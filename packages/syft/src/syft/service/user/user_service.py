@@ -507,7 +507,9 @@ class UserService(AbstractService):
 
         if user.role == ServiceRole.ADMIN:
             settings_stash = SettingsStash(store=self.store)
-            settings = settings_stash.get_all(context.credentials).unwrap()
+            settings = settings_stash.get_all(
+                context.credentials, limit=1, sort_order="desc"
+            ).unwrap()
 
             # TODO: Chance to refactor here in settings, as we're always doing get_att[0]
             if len(settings) > 0:

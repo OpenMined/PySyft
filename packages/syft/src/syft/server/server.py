@@ -71,7 +71,6 @@ from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
 from ..service.settings.settings import ServerSettings
 from ..service.settings.settings import ServerSettingsUpdate
-from ..service.settings.settings_stash import SettingsStash
 from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user import UserView
@@ -398,13 +397,13 @@ class Server(AbstractServer):
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
         self.db.init_tables()
-        self.services.user.stash.init_root_user()
+        # self.services.user.stash.init_root_user()
         self.action_store = self.services.action.store
 
-        create_admin_new(  # nosec B106
+        create_admin_new(
             name=root_username,
             email=root_email,
-            password=root_password,
+            password=root_password,  # nosec
             server=self,
         )
 
@@ -875,14 +874,15 @@ class Server(AbstractServer):
         self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
 
+        # TODO fix database filename + reset
         json_db_config = SQLiteDBConfig(
-            filename=f"{self.id}_json.db",
+            filename=f"{self.id}_{UID().hex}_json.db",
             path=self.get_temp_dir("db"),
         )
         self.db = SQLiteDBManager(
             config=json_db_config,
             server_uid=self.id,
-            root_verify_key=self.signing_key.verify_key,
+            root_verify_key=self.verify_key,
         )
 
     @property
@@ -953,7 +953,7 @@ class Server(AbstractServer):
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
 
-        settings_stash = SettingsStash(store=self.document_store)
+        settings_stash = self.services.settings.stash
 
         try:
             settings = settings_stash.get_all(self.signing_key.verify_key).unwrap()
@@ -1702,13 +1702,15 @@ def create_admin_new(
     # 🟡 TODO: change later but for now this gives the main user super user automatically
     user = create_user.to(User)
     user.signing_key = server.signing_key
-    user.verify_key = user.signing_key.verify_key
+    user.verify_key = server.verify_key
 
     new_user = user_stash.set(
-        credentials=server.signing_key.verify_key,
+        credentials=server.verify_key,
         obj=user,
-        ignore_duplicates=True,
+        ignore_duplicates=False,
     ).unwrap()
+
+    print(f"Created admin {new_user}")
 
     logger.debug(f"Created admin {new_user.email}")
 

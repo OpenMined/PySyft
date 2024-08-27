@@ -50,7 +50,7 @@ class UserStash(ObjectStash[User]):
 
     @as_result(StashException, NotFoundException)
     def get_by_email(self, credentials: SyftVerifyKey, email: str) -> User:
-        self.get_one_by_field(
+        return self.get_one_by_field(
             credentials=credentials, field_name="email", field_value=email
         ).unwrap()
 

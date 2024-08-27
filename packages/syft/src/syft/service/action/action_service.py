@@ -331,7 +331,7 @@ class ActionService(AbstractService):
     @service_method(path="action.get_mock", name="get_mock", roles=GUEST_ROLE_LEVEL)
     def get_mock(self, context: AuthedServiceContext, uid: UID) -> SyftObject:
         """Get a pointer from the action store"""
-        return self.store.get_mock(credentials=context.credentials, uid=uid)
+        return self.store.get_mock(credentials=context.credentials, uid=uid).unwrap()
 
     @service_method(
         path="action.has_storage_permission",

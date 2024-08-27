@@ -157,9 +157,7 @@ class ObjectStash(Generic[SyftT]):
         result = self.session.execute(stmt).first()
 
         if result is None:
-            raise NotFoundException(
-                f"{type(self.object_type).__name__}: {uid} not found"
-            )
+            raise NotFoundException(f"{self.object_type.__name__}: {uid} not found")
         return self.row_as_obj(result)
 
     def _get_field_filter(
@@ -228,7 +226,7 @@ class ObjectStash(Generic[SyftT]):
             has_permission=has_permission,
         ).first()
         if result is None:
-            raise NotFoundException(f"{type(self.object_type).__name__}: not found")
+            raise NotFoundException(f"{self.object_type.__name__}: not found")
         return self.row_as_obj(result)
 
     @as_result(SyftException, StashException, NotFoundException)
@@ -274,7 +272,7 @@ class ObjectStash(Generic[SyftT]):
             limit=limit,
             offset=offset,
             has_permission=has_permission,
-        )
+        ).unwrap()
 
     @as_result(SyftException, StashException, NotFoundException)
     def get_all_contains(
@@ -364,7 +362,7 @@ class ObjectStash(Generic[SyftT]):
         self,
         stmt: T,
         order_by: str | None = None,
-        sort_order: str = "asc",
+        sort_order: str = "desc",
     ) -> T:
         default_order_by = self.table.c.created_at
         default_order_by = (
@@ -437,9 +435,9 @@ class ObjectStash(Generic[SyftT]):
         stmt = self.table.update().where(self._get_field_filter("id", obj.id))
         stmt = self._apply_permission_filter(
             stmt,
-            credentials,
-            has_permission=has_permission,
+            credentials=credentials,
             permission=ActionPermission.WRITE,
+            has_permission=has_permission,
         )
         stmt = stmt.values(fields=serialize_json(obj))
 

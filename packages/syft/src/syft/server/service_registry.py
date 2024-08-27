@@ -124,12 +124,12 @@ class ServiceRegistry:
 
             # Use new DB
             if cls._uses_new_store(service_cls):
+                print("Using new store:", service_cls)
                 svc_kwargs["store"] = server.db
 
             # Use old DB
             elif issubclass(service_cls.store_type, ActionObjectStash):
-                svc_kwargs["store"] = server.action_store
-
+                svc_kwargs["store"] = server.action_store  # type: ignore
             else:
                 svc_kwargs["store"] = server.document_store
 
