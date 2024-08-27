@@ -1,15 +1,10 @@
-# stdlib
-
-# third party
-from result import Err
-from result import Ok
-from result import Result
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
-from ...store.document_store import PartitionSettings
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from .api import TwinAPIEndpoint
 
 MISSING_PATH_STRING = "Endpoint path: {path} does not exist."
@@ -17,55 +12,44 @@ MISSING_PATH_STRING = "Endpoint path: {path} does not exist."
 
 @serializable(canonical_name="TwinAPIEndpointSQLStash", version=1)
 class TwinAPIEndpointStash(ObjectStash[TwinAPIEndpoint]):
-    settings: PartitionSettings = PartitionSettings(
-        name=TwinAPIEndpoint.__canonical_name__, object_type=TwinAPIEndpoint
-    )
-
-    def get_by_path(
-        self, credentials: SyftVerifyKey, path: str
-    ) -> Result[TwinAPIEndpoint, str]:
+    @as_result(StashException, NotFoundException)
+    def get_by_path(self, credentials: SyftVerifyKey, path: str) -> TwinAPIEndpoint:
         # TODO standardize by returning None if endpoint doesnt exist.
-        res_or_err = self.get_one_by_field(
+        res = self.get_one_by_field(
             credentials=credentials,
             field_name="path",
             field_value=path,
-        )
+        ).unwrap()
 
-        if res_or_err.is_err():
-            return res_or_err
-
-        res = res_or_err.ok()
         if res is None:
-            return Err(MISSING_PATH_STRING.format(path=path))
-        return Ok(res)
+            raise NotFoundException(
+                public_message=MISSING_PATH_STRING.format(path=path)
+            )
+        return res
 
-    def path_exists(self, credentials: SyftVerifyKey, path: str) -> Result[bool, str]:
-        result = self.get_by_path(credentials=credentials, path=path)
+    @as_result(StashException)
+    def path_exists(self, credentials: SyftVerifyKey, path: str) -> bool:
+        try:
+            self.get_by_path(credentials=credentials, path=path).unwrap()
+            return True
+        except NotFoundException:
+            return False
 
-        if result.is_err() and result.err() == MISSING_PATH_STRING.format(path=path):
-            return Ok(False)
-        if result.is_ok():
-            return Ok(True)
-
-        return Err(result.err())
-
+    @as_result(StashException)
     def upsert(
         self,
         credentials: SyftVerifyKey,
         endpoint: TwinAPIEndpoint,
         has_permission: bool = False,
-    ) -> Result[TwinAPIEndpoint, str]:
+    ) -> TwinAPIEndpoint:
         """Upsert an endpoint."""
-        # TODO has_permission is not used.
-        result = self.path_exists(credentials=credentials, path=endpoint.path)
+        exists = self.path_exists(credentials=credentials, path=endpoint.path).unwrap()
 
-        if result.is_err():
-            return result
+        if exists:
+            super().delete_by_uid(credentials=credentials, uid=endpoint.id).unwrap()
 
-        if result.ok():
-            super().delete_by_uid(credentials=credentials, uid=endpoint.id)
-
-        result = super().set(
-            credentials=credentials, obj=endpoint, ignore_duplicates=False
+        return (
+            super()
+            .set(credentials=credentials, obj=endpoint, ignore_duplicates=False)
+            .unwrap()
         )
-        return result

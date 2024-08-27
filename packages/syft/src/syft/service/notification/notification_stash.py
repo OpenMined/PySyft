@@ -1,116 +1,91 @@
 # stdlib
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
 
 # relative
 from ...serde.json_serde import serialize_json
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
-from ...store.document_store import PartitionKey
-from ...store.document_store import QueryKeys
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
-from ...types.datetime import DateTime
+from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from .notifications import Notification
 from .notifications import NotificationStatus
 
-FromUserVerifyKeyPartitionKey = PartitionKey(
-    key="from_user_verify_key", type_=SyftVerifyKey
-)
-ToUserVerifyKeyPartitionKey = PartitionKey(
-    key="to_user_verify_key", type_=SyftVerifyKey
-)
-StatusPartitionKey = PartitionKey(key="status", type_=NotificationStatus)
 
-OrderByCreatedAtTimeStampPartitionKey = PartitionKey(key="created_at", type_=DateTime)
-
-LinkedObjectPartitionKey = PartitionKey(key="linked_obj", type_=LinkedObject)
-
-
-@instrument
 @serializable(canonical_name="NotificationSQLStash", version=1)
 class NotificationStash(ObjectStash[Notification]):
+    @as_result(StashException)
     def get_all_inbox_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
-    ) -> Result[list[Notification], str]:
+    ) -> list[Notification]:
         return self.get_all_by_field(
             credentials, field_name="verify_key", field_value=str(verify_key)
-        )
+        ).unwrap()
 
+    @as_result(StashException)
     def get_all_sent_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
-    ) -> Result[list[Notification], str]:
+    ) -> list[Notification]:
         return self.get_all_by_field(
             credentials,
             field_name="from_user_verify_key",
             field_value=str(verify_key),
-        )
+        ).unwrap()
 
+    @as_result(StashException)
     def get_all_for_verify_key(
-        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey, qks: QueryKeys
-    ) -> Result[list[Notification], str]:
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+    ) -> list[Notification]:
         return self.get_all_by_field(
             credentials, field_name="verify_key", field_value=str(verify_key)
-        )
+        ).unwrap()
 
+    @as_result(StashException)
     def get_all_by_verify_key_for_status(
         self,
         credentials: SyftVerifyKey,
         verify_key: SyftVerifyKey,
         status: NotificationStatus,
-    ) -> Result[list[Notification], str]:
+    ) -> list[Notification]:
         return self.get_all_by_fields(
             credentials,
             fields={
                 "to_user_verify_key": str(verify_key),
                 "status": status.value,
             },
-        )
+        ).unwrap()
 
+    @as_result(StashException, NotFoundException)
     def get_notification_for_linked_obj(
         self,
         credentials: SyftVerifyKey,
         linked_obj: LinkedObject,
-    ) -> Result[Notification, str]:
+    ) -> Notification:
         # TODO does this work?
         return self.get_one_by_fields(
             credentials, fields={"linked_obj": serialize_json(linked_obj)}
-        )
+        ).unwrap()
 
+    @as_result(StashException, NotFoundException)
     def update_notification_status(
         self, credentials: SyftVerifyKey, uid: UID, status: NotificationStatus
-    ) -> Result[Notification, str]:
-        result = self.get_by_uid(credentials, uid=uid)
-        if result.is_err():
-            return result.err()
-
-        notification = result.ok()
-        if notification is None:
-            return Err(f"No notification exists for id: {uid}")
+    ) -> Notification:
+        notification = self.get_by_uid(credentials, uid=uid).unwrap()
         notification.status = status
-        return self.update(credentials, obj=notification)
+        return self.update(credentials, obj=notification).unwrap()
 
+    @as_result(StashException, NotFoundException)
     def delete_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
-    ) -> Result[bool, str]:
-        result = self.get_all_inbox_for_verify_key(
+    ) -> bool:
+        notifications = self.get_all_inbox_for_verify_key(
             credentials,
             verify_key=verify_key,
-        )
-        # If result is an error then return the error
-        if result.is_err():
-            return result
-
-        # get the list of notifications
-        notifications = result.ok()
-
+        ).unwrap()
         for notification in notifications:
-            result = self.delete_by_uid(credentials, uid=notification.id)
-            if result.is_err():
-                return result
-        return Ok(True)
+            self.delete_by_uid(credentials, uid=notification.id).unwrap()
+        return True

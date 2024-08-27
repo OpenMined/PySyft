@@ -1,19 +1,17 @@
 # future
 from __future__ import annotations
 
-# third party
-from result import Err
-from result import Ok
-from result import Result
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
-from ..response import SyftSuccess
 from .action_object import ActionObject
 from .action_object import is_action_data_empty
 from .action_permissions import ActionObjectEXECUTE
@@ -25,78 +23,58 @@ from .action_permissions import StoragePermission
 
 @serializable(canonical_name="ActionObjectSQLStore", version=1)
 class ActionObjectStash(ObjectStash[ActionObject]):
+    @as_result(NotFoundException, SyftException)
     def get(
         self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False
-    ) -> Result[ActionObject, str]:
+    ) -> ActionObject:
         uid = uid.id  # We only need the UID from LineageID or UID
-
         # TODO remove and use get_by_uid instead
-        result_or_err = self.get_by_uid(
+        return self.get_by_uid(
             credentials=credentials,
             uid=uid,
             has_permission=has_permission,
-        )
-        if result_or_err.is_err():
-            return Err(result_or_err.err())
+        ).unwrap()
 
-        result = result_or_err.ok()
-        if result is None:
-            return Err(f"Could not find item with uid {uid}")
-        return Ok(result)
-
-    def get_mock(self, credentials: SyftVerifyKey, uid: UID) -> Result[SyftObject, str]:
+    @as_result(NotFoundException, SyftException)
+    def get_mock(self, credentials: SyftVerifyKey, uid: UID) -> SyftObject:
         uid = uid.id  # We only need the UID from LineageID or UID
 
-        try:
-            obj_or_err = self.get_by_uid(
-                credentials=credentials, uid=uid, has_permission=True
-            )  # type: ignore
-            if obj_or_err.is_err():
-                return Err(obj_or_err.err())
-            obj = obj_or_err.ok()
-            if isinstance(obj, TwinObject) and not is_action_data_empty(obj.mock):
-                return Ok(obj.mock)
-            return Err("No mock")
-        except Exception as e:
-            return Err(f"Could not find item with uid {uid}, {e}")
+        obj = self.get_by_uid(
+            credentials=credentials, uid=uid, has_permission=True
+        ).unwrap()
+        if isinstance(obj, TwinObject) and not is_action_data_empty(obj.mock):
+            return obj.mock
+        raise NotFoundException(public_message=f"No mock found for object {uid}")
 
+    @as_result(NotFoundException, SyftException)
     def get_pointer(
         self,
         uid: UID,
         credentials: SyftVerifyKey,
         server_uid: UID,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         uid = uid.id  # We only need the UID from LineageID or UID
 
-        try:
-            result_or_err = self.get_by_uid(
-                credentials=credentials, uid=uid, has_permission=True
-            )
-            has_permissions = self.has_permission(
-                ActionObjectREAD(uid=uid, credentials=credentials)
-            )
-            if result_or_err.is_err():
-                return Err(result_or_err.err())
+        obj = self.get_by_uid(
+            credentials=credentials, uid=uid, has_permission=True
+        ).unwrap()
+        has_permissions = self.has_permission(
+            ActionObjectREAD(uid=uid, credentials=credentials)
+        )
 
-            obj = result_or_err.ok()
-            if obj is None:
-                return Err("Permission denied")
-
-            if has_permissions:
-                if isinstance(obj, TwinObject):
-                    return Ok(obj.private.syft_point_to(server_uid))
-                return Ok(obj.syft_point_to(server_uid))
-
-            # if its a twin with a mock anyone can have this
+        if has_permissions:
             if isinstance(obj, TwinObject):
-                return Ok(obj.mock.syft_point_to(server_uid))
+                return obj.private.syft_point_to(server_uid)
+            return obj.syft_point_to(server_uid)
 
-            # finally worst case you get ActionDataEmpty so you can still trace
-            return Ok(obj.as_empty().syft_point_to(server_uid))
+        # if its a twin with a mock anyone can have this
+        if isinstance(obj, TwinObject):
+            return obj.mock.syft_point_to(server_uid)
 
-        except Exception as e:
-            return Err(str(e))
+        # finally worst case you get ActionDataEmpty so you can still trace
+        return obj.as_empty().syft_point_to(server_uid)
 
+    @as_result(SyftException, StashException)
     def set_or_update(  # type: ignore
         self,
         uid: UID,
@@ -104,7 +82,7 @@ class ActionObjectStash(ObjectStash[ActionObject]):
         syft_object: SyftObject,
         has_result_read_permission: bool = False,
         add_storage_permission: bool = True,
-    ) -> Result[SyftSuccess, Err]:
+    ) -> UID:
         uid = uid.id  # We only need the UID from LineageID or UID
 
         if self.exists(credentials=credentials, uid=uid):
@@ -127,10 +105,10 @@ class ActionObjectStash(ObjectStash[ActionObject]):
             self.update(
                 credentials=credentials,
                 obj=syft_object,
-            )
-            self.add_permissions(permissions)
-            self.add_storage_permissions(storage_permission)
-            return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
+            ).unwrap()
+            self.add_permissions(permissions).unwrap()
+            self.add_storage_permissions(storage_permission).unwrap()
+            return uid
 
         owner_credentials = (
             credentials if has_result_read_permission else self.root_verify_key
@@ -145,9 +123,9 @@ class ActionObjectStash(ObjectStash[ActionObject]):
                 ActionObjectEXECUTE(uid=uid, credentials=credentials),
             ],
             add_storage_permission=add_storage_permission,
-        )
+        ).unwrap()
 
-        return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
+        return uid
 
     def set(self, *args, **kwargs):  # type: ignore
         raise Exception("Use `ActionObjectStash.set_or_update` instead.")

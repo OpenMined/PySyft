@@ -4,10 +4,6 @@
 
 # stdlib
 
-# third party
-from result import Ok
-from result import Result
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
@@ -15,7 +11,9 @@ from ...store.db.sqlite_db import DBManager
 from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
+from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
+from ...types.result import as_result
 from ...util.telemetry import instrument
 from .sync_state import SyncState
 
@@ -34,21 +32,17 @@ class SyncStash(ObjectStash[SyncState]):
         super().__init__(store)
         self.last_state: SyncState | None = None
 
-    def get_latest(self, credentials: SyftVerifyKey) -> Result[SyncState | None, str]:
+    @as_result(StashException)
+    def get_latest(self, credentials: SyftVerifyKey) -> SyncState | None:
         if self.last_state is not None:
-            return Ok(self.last_state)
+            return self.last_state
 
-        states_or_err = self.get_all(
+        states = self.get_all(
             credentials=credentials,
             sort_order="desc",
             limit=1,
         )
 
-        if states_or_err.is_err():
-            return states_or_err
-
-        last_state = states_or_err.ok()
-        if len(last_state) > 0:
-            self.last_state = last_state[0]
-            return Ok(last_state[0])
-        return Ok(None)
+        if len(states) > 0:
+            return states[0]
+        return None
