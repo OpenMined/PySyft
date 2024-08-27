@@ -767,7 +767,7 @@ class OutputPolicy(Policy):
 
         return outputs
 
-    def is_valid(self, context: AuthedServiceContext) -> bool:  # type: ignore
+    def is_valid(self, context: AuthedServiceContext | None) -> bool:  # type: ignore
         raise NotImplementedError()
 
 
@@ -787,14 +787,22 @@ class OutputPolicyExecuteCount(OutputPolicy):
     #     output_history = api.services.output.get_by_output_policy_id(self.id)
     #     return len(output_history)
 
-    def is_valid(self, context: AuthedServiceContext) -> bool:  # type: ignore
-        output_service = context.server.get_service("outputservice")
-        output_history = output_service.get_by_output_policy_id(
-            context, self.id
-        )  # raises
+    def count(self, context: AuthedServiceContext | None = None) -> int:
+        # client side
+        if context is None:
+            output_service = self.get_api().services.output
+            output_history = output_service.get_by_output_policy_id(self.id)
+        else:
+            # server side
+            output_service = context.server.get_service("outputservice")
+            output_history = output_service.get_by_output_policy_id(
+                context, self.id
+            )  # raises
 
-        execution_count = len(output_history)
-        return execution_count < self.limit
+        return len(output_history)
+
+    def is_valid(self, context: AuthedServiceContext | None = None) -> bool:  # type: ignore
+        return self.count(context) < self.limit
 
     def public_state(self) -> dict[str, int]:
         # TODO: this count is not great, fix it.
