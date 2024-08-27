@@ -1,4 +1,5 @@
 # stdlib
+from contextlib import nullcontext as does_not_raise
 
 # third party
 import pytest
@@ -20,9 +21,6 @@ secrets = {
     "table_1": "table1",
     "table_2": "table2",
 }
-# use fixtures to setup low server, set up high server
-
-# fixture to optionally set up worker pool (or use default)
 
 
 # create custom endpoint for private, mock query functions on high server
@@ -195,7 +193,7 @@ def create_submit_query_endpoint(update_query_endpoint):
 @pytest.fixture
 def submit_ds_request(create_submit_query_endpoint):
     admin_client, ds_client = create_submit_query_endpoint
-    FUNC_NAME = "request_and_accept"
+    FUNC_NAME = "my_test_function"
     QUERY = "SELECT * FROM `bigquery-public-data.ml_datasets.penguins` LIMIT 10"
 
     submit_res = ds_client.api.services.bigquery.submit_query(
@@ -203,6 +201,17 @@ def submit_ds_request(create_submit_query_endpoint):
     )
 
     fn_name = extract_code_path(submit_res)
+    yield admin_client, ds_client, fn_name
+
+
+@pytest.fixture
+def approve_original_request(submit_ds_request):
+    admin_client, ds_client, fn_name = submit_ds_request
+
+    request = admin_client.requests[0]
+
+    approved_request = request.approve()
+
     yield admin_client, ds_client, fn_name
 
 
@@ -216,7 +225,7 @@ def accept_request_by_deposit(submit_ds_request):
     job.wait()
     job_info = job.info(result=True)
     approved_request = request.deposit_result(job_info, approve=True)
-    yield admin_client, ds_client, fn_name, job, approved_request
+    yield admin_client, ds_client, fn_name
 
 
 @pytest.fixture
@@ -337,44 +346,39 @@ def test_submit_query_endpoint(create_submit_query_endpoint) -> None:
     assert sql_query in retrieved_obj
 
 
-def test_ds_submit_without_approval_errors(submit_ds_request):
-    admin_client, ds_client, fn_name = submit_ds_request
-
-    assert "request_and_accept" in fn_name
-
-    api_method = getattr(ds_client.code, fn_name)
-
-    with pytest.raises(SyftException) as exc:
-        api_method()
-
-    assert "UserCodeStatus.PENDING" in str(exc.value)
-
-
-def test_submit_and_accept_by_deposit_flow(accept_request_by_deposit):
-    admin_client, ds_client, fn_name, job, req = accept_request_by_deposit
-
-    assert "request_and_accept" in fn_name
-
-    job_res = job.wait()
-
-    assert not isinstance(job_res, SyftError)
-
-    api_method = getattr(ds_client.code, fn_name)
-
-    res = api_method()
-    assert not isinstance(res, SyftError)
-
-    assert res == job_res.get()
-
-
-def test_submit_and_reject_flow(reject_request):
-    admin_client, ds_client, fn_name = reject_request
+@pytest.mark.parametrize(
+    "fixture_name, expected_request_status, raises_expectation, error_message",
+    [
+        (
+            "submit_ds_request",
+            RequestStatus.PENDING,
+            pytest.raises(SyftException),
+            "UserCodeStatus.PENDING",
+        ),
+        ("approve_original_request", RequestStatus.APPROVED, does_not_raise(), ""),
+        (
+            "reject_request",
+            RequestStatus.REJECTED,
+            pytest.raises(SyftException),
+            "Bad vibes :(",
+        ),
+        ("accept_request_by_deposit", RequestStatus.APPROVED, does_not_raise(), ""),
+    ],
+)
+def test_ds_result_retrieval(
+    fixture_name, expected_request_status, raises_expectation, error_message, request
+):
+    flow_fixture = request.getfixturevalue(fixture_name)
+    admin_client, ds_client, fn_name = flow_fixture
 
     req = admin_client.requests[0]
     assert isinstance(req, Request)
-    assert req.status == RequestStatus.REJECTED
+    assert req.status == expected_request_status
 
-    with pytest.raises(SyftException) as exc:
-        api_method = getattr(ds_client.code, fn_name)
-        api_method()
-    assert "Bad vibes :(" in str(exc.value)
+    assert "my_test_function" in fn_name
+
+    api_method = getattr(ds_client.code, fn_name)
+    with raises_expectation as exc:
+        res = api_method()
+    if error_message:
+        assert error_message in str(exc.value)
