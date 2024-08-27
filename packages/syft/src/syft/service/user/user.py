@@ -76,6 +76,7 @@ class User(SyftObject):
     # version
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_2
+    __order_by__ = ("email", "asc")
 
     id: UID | None = None  # type: ignore[assignment]
 

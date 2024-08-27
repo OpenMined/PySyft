@@ -1710,8 +1710,6 @@ def create_admin_new(
         ignore_duplicates=False,
     ).unwrap()
 
-    print(f"Created admin {new_user}")
-
     logger.debug(f"Created admin {new_user.email}")
 
     return new_user

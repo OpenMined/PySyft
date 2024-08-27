@@ -45,7 +45,7 @@ T = TypeVar("T")
 
 class ObjectStash(Generic[SyftT]):
     table: Table
-    object_type: type
+    object_type: type[SyftObject]
 
     def __init__(self, store: DBManager) -> None:
         self.db = store
@@ -177,7 +177,7 @@ class ObjectStash(Generic[SyftT]):
         fields: dict[str, str],
         table: Table | None = None,
         order_by: str | None = None,
-        sort_order: str = "asc",
+        sort_order: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
         has_permission: bool = False,
@@ -235,7 +235,7 @@ class ObjectStash(Generic[SyftT]):
         credentials: SyftVerifyKey,
         fields: dict[str, str],
         order_by: str | None = None,
-        sort_order: str = "asc",
+        sort_order: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
         has_permission: bool = False,
@@ -259,7 +259,7 @@ class ObjectStash(Generic[SyftT]):
         field_name: str,
         field_value: str,
         order_by: str | None = None,
-        sort_order: str = "asc",
+        sort_order: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
         has_permission: bool = False,
@@ -281,7 +281,7 @@ class ObjectStash(Generic[SyftT]):
         field_name: str,
         field_value: str,
         order_by: str | None = None,
-        sort_order: str = "asc",
+        sort_order: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
         has_permission: bool = False,
@@ -299,6 +299,21 @@ class ObjectStash(Generic[SyftT]):
 
         result = self.session.execute(stmt).all()
         return [self.row_as_obj(row) for row in result]
+
+    @as_result(SyftException, StashException, NotFoundException)
+    def get_index(
+        self, credentials: SyftVerifyKey, index: int, has_permission: bool = False
+    ) -> SyftT:
+        items = self.get_all(
+            credentials,
+            has_permission=has_permission,
+            limit=1,
+            offset=index,
+        ).unwrap()
+
+        if len(items) == 0:
+            raise NotFoundException(f"No item found at index {index}")
+        return items[0]
 
     def row_as_obj(self, row: Row) -> SyftT:
         # TODO make unwrappable serde
@@ -358,22 +373,37 @@ class ObjectStash(Generic[SyftT]):
             stmt = stmt.limit(limit)
         return stmt
 
+    def _get_order_by_col(self, order_by: str, sort_order: str | None = None) -> Column:
+        # TODO connect+rename created_date to created_at
+        if sort_order is None:
+            sort_order = "asc"
+
+        if order_by == "id":
+            col = self.table.c.id
+        if order_by == "created_date" or order_by == "created_at":
+            col = self.table.c.created_at
+        else:
+            col = self.table.c.fields[order_by]
+
+        return col.desc() if sort_order.lower() == "desc" else col.asc()
+
     def _apply_order_by(
         self,
         stmt: T,
         order_by: str | None = None,
-        sort_order: str = "desc",
+        sort_order: str | None = None,
     ) -> T:
-        default_order_by = self.table.c.created_at
-        default_order_by = (
-            default_order_by.desc() if sort_order == "desc" else default_order_by
-        )
         if order_by is None:
-            return stmt.order_by(default_order_by)
+            order_by, default_sort_order = self.object_type.__order_by__
+            sort_order = sort_order or default_sort_order
+
+        order_by_col = self._get_order_by_col(order_by, sort_order)
+
+        if order_by == "id":
+            return stmt.order_by(order_by_col)
         else:
-            order_by_col = self.table.c.fields[order_by]
-            order_by = order_by_col.desc() if sort_order == "desc" else order_by_col
-            return stmt.order_by(order_by, default_order_by)
+            secondary_order_by = self._get_order_by_col("id", sort_order)
+            return stmt.order_by(order_by_col, secondary_order_by)
 
     def _apply_permission_filter(
         self,
@@ -395,7 +425,7 @@ class ObjectStash(Generic[SyftT]):
         credentials: SyftVerifyKey,
         has_permission: bool = False,
         order_by: str | None = None,
-        sort_order: str = "asc",
+        sort_order: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
     ) -> list[SyftT]:

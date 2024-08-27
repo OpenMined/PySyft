@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 # relative
 from ..serde.serializable import serializable
 from ..service.action.action_service import ActionService
-from ..service.action.action_store import ActionObjectStash
 from ..service.api.api_service import APIService
 from ..service.attestation.attestation_service import AttestationService
 from ..service.blob_storage.service import BlobStorageService
@@ -124,14 +123,12 @@ class ServiceRegistry:
 
             # Use new DB
             if cls._uses_new_store(service_cls):
-                print("Using new store:", service_cls)
                 svc_kwargs["store"] = server.db
 
             # Use old DB
-            elif issubclass(service_cls.store_type, ActionObjectStash):
-                svc_kwargs["store"] = server.action_store  # type: ignore
             else:
                 svc_kwargs["store"] = server.document_store
+                print("Using old store:", service_cls)
 
             service = service_cls(**svc_kwargs)
             service_dict[field_name] = service

@@ -740,6 +740,8 @@ class APIModule:
             )
 
     def __getitem__(self, key: str | int) -> Any:
+        if hasattr(self, "get_index"):
+            return self.get_index(key)
         if hasattr(self, "get_all"):
             return self.get_all()[key]
         raise NotImplementedError
