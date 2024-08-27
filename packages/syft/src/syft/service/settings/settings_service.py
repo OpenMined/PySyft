@@ -109,13 +109,15 @@ class SettingsService(AbstractService):
     def _update(
         self, context: AuthedServiceContext, settings: ServerSettingsUpdate
     ) -> ServerSettings:
-        all_settings = self.stash.get_all(context.credentials).unwrap()
+        all_settings = self.stash.get_all(
+            context.credentials, limit=1, sort_order="desc"
+        ).unwrap()
         if len(all_settings) > 0:
             new_settings = all_settings[0].model_copy(
                 update=settings.to_dict(exclude_empty=True)
             )
             update_result = self.stash.update(
-                context.credentials, settings=new_settings
+                context.credentials, obj=new_settings
             ).unwrap()
 
             notifier_service = context.server.get_service("notifierservice")
@@ -155,7 +157,9 @@ class SettingsService(AbstractService):
                 public_message=f"Not a valid server_side_type, please use one of the options from: {side_type_options}"
             )
 
-        current_settings = self.stash.get_all(context.credentials).unwrap()
+        current_settings = self.stash.get_all(
+            context.credentials, limit=1, sort_order="desc"
+        ).unwrap()
         if len(current_settings) > 0:
             new_settings = current_settings[0]
             new_settings.server_side_type = server_side_type
