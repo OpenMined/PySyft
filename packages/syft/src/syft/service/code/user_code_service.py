@@ -509,7 +509,10 @@ class UserCodeService(AbstractService):
                 output_policy=output_policy,
             )
 
-            if is_execution_allowed is not IsExecutionAllowedEnum.ALLOWED:
+            if (
+                is_execution_allowed is not IsExecutionAllowedEnum.ALLOWED
+                or context.is_l0_lowside
+            ):
                 # We check output policy only in l2 deployment.
                 # code is from low side (L0 setup)
                 status = code.get_status(context).unwrap()
