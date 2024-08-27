@@ -31,7 +31,7 @@ class NotifierStash(ObjectStash[NotifierSettings]):
     def get(self, credentials: SyftVerifyKey) -> NotifierSettings | None:
         """Get Settings"""
         # actually get latest settings
-        result = self.get_all(credentials, limit=1).unwrap()
+        result = self.get_all(credentials, limit=1, sort_order="desc").unwrap()
         if len(result) > 0:
             return result[0]
         raise NotFoundException(
