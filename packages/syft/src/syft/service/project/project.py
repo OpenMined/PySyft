@@ -1236,7 +1236,7 @@ class ProjectSubmit(SyftObject):
 
     def send(self, return_all_projects: bool = False) -> Project | list[Project]:
         if len(self.clients) == 0:
-            return SyftError(message=_EMPTY_MEMBER_LIST_ERROR_MESSAGE)
+            raise SyftException(public_message=_EMPTY_MEMBER_LIST_ERROR_MESSAGE)
 
         # Currently we are assuming that the first member is the leader
         # This would be changed in our future leaderless approach
