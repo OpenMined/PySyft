@@ -407,7 +407,6 @@ class InputPolicy(Policy):
         self,
         kwargs: dict[Any, Any],
         context: AuthedServiceContext,
-        code_item_id: UID,
     ) -> dict[Any, Any]:
         raise NotImplementedError
 
@@ -541,7 +540,6 @@ class MixedInputPolicy(InputPolicy):
         self,
         kwargs: dict[str, UID],
         context: AuthedServiceContext,
-        code_item_id: UID,
     ) -> dict[Any, Any]:
         try:
             res = {}
@@ -576,7 +574,6 @@ class MixedInputPolicy(InputPolicy):
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,
             context=context,
-            code_item_id=code_item_id,
         )
         expected_input_kwargs = set()
 
@@ -685,7 +682,6 @@ class ExactMatch(InputPolicy):
         self,
         kwargs: dict[Any, Any],
         context: AuthedServiceContext,
-        code_item_id: UID,
     ) -> dict[Any, Any]:
         allowed_inputs = allowed_ids_only(
             allowed_inputs=self.inputs, kwargs=kwargs, context=context
@@ -705,7 +701,6 @@ class ExactMatch(InputPolicy):
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,
             context=context,
-            code_item_id=code_item_id,
         )
 
         expected_input_kwargs = set()
