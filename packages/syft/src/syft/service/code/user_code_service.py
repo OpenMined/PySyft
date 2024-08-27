@@ -567,7 +567,7 @@ class UserCodeService(AbstractService):
                             context.add_warning(output_policy_message)
                         return outputs  # type: ignore
 
-            raise SyftException(public_message=is_execution_allowed.value)
+                raise SyftException(public_message=is_execution_allowed.value)
 
         # Execute the code item
         if not self.valid_worker_pool_for_context(context, code):
