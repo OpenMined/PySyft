@@ -6,9 +6,10 @@ import smtplib
 # third party
 from pydantic import BaseModel
 from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
+
+# relative
+from ...types.errors import SyftException
+from ...types.result import as_result
 
 SOCKET_TIMEOUT = 5  # seconds
 
@@ -47,9 +48,10 @@ class SMTPClient(BaseModel):
         # TODO: Add error handling
 
     @classmethod
+    @as_result(SyftException)
     def check_credentials(
         cls, server: str, port: int, username: str, password: str
-    ) -> Result[str, Exception]:
+    ) -> bool:
         """Check if the credentials are valid.
 
         Returns:
@@ -62,6 +64,6 @@ class SMTPClient(BaseModel):
                     smtp_server.starttls()
                     smtp_server.ehlo()
                 smtp_server.login(username, password)
-                return Ok("Credentials are valid.")
+                return True
         except Exception as e:
-            return Err(e)
+            raise SyftException(public_message=str(e))

@@ -1,3 +1,6 @@
+# third party
+import pytest
+
 # syft absolute
 import syft
 from syft.client.client import SyftClient
@@ -11,10 +14,10 @@ from syft.service.request.request import ActionStoreChange
 from syft.service.request.request import ObjectMutation
 from syft.service.request.request import RequestStatus
 from syft.service.request.request import UserCodeStatusChange
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings_service import SettingsService
 from syft.store.linked_obj import LinkedObject
+from syft.types.errors import SyftException
 
 
 def test_object_mutation(worker: Worker):
@@ -85,8 +88,11 @@ def test_action_store_change(worker: Worker, ds_client: SyftClient):
     result = permission_change.undo(change_context)
     assert result.is_ok()
 
-    result = action_obj_ptr.get()
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException) as exc:
+        action_obj_ptr.get()
+
+    assert exc.type is SyftException
+    assert "Permission", "denied" in exc.value.public_message
 
 
 def test_user_code_status_change(worker: Worker, ds_client: SyftClient):
@@ -149,18 +155,18 @@ def test_code_accept_deny(worker: Worker, ds_client: SyftClient):
         return sum(data)
 
     result = ds_client.code.request_code_execution(simple_function)
-    assert not isinstance(result, SyftError)
-
     request = root_client.requests.get_all()[0]
     result = request.approve()
     assert isinstance(result, SyftSuccess)
 
     request = root_client.requests.get_all()[0]
     assert request.status == RequestStatus.APPROVED
+
     result = ds_client.code.simple_function(data=action_obj)
     assert result.get() == sum(dummy_data)
 
-    result = request.deny(reason="Function output needs differential privacy !!")
+    deny_reason = "Function output needs differential privacy!!"
+    result = request.deny(reason=deny_reason)
     assert isinstance(result, SyftSuccess)
 
     request = root_client.requests.get_all()[0]
@@ -169,6 +175,8 @@ def test_code_accept_deny(worker: Worker, ds_client: SyftClient):
     user_code = ds_client.code.get_all()[0]
     assert not user_code.status.approved
 
-    result = ds_client.code.simple_function(data=action_obj)
-    assert isinstance(result, SyftError)
-    assert "DENIED" in result.message
+    with pytest.raises(SyftException) as exc:
+        ds_client.code.simple_function(data=action_obj)
+
+    assert exc.type is SyftException
+    assert deny_reason in exc.value.public_message

@@ -14,13 +14,12 @@ from typing import TypeVar
 
 # third party
 from pydantic import BaseModel
-from result import Err
-from result import Ok
-from result import Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -29,17 +28,15 @@ from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
-from ..response import SyftError
 from ..response import SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
 
 class BaseNotifier(BaseModel):
-    def send(
-        self, target: SyftVerifyKey, notification: Notification
-    ) -> SyftSuccess | SyftError:
-        return SyftError(message="Not implemented")
+    @as_result(SyftException)
+    def send(self, target: SyftVerifyKey, notification: Notification) -> SyftSuccess:
+        raise SyftException(public_message="Not implemented")
 
 
 TBaseNotifier = TypeVar("TBaseNotifier", bound=BaseNotifier)
@@ -78,25 +75,32 @@ class EmailNotifier(BaseNotifier):
         password: str,
         server: str,
         port: int = 587,
-    ) -> Result[str, Exception]:
-        return SMTPClient.check_credentials(
-            server=server,
-            port=port,
-            username=username,
-            password=password,
-        )
+    ) -> bool:
+        try:
+            SMTPClient.check_credentials(
+                server=server,
+                port=port,
+                username=username,
+                password=password,
+            ).unwrap()
+            return True
+        except Exception:
+            return False
 
+    @as_result(SyftException)
     def send(
         self, context: AuthedServiceContext, notification: Notification
-    ) -> Result[Ok, Err]:
+    ) -> SyftSuccess:
         try:
             user_service = context.server.get_service("userservice")
 
-            receiver = user_service.get_by_verify_key(notification.to_user_verify_key)
+            receiver = user_service.get_by_verify_key(
+                notification.to_user_verify_key
+            ).unwrap()
 
             if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
-                return Ok(
-                    "Email notifications are disabled for this user."
+                return SyftSuccess(
+                    message="Email notifications are disabled for this user."
                 )  # TODO: Should we return an error here?
 
             receiver_email = receiver.email
@@ -118,10 +122,13 @@ class EmailNotifier(BaseNotifier):
             self.smtp_client.send(  # type: ignore
                 sender=self.sender, receiver=receiver_email, subject=subject, body=body
             )
-            return Ok("Email sent successfully!")
+            return SyftSuccess(message="Email sent successfully!")
         except Exception:
-            return Err(
-                "Some notifications failed to be delivered. Please check the health of the mailing server."
+            raise SyftException(
+                public_message=(
+                    "Some notifications failed to be delivered."
+                    " Please check the health of the mailing server."
+                )
             )
 
 
@@ -226,7 +233,7 @@ class NotifierSettings(SyftObject):
         password: str,
         server: str,
         port: int,
-    ) -> Result[str, Exception]:
+    ) -> bool:
         return self.notifiers[NOTIFIERS.EMAIL].check_credentials(
             server=server,
             port=port,
@@ -234,19 +241,18 @@ class NotifierSettings(SyftObject):
             password=password,
         )
 
+    @as_result(SyftException)
     def send_notifications(
         self,
         context: AuthedServiceContext,
         notification: Notification,
-    ) -> Result[Ok, Err]:
-        notifier_objs: list = self.select_notifiers(notification)
+    ) -> int:
+        notifier_objs: list[BaseNotifier] = self.select_notifiers(notification)
 
         for notifier in notifier_objs:
-            result = notifier.send(context, notification)
-            if result.err():
-                return result
+            notifier.send(target=context, notification=notification).unwrap()
 
-        return Ok("Notification sent successfully!")
+        return len(notifier_objs)
 
     def select_notifiers(self, notification: Notification) -> list[BaseNotifier]:
         """

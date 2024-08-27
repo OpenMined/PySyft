@@ -14,15 +14,14 @@ from typing import cast
 from pydantic import ValidationError
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
 
 # relative
 from ...abstract_server import AbstractServer
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -426,7 +425,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
             return True
         return False
 
-    def select_code(self, context: AuthedServiceContext) -> Result[Ok, Err]:
+    def select_code(
+        self, context: AuthedServiceContext
+    ) -> PrivateAPIEndpoint | PublicAPIEndpoint | None:
         """Select the code to execute based on the user's permissions and public code availability.
 
         Args:
@@ -435,8 +436,8 @@ class TwinAPIEndpoint(SyncableSyftObject):
             Result[Ok, Err]: The selected code to execute.
         """
         if self.has_permission(context) and self.private_function:
-            return Ok(self.private_function)
-        return Ok(self.mock_function)
+            return self.private_function
+        return self.mock_function
 
     def exec(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> Any:
         """Execute the code based on the user's permissions and public code availability.
@@ -448,11 +449,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         Returns:
             Any: The result of the executed code.
         """
-        result = self.select_code(context)
-        if result.is_err():
-            return SyftError(message=result.err())
-
-        selected_code = result.ok()
+        selected_code = self.select_code(context)
         return self.exec_code(selected_code, context, *args, **kwargs)
 
     def exec_mock_function(
@@ -462,7 +459,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         if self.mock_function:
             return self.exec_code(self.mock_function, context, *args, **kwargs)
 
-        return SyftError(message="No public code available")
+        raise SyftException(public_message="No public code available")
 
     def exec_private_function(
         self, context: AuthedServiceContext, *args: Any, **kwargs: Any
@@ -477,12 +474,12 @@ class TwinAPIEndpoint(SyncableSyftObject):
             Any: The result of the executed code.
         """
         if self.private_function is None:
-            return SyftError(message="No private code available")
+            raise SyftException(public_message="No private code available")
 
         if self.has_permission(context):
             return self.exec_code(self.private_function, context, *args, **kwargs)
 
-        return SyftError(message="You're not allowed to run this code.")
+        raise SyftException(public_message="You're not allowed to run this code.")
 
     def get_user_client_from_server(self, context: AuthedServiceContext) -> SyftClient:
         # get a user client
@@ -491,9 +488,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         signing_key_for_verify_key = context.server.get_service_method(
             UserService.signing_key_for_verify_key
         )
-        private_key = signing_key_for_verify_key(
-            context=context, verify_key=context.credentials
-        )
+        private_key = signing_key_for_verify_key(context.credentials)
         signing_key = private_key.signing_key
         user_client.credentials = signing_key
         return user_client
@@ -503,6 +498,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         admin_client.credentials = context.server.signing_key
         return admin_client
 
+    @as_result(SyftException)
     def exec_code(
         self,
         code: PrivateAPIEndpoint | PublicAPIEndpoint,
@@ -540,12 +536,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
                 self.private_function = code  # type: ignore
 
             api_service = context.server.get_service("apiservice")
-            upsert_result = api_service.stash.upsert(
+            api_service.stash.upsert(
                 context.server.get_service("userservice").admin_verify_key(), self
-            )
-
-            if upsert_result.is_err():
-                raise Exception(upsert_result.err())
+            ).unwrap()
 
             # return the results
             return result
@@ -553,12 +546,12 @@ class TwinAPIEndpoint(SyncableSyftObject):
             # If it's admin, return the error message.
             # TODO: cleanup typeerrors
             if context.role.value == 128 or isinstance(e, TypeError):
-                return SyftError(
-                    message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}"
+                raise SyftException(
+                    public_message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}"
                 )
             else:
-                return SyftError(
-                    message="Ops something went wrong during this endpoint execution, please contact your admin."
+                raise SyftException(
+                    public_message="Ops something went wrong during this endpoint execution, please contact your admin."
                 )
 
 
