@@ -195,7 +195,7 @@ jobs:
       - name: Generate SBOM
         run: |
           python --version
-          python -m pip install uv==0.2.36
+          python -m pip install uv==0.3.5
           python -m uv pip install ./packages/syft
           python -m uv pip install cyclonedx-bom
           python -m pip freeze > requirements.txt
@@ -239,7 +239,7 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "mongo:7.0.0"
+          image-ref: "mongo:7.0.12"
           format: "cyclonedx"
           output: "mongo-trivy-results.sbom.json"
           timeout: "10m0s"
@@ -256,7 +256,7 @@ jobs:
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "mongo:7.0.0"
+          image-ref: "mongo:7.0.12"
           format: "sarif"
           output: "trivy-results.sarif"
           timeout: "10m0s"
@@ -282,7 +282,7 @@ jobs:
           # This is where you will need to introduce the Snyk API token created with your Snyk account
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          image: mongo:7.0.0
+          image: mongo:7.0.12
           args: --sarif-file-output=snyk-code.sarif
 
         # Replace any "undefined" security severity values with 0. The undefined value is used in the case
