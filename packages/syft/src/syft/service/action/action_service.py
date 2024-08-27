@@ -390,7 +390,7 @@ class ActionService(AbstractService):
                 kwargs=kwargs, context=context, code_item_id=code_item.id
             )
         else:
-            filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).unwrap()
+            filtered_kwargs = retrieve_from_db(kwargs, context).unwrap()
 
         if hasattr(input_policy, "transform_kwargs"):
             filtered_kwargs = input_policy.transform_kwargs(  # type: ignore

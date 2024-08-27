@@ -601,7 +601,7 @@ class MixedInputPolicy(InputPolicy):
 
 @as_result(SyftException, NotFoundException, StashException)
 def retrieve_from_db(
-    code_item_id: UID, allowed_inputs: dict[str, UID], context: AuthedServiceContext
+    allowed_inputs: dict[str, UID], context: AuthedServiceContext
 ) -> dict[str, Any]:
     # relative
     from ...service.action.action_object import TwinMode
@@ -692,7 +692,6 @@ class ExactMatch(InputPolicy):
         ).unwrap()
 
         return retrieve_from_db(
-            code_item_id=code_item_id,
             allowed_inputs=allowed_inputs,
             context=context,
         ).unwrap()
