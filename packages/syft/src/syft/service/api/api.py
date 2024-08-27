@@ -525,9 +525,15 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
             # execute it
             evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
-            result = eval(evil_string, None, locals())  # nosec
+            result = None
+            try:
+                # users can raise SyftException in their code
+                result = eval(evil_string, None, locals())  # nosec
+            except SyftException as e:
+                # capture it as the result variable
+                result = e
 
-            # Update code context state
+            # run all this code to clean up the state
             code.update_state(internal_context.state)
 
             if isinstance(code, PublicAPIEndpoint):
@@ -540,7 +546,11 @@ class TwinAPIEndpoint(SyncableSyftObject):
                 context.server.get_service("userservice").admin_verify_key(), self
             ).unwrap()
 
-            # return the results
+            # if we caught a SyftException above we will raise and auto wrap to Result
+            if isinstance(result, SyftException):
+                raise result
+
+            # here we got a non Exception result which will also be wrapped in Result
             return result
         except Exception as e:
             # If it's admin, return the error message.
