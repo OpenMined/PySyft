@@ -24,6 +24,8 @@ EVENT_SUBMIT_QUERY_ENDPOINT_CREATED = "submit_query_endpoint_created"
 EVENT_SUBMIT_QUERY_ENDPOINT_CONFIGURED = "submit_query_endpoint_configured"
 EVENT_USERS_CAN_QUERY_MOCK = "users_can_query_mock"
 EVENT_USERS_CAN_SUBMIT_QUERY = "users_can_submit_query"
+EVENT_ADMIN_APPROVED_FIRST_REQUEST = "admin_approved_first_request"
+EVENT_USERS_CAN_GET_APPROVED_RESULT = "users_can_get_approved_result"
 
 
 @dataclass

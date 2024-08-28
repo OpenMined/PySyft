@@ -4,12 +4,14 @@ import inspect
 
 # third party
 from asserts import ensure_package_installed
+from events import EVENT_ADMIN_APPROVED_FIRST_REQUEST
 from events import EVENT_ALLOW_GUEST_SIGNUP_DISABLED
 from events import EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED
 from events import EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED
 from events import EVENT_SCHEMA_ENDPOINT_CREATED
 from events import EVENT_SUBMIT_QUERY_ENDPOINT_CONFIGURED
 from events import EVENT_SUBMIT_QUERY_ENDPOINT_CREATED
+from events import EVENT_USERS_CAN_GET_APPROVED_RESULT
 from events import EVENT_USERS_CAN_QUERY_MOCK
 from events import EVENT_USERS_CAN_SUBMIT_QUERY
 from events import EVENT_USERS_CREATED
@@ -32,6 +34,8 @@ from unsync import unsync
 # syft absolute
 import syft as sy
 from syft import test_settings
+from syft.service.code.user_code import UserCode
+from syft.service.job.job_stash import Job
 
 # dataset stuff
 # """
@@ -257,7 +261,10 @@ def run_code(client, method_name, **kwargs):
                 break
 
     api_method = api_for_path(client, path=f"code.{service_func_name}")
-    result = api_method(**kwargs)
+    try:
+        result = api_method(**kwargs)
+    except Exception as e:
+        print(">> got an exception while trying to run code", e)
     return result
 
 
@@ -278,6 +285,87 @@ def api_for_path(client, path):
 
 
 EVENT_USERS_QUERY_NOT_READY = "users_query_not_ready"
+
+
+def get_pending(client):
+    results = []
+    for request in client.requests:
+        if str(request.status) == "RequestStatus.PENDING":
+            results.append(request)
+            print(
+                f"Found pending request: {request.code.constants["query"].val}: {request.id}"
+            )
+    return results
+
+
+def approve_and_deposit(client, request_id):
+    request = client.requests.get_by_uid(uid=request_id)
+    code = request.code
+
+    if not isinstance(code, UserCode):
+        print("NOT A USER CODE???")
+
+    func_name = request.code.service_func_name
+    job = run_code(client, func_name, blocking=False)
+    if not isinstance(job, Job):
+        print("NOT A JOB??")
+
+    job.wait()
+    job_info = job.info(result=True)
+    result = request.deposit_result(job_info, approve=True)
+    print("got result from approving?", result)
+    return result
+
+
+@unsync
+async def triage_requests(events, client, after, register):
+    print("Waiting for admin account to be created")
+    if after:
+        await events.await_for(event_name=after)
+    while True:
+        await asyncio.sleep(1)
+        print("> Admin checking for requests")
+        requests = get_pending(client)
+        for request in requests:
+            print("> Admin approving request", request.id)
+            result = approve_and_deposit(client, request.id)
+            print("got result from approving reuwest", result)
+            events.register(event_name=register)
+
+
+def get_approved(client):
+    results = []
+    for request in client.requests:
+        if str(request.status) == "RequestStatus.APPROVED":
+            results.append(request)
+            print(
+                f"Found approved request: {request.code.constants["query"].val}: {request.id}"
+            )
+    return results
+
+
+@unsync
+async def get_results(events, client, method_name, after, register):
+    method_name = method_name.replace("*", "")
+    print("Waiting for admin approve or deny")
+    if after:
+        await events.await_for(event_name=after)
+    while True:
+        await asyncio.sleep(1)
+        print("> Data Scientist checking for approval")
+        requests = get_approved(client)
+        for request in requests:
+            if method_name in request.code.service_func_name:
+                print(
+                    f"> Found approved request: {method_name} at {request.code.service_func_name}"
+                )
+                print("> Running and getting result")
+                result = run_code(client, request.code.service_func_name)
+                print("> got result", result)
+                if hasattr(result, "__len__") and len(result) == 10000:
+                    events.register(event_name=register)
+                else:
+                    print("no match with expected")
 
 
 @pytest.mark.asyncio
@@ -303,6 +391,8 @@ async def test_level_2_basic_scenario(request):
             EVENT_USERS_CAN_QUERY_MOCK,
             EVENT_USERS_CAN_SUBMIT_QUERY,
             EVENT_USERS_QUERY_NOT_READY,
+            EVENT_ADMIN_APPROVED_FIRST_REQUEST,
+            EVENT_USERS_CAN_GET_APPROVED_RESULT,
         ],
     )
 
@@ -319,6 +409,13 @@ async def test_level_2_basic_scenario(request):
     assert events.happened(EVENT_USER_ADMIN_CREATED)
 
     root_client = admin.client(server)
+    triage_requests(
+        events,
+        root_client,
+        after=EVENT_USER_ADMIN_CREATED,
+        register=EVENT_ADMIN_APPROVED_FIRST_REQUEST,
+    )
+
     worker_pool_name = "bigquery-pool"
 
     worker_docker_tag = f"openmined/bigquery:{sy.__version__}"
@@ -441,14 +538,13 @@ async def test_level_2_basic_scenario(request):
         register=EVENT_USERS_QUERY_NOT_READY,
     )
 
-    # # continuously checking for
-    # # new untriaged requests
-    # # executing them locally
-    # # submitting the results
-
-    # # users get the results
-    # # continuously checking
-    # # assert he random number of rows is there
+    get_results(
+        events,
+        users[0].client(server),
+        method_name=f"{func_name}*",
+        after=EVENT_USERS_QUERY_NOT_READY,
+        register=EVENT_USERS_CAN_GET_APPROVED_RESULT,
+    )
 
     res = await result_is(
         events,
@@ -461,5 +557,7 @@ async def test_level_2_basic_scenario(request):
 
     assert res is True
 
-    await events.await_scenario(scenario_name="test_create_dataset_and_read_mock")
+    await events.await_scenario(
+        scenario_name="test_create_dataset_and_read_mock", timeout=30
+    )
     assert events.scenario_completed("test_create_dataset_and_read_mock")
