@@ -76,9 +76,14 @@ from .service.response import SyftSuccess
 from .service.user.roles import Roles as roles
 from .service.user.user_service import UserService
 from .stable_version import LATEST_STABLE_SYFT
+from .types.errors import SyftException
+from .types.errors import raises
+from .types.result import as_result
 from .types.twin_object import TwinObject
 from .types.uid import UID
 from .util import filterwarnings
+from .util.api_snapshot.api_snapshot import show_api_diff
+from .util.api_snapshot.api_snapshot import take_api_snapshot
 from .util.autoreload import disable_autoreload
 from .util.autoreload import enable_autoreload
 from .util.commit import __commit__

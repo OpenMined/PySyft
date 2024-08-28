@@ -7,9 +7,6 @@ from typing import Set  # noqa: UP035
 from pydantic import Field
 from pymongo import ASCENDING
 from pymongo.collection import Collection as MongoCollection
-from result import Err
-from result import Ok
-from result import Result
 from typing_extensions import Self
 
 # relative
@@ -26,6 +23,8 @@ from ..service.action.action_permissions import ActionPermission
 from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
+from ..types.errors import SyftException
+from ..types.result import as_result
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import StorableObjectType
 from ..types.syft_object import SyftBaseObject
@@ -41,6 +40,7 @@ from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StoreConfig
 from .document_store import StorePartition
+from .document_store_errors import NotFoundException
 from .kv_document_store import KeyValueBackingStore
 from .locks import LockingConfig
 from .locks import NoLockingConfig
@@ -131,39 +131,20 @@ class MongoStorePartition(StorePartition):
 
     storage_type: type[StorableObjectType] = MongoBsonObject
 
-    def init_store(self) -> Result[Ok, Err]:
-        store_status = super().init_store()
-        if store_status.is_err():
-            return store_status
-
+    @as_result(SyftException)
+    def init_store(self) -> bool:
+        super().init_store().unwrap()
         client = MongoClient(config=self.store_config.client_config)
-
-        collection_status = client.with_collection(
+        self._collection = client.with_collection(
             collection_settings=self.settings, store_config=self.store_config
-        )
-        if collection_status.is_err():
-            return collection_status
-
-        collection_permissions_status = client.with_collection_permissions(
+        ).unwrap()
+        self._permissions = client.with_collection_permissions(
             collection_settings=self.settings, store_config=self.store_config
-        )
-        if collection_permissions_status.is_err():
-            return collection_permissions_status
-
-        collection_storage_permissions_status = (
-            client.with_collection_storage_permissions(
-                collection_settings=self.settings, store_config=self.store_config
-            )
-        )
-
-        if collection_storage_permissions_status.is_err():
-            return collection_storage_permissions_status
-
-        self._collection = collection_status.ok()
-        self._permissions = collection_permissions_status.ok()
-        self._storage_permissions = collection_storage_permissions_status.ok()
-
-        return self._create_update_index()
+        ).unwrap()
+        self._storage_permissions = client.with_collection_storage_permissions(
+            collection_settings=self.settings, store_config=self.store_config
+        ).unwrap()
+        return self._create_update_index().unwrap()
 
     # Potentially thread-unsafe methods.
     #
@@ -172,12 +153,10 @@ class MongoStorePartition(StorePartition):
     #       * Do not call the public thread-safe methods here(with locking).
     # These methods are called from the public thread-safe API, and will hang the process.
 
-    def _create_update_index(self) -> Result[Ok, Err]:
+    @as_result(SyftException)
+    def _create_update_index(self) -> bool:
         """Create or update mongo database indexes"""
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
+        collection: MongoCollection = self.collection.unwrap()
 
         def check_index_keys(
             current_keys: list[tuple[str, int]], new_index_keys: list[tuple[str, int]]
@@ -196,7 +175,7 @@ class MongoStorePartition(StorePartition):
         try:
             current_indexes = collection.index_information()
         except BaseException as e:
-            return Err(str(e))
+            raise SyftException.from_exception(e)
         index_name = f"{object_name}_index_name"
 
         current_index_keys = current_indexes.get(index_name, None)
@@ -204,59 +183,58 @@ class MongoStorePartition(StorePartition):
         if current_index_keys is not None:
             keys_same = check_index_keys(current_index_keys["key"], new_index_keys)
             if keys_same:
-                return Ok(True)
+                return True
 
             # Drop current index, since incompatible with current object
             try:
                 collection.drop_index(index_or_name=index_name)
             except Exception:
-                return Err(
-                    f"Failed to drop index for object: {object_name} with index keys: {current_index_keys}"
+                raise SyftException(
+                    public_message=(
+                        f"Failed to drop index for object: {object_name}"
+                        f" with index keys: {current_index_keys}"
+                    )
                 )
 
         # If no new indexes, then skip index creation
         if len(new_index_keys) == 0:
-            return Ok(True)
+            return True
 
         try:
             collection.create_index(new_index_keys, unique=True, name=index_name)
         except Exception:
-            return Err(
-                f"Failed to create index for {object_name} with index keys: {new_index_keys}"
+            raise SyftException(
+                public_message=f"Failed to create index for {object_name} with index keys: {new_index_keys}"
             )
 
-        return Ok(True)
+        return True
 
     @property
-    def collection(self) -> Result[MongoCollection, Err]:
+    @as_result(SyftException)
+    def collection(self) -> MongoCollection:
         if not hasattr(self, "_collection"):
-            res = self.init_store()
-            if res.is_err():
-                return res
-
-        return Ok(self._collection)
+            self.init_store().unwrap()
+        return self._collection
 
     @property
-    def permissions(self) -> Result[MongoCollection, Err]:
+    @as_result(SyftException)
+    def permissions(self) -> MongoCollection:
         if not hasattr(self, "_permissions"):
-            res = self.init_store()
-            if res.is_err():
-                return res
-
-        return Ok(self._permissions)
+            self.init_store().unwrap()
+        return self._permissions
 
     @property
-    def storage_permissions(self) -> Result[MongoCollection, Err]:
+    @as_result(SyftException)
+    def storage_permissions(self) -> MongoCollection:
         if not hasattr(self, "_storage_permissions"):
-            res = self.init_store()
-            if res.is_err():
-                return res
+            self.init_store().unwrap()
+        return self._storage_permissions
 
-        return Ok(self._storage_permissions)
+    @as_result(SyftException)
+    def set(self, *args: Any, **kwargs: Any) -> SyftObject:
+        return self._set(*args, **kwargs).unwrap()
 
-    def set(self, *args: Any, **kwargs: Any) -> Result[SyftObject, str]:
-        return self._set(*args, **kwargs)
-
+    @as_result(SyftException)
     def _set(
         self,
         credentials: SyftVerifyKey,
@@ -264,64 +242,63 @@ class MongoStorePartition(StorePartition):
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         # TODO: Refactor this function since now it's doing both set and
         # update at the same time
         write_permission = ActionObjectWRITE(uid=obj.id, credentials=credentials)
         can_write: bool = self.has_permission(write_permission)
 
         store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
+        collection: MongoCollection = self.collection.unwrap()
 
         store_key_exists = (
             collection.find_one(store_query_key.as_dict_mongo) is not None
         )
         if (not store_key_exists) and (not self.item_keys_exist(obj, collection)):
             # attempt to claim ownership for writing
-            ownership_result = self.take_ownership(uid=obj.id, credentials=credentials)
-            can_write = ownership_result.is_ok()
+            can_write = self.take_ownership(
+                uid=obj.id, credentials=credentials
+            ).unwrap()
         elif not ignore_duplicates:
             unique_query_keys: QueryKeys = self.settings.unique_keys.with_obj(obj)
             keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
-            return Err(
-                f"Duplication Key Error for {obj}.\n"
-                f"The fields that should be unique are {keys}."
+            raise SyftException(
+                public_message=f"Duplication Key Error for {obj}.\nThe fields that should be unique are {keys}."
             )
         else:
             # we are not throwing an error, because we are ignoring duplicates
             # we are also not writing though
-            return Ok(obj)
+            return obj
 
-        if can_write:
-            storage_obj = obj.to(self.storage_type)
-
-            collection.insert_one(storage_obj)
-
-            # adding permissions
-            read_permission = ActionObjectPermission(
-                uid=obj.id,
-                credentials=credentials,
-                permission=ActionPermission.READ,
+        if not can_write:
+            raise SyftException(
+                public_message=f"No permission to write object with id {obj.id}"
             )
-            self.add_permission(read_permission)
 
-            if add_permissions is not None:
-                self.add_permissions(add_permissions)
+        storage_obj = obj.to(self.storage_type)
 
-            if add_storage_permission:
-                self.add_storage_permission(
-                    StoragePermission(
-                        uid=obj.id,
-                        server_uid=self.server_uid,
-                    )
+        collection.insert_one(storage_obj)
+
+        # adding permissions
+        read_permission = ActionObjectPermission(
+            uid=obj.id,
+            credentials=credentials,
+            permission=ActionPermission.READ,
+        )
+        self.add_permission(read_permission)
+
+        if add_permissions is not None:
+            self.add_permissions(add_permissions)
+
+        if add_storage_permission:
+            self.add_storage_permission(
+                StoragePermission(
+                    uid=obj.id,
+                    server_uid=self.server_uid,
                 )
+            )
 
-            return Ok(obj)
-        else:
-            return Err(f"No permission to write object with id {obj.id}")
+        return obj
 
     def item_keys_exist(self, obj: SyftObject, collection: MongoCollection) -> bool:
         qks: QueryKeys = self.settings.unique_keys.with_obj(obj)
@@ -329,6 +306,7 @@ class MongoStorePartition(StorePartition):
         res = collection.find_one(query)
         return res is not None
 
+    @as_result(SyftException)
     def _update(
         self,
         credentials: SyftVerifyKey,
@@ -337,22 +315,17 @@ class MongoStorePartition(StorePartition):
         has_permission: bool = False,
         overwrite: bool = False,
         allow_missing_keys: bool = False,
-    ) -> Result[SyftObject, str]:
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
+    ) -> SyftObject:
+        collection: MongoCollection = self.collection.unwrap()
 
         # TODO: optimize the update. The ID should not be overwritten,
         # but the qk doesn't necessarily have to include the `id` field either.
 
-        prev_obj_status = self._get_all_from_store(credentials, QueryKeys(qks=[qk]))
-        if prev_obj_status.is_err():
-            return Err(f"No object found with query key: {qk}")
-
-        prev_obj = prev_obj_status.ok()
+        prev_obj = self._get_all_from_store(credentials, QueryKeys(qks=[qk])).unwrap()
         if len(prev_obj) == 0:
-            return Err(f"Missing values for query key: {qk}")
+            raise SyftException(
+                public_message=f"Failed to update missing values for query key: {qk} for type {type(obj)}"
+            )
 
         prev_obj = prev_obj[0]
         if has_permission or self.has_permission(
@@ -374,98 +347,93 @@ class MongoStorePartition(StorePartition):
                 collection.update_one(
                     filter=qk.as_dict_mongo, update={"$set": storage_obj}
                 )
-            except Exception as e:
-                return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
+            except Exception:
+                raise SyftException(f"Failed to update obj: {obj} with qk: {qk}")
 
-            return Ok(prev_obj)
+            return prev_obj
         else:
-            return Err(f"Failed to update obj {obj}, you have no permission")
+            raise SyftException(f"Failed to update obj {obj}, you have no permission")
 
+    @as_result(SyftException)
     def _find_index_or_search_keys(
         self,
         credentials: SyftVerifyKey,
         index_qks: QueryKeys,
         search_qks: QueryKeys,
         order_by: PartitionKey | None = None,
-    ) -> Result[list[SyftObject], str]:
+    ) -> list[SyftObject]:
         # TODO: pass index as hint to find method
         qks = QueryKeys(qks=(list(index_qks.all) + list(search_qks.all)))
         return self._get_all_from_store(
             credentials=credentials, qks=qks, order_by=order_by
-        )
+        ).unwrap()
 
     @property
     def data(self) -> dict:
-        values: list = self._all(credentials=None, has_permission=True).ok()
+        values: list = self._all(credentials=None, has_permission=True).unwrap()
         return {v.id: v for v in values}
 
+    @as_result(SyftException)
     def _get(
         self,
         uid: UID,
         credentials: SyftVerifyKey,
         has_permission: bool | None = False,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         qks = QueryKeys.from_dict({"id": uid})
         res = self._get_all_from_store(
             credentials, qks, order_by=None, has_permission=has_permission
-        )
-        if res.is_err():
-            return res
+        ).unwrap()
+        if len(res) == 0:
+            raise NotFoundException
         else:
-            return Ok(res.ok()[0])
+            return res[0]
 
+    @as_result(SyftException)
     def _get_all_from_store(
         self,
         credentials: SyftVerifyKey,
         qks: QueryKeys,
         order_by: PartitionKey | None = None,
         has_permission: bool | None = False,
-    ) -> Result[list[SyftObject], str]:
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
+    ) -> list[SyftObject]:
+        collection = self.collection.unwrap()
 
         if order_by is not None:
             storage_objs = collection.find(filter=qks.as_dict_mongo).sort(order_by.key)
         else:
             _default_key = "_id"
             storage_objs = collection.find(filter=qks.as_dict_mongo).sort(_default_key)
+
         syft_objs = []
         for storage_obj in storage_objs:
             obj = self.storage_type(storage_obj)
             transform_context = TransformContext(output={}, obj=obj)
-            syft_objs.append(obj.to(self.settings.object_type, transform_context))
 
-        # TODO: maybe do this in loop before this
-        res = [
-            s
-            for s in syft_objs
-            if has_permission
-            or self.has_permission(ActionObjectREAD(uid=s.id, credentials=credentials))
-        ]
-        return Ok(res)
+            syft_obj = obj.to(self.settings.object_type, transform_context)
+            if has_permission or self.has_permission(
+                ActionObjectREAD(uid=syft_obj.id, credentials=credentials)
+            ):
+                syft_objs.append(syft_obj)
 
+        return syft_objs
+
+    @as_result(SyftException)
     def _delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
-    ) -> Result[SyftSuccess, Err]:
+    ) -> SyftSuccess:
         if not (
             has_permission
             or self.has_permission(
                 ActionObjectWRITE(uid=qk.value, credentials=credentials)
             )
         ):
-            return Err(f"You don't have permission to delete object with qk: {qk}")
+            raise SyftException(
+                public_message=f"You don't have permission to delete object with qk: {qk}"
+            )
 
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
-
-        collection_permissions_status = self.permissions
-        if collection_permissions_status.is_err():
-            return collection_permissions_status
-        collection_permissions: MongoCollection = collection_permissions_status.ok()
+        collection = self.collection.unwrap()
+        collection_permissions: MongoCollection = self.permissions.unwrap()
 
         qks = QueryKeys(qks=qk)
         # delete the object
@@ -473,12 +441,12 @@ class MongoStorePartition(StorePartition):
         # delete the object's permission
         result_permission = collection_permissions.delete_one(filter=qks.as_dict_mongo)
         if result.deleted_count == 1 and result_permission.deleted_count == 1:
-            return Ok(SyftSuccess(message="Object and its permission are deleted"))
+            return SyftSuccess(message="Object and its permission are deleted")
         elif result.deleted_count == 0:
-            return Err(f"Failed to delete object with qk: {qk}")
+            raise SyftException(public_message=f"Failed to delete object with qk: {qk}")
         else:
-            return Err(
-                f"Object with qk: {qk} was deleted, but failed to delete its corresponding permission"
+            raise SyftException(
+                public_message=f"Object with qk: {qk} was deleted, but failed to delete its corresponding permission"
             )
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
@@ -523,38 +491,28 @@ class MongoStorePartition(StorePartition):
 
         return False
 
-    def _get_permissions_for_uid(self, uid: UID) -> Result[Set[str], str]:  # noqa: UP006
-        collection_permissions_status = self.permissions
-        if collection_permissions_status.is_err():
-            return collection_permissions_status
-        collection_permissions: MongoCollection = collection_permissions_status.ok()
-
+    @as_result(SyftException)
+    def _get_permissions_for_uid(self, uid: UID) -> Set[str]:  # noqa: UP006
+        collection_permissions = self.permissions.unwrap()
         permissions: dict | None = collection_permissions.find_one({"_id": uid})
-
         if permissions is None:
-            return Err(f"Permissions for object with UID {uid} not found!")
+            raise SyftException(
+                public_message=f"Permissions for object with UID {uid} not found!"
+            )
+        return set(permissions["permissions"])
 
-        return Ok(set(permissions["permissions"]))
-
-    def get_all_permissions(self) -> Result[dict[UID, Set[str]], str]:  # noqa: UP006
+    @as_result(SyftException)
+    def get_all_permissions(self) -> dict[UID, Set[str]]:  # noqa: UP006
         # Returns a dictionary of all permissions {object_uid: {*permissions}}
-        collection_permissions_status = self.permissions
-        if collection_permissions_status.is_err():
-            return collection_permissions_status
-        collection_permissions: MongoCollection = collection_permissions_status.ok()
-
+        collection_permissions: MongoCollection = self.permissions.unwrap()
         permissions = collection_permissions.find({})
         permissions_dict = {}
         for permission in permissions:
             permissions_dict[permission["_id"]] = permission["permissions"]
+        return permissions_dict
 
-        return Ok(permissions_dict)
-
-    def add_permission(self, permission: ActionObjectPermission) -> Result[None, Err]:
-        collection_permissions_status = self.permissions
-        if collection_permissions_status.is_err():
-            return collection_permissions_status
-        collection_permissions: MongoCollection = collection_permissions_status.ok()
+    def add_permission(self, permission: ActionObjectPermission) -> None:
+        collection_permissions = self.permissions.unwrap()
 
         # find the permissions for the given permission.uid
         # e.g. permissions = {"_id": "7b88fdef6bff42a8991d294c3d66f757",
@@ -582,18 +540,15 @@ class MongoStorePartition(StorePartition):
         for permission in permissions:
             self.add_permission(permission)
 
-    def remove_permission(
-        self, permission: ActionObjectPermission
-    ) -> Result[None, Err]:
-        collection_permissions_status = self.permissions
-        if collection_permissions_status.is_err():
-            return collection_permissions_status
-        collection_permissions: MongoCollection = collection_permissions_status.ok()
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
+        collection_permissions = self.permissions.unwrap()
         permissions: dict | None = collection_permissions.find_one(
             {"_id": permission.uid}
         )
         if permissions is None:
-            return Err(f"permission with UID {permission.uid} not found!")
+            raise SyftException(
+                public_message=f"permission with UID {permission.uid} not found!"
+            )
         permissions_strings: set = permissions["permissions"]
         if permission.permission_string in permissions_strings:
             permissions_strings.remove(permission.permission_string)
@@ -605,16 +560,14 @@ class MongoStorePartition(StorePartition):
             else:
                 collection_permissions.delete_one({"_id": permission.uid})
         else:
-            return Err(f"the permission {permission.permission_string} does not exist!")
+            raise SyftException(
+                public_message=f"the permission {permission.permission_string} does not exist!"
+            )
 
     def add_storage_permission(self, storage_permission: StoragePermission) -> None:
-        storage_permissions_or_err = self.storage_permissions
-        if storage_permissions_or_err.is_err():
-            return storage_permissions_or_err
         storage_permissions_collection: MongoCollection = (
-            storage_permissions_or_err.ok()
+            self.storage_permissions.unwrap()
         )
-
         storage_permissions: dict | None = storage_permissions_collection.find_one(
             {"_id": storage_permission.uid}
         )
@@ -641,35 +594,24 @@ class MongoStorePartition(StorePartition):
 
     def has_storage_permission(self, permission: StoragePermission) -> bool:  # type: ignore
         """Check if the storage_permission is inside the storage_permission collection"""
-        storage_permissions_or_err = self.storage_permissions
-        if storage_permissions_or_err.is_err():
-            return storage_permissions_or_err
         storage_permissions_collection: MongoCollection = (
-            storage_permissions_or_err.ok()
+            self.storage_permissions.unwrap()
         )
         storage_permissions: dict | None = storage_permissions_collection.find_one(
             {"_id": permission.uid}
         )
-
         if storage_permissions is None or "server_uids" not in storage_permissions:
             return False
-
         return permission.server_uid in storage_permissions["server_uids"]
 
-    def remove_storage_permission(
-        self, storage_permission: StoragePermission
-    ) -> Result[None, Err]:
-        storage_permissions_or_err = self.storage_permissions
-        if storage_permissions_or_err.is_err():
-            return storage_permissions_or_err
-        storage_permissions_collection = storage_permissions_or_err.ok()
-
+    def remove_storage_permission(self, storage_permission: StoragePermission) -> None:
+        storage_permissions_collection = self.storage_permissions.unwrap()
         storage_permissions: dict | None = storage_permissions_collection.find_one(
             {"_id": storage_permission.uid}
         )
         if storage_permissions is None:
-            return Err(
-                f"storage permission with UID {storage_permission.uid} not found!"
+            raise SyftException(
+                public_message=f"storage permission with UID {storage_permission.uid} not found!"
             )
         server_uids: set = storage_permissions["server_uids"]
         if storage_permission.server_uid in server_uids:
@@ -679,90 +621,77 @@ class MongoStorePartition(StorePartition):
                 {"$set": {"server_uids": server_uids}},
             )
         else:
-            return Err(
-                f"the server_uid {storage_permission.server_uid} does not exist in the storage permission!"
+            raise SyftException(
+                public_message=(
+                    f"the server_uid {storage_permission.server_uid} does not exist in the storage permission!"
+                )
             )
 
-    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[Set[UID], str]:  # noqa: UP006
-        storage_permissions_or_err = self.storage_permissions
-        if storage_permissions_or_err.is_err():
-            return storage_permissions_or_err
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Set[UID]:  # noqa: UP006
         storage_permissions_collection: MongoCollection = (
-            storage_permissions_or_err.ok()
+            self.storage_permissions.unwrap()
         )
-
         storage_permissions: dict | None = storage_permissions_collection.find_one(
             {"_id": uid}
         )
-
         if storage_permissions is None:
-            return Err(f"Storage permissions for object with UID {uid} not found!")
+            raise SyftException(
+                public_message=f"Storage permissions for object with UID {uid} not found!"
+            )
+        return set(storage_permissions["server_uids"])
 
-        return Ok(set(storage_permissions["server_uids"]))
-
+    @as_result(SyftException)
     def get_all_storage_permissions(
         self,
-    ) -> Result[dict[UID, Set[UID]], str]:  # noqa: UP006
+    ) -> dict[UID, Set[UID]]:  # noqa: UP006
         # Returns a dictionary of all storage permissions {object_uid: {*server_uids}}
-        storage_permissions_or_err = self.storage_permissions
-        if storage_permissions_or_err.is_err():
-            return storage_permissions_or_err
         storage_permissions_collection: MongoCollection = (
-            storage_permissions_or_err.ok()
+            self.storage_permissions.unwrap()
         )
-
         storage_permissions = storage_permissions_collection.find({})
         storage_permissions_dict = {}
         for storage_permission in storage_permissions:
             storage_permissions_dict[storage_permission["_id"]] = storage_permission[
                 "server_uids"
             ]
+        return storage_permissions_dict
 
-        return Ok(storage_permissions_dict)
-
-    def take_ownership(
-        self, uid: UID, credentials: SyftVerifyKey
-    ) -> Result[SyftSuccess, str]:
-        collection_permissions_status = self.permissions
-        if collection_permissions_status.is_err():
-            return collection_permissions_status
-        collection_permissions: MongoCollection = collection_permissions_status.ok()
-
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
-
+    @as_result(SyftException)
+    def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> bool:
+        collection_permissions: MongoCollection = self.permissions.unwrap()
+        collection: MongoCollection = self.collection.unwrap()
         data: list[UID] | None = collection.find_one({"_id": uid})
         permissions: list[UID] | None = collection_permissions.find_one({"_id": uid})
 
+        if permissions is not None or data is not None:
+            raise SyftException(public_message=f"UID: {uid} already owned.")
+
         # first person using this UID can claim ownership
-        if permissions is None and data is None:
-            self.add_permissions(
-                [
-                    ActionObjectOWNER(uid=uid, credentials=credentials),
-                    ActionObjectWRITE(uid=uid, credentials=credentials),
-                    ActionObjectREAD(uid=uid, credentials=credentials),
-                    ActionObjectEXECUTE(uid=uid, credentials=credentials),
-                ]
-            )
-            return Ok(SyftSuccess(message=f"Ownership of ID: {uid} taken."))
+        self.add_permissions(
+            [
+                ActionObjectOWNER(uid=uid, credentials=credentials),
+                ActionObjectWRITE(uid=uid, credentials=credentials),
+                ActionObjectREAD(uid=uid, credentials=credentials),
+                ActionObjectEXECUTE(uid=uid, credentials=credentials),
+            ]
+        )
 
-        return Err(f"UID: {uid} already owned.")
+        return True
 
+    @as_result(SyftException)
     def _all(
         self,
         credentials: SyftVerifyKey,
         order_by: PartitionKey | None = None,
         has_permission: bool | None = False,
-    ) -> Result[list[SyftObject], str]:
+    ) -> list[SyftObject]:
         qks = QueryKeys(qks=())
         return self._get_all_from_store(
             credentials=credentials,
             qks=qks,
             order_by=order_by,
             has_permission=has_permission,
-        )
+        ).unwrap()
 
     def __len__(self) -> int:
         collection_status = self.collection
@@ -771,15 +700,13 @@ class MongoStorePartition(StorePartition):
         collection: MongoCollection = collection_status.ok()
         return collection.count_documents(filter={})
 
+    @as_result(SyftException)
     def _migrate_data(
         self, to_klass: SyftObject, context: AuthedServiceContext, has_permission: bool
-    ) -> Result[bool, str]:
+    ) -> bool:
         credentials = context.credentials
         has_permission = (credentials == self.root_verify_key) or has_permission
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
+        collection: MongoCollection = self.collection.unwrap()
 
         if has_permission:
             storage_objs = collection.find({})
@@ -791,21 +718,20 @@ class MongoStorePartition(StorePartition):
                 try:
                     migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
-                    return Err(f"Failed to migrate data to {to_klass} for qk: {key}")
+                    raise SyftException(
+                        public_message=f"Failed to migrate data to {to_klass} for qk: {key}"
+                    )
                 qk = self.settings.store_key.with_obj(key)
-                result = self._update(
+                self._update(
                     credentials,
                     qk=qk,
                     obj=migrated_value,
                     has_permission=has_permission,
-                )
-
-                if result.is_err():
-                    return result.err()
-
-            return Ok(True)
-
-        return Err("You don't have permissions to migrate data.")
+                ).unwrap()
+            return True
+        raise SyftException(
+            public_message="You don't have permissions to migrate data."
+        )
 
 
 @serializable(canonical_name="MongoDocumentStore", version=1)
@@ -855,48 +781,34 @@ class MongoBackingStore(KeyValueBackingStore):
         self.ddtype = ddtype
         self.init_client()
 
-    def init_client(self) -> Err | None:
+    @as_result(SyftException)
+    def init_client(self) -> None:
         self.client = MongoClient(config=self.store_config.client_config)
-
-        collection_status = self.client.with_collection(
+        self._collection: MongoCollection = self.client.with_collection(
             collection_settings=self.settings,
             store_config=self.store_config,
             collection_name=f"{self.settings.name}_{self.index_name}",
-        )
-        if collection_status.is_err():
-            return collection_status
-        self._collection: MongoCollection = collection_status.ok()
-        return None
+        ).unwrap()
 
     @property
-    def collection(self) -> Result[MongoCollection, Err]:
+    @as_result(SyftException)
+    def collection(self) -> MongoCollection:
         if not hasattr(self, "_collection"):
-            res = self.init_client()
-            if res is not None and res.is_err():
-                return res
-
-        return Ok(self._collection)
+            self.init_client().unwrap()
+        return self._collection
 
     def _exist(self, key: UID) -> bool:
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
-
+        collection: MongoCollection = self.collection.unwrap()
         result: dict | None = collection.find_one({"_id": key})
         if result is not None:
             return True
-
         return False
 
     def _set(self, key: UID, value: Any) -> None:
         if self._exist(key):
             self._update(key, value)
         else:
-            collection_status = self.collection
-            if collection_status.is_err():
-                return collection_status
-            collection: MongoCollection = collection_status.ok()
+            collection: MongoCollection = self.collection.unwrap()
             try:
                 bson_data = {
                     "_id": key,
@@ -904,14 +816,11 @@ class MongoBackingStore(KeyValueBackingStore):
                     "_repr_debug_": _repr_debug_(value),
                 }
                 collection.insert_one(bson_data)
-            except Exception as e:
-                raise ValueError(f"Cannot insert data. Error message: {e}")
+            except Exception:
+                raise SyftException(public_message="Cannot insert data.")
 
     def _update(self, key: UID, value: Any) -> None:
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
+        collection: MongoCollection = self.collection.unwrap()
         try:
             collection.update_one(
                 {"_id": key},
@@ -923,19 +832,15 @@ class MongoBackingStore(KeyValueBackingStore):
                 },
             )
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to update obj: {key} with value: {value}. Error: {e}"
+            raise SyftException(
+                public_message=f"Failed to update obj: {key} with value: {value}. Error: {e}"
             )
 
     def __setitem__(self, key: Any, value: Any) -> None:
         self._set(key, value)
 
     def _get(self, key: UID) -> Any:
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
-
+        collection: MongoCollection = self.collection.unwrap()
         result: dict | None = collection.find_one({"_id": key})
         if result is not None:
             return _deserialize(result[f"{key}"], from_bytes=True)
@@ -951,33 +856,24 @@ class MongoBackingStore(KeyValueBackingStore):
             raise e
 
     def _len(self) -> int:
-        collection_status = self.collection
-        if collection_status.is_err():
-            return 0
-        collection: MongoCollection = collection_status.ok()
+        collection: MongoCollection = self.collection.unwrap()
         return collection.count_documents(filter={})
 
     def __len__(self) -> int:
         return self._len()
 
-    def _delete(self, key: UID) -> Result[SyftSuccess, Err]:
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
+    def _delete(self, key: UID) -> SyftSuccess:
+        collection: MongoCollection = self.collection.unwrap()
         result = collection.delete_one({"_id": key})
         if result.deleted_count != 1:
-            raise KeyError(f"{key} does not exist")
-        return Ok(SyftSuccess(message="Deleted"))
+            raise SyftException(public_message=f"{key} does not exist")
+        return SyftSuccess(message="Deleted")
 
     def __delitem__(self, key: str) -> None:
         self._delete(key)
 
     def _delete_all(self) -> None:
-        collection_status = self.collection
-        if collection_status.is_err():
-            return collection_status
-        collection: MongoCollection = collection_status.ok()
+        collection: MongoCollection = self.collection.unwrap()
         collection.delete_many({})
 
     def clear(self) -> None:
