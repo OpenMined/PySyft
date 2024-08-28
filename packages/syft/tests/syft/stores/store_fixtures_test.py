@@ -85,7 +85,7 @@ def document_store_with_admin(
 
     user_stash.set(
         credentials=verify_key,
-        user=admin_user,
+        obj=admin_user,
         add_permissions=[
             ActionObjectPermission(
                 uid=admin_user.id, permission=ActionPermission.ALL_READ
@@ -137,8 +137,7 @@ def sqlite_store_partition_fn(
         UID(), root_verify_key, settings=settings, store_config=store_config
     )
 
-    res = store.init_store()
-    assert res.is_ok()
+    store.init_store().unwrap()
 
     return store
 

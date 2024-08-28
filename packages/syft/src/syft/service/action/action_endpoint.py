@@ -70,7 +70,7 @@ class CustomEndpointActionObject(SyftObject):
 
         return __endpoint_mode(
             *args, context=self.context, endpoint_uid=self.endpoint_id, **kwargs
-        )
+        ).unwrap()
 
     def __check_context(self) -> AuthedServiceContext:
         if self.context is None:

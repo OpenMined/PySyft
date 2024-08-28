@@ -13,10 +13,10 @@ from pydantic import EmailStr
 from pydantic import ValidationError
 
 # relative
-from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
+from ...types.errors import SyftException
 from ...types.syft_metaclass import Empty
 from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
@@ -32,8 +32,8 @@ from ...types.transforms import transform
 from ...types.transforms import validate_email
 from ...types.uid import UID
 from ..notifier.notifier_enums import NOTIFIERS
-from ..response import SyftError
 from ..response import SyftSuccess
+from .errors import UserPasswordMismatchError
 from .user_roles import ServiceRole
 
 
@@ -268,23 +268,18 @@ class UserView(SyftObject):
             ),
         }
 
-    def _set_password(self, new_password: str) -> SyftError | SyftSuccess:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
+    def _set_password(self, new_password: str) -> SyftSuccess:
+        client = self.get_api()
 
-        api.services.user.update(uid=self.id, password=new_password)
+        client.services.user.update(uid=self.id, password=new_password)
+
         return SyftSuccess(
-            message=f"Successfully updated password for "
-            f"user '{self.name}' with email '{self.email}'."
+            message=f"Successfully updated password for user '{self.email}'."
         )
 
     def set_password(
         self, new_password: str | None = None, confirm: bool = True
-    ) -> SyftError | SyftSuccess:
+    ) -> SyftSuccess:
         """Set a new password interactively with confirmed password from user input"""
         # TODO: Add password validation for special characters
         if not new_password:
@@ -293,33 +288,22 @@ class UserView(SyftObject):
         if confirm:
             confirmed_password: str = getpass("Please confirm your password: ")
             if confirmed_password != new_password:
-                return SyftError(message="Passwords do not match !")
+                raise UserPasswordMismatchError
+
         return self._set_password(new_password)
 
-    def set_email(self, email: str) -> SyftSuccess | SyftError:
-        # validate email address
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
-
+    def set_email(self, email: str) -> SyftSuccess:
         try:
             user_update = UserUpdate(email=email)
         except ValidationError:
-            return SyftError(message="{email} is not a valid email address.")
+            raise SyftException(public_message=f"Invalid email: '{email}'.")
 
+        api = self.get_api()
+
+        # TODO: Shouldn't this trigger an update on self?
         result = api.services.user.update(uid=self.id, email=user_update.email)
 
-        if isinstance(result, SyftError):
-            return result
-
-        self.email = email
-        return SyftSuccess(
-            message=f"Successfully updated email for the user "
-            f"'{self.name}' to '{self.email}'."
-        )
+        return SyftSuccess(message=f"Email updated to '{result.email}'.")
 
     def update(
         self,
@@ -328,14 +312,9 @@ class UserView(SyftObject):
         website: type[Empty] | str = Empty,
         role: type[Empty] | str = Empty,
         mock_execution_permission: type[Empty] | bool = Empty,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """Used to update name, institution, website of a user."""
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
+        api = self.get_api()
 
         result = api.services.user.update(
             uid=self.id,
@@ -346,15 +325,12 @@ class UserView(SyftObject):
             mock_execution_permission=mock_execution_permission,
         )
 
-        if isinstance(result, SyftError):
-            return result
-
         for attr, val in result.to_dict(exclude_empty=True).items():
             setattr(self, attr, val)
 
         return SyftSuccess(message="User details successfully updated.")
 
-    def allow_mock_execution(self, allow: bool = True) -> SyftSuccess | SyftError:
+    def allow_mock_execution(self, allow: bool = True) -> SyftSuccess:
         return self.update(mock_execution_permission=allow)
 
 

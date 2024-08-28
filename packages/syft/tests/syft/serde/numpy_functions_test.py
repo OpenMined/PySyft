@@ -4,7 +4,6 @@ import pytest
 
 # syft absolute
 from syft import ActionObject
-from syft.service.response import SyftAttributeError
 
 # relative
 from ...utils.custom_markers import FAIL_ON_PYTHON_3_12_REASON
@@ -92,7 +91,7 @@ def test_numpy_functions(func, func_arguments, request):
 
     except Exception as e:
         assert (
-            e == SyftAttributeError
+            e == AttributeError
         ), f"Can not evaluate {func}({func_arguments}) with {e}"
         print(e)
     else:

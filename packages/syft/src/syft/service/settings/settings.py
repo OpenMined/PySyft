@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 class PwdTokenResetConfig(SyftObject):
     __canonical_name__ = "PwdTokenResetConfig"
     __version__ = SYFT_OBJECT_VERSION_1
+
     ascii: bool = True
     numbers: bool = True
     token_len: int = 12
@@ -131,14 +132,6 @@ class ServerSettingsUpdate(PartialSyftObject):
 class ServerSettingsV1(SyftObject):
     __canonical_name__ = "ServerSettings"
     __version__ = SYFT_OBJECT_VERSION_1
-    __repr_attrs__ = [
-        "name",
-        "organization",
-        "description",
-        "deployed_on",
-        "signup_enabled",
-        "admin_email",
-    ]
 
     id: UID
     name: str = "Server"
@@ -164,14 +157,6 @@ class ServerSettingsV1(SyftObject):
 class ServerSettingsV2(SyftObject):
     __canonical_name__ = "ServerSettings"
     __version__ = SYFT_OBJECT_VERSION_2
-    __repr_attrs__ = [
-        "name",
-        "organization",
-        "description",
-        "deployed_on",
-        "signup_enabled",
-        "admin_email",
-    ]
 
     id: UID
     name: str = "Server"
