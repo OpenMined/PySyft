@@ -195,7 +195,7 @@ def take_api_snapshot() -> SyftAPISnapshot:
     return snapshot
 
 
-def show_api_diff() -> dict:
+def show_api_diff() -> None:
     """
     Calculates the difference between the current API snapshot and the previous one,
     saves it as a JSON file, and returns the difference.
@@ -203,5 +203,5 @@ def show_api_diff() -> dict:
     snapshot = get_api_snapshot()
 
     diff = snapshot.calc_diff(save=True)
+    print(json.dumps(diff, indent=2))
     print("Generated API diff file at: ", get_root_data_path() / API_DIFF_JSON_FILENAME)
-    return diff
