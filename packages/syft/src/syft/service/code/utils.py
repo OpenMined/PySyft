@@ -6,7 +6,7 @@ import inspect
 from IPython import get_ipython
 
 # relative
-from ..response import SyftException
+from ...types.errors import SyftException
 from ..response import SyftWarning
 from .code_parse import GlobalsVisitor
 from .code_parse import LaunchJobVisitor
@@ -50,7 +50,7 @@ def check_for_global_vars(code_tree: ast.Module) -> GlobalsVisitor | SyftWarning
         v.visit(code_tree)
     except Exception:
         raise SyftException(
-            "Your code contains (a) global variable(s), which is not allowed"
+            public_message="Your code contains (a) global variable(s), which is not allowed"
         )
     return v
 
@@ -62,5 +62,5 @@ def parse_code(raw_code: str) -> ast.Module | SyftWarning:
     try:
         tree = ast.parse(raw_code)
     except SyntaxError as e:
-        raise SyftException(f"Your code contains syntax error: {e}")
+        raise SyftException(public_message=f"Your code contains syntax error: {e}")
     return tree

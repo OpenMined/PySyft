@@ -29,9 +29,8 @@ from ..service.action.action_object import ActionObject
 from ..service.action.action_object import ActionObjectPointer
 from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
-from ..service.response import SyftError
-from ..service.response import SyftException
 from ..service.service import from_api_or_context
+from ..types.errors import SyftException
 from ..types.server_url import ServerURL
 from ..types.transforms import keep
 from ..types.transforms import transform
@@ -88,28 +87,22 @@ class BlobFile(SyftObject):
 
         return sy.ActionObject.from_path(path=path).send(client).syft_action_data
 
-    def _upload_to_blobstorage_from_api(self, api: SyftAPI) -> SyftError | None:
+    def _upload_to_blobstorage_from_api(self, api: SyftAPI) -> None:
         if self.path is None:
             raise ValueError("cannot upload BlobFile, no path specified")
         storage_entry = CreateBlobStorageEntry.from_path(self.path)
 
         blob_deposit_object = api.services.blob_storage.allocate(storage_entry)
 
-        if isinstance(blob_deposit_object, SyftError):
-            return blob_deposit_object
-
         with open(self.path, "rb") as f:
-            result = blob_deposit_object.write(f)
-
-        if isinstance(result, SyftError):
-            return result
+            blob_deposit_object.write(f).unwrap()
 
         self.syft_blob_storage_entry_id = blob_deposit_object.blob_storage_entry_id
         self.uploaded = True
 
         return None
 
-    def upload_to_blobstorage(self, client: SyftClient) -> SyftError | None:
+    def upload_to_blobstorage(self, client: SyftClient) -> None:
         self.syft_server_location = client.id
         self.syft_client_verify_key = client.verify_key
         return self._upload_to_blobstorage_from_api(client.api)

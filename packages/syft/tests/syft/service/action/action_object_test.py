@@ -23,9 +23,9 @@ from syft.service.action.action_object import make_action_side_effect
 from syft.service.action.action_object import propagate_server_uid
 from syft.service.action.action_object import send_action_side_effect
 from syft.service.action.action_types import action_type_for_type
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.store.blob_storage import SyftObjectRetrieval
+from syft.types.errors import SyftException
 from syft.types.uid import LineageID
 from syft.types.uid import UID
 
@@ -208,10 +208,7 @@ def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any):
     obj = ActionObject.from_obj(orig_obj)
 
     context = PreHookContext(obj=obj, op_name=op)
-    result = make_action_side_effect(context)
-    assert result.is_ok()
-
-    context, args, kwargs = result.ok()
+    context, args, kwargs = make_action_side_effect(context).unwrap()
     assert context.action is not None
     assert isinstance(context.action, Action)
     assert context.action.full_path.endswith("." + op)
@@ -362,8 +359,9 @@ def test_actionobject_syft_execute_ok(worker, testcase):
     )
 
     context = PreHookContext(obj=obj_pointer, op_name=op, action_type=ActionType.METHOD)
-    result = make_action_side_effect(context, *args_pointers, **kwargs_pointers)
-    context, _, _ = result.ok()
+    context, _, _ = make_action_side_effect(
+        context, *args_pointers, **kwargs_pointers
+    ).unwrap()
 
     action_result = context.obj.syft_execute_action(context.action, sync=True)
     assert action_result == expected
@@ -1055,7 +1053,7 @@ def test_actionobject_delete(worker):
     assert isinstance(read_res, SyftObjectRetrieval)
     del_res = root_client.api.services.action.delete(uid=action_obj_2.id)
     assert isinstance(del_res, SyftSuccess)
-    read_res = root_client.api.services.blob_storage.read(
-        action_obj_2.syft_blob_storage_entry_id
-    )
-    assert isinstance(read_res, SyftError)
+    with pytest.raises(SyftException):
+        read_res = root_client.api.services.blob_storage.read(
+            action_obj_2.syft_blob_storage_entry_id
+        )

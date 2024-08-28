@@ -12,6 +12,7 @@ from copy import deepcopy
 from datetime import datetime
 import functools
 import hashlib
+import inspect
 from itertools import chain
 from itertools import repeat
 import json
@@ -46,8 +47,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import nh3
 import requests
-from result import Err
-from result import Ok
 
 # relative
 from ..serde.serialize import _serialize as serialize
@@ -161,15 +160,15 @@ def get_mb_size(data: Any, handlers: dict | None = None) -> float:
     return sizeof(data) / (1024.0 * 1024.0)
 
 
-def get_mb_serialized_size(data: Any) -> Ok[float] | Err[str]:
+def get_mb_serialized_size(data: Any) -> float:
     try:
         serialized_data = serialize(data, to_bytes=True)
-        return Ok(sys.getsizeof(serialized_data) / (1024 * 1024))
+        return sys.getsizeof(serialized_data) / (1024 * 1024)
     except Exception as e:
         data_type = type(data)
-        return Err(
-            f"Failed to serialize data of type '{data_type.__module__}.{data_type.__name__}'. "
-            f"Data type not supported. Detailed error: {e}"
+        raise TypeError(
+            f"Failed to serialize data of type '{data_type.__module__}.{data_type.__name__}'."
+            f" Data type not supported. Detailed error: {e}"
         )
 
 
@@ -1001,9 +1000,9 @@ def generate_token() -> str:
     return secrets.token_hex(64)
 
 
-def sanitize_html(html: str) -> str:
+def sanitize_html(html_str: str) -> str:
     policy = {
-        "tags": ["svg", "strong", "rect", "path", "circle"],
+        "tags": ["svg", "strong", "rect", "path", "circle", "code", "pre"],
         "attributes": {
             "*": {"class", "style"},
             "svg": {
@@ -1032,7 +1031,7 @@ def sanitize_html(html: str) -> str:
     attributes = {**_attributes, **policy["attributes"]}  # type: ignore
 
     return nh3.clean(
-        html,
+        html_str,
         tags=tags,
         clean_content_tags=policy["remove"],
         attributes=attributes,
@@ -1069,19 +1068,77 @@ def get_latest_tag(registry: str, repo: str) -> str | None:
     return None
 
 
-def get_nb_secrets(defaults: dict | None = None) -> dict:
-    if defaults is None:
-        defaults = {}
+def get_caller_file_path() -> str | None:
+    stack = inspect.stack()
 
-    try:
-        filename = "./secrets.json"
-        with open(filename) as f:
-            loaded = json.loads(f.read())
-            defaults.update(loaded)
-    except Exception:
-        print(f"Unable to load {filename}")
+    for frame_info in stack:
+        code_context = frame_info.code_context
+        if code_context and len(code_context) > 0:
+            if "from syft import test_settings" in str(frame_info.code_context):
+                caller_file_path = os.path.dirname(os.path.abspath(frame_info.filename))
+                return caller_file_path
 
-    return defaults
+    return None
+
+
+def find_base_dir_with_tox_ini(start_path: str = ".") -> str | None:
+    base_path = os.path.abspath(start_path)
+    while True:
+        if os.path.exists(os.path.join(base_path, "tox.ini")):
+            return base_path
+        parent_path = os.path.abspath(os.path.join(base_path, os.pardir))
+        if parent_path == base_path:  # Reached the root directory
+            break
+        base_path = parent_path
+    return None
+
+
+def get_all_config_files(base_path: str, current_path: str) -> list[str]:
+    config_files = []
+    current_path = os.path.abspath(current_path)
+
+    while current_path.startswith(base_path):
+        config_file = os.path.join(current_path, "settings.yaml")
+        if os.path.exists(config_file):
+            config_files.append(config_file)
+        if current_path == base_path:  # Stop if we reach the base directory
+            break
+        current_path = os.path.abspath(os.path.join(current_path, os.pardir))
+
+    return config_files
+
+
+def test_settings() -> Any:
+    # third party
+    from dynaconf import Dynaconf
+
+    config_files = []
+    current_path = "."
+
+    # jupyter uses "." which resolves to the notebook
+    if not is_interpreter_jupyter():
+        # python uses the file which has from syft import test_settings in it
+        import_path = get_caller_file_path()
+        if import_path:
+            current_path = import_path
+
+    base_dir = find_base_dir_with_tox_ini(current_path)
+    config_files = get_all_config_files(base_dir, current_path)
+    config_files = list(reversed(config_files))
+    # create
+    # can override with
+    # import os
+    # os.environ["TEST_KEY"] = "var"
+    # third party
+
+    # Dynaconf settings
+    test_settings = Dynaconf(
+        settings_files=config_files,
+        environments=True,
+        envvar_prefix="TEST",
+    )
+
+    return test_settings
 
 
 class CustomRepr(reprlib.Repr):

@@ -30,6 +30,7 @@ from ..service.response import SyftError
 from ..service.user.user import UserCreate
 from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
+from ..types.errors import SyftException
 from ..types.uid import UID
 from ..util.telemetry import TRACE_MODE
 from .credentials import SyftVerifyKey
@@ -59,7 +60,7 @@ def make_routes(worker: Worker) -> APIRouter:
         from ..service.network.server_peer import route_to_connection
 
         network_service = worker.get_service("NetworkService")
-        peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid).ok()
+        peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid).unwrap()
         peer_server_route = peer.pick_highest_priority_route()
         connection = route_to_connection(route=peer_server_route)
         return connection
@@ -252,15 +253,11 @@ def make_routes(worker: Worker) -> APIRouter:
         context = ServerServiceContext(server=server)
         method = server.get_method_with_context(UserService.register, context)
 
-        result = method(new_user=user_create)
-
-        if isinstance(result, SyftError):
-            logger.error(
-                f"Register Error: {result.message}. user={user_create.model_dump()}"
-            )
-            response = SyftError(message=f"{result.message}")
-        else:
-            response = result
+        try:
+            response = method(new_user=user_create)
+        except SyftException as e:
+            logger.error(f"Register Error: {e}. user={user_create.model_dump()}")
+            response = SyftError(message=f"{e.public_message}")
 
         return Response(
             serialize(response, to_bytes=True),
