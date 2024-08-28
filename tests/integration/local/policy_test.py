@@ -1,24 +1,11 @@
 # stdlib
 from secrets import token_hex
-import uuid
 
 # third party
-from faker import Faker
-import numpy as np
 import pytest
 
 # syft absolute
 import syft as sy
-from syft.client.datasite_client import DatasiteClient
-from syft.server.worker import Worker
-from syft.service.action.action_object import ActionObject
-from syft.service.request.request import Request
-from syft.service.request.request import UserCodeStatusChange
-from syft.service.response import SyftError
-from syft.service.response import SyftSuccess
-from syft.service.user.user import User
-from syft.service.user.user_roles import ServiceRole
-from syft.types.errors import SyftException
 
 
 @sy.api_endpoint_method()
