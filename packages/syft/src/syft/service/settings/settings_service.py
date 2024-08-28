@@ -188,7 +188,6 @@ class SettingsService(AbstractService):
         email_port: str | None = None,
     ) -> SyftSuccess:
         notifier_service = context.server.get_service("notifierservice")
-        # FIX: NotificationService
         notifier_service.turn_on(
             context=context,
             email_username=email_username,
@@ -196,7 +195,7 @@ class SettingsService(AbstractService):
             email_sender=email_sender,
             email_server=email_server,
             email_port=email_port,
-        ).unwrap(public_message="Failed to enable notifications")
+        ).unwrap()
         return SyftSuccess(message="Notifications enabled")
 
     @service_method(

@@ -35,7 +35,7 @@ from .smtp_client import SMTPClient
 
 class BaseNotifier(BaseModel):
     @as_result(SyftException)
-    def send(self, target: SyftVerifyKey, notification: Notification) -> SyftSuccess:
+    def send(self, context: AuthedServiceContext, notification: Notification) -> SyftSuccess:
         raise SyftException(public_message="Not implemented")
 
 
@@ -123,8 +123,8 @@ class EmailNotifier(BaseNotifier):
                 sender=self.sender, receiver=receiver_email, subject=subject, body=body
             )
             return SyftSuccess(message="Email sent successfully!")
-        except Exception:
-            raise SyftException(
+        except Exception as exc:
+            raise SyftException.from_exception(exc,
                 public_message=(
                     "Some notifications failed to be delivered."
                     " Please check the health of the mailing server."
@@ -250,7 +250,7 @@ class NotifierSettings(SyftObject):
         notifier_objs: list[BaseNotifier] = self.select_notifiers(notification)
 
         for notifier in notifier_objs:
-            notifier.send(target=context, notification=notification).unwrap()
+            notifier.send(context=context, notification=notification).unwrap()
 
         return len(notifier_objs)
 
@@ -278,6 +278,7 @@ class NotifierSettings(SyftObject):
                             password=self.email_password,
                             sender=self.email_sender,
                             server=self.email_server,
+                            port=self.email_port
                         )
                     )
                 # If notifier is not email, we just create the notifier object
