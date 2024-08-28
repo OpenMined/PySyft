@@ -222,6 +222,7 @@ class SyftWorkerPoolService(AbstractService):
         path="worker_pool.create_image_and_pool_request",
         name="create_image_and_pool_request",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def create_image_and_pool_request(
         self,
@@ -409,6 +410,7 @@ class SyftWorkerPoolService(AbstractService):
         path="worker_pool.scale",
         name="scale",
         roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def scale(
         self,
@@ -508,6 +510,7 @@ class SyftWorkerPoolService(AbstractService):
         path="worker_pool.sync_pool_from_request",
         name="sync_pool_from_request",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def sync_pool_from_request(
         self,
@@ -566,6 +569,7 @@ class SyftWorkerPoolService(AbstractService):
         path="worker_pool.delete",
         name="delete",
         roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def delete(
         self,
@@ -627,7 +631,9 @@ class SyftWorkerPoolService(AbstractService):
             for id_ in worker_ids:
                 worker_service.delete(context=context, uid=id_, force=True)
 
-        self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap()
+        self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap(
+            public_message=f"Failed to delete WorkerPool: {worker_pool.name} from stash"
+        )
 
         return SyftSuccess(message=f"Successfully deleted worker pool with id {uid}")
 
