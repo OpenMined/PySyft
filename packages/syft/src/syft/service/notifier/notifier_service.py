@@ -135,7 +135,7 @@ class NotifierService(AbstractService):
         if not (email_username and email_password):
             if not (notifier.email_username and notifier.email_password):
                 raise SyftException(
-                    message="No valid token has been added to the datasite."
+                    public_message="No valid token has been added to the datasite."
                     + "You can add a pair of SMTP credentials via "
                     + "<client>.settings.enable_notifications(email=<>, password=<>)"
                 )
