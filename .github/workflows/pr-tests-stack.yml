@@ -365,7 +365,7 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
-      - name: Run Notebooks Tests
+      - name: Run Notebook and Scenario Notebook Tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
         env:
@@ -384,6 +384,7 @@ jobs:
           chmod +x devspace
           devspace version
           tox -e stack.test.notebook.k8s
+          tox -e syft.test.notebook.scenario.k8s
 
       - name: Get current timestamp
         id: date
