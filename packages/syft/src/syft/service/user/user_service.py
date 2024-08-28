@@ -321,17 +321,36 @@ class UserService(AbstractService):
     def get_all(
         self,
         context: AuthedServiceContext,
+        order_by: str | None = None,
+        sort_order: str | None = None,
         page_size: int | None = 0,
         page_index: int | None = 0,
     ) -> list[UserView]:
         if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             users = self.stash.get_all(
-                context.credentials, has_permission=True
+                context.credentials,
+                has_permission=True,
+                order_by=order_by,
+                sort_order=sort_order,
             ).unwrap()
         else:
             users = self.stash.get_all(context.credentials).unwrap()
         users = [user.to(UserView) for user in users]
         return _paginate(users, page_size, page_index)
+
+    @service_method(
+        path="user.get_index", name="get_index", roles=DATA_OWNER_ROLE_LEVEL
+    )
+    def get_index(
+        self,
+        context: AuthedServiceContext,
+        index: int,
+    ) -> UserView:
+        return (
+            self.stash.get_index(credentials=context.credentials, index=index)
+            .unwrap()
+            .to(UserView)
+        )
 
     def signing_key_for_verify_key(self, verify_key: SyftVerifyKey) -> UserPrivateKey:
         user = self.stash.get_by_verify_key(

@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 import json
+import typing
 from typing import Any
 from typing import Generic
 from typing import TypeVar
@@ -21,6 +22,7 @@ import syft as sy
 from ..server.credentials import SyftSigningKey
 from ..server.credentials import SyftVerifyKey
 from ..types.datetime import DateTime
+from ..types.errors import SyftException
 from ..types.syft_object import BaseDateTime
 from ..types.syft_object_registry import SyftObjectRegistry
 from ..types.uid import LineageID
@@ -37,12 +39,20 @@ JSON_DATA_FIELD = "data"
 Json = str | int | float | bool | None | list["Json"] | dict[str, "Json"]
 
 
+class JSONSerdeError(SyftException):
+    pass
+
+
 @dataclass
 class JSONSerde(Generic[T]):
     # TODO add json schema
     klass: type[T]
     serialize_fn: Callable[[T], Json] | None = None
     deserialize_fn: Callable[[Json], T] | None = None
+
+    def _check_type(self, obj: Any) -> None:
+        if not isinstance(obj, self.klass):
+            raise JSONSerdeError(f"Expected {self.klass}, got {type(obj)}")
 
     def serialize(self, obj: T) -> Json:
         if self.serialize_fn is None:
@@ -53,7 +63,8 @@ class JSONSerde(Generic[T]):
     def deserialize(self, obj: Json) -> T:
         if self.deserialize_fn is None:
             return obj  # type: ignore
-        return self.deserialize_fn(obj)
+        else:
+            return self.deserialize_fn(obj)  # type: ignore
 
 
 JSON_SERDE_REGISTRY: dict[type[T], JSONSerde[T]] = {}
@@ -101,11 +112,18 @@ def _validate_json(value: T) -> T:
     return value
 
 
-def _is_optional_annotation(annotation: Any) -> Any:
-    return annotation | None == annotation
+def _is_optional_annotation(annotation: Any) -> bool:
+    try:
+        return annotation | None == annotation
+    except TypeError:
+        return False
 
 
-def _get_nonoptional_annotation(annotation: Any) -> Any:
+def _is_annotated_type(annotation: Any) -> bool:
+    return get_origin(annotation) == typing.Annotated
+
+
+def _unwrap_optional_annotation(annotation: Any) -> Any:
     """Return the type anntation with None type removed, if it is present.
 
     Args:
@@ -117,6 +135,24 @@ def _get_nonoptional_annotation(annotation: Any) -> Any:
     if _is_optional_annotation(annotation):
         args = get_args(annotation)
         return Union[tuple(arg for arg in args if arg is not type(None))]  # noqa
+    return annotation
+
+
+def _unwrap_annotated(annotation: Any) -> Any:
+    # Convert Annotated[T, ...] to T
+    return get_args(annotation)[0]
+
+
+def _unwrap_type_annotation(annotation: Any) -> Any:
+    """
+    recursively unwrap type annotations, removing Annotated and Optional types
+    """
+    if _is_annotated_type(annotation):
+        res = _unwrap_annotated(annotation)
+        return _unwrap_type_annotation(res)
+    elif _is_optional_annotation(annotation):
+        res = _unwrap_optional_annotation(annotation)
+        return _unwrap_type_annotation(res)
     return annotation
 
 
@@ -235,7 +271,7 @@ def _is_serializable_iterable(annotation: Any) -> bool:
     if len(args) != 1:
         return False
 
-    inner_type = _get_nonoptional_annotation(args[0])
+    inner_type = _unwrap_type_annotation(args[0])
     return inner_type in JSON_SERDE_REGISTRY or _annotation_issubclass(
         inner_type, pydantic.BaseModel
     )
@@ -250,12 +286,12 @@ def _deserialize_iterable_from_json(value: Json, annotation: Any) -> Any:
     if not isinstance(value, list):
         raise ValueError(f"Cannot deserialize {type(value)} to {annotation}")
 
-    annotation = _get_nonoptional_annotation(annotation)
+    annotation = _unwrap_type_annotation(annotation)
 
     if not _is_serializable_iterable(annotation):
         raise ValueError(f"Cannot deserialize {annotation} from JSON")
 
-    inner_type = _get_nonoptional_annotation(get_args(annotation)[0])
+    inner_type = _unwrap_type_annotation(get_args(annotation)[0])
     return [deserialize_json(v, inner_type) for v in value]
 
 
@@ -279,7 +315,7 @@ def _is_serializable_mapping(annotation: Any) -> bool:
         return False
 
     # check if value type is serializable
-    value_type = _get_nonoptional_annotation(value_type)
+    value_type = _unwrap_type_annotation(value_type)
     return value_type in JSON_SERDE_REGISTRY or _annotation_issubclass(
         value_type, pydantic.BaseModel
     )
@@ -295,7 +331,7 @@ def _deserialize_mapping_from_json(value: Json, annotation: Any) -> Any:
     if not isinstance(value, dict):
         raise ValueError(f"Cannot deserialize {type(value)} to {annotation}")
 
-    annotation = _get_nonoptional_annotation(annotation)
+    annotation = _unwrap_type_annotation(annotation)
 
     if not _is_serializable_mapping(annotation):
         raise ValueError(f"Cannot deserialize {annotation} from JSON")
@@ -347,7 +383,7 @@ def serialize_json(value: Any, annotation: Any = None, validate: bool = True) ->
         return None
 
     # Remove None type from annotation if it is present.
-    annotation = _get_nonoptional_annotation(annotation)
+    annotation = _unwrap_type_annotation(annotation)
 
     if annotation in JSON_SERDE_REGISTRY:
         result = JSON_SERDE_REGISTRY[annotation].serialize(value)
@@ -394,7 +430,10 @@ def deserialize_json(value: Json, annotation: Any = None) -> Any:
         return None
 
     # Remove None type from annotation if it is present.
-    annotation = _get_nonoptional_annotation(annotation)
+    if annotation is None:
+        raise ValueError("Annotation is required for deserialization")
+
+    annotation = _unwrap_type_annotation(annotation)
 
     if annotation in JSON_SERDE_REGISTRY:
         return JSON_SERDE_REGISTRY[annotation].deserialize(value)
