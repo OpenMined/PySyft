@@ -74,8 +74,8 @@ def make_schema(settings: dict, worker_pool: str) -> Callable:
 
             data_schema = []
             for table_id in [
-                f"{context.settings["dataset_1"]}.{context.settings["table_1"]}",
-                f"{context.settings["dataset_1"]}.{context.settings["table_2"]}",
+                f'{context.settings["dataset_1"]}.{context.settings["table_1"]}',
+                f'{context.settings["dataset_1"]}.{context.settings["table_2"]}',
             ]:
                 table = client.get_table(table_id)
                 for schema in table.schema:
