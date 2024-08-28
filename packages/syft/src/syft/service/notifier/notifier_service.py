@@ -144,17 +144,20 @@ class NotifierService(AbstractService):
                 email_password = notifier.email_password
                 email_username = notifier.email_username
 
-        validation_result = notifier.validate_email_credentials(
+        mail_server = email_server or notifier.email_server
+        mail_port = email_port or notifier.email_port
+
+        valid_credentials = notifier.validate_email_credentials(
             username=email_username,
             password=email_password,
-            server=email_server if email_server else notifier.email_server,
-            port=email_port if email_port else notifier.email_port,
+            server=mail_server,
+            port=mail_port,
         )
 
-        if validation_result.is_err():
-            logging.error(f"Invalid SMTP credentials {validation_result.err()}")
-            validation_result.unwrap(
-                public_message="Invalid SMTP credentials. Please check your username and password."
+        if not valid_credentials:
+            logging.error(f"Invalid SMTP credentials: username={email_username}, password={email_password}, server={mail_server}, port={mail_port}")
+            raise SyftException(
+                public_message="Invalid SMTP credentials. Please check your username and password.",
             )
 
         notifier.email_password = email_password
