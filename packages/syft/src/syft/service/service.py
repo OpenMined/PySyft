@@ -20,8 +20,6 @@ from typing import TYPE_CHECKING
 
 # third party
 from pydantic import ValidationError
-from result import Ok
-from result import OkErr
 from typing_extensions import Self
 
 # relative
@@ -40,17 +38,19 @@ from ..serde.signature import signature_remove_self
 from ..server.credentials import SyftVerifyKey
 from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
+from ..types.errors import SyftException
+from ..types.result import as_result
 from ..types.syft_metaclass import Empty
 from ..types.syft_metaclass import EmptyType
 from ..types.syft_object import EXCLUDED_FROM_SIGNATURE
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
+from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
 from ..types.uid import UID
 from .context import AuthedServiceContext
 from .context import ChangeContext
-from .response import SyftError
 from .user.user_roles import DATA_OWNER_ROLE_LEVEL
 from .user.user_roles import ServiceRole
 from .warnings import APIEndpointWarning
@@ -70,35 +70,38 @@ class AbstractService:
     server_uid: UID
     store_type: type = DocumentStore
 
+    @as_result(SyftException)
     def resolve_link(
         self,
         context: AuthedServiceContext | ChangeContext | Any,
         linked_obj: LinkedObject,
-    ) -> Any | SyftError:
+    ) -> Any:
         if isinstance(context, AuthedServiceContext):
             credentials = context.credentials
         elif isinstance(context, ChangeContext):
             credentials = context.approving_user_credentials
         else:
-            return SyftError(message="wrong context passed")
+            raise SyftException(public_message="Wrong context passed")
 
-        obj = self.stash.get_by_uid(credentials, uid=linked_obj.object_uid)
-        if isinstance(obj, OkErr) and obj.is_ok():
-            obj = obj.ok()
+        # TODO: Add stash to AbstractService?
+        obj = self.stash.get_by_uid(credentials, uid=linked_obj.object_uid).unwrap()  # type: ignore
+
         if hasattr(obj, "server_uid"):
             if context.server is None:
-                return SyftError(message=f"context {context}'s server is None")
+                raise SyftException(
+                    public_message=f"The context '{context}' server is None"
+                )
             obj.server_uid = context.server.id
-        if not isinstance(obj, OkErr):
-            obj = Ok(obj)
+
         return obj
 
+    # TODO: Delete?
     def get_all(*arg: Any, **kwargs: Any) -> Any:
         pass
 
 
 @serializable()
-class BaseConfig(SyftBaseObject):
+class BaseConfigV1(SyftBaseObject):
     __canonical_name__ = "BaseConfig"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -113,8 +116,35 @@ class BaseConfig(SyftBaseObject):
 
 
 @serializable()
+class BaseConfig(SyftBaseObject):
+    __canonical_name__ = "BaseConfig"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    public_path: str
+    private_path: str
+    public_name: str
+    method_name: str
+    doc_string: str | None = None
+    signature: Signature | None = None
+    is_from_lib: bool = False
+    warning: APIEndpointWarning | None = None
+    unwrap_on_success: bool = True
+
+
+@serializable()
+class ServiceConfigV1(BaseConfigV1):
+    __canonical_name__ = "ServiceConfig"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    permissions: list
+    roles: list[ServiceRole]
+
+
+@serializable()
 class ServiceConfig(BaseConfig):
     __canonical_name__ = "ServiceConfig"
+    __version__ = SYFT_OBJECT_VERSION_2
+
     permissions: list
     roles: list[ServiceRole]
 
@@ -123,8 +153,16 @@ class ServiceConfig(BaseConfig):
 
 
 @serializable()
+class LibConfigV1(BaseConfigV1):
+    __canonical_name__ = "LibConfig"
+    __version__ = SYFT_OBJECT_VERSION_1
+    permissions: set[CMPPermission]
+
+
+@serializable()
 class LibConfig(BaseConfig):
     __canonical_name__ = "LibConfig"
+    __version__ = SYFT_OBJECT_VERSION_2
     permissions: set[CMPPermission]
 
     def has_permission(self, credentials: SyftVerifyKey) -> bool:
@@ -400,6 +438,7 @@ def service_method(
     roles: list[ServiceRole] | None = None,
     autosplat: list[str] | None = None,
     warning: APIEndpointWarning | None = None,
+    unwrap_on_success: bool = True,
 ) -> Callable:
     if roles is None or len(roles) == 0:
         # TODO: this is dangerous, we probably want to be more conservative
@@ -461,6 +500,7 @@ def service_method(
             roles=roles,
             permissions=["Guest"],
             warning=warning,
+            unwrap_on_success=unwrap_on_success,
         )
         ServiceConfigRegistry.register(config)
 
@@ -515,7 +555,7 @@ def from_api_or_context(
     func_or_path: str,
     syft_server_location: UID | None = None,
     syft_client_verify_key: SyftVerifyKey | None = None,
-) -> APIModule | SyftError | partial | None:
+) -> APIModule | partial | None:
     # relative
     from ..client.api import APIRegistry
     from ..server.server import AuthServerContextRegistry
@@ -530,8 +570,8 @@ def from_api_or_context(
         server_uid=syft_server_location,
         user_verify_key=syft_client_verify_key,
     )
-    if api is not None:
-        service_method = api.services
+    if api.is_ok():
+        service_method = api.unwrap().services
         for path in func_or_path.split("."):
             service_method = getattr(service_method, path)
         return service_method
@@ -546,12 +586,12 @@ def from_api_or_context(
         )
         if func_or_path not in user_config_registry:
             if ServiceConfigRegistry.path_exists(func_or_path):
-                return SyftError(
-                    message=f"As a `{server_context.role}` you have has no access to: {func_or_path}"
+                raise SyftException(
+                    public_message=f"As a `{server_context.role}` you have has no access to: {func_or_path}"
                 )
             else:
-                return SyftError(
-                    message=f"API call not in registered services: {func_or_path}"
+                raise SyftException(
+                    public_message=f"API call not in registered services: {func_or_path}"
                 )
 
         _private_api_path = user_config_registry.private_path_for(func_or_path)
