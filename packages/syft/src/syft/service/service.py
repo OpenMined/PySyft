@@ -363,7 +363,6 @@ def reconstruct_args_kwargs(
     kwargs: dict[Any, str],
 ) -> tuple[tuple[Any, ...], dict[str, Any]]:
     autosplat_types = types_for_autosplat(signature=signature, autosplat=autosplat)
-    print(f"autosplat_types: {autosplat_types}")
 
     autosplat_objs = {}
     for autosplat_key, autosplat_type in autosplat_types.items():
