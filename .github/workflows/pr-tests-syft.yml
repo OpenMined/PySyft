@@ -274,6 +274,17 @@ jobs:
           max_attempts: 3
           command: tox -e syft.test.notebook.scenario
 
+      - name: Run notebook scenario with sync tests
+        uses: nick-fields/retry@v3
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
+        env:
+          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
+          BUMP_VERSION: "${{ matrix.bump-version }}"
+        with:
+          timeout_seconds: 2400
+          max_attempts: 3
+          command: tox -e syft.test.notebook.scenario.sync
+
   pr-tests-syft-notebook-single-container:
     strategy:
       max-parallel: 99
