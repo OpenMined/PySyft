@@ -1,5 +1,4 @@
 # third party
-from result import Err
 from tqdm import tqdm
 
 # syft absolute
@@ -12,6 +11,7 @@ from syft.service.job.job_stash import JobStatus
 from syft.service.request.request import Request
 from syft.service.request.request import RequestStatus
 from syft.service.sync.diff_state import ObjectDiffBatch
+from syft.types.result import Err
 
 
 def deny_requests_without_autosync_tag(client_low: DatasiteClient):
