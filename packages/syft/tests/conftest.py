@@ -157,7 +157,7 @@ def high_worker() -> Worker:
 @pytest.fixture(scope="function")
 def low_worker() -> Worker:
     worker = sy.Worker.named(
-        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE
+        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE, dev_mode=True
     )
     yield worker
     worker.cleanup()

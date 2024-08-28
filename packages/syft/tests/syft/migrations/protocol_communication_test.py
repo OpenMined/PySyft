@@ -16,13 +16,12 @@ from syft.serde.recursive import TYPE_BANK
 from syft.serde.serializable import serializable
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
-from syft.service.response import SyftError
 from syft.service.service import AbstractService
 from syft.service.service import ServiceConfigRegistry
 from syft.service.service import service_method
 from syft.service.user.user_roles import GUEST_ROLE_LEVEL
-from syft.store.document_store import BaseStash
 from syft.store.document_store import DocumentStore
+from syft.store.document_store import NewBaseStash
 from syft.store.document_store import PartitionSettings
 from syft.types.syft_migration import migrate
 from syft.types.syft_object import SYFT_OBJECT_VERSION_1
@@ -79,7 +78,7 @@ def get_stash_klass(syft_object: type[SyftBaseObject]):
         canonical_name="SyftMockObjectStash",
         version=1,
     )
-    class SyftMockObjectStash(BaseStash):
+    class SyftMockObjectStash(NewBaseStash):
         object_type = syft_object
         settings: PartitionSettings = PartitionSettings(
             name=object_type.__canonical_name__,
@@ -93,7 +92,7 @@ def get_stash_klass(syft_object: type[SyftBaseObject]):
 
 
 def setup_service_method(syft_object):
-    stash_klass: BaseStash = get_stash_klass(syft_object=syft_object)
+    stash_klass: NewBaseStash = get_stash_klass(syft_object=syft_object)
 
     @serializable(
         canonical_name="SyftMockObjectService",
@@ -101,7 +100,7 @@ def setup_service_method(syft_object):
     )
     class SyftMockObjectService(AbstractService):
         store: DocumentStore
-        stash: stash_klass
+        stash: stash_klass  # type: ignore
         __module__: str = "syft.test"
 
         def __init__(self, store: DocumentStore) -> None:
@@ -113,11 +112,8 @@ def setup_service_method(syft_object):
             name="get",
             roles=GUEST_ROLE_LEVEL,
         )
-        def get(self, context: AuthedServiceContext) -> list[syft_object] | SyftError:
-            result = self.stash.get_all(context.credentials, has_permission=True)
-            if result.is_ok():
-                return result.ok()
-            return SyftError(message=f"{result.err()}")
+        def get(self, context: AuthedServiceContext) -> list[syft_object]:
+            return self.stash.get_all(context.credentials, has_permission=True)
 
     return SyftMockObjectService
 

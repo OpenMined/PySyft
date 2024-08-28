@@ -76,3 +76,17 @@ notebooks:
   - packages/syft/**/*.ini
   - packages/syft/**/*.sh
   - packages/syft/**/*.mako
+
+notebooks_scenario:
+  - .github/workflows/pr-tests-syft.yml
+  - notebooks/scenarios/**/*.ipynb
+  - packages/syft/**/*.py
+  - packages/syft/**/*.capnp
+  - packages/syft/**/*.yml
+  - packages/syft/**/*.cfg
+  - packages/syft/**/*.dockerfile
+  - packages/syft/**/*.toml
+  - packages/syft/**/*.txt
+  - packages/syft/**/*.ini
+  - packages/syft/**/*.sh
+  - packages/syft/**/*.mako

@@ -9,6 +9,7 @@ import pytest
 from syft.store.document_store import PartitionSettings
 from syft.store.document_store import QueryKeys
 from syft.store.kv_document_store import KeyValueStorePartition
+from syft.types.errors import SyftException
 from syft.types.uid import UID
 
 # relative
@@ -44,7 +45,7 @@ def test_kv_store_partition_init_failed(root_verify_key) -> None:
     store_config = MockStoreConfig(is_crashed=True)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(SyftException):
         KeyValueStorePartition(
             UID(), root_verify_key, settings=settings, store_config=store_config
         )
@@ -79,7 +80,7 @@ def test_kv_store_partition_set_backend_fail(root_verify_key) -> None:
     store_config = MockStoreConfig(is_crashed=True)
     settings = PartitionSettings(name="test", object_type=MockObjectType)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(SyftException):
         KeyValueStorePartition(
             UID(), root_verify_key, settings=settings, store_config=store_config
         )

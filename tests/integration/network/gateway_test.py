@@ -67,12 +67,8 @@ def _random_hash() -> str:
 
 def _remove_existing_peers(client: SyftClient) -> SyftSuccess | SyftError:
     peers: list[ServerPeer] | SyftError = client.api.services.network.get_all_peers()
-    if isinstance(peers, SyftError):
-        return peers
     for peer in peers:
-        res = client.api.services.network.delete_peer_by_id(peer.id)
-        if isinstance(res, SyftError):
-            return res
+        client.api.services.network.delete_peer_by_id(peer.id)
     return SyftSuccess(message="All peers removed.")
 
 
@@ -126,7 +122,6 @@ def test_datasite_connect_to_gateway(
         email="info@openmined.org", password="changethis"
     )
     res = gateway_client_root.api.services.request.get_all()[-1].approve()
-    assert not isinstance(res, SyftError)
 
     assert len(gateway_client.peers) == 1
 
@@ -897,7 +892,6 @@ def test_peer_health_check(
 
     # the gateway client approves one of the association requests
     res = gateway_client.api.services.request.get_all()[-1].approve()
-    assert not isinstance(res, SyftError)
     assert len(gateway_client.peers) == 1
 
     # the gateway client checks that the peer is associated
@@ -927,7 +921,7 @@ def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
         port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
 
-    res = gateway_client.settings.allow_association_request_auto_approval(enable=False)
+    _ = gateway_client.settings.allow_association_request_auto_approval(enable=False)
 
     # Try removing existing peers just to make sure
     _remove_existing_peers(datasite_client)
@@ -950,9 +944,7 @@ def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
     gateway_client_root = gateway_client.login(
         email="info@openmined.org", password="changethis"
     )
-    res = gateway_client_root.api.services.request.get_all()[-1].approve()
-    assert not isinstance(res, SyftError)
-
+    _ = gateway_client_root.api.services.request.get_all()[-1].approve()
     time.sleep(90)
 
     gateway_peers = gateway_client.api.services.network.get_all_peers()
