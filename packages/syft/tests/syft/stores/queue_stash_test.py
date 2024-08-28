@@ -12,6 +12,7 @@ from syft.service.queue.queue_stash import QueueItem
 from syft.service.worker.worker_pool import WorkerPool
 from syft.service.worker.worker_pool_service import SyftWorkerPoolService
 from syft.store.linked_obj import LinkedObject
+from syft.types.errors import SyftException
 from syft.types.uid import UID
 
 # relative
@@ -65,7 +66,7 @@ def test_queue_stash_sanity(queue: Any) -> None:
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=3)
+# @pytest.mark.flaky(reruns=3, reruns_delay=3)
 def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
     objs = []
     repeats = 5
@@ -77,8 +78,8 @@ def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
         assert res.is_ok()
         assert len(queue) == idx + 1
 
-        res = queue.set(root_verify_key, obj, ignore_duplicates=False)
-        assert res.is_err()
+        with pytest.raises(SyftException):
+            res = queue.set(root_verify_key, obj, ignore_duplicates=False)
         assert len(queue) == idx + 1
 
         assert len(queue.get_all(root_verify_key).ok()) == idx + 1
@@ -95,8 +96,7 @@ def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
         cnt -= 1
         assert len(queue) == cnt
         item = queue.find_one(root_verify_key, id=obj.id)
-        assert item.is_ok()
-        assert item.ok() is None
+        assert item.is_err()
 
 
 @pytest.mark.parametrize(

@@ -9,7 +9,6 @@ from ..abstract_server import ServerSideType
 from ..serde.serializable import serializable
 from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.network.routes import ServerRouteType
-from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
@@ -68,7 +67,7 @@ class EnclaveClient(SyftClient):
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,
-    ) -> SyftSuccess | SyftError | None:
+    ) -> SyftSuccess | None:
         if isinstance(protocol, str):
             protocol = SyftProtocol(protocol)
 
@@ -82,25 +81,19 @@ class EnclaveClient(SyftClient):
                 if email is None
                 else login(url=url, port=port, email=email, password=password)
             )
-            if isinstance(client, SyftError):
-                return client
 
         self.metadata: ServerMetadataJSON = self.metadata
         res = self.exchange_route(client, protocol=protocol)
-
-        if isinstance(res, SyftSuccess):
-            if self.metadata:
-                return SyftSuccess(
-                    message=(
-                        f"Connected {self.metadata.server_type} "
-                        f"'{self.metadata.name}' to gateway '{client.name}'. "
-                        f"{res.message}"
-                    )
+        if self.metadata:
+            return SyftSuccess(
+                message=(
+                    f"Connected {self.metadata.server_type} "
+                    f"'{self.metadata.name}' to gateway '{client.name}'. "
+                    f"{res.message}"
                 )
-            else:
-                return SyftSuccess(message=f"Connected to '{client.name}' gateway")
-
-        return res
+            )
+        else:
+            return SyftSuccess(message=f"Connected to '{client.name}' gateway")
 
     def get_enclave_metadata(self) -> EnclaveMetadata:
         return EnclaveMetadata(route=self.connection.route)

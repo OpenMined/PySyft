@@ -6,7 +6,6 @@ from ...store.document_store import DocumentStore
 from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
@@ -29,11 +28,6 @@ class QueueService(AbstractService):
         name="get_subjobs",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def get_subjobs(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> list[QueueItem] | SyftError:
-        res = self.stash.get_by_parent_id(context.credentials, uid=uid)
-        if res.is_err():
-            return SyftError(message=res.err())
-        else:
-            return res.ok()
+    def get_subjobs(self, context: AuthedServiceContext, uid: UID) -> list[QueueItem]:
+        # FIX: There is no get_by_parent_id in QueueStash
+        return self.stash.get_by_parent_id(context.credentials, uid=uid)

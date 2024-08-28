@@ -73,6 +73,7 @@ class SearchResults:
 #             display(warning)
 #             return (None, [])
 
+
 #     def __search(self, name: str) -> list[tuple[SyftClient, list[Dataset]]]:
 #         with ThreadPoolExecutor(max_workers=20) as executor:
 #             # results: list[tuple[SyftClient | None, list[Dataset]]] = [
@@ -84,7 +85,6 @@ class SearchResults:
 #                     self.datasites,
 #                 )
 #             )
-#         # filter out SyftError
 #         filtered = [(client, result) for client, result in results if client and result]
 
 #         return filtered

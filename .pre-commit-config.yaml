@@ -31,7 +31,7 @@ repos:
         exclude: ^(packages/syft/tests/mongomock)
       - id: name-tests-test
         always_run: true
-        exclude: ^(.*/tests/utils/)|^(.*fixtures.py|packages/syft/tests/mongomock)
+        exclude: ^(.*/tests/utils/)|^(.*fixtures.py|packages/syft/tests/mongomock)|^(tests/scenarios/bigquery/helpers)
       - id: requirements-txt-fixer
         always_run: true
         exclude: "packages/syft/tests/mongomock"

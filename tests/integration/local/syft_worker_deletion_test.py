@@ -9,9 +9,10 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.orchestra import ClientAlias
+from syft.orchestra import ServerHandle
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
+from syft.types.errors import SyftException
 
 # relative
 from .conftest import matrix
@@ -43,13 +44,13 @@ class FlakyMark(RuntimeError):
 )
 @pytest.mark.parametrize("force", [True, False])
 def test_delete_idle_worker(
-    client: ClientAlias, force: bool, server_args: dict[str, Any]
+    server: ServerHandle, force: bool, server_args: dict[str, Any]
 ) -> None:
+    client = server.login(email="info@openmined.org", password="changethis")
     original_workers = client.worker.get_all()
     worker_to_delete = max(original_workers, key=operator.attrgetter("name"))
 
-    res = client.worker.delete(worker_to_delete.id, force=force)
-    assert not isinstance(res, SyftError)
+    client.worker.delete(worker_to_delete.id, force=force)
 
     if force:
         workers = client.worker.get_all()
@@ -78,7 +79,8 @@ def test_delete_idle_worker(
 
 @pytest.mark.parametrize("server_args", matrix(**SERVER_ARGS_TEST_CASES))
 @pytest.mark.parametrize("force", [True, False])
-def test_delete_worker(client: ClientAlias, force: bool) -> None:
+def test_delete_worker(server: ServerHandle, force: bool) -> None:
+    client = server.login(email="info@openmined.org", password="changethis")
     data = np.array([1, 2, 3])
     data_action_obj = sy.ActionObject.from_obj(data)
     data_pointer = data_action_obj.send(client)
@@ -103,8 +105,7 @@ def test_delete_worker(client: ClientAlias, force: bool) -> None:
         if time.time() - start > 5:
             raise TimeoutError("Job did not get picked up by any worker.")
 
-    res = client.worker.delete(syft_worker_id, force=force)
-    assert not isinstance(res, SyftError)
+    client.worker.delete(syft_worker_id, force=force)
 
     if not force and len(client.worker.get_all()) > 0:
         assert client.worker.get(syft_worker_id).to_be_deleted
@@ -118,8 +119,9 @@ def test_delete_worker(client: ClientAlias, force: bool) -> None:
 
     start = time.time()
     while True:
-        res = client.worker.get(syft_worker_id)
-        if isinstance(res, SyftError):
+        try:
+            client.worker.get(syft_worker_id)
+        except SyftException:
             break
         if time.time() - start > 5:
             raise TimeoutError("Worker did not get removed from stash.")
