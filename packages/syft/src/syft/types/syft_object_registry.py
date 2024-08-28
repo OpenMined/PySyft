@@ -83,6 +83,7 @@ class SyftObjectRegistry:
         obj_type = type(obj)
         if obj_type in cls.__type_to_canonical_name__:
             return cls.__type_to_canonical_name__[obj_type]
+
         raise ValueError(
             f"Could not find canonical name for '{obj_type.__module__}.{obj_type.__name__}'"
         )

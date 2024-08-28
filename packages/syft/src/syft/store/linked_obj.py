@@ -9,8 +9,9 @@ from ..serde.serializable import serializable
 from ..service.context import AuthedServiceContext
 from ..service.context import ChangeContext
 from ..service.context import ServerServiceContext
-from ..service.response import SyftError
 from ..service.response import SyftSuccess
+from ..types.errors import SyftException
+from ..types.result import as_result
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
@@ -39,42 +40,38 @@ class LinkedObject(SyftObject):
     @property
     def resolve(self) -> SyftObject:
         # relative
-        from ..client.api import APIRegistry
-
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise ValueError(f"api is None. You must login to {self.server_uid}")
-
-        resolve: SyftObject = api.services.notifications.resolve_object(self)
+        resolve: SyftObject = self.get_api().services.notifications.resolve_object(self)
         self._resolve_cache = resolve
         return resolve
 
+    @as_result(SyftException)
     def resolve_with_context(self, context: ServerServiceContext) -> Any:
         if context.server is None:
             raise ValueError(f"context {context}'s server is None")
-        return context.server.get_service(self.service_type).resolve_link(
-            context=context, linked_obj=self
+        return (
+            context.server.get_service(self.service_type)
+            .resolve_link(context=context, linked_obj=self)
+            .unwrap()
         )
 
     def update_with_context(
         self, context: ServerServiceContext | ChangeContext | Any, obj: Any
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         if isinstance(context, AuthedServiceContext):
             credentials = context.credentials
         elif isinstance(context, ChangeContext):
             credentials = context.approving_user_credentials
         else:
-            return SyftError(message="wrong context passed")
+            raise SyftException(public_message="wrong context passed")
         if context.server is None:
-            return SyftError(message=f"context {context}'s server is None")
+            raise SyftException(public_message=f"context {context}'s server is None")
         service = context.server.get_service(self.service_type)
         if hasattr(service, "stash"):
             result = service.stash.update(credentials, obj)
         else:
-            return SyftError(message=f"service {service} does not have a stash")
+            raise SyftException(
+                public_message=f"service {service} does not have a stash"
+            )
         return result
 
     @classmethod
