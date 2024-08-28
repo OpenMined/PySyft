@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 # stdlib
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
+from collections import defaultdict
 from collections.abc import Callable
 from collections.abc import Iterable
 from copy import deepcopy
@@ -347,9 +348,7 @@ def _format_signature(s: inspect.Signature) -> inspect.Signature:
     )
 
 
-_SIGNATURE_ERROR_MESSAGE = (
-    "Please provide the correct arguments to the method according to the following signature:"
-)
+_SIGNATURE_ERROR_MESSAGE = "Please provide the correct arguments to the method according to the following signature:"
 
 
 def _signature_error_message(s: inspect.Signature) -> str:
@@ -382,7 +381,9 @@ def reconstruct_args_kwargs(
             )
 
     autosplat_parameters = OrderedDict(
-        (param_key, param) for param_key, param in signature.parameters.items() if param_key in autosplat_objs
+        (param_key, param)
+        for param_key, param in signature.parameters.items()
+        if param_key in autosplat_objs
     )
 
     final_kwargs = {}

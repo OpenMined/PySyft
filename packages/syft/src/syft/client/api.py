@@ -1336,8 +1336,8 @@ def validate_callable_args_and_kwargs(
             if key not in signature.parameters:
                 valid_parameters = list(signature.parameters)
                 valid_parameters_msg = (
-                    f"Valid parameter: {valid_parameters}" 
-                    if len(valid_parameters) == 1 
+                    f"Valid parameter: {valid_parameters}"
+                    if len(valid_parameters) == 1
                     else f"Valid parameters: {valid_parameters}"
                 )
 

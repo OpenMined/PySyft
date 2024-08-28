@@ -305,13 +305,15 @@ def test_userservice_search(
 
 
 def test_userservice_search_with_invalid_kwargs(
-    worker, user_service: UserService, authed_context: AuthedServiceContext 
+    worker, user_service: UserService, authed_context: AuthedServiceContext
 ) -> None:
     # Direct calls will fail with a type error
     with pytest.raises(TypeError) as exc:
         user_service.search(context=authed_context, role=ServiceRole.GUEST)
 
-    assert "UserService.search() got an unexpected keyword argument 'role'" == str(exc.value)
+    assert "UserService.search() got an unexpected keyword argument 'role'" == str(
+        exc.value
+    )
 
     root_client = worker.root_client
     # Client calls fails at autosplat check
@@ -761,7 +763,12 @@ def test_userservice_update_via_client_with_mixed_args():
     server = orchestra.launch(name="datasite-test", reset=True)
 
     root_client = server.login(email="info@openmined.org", password="changethis")
-    root_client.register(name="New user", email="new_user@openmined.org", password="password", password_verify="password")
+    root_client.register(
+        name="New user",
+        email="new_user@openmined.org",
+        password="password",
+        password_verify="password",
+    )
     assert len(root_client.users.get_all()) == 2
 
     user_list = root_client.users.search(email="new_user@openmined.org")
@@ -779,5 +786,7 @@ def test_userservice_update_via_client_with_mixed_args():
     assert user.name == "User name"
 
     root_client.users.update(user.id, password="newpassword")
-    user_client = root_client.login(email="new_user@openmined.org", password="newpassword")
+    user_client = root_client.login(
+        email="new_user@openmined.org", password="newpassword"
+    )
     assert user_client.account.name == "User name"
