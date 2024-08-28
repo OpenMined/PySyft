@@ -87,7 +87,11 @@ class RequestService(AbstractService):
         path="request.get_all", name="get_all", roles=DATA_SCIENTIST_ROLE_LEVEL
     )
     def get_all(self, context: AuthedServiceContext) -> list[Request]:
-        return self.stash.get_all(context.credentials).unwrap()
+        requests = self.stash.get_all(context.credentials).unwrap()
+        # TODO remove once sorting is handled by the stash
+        requests.sort(key=lambda x: (x.request_time, x.id), reverse=True)
+
+        return requests
 
     @service_method(path="request.get_all_info", name="get_all_info")
     def get_all_info(
