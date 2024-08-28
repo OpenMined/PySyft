@@ -26,6 +26,9 @@ EVENT_USERS_CAN_QUERY_MOCK = "users_can_query_mock"
 EVENT_USERS_CAN_SUBMIT_QUERY = "users_can_submit_query"
 EVENT_ADMIN_APPROVED_FIRST_REQUEST = "admin_approved_first_request"
 EVENT_USERS_CAN_GET_APPROVED_RESULT = "users_can_get_approved_result"
+EVENT_USERS_QUERY_NOT_READY = "users_query_not_ready"
+EVENT_QUERY_ENDPOINT_CREATED = "query_endpoint_created"
+EVENT_QUERY_ENDPOINT_CONFIGURED = "query_endpoint_configured"
 
 
 @dataclass

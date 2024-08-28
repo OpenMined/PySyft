@@ -8,6 +8,8 @@ from events import EVENT_ADMIN_APPROVED_FIRST_REQUEST
 from events import EVENT_ALLOW_GUEST_SIGNUP_DISABLED
 from events import EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED
 from events import EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED
+from events import EVENT_QUERY_ENDPOINT_CONFIGURED
+from events import EVENT_QUERY_ENDPOINT_CREATED
 from events import EVENT_SCHEMA_ENDPOINT_CREATED
 from events import EVENT_SUBMIT_QUERY_ENDPOINT_CONFIGURED
 from events import EVENT_SUBMIT_QUERY_ENDPOINT_CREATED
@@ -16,6 +18,7 @@ from events import EVENT_USERS_CAN_QUERY_MOCK
 from events import EVENT_USERS_CAN_SUBMIT_QUERY
 from events import EVENT_USERS_CREATED
 from events import EVENT_USERS_CREATED_CHECKED
+from events import EVENT_USERS_QUERY_NOT_READY
 from events import EVENT_USER_ADMIN_CREATED
 from events import EVENT_WORKER_POOL_CREATED
 from events import EventManager
@@ -37,30 +40,6 @@ from syft import test_settings
 from syft.service.code.user_code import UserCode
 from syft.service.job.job_stash import Job
 
-# dataset stuff
-# """
-# dataset_get_all = with_client(get_datasets, server)
-
-# assert dataset_get_all() == 0
-
-# dataset_name = fake.name()
-# dataset = create_dataset(name=dataset_name)
-
-# upload_dataset(root_client, dataset)
-
-# events.register(EVENT_DATASET_UPLOADED)
-
-# user_can_read_mock_dataset(server, events, user, dataset_name)
-
-# await has(
-#     lambda: dataset_get_all() == 1,
-#     "1 Dataset",
-#     timeout=15,
-#     retry=1,
-# )
-
-# """
-
 
 @unsync
 async def get_prebuilt_worker_image(events, client, expected_tag, event_name):
@@ -70,8 +49,6 @@ async def get_prebuilt_worker_image(events, client, expected_tag, event_name):
         if expected_tag in str(worker_image.image_identifier):
             assert expected_tag in str(worker_image.image_identifier)
             return worker_image
-    print(f"get_prebuilt_worker_image cannot find {expected_tag}")
-    # raise FailedAssert()
 
 
 @unsync
@@ -109,8 +86,6 @@ async def create_worker_pool(
         result[0], sy.service.worker.worker_pool.ContainerSpawnStatus
     ):
         events.register(event_name)
-    else:
-        print("bad result", result)
 
 
 @unsync
@@ -123,11 +98,6 @@ async def check_worker_pool_exists(events, client, worker_pool_name, event_name)
             assert worker_pool_name == pool.name
             return worker_pool_name == pool.name
 
-    print(f"check_worker_pool_exists cannot find worker_pool_name {worker_pool_name}")
-    # raise FailedAssert(
-
-    # )
-
 
 @unsync
 async def set_settings_allow_guest_signup(
@@ -137,8 +107,6 @@ async def set_settings_allow_guest_signup(
     if event_name:
         if isinstance(result, sy.SyftSuccess):
             events.register(event_name)
-        else:
-            print("cant set settings alow guest signup")
 
 
 @unsync
@@ -153,12 +121,6 @@ async def check_users_created(events, client, users, event_name, event_set):
 
     if len(found_emails) == len(expected_emails):
         events.register(event_set)
-    else:
-        print(
-            f"check_users_created only found {len(found_emails)} of {len(expected_emails)} "
-            f"emails: {found_emails}, {expected_emails}"
-        )
-        # raise FailedAssert()
 
 
 def guest_register(client, test_user):
@@ -187,6 +149,7 @@ async def result_is(
 
     lambda_source = inspect.getsource(expr)
     try:
+        result = None
         try:
             result = expr()
         except Exception as e:
@@ -204,16 +167,22 @@ async def result_is(
             message = matches.replace("*", "")
             assertion = message in str(result)
         else:
-            if isinstance(result, sy.service.response.SyftResponseMessage):
+            type_matches = isinstance(result, type(matches))
+            message_matches = True
+
+            message = None
+            if isinstance(matches, sy.service.response.SyftResponseMessage):
                 message = matches.message.replace("*", "")
-                assertion = isinstance(result, type(matches)) and message in str(result)
             elif isinstance(result, sy.SyftException):
                 message = matches.public_message.replace("*", "")
-                assertion = (
-                    isinstance(result, type(matches))
-                    and message in result.public_message
-                )
 
+            if message:
+                if isinstance(result, sy.service.response.SyftResponseMessage):
+                    message_matches = message in str(result)
+                elif isinstance(result, sy.SyftException):
+                    message_matches = message in result.public_message
+
+            assertion = type_matches and message_matches
         if assertion and register:
             events.register(event_name=register)
         return assertion
@@ -234,12 +203,6 @@ async def set_endpoint_settings(
     result = client.api.services.api.update(endpoint_path=path, **kwargs)
     if isinstance(result, sy.SyftSuccess):
         events.register(register)
-    else:
-        print(f"Failed to update api endpoint. {path}")
-
-
-EVENT_QUERY_ENDPOINT_CREATED = "query_endpoint_created"
-EVENT_QUERY_ENDPOINT_CONFIGURED = "query_endpoint_configured"
 
 
 def query_sql():
@@ -261,10 +224,8 @@ def run_code(client, method_name, **kwargs):
                 break
 
     api_method = api_for_path(client, path=f"code.{service_func_name}")
-    try:
-        result = api_method(**kwargs)
-    except Exception as e:
-        print(">> got an exception while trying to run code", e)
+    # can raise
+    result = api_method(**kwargs)
     return result
 
 
@@ -279,12 +240,7 @@ def api_for_path(client, path):
     for part in path.split("."):
         if hasattr(root, part):
             root = getattr(root, part)
-        else:
-            print("cant find part", part, path)
     return root
-
-
-EVENT_USERS_QUERY_NOT_READY = "users_query_not_ready"
 
 
 def get_pending(client):
@@ -292,9 +248,6 @@ def get_pending(client):
     for request in client.requests:
         if str(request.status) == "RequestStatus.PENDING":
             results.append(request)
-            print(
-                f"Found pending request: {request.code.constants["query"].val}: {request.id}"
-            )
     return results
 
 
@@ -303,33 +256,28 @@ def approve_and_deposit(client, request_id):
     code = request.code
 
     if not isinstance(code, UserCode):
-        print("NOT A USER CODE???")
+        return
 
     func_name = request.code.service_func_name
     job = run_code(client, func_name, blocking=False)
     if not isinstance(job, Job):
-        print("NOT A JOB??")
+        return None
 
     job.wait()
     job_info = job.info(result=True)
     result = request.deposit_result(job_info, approve=True)
-    print("got result from approving?", result)
     return result
 
 
 @unsync
 async def triage_requests(events, client, after, register):
-    print("Waiting for admin account to be created")
     if after:
         await events.await_for(event_name=after)
     while True:
-        await asyncio.sleep(1)
-        print("> Admin checking for requests")
+        await asyncio.sleep(2)
         requests = get_pending(client)
         for request in requests:
-            print("> Admin approving request", request.id)
-            result = approve_and_deposit(client, request.id)
-            print("got result from approving reuwest", result)
+            approve_and_deposit(client, request.id)
             events.register(event_name=register)
 
 
@@ -338,34 +286,26 @@ def get_approved(client):
     for request in client.requests:
         if str(request.status) == "RequestStatus.APPROVED":
             results.append(request)
-            print(
-                f"Found approved request: {request.code.constants["query"].val}: {request.id}"
-            )
     return results
 
 
 @unsync
 async def get_results(events, client, method_name, after, register):
     method_name = method_name.replace("*", "")
-    print("Waiting for admin approve or deny")
     if after:
         await events.await_for(event_name=after)
     while True:
         await asyncio.sleep(1)
-        print("> Data Scientist checking for approval")
         requests = get_approved(client)
         for request in requests:
             if method_name in request.code.service_func_name:
-                print(
-                    f"> Found approved request: {method_name} at {request.code.service_func_name}"
-                )
-                print("> Running and getting result")
-                result = run_code(client, request.code.service_func_name)
-                print("> got result", result)
-                if hasattr(result, "__len__") and len(result) == 10000:
-                    events.register(event_name=register)
+                job = run_code(client, request.code.service_func_name, blocking=False)
+                if not isinstance(job, Job):
+                    continue
                 else:
-                    print("no match with expected")
+                    result = job.wait().get()
+                    if hasattr(result, "__len__") and len(result) == 10000:
+                        events.register(event_name=register)
 
 
 @pytest.mark.asyncio
@@ -374,7 +314,7 @@ async def test_level_2_basic_scenario(request):
     ensure_package_installed("db-dtypes", "db_dtypes")
 
     scenario = Scenario(
-        name="test_create_dataset_and_read_mock",
+        name="test_create_apis_and_triage_requests",
         events=[
             EVENT_USER_ADMIN_CREATED,
             EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED,
@@ -477,7 +417,6 @@ async def test_level_2_basic_scenario(request):
         register=EVENT_QUERY_ENDPOINT_CONFIGURED,
     )
 
-    print("calling create endpoints schema")
     create_endpoints_schema(
         events,
         root_client,
@@ -558,6 +497,6 @@ async def test_level_2_basic_scenario(request):
     assert res is True
 
     await events.await_scenario(
-        scenario_name="test_create_dataset_and_read_mock", timeout=30
+        scenario_name="test_create_apis_and_triage_requests", timeout=30
     )
-    assert events.scenario_completed("test_create_dataset_and_read_mock")
+    assert events.scenario_completed("test_create_apis_and_triage_requests")

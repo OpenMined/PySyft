@@ -119,10 +119,13 @@ def create_dataset(name: str):
     return dataset
 
 
-def make_server(request: Any | None = None) -> Any:
+def make_server(request: Any | None = None, server_name: str | None = None) -> Any:
     print("making server")
+    if server_name is None:
+        faker = Faker()
+        server_name = faker.name()
     server = sy.orchestra.launch(
-        name="test-datasite-1",
+        name=server_name,
         port="auto",
         dev_mode=True,
         reset=True,
