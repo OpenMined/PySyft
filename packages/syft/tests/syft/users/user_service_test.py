@@ -9,6 +9,7 @@ import pytest
 from pytest import MonkeyPatch
 
 # syft absolute
+from syft import orchestra
 from syft.server.credentials import SyftVerifyKey
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
@@ -304,14 +305,20 @@ def test_userservice_search(
 
 
 def test_userservice_search_with_invalid_kwargs(
-    user_service: UserService, authed_context: AuthedServiceContext
+    worker, user_service: UserService, authed_context: AuthedServiceContext 
 ) -> None:
-    # Search with invalid kwargs
-    with pytest.raises(SyftException) as exc:
+    # Direct calls will fail with a type error
+    with pytest.raises(TypeError) as exc:
         user_service.search(context=authed_context, role=ServiceRole.GUEST)
 
-    assert exc.type == SyftException
-    assert "Invalid search parameters" in exc.value.public_message
+    assert "UserService.search() got an unexpected keyword argument 'role'" == str(exc.value)
+
+    root_client = worker.root_client
+    # Client calls fails at autosplat check
+    with pytest.raises(SyftException) as exc:
+        root_client.users.search(role=ServiceRole.GUEST)
+
+    assert "Invalid parameter: `role`" in exc.value.public_message
 
 
 def test_userservice_update_get_by_uid_fails(
@@ -373,8 +380,8 @@ def test_userservice_update_success(
     def mock_update(
         credentials: SyftVerifyKey, obj: User, has_permission: bool
     ) -> User:
-        guest_user.name = update_user.name
-        guest_user.email = update_user.email
+        guest_user.name = obj.name
+        guest_user.email = obj.email
         return guest_user
 
     monkeypatch.setattr(user_service.stash, "update", mock_update)
@@ -386,6 +393,12 @@ def test_userservice_update_success(
     assert isinstance(user, UserView)
     assert user.email == update_user.email
     assert user.name == update_user.name
+
+    another_update = UserUpdate(name="name", email="email@openmined.org")
+    user = user_service.update(authed_context, guest_user.id, **another_update)
+    assert isinstance(user, UserView)
+    assert user.name == "name"
+    assert user.email == "email@openmined.org"
 
 
 def test_userservice_update_fails(
@@ -728,7 +741,6 @@ def test_userservice_exchange_credentials_get_email_fails(
     monkeypatch: MonkeyPatch,
     user_service: UserService,
     unauthed_context: UnauthedServiceContext,
-    guest_user: User,
 ) -> None:
     get_by_email_error = "Failed to connect to server."
 
@@ -743,3 +755,29 @@ def test_userservice_exchange_credentials_get_email_fails(
 
     assert exc.type == StashException
     assert exc.value.public_message == get_by_email_error
+
+
+def test_userservice_update_via_client_with_mixed_args():
+    server = orchestra.launch(name="datasite-test", reset=True)
+
+    root_client = server.login(email="info@openmined.org", password="changethis")
+    root_client.register(name="New user", email="new_user@openmined.org", password="password", password_verify="password")
+    assert len(root_client.users.get_all()) == 2
+
+    user_list = root_client.users.search(email="new_user@openmined.org")
+    assert len(user_list) == 1
+
+    user = user_list[0]
+    assert user.name == "New user"
+
+    root_client.users.update(uid=user.id, name="Updated user name")
+    user = root_client.users.search(email="new_user@openmined.org")[0]
+    assert user.name == "Updated user name"
+
+    root_client.users.update(user.id, name="User name")
+    user = root_client.users.search(email="new_user@openmined.org")[0]
+    assert user.name == "User name"
+
+    root_client.users.update(user.id, password="newpassword")
+    user_client = root_client.login(email="new_user@openmined.org", password="newpassword")
+    assert user_client.account.name == "User name"

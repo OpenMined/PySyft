@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 # stdlib
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from collections.abc import Callable
 from collections.abc import Iterable
 from copy import deepcopy
@@ -348,7 +348,7 @@ def _format_signature(s: inspect.Signature) -> inspect.Signature:
 
 
 _SIGNATURE_ERROR_MESSAGE = (
-    "Please provide the correct arguments to the method according to this signature"
+    "Please provide the correct arguments to the method according to the following signature:"
 )
 
 
@@ -364,6 +364,7 @@ def reconstruct_args_kwargs(
     kwargs: dict[Any, str],
 ) -> tuple[tuple[Any, ...], dict[str, Any]]:
     autosplat_types = types_for_autosplat(signature=signature, autosplat=autosplat)
+    print(f"autosplat_types: {autosplat_types}")
 
     autosplat_objs = {}
     for autosplat_key, autosplat_type in autosplat_types.items():
@@ -380,8 +381,16 @@ def reconstruct_args_kwargs(
                 f"{_signature_error_message(_format_signature(expanded_signature))}"
             )
 
+    autosplat_parameters = OrderedDict(
+        (param_key, param) for param_key, param in signature.parameters.items() if param_key in autosplat_objs
+    )
+
     final_kwargs = {}
-    for param_key, param in signature.parameters.items():
+    for key in kwargs:
+        if key not in autosplat_parameters:
+            final_kwargs[key] = kwargs[key]
+
+    for param_key, param in autosplat_parameters.items():
         if param_key in kwargs:
             final_kwargs[param_key] = kwargs[param_key]
         elif param_key in autosplat_objs:
@@ -390,7 +399,7 @@ def reconstruct_args_kwargs(
             final_kwargs[param_key] = param.default
         else:
             raise TypeError(
-                f"Missing argument {param_key}."
+                f"Missing argument {param_key}. "
                 f"{_signature_error_message(_format_signature(expanded_signature))}"
             )
 
