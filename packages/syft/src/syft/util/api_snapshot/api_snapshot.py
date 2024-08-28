@@ -222,6 +222,7 @@ def take_api_snapshot() -> SyftAPISnapshot:
 
     snapshot = get_api_snapshot(stable_release=stable_release)
     snapshot.save_as_json()
+    print("API snapshot saved at: ", snapshot.file_path)
     return snapshot
 
 
