@@ -876,7 +876,7 @@ class Server(AbstractServer):
 
         # TODO fix database filename + reset
         json_db_config = SQLiteDBConfig(
-            filename=f"{self.id}_{UID().hex}_json.db",
+            filename=f"{self.id}_json.db",
             path=self.get_temp_dir("db"),
         )
         self.db = SQLiteDBManager(

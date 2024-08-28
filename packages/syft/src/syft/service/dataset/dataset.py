@@ -7,6 +7,7 @@ import textwrap
 from typing import Any
 
 # third party
+from IPython.display import display
 import markdown
 import pandas as pd
 from pydantic import ConfigDict
@@ -292,8 +293,8 @@ class Asset(SyftObject):
     def data(self) -> Any:
         try:
             return self._private_data().unwrap()
-        except SyftException as e:
-            print(e)
+        except SyftException:
+            display(SyftError(message="You have no access to the private data"))
             return None
 
 

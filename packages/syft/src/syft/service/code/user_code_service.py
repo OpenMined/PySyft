@@ -86,6 +86,7 @@ class UserCodeService(AbstractService):
             message="User Code Submitted", require_api_update=True, value=user_code
         )
 
+    @as_result(SyftException)
     def _submit(
         self,
         context: AuthedServiceContext,
@@ -111,14 +112,13 @@ class UserCodeService(AbstractService):
                 context.credentials,
                 code_hash=get_code_hash(submit_code.code, context.credentials),
             ).unwrap()
-
-            if not exists_ok:
-                raise SyftException(
-                    public_message="The code to be submitted already exists"
-                )
-            return existing_code
         except NotFoundException:
-            pass
+            existing_code = None
+
+        if not exists_ok and existing_code is not None:
+            raise SyftException(
+                public_message="UserCode with this code already exists",
+            )
 
         code = submit_code.to(UserCode, context=context)
 
@@ -286,13 +286,7 @@ class UserCodeService(AbstractService):
         - If the code is a SubmitUserCode and the code hash does not exist, submit the code
         """
         if isinstance(code, UserCode):
-            # Get existing UserCode
-            try:
-                return self.stash.get_by_uid(context.credentials, code.id).unwrap()
-            except NotFoundException as exc:
-                raise NotFoundException.from_exception(
-                    exc, public_message=f"UserCode {code.id} not found on this server"
-                )
+            return self.stash.get_by_uid(context.credentials, code.id).unwrap()
         else:  # code: SubmitUserCode
             # Submit new UserCode, or get existing UserCode with the same code hash
             # TODO: Why is this tagged as unreachable?
@@ -310,7 +304,7 @@ class UserCodeService(AbstractService):
         reason: str | None = "",
     ) -> Request:
         """Request Code execution on user code"""
-        user_code = self._get_or_submit_user_code(context, code).unwrap()
+        user_code = self._submit(context, code, exists_ok=False).unwrap()
 
         result = self._request_code_execution(
             context,

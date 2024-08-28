@@ -46,6 +46,7 @@ from .action_object import TwinMode
 from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionPermission
+from .action_permissions import StoragePermission
 from .action_store import ActionObjectStash
 from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
@@ -339,7 +340,9 @@ class ActionService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
-        return self.store.has_storage_permission(uid)
+        return self.store.has_storage_permission(
+            StoragePermission(uid=uid, server_uid=context.server.id)
+        )
 
     def has_read_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
         return self.store.has_permissions(
