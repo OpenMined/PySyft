@@ -1,6 +1,5 @@
 # stdlib
 from collections import OrderedDict
-from functools import cache
 import hashlib
 from inspect import Signature
 import json
@@ -11,9 +10,10 @@ from pathlib import Path
 from ...service.service import ServiceConfigRegistry
 from ...service.warnings import APIEndpointWarning
 from ..util import get_root_data_path
+from ..util import str_to_bool
 from .json_diff import json_diff
 
-API_DUMP_JSON_FILENAME = "syft_api_dump.json"
+API_SPEC_JSON_FILENAME = "syft_api_spec.json"
 API_DIFF_JSON_FILENAME = "syft_api_diff.json"
 
 
@@ -23,17 +23,39 @@ def api_snapshot_dir() -> Path:
 
 
 class SyftAPISnapshot:
-    def __init__(self, filename: str = API_DUMP_JSON_FILENAME) -> None:
+    def __init__(
+        self,
+        filename: str = API_SPEC_JSON_FILENAME,
+        stable_release: bool = False,
+    ) -> None:
         """
         Initialize the SyftAPISnapshot object.
 
         Args:
             filename (str): The name of the JSON file to load the API snapshot from.
-                            Defaults to API_DUMP_JSON_FILENAME.
+                            Defaults to API_SPEC_JSON_FILENAME.
         """
+
+        filename = self.get_filename(filename, stable_release)
         self.file_path = api_snapshot_dir() / filename
         self.history = self.load_map()
         self.state = self.build_map()
+
+    def get_filename(self, filename: str, stable_release: bool) -> str:
+        """
+        Get the modified filename based on the stable_release flag.
+
+        Args:
+            filename (str): The original filename.
+            stable_release (bool): Flag indicating if it's a stable release.
+
+        Returns:
+            str: The modified filename.
+        """
+        if stable_release:
+            return f"{filename.split('.')[0]}_stable.json"
+        else:
+            return f"{filename.split('.')[0]}_beta.json"
 
     @staticmethod
     def extract_service_name(path: str) -> str:
@@ -130,7 +152,7 @@ class SyftAPISnapshot:
         Returns:
             OrderedDict: The built API map.
         """
-        api_details = OrderedDict()
+        api_details = {}
         for (
             _,
             service_config,
@@ -151,7 +173,9 @@ class SyftAPISnapshot:
             api_details[f"{service_name}.{service_config.public_path}"] = OrderedDict(
                 api_detail
             )
-        return api_details
+
+        api_details_ordered = OrderedDict(sorted(api_details.items()))
+        return api_details_ordered
 
     def save_as_json(self) -> None:
         """
@@ -177,20 +201,26 @@ class SyftAPISnapshot:
         return diff
 
 
-@cache
-def get_api_snapshot() -> SyftAPISnapshot:
+def get_api_snapshot(stable_release: bool = False) -> SyftAPISnapshot:
     """
     Retrieves the API snapshot.
     """
-    snapshot = SyftAPISnapshot(filename=API_DUMP_JSON_FILENAME)
+    snapshot = SyftAPISnapshot(
+        filename=API_SPEC_JSON_FILENAME,
+        stable_release=stable_release,
+    )
     return snapshot
 
 
 def take_api_snapshot() -> SyftAPISnapshot:
     """
-    Takes a snapshot of the API and saves it as a JSON file.
+    Takes a stable release snapshot of the API and saves it as a JSON file.
     """
-    snapshot = get_api_snapshot()
+
+    # Get the stable_release flag from the environment variable
+    stable_release = str_to_bool(os.environ.get("STABLE_RELEASE", "False"))
+
+    snapshot = get_api_snapshot(stable_release=stable_release)
     snapshot.save_as_json()
     return snapshot
 
@@ -200,8 +230,13 @@ def show_api_diff() -> None:
     Calculates the difference between the current API snapshot and the previous one,
     saves it as a JSON file, and returns the difference.
     """
-    snapshot = get_api_snapshot()
 
+    # Get the stable_release flag from the environment variable
+    stable_release = str_to_bool(os.environ.get("STABLE_RELEASE", "False"))
+
+    snapshot = get_api_snapshot(stable_release=stable_release)
+
+    # Calculate the difference between the current API snapshot and the previous one
     diff = snapshot.calc_diff(save=True)
     print(json.dumps(diff, indent=2))
     print("Generated API diff file at: ", get_root_data_path() / API_DIFF_JSON_FILENAME)
