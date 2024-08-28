@@ -108,7 +108,7 @@ def test_delete_worker(server: ServerHandle, force: bool) -> None:
 
     if not force and len(client.worker.get_all()) > 0:
         assert client.worker.get(syft_worker_id).to_be_deleted
-        job.wait()
+        job.wait(timeout=30)
 
     job = client.jobs[0]
     if force:
