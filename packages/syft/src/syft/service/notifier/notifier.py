@@ -9,6 +9,7 @@
 # stdlib
 from collections.abc import Callable
 from datetime import datetime
+import logging
 from typing import Any
 from typing import TypeVar
 
@@ -32,10 +33,14 @@ from ..response import SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
+logger = logging.getLogger(__name__)
+
 
 class BaseNotifier(BaseModel):
     @as_result(SyftException)
-    def send(self, context: AuthedServiceContext, notification: Notification) -> SyftSuccess:
+    def send(
+        self, context: AuthedServiceContext, notification: Notification
+    ) -> SyftSuccess:
         raise SyftException(public_message="Not implemented")
 
 
@@ -82,9 +87,10 @@ class EmailNotifier(BaseNotifier):
                 port=port,
                 username=username,
                 password=password,
-            ).unwrap()
+            )
             return True
         except Exception:
+            logger.exception("Credentials validation failed")
             return False
 
     @as_result(SyftException)
@@ -124,11 +130,12 @@ class EmailNotifier(BaseNotifier):
             )
             return SyftSuccess(message="Email sent successfully!")
         except Exception as exc:
-            raise SyftException.from_exception(exc,
+            raise SyftException.from_exception(
+                exc,
                 public_message=(
                     "Some notifications failed to be delivered."
                     " Please check the health of the mailing server."
-                )
+                ),
             )
 
 
@@ -278,7 +285,7 @@ class NotifierSettings(SyftObject):
                             password=self.email_password,
                             sender=self.email_sender,
                             server=self.email_server,
-                            port=self.email_port
+                            port=self.email_port,
                         )
                     )
                 # If notifier is not email, we just create the notifier object

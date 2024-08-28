@@ -58,4 +58,3 @@ class NotifierStash(NewBaseStash):
         return (
             super().set(credentials=credentials, obj=result).unwrap()
         )  # TODO check if result isInstance(Ok)
-
