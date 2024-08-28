@@ -430,11 +430,17 @@ class DatasiteClient(SyftClient):
                 public_message="Root verify key in migration data does not match this client's verify key"
             )
 
+        if migration_data.includes_custom_workerpools:
+            prompt_warning_message(
+                "This migration data includes custom workers, "
+                "which need to be migrated separately with `sy.upgrade_custom_workerpools` "
+                "after finishing the migration."
+            )
+
         migration_data.migrate_and_upload_blobs()
-        migration_data_without_blobs = migration_data.copy_without_blobs()
-        return self.api.services.migration.apply_migration_data(
-            migration_data_without_blobs
-        )
+
+        migration_data = migration_data.copy_without_workerpools().copy_without_blobs()
+        return self.api.services.migration.apply_migration_data(migration_data)
 
     def get_project(
         self,
