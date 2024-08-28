@@ -150,11 +150,7 @@ class NotifierService(AbstractService):
         )
 
         if not valid_credentials:
-            logging.error(
-                f"Invalid SMTP credentials:"
-                f" username={email_username}, password={email_password},"
-                f" server={email_server or notifier.email_server}, port={email_port or notifier.email_port}"
-            )
+            logging.error("Invalid SMTP credentials.")
             raise SyftException(public_message=("Invalid SMTP credentials."))
 
         notifier.email_password = email_password
