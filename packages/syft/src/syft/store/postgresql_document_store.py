@@ -1,16 +1,21 @@
 # stdlib
 from collections import defaultdict
 import logging
+from typing import Any
+from typing import Self
 
 # third party
-import psycopg2
-from psycopg2.extensions import connection
-from psycopg2.extensions import cursor
+import psycopg
+from psycopg import Connection
+from psycopg import Cursor
+from psycopg.errors import DuplicateTable
+from psycopg.errors import InFailedSqlTransaction
 from pydantic import Field
 
 # relative
 from ..serde.serializable import serializable
 from ..types.errors import SyftException
+from ..types.result import as_result
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
@@ -25,8 +30,8 @@ from .sqlite_document_store import cache_key
 from .sqlite_document_store import special_exception_public_message
 
 logger = logging.getLogger(__name__)
-_CONNECTION_POOL_DB: dict[str, connection] = {}
-_CONNECTION_POOL_CUR: dict[str, cursor] = {}
+_CONNECTION_POOL_DB: dict[str, Connection] = {}
+_CONNECTION_POOL_CUR: dict[str, Cursor] = {}
 REF_COUNTS: dict[str, int] = defaultdict(int)
 
 
@@ -38,6 +43,10 @@ class PostgreSQLStoreClientConfig(StoreClientConfig):
     password: str
     host: str
     port: int
+
+    # makes hashabel
+    class Config:
+        frozen = True
 
 
 @serializable(canonical_name="PostgreSQLStorePartition", version=1)
@@ -66,6 +75,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         self.index_name = index_name
         self.settings = settings
         self.store_config = store_config
+        self.store_config_hash = hash(store_config.client_config)
         self._ddtype = ddtype
         if self.store_config.client_config:
             self.dbname = self.store_config.client_config.dbname
@@ -73,12 +83,13 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         self.lock = SyftLock(NoLockingConfig())
         self.create_table()
         REF_COUNTS[cache_key(self.dbname)] += 1
+        self.subs_char = r"%s"  # thanks postgresql
 
     def _connect(self) -> None:
         if self.store_config.client_config:
-            connection = psycopg2.connect(
+            connection = psycopg.connect(
                 dbname=self.store_config.client_config.dbname,
-                user=self.store_config.client_config.user,
+                user=self.store_config.client_config.username,
                 password=self.store_config.client_config.password,
                 host=self.store_config.client_config.host,
                 port=self.store_config.client_config.port,
@@ -95,39 +106,57 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
                     + "sqltime TIMESTAMP NOT NULL DEFAULT NOW())"  # nosec
                 )
                 self.db.commit()
+        except DuplicateTable:
+            pass
+        except InFailedSqlTransaction:
+            self.db.rollback()
         except Exception as e:
             public_message = special_exception_public_message(self.table_name, e)
             raise SyftException.from_exception(e, public_message=public_message)
 
     @property
-    def db(self) -> connection:
+    def db(self) -> Connection:
         if cache_key(self.dbname) not in _CONNECTION_POOL_DB:
             self._connect()
         return _CONNECTION_POOL_DB[cache_key(self.dbname)]
 
     @property
-    def cur(self) -> cursor:
-        if cache_key(self.db_filename) not in _CONNECTION_POOL_CUR:
+    def cur(self) -> Cursor:
+        if cache_key(self.store_config_hash) not in _CONNECTION_POOL_CUR:
             _CONNECTION_POOL_CUR[cache_key(self.dbname)] = self.db.cursor()
 
         return _CONNECTION_POOL_CUR[cache_key(self.dbname)]
 
     def _close(self) -> None:
         self._commit()
-        REF_COUNTS[cache_key(self.db_filename)] -= 1
-        if REF_COUNTS[cache_key(self.db_filename)] <= 0:
+        REF_COUNTS[cache_key(self.store_config_hash)] -= 1
+        if REF_COUNTS[cache_key(self.store_config_hash)] <= 0:
             # once you close it seems like other object references can't re-use the
             # same connection
 
             self.db.close()
-            db_key = cache_key(self.db_filename)
+            db_key = cache_key(self.store_config_hash)
             if db_key in _CONNECTION_POOL_CUR:
                 # NOTE if we don't remove the cursor, the cursor cache_key can clash with a future thread id
                 del _CONNECTION_POOL_CUR[db_key]
-            del _CONNECTION_POOL_DB[cache_key(self.db_filename)]
+            del _CONNECTION_POOL_DB[cache_key(self.store_config_hash)]
         else:
             # don't close yet because another SQLiteBackingStore is probably still open
             pass
+
+    @as_result(SyftException)
+    def _execute(self, sql: str, args: list[Any] | None) -> psycopg.Cursor:
+        with self.lock:
+            cursor: psycopg.Cursor | None = None
+            try:
+                cursor = self.cur.execute(sql, args)
+            except InFailedSqlTransaction:
+                self.db.rollback()
+            except Exception as e:
+                public_message = special_exception_public_message(self.table_name, e)
+                raise SyftException.from_exception(e, public_message=public_message)
+            self.db.commit()  # Commit if everything went ok
+            return cursor
 
 
 @serializable()
@@ -138,3 +167,15 @@ class PostgreSQLStoreConfig(StoreConfig):
     store_type: type[DocumentStore] = PostgreSQLDocumentStore
     backing_store: type[KeyValueBackingStore] = PostgreSQLBackingStore
     locking_config: LockingConfig = Field(default_factory=NoLockingConfig)
+
+    @classmethod
+    def from_dict(cls, client_config_dict: dict) -> Self:
+        postgresql_client_config = PostgreSQLStoreClientConfig(
+            dbname=client_config_dict["POSTGRESQL_DBNAME"],
+            host=client_config_dict["POSTGRESQL_HOST"],
+            port=client_config_dict["POSTGRESQL_PORT"],
+            username=client_config_dict["POSTGRESQL_USERNAME"],
+            password=client_config_dict["POSTGRESQL_PASSWORD"],
+        )
+
+        return PostgreSQLStoreConfig(client_config=postgresql_client_config)

@@ -114,6 +114,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.lock = SyftLock(NoLockingConfig())
         self.create_table()
         REF_COUNTS[cache_key(self.db_filename)] += 1
+        self.subs_char = r"?"
 
     @property
     def table_name(self) -> str:
@@ -134,7 +135,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             connection = sqlite3.connect(
                 self.file_path,
                 timeout=self.store_config.client_config.timeout,
-                check_same_thread=False,  # do we need this if we use the lock?
+                check_same_thread=False,  # do we need this if we use the lock
                 # check_same_thread=self.store_config.client_config.check_same_thread,
             )
             # Set journal mode to WAL.
@@ -192,17 +193,17 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.db.commit()
 
     @as_result(SyftException)
-    def _execute(self, sql: str, *args: list[Any] | None) -> sqlite3.Cursor:
+    def _execute(self, sql: str, args: list[Any] | None) -> sqlite3.Cursor:
         with self.lock:
             cursor: sqlite3.Cursor | None = None
             # err = None
             try:
-                cursor = self.cur.execute(sql, *args)
+                cursor = self.cur.execute(sql, args)
             except Exception as e:
                 public_message = special_exception_public_message(self.table_name, e)
                 raise SyftException.from_exception(e, public_message=public_message)
 
-            # TODO: Which exception is safe to rollback on?
+            # TODO: Which exception is safe to rollback on
             # we should map out some more clear exceptions that can be returned
             # rather than halting the program like disk I/O error etc
             # self.db.rollback()  # Roll back all changes if an exception occurs.
@@ -215,22 +216,28 @@ class SQLiteBackingStore(KeyValueBackingStore):
             self._update(key, value)
         else:
             insert_sql = (
-                f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
-            )
+                f"insert into {self.table_name} (uid, repr, value) VALUES "
+                f"({self.subs_char}, {self.subs_char}, {self.subs_char})"
+            )  # nosec
             data = _serialize(value, to_bytes=True)
             self._execute(insert_sql, [str(key), _repr_debug_(value), data]).unwrap()
 
     def _update(self, key: UID, value: Any) -> None:
         insert_sql = (
-            f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
-        )
+            f"update {self.table_name} set uid = {self.subs_char}, "
+            f"repr = {self.subs_char}, value = {self.subs_char} "
+            f"where uid = {self.subs_char}"
+        )  # nosec
         data = _serialize(value, to_bytes=True)
         self._execute(
             insert_sql, [str(key), _repr_debug_(value), data, str(key)]
         ).unwrap()
 
     def _get(self, key: UID) -> Any:
-        select_sql = f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
+        select_sql = (
+            f"select * from {self.table_name} where uid = {self.subs_char} "
+            "order by sqltime"
+        )  # nosec
         cursor = self._execute(select_sql, [str(key)]).unwrap(
             public_message=f"Query {select_sql} failed"
         )
@@ -241,13 +248,11 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return _deserialize(data, from_bytes=True)
 
     def _exists(self, key: UID) -> bool:
-        select_sql = f"select uid from {self.table_name} where uid = ?"  # nosec
-
+        select_sql = f"select uid from {self.table_name} where uid = {self.subs_char}"  # nosec
         res = self._execute(select_sql, [str(key)])
         if res.is_err():
             return False
         cursor = res.ok()
-
         row = cursor.fetchone()  # type: ignore
         if row is None:
             return False
@@ -259,7 +264,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         keys = []
         data = []
 
-        res = self._execute(select_sql)
+        res = self._execute(select_sql, [])
         if res.is_err():
             return {}
         cursor = res.ok()
@@ -276,7 +281,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _get_all_keys(self) -> Any:
         select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
 
-        res = self._execute(select_sql)
+        res = self._execute(select_sql, [])
         if res.is_err():
             return []
         cursor = res.ok()
@@ -289,16 +294,16 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return keys
 
     def _delete(self, key: UID) -> None:
-        select_sql = f"delete from {self.table_name} where uid = ?"  # nosec
+        select_sql = f"delete from {self.table_name} where uid = {self.subs_char}"  # nosec
         self._execute(select_sql, [str(key)]).unwrap()
 
     def _delete_all(self) -> None:
         select_sql = f"delete from {self.table_name}"  # nosec
-        self._execute(select_sql).unwrap()
+        self._execute(select_sql, []).unwrap()
 
     def _len(self) -> int:
         select_sql = f"select count(uid) from {self.table_name}"  # nosec
-        cursor = self._execute(select_sql).unwrap()
+        cursor = self._execute(select_sql, []).unwrap()
         cnt = cursor.fetchone()[0]
         return cnt
 
@@ -369,7 +374,7 @@ class SQLiteStorePartition(KeyValueStorePartition):
     def close(self) -> None:
         self.lock.acquire()
         try:
-            # I think we don't want these now, because of the REF_COUNT?
+            # I think we don't want these now, because of the REF_COUNT
             # self.data._close()
             # self.unique_keys._close()
             # self.searchable_keys._close()

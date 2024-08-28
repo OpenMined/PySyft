@@ -1,6 +1,7 @@
 # stdlib
 from collections.abc import Callable
 from contextlib import asynccontextmanager
+import json
 import logging
 import multiprocessing
 import multiprocessing.synchronize
@@ -170,6 +171,8 @@ def run_uvicorn(
     env_prefix = AppSettings.model_config.get("env_prefix", "")
     for key, value in kwargs.items():
         key_with_prefix = f"{env_prefix}{key.upper()}"
+        if isinstance(value, dict):
+            value = json.dumps(value)
         os.environ[key_with_prefix] = str(value)
 
     # The `serve_server` function calls `run_uvicorn` in a separate process using `multiprocessing.Process`.
@@ -213,6 +216,7 @@ def serve_server(
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
     debug: bool = False,
+    store_client_config: dict | None = None,
 ) -> tuple[Callable, Callable]:
     starting_uvicorn_event = multiprocessing.Event()
 
@@ -240,6 +244,7 @@ def serve_server(
             "background_tasks": background_tasks,
             "debug": debug,
             "starting_uvicorn_event": starting_uvicorn_event,
+            "store_client_config": store_client_config,
         },
     )
 

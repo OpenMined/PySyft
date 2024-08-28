@@ -1157,6 +1157,13 @@
           "hash": "8d2dfafa01ec909c080a790cf15a8fc78e00382d3bfe6207098ceb25a60b9c53",
           "action": "add"
         }
+      },
+      "PostgreSQLStorePartition": {
+        "1": {
+          "version": 1,
+          "hash": "1a807dcf54f969c53e6f46d62443d4dd83e5f6ff47fb4e9f6381c3374601c818",
+          "action": "add"
+        }
       }
     }
   }

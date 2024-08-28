@@ -296,6 +296,23 @@ class AuthServerContextRegistry:
         return cls.__server_context_registry__.get(key)
 
 
+def get_external_storage_config(
+    store_client_config: dict | None = None,
+) -> PostgreSQLStoreConfig | None:
+    if not store_client_config:
+        store_client_config_json = os.environ.get("SYFT_STORE_CLIENT_CONFIG", "{}")
+        store_client_config = json.loads(store_client_config_json)
+
+    if (
+        store_client_config
+        and "TYPE" in store_client_config
+        and store_client_config["TYPE"] == "PostgreSQLStoreConfig"
+    ):
+        return PostgreSQLStoreConfig.from_dict(store_client_config)
+
+    return None
+
+
 @instrument
 class Server(AbstractServer):
     signing_key: SyftSigningKey | None
@@ -336,6 +353,7 @@ class Server(AbstractServer):
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        store_client_config: dict | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -383,15 +401,21 @@ class Server(AbstractServer):
         if reset:
             self.remove_temp_dir()
 
-        use_sqlite = local_db or (processes > 0 and not is_subprocess)
-        document_store_config = document_store_config or self.get_default_store(
-            use_sqlite=use_sqlite,
-            store_type="Document Store",
-        )
-        action_store_config = action_store_config or self.get_default_store(
-            use_sqlite=use_sqlite,
-            store_type="Action Store",
-        )
+        # get from python constructors or env variables
+        external_config = get_external_storage_config(store_client_config)
+        if external_config:
+            document_store_config = external_config
+            action_store_config = external_config
+        else:
+            use_sqlite = local_db or (processes > 0 and not is_subprocess)
+            document_store_config = document_store_config or self.get_default_store(
+                use_sqlite=use_sqlite,
+                store_type="Document Store",
+            )
+            action_store_config = action_store_config or self.get_default_store(
+                use_sqlite=use_sqlite,
+                store_type="Action Store",
+            )
         self.init_stores(
             action_store_config=action_store_config,
             document_store_config=document_store_config,
@@ -683,6 +707,7 @@ class Server(AbstractServer):
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        store_client_config: dict | None = None,
     ) -> Server:
         uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -712,6 +737,7 @@ class Server(AbstractServer):
             reset=reset,
             association_request_auto_approval=association_request_auto_approval,
             background_tasks=background_tasks,
+            store_client_config=store_client_config,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:

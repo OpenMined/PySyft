@@ -186,6 +186,7 @@ def deploy_to_python(
     background_tasks: bool = False,
     debug: bool = False,
     migrate: bool = False,
+    store_client_config: dict | None = None,
 ) -> ServerHandle:
     worker_classes = {
         ServerType.DATASITE: Datasite,
@@ -215,6 +216,7 @@ def deploy_to_python(
         "background_tasks": background_tasks,
         "debug": debug,
         "migrate": migrate,
+        "store_client_config": store_client_config,
     }
 
     if port:
@@ -325,6 +327,7 @@ class Orchestra:
         background_tasks: bool = False,
         debug: bool = False,
         migrate: bool = False,
+        store_client_config: dict | None = None,
     ) -> ServerHandle:
         if dev_mode is True:
             thread_workers = True
@@ -363,6 +366,7 @@ class Orchestra:
                 background_tasks=background_tasks,
                 debug=debug,
                 migrate=migrate,
+                store_client_config=store_client_config,
             )
             display(
                 SyftInfo(
