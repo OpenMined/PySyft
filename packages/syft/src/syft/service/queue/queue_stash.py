@@ -177,4 +177,4 @@ class QueueStash(NewBaseStash):
         self, credentials: SyftVerifyKey, worker_pool: LinkedObject
     ) -> list[QueueItem]:
         qks = QueryKeys(qks=_WorkerPoolPartitionKey.with_obj(worker_pool))
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(credentials=credentials, qks=qks).unwrap()
