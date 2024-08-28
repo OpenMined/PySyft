@@ -16,7 +16,6 @@ from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util.markdown import as_markdown_python_code
-from ..response import SyftError
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
@@ -35,13 +34,7 @@ class DataSubject(SyftObject):
     @property
     def members(self) -> list:
         # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
-        if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
-        members = api.services.data_subject.members_for(self.name)
-        return members
+        return self.get_api().services.data_subject.members_for(self.name)
 
     __attr_searchable__ = ["name", "description"]
     __repr_attrs__ = ["name", "description"]

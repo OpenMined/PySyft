@@ -4,7 +4,6 @@ from threading import Thread
 
 # third party
 import pytest
-from result import Err
 
 # syft absolute
 from syft.server.credentials import SyftVerifyKey
@@ -21,6 +20,7 @@ from syft.store.document_store import QueryKeys
 from syft.store.mongo_client import MongoStoreClientConfig
 from syft.store.mongo_document_store import MongoStoreConfig
 from syft.store.mongo_document_store import MongoStorePartition
+from syft.types.errors import SyftException
 from syft.types.uid import UID
 
 # relative
@@ -661,12 +661,14 @@ def test_mongo_store_partition_add_remove_permission(
     }
 
     # remove a non-existent permission
-    remove_res = mongo_store_partition.remove_permission(
-        ActionObjectPermission(
-            uid=obj.id, permission=ActionPermission.OWNER, credentials=root_verify_key
+    with pytest.raises(SyftException):
+        mongo_store_partition.remove_permission(
+            ActionObjectPermission(
+                uid=obj.id,
+                permission=ActionPermission.OWNER,
+                credentials=root_verify_key,
+            )
         )
-    )
-    assert isinstance(remove_res, Err)
     find_res_5 = permissions_collection.find_one({"_id": obj.id})
     assert len(find_res_5["permissions"]) == 1
     assert find_res_1["permissions"] == {
@@ -841,7 +843,9 @@ def test_mongo_store_partition_take_ownership(
     obj = MockSyftObject(data=1)
 
     # the guest client takes ownership of obj
-    mongo_store_partition.take_ownership(uid=obj.id, credentials=guest_verify_key)
+    mongo_store_partition.take_ownership(
+        uid=obj.id, credentials=guest_verify_key
+    ).unwrap()
     assert mongo_store_partition.has_permission(
         permission(uid=obj.id, credentials=guest_verify_key)
     )
@@ -862,7 +866,11 @@ def test_mongo_store_partition_take_ownership(
     )
     assert res.is_err()
     assert res_2.is_err()
-    assert res.value == res_2.value == f"UID: {obj.id} already owned."
+    assert (
+        res.value.public_message
+        == res_2.value.public_message
+        == f"UID: {obj.id} already owned."
+    )
 
     # another object
     obj_2 = MockSyftObject(data=2)

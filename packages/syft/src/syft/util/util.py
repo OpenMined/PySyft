@@ -38,6 +38,7 @@ import time
 import types
 from types import ModuleType
 from typing import Any
+from unittest.mock import Mock
 
 # third party
 from IPython.display import display
@@ -46,8 +47,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import nh3
 import requests
-from result import Err
-from result import Ok
 
 # relative
 from ..serde.serialize import _serialize as serialize
@@ -161,15 +160,15 @@ def get_mb_size(data: Any, handlers: dict | None = None) -> float:
     return sizeof(data) / (1024.0 * 1024.0)
 
 
-def get_mb_serialized_size(data: Any) -> Ok[float] | Err[str]:
+def get_mb_serialized_size(data: Any) -> float:
     try:
         serialized_data = serialize(data, to_bytes=True)
-        return Ok(sys.getsizeof(serialized_data) / (1024 * 1024))
+        return sys.getsizeof(serialized_data) / (1024 * 1024)
     except Exception as e:
         data_type = type(data)
-        return Err(
-            f"Failed to serialize data of type '{data_type.__module__}.{data_type.__name__}'. "
-            f"Data type not supported. Detailed error: {e}"
+        raise TypeError(
+            f"Failed to serialize data of type '{data_type.__module__}.{data_type.__name__}'."
+            f" Data type not supported. Detailed error: {e}"
         )
 
 
@@ -1002,9 +1001,9 @@ def generate_token() -> str:
     return secrets.token_hex(64)
 
 
-def sanitize_html(html: str) -> str:
+def sanitize_html(html_str: str) -> str:
     policy = {
-        "tags": ["svg", "strong", "rect", "path", "circle"],
+        "tags": ["svg", "strong", "rect", "path", "circle", "code", "pre"],
         "attributes": {
             "*": {"class", "style"},
             "svg": {
@@ -1033,7 +1032,7 @@ def sanitize_html(html: str) -> str:
     attributes = {**_attributes, **policy["attributes"]}  # type: ignore
 
     return nh3.clean(
-        html,
+        html_str,
         tags=tags,
         clean_content_tags=policy["remove"],
         attributes=attributes,
@@ -1145,3 +1144,47 @@ def repr_truncation(obj: Any, max_elements: int = 10) -> str:
     r.maxother = 100  # For other objects
 
     return r.repr(obj)
+
+
+class MockBigQueryError(Exception):
+    def __init__(self, errors: list) -> None:
+        self._errors = errors
+        super().__init__(self._errors[0]["message"])
+
+
+class MockBigQueryClient:
+    def __init__(self, credentials: dict, location: str | None = None) -> None:
+        self.credentials = credentials
+        self.location = location
+
+    def query_and_wait(self, sql_query: str, project: str | None = None) -> Mock | None:
+        if self.credentials["mock_result"] == "timeout":
+            raise TimeoutError("Simulated query timeout.")
+
+        if self.credentials["mock_result"] == "success":
+            # Simulate a successful response
+            rows = Mock()
+            rows.total_rows = 1  # or any number within acceptable limits
+            rows.to_dataframe = Mock(return_value="Simulated DataFrame")
+            return rows
+
+        if self.credentials["mock_result"] == "bigquery_error":
+            errors = [
+                {
+                    "reason": "Simulated BigQuery error.",
+                    "message": "Simulated BigQuery error.",
+                }
+            ]
+            raise MockBigQueryError(errors)
+
+        raise Exception("Simulated non-BigQuery exception.")
+
+
+class MockBigQuery:
+    @staticmethod
+    def mock_credentials(mock_result: str = "success") -> dict:
+        return {"mocked": "credentials", "mock_result": mock_result}
+
+    @staticmethod
+    def Client(credentials: dict, location: str | None = None) -> MockBigQueryClient:
+        return MockBigQueryClient(credentials, location)
