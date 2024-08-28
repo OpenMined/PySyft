@@ -1,21 +1,36 @@
+# stdlib
+from collections.abc import Callable
+
 # syft absolute
 import syft as sy
+from syft import test_settings
 
 # relative
-from .helpers import is_within_rate_limit
+from ..rate_limiter import is_within_rate_limit
 
 
-def make_schema(settings, worker_pool):
+def make_schema(settings: dict, worker_pool: str) -> Callable:
+    updated_settings = {
+        "calls_per_min": 5,
+        "rate_limiter_enabled": True,
+        "credentials": test_settings.gce_service_account.to_dict(),
+        "region": test_settings.gce_region,
+        "project_id": test_settings.gce_project_id,
+        "dataset_1": test_settings.dataset_1,
+        "table_1": test_settings.table_1,
+        "table_2": test_settings.table_2,
+    } | settings
+
     @sy.api_endpoint(
         path="bigquery.schema",
         description="This endpoint allows for visualising the metadata of tables available in BigQuery.",
-        settings=settings,
+        settings=updated_settings,
         helper_functions=[
             is_within_rate_limit
         ],  # Adds ratelimit as this is also a method available to data scientists
         worker_pool=worker_pool,
     )
-    def schema(
+    def live_schema(
         context,
     ) -> str:
         # stdlib
@@ -42,17 +57,18 @@ def make_schema(settings, worker_pool):
             location=context.settings["region"],
         )
 
-        if context.user.email not in context.state.keys():
-            context.state[context.user.email] = []
+        # Store a dict with the calltimes for each user, via the email.
+        if context.settings["rate_limiter_enabled"]:
+            if context.user.email not in context.state.keys():
+                context.state[context.user.email] = []
 
-        if not context.code.is_within_rate_limit(context):
-            raise SyftException(
-                public_message="Rate limit of calls per minute has been reached."
-            )
-
-        try:
+            if not context.code.is_within_rate_limit(context):
+                raise SyftException(
+                    public_message="Rate limit of calls per minute has been reached."
+                )
             context.state[context.user.email].append(datetime.datetime.now())
 
+        try:
             # Formats the data schema in a data frame format
             # Warning: the only supported format types are primitives, np.ndarrays and pd.DataFrames
 
@@ -89,4 +105,4 @@ def make_schema(settings, worker_pool):
                 public_message="An error occured executing the API call, please contact the domain owner."
             )
 
-    return schema
+    return live_schema

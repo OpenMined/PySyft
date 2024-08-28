@@ -1,4 +1,4 @@
-def is_within_rate_limit(context):
+def is_within_rate_limit(context) -> bool:
     """Rate limiter for custom API calls made by users."""
     # stdlib
     import datetime
@@ -13,4 +13,4 @@ def is_within_rate_limit(context):
         for call_time in state[email]
     ]
 
-    return sum(calls_last_min) < settings["CALLS_PER_MIN"]
+    return sum(calls_last_min) < settings.get("calls_per_min", 5)
