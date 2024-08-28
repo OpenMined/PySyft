@@ -4,6 +4,7 @@ from typing import NoReturn
 # third party
 import pytest
 from pytest import MonkeyPatch
+from tests.syft.utils.smtp_mock import MockSMTP
 
 # syft absolute
 from syft.server.credentials import SyftSigningKey
@@ -734,3 +735,44 @@ def test_clear_error_on_delete_all_for_verify_key(
     assert exc.type is StashException
     assert exc.value.public_message == expected_error
     assert len(inbox_after_delete) == 1
+
+
+def test_send_email(worker, monkeypatch, mock_create_notification, authed_context):
+    # stdlib
+    import smtplib
+
+    monkeypatch.setattr(smtplib, "SMTP", MockSMTP)
+
+    root_client = worker.root_client
+
+    root_client.settings.enable_notifications(
+        email_sender="someone@example.com",
+        email_port="2525",
+        email_server="localhost",
+        email_username="someuser",
+        email_password="password",
+    )
+
+    mock_create_notification.to(Notification, authed_context)
+    root_client.notifications.send(mock_create_notification)
+
+    assert len(mock_smtp.sent_mail) == 1
+
+    test_signing_key1 = SyftSigningKey.generate()
+    test_verify_key1 = test_signing_key1.verify_key
+    test_signing_key2 = SyftSigningKey.generate()
+    test_verify_key2 = test_signing_key2.verify_key
+
+    mock_notification = CreateNotification(
+        subject="mock_created_notification new",
+        id=UID(),
+        server_uid=UID(),
+        from_user_verify_key=test_verify_key1,
+        to_user_verify_key=test_verify_key2,
+        created_at=DateTime.now(),
+    )
+
+    root_client.settings.disable_notifications()
+    root_client.notifications.send(mock_notification)
+
+    assert len(mock_smtp.sent_mail) == 1
