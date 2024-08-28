@@ -195,16 +195,31 @@ class raises:
         pass
 
     def __exit__(self, exc_type, exc_value, traceback):  # type: ignore
+        message = None
+        expected_exception_type = self.expected_exception
+        if not isinstance(expected_exception_type, type):
+            expected_exception_type = type(self.expected_exception)
+            if hasattr(self.expected_exception, "public_message"):
+                message = self.expected_exception.public_message.replace("*", "")
+
         # After block of code
         if exc_type is None:
             raise AssertionError(
-                f"Expected {self.expected_exception} to be raised, but no exception was raised."
+                f"Expected {self.expected_exception} to be raised, "
+                "but no exception was raised."
             )
-        if not issubclass(exc_type, self.expected_exception):
+        if not issubclass(exc_type, expected_exception_type):
             raise AssertionError(
-                f"Expected {self.expected_exception} to be raised, but got {exc_type}."
+                f"Expected {expected_exception_type} to be raised, but got {exc_type}."
+            )
+        if message and message not in exc_value.public_message:
+            raise AssertionError(
+                f"Expected {expected_exception_type} to be raised, "
+                f"did not contain {message}."
             )
         if self.show:
+            # keep this print!
+            print("with sy.raises successfully caught the following exception:")
             if hasattr(exc_value, "_repr_html_"):
                 display(HTML(exc_value._repr_html_()))
             else:

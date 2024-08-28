@@ -12,6 +12,7 @@ from copy import deepcopy
 from datetime import datetime
 import functools
 import hashlib
+import inspect
 from itertools import chain
 from itertools import repeat
 import json
@@ -1068,6 +1069,19 @@ def get_latest_tag(registry: str, repo: str) -> str | None:
     return None
 
 
+def get_caller_file_path() -> str | None:
+    stack = inspect.stack()
+
+    for frame_info in stack:
+        code_context = frame_info.code_context
+        if code_context and len(code_context) > 0:
+            if "from syft import test_settings" in str(frame_info.code_context):
+                caller_file_path = os.path.dirname(os.path.abspath(frame_info.filename))
+                return caller_file_path
+
+    return None
+
+
 def find_base_dir_with_tox_ini(start_path: str = ".") -> str | None:
     base_path = os.path.abspath(start_path)
     while True:
@@ -1099,8 +1113,19 @@ def test_settings() -> Any:
     # third party
     from dynaconf import Dynaconf
 
-    base_dir = find_base_dir_with_tox_ini()
-    config_files = get_all_config_files(base_dir, ".") if base_dir else []
+    config_files = []
+    current_path = "."
+
+    # jupyter uses "." which resolves to the notebook
+    if not is_interpreter_jupyter():
+        # python uses the file which has from syft import test_settings in it
+        import_path = get_caller_file_path()
+        if import_path:
+            current_path = import_path
+
+    base_dir = find_base_dir_with_tox_ini(current_path)
+    config_files = get_all_config_files(base_dir, current_path)
+    config_files = list(reversed(config_files))
     # create
     # can override with
     # import os
@@ -1109,7 +1134,7 @@ def test_settings() -> Any:
 
     # Dynaconf settings
     test_settings = Dynaconf(
-        settings_files=list(reversed(config_files)),
+        settings_files=config_files,
         environments=True,
         envvar_prefix="TEST",
     )
