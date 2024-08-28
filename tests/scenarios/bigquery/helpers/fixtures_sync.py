@@ -3,8 +3,8 @@ from typing import Any
 
 # third party
 from faker import Faker
+from helpers.users import TestUser
 import pandas as pd
-from users import TestUser
 
 # syft absolute
 import syft as sy

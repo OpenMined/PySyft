@@ -3,34 +3,34 @@ import asyncio
 import inspect
 
 # third party
-from asserts import ensure_package_installed
-from events import EVENT_ADMIN_APPROVED_FIRST_REQUEST
-from events import EVENT_ALLOW_GUEST_SIGNUP_DISABLED
-from events import EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED
-from events import EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED
-from events import EVENT_QUERY_ENDPOINT_CONFIGURED
-from events import EVENT_QUERY_ENDPOINT_CREATED
-from events import EVENT_SCHEMA_ENDPOINT_CREATED
-from events import EVENT_SUBMIT_QUERY_ENDPOINT_CONFIGURED
-from events import EVENT_SUBMIT_QUERY_ENDPOINT_CREATED
-from events import EVENT_USERS_CAN_GET_APPROVED_RESULT
-from events import EVENT_USERS_CAN_QUERY_MOCK
-from events import EVENT_USERS_CAN_SUBMIT_QUERY
-from events import EVENT_USERS_CREATED
-from events import EVENT_USERS_CREATED_CHECKED
-from events import EVENT_USERS_QUERY_NOT_READY
-from events import EVENT_USER_ADMIN_CREATED
-from events import EVENT_WORKER_POOL_CREATED
-from events import EventManager
-from events import Scenario
 from faker import Faker
-from fixtures_sync import make_admin
-from fixtures_sync import make_server
-from fixtures_sync import make_user
-from make import create_endpoints_query
-from make import create_endpoints_schema
-from make import create_endpoints_submit_query
-from make import create_users
+from helpers.asserts import ensure_package_installed
+from helpers.events import EVENT_ADMIN_APPROVED_FIRST_REQUEST
+from helpers.events import EVENT_ALLOW_GUEST_SIGNUP_DISABLED
+from helpers.events import EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED
+from helpers.events import EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED
+from helpers.events import EVENT_QUERY_ENDPOINT_CONFIGURED
+from helpers.events import EVENT_QUERY_ENDPOINT_CREATED
+from helpers.events import EVENT_SCHEMA_ENDPOINT_CREATED
+from helpers.events import EVENT_SUBMIT_QUERY_ENDPOINT_CONFIGURED
+from helpers.events import EVENT_SUBMIT_QUERY_ENDPOINT_CREATED
+from helpers.events import EVENT_USERS_CAN_GET_APPROVED_RESULT
+from helpers.events import EVENT_USERS_CAN_QUERY_MOCK
+from helpers.events import EVENT_USERS_CAN_SUBMIT_QUERY
+from helpers.events import EVENT_USERS_CREATED
+from helpers.events import EVENT_USERS_CREATED_CHECKED
+from helpers.events import EVENT_USERS_QUERY_NOT_READY
+from helpers.events import EVENT_USER_ADMIN_CREATED
+from helpers.events import EVENT_WORKER_POOL_CREATED
+from helpers.events import EventManager
+from helpers.events import Scenario
+from helpers.fixtures_sync import make_admin
+from helpers.fixtures_sync import make_server
+from helpers.fixtures_sync import make_user
+from helpers.make import create_endpoints_query
+from helpers.make import create_endpoints_schema
+from helpers.make import create_endpoints_submit_query
+from helpers.make import create_users
 import pytest
 from unsync import unsync
 

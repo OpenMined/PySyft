@@ -1,5 +1,5 @@
 # third party
-from fixtures_sync import create_user
+from helpers.fixtures_sync import create_user
 from unsync import unsync
 
 # syft absolute
