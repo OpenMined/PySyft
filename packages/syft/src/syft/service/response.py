@@ -107,6 +107,13 @@ class SyftError(SyftResponseMessage):
         return False
 
     @classmethod
+    def from_public_exception(
+        cls,
+        exc: Exception,
+    ) -> Self:
+        return cls(message=exc.public_message)
+
+    @classmethod
     def from_exception(
         cls,
         context: "AuthedServiceContext",
