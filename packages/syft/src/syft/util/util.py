@@ -39,6 +39,7 @@ import time
 import types
 from types import ModuleType
 from typing import Any
+from unittest.mock import Mock
 
 # third party
 from IPython.display import display
@@ -1168,3 +1169,47 @@ def repr_truncation(obj: Any, max_elements: int = 10) -> str:
     r.maxother = 100  # For other objects
 
     return r.repr(obj)
+
+
+class MockBigQueryError(Exception):
+    def __init__(self, errors: list) -> None:
+        self._errors = errors
+        super().__init__(self._errors[0]["message"])
+
+
+class MockBigQueryClient:
+    def __init__(self, credentials: dict, location: str | None = None) -> None:
+        self.credentials = credentials
+        self.location = location
+
+    def query_and_wait(self, sql_query: str, project: str | None = None) -> Mock | None:
+        if self.credentials["mock_result"] == "timeout":
+            raise TimeoutError("Simulated query timeout.")
+
+        if self.credentials["mock_result"] == "success":
+            # Simulate a successful response
+            rows = Mock()
+            rows.total_rows = 1  # or any number within acceptable limits
+            rows.to_dataframe = Mock(return_value="Simulated DataFrame")
+            return rows
+
+        if self.credentials["mock_result"] == "bigquery_error":
+            errors = [
+                {
+                    "reason": "Simulated BigQuery error.",
+                    "message": "Simulated BigQuery error.",
+                }
+            ]
+            raise MockBigQueryError(errors)
+
+        raise Exception("Simulated non-BigQuery exception.")
+
+
+class MockBigQuery:
+    @staticmethod
+    def mock_credentials(mock_result: str = "success") -> dict:
+        return {"mocked": "credentials", "mock_result": mock_result}
+
+    @staticmethod
+    def Client(credentials: dict, location: str | None = None) -> MockBigQueryClient:
+        return MockBigQueryClient(credentials, location)
