@@ -268,7 +268,6 @@ jobs:
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
-          TEST_NOTEBOOK_PATHS: "${{ matrix.notebook-paths }}"
           BUMP_VERSION: "${{ matrix.bump-version }}"
         with:
           timeout_seconds: 2400
