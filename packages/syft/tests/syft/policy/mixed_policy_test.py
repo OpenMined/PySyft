@@ -11,16 +11,16 @@ from syft.service.response import SyftSuccess
 
 
 @sy.api_endpoint_method()
-def private_query_function(query_str: str) -> str:
+def private_query_function(context, query_str: str) -> str:
     return query_str
 
 
 @sy.api_endpoint_method()
-def mock_query_function(query_str: str) -> str:
+def mock_query_function(context, query_str: str) -> str:
     return query_str
 
 
-def test_constant(worker, ds_client) -> None:
+def test_constant(worker) -> None:
     root_client = worker.root_client
     new_endpoint = sy.TwinAPIEndpoint(
         path="test.test_query",
@@ -29,7 +29,7 @@ def test_constant(worker, ds_client) -> None:
         mock_function=mock_query_function,
     )
 
-    res = root_client.custom_api.add(endpoint=new_endpoint)
+    res = root_client.api.services.api.add(endpoint=new_endpoint)
 
     assert isinstance(res, SyftSuccess)
 
