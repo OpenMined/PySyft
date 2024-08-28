@@ -41,7 +41,7 @@ class SyncStash(ObjectStash[SyncState]):
             credentials=credentials,
             sort_order="desc",
             limit=1,
-        )
+        ).unwrap()
 
         if len(states) > 0:
             return states[0]

@@ -367,9 +367,8 @@ class UserService(AbstractService):
             # they could be different
             # TODO: This fn is cryptic -- when does each situation occur?
             if isinstance(credentials, SyftVerifyKey):
-                user = self.stash.get_by_verify_key(
-                    credentials=credentials, verify_key=credentials
-                ).unwrap()
+                role = self.stash.get_role(credentials=credentials)
+                return role
             elif isinstance(credentials, SyftSigningKey):
                 user = self.stash.get_by_signing_key(
                     credentials=credentials,
