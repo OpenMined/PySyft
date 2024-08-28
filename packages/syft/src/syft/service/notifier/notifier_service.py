@@ -114,11 +114,8 @@ class NotifierService(AbstractService):
         notifier = self.stash.get(credentials=context.credentials).unwrap()
 
         # 2 - If one of the credentials are set alone, return an error
-        if (
-            email_username
-            and not email_password
-            or email_password
-            and not email_username
+        if (email_username and not email_password) or (
+            not email_username and email_password
         ):
             raise SyftException(
                 public_message="You must provide both username and password"
@@ -155,7 +152,9 @@ class NotifierService(AbstractService):
         )
 
         if not valid_credentials:
-            logging.error(f"Invalid SMTP credentials: username={email_username}, password={email_password}, server={mail_server}, port={mail_port}")
+            logging.error(
+                f"Invalid SMTP credentials: username={email_username}, password={email_password}, server={mail_server}, port={mail_port}"
+            )
             raise SyftException(
                 public_message="Invalid SMTP credentials. Please check your username and password.",
             )
