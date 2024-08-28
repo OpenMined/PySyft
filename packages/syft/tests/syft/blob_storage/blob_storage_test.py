@@ -20,6 +20,7 @@ from syft.service.user.user import UserCreate
 from syft.store.blob_storage import BlobDeposit
 from syft.store.blob_storage import SyftObjectRetrieval
 from syft.types.blob_storage import CreateBlobStorageEntry
+from syft.types.errors import SyftException
 
 raw_data = {"test": "test"}
 data = sy.serialize(raw_data, to_bytes=True)
@@ -52,7 +53,7 @@ def test_blob_storage_write():
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     file_data = io.BytesIO(data)
-    written_data = blob_deposit.write(file_data)
+    written_data = blob_deposit.write(file_data).unwrap()
 
     assert isinstance(written_data, SyftSuccess)
 
@@ -71,7 +72,7 @@ def test_blob_storage_write_syft_object():
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     user = UserCreate(email="info@openmined.org", name="Jana Doe", password="password")
     file_data = io.BytesIO(sy.serialize(user, to_bytes=True))
-    written_data = blob_deposit.write(file_data)
+    written_data = blob_deposit.write(file_data).unwrap()
 
     assert isinstance(written_data, SyftSuccess)
     worker.cleanup()
@@ -88,7 +89,7 @@ def test_blob_storage_read():
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
     file_data = io.BytesIO(data)
-    blob_deposit.write(file_data)
+    blob_deposit.write(file_data).unwrap()
 
     syft_retrieved_data = blob_storage.read(
         authed_context, blob_deposit.blob_storage_entry_id
@@ -102,9 +103,21 @@ def test_blob_storage_read():
 def test_blob_storage_delete(authed_context, blob_storage):
     blob_data = CreateBlobStorageEntry.from_obj(data)
     blob_deposit = blob_storage.allocate(authed_context, blob_data)
-    blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
 
-    with pytest.raises(FileNotFoundError):
+    assert isinstance(blob_deposit, BlobDeposit)
+
+    file_data = io.BytesIO(data)
+    written_data = blob_deposit.write(file_data).unwrap()
+    assert type(written_data) is SyftSuccess
+
+    item = blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
+    assert isinstance(item, SyftObjectRetrieval)
+    assert item.read() == raw_data
+
+    del_type = blob_storage.delete(authed_context, blob_deposit.blob_storage_entry_id)
+    assert type(del_type) is SyftSuccess
+
+    with pytest.raises(SyftException):
         blob_storage.read(authed_context, blob_deposit.blob_storage_entry_id)
 
 
@@ -122,7 +135,7 @@ def test_action_obj_send_save_to_blob_storage(worker):
     rng = np.random.default_rng()
     data_big = rng.integers(0, 100, size=num_elements)  # 4 bytes per int32
     action_obj_2 = ActionObject.from_obj(data_big)
-    assert can_upload_to_blob_storage(action_obj_2, root_client.api.metadata)
+    assert can_upload_to_blob_storage(action_obj_2, root_client.api.metadata).unwrap()
     action_obj_2.send(root_client)
     assert isinstance(action_obj_2.syft_blob_storage_entry_id, sy.UID)
     # get back the object from blob storage to check if it is the same

@@ -24,12 +24,12 @@ from rich.panel import Panel
 from typing_extensions import Self
 
 # relative
-from ...client.api import APIRegistry
 from ...client.client import SyftClient
 from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...server.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
@@ -53,7 +53,6 @@ from ..log.log import SyftLog
 from ..output.output_service import ExecutionOutput
 from ..policy.policy import Constant
 from ..request.request import Request
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
 from .sync_state import SyncState
@@ -465,7 +464,7 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
     def _repr_html_(self) -> str:
         if self.low_obj is None and self.high_obj is None:
-            return SyftError(message="Something broke")
+            raise SyftException(public_message="Something broke")
 
         base_str = """
         <div class='syft-diff'>
@@ -650,7 +649,8 @@ class ObjectDiffBatch(SyftObject):
         # relative
         from ...client.datasite_client import DatasiteClient
 
-        api = APIRegistry.api_for(server_uid, syft_client_verify_key)
+        api = self.get_api(server_uid, syft_client_verify_key)
+
         client = DatasiteClient(
             api=api,
             connection=api.connection,  # type: ignore
@@ -699,13 +699,13 @@ class ObjectDiffBatch(SyftObject):
         diffs = self.get_dependents(include_roots=False)
         return sum(hash(x) for x in diffs)
 
-    def ignore(self) -> SyftSuccess | SyftError:
+    def ignore(self) -> SyftSuccess:
         # relative
         from ...client.syncing import handle_ignore_batch
 
         return handle_ignore_batch(self, self.global_batches)
 
-    def unignore(self) -> SyftSuccess | SyftError:
+    def unignore(self) -> SyftSuccess:
         # relative
         from ...client.syncing import handle_unignore_batch
 
@@ -843,11 +843,11 @@ class ObjectDiffBatch(SyftObject):
         try:
             diffs = self.flatten_visual_hierarchy()
         except Exception as _:
-            return SyftError(
-                message=html.escape(
+            raise SyftException(
+                public_message=html.escape(
                     "Could not render batch, please use resolve(<batch>) instead."
                 )
-            )._repr_html_()
+            )
 
         return f"""
 <h2> ObjectBatchDiff </h2>
@@ -921,11 +921,11 @@ class ObjectDiffBatch(SyftObject):
     {self.hierarchy_str('high')}
     """
         except Exception as _:
-            return SyftError(
-                message=html.escape(
+            raise SyftException(
+                public_message=html.escape(
                     "Could not render batch, please use resolve(<batch>) instead."
                 )
-            )._repr_html_()
+            )
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return ""  # Turns off the _repr_markdown_ of SyftObject
@@ -995,11 +995,11 @@ class ObjectDiffBatch(SyftObject):
             return user_code_diffs[0]
 
     @property
-    def user(self) -> UserView | SyftError:
+    def user(self) -> UserView:
         user_code_diff = self.user_code_diff
         if user_code_diff is not None and isinstance(user_code_diff.low_obj, UserCode):
             return user_code_diff.low_obj.user
-        return SyftError(message="No user found")
+        raise SyftException(public_message="No user found")
 
     def get_visual_hierarchy(self) -> dict[ObjectDiff, dict]:
         visual_root = self.visual_root
@@ -1074,9 +1074,7 @@ class FilterProperty(enum.Enum):
     def from_batch(self, batch: ObjectDiffBatch) -> Any:
         if self == FilterProperty.USER:
             user = batch.user
-            if isinstance(user, UserView):
-                return user.email
-            return None
+            return user.email
         elif self == FilterProperty.TYPE:
             return batch.root_diff.obj_type.__name__.lower()
         elif self == FilterProperty.STATUS:

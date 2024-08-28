@@ -16,7 +16,7 @@ import requests
 from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.network.server_peer import ServerPeer
 from ..service.network.server_peer import ServerPeerConnectionStatus
-from ..service.response import SyftException
+from ..types.errors import SyftException
 from ..types.server_url import ServerURL
 from ..types.syft_object import SyftObject
 from ..util.constants import DEFAULT_TIMEOUT
@@ -174,7 +174,7 @@ class NetworkRegistry:
             client = connect(url=str(server_url))
             return client.guest()
         except Exception as e:
-            raise SyftException(f"Failed to login with: {network}. {e}")
+            raise SyftException(public_message=f"Failed to login with: {network}. {e}")
 
     def __getitem__(self, key: str | int) -> Client:
         if isinstance(key, int):
@@ -315,7 +315,7 @@ class DatasiteRegistry:
             client = connect(url=str(server_url))
             return client.guest()
         except Exception as e:
-            raise SyftException(f"Failed to login with: {datasite}. {e}")
+            raise SyftException(public_message=f"Failed to login with: {datasite}. {e}")
 
     def __getitem__(self, key: str | int) -> Client:
         if isinstance(key, int):
@@ -483,7 +483,7 @@ class NetworksOfDatasitesRegistry:
         try:
             return peer.guest_client
         except Exception as e:
-            raise SyftException(f"Failed to login to: {peer}. {e}")
+            raise SyftException(public_message=f"Failed to login to: {peer}. {e}")
 
     def __getitem__(self, key: str | int) -> Client:
         if isinstance(key, int):
@@ -581,7 +581,7 @@ class EnclaveRegistry:
             client = connect(url=str(server_url))
             return client.guest()
         except Exception as e:
-            raise SyftException(f"Failed to login with: {enclave}. {e}")
+            raise SyftException(public_message=f"Failed to login with: {enclave}. {e}")
 
     def __getitem__(self, key: str | int) -> Client:
         if isinstance(key, int):

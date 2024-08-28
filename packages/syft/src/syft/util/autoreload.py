@@ -8,8 +8,9 @@ def enable_autoreload() -> None:
         from IPython import get_ipython
 
         ipython = get_ipython()  # noqa: F821
-        ipython.run_line_magic("load_ext", "autoreload")
-        ipython.run_line_magic("autoreload", "2")
+        if hasattr(ipython, "run_line_magic"):
+            ipython.run_line_magic("load_ext", "autoreload")
+            ipython.run_line_magic("autoreload", "2")
         AUTORELOAD_ENABLED = True
         print("Autoreload enabled")
     except Exception as e:
@@ -24,7 +25,8 @@ def disable_autoreload() -> None:
         from IPython import get_ipython
 
         ipython = get_ipython()  # noqa: F821
-        ipython.run_line_magic("autoreload", "0")
+        if hasattr(ipython, "run_line_magic"):
+            ipython.run_line_magic("autoreload", "0")
         AUTORELOAD_ENABLED = False
         print("Autoreload disabled.")
     except Exception as e:
