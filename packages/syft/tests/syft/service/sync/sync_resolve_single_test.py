@@ -61,7 +61,7 @@ def run_and_deposit_result(client):
     return job
 
 
-def create_dataset(client):
+def create_dataset(client, _id: sy.UID | None = None):
     mock = np.random.random(5)
     private = np.random.random(5)
 
@@ -78,6 +78,8 @@ def create_dataset(client):
             )
         ],
     )
+    if _id is not None:
+        dataset.id = _id
 
     client.upload_dataset(dataset)
     return dataset
@@ -155,7 +157,8 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
     client_low_ds = get_ds_client(low_client)
     high_client: DatasiteClient = high_worker.root_client
 
-    _ = create_dataset(high_client)
+    ds_high = create_dataset(high_client)
+    create_dataset(low_client, _id=ds_high.id)
 
     @sy.syft_function_single_use()
     def compute_mean(data) -> int:
@@ -202,11 +205,15 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
 
     client_low_ds.refresh()
 
+    data_low = low_client.datasets[0].assets[0]
+
     # check loading results for both blocking and non-blocking case
-    res_blocking = client_low_ds.code.compute_mean(blocking=True)
+    res_blocking = client_low_ds.code.compute_mean(data=data_low, blocking=True)
     res_blocking = res_blocking.get()
 
-    res_non_blocking = client_low_ds.code.compute_mean(blocking=False).wait()
+    res_non_blocking = client_low_ds.code.compute_mean(
+        data=data_low, blocking=False
+    ).wait()
 
     # expected_result = compute_mean(syft_no_server=True, data=)
     assert res_blocking == res_non_blocking == mean_result
