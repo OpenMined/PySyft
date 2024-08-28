@@ -222,7 +222,6 @@ class SyftWorkerPoolService(AbstractService):
         path="worker_pool.create_image_and_pool_request",
         name="create_image_and_pool_request",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
-        unwrap_on_success=False,
     )
     def create_image_and_pool_request(
         self,
@@ -236,7 +235,7 @@ class SyftWorkerPoolService(AbstractService):
         pull_image: bool = True,
         pod_annotations: dict[str, str] | None = None,
         pod_labels: dict[str, str] | None = None,
-    ) -> SyftSuccess:
+    ) -> Request:
         """
         Create a request to launch the worker pool based on a built image.
 
@@ -516,7 +515,7 @@ class SyftWorkerPoolService(AbstractService):
         self,
         context: AuthedServiceContext,
         request: Request,
-    ) -> SyftSuccess:
+    ) -> Request:
         """Re-submit request from a different server"""
 
         num_of_changes = len(request.changes)
