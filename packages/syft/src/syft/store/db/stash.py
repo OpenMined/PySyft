@@ -1,6 +1,7 @@
 # stdlib
 
 # stdlib
+from functools import cache
 from typing import Any
 from typing import Generic
 from typing import get_args
@@ -13,6 +14,7 @@ from sqlalchemy import Row
 from sqlalchemy import Table
 from sqlalchemy import func
 from sqlalchemy import select
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session
 from sqlalchemy.types import JSON
 from typing_extensions import TypeVar
@@ -84,14 +86,32 @@ class ObjectStash(Generic[SyftT]):
     def _create_table(self) -> Table:
         # need to call Base.metadata.create_all(engine) to create the table
         table_name = self.object_type.__canonical_name__
+
+        fields_type = (
+            JSON if self.db.engine.dialect.name == "sqlite" else postgresql.JSONB
+        )
+        permissons_type = (
+            JSON
+            if self.db.engine.dialect.name == "sqlite"
+            else postgresql.ARRAY(sa.String)
+        )
+        storage_permissions_type = (
+            JSON
+            if self.db.engine.dialect.name == "sqlite"
+            else postgresql.ARRAY(UIDTypeDecorator)
+        )
         if table_name not in Base.metadata.tables:
             Table(
                 self.object_type.__canonical_name__,
                 Base.metadata,
                 Column("id", UIDTypeDecorator, primary_key=True, default=uuid.uuid4),
-                Column("fields", JSON, default={}),
-                Column("permissions", JSON, default=[]),
-                Column("storage_permissions", JSON, default=[]),
+                Column("fields", fields_type, default={}),
+                Column("permissions", permissons_type, default=[]),
+                Column(
+                    "storage_permissions",
+                    storage_permissions_type,
+                    default=[],
+                ),
                 # TODO rename and use on SyftObject fields
                 Column(
                     "created_at", sa.DateTime, server_default=sa.func.now(), index=True
@@ -100,6 +120,13 @@ class ObjectStash(Generic[SyftT]):
                 Column("deleted_at", sa.DateTime, index=True),
             )
         return Base.metadata.tables[table_name]
+
+    def _drop_table(self) -> None:
+        table_name = self.object_type.__canonical_name__
+        if table_name in Base.metadata.tables:
+            Base.metadata.tables[table_name].drop(self.db.engine)
+        else:
+            raise StashException(f"Table {table_name} does not exist")
 
     def _print_query(self, stmt: sa.sql.select) -> None:
         print(
@@ -154,6 +181,7 @@ class ObjectStash(Generic[SyftT]):
         stmt = self._apply_permission_filter(
             stmt, credentials=credentials, has_permission=has_permission
         )
+
         result = self.session.execute(stmt).first()
 
         if result is None:
@@ -169,7 +197,11 @@ class ObjectStash(Generic[SyftT]):
         table = table if table is not None else self.table
         if field_name == "id":
             return table.c.id == field_value
-        return table.c.fields[field_name] == func.json_quote(field_value)
+
+        if self.db.engine.dialect.name == "sqlite":
+            return table.c.fields[field_name] == func.json_quote(field_value)
+        elif self.db.engine.dialect.name == "postgresql":
+            return sa.cast(table.c.fields[field_name], sa.String) == field_value
 
     def _get_by_fields(
         self,
@@ -319,6 +351,8 @@ class ObjectStash(Generic[SyftT]):
         # TODO make unwrappable serde
         return deserialize_json(row.fields)
 
+    # TODO add cache invalidation, ignore B019
+    @cache  # noqa: B019
     def get_role(self, credentials: SyftVerifyKey) -> ServiceRole:
         # TODO error handling
         user_table = Table("User", Base.metadata)
@@ -330,32 +364,16 @@ class ObjectStash(Generic[SyftT]):
             return ServiceRole.GUEST
         return ServiceRole[role]
 
-    def _get_permission_filter(
+    def _get_permission_filter_from_permisson(
         self,
-        credentials: SyftVerifyKey,
-        permission: ActionPermission = ActionPermission.READ,
+        permission: ActionObjectPermission,
     ) -> sa.sql.elements.BinaryExpression:
-        role = self.get_role(credentials)
-        if role in (ServiceRole.ADMIN, ServiceRole.DATA_OWNER):
-            return sa.literal(True)
+        permission_string = permission.permission_string
+        compound_permission_string = permission.compound_permission_string
 
-        permission_string = ActionObjectPermission(
-            uid=UID(),  # dummy uid, we just need the permission string
-            credentials=credentials,
-            permission=permission,
-        ).permission_string
-
-        compound_permission_map = {
-            ActionPermission.READ: ActionPermission.ALL_READ,
-            ActionPermission.WRITE: ActionPermission.ALL_WRITE,
-            ActionPermission.EXECUTE: ActionPermission.ALL_EXECUTE,
-        }
-        compound_permission_string = ActionObjectPermission(
-            uid=UID(),  # dummy uid, we just need the permission string
-            credentials=None,  # no credentials for compound permissions
-            permission=compound_permission_map[permission],
-        ).permission_string
-
+        if self.session.bind.dialect.name == "postgresql":
+            permission_string = [permission_string]  # type: ignore
+            compound_permission_string = [compound_permission_string]  # type: ignore
         return sa.or_(
             self.table.c.permissions.contains(permission_string),
             self.table.c.permissions.contains(compound_permission_string),
@@ -413,10 +431,26 @@ class ObjectStash(Generic[SyftT]):
         permission: ActionPermission = ActionPermission.READ,
         has_permission: bool = False,
     ) -> T:
-        if not has_permission:
-            stmt = stmt.where(
-                self._get_permission_filter(credentials, permission=permission)
+        if has_permission:
+            # ignoring permissions
+            return stmt
+
+        role = self.get_role(credentials)
+        if role in (ServiceRole.ADMIN, ServiceRole.DATA_OWNER):
+            # admins and data owners have all permissions
+            return stmt
+
+        action_object_permission = ActionObjectPermission(
+            uid=UID(),  # dummy uid, we just need the permission string
+            credentials=credentials,
+            permission=permission,
+        )
+
+        stmt = stmt.where(
+            self._get_permission_filter_from_permisson(
+                permission=action_object_permission
             )
+        )
         return stmt
 
     @as_result(StashException)
@@ -602,15 +636,16 @@ class ObjectStash(Generic[SyftT]):
             )
         )
         result = self.session.execute(stmt).first()
-        return result
+        return result is not None
 
     def has_permissions(self, permissions: list[ActionObjectPermission]) -> bool:
         # TODO: we should use a permissions table to check all permissions at once
         # TODO: should check for compound permissions
+
         permission_filters = [
             sa.and_(
                 self._get_field_filter("id", p.uid),
-                self.table.c.permissions.contains(p.permission_string),
+                self._get_permission_filter_from_permisson(permission=p),
             )
             for p in permissions
         ]
@@ -618,7 +653,7 @@ class ObjectStash(Generic[SyftT]):
         stmt = self.table.select().where(
             sa.and_(
                 *permission_filters,
-            )
+            ),
         )
         result = self.session.execute(stmt).first()
         return result is not None

@@ -18,6 +18,19 @@ class ActionPermission(Enum):
     EXECUTE = 64
     ALL_EXECUTE = 128
 
+    @property
+    def as_compound(self) -> "ActionPermission":
+        if self in COMPOUND_ACTION_PERMISSION:
+            return self
+        elif self == ActionPermission.READ:
+            return ActionPermission.ALL_READ
+        elif self == ActionPermission.WRITE:
+            return ActionPermission.ALL_WRITE
+        elif self == ActionPermission.EXECUTE:
+            return ActionPermission.ALL_EXECUTE
+        else:
+            raise Exception(f"Invalid compound permission {self}")
+
 
 COMPOUND_ACTION_PERMISSION = {
     ActionPermission.ALL_READ,
@@ -63,6 +76,10 @@ class ActionObjectPermission:
             if self.credentials is not None:
                 return f"{self.credentials.verify}_{self.permission.name}"
             return f"{self.permission.name}"
+
+    @property
+    def compound_permission_string(self) -> str:
+        return self.permission.as_compound.name
 
     def _coll_repr_(self) -> dict[str, Any]:
         return {

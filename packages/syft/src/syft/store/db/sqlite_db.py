@@ -20,12 +20,33 @@ from .utils import loads
 
 
 class DBConfig(BaseModel):
-    pass
+    reset: bool = False
+
+    @property
+    def connection_string(self) -> str:
+        raise NotImplementedError("Subclasses must implement this method.")
 
 
 class SQLiteDBConfig(DBConfig):
     filename: str = "jsondb.sqlite"
     path: Path = Field(default_factory=tempfile.gettempdir)
+
+    @property
+    def connection_string(self) -> str:
+        filepath = self.path / self.filename
+        return f"sqlite:///{filepath.resolve()}"
+
+
+class PostgresDBConfig(DBConfig):
+    host: str = "localhost"
+    port: int = 5432
+    user: str = "postgres"
+    password: str = "postgres"
+    database: str = "postgres"
+
+    @property
+    def connection_string(self) -> str:
+        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
 
 class DBManager:
@@ -50,13 +71,10 @@ class SQLiteDBManager(DBManager):
         self.config = config
         self.root_verify_key = root_verify_key
         self.server_uid = server_uid
-
-        self.filepath = config.path / config.filename
-        self.path = f"sqlite:///{self.filepath.resolve()}"
         self.engine = create_engine(
-            self.path, json_serializer=dumps, json_deserializer=loads
+            config.connection_string, json_serializer=dumps, json_deserializer=loads
         )
-        print(f"Connecting to {self.path}")
+        print(f"Connecting to {config.connection_string}")
         self.Session = sessionmaker(bind=self.engine)
 
         # TODO use AuthedServiceContext for session management instead of threading.local
@@ -67,12 +85,16 @@ class SQLiteDBManager(DBManager):
     def update_settings(self) -> None:
         connection = self.engine.connect()
 
-        connection.execute(sa.text("PRAGMA journal_mode = WAL"))
-        connection.execute(sa.text("PRAGMA busy_timeout = 5000"))
-        connection.execute(sa.text("PRAGMA temp_store = 2"))
-        connection.execute(sa.text("PRAGMA synchronous = 1"))
+        if self.engine.dialect.name == "sqlite":
+            connection.execute(sa.text("PRAGMA journal_mode = WAL"))
+            connection.execute(sa.text("PRAGMA busy_timeout = 5000"))
+            connection.execute(sa.text("PRAGMA temp_store = 2"))
+            connection.execute(sa.text("PRAGMA synchronous = 1"))
 
     def init_tables(self) -> None:
+        if self.config.reset:
+            # drop all tables that we know about
+            Base.metadata.drop_all(bind=self.engine)
         Base.metadata.create_all(self.engine)
 
     # TODO remove
