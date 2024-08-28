@@ -197,9 +197,10 @@ class raises:
     def __exit__(self, exc_type, exc_value, traceback):  # type: ignore
         message = None
         expected_exception_type = self.expected_exception
-        if isinstance(expected_exception_type, SyftException):
-            message = self.expected_exception.public_message.replace("*", "")
+        if not isinstance(expected_exception_type, type):
             expected_exception_type = type(self.expected_exception)
+            if hasattr(self.expected_exception, "public_message"):
+                message = self.expected_exception.public_message.replace("*", "")
 
         # After block of code
         if exc_type is None:
