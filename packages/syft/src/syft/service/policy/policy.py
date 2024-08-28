@@ -55,7 +55,6 @@ from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..context import ServerServiceContext
 from ..dataset.dataset import Asset
-from ..response import SyftSuccess
 
 # Use this for return type enums:
 # class MyEnum(Enum):
@@ -152,8 +151,8 @@ class Policy(SyftObject):
                 op_code += "\n"
         return op_code
 
-    def is_valid(self, *args: list, **kwargs: dict) -> SyftSuccess:  # type: ignore
-        return SyftSuccess(message="Policy is valid.")
+    def is_valid(self, *args: list, **kwargs: dict) -> bool:  # type: ignore
+        return True
 
     def public_state(self) -> Any:
         raise NotImplementedError
@@ -287,6 +286,10 @@ class Constant(PolicyRule):
     klass: type
     requires_input: bool = False
 
+    @property
+    def value(self) -> Any:
+        return self.val
+
     def is_met(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> bool:
         return True
 
@@ -294,7 +297,9 @@ class Constant(PolicyRule):
     def transform_kwarg(self, context: AuthedServiceContext, val: Any) -> Any:
         if isinstance(self.val, UID):
             if issubclass(self.klass, CustomEndpointActionObject):
-                obj = context.server.get_service("actionservice").get(context, self.val)
+                obj = context.server.get_service("actionservice").get(
+                    context.as_root_context(), self.val
+                )
                 return obj.syft_action_data
         return self.val
 
@@ -390,7 +395,7 @@ class InputPolicy(Policy):
             init_kwargs = partition_by_server(kwargs)
         super().__init__(*args, init_kwargs=init_kwargs, **kwargs)
 
-    def _is_valid(
+    def is_valid(  # type: ignore
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
@@ -562,7 +567,7 @@ class MixedInputPolicy(InputPolicy):
             )
         return res
 
-    def _is_valid(  # type: ignore[override]
+    def is_valid(  # type: ignore[override]
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
@@ -573,12 +578,11 @@ class MixedInputPolicy(InputPolicy):
             context=context,
             code_item_id=code_item_id,
         )
-
         expected_input_kwargs = set()
 
         for _inp_kwargs in self.inputs.values():
             for k in _inp_kwargs.keys():
-                if k not in usr_input_kwargs:
+                if k not in usr_input_kwargs and k not in filtered_input_kwargs:
                     raise SyftException(
                         public_message=f"Function missing required keyword argument: '{k}'"
                     )
@@ -693,7 +697,7 @@ class ExactMatch(InputPolicy):
             context=context,
         ).unwrap()
 
-    def _is_valid(  # type: ignore
+    def is_valid(  # type: ignore
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
@@ -763,7 +767,7 @@ class OutputPolicy(Policy):
 
         return outputs
 
-    def is_valid(self, context: AuthedServiceContext) -> OutputPolicyValidEnum:  # type: ignore
+    def is_valid(self, context: AuthedServiceContext | None) -> bool:  # type: ignore
         raise NotImplementedError()
 
 
@@ -774,30 +778,31 @@ class OutputPolicyExecuteCount(OutputPolicy):
 
     limit: int
 
-    @property
-    def is_valid(self) -> bool:  # type: ignore
-        return self.count().unwrap() < self.limit
+    # def is_valid(self, context: AuthedServiceContext) -> bool:
+    #     return self.count().unwrap() < self.limit
 
-    @as_result(SyftException)
-    def count(self) -> int:
-        api = self.get_api()
-        output_history = api.services.output.get_by_output_policy_id(self.id)
+    # @as_result(SyftException)
+    # def count(self) -> int:
+    #     api = self.get_api()
+    #     output_history = api.services.output.get_by_output_policy_id(self.id)
+    #     return len(output_history)
+
+    def count(self, context: AuthedServiceContext | None = None) -> int:
+        # client side
+        if context is None:
+            output_service = self.get_api().services.output
+            output_history = output_service.get_by_output_policy_id(self.id)
+        else:
+            # server side
+            output_service = context.server.get_service("outputservice")
+            output_history = output_service.get_by_output_policy_id(
+                context, self.id
+            )  # raises
+
         return len(output_history)
 
-    def _is_valid(self, context: AuthedServiceContext) -> bool:
-        output_service = context.server.get_service("outputservice")
-        output_history = output_service.get_by_output_policy_id(
-            context, self.id
-        )  # raises
-
-        execution_count = len(output_history)
-
-        if execution_count < self.limit:
-            return True
-
-        raise SyftException(
-            public_message=f"Policy is no longer valid. count: {execution_count} >= limit: {self.limit}"
-        )
+    def is_valid(self, context: AuthedServiceContext | None = None) -> bool:  # type: ignore
+        return self.count(context) < self.limit
 
     def public_state(self) -> dict[str, int]:
         # TODO: this count is not great, fix it.

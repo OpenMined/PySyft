@@ -382,7 +382,7 @@ class ActionService(AbstractService):
                 )
 
             # validate input policy, raises if not valid
-            input_policy._is_valid(
+            input_policy.is_valid(
                 context=context,
                 usr_input_kwargs=kwargs,
                 code_item_id=code_item.id,

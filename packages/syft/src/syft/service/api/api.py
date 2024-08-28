@@ -7,6 +7,7 @@ import keyword
 import linecache
 import re
 import textwrap
+from textwrap import dedent
 from typing import Any
 from typing import cast
 
@@ -175,6 +176,7 @@ class Endpoint(SyftObject):
     @classmethod
     def validate_api_code(cls, api_code: str) -> str:
         valid_code = True
+        api_code = dedent(api_code)
         try:
             ast.parse(api_code)
         except SyntaxError:
@@ -525,9 +527,15 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
             # execute it
             evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
-            result = eval(evil_string, None, locals())  # nosec
+            result = None
+            try:
+                # users can raise SyftException in their code
+                result = eval(evil_string, None, locals())  # nosec
+            except SyftException as e:
+                # capture it as the result variable
+                result = e
 
-            # Update code context state
+            # run all this code to clean up the state
             code.update_state(internal_context.state)
 
             if isinstance(code, PublicAPIEndpoint):
@@ -540,7 +548,11 @@ class TwinAPIEndpoint(SyncableSyftObject):
                 context.server.get_service("userservice").admin_verify_key(), self
             ).unwrap()
 
-            # return the results
+            # if we caught a SyftException above we will raise and auto wrap to Result
+            if isinstance(result, SyftException):
+                raise result
+
+            # here we got a non Exception result which will also be wrapped in Result
             return result
         except Exception as e:
             # If it's admin, return the error message.
@@ -685,7 +697,8 @@ def api_endpoint(
     def decorator(f: Callable) -> TwinAPIEndpoint | SyftError:
         try:
             helper_functions_dict = {
-                f.__name__: inspect.getsource(f) for f in (helper_functions or [])
+                f.__name__: dedent(inspect.getsource(f))
+                for f in (helper_functions or [])
             }
             res = CreateTwinAPIEndpoint(
                 path=path,
@@ -717,7 +730,8 @@ def api_endpoint_method(
     def decorator(f: Callable) -> Endpoint | SyftError:
         try:
             helper_functions_dict = {
-                f.__name__: inspect.getsource(f) for f in (helper_functions or [])
+                f.__name__: dedent(inspect.getsource(f))
+                for f in (helper_functions or [])
             }
             return Endpoint(
                 api_code=inspect.getsource(f),
