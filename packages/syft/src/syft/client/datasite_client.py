@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import json
 import logging
 from pathlib import Path
 import re
@@ -435,6 +436,20 @@ class DatasiteClient(SyftClient):
         return self.api.services.migration.apply_migration_data(
             migration_data_without_blobs
         )
+
+    def dump_state(self, path: str | Path) -> None:
+        if isinstance(path, str):
+            path = Path(path)
+        path.mkdir(exist_ok=True)
+        blob_path = path / "migration.blob"
+        yaml_path = path / "migration.yaml"
+        config_path = path / "config.json"
+
+        migration_data = self.get_migration_data(include_blobs=True)
+        migration_data.save(blob_path, yaml_path=yaml_path)
+        server_config = self.api.services.settings.get_server_config()
+        with open(config_path, "w") as fp:
+            json.dump(server_config, fp)
 
     def get_project(
         self,
