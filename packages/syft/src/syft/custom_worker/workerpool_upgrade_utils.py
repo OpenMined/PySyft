@@ -107,15 +107,16 @@ def upgrade_prebuilt_image(
 ) -> SyftWorkerImage | None:
     print(f"Found outdated prebuilt worker image `{old_image.image_identifier}`")
     if mode == "auto":
-        new_syft_version = client.metadata.syft_version
+        new_syft_version = client.metadata.syft_version  # type: ignore
         new_identifier = upgrade_image_identifier(
             old_image.image_identifier, new_syft_version
         )
         new_image_tag = new_identifier.full_name_with_tag
     else:
-        new_image_tag = get_tag_from_input()
-        if not new_image_tag:
+        new_image_tag_or_none = get_tag_from_input()
+        if not new_image_tag_or_none:
             return None
+        new_image_tag = new_image_tag_or_none
 
     new_config = sy.PrebuiltWorkerConfig(
         tag=new_image_tag, description=old_image.config.description
@@ -139,7 +140,10 @@ def upgrade_syft_image(
 ) -> SyftWorkerImage | None:
     old_identifier = old_image.image_identifier
     old_config = old_image.config
-    new_syft_version = client.metadata.syft_version
+    new_syft_version = client.metadata.syft_version  # type: ignore
+
+    if old_identifier is None:
+        raise ValueError("old image does not have an image identifier")
 
     print(f"Found outdated custom worker image `{old_image.image_identifier}`")
 
