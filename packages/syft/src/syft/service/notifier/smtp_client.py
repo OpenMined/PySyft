@@ -9,7 +9,6 @@ from pydantic import model_validator
 
 # relative
 from ...types.errors import SyftException
-from ...types.result import as_result
 
 SOCKET_TIMEOUT = 5  # seconds
 
@@ -48,7 +47,6 @@ class SMTPClient(BaseModel):
         # TODO: Add error handling
 
     @classmethod
-    @as_result(SyftException)
     def check_credentials(
         cls, server: str, port: int, username: str, password: str
     ) -> bool:

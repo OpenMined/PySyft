@@ -58,16 +58,3 @@ class NotifierStash(NewBaseStash):
         return (
             super().set(credentials=credentials, obj=result).unwrap()
         )  # TODO check if result isInstance(Ok)
-
-    @as_result(StashException)
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        settings: NotifierSettings,
-        has_permission: bool = False,
-    ) -> NotifierSettings:
-        result = self.check_type(settings, self.object_type).unwrap()
-        # we dont use and_then logic here as it is hard because of the order of the arguments
-        return (
-            super().update(credentials=credentials, obj=result).unwrap()
-        )  # TODO check if result isInstance(Ok)

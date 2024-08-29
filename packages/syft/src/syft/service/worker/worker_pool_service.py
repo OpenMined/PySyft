@@ -1,6 +1,7 @@
 # stdlib
 import logging
 from typing import Any
+from typing import cast
 
 # third party
 import pydantic
@@ -234,7 +235,7 @@ class SyftWorkerPoolService(AbstractService):
         pull_image: bool = True,
         pod_annotations: dict[str, str] | None = None,
         pod_labels: dict[str, str] | None = None,
-    ) -> SyftSuccess:
+    ) -> Request:
         """
         Create a request to launch the worker pool based on a built image.
 
@@ -408,6 +409,7 @@ class SyftWorkerPoolService(AbstractService):
         path="worker_pool.scale",
         name="scale",
         roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def scale(
         self,
@@ -507,12 +509,13 @@ class SyftWorkerPoolService(AbstractService):
         path="worker_pool.sync_pool_from_request",
         name="sync_pool_from_request",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def sync_pool_from_request(
         self,
         context: AuthedServiceContext,
         request: Request,
-    ) -> SyftSuccess:
+    ) -> Request:
         """Re-submit request from a different server"""
 
         num_of_changes = len(request.changes)
@@ -560,6 +563,78 @@ class SyftWorkerPoolService(AbstractService):
                     f"{request.changes}"
                 )
             )
+
+    @service_method(
+        path="worker_pool.delete",
+        name="delete",
+        roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
+    def delete(
+        self,
+        context: AuthedServiceContext,
+        pool_id: UID | None = None,
+        pool_name: str | None = None,
+    ) -> SyftSuccess:
+        worker_pool = self._get_worker_pool(
+            context, pool_id=pool_id, pool_name=pool_name
+        ).unwrap(public_message=f"Failed to get WorkerPool: {pool_id or pool_name}")
+
+        uid = worker_pool.id
+
+        # relative
+        from ..queue.queue_service import QueueService
+        from ..queue.queue_stash import Status
+
+        queue_service = cast(QueueService, context.server.get_service(QueueService))
+        queue_items = queue_service.stash._get_by_worker_pool(
+            credentials=context.credentials,
+            worker_pool=LinkedObject.from_obj(
+                obj=worker_pool,
+                service_type=self.__class__,
+                server_uid=context.server.id,
+            ),
+        ).unwrap(
+            public_message=f"Failed to get queue items mapped to WorkerPool: {worker_pool.name}"
+        )
+
+        items_to_interrupt = (
+            item
+            for item in queue_items
+            if item.status in (Status.CREATED, Status.PROCESSING)
+        )
+
+        for item in items_to_interrupt:
+            item.status = Status.INTERRUPTED
+            queue_service.stash.update(
+                credentials=context.credentials,
+                obj=item,
+            ).unwrap()
+
+        worker_service = cast(
+            WorkerService, context.server.get_service("WorkerService")
+        )
+
+        if IN_KUBERNETES:
+            self.scale(context=context, number=0, pool_id=uid)
+        else:
+            workers = (
+                worker.resolve_with_context(context=context).unwrap()
+                for worker in worker_pool.worker_list
+            )
+
+            worker_ids = []
+            for worker in workers:
+                worker_ids.append(worker.id)
+
+            for id_ in worker_ids:
+                worker_service.delete(context=context, uid=id_, force=True)
+
+        self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap(
+            public_message=f"Failed to delete WorkerPool: {worker_pool.name} from stash"
+        )
+
+        return SyftSuccess(message=f"Successfully deleted worker pool with id {uid}")
 
     @as_result(StashException, SyftException)
     def _get_worker_pool(

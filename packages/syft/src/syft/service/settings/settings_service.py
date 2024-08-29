@@ -1,16 +1,18 @@
 # stdlib
 from string import Template
 from typing import Any
+from typing import cast
 
 # relative
 from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
-from ...store.sqlite_document_store import SQLiteStoreConfig
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
+from ...store.sqlite_document_store import SQLiteStoreConfig
 from ...types.errors import SyftException
 from ...types.result import as_result
+from ...types.syft_metaclass import Empty
 from ...util.assets import load_png_base64
 from ...util.experimental_flags import flags
 from ...util.misc_objs import HTMLObject
@@ -22,6 +24,7 @@ from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
 from ..notifier.notifier_enums import EMAIL_TYPES
+from ..notifier.notifier_service import NotifierService
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -32,6 +35,14 @@ from ..warnings import HighSideCRUDWarning
 from .settings import ServerSettings
 from .settings import ServerSettingsUpdate
 from .settings_stash import SettingsStash
+
+# for testing purpose
+_NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR = (
+    "Failed to enable notification. "
+    "Email credentials are invalid or have not been set. "
+    "Please use `enable_notifications` from `user_service` "
+    "to set the correct email credentials."
+)
 
 
 @serializable(canonical_name="SettingsService", version=1)
@@ -120,23 +131,44 @@ class SettingsService(AbstractService):
                 context.credentials, settings=new_settings
             ).unwrap()
 
-            notifier_service = context.server.get_service("notifierservice")
+            notifier_service = cast(
+                NotifierService, context.server.get_service("notifierservice")
+            )
 
             # If notifications_enabled is present in the update, we need to update the notifier settings
-            if settings.notifications_enabled is True:
-                if not notifier_service.settings(context):
+            if settings.notifications_enabled is not Empty:  # type: ignore[comparison-overlap]
+                notifier_settings_res = notifier_service.settings(context)
+                if (
+                    not notifier_settings_res.is_ok()
+                    or (notifier_settings := notifier_settings_res.ok()) is None
+                ):
                     raise SyftException(
-                        public_smessage="Create notification settings using enable_notifications from user_service"
+                        public_message=(
+                            "Notification has not been enabled. "
+                            "Please use `enable_notifications` from `user_service`."
+                        )
                     )
-                notifier_service = context.server.get_service("notifierservice")
-                notifier_service.set_notifier_active_to_true(context)
-            elif settings.notifications_enabled is False:
-                if not notifier_service.settings(context):
+
+                if settings.notifications_enabled and (
+                    not (
+                        notifier_settings.email_username
+                        and notifier_settings.email_password
+                    )
+                    or not notifier_settings.validate_email_credentials(
+                        notifier_settings.email_username,
+                        notifier_settings.email_password,
+                        notifier_settings.email_server,
+                        notifier_settings.email_port,
+                    )
+                ):
                     raise SyftException(
-                        public_message="Create notification settings using enable_notifications from user_service"
+                        public_message=_NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR
                     )
-                notifier_service = context.server.get_service("notifierservice")
-                notifier_service.set_notifier_active_to_false(context)
+
+                notifier_service._set_notifier(
+                    context, active=settings.notifications_enabled
+                )
+
             return update_result
         else:
             raise NotFoundException(public_message="Server settings not found")
@@ -190,7 +222,6 @@ class SettingsService(AbstractService):
         email_port: str | None = None,
     ) -> SyftSuccess:
         notifier_service = context.server.get_service("notifierservice")
-        # FIX: NotificationService
         notifier_service.turn_on(
             context=context,
             email_username=email_username,
@@ -198,7 +229,7 @@ class SettingsService(AbstractService):
             email_sender=email_sender,
             email_server=email_server,
             email_port=email_port,
-        ).unwrap(public_message="Failed to enable notifications")
+        ).unwrap()
         return SyftSuccess(message="Notifications enabled")
 
     @service_method(
