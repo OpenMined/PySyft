@@ -1969,7 +1969,7 @@ def load_approved_policy_code(
         except SyftException:
             display(
                 SyftWarning(
-                    message=f"Failed to load UserCode {user_code.id=} {user_code.service_func_name=}"
+                    message=f"Failed to load UserCode {user_code.id.no_dash} {user_code.service_func_name=}"
                 )
             )
             continue

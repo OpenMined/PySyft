@@ -2,10 +2,8 @@
 from collections import defaultdict
 import logging
 from typing import Any
-from typing import cast
 
 # relative
-from ...abstract_server import ServerSideType
 from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -25,11 +23,9 @@ from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
 from ..api.api import TwinAPIEndpoint
 from ..api.api_service import APIService
-from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
-from ..request.request import Request
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -350,25 +346,6 @@ class SyncService(AbstractService):
         for service_name in services_to_sync:
             service = context.server.get_service(service_name)
             items = service.get_all(context)
-
-            if service_name == "usercodeservice":
-                # filter out codes created on high side
-                items = cast(list[UserCode], items)
-                items = [
-                    item
-                    for item in items
-                    if item.origin_server_side_type != ServerSideType.HIGH_SIDE
-                ]
-
-            if service_name == "requestservice":
-                # filter out requests created on high side
-                items = cast(list[Request], items)
-                items = [
-                    item
-                    for item in items
-                    if item.code.origin_server_side_type != ServerSideType.HIGH_SIDE
-                ]
-
             all_items.extend(items)
 
         # Gather jobs, logs, outputs and action objects
