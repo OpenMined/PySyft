@@ -1334,10 +1334,19 @@ def validate_callable_args_and_kwargs(
     else:
         for key, value in kwargs.items():
             if key not in signature.parameters:
+                valid_parameters = list(signature.parameters)
+                valid_parameters_msg = (
+                    f"Valid parameter: {valid_parameters}"
+                    if len(valid_parameters) == 1
+                    else f"Valid parameters: {valid_parameters}"
+                )
+
                 raise SyftException(
-                    public_message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}
-                    f"{_signature_error_message(_format_signature(signature))}"
-"""
+                    public_message=(
+                        f"Invalid parameter: `{key}`\n"
+                        f"{valid_parameters_msg}\n"
+                        f"{_signature_error_message(_format_signature(signature))}"
+                    )
                 )
             param = signature.parameters[key]
             if isinstance(param.annotation, str):
