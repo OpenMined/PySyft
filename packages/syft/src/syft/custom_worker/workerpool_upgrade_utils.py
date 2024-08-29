@@ -1,5 +1,6 @@
 # stdlib
 from pathlib import Path
+from typing import cast
 
 # third party
 from IPython.display import display
@@ -106,6 +107,8 @@ def upgrade_custom_workerpools(
         print("loading migration data...")
         migration_data = MigrationData.from_file(migration_data)
 
+    # NOTE mypy does not recognize instance check for str | Path
+    migration_data = cast(MigrationData, migration_data)
     worker_pools = migration_data.get_items_by_canonical_name(
         WorkerPool.__canonical_name__
     )
