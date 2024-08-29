@@ -1,7 +1,5 @@
 # stdlib
-import json
 import os
-from pathlib import Path
 import sys
 
 
@@ -15,53 +13,54 @@ def add_notes(helm_chart_template_dir: str) -> None:
 
         $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
         $ helm get all {{ .Release.Name }}
+
+    =========================================
+    Syft Installed
+    =========================================
+    Check the ingress for your IP by running the command below:
+
+        kubectl get ingress -n {{ .Release.Namespace }}
+
+    Once you have the IP, visit it in your browser:
+
+        http://<IP>
+
+    You should see the welcome page. You can now log in with Syft in Python or Jupyter:
+
+    import syft as sy
+    sy.login(url="http://<IP>", email="info@openmined.org", password="yourpass")
+
+    You can see your password in the configmap with:
+
+        kubectl get secret backend-secret -n syft -o yaml | grep defaultRootPassword
+
+    If you used a different email or password, make sure to adjust the login information accordingly.
+
+    =========================================
+    Start Jupyter Environment
+    =========================================
+    You can start a Jupyter environment using the following Docker command:
+
+        docker run --rm -it --network=host openmined/syft-client:${VERSION}
+
+    Consider using `tmux` to keep the Jupyter notebook running in the background.
+    This can help manage long-running sessions and maintain your environment active.
+
+    For more information on installation and usage, refer to the OpenMined documentation:
+
+    https://docs.openmined.org
+
+    =========================================
     """
 
     notes_path = os.path.join(helm_chart_template_dir, "NOTES.txt")
-
-    protocol_changelog = get_protocol_changes()
-
-    notes += "\n" + protocol_changelog
 
     with open(notes_path, "w") as fp:
         fp.write(notes)
 
 
-def get_protocol_changes() -> str:
-    """Generate change log of the dev protocol state."""
-    script_path = os.path.dirname(os.path.realpath(__file__))
-    protocol_path = Path(
-        os.path.normpath(
-            os.path.join(
-                script_path,
-                "../../",
-                "syft/src/syft/protocol",
-                "protocol_version.json",
-            )
-        )
-    )
-
-    protocol_changes = ""
-    if protocol_path.exists():
-        dev_protocol_changes = json.loads(protocol_path.read_text()).get("dev", {})
-        protocol_changes = json.dumps(
-            dev_protocol_changes.get("object_versions", {}), indent=4
-        )
-
-    protocol_changelog = f"""
-    Following class versions are either added/removed.
-
-    {protocol_changes}
-
-    This means the existing data will be automatically be migrated to
-    their latest class versions during the upgrade.
-    """
-
-    return protocol_changelog
-
-
 if __name__ == "__main__":
-    # write code to path from user and pass to generate notes
+    # Write code to path from user and pass to generate notes
     if len(sys.argv) != 2:
         print("Please provide helm chart template directory path")
         sys.exit(1)
