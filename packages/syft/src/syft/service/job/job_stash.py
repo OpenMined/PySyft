@@ -647,11 +647,14 @@ class Job(SyncableSyftObject):
         if self.user_code_id is not None:
             dependencies.append(self.user_code_id)
 
-        output = context.server.get_service("outputservice").get_by_job_id(  # type: ignore
-            context, self.id
-        )
-        if output is not None:
-            dependencies.append(output.id)
+        try:
+            output = context.server.get_service("outputservice").get_by_job_id(  # type: ignore
+                context, self.id
+            )
+            if output is not None:
+                dependencies.append(output.id)
+        except NotFoundException:
+            pass
 
         return dependencies
 

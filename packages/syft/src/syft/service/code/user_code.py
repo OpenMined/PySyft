@@ -1834,9 +1834,10 @@ def execute_byte_code(
         if code_item.uses_datasite:
             kwargs["datasite"] = LocalDatasiteClient()
 
+        job_log_id = context.job.log_id if context.job else None
         for k, v in kwargs.items():
             if isinstance(v, CustomEndpointActionObject):
-                kwargs[k] = v.add_context(context=context)
+                kwargs[k] = v.add_context(context=context, log_id=job_log_id)
 
         stdout = StringIO()
         stderr = StringIO()
