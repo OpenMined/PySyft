@@ -118,7 +118,7 @@ class OnBoardEmailTemplate(EmailTemplate):
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         user_service = context.server.get_service("userservice")
         admin_verify_key = user_service.admin_verify_key()
-        admin = user_service.get_by_verify_key(admin_verify_key)
+        admin = user_service.get_by_verify_key(admin_verify_key).unwrap()
         admin_name = admin.name
 
         head = (
