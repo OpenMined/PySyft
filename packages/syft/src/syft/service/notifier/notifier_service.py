@@ -67,24 +67,16 @@ class NotifierService(AbstractService):
             app=notifications[NOTIFIERS.APP],
         )
 
-    def set_notifier_active_to_true(self, context: AuthedServiceContext) -> SyftSuccess:
+    def _set_notifier(self, context: AuthedServiceContext, active: bool) -> SyftSuccess:
         notifier = self.stash.get(credentials=context.credentials).unwrap(
             public_message="Notifier settings not found."
         )
-        notifier.active = True
-        self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
-        return SyftSuccess(message="notifier.active set to true.")
 
-    def set_notifier_active_to_false(
-        self, context: AuthedServiceContext
-    ) -> SyftSuccess:
-        """
-        Essentially a duplicate of turn_off method.
-        """
-        notifier = self.stash.get(credentials=context.credentials).unwrap()
-        notifier.active = False
+        notifier.active = active
         self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
-        return SyftSuccess(message="notifier.active set to false.")
+
+        active_s = "active" if active else "inactive"
+        return SyftSuccess(message=f"Notifier set to {active_s}")
 
     @as_result(SyftException)
     def turn_on(
