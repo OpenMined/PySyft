@@ -1960,17 +1960,22 @@ def load_approved_policy_code(
     user_code_items: list[UserCode], context: AuthedServiceContext | None
 ) -> Any:
     """Reload the policy code in memory for user code that is approved."""
-    try:
-        for user_code in user_code_items:
+    for user_code in user_code_items:
+        try:
             if context is None:
                 status = user_code.status
             else:
                 status = user_code.get_status(context).unwrap()
+        except SyftException:
+            display(
+                SyftWarning(
+                    message=f"Failed to load UserCode {user_code.id=} {user_code.service_func_name=}"
+                )
+            )
+            continue
 
-            if status.approved:
-                if isinstance(user_code.input_policy_type, UserPolicy):
-                    load_policy_code(user_code.input_policy_type)
-                if isinstance(user_code.output_policy_type, UserPolicy):
-                    load_policy_code(user_code.output_policy_type)
-    except Exception as e:
-        raise Exception(f"Failed to load code: {user_code}: {e}")
+        if status.approved:
+            if isinstance(user_code.input_policy_type, UserPolicy):
+                load_policy_code(user_code.input_policy_type)
+            if isinstance(user_code.output_policy_type, UserPolicy):
+                load_policy_code(user_code.output_policy_type)
