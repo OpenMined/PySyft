@@ -15,13 +15,13 @@ def test_dataset_namepartitionkey() -> None:
     mock_obj = "dummy_name_key"
 
     assert NamePartitionKey.key == "name"
-    assert NamePartitionKey.type_ == str
+    assert NamePartitionKey.type_ is str
 
     name_partition_key = NamePartitionKey.with_obj(obj=mock_obj)
 
     assert isinstance(name_partition_key, QueryKey)
     assert name_partition_key.key == "name"
-    assert name_partition_key.type_ == str
+    assert name_partition_key.type_ is str
     assert name_partition_key.value == mock_obj
 
     with pytest.raises(AttributeError):

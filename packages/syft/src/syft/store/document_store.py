@@ -6,6 +6,7 @@ from collections.abc import Callable
 import types
 import typing
 from typing import Any
+from typing import get_origin
 from typing import Literal
 from typing import TypeVar
 
@@ -85,7 +86,7 @@ class PartitionKey(BaseModel):
 
     def __eq__(self, other: Any) -> bool:
         return (
-            type(other) == type(self)
+            type(other) is type(self)
             and self.key == other.key
             and self.type_ == other.type_
         )
@@ -113,7 +114,7 @@ class PartitionKey(BaseModel):
 
     @property
     def type_list(self) -> bool:
-        return is_generic_alias(self.type_) and self.type_.__origin__ == list
+        return get_origin(self.type_) is list
 
 
 @serializable(canonical_name="PartitionKeys", version=1)
@@ -148,7 +149,7 @@ class QueryKey(PartitionKey):
 
     def __eq__(self, other: Any) -> bool:
         return (
-            type(other) == type(self)
+            type(other) is type(self)
             and self.key == other.key
             and self.type_ == other.type_
             and self.value == other.value

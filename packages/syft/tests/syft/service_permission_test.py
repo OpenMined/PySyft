@@ -7,7 +7,7 @@ from syft.types.errors import SyftException
 from syft.types.syft_object import EXCLUDED_FROM_SIGNATURE
 
 
-@pytest.fixture
+@pytest.fixture()
 def guest_mock_user(root_verify_key, user_stash, guest_user):
     result = user_stash.partition.set(root_verify_key, guest_user)
     assert result.is_ok()
@@ -15,7 +15,7 @@ def guest_mock_user(root_verify_key, user_stash, guest_user):
     user = result.ok()
     assert user is not None
 
-    yield user
+    return user
 
 
 def test_call_service_syftapi_with_permission(worker, guest_mock_user, update_user):

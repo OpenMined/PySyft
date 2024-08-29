@@ -20,19 +20,19 @@ from syft.types.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from syft.types.uid import UID
 
 
-@pytest.fixture
+@pytest.fixture()
 def notifier_stash(document_store) -> NotifierStash:
     yield NotifierStash(store=document_store)
 
 
-@pytest.fixture
+@pytest.fixture()
 def settings_stash(document_store) -> SettingsStash:
-    yield SettingsStash(store=document_store)
+    return SettingsStash(store=document_store)
 
 
-@pytest.fixture
+@pytest.fixture()
 def settings(worker, faker) -> ServerSettings:
-    yield ServerSettings(
+    return ServerSettings(
         id=UID(),
         name=worker.name,
         organization=faker.text(),
@@ -51,18 +51,18 @@ def settings(worker, faker) -> ServerSettings:
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def update_settings(faker) -> ServerSettingsUpdate:
-    yield ServerSettingsUpdate(
+    return ServerSettingsUpdate(
         name=faker.name(),
         description=faker.text(),
         on_board=faker.boolean(),
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def metadata_json(faker) -> ServerMetadataJSON:
-    yield ServerMetadataJSON(
+    return ServerMetadataJSON(
         metadata_version=faker.random_int(),
         name=faker.name(),
         id=faker.text(),
@@ -77,6 +77,6 @@ def metadata_json(faker) -> ServerMetadataJSON:
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def settings_service(document_store) -> SettingsService:
-    yield SettingsService(store=document_store)
+    return SettingsService(store=document_store)

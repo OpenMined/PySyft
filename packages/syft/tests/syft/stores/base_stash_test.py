@@ -78,9 +78,9 @@ def create_unique(
     return x
 
 
-@pytest.fixture
+@pytest.fixture()
 def base_stash(root_verify_key) -> MockStash:
-    yield MockStash(store=DictDocumentStore(UID(), root_verify_key))
+    return MockStash(store=DictDocumentStore(UID(), root_verify_key))
 
 
 def random_sentence(faker: Faker) -> str:
@@ -106,14 +106,14 @@ def multiple_object_kwargs(
     return [object_kwargs(faker, **kwargs) for _ in range(n)]
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_object(faker: Faker) -> MockObject:
-    yield MockObject(**object_kwargs(faker))
+    return MockObject(**object_kwargs(faker))
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_objects(faker: Faker) -> list[MockObject]:
-    yield [MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker)]
+    return [MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker)]
 
 
 def test_basestash_set(

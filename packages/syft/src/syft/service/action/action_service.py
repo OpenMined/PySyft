@@ -365,7 +365,7 @@ class ActionService(AbstractService):
         output_policy = code_item.get_output_policy(context)
 
         # Unwrap nested ActionObjects
-        for _, arg in kwargs.items():
+        for arg in kwargs.values():
             self.flatten_action_arg(context, arg) if isinstance(arg, UID) else None
 
         if not override_execution_permission:

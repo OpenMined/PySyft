@@ -19,7 +19,7 @@ def action_type_for_type(obj_or_type: Any) -> type:
     """
     if isinstance(obj_or_type, ActionDataEmpty):
         obj_or_type = obj_or_type.syft_internal_type
-    if type(obj_or_type) != type:
+    if type(obj_or_type) is not type:
         obj_or_type = type(obj_or_type)
 
     if obj_or_type not in action_types:

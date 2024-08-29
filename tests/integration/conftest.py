@@ -21,22 +21,22 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "local_server: local server integration tests")
 
 
-@pytest.fixture
+@pytest.fixture()
 def gateway_port() -> int:
     return 9081
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_1_port() -> int:
     return 9082
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_2_port() -> int:
     return 9083
 
 
-@pytest.fixture
+@pytest.fixture()
 def faker():
     return Faker()
 

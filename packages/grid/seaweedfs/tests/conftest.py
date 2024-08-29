@@ -10,7 +10,7 @@ import pytest
 __all__ = ["random_path"]
 
 
-@pytest.fixture
+@pytest.fixture()
 def random_path() -> Path:  # type: ignore
     path = Path(gettempdir(), f"{token_hex(8)}")
     yield path

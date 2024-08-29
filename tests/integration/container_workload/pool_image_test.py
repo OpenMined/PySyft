@@ -32,7 +32,7 @@ external_registry_username = os.getenv("EXTERNAL_REGISTRY_USERNAME", None)
 external_registry_password = os.getenv("EXTERNAL_REGISTRY_PASSWORD", None)
 
 
-@pytest.fixture
+@pytest.fixture()
 def external_registry_uid(datasite_1_port: int) -> UID:
     datasite_client: DatasiteClient = sy.login(
         port=datasite_1_port, email="info@openmined.org", password="changethis"
@@ -66,7 +66,7 @@ def make_docker_config_test_case(pkg: str) -> tuple[str, str]:
     )
 
 
-@pytest.mark.container_workload
+@pytest.mark.container_workload()
 def test_image_build(datasite_1_port: int, external_registry_uid: UID) -> None:
     datasite_client: DatasiteClient = sy.login(
         port=datasite_1_port, email="info@openmined.org", password="changethis"
@@ -100,7 +100,7 @@ def test_image_build(datasite_1_port: int, external_registry_uid: UID) -> None:
     assert workerimage.image_hash is not None
 
 
-@pytest.mark.container_workload
+@pytest.mark.container_workload()
 # @pytest.mark.parametrize("prebuilt", [True, False])
 @pytest.mark.parametrize("prebuilt", [False])
 def test_pool_launch(
@@ -196,7 +196,7 @@ def test_pool_launch(
     # TODO: delete the launched pool
 
 
-@pytest.mark.container_workload
+@pytest.mark.container_workload()
 @pytest.mark.parametrize("prebuilt", [True, False])
 def test_pool_image_creation_job_requests(
     datasite_1_port: int, external_registry_uid: UID, prebuilt: bool

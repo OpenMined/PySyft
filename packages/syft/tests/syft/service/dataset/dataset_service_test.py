@@ -302,10 +302,10 @@ def test_upload_dataset_with_assets_of_different_data_types(
     res = root_datasite_client.upload_dataset(dataset)
     assert isinstance(res, SyftSuccess)
     assert len(root_datasite_client.api.services.dataset.get_all()) == 1
-    assert type(root_datasite_client.datasets[0].assets[0].data) == type(
+    assert type(root_datasite_client.datasets[0].assets[0].data) is type(
         different_data_types
     )
-    assert type(root_datasite_client.datasets[0].assets[0].mock) == type(
+    assert type(root_datasite_client.datasets[0].assets[0].mock) is type(
         different_data_types
     )
 

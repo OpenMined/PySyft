@@ -16,7 +16,7 @@ from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_job_restart(job) -> None:
     job.wait(timeout=2)
 
@@ -59,7 +59,7 @@ def test_job_restart(job) -> None:
     ), "Subjobs not restarted"
 
 
-@pytest.fixture
+@pytest.fixture()
 def server():
     server = sy.orchestra.launch(
         name=token_hex(8),
@@ -77,7 +77,7 @@ def server():
         server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def job(server):
     client = server.login(email="info@openmined.org", password="changethis")
     _ = client.register(name="a", email="aa@b.org", password="c", password_verify="c")
@@ -114,7 +114,7 @@ def job(server):
         job.kill()
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_job_kill(job) -> None:
     job.wait(timeout=2)
     assert wait_until(

@@ -33,7 +33,7 @@ def test_requeststash_get_all_for_verify_key_no_requests(
     assert len(requests.ok()) == 0
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail()
 def test_requeststash_get_all_for_verify_key_success(
     root_verify_key,
     request_stash: RequestStash,

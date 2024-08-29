@@ -122,9 +122,9 @@ def stage_protocol(protocol_file: Path):
                         _file_path.unlink()
 
 
-@pytest.fixture
+@pytest.fixture()
 def faker():
-    yield Faker()
+    return Faker()
 
 
 @pytest.fixture(scope="function")
@@ -164,32 +164,32 @@ def low_worker() -> Worker:
     del worker
 
 
-@pytest.fixture
+@pytest.fixture()
 def root_datasite_client(worker) -> DatasiteClient:
-    yield worker.root_client
+    return worker.root_client
 
 
-@pytest.fixture
+@pytest.fixture()
 def root_verify_key(worker):
-    yield worker.root_client.credentials.verify_key
+    return worker.root_client.credentials.verify_key
 
 
-@pytest.fixture
+@pytest.fixture()
 def guest_client(worker) -> DatasiteClient:
-    yield worker.guest_client
+    return worker.guest_client
 
 
-@pytest.fixture
+@pytest.fixture()
 def guest_verify_key(worker):
-    yield worker.guest_client.credentials.verify_key
+    return worker.guest_client.credentials.verify_key
 
 
-@pytest.fixture
+@pytest.fixture()
 def guest_datasite_client(root_datasite_client) -> DatasiteClient:
-    yield root_datasite_client.guest()
+    return root_datasite_client.guest()
 
 
-@pytest.fixture
+@pytest.fixture()
 def ds_client(
     faker: Faker, root_datasite_client: DatasiteClient, guest_client: DatasiteClient
 ):
@@ -205,20 +205,20 @@ def ds_client(
     yield ds_client
 
 
-@pytest.fixture
+@pytest.fixture()
 def ds_verify_key(ds_client: DatasiteClient):
     yield ds_client.credentials.verify_key
 
 
-@pytest.fixture
+@pytest.fixture()
 def document_store(worker):
     yield worker.document_store
     worker.document_store.reset()
 
 
-@pytest.fixture
+@pytest.fixture()
 def action_store(worker):
-    yield worker.action_store
+    return worker.action_store
 
 
 @pytest.fixture(scope="session")
@@ -236,7 +236,7 @@ def mongo_client(testrun_uid):
     client = MongoClient(conn_str)
     assert client.server_info().get("ok") == 1.0
 
-    yield client
+    return client
 
     # stop_mongo_server(db_name)
 

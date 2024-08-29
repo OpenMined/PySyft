@@ -345,7 +345,7 @@ class UserOwned(PolicyRule):
     def is_met(
         self, context: AuthedServiceContext, action_object: ActionObject
     ) -> bool:
-        return type(action_object.syft_action_data) == self.type and self.is_owned(
+        return type(action_object.syft_action_data) is self.type and self.is_owned(
             context, action_object
         )
 
@@ -475,7 +475,7 @@ class MixedInputPolicy(InputPolicy):
     def transform_kwargs(
         self, context: AuthedServiceContext, kwargs: dict[str, Any]
     ) -> dict[str, Any]:
-        for _, rules in self.kwarg_rules.items():
+        for rules in self.kwarg_rules.values():
             for kw, rule in rules.items():
                 if hasattr(rule, "transform_kwarg"):
                     kwargs[kw] = rule.transform_kwarg(
@@ -542,7 +542,7 @@ class MixedInputPolicy(InputPolicy):
     ) -> dict[Any, Any]:
         try:
             res = {}
-            for _, rules in self.kwarg_rules.items():
+            for rules in self.kwarg_rules.values():
                 for kw, rule in rules.items():
                     if rule.requires_input:
                         passed_id = kwargs[kw]

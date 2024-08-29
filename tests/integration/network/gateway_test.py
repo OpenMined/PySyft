@@ -78,7 +78,7 @@ def test_network_registry_from_url() -> None:
     assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_network_registry_env_var(set_env_var) -> None:
     assert isinstance(sy.gateways, NetworkRegistry)
     assert len(sy.gateways.all_networks) == len(sy.gateways.online_networks) == 1
@@ -86,7 +86,7 @@ def test_network_registry_env_var(set_env_var) -> None:
     assert isinstance(sy.gateways[0].connection, HTTPConnection)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_datasite_connect_to_gateway(
     set_env_var, datasite_1_port: int, gateway_port: int
 ) -> None:
@@ -165,7 +165,7 @@ def test_datasite_connect_to_gateway(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 @pytest.mark.skip(reason="Disabled since the dataset search functionality was removed")
 def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
@@ -228,7 +228,7 @@ def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) ->
 
 
 @pytest.mark.skip(reason="Possible bug")
-@pytest.mark.network
+@pytest.mark.network()
 def test_datasite_gateway_user_code(
     set_env_var, datasite_1_port: int, gateway_port: int
 ) -> None:
@@ -309,7 +309,7 @@ def test_datasite_gateway_user_code(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_deleting_peers(set_env_var, datasite_1_port: int, gateway_port: int) -> None:
     # login to the datasite and gateway
     gateway_client: GatewayClient = sy.login(
@@ -354,7 +354,7 @@ def test_deleting_peers(set_env_var, datasite_1_port: int, gateway_port: int) ->
     assert len(gateway_client.peers) == 0
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_add_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
     Test the network service's `add_route` functionalities to add routes directly
@@ -433,7 +433,7 @@ def test_add_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_delete_route(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
     Scenario:
@@ -487,7 +487,7 @@ def test_delete_route(set_env_var, gateway_port: int, datasite_1_port: int) -> N
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_add_route_on_peer(
     set_env_var, gateway_port: int, datasite_1_port: int
 ) -> None:
@@ -560,7 +560,7 @@ def test_add_route_on_peer(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 @pytest.mark.flaky(reruns=2, reruns_delay=2)
 def test_delete_route_on_peer(
     set_env_var, gateway_port: int, datasite_1_port: int
@@ -635,7 +635,7 @@ def test_delete_route_on_peer(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_update_route_priority(
     set_env_var, gateway_port: int, datasite_1_port: int
 ) -> None:
@@ -709,7 +709,7 @@ def test_update_route_priority(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_update_route_priority_on_peer(
     set_env_var, gateway_port: int, datasite_1_port: int
 ) -> None:
@@ -778,7 +778,7 @@ def test_update_route_priority_on_peer(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_dataset_stream(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
     Scenario: Connecting a datasite server to a gateway server. The datasite
@@ -834,7 +834,7 @@ def test_dataset_stream(set_env_var, gateway_port: int, datasite_1_port: int) ->
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_peer_health_check(
     set_env_var, gateway_port: int, datasite_1_port: int
 ) -> None:
@@ -910,7 +910,7 @@ def test_peer_health_check(
     assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
-@pytest.mark.network
+@pytest.mark.network()
 def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
     # login to the datasite and gateway
 

@@ -14,7 +14,7 @@ from syft.service.job.job_stash import Job
 from syft.service.response import SyftSuccess
 
 
-@pytest.fixture
+@pytest.fixture()
 def server():
     _server = sy.orchestra.launch(
         name=token_hex(8),

@@ -164,7 +164,7 @@ def setup_version_second(server_name: str, klass_version_one: type):
     return server, syft_klass_version_second
 
 
-@pytest.fixture
+@pytest.fixture()
 def my_stage_protocol(protocol_file: Path):
     with mock.patch(
         "syft.protocol.data_protocol.PROTOCOL_STATE_FILENAME",

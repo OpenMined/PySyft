@@ -107,14 +107,14 @@ def get_full_build_config(build_config: dict[str, Any]) -> dict[str, Any]:
     return {**DEFAULT_BUILD_CONFIG, **build_config}
 
 
-@pytest.fixture
+@pytest.fixture()
 def worker_config(
     build_config: dict[str, Any], worker_config_version: str | None
 ) -> dict[str, Any]:
-    yield get_worker_config(build_config, worker_config_version)
+    return get_worker_config(build_config, worker_config_version)
 
 
-@pytest.fixture
+@pytest.fixture()
 def worker_config_yaml(tmp_path: Path, worker_config: dict[str, Any]) -> Path:
     file_name = f"{uuid4().hex}.yaml"
     file_path = tmp_path / file_name
@@ -171,7 +171,7 @@ DOCKER_CONFIG_OPENDP = f"""
 """
 
 
-@pytest.fixture
+@pytest.fixture()
 def dockerfile_path(tmp_path: Path) -> Path:
     file_name = f"{uuid4().hex}.Dockerfile"
     file_path = tmp_path / file_name

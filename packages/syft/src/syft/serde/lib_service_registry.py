@@ -199,7 +199,7 @@ class CMPBase:
     def isfunction(obj: Callable) -> bool:
         return (
             inspect.isfunction(obj)
-            or type(obj) == numpy.ufunc
+            or type(obj) is numpy.ufunc
             or isinstance(obj, BuiltinFunctionType)
         )
 

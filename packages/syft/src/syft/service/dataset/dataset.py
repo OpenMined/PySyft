@@ -308,7 +308,7 @@ def _is_action_data_empty(obj: Any) -> bool:
 
 
 def check_mock(data: Any, mock: Any) -> bool:
-    if type(data) == type(mock):
+    if type(data) is type(mock):
         return True
 
     return _is_action_data_empty(mock) or _is_action_data_empty(data)

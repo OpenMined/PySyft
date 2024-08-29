@@ -18,7 +18,7 @@ from .store_mocks_test import MockStoreConfig
 from .store_mocks_test import MockSyftObject
 
 
-@pytest.fixture
+@pytest.fixture()
 def kv_store_partition(worker):
     store_config = MockStoreConfig()
     settings = PartitionSettings(name="test", object_type=MockObjectType)
@@ -32,7 +32,7 @@ def kv_store_partition(worker):
     res = store.init_store()
     assert res.is_ok()
 
-    yield store
+    return store
 
 
 def test_kv_store_partition_sanity(kv_store_partition: KeyValueStorePartition) -> None:

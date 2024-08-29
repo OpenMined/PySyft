@@ -300,9 +300,7 @@ def deconstruct_param(param: inspect.Parameter) -> dict[str, Any]:
             f"Type {param_type} needs __signature__. Or code changed to support backup init"
         )
     signature = param_type.__signature__
-    sub_mapping = {}
-    for k, v in signature.parameters.items():
-        sub_mapping[k] = v
+    sub_mapping = dict(signature.parameters)
     return sub_mapping
 
 

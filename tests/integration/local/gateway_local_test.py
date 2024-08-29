@@ -39,7 +39,7 @@ def _launch(
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def gateway():
     server = _launch(ServerType.GATEWAY)
     yield server
@@ -57,7 +57,7 @@ def gateway_association_request_auto_approval(request: pytest.FixtureRequest):
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite():
     server = _launch(ServerType.DATASITE)
     yield server
@@ -65,7 +65,7 @@ def datasite():
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_2():
     server = _launch(ServerType.DATASITE)
     yield server
@@ -73,7 +73,7 @@ def datasite_2():
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def enclave():
     server = _launch(ServerType.ENCLAVE)
     yield server
@@ -81,21 +81,21 @@ def enclave():
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def gateway_webserver():
     server = _launch(server_type=ServerType.GATEWAY, port="auto")
     yield server
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_webserver():
     server = _launch(ServerType.DATASITE, port="auto")
     yield server
     server.land()
 
 
-@pytest.fixture
+@pytest.fixture()
 def datasite_2_webserver():
     server = _launch(ServerType.DATASITE, port="auto")
     yield server
@@ -129,7 +129,7 @@ def set_network_json_env_var(gateway_webserver):
     del os.environ["NETWORK_REGISTRY_JSON"]
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_create_gateway(
     set_network_json_env_var,
     gateway_webserver,
@@ -175,7 +175,7 @@ def test_create_gateway(
     assert client.metadata.server_type == ServerType.GATEWAY.value
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_datasite_connect_to_gateway(
     gateway_association_request_auto_approval, datasite
 ):
@@ -249,7 +249,7 @@ def test_datasite_connect_to_gateway(
     assert all_peers[0].server_routes[0].priority == 1
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_datasite_connect_to_gateway_routes_priority(
     gateway, datasite, datasite_2
 ) -> None:
@@ -295,7 +295,7 @@ def test_datasite_connect_to_gateway_routes_priority(
         assert peer.server_routes[0].priority == 1
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
     gateway_client = gateway.client
     enclave_client: EnclaveClient = enclave.client
@@ -350,7 +350,7 @@ def test_enclave_connect_to_gateway(faker: Faker, gateway, enclave):
     )
 
 
-@pytest.mark.local_server
+@pytest.mark.local_server()
 @pytest.mark.parametrize(
     "gateway_association_request_auto_approval", [False], indirect=True
 )
