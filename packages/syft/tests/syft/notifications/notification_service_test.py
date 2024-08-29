@@ -4,7 +4,6 @@ from typing import NoReturn
 # third party
 import pytest
 from pytest import MonkeyPatch
-from tests.syft.utils.smtp_mock import MockSMTP
 
 # syft absolute
 from syft.server.credentials import SyftSigningKey
@@ -28,6 +27,35 @@ test_verify_key_string = (
 )
 
 test_verify_key = SyftVerifyKey.from_string(test_verify_key_string)
+
+
+class MockSMTP:
+    def __init__(self, smtp_server, smtp_port, timeout):
+        self.sent_mail = []
+        self.smtp_server = smtp_server
+        self.smtp_port = smtp_port
+        self.timeout = timeout
+
+    def sendmail(self, from_addr, to_addrs, msg):
+        self.sent_mail.append((from_addr, to_addrs, msg))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+    def ehlo(self):
+        return True
+
+    def has_extn(self, extn):
+        return True
+
+    def login(self, username, password):
+        return True
+
+    def starttls(self):
+        return True
 
 
 def add_mock_notification(
