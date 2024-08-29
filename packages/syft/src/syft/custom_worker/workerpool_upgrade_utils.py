@@ -14,7 +14,90 @@ from ..service.migration.object_migration_state import MigrationData
 from ..service.worker.image_identifier import SyftWorkerImageIdentifier
 from ..service.worker.worker_image import SyftWorkerImage
 from ..service.worker.worker_pool import WorkerPool
-from .config import PrebuiltWorkerConfig
+
+
+def upgrade_custom_workerpools(
+    client: SyftClient,
+    migration_data: str | Path | MigrationData,
+    mode: str = "manual",
+) -> None:
+    """Upgrade custom workerpools to the new syft version
+
+    Args:
+        client (SyftClient): Admin client to upgrade workerpools with
+        migration_data (str | Path | MigrationData): Path to migration data or MigrationData object
+        mode (str, optional): if "auto" the upgrade will be done automatically. "auto" assumes
+            all images and tags use Syft versioning. Defaults to "manual".
+
+    Raises:
+        ValueError: if mode is not "manual" or "auto"
+    """
+    print("This is a utility to upgrade workerpools to the new syft version")
+    print("If an upgrade fails, it is always possible to start the workerpool manually")
+
+    if mode not in ["manual", "auto"]:
+        raise ValueError("mode must be either 'manual' or 'auto'")
+
+    if isinstance(migration_data, str | Path):
+        print("loading migration data...")
+        migration_data = MigrationData.from_file(migration_data)
+
+    # mypy does not recognize instance check for str | Path
+    migration_data = cast(MigrationData, migration_data)
+    worker_pools = migration_data.get_items_by_canonical_name(
+        WorkerPool.__canonical_name__
+    )
+    num_upgraded = 0
+    for pool in worker_pools:
+        is_upgraded = upgrade_workerpool(client, pool, migration_data, mode)
+        if is_upgraded:
+            num_upgraded += 1
+        print()
+
+    print(f"Upgraded {num_upgraded} workerpools to the new syft version")
+    print("Please verify your upgraded pools with `client.worker_pools`")
+
+
+def upgrade_workerpool(
+    client: SyftClient,
+    pool: WorkerPool,
+    migration_data: MigrationData,
+    mode: str = "manual",
+) -> bool:
+    if pool.name == migration_data.default_pool_name:
+        print("Skipping default pool, this pool has already been upgraded")
+        return False
+
+    print(f"Upgrading workerpool {pool.name}")
+
+    images = migration_data.get_items_by_canonical_name(
+        SyftWorkerImage.__canonical_name__
+    )
+    image_id = pool.image_id
+    old_image: SyftWorkerImage = [img for img in images if img.id == image_id][0]
+
+    if old_image.is_prebuilt:
+        new_image = upgrade_prebuilt_image(client, old_image, mode)
+    else:
+        new_image = upgrade_syft_image(client, old_image, mode)
+
+    if not new_image:
+        print(f"Failed to upgrade workerpool {pool.name}, could not build new image")
+        return False
+
+    print(f"starting new pool `{pool.name}` with {pool.max_count} workers")
+    try:
+        result = client.api.services.worker_pool.launch(
+            pool_name=pool.name,
+            image_uid=new_image.id,
+            num_workers=pool.max_count,
+        )
+        display(result)
+        return True
+    except Exception as e:
+        display(e)
+        print(f"failed to start workerpool {pool.name}, please start the pool manually")
+        return False
 
 
 def upgrade_prebuilt_image(
@@ -101,91 +184,6 @@ def upgrade_syft_image(
         return None
 
     return custom_image
-
-
-def upgrade_workerpool(
-    client: SyftClient,
-    pool: WorkerPool,
-    migration_data: MigrationData,
-    mode: str = "manual",
-) -> bool:
-    if pool.name == migration_data.default_pool_name:
-        print("Skipping default pool, this pool has already been upgraded")
-        return False
-
-    print(f"Upgrading workerpool {pool.name}")
-
-    images = migration_data.get_items_by_canonical_name(
-        SyftWorkerImage.__canonical_name__
-    )
-    image_id = pool.image_id
-    old_image = [img for img in images if img.id == image_id][0]
-    is_prebuilt_image = isinstance(old_image.config, PrebuiltWorkerConfig)
-
-    if is_prebuilt_image:
-        new_image = upgrade_prebuilt_image(client, old_image, mode)
-    else:
-        new_image = upgrade_syft_image(client, old_image, mode)
-
-    if not new_image:
-        print(f"Failing to upgrade workerpool {pool.name}, could not build new image")
-        return False
-
-    print(f"starting new pool `{pool.name}` with {pool.max_count} workers")
-    try:
-        result = client.api.services.worker_pool.launch(
-            pool_name=pool.name,
-            image_uid=new_image.id,
-            num_workers=pool.max_count,
-        )
-        display(result)
-        return True
-    except Exception as e:
-        display(e)
-        print(f"failed to start workerpool {pool.name}, please start the pool manually")
-        return False
-
-
-def upgrade_custom_workerpools(
-    client: SyftClient,
-    migration_data: str | Path | MigrationData,
-    mode: str = "manual",
-) -> None:
-    """Upgrade custom workerpools to the new syft version
-
-    Args:
-        client (SyftClient): Admin client to upgrade workerpools with
-        migration_data (str | Path | MigrationData): Path to migration data or MigrationData object
-        mode (str, optional): if "auto" the upgrade will be done automatically. "auto" assumes
-            all images and tags use Syft versioning. Defaults to "manual".
-
-    Raises:
-        ValueError: if mode is not "manual" or "auto"
-    """
-    print("This is a utility to upgrade workerpools to the new syft version")
-    print("If an upgrade fails, it is always possible to start the workerpool manually")
-
-    if mode not in ["manual", "auto"]:
-        raise ValueError("mode must be either 'manual' or 'auto'")
-
-    if isinstance(migration_data, str | Path):
-        print("loading migration data...")
-        migration_data = MigrationData.from_file(migration_data)
-
-    # mypy does not recognize instance check for str | Path
-    migration_data = cast(MigrationData, migration_data)
-    worker_pools = migration_data.get_items_by_canonical_name(
-        WorkerPool.__canonical_name__
-    )
-    num_upgraded = 0
-    for pool in worker_pools:
-        is_upgraded = upgrade_workerpool(client, pool, migration_data, mode)
-        if is_upgraded:
-            num_upgraded += 1
-        print()
-
-    print(f"Upgraded {num_upgraded} workerpools to the new syft version")
-    print("Please verify your upgraded pools with `client.worker_pools`")
 
 
 def get_tag_from_input() -> str | None:
