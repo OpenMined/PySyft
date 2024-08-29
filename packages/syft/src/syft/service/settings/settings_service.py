@@ -163,7 +163,7 @@ class SettingsService(AbstractService):
                         public_message=_NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR
                     )
 
-                notifier_service.set_notifier(
+                notifier_service._set_notifier(
                     context, active=settings.notifications_enabled
                 )
 
@@ -220,7 +220,6 @@ class SettingsService(AbstractService):
         email_port: str | None = None,
     ) -> SyftSuccess:
         notifier_service = context.server.get_service("notifierservice")
-        # FIX: NotificationService
         notifier_service.turn_on(
             context=context,
             email_username=email_username,
@@ -228,7 +227,7 @@ class SettingsService(AbstractService):
             email_sender=email_sender,
             email_server=email_server,
             email_port=email_port,
-        ).unwrap(public_message="Failed to enable notifications")
+        ).unwrap()
         return SyftSuccess(message="Notifications enabled")
 
     @service_method(
