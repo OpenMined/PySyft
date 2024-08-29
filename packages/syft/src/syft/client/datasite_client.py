@@ -437,7 +437,7 @@ class DatasiteClient(SyftClient):
             migration_data_without_blobs
         )
 
-    def dump_state(self, path: str | Path) -> SyftSuccess:
+    def dump_state(self, path: str | Path) -> None:
         if isinstance(path, str):
             path = Path(path)
         path.mkdir(exist_ok=True)
