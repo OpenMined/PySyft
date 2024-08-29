@@ -8,6 +8,7 @@ from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store import NewBaseStash
+from ...store.document_store_errors import NotFoundException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
@@ -154,7 +155,13 @@ class SyncService(AbstractService):
         stash = self.get_stash_for_item(context, item)
         creds = context.credentials
 
-        exists = stash.get_by_uid(context.credentials, item.id).ok() is not None
+        obj = None
+        try:
+            obj = stash.get_by_uid(context.credentials, item.id).unwrap()
+        except (SyftException, KeyError):
+            obj = None
+
+        exists = obj is not None
 
         if isinstance(item, TwinAPIEndpoint):
             # we need the side effect of set function
@@ -300,7 +307,10 @@ class SyncService(AbstractService):
         job_batch.append(log)
 
         output_service = context.server.get_service("outputservice")
-        output = output_service.get_by_job_id(context, job.id)
+        try:
+            output = output_service.get_by_job_id(context, job.id)
+        except NotFoundException:
+            output = None
 
         if output is not None:
             job_batch.append(output)
@@ -370,7 +380,10 @@ class SyncService(AbstractService):
             permissions = {}
             storage_permissions = {}
 
-        previous_state = self.stash.get_latest(context=context).unwrap()
+        try:
+            previous_state = self.stash.get_latest(context=context).unwrap()
+        except NotFoundException:
+            previous_state = None
 
         if previous_state is not None:
             previous_state_link = LinkedObject.from_obj(

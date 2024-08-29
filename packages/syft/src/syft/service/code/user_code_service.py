@@ -543,7 +543,6 @@ class UserCodeService(AbstractService):
                             inp_policy_validation = input_policy.is_valid(
                                 context,
                                 usr_input_kwargs=kwarg2id,
-                                code_item_id=code.id,
                             )
 
                             if not inp_policy_validation:
