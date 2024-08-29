@@ -74,12 +74,12 @@ def upgrade_workerpool(
 
     if is_prebuilt_image:
         new_image = upgrade_prebuilt_image(client, pool, old_image)
-        if not new_image:
-            print(f"Skipping workerpool {pool.name}.")
-            return False
     else:
-        # TODO upgrade prebuilt images
         new_image = upgrade_syft_image(client, pool, old_image)
+
+    if not new_image:
+        print(f"Failing to upgrade workerpool {pool.name}, could not build new image")
+        return False
 
     print(f"starting new pool `{pool.name}` with {pool.max_count} workers")
     try:

@@ -201,7 +201,7 @@ class MigrationData(SyftObject):
             res: SyftObject = _deserialize(f.read(), from_bytes=True)
 
         if not isinstance(res, MigrationData):
-            latest_version = SyftObjectRegistry.get_latest_version(
+            latest_version = SyftObjectRegistry.get_latest_version(  # type: ignore[unreachable]
                 MigrationData.__canonical_name__
             )
             print("Upgrading MigrationData object to latest version...")
