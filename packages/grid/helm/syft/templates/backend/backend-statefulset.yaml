@@ -99,18 +99,20 @@ spec:
             - name: REVERSE_TUNNEL_ENABLED
               value: "true"
             {{- end }}
-            # MongoDB
-            - name: MONGO_PORT
-              value: {{ .Values.mongo.port | quote }}
-            - name: MONGO_HOST
-              value: "mongo"
-            - name: MONGO_USERNAME
-              value: {{ .Values.mongo.username | quote }}
-            - name: MONGO_PASSWORD
+            # Postgres
+            - name: POSTGRESQL_PORT
+              value: {{ .Values.postgres.port | quote }}
+            - name: POSTGRESQL_HOST
+              value: "postgres"
+            - name: POSTGRESQL_USERNAME
+              value: {{ .Values.postgres.username | quote }}
+            - name: POSTGRESQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.mongo.secretKeyName | required "mongo.secretKeyName is required" }}
+                  name: {{ .Values.postgres.secretKeyName | required "postgres.secretKeyName is required" }}
                   key: rootPassword
+            - name: POSTGRESQL_DBNAME
+              value: {{ .Values.postgres.dbname | quote }}
             # SMTP
             - name: SMTP_HOST
               value: {{ .Values.server.smtp.host | quote }}

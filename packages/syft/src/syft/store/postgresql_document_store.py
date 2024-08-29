@@ -48,6 +48,12 @@ class PostgreSQLStoreClientConfig(StoreClientConfig):
     class Config:
         frozen = True
 
+    def __hash__(self) -> int:
+        return hash((self.dbname, self.username, self.password, self.host, self.port))
+
+    def __str__(self) -> str:
+        return f"dbname={self.dbname} user={self.username} password={self.password} host={self.host} port={self.port}"
+
 
 @serializable(canonical_name="PostgreSQLStorePartition", version=1)
 class PostgreSQLStorePartition(SQLiteStorePartition):
@@ -94,6 +100,9 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
                 host=self.store_config.client_config.host,
                 port=self.store_config.client_config.port,
             )
+
+            print(f"Connected to {self.store_config.client_config.dbname}")
+            print("PostgreSQL database connection:", connection._check_connection_ok())
 
             _CONNECTION_POOL_DB[cache_key(self.dbname)] = connection
 

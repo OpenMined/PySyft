@@ -91,6 +91,10 @@ single_container_mode = settings.SINGLE_CONTAINER_MODE
 store_config = (
     sql_store_config() if single_container_mode else postgresql_store_config()
 )
+
+print("----------------------------Store Config----------------------------\n")
+print(store_config.model_dump())
+print("\n----------------------------Store Config----------------------------")
 blob_storage_config = None if single_container_mode else seaweedfs_config()
 queue_config = queue_config()
 
