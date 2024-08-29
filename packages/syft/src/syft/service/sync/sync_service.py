@@ -12,6 +12,7 @@ from ...store.document_store_errors import NotFoundException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
+from ...types.result import OkErr
 from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
@@ -266,8 +267,20 @@ class SyncService(AbstractService):
 
                 # TODO fix error handling for storage permissions
                 item_storage_permissions = store._get_storage_permissions_for_uid(uid)
-                if not item_storage_permissions.is_err():
-                    storage_permissions[uid] = item_storage_permissions.ok()
+                print(">> item_storage_permissions", type(item_storage_permissions))
+                # POSSIBLE BUG different db interfaces might be returning different types
+                if (
+                    isinstance(item_storage_permissions, OkErr)
+                    and not item_storage_permissions.is_err()
+                ):
+                    item_storage_permissions = item_storage_permissions.ok()
+
+                print(
+                    ">> unboxed item_storage_permissions",
+                    type(item_storage_permissions),
+                )
+
+                storage_permissions[uid] = item_storage_permissions
         return permissions, storage_permissions
 
     @as_result(SyftException)
