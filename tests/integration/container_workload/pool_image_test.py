@@ -193,7 +193,9 @@ def test_pool_launch(
             res = datasite_client.api.services.worker.delete(uid=worker.id, force=True)
             assert isinstance(res, sy.SyftSuccess)
 
-    # TODO: delete the launched pool
+    # delete the launched pool
+    res = datasite_client.api.services.worker_pool.delete(pool_name=worker_pool_name)
+    assert isinstance(res, SyftSuccess), res.message
 
 
 @pytest.mark.container_workload
@@ -320,4 +322,6 @@ def test_pool_image_creation_job_requests(
         res = datasite_client.api.services.worker.delete(uid=worker.id, force=True)
         assert isinstance(res, sy.SyftSuccess)
 
-    # TODO: delete the launched pool
+    # delete the launched pool
+    res = datasite_client.api.services.worker_pool.delete(pool_id=launched_pool.id)
+    assert isinstance(res, SyftSuccess), res.message

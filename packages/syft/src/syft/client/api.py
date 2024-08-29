@@ -1360,11 +1360,13 @@ def validate_callable_args_and_kwargs(
                 try:
                     _check_type(value, t)
                 except ValueError:
-                    _type_str = getattr(t, "__name__", str(t))
-                    raise SyftException(
-                        public_message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
-                        f"{_signature_error_message(_format_signature(signature))}"
-                    )
+                    # TODO: fix this properly
+                    if not (t == type(Any)):
+                        _type_str = getattr(t, "__name__", str(t))
+                        raise SyftException(
+                            public_message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
+                            f"{_signature_error_message(_format_signature(signature))}"
+                        )
 
             _valid_kwargs[key] = value
 

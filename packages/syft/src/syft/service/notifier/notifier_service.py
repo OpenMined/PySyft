@@ -67,13 +67,15 @@ class NotifierService(AbstractService):
             app=notifications[NOTIFIERS.APP],
         )
 
-    def set_notifier_active_to_true(self, context: AuthedServiceContext) -> SyftSuccess:
+    def _set_notifier(self, context: AuthedServiceContext, active: bool) -> SyftSuccess:
         notifier = self.stash.get(credentials=context.credentials).unwrap(
             public_message="Notifier settings not found."
         )
-        notifier.active = True
-        self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
-        return SyftSuccess(message="notifier.active set to true.")
+        notifier.active = active
+        self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
+
+        active_s = "active" if active else "inactive"
+        return SyftSuccess(message=f"Notifier set to {active_s}")
 
     def set_notifier_active_to_false(
         self, context: AuthedServiceContext
@@ -83,7 +85,7 @@ class NotifierService(AbstractService):
         """
         notifier = self.stash.get(credentials=context.credentials).unwrap()
         notifier.active = False
-        self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
+        self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
         return SyftSuccess(message="notifier.active set to false.")
 
     @as_result(SyftException)
@@ -106,19 +108,15 @@ class NotifierService(AbstractService):
             SyftSuccess: success response.
 
         Raises:
-            None
-
+            SyftException: any error that occurs during the process
         """
 
         # 1 -  If something went wrong at db level, return the error
         notifier = self.stash.get(credentials=context.credentials).unwrap()
 
         # 2 - If one of the credentials are set alone, return an error
-        if (
-            email_username
-            and not email_password
-            or email_password
-            and not email_username
+        if (email_username and not email_password) or (
+            not email_username and email_password
         ):
             raise SyftException(
                 public_message="You must provide both username and password"
@@ -135,27 +133,27 @@ class NotifierService(AbstractService):
         if not (email_username and email_password):
             if not (notifier.email_username and notifier.email_password):
                 raise SyftException(
-                    message="No valid token has been added to the datasite."
-                    + "You can add a pair of SMTP credentials via "
-                    + "<client>.settings.enable_notifications(email=<>, password=<>)"
+                    public_message=(
+                        "No valid token has been added to the datasite."
+                        " You can add a pair of SMTP credentials via"
+                        " <client>.settings.enable_notifications(email=<>, password=<>)"
+                    )
                 )
             else:
                 logging.debug("No new credentials provided. Using existing ones.")
                 email_password = notifier.email_password
                 email_username = notifier.email_username
 
-        validation_result = notifier.validate_email_credentials(
+        valid_credentials = notifier.validate_email_credentials(
             username=email_username,
             password=email_password,
-            server=email_server if email_server else notifier.email_server,
-            port=email_port if email_port else notifier.email_port,
+            server=email_server or notifier.email_server,
+            port=email_port or notifier.email_port,
         )
 
-        if validation_result.is_err():
-            logging.error(f"Invalid SMTP credentials {validation_result.err()}")
-            validation_result.unwrap(
-                public_message="Invalid SMTP credentials. Please check your username and password."
-            )
+        if not valid_credentials:
+            logging.error("Invalid SMTP credentials.")
+            raise SyftException(public_message=("Invalid SMTP credentials."))
 
         notifier.email_password = email_password
         notifier.email_username = email_username
@@ -189,7 +187,7 @@ class NotifierService(AbstractService):
             "Email credentials are valid. Updating the notifier settings in the db."
         )
 
-        self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
+        self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
         settings_service = context.server.get_service("settingsservice")
         settings_service.update(context, notifications_enabled=True)
         return SyftSuccess(message="Notifications enabled successfully.")
@@ -206,7 +204,7 @@ class NotifierService(AbstractService):
         notifier = self.stash.get(credentials=context.credentials).unwrap()
 
         notifier.active = False
-        self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
+        self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
 
         settings_service = context.server.get_service("settingsservice")
         settings_service.update(context, notifications_enabled=False)
@@ -298,7 +296,7 @@ class NotifierService(AbstractService):
 
             if should_update:
                 notifier_stash.update(
-                    credentials=server.signing_key.verify_key, settings=notifier
+                    credentials=server.signing_key.verify_key, obj=notifier
                 ).unwrap()
             else:
                 notifier_stash.set(server.signing_key.verify_key, notifier).unwrap()
@@ -317,7 +315,7 @@ class NotifierService(AbstractService):
             public_message="Couldn't set the email rate limit."
         )
         notifier.email_rate_limit[email_type.value] = daily_limit
-        self.stash.update(credentials=context.credentials, settings=notifier)
+        self.stash.update(credentials=context.credentials, obj=notifier)
 
         return SyftSuccess(message="Email rate limit updated!")
 
@@ -349,10 +347,12 @@ class NotifierService(AbstractService):
         # If notifier is active
         if notifier.active and notification.email_template is not None:
             logging.debug("Checking user email activity")
+
             if notifier.email_activity.get(notification.email_template.__name__, None):
                 user_activity = notifier.email_activity[
                     notification.email_template.__name__
                 ].get(notification.to_user_verify_key, None)
+
                 # If there's no user activity
                 if user_activity is None:
                     notifier.email_activity[notification.email_template.__name__][
@@ -388,7 +388,7 @@ class NotifierService(AbstractService):
                     )
                 }
 
-            self.stash.update(credentials=admin_key, settings=notifier).unwrap()
+            self.stash.update(credentials=admin_key, obj=notifier).unwrap()
 
             notifier.send_notifications(
                 context=context, notification=notification
