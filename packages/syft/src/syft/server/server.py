@@ -1266,6 +1266,7 @@ class Server(AbstractServer):
         credentials: SyftVerifyKey,
         method: str,
         path: str,
+        log_id: UID,
         *args: Any,
         worker_pool: str | None = None,
         **kwargs: Any,
@@ -1294,7 +1295,7 @@ class Server(AbstractServer):
             job_id=job_id,
             worker_settings=worker_settings,
             args=args,
-            kwargs={"path": path, **kwargs},
+            kwargs={"path": path, "log_id": log_id, **kwargs},
             has_execute_permissions=True,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
@@ -1385,9 +1386,11 @@ class Server(AbstractServer):
         action: Action | None = None,
         parent_job_id: UID | None = None,
         user_id: UID | None = None,
+        log_id: UID | None = None,
         job_type: JobType = JobType.JOB,
     ) -> Job:
-        log_id = UID()
+        if log_id is None:
+            log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(server=self, credentials=credentials, role=role)
 
