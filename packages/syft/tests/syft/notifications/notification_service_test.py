@@ -737,13 +737,26 @@ def test_clear_error_on_delete_all_for_verify_key(
     assert len(inbox_after_delete) == 1
 
 
+# a list of all the mock objects created
+mock_smtps = []
+
+
 def test_send_email(worker, monkeypatch, mock_create_notification, authed_context):
     # stdlib
     import smtplib
 
-    monkeypatch.setattr(smtplib, "SMTP", MockSMTP)
+    # we use this to have a reference to all the mock objects we create
+    def create_smtp(*args, **kwargs):
+        # we sum over all the mocks
+        global mock_smtps
+        res = MockSMTP(*args, **kwargs)
+        mock_smtps.append(res)
+        return res
 
+    monkeypatch.setattr(smtplib, "SMTP", create_smtp)
     root_client = worker.root_client
+    mock_create_notification.to_user_verify_key = root_client.verify_key
+    mock_create_notification.from_user_verify_key = root_client.verify_key
 
     root_client.settings.enable_notifications(
         email_sender="someone@example.com",
@@ -753,25 +766,32 @@ def test_send_email(worker, monkeypatch, mock_create_notification, authed_contex
         email_password="password",
     )
 
+    def emails_sent():
+        global mock_smtps
+        return sum([len(x.sent_mail) for x in mock_smtps])
+
     mock_create_notification.to(Notification, authed_context)
     root_client.notifications.send(mock_create_notification)
 
-    # assert emails_sent == 1
+    assert emails_sent() == 1
 
-    test_signing_key1 = SyftSigningKey.generate()
-    test_verify_key1 = test_signing_key1.verify_key
-    test_signing_key2 = SyftSigningKey.generate()
-    test_verify_key2 = test_signing_key2.verify_key
-
-    mock_notification = CreateNotification(
-        subject="mock_created_notification new",
-        id=UID(),
-        server_uid=UID(),
-        from_user_verify_key=test_verify_key1,
-        to_user_verify_key=test_verify_key2,
-        created_at=DateTime.now(),
-    )
+    mock_create_notification.id = UID()
 
     root_client.settings.disable_notifications()
-    root_client.notifications.send(mock_notification)
-    # assert emails_sent == 1
+    root_client.notifications.send(mock_create_notification)
+    assert emails_sent() == 1
+
+    new_port = "2526"
+
+    root_client.settings.enable_notifications(
+        email_sender="someone@example.com",
+        email_port=new_port,
+        email_server="localhost",
+        email_username="someuser",
+        email_password="password",
+    )
+
+    mock_create_notification.id = UID()
+    root_client.notifications.send(mock_create_notification)
+    assert emails_sent() == 2
+    assert int(mock_smtps[-1].smtp_port) == int(new_port)
