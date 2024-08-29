@@ -163,7 +163,7 @@ class SettingsService(AbstractService):
                         public_message=_NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR
                     )
 
-                notifier_service.set_notifier(
+                notifier_service._set_notifier(
                     context, active=settings.notifications_enabled
                 )
 
