@@ -333,7 +333,7 @@ class Orchestra:
             with open(f"{from_state_folder}/config.json") as f:
                 kwargs = json.load(f)
                 server_handle = Orchestra.launch(**kwargs)
-                client = server_handle.login(
+                client = server_handle.login(  # nosec
                     email="info@openmined.org", password="changethis"
                 )
                 client.load_migration_data(f"{from_state_folder}/migration.blob")
