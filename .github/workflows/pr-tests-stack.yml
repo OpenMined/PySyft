@@ -365,7 +365,7 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
-      - name: Run Notebook and Scenario Notebook Tests
+      - name: Run Notebook Tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
         env:
@@ -508,7 +508,7 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
-      - name: Run Notebooks Tests
+      - name: Run Scenario Notebook Tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
         env:
@@ -555,7 +555,7 @@ jobs:
         shell: bash
         run: |
           export PATH=`pwd`:$PATH
-          k3d cluster delete test-datasite-1 || true
+          k3d cluster delete bigquery-high || true
           k3d registry delete k3d-registry.localhost || true
 
   pr-tests-notebook-scenario-k8s-sync:
@@ -698,7 +698,8 @@ jobs:
         shell: bash
         run: |
           export PATH=`pwd`:$PATH
-          k3d cluster delete test-datasite-1 || true
+          k3d cluster delete bigquery-high || true
+          k3d cluster delete bigquery-low || true
           k3d registry delete k3d-registry.localhost || true
 
   pr-tests-migrations:
