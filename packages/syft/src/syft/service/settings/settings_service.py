@@ -1,5 +1,6 @@
 # stdlib
 from string import Template
+from typing import Any
 from typing import cast
 
 # relative
@@ -8,6 +9,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
+from ...store.sqlite_document_store import SQLiteStoreConfig
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_metaclass import Empty
@@ -163,7 +165,7 @@ class SettingsService(AbstractService):
                         public_message=_NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR
                     )
 
-                notifier_service.set_notifier(
+                notifier_service._set_notifier(
                     context, active=settings.notifications_enabled
                 )
 
@@ -220,7 +222,6 @@ class SettingsService(AbstractService):
         email_port: str | None = None,
     ) -> SyftSuccess:
         notifier_service = context.server.get_service("notifierservice")
-        # FIX: NotificationService
         notifier_service.turn_on(
             context=context,
             email_username=email_username,
@@ -228,7 +229,7 @@ class SettingsService(AbstractService):
             email_sender=email_sender,
             email_server=email_server,
             email_port=email_port,
-        ).unwrap(public_message="Failed to enable notifications")
+        ).unwrap()
         return SyftSuccess(message="Notifications enabled")
 
     @service_method(
@@ -410,3 +411,37 @@ class SettingsService(AbstractService):
             )
             return welcome_msg_class(text=result)
         raise SyftException(public_message="There's no welcome message")
+
+    @service_method(
+        path="settings.get_server_config",
+        name="get_server_config",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def get_server_config(
+        self,
+        context: AuthedServiceContext,
+    ) -> dict[str, Any]:
+        server = context.server
+
+        return {
+            "name": server.name,
+            "server_type": server.server_type,
+            # "deploy_to": server.deployment_type_enum,
+            "server_side_type": server.server_side_type,
+            # "port": server.port,
+            "processes": server.processes,
+            "local_db": isinstance(server.document_store_config, SQLiteStoreConfig),
+            "dev_mode": server.dev_mode,
+            "reset": True,  # we should be able to get all the objects from migration data
+            "tail": False,
+            # "host": server.host,
+            "enable_warnings": server.enable_warnings,
+            "n_consumers": server.queue_config.client_config.create_producer,
+            "thread_workers": server.queue_config.thread_workers,
+            "create_producer": server.queue_config.client_config.create_producer,
+            "queue_port": server.queue_config.client_config.queue_port,
+            "association_request_auto_approval": server.association_request_auto_approval,
+            "background_tasks": True,
+            "debug": True,  # we also want to debug
+            "migrate": False,  # I think we dont want to migrate?
+        }
