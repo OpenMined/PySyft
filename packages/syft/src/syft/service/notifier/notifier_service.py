@@ -138,7 +138,7 @@ class NotifierService(AbstractService):
                 logging.debug("No new credentials provided. Using existing ones.")
                 email_password = notifier.email_password
                 email_username = notifier.email_username
-           
+
         valid_credentials = True
         if not skip_auth:
             valid_credentials = notifier.validate_email_credentials(

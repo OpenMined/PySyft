@@ -5,7 +5,9 @@ import smtplib
 
 # third party
 from pydantic import BaseModel
-from pydantic import model_validator
+
+# relative
+from ...types.errors import SyftException
 
 SOCKET_TIMEOUT = 5  # seconds
 
@@ -28,15 +30,18 @@ class SMTPClient(BaseModel):
         try:
             with smtplib.SMTP(self.server, self.port, timeout=SOCKET_TIMEOUT) as server:
                 server.ehlo()
-                # if server.has_extn("STARTTLS"):
-                #     server.starttls()
-                #     server.ehlo()
-                # server.login(self.username, self.password)
+                if server.has_extn("STARTTLS"):
+                    server.starttls()
+                    server.ehlo()
+                if self.username and self.password:
+                    server.login(self.username, self.password)
                 text = msg.as_string()
                 server.sendmail(sender, ", ".join(receiver), text)
-        except Exception as e:
-            print("got an exception", e)
-        # TODO: Add error handling
+                return None
+        except Exception:
+            raise SyftException(
+                public_message="Ops! Something went wrong while trying to send an email."
+            )
 
     @classmethod
     def check_credentials(
@@ -56,5 +61,4 @@ class SMTPClient(BaseModel):
                 smtp_server.login(username, password)
                 return True
         except Exception as e:
-            print(e)
-            # raise SyftException(public_message=str(e))
+            raise SyftException(public_message=str(e))
