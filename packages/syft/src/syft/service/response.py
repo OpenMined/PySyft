@@ -51,7 +51,6 @@ class SyftResponseMessage(SyftBaseModel):
             "__version__",
         ] or name.startswith("_repr"):
             return super().__getattr__(name)
-        display(self)
         raise AttributeError(
             f"You have tried accessing `{name}` on a {type(self).__name__} with message: {self.message}"
         )
