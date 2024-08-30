@@ -7,7 +7,11 @@ from collections.abc import KeysView
 from collections.abc import Mapping
 from collections.abc import Sequence
 from collections.abc import Set
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 from functools import cache
+from functools import total_ordering
 from hashlib import sha256
 import inspect
 from inspect import Signature
@@ -32,23 +36,25 @@ from pydantic import EmailStr
 from pydantic import Field
 from pydantic import model_validator
 from pydantic.fields import PydanticUndefined
-from result import OkErr
 from typeguard import check_type
 from typing_extensions import Self
 
 # relative
-from ..serde.recursive_primitives import recursive_serde_register_type
+from ..serde.serializable import serializable
 from ..serde.serialize import _serialize as serialize
 from ..server.credentials import SyftVerifyKey
-from ..service.response import SyftError
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
 from ..util.util import aggressive_set_attr
 from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
+from .result import Err
+from .result import Ok
+from .syft_equals import _syft_equals
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
+from .syft_object_registry import SyftObjectRegistry
 from .uid import UID
 
 logger = logging.getLogger(__name__)
@@ -140,10 +146,40 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
         self.syft_server_location = server_uid
         self.syft_client_verify_key = credentials
 
+    def get_api(
+        self,
+        server_uid: UID | None = None,
+        user_verify_key: SyftVerifyKey | None = None,
+    ) -> "SyftAPI":
+        if server_uid is None:
+            server_uid = self.syft_server_location
+
+        if user_verify_key is None:
+            user_verify_key = self.syft_client_verify_key
+
+        # relative
+        from ..client.api import APIRegistry
+
+        return APIRegistry.api_for(
+            server_uid=server_uid,
+            user_verify_key=user_verify_key,
+        ).unwrap(
+            public_message=f"Can't access Syft API using this object. You must login to {self.syft_server_location}"
+        )
+
+    def get_api_wrapped(self):  # type: ignore
+        # relative
+        from ..client.api import APIRegistry
+
+        return APIRegistry.api_for(
+            server_uid=self.syft_server_location,
+            user_verify_key=self.syft_client_verify_key,
+        )
+
 
 class Context(SyftBaseObject):
     __canonical_name__ = "Context"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     pass
 
@@ -305,9 +341,53 @@ base_attrs_sync_ignore = [
 ]
 
 
-class SyftObject(SyftBaseObject, SyftMigrationRegistry):
+@serializable()
+class SyftObjectVersioned(SyftBaseObject, SyftMigrationRegistry):
+    __canonical_name__ = "SyftObjectVersioned"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+
+@serializable()
+@total_ordering
+class BaseDateTime(SyftObjectVersioned):
+    __canonical_name__ = "BaseDateTime"
+    __version__ = SYFT_OBJECT_VERSION_1
+    # id: UID | None = None  # type: ignore
+    utc_timestamp: float
+
+    @classmethod
+    def now(cls) -> Self:
+        return cls(utc_timestamp=datetime.now(timezone.utc).timestamp())
+
+    def __str__(self) -> str:
+        utc_datetime = datetime.fromtimestamp(self.utc_timestamp, tz=timezone.utc)
+        return utc_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+    def __hash__(self) -> int:
+        return hash(self.utc_timestamp)
+
+    def __sub__(self, other: Self) -> timedelta:
+        res = timedelta(seconds=self.utc_timestamp - other.utc_timestamp)
+        return res
+
+    def __eq__(self, other: Any) -> bool:
+        if other is None:
+            return False
+        return self.utc_timestamp == other.utc_timestamp
+
+    def __lt__(self, other: Self) -> bool:
+        return self.utc_timestamp < other.utc_timestamp
+
+
+EXCLUDED_FROM_SIGNATURE = set(
+    DYNAMIC_SYFT_ATTRIBUTES + ["created_date", "updated_date", "deleted_date"]
+)
+
+
+@serializable()
+class SyftObject(SyftObjectVersioned):
     __canonical_name__ = "SyftObject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -316,6 +396,10 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
 
     # all objects have a UID
     id: UID
+
+    created_date: BaseDateTime | None = None
+    updated_date: BaseDateTime | None = None
+    deleted_date: BaseDateTime | None = None
 
     # # move this to transforms
     @model_validator(mode="before")
@@ -459,7 +543,6 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
     # transform from one supported type to another
     def to(self, projection: type[T], context: Context | None = None) -> T:
         # relative
-        from .syft_object_registry import SyftObjectRegistry
 
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
@@ -563,6 +646,7 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
         attrs_to_check = self.__dict__.keys()
 
         obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+        obj_exclude_attrs.extend(["created_date", "updated_date", "deleted_date"])
         for attr in attrs_to_check:
             if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
                 obj_attr = getattr(self, attr)
@@ -570,7 +654,7 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
                 if hasattr(obj_attr, "syft_eq") and not inspect.isclass(obj_attr):
                     if not obj_attr.syft_eq(ext_obj=ext_obj_attr):
                         return False
-                elif obj_attr != ext_obj_attr:
+                elif not _syft_equals(obj_attr, ext_obj_attr):
                     return False
         return True
 
@@ -589,20 +673,13 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
         attrs_to_check = self.__dict__.keys()
 
         obj_exclude_attrs = getattr(self, "__exclude_sync_diff_attrs__", [])
+        obj_exclude_attrs.extend(["created_date", "updated_date", "deleted_date"])
         for attr in attrs_to_check:
             if attr not in base_attrs_sync_ignore and attr not in obj_exclude_attrs:
                 obj_attr = getattr(self, attr)
                 ext_obj_attr = getattr(ext_obj, attr)
 
-                if (obj_attr is None) ^ (ext_obj_attr is None):
-                    # If either attr is None, but not both, we have a diff
-                    # NOTE This clause is needed because attr.__eq__ is not implemented for None, and will eval to True
-                    diff_attr = AttrDiff(
-                        attr_name=attr,
-                        low_attr=obj_attr,
-                        high_attr=ext_obj_attr,
-                    )
-                    diff_attrs.append(diff_attr)
+                # TODO move to _syft_equals
                 if isinstance(obj_attr, list) and isinstance(ext_obj_attr, list):
                     list_diff = ListDiff.from_lists(
                         attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr
@@ -610,13 +687,13 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
                     if not list_diff.is_empty:
                         diff_attrs.append(list_diff)
 
-                # TODO: to the same check as above for Dicts when we use them
                 else:
-                    cmp = obj_attr.__eq__
                     if hasattr(obj_attr, "syft_eq"):
-                        cmp = obj_attr.syft_eq
+                        is_equal = obj_attr.syft_eq(ext_obj_attr)
+                    else:
+                        is_equal = _syft_equals(obj_attr, ext_obj_attr)
 
-                    if not cmp(ext_obj_attr):
+                    if not is_equal:
                         diff_attr = AttrDiff(
                             attr_name=attr,
                             low_attr=obj_attr,
@@ -625,18 +702,14 @@ class SyftObject(SyftBaseObject, SyftMigrationRegistry):
                         diff_attrs.append(diff_attr)
         return diff_attrs
 
-    def _get_api(self) -> "SyftAPI | SyftError":
+    # TODO: Move this away from here
+    def _get_api(self) -> "SyftAPI":
         # relative
         from ..client.api import APIRegistry
 
-        api = APIRegistry.api_for(
+        return APIRegistry.api_for(
             self.syft_server_location, self.syft_client_verify_key
-        )
-        if api is None:
-            return SyftError(
-                f"Can't access the api. You must login to {self.server_uid}"
-            )
-        return api
+        ).unwrap()
 
     ## OVERRIDING pydantic.BaseModel.__getattr__
     ## return super().__getattribute__(item) -> return self.__getattribute__(item)
@@ -710,7 +783,6 @@ class StorableObjectType:
     def to(self, projection: type, context: Context | None = None) -> Any:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         # relative
-        from .syft_object_registry import SyftObjectRegistry
 
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
@@ -722,23 +794,28 @@ class StorableObjectType:
 TupleGenerator = Generator[tuple[str, Any], None, None]
 
 
+@serializable()
 class PartialSyftObject(SyftObject, metaclass=PartialModelMetaclass):
     """Syft Object to which partial arguments can be provided."""
 
     __canonical_name__ = "PartialSyftObject"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     def __iter__(self) -> TupleGenerator:
         yield from ((k, v) for k, v in super().__iter__() if v is not Empty)
 
-
-recursive_serde_register_type(PartialSyftObject)
+    def apply(self, to: SyftObject) -> None:
+        for k, v in self:
+            setattr(to, k, v)
 
 
 def attach_attribute_to_syft_object(result: Any, attr_dict: dict[str, Any]) -> None:
     iterator: Iterable
-    if isinstance(result, OkErr):
-        iterator = (result._value,)
+
+    if isinstance(result, Ok):
+        iterator = (result.ok(),)
+    elif isinstance(result, Err):
+        iterator = (result.err(),)
     elif isinstance(result, Mapping):
         iterator = result.values()
     elif isinstance(result, Sequence):

@@ -8,8 +8,10 @@ from collections.abc import Callable
 from enum import Enum
 import getpass
 import inspect
+import json
 import logging
 import os
+from pathlib import Path
 import sys
 from typing import Any
 
@@ -19,14 +21,15 @@ from IPython.display import display
 # relative
 from .abstract_server import ServerSideType
 from .abstract_server import ServerType
+from .client.client import login as sy_login
 from .client.client import login_as_guest as sy_login_as_guest
 from .protocol.data_protocol import stage_protocol_changes
 from .server.datasite import Datasite
 from .server.enclave import Enclave
 from .server.gateway import Gateway
 from .server.uvicorn import serve_server
-from .service.response import SyftError
 from .service.response import SyftInfo
+from .types.errors import SyftException
 from .util.util import get_random_available_port
 
 logger = logging.getLogger(__name__)
@@ -113,7 +116,17 @@ class ServerHandle:
         if not password:
             password = getpass.getpass("Password: ")
 
-        return self.client.login(email=email, password=password, **kwargs)
+        if self.port:
+            return sy_login(
+                email=email, password=password, url=self.url, port=self.port
+            )  # type: ignore
+        elif self.deployment_type == DeploymentType.PYTHON:
+            guest_client = self.python_server.get_guest_client(verbose=False)  # type: ignore
+            return guest_client.login(email=email, password=password, **kwargs)  # type: ignore
+        else:
+            raise NotImplementedError(
+                f"client not implemented for the deployment type:{self.deployment_type}"
+            )
 
     def register(
         self,
@@ -131,7 +144,7 @@ class ServerHandle:
         if not password_verify:
             password_verify = getpass.getpass("Confirm Password: ")
         if password != password_verify:
-            return SyftError(message="Passwords do not match")
+            raise SyftException(public_message="Passwords do not match")
 
         client = self.client
         return client.register(
@@ -210,7 +223,14 @@ def deploy_to_python(
         kwargs["in_memory_workers"] = True
         if port == "auto":
             port = get_random_available_port()
-            kwargs["port"] = port
+        else:
+            try:
+                port = int(port)
+            except ValueError:
+                raise ValueError(
+                    f"port must be either 'auto' or a valid int not: {port}"
+                )
+        kwargs["port"] = port
 
         sig = inspect.signature(serve_server)
         supported_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
@@ -307,7 +327,17 @@ class Orchestra:
         background_tasks: bool = False,
         debug: bool = False,
         migrate: bool = False,
+        from_state_folder: str | Path | None = None,
     ) -> ServerHandle:
+        if from_state_folder is not None:
+            with open(f"{from_state_folder}/config.json") as f:
+                kwargs = json.load(f)
+                server_handle = Orchestra.launch(**kwargs)
+                client = server_handle.login(  # nosec
+                    email="info@openmined.org", password="changethis"
+                )
+                client.load_migration_data(f"{from_state_folder}/migration.blob")
+                return server_handle
         if dev_mode is True:
             thread_workers = True
         os.environ["DEV_MODE"] = str(dev_mode)

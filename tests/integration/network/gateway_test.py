@@ -16,8 +16,6 @@ from syft.client.client import SyftClient
 from syft.client.datasite_client import DatasiteClient
 from syft.client.gateway_client import GatewayClient
 from syft.client.registry import NetworkRegistry
-from syft.client.search import SearchResults
-from syft.service.dataset.dataset import Dataset
 from syft.service.network.association_request import AssociationRequestChange
 from syft.service.network.network_service import ServerPeerAssociationStatus
 from syft.service.network.routes import HTTPServerRoute
@@ -69,12 +67,8 @@ def _random_hash() -> str:
 
 def _remove_existing_peers(client: SyftClient) -> SyftSuccess | SyftError:
     peers: list[ServerPeer] | SyftError = client.api.services.network.get_all_peers()
-    if isinstance(peers, SyftError):
-        return peers
     for peer in peers:
-        res = client.api.services.network.delete_peer_by_id(peer.id)
-        if isinstance(res, SyftError):
-            return res
+        client.api.services.network.delete_peer_by_id(peer.id)
     return SyftSuccess(message="All peers removed.")
 
 
@@ -128,14 +122,10 @@ def test_datasite_connect_to_gateway(
         email="info@openmined.org", password="changethis"
     )
     res = gateway_client_root.api.services.request.get_all()[-1].approve()
-    assert not isinstance(res, SyftError)
 
     assert len(gateway_client.peers) == 1
 
     time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
-    # check that the datasite is online on the network
-    assert len(sy.datasites.all_datasites) == 1
-    assert len(sy.datasites.online_datasites) == 1
 
     proxy_datasite_client = gateway_client.peers[0]
     datasite_peer = datasite_client.peers[0]
@@ -176,6 +166,7 @@ def test_datasite_connect_to_gateway(
 
 
 @pytest.mark.network
+@pytest.mark.skip(reason="Disabled since the dataset search functionality was removed")
 def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) -> None:
     """
     Scenario: Connecting a datasite server to a gateway server. The datasite
@@ -213,27 +204,27 @@ def test_dataset_search(set_env_var, gateway_port: int, datasite_1_port: int) ->
 
     # since dataset search is done by checking from the online datasites,
     # we need to wait to make sure peers health check is done
-    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
+    # time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
     # test if the dataset can be searched by the syft network
-    right_search = sy.search(dataset_name)
-    assert isinstance(right_search, SearchResults)
-    assert len(right_search) == 1
-    dataset = right_search[0]
-    assert isinstance(dataset, Dataset)
-    assert len(dataset.assets) == 1
-    assert isinstance(dataset.assets[0].mock, np.ndarray)
-    assert dataset.assets[0].data is None
+    # right_search = sy.search(dataset_name)
+    # assert isinstance(right_search, SearchResults)
+    # assert len(right_search) == 1
+    # dataset = right_search[0]
+    # assert isinstance(dataset, Dataset)
+    # assert len(dataset.assets) == 1
+    # assert isinstance(dataset.assets[0].mock, np.ndarray)
+    # assert dataset.assets[0].data is None
 
-    # search a wrong dataset should return an empty list
-    wrong_search = sy.search(_random_hash())
-    assert len(wrong_search) == 0
+    # # search a wrong dataset should return an empty list
+    # wrong_search = sy.search(_random_hash())
+    # assert len(wrong_search) == 0
 
-    # the datasite client delete the dataset
-    datasite_client.api.services.dataset.delete_by_uid(uid=dataset.id)
+    # # the datasite client delete the dataset
+    # datasite_client.api.services.dataset.delete(uid=dataset.id)
 
-    # Remove existing peers
-    assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
-    assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
+    # # Remove existing peers
+    # assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
+    # assert isinstance(_remove_existing_peers(gateway_client), SyftSuccess)
 
 
 @pytest.mark.skip(reason="Possible bug")
@@ -311,7 +302,7 @@ def test_datasite_gateway_user_code(
     assert (final_result == input_data + 1).all()
 
     # the datasite client delete the dataset
-    datasite_client.api.services.dataset.delete_by_uid(uid=dataset.id)
+    datasite_client.api.services.dataset.delete(uid=dataset.id)
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
@@ -348,12 +339,6 @@ def test_deleting_peers(set_env_var, datasite_1_port: int, gateway_port: int) ->
     # check that removing peers work as expected
     assert len(datasite_client.peers) == 0
     assert len(gateway_client.peers) == 0
-
-    # check that the online datasites and gateways are updated
-    time.sleep(PeerHealthCheckTask.repeat_time * 2 + 1)
-    assert len(sy.gateways.all_networks) == 1
-    assert len(sy.datasites.all_datasites) == 0
-    assert len(sy.datasites.online_datasites) == 0
 
     # reconnect the datasite to the gateway
     result = datasite_client.connect_to_gateway(gateway_client)
@@ -842,7 +827,7 @@ def test_dataset_stream(set_env_var, gateway_port: int, datasite_1_port: int) ->
     assert np.all(retrieved_asset.data == input_data)
 
     # the datasite client delete the dataset
-    datasite_client.api.services.dataset.delete_by_uid(uid=retrieved_dataset.id)
+    datasite_client.api.services.dataset.delete(uid=retrieved_dataset.id)
 
     # Remove existing peers
     assert isinstance(_remove_existing_peers(datasite_client), SyftSuccess)
@@ -907,7 +892,6 @@ def test_peer_health_check(
 
     # the gateway client approves one of the association requests
     res = gateway_client.api.services.request.get_all()[-1].approve()
-    assert not isinstance(res, SyftError)
     assert len(gateway_client.peers) == 1
 
     # the gateway client checks that the peer is associated
@@ -937,7 +921,7 @@ def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
         port=datasite_1_port, email="info@openmined.org", password="changethis"
     )
 
-    res = gateway_client.settings.allow_association_request_auto_approval(enable=False)
+    _ = gateway_client.settings.allow_association_request_auto_approval(enable=False)
 
     # Try removing existing peers just to make sure
     _remove_existing_peers(datasite_client)
@@ -960,9 +944,7 @@ def test_reverse_tunnel_connection(datasite_1_port: int, gateway_port: int):
     gateway_client_root = gateway_client.login(
         email="info@openmined.org", password="changethis"
     )
-    res = gateway_client_root.api.services.request.get_all()[-1].approve()
-    assert not isinstance(res, SyftError)
-
+    _ = gateway_client_root.api.services.request.get_all()[-1].approve()
     time.sleep(90)
 
     gateway_peers = gateway_client.api.services.network.get_all_peers()

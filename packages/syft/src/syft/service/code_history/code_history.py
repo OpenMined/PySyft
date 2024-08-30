@@ -1,49 +1,27 @@
 # stdlib
-from collections.abc import Callable
 import json
 from typing import Any
 
 # relative
-from ...client.api import APIRegistry
-from ...client.enclave_client import EnclaveMetadata
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
-from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
+from ...types.errors import SyftException
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
-from ...types.transforms import drop
-from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.notebook_ui.components.tabulator_template import (
     build_tabulator_table_with_data,
 )
 from ...util.table import prepare_table_data
 from ..code.user_code import UserCode
-from ..response import SyftError
-
-
-@serializable()
-class CodeHistoryV2(SyftObject):
-    # version
-    __canonical_name__ = "CodeHistory"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: UID
-    server_uid: UID
-    user_verify_key: SyftVerifyKey
-    enclave_metadata: EnclaveMetadata | None = None
-    user_code_history: list[UID] = []
-    service_func_name: str
-    comment_history: list[str] = []
 
 
 @serializable()
 class CodeHistory(SyftObject):
     # version
     __canonical_name__ = "CodeHistory"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     server_uid: UID
@@ -65,7 +43,7 @@ class CodeHistory(SyftObject):
 class CodeHistoryView(SyftObject):
     # version
     __canonical_name__ = "CodeHistoryView"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     user_code_history: list[UserCode] = []
@@ -91,23 +69,17 @@ class CodeHistoryView(SyftObject):
 
         return build_tabulator_table_with_data(rows, metadata)
 
-    def __getitem__(self, index: int | str) -> UserCode | SyftError:
+    def __getitem__(self, index: int | str) -> UserCode:
         if isinstance(index, str):
             raise TypeError(f"index {index} must be an integer, not a string")
-        api = APIRegistry.api_for(
-            self.syft_server_location, self.syft_client_verify_key
-        )
-        if api is None:
-            return SyftError(
-                message=f"Can't access the api. You must login to {self.server_uid}"
-            )
+        api = self.get_api()
         if (
             api.user.get_current_user().role.value >= ServiceRole.DATA_OWNER.value
             and index < 0
         ):
             # negative index would dynamically resolve to a different version
-            return SyftError(
-                message="For security concerns we do not allow negative indexing. \
+            raise SyftException(
+                public_message="For security concerns we do not allow negative indexing. \
                 Try using absolute values when indexing"
             )
         return self.user_code_history[index]
@@ -117,7 +89,7 @@ class CodeHistoryView(SyftObject):
 class CodeHistoriesDict(SyftObject):
     # version
     __canonical_name__ = "CodeHistoriesDict"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     code_versions: dict[str, CodeHistoryView] = {}
@@ -146,7 +118,7 @@ class CodeHistoriesDict(SyftObject):
 class UsersCodeHistoriesDict(SyftObject):
     # version
     __canonical_name__ = "UsersCodeHistoriesDict"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     server_uid: UID
@@ -158,13 +130,8 @@ class UsersCodeHistoriesDict(SyftObject):
     def available_keys(self) -> str:
         return json.dumps(self.user_dict, sort_keys=True, indent=4)
 
-    def __getitem__(self, key: str | int) -> CodeHistoriesDict | SyftError:
-        api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
-        if api is None:
-            return SyftError(
-                message=f"Can't access the api. You must login to {self.server_uid}"
-            )
-        return api.services.code_history.get_history_for_user(key)
+    def __getitem__(self, key: str | int) -> CodeHistoriesDict:
+        return self.get_api().services.code_history.get_history_for_user(key)
 
     def _repr_html_(self) -> str | None:
         rows = [
@@ -177,15 +144,3 @@ class UsersCodeHistoriesDict(SyftObject):
             "icon": None,
         }
         return build_tabulator_table_with_data(rows, metadata)
-
-
-@migrate(CodeHistoryV2, CodeHistory)
-def code_history_v2_to_v3() -> list[Callable]:
-    return [drop("enclave_metadata")]
-
-
-@migrate(CodeHistory, CodeHistoryV2)
-def code_history_v3_to_v2() -> list[Callable]:
-    return [
-        make_set_default("enclave_metadata", None),
-    ]

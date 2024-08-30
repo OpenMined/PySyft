@@ -33,7 +33,7 @@ def test_project_creation(worker):
     assert project.description == "My Cool Description"
 
 
-def test_error_data_owner_project_creation(worker):
+def test_data_owner_project_creation(worker):
     root_client = worker.root_client
 
     root_client.register(
@@ -48,9 +48,7 @@ def test_error_data_owner_project_creation(worker):
     )
 
     project = new_project.send()
-
-    assert isinstance(project, sy.SyftError)
-    assert project.message == "Only Data Scientists can create projects"
+    assert project.name == "My Cool Project"
 
 
 def test_exception_different_email(worker):
@@ -96,8 +94,12 @@ def test_project_serde(worker):
         password_verify="bazinga",
     )
 
+    ds_sheldon = sy.login(
+        server=worker, email="sheldon@caltech.edu", password="bazinga"
+    )
+
     new_project = sy.Project(
-        name="My Cool Project", description="My Cool Description", members=[root_client]
+        name="My Cool Project", description="My Cool Description", members=[ds_sheldon]
     )
 
     project = new_project.send()

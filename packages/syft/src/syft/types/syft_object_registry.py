@@ -3,9 +3,6 @@ from collections.abc import Callable
 from typing import Any
 from typing import TYPE_CHECKING
 
-# relative
-from ..util.util import get_fully_qualified_name
-
 SYFT_086_PROTOCOL_VERSION = "4"
 
 # third party
@@ -19,6 +16,7 @@ if TYPE_CHECKING:
 class SyftObjectRegistry:
     __object_transform_registry__: dict[str, Callable] = {}
     __object_serialization_registry__: dict[str, dict[int, tuple]] = {}
+    __type_to_canonical_name__: dict[type, tuple[str, int]] = {}
 
     @classmethod
     def register_cls(
@@ -30,6 +28,8 @@ class SyftObjectRegistry:
             serde_attributes
         )
 
+        cls.__type_to_canonical_name__[serde_attributes[7]] = (canonical_name, version)
+
     @classmethod
     def get_versions(cls, canonical_name: str) -> list[int]:
         available_versions: dict = cls.__object_serialization_registry__.get(
@@ -39,22 +39,66 @@ class SyftObjectRegistry:
         return list(available_versions.keys())
 
     @classmethod
-    def get_canonical_name(cls, obj: Any) -> str:
-        # if is_type:
-        #     # TODO: this is different for builtin types, make more generic
-        #     return "ModelMetaclass"
-        is_type = isinstance(obj, type)
+    def get_latest_version(cls, canonical_name: str) -> int:
+        available_versions = cls.get_versions(canonical_name)
+        if not available_versions:
+            return 0
+        return sorted(available_versions, reverse=True)[0]
 
-        res = getattr(obj, "__canonical_name__", None)
-        if res is not None and not is_type:
-            return res
-        else:
-            fqn = get_fully_qualified_name(obj)
-            return fqn
+    @classmethod
+    def get_identifier_for_type(cls, obj: Any) -> tuple[str, int]:
+        """
+        This is to create the string in nonrecursiveBlob
+        """
+        return cls.__type_to_canonical_name__[obj]
+
+    @classmethod
+    def get_canonical_name_version(cls, obj: Any) -> tuple[str, int]:
+        """
+        Retrieves the canonical name for both objects and types.
+
+        This function works for both objects and types, returning the canonical name
+        as a string. It handles various cases, including built-in types, instances of
+        classes, and enum members.
+
+        If the object is not registered in the registry, a ValueError is raised.
+
+        Examples:
+            get_canonical_name_version([1,2,3]) -> "list"
+            get_canonical_name_version(list) -> "type"
+            get_canonical_name_version(MyEnum.A) -> "MyEnum"
+            get_canonical_name_version(MyEnum) -> "type"
+
+        Args:
+            obj: The object or type for which to get the canonical name.
+
+        Returns:
+            The canonical name and version of the object or type.
+        """
+
+        # for types we return "type"
+        if isinstance(obj, type):
+            return cls.__type_to_canonical_name__[type]
+
+        obj_type = type(obj)
+        if obj_type in cls.__type_to_canonical_name__:
+            return cls.__type_to_canonical_name__[obj_type]
+
+        raise ValueError(
+            f"Could not find canonical name for '{obj_type.__module__}.{obj_type.__name__}'"
+        )
 
     @classmethod
     def get_serde_properties(cls, canonical_name: str, version: int) -> tuple:
-        return cls.__object_serialization_registry__[canonical_name][version]
+        try:
+            return cls.__object_serialization_registry__[canonical_name][version]
+        except Exception:
+            # This is a hack for python 3.10 in which Any is not a type
+            # if the server uses py>3.10 and the client 3.10 this goes wrong
+            if canonical_name == "Any_typing._SpecialForm":
+                return cls.__object_serialization_registry__["Any"][version]
+            else:
+                raise
 
     @classmethod
     def get_serde_class(cls, canonical_name: str, version: int) -> type["SyftObject"]:
@@ -62,74 +106,12 @@ class SyftObjectRegistry:
         return serde_properties[7]
 
     @classmethod
-    def get_serde_properties_bw_compatible(
-        cls, fqn: str, canonical_name: str, version: int
-    ) -> tuple:
+    def has_serde_class(cls, canonical_name: str | None, version: int) -> bool:
         # relative
-        from ..serde.recursive import TYPE_BANK
-
-        if canonical_name != "" and canonical_name is not None:
-            return cls.get_serde_properties(canonical_name, version)
-        else:
-            # this is for backward compatibility with 0.8.6
-            try:
-                # relative
-                from ..protocol.data_protocol import get_data_protocol
-
-                serde_props = TYPE_BANK[fqn]
-                klass = serde_props[7]
-                is_syftobject = hasattr(klass, "__canonical_name__")
-                if is_syftobject:
-                    canonical_name = klass.__canonical_name__
-                    dp = get_data_protocol()
-                    try:
-                        version_mutations = dp.protocol_history[
-                            SYFT_086_PROTOCOL_VERSION
-                        ]["object_versions"][canonical_name]
-                    except Exception:
-                        print(f"could not find {canonical_name} in protocol history")
-                        raise
-
-                    version_086 = max(
-                        [
-                            int(k)
-                            for k, v in version_mutations.items()
-                            if v["action"] == "add"
-                        ]
-                    )
-                    try:
-                        res = cls.get_serde_properties(canonical_name, version_086)
-
-                    except Exception:
-                        print(
-                            f"could not find {canonical_name} {version_086} in ObjectRegistry"
-                        )
-                        raise
-                    return res
-                else:
-                    # TODO, add refactoring for non syftobject versions
-                    canonical_name = fqn
-                    version = 1
-                    return cls.get_serde_properties(canonical_name, version)
-            except Exception as e:
-                print(e)
-                raise
-
-    @classmethod
-    def has_serde_class(
-        cls, fqn: str, canonical_name: str | None, version: int
-    ) -> bool:
-        # relative
-        from ..serde.recursive import TYPE_BANK
-
-        if canonical_name != "" and canonical_name is not None:
-            return (
-                canonical_name in cls.__object_serialization_registry__
-                and version in cls.__object_serialization_registry__[canonical_name]
-            )
-        else:
-            # this is for backward compatibility with 0.8.6
-            return fqn in TYPE_BANK
+        return (
+            canonical_name in cls.__object_serialization_registry__
+            and version in cls.__object_serialization_registry__[canonical_name]
+        )
 
     @classmethod
     def add_transform(
@@ -159,7 +141,10 @@ class SyftObjectRegistry:
                 klass_from = type_from_mro.__name__
                 version_from = None
             for type_to_mro in type_to.mro():
-                if issubclass(type_to_mro, SyftBaseObject):
+                if (
+                    issubclass(type_to_mro, SyftBaseObject)
+                    and type_to_mro != SyftBaseObject
+                ):
                     klass_to = type_to_mro.__canonical_name__
                     version_to = type_to_mro.__version__
                 else:

@@ -14,9 +14,9 @@ import yaml
 
 # relative
 from ..serde.serializable import serializable
-from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
+from ..types.errors import SyftException
 from .utils import iterator_to_string
 
 PYTHON_DEFAULT_VER = "3.12"
@@ -79,11 +79,12 @@ class CustomBuildConfig(SyftBaseModel):
         return sep.join(self.custom_cmds)
 
 
+@serializable(canonical_name="WorkerConfig", version=1)
 class WorkerConfig(SyftBaseModel):
     pass
 
 
-@serializable()
+@serializable(canonical_name="CustomWorkerConfig", version=1)
 class CustomWorkerConfig(WorkerConfig):
     build: CustomBuildConfig
     version: str = "1"
@@ -107,7 +108,7 @@ class CustomWorkerConfig(WorkerConfig):
         return sha256(self.json(sort_keys=True).encode()).hexdigest()
 
 
-@serializable()
+@serializable(canonical_name="PrebuiltWorkerConfig", version=1)
 class PrebuiltWorkerConfig(WorkerConfig):
     # tag that is already built and pushed in some registry
     tag: str
@@ -126,7 +127,7 @@ class PrebuiltWorkerConfig(WorkerConfig):
         return hash(self.tag)
 
 
-@serializable()
+@serializable(canonical_name="DockerWorkerConfig", version=1)
 class DockerWorkerConfig(WorkerConfig):
     dockerfile: str
     file_name: str | None = None
@@ -167,11 +168,11 @@ class DockerWorkerConfig(WorkerConfig):
     def set_description(self, description_text: str) -> None:
         self.description = description_text
 
-    def test_image_build(self, tag: str, **kwargs: Any) -> SyftSuccess | SyftError:
+    def test_image_build(self, tag: str, **kwargs: Any) -> SyftSuccess:
         try:
             with contextlib.closing(docker.from_env()) as client:
                 if not client.ping():
-                    return SyftError(
+                    raise SyftException(
                         "Cannot reach docker server. Please check if docker is running."
                     )
 
@@ -187,4 +188,6 @@ class DockerWorkerConfig(WorkerConfig):
             # stdlib
             import traceback
 
-            return SyftError(message=f"Failed to build: {e} {traceback.format_exc()}")
+            raise SyftException(
+                public_message=f"Failed to build: {e} {traceback.format_exc()}"
+            )

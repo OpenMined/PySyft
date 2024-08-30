@@ -17,24 +17,23 @@ from ...client.client import ServerConnection
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...server.worker_settings import WorkerSettings
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..context import ServerServiceContext
-from ..response import SyftError
 
 if TYPE_CHECKING:
     # relative
     from .server_peer import ServerPeer
 
 
+@serializable(canonical_name="ServerRoute", version=1)
 class ServerRoute:
-    def client_with_context(
-        self, context: ServerServiceContext
-    ) -> SyftClient | SyftError:
+    def client_with_context(self, context: ServerServiceContext) -> SyftClient:
         """
         Convert the current route (self) to a connection (either HTTP, Veilid or Python)
         and create a SyftClient from the connection.
@@ -43,20 +42,16 @@ class ServerRoute:
             context (ServerServiceContext): The ServerServiceContext containing the server information.
 
         Returns:
-            SyftClient | SyftError: Returns the created SyftClient, or SyftError
-                if the client type is not valid or if the context's server is None.
+            SyftClient: Returns the created SyftClient
         """
         connection = route_to_connection(route=self, context=context)
-        client_type = connection.get_client_type()
-        if isinstance(client_type, SyftError):
-            return client_type
+        client_type = connection.get_client_type().unwrap()
         return client_type(
             connection=connection, credentials=context.server.signing_key
         )
 
-    def validate_with_context(
-        self, context: AuthedServiceContext
-    ) -> ServerPeer | SyftError:
+    @as_result(SyftException)
+    def validate_with_context(self, context: AuthedServiceContext) -> ServerPeer:
         # relative
         from .server_peer import ServerPeer
 
@@ -67,17 +62,13 @@ class ServerRoute:
         # generating a random challenge
         random_challenge = secrets.token_bytes(16)
         challenge_signature = self_client.api.services.network.ping(random_challenge)
-
-        if isinstance(challenge_signature, SyftError):
-            return challenge_signature
-
         try:
             # Verifying if the challenge is valid
             context.server.verify_key.verify_key.verify(
                 random_challenge, challenge_signature
             )
         except Exception:
-            return SyftError(message="Signature Verification Failed in ping")
+            raise SyftException(public_message="Signature Verification Failed in ping")
 
         # Step 2: Create a Server Peer with the given route
         self_server_peer: ServerPeer = context.server.settings.to(ServerPeer)
@@ -89,7 +80,7 @@ class ServerRoute:
 @serializable()
 class HTTPServerRoute(SyftObject, ServerRoute):
     __canonical_name__ = "HTTPServerRoute"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore
     host_or_ip: str
@@ -121,7 +112,7 @@ class HTTPServerRoute(SyftObject, ServerRoute):
 @serializable()
 class PythonServerRoute(SyftObject, ServerRoute):
     __canonical_name__ = "PythonServerRoute"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore
     worker_settings: WorkerSettings

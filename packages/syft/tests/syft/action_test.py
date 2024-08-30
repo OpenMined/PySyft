@@ -12,7 +12,6 @@ from syft.client.api import SyftAPICall
 from syft.server.worker import Worker
 from syft.service.action.action_object import Action
 from syft.service.response import SyftError
-from syft.service.user.user import UserUpdate
 from syft.service.user.user_roles import ServiceRole
 from syft.types.uid import LineageID
 
@@ -20,6 +19,7 @@ from syft.types.uid import LineageID
 from ..utils.custom_markers import currently_fail_on_python_3_12
 
 
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_actionobject_method(worker):
     root_datasite_client = worker.root_client
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
@@ -58,12 +58,10 @@ def test_new_admin_has_action_object_permission(
 
     admin = root_client.login(email=email, password=pw)
 
-    root_client.api.services.user.update(
-        admin.me.id, UserUpdate(role=ServiceRole.ADMIN)
-    )
+    root_client.api.services.user.update(uid=admin.account.id, role=ServiceRole.ADMIN)
 
     if delete_original_admin:
-        res = root_client.api.services.user.delete(root_client.me.id)
+        res = root_client.api.services.user.delete(root_client.account.id)
         assert not isinstance(res, SyftError)
 
     assert admin.api.services.action.get(obj.id) == obj

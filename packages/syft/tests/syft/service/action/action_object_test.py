@@ -23,6 +23,9 @@ from syft.service.action.action_object import make_action_side_effect
 from syft.service.action.action_object import propagate_server_uid
 from syft.service.action.action_object import send_action_side_effect
 from syft.service.action.action_types import action_type_for_type
+from syft.service.response import SyftSuccess
+from syft.store.blob_storage import SyftObjectRetrieval
+from syft.types.errors import SyftException
 from syft.types.uid import LineageID
 from syft.types.uid import UID
 
@@ -205,10 +208,7 @@ def test_actionobject_hooks_make_action_side_effect(orig_obj_op: Any):
     obj = ActionObject.from_obj(orig_obj)
 
     context = PreHookContext(obj=obj, op_name=op)
-    result = make_action_side_effect(context)
-    assert result.is_ok()
-
-    context, args, kwargs = result.ok()
+    context, args, kwargs = make_action_side_effect(context).unwrap()
     assert context.action is not None
     assert isinstance(context.action, Action)
     assert context.action.full_path.endswith("." + op)
@@ -359,8 +359,9 @@ def test_actionobject_syft_execute_ok(worker, testcase):
     )
 
     context = PreHookContext(obj=obj_pointer, op_name=op, action_type=ActionType.METHOD)
-    result = make_action_side_effect(context, *args_pointers, **kwargs_pointers)
-    context, _, _ = result.ok()
+    context, _, _ = make_action_side_effect(
+        context, *args_pointers, **kwargs_pointers
+    ).unwrap()
 
     action_result = context.obj.syft_execute_action(context.action, sync=True)
     assert action_result == expected
@@ -581,6 +582,7 @@ def test_actionobject_syft_get_attr_context():
         (complex(1, 2), "conjugate", [], {}, complex(1, -2)),
     ],
 )
+@pytest.mark.skip(reason="Disabled until we bring back eager execution")
 def test_actionobject_syft_execute_hooks(worker, testcase):
     client = worker.root_client
     assert client.settings.enable_eager_execution(enable=True)
@@ -1023,3 +1025,35 @@ def test_actionobject_syft_getattr_pandas(worker):
 
     obj.columns = ["a", "b", "c"]
     assert (obj.columns == ["a", "b", "c"]).all()
+
+
+def test_actionobject_delete(worker):
+    """
+    Test deleting action objects and their corresponding blob storage entries
+    """
+    root_client = worker.root_client
+
+    # small object with no blob store entry
+    data_small = np.random.randint(0, 100, size=3)
+    action_obj = ActionObject.from_obj(data_small)
+    action_obj.send(root_client)
+    assert action_obj.syft_blob_storage_entry_id is None
+    del_res = root_client.api.services.action.delete(uid=action_obj.id)
+    assert isinstance(del_res, SyftSuccess)
+
+    # big object with blob store entry
+    num_elements = 25 * 1024 * 1024
+    data_big = np.random.randint(0, 100, size=num_elements)  # 4 bytes per int32
+    action_obj_2 = ActionObject.from_obj(data_big)
+    action_obj_2.send(root_client)
+    assert isinstance(action_obj_2.syft_blob_storage_entry_id, UID)
+    read_res = root_client.api.services.blob_storage.read(
+        action_obj_2.syft_blob_storage_entry_id
+    )
+    assert isinstance(read_res, SyftObjectRetrieval)
+    del_res = root_client.api.services.action.delete(uid=action_obj_2.id)
+    assert isinstance(del_res, SyftSuccess)
+    with pytest.raises(SyftException):
+        read_res = root_client.api.services.blob_storage.read(
+            action_obj_2.syft_blob_storage_entry_id
+        )

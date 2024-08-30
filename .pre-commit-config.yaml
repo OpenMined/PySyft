@@ -31,7 +31,7 @@ repos:
         exclude: ^(packages/syft/tests/mongomock)
       - id: name-tests-test
         always_run: true
-        exclude: ^(.*/tests/utils/)|^(.*fixtures.py|packages/syft/tests/mongomock)
+        exclude: ^(.*/tests/utils/)|^(.*fixtures.py|packages/syft/tests/mongomock)|^(tests/scenarios/bigquery/helpers)
       - id: requirements-txt-fixer
         always_run: true
         exclude: "packages/syft/tests/mongomock"
@@ -150,7 +150,6 @@ repos:
         name: "mypy: syft"
         always_run: true
         files: "^packages/syft/src/syft/"
-        exclude: "packages/syft/src/syft/types/dicttuple.py"
         args: [
             "--follow-imports=skip",
             "--ignore-missing-imports",
@@ -173,7 +172,7 @@ repos:
     rev: 0.7.1
     hooks:
       - id: nbstripout
-        files: "^notebooks/(api|tutorials|admin)"
+        files: "^notebooks/(api|tutorials|admin|scenarios)"
 
   - repo: https://github.com/pre-commit/mirrors-prettier # This repository has been archived by the owner on Apr 11, 2024. It is now read-only.
     rev: "v3.0.0-alpha.9-for-vscode"

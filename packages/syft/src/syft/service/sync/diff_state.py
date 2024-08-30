@@ -24,26 +24,22 @@ from rich.panel import Panel
 from typing_extensions import Self
 
 # relative
-from ...client.api import APIRegistry
 from ...client.client import SyftClient
 from ...client.sync_decision import SyncDecision
 from ...client.sync_decision import SyncDirection
 from ...server.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import LineageID
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
 from ...util.notebook_ui.components.sync import Label
 from ...util.notebook_ui.components.sync import SyncTableObject
 from ...util.notebook_ui.icons import Icon
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
+from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -55,8 +51,8 @@ from ..job.job_stash import Job
 from ..job.job_stash import JobType
 from ..log.log import SyftLog
 from ..output.output_service import ExecutionOutput
+from ..policy.policy import Constant
 from ..request.request import Request
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..user.user import UserView
 from .sync_state import SyncState
@@ -74,7 +70,7 @@ sketchy_tab = "‎ " * 4
 class AttrDiff(SyftObject):
     # version
     __canonical_name__ = "AttrDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     attr_name: str
     low_attr: Any = None
     high_attr: Any = None
@@ -102,7 +98,7 @@ class AttrDiff(SyftObject):
 class ListDiff(AttrDiff):
     # version
     __canonical_name__ = "ListDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     diff_ids: list[int] = []
     new_low_ids: list[int] = []
     new_high_ids: list[int] = []
@@ -182,7 +178,7 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
 class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
     # version
     __canonical_name__ = "ObjectDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     low_obj: SyncableSyftObject | None = None
     high_obj: SyncableSyftObject | None = None
     low_server_uid: UID
@@ -372,6 +368,14 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         for attr in repr_attrs:
             value = getattr(obj, attr)
             res[attr] = value
+
+        # if there are constants in UserCode input policy, add to repr
+        # type ignores since mypy thinks the code is unreachable for some reason
+        if isinstance(obj, UserCode) and obj.input_policy_init_kwargs is not None:  # type: ignore
+            for input_policy_kwarg in obj.input_policy_init_kwargs.values():  # type: ignore
+                for input_val in input_policy_kwarg.values():
+                    if isinstance(input_val, Constant):
+                        res[input_val.kw] = input_val.val
         return res
 
     def diff_attributes_str(self, side: str) -> str:
@@ -460,17 +464,9 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
 
     def _repr_html_(self) -> str:
         if self.low_obj is None and self.high_obj is None:
-            return SyftError(message="Something broke")
+            raise SyftException(public_message="Something broke")
 
-        base_str = f"""
-        <style>
-        {FONT_CSS}
-        .syft-dataset {{color: {SURFACE[options.color_theme]};}}
-        .syft-dataset h3,
-        .syft-dataset p
-            {{font-family: 'Open Sans';}}
-            {ITABLES_CSS}
-        </style>
+        base_str = """
         <div class='syft-diff'>
         """
 
@@ -541,7 +537,7 @@ def _wrap_text(text: str, width: int, indent: int = 4) -> str:
 
 class ObjectDiffBatch(SyftObject):
     __canonical_name__ = "DiffHierarchy"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
     LINE_LENGTH: ClassVar[int] = 100
     INDENT: ClassVar[int] = 4
     ORDER: ClassVar[dict] = {"low": 0, "high": 1}
@@ -653,7 +649,8 @@ class ObjectDiffBatch(SyftObject):
         # relative
         from ...client.datasite_client import DatasiteClient
 
-        api = APIRegistry.api_for(server_uid, syft_client_verify_key)
+        api = self.get_api(server_uid, syft_client_verify_key)
+
         client = DatasiteClient(
             api=api,
             connection=api.connection,  # type: ignore
@@ -702,13 +699,13 @@ class ObjectDiffBatch(SyftObject):
         diffs = self.get_dependents(include_roots=False)
         return sum(hash(x) for x in diffs)
 
-    def ignore(self) -> SyftSuccess | SyftError:
+    def ignore(self) -> SyftSuccess:
         # relative
         from ...client.syncing import handle_ignore_batch
 
         return handle_ignore_batch(self, self.global_batches)
 
-    def unignore(self) -> SyftSuccess | SyftError:
+    def unignore(self) -> SyftSuccess:
         # relative
         from ...client.syncing import handle_unignore_batch
 
@@ -846,11 +843,11 @@ class ObjectDiffBatch(SyftObject):
         try:
             diffs = self.flatten_visual_hierarchy()
         except Exception as _:
-            return SyftError(
-                message=html.escape(
+            raise SyftException(
+                public_message=html.escape(
                     "Could not render batch, please use resolve(<batch>) instead."
                 )
-            )._repr_html_()
+            )
 
         return f"""
 <h2> ObjectBatchDiff </h2>
@@ -924,11 +921,11 @@ class ObjectDiffBatch(SyftObject):
     {self.hierarchy_str('high')}
     """
         except Exception as _:
-            return SyftError(
-                message=html.escape(
+            raise SyftException(
+                public_message=html.escape(
                     "Could not render batch, please use resolve(<batch>) instead."
                 )
-            )._repr_html_()
+            )
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return ""  # Turns off the _repr_markdown_ of SyftObject
@@ -998,11 +995,11 @@ class ObjectDiffBatch(SyftObject):
             return user_code_diffs[0]
 
     @property
-    def user(self) -> UserView | SyftError:
+    def user(self) -> UserView:
         user_code_diff = self.user_code_diff
         if user_code_diff is not None and isinstance(user_code_diff.low_obj, UserCode):
             return user_code_diff.low_obj.user
-        return SyftError(message="No user found")
+        raise SyftException(public_message="No user found")
 
     def get_visual_hierarchy(self) -> dict[ObjectDiff, dict]:
         visual_root = self.visual_root
@@ -1077,9 +1074,7 @@ class FilterProperty(enum.Enum):
     def from_batch(self, batch: ObjectDiffBatch) -> Any:
         if self == FilterProperty.USER:
             user = batch.user
-            if isinstance(user, UserView):
-                return user.email
-            return None
+            return user.email
         elif self == FilterProperty.TYPE:
             return batch.root_diff.obj_type.__name__.lower()
         elif self == FilterProperty.STATUS:
@@ -1127,7 +1122,7 @@ class ServerDiffFilter:
 
 class ServerDiff(SyftObject):
     __canonical_name__ = "ServerDiff"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     low_server_uid: UID
     high_server_uid: UID
@@ -1196,6 +1191,7 @@ class ServerDiff(SyftObject):
         _include_server_status: bool = False,
     ) -> "ServerDiff":
         obj_uid_to_diff = {}
+        show_deletion_warning = False
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
             low_obj = low_state.objects.get(obj_id, None)
             high_obj = high_state.objects.get(obj_id, None)
@@ -1215,6 +1211,13 @@ class ServerDiff(SyftObject):
             else:
                 low_status = "NEW"
                 high_status = "NEW"
+
+            # We don't support deletion of objects yet.
+            # So, skip if the object is not present on the *source* side
+            source_obj = low_obj if direction == SyncDirection.LOW_TO_HIGH else high_obj
+            if source_obj is None:
+                show_deletion_warning = True
+                continue
 
             diff = ObjectDiff.from_objects(
                 low_obj=low_obj,
@@ -1269,6 +1272,15 @@ class ServerDiff(SyftObject):
             exclude_types=exclude_types,
             inplace=True,
         )
+
+        if show_deletion_warning:
+            prompt_warning_message(
+                message=(
+                    "The target server has objects not found on the source server. "
+                    "These objects cannot be deleted via syncing and only manual deletion is possible."
+                ),
+                confirm=False,
+            )
 
         return res
 
@@ -1528,7 +1540,7 @@ It will be available for review again."""
 
 class SyncInstruction(SyftObject):
     __canonical_name__ = "SyncDecision"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     diff: ObjectDiff
     decision: SyncDecision | None
@@ -1602,7 +1614,7 @@ class SyncInstruction(SyftObject):
 
 class ResolvedSyncState(SyftObject):
     __canonical_name__ = "SyncUpdate"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     server_uid: UID
     create_objs: list[SyncableSyftObject] = []

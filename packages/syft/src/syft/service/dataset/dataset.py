@@ -7,16 +7,11 @@ import textwrap
 from typing import Any
 
 # third party
-from IPython.display import display
-import itables
 import markdown
 import pandas as pd
 from pydantic import ConfigDict
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
 from typing_extensions import Self
 
 # relative
@@ -24,33 +19,29 @@ from ...serde.serializable import serializable
 from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
-from ...types.syft_migration import migrate
+from ...types.errors import SyftException
+from ...types.result import as_result
+from ...types.syft_object import PartialSyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
-from ...types.transforms import drop
 from ...types.transforms import generate_id
 from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import validate_url
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import ON_SURFACE_HIGHEST
-from ...util.colors import SURFACE
-from ...util.colors import SURFACE_SURFACE
 from ...util.markdown import as_markdown_python_code
 from ...util.misc_objs import MarkdownDescription
 from ...util.notebook_ui.icons import Icon
-from ...util.notebook_ui.styles import FONT_CSS
-from ...util.notebook_ui.styles import ITABLES_CSS
+from ...util.table import itable_template_from_df
+from ...util.util import repr_truncation
 from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
 from ..data_subject.data_subject_service import DataSubjectService
 from ..response import SyftError
-from ..response import SyftException
 from ..response import SyftSuccess
 from ..response import SyftWarning
 
@@ -61,7 +52,7 @@ logger = logging.getLogger(__name__)
 @serializable()
 class Contributor(SyftObject):
     __canonical_name__ = "Contributor"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     name: str
     role: str | None = None
@@ -73,15 +64,12 @@ class Contributor(SyftObject):
 
     def _repr_html_(self) -> Any:
         return f"""
-            <style>
-            .syft-contributor {{color: {SURFACE[options.color_theme]};}}
-            </style>
-            <div class='syft-contributor' style="line-height:25%">
-                <h3>Contributor</h3>
-                <p><strong>Name: </strong>{self.name}</p>
-                <p><strong>Role: </strong>{self.role}</p>
-                <p><strong>Email: </strong>{self.email}</p>
-            </div>
+
+                Contributor
+                Name: {self.name}
+                Role: {self.role}
+                Email: {self.email}
+
             """
 
     def __eq__(self, value: object) -> bool:
@@ -99,7 +87,7 @@ class Contributor(SyftObject):
 class Asset(SyftObject):
     # version
     __canonical_name__ = "Asset"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     action_id: UID
     server_uid: UID
@@ -127,57 +115,64 @@ class Asset(SyftObject):
         super().__init__(**data, description=description)
 
     def _repr_html_(self) -> Any:
-        itables_css = f"""
-        .itables table {{
-            margin: 0 auto;
-            float: left;
-            color: {ON_SURFACE_HIGHEST[options.color_theme]};
-        }}
-        .itables table th {{color: {SURFACE_SURFACE[options.color_theme]};}}
-        """
-
         # relative
         from ...service.action.action_object import ActionObject
 
         uploaded_by_line = (
-            f"<p><strong>Uploaded by: </strong>{self.uploader.name} ({self.uploader.email})</p>"
+            f"Uploaded by: {self.uploader.name} ({self.uploader.email})"
             if self.uploader
             else ""
         )
 
-        if isinstance(self.data, ActionObject):
-            data_table_line = itables.to_html_datatable(
-                df=self.data.syft_action_data, css=itables_css
-            )
-        elif isinstance(self.data, pd.DataFrame):
-            data_table_line = itables.to_html_datatable(df=self.data, css=itables_css)
+        mock = self.mock
+        private_data_res = self._private_data()
+        if private_data_res.is_err():
+            data_table_line = "You have no permission to the private data"
         else:
-            data_table_line = self.data
+            private_data_obj = private_data_res.ok()
+            if isinstance(private_data_obj, ActionObject):
+                if isinstance(private_data_obj.syft_action_data, ActionDataEmpty):
+                    data_table_line = "No data"
+                else:
+                    df = pd.DataFrame(private_data_obj)
+                    data_table_line = itable_template_from_df(
+                        df=private_data_obj.head(5)
+                    )
 
-        if isinstance(self.mock, ActionObject):
-            mock_table_line = itables.to_html_datatable(
-                df=self.mock.syft_action_data, css=itables_css
-            )
-        elif isinstance(self.mock, pd.DataFrame):
-            mock_table_line = itables.to_html_datatable(df=self.mock, css=itables_css)
+            elif isinstance(private_data_obj, pd.DataFrame):
+                data_table_line = itable_template_from_df(df=private_data_obj.head(5))
+            else:
+                try:
+                    data_table_line = repr_truncation(private_data_obj)
+                except Exception as e:
+                    error_msg = (
+                        e.public_message if isinstance(e, SyftException) else str(e)
+                    )
+                    logger.debug(f"Failed to truncate private data repr. {error_msg}")
+                    data_table_line = private_data_res.ok()  # type: ignore
+
+        if isinstance(mock, ActionObject):
+            if isinstance(mock.syft_action_data, ActionDataEmpty):
+                mock_table_line = "No data"
+            else:
+                df = pd.DataFrame(mock.syft_action_data)
+                mock_table_line = itable_template_from_df(df=df.head(5))
+        elif isinstance(mock, pd.DataFrame):
+            mock_table_line = itable_template_from_df(df=self.mock.head(5))
         else:
-            mock_table_line = self.mock
+            try:
+                mock_table_line = repr_truncation(self.mock)
+            except Exception as e:
+                logger.debug(f"Failed to truncate mock data repr. {e}")
+                mock_table_line = self.mock
+
             if isinstance(mock_table_line, SyftError):
                 mock_table_line = mock_table_line.message
 
         return f"""
-            <style>
-            {FONT_CSS}
-            .syft-asset {{color: {SURFACE[options.color_theme]};}}
-            .syft-asset h3,
-            .syft-asset p
-              {{font-family: 'Open Sans'}}
-            {ITABLES_CSS}
-            </style>
-
             <div class="syft-asset">
             <h3>{self.name}</h3>
-            <p>{self.description}</p>
+            <p>{self.description or ""}</p>
             <p><strong>Asset ID: </strong>{self.id}</p>
             <p><strong>Action Object ID: </strong>{self.action_id}</p>
             {uploaded_by_line}
@@ -243,34 +238,24 @@ class Asset(SyftObject):
 
     @property
     def pointer(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is not None and api.services is not None:
+        api = self.get_api()
+        if api.services is not None:
             return api.services.action.get_pointer(self.action_id)
 
     @property
-    def mock(self) -> SyftError | Any:
+    def mock(self) -> Any:
         # relative
-        from ...client.api import APIRegistry
-
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
-        result = api.services.action.get_mock(self.action_id)
+        api = self.get_api()
         try:
+            result = api.services.action.get_mock(self.action_id)
             if isinstance(result, SyftObject):
                 return result.syft_action_data
-            return result
+            else:
+                return result
         except Exception as e:
-            return SyftError(message=f"Failed to get mock. {e}")
+            raise SyftException.from_exception(
+                e, public_message=f"Failed to get mock. {e}"
+            )
 
     def has_data_permission(self) -> bool:
         return self.data is not None
@@ -283,25 +268,32 @@ class Asset(SyftObject):
             and data_result.endswith("denied")
         )
 
-    @property
-    def data(self) -> Any:
-        # relative
-        from ...client.api import APIRegistry
+    @as_result(SyftException)
+    def _private_data(self) -> Any:
+        """
+        Retrieves the private data associated with this asset.
 
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None or api.services is None:
+        Returns:
+            Result[Any, str]: A Result object containing the private data if the user has permission
+            otherwise an Err object with the message "You do not have permission to access private data."
+        """
+
+        # TODO: split this out in permission logic and existence logic
+        api = self.get_api_wrapped()
+        if api.is_err():
             return None
-        res = api.services.action.get(self.action_id)
+        res = api.unwrap().services.action.get(self.action_id)
         if self.has_permission(res):
             return res.syft_action_data
         else:
-            warning = SyftWarning(
-                message="You do not have permission to access private data."
-            )
-            display(warning)
+            raise SyftException(public_message="You have no access to the private data")
+
+    @property
+    def data(self) -> Any:
+        try:
+            return self._private_data().unwrap()
+        except SyftException as e:
+            print(e)
             return None
 
 
@@ -326,7 +318,7 @@ def check_mock(data: Any, mock: Any) -> bool:
 class CreateAsset(SyftObject):
     # version
     __canonical_name__ = "CreateAsset"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type:ignore[assignment]
     name: str
@@ -380,15 +372,15 @@ class CreateAsset(SyftObject):
         role: Enum | str | None = None,
         phone: str | None = None,
         note: str | None = None,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         try:
             _role_str = role.value if isinstance(role, Enum) else role
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
             if contributor in self.contributors:
-                return SyftError(
-                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset."
+                raise SyftException(
+                    public_message=f"Contributor with email: '{email}' already exists in '{self.name}' Asset."
                 )
             self.contributors.add(contributor)
 
@@ -396,22 +388,24 @@ class CreateAsset(SyftObject):
                 message=f"Contributor '{name}' added to '{self.name}' Asset."
             )
         except Exception as e:
-            return SyftError(message=f"Failed to add contributor. Error: {e}")
+            raise SyftException(public_message=f"Failed to add contributor. Error: {e}")
 
     def set_description(self, description: str) -> None:
         self.description = MarkdownDescription(text=description)
 
     def set_obj(self, data: Any) -> None:
         if isinstance(data, SyftError):
-            raise SyftException(data)
+            raise SyftException(public_message=data)
         self.data = data
 
     def set_mock(self, mock_data: Any, mock_is_real: bool) -> None:
         if isinstance(mock_data, SyftError):
-            raise SyftException(mock_data)
+            raise SyftException(public_message=mock_data)
 
         if mock_is_real and (mock_data is None or _is_action_data_empty(mock_data)):
-            raise SyftException("`mock_is_real` must be False if mock is empty")
+            raise SyftException(
+                public_message="`mock_is_real` must be False if mock is empty"
+            )
 
         self.mock = mock_data
         self.mock_is_real = mock_is_real
@@ -425,18 +419,11 @@ class CreateAsset(SyftObject):
     def set_shape(self, shape: tuple) -> None:
         self.shape = shape
 
-    def check(self) -> SyftSuccess | SyftError:
+    def check(self) -> SyftSuccess:
         if not check_mock(self.data, self.mock):
-            return SyftError(
-                message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}"
+            raise SyftException(
+                public_message=f"set_obj type {type(self.data)} must match set_mock type {type(self.mock)}"
             )
-        # if not _is_action_data_empty(self.mock):
-        #     data_shape = get_shape_or_len(self.data)
-        #     mock_shape = get_shape_or_len(self.mock)
-        #     if data_shape != mock_shape:
-        #         return SyftError(
-        #             message=f"set_obj shape {data_shape} must match set_mock shape {mock_shape}"
-        #         )
 
         return SyftSuccess(message="Dataset is Valid")
 
@@ -456,43 +443,10 @@ def get_shape_or_len(obj: Any) -> tuple[int, ...] | int | None:
 
 
 @serializable()
-class DatasetV2(SyftObject):
-    # version
-    __canonical_name__: str = "Dataset"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    id: UID
-    name: str
-    server_uid: UID | None = None
-    asset_list: list[Asset] = []
-    contributors: set[Contributor] = set()
-    citation: str | None = None
-    url: str | None = None
-    description: MarkdownDescription | None = None
-    updated_at: str | None = None
-    requests: int | None = 0
-    mb_size: float | None = None
-    created_at: DateTime = DateTime.now()
-    uploader: Contributor
-
-    __attr_searchable__ = [
-        "name",
-        "citation",
-        "url",
-        "description",
-        "action_ids",
-        "summary",
-    ]
-    __attr_unique__ = ["name"]
-    __repr_attrs__ = ["name", "url", "created_at"]
-    __table_sort_attr__ = "Created at"
-
-
-@serializable()
 class Dataset(SyftObject):
     # version
     __canonical_name__: str = "Dataset"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     name: str
@@ -508,6 +462,7 @@ class Dataset(SyftObject):
     created_at: DateTime = DateTime.now()
     uploader: Contributor
     summary: str | None = None
+    to_be_deleted: bool = False
 
     __attr_searchable__ = [
         "name",
@@ -560,15 +515,9 @@ class Dataset(SyftObject):
             """
         else:
             description_info_message = ""
+        if self.to_be_deleted:
+            return "This dataset has been marked for deletion. The underlying data may be not available."
         return f"""
-            <style>
-            {FONT_CSS}
-            .syft-dataset {{color: {SURFACE[options.color_theme]};}}
-            .syft-dataset h3,
-            .syft-dataset p
-              {{font-family: 'Open Sans';}}
-              {ITABLES_CSS}
-            </style>
             <div class='syft-dataset'>
             <h1>{self.name}</h1>
             <h2><strong><span class='pr-8'>Summary</span></strong></h2>
@@ -586,8 +535,7 @@ class Dataset(SyftObject):
             """
 
     def action_ids(self) -> list[UID]:
-        data = [asset.action_id for asset in self.asset_list if asset.action_id]
-        return data
+        return [asset.action_id for asset in self.asset_list if asset.action_id]
 
     @property
     def assets(self) -> DictTuple[str, Asset]:
@@ -619,8 +567,8 @@ class Dataset(SyftObject):
 
         client = SyftClientSessionCache.get_client_for_server_uid(self.server_uid)
         if client is None:
-            return SyftError(
-                message=f"No clients for {self.server_uid} in memory. Please login with sy.login"
+            raise SyftException(
+                public_message=f"No clients for {self.server_uid} in memory. Please login with sy.login"
             )
         return client
 
@@ -653,33 +601,26 @@ def _check_asset_must_contain_mock(asset_list: list[CreateAsset]) -> None:
 
 @serializable()
 class DatasetPageView(SyftObject):
-    # version
     __canonical_name__ = "DatasetPageView"
     __version__ = SYFT_OBJECT_VERSION_2
+
+    datasets: DictTuple[str, Dataset]
+    total: int
+
+
+@serializable()
+class DatasetPageViewV1(SyftObject):
+    __canonical_name__ = "DatasetPageView"
+    __version__ = SYFT_OBJECT_VERSION_1
 
     datasets: DictTuple
     total: int
 
 
 @serializable()
-class CreateDatasetV2(DatasetV2):
-    # version
-    __canonical_name__ = "CreateDataset"
-    __version__ = SYFT_OBJECT_VERSION_2
-    asset_list: list[CreateAsset] = []
-
-    __repr_attrs__ = ["name", "url"]
-
-    id: UID | None = None  # type: ignore[assignment]
-    created_at: DateTime | None = None  # type: ignore[assignment]
-    uploader: Contributor | None = None  # type: ignore[assignment]
-
-
-@serializable()
 class CreateDataset(Dataset):
-    # version
     __canonical_name__ = "CreateDataset"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
     asset_list: list[CreateAsset] = []
 
     __repr_attrs__ = ["name", "summary", "url"]
@@ -690,9 +631,6 @@ class CreateDataset(Dataset):
 
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
-    def _check_asset_must_contain_mock(self) -> None:
-        _check_asset_must_contain_mock(self.asset_list)
-
     @field_validator("asset_list")
     @classmethod
     def __assets_must_contain_mock(
@@ -700,6 +638,13 @@ class CreateDataset(Dataset):
     ) -> list[CreateAsset]:
         _check_asset_must_contain_mock(asset_list)
         return asset_list
+
+    @field_validator("to_be_deleted")
+    @classmethod
+    def __to_be_deleted_must_be_false(cls, v: bool) -> bool:
+        if v is True:
+            raise ValueError("to_be_deleted must be False")
+        return v
 
     def set_description(self, description: str) -> None:
         self.description = MarkdownDescription(text=description)
@@ -720,35 +665,35 @@ class CreateDataset(Dataset):
         role: Enum | str | None = None,
         phone: str | None = None,
         note: str | None = None,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         try:
             _role_str = role.value if isinstance(role, Enum) else role
             contributor = Contributor(
                 name=name, role=_role_str, email=email, phone=phone, note=note
             )
             if contributor in self.contributors:
-                return SyftError(
-                    message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset."
+                raise SyftException(
+                    public_message=f"Contributor with email: '{email}' already exists in '{self.name}' Dataset."
                 )
             self.contributors.add(contributor)
             return SyftSuccess(
                 message=f"Contributor '{name}' added to '{self.name}' Dataset."
             )
         except Exception as e:
-            return SyftError(message=f"Failed to add contributor. Error: {e}")
+            raise SyftException(public_message=f"Failed to add contributor. Error: {e}")
 
-    def add_asset(
-        self, asset: CreateAsset, force_replace: bool = False
-    ) -> SyftSuccess | SyftError:
+    def add_asset(self, asset: CreateAsset, force_replace: bool = False) -> SyftSuccess:
         if asset.mock is None:
             raise ValueError(_ASSET_WITH_NONE_MOCK_ERROR_MESSAGE)
 
         for i, existing_asset in enumerate(self.asset_list):
             if existing_asset.name == asset.name:
                 if not force_replace:
-                    return SyftError(
-                        message=f"""Asset "{asset.name}" already exists in '{self.name}' Dataset."""
-                        """ Use add_asset(asset, force_replace=True) to replace."""
+                    raise SyftException(
+                        public_message=(
+                            f"Asset '{asset.name}' already exists in '{self.name}' Dataset."
+                            "\nUse add_asset(asset, force_replace=True) to replace."
+                        )
                     )
                 else:
                     self.asset_list[i] = asset
@@ -762,10 +707,10 @@ class CreateDataset(Dataset):
             message=f"Asset '{asset.name}' added to '{self.name}' Dataset."
         )
 
-    def replace_asset(self, asset: CreateAsset) -> SyftSuccess | SyftError:
+    def replace_asset(self, asset: CreateAsset) -> SyftSuccess:
         return self.add_asset(asset=asset, force_replace=True)
 
-    def remove_asset(self, name: str) -> SyftSuccess | SyftError:
+    def remove_asset(self, name: str) -> SyftSuccess:
         asset_to_remove = None
         for asset in self.asset_list:
             if asset.name == name:
@@ -773,21 +718,21 @@ class CreateDataset(Dataset):
                 break
 
         if asset_to_remove is None:
-            return SyftError(message=f"No asset exists with name: {name}")
+            raise SyftException(public_message=f"No asset exists with name: {name}")
         self.asset_list.remove(asset_to_remove)
         return SyftSuccess(
             message=f"Asset '{self.name}' removed from '{self.name}' Dataset."
         )
 
-    def check(self) -> Result[SyftSuccess, list[SyftError]]:
+    def check(self) -> SyftSuccess:
         errors = []
         for asset in self.asset_list:
             result = asset.check()
             if not result:
                 errors.append(result)
         if len(errors):
-            return Err(errors)
-        return Ok(SyftSuccess(message="Dataset is Valid"))
+            raise SyftException(public_message=f"Errors: {errors}")
+        return SyftSuccess(message="Dataset is Valid")
 
 
 def create_and_store_twin(context: TransformContext) -> TransformContext:
@@ -812,9 +757,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
             syft_server_location=asset.syft_server_location,  # type: ignore
             syft_client_verify_key=asset.syft_client_verify_key,  # type: ignore
         )
-        res = twin._save_to_blob_storage(allow_empty=contains_empty)
-        if isinstance(res, SyftError):
-            raise ValueError(res.message)
+        res = twin._save_to_blob_storage(allow_empty=contains_empty).unwrap()
         if isinstance(res, SyftWarning):
             logger.debug(res.message)
         # TODO, upload to blob storage here
@@ -823,13 +766,10 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
                 "f{context}'s server is None, please log in. No trasformation happened"
             )
         action_service = context.server.get_service("actionservice")
-        result = action_service._set(
+        action_service._set(
             context=context.to_server_context(),
             action_object=twin,
-        )
-        if result.is_err():
-            raise RuntimeError(f"Failed to create and store twin. Error: {result}")
-
+        ).unwrap(public_message="Failed to create and store twin")
         context.output["action_id"] = twin.id
     else:
         private_obj = context.output.pop("data", None)
@@ -847,20 +787,18 @@ def infer_shape(context: TransformContext) -> TransformContext:
     return context
 
 
-def set_data_subjects(context: TransformContext) -> TransformContext | SyftError:
+def set_data_subjects(context: TransformContext) -> TransformContext:
     if context.output is None:
         raise ValueError(f"{context}'s output is None. No transformation happened")
     if context.server is None:
-        return SyftError(
-            "f{context}'s server is None, please log in. No trasformation happened"
+        raise SyftException(
+            public_message="f{context}'s server is None, please log in. No trasformation happened"
         )
     data_subjects = context.output["data_subjects"]
     get_data_subject = context.server.get_service_method(DataSubjectService.get_by_name)
     resultant_data_subjects = []
     for data_subject in data_subjects:
         result = get_data_subject(context=context, name=data_subject.name)
-        if isinstance(result, SyftError):
-            return result
         resultant_data_subjects.append(result)
     context.output["data_subjects"] = resultant_data_subjects
     return context
@@ -927,44 +865,13 @@ def createdataset_to_dataset() -> list[Callable]:
         validate_url,
         convert_asset,
         add_current_date,
+        make_set_default("to_be_deleted", False),  # explicitly set it to False
     ]
 
 
-@migrate(DatasetV2, Dataset)
-def migrate_dataset_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("summary", None),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "summary", "url", "created_at"]),
-    ]
+class DatasetUpdate(PartialSyftObject):
+    __canonical_name__ = "DatasetUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
 
-
-@migrate(Dataset, DatasetV2)
-def migrate_dataset_v3_to_v2() -> list[Callable]:
-    return [
-        drop("summary"),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "url", "created_at"]),
-    ]
-
-
-@migrate(CreateDatasetV2, CreateDataset)
-def migrate_create_dataset_v2_to_v3() -> list[Callable]:
-    return [
-        make_set_default("summary", None),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "summary", "url"]),
-    ]
-
-
-@migrate(CreateDataset, CreateDatasetV2)
-def migrate_create_dataset_v3_to_v2() -> list[Callable]:
-    return [
-        drop("summary"),
-        drop("__repr_attrs__"),
-        make_set_default("__repr_attrs__", ["name", "url"]),
-    ]
-
-
-class DatasetUpdate:
-    pass
+    name: str
+    to_be_deleted: bool

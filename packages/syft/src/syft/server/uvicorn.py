@@ -1,5 +1,7 @@
 # stdlib
 from collections.abc import Callable
+from contextlib import asynccontextmanager
+import logging
 import multiprocessing
 import multiprocessing.synchronize
 import os
@@ -30,6 +32,7 @@ from .datasite import Datasite
 from .enclave import Enclave
 from .gateway import Gateway
 from .routes import make_routes
+from .server import Server
 from .server import ServerType
 from .utils import get_named_server_uid
 from .utils import remove_temp_dir_for_server
@@ -60,6 +63,17 @@ class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
 
 
+def get_lifetime(worker: Server) -> Callable:
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> Any:
+        try:
+            yield
+        finally:
+            worker.stop()
+
+    return lifespan
+
+
 def app_factory() -> FastAPI:
     settings = AppSettings()
 
@@ -84,7 +98,9 @@ def app_factory() -> FastAPI:
     else:
         worker = worker_class(**kwargs)
 
-    app = FastAPI(title=settings.name)
+    worker_lifespan = get_lifetime(worker=worker)
+
+    app = FastAPI(title=settings.name, lifespan=worker_lifespan)
     router = make_routes(worker=worker)
     api_router = APIRouter()
     api_router.include_router(router)
@@ -122,7 +138,8 @@ def run_uvicorn(
     starting_uvicorn_event: multiprocessing.synchronize.Event,
     **kwargs: Any,
 ) -> None:
-    should_reset = kwargs.get("dev_mode") and kwargs.get("reset")
+    dev_mode = kwargs.get("dev_mode")
+    should_reset = dev_mode and kwargs.get("reset")
 
     if should_reset:
         print("Found `reset=True` in the launch configuration. Resetting the server...")
@@ -139,6 +156,12 @@ def run_uvicorn(
                 time.sleep(1)
         except Exception:  # nosec
             print(f"Failed to kill python process on port: {port}")
+
+    log_level = "critical"
+    if dev_mode:
+        log_level = "info"
+        logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
+        logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
 
     if kwargs.get("debug"):
         attach_debugger()
@@ -166,8 +189,9 @@ def run_uvicorn(
         host=host,
         port=port,
         factory=True,
-        reload=kwargs.get("dev_mode"),
-        reload_dirs=[Path(__file__).parent.parent] if kwargs.get("dev_mode") else None,
+        reload=dev_mode,
+        reload_dirs=[Path(__file__).parent.parent] if dev_mode else None,
+        log_level=log_level,
     )
 
 

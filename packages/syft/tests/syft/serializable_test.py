@@ -21,7 +21,11 @@ class AbstractBase:
     uid: str
 
 
-@serializable(attrs=["uid", "value"])
+@serializable(
+    attrs=["uid", "value"],
+    canonical_name="Base",
+    version=1,
+)
 class Base(AbstractBase):
     """Serialize: uid, value"""
 
@@ -32,7 +36,11 @@ class Base(AbstractBase):
         self.value = value
 
 
-@serializable(attrs=["status"])
+@serializable(
+    attrs=["status"],
+    canonical_name="Derived",
+    version=1,
+)
 class Derived(Base):
     """Serialize: uid, value, status"""
 
@@ -43,7 +51,12 @@ class Derived(Base):
         self.status = status
 
 
-@serializable(attrs=["status"], without=["uid"])
+@serializable(
+    attrs=["status"],
+    without=["uid"],
+    canonical_name="DerivedWithoutAttrs",
+    version=1,
+)
 class DerivedWithoutAttrs(Base):
     """Serialize: value, status"""
 
@@ -54,7 +67,12 @@ class DerivedWithoutAttrs(Base):
         self.status = status
 
 
-@serializable(attrs=["status"], inherit=False)
+@serializable(
+    attrs=["status"],
+    inherit=False,
+    canonical_name="DerivedNoInherit",
+    version=1,
+)
 class DerivedNoInherit(Base):
     """Serialize: status"""
 
@@ -65,7 +83,12 @@ class DerivedNoInherit(Base):
         self.status = status
 
 
-@serializable(attrs=["uid", "value"], inheritable=False)
+@serializable(
+    attrs=["uid", "value"],
+    inheritable=False,
+    canonical_name="BaseAttrsNonInheritable",
+    version=1,
+)
 class BaseAttrsNonInheritable(AbstractBase):
     """Serialize: uid, value (Derived cannot inherit base attrs)"""
 
@@ -76,7 +99,11 @@ class BaseAttrsNonInheritable(AbstractBase):
         self.value = value
 
 
-@serializable(attrs=["status"])
+@serializable(
+    attrs=["status"],
+    canonical_name="DerivedWithoutBaseAttrs",
+    version=1,
+)
 class DerivedWithoutBaseAttrs(BaseAttrsNonInheritable):
     """Serialize: status (Dervied cannot inherit base attrs)"""
 
@@ -168,7 +195,10 @@ def test_derived_without_base_attrs():
 # ------------------------------ Pydantic classes ------------------------------
 
 
-@serializable()
+@serializable(
+    canonical_name="PydBase",
+    version=1,
+)
 class PydBase(BaseModel):
     """Serialize: uid, value, flag"""
 
@@ -177,7 +207,10 @@ class PydBase(BaseModel):
     flag: bool | None = None
 
 
-@serializable()
+@serializable(
+    canonical_name="PydDerived",
+    version=1,
+)
 class PydDerived(PydBase):
     """Serialize: uid, value, flag, source, target"""
 
@@ -185,7 +218,11 @@ class PydDerived(PydBase):
     target: str
 
 
-@serializable(without=["uid"])
+@serializable(
+    without=["uid"],
+    canonical_name="PydDerivedWithoutAttr",
+    version=1,
+)
 class PydDerivedWithoutAttr(PydBase):
     """
     Serialize: value, flag, source, target
@@ -196,7 +233,11 @@ class PydDerivedWithoutAttr(PydBase):
     target: str
 
 
-@serializable(without=["uid", "flag", "config"])
+@serializable(
+    without=["uid", "flag", "config"],
+    canonical_name="PydDerivedWithoutAttrs",
+    version=1,
+)
 class PydDerivedWithoutAttrs(PydBase):
     """
     Serialize: value, source, target
@@ -208,7 +249,11 @@ class PydDerivedWithoutAttrs(PydBase):
     config: dict | None = None
 
 
-@serializable(attrs=["source", "target"])
+@serializable(
+    attrs=["source", "target"],
+    canonical_name="PydDerivedOnly",
+    version=1,
+)
 class PydDerivedOnly(PydBase):
     """
     Serialize: source, target

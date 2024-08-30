@@ -8,9 +8,8 @@ from ..serde.serializable import serializable
 from ..server.credentials import SyftSigningKey
 from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.network.server_peer import ServerPeer
-from ..service.response import SyftError
-from ..service.response import SyftException
-from ..types.syft_object import SYFT_OBJECT_VERSION_2
+from ..types.errors import SyftException
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..util.assets import load_png_base64
 from ..util.notebook_ui.styles import FONT_CSS
@@ -18,7 +17,7 @@ from .client import SyftClient
 from .connection import ServerConnection
 
 
-@serializable()
+@serializable(canonical_name="GatewayClient", version=1)
 class GatewayClient(SyftClient):
     # TODO: add widget repr for gateway client
 
@@ -28,18 +27,16 @@ class GatewayClient(SyftClient):
         from .enclave_client import EnclaveClient
 
         connection: type[ServerConnection] = self.connection.with_proxy(peer.id)
-        metadata: ServerMetadataJSON | SyftError = connection.get_server_metadata(
+        metadata: ServerMetadataJSON = connection.get_server_metadata(
             credentials=SyftSigningKey.generate()
         )
-        if isinstance(metadata, SyftError):
-            return metadata
         if metadata.server_type == ServerType.DATASITE.value:
             client_type: type[SyftClient] = DatasiteClient
         elif metadata.server_type == ServerType.ENCLAVE.value:
             client_type = EnclaveClient
         else:
             raise SyftException(
-                f"Unknown server type {metadata.server_type} to create proxy client"
+                public_message=f"Unknown server type {metadata.server_type} to create proxy client"
             )
 
         client = client_type(
@@ -59,22 +56,22 @@ class GatewayClient(SyftClient):
         if self.api.has_service("network"):
             peer = self.api.services.network.get_peer_by_name(name=name)
         if peer is None:
-            return SyftError(message=f"No datasite with name {name}")
+            raise SyftException(public_message=f"No datasite with name {name}")
         res = self.proxy_to(peer)
         if email and password:
             res = res.login(email=email, password=password, **kwargs)
         return res
 
     @property
-    def peers(self) -> list[ServerPeer] | SyftError | None:
+    def peers(self) -> list[ServerPeer] | None:
         return ProxyClient(routing_client=self)
 
     @property
-    def datasites(self) -> list[ServerPeer] | SyftError | None:
+    def datasites(self) -> list[ServerPeer] | None:
         return ProxyClient(routing_client=self, server_type=ServerType.DATASITE)
 
     @property
-    def enclaves(self) -> list[ServerPeer] | SyftError | None:
+    def enclaves(self) -> list[ServerPeer] | None:
         return ProxyClient(routing_client=self, server_type=ServerType.ENCLAVE)
 
     def _repr_html_(self) -> str:
@@ -155,7 +152,7 @@ class GatewayClient(SyftClient):
 
 class ProxyClient(SyftObject):
     __canonical_name__ = "ProxyClient"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     routing_client: GatewayClient
     server_type: ServerType | None = None
@@ -170,7 +167,7 @@ class ProxyClient(SyftObject):
             return self.routing_client.api.services.network.get_all_peers()
         else:
             raise SyftException(
-                f"Unknown server type {self.server_type} to retrieve proxy client"
+                public_message=f"Unknown server type {self.server_type} to retrieve proxy client"
             )
 
     def _repr_html_(self) -> str:
@@ -181,11 +178,13 @@ class ProxyClient(SyftObject):
 
     def __getitem__(self, key: int | str) -> SyftClient:
         if not isinstance(key, int):
-            raise SyftException(f"Key: {key} must be an integer")
+            raise SyftException(public_message=f"Key: {key} must be an integer")
 
         servers = self.retrieve_servers()
 
         if key >= len(servers):
-            raise SyftException(f"Index {key} out of range for retrieved servers")
+            raise SyftException(
+                public_message=f"Index {key} out of range for retrieved servers"
+            )
 
         return self.routing_client.proxy_to(servers[key])

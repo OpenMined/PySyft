@@ -1,8 +1,5 @@
 # stdlib
-from collections.abc import Generator
-from collections.abc import Iterable
-from itertools import product
-from secrets import token_hex
+import operator
 import time
 from typing import Any
 
@@ -15,90 +12,74 @@ import syft as sy
 from syft.orchestra import ServerHandle
 from syft.service.job.job_stash import JobStatus
 from syft.service.response import SyftError
+from syft.types.errors import SyftException
+
+# relative
+from .conftest import matrix
 
 # equivalent to adding this mark to every test in this file
 pytestmark = pytest.mark.local_server
 
 
-@pytest.fixture()
-def server_args() -> dict[str, Any]:
-    return {}
+SERVER_ARGS_TEST_CASES = {
+    "n_consumers": [1],
+    "dev_mode": [True, False],
+    "thread_workers": [True, False],
+    "create_producer": [True],
+}
 
 
-@pytest.fixture
-def server(server_args: dict[str, Any]) -> Generator[ServerHandle, None, None]:
-    _server = sy.orchestra.launch(
-        **{
-            "name": token_hex(8),
-            "dev_mode": True,
-            "reset": True,
-            "n_consumers": 3,
-            "create_producer": True,
-            "queue_port": None,
-            "local_db": False,
-            **server_args,
-        }
-    )
-    # startup code here
-    yield _server
-    # Cleanup code
-    _server.python_server.cleanup()
-    _server.land()
+class FlakyMark(RuntimeError):
+    """To mark a flaky part of a test to use with @pytest.mark.flaky"""
+
+    pass
 
 
-def matrix(
-    *,
-    excludes_: Iterable[dict[str, Any]] | None = None,
-    **kwargs: Iterable,
-) -> list[dict[str, Any]]:
-    args = ([(k, v) for v in vs] for k, vs in kwargs.items())
-    args = product(*args)
-
-    if excludes_ is None:
-        excludes_ = []
-    excludes_ = [kv.items() for kv in excludes_]
-
-    args = (
-        arg
-        for arg in args
-        if not any(all(kv in arg for kv in kvs) for kvs in excludes_)
-    )
-
-    return [dict(kvs) for kvs in args]
-
-
-SERVER_ARGS_TEST_CASES = matrix(
-    n_consumers=[1],
-    dev_mode=[True, False],
-    thread_workers=[True, False],
+@pytest.mark.flaky(reruns=3, rerun_delay=1, only_rerun=["FlakyMark"])
+@pytest.mark.parametrize(
+    "server_args",
+    matrix(
+        **{**SERVER_ARGS_TEST_CASES, "n_consumers": [3]},
+    ),
 )
-
-
-@pytest.mark.parametrize("server_args", SERVER_ARGS_TEST_CASES)
 @pytest.mark.parametrize("force", [True, False])
-def test_delete_idle_worker(server: ServerHandle, force: bool) -> None:
+def test_delete_idle_worker(
+    server: ServerHandle, force: bool, server_args: dict[str, Any]
+) -> None:
     client = server.login(email="info@openmined.org", password="changethis")
-    worker = client.worker.get_all()[0]
+    original_workers = client.worker.get_all()
+    worker_to_delete = max(original_workers, key=operator.attrgetter("name"))
 
-    res = client.worker.delete(worker.id, force=force)
-    assert not isinstance(res, SyftError)
+    client.worker.delete(worker_to_delete.id, force=force)
 
     if force:
-        assert len(client.worker.get_all()) == 0
+        assert (
+            len(workers := client.worker.get_all()) == len(original_workers) - 1
+            and all(w.id != worker_to_delete.id for w in workers)
+        ), f"{workers.message=} {server_args=} {[(w.id, w.name) for w in original_workers]}"
+        return
 
     start = time.time()
     while True:
-        if len(client.worker.get_all()) == 0:
+        workers = client.worker.get_all()
+        if isinstance(workers, SyftError):
+            raise FlakyMark(
+                f"`workers = client.worker.get_all()` failed.\n"
+                f"{workers.message=} {server_args=} {[(w.id, w.name) for w in original_workers]}"
+            )
+
+        if len(workers) == len(original_workers) - 1 and all(
+            w.id != worker_to_delete.id for w in workers
+        ):
             break
         if time.time() - start > 3:
             raise TimeoutError("Worker did not get removed from stash.")
 
 
-@pytest.mark.parametrize("server_args", SERVER_ARGS_TEST_CASES)
+@pytest.mark.parametrize("server_args", matrix(**SERVER_ARGS_TEST_CASES))
 @pytest.mark.parametrize("force", [True, False])
 def test_delete_worker(server: ServerHandle, force: bool) -> None:
     client = server.login(email="info@openmined.org", password="changethis")
-
     data = np.array([1, 2, 3])
     data_action_obj = sy.ActionObject.from_obj(data)
     data_pointer = data_action_obj.send(client)
@@ -123,12 +104,11 @@ def test_delete_worker(server: ServerHandle, force: bool) -> None:
         if time.time() - start > 5:
             raise TimeoutError("Job did not get picked up by any worker.")
 
-    res = client.worker.delete(syft_worker_id, force=force)
-    assert not isinstance(res, SyftError)
+    client.worker.delete(syft_worker_id, force=force)
 
     if not force and len(client.worker.get_all()) > 0:
         assert client.worker.get(syft_worker_id).to_be_deleted
-        job.wait()
+        job.wait(timeout=30)
 
     job = client.jobs[0]
     if force:
@@ -138,8 +118,9 @@ def test_delete_worker(server: ServerHandle, force: bool) -> None:
 
     start = time.time()
     while True:
-        res = client.worker.get(syft_worker_id)
-        if isinstance(res, SyftError):
+        try:
+            client.worker.get(syft_worker_id)
+        except SyftException:
             break
         if time.time() - start > 5:
             raise TimeoutError("Worker did not get removed from stash.")

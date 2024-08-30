@@ -10,6 +10,7 @@ import pytest
 import syft as sy
 from syft.service.job.job_stash import Job
 from syft.service.job.job_stash import JobStatus
+from syft.types.errors import SyftException
 from syft.types.uid import UID
 
 
@@ -56,5 +57,8 @@ def test_job_no_consumer(worker):
 
     _ = ds_client.code.request_code_execution(process_all)
     job = client.code.process_all(blocking=False)
-    res = job.wait()
-    assert not res, "Should return error when no consumers are available"
+
+    with pytest.raises(SyftException) as exc:
+        job.wait()
+
+    assert "has no workers" in exc.value.public_message

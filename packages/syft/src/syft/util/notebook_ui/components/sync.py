@@ -10,7 +10,6 @@ from ....client.sync_decision import SyncDirection
 from ....service.code.user_code import UserCode
 from ....service.job.job_stash import Job
 from ....service.request.request import Request
-from ....service.response import SyftError
 from ....service.user.user import UserView
 from ....types.datetime import DateTime
 from ....types.datetime import format_timedelta_human_readable
@@ -113,7 +112,7 @@ class SyncTableObject(HTMLComponentBase):
             if email is not None:
                 return f"Requested by {email}"
 
-        user_view: UserView | SyftError | None = None
+        user_view: UserView | None = None
         if isinstance(self.object, UserCode):
             user_view = self.object.user
 

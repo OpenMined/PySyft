@@ -7,6 +7,7 @@ from typing import cast
 # relative
 from ...serde.serializable import serializable
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from .network_service import NetworkService
@@ -18,7 +19,7 @@ from .server_peer import ServerPeerUpdate
 logger = logging.getLogger(__name__)
 
 
-@serializable(without=["thread"])
+@serializable(without=["thread"], canonical_name="PeerHealthCheckTask", version=1)
 class PeerHealthCheckTask:
     repeat_time = 10  # in seconds
 
@@ -27,7 +28,7 @@ class PeerHealthCheckTask:
         self.started_time = None
         self._stop = False
 
-    def peer_route_heathcheck(self, context: AuthedServiceContext) -> SyftError | None:
+    def peer_route_heathcheck(self, context: AuthedServiceContext) -> None:
         """
         Perform a health check on the peers in the network stash.
         - If peer is accessible, ping the peer.
@@ -45,13 +46,14 @@ class PeerHealthCheckTask:
         )
         network_stash = network_service.stash
 
-        result = network_stash.get_all(context.server.verify_key)
-
-        if result.is_err():
-            logger.error(f"Failed to fetch peers from stash: {result.err()}")
-            return SyftError(message=f"{result.err()}")
-
-        all_peers: list[ServerPeer] = result.ok()
+        try:
+            all_peers: list[ServerPeer] = network_stash.get_all(
+                context.server.verify_key
+            ).unwrap()  # type: ignore
+        except SyftException as exc:
+            msg = exc._private_message or exc.public_message
+            logger.error(f"Failed to fetch peers from stash: {msg}")
+            raise SyftException(message="Failed to fetch peers from stash")
 
         for peer in all_peers:
             peer_update = ServerPeerUpdate(id=peer.id)
@@ -63,7 +65,7 @@ class PeerHealthCheckTask:
                         f"Failed to create client for peer: {peer}: {peer_client.err()}"
                     )
                     peer_update.ping_status = ServerPeerConnectionStatus.TIMEOUT
-                    peer_client = None
+                    peer_client = None  # type: ignore [assignment]
             except Exception as e:
                 logger.error(f"Failed to create client for peer: {peer}", exc_info=e)
 
@@ -71,8 +73,8 @@ class PeerHealthCheckTask:
                 peer_client = None
 
             if peer_client is not None:
-                peer_client = peer_client.ok()
-                peer_status = peer_client.api.services.network.check_peer_association(
+                peer_client = peer_client.ok()  # type: ignore [assignment]
+                peer_status = peer_client.api.services.network.check_peer_association(  # type: ignore [union-attr]
                     peer_id=context.server.id
                 )
                 peer_update.ping_status = (

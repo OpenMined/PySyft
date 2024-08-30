@@ -14,7 +14,6 @@ from typing import cast
 
 # third party
 from pydantic import field_validator
-from result import Result
 import zmq
 from zmq import Frame
 from zmq import LINGER
@@ -28,11 +27,12 @@ from ...server.credentials import SyftVerifyKey
 from ...service.action.action_object import ActionObject
 from ...service.context import AuthedServiceContext
 from ...types.base import SyftBaseModel
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
+from ...types.errors import SyftException
+from ...types.result import as_result
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.util import get_queue_address
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..worker.worker_pool import ConsumerState
@@ -133,10 +133,13 @@ class Worker(SyftBaseModel):
     def reset_expiry(self) -> None:
         self.expiry_t.reset()
 
+    @as_result(SyftException)
     def _syft_worker(
         self, stash: WorkerStash, credentials: SyftVerifyKey
-    ) -> Result[SyftWorker | None, str]:
-        return stash.get_by_uid(credentials=credentials, uid=self.syft_worker_id)
+    ) -> SyftWorker | None:
+        return stash.get_by_uid(
+            credentials=credentials, uid=self.syft_worker_id
+        ).unwrap()
 
     def __str__(self) -> str:
         svc = self.service.name if self.service else None
@@ -146,7 +149,7 @@ class Worker(SyftBaseModel):
         )
 
 
-@serializable()
+@serializable(canonical_name="ZMQProducer", version=1)
 class ZMQProducer(QueueProducer):
     INTERNAL_SERVICE_PREFIX = b"mmi."
 
@@ -225,41 +228,37 @@ class ZMQProducer(QueueProducer):
         else:
             raise Exception(f"{self.auth_context} does not have a server.")
 
+    @as_result(SyftException)
     def contains_unresolved_action_objects(self, arg: Any, recursion: int = 0) -> bool:
         """recursively check collections for unresolved action objects"""
         if isinstance(arg, UID):
-            arg = self.action_service.get(self.auth_context, arg).ok()
-            return self.contains_unresolved_action_objects(arg, recursion=recursion + 1)
+            arg = self.action_service.get(self.auth_context, arg)
+            return self.contains_unresolved_action_objects(
+                arg, recursion=recursion + 1
+            ).unwrap()
         if isinstance(arg, ActionObject):
             if not arg.syft_resolved:
-                res = self.action_service.get(self.auth_context, arg)
-                if res.is_err():
-                    return True
-                arg = res.ok()
+                arg = self.action_service.get(self.auth_context, arg)
                 if not arg.syft_resolved:
                     return True
             arg = arg.syft_action_data
 
-        try:
-            value = False
-            if isinstance(arg, list):
-                for elem in arg:
-                    value = self.contains_unresolved_action_objects(
-                        elem, recursion=recursion + 1
-                    )
-                    if value:
-                        return True
-            if isinstance(arg, dict):
-                for elem in arg.values():
-                    value = self.contains_unresolved_action_objects(
-                        elem, recursion=recursion + 1
-                    )
-                    if value:
-                        return True
-            return value
-        except Exception as e:
-            logger.exception("Failed to resolve action objects.", exc_info=e)
-            return True
+        value = False
+        if isinstance(arg, list):
+            for elem in arg:
+                value = self.contains_unresolved_action_objects(
+                    elem, recursion=recursion + 1
+                ).unwrap()
+                if value:
+                    return True
+        if isinstance(arg, dict):
+            for elem in arg.values():
+                value = self.contains_unresolved_action_objects(
+                    elem, recursion=recursion + 1
+                ).unwrap()
+                if value:
+                    return True
+        return value
 
     def read_items(self) -> None:
         while True:
@@ -272,7 +271,7 @@ class ZMQProducer(QueueProducer):
                 items_to_queue = self.queue_stash.get_by_status(
                     self.queue_stash.partition.root_verify_key,
                     status=Status.CREATED,
-                ).ok()
+                ).unwrap()
 
                 items_to_queue = [] if items_to_queue is None else items_to_queue
 
@@ -280,7 +279,7 @@ class ZMQProducer(QueueProducer):
                 items_processing = self.queue_stash.get_by_status(
                     self.queue_stash.partition.root_verify_key,
                     status=Status.PROCESSING,
-                ).ok()
+                ).unwrap()
 
                 items_processing = [] if items_processing is None else items_processing
 
@@ -289,16 +288,20 @@ class ZMQProducer(QueueProducer):
                     if item.status == Status.CREATED:
                         if isinstance(item, ActionQueueItem):
                             action = item.kwargs["action"]
-                            if self.contains_unresolved_action_objects(
-                                action.args
-                            ) or self.contains_unresolved_action_objects(action.kwargs):
+                            if (
+                                self.contains_unresolved_action_objects(
+                                    action.args
+                                ).unwrap()
+                                or self.contains_unresolved_action_objects(
+                                    action.kwargs
+                                ).unwrap()
+                            ):
                                 continue
 
                         msg_bytes = serialize(item, to_bytes=True)
                         worker_pool = item.worker_pool.resolve_with_context(
                             self.auth_context
-                        )
-                        worker_pool = worker_pool.ok()
+                        ).unwrap()
                         service_name = worker_pool.name
                         service: Service | None = self.services.get(service_name)
 
@@ -311,13 +314,11 @@ class ZMQProducer(QueueProducer):
                         # This list is processed in dispatch method.
 
                         # TODO: Logic to evaluate the CAN RUN Condition
-                        service.requests.append(msg_bytes)
                         item.status = Status.PROCESSING
-                        res = self.queue_stash.update(item.syft_client_verify_key, item)
-                        if res.is_err():
-                            logger.error(
-                                f"Failed to update queue item={item} error={res.err()}"
-                            )
+                        self.queue_stash.update(
+                            item.syft_client_verify_key, item
+                        ).unwrap(public_message=f"failed to update queue item {item}")
+                        service.requests.append(msg_bytes)
                     elif item.status == Status.PROCESSING:
                         # Evaluate Retry condition here
                         # If job running and timeout or job status is KILL
@@ -326,13 +327,12 @@ class ZMQProducer(QueueProducer):
                         # else decrease retry count and mark status as CREATED.
                         pass
             except Exception as e:
-                print(e, file=sys.stderr)
+                # stdlib
+                import traceback
+
+                print(e, traceback.format_exc(), file=sys.stderr)
                 item.status = Status.ERRORED
-                res = self.queue_stash.update(item.syft_client_verify_key, item)
-                if res.is_err():
-                    logger.error(
-                        f"Failed to update queue item={item} error={res.err()}"
-                    )
+                self.queue_stash.update(item.syft_client_verify_key, item).unwrap()
 
     def run(self) -> None:
         self.thread = threading.Thread(target=self._run)
@@ -391,28 +391,22 @@ class ZMQProducer(QueueProducer):
             return
 
         try:
-            # Check if worker is present in the database
-            worker = self.worker_stash.get_by_uid(
-                credentials=self.worker_stash.partition.root_verify_key,
-                uid=syft_worker_id,
-            )
-            if worker.is_ok() and worker.ok() is None:
-                return
+            try:
+                self.worker_stash.get_by_uid(
+                    credentials=self.worker_stash.partition.root_verify_key,
+                    uid=syft_worker_id,
+                ).unwrap()
+            except Exception:
+                return None
 
-            res = self.worker_stash.update_consumer_state(
+            self.worker_stash.update_consumer_state(
                 credentials=self.worker_stash.partition.root_verify_key,
                 worker_uid=syft_worker_id,
                 consumer_state=consumer_state,
-            )
-            if res.is_err():
-                logger.error(
-                    f"Failed to update consumer state for worker id={syft_worker_id} "
-                    f"to state: {consumer_state} error={res.err()}",
-                )
-        except Exception as e:
-            logger.error(
+            ).unwrap()
+        except Exception:
+            logger.exception(
                 f"Failed to update consumer state for worker id: {syft_worker_id} to state {consumer_state}",
-                exc_info=e,
             )
 
     def worker_waiting(self, worker: Worker) -> None:
@@ -470,8 +464,8 @@ class ZMQProducer(QueueProducer):
         with ZMQ_SOCKET_LOCK:
             try:
                 self.socket.send_multipart(msg)
-            except zmq.ZMQError as e:
-                logger.error("ZMQProducer send error", exc_info=e)
+            except zmq.ZMQError:
+                logger.exception("ZMQProducer send error")
 
     def _run(self) -> None:
         try:
@@ -587,7 +581,7 @@ class ZMQProducer(QueueProducer):
         return not self.socket.closed
 
 
-@serializable(attrs=["_subscriber"])
+@serializable(attrs=["_subscriber"], canonical_name="ZMQConsumer", version=1)
 class ZMQConsumer(QueueConsumer):
     def __init__(
         self,
@@ -655,8 +649,8 @@ class ZMQConsumer(QueueConsumer):
                     )
                 self.thread = None
             self.poller.unregister(self.socket)
-        except Exception as e:
-            logger.error("Failed to unregister worker.", exc_info=e)
+        except Exception:
+            logger.exception("Failed to unregister worker.")
         finally:
             self.socket.close()
             self.context.destroy()
@@ -690,8 +684,8 @@ class ZMQConsumer(QueueConsumer):
         with ZMQ_SOCKET_LOCK:
             try:
                 self.socket.send_multipart(msg)
-            except zmq.ZMQError as e:
-                logger.error("ZMQConsumer send error", exc_info=e)
+            except zmq.ZMQError:
+                logger.exception("ZMQConsumer send error")
 
     def _run(self) -> None:
         """Send reply, if any, to producer and wait for next request."""
@@ -795,14 +789,15 @@ class ZMQConsumer(QueueConsumer):
             consumer_state = (
                 ConsumerState.IDLE if job_id is None else ConsumerState.CONSUMING
             )
-            res = self.worker_stash.update_consumer_state(
-                credentials=self.worker_stash.partition.root_verify_key,
-                worker_uid=self.syft_worker_id,
-                consumer_state=consumer_state,
-            )
-            if res.is_err():
+            try:
+                self.worker_stash.update_consumer_state(
+                    credentials=self.worker_stash.partition.root_verify_key,
+                    worker_uid=self.syft_worker_id,
+                    consumer_state=consumer_state,
+                ).unwrap()
+            except SyftException as exc:
                 logger.error(
-                    f"Failed to update consumer state for {self.service_name}-{self.id}, error={res.err()}"
+                    f"Failed to update consumer state for {self.service_name}-{self.id}, error={exc.public}"
                 )
 
     @property
@@ -813,7 +808,7 @@ class ZMQConsumer(QueueConsumer):
 @serializable()
 class ZMQClientConfig(SyftObject, QueueClientConfig):
     __canonical_name__ = "ZMQClientConfig"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID | None = None  # type: ignore[assignment]
     hostname: str = "127.0.0.1"
@@ -825,7 +820,7 @@ class ZMQClientConfig(SyftObject, QueueClientConfig):
     consumer_service: str | None = None
 
 
-@serializable(attrs=["host"])
+@serializable(attrs=["host"], canonical_name="ZMQClient", version=1)
 class ZMQClient(QueueClient):
     """ZMQ Client for creating producers and consumers."""
 
@@ -910,24 +905,24 @@ class ZMQClient(QueueClient):
         message: bytes,
         queue_name: str,
         worker: bytes | None = None,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         producer = self.producers.get(queue_name)
         if producer is None:
-            return SyftError(
-                message=f"No producer attached for queue: {queue_name}. Please add a producer for it."
+            raise SyftException(
+                public_message=f"No producer attached for queue: {queue_name}. Please add a producer for it."
             )
         try:
             producer.send(message=message, worker=worker)
         except Exception as e:
             # stdlib
-            return SyftError(
-                message=f"Failed to send message to: {queue_name} with error: {e}"
+            raise SyftException(
+                public_message=f"Failed to send message to: {queue_name} with error: {e}"
             )
         return SyftSuccess(
             message=f"Successfully queued message to : {queue_name}",
         )
 
-    def close(self) -> SyftError | SyftSuccess:
+    def close(self) -> SyftSuccess:
         try:
             for consumers in self.consumers.values():
                 for consumer in consumers:
@@ -939,13 +934,15 @@ class ZMQClient(QueueClient):
                 producer.close()
                 # close existing connection.
         except Exception as e:
-            return SyftError(message=f"Failed to close connection: {e}")
+            raise SyftException(public_message=f"Failed to close connection: {e}")
 
         return SyftSuccess(message="All connections closed.")
 
-    def purge_queue(self, queue_name: str) -> SyftError | SyftSuccess:
+    def purge_queue(self, queue_name: str) -> SyftSuccess:
         if queue_name not in self.producers:
-            return SyftError(message=f"No producer running for : {queue_name}")
+            raise SyftException(
+                public_message=f"No producer running for : {queue_name}"
+            )
 
         producer = self.producers[queue_name]
 
@@ -957,14 +954,14 @@ class ZMQClient(QueueClient):
 
         return SyftSuccess(message=f"Queue: {queue_name} successfully purged")
 
-    def purge_all(self) -> SyftError | SyftSuccess:
+    def purge_all(self) -> SyftSuccess:
         for queue_name in self.producers:
             self.purge_queue(queue_name=queue_name)
 
         return SyftSuccess(message="Successfully purged all queues.")
 
 
-@serializable()
+@serializable(canonical_name="ZMQQueueConfig", version=1)
 class ZMQQueueConfig(QueueConfig):
     def __init__(
         self,

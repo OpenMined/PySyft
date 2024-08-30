@@ -27,22 +27,15 @@ from ..serde.serializable import serializable
 from ..server.credentials import SyftVerifyKey
 from ..service.action.action_object import ActionObject
 from ..service.action.action_object import ActionObjectPointer
-from ..service.action.action_object import ActionObjectV3
 from ..service.action.action_object import BASE_PASSTHROUGH_ATTRS
 from ..service.action.action_types import action_types
-from ..service.response import SyftError
-from ..service.response import SyftException
 from ..service.service import from_api_or_context
+from ..types.errors import SyftException
 from ..types.server_url import ServerURL
-from ..types.transforms import drop
 from ..types.transforms import keep
-from ..types.transforms import make_set_default
 from ..types.transforms import transform
 from .datetime import DateTime
-from .syft_migration import migrate
-from .syft_object import SYFT_OBJECT_VERSION_2
-from .syft_object import SYFT_OBJECT_VERSION_3
-from .syft_object import SYFT_OBJECT_VERSION_4
+from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 from .uid import UID
 
@@ -59,7 +52,7 @@ DEFAULT_CHUNK_SIZE = 10000 * 1024
 @serializable()
 class BlobFile(SyftObject):
     __canonical_name__ = "BlobFile"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_1
 
     file_name: str
     syft_blob_storage_entry_id: UID | None = None
@@ -94,28 +87,22 @@ class BlobFile(SyftObject):
 
         return sy.ActionObject.from_path(path=path).send(client).syft_action_data
 
-    def _upload_to_blobstorage_from_api(self, api: SyftAPI) -> SyftError | None:
+    def _upload_to_blobstorage_from_api(self, api: SyftAPI) -> None:
         if self.path is None:
             raise ValueError("cannot upload BlobFile, no path specified")
         storage_entry = CreateBlobStorageEntry.from_path(self.path)
 
         blob_deposit_object = api.services.blob_storage.allocate(storage_entry)
 
-        if isinstance(blob_deposit_object, SyftError):
-            return blob_deposit_object
-
         with open(self.path, "rb") as f:
-            result = blob_deposit_object.write(f)
-
-        if isinstance(result, SyftError):
-            return result
+            blob_deposit_object.write(f).unwrap()
 
         self.syft_blob_storage_entry_id = blob_deposit_object.blob_storage_entry_id
         self.uploaded = True
 
         return None
 
-    def upload_to_blobstorage(self, client: SyftClient) -> SyftError | None:
+    def upload_to_blobstorage(self, client: SyftClient) -> None:
         self.syft_server_location = client.id
         self.syft_client_verify_key = client.verify_key
         return self._upload_to_blobstorage_from_api(client.api)
@@ -187,28 +174,20 @@ class BlobFile(SyftObject):
         return {"file_name": self.file_name}
 
 
+@serializable(canonical_name="BlobFileType", version=1)
 class BlobFileType(type):
     pass
 
 
+@serializable(canonical_name="BlobFileObjectPointer", version=1)
 class BlobFileObjectPointer(ActionObjectPointer):
     pass
 
 
 @serializable()
-class BlobFileObjectV3(ActionObjectV3):
-    __canonical_name__ = "BlobFileOBject"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    syft_internal_type: ClassVar[type[Any]] = BlobFile
-    syft_pointer_type: ClassVar[type[ActionObjectPointer]] = BlobFileObjectPointer
-    syft_passthrough_attrs: list[str] = BASE_PASSTHROUGH_ATTRS
-
-
-@serializable()
 class BlobFileObject(ActionObject):
     __canonical_name__ = "BlobFileOBject"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_internal_type: ClassVar[type[Any]] = BlobFile
     syft_pointer_type: ClassVar[type[ActionObjectPointer]] = BlobFileObjectPointer
@@ -218,7 +197,7 @@ class BlobFileObject(ActionObject):
 @serializable()
 class SecureFilePathLocation(SyftObject):
     __canonical_name__ = "SecureFilePathLocation"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     path: str
@@ -239,7 +218,7 @@ class SecureFilePathLocation(SyftObject):
 @serializable()
 class SeaweedSecureFilePathLocation(SecureFilePathLocation):
     __canonical_name__ = "SeaweedSecureFilePathLocation"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     upload_id: str | None = None
 
@@ -270,7 +249,7 @@ class SeaweedSecureFilePathLocation(SecureFilePathLocation):
 @serializable()
 class AzureSecureFilePathLocation(SecureFilePathLocation):
     __canonical_name__ = "AzureSecureFilePathLocation"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # upload_id: str
     azure_profile_name: str  # Used by Seaweedfs to refer to a remote config
@@ -303,7 +282,7 @@ class AzureSecureFilePathLocation(SecureFilePathLocation):
 @serializable()
 class BlobStorageEntry(SyftObject):
     __canonical_name__ = "BlobStorageEntry"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     location: SecureFilePathLocation | SeaweedSecureFilePathLocation
@@ -321,7 +300,7 @@ class BlobStorageEntry(SyftObject):
 @serializable()
 class BlobStorageMetadata(SyftObject):
     __canonical_name__ = "BlobStorageMetadata"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     type_: type[SyftObject] | None = None
     mimetype: str = "bytes"
@@ -332,7 +311,7 @@ class BlobStorageMetadata(SyftObject):
 @serializable()
 class CreateBlobStorageEntry(SyftObject):
     __canonical_name__ = "CreateBlobStorageEntry"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
     type_: type | None = None
@@ -396,13 +375,3 @@ def storage_entry_to_metadata() -> list[Callable]:
 
 
 action_types[BlobFile] = BlobFileObject
-
-
-@migrate(BlobFileObjectV3, BlobFileObject)
-def upgrade_blobfile_object() -> list[Callable]:
-    return [make_set_default("syft_action_saved_to_blob_store", True)]
-
-
-@migrate(BlobFileObject, BlobFileObjectV3)
-def downgrade_blobfile_object() -> list[Callable]:
-    return [drop("syft_action_saved_to_blob_store")]

@@ -55,7 +55,6 @@ from typing_extensions import Self
 # relative
 from ...serde.deserialize import _deserialize as deserialize
 from ...serde.serializable import serializable
-from ...service.response import SyftError
 from ...service.response import SyftSuccess
 from ...types.base import SyftBaseModel
 from ...types.blob_storage import BlobFile
@@ -64,12 +63,11 @@ from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.blob_storage import DEFAULT_CHUNK_SIZE
 from ...types.blob_storage import SecureFilePathLocation
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.server_url import ServerURL
 from ...types.syft_migration import migrate
-from ...types.syft_object import SYFT_OBJECT_VERSION_2
-from ...types.syft_object import SYFT_OBJECT_VERSION_3
-from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SYFT_OBJECT_VERSION_5
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
@@ -84,7 +82,7 @@ MAX_RETRIES = 20
 @serializable()
 class BlobRetrieval(SyftObject):
     __canonical_name__ = "BlobRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_3
+    __version__ = SYFT_OBJECT_VERSION_1
 
     type_: type | None = None
     file_name: str
@@ -95,7 +93,7 @@ class BlobRetrieval(SyftObject):
 @serializable()
 class SyftObjectRetrieval(BlobRetrieval):
     __canonical_name__ = "SyftObjectRetrieval"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_object: bytes
 
@@ -114,7 +112,7 @@ class SyftObjectRetrieval(BlobRetrieval):
         else:
             return res
 
-    def read(self, _deserialize: bool = True) -> SyftObject | SyftError:
+    def read(self, _deserialize: bool = True) -> SyftObject:
         return self._read_data(_deserialize=_deserialize)
 
 
@@ -146,26 +144,18 @@ def syft_iter_content(
                 )
             else:
                 logger.error(f"Max retries reached - {e}")
-                raise
-
-
-@serializable()
-class BlobRetrievalByURLV4(BlobRetrieval):
-    __canonical_name__ = "BlobRetrievalByURL"
-    __version__ = SYFT_OBJECT_VERSION_4
-
-    url: ServerURL | str
+                raise SyftException(public_message=f"Max retries reached - {e}")
 
 
 @serializable()
 class BlobRetrievalByURL(BlobRetrieval):
     __canonical_name__ = "BlobRetrievalByURL"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_1
 
     url: ServerURL | str
     proxy_server_uid: UID | None = None
 
-    def read(self) -> SyftObject | SyftError:
+    def read(self) -> SyftObject:
         if self.type_ is BlobFileType:
             return BlobFile(
                 file_name=self.file_name,
@@ -187,18 +177,16 @@ class BlobRetrievalByURL(BlobRetrieval):
         # relative
         from ...client.api import APIRegistry
 
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
+        api = self.get_api_wrapped()
 
-        if api and api.connection and isinstance(self.url, ServerURL):
+        if api.is_ok() and api.unwrap().connection and isinstance(self.url, ServerURL):
+            api = api.unwrap()
             if self.proxy_server_uid is None:
-                blob_url = api.connection.to_blob_route(
+                blob_url = api.connection.to_blob_route(  # type: ignore [union-attr]
                     self.url.url_path, host=self.url.host_or_ip
                 )
             else:
-                blob_url = api.connection.stream_via(
+                blob_url = api.connection.stream_via(  # type: ignore [union-attr]
                     self.proxy_server_uid, self.url.url_path
                 )
                 stream = True
@@ -222,21 +210,22 @@ class BlobRetrievalByURL(BlobRetrieval):
                 else deserialize(resp_content, from_bytes=True)
             )
         except requests.RequestException as e:
-            return SyftError(message=f"Failed to retrieve with error: {e}")
+            raise SyftException(public_message=f"Failed to retrieve with error: {e}")
 
 
 @serializable()
 class BlobDeposit(SyftObject):
     __canonical_name__ = "BlobDeposit"
-    __version__ = SYFT_OBJECT_VERSION_2
+    __version__ = SYFT_OBJECT_VERSION_1
 
     blob_storage_entry_id: UID
 
-    def write(self, data: BytesIO) -> SyftSuccess | SyftError:
+    @as_result(SyftException)
+    def write(self, data: BytesIO) -> SyftSuccess:
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="BlobStorageClientConfig", version=1)
 class BlobStorageClientConfig(BaseModel):
     pass
 
@@ -251,9 +240,7 @@ class BlobStorageConnection:
     def read(self, fp: SecureFilePathLocation, type_: type | None) -> BlobRetrieval:
         raise NotImplementedError
 
-    def allocate(
-        self, obj: CreateBlobStorageEntry
-    ) -> SecureFilePathLocation | SyftError:
+    def allocate(self, obj: CreateBlobStorageEntry) -> SecureFilePathLocation:
         raise NotImplementedError
 
     def write(self, obj: BlobStorageEntry) -> BlobDeposit:
@@ -263,7 +250,7 @@ class BlobStorageConnection:
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="BlobStorageClient", version=1)
 class BlobStorageClient(SyftBaseModel):
     config: BlobStorageClientConfig
 
@@ -271,18 +258,8 @@ class BlobStorageClient(SyftBaseModel):
         raise NotImplementedError
 
 
-@serializable()
+@serializable(canonical_name="BlobStorageConfig", version=1)
 class BlobStorageConfig(SyftBaseModel):
     client_type: type[BlobStorageClient]
     client_config: BlobStorageClientConfig
     min_blob_size: int = 0  # in MB
-
-
-@migrate(BlobRetrievalByURLV4, BlobRetrievalByURL)
-def upgrade_blob_retrieval_by_url() -> list[Callable]:
-    return [make_set_default("proxy_server_uid", None)]
-
-
-@migrate(BlobRetrievalByURL, BlobRetrievalByURLV4)
-def downgrade_blob_retrieval_by_url() -> list[Callable]:
-    return [drop(["proxy_server_uid"])]
