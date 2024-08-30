@@ -30,12 +30,6 @@ vars:
   CONTAINER_REGISTRY: "docker.io"
   VERSION: "0.9.1-beta.6"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
-  # ROOT_EMAIL:
-  #   source: env
-  #   default: info@openmined.org
-  # ROOT_PASSWORD:
-  #   source: env
-  #   default: changethis
 
 # This is a list of `images` that DevSpace can build for this project
 # We recommend to skip image building during development (devspace dev) as much as possible
@@ -79,10 +73,6 @@ deployments:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
-        # server:
-        #   rootEmail: ${ROOT_EMAIL}
-        #   secret:
-        #     defaultRootPassword: ${ROOT_PASSWORD}
       # anything that does not need templating should go in helm/examples/dev/base.yaml
       # or profile specific values files
       valuesFiles:
