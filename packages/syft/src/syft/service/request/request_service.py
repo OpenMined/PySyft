@@ -92,6 +92,42 @@ class RequestService(AbstractService):
         requests.sort(key=lambda x: (x.request_time, x.id), reverse=True)
 
         return requests
+    
+    # DIRTY METHOD: DELETE AFTER DATABASE UPGRADE
+    @service_method(
+        path="request.get_all_approved", name="get_all_approved", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
+    def get_all_approved(self, context: AuthedServiceContext) -> list[Request]:
+        requests = self.stash.get_all(context.credentials).unwrap()
+        # TODO remove once sorting is handled by the stash
+        requests = [request for request in requests if request.get_status(context) == RequestStatus.APPROVED]
+        requests.sort(key=lambda x: (x.request_time, x.id), reverse=True)
+
+        return requests
+    
+    # DIRTY METHOD: DELETE AFTER DATABASE UPGRADE
+    @service_method(
+        path="request.get_all_rejected", name="get_all_rejected", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
+    def get_all_rejected(self, context: AuthedServiceContext) -> list[Request]:
+        requests = self.stash.get_all(context.credentials).unwrap()
+        # TODO remove once sorting is handled by the stash
+        requests = [request for request in requests if request.get_status(context) == RequestStatus.REJECTED]
+        requests.sort(key=lambda x: (x.request_time, x.id), reverse=True)
+
+        return requests
+    
+    # DIRTY METHOD: DELETE AFTER DATABASE UPGRADE
+    @service_method(
+        path="request.get_all_pending", name="get_all_pending", roles=DATA_SCIENTIST_ROLE_LEVEL
+    )
+    def get_all_pending(self, context: AuthedServiceContext) -> list[Request]:
+        requests = self.stash.get_all(context.credentials).unwrap()
+        # TODO remove once sorting is handled by the stash
+        requests = [request for request in requests if request.get_status(context) == RequestStatus.PENDING]
+        requests.sort(key=lambda x: (x.request_time, x.id), reverse=True)
+
+        return requests
 
     @service_method(path="request.get_all_info", name="get_all_info")
     def get_all_info(
