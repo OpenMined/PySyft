@@ -12,7 +12,9 @@ from faker import Faker
 from syft.service.user.user_roles import ServiceRole
 
 fake = Faker()
+emails_table = {}
 
+SENDER = "noreply@openmined.org"
 
 @dataclass
 class TestUser:
@@ -110,6 +112,33 @@ def user_exists(root_client, email: str) -> bool:
             return True
     return False
 
+@dataclass
+class Email:
+    email_from: str
+    email_to: str
+    email_content: str
+
+def create_smtp_test_server():
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    import smtplib
+    
+    # third party
+    from aiosmtpd.controller import Controller
+    
+    # Simple email handler class
+    class SimpleHandler:
+        async def handle_DATA(self, server, session, envelope):
+            # print(f"Message from {envelope.mail_from} to {envelope.rcpt_tos}")
+            # print(f"Message data:\n{envelope.content.decode('utf-8', errors='replace')}")
+            emails_table[envelope.rcpt_tos[0]] = Email(email_from=envelope.mail_from, email_to=envelope.rcpt_tos, email_content=envelope.content.decode('utf-8', errors='replace'))
+            return "250 Message accepted for delivery"
+
+    # Start the SMTP server
+    handler = SimpleHandler()
+    controller = Controller(handler, hostname="localhost", port=1025)
+    controller.start()
+    return controller
 
 def create_user(root_client, test_user):
     if not user_exists(root_client, test_user.email):
