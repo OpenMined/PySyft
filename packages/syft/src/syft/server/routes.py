@@ -233,7 +233,7 @@ def make_routes(worker: Worker) -> APIRouter:
             if not isinstance(result, UserPrivateKey):
                 response = SyftError(message=f"Incorrect return type: {type(result)}")
             else:
-                response = result 
+                response = result
         except SyftException as e:
             logger.error(f"Login Error: {e}. user={email}")
             response = SyftError(message=f"{e.public_message}")

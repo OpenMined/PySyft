@@ -943,7 +943,6 @@ class SyftClient:
         except Exception as e:
             raise SyftException(public_message=str(e))
 
-
         signing_key = None if user_private_key is None else user_private_key.signing_key
 
         client = self.__class__(

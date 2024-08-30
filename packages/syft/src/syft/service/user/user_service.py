@@ -564,12 +564,14 @@ class UserService(AbstractService):
                 and user.role == ServiceRole.ADMIN
             ):
                 # FIX: Replace with SyftException
-                raise SyftException(public_message=UserEnclaveAdminLoginError.public_message) 
+                raise SyftException(
+                    public_message=UserEnclaveAdminLoginError.public_message
+                )
         else:
             # FIX: Replace this below
             raise SyftException(public_message=CredentialsError.public_message)
 
-        return SyftSuccess(message="Login successful.",value=user.to(UserPrivateKey))
+        return SyftSuccess(message="Login successful.", value=user.to(UserPrivateKey))
 
     def admin_verify_key(self) -> SyftVerifyKey:
         # TODO: Remove passthrough method?
