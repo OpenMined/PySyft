@@ -53,3 +53,7 @@ jobs:
       - name: Check Protocol Version
         run: |
           tox -e syft.protocol.check
+
+      - name: Generate API Snapshot Diff with latest beta
+        run: |
+          tox --recreate -e syft.api.snapshot
