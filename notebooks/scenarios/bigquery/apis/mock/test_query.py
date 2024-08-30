@@ -93,11 +93,13 @@ def make_test_query(settings: dict) -> Callable:
             if context.user.email not in context.state.keys():
                 context.state[context.user.email] = []
 
+            # Append the current time before checking rate limit
+            context.state[context.user.email].append(datetime.datetime.now())
+
             if not context.code.is_within_rate_limit(context):
                 raise SyftException(
                     public_message="Rate limit of calls per minute has been reached."
                 )
-            context.state[context.user.email].append(datetime.datetime.now())
 
         bad_table = "invalid_table"
         bad_post = (
