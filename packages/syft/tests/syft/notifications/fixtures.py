@@ -2,14 +2,17 @@
 import pytest
 
 # syft absolute
+from syft.serde.serializable import serializable
 from syft.server.credentials import SyftSigningKey
 from syft.server.credentials import SyftVerifyKey
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
+from syft.service.notification.email_templates import EmailTemplate
 from syft.service.notification.notification_service import NotificationService
 from syft.service.notification.notification_stash import NotificationStash
 from syft.service.notification.notifications import CreateNotification
 from syft.service.notification.notifications import Notification
+from syft.service.notifier.notifier_enums import NOTIFIERS
 from syft.service.user.user import User
 from syft.store.linked_obj import LinkedObject
 from syft.types.datetime import DateTime
@@ -47,6 +50,17 @@ def linked_object():
     )
 
 
+@serializable(canonical_name="NewEmail", version=1)
+class NewEmail(EmailTemplate):
+    @staticmethod
+    def email_title(notification: "Notification", context) -> str:
+        return f"Welcome to {context.server.name} server!"
+
+    @staticmethod
+    def email_body(notification: "Notification", context) -> str:
+        return "x"
+
+
 @pytest.fixture
 def mock_create_notification(faker) -> CreateNotification:
     test_signing_key1 = SyftSigningKey.generate()
@@ -58,9 +72,11 @@ def mock_create_notification(faker) -> CreateNotification:
         subject="mock_created_notification",
         id=UID(),
         server_uid=UID(),
+        notifier_types=[NOTIFIERS.EMAIL],
         from_user_verify_key=test_verify_key1,
         to_user_verify_key=test_verify_key2,
         created_at=DateTime.now(),
+        email_template=NewEmail,
     )
 
     yield mock_notification

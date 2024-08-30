@@ -10,12 +10,14 @@ from kr8s.objects import Job
 from kr8s.objects import Secret
 
 # relative
+from ..types.errors import SyftException
 from .builder_types import BUILD_IMAGE_TIMEOUT_SEC
 from .builder_types import BuilderBase
 from .builder_types import ImageBuildResult
 from .builder_types import ImagePushResult
 from .builder_types import PUSH_IMAGE_TIMEOUT_SEC
 from .k8s import INTERNAL_REGISTRY_HOST
+from .k8s import KANIKO_VERSION
 from .k8s import KUBERNETES_NAMESPACE
 from .k8s import KubeUtils
 from .k8s import USE_INTERNAL_REGISTRY
@@ -23,10 +25,6 @@ from .k8s import get_kr8s_client
 from .utils import ImageUtils
 
 __all__ = ["KubernetesBuilder"]
-
-
-class BuildFailed(Exception):
-    pass
 
 
 class KubernetesBuilder(BuilderBase):
@@ -97,10 +95,12 @@ class KubernetesBuilder(BuilderBase):
             image_digest = self._get_image_digest(job)
             if not image_digest:
                 exit_code = self._get_exit_code(job)
-                raise BuildFailed(
-                    "Failed to build the image. "
-                    f"Kaniko exit code={exit_code}. "
-                    f"Logs={logs}"
+                raise SyftException(
+                    public_message=(
+                        "Failed to build the image."
+                        f" Kaniko exit code={exit_code}."
+                        f" Logs={logs}"
+                    )
                 )
 
         except Exception:
@@ -173,17 +173,17 @@ class KubernetesBuilder(BuilderBase):
         return sha256(tag.encode()).hexdigest()
 
     def _get_image_digest(self, job: Job) -> str | None:
-        selector = {"batch.kubernetes.io/job-name": job.metadata.name}
+        selector = {"job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         return KubeUtils.get_container_exit_message(pods)
 
     def _get_exit_code(self, job: Job) -> list[int]:
-        selector = {"batch.kubernetes.io/job-name": job.metadata.name}
+        selector = {"job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         return KubeUtils.get_container_exit_code(pods)
 
     def _get_logs(self, job: Job) -> str:
-        selector = {"batch.kubernetes.io/job-name": job.metadata.name}
+        selector = {"job-name": job.metadata.name}
         pods = self.client.get("pods", label_selector=selector)
         return KubeUtils.get_logs(pods)
 
@@ -241,7 +241,7 @@ class KubernetesBuilder(BuilderBase):
                             "containers": [
                                 {
                                     "name": "kaniko",
-                                    "image": "gcr.io/kaniko-project/executor:latest",
+                                    "image": f"gcr.io/kaniko-project/executor:{KANIKO_VERSION}",
                                     "args": [
                                         "--dockerfile=Dockerfile",
                                         "--context=dir:///workspace",
