@@ -73,7 +73,6 @@ deployments:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
-        server: {}
       # anything that does not need templating should go in helm/examples/dev/base.yaml
       # or profile specific values files
       valuesFiles:
@@ -124,6 +123,13 @@ profiles:
         path: deployments.syft.helm.values.server
         value:
           side: low
+
+  - name: bigquery-scenario-tests
+    description: "Deploy a datasite for bigquery scenario testing"
+    patches:
+      - op: add
+        path: deployments.syft.helm.valuesFiles
+        value: ./helm/examples/dev/bigquery.scenario.yaml
 
   - name: migrated-datasite
     description: "Deploy a migrated datasite"
