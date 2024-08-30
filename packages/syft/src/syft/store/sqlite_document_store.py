@@ -249,10 +249,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _exists(self, key: UID) -> bool:
         select_sql = f"select uid from {self.table_name} where uid = {self.subs_char}"  # nosec
-        res = self._execute(select_sql, [str(key)])
-        if res.is_err():
-            return False
-        cursor = res.ok()
+        cursor = self._execute(select_sql, [str(key)]).unwrap()
         row = cursor.fetchone()  # type: ignore
         if row is None:
             return False
@@ -264,11 +261,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         keys = []
         data = []
 
-        res = self._execute(select_sql, [])
-        if res.is_err():
-            return {}
-        cursor = res.ok()
-
+        cursor = self._execute(select_sql, []).unwrap()
         rows = cursor.fetchall()  # type: ignore
         if rows is None:
             return {}
@@ -281,11 +274,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _get_all_keys(self) -> Any:
         select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
 
-        res = self._execute(select_sql, [])
-        if res.is_err():
-            return []
-        cursor = res.ok()
-
+        cursor = self._execute(select_sql, []).unwrap()
         rows = cursor.fetchall()  # type: ignore
         if rows is None:
             return []

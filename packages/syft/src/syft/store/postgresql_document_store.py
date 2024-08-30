@@ -158,10 +158,17 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         with self.lock:
             cursor: psycopg.Cursor | None = None
             try:
-                cursor = self.cur.execute(sql, args)
+                # Ensure self.cur is a psycopg cursor object
+                cursor = self.cur  # Assuming self.cur is already set as psycopg.Cursor
+                cursor.execute(sql, args)  # Execute the SQL with arguments
+                # cursor = self.cur.execute(sql, args)
             except InFailedSqlTransaction:
-                self.db.rollback()
+                self.db.rollback()  # Rollback if something went wrong
+                raise SyftException(
+                    public_message=f"Transaction {sql} failed and was rolled back."
+                )
             except Exception as e:
+                self.db.rollback()  # Rollback on any other exception to maintain clean state
                 public_message = special_exception_public_message(self.table_name, e)
                 raise SyftException.from_exception(e, public_message=public_message)
             self.db.commit()  # Commit if everything went ok
