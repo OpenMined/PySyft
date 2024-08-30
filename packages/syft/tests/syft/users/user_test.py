@@ -17,7 +17,6 @@ from syft.service.context import AuthedServiceContext
 from syft.service.user.user import ServiceRole
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
-from syft.types.errors import CredentialsError
 from syft.types.errors import SyftException
 
 GUEST_ROLES = [ServiceRole.GUEST]
@@ -282,7 +281,7 @@ def test_user_view_set_password(worker: Worker, root_client: DatasiteClient) -> 
     with pytest.raises(SyftException) as exc:
         worker.root_client.login(email=email, password="1234")
 
-    assert exc.type == SyftException 
+    assert exc.type == SyftException
     assert exc.value.public_message == "Invalid credentials."
 
     # log in again with the right password
