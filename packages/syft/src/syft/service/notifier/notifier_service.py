@@ -228,9 +228,11 @@ class NotifierService(AbstractService):
         """Deactivate email notifications for the authenticated user
         This will only work if the datasite owner has enabled notifications.
         """
-
         user_service = context.server.get_service("userservice")
-        return user_service.disable_notifications(context, notifier_type=notifier_type)
+        result = user_service.disable_notifications(
+            context, notifier_type=notifier_type
+        )
+        return result
 
     @staticmethod
     @as_result(SyftException)

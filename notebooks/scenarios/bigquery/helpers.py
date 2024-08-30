@@ -11,6 +11,8 @@ from faker import Faker
 # syft absolute
 from syft.service.user.user_roles import ServiceRole
 
+fake = Faker()
+
 
 @dataclass
 class TestUser:
@@ -18,16 +20,31 @@ class TestUser:
     email: str
     password: str
     role: ServiceRole
+    new_password: str | None = None
     email_disabled: bool = False
+    reset_token: str | None = None
     _client_cache: Any | None = field(default=None, repr=False, init=False)
+
+    @property
+    def latest_password(self) -> str:
+        if self.new_password:
+            return self.new_password
+        return self.password
+
+    def make_new_password(self) -> str:
+        self.new_password = fake.password()
+        return self.new_password
 
     @property
     def client(self):
         return self._client_cache
 
+    def relogin(self) -> None:
+        self.client = self.client
+
     @client.setter
     def client(self, client):
-        client = client.login(email=self.email, password=self.password)
+        client = client.login(email=self.email, password=self.latest_password)
         self._client_cache = client
 
     def to_dict(self) -> dict:
@@ -73,8 +90,6 @@ def make_user(
     password: str | None = None,
     role: ServiceRole = ServiceRole.DATA_SCIENTIST,
 ):
-    # stdlib
-
     fake = Faker()
     if name is None:
         name = fake.name()

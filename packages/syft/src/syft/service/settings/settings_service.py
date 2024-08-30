@@ -236,7 +236,6 @@ class SettingsService(AbstractService):
         path="settings.disable_notifications",
         name="disable_notifications",
         roles=ADMIN_ROLE_LEVEL,
-        unwrap_on_success=False,
     )
     def disable_notifications(
         self,
