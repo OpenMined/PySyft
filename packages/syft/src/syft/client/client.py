@@ -383,7 +383,7 @@ class HTTPConnection(ServerConnection):
     ) -> SyftSigningKey | None:
         credentials = {"email": email, "password": password}
         if self.proxy_target_uid:
-            obj = forward_message_to_proxy(
+            response = forward_message_to_proxy(
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="login",
@@ -391,9 +391,10 @@ class HTTPConnection(ServerConnection):
             )
         else:
             response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
-            obj = _deserialize(response, from_bytes=True)
+            response = _deserialize(response, from_bytes=True)
+            response = post_process_result(response, unwrap_on_success=False)
 
-        return obj
+        return response
 
     def forgot_password(
         self,
@@ -937,7 +938,11 @@ class SyftClient:
                 email=email, password=password, password_verify=password, **kwargs
             )
 
-        user_private_key = self.connection.login(email=email, password=password)
+        try:
+            user_private_key = self.connection.login(email=email, password=password)
+        except Exception as e:
+            raise SyftException(public_message=str(e))
+
 
         signing_key = None if user_private_key is None else user_private_key.signing_key
 
