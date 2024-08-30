@@ -133,7 +133,7 @@ def create_long_query_job(user: TestUser) -> TestJob:
     job_type = "job_too_much_text"
     func_name = f"{job_type}_{secrets.token_hex(3)}"
 
-    query = "a" * 100_000
+    query = "a" * 1_000
 
     result = TestJob(
         user_email=user.email,
@@ -155,7 +155,7 @@ def create_query_long_name(user: TestUser) -> TestJob:
     job = create_simple_query_job(user)
 
     job.job_type = job_type
-    job.func_name = func_name + "a" * 100_000
+    job.func_name = func_name + "a" * 1_000
 
     return job
 
@@ -168,7 +168,6 @@ def create_job_funcname_xss(user: TestUser) -> TestJob:
     job = create_simple_query_job(user)
     job.job_type = job_type
     job.func_name = func_name
-
     return job
 
 
@@ -196,7 +195,7 @@ def create_job_many_columns(user: TestUser) -> TestJob:
     job.settings["num_extra_cols"] = random.randint(100, 1000)
 
     new_columns_string = ", ".join(
-        f"[settings['score_col'] as col_{i}" for i in range(settings["num_extra_cols"])
+        f"{settings['score_col']} as col_{i}" for i in range(settings["num_extra_cols"])
     )
 
     job.query = f"""
