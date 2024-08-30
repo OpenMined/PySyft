@@ -1,4 +1,5 @@
 # third party
+from uuid import uuid4
 from pydantic import BaseModel
 
 # syft absolute
@@ -76,35 +77,51 @@ class DSTestUser(TestUser):
                 # assert False, "Job did not complete"
                 assert request.status in [RequestStatus.PENDING, RequestStatus.REJECTED]
 
+    def change_password(self):
+        guest_client = sy.login_as_guest(...)
+        res = guest_client.forgot_password(email=self.email)
+        assert res, res
 
-def change_user_settings(ds_client):
-    return
+        datasite_client = sy.login(email="info@openmined.org", password="changethis")
+
+        temp_token = datasite_client.users.request_password_reset(
+            self.client.notifications[-1].linked_obj.resolve.id
+        )
+
+        new_password = uuid4().hex
+        res = guest_client.reset_password(token=temp_token, new_password=new_password)
+        assert res, res
+        self.password = new_password
+        self._client_cache = None
 
 
-# read from somewhere
-request_data = [
-    RequestData(
-        n_rows=10 ^ i,
-        status=RequestStatus.APPROVED,
-        request_id=uid,
-        logs=None,
-    )
-    for i, uid in enumerate(request_ids)
-]
+def change_user_settings(test_user: DSTestUser):
+    test_user.change_password()
+
+
+# read test submissions from somewhere
 
 users = [
     DSTestUser(
         email="data_scientist@openmined.org",
         password="verysecurepassword",
+        job_submissions=[
+            TestJobSubmission(
+                request_id=request_data[0].request_id,
+                job_uid="",
+                test_job=TestJob(
+                    settings={"limit": request_data[0].n_rows},
+                    should_succeed=request_data[0].status == RequestStatus.APPROVED,
+                ),
+                expected_logs=request_data[0].logs,
+            )
+        ],
     ),
 ]
 
 
 for user in users:
     change_user_settings(user)
-
-
-for user in users:
     for job_data in user.job_submissions:
         user.verify_test_job(job_data)
 server.land()
