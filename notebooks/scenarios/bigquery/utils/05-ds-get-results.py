@@ -1,6 +1,3 @@
-# stdlib
-from functools import cached_property
-
 # third party
 from pydantic import BaseModel
 
@@ -11,7 +8,12 @@ from syft.service.job.job_stash import JobStatus
 from syft.service.output.output_service import ExecutionOutput
 from syft.service.request.request import Request
 from syft.service.request.request import RequestStatus
+from syft.service.user.user_roles import ServiceRole
 from syft.types.uid import UID
+
+# first party
+from notebooks.scenarios.bigquery.helpers import TestUser
+from notebooks.scenarios.bigquery.job_helpers import TestJob
 
 server = sy.orchestra.launch(
     name="bigquery-high",
@@ -22,11 +24,22 @@ server = sy.orchestra.launch(
 )
 
 
-class RequestData(BaseModel):
-    n_rows: int
-    status: RequestStatus
+class TestJobSubmission(BaseModel):
     request_id: str
-    logs: str | None
+    job_uid: str
+    test_job: TestJob
+    expected_logs: str | None
+
+    @property
+    def n_rows(self):
+        return self.test_job.settings["limit"]
+
+    @property
+    def status(self):
+        if self.test_job.should_succeed:
+            return RequestStatus.APPROVED
+        else:
+            return RequestStatus.REJECTED
 
     def verify(self, request: Request):
         assert self.status == request.status
@@ -43,44 +56,32 @@ class RequestData(BaseModel):
                 assert self.logs == logs
 
 
-class UserData(BaseModel):
-    email: str
-    password: str
-    requests: list[RequestData]
+class DSTestUser(TestUser):
+    name: str = "Some Data Scientist"
+    role: ServiceRole = ServiceRole.DATA_SCIENTIST
 
-    @cached_property
-    def client(self) -> sy.DatasiteClient:
-        return server.login(email=self.email, password=self.password)
+    job_submissions: list[TestJobSubmission]
 
-    def verify_request(self, request_data: RequestData):
-        request: Request = self.client.requests.get_by_uid(UID(request_data.request_id))
+    def verify_test_job(self, test_job: TestJobSubmission):
+        request: Request = self.client.requests.get_by_uid(UID(test_job.request_id))
 
         jobs = request.jobs
 
         match jobs:
             case [Job(status=JobStatus.COMPLETED), *rest]:
                 assert request.status == RequestStatus.APPROVED
-                request_data.verify(request), "Request data does not match"
+                test_job.verify(request), "Request data does not match"
             case _:
                 # TODO: wait if not completed
                 # assert False, "Job did not complete"
                 assert request.status in [RequestStatus.PENDING, RequestStatus.REJECTED]
 
 
-request_ids = [
-    "88594df7a4c343f99491128fb52ed6bf",
-    "d30edf41cf194c53b38a9e98408f4eb6",
-    "7c1b6ebd1a4c46b6b5cdd293f153deb1",
-    "d1d1f0eafaf646c4af2359ab04c4f984",
-    "27e2b599646a41cfafb3aba65578c025",
-    "a1677a7d7b7e4f6da39ac52aad80707e",
-    "6de5b7c9356244c2b741608ce83e5b30",
-    "30b701151a034936be71de04fad61113",
-    "d8b88c1a7cd34a3f92ca3f4cd48b87f2",
-    "97ab16c89f8a4bfe832b7fa97aa342f5",
-]
+def change_user_settings(ds_client):
+    return
 
 
+# read from somewhere
 request_data = [
     RequestData(
         n_rows=10 ^ i,
@@ -92,16 +93,11 @@ request_data = [
 ]
 
 users = [
-    UserData(
+    DSTestUser(
         email="data_scientist@openmined.org",
         password="verysecurepassword",
-        requests=request_data,
     ),
 ]
-
-
-def change_user_settings(ds_client):
-    return
 
 
 for user in users:
@@ -109,6 +105,6 @@ for user in users:
 
 
 for user in users:
-    for request in user.requests:
-        user.verify_request(request)
+    for job_data in user.job_submissions:
+        user.verify_test_job(job_data)
 server.land()
