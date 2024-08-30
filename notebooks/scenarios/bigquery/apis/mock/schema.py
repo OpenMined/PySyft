@@ -37,11 +37,12 @@ def make_schema(settings, worker_pool) -> Callable:
             if context.user.email not in context.state.keys():
                 context.state[context.user.email] = []
 
+            context.state[context.user.email].append(datetime.datetime.now())
+
             if not context.code.is_within_rate_limit(context):
                 raise SyftException(
                     public_message="Rate limit of calls per minute has been reached."
                 )
-            context.state[context.user.email].append(datetime.datetime.now())
 
         # third party
         import pandas as pd
