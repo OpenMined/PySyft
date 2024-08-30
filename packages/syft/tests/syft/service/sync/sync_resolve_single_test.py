@@ -340,12 +340,7 @@ def test_filter_out_l2_requests(low_worker, high_worker):
     high_client.code.compute(blocking=False)
 
     w = sy.sync(from_client=high_client, to_client=low_client)
-    w._share_all()
-    w._sync_all()
-
-    assert (
-        len(low_client.code.get_all()) == 0
-    ), "We don't want to sync requests that originate from high side."
+    assert isinstance(w, SyftSuccess), f"Expected empty diff, got {w}"
 
 
 def test_approve_request_on_sync_blocking(low_worker, high_worker):
