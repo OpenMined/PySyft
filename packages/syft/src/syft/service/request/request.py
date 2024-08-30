@@ -1080,6 +1080,11 @@ class Request(SyncableSyftObject):
         dependencies.append(self.code_id)
         return dependencies
 
+    @property
+    def jobs(self) -> list[Job]:
+        api = self._get_api()
+        return api.services.job.get_by_user_code_id(self.code_id)
+
 
 @serializable()
 class RequestInfo(SyftObject):
