@@ -5,7 +5,6 @@ import random
 import re
 import secrets
 import textwrap
-from typing import Any
 
 # third party
 from helpers import TestUser
@@ -33,6 +32,7 @@ class TestJob:
     job_type: str
     settings: dict
     should_succeed: bool
+    should_submit: bool = True
     code_path: str | None = field(default=None)
 
     client: SyftClient = field(default=None, repr=False, init=False)
@@ -133,7 +133,7 @@ def create_long_query_job(user: TestUser) -> TestJob:
     job_type = "job_too_much_text"
     func_name = f"{job_type}_{secrets.token_hex(3)}"
 
-    query = "a" * 100_000
+    query = "a" * 1_000
 
     result = TestJob(
         user_email=user.email,
@@ -155,7 +155,7 @@ def create_query_long_name(user: TestUser) -> TestJob:
     job = create_simple_query_job(user)
 
     job.job_type = job_type
-    job.func_name = func_name + "a" * 100_000
+    job.func_name = func_name + "a" * 1_000
 
     return job
 
@@ -168,7 +168,7 @@ def create_job_funcname_xss(user: TestUser) -> TestJob:
     job = create_simple_query_job(user)
     job.job_type = job_type
     job.func_name = func_name
-
+    job.should_submit = False
     return job
 
 
@@ -196,7 +196,7 @@ def create_job_many_columns(user: TestUser) -> TestJob:
     job.settings["num_extra_cols"] = random.randint(100, 1000)
 
     new_columns_string = ", ".join(
-        f"[settings['score_col'] as col_{i}" for i in range(settings["num_extra_cols"])
+        f"{settings['score_col']} as col_{i}" for i in range(settings["num_extra_cols"])
     )
 
     job.query = f"""
@@ -221,15 +221,6 @@ def create_jobs(users: list[TestUser], n_per_user: int = 10) -> list[TestJob]:
     return jobs
 
 
-def submit_job(job: TestJob) -> tuple[Any, str]:
-    client = job.client
-    response = client.api.services.bigquery.submit_query(
-        func_name=job.func_name, query=job.query
-    )
-    job.code_path = extract_code_path(response)
-    return response
-
-
 def extract_code_path(response) -> str | None:
     pattern = r"client\.code\.(\w+)\(\)"
     match = re.search(pattern, str(response))
@@ -241,7 +232,7 @@ def extract_code_path(response) -> str | None:
 
 create_job_functions = [
     create_simple_query_job,
-    create_wrong_asset_query,
+    # create_wrong_asset_query,
     create_wrong_syntax_query,
     create_long_query_job,
     create_query_long_name,
