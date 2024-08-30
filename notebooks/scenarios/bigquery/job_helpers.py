@@ -33,6 +33,7 @@ class TestJob:
     job_type: str
     settings: dict
     should_succeed: bool
+    should_submit: bool = True
     code_path: str | None = field(default=None)
 
     client: SyftClient = field(default=None, repr=False, init=False)
@@ -168,6 +169,7 @@ def create_job_funcname_xss(user: TestUser) -> TestJob:
     job = create_simple_query_job(user)
     job.job_type = job_type
     job.func_name = func_name
+    job.should_submit = False
     return job
 
 
@@ -260,6 +262,11 @@ def resolve_request(request):
     
 
 create_job_functions = [
+    create_simple_query_job, # quick way to increase the odds
+    create_simple_query_job,
+    create_simple_query_job,
+    create_simple_query_job,
+    create_simple_query_job,
     create_simple_query_job,
     create_wrong_asset_query,
     create_wrong_syntax_query,
