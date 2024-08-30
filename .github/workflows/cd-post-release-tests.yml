@@ -54,6 +54,8 @@ jobs:
       - name: Upgrade pip
         run: |
           python -m pip install --upgrade pip
+          python -m pip install uv==0.3.5
+          uv --version
 
       - name: Get pip cache dir
         id: pip-cache
@@ -65,18 +67,18 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Install Syft
         shell: bash
         run: |
           if [[ ${{inputs.release_platform}} == "REAL_PYPI" ]]; then
-            pip install syft==${{inputs.syft_version}}
+            python -m uv pip install syft==${{inputs.syft_version}}
           fi
           if [[ ${{ inputs.release_platform }} == "TEST_PYPI" ]]; then
-            pip install --extra-index-url https://test.pypi.org/simple/ syft==${{inputs.syft_version}}
+            python -m uv pip install --extra-index-url https://test.pypi.org/simple/ syft==${{inputs.syft_version}}
           fi
 
       - name: Check Syft version
@@ -119,8 +121,9 @@ jobs:
       - name: Install pip dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
+          python -m pip install uv==0.3.5
           uv --version
+          python -m uv pip install tox==4.18.0 tox-uv==1.11.2
 
       - name: Get uv cache dir
         id: pip-cache
@@ -132,7 +135,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
@@ -164,9 +167,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
+      - name: Upgrade pip and dependencies
         run: |
           python -m pip install --upgrade pip
+          python -m pip install uv==0.3.5
+          uv --version
+          python -m uv pip install tox==4.18.0 tox-uv==1.11.2 tox-current-env
 
       - name: Get pip cache dir
         id: pip-cache
@@ -178,24 +184,20 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Install Syft
         env:
           SYFT_VERSION: ${{ inputs.syft_version }}
         run: |
           if [[ ${{ inputs.release_platform }} == "TEST_PYPI" ]]; then
-            pip install --extra-index-url https://test.pypi.org/simple/ syft[data_science,dev]==${{ inputs.syft_version }}
+            python -m uv pip install --extra-index-url https://test.pypi.org/simple/ syft[data_science,dev]==${{ inputs.syft_version }}
           fi
           if [[ ${{ inputs.release_platform }} == "REAL_PYPI" ]]; then
-            pip install syft[data_science,dev]==${{ inputs.syft_version }}
+            python -m uv pip install syft[data_science,dev]==${{ inputs.syft_version }}
           fi
-
-      - name: Install tox and uv
-        run: |
-          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0 tox-current-env
 
       - name: Run unit tests
         run: |

@@ -42,7 +42,10 @@ jobs:
 
       - name: Install checksumdir
         run: |
-          pip install --upgrade checksumdir
+          python -m pip install --upgrade
+          python -m pip install uv==0.3.5
+          uv --version
+          python -m uv install checksumdir
 
       - name: Get the hashes
         id: get-hashes
@@ -66,17 +69,19 @@ jobs:
         if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade tox setuptools wheel twine bump2version==1.0.1 PyYAML==6.0.1
+          python -p pip install uv==0.3.5
+          uv --version
+          python -m uv pip install --upgrade tox==4.18.0 tox-uv==1.11.2 setuptools wheel twine bump2version==1.0.1 PyYAML==6.0.1
 
       - name: Bump the Version
         if: ${{steps.get-hashes.outputs.current_hash != steps.get-hashes.outputs.previous_hash }}
         id: bump-version
         run: |
-          python3 syftcli/version.py
+          python syftcli/version.py
           bump2version patch --allow-dirty --no-commit
           tox -e lint || true
           echo "deployed_version=$(python3 syftcli/version.py)" >> $GITHUB_OUTPUT
-          python3 syftcli/version.py
+          python syftcli/version.py
         working-directory: ./packages/syftcli
 
       - name: Write the new hash
@@ -122,8 +127,9 @@ jobs:
       - name: Install pip dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
+          python -m pip install uv==0.3.5
           uv --version
+          python -m uv pip install tox==4.18.0 tox-uv==1.11.2
 
       - name: Build syftcli
         env:

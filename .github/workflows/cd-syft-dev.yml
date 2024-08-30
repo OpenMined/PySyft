@@ -165,7 +165,9 @@ jobs:
 
           # install tox
           python -m pip install --upgrade pip
-          pip install tox
+          python -m pip install uv==0.3.5
+          uv --version
+          python -m uv pip install tox==4.18.0 tox-uv==1.11.2
 
           tox -e syft.build.helm
 
