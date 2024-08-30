@@ -392,7 +392,7 @@ class HTTPConnection(ServerConnection):
         else:
             response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
             response = _deserialize(response, from_bytes=True)
-            response = post_process_result(response, unwrap_on_success=False)
+            response = post_process_result(response, unwrap_on_success=True)
 
         return response
 
@@ -941,7 +941,7 @@ class SyftClient:
         try:
             user_private_key = self.connection.login(email=email, password=password)
         except Exception as e:
-            raise SyftException(public_message=str(e))
+            raise SyftException(public_message=e.public_message)
 
         signing_key = None if user_private_key is None else user_private_key.signing_key
 
