@@ -149,22 +149,22 @@ class SettingsService(AbstractService):
                         )
                     )
 
-                if settings.notifications_enabled and (
-                    not (
-                        notifier_settings.email_username
-                        and notifier_settings.email_password
-                    )
-                    or not notifier_settings.validate_email_credentials(
-                        notifier_settings.email_username,
-                        notifier_settings.email_password,
-                        notifier_settings.email_server,
-                        notifier_settings.email_port,
-                    )
-                ):
-                    raise SyftException(
-                        public_message=_NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR
-                    )
-
+                # if settings.notifications_enabled and (
+                #     not (
+                #         notifier_settings.email_username
+                #         and notifier_settings.email_password
+                #     )
+                #     or not notifier_settings.validate_email_credentials(
+                #         notifier_settings.email_username,
+                #         notifier_settings.email_password,
+                #         notifier_settings.email_server,
+                #         notifier_settings.email_port,
+                #     )
+                # ):
+                #     raise SyftException(
+                #         public_message=_NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR
+                #     )
+ 
                 notifier_service._set_notifier(
                     context, active=settings.notifications_enabled
                 )

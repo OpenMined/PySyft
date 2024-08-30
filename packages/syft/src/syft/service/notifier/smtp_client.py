@@ -11,17 +11,10 @@ SOCKET_TIMEOUT = 5  # seconds
 
 
 class SMTPClient(BaseModel):
-    username: str
-    password: str
     server: str
     port: int
-
-    @model_validator(mode="before")
-    @classmethod
-    def check_user_and_password(cls, values: dict) -> dict:
-        if not (values.get("username", None) and values.get("password")):
-            raise ValueError("Both username and password must be provided")
-        return values
+    password: str | None = None
+    username: str | None = None
 
     def send(self, sender: str, receiver: list[str], subject: str, body: str) -> None:
         if not (subject and body and receiver):

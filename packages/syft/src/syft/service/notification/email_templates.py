@@ -32,8 +32,8 @@ class PasswordResetTemplate(EmailTemplate):
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         user_service = context.server.get_service("userservice")
-
-        user = user_service.get_by_verify_key(notification.to_user_verify_key)
+        admin_verify_key = user_service.admin_verify_key()
+        user = user_service.stash.get_by_verify_key(credentials=admin_verify_key, verify_key=notification.to_user_verify_key).unwrap()
         if not user:
             raise Exception("User not found!")
 
@@ -43,7 +43,7 @@ class PasswordResetTemplate(EmailTemplate):
         user.reset_token_date = datetime.now()
 
         result = user_service.stash.update(
-            credentials=context.credentials, user=user, has_permission=True
+            credentials=context.credentials, obj=user, has_permission=True
         )
         if result.is_err():
             raise Exception("Couldn't update the user password")
