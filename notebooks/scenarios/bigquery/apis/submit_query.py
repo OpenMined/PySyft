@@ -16,16 +16,8 @@ def make_submit_query(settings, worker_pool):
         func_name: str,
         query: str,
     ) -> str:
-        # stdlib
-        import hashlib
-
         # syft absolute
         import syft as sy
-
-        hash_object = hashlib.new("sha256")
-
-        hash_object.update(context.user.email.encode("utf-8"))
-        func_name = func_name + "_" + hash_object.hexdigest()[:6]
 
         @sy.syft_function(
             name=func_name,

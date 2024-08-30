@@ -8,8 +8,10 @@ from collections.abc import Callable
 from enum import Enum
 import getpass
 import inspect
+import json
 import logging
 import os
+from pathlib import Path
 import sys
 from typing import Any
 
@@ -328,7 +330,17 @@ class Orchestra:
         debug: bool = False,
         migrate: bool = False,
         store_client_config: dict | None = None,
+        from_state_folder: str | Path | None = None,
     ) -> ServerHandle:
+        if from_state_folder is not None:
+            with open(f"{from_state_folder}/config.json") as f:
+                kwargs = json.load(f)
+                server_handle = Orchestra.launch(**kwargs)
+                client = server_handle.login(  # nosec
+                    email="info@openmined.org", password="changethis"
+                )
+                client.load_migration_data(f"{from_state_folder}/migration.blob")
+                return server_handle
         if dev_mode is True:
             thread_workers = True
         os.environ["DEV_MODE"] = str(dev_mode)

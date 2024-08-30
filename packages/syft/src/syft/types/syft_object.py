@@ -51,6 +51,7 @@ from ..util.util import full_name_with_qualname
 from ..util.util import get_qualname_for
 from .result import Err
 from .result import Ok
+from .syft_equals import _syft_equals
 from .syft_metaclass import Empty
 from .syft_metaclass import PartialModelMetaclass
 from .syft_object_registry import SyftObjectRegistry
@@ -653,7 +654,7 @@ class SyftObject(SyftObjectVersioned):
                 if hasattr(obj_attr, "syft_eq") and not inspect.isclass(obj_attr):
                     if not obj_attr.syft_eq(ext_obj=ext_obj_attr):
                         return False
-                elif obj_attr != ext_obj_attr:
+                elif not _syft_equals(obj_attr, ext_obj_attr):
                     return False
         return True
 
@@ -678,15 +679,7 @@ class SyftObject(SyftObjectVersioned):
                 obj_attr = getattr(self, attr)
                 ext_obj_attr = getattr(ext_obj, attr)
 
-                if (obj_attr is None) ^ (ext_obj_attr is None):
-                    # If either attr is None, but not both, we have a diff
-                    # NOTE This clause is needed because attr.__eq__ is not implemented for None, and will eval to True
-                    diff_attr = AttrDiff(
-                        attr_name=attr,
-                        low_attr=obj_attr,
-                        high_attr=ext_obj_attr,
-                    )
-                    diff_attrs.append(diff_attr)
+                # TODO move to _syft_equals
                 if isinstance(obj_attr, list) and isinstance(ext_obj_attr, list):
                     list_diff = ListDiff.from_lists(
                         attr_name=attr, low_list=obj_attr, high_list=ext_obj_attr
@@ -694,13 +687,13 @@ class SyftObject(SyftObjectVersioned):
                     if not list_diff.is_empty:
                         diff_attrs.append(list_diff)
 
-                # TODO: to the same check as above for Dicts when we use them
                 else:
-                    cmp = obj_attr.__eq__
                     if hasattr(obj_attr, "syft_eq"):
-                        cmp = obj_attr.syft_eq
+                        is_equal = obj_attr.syft_eq(ext_obj_attr)
+                    else:
+                        is_equal = _syft_equals(obj_attr, ext_obj_attr)
 
-                    if not cmp(ext_obj_attr):
+                    if not is_equal:
                         diff_attr = AttrDiff(
                             attr_name=attr,
                             low_attr=obj_attr,
