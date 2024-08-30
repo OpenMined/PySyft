@@ -128,7 +128,7 @@ class Settings(BaseSettings):
     CONTAINER_HOST: str = str(os.getenv("CONTAINER_HOST", "docker"))
     POSTGRESQL_DBNAME: str = str(os.getenv("POSTGRESQL_DBNAME", ""))
     POSTGRESQL_HOST: str = str(os.getenv("POSTGRESQL_HOST", ""))
-    POSTGRESQL_PORT: int = int(os.getenv("POSTGRESQL_PORT", 27017))
+    POSTGRESQL_PORT: int = int(os.getenv("POSTGRESQL_PORT", 5432))
     POSTGRESQL_USERNAME: str = str(os.getenv("POSTGRESQL_USERNAME", ""))
     POSTGRESQL_PASSWORD: str = str(os.getenv("POSTGRESQL_PASSWORD", ""))
     DEV_MODE: bool = True if os.getenv("DEV_MODE", "false").lower() == "true" else False

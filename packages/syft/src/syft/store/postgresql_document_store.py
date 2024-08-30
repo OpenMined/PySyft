@@ -2,7 +2,6 @@
 from collections import defaultdict
 import logging
 from typing import Any
-from typing import Self
 
 # third party
 import psycopg
@@ -11,6 +10,7 @@ from psycopg import Cursor
 from psycopg.errors import DuplicateTable
 from psycopg.errors import InFailedSqlTransaction
 from pydantic import Field
+from typing_extensions import Self
 
 # relative
 from ..serde.serializable import serializable
