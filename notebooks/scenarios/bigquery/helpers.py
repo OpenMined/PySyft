@@ -212,7 +212,7 @@ def user_exists(root_client, email: str) -> bool:
 
 class SMTPTestServer:
     def __init__(self, email_server):
-        self.port = 1025
+        self.port = 9025
         self.hostname = "localhost"
 
         # Simple email handler class
