@@ -528,7 +528,6 @@ jobs:
           chmod +x devspace
           devspace version
           export PATH="/usr/share/miniconda/bin:$PATH"
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T xjy58tf7xKPZLpvbmCuuP5 QRuupIQ4aHalSjRPMxmVHg au.relay.tunshell.com
           tox -e stack.test.notebook.scenario.k8s
 
       - name: Get current timestamp
