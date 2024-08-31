@@ -159,11 +159,11 @@ jobs:
         run: |
           sudo python ./scripts/patch_hosts.py --add-k3d-registry
 
-      # - name: Free Disk Space (Ubuntu)
-      #   uses: jlumbroso/free-disk-space@main
-      #   with:
-      #     tool-cache: true
-      #     large-packages: false
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          large-packages: false
 
       # free 10GB of space
       - name: Remove unnecessary files
@@ -451,11 +451,11 @@ jobs:
         run: |
           sudo python ./scripts/patch_hosts.py --add-k3d-registry
 
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: true
-          large-packages: false
+      # - name: Free Disk Space (Ubuntu)
+      #   uses: jlumbroso/free-disk-space@main
+      #   with:
+      #     tool-cache: true
+      #     large-packages: false
 
       # free 10GB of space
       - name: Remove unnecessary files
