@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 # relative
 from ...types.errors import SyftException
+from ...types.server_url import ServerURL
 
 SOCKET_TIMEOUT = 5  # seconds
 
@@ -27,8 +28,13 @@ class SMTPClient(BaseModel):
         msg["To"] = ", ".join(receiver)
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "html"))
+
+        mail_url = ServerURL.from_url(f"smtp://{self.server}:{self.port}")
+        mail_url = mail_url.as_container_host()
         try:
-            with smtplib.SMTP(self.server, self.port, timeout=SOCKET_TIMEOUT) as server:
+            with smtplib.SMTP(
+                mail_url.host_or_ip, mail_url.port, timeout=SOCKET_TIMEOUT
+            ) as server:
                 server.ehlo()
                 if server.has_extn("STARTTLS"):
                     server.starttls()
@@ -53,7 +59,13 @@ class SMTPClient(BaseModel):
             bool: True if the credentials are valid, False otherwise.
         """
         try:
-            with smtplib.SMTP(server, port, timeout=SOCKET_TIMEOUT) as smtp_server:
+            mail_url = ServerURL.from_url(f"smtp://{server}:{port}")
+            mail_url = mail_url.as_container_host()
+
+            print(f"> Validating SMTP settings: {mail_url}")
+            with smtplib.SMTP(
+                mail_url.host_or_ip, mail_url.port, timeout=SOCKET_TIMEOUT
+            ) as smtp_server:
                 smtp_server.ehlo()
                 if smtp_server.has_extn("STARTTLS"):
                     smtp_server.starttls()
