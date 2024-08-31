@@ -183,6 +183,7 @@ class WorkerService(AbstractService):
                 obj for obj in worker_pool.worker_list if obj.object_uid == uid
             )
             worker_pool.worker_list.remove(worker_linked_object)
+            worker_pool.max_count -= 1
         except StopIteration:
             pass
 

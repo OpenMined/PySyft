@@ -11,7 +11,6 @@ from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
-from ...custom_worker.runner_k8s import KubernetesRunner
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
@@ -40,7 +39,6 @@ from .utils import DEFAULT_WORKER_POOL_NAME
 from .utils import get_orchestration_type
 from .utils import run_containers
 from .utils import run_workers_in_threads
-from .utils import scale_kubernetes_pool
 from .worker_image import SyftWorkerImage
 from .worker_image_stash import SyftWorkerImageStash
 from .worker_pool import ContainerSpawnStatus
@@ -423,11 +421,7 @@ class SyftWorkerPoolService(AbstractService):
         Allows both scaling up and down the worker pool.
         """
 
-        if not IN_KUBERNETES:
-            raise SyftException(
-                public_message="Scaling is only supported in Kubernetes mode"
-            )
-        elif number < 0:
+        if number < 0:
             # zero is a valid scale down
             raise SyftException(public_message=f"Invalid number of workers: {number}")
 
@@ -448,40 +442,14 @@ class SyftWorkerPoolService(AbstractService):
                 registry_password=None,
             )
         else:
-            # scale down at kubernetes control plane
-            runner = KubernetesRunner()
-            scale_kubernetes_pool(
-                runner,
-                pool_name=worker_pool.name,
-                replicas=number,
-            ).unwrap()
-
-            # scale down removes the last "n" workers
-            # workers to delete = len(workers) - number
             workers_to_delete = worker_pool.worker_list[
                 -(current_worker_count - number) :
             ]
 
-            worker_stash = context.server.get_service("WorkerService").stash
-            # delete linkedobj workers
-            for worker in workers_to_delete:
-                worker_stash.delete_by_uid(
-                    credentials=context.credentials,
-                    uid=worker.object_uid,
-                ).unwrap()
+            worker_service = context.server.get_service("WorkerService")
 
-            # update worker_pool
-            worker_pool.max_count = number
-            worker_pool.worker_list = worker_pool.worker_list[:number]
-            self.stash.update(
-                credentials=context.credentials,
-                obj=worker_pool,
-            ).unwrap(
-                public_message=(
-                    f"Pool {worker_pool.name} was scaled down, "
-                    f"but failed to update the stash"
-                )
-            )
+            for worker in workers_to_delete:
+                worker_service.delete(context=context, uid=worker.object_uid)
 
         return SyftSuccess(message=f"Worker pool scaled to {number} workers")
 
