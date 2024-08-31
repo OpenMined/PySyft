@@ -513,6 +513,7 @@ jobs:
         timeout-minutes: 60
         env:
           GITHUB_CI: true
+          TOX_PYTHON: ${{ matrix.python-version }}
         shell: bash
         run: |
           K3D_VERSION=v5.6.3
