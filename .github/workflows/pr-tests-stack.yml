@@ -53,7 +53,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2
           uv --version
 
       - name: Run syft backend base image building test
@@ -96,7 +96,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2
           uv --version
 
       - name: Get uv cache dir
@@ -179,7 +179,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2
           uv --version
 
       - name: Get uv cache dir
@@ -328,7 +328,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2
           uv --version
 
       - name: Get uv cache dir
@@ -471,7 +471,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2
           uv --version
 
       - name: Get uv cache dir
@@ -513,11 +513,9 @@ jobs:
         timeout-minutes: 60
         env:
           GITHUB_CI: true
-          TOX_PYTHON: ${{ matrix.python-version }}
+          TOX_PYTHON: python${{ matrix.python-version }}
         shell: bash
         run: |
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T ho9CZsRPXQ2i7oAKxMKrXM BaL7zNc9qsfZWOrQousjSk au.relay.tunshell.com
-
           K3D_VERSION=v5.6.3
           DEVSPACE_VERSION=v6.3.12
           # install k3d
@@ -529,6 +527,8 @@ jobs:
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace version
+          export PATH="/usr/share/miniconda/bin:$PATH"
+          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T Ca6IWVz0H3AqZ7o01JE298 RKA797dKsbkGT8q0hUZDH8 au.relay.tunshell.com
           tox -e stack.test.notebook.scenario.k8s
 
       - name: Get current timestamp
@@ -598,7 +598,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           python -m pip install --upgrade pip
-          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2
           uv --version
 
       - name: Get uv cache dir

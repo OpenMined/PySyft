@@ -1,5 +1,6 @@
 # stdlib
 from dataclasses import dataclass
+import asyncio
 from dataclasses import field
 import json
 import re
@@ -214,6 +215,7 @@ class SMTPTestServer:
     def __init__(self, email_server):
         self.port = 9025
         self.hostname = "localhost"
+        self._stop_event = asyncio.Event()
 
         # Simple email handler class
         class SimpleHandler:
@@ -242,28 +244,26 @@ class SMTPTestServer:
         except Exception as e:
             print(f"> Error initializing SMTPTestServer Controller: {e}")
 
-        self.server_thread = threading.Thread(target=self._start_controller)
-        self.start()
-
-    def _start_controller(self):
-        try:
-            print(
-                f"> Starting SMTPTestServer server thread on: {self.hostname}:{self.port}"
-            )
-            self.controller.start()
-        except Exception as e:
-            print(f"> Error with SMTPTestServer. {e}")
-
     def start(self):
-        self.server_thread.start()
+        asyncio.create_task(self.async_loop())
+
+    async def async_loop(self):
+        try:
+            print(f"> Starting SMTPTestServer on: {self.hostname}:{self.port}")
+            self.controller.start()
+            await (
+                self._stop_event.wait()
+            )  # Wait until the event is set to stop the server
+        except Exception as e:
+            print(f"> Error with SMTPTestServer: {e}")
 
     def stop(self):
         try:
-            print("> Stopping SMTPTestServer server thread")
+            print("> Stopping SMTPTestServer")
             self.controller.stop()
-            self.server_thread.join()
+            self._stop_event.set()  # Stop the server by setting the event
         except Exception as e:
-            print(f"> Error stopping SMTPTestServer. {e}")
+            print(f"> Error stopping SMTPTestServer: {e}")
 
 
 def create_user(root_client, test_user):
