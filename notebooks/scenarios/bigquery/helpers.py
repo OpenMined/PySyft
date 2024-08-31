@@ -1,10 +1,9 @@
 # stdlib
-from dataclasses import dataclass
 import asyncio
+from dataclasses import dataclass
 from dataclasses import field
 import json
 import re
-import threading
 from typing import Any
 
 # third party

@@ -274,9 +274,10 @@ jobs:
         with:
           timeout_seconds: 2400
           max_attempts: 3
-          run: |
-            export PATH="/usr/share/miniconda/bin:$PATH"
-            tox -e syft.test.notebook.scenario
+        shell: bash
+        run: |
+          export PATH="/usr/share/miniconda/bin:$PATH"
+          tox -e syft.test.notebook.scenario
 
   pr-tests-syft-notebook-scenario-sync:
     strategy:
