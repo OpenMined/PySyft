@@ -545,7 +545,7 @@ class UserService(AbstractService):
 
         return uid
 
-    def exchange_credentials(self, context: UnauthedServiceContext) -> UserPrivateKey:
+    def exchange_credentials(self, context: UnauthedServiceContext) -> SyftSuccess:
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
@@ -564,12 +564,14 @@ class UserService(AbstractService):
                 and user.role == ServiceRole.ADMIN
             ):
                 # FIX: Replace with SyftException
-                raise UserEnclaveAdminLoginError
+                raise SyftException(
+                    public_message=UserEnclaveAdminLoginError.public_message
+                )
         else:
             # FIX: Replace this below
-            raise CredentialsError
+            raise SyftException(public_message=CredentialsError.public_message)
 
-        return user.to(UserPrivateKey)
+        return SyftSuccess(message="Login successful.", value=user.to(UserPrivateKey))
 
     def admin_verify_key(self) -> SyftVerifyKey:
         # TODO: Remove passthrough method?

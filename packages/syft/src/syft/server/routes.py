@@ -228,16 +228,15 @@ def make_routes(worker: Worker) -> APIRouter:
         context = UnauthedServiceContext(
             server=server, login_credentials=login_credentials
         )
-        result = method(context=context)
-
-        if isinstance(result, SyftError):
-            logger.error(f"Login Error: {result.message}. user={email}")
-            response = result
-        else:
-            user_private_key = result
-            if not isinstance(user_private_key, UserPrivateKey):
-                raise Exception(f"Incorrect return type: {type(user_private_key)}")
-            response = user_private_key
+        try:
+            result = method(context=context).value
+            if not isinstance(result, UserPrivateKey):
+                response = SyftError(message=f"Incorrect return type: {type(result)}")
+            else:
+                response = result
+        except SyftException as e:
+            logger.error(f"Login Error: {e}. user={email}")
+            response = SyftError(message=f"{e.public_message}")
 
         return Response(
             serialize(response, to_bytes=True),

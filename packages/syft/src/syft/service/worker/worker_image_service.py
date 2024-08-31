@@ -64,7 +64,15 @@ class SyftWorkerImageService(AbstractService):
             created_by=context.credentials,
             image_identifier=image_identifier,
         )
-        stored_image = self.stash.set(context.credentials, worker_image).unwrap()
+
+        # TODO: I think this was working in python mode due to a bug because
+        # it wasn't saying it was duplicate
+        # why can we only have a prebuilt or a non prebuilt with the same tag?
+        # bigquery uses prebuilt but we need to build and then test that prebuilt works
+        # so we kind of need to use one then the other and have it pull from the first
+        stored_image = self.stash.set(
+            context.credentials, worker_image, ignore_duplicates=True
+        ).unwrap()
 
         return SyftSuccess(
             message=f"Dockerfile ID: {worker_image.id} successfully submitted.",

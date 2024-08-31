@@ -1,6 +1,9 @@
 # stdlib
+from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from dataclasses import field
+import json
 import random
 import re
 import secrets
@@ -30,10 +33,12 @@ class TestJob:
     func_name: str
     query: str
     job_type: str
-    settings: dict
+    settings: dict  # make a type so we can rely on attributes
     should_succeed: bool
     should_submit: bool = True
     code_path: str | None = field(default=None)
+    admin_reviewed: bool = False
+    result_as_expected: bool | None = None
 
     _client_cache: SyftClient | None = field(default=None, repr=False, init=False)
 
@@ -66,6 +71,14 @@ class TestJob:
         if key.startswith("_"):
             return None
         return self.to_dict()[key]
+
+    @property
+    def code_method(self) -> None | Callable:
+        try:
+            return getattr(self.client.code, self.func_name, None)
+        except Exception as e:
+            print(f"Cant find code method. {e}")
+        return None
 
 
 def make_query(settings: dict) -> str:
@@ -241,9 +254,32 @@ def create_job(user: TestUser) -> TestJob:
 
 def create_jobs(users: list[TestUser], n_per_user: int = 10) -> list[TestJob]:
     jobs = []
-    for user in users:
-        for _ in range(n_per_user):
-            jobs.append(create_job(user))
+    num_users = len(users)
+    total_jobs = n_per_user * num_users
+    user_index = 0
+    each_count = 0
+    # keep making jobs until we have enough
+    while len(jobs) < total_jobs:
+        # if we havent used each job type yet keep getting the next one
+        if each_count < len(create_job_functions):
+            job_func = create_job_functions[each_count]
+            each_count += 1
+        else:
+            # otherwise lets get a random one
+            job_func = create_job
+        # use the current index of user
+        jobs.append(job_func(users[user_index]))
+
+        # only go as high as the last user index
+        if user_index < num_users - 1:
+            user_index += 1
+        else:
+            # reset back to the first user
+            user_index = 0
+
+    # in case we stuffed up
+    if len(jobs) > total_jobs:
+        jobs = jobs[:total_jobs]
     return jobs
 
 
@@ -266,3 +302,31 @@ create_job_functions = [
     create_job_query_xss,
     create_job_many_columns,
 ]
+
+
+def save_jobs(jobs, filepath="./jobs.json"):
+    user_jobs = defaultdict(list)
+    for job in jobs:
+        user_jobs[job.user_email].append(job.to_dict())
+    with open(filepath, "w") as f:
+        f.write(json.dumps(user_jobs))
+
+
+def load_jobs(users, high_client, filepath="./jobs.json"):
+    data = {}
+    try:
+        with open(filepath) as f:
+            data = json.loads(f.read())
+    except Exception as e:
+        print(f"cant read file: {filepath}: {e}")
+        data = {}
+    jobs_list = []
+    for user in users:
+        user_jobs = data[user.email]
+        for user_job in user_jobs:
+            test_job = TestJob(**user_job)
+            if user._client_cache is None:
+                user.client = high_client
+            test_job.client = user.client
+            jobs_list.append(test_job)
+    return jobs_list
