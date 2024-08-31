@@ -415,6 +415,7 @@ class SyftWorkerPoolService(AbstractService):
         number: int,
         pool_id: UID | None = None,
         pool_name: str | None = None,
+        force: bool = False,
     ) -> SyftSuccess:
         """
         Scale the worker pool to the given number of workers in Kubernetes.
@@ -449,9 +450,13 @@ class SyftWorkerPoolService(AbstractService):
             worker_service = context.server.get_service("WorkerService")
 
             for worker in workers_to_delete:
-                worker_service.delete(context=context, uid=worker.object_uid)
+                worker_service.delete(
+                    context=context, uid=worker.object_uid, force=force
+                )
 
-        return SyftSuccess(message=f"Worker pool scaled to {number} workers")
+        return SyftSuccess(
+            message=f"Worker pool '{worker_pool.name}' scaled to {number} workers"
+        )
 
     @service_method(
         path="worker_pool.filter_by_image_id",

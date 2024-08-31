@@ -620,12 +620,8 @@ class Server(AbstractServer):
     ) -> None:
         """Starts in-memory workers for the server."""
 
-        worker_pools = self.pool_stash.get_all(credentials=self.verify_key).ok()
+        worker_pools = self.pool_stash.get_all(credentials=self.verify_key).unwrap()
         for worker_pool in worker_pools:  # type: ignore
-            # Skip the default worker pool
-            if worker_pool.name == DEFAULT_WORKER_POOL_NAME:
-                continue
-
             # Create consumers for each worker pool
             for linked_worker in worker_pool.worker_list:
                 self.add_consumer_for_service(
@@ -642,6 +638,19 @@ class Server(AbstractServer):
         address: str,
         message_handler: type[AbstractMessageHandler] = APICallMessageHandler,
     ) -> None:
+        def is_syft_worker_consumer_running(
+            queue_name: str, syft_worker_id: UID
+        ) -> bool:
+            consumers = self.queue_manager.consumers.get(queue_name, [])
+            for consumer in consumers:
+                if consumer.syft_worker_id == syft_worker_id:
+                    return True
+            return False
+
+        # Check if the consumer is already running
+        if is_syft_worker_consumer_running(syft_worker_id, message_handler.queue_name):
+            return
+
         consumer: QueueConsumer = self.queue_manager.create_consumer(
             message_handler,
             address=address,
