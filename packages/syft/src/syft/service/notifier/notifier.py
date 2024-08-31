@@ -118,27 +118,31 @@ class EmailNotifier(BaseNotifier):
                 subject = notification.email_template.email_title(
                     notification, context=context
                 )
+                print("> 4a")
                 body = notification.email_template.email_body(
                     notification, context=context
                 )
+                print("> 4b")
             else:
                 print("> 5")
                 subject = notification.subject
                 body = notification._repr_html_()
 
+            print("> 6")
             if isinstance(receiver_email, str):
-                print("> 6")
+                print("> 7")
                 receiver_email = [receiver_email]
 
-            print("> 7")
-            self.smtp_client.send(  # type: ignore
+            print("> 8")
+            result = self.smtp_client.send(  # type: ignore
                 sender=self.sender, receiver=receiver_email, subject=subject, body=body
             )
-            print("> 8")
+            print("> 9")
+            print("got result from sending email", type(result), result)
             return SyftSuccess(message="Email sent successfully!")
         except Exception as e:
             print("DONT BREAK THE SYSTEM because ytou cant send an email")
-            return SyftError(f"Failed to send an email {e}")
+            return SyftError(message=f"Failed to send an email {e}")
             # raise SyftException.from_exception(
             #     exc,
             #     public_message=(
