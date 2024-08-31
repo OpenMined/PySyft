@@ -265,15 +265,11 @@ jobs:
             ${{ runner.os }}-uv-py${{ matrix.python-version }}-
 
       - name: Run notebook scenario tests
-        uses: nick-fields/retry@v3
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
         env:
           ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
           BUMP_VERSION: "${{ matrix.bump-version }}"
           TOX_PYTHON: python${{ matrix.python-version }}
-        with:
-          timeout_seconds: 2400
-          max_attempts: 3
         shell: bash
         run: |
           export PATH="/usr/share/miniconda/bin:$PATH"
