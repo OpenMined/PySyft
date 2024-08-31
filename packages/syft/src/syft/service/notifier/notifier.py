@@ -29,6 +29,7 @@ from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
+from ..response import SyftError
 from ..response import SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
@@ -96,22 +97,24 @@ class EmailNotifier(BaseNotifier):
     @as_result(SyftException)
     def send(
         self, context: AuthedServiceContext, notification: Notification
-    ) -> SyftSuccess:
+    ) -> SyftSuccess | SyftError:
+        print("> Trying to send a notification", notification)
         try:
             user_service = context.server.get_service("userservice")
-
+            print("> 1")
             receiver = user_service.get_by_verify_key(
                 notification.to_user_verify_key
             ).unwrap()
-
+            print("> 2")
             if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
                 return SyftSuccess(
                     message="Email notifications are disabled for this user."
                 )  # TODO: Should we return an error here?
-
+            print("> 3")
             receiver_email = receiver.email
 
             if notification.email_template:
+                print("> 4")
                 subject = notification.email_template.email_title(
                     notification, context=context
                 )
@@ -119,24 +122,30 @@ class EmailNotifier(BaseNotifier):
                     notification, context=context
                 )
             else:
+                print("> 5")
                 subject = notification.subject
                 body = notification._repr_html_()
 
             if isinstance(receiver_email, str):
+                print("> 6")
                 receiver_email = [receiver_email]
 
+            print("> 7")
             self.smtp_client.send(  # type: ignore
                 sender=self.sender, receiver=receiver_email, subject=subject, body=body
             )
+            print("> 8")
             return SyftSuccess(message="Email sent successfully!")
-        except Exception as exc:
-            raise SyftException.from_exception(
-                exc,
-                public_message=(
-                    "Some notifications failed to be delivered."
-                    " Please check the health of the mailing server."
-                ),
-            )
+        except Exception as e:
+            print("DONT BREAK THE SYSTEM because ytou cant send an email")
+            return SyftError(f"Failed to send an email {e}")
+            # raise SyftException.from_exception(
+            #     exc,
+            #     public_message=(
+            #         "Some notifications failed to be delivered."
+            #         " Please check the health of the mailing server."
+            #     ),
+            # )
 
 
 @serializable()
