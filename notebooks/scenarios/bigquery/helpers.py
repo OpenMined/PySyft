@@ -48,7 +48,8 @@ class EmailServer:
             with open(self.filepath) as f:
                 data = json.load(f)
                 return {k: [Email(**email) for email in v] for k, v in data.items()}
-        except FileNotFoundError:
+        except Exception as e:
+            print("Issues reading email file", e)
             return {}
 
     def save_emails(self) -> None:
@@ -65,6 +66,7 @@ class EmailServer:
         self.save_emails()
 
     def get_emails_for_user(self, user_email: str) -> list[Email]:
+        self._emails: dict[str, list[Email]] = self.load_emails()
         return self._emails.get(user_email, [])
 
     def reset_emails(self) -> None:
