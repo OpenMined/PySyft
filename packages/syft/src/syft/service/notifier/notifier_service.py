@@ -129,27 +129,24 @@ class NotifierService(AbstractService):
             )
 
         logging.debug("Got notifier from db")
+        skip_auth: bool = False
         # If no new credentials provided, check for existing ones
         if not (email_username and email_password):
             if not (notifier.email_username and notifier.email_password):
-                raise SyftException(
-                    public_message=(
-                        "No valid token has been added to the datasite."
-                        " You can add a pair of SMTP credentials via"
-                        " <client>.settings.enable_notifications(email=<>, password=<>)"
-                    )
-                )
+                skip_auth = True
             else:
                 logging.debug("No new credentials provided. Using existing ones.")
                 email_password = notifier.email_password
                 email_username = notifier.email_username
 
-        valid_credentials = notifier.validate_email_credentials(
-            username=email_username,
-            password=email_password,
-            server=email_server or notifier.email_server,
-            port=email_port or notifier.email_port,
-        )
+        valid_credentials = True
+        if not skip_auth:
+            valid_credentials = notifier.validate_email_credentials(
+                username=email_username,
+                password=email_password,
+                server=email_server or notifier.email_server,
+                port=email_port or notifier.email_port,
+            )
 
         if not valid_credentials:
             logging.error("Invalid SMTP credentials.")
@@ -228,9 +225,11 @@ class NotifierService(AbstractService):
         """Deactivate email notifications for the authenticated user
         This will only work if the datasite owner has enabled notifications.
         """
-
         user_service = context.server.get_service("userservice")
-        return user_service.disable_notifications(context, notifier_type=notifier_type)
+        result = user_service.disable_notifications(
+            context, notifier_type=notifier_type
+        )
+        return result
 
     @staticmethod
     @as_result(SyftException)
