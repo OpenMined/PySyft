@@ -246,6 +246,7 @@ class SMTPTestServer:
             print(f"> Error initializing SMTPTestServer Controller: {e}")
 
     def start(self):
+        print(f"> Starting SMTPTestServer on: {self.hostname}:{self.port}")
         asyncio.create_task(self.async_loop())
 
     async def async_loop(self):
@@ -261,10 +262,17 @@ class SMTPTestServer:
     def stop(self):
         try:
             print("> Stopping SMTPTestServer")
-            self.controller.stop()
-            self._stop_event.set()  # Stop the server by setting the event
+            loop = asyncio.get_running_loop()
+            if loop.is_running():
+                loop.create_task(self.async_stop())
+            else:
+                asyncio.run(self.async_stop())
         except Exception as e:
             print(f"> Error stopping SMTPTestServer: {e}")
+
+    async def async_stop(self):
+        self.controller.stop()
+        self._stop_event.set()  # Stop the server by setting the event
 
 
 def create_user(root_client, test_user):
