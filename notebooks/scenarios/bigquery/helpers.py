@@ -212,32 +212,58 @@ def user_exists(root_client, email: str) -> bool:
 
 class SMTPTestServer:
     def __init__(self, email_server):
+        self.port = 1025
+        self.hostname = "localhost"
+
         # Simple email handler class
         class SimpleHandler:
             async def handle_DATA(self, server, session, envelope):
-                email = Email(
-                    email_from=envelope.mail_from,
-                    email_to=envelope.rcpt_tos,
-                    email_content=envelope.content.decode("utf-8", errors="replace"),
-                )
-                email_server.add_email_for_user(envelope.rcpt_tos[0], email)
-                email_server.save_emails()
-                return "250 Message accepted for delivery"
+                try:
+                    print(f"> SMTPTestServer got an email for {envelope.rcpt_tos}")
+                    email = Email(
+                        email_from=envelope.mail_from,
+                        email_to=envelope.rcpt_tos,
+                        email_content=envelope.content.decode(
+                            "utf-8", errors="replace"
+                        ),
+                    )
+                    email_server.add_email_for_user(envelope.rcpt_tos[0], email)
+                    email_server.save_emails()
+                    return "250 Message accepted for delivery"
+                except Exception as e:
+                    print(f"> Error handling email: {e}")
+                    return "550 Internal Server Error"
 
-        self.handler = SimpleHandler()
-        self.controller = Controller(self.handler, hostname="localhost", port=1025)
+        try:
+            self.handler = SimpleHandler()
+            self.controller = Controller(
+                self.handler, hostname=self.hostname, port=self.port
+            )
+        except Exception as e:
+            print(f"> Error initializing SMTPTestServer Controller: {e}")
+
         self.server_thread = threading.Thread(target=self._start_controller)
         self.start()
 
     def _start_controller(self):
-        self.controller.start()
+        try:
+            print(
+                f"> Starting SMTPTestServer server thread on: {self.hostname}:{self.port}"
+            )
+            self.controller.start()
+        except Exception as e:
+            print(f"> Error with SMTPTestServer. {e}")
 
     def start(self):
         self.server_thread.start()
 
     def stop(self):
-        self.controller.stop()
-        self.server_thread.join()
+        try:
+            print("> Stopping SMTPTestServer server thread")
+            self.controller.stop()
+            self.server_thread.join()
+        except Exception as e:
+            print(f"> Error stopping SMTPTestServer. {e}")
 
 
 def create_user(root_client, test_user):
