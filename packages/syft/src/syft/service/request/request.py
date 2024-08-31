@@ -537,7 +537,7 @@ class Request(SyncableSyftObject):
                     self.code.get_status(context) if context else self.code.status
                 )
                 return RequestStatus.from_usercode_status(code_status)
-        except Exception:
+        except Exception:  # nosec
             # this breaks when coming from a user submitting a request
             # which tries to send an email to the admin and ends up here
             pass  # lets keep going
