@@ -35,11 +35,37 @@ class TestJob:
     should_submit: bool = True
     code_path: str | None = field(default=None)
 
-    client: SyftClient = field(default=None, repr=False, init=False)
+    _client_cache: SyftClient | None = field(default=None, repr=False, init=False)
 
     @property
     def is_submitted(self) -> bool:
         return self.code_path is not None
+
+    @property
+    def client(self):
+        return self._client_cache
+
+    @client.setter
+    def client(self, client):
+        self._client_cache = client
+
+    def to_dict(self) -> dict:
+        output = {}
+        for k, v in self.__dict__.items():
+            if k.startswith("_"):
+                continue
+            output[k] = v
+        return output
+
+    def __iter__(self):
+        for key, val in self.to_dict().items():
+            if key.startswith("_"):
+                yield key, val
+
+    def __getitem__(self, key):
+        if key.startswith("_"):
+            return None
+        return self.to_dict()[key]
 
 
 def make_query(settings: dict) -> str:
