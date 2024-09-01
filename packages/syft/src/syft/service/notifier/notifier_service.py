@@ -12,6 +12,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
+from ...types.result import OkErr
 from ...types.result import as_result
 from ..context import AuthedServiceContext
 from ..notification.email_templates import PasswordResetTemplate
@@ -216,7 +217,11 @@ class NotifierService(AbstractService):
         This will only work if the datasite owner has enabled notifications.
         """
         user_service = context.server.get_service("userservice")
-        return user_service.enable_notifications(context, notifier_type=notifier_type)
+        result = user_service.enable_notifications(context, notifier_type=notifier_type)
+        if isinstance(result, OkErr) and result.is_ok():
+            # sad, TODO: remove upstream Ok
+            result = result.ok()
+        return result
 
     @as_result(SyftException)
     def deactivate(
