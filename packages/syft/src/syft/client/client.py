@@ -383,7 +383,7 @@ class HTTPConnection(ServerConnection):
     ) -> SyftSigningKey | None:
         credentials = {"email": email, "password": password}
         if self.proxy_target_uid:
-            obj = forward_message_to_proxy(
+            response = forward_message_to_proxy(
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="login",
@@ -391,9 +391,10 @@ class HTTPConnection(ServerConnection):
             )
         else:
             response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
-            obj = _deserialize(response, from_bytes=True)
+            response = _deserialize(response, from_bytes=True)
+            response = post_process_result(response, unwrap_on_success=True)
 
-        return obj
+        return response
 
     def forgot_password(
         self,
@@ -570,7 +571,7 @@ class PythonConnection(ServerConnection):
     def get_cache_key(self) -> str:
         return str(self.server.id)
 
-    def exchange_credentials(self, email: str, password: str) -> UserPrivateKey | None:
+    def exchange_credentials(self, email: str, password: str) -> SyftSuccess | None:
         context = self.server.get_unauthed_context(
             login_credentials=UserLoginCredentials(email=email, password=password)
         )
@@ -593,7 +594,7 @@ class PythonConnection(ServerConnection):
         password: str,
     ) -> SyftSigningKey | None:
         if self.proxy_target_uid:
-            obj = forward_message_to_proxy(
+            result = forward_message_to_proxy(
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="login",
@@ -601,8 +602,9 @@ class PythonConnection(ServerConnection):
             )
 
         else:
-            obj = self.exchange_credentials(email=email, password=password)
-        return obj
+            result = self.exchange_credentials(email=email, password=password)
+            result = post_process_result(result, unwrap_on_success=True)
+        return result
 
     def register(self, new_user: UserCreate) -> SyftSigningKey | None:
         if self.proxy_target_uid:
@@ -937,7 +939,10 @@ class SyftClient:
                 email=email, password=password, password_verify=password, **kwargs
             )
 
-        user_private_key = self.connection.login(email=email, password=password)
+        try:
+            user_private_key = self.connection.login(email=email, password=password)
+        except Exception as e:
+            raise SyftException(public_message=e.public_message)
 
         signing_key = None if user_private_key is None else user_private_key.signing_key
 

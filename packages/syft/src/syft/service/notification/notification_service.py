@@ -5,6 +5,7 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
+from ...types.result import OkErr
 from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -118,13 +119,16 @@ class NotificationService(AbstractService):
         path="notifications.deactivate",
         name="deactivate",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def deactivate(
         self,
         context: AuthedServiceContext,
-    ) -> Notification:
+    ) -> SyftSuccess:
         notifier_service = context.server.get_service("notifierservice")
         result = notifier_service.deactivate(context)
+        if isinstance(result, OkErr):
+            result = result.ok()
         return result
 
     @service_method(

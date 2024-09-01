@@ -714,8 +714,8 @@ def test_userservice_exchange_credentials(
     expected_user_private_key = guest_user.to(UserPrivateKey)
 
     response = user_service.exchange_credentials(unauthed_context)
-    assert isinstance(response, UserPrivateKey)
-    assert response == expected_user_private_key
+    assert isinstance(response.value, UserPrivateKey)
+    assert response.value == expected_user_private_key
 
 
 def test_userservice_exchange_credentials_invalid_user(
