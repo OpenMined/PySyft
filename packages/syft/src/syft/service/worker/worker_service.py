@@ -188,7 +188,9 @@ class WorkerService(AbstractService):
             pass
 
         # Delete worker from worker stash
-        self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap()
+        self.stash.find_and_delete_by_uid(
+            credentials=context.credentials, uid=uid
+        ).unwrap()
 
         # Update worker pool
         worker_pool_stash.update(context.credentials, obj=worker_pool).unwrap()

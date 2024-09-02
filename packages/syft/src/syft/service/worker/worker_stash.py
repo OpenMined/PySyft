@@ -10,8 +10,10 @@ from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
+from ...store.document_store import UIDPartitionKey
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
+from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -74,3 +76,14 @@ class WorkerStash(NewBaseUIDStoreStash):
         worker = self.get_by_uid(credentials=credentials, uid=worker_uid).unwrap()
         worker.consumer_state = consumer_state
         return self.update(credentials=credentials, obj=worker).unwrap()
+
+    @as_result(StashException, SyftException)
+    def find_and_delete_by_uid(
+        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
+    ) -> bool:
+        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
+        try:
+            worker = self.query_one(credentials=credentials, qks=qks).unwrap()
+        except NotFoundException:
+            return True
+        return self.delete_by_uid(credentials=credentials, uid=worker.id).unwrap()
