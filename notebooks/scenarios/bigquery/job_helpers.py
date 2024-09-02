@@ -248,15 +248,14 @@ def create_job_many_columns(user: TestUser) -> TestJob:
     return job
 
 
-def create_job(user: TestUser) -> TestJob:
+def create_random_job(user: TestUser) -> TestJob:
     job_func = random.choice(create_job_functions)
     return job_func(user)
 
 
-def create_jobs(users: list[TestUser], n_per_user: int = 10) -> list[TestJob]:
+def create_jobs(users: list[TestUser], total_jobs: int = 10) -> list[TestJob]:
     jobs = []
     num_users = len(users)
-    total_jobs = n_per_user * num_users
     user_index = 0
     each_count = 0
     # keep making jobs until we have enough
@@ -267,7 +266,7 @@ def create_jobs(users: list[TestUser], n_per_user: int = 10) -> list[TestJob]:
             each_count += 1
         else:
             # otherwise lets get a random one
-            job_func = create_job
+            job_func = create_random_job
         # use the current index of user
         jobs.append(job_func(users[user_index]))
 
