@@ -24,7 +24,7 @@ if TRACING_ENABLED:
         from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
 
         PymongoInstrumentor().instrument()
-    except Exception:
+    except Exception:  # nosec
         pass
 
 

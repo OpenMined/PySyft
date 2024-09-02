@@ -57,7 +57,7 @@ if TRACING_ENABLED:
         from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 
         BotocoreInstrumentor().instrument()
-    except Exception:
+    except Exception:  # nosec
         pass
 
 
