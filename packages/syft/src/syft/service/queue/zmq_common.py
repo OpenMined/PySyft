@@ -5,11 +5,12 @@ from typing import Any
 
 # third party
 from pydantic import field_validator
-from result import Result
 
 # relative
 from ...server.credentials import SyftVerifyKey
 from ...types.base import SyftBaseModel
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.uid import UID
 from ..worker.worker_pool import SyftWorker
 from ..worker.worker_stash import WorkerStash
@@ -103,10 +104,13 @@ class Worker(SyftBaseModel):
     def reset_expiry(self) -> None:
         self.expiry_t.reset()
 
+    @as_result(SyftException)
     def _syft_worker(
         self, stash: WorkerStash, credentials: SyftVerifyKey
-    ) -> Result[SyftWorker | None, str]:
-        return stash.get_by_uid(credentials=credentials, uid=self.syft_worker_id)
+    ) -> SyftWorker | None:
+        return stash.get_by_uid(
+            credentials=credentials, uid=self.syft_worker_id
+        ).unwrap()
 
     def __str__(self) -> str:
         svc = self.service.name if self.service else None
