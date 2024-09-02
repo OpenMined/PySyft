@@ -252,10 +252,9 @@ def create_random_job(user: TestUser) -> TestJob:
     return job_func(user)
 
 
-def create_jobs(users: list[TestUser], n: int = 10) -> list[TestJob]:
+def create_jobs(users: list[TestUser], total_jobs: int = 10) -> list[TestJob]:
     jobs = []
     num_users = len(users)
-    total_jobs = n
     user_index = 0
     each_count = 0
     # keep making jobs until we have enough
