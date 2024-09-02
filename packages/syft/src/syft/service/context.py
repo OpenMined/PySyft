@@ -6,6 +6,7 @@ from typing_extensions import Self
 
 # relative
 from ..abstract_server import AbstractServer
+from ..abstract_server import ServerSideType
 from ..server.credentials import SyftVerifyKey
 from ..server.credentials import UserLoginCredentials
 from ..types.syft_object import Context
@@ -36,10 +37,14 @@ class AuthedServiceContext(ServerServiceContext):
     extra_kwargs: dict = {}
     has_execute_permissions: bool = False
     is_blocking_api_call: bool = False
+    client_warnings: list[str] = []
 
     @property
     def dev_mode(self) -> Any:
         return self.server.dev_mode  # type: ignore
+
+    def add_warning(self, message: str) -> None:
+        self.client_warnings.append(message)
 
     def capabilities(self) -> list[ServiceRoleCapability]:
         return ROLE_TO_CAPABILITIES.get(self.role, [])
@@ -48,6 +53,11 @@ class AuthedServiceContext(ServerServiceContext):
         return AuthedServiceContext(
             credentials=credentials, role=role, server=self.server
         )
+
+    @property
+    def is_l0_lowside(self) -> bool:
+        """Returns True if this is a low side of a Level 0 deployment"""
+        return self.server.server_side_type == ServerSideType.LOW_SIDE
 
     def as_root_context(self) -> Self:
         return AuthedServiceContext(
@@ -62,19 +72,17 @@ class AuthedServiceContext(ServerServiceContext):
         # but we can't import Job since it's a circular import
         if self.job_id is None:
             return None
-        res = self.server.job_stash.get_by_uid(self.credentials, self.job_id)
-        if res.is_err():
-            return None
-        else:
-            return res.ok()
+        return self.server.job_stash.get_by_uid(
+            self.credentials, self.job_id
+        ).ok()  # if this fails, it will return None
 
 
 class UnauthedServiceContext(ServerServiceContext):
     __canonical_name__ = "UnauthedServiceContext"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    login_credentials: UserLoginCredentials
     server: AbstractServer
+    login_credentials: UserLoginCredentials | None = None
     role: ServiceRole = ServiceRole.NONE
 
 

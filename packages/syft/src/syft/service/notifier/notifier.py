@@ -6,20 +6,27 @@
 # 2) .....settings().x_enabled
 # 2) .....user_settings().x
 
-
 # stdlib
+from collections.abc import Callable
+from datetime import datetime
+import logging
+from typing import Any
 from typing import TypeVar
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
+from pydantic import BaseModel
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...types.errors import SyftException
+from ...types.result import as_result
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.transforms import drop
+from ...types.transforms import make_set_default
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
 from ..response import SyftError
@@ -27,36 +34,44 @@ from ..response import SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
+logger = logging.getLogger(__name__)
 
-class BaseNotifier:
+
+class BaseNotifier(BaseModel):
+    @as_result(SyftException)
     def send(
-        self, target: SyftVerifyKey, notification: Notification
-    ) -> SyftSuccess | SyftError:
-        return SyftError(message="Not implemented")
+        self, context: AuthedServiceContext, notification: Notification
+    ) -> SyftSuccess:
+        raise SyftException(public_message="Not implemented")
 
 
 TBaseNotifier = TypeVar("TBaseNotifier", bound=BaseNotifier)
 
 
+@serializable()
+class UserNotificationActivity(SyftObject):
+    __canonical_name__ = "UserNotificationActivity"
+    __version__ = SYFT_OBJECT_VERSION_1
+    count: int = 1
+    date: datetime = datetime.now()
+
+
 @serializable(canonical_name="EmailNotifier", version=1)
 class EmailNotifier(BaseNotifier):
-    smtp_client: SMTPClient
-    sender = ""
+    smtp_client: SMTPClient | None = None
+    sender: str = ""
 
     def __init__(
         self,
-        username: str,
-        password: str,
-        sender: str,
-        server: str,
-        port: int = 587,
+        **data: Any,
     ) -> None:
-        self.sender = sender
+        super().__init__(**data)
+        self.sender = data.get("sender", "")
         self.smtp_client = SMTPClient(
-            server=server,
-            port=port,
-            username=username,
-            password=password,
+            server=data.get("server", ""),
+            port=int(data.get("port", 587)),
+            username=data.get("username", ""),
+            password=data.get("password", ""),
         )
 
     @classmethod
@@ -66,27 +81,34 @@ class EmailNotifier(BaseNotifier):
         password: str,
         server: str,
         port: int = 587,
-    ) -> Result[Ok, Err]:
-        return SMTPClient.check_credentials(
-            server=server,
-            port=port,
-            username=username,
-            password=password,
-        )
+    ) -> bool:
+        try:
+            SMTPClient.check_credentials(
+                server=server,
+                port=port,
+                username=username,
+                password=password,
+            )
+            return True
+        except Exception:
+            logger.exception("Credentials validation failed")
+            return False
 
+    @as_result(SyftException)
     def send(
         self, context: AuthedServiceContext, notification: Notification
-    ) -> Result[Ok, Err]:
+    ) -> SyftSuccess | SyftError:
+        subject = None
+        receiver_email = None
         try:
             user_service = context.server.get_service("userservice")
-
-            receiver = user_service.get_by_verify_key(notification.to_user_verify_key)
-
+            receiver = user_service.get_by_verify_key(
+                notification.to_user_verify_key
+            ).unwrap()
             if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
-                return Ok(
-                    "Email notifications are disabled for this user."
+                return SyftSuccess(
+                    message="Email notifications are disabled for this user."
                 )  # TODO: Should we return an error here?
-
             receiver_email = receiver.email
 
             if notification.email_template:
@@ -103,14 +125,21 @@ class EmailNotifier(BaseNotifier):
             if isinstance(receiver_email, str):
                 receiver_email = [receiver_email]
 
-            self.smtp_client.send(
+            self.smtp_client.send(  # type: ignore
                 sender=self.sender, receiver=receiver_email, subject=subject, body=body
             )
-            return Ok("Email sent successfully!")
+            print(f"> Sent email: {subject} to {receiver_email}")
+            return SyftSuccess(message="Email sent successfully!")
         except Exception:
-            return Err(
-                "Some notifications failed to be delivered. Please check the health of the mailing server."
-            )
+            print(f"> Error sending email: {subject} to {receiver_email}")
+            return SyftError(message="Failed to send an email.")
+            # raise SyftException.from_exception(
+            #     exc,
+            #     public_message=(
+            #         "Some notifications failed to be delivered."
+            #         " Please check the health of the mailing server."
+            #     ),
+            # )
 
 
 @serializable()
@@ -131,9 +160,37 @@ class NotificationPreferences(SyftObject):
 
 
 @serializable()
-class NotifierSettings(SyftObject):
+class NotifierSettingsV1(SyftObject):
     __canonical_name__ = "NotifierSettings"
     __version__ = SYFT_OBJECT_VERSION_1
+    __repr_attrs__ = [
+        "active",
+        "email_enabled",
+    ]
+    active: bool = False
+
+    notifiers: dict[NOTIFIERS, type[TBaseNotifier]] = {
+        NOTIFIERS.EMAIL: EmailNotifier,
+    }
+
+    notifiers_status: dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
+
+    email_sender: str | None = ""
+    email_server: str | None = ""
+    email_port: int | None = 587
+    email_username: str | None = ""
+    email_password: str | None = ""
+
+
+@serializable()
+class NotifierSettings(SyftObject):
+    __canonical_name__ = "NotifierSettings"
+    __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [
         "active",
         "email_enabled",
@@ -161,6 +218,9 @@ class NotifierSettings(SyftObject):
     email_username: str | None = ""
     email_password: str | None = ""
 
+    email_activity: dict[str, dict[SyftVerifyKey, UserNotificationActivity]] = {}
+    email_rate_limit: dict[str, int] = {}
+
     @property
     def email_enabled(self) -> bool:
         return self.notifiers_status[NOTIFIERS.EMAIL]
@@ -183,7 +243,7 @@ class NotifierSettings(SyftObject):
         password: str,
         server: str,
         port: int,
-    ) -> Result[Ok, Err]:
+    ) -> bool:
         return self.notifiers[NOTIFIERS.EMAIL].check_credentials(
             server=server,
             port=port,
@@ -191,19 +251,18 @@ class NotifierSettings(SyftObject):
             password=password,
         )
 
+    @as_result(SyftException)
     def send_notifications(
         self,
         context: AuthedServiceContext,
         notification: Notification,
-    ) -> Result[Ok, Err]:
-        notifier_objs: list = self.select_notifiers(notification)
+    ) -> int:
+        notifier_objs: list[BaseNotifier] = self.select_notifiers(notification)
 
         for notifier in notifier_objs:
-            result = notifier.send(context, notification)
-            if result.err():
-                return result
+            notifier.send(context=context, notification=notification).unwrap()
 
-        return Ok("Notification sent successfully!")
+        return len(notifier_objs)
 
     def select_notifiers(self, notification: Notification) -> list[BaseNotifier]:
         """
@@ -229,6 +288,7 @@ class NotifierSettings(SyftObject):
                             password=self.email_password,
                             sender=self.email_sender,
                             server=self.email_server,
+                            port=self.email_port,
                         )
                     )
                 # If notifier is not email, we just create the notifier object
@@ -237,3 +297,17 @@ class NotifierSettings(SyftObject):
                     notifier_objs.append(self.notifiers[notifier_type]())  # type: ignore[misc]
 
         return notifier_objs
+
+
+@migrate(NotifierSettingsV1, NotifierSettings)
+def migrate_server_settings_v1_to_current() -> list[Callable]:
+    return [
+        make_set_default("email_activity", {}),
+        make_set_default("email_rate_limit", {}),
+    ]
+
+
+@migrate(NotifierSettings, NotifierSettingsV1)
+def migrate_server_settings_v2_to_v1() -> list[Callable]:
+    # Use drop function on "notifications_enabled" attrubute
+    return [drop(["email_activity"]), drop(["email_rate_limit"])]

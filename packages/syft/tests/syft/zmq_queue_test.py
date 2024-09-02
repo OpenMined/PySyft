@@ -18,8 +18,8 @@ from syft.service.queue.zmq_client import ZMQClientConfig
 from syft.service.queue.zmq_client import ZMQQueueConfig
 from syft.service.queue.zmq_consumer import ZMQConsumer
 from syft.service.queue.zmq_producer import ZMQProducer
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
+from syft.types.errors import SyftException
 from syft.util.util import get_queue_address
 from syft.util.util import get_random_available_port
 
@@ -34,7 +34,7 @@ def client():
     client.close()
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=3)
+# @pytest.mark.flaky(reruns=3, reruns_delay=3)
 @pytest.mark.skipif(sys.platform == "win32", reason="does not run on windows")
 def test_zmq_client(client):
     hostname = "127.0.0.1"
@@ -105,8 +105,8 @@ def test_zmq_client(client):
     assert len(received_message) == 1
 
     msg = b"My Message"
-    response = client.send_message(message=msg, queue_name="random queue")
-    assert isinstance(response, SyftError)
+    with pytest.raises(SyftException):
+        response = client.send_message(message=msg, queue_name="random queue")
 
     assert isinstance(client.close(), SyftSuccess)
     sleep(0.5)

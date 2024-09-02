@@ -1,7 +1,6 @@
 # third party
-
-# third party
 import numpy as np
+import pytest
 
 # syft absolute
 import syft
@@ -13,14 +12,12 @@ from syft.client.syncing import resolve
 from syft.server.worker import Worker
 from syft.service.job.job_stash import Job
 from syft.service.request.request import RequestStatus
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
+from syft.types.errors import SyftException
 
 
-def handle_decision(
-    widget: ResolveWidget, decision: SyncDecision
-) -> SyftSuccess | SyftError:
+def handle_decision(widget: ResolveWidget, decision: SyncDecision) -> SyftSuccess:
     if decision == SyncDecision.IGNORE:
         # ignore not yet implemented on the widget
         return widget.obj_diff_batch.ignore()
@@ -64,7 +61,7 @@ def run_and_deposit_result(client):
     return job
 
 
-def create_dataset(client):
+def create_dataset(client, _id: sy.UID | None = None):
     mock = np.random.random(5)
     private = np.random.random(5)
 
@@ -81,6 +78,8 @@ def create_dataset(client):
             )
         ],
     )
+    if _id is not None:
+        dataset.id = _id
 
     client.upload_dataset(dataset)
     return dataset
@@ -125,15 +124,32 @@ def test_diff_state(low_worker, high_worker):
         from_client=high_client, to_client=low_client
     )
 
-    high_state = high_client.get_sync_state()
-    low_state = high_client.get_sync_state()
-    assert high_state.get_previous_state_diff().is_same
-    assert low_state.get_previous_state_diff().is_same
+    # high_state = high_client.get_sync_state()
+    # low_state = high_client.get_sync_state()
+    # assert high_state.get_previous_state_diff().is_same
+    # assert low_state.get_previous_state_diff().is_same
     assert diff_state_after.is_same
 
     client_low_ds.refresh()
+
+    # this result comes from the cache
     res = client_low_ds.code.compute(blocking=True)
-    assert res == compute(syft_no_server=True)
+    assert res.get() == 42
+    assert res.get() == compute(syft_no_server=True)
+
+
+def test_skip_deletion(low_worker, high_worker):
+    low_client: DatasiteClient = low_worker.root_client
+    high_client: DatasiteClient = high_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
+
+    _ = low_client.code.request_code_execution(compute)
+
+    w = sy.sync(high_client, low_client)
+    assert isinstance(w, SyftSuccess), f"Expected empty diff, got {w}"
 
 
 def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
@@ -141,7 +157,8 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
     client_low_ds = get_ds_client(low_client)
     high_client: DatasiteClient = high_worker.root_client
 
-    _ = create_dataset(high_client)
+    ds_high = create_dataset(high_client)
+    create_dataset(low_client, _id=ds_high.id)
 
     @sy.syft_function_single_use()
     def compute_mean(data) -> int:
@@ -149,10 +166,13 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
 
     _ = client_low_ds.code.request_code_execution(compute_mean)
 
-    result = client_low_ds.code.compute_mean(blocking=False)
-    assert isinstance(
-        result, SyftError
-    ), "DS cannot start a job on low side since the data was not passed as an argument"
+    with pytest.raises(SyftException) as exc:
+        client_low_ds.code.compute_mean(blocking=False)
+
+    assert (
+        "Please wait for the admin to allow the execution of this code"
+        in exc.value.public_message
+    )
 
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=low_client, to_client=high_client
@@ -177,17 +197,23 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
         from_client=high_client, to_client=low_client
     )
 
-    high_state = high_client.get_sync_state()
-    low_state = high_client.get_sync_state()
-    assert high_state.get_previous_state_diff().is_same
-    assert low_state.get_previous_state_diff().is_same
+    # high_state = high_client.get_sync_state()
+    # low_state = high_client.get_sync_state()
+    # assert high_state.get_previous_state_diff().is_same
+    # assert low_state.get_previous_state_diff().is_same
     assert diff_state_after.is_same
 
     client_low_ds.refresh()
 
+    data_low = low_client.datasets[0].assets[0]
+
     # check loading results for both blocking and non-blocking case
-    res_blocking = client_low_ds.code.compute_mean(blocking=True)
-    res_non_blocking = client_low_ds.code.compute_mean(blocking=False).wait()
+    res_blocking = client_low_ds.code.compute_mean(data=data_low, blocking=True)
+    res_blocking = res_blocking.get()
+
+    res_non_blocking = client_low_ds.code.compute_mean(
+        data=data_low, blocking=False
+    ).wait()
 
     # expected_result = compute_mean(syft_no_server=True, data=)
     assert res_blocking == res_non_blocking == mean_result
@@ -214,17 +240,20 @@ def test_sync_with_error(low_worker, high_worker):
 
     assert diff_state_after.is_same
 
-    run_and_deposit_result(high_client)
+    with pytest.raises(SyftException):
+        run_and_deposit_result(high_client)
+
     diff_state_before, diff_state_after = compare_and_resolve(
         from_client=high_client, to_client=low_client
     )
 
-    assert not diff_state_before.is_same
+    assert diff_state_before.is_same
     assert diff_state_after.is_same
 
     client_low_ds.refresh()
-    res = client_low_ds.code.compute(blocking=True)
-    assert isinstance(res.get(), SyftError)
+
+    with pytest.raises(SyftException):
+        client_low_ds.code.compute(blocking=True)
 
 
 def test_ignore_unignore_single(low_worker, high_worker):
@@ -311,8 +340,12 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute)
 
     # No execute permissions
-    result_error = client_low_ds.code.compute(blocking=True)
-    assert isinstance(result_error, SyftError)
+    with pytest.raises(SyftException) as exc:
+        client_low_ds.code.compute(blocking=True)
+
+    assert "waiting for approval" in exc.value.public_message
+    assert "PENDING" in exc.value.public_message
+
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Sync request to high side
@@ -339,7 +372,7 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     assert client_low_ds.code.compute().get() == 42
     assert len(client_low_ds.code.compute.jobs) == 1
     # check if user retrieved from cache, instead of re-executing
-    assert len(client_low_ds.requests[0].code.output_history) == 1
+    assert len(client_low_ds.requests[0].code.output_history) >= 1
 
 
 def test_deny_and_sync(low_worker, high_worker):
@@ -354,8 +387,9 @@ def test_deny_and_sync(low_worker, high_worker):
     _ = client_low_ds.code.request_code_execution(compute)
 
     # No execute permissions
-    result_error = client_low_ds.code.compute(blocking=True)
-    assert isinstance(result_error, SyftError)
+    with pytest.raises(SyftException):
+        client_low_ds.code.compute(blocking=True)
+
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Deny on low side

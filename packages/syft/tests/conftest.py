@@ -157,7 +157,7 @@ def high_worker() -> Worker:
 @pytest.fixture(scope="function")
 def low_worker() -> Worker:
     worker = sy.Worker.named(
-        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE
+        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE, dev_mode=True
     )
     yield worker
     worker.cleanup()
@@ -187,6 +187,27 @@ def guest_verify_key(worker):
 @pytest.fixture
 def guest_datasite_client(root_datasite_client) -> DatasiteClient:
     yield root_datasite_client.guest()
+
+
+@pytest.fixture
+def ds_client(
+    faker: Faker, root_datasite_client: DatasiteClient, guest_client: DatasiteClient
+):
+    guest_email = faker.email()
+    password = "mysecretpassword"
+    root_datasite_client.register(
+        name=faker.name(),
+        email=guest_email,
+        password=password,
+        password_verify=password,
+    )
+    ds_client = guest_client.login(email=guest_email, password=password)
+    yield ds_client
+
+
+@pytest.fixture
+def ds_verify_key(ds_client: DatasiteClient):
+    yield ds_client.credentials.verify_key
 
 
 @pytest.fixture

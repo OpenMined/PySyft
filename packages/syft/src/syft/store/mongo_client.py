@@ -7,12 +7,11 @@ from pymongo.collection import Collection as MongoCollection
 from pymongo.database import Database as MongoDatabase
 from pymongo.errors import ConnectionFailure
 from pymongo.mongo_client import MongoClient as PyMongoClient
-from result import Err
-from result import Ok
-from result import Result
 
 # relative
 from ..serde.serializable import serializable
+from ..types.errors import SyftException
+from ..types.result import as_result
 from ..util.telemetry import TRACING_ENABLED
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
@@ -157,9 +156,10 @@ class MongoClient:
             self.client = MongoClientCache.from_cache(config=config)
 
         if not cache or self.client is None:
-            self.connect(config=config)
+            self.connect(config=config).unwrap()
 
-    def connect(self, config: MongoStoreClientConfig) -> Result[Ok, Err]:
+    @as_result(SyftException)
+    def connect(self, config: MongoStoreClientConfig) -> bool:
         self.client = PyMongoClient(
             # Connection
             host=config.hostname,
@@ -189,26 +189,25 @@ class MongoClient:
             self.client.admin.command("ping")
         except ConnectionFailure as e:
             self.client = None
-            return Err(str(e))
+            raise SyftException.from_exception(e)
 
-        return Ok(True)
+        return True
 
-    def with_db(self, db_name: str) -> Result[MongoDatabase, Err]:
+    @as_result(SyftException)
+    def with_db(self, db_name: str) -> MongoDatabase:
         try:
-            return Ok(self.client[db_name])
+            return self.client[db_name]
         except BaseException as e:
-            return Err(str(e))
+            raise SyftException.from_exception(e)
 
+    @as_result(SyftException)
     def with_collection(
         self,
         collection_settings: PartitionSettings,
         store_config: StoreConfig,
         collection_name: str | None = None,
-    ) -> Result[MongoCollection, Err]:
-        res = self.with_db(db_name=store_config.db_name)
-        if res.is_err():
-            return res
-        db = res.ok()
+    ) -> MongoCollection:
+        db = self.with_db(db_name=store_config.db_name).unwrap()
 
         try:
             collection_name = (
@@ -220,21 +219,19 @@ class MongoClient:
                 name=collection_name, codec_options=SYFT_CODEC_OPTIONS
             )
         except BaseException as e:
-            return Err(str(e))
+            raise SyftException.from_exception(e)
 
-        return Ok(collection)
+        return collection
 
+    @as_result(SyftException)
     def with_collection_permissions(
         self, collection_settings: PartitionSettings, store_config: StoreConfig
-    ) -> Result[MongoCollection, Err]:
+    ) -> MongoCollection:
         """
         For each collection, create a corresponding collection
         that store the permissions to the data in that collection
         """
-        res = self.with_db(db_name=store_config.db_name)
-        if res.is_err():
-            return res
-        db = res.ok()
+        db = self.with_db(db_name=store_config.db_name).unwrap()
 
         try:
             collection_permissions_name: str = collection_settings.name + "_permissions"
@@ -242,21 +239,18 @@ class MongoClient:
                 name=collection_permissions_name, codec_options=SYFT_CODEC_OPTIONS
             )
         except BaseException as e:
-            return Err(str(e))
+            raise SyftException.from_exception(e)
+        return collection_permissions
 
-        return Ok(collection_permissions)
-
+    @as_result(SyftException)
     def with_collection_storage_permissions(
         self, collection_settings: PartitionSettings, store_config: StoreConfig
-    ) -> Result[MongoCollection, Err]:
+    ) -> MongoCollection:
         """
         For each collection, create a corresponding collection
         that store the permissions to the data in that collection
         """
-        res = self.with_db(db_name=store_config.db_name)
-        if res.is_err():
-            return res
-        db = res.ok()
+        db = self.with_db(db_name=store_config.db_name).unwrap()
 
         try:
             collection_storage_permissions_name: str = (
@@ -267,9 +261,9 @@ class MongoClient:
                 codec_options=SYFT_CODEC_OPTIONS,
             )
         except BaseException as e:
-            return Err(str(e))
+            raise SyftException.from_exception(e)
 
-        return Ok(storage_permissons_collection)
+        return storage_permissons_collection
 
     def close(self) -> None:
         self.client.close()
