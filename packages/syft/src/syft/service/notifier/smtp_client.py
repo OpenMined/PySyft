@@ -1,6 +1,7 @@
 # stdlib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import logging
 import smtplib
 
 # third party
@@ -11,6 +12,8 @@ from ...types.errors import SyftException
 from ...types.server_url import ServerURL
 
 SOCKET_TIMEOUT = 5  # seconds
+
+logger = logging.getLogger(__name__)
 
 
 class SMTPClient(BaseModel):
@@ -44,7 +47,8 @@ class SMTPClient(BaseModel):
                 text = msg.as_string()
                 server.sendmail(sender, ", ".join(receiver), text)
                 return None
-        except Exception:
+        except Exception as e:
+            logger.error(f"Unable to send email. {e}")
             raise SyftException(
                 public_message="Ops! Something went wrong while trying to send an email."
             )
