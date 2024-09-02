@@ -6,6 +6,8 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...store.linked_obj import LinkedObject
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..notification.email_templates import EmailTemplate
@@ -197,6 +199,7 @@ class RequestService(AbstractService):
                 )
         return result
 
+    @as_result(SyftException, RateLimitException)
     def _send_email_notification(
         self,
         *,
@@ -217,10 +220,7 @@ class RequestService(AbstractService):
         )
 
         send_notification = context.server.get_service_method(NotificationService.send)
-        try:
-            send_notification(context=context, notification=notification)
-        except RateLimitException as e:
-            logger.error(f"Error sending notification: {e}")
+        send_notification(context=context, notification=notification)
 
     @service_method(path="request.undo", name="undo", unwrap_on_success=False)
     def undo(self, context: AuthedServiceContext, uid: UID, reason: str) -> SyftSuccess:
