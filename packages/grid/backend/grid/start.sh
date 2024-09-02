@@ -31,7 +31,7 @@ fi
 
 
 
-if [[ ${TRACING} == "True" ]];
+if [[ "${TRACING,,}" == "true" ]];
 then
     echo "OpenTelemetry Enabled"
 
@@ -45,6 +45,8 @@ then
 
     # TODO: uvicorn postfork is not stable with OpenTelemetry
     # ROOT_PROC="opentelemetry-instrument"
+else
+    echo "OpenTelemetry Disabled"
 fi
 
 export CREDENTIALS_PATH=${CREDENTIALS_PATH:-$HOME/data/creds/credentials.json}
