@@ -13,7 +13,6 @@ from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from .request import Request
 
 RequestingUserVerifyKeyPartitionKey = PartitionKey(
@@ -23,7 +22,6 @@ RequestingUserVerifyKeyPartitionKey = PartitionKey(
 OrderByRequestTimeStampPartitionKey = PartitionKey(key="request_time", type_=DateTime)
 
 
-@instrument
 @serializable(canonical_name="RequestStash", version=1)
 class RequestStash(NewBaseUIDStoreStash):
     object_type = Request

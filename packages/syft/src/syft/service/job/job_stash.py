@@ -42,7 +42,6 @@ from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.markdown import as_markdown_code
-from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
@@ -742,7 +741,6 @@ class JobInfo(SyftObject):
         return info
 
 
-@instrument
 @serializable(canonical_name="JobStash", version=1)
 class JobStash(NewBaseUIDStoreStash):
     object_type = Job

@@ -50,6 +50,7 @@ from ..types.syft_object import SyftBaseObject
 from ..types.syft_object import SyftObject
 from ..types.syft_object import attach_attribute_to_syft_object
 from ..types.uid import UID
+from ..util.telemetry import instrument
 from .context import AuthedServiceContext
 from .context import ChangeContext
 from .user.user_roles import DATA_OWNER_ROLE_LEVEL
@@ -466,6 +467,10 @@ def service_method(
         if autosplat is not None and len(autosplat) > 0:
             signature = expand_signature(signature=input_signature, autosplat=autosplat)
 
+        @instrument(  # type: ignore
+            span_name=f"service_method::{_path}",
+            attributes={"service.name": name, "service.path": path},
+        )
         @functools.wraps(func)
         def _decorator(self: Any, *args: Any, **kwargs: Any) -> Callable:
             communication_protocol = kwargs.pop("communication_protocol", None)

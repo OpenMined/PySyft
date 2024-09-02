@@ -6,7 +6,6 @@ from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
 from ..code.user_code_service import UserCodeService
@@ -24,7 +23,6 @@ from .code_history import UsersCodeHistoriesDict
 from .code_history_stash import CodeHistoryStash
 
 
-@instrument
 @serializable(canonical_name="CodeHistoryService", version=1)
 class CodeHistoryService(AbstractService):
     store: DocumentStore

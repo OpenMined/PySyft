@@ -124,6 +124,14 @@ profiles:
         value:
           side: low
 
+  - name: tracing
+    description: "Enable Tracing"
+    patches:
+      - op: add
+        path: deployments.syft.helm.values.server
+        value:
+          tracing: true
+
   - name: bigquery-scenario-tests
     description: "Deploy a datasite for bigquery scenario testing"
     patches:
