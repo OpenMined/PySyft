@@ -13,6 +13,7 @@ from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
 from ...util.telemetry import instrument
+from ..action.action_permissions import ActionObjectPermission
 from .notifier import NotifierSettings
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
@@ -26,9 +27,8 @@ class NotifierStash(ObjectStash[NotifierSettings]):
         name=NotifierSettings.__canonical_name__, object_type=NotifierSettings
     )
 
-    # TODO: should this method behave like a singleton?
     @as_result(StashException, NotFoundException)
-    def get(self, credentials: SyftVerifyKey) -> NotifierSettings | None:
+    def get(self, credentials: SyftVerifyKey) -> NotifierSettings:
         """Get Settings"""
         # actually get latest settings
         result = self.get_all(credentials, limit=1, sort_order="desc").unwrap()
@@ -37,3 +37,15 @@ class NotifierStash(ObjectStash[NotifierSettings]):
         raise NotFoundException(
             public_message="No settings found for the current user."
         )
+
+    @as_result(StashException)
+    def set(
+        self,
+        credentials: SyftVerifyKey,
+        settings: NotifierSettings,
+        add_permissions: list[ActionObjectPermission] | None = None,
+        add_storage_permission: bool = True,
+        ignore_duplicates: bool = False,
+    ) -> NotifierSettings:
+        result = self.check_type(settings, self.object_type).unwrap()
+        return super().set(credentials=credentials, obj=result).unwrap()

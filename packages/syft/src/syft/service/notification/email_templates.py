@@ -32,8 +32,10 @@ class PasswordResetTemplate(EmailTemplate):
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         user_service = context.server.get_service("userservice")
-
-        user = user_service.get_by_verify_key(notification.to_user_verify_key)
+        admin_verify_key = user_service.admin_verify_key()
+        user = user_service.stash.get_by_verify_key(
+            credentials=admin_verify_key, verify_key=notification.to_user_verify_key
+        ).unwrap()
         if not user:
             raise Exception("User not found!")
 
@@ -43,7 +45,7 @@ class PasswordResetTemplate(EmailTemplate):
         user.reset_token_date = datetime.now()
 
         result = user_service.stash.update(
-            credentials=context.credentials, user=user, has_permission=True
+            credentials=context.credentials, obj=user, has_permission=True
         )
         if result.is_err():
             raise Exception("Couldn't update the user password")
@@ -118,7 +120,7 @@ class OnBoardEmailTemplate(EmailTemplate):
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         user_service = context.server.get_service("userservice")
         admin_verify_key = user_service.admin_verify_key()
-        admin = user_service.get_by_verify_key(admin_verify_key)
+        admin = user_service.get_by_verify_key(admin_verify_key).unwrap()
         admin_name = admin.name
 
         head = (
@@ -211,6 +213,15 @@ class RequestEmailTemplate(EmailTemplate):
         request_obj = notification.linked_obj.resolve_with_context(
             context=context
         ).unwrap()
+
+        request_id = request_obj.id
+        request_name = request_obj.requesting_user_name
+        request_email = request_obj.requesting_user_email
+        request_time = request_obj.request_time
+        request_status = request_obj.status.name  # fails in l0 check right now
+        request_changes = ",".join(
+            [change.__class__.__name__ for change in request_obj.changes]
+        )
 
         head = """
         <head>
@@ -319,18 +330,32 @@ class RequestEmailTemplate(EmailTemplate):
                         <div class="request-header">Request Details</div>
                         <div class="request-content">
 
-                            <p><strong>ID:</strong> {request_obj.id}</p>
+                            <p><strong>ID:</strong> {request_id}</p>
                             <p>
                             <strong>Submitted By:</strong>
-                            {request_obj.requesting_user_name} {request_obj.requesting_user_email or ""}
+                            {request_name}<{request_email}>
                             </p>
-                            <p><strong>Date:</strong> {request_obj.request_time}</p>
-                        <div style="display: flex"><p><strong>Status:</strong><div class="badge yellow">{
-                            request_obj.status.name
-                        }</div></div>
-                        <p><strong>Changes:</strong>{
-                            ",".join([change.__class__.__name__ for change in request_obj.changes])
-                        }</p>
+                            <p><strong>Date:</strong> {request_time}</p>
+                        <div style="display: flex"><p><strong>Status:</strong><div class="badge yellow">
+                            {request_status}
+                        </div></div>
+                        <p><strong>Changes:</strong>
+                            {request_changes}
+                        </p>
+
+                        <p>Use:<br />
+                        <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                            request = client.api.services.request.get_by_uid(uid=sy.UID("{request_id}"))
+                        </code><br />
+                            to get this specific request.
+                        </p>
+
+                        <p>Or you can view all requests with: <br />
+                        <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                            client.requests
+                        </code>
+                        </p>
+
                         </div>
                     </div>
                     <p>If you did not expect this request or have concerns about it,
@@ -359,6 +384,16 @@ class RequestUpdateEmailTemplate(EmailTemplate):
             context=context
         ).unwrap()
         badge_color = "red" if request_obj.status.name == "REJECTED" else "green"
+
+        request_id = request_obj.id
+        request_name = request_obj.requesting_user_name
+        request_email = request_obj.requesting_user_email
+        request_time = request_obj.request_time
+        request_status = request_obj.status.name  # fails in l0 check right now
+        request_changes = ",".join(
+            [change.__class__.__name__ for change in request_obj.changes]
+        )
+
         head = """
         <head>
             <title>Access Request Notification</title>
@@ -467,18 +502,31 @@ class RequestUpdateEmailTemplate(EmailTemplate):
                         <div class="request-header">Request Details</div>
                         <div class="request-content">
 
-                            <p><strong>ID:</strong> {request_obj.id}</p>
+                            <p><strong>ID:</strong> {request_id}</p>
                             <p>
                             <strong>Submitted By:</strong>
-                            {request_obj.requesting_user_name} {request_obj.requesting_user_email or ""}
+                            {request_name} {request_email}
                             </p>
-                            <p><strong>Date:</strong> {request_obj.request_time}</p>
-                            <div style="display: flex"><p><strong>Status:</strong><div class="badge {badge_color}">{
-                                request_obj.status.name
-                            }</div></div>
+                            <p><strong>Date:</strong> {request_time}</p>
+                            <div style="display: flex"><p><strong>Status:</strong><div class="badge {badge_color}">
+                                {request_status}
+                            </div></div>
                             <p>
                             <strong>Changes:</strong>
-                            {",".join([change.__class__.__name__ for change in request_obj.changes])}
+                            {request_changes}
+                            </p>
+
+                            <p>Use:<br />
+                            <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                                request = client.api.services.request.get_by_uid(uid=sy.UID("{request_id}"))
+                            </code><br />
+                                to get this specific request.
+                            </p>
+
+                            <p>Or you can view all requests with: <br />
+                            <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                                client.requests
+                            </code>
                             </p>
                         </div>
                     </div>

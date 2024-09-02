@@ -9,6 +9,7 @@
 # stdlib
 from collections.abc import Callable
 from datetime import datetime
+import logging
 from typing import Any
 from typing import TypeVar
 
@@ -28,14 +29,19 @@ from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
+from ..response import SyftError
 from ..response import SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
+logger = logging.getLogger(__name__)
+
 
 class BaseNotifier(BaseModel):
     @as_result(SyftException)
-    def send(self, target: SyftVerifyKey, notification: Notification) -> SyftSuccess:
+    def send(
+        self, context: AuthedServiceContext, notification: Notification
+    ) -> SyftSuccess:
         raise SyftException(public_message="Not implemented")
 
 
@@ -82,27 +88,29 @@ class EmailNotifier(BaseNotifier):
                 port=port,
                 username=username,
                 password=password,
-            ).unwrap()
+            )
             return True
         except Exception:
+            logger.exception("Credentials validation failed")
             return False
 
     @as_result(SyftException)
     def send(
         self, context: AuthedServiceContext, notification: Notification
-    ) -> SyftSuccess:
+    ) -> SyftSuccess | SyftError:
+        subject = None
+        receiver_email = None
+        sender = None
         try:
+            sender = self.sender
             user_service = context.server.get_service("userservice")
-
             receiver = user_service.get_by_verify_key(
                 notification.to_user_verify_key
             ).unwrap()
-
             if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
                 return SyftSuccess(
                     message="Email notifications are disabled for this user."
                 )  # TODO: Should we return an error here?
-
             receiver_email = receiver.email
 
             if notification.email_template:
@@ -120,16 +128,22 @@ class EmailNotifier(BaseNotifier):
                 receiver_email = [receiver_email]
 
             self.smtp_client.send(  # type: ignore
-                sender=self.sender, receiver=receiver_email, subject=subject, body=body
+                sender=sender, receiver=receiver_email, subject=subject, body=body
             )
+            print(f"> Sent email: {subject} to {receiver_email} from: {sender}")
             return SyftSuccess(message="Email sent successfully!")
-        except Exception:
-            raise SyftException(
-                public_message=(
-                    "Some notifications failed to be delivered."
-                    " Please check the health of the mailing server."
-                )
-            )
+        except Exception as e:
+            message = f"> Error sending email: {subject} to {receiver_email} from: {sender}. {e}"
+            print(message)
+            logger.error(message)
+            return SyftError(message="Failed to send an email.")
+            # raise SyftException.from_exception(
+            #     exc,
+            #     public_message=(
+            #         "Some notifications failed to be delivered."
+            #         " Please check the health of the mailing server."
+            #     ),
+            # )
 
 
 @serializable()
@@ -250,7 +264,7 @@ class NotifierSettings(SyftObject):
         notifier_objs: list[BaseNotifier] = self.select_notifiers(notification)
 
         for notifier in notifier_objs:
-            notifier.send(target=context, notification=notification).unwrap()
+            notifier.send(context=context, notification=notification).unwrap()
 
         return len(notifier_objs)
 
@@ -278,6 +292,7 @@ class NotifierSettings(SyftObject):
                             password=self.email_password,
                             sender=self.email_sender,
                             server=self.email_server,
+                            port=self.email_port,
                         )
                     )
                 # If notifier is not email, we just create the notifier object

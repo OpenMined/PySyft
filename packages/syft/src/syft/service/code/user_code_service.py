@@ -23,7 +23,6 @@ from ..context import AuthedServiceContext
 from ..output.output_service import ExecutionOutput
 from ..policy.policy import InputPolicyValidEnum
 from ..policy.policy import OutputPolicy
-from ..policy.policy import OutputPolicyValidEnum
 from ..request.request import Request
 from ..request.request import SubmitRequest
 from ..request.request import SyncedUserCodeStatusChange
@@ -289,8 +288,7 @@ class UserCodeService(AbstractService):
             return self.stash.get_by_uid(context.credentials, code.id).unwrap()
         else:  # code: SubmitUserCode
             # Submit new UserCode, or get existing UserCode with the same code hash
-            # TODO: Why is this tagged as unreachable?
-            return self._submit(context, code, exists_ok=True)  # type: ignore[unreachable]
+            return self._submit(context, code, exists_ok=True).unwrap()  # type: ignore[unreachable]
 
     @service_method(
         path="code.request_code_execution",
@@ -371,7 +369,7 @@ class UserCodeService(AbstractService):
             return IsExecutionAllowedEnum.OUTPUT_POLICY_NONE
 
         try:
-            output_policy._is_valid(context)
+            output_policy.is_valid(context)
         except Exception:
             return IsExecutionAllowedEnum.INVALID_OUTPUT_POLICY
 
@@ -504,7 +502,10 @@ class UserCodeService(AbstractService):
                 output_policy=output_policy,
             )
 
-            if is_execution_allowed is not IsExecutionAllowedEnum.ALLOWED:
+            if (
+                is_execution_allowed is not IsExecutionAllowedEnum.ALLOWED
+                or context.is_l0_lowside
+            ):
                 # We check output policy only in l2 deployment.
                 # code is from low side (L0 setup)
                 status = code.get_status(context).unwrap()
@@ -512,16 +513,16 @@ class UserCodeService(AbstractService):
                 if not status.approved:
                     raise SyftException(public_message=status.get_status_message())
 
+                output_policy_is_valid = False
                 try:
-                    output_policy_is_valid = (
-                        output_policy._is_valid(context)
-                        if output_policy
-                        else OutputPolicyValidEnum.NOT_APPROVED
-                    )
-                except Exception:
-                    output_policy_is_valid = False
+                    if output_policy:
+                        output_policy_is_valid = output_policy.is_valid(context)
+                except SyftException:
+                    pass
 
-                if output_policy_is_valid or code.is_l0_deployment:
+                # if you cant run it or the results are being sycned from l0
+                # lets have a look at the output history and possibly return that
+                if not output_policy_is_valid or code.is_l0_deployment:
                     if len(output_history) > 0 and not skip_read_cache:
                         last_executed_output = output_history[-1]
                         # Check if the inputs of the last executed output match
@@ -532,10 +533,9 @@ class UserCodeService(AbstractService):
                                 kwargs=kwarg2id
                             )
                         ):
-                            inp_policy_validation = input_policy._is_valid(
+                            inp_policy_validation = input_policy.is_valid(
                                 context,
                                 usr_input_kwargs=kwarg2id,
-                                code_item_id=code.id,
                             )
 
                             if not inp_policy_validation:
@@ -552,18 +552,16 @@ class UserCodeService(AbstractService):
                         if outputs:
                             outputs = delist_if_single(outputs)
 
-                        output_policy_message = ""
-
                         if code.is_l2_deployment:
                             # Skip output policy warning in L0 setup;
                             # admin overrides policy checks.
-                            output_policy_message = output_policy_is_valid.value
-
-                        context.add_warning(output_policy_message)
+                            output_policy_message = (
+                                "Your result has been fetched from output_history, "
+                                "because your OutputPolicy is no longer valid."
+                            )
+                            context.add_warning(output_policy_message)
                         return outputs  # type: ignore
 
-                    else:
-                        raise SyftException(public_message=output_policy_is_valid.value)
                 raise SyftException(public_message=is_execution_allowed.value)
 
         # Execute the code item
@@ -571,7 +569,7 @@ class UserCodeService(AbstractService):
             raise SyftException(
                 public_message="You tried to run a syft function attached to a worker pool in blocking mode,"
                 "which is currently not supported. Run your function with `blocking=False` to run"
-                " as a job on your worker pool"
+                " as a job on your worker pool."
             )
 
         action_service = context.server.get_service("actionservice")

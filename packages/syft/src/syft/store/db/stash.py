@@ -1,8 +1,8 @@
 # stdlib
 
 # stdlib
-from typing import Any
 from typing import Generic
+from typing import cast
 from typing import get_args
 import uuid
 
@@ -72,10 +72,10 @@ class ObjectStash(Generic[SyftT]):
         return self.db.root_verify_key
 
     @as_result(StashException)
-    def check_type(self, obj: Any, type_: type) -> Any:
+    def check_type(self, obj: T, type_: type) -> T:
         if not isinstance(obj, type_):
             raise StashException(f"{type(obj)} does not match required type: {type_}")
-        return obj
+        return cast(T, obj)
 
     @property
     def session(self) -> Session:

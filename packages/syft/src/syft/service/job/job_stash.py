@@ -21,6 +21,7 @@ from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
 from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionSettings
+from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
@@ -640,11 +641,14 @@ class Job(SyncableSyftObject):
         if self.user_code_id is not None:
             dependencies.append(self.user_code_id)
 
-        output = context.server.get_service("outputservice").get_by_job_id(  # type: ignore
-            context, self.id
-        )
-        if output is not None:
-            dependencies.append(output.id)
+        try:
+            output = context.server.get_service("outputservice").get_by_job_id(  # type: ignore
+                context, self.id
+            )
+            if output is not None:
+                dependencies.append(output.id)
+        except NotFoundException:
+            pass
 
         return dependencies
 

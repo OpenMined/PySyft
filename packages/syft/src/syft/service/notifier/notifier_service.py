@@ -12,6 +12,7 @@ from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
+from ...types.result import OkErr
 from ...types.result import as_result
 from ..context import AuthedServiceContext
 from ..notification.email_templates import PasswordResetTemplate
@@ -67,13 +68,15 @@ class NotifierService(AbstractService):
             app=notifications[NOTIFIERS.APP],
         )
 
-    def set_notifier_active_to_true(self, context: AuthedServiceContext) -> SyftSuccess:
+    def _set_notifier(self, context: AuthedServiceContext, active: bool) -> SyftSuccess:
         notifier = self.stash.get(credentials=context.credentials).unwrap(
             public_message="Notifier settings not found."
         )
-        notifier.active = True
+        notifier.active = active
         self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
-        return SyftSuccess(message="notifier.active set to true.")
+
+        active_s = "active" if active else "inactive"
+        return SyftSuccess(message=f"Notifier set to {active_s}")
 
     def set_notifier_active_to_false(
         self, context: AuthedServiceContext
@@ -106,19 +109,15 @@ class NotifierService(AbstractService):
             SyftSuccess: success response.
 
         Raises:
-            None
-
+            SyftException: any error that occurs during the process
         """
 
         # 1 -  If something went wrong at db level, return the error
         notifier = self.stash.get(credentials=context.credentials).unwrap()
 
         # 2 - If one of the credentials are set alone, return an error
-        if (
-            email_username
-            and not email_password
-            or email_password
-            and not email_username
+        if (email_username and not email_password) or (
+            not email_username and email_password
         ):
             raise SyftException(
                 public_message="You must provide both username and password"
@@ -131,31 +130,28 @@ class NotifierService(AbstractService):
             )
 
         logging.debug("Got notifier from db")
+        skip_auth: bool = False
         # If no new credentials provided, check for existing ones
         if not (email_username and email_password):
             if not (notifier.email_username and notifier.email_password):
-                raise SyftException(
-                    message="No valid token has been added to the datasite."
-                    + "You can add a pair of SMTP credentials via "
-                    + "<client>.settings.enable_notifications(email=<>, password=<>)"
-                )
+                skip_auth = True
             else:
                 logging.debug("No new credentials provided. Using existing ones.")
                 email_password = notifier.email_password
                 email_username = notifier.email_username
 
-        validation_result = notifier.validate_email_credentials(
-            username=email_username,
-            password=email_password,
-            server=email_server if email_server else notifier.email_server,
-            port=email_port if email_port else notifier.email_port,
-        )
-
-        if validation_result.is_err():
-            logging.error(f"Invalid SMTP credentials {validation_result.err()}")
-            validation_result.unwrap(
-                public_message="Invalid SMTP credentials. Please check your username and password."
+        valid_credentials = True
+        if not skip_auth:
+            valid_credentials = notifier.validate_email_credentials(
+                username=email_username,
+                password=email_password,
+                server=email_server or notifier.email_server,
+                port=email_port or notifier.email_port,
             )
+
+        if not valid_credentials:
+            logging.error("Invalid SMTP credentials.")
+            raise SyftException(public_message=("Invalid SMTP credentials."))
 
         notifier.email_password = email_password
         notifier.email_username = email_username
@@ -221,7 +217,11 @@ class NotifierService(AbstractService):
         This will only work if the datasite owner has enabled notifications.
         """
         user_service = context.server.get_service("userservice")
-        return user_service.enable_notifications(context, notifier_type=notifier_type)
+        result = user_service.enable_notifications(context, notifier_type=notifier_type)
+        if isinstance(result, OkErr) and result.is_ok():
+            # sad, TODO: remove upstream Ok
+            result = result.ok()
+        return result
 
     @as_result(SyftException)
     def deactivate(
@@ -230,9 +230,11 @@ class NotifierService(AbstractService):
         """Deactivate email notifications for the authenticated user
         This will only work if the datasite owner has enabled notifications.
         """
-
         user_service = context.server.get_service("userservice")
-        return user_service.disable_notifications(context, notifier_type=notifier_type)
+        result = user_service.disable_notifications(
+            context, notifier_type=notifier_type
+        )
+        return result
 
     @staticmethod
     @as_result(SyftException)
@@ -349,10 +351,12 @@ class NotifierService(AbstractService):
         # If notifier is active
         if notifier.active and notification.email_template is not None:
             logging.debug("Checking user email activity")
+
             if notifier.email_activity.get(notification.email_template.__name__, None):
                 user_activity = notifier.email_activity[
                     notification.email_template.__name__
                 ].get(notification.to_user_verify_key, None)
+
                 # If there's no user activity
                 if user_activity is None:
                     notifier.email_activity[notification.email_template.__name__][

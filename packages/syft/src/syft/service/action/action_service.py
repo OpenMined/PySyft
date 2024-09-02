@@ -382,18 +382,18 @@ class ActionService(AbstractService):
                 )
 
             # validate input policy, raises if not valid
-            input_policy._is_valid(
+            input_policy.is_valid(
                 context=context,
                 usr_input_kwargs=kwargs,
-                code_item_id=code_item.id,
             )
 
             # Filter input kwargs based on policy
             filtered_kwargs = input_policy.filter_kwargs(
-                kwargs=kwargs, context=context, code_item_id=code_item.id
+                kwargs=kwargs,
+                context=context,
             )
         else:
-            filtered_kwargs = retrieve_from_db(code_item.id, kwargs, context).unwrap()
+            filtered_kwargs = retrieve_from_db(kwargs, context).unwrap()
 
         if hasattr(input_policy, "transform_kwargs"):
             filtered_kwargs = input_policy.transform_kwargs(  # type: ignore
