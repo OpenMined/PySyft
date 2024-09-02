@@ -130,7 +130,7 @@ profiles:
       - op: add
         path: deployments.syft.helm.values.server
         value:
-          tracing: "True"
+          tracing: true
 
   - name: bigquery-scenario-tests
     description: "Deploy a datasite for bigquery scenario testing"

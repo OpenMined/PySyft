@@ -79,6 +79,7 @@ ENV \
     RELEASE="production" \
     DEV_MODE="False" \
     DEBUGGER_ENABLED="False" \
+    TRACING="False" \
     CONTAINER_HOST="docker" \
     DEFAULT_ROOT_EMAIL="info@openmined.org" \
     DEFAULT_ROOT_PASSWORD="changethis" \

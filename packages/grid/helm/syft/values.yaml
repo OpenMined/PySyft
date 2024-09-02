@@ -173,7 +173,7 @@ server:
   debuggerEnabled: false
   associationRequestAutoApproval: false
   useInternalRegistry: true
-  tracing: true
+  tracing: false
 
   # Default Worker pool settings
   defaultWorkerPool:
