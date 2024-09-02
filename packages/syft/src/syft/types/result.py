@@ -2,6 +2,7 @@
 from collections.abc import Callable
 import functools
 from typing import Any
+from typing import Final
 from typing import Generic
 from typing import Literal
 from typing import NoReturn
@@ -90,6 +91,7 @@ class Err(Generic[E]):
         raise TypeError("Error is not a BaseException")
 
 
+OkErr: Final = (Ok, Err)
 Result: TypeAlias = Ok[T] | Err[E]
 
 

@@ -32,7 +32,7 @@ Try out your <a href="https://docs.openmined.org/en/latest/index.html">first que
 pip install -U "syft[data_science]"
 ```
 
-More instructions are available <a href="https://docs.openmined.org/en/latest/quick_install.ipynb">here</a>.
+More instructions are available <a href="https://docs.openmined.org/en/latest/quick-install.html">here</a>.
 
 ## Launch Server
 
@@ -61,11 +61,11 @@ $ syft launch --name=my-datasite --port=8080 --reset=True
 Starting syft-datasite server on 0.0.0.0:8080
 ```
 
-Datasite servers can be deployed as a single container using Docker or directly in Kubernetes. Check out our <a href="https://docs.openmined.org/en/latest/deployment/deployment-doc-1-2-intro-req.ipynb">deployment guide.</a>
+Datasite servers can be deployed as a single container using Docker or directly in Kubernetes. Check out our <a href="https://docs.openmined.org/en/latest/deployment/deployment-doc-1-2-intro-req.html">deployment guide.</a>
 
 ## Launch Client
 
-Main way to use a Datasite is via our Syft client, in a Jupyter Notebook. Check out our <a href="https://docs.openmined.org/en/latest/components/syft-client.ipynb"> PySyft client guide</a>:
+Main way to use a Datasite is via our Syft client, in a Jupyter Notebook. Check out our <a href="https://docs.openmined.org/en/latest/components/syft-client.html"> PySyft client guide</a>:
 
 ```python
 import syft as sy
@@ -83,12 +83,12 @@ datasite_client = sy.login(
 
 Learn about PySyft via our getting started guide:
 
-- <a href="https://docs.openmined.org/en/latest/getting_started/introduction.html">PySyft from the ground up</a>
-- <a href="https://docs.openmined.org/en/latest/getting_started/part1_dataset_and_assets.html"> Part 1: Datasets & Assets</a>
-- <a href="https://docs.openmined.org/en/latest/getting_started/part2_datasite_access.html"> Part 2: Client and Datasite Access</a>
-- <a href="https://docs.openmined.org/en/latest/getting_started/part3_research_study.html"> Part 3: Propose the research study</a>
-- <a href="https://docs.openmined.org/en/latest/getting_started/part4_review_code_request.html"> Part 4: Review Code Requests</a>
-- <a href="https://docs.openmined.org/en/latest/getting_started/part5_retrieving_results.html"> Part 5: Retrieving Results</a>
+- <a href="https://docs.openmined.org/en/latest/getting-started/introduction.html">PySyft from the ground up</a>
+- <a href="https://docs.openmined.org/en/latest/getting-started/part1-dataset-and-assets.html"> Part 1: Datasets & Assets</a>
+- <a href="https://docs.openmined.org/en/latest/getting-started/part2-datasite-access.html"> Part 2: Client and Datasite Access</a>
+- <a href="https://docs.openmined.org/en/latest/getting-started/part3-research-study.html"> Part 3: Propose the research study</a>
+- <a href="https://docs.openmined.org/en/latest/getting-started/part4-review-code-request.html"> Part 4: Review Code Requests</a>
+- <a href="https://docs.openmined.org/en/latest/getting-started/part5-retrieving-results.html"> Part 5: Retrieving Results</a>
 
 # PySyft In-depth
 
@@ -104,7 +104,7 @@ Quick PySyft components links:
 
 - <a href="https://docs.openmined.org/en/latest/components/users-api.html">Users API (`.users`)</a>
 
-- <a href="https://docs.openmined.org/en/latest/components/projects-api.html">Projects API (`.projects`)</a>
+<!-- - <a href="https://docs.openmined.org/en/latest/components/projects-api.html">Projects API (`.projects`)</a> -->
 
 - <a href="https://docs.openmined.org/en/latest/components/requests-api.html">Request API (`.requests`)</a>
 
