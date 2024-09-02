@@ -39,11 +39,11 @@ from .models import Base
 from .models import UIDTypeDecorator
 from .sqlite_db import DBManager
 
-SyftT = TypeVar("SyftT", bound=SyftObject)
+StashT = TypeVar("StashT", bound=SyftObject)
 T = TypeVar("T")
 
 
-class ObjectStash(Generic[SyftT]):
+class ObjectStash(Generic[StashT]):
     table: Table
     object_type: type[SyftObject]
 
@@ -53,7 +53,7 @@ class ObjectStash(Generic[SyftT]):
         self.table = self._create_table()
 
     @classmethod
-    def get_object_type(cls) -> type[SyftT]:
+    def get_object_type(cls) -> type[StashT]:
         generic_args = get_args(cls.__orig_bases__[0])
         if len(generic_args) != 1:
             raise TypeError("ObjectStash must have a single generic argument")
@@ -113,7 +113,7 @@ class ObjectStash(Generic[SyftT]):
     def unique_fields(self) -> list[str]:
         return getattr(self.object_type, "__attr_unique__", [])
 
-    def is_unique(self, obj: SyftT) -> bool:
+    def is_unique(self, obj: StashT) -> bool:
         unique_fields = self.unique_fields
         if not unique_fields:
             return True
@@ -148,7 +148,7 @@ class ObjectStash(Generic[SyftT]):
     @as_result(SyftException, StashException, NotFoundException)
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
-    ) -> SyftT:
+    ) -> StashT:
         stmt = self.table.select()
         stmt = stmt.where(self._get_field_filter("id", uid))
         stmt = self._apply_permission_filter(
@@ -206,7 +206,7 @@ class ObjectStash(Generic[SyftT]):
         field_name: str,
         field_value: str,
         has_permission: bool = False,
-    ) -> SyftT:
+    ) -> StashT:
         return self.get_one_by_fields(
             credentials=credentials,
             fields={field_name: field_value},
@@ -219,7 +219,7 @@ class ObjectStash(Generic[SyftT]):
         credentials: SyftVerifyKey,
         fields: dict[str, str],
         has_permission: bool = False,
-    ) -> SyftT:
+    ) -> StashT:
         result = self._get_by_fields(
             credentials=credentials,
             fields=fields,
@@ -239,7 +239,7 @@ class ObjectStash(Generic[SyftT]):
         limit: int | None = None,
         offset: int | None = None,
         has_permission: bool = False,
-    ) -> list[SyftT]:
+    ) -> list[StashT]:
         result = self._get_by_fields(
             credentials=credentials,
             fields=fields,
@@ -263,7 +263,7 @@ class ObjectStash(Generic[SyftT]):
         limit: int | None = None,
         offset: int | None = None,
         has_permission: bool = False,
-    ) -> list[SyftT]:
+    ) -> list[StashT]:
         return self.get_all_by_fields(
             credentials=credentials,
             fields={field_name: field_value},
@@ -285,7 +285,7 @@ class ObjectStash(Generic[SyftT]):
         limit: int | None = None,
         offset: int | None = None,
         has_permission: bool = False,
-    ) -> list[SyftT]:
+    ) -> list[StashT]:
         # TODO write filter logic, merge with get_all
 
         stmt = self.table.select().where(
@@ -303,7 +303,7 @@ class ObjectStash(Generic[SyftT]):
     @as_result(SyftException, StashException, NotFoundException)
     def get_index(
         self, credentials: SyftVerifyKey, index: int, has_permission: bool = False
-    ) -> SyftT:
+    ) -> StashT:
         items = self.get_all(
             credentials,
             has_permission=has_permission,
@@ -315,7 +315,7 @@ class ObjectStash(Generic[SyftT]):
             raise NotFoundException(f"No item found at index {index}")
         return items[0]
 
-    def row_as_obj(self, row: Row) -> SyftT:
+    def row_as_obj(self, row: Row) -> StashT:
         # TODO make unwrappable serde
         return deserialize_json(row.fields)
 
@@ -428,7 +428,7 @@ class ObjectStash(Generic[SyftT]):
         sort_order: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> list[SyftT]:
+    ) -> list[StashT]:
         stmt = self.table.select()
 
         stmt = self._apply_permission_filter(
@@ -447,9 +447,9 @@ class ObjectStash(Generic[SyftT]):
     def update(
         self,
         credentials: SyftVerifyKey,
-        obj: SyftT,
+        obj: StashT,
         has_permission: bool = False,
-    ) -> SyftT:
+    ) -> StashT:
         """
         NOTE: We cannot do partial updates on the database,
         because we are using computed fields that are not known to the DB or ORM:
@@ -661,11 +661,11 @@ class ObjectStash(Generic[SyftT]):
     def set(
         self,
         credentials: SyftVerifyKey,
-        obj: SyftT,
+        obj: StashT,
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,  # TODO: check the default value
         ignore_duplicates: bool = False,
-    ) -> SyftT:
+    ) -> StashT:
         uid = obj.id
 
         # check if the object already exists
