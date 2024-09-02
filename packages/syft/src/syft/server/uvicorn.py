@@ -119,6 +119,7 @@ def app_factory() -> FastAPI:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
         FastAPIInstrumentor().instrument_app(app)
+        print("> Added OTEL FastAPIInstrumentor")
 
     return app
 

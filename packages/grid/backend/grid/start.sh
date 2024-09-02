@@ -11,6 +11,9 @@ SERVER_TYPE=${SERVER_TYPE:-datasite}
 APPDIR=${APPDIR:-$HOME/app}
 RELOAD=""
 ROOT_PROC=""
+TRACING=${TRACING:"False"}
+
+echo "Starting with TRACING=${TRACING}"
 
 if [[ ${DEV_MODE} == "True" ]];
 then
@@ -25,6 +28,8 @@ then
     uv pip install debugpy
     ROOT_PROC="python -m debugpy --listen 0.0.0.0:5678 -m"
 fi
+
+
 
 if [[ ${TRACING} == "True" ]];
 then

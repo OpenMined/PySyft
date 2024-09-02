@@ -57,6 +57,9 @@ if TRACING_ENABLED:
         from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 
         BotocoreInstrumentor().instrument()
+        message = "> Added OTEL BotocoreInstrumentor"
+        print(message)
+        logger.info(message)
     except Exception:  # nosec
         pass
 

@@ -1,4 +1,5 @@
 # stdlib
+import logging
 from threading import Lock
 from typing import Any
 
@@ -24,6 +25,10 @@ if TRACING_ENABLED:
         from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
 
         PymongoInstrumentor().instrument()
+        message = "> Added OTEL PymongoInstrumentor"
+        print(message)
+        logger = logging.getLogger(__name__)
+        logger.info(message)
     except Exception:  # nosec
         pass
 
