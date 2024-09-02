@@ -143,11 +143,7 @@ spec:
               value: {{ .Values.seaweedfs.minSizeBlobStorageMB | quote }}
             # Tracing
             - name: TRACING
-            {{- if .Values.server.tracing }}
-              value: {{ .Values.server.tracing | quote }}
-            {{- else }}
-              value: "False"
-            {{- end }}
+              value: {{ .Values.server.tracing | default "False" | quote }}
             # Enclave attestation
             {{- if .Values.attestation.enabled }}
             - name: ENCLAVE_ATTESTATION_ENABLED
