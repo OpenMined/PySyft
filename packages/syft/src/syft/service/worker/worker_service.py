@@ -23,6 +23,7 @@ from ..service import AbstractService
 from ..service import AuthedServiceContext
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .utils import DEFAULT_WORKER_POOL_NAME
 from .utils import _get_healthcheck_based_on_status
@@ -193,12 +194,12 @@ class WorkerService(AbstractService):
             message=f"Worker with id: {uid} deleted successfully from pool: {worker_pool.name}"
         )
 
-    # @service_method(
-    #     path="worker.delete",
-    #     name="delete",
-    #     roles=DATA_OWNER_ROLE_LEVEL,
-    #     unwrap_on_success=False,
-    # )
+    @service_method(
+        path="worker.delete",
+        name="delete",
+        roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
     def delete(
         self,
         context: AuthedServiceContext,
