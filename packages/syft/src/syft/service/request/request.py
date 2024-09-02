@@ -96,6 +96,7 @@ class ChangeStatus(SyftObject):
     id: UID | None = None  # type: ignore[assignment]
     change_id: UID
     applied: bool = False
+    reason: str | None = None
 
     @classmethod
     def from_change(cls, change: Change, applied: bool) -> Self:
@@ -427,6 +428,9 @@ class Request(SyncableSyftObject):
             if self.requesting_user_institution
             else ""
         )
+        reason_str = self._reason_str()
+        if reason_str != "":
+            reason_str = f"({reason_str})"
 
         return f"""
             <div class='syft-request'>
@@ -435,7 +439,7 @@ class Request(SyncableSyftObject):
                 <p><strong>Request time: </strong>{self.request_time}</p>
                 {updated_at_line}
                 {shared_with_line}
-                <p><strong>Status: </strong>{self.status}</p>
+                <p><strong>Status: </strong>{self.status} {reason_str}</p>
                 {server_info}
                 <p><strong>Requested by:</strong> {self.requesting_user_name} {email_str} {institution_str}</p>
                 <p><strong>Changes: </strong> {str_changes}</p>
@@ -524,6 +528,18 @@ class Request(SyncableSyftObject):
     @property
     def icon(self) -> str:
         return Icon.REQUEST.svg
+
+    def _reason_str(self) -> str:
+        """Computes the reason, assuming that the request has been denied"""
+        reasons = [
+            change_status.reason
+            for change_status in self.history
+            if change_status.reason != ""
+        ]
+        if len(reasons) == 0:
+            return ""
+        else:
+            return reasons[-1]
 
     def get_status(self, context: AuthedServiceContext | None = None) -> RequestStatus:
         # TODO fix
@@ -667,7 +683,9 @@ class Request(SyncableSyftObject):
 
         return SyftSuccess(message=f"Request {self.id} changes applied")
 
-    def undo(self, context: AuthedServiceContext) -> SyftSuccess:
+    def undo(
+        self, context: AuthedServiceContext, reason: str | None = None
+    ) -> SyftSuccess:
         change_context: ChangeContext = ChangeContext.from_service(context)
         change_context.requesting_user_credentials = self.requesting_user_verify_key
 
@@ -690,6 +708,7 @@ class Request(SyncableSyftObject):
 
             # If no error, then change successfully undone.
             change_status.applied = False
+            change_status.reason = reason
             self.history.append(change_status)
 
         self.updated_at = DateTime.now()

@@ -213,7 +213,7 @@ class RequestService(AbstractService):
         ).unwrap()
 
         context.extra_kwargs["reason"] = reason
-        request.undo(context=context)
+        request.undo(context=context, reason=reason)
 
         link = LinkedObject.with_context(request, context=context)
         message_subject = f"Your request ({str(uid)[:4]}) has been denied. "
