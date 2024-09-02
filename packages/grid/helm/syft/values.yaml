@@ -10,7 +10,6 @@ global:
   kaniko:
     version: "v1.23.2"
 
-
 # =================================================================================
 
 mongo:
@@ -174,6 +173,7 @@ server:
   debuggerEnabled: false
   associationRequestAutoApproval: false
   useInternalRegistry: true
+  tracing: false
 
   # Default Worker pool settings
   defaultWorkerPool:
@@ -185,7 +185,7 @@ server:
   smtp:
     # Existing secret for SMTP with key 'smtpPassword'
     existingSecret: null
-    host: smtp.sendgrid.net
+    host: hostname
     port: 587
     from: noreply@openmined.org
     username: apikey

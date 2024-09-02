@@ -20,7 +20,6 @@ from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 
 
@@ -94,7 +93,6 @@ class APIEndpointQueueItem(QueueItem):
     service: str = "apiservice"
 
 
-@instrument
 @serializable(canonical_name="QueueStash", version=1)
 class QueueStash(NewBaseStash):
     object_type = QueueItem

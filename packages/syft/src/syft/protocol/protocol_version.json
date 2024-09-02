@@ -487,6 +487,11 @@
         }
       },
       "JobItem": {
+        "1": {
+          "version": 1,
+          "hash": "0b32277b7d3b9bdc14a2a51cc9005f8254e7f7b6ec059ddcccbcd681a807afb6",
+          "action": "add"
+        },
         "2": {
           "version": 2,
           "hash": "b087d0c62b7d304c6ca80e4fb0e8a7f2a444be8f8cba57490dc09aeb98033105",
@@ -747,6 +752,11 @@
         "1": {
           "version": 1,
           "hash": "cb96b8c8413609e1224341d1b0dd1efb08387c0ff7b0ff65eba36c0b104c9ed1",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "1d1b14c196221ecf6d644d7dcaa32ac9e90361b2687fa83161ff399ebc6df1bd",
           "action": "add"
         }
       },

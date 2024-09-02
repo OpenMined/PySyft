@@ -12,7 +12,6 @@ from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from .user import User
 from .user_roles import ServiceRole
 
@@ -24,7 +23,6 @@ SigningKeyPartitionKey = PartitionKey(key="signing_key", type_=SyftSigningKey)
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 
 
-@instrument
 @serializable(canonical_name="UserStash", version=1)
 class UserStash(NewBaseUIDStoreStash):
     object_type = User

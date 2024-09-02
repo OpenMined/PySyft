@@ -328,6 +328,21 @@ def test_request_code_execution_multiple(low_worker, high_worker):
     assert diff_after.is_same
 
 
+def test_filter_out_l2_requests(low_worker, high_worker):
+    low_client = low_worker.root_client
+    high_client = high_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
+
+    high_client.code.request_code_execution(compute)
+    high_client.code.compute(blocking=False)
+
+    w = sy.sync(from_client=high_client, to_client=low_client)
+    assert isinstance(w, SyftSuccess), f"Expected empty diff, got {w}"
+
+
 def test_approve_request_on_sync_blocking(low_worker, high_worker):
     low_client = low_worker.root_client
     client_low_ds = get_ds_client(low_client)

@@ -307,7 +307,6 @@ class PartitionSettings(BasePartitionSettings):
         return PartitionKeys.from_dict(self.object_type._syft_searchable_keys_dict())
 
 
-@instrument
 @serializable(
     attrs=["settings", "store_config", "unique_cks", "searchable_cks"],
     canonical_name="StorePartition",
@@ -600,7 +599,6 @@ class StorePartition:
         raise NotImplementedError
 
 
-@instrument
 @serializable(canonical_name="DocumentStore", version=1)
 class DocumentStore:
     """Base Document Store

@@ -55,7 +55,6 @@ from ..types.result import as_result
 from ..types.server_url import ServerURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
-from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
 from ..util.util import verify_tls
@@ -648,7 +647,6 @@ class PythonConnection(ServerConnection):
             raise SyftException(message=f"Unknown server type {metadata.server_type}")
 
 
-@instrument
 @serializable(canonical_name="SyftClient", version=1)
 class SyftClient:
     connection: ServerConnection
@@ -1117,7 +1115,6 @@ class SyftClient:
         return _api
 
 
-@instrument
 def connect(
     url: str | ServerURL = DEFAULT_SYFT_UI_ADDRESS,
     server: AbstractServer | None = None,
@@ -1135,7 +1132,6 @@ def connect(
     return client_type(connection=connection)
 
 
-@instrument
 def register(
     url: str | ServerURL,
     port: int,
@@ -1155,7 +1151,6 @@ def register(
     )
 
 
-@instrument
 def login_as_guest(
     # HTTPConnection
     url: str | ServerURL = DEFAULT_SYFT_UI_ADDRESS,
@@ -1179,7 +1174,6 @@ def login_as_guest(
     return _client.guest()
 
 
-@instrument
 def login(
     email: str,
     # HTTPConnection

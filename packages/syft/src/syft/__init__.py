@@ -29,6 +29,7 @@ from .client.user_settings import UserSettings
 from .client.user_settings import settings
 from .custom_worker.config import DockerWorkerConfig
 from .custom_worker.config import PrebuiltWorkerConfig
+from .custom_worker.workerpool_upgrade_utils import upgrade_custom_workerpools
 from .orchestra import Orchestra as orchestra
 from .protocol.data_protocol import bump_protocol_version
 from .protocol.data_protocol import check_or_stage_protocol
