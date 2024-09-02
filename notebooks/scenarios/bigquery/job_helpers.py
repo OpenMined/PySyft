@@ -301,30 +301,31 @@ def extract_code_path(response) -> str | None:
         return extracted_code
     return None
 
+
 def resolve_request(request):
     service_func_name = request.code.service_func_name
     if service_func_name.startswith("simple_query"):
-        request.approve() # approve because it is good
+        request.approve()  # approve because it is good
     if service_func_name.startswith("wrong_asset_query"):
-        request.approve() # approve because it is bad
+        request.approve()  # approve because it is bad
     if service_func_name.startswith("wrong_syntax_query"):
-        request.approve() # approve because it is bad
+        request.approve()  # approve because it is bad
     if service_func_name.startswith("job_too_much_text"):
-        request.deny(reason="too long, boring!") # deny because it is bad 
+        request.deny(reason="too long, boring!")  # deny because it is bad
     if service_func_name.startswith("job_long_name"):
-        request.deny(reason="too long, boring!") # deny because it is bad 
+        request.deny(reason="too long, boring!")  # deny because it is bad
     if service_func_name.startswith("job_funcname_xss"):
-        request.deny(reason="too long, boring!") # never reach doesnt matter
+        request.deny(reason="too long, boring!")  # never reach doesnt matter
     if service_func_name.startswith("job_query_xss"):
-        request.approve() # approve because it is bad
+        request.approve()  # approve because it is bad
     if service_func_name.startswith("job_many_columns"):
-        request.approve() # approve because it is bad
-    
+        request.approve()  # approve because it is bad
+
     return (request.id, request.status)
-    
+
 
 create_job_functions = [
-    create_simple_query_job, # quick way to increase the odds
+    create_simple_query_job,  # quick way to increase the odds
     create_simple_query_job,
     create_simple_query_job,
     create_simple_query_job,
