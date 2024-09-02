@@ -104,6 +104,7 @@ class NotificationService(AbstractService):
         path="notifications.activate",
         name="activate",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def activate(
         self,
@@ -111,6 +112,9 @@ class NotificationService(AbstractService):
     ) -> Notification:
         notifier_service = context.server.get_service("notifierservice")
         result = notifier_service.activate(context)
+        if isinstance(result, OkErr) and result.is_ok():
+            # sad, TODO: remove upstream Ok
+            result = result.ok()
         return result
 
     @service_method(

@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -33,10 +34,12 @@ from ...types.datetime import format_timedelta
 from ...types.errors import SyftException
 from ...types.result import Err
 from ...types.result import as_result
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.markdown import as_markdown_code
 from ...util.util import prompt_warning_message
@@ -824,3 +827,36 @@ class JobStash(NewBaseUIDStoreStash):
             qks=[PartitionKey(key="user_code_id", type_=UID).with_obj(user_code_id)]
         )
         return self.query_all(credentials=credentials, qks=qks).unwrap()
+
+
+@serializable()
+class JobV1(SyncableSyftObject):
+    __canonical_name__ = "JobItem"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    server_uid: UID
+    result: Any | None = None
+    resolved: bool = False
+    status: JobStatus = JobStatus.CREATED
+    log_id: UID | None = None
+    parent_job_id: UID | None = None
+    n_iters: int | None = 0
+    current_iter: int | None = None
+    creation_time: str | None = Field(
+        default_factory=lambda: str(datetime.now(tz=timezone.utc))
+    )
+    action: Action | None = None
+    job_pid: int | None = None
+    job_worker_id: UID | None = None
+    updated_at: DateTime | None = None
+    user_code_id: UID | None = None
+    requested_by: UID | None = None
+    job_type: JobType = JobType.JOB
+
+
+@migrate(JobV1, Job)
+def migrate_job_update_v1_current() -> list[Callable]:
+    return [
+        make_set_default("endpoint", None),
+    ]

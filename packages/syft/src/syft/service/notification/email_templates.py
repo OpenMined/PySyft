@@ -342,6 +342,20 @@ class RequestEmailTemplate(EmailTemplate):
                         <p><strong>Changes:</strong>
                             {request_changes}
                         </p>
+
+                        <p>Use:<br />
+                        <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                            request = client.api.services.request.get_by_uid(uid=sy.UID("{request_id}"))
+                        </code><br />
+                            to get this specific request.
+                        </p>
+
+                        <p>Or you can view all requests with: <br />
+                        <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                            client.requests
+                        </code>
+                        </p>
+
                         </div>
                     </div>
                     <p>If you did not expect this request or have concerns about it,
@@ -500,6 +514,19 @@ class RequestUpdateEmailTemplate(EmailTemplate):
                             <p>
                             <strong>Changes:</strong>
                             {request_changes}
+                            </p>
+
+                            <p>Use:<br />
+                            <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                                request = client.api.services.request.get_by_uid(uid=sy.UID("{request_id}"))
+                            </code><br />
+                                to get this specific request.
+                            </p>
+
+                            <p>Or you can view all requests with: <br />
+                            <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                                client.requests
+                            </code>
                             </p>
                         </div>
                     </div>

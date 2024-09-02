@@ -100,7 +100,9 @@ class EmailNotifier(BaseNotifier):
     ) -> SyftSuccess | SyftError:
         subject = None
         receiver_email = None
+        sender = None
         try:
+            sender = self.sender
             user_service = context.server.get_service("userservice")
             receiver = user_service.get_by_verify_key(
                 notification.to_user_verify_key
@@ -126,16 +128,16 @@ class EmailNotifier(BaseNotifier):
                 receiver_email = [receiver_email]
 
             self.smtp_client.send(  # type: ignore
-                sender=self.sender, receiver=receiver_email, subject=subject, body=body
+                sender=sender, receiver=receiver_email, subject=subject, body=body
             )
             message = f"> Sent email: {subject} to {receiver_email}"
             print(message)
             logging.info(message)
             return SyftSuccess(message="Email sent successfully!")
-        except Exception:
-            message = f"> Error sending email: {subject} to {receiver_email}"
+        except Exception as e:
+            message = f"> Error sending email: {subject} to {receiver_email} from: {sender}. {e}"
             print(message)
-            logging.info(message)
+            logger.error(message)
             return SyftError(message="Failed to send an email.")
             # raise SyftException.from_exception(
             #     exc,

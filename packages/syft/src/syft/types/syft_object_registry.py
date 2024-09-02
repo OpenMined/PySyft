@@ -98,7 +98,16 @@ class SyftObjectRegistry:
             if canonical_name == "Any_typing._SpecialForm":
                 return cls.__object_serialization_registry__["Any"][version]
             else:
-                raise
+                if canonical_name not in cls.__object_serialization_registry__:
+                    raise ValueError(f"Could not find {canonical_name} in registry")
+                elif (
+                    version not in cls.__object_serialization_registry__[canonical_name]
+                ):
+                    raise ValueError(
+                        f"Could not find {canonical_name} version {version} in registry"
+                    )
+                else:
+                    raise
 
     @classmethod
     def get_serde_class(cls, canonical_name: str, version: int) -> type["SyftObject"]:
