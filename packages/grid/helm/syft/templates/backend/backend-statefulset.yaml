@@ -87,7 +87,7 @@ spec:
             {{- end }}
             {{- if .Values.server.debuggerEnabled }}
             - name: DEBUGGER_ENABLED
-              value: "true"
+              value: "True"
             {{- end }}
             {{- if eq .Values.server.type "gateway" }}
             - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
@@ -142,14 +142,8 @@ spec:
             - name: MIN_SIZE_BLOB_STORAGE_MB
               value: {{ .Values.seaweedfs.minSizeBlobStorageMB | quote }}
             # Tracing
-            - name: TRACE
-              value: "false"
-            - name: SERVICE_NAME
-              value: "backend"
-            - name: JAEGER_HOST
-              value: "localhost"
-            - name: JAEGER_PORT
-              value: "14268"
+            - name: TRACING
+              value: {{ .Values.server.tracing | default "False" | quote }}
             # Enclave attestation
             {{- if .Values.attestation.enabled }}
             - name: ENCLAVE_ATTESTATION_ENABLED

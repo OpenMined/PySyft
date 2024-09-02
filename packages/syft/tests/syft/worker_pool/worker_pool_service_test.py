@@ -134,6 +134,7 @@ def test_create_pool_request_accept(
     request = ds_client.api.services.worker_pool.pool_creation_request(
         pool_name="opendp-pool", num_workers=3, image_uid=worker_image.id
     )
+
     assert len(request.changes) == 1
     change = request.changes[0]
     assert isinstance(change, CreateCustomWorkerPoolChange)
@@ -144,6 +145,7 @@ def test_create_pool_request_accept(
     # the root client approves the request, and the worker pool should be launched
     req_result = root_client.requests[-1].approve()
     assert isinstance(req_result, SyftSuccess)
+
     launched_pool = root_client.worker_pools["opendp-pool"]
     assert isinstance(launched_pool, WorkerPool)
     assert len(launched_pool.worker_list) == 3

@@ -10,6 +10,7 @@ from kr8s.objects import Job
 from kr8s.objects import Secret
 
 # relative
+from ..types.errors import SyftException
 from .builder_types import BUILD_IMAGE_TIMEOUT_SEC
 from .builder_types import BuilderBase
 from .builder_types import ImageBuildResult
@@ -24,10 +25,6 @@ from .k8s import get_kr8s_client
 from .utils import ImageUtils
 
 __all__ = ["KubernetesBuilder"]
-
-
-class BuildFailed(Exception):
-    pass
 
 
 class KubernetesBuilder(BuilderBase):
@@ -98,10 +95,12 @@ class KubernetesBuilder(BuilderBase):
             image_digest = self._get_image_digest(job)
             if not image_digest:
                 exit_code = self._get_exit_code(job)
-                raise BuildFailed(
-                    "Failed to build the image. "
-                    f"Kaniko exit code={exit_code}. "
-                    f"Logs={logs}"
+                raise SyftException(
+                    public_message=(
+                        "Failed to build the image."
+                        f" Kaniko exit code={exit_code}."
+                        f" Logs={logs}"
+                    )
                 )
 
         except Exception:
