@@ -911,12 +911,11 @@ def new_getfile(object: Any) -> Any:  # TODO: fix the mypy issue
             and object.__qualname__ + "." + member.__name__ == member.__qualname__
         ):
             return inspect.getfile(member)
-    else:
-        raise TypeError(f"Source for {object!r} not found")
+    raise TypeError(f"Source for {object!r} not found")
 
 
 def get_code_from_class(policy: type[CustomPolicy]) -> str:
-    klasses = [inspect.getmro(policy)[0]]  #
+    klasses = [inspect.getmro(policy)[0]]
     whole_str = ""
     for klass in klasses:
         if is_interpreter_jupyter():

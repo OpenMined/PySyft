@@ -402,11 +402,10 @@ def find_available_port(
             if result_of_check != 0:
                 port_available = True
                 break
+            elif search:
+                port += 1
             else:
-                if search:
-                    port += 1
-                else:
-                    break
+                break
             sock.close()
 
         except Exception as e:
@@ -791,7 +790,7 @@ def autocache(
 def str_to_bool(bool_str: str | None) -> bool:
     result = False
     bool_str = str(bool_str).lower()
-    if bool_str == "true" or bool_str == "1":
+    if bool_str in ("true", "1"):
         result = True
     return result
 

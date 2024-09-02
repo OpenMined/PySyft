@@ -2,7 +2,7 @@ AUTORELOAD_ENABLED = False
 
 
 def enable_autoreload() -> None:
-    global AUTORELOAD_ENABLED
+    global AUTORELOAD_ENABLED  # noqa
     try:
         # third party
         from IPython import get_ipython
@@ -19,7 +19,7 @@ def enable_autoreload() -> None:
 
 
 def disable_autoreload() -> None:
-    global AUTORELOAD_ENABLED
+    global AUTORELOAD_ENABLED  # noqa
     try:
         # third party
         from IPython import get_ipython
@@ -34,5 +34,5 @@ def disable_autoreload() -> None:
 
 
 def autoreload_enabled() -> bool:
-    global AUTORELOAD_ENABLED
+    global AUTORELOAD_ENABLED  # noqa
     return AUTORELOAD_ENABLED

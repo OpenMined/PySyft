@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def str_to_bool(bool_str: str | None) -> bool:
     result = False
     bool_str = str(bool_str).lower()
-    if bool_str == "true" or bool_str == "1":
+    if bool_str in ("true", "1"):
         result = True
     return result
 

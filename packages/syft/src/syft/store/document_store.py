@@ -234,11 +234,10 @@ class QueryKeys(SyftBaseModel):
                 pk_value = pk_value()
             if partition_key.type_list:
                 pk_value = partition_key.extract_list(obj)
-            else:
-                if pk_value and not isinstance(pk_value, pk_type):
-                    raise Exception(
-                        f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}."
-                    )
+            elif pk_value and not isinstance(pk_value, pk_type):
+                raise Exception(
+                    f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}."
+                )
             qk = QueryKey(key=pk_key, type_=pk_type, value=pk_value)
             qks.append(qk)
         return QueryKeys(qks=qks)

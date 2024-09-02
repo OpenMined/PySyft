@@ -122,9 +122,8 @@ class ServerPeer(SyftObject):
             if oldest:
                 if route.priority < highest_priority_route.priority:
                     highest_priority_route = route
-            else:
-                if route.priority > highest_priority_route.priority:
-                    highest_priority_route = route
+            elif route.priority > highest_priority_route.priority:
+                highest_priority_route = route
         return highest_priority_route
 
     def update_route(self, route: ServerRoute) -> None:

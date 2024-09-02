@@ -79,6 +79,7 @@ def configure_azure(first_res: dict) -> str:
             bucket_name,
             container_name,
             account_key,
-        ]
+        ],
+        check=True,
     )
     return str(res.returncode)
