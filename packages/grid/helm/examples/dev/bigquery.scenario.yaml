@@ -1,0 +1,4 @@
+server:
+  rootEmail: admin@bigquery.org
+  secret:
+    defaultRootPassword: bqpw

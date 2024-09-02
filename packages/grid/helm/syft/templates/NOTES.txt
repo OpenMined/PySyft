@@ -6,39 +6,40 @@
         $ helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
         $ helm get all {{ .Release.Name }}
 
+    =========================================
+    Syft Installed
+    =========================================
+    Check the ingress for your IP by running the command below:
 
-    Following class versions are either added/removed.
+        kubectl get ingress -n {{ .Release.Namespace }}
 
-    {
-    "ServerSettingsUpdate": {
-        "4": {
-            "version": 4,
-            "hash": "8d7a41992c39c287fcb46383bed429ce75d3c9524ced8c86b88c26dd0232e2fe",
-            "action": "add"
-        }
-    },
-    "ServerSettings": {
-        "4": {
-            "version": 4,
-            "hash": "cf6c1cb55d569af9823d8541ca038806bd350450a919345244ed4f432a099f34",
-            "action": "add"
-        }
-    },
-    "DatasetPageView": {
-        "2": {
-            "version": 2,
-            "hash": "be1ca6dcd0b3aa0481ce5dce737e78432d06a78ad0c701aaf136be407c798352",
-            "action": "add"
-        }
-    },
-    "JobItem": {
-        "2": {
-            "version": 2,
-            "hash": "b087d0c62b7d304c6ca80e4fb0e8a7f2a444be8f8cba57490dc09aeb98033105",
-            "action": "add"
-        }
-    }
-}
+    Once you have the IP, visit it in your browser:
 
-    This means the existing data will be automatically be migrated to
-    their latest class versions during the upgrade.
+        http://<IP>
+
+    You should see the welcome page. You can now log in with Syft in Python or Jupyter:
+
+    import syft as sy
+    sy.login(url="http://<IP>", email="info@openmined.org", password="yourpass")
+
+    You can see your password in the configmap with:
+
+        kubectl get secret backend-secret -n syft -o yaml | grep defaultRootPassword
+
+    If you used a different email or password, make sure to adjust the login information accordingly.
+
+    =========================================
+    Start Jupyter Environment
+    =========================================
+    You can start a Jupyter environment using the following Docker command:
+
+        docker run --rm -it --network=host openmined/syft-client:${VERSION}
+
+    Consider using `tmux` to keep the Jupyter notebook running in the background.
+    This can help manage long-running sessions and maintain your environment active.
+
+    For more information on installation and usage, refer to the OpenMined documentation:
+
+    https://docs.openmined.org
+
+    =========================================
