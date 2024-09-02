@@ -5,11 +5,11 @@ import socketserver
 # relative
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
+from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.util import get_queue_address
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..worker.worker_stash import WorkerStash
 from .base_queue import AbstractMessageHandler
@@ -121,24 +121,24 @@ class ZMQClient(QueueClient):
         message: bytes,
         queue_name: str,
         worker: bytes | None = None,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         producer = self.producers.get(queue_name)
         if producer is None:
-            return SyftError(
-                message=f"No producer attached for queue: {queue_name}. Please add a producer for it."
+            raise SyftException(
+                public_message=f"No producer attached for queue: {queue_name}. Please add a producer for it."
             )
         try:
             producer.send(message=message, worker=worker)
         except Exception as e:
             # stdlib
-            return SyftError(
-                message=f"Failed to send message to: {queue_name} with error: {e}"
+            raise SyftException(
+                public_message=f"Failed to send message to: {queue_name} with error: {e}"
             )
         return SyftSuccess(
             message=f"Successfully queued message to : {queue_name}",
         )
 
-    def close(self) -> SyftError | SyftSuccess:
+    def close(self) -> SyftSuccess:
         try:
             for consumers in self.consumers.values():
                 for consumer in consumers:
@@ -150,13 +150,15 @@ class ZMQClient(QueueClient):
                 producer.close()
                 # close existing connection.
         except Exception as e:
-            return SyftError(message=f"Failed to close connection: {e}")
+            raise SyftException(public_message=f"Failed to close connection: {e}")
 
         return SyftSuccess(message="All connections closed.")
 
-    def purge_queue(self, queue_name: str) -> SyftError | SyftSuccess:
+    def purge_queue(self, queue_name: str) -> SyftSuccess:
         if queue_name not in self.producers:
-            return SyftError(message=f"No producer running for : {queue_name}")
+            raise SyftException(
+                public_message=f"No producer running for : {queue_name}"
+            )
 
         producer = self.producers[queue_name]
 
@@ -168,7 +170,7 @@ class ZMQClient(QueueClient):
 
         return SyftSuccess(message=f"Queue: {queue_name} successfully purged")
 
-    def purge_all(self) -> SyftError | SyftSuccess:
+    def purge_all(self) -> SyftSuccess:
         for queue_name in self.producers:
             self.purge_queue(queue_name=queue_name)
 
