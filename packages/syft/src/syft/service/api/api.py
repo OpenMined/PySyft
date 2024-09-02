@@ -598,7 +598,10 @@ class TwinAPIEndpoint(SyncableSyftObject):
                 )
             else:
                 raise SyftException(
-                    public_message="Ops something went wrong during this endpoint execution, please contact your admin."
+                    public_message=(
+                        "Oops something went wrong during this endpoint execution, "
+                        "please contact your admin."
+                    )
                 )
 
 

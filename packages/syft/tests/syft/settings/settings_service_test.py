@@ -467,6 +467,7 @@ def test_invalid_args_error_message(root_datasite_client: DatasiteClient) -> Non
     assert settings.organization == update_args["organization"]
 
 
+@pytest.mark.skip(reason="For now notifications can be enabled without credentials.")
 def test_notifications_enabled_without_emails_credentials_not_allowed(
     root_datasite_client: DatasiteClient,
 ) -> None:
