@@ -2,6 +2,7 @@
 from string import Template
 from typing import Any
 from typing import cast
+
 # third party
 from pydantic import ValidationError
 
@@ -58,7 +59,6 @@ class SettingsService(AbstractService):
 
     @service_method(path="settings.get", name="get")
     def get(self, context: UnauthedServiceContext) -> ServerSettings:
-
         """Get Settings"""
         all_settings = self.stash.get_all(
             context.server.signing_key.verify_key
