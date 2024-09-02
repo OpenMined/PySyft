@@ -29,6 +29,10 @@ from .notifier_stash import NotifierStash
 logger = logging.getLogger(__name__)
 
 
+class RateLimitException(SyftException):
+    public_message = "Rate limit exceeded."
+
+
 @serializable(canonical_name="NotifierService", version=1)
 class NotifierService(AbstractService):
     store: DocumentStore
@@ -325,7 +329,7 @@ class NotifierService(AbstractService):
 
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally
-    @as_result(SyftException)
+    @as_result(SyftException, RateLimitException)
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
     ) -> SyftSuccess:
@@ -381,7 +385,7 @@ class NotifierService(AbstractService):
                         current_state.count += 1
                         current_state.date = datetime.now()
                     else:
-                        raise SyftException(
+                        raise RateLimitException(
                             public_message="Couldn't send the email. You have surpassed the"
                             + " email threshold limit. Please try again later."
                         )

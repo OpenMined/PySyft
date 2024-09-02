@@ -160,10 +160,10 @@ class SyftException(Exception):
         server_trace = self._server_trace
         message = self._private_message or self.public
 
-        return f"""
-{message}
-server_trace: {server_trace}
-"""
+        if server_trace:
+            message = f"{message}\nserver_trace: {server_trace}"
+
+        return message
 
     def _repr_html_(self) -> str:
         is_dev_mode = os.getenv("DEV_MODE", "false").lower() == "true"
