@@ -258,7 +258,7 @@ class UserService(AbstractService):
         #
         if user is None:
             raise SyftException(
-                public_message="Failed to reset user password. Token is invalid or expired!"
+                public_message="Failed to reset user password. Token is invalid or expired."
             )
         now = datetime.now()
         if user.reset_token_date is not None:
@@ -277,9 +277,10 @@ class UserService(AbstractService):
 
         if not validate_password(new_password):
             raise SyftException(
-                public_message="Your new password must have at least 8 \
-                characters, Upper case and lower case characters\
-                and at least one number."
+                public_message=(
+                    "Your new password must have at least 8 characters, an upper case "
+                    "and lower case character; and at least one number."
+                )
             )
 
         salt, hashed = salt_and_hash_password(new_password, 12)
@@ -293,7 +294,7 @@ class UserService(AbstractService):
             credentials=root_context.credentials, obj=user, has_permission=True
         ).unwrap()
 
-        return SyftSuccess(message="User Password updated successfully!")
+        return SyftSuccess(message="User Password updated successfully.")
 
     def generate_new_password_reset_token(
         self, token_config: PwdTokenResetConfig

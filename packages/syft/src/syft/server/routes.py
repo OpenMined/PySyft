@@ -193,25 +193,33 @@ def make_routes(worker: Worker) -> APIRouter:
             return handle_new_api_call(data)
 
     def handle_forgot_password(email: str, server: AbstractServer) -> Response:
-        method = server.get_service_method(UserService.forgot_password)
-        context = UnauthedServiceContext(server=server)
-        result = method(context=context, email=email)
+        try:
+            method = server.get_service_method(UserService.forgot_password)
+            context = UnauthedServiceContext(server=server)
+            result = method(context=context, email=email)
+        except SyftException as e:
+            result = SyftError.from_public_exception(e)
 
         if isinstance(result, SyftError):
-            logger.error(f"Forgot Password Error: {result.message}. user={email}")
+            logger.debug(f"Forgot Password Error: {result.message}. user={email}")
 
-        response = result
         return Response(
-            serialize(response, to_bytes=True),
+            serialize(result, to_bytes=True),
             media_type="application/octet-stream",
         )
 
     def handle_reset_password(
         token: str, new_password: str, server: AbstractServer
     ) -> Response:
-        method = server.get_service_method(UserService.reset_password)
-        context = UnauthedServiceContext(server=server)
-        result = method(context=context, token=token, new_password=new_password)
+        try:
+            method = server.get_service_method(UserService.reset_password)
+            context = UnauthedServiceContext(server=server)
+            result = method(context=context, token=token, new_password=new_password)
+        except SyftException as e:
+            result = SyftError.from_public_exception(e)
+
+        if isinstance(result, SyftError):
+            logger.debug(f"Reset Password Error: {result.message}. token={token}")
 
         return Response(
             serialize(result, to_bytes=True),
