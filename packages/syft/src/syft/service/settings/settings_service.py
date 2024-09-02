@@ -3,6 +3,9 @@ from string import Template
 from typing import Any
 from typing import cast
 
+# third party
+from pydantic import ValidationError
+
 # relative
 from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
@@ -118,7 +121,7 @@ class SettingsService(AbstractService):
             value=updated_settings,
         )
 
-    @as_result(StashException, NotFoundException)
+    @as_result(StashException, NotFoundException, ValidationError)
     def _update(
         self, context: AuthedServiceContext, settings: ServerSettingsUpdate
     ) -> ServerSettings:
@@ -127,6 +130,7 @@ class SettingsService(AbstractService):
             new_settings = all_settings[0].model_copy(
                 update=settings.to_dict(exclude_empty=True)
             )
+            ServerSettings.model_validate(new_settings.to_dict())
             update_result = self.stash.update(
                 context.credentials, settings=new_settings
             ).unwrap()
