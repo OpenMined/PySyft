@@ -137,7 +137,11 @@ class WorkerService(AbstractService):
         return logs if raw else logs.decode(errors="ignore")
 
     def _delete(
-        self, context: AuthedServiceContext, worker: SyftWorker, force: bool = False
+        self,
+        context: AuthedServiceContext,
+        worker: SyftWorker,
+        force: bool = False,
+        via_scale: bool = False,
     ) -> SyftSuccess:
         uid = worker.id
 
@@ -157,7 +161,9 @@ class WorkerService(AbstractService):
             credentials=context.credentials, pool_name=worker.worker_pool_name
         ).unwrap()
 
-        if IN_KUBERNETES:
+        if IN_KUBERNETES and via_scale:
+            pass
+        elif IN_KUBERNETES:
             # Kubernetes will only restart the worker NOT REMOVE IT
             runner = KubernetesRunner()
             runner.delete_pod(pod_name=worker.name)

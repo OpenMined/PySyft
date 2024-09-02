@@ -11,6 +11,7 @@ from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
+from ...custom_worker.runner_k8s import KubernetesRunner
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
@@ -39,6 +40,7 @@ from .utils import DEFAULT_WORKER_POOL_NAME
 from .utils import get_orchestration_type
 from .utils import run_containers
 from .utils import run_workers_in_threads
+from .utils import scale_kubernetes_pool
 from .worker_image import SyftWorkerImage
 from .worker_image_stash import SyftWorkerImageStash
 from .worker_pool import ContainerSpawnStatus
@@ -443,15 +445,27 @@ class SyftWorkerPoolService(AbstractService):
                 registry_password=None,
             )
         else:
+            # scale down removes the last "n" workers
+            # workers to delete = len(workers) - number
             workers_to_delete = worker_pool.worker_list[
                 -(current_worker_count - number) :
             ]
 
-            worker_service = context.server.get_service("WorkerService")
+            # scale down at kubernetes control plane
+            if IN_KUBERNETES:
+                runner = KubernetesRunner()
+                scale_kubernetes_pool(
+                    runner,
+                    pool_name=worker_pool.name,
+                    replicas=number,
+                ).unwrap()
 
+            worker_service = context.server.get_service("WorkerService")
             for worker in workers_to_delete:
-                worker_service.delete(
-                    context=context, uid=worker.object_uid, force=force
+                syft_worker = worker.resolve_with_context(context=context).unwrap()
+                syft_worker.to_be_deleted = True
+                worker_service._delete(
+                    context=context, worker=syft_worker, force=force, via_scale=True
                 )
 
         return SyftSuccess(
