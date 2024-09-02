@@ -193,25 +193,33 @@ def make_routes(worker: Worker) -> APIRouter:
             return handle_new_api_call(data)
 
     def handle_forgot_password(email: str, server: AbstractServer) -> Response:
-        method = server.get_service_method(UserService.forgot_password)
-        context = UnauthedServiceContext(server=server)
-        result = method(context=context, email=email)
+        try:
+            method = server.get_service_method(UserService.forgot_password)
+            context = UnauthedServiceContext(server=server)
+            result = method(context=context, email=email)
+        except SyftException as e:
+            result = SyftError.from_public_exception(e)
 
         if isinstance(result, SyftError):
-            logger.error(f"Forgot Password Error: {result.message}. user={email}")
+            logger.debug(f"Forgot Password Error: {result.message}. user={email}")
 
-        response = result
         return Response(
-            serialize(response, to_bytes=True),
+            serialize(result, to_bytes=True),
             media_type="application/octet-stream",
         )
 
     def handle_reset_password(
         token: str, new_password: str, server: AbstractServer
     ) -> Response:
-        method = server.get_service_method(UserService.reset_password)
-        context = UnauthedServiceContext(server=server)
-        result = method(context=context, token=token, new_password=new_password)
+        try:
+            method = server.get_service_method(UserService.reset_password)
+            context = UnauthedServiceContext(server=server)
+            result = method(context=context, token=token, new_password=new_password)
+        except SyftException as e:
+            result = SyftError.from_public_exception(e)
+
+        if isinstance(result, SyftError):
+            logger.debug(f"Reset Password Error: {result.message}. token={token}")
 
         return Response(
             serialize(result, to_bytes=True),
@@ -228,16 +236,15 @@ def make_routes(worker: Worker) -> APIRouter:
         context = UnauthedServiceContext(
             server=server, login_credentials=login_credentials
         )
-        result = method(context=context)
-
-        if isinstance(result, SyftError):
-            logger.error(f"Login Error: {result.message}. user={email}")
-            response = result
-        else:
-            user_private_key = result
-            if not isinstance(user_private_key, UserPrivateKey):
-                raise Exception(f"Incorrect return type: {type(user_private_key)}")
-            response = user_private_key
+        try:
+            result = method(context=context).value
+            if not isinstance(result, UserPrivateKey):
+                response = SyftError(message=f"Incorrect return type: {type(result)}")
+            else:
+                response = result
+        except SyftException as e:
+            logger.error(f"Login Error: {e}. user={email}")
+            response = SyftError(message=f"{e.public_message}")
 
         return Response(
             serialize(response, to_bytes=True),
