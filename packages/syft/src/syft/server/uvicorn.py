@@ -179,7 +179,7 @@ def run_uvicorn(
 
     # log level should be defined for in-memory servers
     if in_memory_workers and log_level is None:
-        log_level = logging.CRITICAL + 1
+        log_level = logging.CRITICAL
     elif dev_mode:
         log_level = determine_log_level(log_level) if log_level is not None else "info"
         logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
