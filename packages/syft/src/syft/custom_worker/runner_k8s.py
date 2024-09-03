@@ -96,9 +96,11 @@ class KubernetesRunner:
         selector = {"app.kubernetes.io/component": pool_name}
         for _set in self.client.get("statefulsets", label_selector=selector):
             _set.delete(propagation_policy="Foreground")
+            _set.wait(conditions="delete")
 
         for _secret in self.client.get("secrets", label_selector=selector):
             _secret.delete(propagation_policy="Foreground")
+            _secret.wait(conditions="delete")
 
         return True
 
