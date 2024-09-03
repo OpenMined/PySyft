@@ -1,8 +1,6 @@
 # future
 from __future__ import annotations
 
-# stdlib
-
 # third party
 from typing_extensions import Self
 
