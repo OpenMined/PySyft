@@ -73,12 +73,13 @@ class KubernetesRunner:
 
     def scale_pool(self, pool_name: str, replicas: int) -> StatefulSet | None:
         deployment = self.get_pool(pool_name)
+        timeout = max(SCALE_POOL_TIMEOUT_SEC * replicas, SCALE_POOL_TIMEOUT_SEC)
         if not deployment:
             return None
         deployment.scale(replicas)
         deployment.wait(
             f"jsonpath='{JSONPATH_AVAILABLE_REPLICAS}'={replicas}",
-            timeout=SCALE_POOL_TIMEOUT_SEC,
+            timeout=timeout,
         )
         return deployment
 
