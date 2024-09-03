@@ -10,7 +10,7 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
-from ...util.trace_decorator import instrument
+from ...util.telemetry import instrument
 from .notifier import NotifierSettings
 
 
@@ -21,7 +21,6 @@ class NotifierStash(ObjectStash[NotifierSettings]):
         name=NotifierSettings.__canonical_name__, object_type=NotifierSettings
     )
 
-    # TODO: should this method behave like a singleton?
     @as_result(StashException, NotFoundException)
     def get(self, credentials: SyftVerifyKey) -> NotifierSettings:
         """Get Settings"""

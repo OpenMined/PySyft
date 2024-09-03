@@ -252,9 +252,9 @@ class SyncService(AbstractService):
         self,
         context: AuthedServiceContext,
         items: list[SyncableSyftObject],
-    ) -> tuple[dict[UID, set[str]], dict[UID, set[str]]]:
-        permissions = {}
-        storage_permissions = {}
+    ) -> tuple[dict[UID, set[str]], dict[UID, set[UID]]]:
+        permissions: dict[UID, set[str]] = {}
+        storage_permissions: dict[UID, set[UID]] = {}
 
         for item in items:
             store = get_store(context, item)
@@ -263,12 +263,12 @@ class SyncService(AbstractService):
                 uid = item.id.id
                 item_permissions = store._get_permissions_for_uid(uid)
                 if not item_permissions.is_err():
-                    permissions[uid] = item_permissions.ok()
+                    permissions[uid] = item_permissions.ok()  # type: ignore
 
                 # TODO fix error handling for storage permissions
                 item_storage_permissions = store._get_storage_permissions_for_uid(uid)
                 if not item_storage_permissions.is_err():
-                    storage_permissions[uid] = item_storage_permissions.ok()
+                    storage_permissions[uid] = item_storage_permissions.ok()  # type: ignore
         return permissions, storage_permissions
 
     @as_result(SyftException)
