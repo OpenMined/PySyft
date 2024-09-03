@@ -1,5 +1,6 @@
 # future
 from __future__ import annotations
+import logging
 
 # third party
 from typing_extensions import Self
@@ -32,6 +33,7 @@ class WorkerSettings(SyftObject):
     action_store_config: StoreConfig
     blob_store_config: BlobStorageConfig | None = None
     queue_config: QueueConfig | None = None
+    log_level: int | None = None
 
     @classmethod
     def from_server(cls, server: AbstractServer) -> Self:
@@ -49,4 +51,5 @@ class WorkerSettings(SyftObject):
             server_side_type=server_side_type,
             blob_store_config=server.blob_store_config,
             queue_config=server.queue_config,
+            log_level=server.log_level
         )

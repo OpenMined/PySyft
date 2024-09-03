@@ -328,6 +328,7 @@ class Server(AbstractServer):
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        log_level: int | None = None,
         smtp_username: str | None = None,
         smtp_password: str | None = None,
         email_sender: str | None = None,
@@ -350,6 +351,17 @@ class Server(AbstractServer):
         self.server_side_type = ServerSideType(server_side_type)
         self.client_cache: dict = {}
         self.peer_client_cache: dict = {}
+
+        # @teo: needs to be finished below
+        if self.in_memory_workers and log_level is None:
+            self.log_level = logging.CRITICAL + 1
+        elif self.dev_mode:
+            self.log_level = log_level or logging.INFO
+            logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
+            logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
+        else:
+            self.log_level = logging.CRITICAL
+        logging.getLogger().setLevel(self.log_level)
 
         if isinstance(server_type, str):
             server_type = ServerType(server_type)

@@ -186,6 +186,7 @@ def deploy_to_python(
     queue_port: int | None = None,
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
+    log_level: str | int | None = None,
     debug: bool = False,
     migrate: bool = False,
 ) -> ServerHandle:
@@ -214,6 +215,7 @@ def deploy_to_python(
         "n_consumers": n_consumers,
         "create_producer": create_producer,
         "association_request_auto_approval": association_request_auto_approval,
+        "log_level": log_level,
         "background_tasks": background_tasks,
         "debug": debug,
         "migrate": migrate,
@@ -316,6 +318,7 @@ class Orchestra:
         local_db: bool = False,
         dev_mode: bool = False,
         reset: bool = False,
+        log_level: str | int | None = None,
         tail: bool = False,
         host: str | None = "0.0.0.0",  # nosec
         enable_warnings: bool = False,
@@ -367,6 +370,7 @@ class Orchestra:
                 local_db=local_db,
                 server_side_type=server_side_type_enum,
                 enable_warnings=enable_warnings,
+                log_level=log_level,
                 n_consumers=n_consumers,
                 thread_workers=thread_workers,
                 create_producer=create_producer,

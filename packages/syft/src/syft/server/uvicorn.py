@@ -140,6 +140,13 @@ def attach_debugger() -> None:
     debugpy.wait_for_client()  # blocks execution until a remote debugger is attached
     print("Debugger attached", flush=True)
 
+def determine_log_level(log_level: str | int) -> int:
+    if isinstance(log_level, str):
+        level = logging.getLevelName(log_level.upper())
+        if isinstance(level, str) and level.startswith("Level "):
+            level = logging.INFO # defaults to info otherwise
+        return level # type: ignore
+    return log_level
 
 def run_uvicorn(
     host: str,
@@ -147,6 +154,8 @@ def run_uvicorn(
     starting_uvicorn_event: multiprocessing.synchronize.Event,
     **kwargs: Any,
 ) -> None:
+    in_memory_workers = kwargs.get("in_memory_workers")
+    log_level = kwargs.get("log_level")
     dev_mode = kwargs.get("dev_mode")
     should_reset = dev_mode and kwargs.get("reset")
 
@@ -166,11 +175,15 @@ def run_uvicorn(
         except Exception:  # nosec
             print(f"Failed to kill python process on port: {port}")
 
-    log_level = "critical"
-    if dev_mode:
-        log_level = "info"
+    # log level should be defined for in-memory servers
+    if in_memory_workers and log_level is None:
+        log_level = logging.CRITICAL + 1
+    elif dev_mode:
+        log_level = determine_log_level(log_level) if log_level is not None else "info"
         logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
         logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
+    else:
+        log_level = logging.CRITICAL
 
     if kwargs.get("debug"):
         attach_debugger()
@@ -216,6 +229,7 @@ def serve_server(
     tail: bool = False,
     enable_warnings: bool = False,
     in_memory_workers: bool = True,
+    log_level: str | int | None = None,
     queue_port: int | None = None,
     create_producer: bool = False,
     n_consumers: int = 0,
@@ -242,6 +256,7 @@ def serve_server(
             "server_side_type": server_side_type,
             "enable_warnings": enable_warnings,
             "in_memory_workers": in_memory_workers,
+            "log_level": log_level,
             "queue_port": queue_port,
             "create_producer": create_producer,
             "n_consumers": n_consumers,
