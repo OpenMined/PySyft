@@ -50,7 +50,7 @@ class SMTPClient(BaseModel):
         except Exception as e:
             logger.error(f"Unable to send email. {e}")
             raise SyftException(
-                public_message="Ops! Something went wrong while trying to send an email."
+                public_message="Oops! Something went wrong while trying to send an email."
             )
 
     @classmethod
@@ -77,4 +77,7 @@ class SMTPClient(BaseModel):
                 smtp_server.login(username, password)
                 return True
         except Exception as e:
+            message = f"SMTP check_credentials failed. {e}"
+            print(message)
+            logger.error(message)
             raise SyftException(public_message=str(e))

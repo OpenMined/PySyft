@@ -32,7 +32,6 @@ from ..service.user.user import UserPrivateKey
 from ..service.user.user_service import UserService
 from ..types.errors import SyftException
 from ..types.uid import UID
-from ..util.telemetry import TRACE_MODE
 from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials
 from .worker import Worker
@@ -41,15 +40,6 @@ logger = logging.getLogger(__name__)
 
 
 def make_routes(worker: Worker) -> APIRouter:
-    if TRACE_MODE:
-        # third party
-        try:
-            # third party
-            from opentelemetry import trace
-            from opentelemetry.propagate import extract
-        except Exception as e:
-            logger.error("Failed to import opentelemetry", exc_info=e)
-
     router = APIRouter()
 
     async def get_body(request: Request) -> bytes:
@@ -159,15 +149,7 @@ def make_routes(worker: Worker) -> APIRouter:
         request: Request, verify_key: str, communication_protocol: PROTOCOL_TYPE
     ) -> Response:
         user_verify_key: SyftVerifyKey = SyftVerifyKey.from_string(verify_key)
-        if TRACE_MODE:
-            with trace.get_tracer(syft_new_api.__module__).start_as_current_span(
-                syft_new_api.__qualname__,
-                context=extract(request.headers),
-                kind=trace.SpanKind.SERVER,
-            ):
-                return handle_syft_new_api(user_verify_key, communication_protocol)
-        else:
-            return handle_syft_new_api(user_verify_key, communication_protocol)
+        return handle_syft_new_api(user_verify_key, communication_protocol)
 
     def handle_new_api_call(data: bytes) -> Response:
         obj_msg = deserialize(blob=data, from_bytes=True)
@@ -182,15 +164,7 @@ def make_routes(worker: Worker) -> APIRouter:
     def syft_new_api_call(
         request: Request, data: Annotated[bytes, Depends(get_body)]
     ) -> Response:
-        if TRACE_MODE:
-            with trace.get_tracer(syft_new_api_call.__module__).start_as_current_span(
-                syft_new_api_call.__qualname__,
-                context=extract(request.headers),
-                kind=trace.SpanKind.SERVER,
-            ):
-                return handle_new_api_call(data)
-        else:
-            return handle_new_api_call(data)
+        return handle_new_api_call(data)
 
     def handle_forgot_password(email: str, server: AbstractServer) -> Response:
         try:
@@ -278,15 +252,7 @@ def make_routes(worker: Worker) -> APIRouter:
         email: Annotated[str, Body(example="info@openmined.org")],
         password: Annotated[str, Body(example="changethis")],
     ) -> Response:
-        if TRACE_MODE:
-            with trace.get_tracer(login.__module__).start_as_current_span(
-                login.__qualname__,
-                context=extract(request.headers),
-                kind=trace.SpanKind.SERVER,
-            ):
-                return handle_login(email, password, worker)
-        else:
-            return handle_login(email, password, worker)
+        return handle_login(email, password, worker)
 
     @router.post("/reset_password", name="reset_password", status_code=200)
     def reset_password(
@@ -294,42 +260,18 @@ def make_routes(worker: Worker) -> APIRouter:
         token: Annotated[str, Body(...)],
         new_password: Annotated[str, Body(...)],
     ) -> Response:
-        if TRACE_MODE:
-            with trace.get_tracer(reset_password.__module__).start_as_current_span(
-                reset_password.__qualname__,
-                context=extract(request.headers),
-                kind=trace.SpanKind.SERVER,
-            ):
-                return handle_reset_password(token, new_password, worker)
-        else:
-            return handle_reset_password(token, new_password, worker)
+        return handle_reset_password(token, new_password, worker)
 
     @router.post("/forgot_password", name="forgot_password", status_code=200)
     def forgot_password(
         request: Request, email: str = Body(..., embed=True)
     ) -> Response:
-        if TRACE_MODE:
-            with trace.get_tracer(forgot_password.__module__).start_as_current_span(
-                forgot_password.__qualname__,
-                context=extract(request.headers),
-                kind=trace.SpanKind.SERVER,
-            ):
-                return handle_forgot_password(email, worker)
-        else:
-            return handle_forgot_password(email, worker)
+        return handle_forgot_password(email, worker)
 
     @router.post("/register", name="register", status_code=200)
     def register(
         request: Request, data: Annotated[bytes, Depends(get_body)]
     ) -> Response:
-        if TRACE_MODE:
-            with trace.get_tracer(register.__module__).start_as_current_span(
-                register.__qualname__,
-                context=extract(request.headers),
-                kind=trace.SpanKind.SERVER,
-            ):
-                return handle_register(data, worker)
-        else:
-            return handle_register(data, worker)
+        return handle_register(data, worker)
 
     return router

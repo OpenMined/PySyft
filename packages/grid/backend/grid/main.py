@@ -77,3 +77,58 @@ def healthcheck() -> dict[str, str]:
     probe on the pods backing the Service.
     """
     return {"status": "ok"}
+
+
+if settings.TRACING_ENABLED:
+    try:
+        # stdlib
+        import os
+
+        endpoint = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", None)
+        # third party
+        from opentelemetry._logs import set_logger_provider
+        from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
+        from opentelemetry.sdk._logs import LoggerProvider
+        from opentelemetry.sdk._logs import LoggingHandler
+        from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+        from opentelemetry.sdk.resources import Resource
+
+        logger_provider = LoggerProvider(
+            resource=Resource.create(
+                {
+                    "service.name": "backend-container",
+                }
+            ),
+        )
+        set_logger_provider(logger_provider)
+
+        exporter = OTLPLogExporter(insecure=True, endpoint=endpoint)
+
+        logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
+        handler = LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider)
+
+        # Attach OTLP handler to root logger
+        logging.getLogger().addHandler(handler)
+        logger = logging.getLogger(__name__)
+        message = "> Added OTEL BatchLogRecordProcessor"
+        print(message)
+        logger.info(message)
+
+    except Exception as e:
+        print(f"Failed to load OTLPLogExporter. {e}")
+
+    # third party
+    try:
+        # third party
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        FastAPIInstrumentor.instrument_app(app)
+        message = "> Added OTEL FastAPIInstrumentor"
+        print(message)
+        logger = logging.getLogger(__name__)
+        logger.info(message)
+    except Exception as e:
+        error = f"Failed to load FastAPIInstrumentor. {e}"
+        print(error)
+        logger = logging.getLogger(__name__)
+        logger.error(message)

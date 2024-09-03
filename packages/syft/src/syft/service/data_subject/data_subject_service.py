@@ -11,7 +11,6 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -24,7 +23,6 @@ from .data_subject import NamePartitionKey
 from .data_subject_member_service import DataSubjectMemberService
 
 
-@instrument
 @serializable(canonical_name="DataSubjectStash", version=1)
 class DataSubjectStash(NewBaseUIDStoreStash):
     object_type = DataSubject
@@ -52,7 +50,6 @@ class DataSubjectStash(NewBaseUIDStoreStash):
         return super().update(credentials=credentials, obj=res).unwrap()
 
 
-@instrument
 @serializable(canonical_name="DataSubjectService", version=1)
 class DataSubjectService(AbstractService):
     store: DocumentStore
