@@ -354,7 +354,7 @@ class Server(AbstractServer):
 
         # @teo: needs to be finished below
         if self.in_memory_workers and log_level is None:
-            self.log_level = logging.CRITICAL + 1
+            self.log_level = logging.CRITICAL
         elif self.dev_mode:
             self.log_level = log_level or logging.INFO
             logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
