@@ -13,7 +13,6 @@ from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from .notifier import NotifierSettings
 
@@ -21,7 +20,6 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
-@instrument
 @serializable(canonical_name="NotifierStash", version=1)
 class NotifierStash(NewBaseStash):
     object_type = NotifierSettings

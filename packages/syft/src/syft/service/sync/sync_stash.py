@@ -1,8 +1,4 @@
 # stdlib
-
-# stdlib
-
-# stdlib
 import threading
 
 # relative
@@ -14,14 +10,12 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
 from ...types.result import as_result
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from .sync_state import SyncState
 
 OrderByDatePartitionKey = PartitionKey(key="created_at", type_=DateTime)
 
 
-@instrument
 @serializable(canonical_name="SyncStash", version=1)
 class SyncStash(NewBaseUIDStoreStash):
     object_type = SyncState

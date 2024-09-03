@@ -20,7 +20,6 @@ from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_metaclass import Empty
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..context import AuthedServiceContext
@@ -81,7 +80,6 @@ def _paginate(
     return list_objs
 
 
-@instrument
 @serializable(canonical_name="UserService", version=1)
 class UserService(AbstractService):
     store: DocumentStore

@@ -13,7 +13,6 @@ from ...store.document_store import UIDPartitionKey
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -24,7 +23,6 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import UserCodeStatusCollection
 
 
-@instrument
 @serializable(canonical_name="StatusStash", version=1)
 class StatusStash(NewBaseUIDStoreStash):
     object_type = UserCodeStatusCollection
@@ -47,7 +45,6 @@ class StatusStash(NewBaseUIDStoreStash):
         return self.query_one(credentials=credentials, qks=qks).unwrap()
 
 
-@instrument
 @serializable(canonical_name="UserCodeStatusService", version=1)
 class UserCodeStatusService(AbstractService):
     store: DocumentStore

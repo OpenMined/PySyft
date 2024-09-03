@@ -14,7 +14,6 @@ from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from .worker_pool import ConsumerState
@@ -23,7 +22,6 @@ from .worker_pool import SyftWorker
 WorkerContainerNamePartitionKey = PartitionKey(key="container_name", type_=str)
 
 
-@instrument
 @serializable(canonical_name="WorkerStash", version=1)
 class WorkerStash(NewBaseUIDStoreStash):
     object_type = SyftWorker

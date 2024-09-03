@@ -130,7 +130,9 @@ class EmailNotifier(BaseNotifier):
             self.smtp_client.send(  # type: ignore
                 sender=sender, receiver=receiver_email, subject=subject, body=body
             )
-            print(f"> Sent email: {subject} to {receiver_email} from: {sender}")
+            message = f"> Sent email: {subject} to {receiver_email}"
+            print(message)
+            logging.info(message)
             return SyftSuccess(message="Email sent successfully!")
         except Exception as e:
             message = f"> Error sending email: {subject} to {receiver_email} from: {sender}. {e}"

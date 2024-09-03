@@ -8,7 +8,6 @@ from ...types.errors import SyftException
 from ...types.result import OkErr
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..notifier.notifier import NotifierSettings
@@ -28,7 +27,6 @@ from .notifications import NotificationStatus
 from .notifications import ReplyNotification
 
 
-@instrument
 @serializable(canonical_name="NotificationService", version=1)
 class NotificationService(AbstractService):
     store: DocumentStore
