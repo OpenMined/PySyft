@@ -13,7 +13,7 @@ from .k8s import PodStatus
 from .k8s import get_kr8s_client
 
 JSONPATH_AVAILABLE_REPLICAS = "{.status.availableReplicas}"
-CREATE_POOL_TIMEOUT_SEC = 180
+CREATE_POOL_TIMEOUT_SEC = 380
 SCALE_POOL_TIMEOUT_SEC = 60
 
 
