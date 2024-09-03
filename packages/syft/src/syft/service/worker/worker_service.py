@@ -19,7 +19,6 @@ from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..service import AbstractService
 from ..service import AuthedServiceContext
 from ..service import service_method
@@ -38,7 +37,6 @@ from .worker_pool import _get_worker_container_status
 from .worker_stash import WorkerStash
 
 
-@instrument
 @serializable(canonical_name="WorkerService", version=1)
 class WorkerService(AbstractService):
     store: DocumentStore
@@ -137,11 +135,7 @@ class WorkerService(AbstractService):
         return logs if raw else logs.decode(errors="ignore")
 
     def _delete(
-        self,
-        context: AuthedServiceContext,
-        worker: SyftWorker,
-        force: bool = False,
-        via_scale: bool = False,
+        self, context: AuthedServiceContext, worker: SyftWorker, force: bool = False
     ) -> SyftSuccess:
         uid = worker.id
 
@@ -161,9 +155,7 @@ class WorkerService(AbstractService):
             credentials=context.credentials, pool_name=worker.worker_pool_name
         ).unwrap()
 
-        if IN_KUBERNETES and via_scale:
-            pass
-        elif IN_KUBERNETES:
+        if IN_KUBERNETES:
             # Kubernetes will only restart the worker NOT REMOVE IT
             runner = KubernetesRunner()
             runner.delete_pod(pod_name=worker.name)
@@ -189,14 +181,11 @@ class WorkerService(AbstractService):
                 obj for obj in worker_pool.worker_list if obj.object_uid == uid
             )
             worker_pool.worker_list.remove(worker_linked_object)
-            worker_pool.max_count -= 1
         except StopIteration:
             pass
 
         # Delete worker from worker stash
-        self.stash.find_and_delete_by_uid(
-            credentials=context.credentials, uid=uid
-        ).unwrap()
+        self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
         # Update worker pool
         worker_pool_stash.update(context.credentials, obj=worker_pool).unwrap()

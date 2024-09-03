@@ -417,14 +417,17 @@ class SyftWorkerPoolService(AbstractService):
         number: int,
         pool_id: UID | None = None,
         pool_name: str | None = None,
-        force: bool = False,
     ) -> SyftSuccess:
         """
         Scale the worker pool to the given number of workers in Kubernetes.
         Allows both scaling up and down the worker pool.
         """
 
-        if number < 0:
+        if not IN_KUBERNETES:
+            raise SyftException(
+                public_message="Scaling is only supported in Kubernetes mode"
+            )
+        elif number < 0:
             # zero is a valid scale down
             raise SyftException(public_message=f"Invalid number of workers: {number}")
 
@@ -445,32 +448,42 @@ class SyftWorkerPoolService(AbstractService):
                 registry_password=None,
             )
         else:
+            # scale down at kubernetes control plane
+            runner = KubernetesRunner()
+            scale_kubernetes_pool(
+                runner,
+                pool_name=worker_pool.name,
+                replicas=number,
+            ).unwrap()
+
             # scale down removes the last "n" workers
             # workers to delete = len(workers) - number
             workers_to_delete = worker_pool.worker_list[
                 -(current_worker_count - number) :
             ]
 
-            # scale down at kubernetes control plane
-            if IN_KUBERNETES:
-                runner = KubernetesRunner()
-                scale_kubernetes_pool(
-                    runner,
-                    pool_name=worker_pool.name,
-                    replicas=number,
+            worker_stash = context.server.get_service("WorkerService").stash
+            # delete linkedobj workers
+            for worker in workers_to_delete:
+                worker_stash.delete_by_uid(
+                    credentials=context.credentials,
+                    uid=worker.object_uid,
                 ).unwrap()
 
-            worker_service = context.server.get_service("WorkerService")
-            for worker in workers_to_delete:
-                syft_worker = worker.resolve_with_context(context=context).unwrap()
-                syft_worker.to_be_deleted = True
-                worker_service._delete(
-                    context=context, worker=syft_worker, force=force, via_scale=True
+            # update worker_pool
+            worker_pool.max_count = number
+            worker_pool.worker_list = worker_pool.worker_list[:number]
+            self.stash.update(
+                credentials=context.credentials,
+                obj=worker_pool,
+            ).unwrap(
+                public_message=(
+                    f"Pool {worker_pool.name} was scaled down, "
+                    f"but failed to update the stash"
                 )
+            )
 
-        return SyftSuccess(
-            message=f"Worker pool '{worker_pool.name}' scaled to {number} workers"
-        )
+        return SyftSuccess(message=f"Worker pool scaled to {number} workers")
 
     @service_method(
         path="worker_pool.filter_by_image_id",
