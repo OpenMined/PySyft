@@ -354,8 +354,6 @@ class Server(AbstractServer):
         self.client_cache: dict = {}
         self.peer_client_cache: dict = {}
 
-        # if log_level:
-
         if isinstance(server_type, str):
             server_type = ServerType(server_type)
 
