@@ -5,7 +5,6 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 # third party
-from IPython.display import display
 from typing_extensions import Self
 
 # relative

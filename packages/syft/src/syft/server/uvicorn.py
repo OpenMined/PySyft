@@ -140,13 +140,15 @@ def attach_debugger() -> None:
     debugpy.wait_for_client()  # blocks execution until a remote debugger is attached
     print("Debugger attached", flush=True)
 
+
 def determine_log_level(log_level: str | int) -> int:
     if isinstance(log_level, str):
         level = logging.getLevelName(log_level.upper())
         if isinstance(level, str) and level.startswith("Level "):
-            level = logging.INFO # defaults to info otherwise
-        return level # type: ignore
+            level = logging.INFO  # defaults to info otherwise
+        return level  # type: ignore
     return log_level
+
 
 def run_uvicorn(
     host: str,
