@@ -10,7 +10,6 @@ from ...server.worker_settings import WorkerSettings
 from ...store.document_store import DocumentStore
 from ...types.errors import SyftException
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -41,7 +40,6 @@ def wait_until(predicate: Callable[[], bool], timeout: int = 10) -> SyftSuccess:
     raise SyftException(public_message=f"Timeout reached for predicate {code_string}")
 
 
-@instrument
 @serializable(canonical_name="JobService", version=1)
 class JobService(AbstractService):
     store: DocumentStore

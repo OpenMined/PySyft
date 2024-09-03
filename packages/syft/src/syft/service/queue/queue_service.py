@@ -4,7 +4,6 @@
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..service import AbstractService
 from ..service import service_method
@@ -13,7 +12,6 @@ from .queue_stash import QueueItem
 from .queue_stash import QueueStash
 
 
-@instrument
 @serializable(canonical_name="QueueService", version=1)
 class QueueService(AbstractService):
     store: DocumentStore

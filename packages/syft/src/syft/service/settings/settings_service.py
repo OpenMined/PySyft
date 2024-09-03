@@ -1,5 +1,10 @@
 # stdlib
 from string import Template
+from typing import Any
+from typing import cast
+
+# third party
+from pydantic import ValidationError
 
 # relative
 from ...abstract_server import ServerSideType
@@ -7,8 +12,10 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
+from ...store.sqlite_document_store import SQLiteStoreConfig
 from ...types.errors import SyftException
 from ...types.result import as_result
+from ...types.syft_metaclass import Empty
 from ...util.assets import load_png_base64
 from ...util.experimental_flags import flags
 from ...util.misc_objs import HTMLObject
@@ -20,6 +27,7 @@ from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
 from ..notifier.notifier_enums import EMAIL_TYPES
+from ..notifier.notifier_service import NotifierService
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -30,6 +38,14 @@ from ..warnings import HighSideCRUDWarning
 from .settings import ServerSettings
 from .settings import ServerSettingsUpdate
 from .settings_stash import SettingsStash
+
+# for testing purpose
+_NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR = (
+    "Failed to enable notification. "
+    "Email credentials are invalid or have not been set. "
+    "Please use `enable_notifications` from `user_service` "
+    "to set the correct email credentials."
+)
 
 
 @serializable(canonical_name="SettingsService", version=1)
@@ -105,7 +121,7 @@ class SettingsService(AbstractService):
             value=updated_settings,
         )
 
-    @as_result(StashException, NotFoundException)
+    @as_result(StashException, NotFoundException, ValidationError)
     def _update(
         self, context: AuthedServiceContext, settings: ServerSettingsUpdate
     ) -> ServerSettings:
@@ -116,27 +132,33 @@ class SettingsService(AbstractService):
             new_settings = all_settings[0].model_copy(
                 update=settings.to_dict(exclude_empty=True)
             )
+            ServerSettings.model_validate(new_settings.to_dict())
             update_result = self.stash.update(
                 context.credentials, obj=new_settings
             ).unwrap()
 
-            notifier_service = context.server.get_service("notifierservice")
+            notifier_service = cast(
+                NotifierService, context.server.get_service("notifierservice")
+            )
 
             # If notifications_enabled is present in the update, we need to update the notifier settings
-            if settings.notifications_enabled is True:
-                if not notifier_service.settings(context):
+            if settings.notifications_enabled is not Empty:  # type: ignore[comparison-overlap]
+                notifier_settings_res = notifier_service.settings(context)
+                if (
+                    not notifier_settings_res.is_ok()
+                    or notifier_settings_res.ok() is None
+                ):
                     raise SyftException(
-                        public_smessage="Create notification settings using enable_notifications from user_service"
+                        public_message=(
+                            "Notification has not been enabled. "
+                            "Please use `enable_notifications` from `user_service`."
+                        )
                     )
-                notifier_service = context.server.get_service("notifierservice")
-                notifier_service.set_notifier_active_to_true(context)
-            elif settings.notifications_enabled is False:
-                if not notifier_service.settings(context):
-                    raise SyftException(
-                        public_message="Create notification settings using enable_notifications from user_service"
-                    )
-                notifier_service = context.server.get_service("notifierservice")
-                notifier_service.set_notifier_active_to_false(context)
+
+                notifier_service._set_notifier(
+                    context, active=settings.notifications_enabled
+                )
+
             return update_result
         else:
             raise NotFoundException(public_message="Server settings not found")
@@ -192,7 +214,6 @@ class SettingsService(AbstractService):
         email_port: str | None = None,
     ) -> SyftSuccess:
         notifier_service = context.server.get_service("notifierservice")
-        # FIX: NotificationService
         notifier_service.turn_on(
             context=context,
             email_username=email_username,
@@ -200,14 +221,13 @@ class SettingsService(AbstractService):
             email_sender=email_sender,
             email_server=email_server,
             email_port=email_port,
-        ).unwrap(public_message="Failed to enable notifications")
+        ).unwrap()
         return SyftSuccess(message="Notifications enabled")
 
     @service_method(
         path="settings.disable_notifications",
         name="disable_notifications",
         roles=ADMIN_ROLE_LEVEL,
-        unwrap_on_success=False,
     )
     def disable_notifications(
         self,
@@ -382,3 +402,37 @@ class SettingsService(AbstractService):
             )
             return welcome_msg_class(text=result)
         raise SyftException(public_message="There's no welcome message")
+
+    @service_method(
+        path="settings.get_server_config",
+        name="get_server_config",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def get_server_config(
+        self,
+        context: AuthedServiceContext,
+    ) -> dict[str, Any]:
+        server = context.server
+
+        return {
+            "name": server.name,
+            "server_type": server.server_type,
+            # "deploy_to": server.deployment_type_enum,
+            "server_side_type": server.server_side_type,
+            # "port": server.port,
+            "processes": server.processes,
+            "local_db": isinstance(server.document_store_config, SQLiteStoreConfig),
+            "dev_mode": server.dev_mode,
+            "reset": True,  # we should be able to get all the objects from migration data
+            "tail": False,
+            # "host": server.host,
+            "enable_warnings": server.enable_warnings,
+            "n_consumers": server.queue_config.client_config.create_producer,
+            "thread_workers": server.queue_config.thread_workers,
+            "create_producer": server.queue_config.client_config.create_producer,
+            "queue_port": server.queue_config.client_config.queue_port,
+            "association_request_auto_approval": server.association_request_auto_approval,
+            "background_tasks": True,
+            "debug": True,  # we also want to debug
+            "migrate": False,  # I think we dont want to migrate?
+        }

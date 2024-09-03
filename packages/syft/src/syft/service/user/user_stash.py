@@ -7,7 +7,7 @@ from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
+from ...util.trace_decorator import instrument
 from .user import User
 from .user_roles import ServiceRole
 
@@ -89,7 +89,7 @@ class UserStash(ObjectStash[User]):
     @as_result(StashException, NotFoundException)
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
-    ) -> User | None:
+    ) -> User:
         try:
             return self.get_one_by_field(
                 credentials=credentials,

@@ -17,7 +17,7 @@ from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
-from ...util.telemetry import instrument
+from ...util.trace_decorator import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
@@ -214,7 +214,6 @@ class OutputStash(ObjectStash[ExecutionOutput]):
         ).unwrap()
 
 
-@instrument
 @serializable(canonical_name="OutputService", version=1)
 class OutputService(AbstractService):
     store: DocumentStore

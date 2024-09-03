@@ -21,6 +21,7 @@ from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
 from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionSettings
+from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
@@ -33,7 +34,7 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.markdown import as_markdown_code
-from ...util.telemetry import instrument
+from ...util.trace_decorator import instrument
 from ...util.util import prompt_warning_message
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
@@ -787,7 +788,7 @@ class JobStash(ObjectStash[Job]):
         ).unwrap()
 
     @as_result(StashException)
-    def get_by_result_id(self, credentials: SyftVerifyKey, uid: UID) -> list[Job]:
+    def get_by_result_id(self, credentials: SyftVerifyKey, uid: UID) -> Job:
         return self.get_one_by_field(
             credentials=credentials, field_name="result_id", field_value=str(uid)
         ).unwrap()

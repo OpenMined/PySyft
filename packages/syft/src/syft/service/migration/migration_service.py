@@ -2,6 +2,9 @@
 from collections import defaultdict
 from typing import cast
 
+# syft absolute
+import syft
+
 # relative
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
@@ -22,6 +25,7 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..worker.utils import DEFAULT_WORKER_POOL_NAME
 from .object_migration_state import MigrationData
 from .object_migration_state import StoreMetadata
 from .object_migration_state import SyftMigrationStateStash
@@ -125,9 +129,9 @@ class MigrationService(AbstractService):
         context: AuthedServiceContext,
         object_type: type[SyftObject],
     ) -> StorePartition:
-        object_partition: KeyValueActionStore | StorePartition | None = None
+        object_partition: ActionObjectStash | StorePartition | None = None
         if issubclass(object_type, ActionObject):
-            object_partition = cast(KeyValueActionStore, context.server.action_store)
+            object_partition = cast(ActionObjectStash, context.server.action_store)
         else:
             canonical_name = object_type.__canonical_name__  # type: ignore[unreachable]
             object_partition = self.store.partitions.get(canonical_name)
@@ -146,8 +150,10 @@ class MigrationService(AbstractService):
         object_type: type[SyftObject],
     ) -> StoreMetadata:
         object_partition = self._get_partition_from_type(context, object_type).unwrap()
-        permissions = object_partition.get_all_permissions().unwrap()
-        storage_permissions = object_partition.get_all_storage_permissions().unwrap()
+        permissions = dict(object_partition.get_all_permissions().unwrap())
+        storage_permissions = dict(
+            object_partition.get_all_storage_permissions().unwrap()
+        )
         return StoreMetadata(
             object_type=object_type,
             permissions=permissions,
@@ -181,8 +187,8 @@ class MigrationService(AbstractService):
     )
     def update_store_metadata(
         self, context: AuthedServiceContext, store_metadata: dict[type, StoreMetadata]
-    ) -> None:
-        return self._update_store_metadata(context, store_metadata).unwrap()
+    ) -> None:  # type: ignore
+        self._update_store_metadata(context, store_metadata).unwrap()
 
     @as_result(SyftException)
     def _update_store_metadata_for_klass(
@@ -502,6 +508,8 @@ class MigrationService(AbstractService):
         return MigrationData(
             server_uid=context.server.id,
             signing_key=context.server.signing_key,
+            syft_version=syft.__version__,
+            default_pool_name=DEFAULT_WORKER_POOL_NAME,
             store_objects=store_objects,
             metadata=store_metadata,
             action_objects=action_objects,

@@ -61,9 +61,9 @@ from ..service.queue.queue_stash import APIEndpointQueueItem
 from ..service.queue.queue_stash import ActionQueueItem
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
-from ..service.queue.zmq_queue import QueueConfig
-from ..service.queue.zmq_queue import ZMQClientConfig
-from ..service.queue.zmq_queue import ZMQQueueConfig
+from ..service.queue.zmq_client import QueueConfig
+from ..service.queue.zmq_client import ZMQClientConfig
+from ..service.queue.zmq_client import ZMQQueueConfig
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import AbstractService
@@ -292,7 +292,6 @@ class AuthServerContextRegistry:
         return cls.__server_context_registry__.get(key)
 
 
-@instrument
 class Server(AbstractServer):
     signing_key: SyftSigningKey | None
     required_signed_calls: bool = True
@@ -458,6 +457,8 @@ class Server(AbstractServer):
             path = self.get_temp_dir("db")
             file_name: str = f"{self.id}.sqlite"
             if self.dev_mode:
+                # leave this until the logger shows this in the notebook
+                print(f"{store_type}'s SQLite DB path: {path/file_name}")
                 logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
@@ -1056,6 +1057,7 @@ class Server(AbstractServer):
                 return result
             sleep(0.1)
 
+    @instrument
     def resolve_future(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem:
         queue_obj = self.queue_stash.pop_on_complete(credentials, uid).unwrap()
         queue_obj._set_obj_location_(
@@ -1064,6 +1066,7 @@ class Server(AbstractServer):
         )
         return queue_obj
 
+    @instrument
     def forward_message(
         self, api_call: SyftAPICall | SignedSyftAPICall
     ) -> Result | QueueItem | SyftObject | Any:
@@ -1129,6 +1132,7 @@ class Server(AbstractServer):
             .unwrap()
         )
 
+    @instrument
     def handle_api_call(
         self,
         api_call: SyftAPICall | SignedSyftAPICall,
@@ -1274,6 +1278,7 @@ class Server(AbstractServer):
         credentials: SyftVerifyKey,
         method: str,
         path: str,
+        log_id: UID,
         *args: Any,
         worker_pool: str | None = None,
         **kwargs: Any,
@@ -1302,7 +1307,7 @@ class Server(AbstractServer):
             job_id=job_id,
             worker_settings=worker_settings,
             args=args,
-            kwargs={"path": path, **kwargs},
+            kwargs={"path": path, "log_id": log_id, **kwargs},
             has_execute_permissions=True,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
@@ -1335,6 +1340,7 @@ class Server(AbstractServer):
         )
         return worker_pool_ref
 
+    @instrument
     @as_result(SyftException)
     def add_action_to_queue(
         self,
@@ -1384,6 +1390,7 @@ class Server(AbstractServer):
             user_id=user_id,
         ).unwrap()
 
+    @instrument
     @as_result(SyftException)
     def add_queueitem_to_queue(
         self,
@@ -1393,9 +1400,11 @@ class Server(AbstractServer):
         action: Action | None = None,
         parent_job_id: UID | None = None,
         user_id: UID | None = None,
+        log_id: UID | None = None,
         job_type: JobType = JobType.JOB,
     ) -> Job:
-        log_id = UID()
+        if log_id is None:
+            log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(server=self, credentials=credentials, role=role)
 
@@ -1483,6 +1492,7 @@ class Server(AbstractServer):
             context, user_code_id, api_call.kwargs
         )
 
+    @instrument
     def add_api_call_to_queue(
         self, api_call: SyftAPICall, parent_job_id: UID | None = None
     ) -> SyftSuccess:
@@ -1600,6 +1610,7 @@ class Server(AbstractServer):
             credentials=self.verify_key, pool_name=name
         ).unwrap()
 
+    @instrument
     def get_api(
         self,
         for_user: SyftVerifyKey | None = None,

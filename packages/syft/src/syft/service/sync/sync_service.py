@@ -156,6 +156,7 @@ class SyncService(AbstractService):
         stash = self.get_stash_for_item(context, item)
         creds = context.credentials
 
+        obj = None
         try:
             obj = stash.get_by_uid(context.credentials, item.id).unwrap()
         except (SyftException, KeyError):
@@ -381,7 +382,9 @@ class SyncService(AbstractService):
             storage_permissions = {}
 
         try:
-            previous_state = self.stash.get_latest(context=context).unwrap()
+            previous_state = self.stash.get_latest(
+                credentials=context.credentials
+            ).unwrap()
         except NotFoundException:
             previous_state = None
 

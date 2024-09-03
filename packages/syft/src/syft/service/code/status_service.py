@@ -8,7 +8,7 @@ from ...store.db.stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
-from ...util.telemetry import instrument
+from ...util.trace_decorator import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -28,7 +28,6 @@ class StatusStash(ObjectStash[UserCodeStatusCollection]):
     )
 
 
-@instrument
 @serializable(canonical_name="UserCodeStatusService", version=1)
 class UserCodeStatusService(AbstractService):
     store: DocumentStore

@@ -21,11 +21,11 @@ importers:
         specifier: ^0.33.3
         version: 0.33.3
       libsodium:
-        specifier: 0.7.11
-        version: 0.7.11
+        specifier: 0.7.14
+        version: 0.7.14
       libsodium-wrappers:
-        specifier: 0.7.11
-        version: 0.7.11
+        specifier: 0.7.14
+        version: 0.7.14
       prismjs:
         specifier: ^1.29.0
         version: 1.29.0
@@ -971,11 +971,11 @@ packages:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
 
-  libsodium-wrappers@0.7.11:
-    resolution: {integrity: sha512-SrcLtXj7BM19vUKtQuyQKiQCRJPgbpauzl3s0rSwD+60wtHqSUuqcoawlMDheCJga85nKOQwxNYQxf/CKAvs6Q==}
+  libsodium-wrappers@0.7.14:
+    resolution: {integrity: sha512-300TtsePizhJZ7HjLmWr6hLHAgJUxIGhapSw+EwfCtDuWaEmEdGXSQv6j6qFw0bs9l4vS2NH9BtOHfXAq6h5kQ==}
 
-  libsodium@0.7.11:
-    resolution: {integrity: sha512-WPfJ7sS53I2s4iM58QxY3Inb83/6mjlYgcmZs7DJsvDlnmVUwNinBCi5vBT43P6bHRy01O4zsMU2CoVR6xJ40A==}
+  libsodium@0.7.14:
+    resolution: {integrity: sha512-/pOd7eO6oZrfORquRTC4284OUJFcMi8F3Vnc9xtRBT0teLfOUxWIItaBFF3odYjZ7nlJNwnLdUVEUFHxVyX/Sw==}
 
   lilconfig@2.1.0:
     resolution: {integrity: sha512-utWOt/GHzuUxnLKxB6dk81RoOeoNeHgbrXiuGk4yyF5qlRz+iIVWu56E2fqGHFrXz0QNUhLB/8nKqvRH66JKGQ==}
@@ -2488,11 +2488,11 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
 
-  libsodium-wrappers@0.7.11:
+  libsodium-wrappers@0.7.14:
     dependencies:
-      libsodium: 0.7.11
+      libsodium: 0.7.14
 
-  libsodium@0.7.11: {}
+  libsodium@0.7.14: {}
 
   lilconfig@2.1.0: {}
 

@@ -58,7 +58,6 @@ from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
-from ..util.telemetry import instrument
 from ..util.util import index_syft_by_module_name
 from ..util.util import prompt_warning_message
 from .connection import ServerConnection
@@ -236,7 +235,6 @@ class SignedSyftAPICall(SyftObject):
         return True
 
 
-@instrument
 @serializable()
 class SyftAPICall(SyftObject):
     # version
@@ -263,7 +261,6 @@ class SyftAPICall(SyftObject):
         return f"SyftAPICall(path={self.path}, args={self.args}, kwargs={self.kwargs}, blocking={self.blocking})"
 
 
-@instrument
 @serializable()
 class SyftAPIData(SyftBaseObject):
     # version
@@ -875,7 +872,6 @@ def result_needs_api_update(api_call_result: Any) -> bool:
     return False
 
 
-@instrument
 @serializable(
     attrs=[
         "endpoints",
@@ -1336,10 +1332,19 @@ def validate_callable_args_and_kwargs(
     else:
         for key, value in kwargs.items():
             if key not in signature.parameters:
+                valid_parameters = list(signature.parameters)
+                valid_parameters_msg = (
+                    f"Valid parameter: {valid_parameters}"
+                    if len(valid_parameters) == 1
+                    else f"Valid parameters: {valid_parameters}"
+                )
+
                 raise SyftException(
-                    public_message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}
-                    f"{_signature_error_message(_format_signature(signature))}"
-"""
+                    public_message=(
+                        f"Invalid parameter: `{key}`\n"
+                        f"{valid_parameters_msg}\n"
+                        f"{_signature_error_message(_format_signature(signature))}"
+                    )
                 )
             param = signature.parameters[key]
             if isinstance(param.annotation, str):
@@ -1353,11 +1358,13 @@ def validate_callable_args_and_kwargs(
                 try:
                     _check_type(value, t)
                 except ValueError:
-                    _type_str = getattr(t, "__name__", str(t))
-                    raise SyftException(
-                        public_message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
-                        f"{_signature_error_message(_format_signature(signature))}"
-                    )
+                    # TODO: fix this properly
+                    if not (t == type(Any)):
+                        _type_str = getattr(t, "__name__", str(t))
+                        raise SyftException(
+                            public_message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
+                            f"{_signature_error_message(_format_signature(signature))}"
+                        )
 
             _valid_kwargs[key] = value
 

@@ -15,7 +15,6 @@ from ...types.result import as_result
 from ...types.syft_metaclass import Empty
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
@@ -60,7 +59,6 @@ class IsExecutionAllowedEnum(str, Enum):
     OUTPUT_POLICY_NOT_APPROVED = "Execution denied: Output policy not approved"
 
 
-@instrument
 @serializable(canonical_name="UserCodeService", version=1)
 class UserCodeService(AbstractService):
     store: DocumentStore
@@ -289,7 +287,7 @@ class UserCodeService(AbstractService):
         else:  # code: SubmitUserCode
             # Submit new UserCode, or get existing UserCode with the same code hash
             # TODO: Why is this tagged as unreachable?
-            return self._submit(context, code, exists_ok=True)  # type: ignore[unreachable]
+            return self._submit(context, code, exists_ok=True).unwrap()  # type: ignore[unreachable]
 
     @service_method(
         path="code.request_code_execution",
@@ -537,7 +535,6 @@ class UserCodeService(AbstractService):
                             inp_policy_validation = input_policy.is_valid(
                                 context,
                                 usr_input_kwargs=kwarg2id,
-                                code_item_id=code.id,
                             )
 
                             if not inp_policy_validation:
