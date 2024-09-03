@@ -28,7 +28,7 @@ class WorkerSettings(SyftObject):
     name: str
     server_type: ServerType
     server_side_type: ServerSideType
-    deployment_type: DeploymentType
+    deployment_type: DeploymentType = DeploymentType.REMOTE
     signing_key: SyftSigningKey
     document_store_config: StoreConfig
     action_store_config: StoreConfig
