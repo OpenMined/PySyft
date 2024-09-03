@@ -8,6 +8,7 @@ from typing_extensions import Self
 from ..abstract_server import AbstractServer
 from ..abstract_server import ServerSideType
 from ..abstract_server import ServerType
+from ..deployment_type import DeploymentType
 from ..serde.serializable import serializable
 from ..server.credentials import SyftSigningKey
 from ..service.queue.base_queue import QueueConfig
@@ -27,6 +28,7 @@ class WorkerSettings(SyftObject):
     name: str
     server_type: ServerType
     server_side_type: ServerSideType
+    deployment_type: DeploymentType
     signing_key: SyftSigningKey
     document_store_config: StoreConfig
     action_store_config: StoreConfig
@@ -51,4 +53,5 @@ class WorkerSettings(SyftObject):
             blob_store_config=server.blob_store_config,
             queue_config=server.queue_config,
             log_level=server.log_level,
+            deployment_type=server.deployment_type,
         )

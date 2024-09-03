@@ -5,7 +5,6 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Callable
-from enum import Enum
 import getpass
 import inspect
 import json
@@ -23,6 +22,7 @@ from .abstract_server import ServerSideType
 from .abstract_server import ServerType
 from .client.client import login as sy_login
 from .client.client import login_as_guest as sy_login_as_guest
+from .deployment_type import DeploymentType
 from .protocol.data_protocol import stage_protocol_changes
 from .server.datasite import Datasite
 from .server.enclave import Enclave
@@ -63,13 +63,6 @@ def get_deployment_type(deployment_type: str | None) -> DeploymentType | None:
             f"deployment_type: {deployment_type} is not a valid DeploymentType: {DeploymentType}"
         )
     return None
-
-
-# Can also be specified by the environment variable
-# ORCHESTRA_DEPLOYMENT_TYPE
-class DeploymentType(Enum):
-    PYTHON = "python"
-    REMOTE = "remote"
 
 
 class ServerHandle:
@@ -219,6 +212,7 @@ def deploy_to_python(
         "background_tasks": background_tasks,
         "debug": debug,
         "migrate": migrate,
+        "deployment_type": deployment_type_enum,
     }
 
     if port:

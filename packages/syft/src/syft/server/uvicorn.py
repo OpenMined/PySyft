@@ -1,7 +1,6 @@
 # stdlib
 from collections.abc import Callable
 from contextlib import asynccontextmanager
-import logging
 import multiprocessing
 import multiprocessing.synchronize
 import os
@@ -25,6 +24,7 @@ import uvicorn
 # relative
 from ..abstract_server import ServerSideType
 from ..client.client import API_PATH
+from ..deployment_type import DeploymentType
 from ..util.autoreload import enable_autoreload
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.telemetry import TRACING_ENABLED
@@ -50,6 +50,7 @@ class AppSettings(BaseSettings):
     name: str
     server_type: ServerType = ServerType.DATASITE
     server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
+    deployment_type: DeploymentType = DeploymentType.REMOTE
     processes: int = 1
     reset: bool = False
     dev_mode: bool = False
@@ -141,22 +142,12 @@ def attach_debugger() -> None:
     print("Debugger attached", flush=True)
 
 
-def determine_log_level(log_level: str | int) -> int:
-    if isinstance(log_level, str):
-        level = logging.getLevelName(log_level.upper())
-        if isinstance(level, str) and level.startswith("Level "):
-            level = logging.INFO  # defaults to info otherwise
-        return level  # type: ignore
-    return log_level
-
-
 def run_uvicorn(
     host: str,
     port: int,
     starting_uvicorn_event: multiprocessing.synchronize.Event,
     **kwargs: Any,
 ) -> None:
-    in_memory_workers = kwargs.get("in_memory_workers")
     log_level = kwargs.get("log_level")
     dev_mode = kwargs.get("dev_mode")
     should_reset = dev_mode and kwargs.get("reset")
@@ -176,16 +167,6 @@ def run_uvicorn(
                 time.sleep(1)
         except Exception:  # nosec
             print(f"Failed to kill python process on port: {port}")
-
-    # log level should be defined for in-memory servers
-    if in_memory_workers and log_level is None:
-        log_level = logging.CRITICAL + 1
-    elif dev_mode:
-        log_level = determine_log_level(log_level) if log_level is not None else "info"
-        logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
-        logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
-    else:
-        log_level = logging.CRITICAL
 
     if kwargs.get("debug"):
         attach_debugger()
@@ -223,6 +204,7 @@ def serve_server(
     name: str,
     server_type: ServerType = ServerType.DATASITE,
     server_side_type: ServerSideType = ServerSideType.HIGH_SIDE,
+    deployment_type: DeploymentType = DeploymentType.REMOTE,
     host: str = "0.0.0.0",  # nosec
     port: int = 8080,
     processes: int = 1,
@@ -266,6 +248,7 @@ def serve_server(
             "background_tasks": background_tasks,
             "debug": debug,
             "starting_uvicorn_event": starting_uvicorn_event,
+            "deployment_type": deployment_type,
         },
     )
 
