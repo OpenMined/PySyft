@@ -3,14 +3,13 @@ from collections import defaultdict
 import logging
 from typing import Any
 
-from syft.store.document_store_errors import NotFoundException
-
 # relative
 from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
 from ...store.db.stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import NewBaseStash
+from ...store.document_store_errors import NotFoundException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.errors import SyftException

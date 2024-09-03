@@ -879,6 +879,7 @@ class Server(AbstractServer):
             filename=f"{self.id}_json.db",
             path=self.get_temp_dir("db"),
         )
+        # json_db_config = PostgresDBConfig(reset=False)
         self.db = SQLiteDBManager(
             config=json_db_config,
             server_uid=self.id,
