@@ -118,6 +118,18 @@ def make_test_query(settings: dict) -> Callable:
                     public_message=f"*must be qualified with a dataset*. {e}"
                 )
 
+        timed_out = "TIMED OUT"
+        timed_out_post = (
+            "BadRequest: 400 POST "
+            "https://bigquery.googleapis.com/bigquery/v2/projects/project-id/"
+            "queries?prettyPrint=false: "
+        )
+        if timed_out in sql_query:
+            try:
+                raise BadRequest(f"{timed_out_post}. Query {sql_query} timed out.")
+            except Exception:
+                raise SyftException(public_message=f"*query {sql_query} timed out.")
+
         if not context.code.is_valid_sql(sql_query):
             raise BadRequest(
                 f'{bad_post} Syntax error: Unexpected identifier "{sql_query}" at [1:1]'
