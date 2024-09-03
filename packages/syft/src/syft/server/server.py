@@ -352,7 +352,6 @@ class Server(AbstractServer):
         self.client_cache: dict = {}
         self.peer_client_cache: dict = {}
 
-        # @teo: needs to be finished below
         if self.in_memory_workers and log_level is None:
             self.log_level = logging.CRITICAL
         elif self.dev_mode:
