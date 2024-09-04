@@ -75,9 +75,7 @@ class MigrationService(AbstractService):
         obj = SyftObjectMigrationState(
             current_version=current_version, canonical_name=canonical_name
         )
-        return self.stash.set(
-            migration_state=obj, credentials=context.credentials
-        ).unwrap()
+        return self.stash.set(obj=obj, credentials=context.credentials).unwrap()
 
     @as_result(SyftException, NotFoundException)
     def _find_klasses_pending_for_migration(

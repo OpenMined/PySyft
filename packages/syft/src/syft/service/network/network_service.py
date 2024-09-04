@@ -15,10 +15,9 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...server.worker_settings import WorkerSettings
 from ...service.settings.settings import ServerSettings
+from ...store.db.stash import ObjectStash
 from ...store.document_store import DocumentStore
-from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
@@ -36,7 +35,6 @@ from ...util.util import get_env
 from ...util.util import prompt_warning_message
 from ...util.util import str_to_bool
 from ..context import AuthedServiceContext
-from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.server_metadata import ServerMetadata
 from ..request.request import Request
 from ..request.request import RequestStatus
@@ -80,24 +78,18 @@ class ServerPeerAssociationStatus(Enum):
     PEER_NOT_FOUND = "PEER_NOT_FOUND"
 
 
-@serializable(canonical_name="NetworkStash", version=1)
-class NetworkStash(NewBaseUIDStoreStash):
-    object_type = ServerPeer
-    settings: PartitionSettings = PartitionSettings(
-        name=ServerPeer.__canonical_name__, object_type=ServerPeer
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
+@serializable(canonical_name="NetworkSQLStash", version=1)
+class NetworkStash(ObjectStash[ServerPeer]):
     @as_result(StashException, NotFoundException)
     def get_by_name(self, credentials: SyftVerifyKey, name: str) -> ServerPeer:
-        qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
         try:
-            return self.query_one(credentials=credentials, qks=qks).unwrap()
-        except NotFoundException as exc:
+            return self.get_one_by_fields(
+                credentials=credentials,
+                fields={"name": name},
+            ).unwrap()
+        except NotFoundException as e:
             raise NotFoundException.from_exception(
-                exc, public_message=f"ServerPeer with {name} not found"
+                e, public_message=f"ServerPeer with {name} not found"
             )
 
     @as_result(StashException)

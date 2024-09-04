@@ -701,6 +701,7 @@ class ObjectStash(Generic[StashT]):
         add_storage_permission: bool = True,  # TODO: check the default value
         ignore_duplicates: bool = False,
     ) -> StashT:
+        self.check_type(obj, self.object_type).unwrap()
         uid = obj.id
 
         # check if the object already exists

@@ -5,11 +5,7 @@
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
-from ...store.document_store import NewBaseUIDStoreStash
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.db.stash import ObjectStash
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
@@ -18,25 +14,17 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from .worker_pool import WorkerPool
 
-PoolNamePartitionKey = PartitionKey(key="name", type_=str)
-PoolImageIDPartitionKey = PartitionKey(key="image_id", type_=UID)
 
-
-@serializable(canonical_name="SyftWorkerPoolStash", version=1)
-class SyftWorkerPoolStash(NewBaseUIDStoreStash):
-    object_type = WorkerPool
-    settings: PartitionSettings = PartitionSettings(
-        name=WorkerPool.__canonical_name__,
-        object_type=WorkerPool,
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
+@serializable(canonical_name="SyftWorkerPoolSQLStash", version=1)
+class SyftWorkerPoolStash(ObjectStash[WorkerPool]):
     @as_result(StashException, NotFoundException)
     def get_by_name(self, credentials: SyftVerifyKey, pool_name: str) -> WorkerPool:
-        qks = QueryKeys(qks=[PoolNamePartitionKey.with_obj(pool_name)])
-        return self.query_one(credentials=credentials, qks=qks).unwrap(
+        result = self.get_one_by_fields(
+            credentials=credentials,
+            fields={"name": pool_name},
+        )
+
+        return result.unwrap(
             public_message=f"WorkerPool with name {pool_name} not found"
         )
 
@@ -70,5 +58,7 @@ class SyftWorkerPoolStash(NewBaseUIDStoreStash):
     def get_by_image_uid(
         self, credentials: SyftVerifyKey, image_uid: UID
     ) -> list[WorkerPool]:
-        qks = QueryKeys(qks=[PoolImageIDPartitionKey.with_obj(image_uid)])
-        return self.query_all(credentials=credentials, qks=qks).unwrap()
+        return self.get_by_fields(
+            credentials=credentials,
+            fields={"image_id": image_uid.no_dash},
+        ).unwrap()

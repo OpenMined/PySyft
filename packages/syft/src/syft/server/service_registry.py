@@ -128,7 +128,15 @@ class ServiceRegistry:
             # Use old DB
             else:
                 svc_kwargs["store"] = server.document_store
-                print("Using old store:", service_cls)
+
+                # TODO remove after all services are migrated
+                services_without_stash = [
+                    AttestationService,
+                    MetadataService,
+                    EnclaveService,
+                ]
+                if service_cls not in services_without_stash:
+                    print("Using old store:", service_cls)
 
             service = service_cls(**svc_kwargs)
             service_dict[field_name] = service
