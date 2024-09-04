@@ -41,7 +41,7 @@ Launch <a href="https://docs.openmined.org/en/latest/deployment/deployment-doc-1
 ```python
 import syft as sy
 
-sy.requires(">=0.9,<0.9.1")
+sy.requires(">=0.9.1,<0.9.2")
 
 server = sy.orchestra.launch(
     name="my-datasite",
@@ -70,7 +70,7 @@ Main way to use a Datasite is via our Syft client, in a Jupyter Notebook. Check 
 ```python
 import syft as sy
 
-sy.requires(">=0.9,<0.9.1")
+sy.requires(">=0.9.1,<0.9.2")
 
 datasite_client = sy.login(
     port=8080,
@@ -138,12 +138,12 @@ For questions about PySyft, reach out via `#support` on <a href="https://slack.o
 
 **Latest Stable**
 
-- `0.9.0` (Stable) - <a href="https://docs.openmined.org/en/latest/index.html">Docs</a>
+- `0.9.1` (Stable) - <a href="https://docs.openmined.org/en/latest/index.html">Docs</a>
 - Install PySyft (Stable): `pip install -U syft`
 
 **Latest Beta**
 
-- `0.9.1` (Beta) - `dev` branch 👈🏽
+- `0.9.2` (Beta) - `dev` branch 👈🏽
 - Install PySyft (Beta): `pip install -U syft --pre`
 
 Find more about previous <a href="./releases.md">releases here</a>.
