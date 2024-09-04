@@ -136,7 +136,6 @@ class EmailNotifier(BaseNotifier):
             return SyftSuccess(message="Email sent successfully!")
         except Exception as e:
             message = f"> Error sending email: {subject} to {receiver_email} from: {sender}. {e}"
-            print(message)
             logger.error(message)
             return SyftError(message="Failed to send an email.")
             # raise SyftException.from_exception(

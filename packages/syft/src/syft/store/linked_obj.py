@@ -1,4 +1,5 @@
 # stdlib
+import logging
 from typing import Any
 
 # third party
@@ -15,6 +16,8 @@ from ..types.result import as_result
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
+
+logger = logging.getLogger(__name__)
 
 
 @serializable()
@@ -47,7 +50,7 @@ class LinkedObject(SyftObject):
             self._resolve_cache = resolve
             return resolve
         except Exception as e:
-            print(">>> Failed to resolve object", type(api), e)
+            logger.error(">>> Failed to resolve object", type(api), e)
             raise e
 
     @as_result(SyftException)
