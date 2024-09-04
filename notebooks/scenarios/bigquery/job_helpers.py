@@ -248,6 +248,51 @@ def create_job_many_columns(user: TestUser) -> TestJob:
     return job
 
 
+def create_long_running_query_job(user: TestUser) -> TestJob:
+    job_type = "long_running_query"
+    func_name = f"{job_type}_{secrets.token_hex(3)}"
+
+    # Use a valid dataset and table, but with a query designed to run for a long time
+    dataset = random.choice([dataset_1, dataset_2])
+    table, groupby_col, score_col = random.choice(
+        [
+            (table_1, table_1_col_id, table_1_col_score),
+            (table_2, table_2_col_id, table_2_col_score),
+        ]
+    )
+
+    # Creating a query that simulates a 121-second delay
+    query = """
+    DECLARE WAIT STRING DEFAULT 'TRUE';
+    DECLARE DELAY_TIME DATETIME DEFAULT DATETIME_ADD(CURRENT_DATETIME(), INTERVAL 121 SECOND);
+    WHILE WAIT = 'TRUE' DO
+        IF (DELAY_TIME < CURRENT_DATETIME()) THEN
+            SET WAIT = 'FALSE';
+        END IF;
+    END WHILE;
+    SELECT 'Query finished after delay' AS result;
+    """.strip()
+
+    settings = {
+        "dataset": dataset,
+        "table": table,
+        "groupby_col": groupby_col,
+        "score_col": score_col,
+    }
+
+    result = TestJob(
+        user_email=user.email,
+        func_name=func_name,
+        query=query,
+        job_type=job_type,
+        settings=settings,
+        should_succeed=False,  # We expect this to fail due to timeout
+    )
+
+    result.client = user.client
+    return result
+
+
 def create_random_job(user: TestUser) -> TestJob:
     job_func = random.choice(create_job_functions)
     return job_func(user)
@@ -319,6 +364,8 @@ def resolve_request(request):
         request.approve()  # approve because it is bad
     if service_func_name.startswith("job_many_columns"):
         request.approve()  # approve because it is bad
+    if service_func_name.startswith("long_running_query"):
+        request.approve()  # approve because we want to test the timeout
 
     return (request.id, request.status)
 
@@ -337,6 +384,7 @@ create_job_functions = [
     create_job_funcname_xss,
     create_job_query_xss,
     create_job_many_columns,
+    create_long_running_query_job,
 ]
 
 
