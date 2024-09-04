@@ -166,12 +166,12 @@ class JobService(AbstractService):
                 results.append(res)
 
         # wait for job and subjobs to be killed by MonitorThread
-        wait_until(lambda: job.fetched_status == JobStatus.INTERRUPTED)
+        """ wait_until(lambda: job.fetched_status == JobStatus.INTERRUPTED)
         wait_until(
             lambda: all(
                 subjob.fetched_status == JobStatus.INTERRUPTED for subjob in job.subjobs
             )
-        )
+        ) """
 
         return SyftSuccess(message="Job killed successfully!")
 

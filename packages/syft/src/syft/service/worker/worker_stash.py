@@ -67,8 +67,10 @@ class WorkerStash(NewBaseUIDStoreStash):
 
     @as_result(StashException, NotFoundException)
     def update_consumer_state(
-        self, credentials: SyftVerifyKey, worker_uid: UID, consumer_state: ConsumerState
+        self, credentials: SyftVerifyKey, worker_uid: UID, consumer_state: ConsumerState, job_id: UID | None = None
     ) -> SyftWorker:
         worker = self.get_by_uid(credentials=credentials, uid=worker_uid).unwrap()
         worker.consumer_state = consumer_state
+        if job_id is not None:
+            worker.job_id = job_id
         return self.update(credentials=credentials, obj=worker).unwrap()
