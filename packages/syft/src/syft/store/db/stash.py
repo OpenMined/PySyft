@@ -2,6 +2,7 @@
 
 # stdlib
 from functools import cache
+from typing import Any
 from typing import Generic
 from typing import cast
 from typing import get_args
@@ -192,17 +193,18 @@ class ObjectStash(Generic[StashT]):
     def _get_field_filter(
         self,
         field_name: str,
-        field_value: str,
+        field_value: Any,
         table: Table | None = None,
     ) -> sa.sql.elements.BinaryExpression:
         table = table if table is not None else self.table
         if field_name == "id":
             return table.c.id == field_value
 
+        json_value = serialize_json(field_value)
         if self.db.engine.dialect.name == "sqlite":
-            return table.c.fields[field_name] == func.json_quote(field_value)
+            return table.c.fields[field_name] == func.json_quote(json_value)
         elif self.db.engine.dialect.name == "postgresql":
-            return sa.cast(table.c.fields[field_name], sa.String) == field_value
+            return sa.cast(table.c.fields[field_name], sa.String) == json_value
 
     def _get_by_fields(
         self,
