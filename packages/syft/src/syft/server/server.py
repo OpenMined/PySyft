@@ -95,7 +95,6 @@ from ..store.document_store import StoreConfig
 from ..store.document_store_errors import NotFoundException
 from ..store.document_store_errors import StashException
 from ..store.linked_obj import LinkedObject
-from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
@@ -395,10 +394,7 @@ class Server(AbstractServer):
             store_type="Action Store",
         )
 
-        self.init_stores(
-            action_store_config=action_store_config,
-            document_store_config=document_store_config,
-        )
+        self.init_stores()
 
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
@@ -874,45 +870,7 @@ class Server(AbstractServer):
 
     def init_stores(
         self,
-        document_store_config: StoreConfig,
-        action_store_config: StoreConfig,
     ) -> None:
-        # We add the python id of the current server in order
-        # to create one connection per Server object in MongoClientCache
-        # so that we avoid closing the connection from a
-        # different thread through the garbage collection
-        if isinstance(document_store_config, MongoStoreConfig):
-            document_store_config.client_config.server_obj_python_id = id(self)
-
-        self.document_store_config = document_store_config
-        self.document_store = document_store_config.store_type(
-            server_uid=self.id,
-            root_verify_key=self.verify_key,
-            store_config=document_store_config,
-        )
-
-        # if isinstance(action_store_config, SQLiteStoreConfig):
-        #     self.action_store: ActionObjectStash = ActionObjectStash(
-        #         store=self.document_store,
-        #     )
-        # elif isinstance(action_store_config, MongoStoreConfig):
-        #     # We add the python id of the current server in order
-        #     # to create one connection per Server object in MongoClientCache
-        #     # so that we avoid closing the connection from a
-        #     # different thread through the garbage collection
-        #     action_store_config.client_config.server_obj_python_id = id(self)
-
-        #     self.action_store = ActionObjectStash(
-        #         store=self.document_store,
-        #     )
-        # else:
-        #     self.action_store = ActionObjectStash(
-        #         store=self.document_store,
-        #     )
-
-        self.action_store_config = action_store_config
-        self.queue_stash = QueueStash(store=self.document_store)
-
         # TODO fix database filename + reset
         json_db_config = SQLiteDBConfig(
             filename=f"{self.id}_json.db",
@@ -924,6 +882,8 @@ class Server(AbstractServer):
             server_uid=self.id,
             root_verify_key=self.verify_key,
         )
+
+        self.queue_stash = QueueStash(store=self.db)
 
     @property
     def job_stash(self) -> JobStash:

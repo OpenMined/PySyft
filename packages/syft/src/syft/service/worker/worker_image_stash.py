@@ -7,11 +7,7 @@ from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
-from ...store.document_store import NewBaseUIDStoreStash
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.db.stash import ObjectStash
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
@@ -20,22 +16,11 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from .worker_image import SyftWorkerImage
 
-WorkerConfigPK = PartitionKey(key="config", type_=WorkerConfig)
 
-
-@serializable(canonical_name="SyftWorkerImageStash", version=1)
-class SyftWorkerImageStash(NewBaseUIDStoreStash):
-    object_type = SyftWorkerImage
-    settings: PartitionSettings = PartitionSettings(
-        name=SyftWorkerImage.__canonical_name__,
-        object_type=SyftWorkerImage,
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
+@serializable(canonical_name="SyftWorkerImageSQLStash", version=1)
+class SyftWorkerImageStash(ObjectStash[SyftWorkerImage]):
     @as_result(SyftException, StashException, NotFoundException)
-    def set(  # type: ignore
+    def set(
         self,
         credentials: SyftVerifyKey,
         obj: SyftWorkerImage,
@@ -43,9 +28,8 @@ class SyftWorkerImageStash(NewBaseUIDStoreStash):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
     ) -> SyftWorkerImage:
-        add_permissions = [] if add_permissions is None else add_permissions
-
         # By default syft images have all read permission
+        add_permissions = [] if add_permissions is None else add_permissions
         add_permissions.append(
             ActionObjectPermission(uid=obj.id, permission=ActionPermission.ALL_READ)
         )
@@ -85,7 +69,11 @@ class SyftWorkerImageStash(NewBaseUIDStoreStash):
     def get_by_worker_config(
         self, credentials: SyftVerifyKey, config: WorkerConfig
     ) -> SyftWorkerImage:
-        qks = QueryKeys(qks=[WorkerConfigPK.with_obj(config)])
-        return self.query_one(credentials=credentials, qks=qks).unwrap(
+        # TODO cannot search on fields containing objects
+        all_images = self.get_all(credentials=credentials).unwrap()
+        for image in all_images:
+            if image.config == config:
+                return image
+        raise NotFoundException(
             public_message=f"Worker Image with config {config} not found"
         )
