@@ -460,7 +460,11 @@ class SyftWorkerPoolService(AbstractService):
 
             # scale down removes the last "n" workers
             # workers to delete = len(workers) - number
-            workers_to_delete = worker_pool.worker_list[
+            workers = [
+                worker.resolve_with_context(context=context).unwrap()
+                for worker in worker_pool.worker_list
+            ]
+            workers_to_delete = workers[
                 -(current_worker_count - number) :
             ]
             worker_service = cast(
