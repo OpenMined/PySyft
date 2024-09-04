@@ -464,11 +464,9 @@ class SyftWorkerPoolService(AbstractService):
                 worker.resolve_with_context(context=context).unwrap()
                 for worker in worker_pool.worker_list
             ]
-            workers_to_delete = workers[
-                -(current_worker_count - number) :
-            ]
+            workers_to_delete = workers[-(current_worker_count - number) :]
             worker_service = cast(
-            WorkerService, context.server.get_service("WorkerService")
+                WorkerService, context.server.get_service("WorkerService")
             )
 
             for worker in workers_to_delete:
