@@ -200,7 +200,8 @@ class ObjectStash(Generic[StashT]):
     ) -> sa.sql.elements.BinaryExpression:
         table = table if table is not None else self.table
         if field_name == "id":
-            return table.c.id == field_value
+            uid_field_value = UID(field_value)
+            return table.c.id == uid_field_value
 
         if self.db.engine.dialect.name == "sqlite":
             return table.c.fields[field_name] == func.json_quote(field_value)
@@ -480,7 +481,7 @@ class ObjectStash(Generic[StashT]):
         result = self.session.execute(stmt).all()
         return [self.row_as_obj(row) for row in result]
 
-    @as_result(StashException)
+    @as_result(StashException, NotFoundException)
     def update(
         self,
         credentials: SyftVerifyKey,
@@ -517,9 +518,12 @@ class ObjectStash(Generic[StashT]):
             )
         stmt = stmt.values(fields=fields)
 
-        self.session.execute(stmt)
+        result = self.session.execute(stmt)
         self.session.commit()
-
+        if result.rowcount == 0:
+            raise NotFoundException(
+                f"{self.object_type.__name__}: {obj.id} not found or no permission to update."
+            )
         return self.get_by_uid(credentials, obj.id).unwrap()
 
     def get_ownership_permissions(
@@ -532,7 +536,7 @@ class ObjectStash(Generic[StashT]):
             ActionObjectEXECUTE(uid=uid, credentials=credentials).permission_string,
         ]
 
-    @as_result(StashException)
+    @as_result(StashException, NotFoundException)
     def delete_by_uid(
         self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
     ) -> UID:
@@ -543,8 +547,12 @@ class ObjectStash(Generic[StashT]):
             permission=ActionPermission.WRITE,
             has_permission=has_permission,
         )
-        self.session.execute(stmt)
+        result = self.session.execute(stmt)
         self.session.commit()
+        if result.rowcount == 0:
+            raise NotFoundException(
+                f"{self.object_type.__name__}: {uid} not found or no permission to delete."
+            )
         return uid
 
     def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
@@ -720,7 +728,7 @@ class ObjectStash(Generic[StashT]):
             if ignore_duplicates:
                 return obj
             unique_fields_str = ", ".join(self.unique_fields)
-            raise SyftException(
+            raise StashException(
                 public_message=f"Duplication Key Error for {obj}.\n"
                 f"The fields that should be unique are {unique_fields_str}."
             )

@@ -30,7 +30,7 @@ class DBConfig(BaseModel):
 
 class SQLiteDBConfig(DBConfig):
     filename: str = Field(default_factory=lambda: f"{uuid.uuid4()}.db")
-    path: Path = Field(default_factory=tempfile.gettempdir)
+    path: Path = Field(default_factory=lambda: Path(tempfile.gettempdir()))
 
     @property
     def connection_string(self) -> str:
