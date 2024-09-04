@@ -1091,7 +1091,7 @@ def find_base_dir_with_tox_ini(start_path: str = ".") -> str | None:
         if parent_path == base_path:  # Reached the root directory
             break
         base_path = parent_path
-    return None
+    return start_path
 
 
 def get_all_config_files(base_path: str, current_path: str) -> list[str]:
