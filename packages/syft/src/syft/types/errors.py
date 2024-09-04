@@ -336,7 +336,6 @@ def syft_exception_handler(
     shell: Any, etype: Any, evalue: Any, tb: Any, tb_offset: Any = None
 ) -> None:
     display(HTML(evalue._repr_html_()))
-    raise evalue
 
 
 runs_in_pytest = False
