@@ -14,7 +14,7 @@ from syft.types.uid import UID
 
 def add_mock_user(root_datasite_client, user_stash: UserStash, user: User) -> User:
     # prepare: add mock data
-    result = user_stash.partition.set(root_datasite_client.credentials.verify_key, user)
+    result = user_stash.set(root_datasite_client.credentials.verify_key, user)
     assert result.is_ok()
 
     user = result.ok()
@@ -26,22 +26,23 @@ def add_mock_user(root_datasite_client, user_stash: UserStash, user: User) -> Us
 def test_userstash_set(
     root_datasite_client, user_stash: UserStash, guest_user: User
 ) -> None:
-    result = user_stash.set(root_datasite_client.credentials.verify_key, guest_user)
-    assert result.is_ok()
-
-    created_user = result.ok()
+    created_user = user_stash.set(
+        root_datasite_client.credentials.verify_key, guest_user
+    ).unwrap()
     assert isinstance(created_user, User)
     assert guest_user == created_user
-    assert guest_user.id in user_stash.partition.data
+    assert user_stash.exists(
+        root_datasite_client.credentials.verify_key, created_user.id
+    )
 
 
 def test_userstash_set_duplicate(
     root_datasite_client, user_stash: UserStash, guest_user: User
 ) -> None:
-    result = user_stash.set(root_datasite_client.credentials.verify_key, guest_user)
-    assert result.is_ok()
-
-    original_count = len(user_stash.partition.data)
+    result = user_stash.set(
+        root_datasite_client.credentials.verify_key, guest_user
+    ).unwrap()
+    original_count = len(user_stash._data)
 
     result = user_stash.set(root_datasite_client.credentials.verify_key, guest_user)
     assert result.is_err()
@@ -49,7 +50,7 @@ def test_userstash_set_duplicate(
     assert type(exc) == SyftException
     assert exc.public_message
 
-    assert len(user_stash.partition.data) == original_count
+    assert len(user_stash._data) == original_count
 
 
 def test_userstash_get_by_uid(
@@ -171,11 +172,9 @@ def test_userstash_get_by_role(
     # prepare: add mock data
     user = add_mock_user(root_datasite_client, user_stash, guest_user)
 
-    result = user_stash.get_by_role(
+    searched_user = user_stash.get_by_role(
         root_datasite_client.credentials.verify_key, role=ServiceRole.GUEST
-    )
-    assert result.is_ok()
-    searched_user = result.ok()
+    ).unwrap()
     assert user == searched_user
 
 

@@ -73,6 +73,10 @@ class ObjectStash(Generic[StashT]):
     def root_verify_key(self) -> SyftVerifyKey:
         return self.db.root_verify_key
 
+    @property
+    def _data(self) -> list[StashT]:
+        return self.get_all(self.root_verify_key, has_permission=True).unwrap()
+
     @as_result(StashException)
     def check_type(self, obj: T, type_: type) -> T:
         if not isinstance(obj, type_):
@@ -434,7 +438,6 @@ class ObjectStash(Generic[StashT]):
         if has_permission:
             # ignoring permissions
             return stmt
-
         role = self.get_role(credentials)
         if role in (ServiceRole.ADMIN, ServiceRole.DATA_OWNER):
             # admins and data owners have all permissions

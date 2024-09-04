@@ -66,7 +66,7 @@ class UserStash(ObjectStash[User]):
     def get_by_role(self, credentials: SyftVerifyKey, role: ServiceRole) -> User:
         try:
             return self.get_one_by_field(
-                credentials=credentials, field_name="role", field_value=role
+                credentials=credentials, field_name="role", field_value=role.name
             ).unwrap()
         except NotFoundException as exc:
             private_msg = f"User with role {role} not found"
