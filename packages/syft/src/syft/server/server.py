@@ -33,6 +33,7 @@ from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..client.client import SyftClient
+from ..deployment_type import DeploymentType
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
@@ -311,6 +312,7 @@ class Server(AbstractServer):
         processes: int = 0,
         is_subprocess: bool = False,
         server_type: str | ServerType = ServerType.DATASITE,
+        deployment_type: str | DeploymentType = "remote",
         local_db: bool = False,
         reset: bool = False,
         blob_storage_config: BlobStorageConfig | None = None,
@@ -324,6 +326,7 @@ class Server(AbstractServer):
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        log_level: int | None = None,
         smtp_username: str | None = None,
         smtp_password: str | None = None,
         email_sender: str | None = None,
@@ -349,7 +352,15 @@ class Server(AbstractServer):
 
         if isinstance(server_type, str):
             server_type = ServerType(server_type)
+
         self.server_type = server_type
+
+        if isinstance(deployment_type, str):
+            deployment_type = DeploymentType(deployment_type)
+        self.deployment_type = deployment_type
+
+        # do this after we set the deployment type
+        self.set_log_level(log_level)
 
         if isinstance(server_side_type, str):
             server_side_type = ServerSideType(server_side_type)
@@ -442,6 +453,37 @@ class Server(AbstractServer):
             self.run_peer_health_checks(context=context)
 
         ServerRegistry.set_server_for(self.id, self)
+
+    def set_log_level(self, log_level: int | str | None) -> None:
+        def determine_log_level(
+            log_level: str | int | None, default: int
+        ) -> int | None:
+            if log_level is None:
+                return default
+            if isinstance(log_level, str):
+                level = logging.getLevelName(log_level.upper())
+                if isinstance(level, str) and level.startswith("Level "):
+                    level = logging.INFO  # defaults to info otherwise
+                return level  # type: ignore
+            return log_level
+
+        default = logging.CRITICAL
+        if self.deployment_type == DeploymentType.PYTHON:
+            default = logging.CRITICAL
+        elif self.dev_mode:  # if real deployment and dev mode
+            default = logging.INFO
+
+        self.log_level = determine_log_level(log_level, default)
+
+        logging.getLogger().setLevel(self.log_level)
+
+        if log_level == logging.DEBUG:
+            # only do this if specifically set, very noisy
+            logging.getLogger("uvicorn").setLevel(logging.DEBUG)
+            logging.getLogger("uvicorn.access").setLevel(logging.DEBUG)
+        else:
+            logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
+            logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
 
     @property
     def runs_in_docker(self) -> bool:
@@ -621,7 +663,7 @@ class Server(AbstractServer):
     ) -> None:
         """Starts in-memory workers for the server."""
 
-        worker_pools = self.pool_stash.get_all(credentials=self.verify_key).ok()
+        worker_pools = self.pool_stash.get_all(credentials=self.verify_key).unwrap()
         for worker_pool in worker_pools:  # type: ignore
             # Skip the default worker pool
             if worker_pool.name == DEFAULT_WORKER_POOL_NAME:
@@ -674,6 +716,7 @@ class Server(AbstractServer):
         local_db: bool = False,
         server_type: str | ServerType = ServerType.DATASITE,
         server_side_type: str | ServerSideType = ServerSideType.HIGH_SIDE,
+        deployment_type: str | DeploymentType = "remote",
         enable_warnings: bool = False,
         n_consumers: int = 0,
         thread_workers: bool = False,
@@ -701,6 +744,7 @@ class Server(AbstractServer):
             local_db=local_db,
             server_type=server_type,
             server_side_type=server_side_type,
+            deployment_type=deployment_type,
             enable_warnings=enable_warnings,
             blob_storage_config=blob_storage_config,
             queue_port=queue_port,

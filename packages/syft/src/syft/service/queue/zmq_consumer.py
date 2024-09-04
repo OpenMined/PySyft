@@ -88,7 +88,7 @@ class ZMQConsumer(QueueConsumer):
         try:
             if self.thread is not None:
                 self.thread.join(timeout=THREAD_TIMEOUT_SEC)
-                if self.thread.is_alive():
+                if self.thread is not None and self.thread.is_alive():
                     logger.error(
                         f"ZMQConsumer thread join timed out during closing. "
                         f"SyftWorker id {self.syft_worker_id}, "

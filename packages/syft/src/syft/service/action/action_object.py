@@ -1257,7 +1257,7 @@ class ActionObject(SyncableSyftObject):
     def has_storage_permission(self) -> bool:
         try:
             api = self.get_api()
-            return api.services.action.has_storage_permission(self.id)
+            return api.services.action.has_storage_permission(self.id.id)
         except Exception:
             return False
 
