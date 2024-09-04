@@ -15,6 +15,7 @@ import uuid
 from IPython import get_ipython
 from IPython.display import HTML
 from IPython.display import display
+import psutil
 from typing_extensions import Self
 
 # relative
@@ -335,9 +336,20 @@ def syft_exception_handler(
     shell: Any, etype: Any, evalue: Any, tb: Any, tb_offset: Any = None
 ) -> None:
     display(HTML(evalue._repr_html_()))
+    raise evalue
 
 
-try:
-    get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
-except Exception:
-    pass  # nosec
+runs_in_pytest = False
+for pid in psutil.pids():
+    try:
+        if "PYTEST_CURRENT_TEST" in psutil.Process(pid).environ():
+            runs_in_pytest = True
+    except Exception:
+        pass  # nosec
+
+
+if not runs_in_pytest:
+    try:
+        get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
+    except Exception:
+        pass  # nosec
