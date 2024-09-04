@@ -104,7 +104,7 @@ class TwinAPIEndpointView(SyftObject):
     mock_helper_functions: list[str] | None = None
     private_helper_functions: list[str] | None = None
     worker_pool: str | None = None
-    endpoint_timeout: int = 60
+    endpoint_timeout: int = 120
 
     __repr_attrs__ = [
         "path",
@@ -355,7 +355,7 @@ class UpdateTwinAPIEndpoint(PartialSyftObject, BaseTwinAPIEndpoint):
     private_function: PrivateAPIEndpoint | None = None
     mock_function: PublicAPIEndpoint
     description: MarkdownDescription | None = None
-    endpoint_timeout: int = 60
+    endpoint_timeout: int = 120
 
 
 @serializable()
@@ -370,7 +370,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     signature: Signature
     description: MarkdownDescription | None = None
     worker_pool: str | None = None
-    endpoint_timeout: int = 60
+    endpoint_timeout: int = 120
 
     def __init__(
         self, description: str | MarkdownDescription | None = "", **kwargs: Any
@@ -730,7 +730,7 @@ def api_endpoint(
     helper_functions: list[Callable] | None = None,
     description: MarkdownDescription | None = None,
     worker_pool: str | None = None,
-    endpoint_timeout: int = 60,
+    endpoint_timeout: int = 120,
 ) -> Callable[..., TwinAPIEndpoint | SyftError]:
     def decorator(f: Callable) -> TwinAPIEndpoint | SyftError:
         try:
@@ -793,7 +793,7 @@ def create_new_api_endpoint(
     private_function: Endpoint | None = None,
     description: MarkdownDescription | None = None,
     worker_pool: str | None = None,
-    endpoint_timeout: int = 60,
+    endpoint_timeout: int = 120,
     hide_mock_definition: bool = False,
     hide_private_definition: bool = True,
 ) -> CreateTwinAPIEndpoint | SyftError:
