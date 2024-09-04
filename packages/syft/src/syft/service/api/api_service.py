@@ -364,7 +364,7 @@ class APIService(AbstractService):
             or job.status == JobStatus.CREATED
         ):
             job = job_service.get(context, job_id)
-            time.sleep(0.1)
+            time.sleep(0.2)
             if (time.time() - custom_endpoint.endpoint_timeout) > start:
                 raise SyftException(
                     public_message=(

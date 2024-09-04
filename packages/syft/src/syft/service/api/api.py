@@ -401,7 +401,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
     description: MarkdownDescription | None = None
     action_object_id: UID
     worker_pool: str | None = None
-    endpoint_timeout: int = 60
+    endpoint_timeout: int = 120
 
     __attr_searchable__ = ["path"]
     __attr_unique__ = ["path"]
