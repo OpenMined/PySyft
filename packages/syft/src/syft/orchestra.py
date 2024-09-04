@@ -5,11 +5,12 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Callable
-from enum import Enum
 import getpass
 import inspect
+import json
 import logging
 import os
+from pathlib import Path
 import sys
 from typing import Any
 
@@ -21,6 +22,7 @@ from .abstract_server import ServerSideType
 from .abstract_server import ServerType
 from .client.client import login as sy_login
 from .client.client import login_as_guest as sy_login_as_guest
+from .deployment_type import DeploymentType
 from .protocol.data_protocol import stage_protocol_changes
 from .server.datasite import Datasite
 from .server.enclave import Enclave
@@ -61,13 +63,6 @@ def get_deployment_type(deployment_type: str | None) -> DeploymentType | None:
             f"deployment_type: {deployment_type} is not a valid DeploymentType: {DeploymentType}"
         )
     return None
-
-
-# Can also be specified by the environment variable
-# ORCHESTRA_DEPLOYMENT_TYPE
-class DeploymentType(Enum):
-    PYTHON = "python"
-    REMOTE = "remote"
 
 
 class ServerHandle:
@@ -184,6 +179,7 @@ def deploy_to_python(
     queue_port: int | None = None,
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
+    log_level: str | int | None = None,
     debug: bool = False,
     migrate: bool = False,
 ) -> ServerHandle:
@@ -212,9 +208,11 @@ def deploy_to_python(
         "n_consumers": n_consumers,
         "create_producer": create_producer,
         "association_request_auto_approval": association_request_auto_approval,
+        "log_level": log_level,
         "background_tasks": background_tasks,
         "debug": debug,
         "migrate": migrate,
+        "deployment_type": deployment_type_enum,
     }
 
     if port:
@@ -314,6 +312,7 @@ class Orchestra:
         local_db: bool = False,
         dev_mode: bool = False,
         reset: bool = False,
+        log_level: str | int | None = None,
         tail: bool = False,
         host: str | None = "0.0.0.0",  # nosec
         enable_warnings: bool = False,
@@ -325,7 +324,17 @@ class Orchestra:
         background_tasks: bool = False,
         debug: bool = False,
         migrate: bool = False,
+        from_state_folder: str | Path | None = None,
     ) -> ServerHandle:
+        if from_state_folder is not None:
+            with open(f"{from_state_folder}/config.json") as f:
+                kwargs = json.load(f)
+                server_handle = Orchestra.launch(**kwargs)
+                client = server_handle.login(  # nosec
+                    email="info@openmined.org", password="changethis"
+                )
+                client.load_migration_data(f"{from_state_folder}/migration.blob")
+                return server_handle
         if dev_mode is True:
             thread_workers = True
         os.environ["DEV_MODE"] = str(dev_mode)
@@ -355,6 +364,7 @@ class Orchestra:
                 local_db=local_db,
                 server_side_type=server_side_type_enum,
                 enable_warnings=enable_warnings,
+                log_level=log_level,
                 n_consumers=n_consumers,
                 thread_workers=thread_workers,
                 create_producer=create_producer,

@@ -172,6 +172,7 @@ def handle_message_multiprocessing(
         queue_config=queue_config,
         is_subprocess=True,
         migrate=False,
+        deployment_type=worker_settings.deployment_type,
     )
 
     # Set monitor thread for this job.
@@ -264,6 +265,7 @@ class APICallMessageHandler(AbstractMessageHandler):
             action_store_config=worker_settings.action_store_config,
             blob_storage_config=worker_settings.blob_store_config,
             server_side_type=worker_settings.server_side_type,
+            deployment_type=worker_settings.deployment_type,
             queue_config=queue_config,
             is_subprocess=True,
             migrate=False,

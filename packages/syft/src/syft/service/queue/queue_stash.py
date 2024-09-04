@@ -20,7 +20,6 @@ from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 
 
@@ -34,6 +33,7 @@ class Status(str, Enum):
 
 
 StatusPartitionKey = PartitionKey(key="status", type_=Status)
+_WorkerPoolPartitionKey = PartitionKey(key="worker_pool", type_=LinkedObject)
 
 
 @serializable()
@@ -41,7 +41,7 @@ class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_searchable__ = ["status"]
+    __attr_searchable__ = ["status", "worker_pool"]
 
     id: UID
     server_uid: UID
@@ -93,7 +93,6 @@ class APIEndpointQueueItem(QueueItem):
     service: str = "apiservice"
 
 
-@instrument
 @serializable(canonical_name="QueueStash", version=1)
 class QueueStash(NewBaseStash):
     object_type = QueueItem
@@ -168,4 +167,12 @@ class QueueStash(NewBaseStash):
         self, credentials: SyftVerifyKey, status: Status
     ) -> list[QueueItem]:
         qks = QueryKeys(qks=StatusPartitionKey.with_obj(status))
+
+        return self.query_all(credentials=credentials, qks=qks).unwrap()
+
+    @as_result(StashException)
+    def _get_by_worker_pool(
+        self, credentials: SyftVerifyKey, worker_pool: LinkedObject
+    ) -> list[QueueItem]:
+        qks = QueryKeys(qks=_WorkerPoolPartitionKey.with_obj(worker_pool))
         return self.query_all(credentials=credentials, qks=qks).unwrap()

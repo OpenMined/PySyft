@@ -42,6 +42,7 @@ from ...types.server_url import ServerURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
+from ...util.telemetry import TRACING_ENABLED
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,18 @@ MAX_QUEUE_SIZE = 100
 WRITE_EXPIRATION_TIME = 900  # seconds
 DEFAULT_FILE_PART_SIZE = 1024**3  # 1GB
 DEFAULT_UPLOAD_CHUNK_SIZE = 1024 * 800  # 800KB
+
+if TRACING_ENABLED:
+    try:
+        # third party
+        from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
+
+        BotocoreInstrumentor().instrument()
+        message = "> Added OTEL BotocoreInstrumentor"
+        print(message)
+        logger.info(message)
+    except Exception:  # nosec
+        pass
 
 
 @serializable()

@@ -33,6 +33,7 @@ from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..client.client import SyftClient
+from ..deployment_type import DeploymentType
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
@@ -65,9 +66,9 @@ from ..service.queue.queue_stash import APIEndpointQueueItem
 from ..service.queue.queue_stash import ActionQueueItem
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
-from ..service.queue.zmq_queue import QueueConfig
-from ..service.queue.zmq_queue import ZMQClientConfig
-from ..service.queue.zmq_queue import ZMQQueueConfig
+from ..service.queue.zmq_client import QueueConfig
+from ..service.queue.zmq_client import ZMQClientConfig
+from ..service.queue.zmq_client import ZMQQueueConfig
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import AbstractService
@@ -296,7 +297,6 @@ class AuthServerContextRegistry:
         return cls.__server_context_registry__.get(key)
 
 
-@instrument
 class Server(AbstractServer):
     signing_key: SyftSigningKey | None
     required_signed_calls: bool = True
@@ -316,6 +316,7 @@ class Server(AbstractServer):
         processes: int = 0,
         is_subprocess: bool = False,
         server_type: str | ServerType = ServerType.DATASITE,
+        deployment_type: str | DeploymentType = "remote",
         local_db: bool = False,
         reset: bool = False,
         blob_storage_config: BlobStorageConfig | None = None,
@@ -329,6 +330,7 @@ class Server(AbstractServer):
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        log_level: int | None = None,
         smtp_username: str | None = None,
         smtp_password: str | None = None,
         email_sender: str | None = None,
@@ -354,7 +356,15 @@ class Server(AbstractServer):
 
         if isinstance(server_type, str):
             server_type = ServerType(server_type)
+
         self.server_type = server_type
+
+        if isinstance(deployment_type, str):
+            deployment_type = DeploymentType(deployment_type)
+        self.deployment_type = deployment_type
+
+        # do this after we set the deployment type
+        self.set_log_level(log_level)
 
         if isinstance(server_side_type, str):
             server_side_type = ServerSideType(server_side_type)
@@ -444,6 +454,37 @@ class Server(AbstractServer):
 
         ServerRegistry.set_server_for(self.id, self)
 
+    def set_log_level(self, log_level: int | str | None) -> None:
+        def determine_log_level(
+            log_level: str | int | None, default: int
+        ) -> int | None:
+            if log_level is None:
+                return default
+            if isinstance(log_level, str):
+                level = logging.getLevelName(log_level.upper())
+                if isinstance(level, str) and level.startswith("Level "):
+                    level = logging.INFO  # defaults to info otherwise
+                return level  # type: ignore
+            return log_level
+
+        default = logging.CRITICAL
+        if self.deployment_type == DeploymentType.PYTHON:
+            default = logging.CRITICAL
+        elif self.dev_mode:  # if real deployment and dev mode
+            default = logging.INFO
+
+        self.log_level = determine_log_level(log_level, default)
+
+        logging.getLogger().setLevel(self.log_level)
+
+        if log_level == logging.DEBUG:
+            # only do this if specifically set, very noisy
+            logging.getLogger("uvicorn").setLevel(logging.DEBUG)
+            logging.getLogger("uvicorn.access").setLevel(logging.DEBUG)
+        else:
+            logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
+            logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
+
     @property
     def runs_in_docker(self) -> bool:
         path = "/proc/self/cgroup"
@@ -458,6 +499,8 @@ class Server(AbstractServer):
             path = self.get_temp_dir("db")
             file_name: str = f"{self.id}.sqlite"
             if self.dev_mode:
+                # leave this until the logger shows this in the notebook
+                print(f"{store_type}'s SQLite DB path: {path/file_name}")
                 logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
             return SQLiteStoreConfig(
                 client_config=SQLiteStoreClientConfig(
@@ -620,7 +663,7 @@ class Server(AbstractServer):
     ) -> None:
         """Starts in-memory workers for the server."""
 
-        worker_pools = self.pool_stash.get_all(credentials=self.verify_key).ok()
+        worker_pools = self.pool_stash.get_all(credentials=self.verify_key).unwrap()
         for worker_pool in worker_pools:  # type: ignore
             # Skip the default worker pool
             if worker_pool.name == DEFAULT_WORKER_POOL_NAME:
@@ -673,6 +716,7 @@ class Server(AbstractServer):
         local_db: bool = False,
         server_type: str | ServerType = ServerType.DATASITE,
         server_side_type: str | ServerSideType = ServerSideType.HIGH_SIDE,
+        deployment_type: str | DeploymentType = "remote",
         enable_warnings: bool = False,
         n_consumers: int = 0,
         thread_workers: bool = False,
@@ -700,6 +744,7 @@ class Server(AbstractServer):
             local_db=local_db,
             server_type=server_type,
             server_side_type=server_side_type,
+            deployment_type=deployment_type,
             enable_warnings=enable_warnings,
             blob_storage_config=blob_storage_config,
             queue_port=queue_port,
@@ -1048,6 +1093,7 @@ class Server(AbstractServer):
                 return result
             sleep(0.1)
 
+    @instrument
     def resolve_future(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem:
         queue_obj = self.queue_stash.pop_on_complete(credentials, uid).unwrap()
         queue_obj._set_obj_location_(
@@ -1056,6 +1102,7 @@ class Server(AbstractServer):
         )
         return queue_obj
 
+    @instrument
     def forward_message(
         self, api_call: SyftAPICall | SignedSyftAPICall
     ) -> Result | QueueItem | SyftObject | Any:
@@ -1121,6 +1168,7 @@ class Server(AbstractServer):
             .unwrap()
         )
 
+    @instrument
     def handle_api_call(
         self,
         api_call: SyftAPICall | SignedSyftAPICall,
@@ -1266,6 +1314,7 @@ class Server(AbstractServer):
         credentials: SyftVerifyKey,
         method: str,
         path: str,
+        log_id: UID,
         *args: Any,
         worker_pool: str | None = None,
         **kwargs: Any,
@@ -1294,7 +1343,7 @@ class Server(AbstractServer):
             job_id=job_id,
             worker_settings=worker_settings,
             args=args,
-            kwargs={"path": path, **kwargs},
+            kwargs={"path": path, "log_id": log_id, **kwargs},
             has_execute_permissions=True,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
@@ -1327,6 +1376,7 @@ class Server(AbstractServer):
         )
         return worker_pool_ref
 
+    @instrument
     @as_result(SyftException)
     def add_action_to_queue(
         self,
@@ -1376,6 +1426,7 @@ class Server(AbstractServer):
             user_id=user_id,
         ).unwrap()
 
+    @instrument
     @as_result(SyftException)
     def add_queueitem_to_queue(
         self,
@@ -1385,9 +1436,11 @@ class Server(AbstractServer):
         action: Action | None = None,
         parent_job_id: UID | None = None,
         user_id: UID | None = None,
+        log_id: UID | None = None,
         job_type: JobType = JobType.JOB,
     ) -> Job:
-        log_id = UID()
+        if log_id is None:
+            log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(server=self, credentials=credentials, role=role)
 
@@ -1475,6 +1528,7 @@ class Server(AbstractServer):
             context, user_code_id, api_call.kwargs
         )
 
+    @instrument
     def add_api_call_to_queue(
         self, api_call: SyftAPICall, parent_job_id: UID | None = None
     ) -> SyftSuccess:
@@ -1592,6 +1646,7 @@ class Server(AbstractServer):
             credentials=self.verify_key, pool_name=name
         ).unwrap()
 
+    @instrument
     def get_api(
         self,
         for_user: SyftVerifyKey | None = None,

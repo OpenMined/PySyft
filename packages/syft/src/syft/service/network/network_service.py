@@ -31,7 +31,6 @@ from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.transforms import transform_method
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ...util.util import generate_token
 from ...util.util import get_env
 from ...util.util import prompt_warning_message
@@ -81,7 +80,6 @@ class ServerPeerAssociationStatus(Enum):
     PEER_NOT_FOUND = "PEER_NOT_FOUND"
 
 
-@instrument
 @serializable(canonical_name="NetworkStash", version=1)
 class NetworkStash(NewBaseUIDStoreStash):
     object_type = ServerPeer
@@ -166,7 +164,6 @@ class NetworkStash(NewBaseUIDStoreStash):
         ).unwrap()
 
 
-@instrument
 @serializable(canonical_name="NetworkService", version=1)
 class NetworkService(AbstractService):
     store: DocumentStore

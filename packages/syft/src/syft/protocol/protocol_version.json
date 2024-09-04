@@ -339,7 +339,7 @@
         },
         "4": {
           "version": 4,
-          "hash": "cf6c1cb55d569af9823d8541ca038806bd350450a919345244ed4f432a099f34",
+          "hash": "b8067777967a0e06733433e179e549caaf501419d62f7e8474ee33b839e3890d",
           "action": "add"
         }
       },
@@ -403,6 +403,11 @@
         "1": {
           "version": 1,
           "hash": "c7addbaf2777707f3e91e5c1e092343476cd22efc4ec8617f39ccf76e61a5a14",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "846ba36e8737a1bec16853c9de54c4948450009278e0b76fe7e3355ef9e70089",
           "action": "add"
         }
       },
@@ -482,6 +487,11 @@
         }
       },
       "JobItem": {
+        "1": {
+          "version": 1,
+          "hash": "0b32277b7d3b9bdc14a2a51cc9005f8254e7f7b6ec059ddcccbcd681a807afb6",
+          "action": "add"
+        },
         "2": {
           "version": 2,
           "hash": "b087d0c62b7d304c6ca80e4fb0e8a7f2a444be8f8cba57490dc09aeb98033105",
@@ -743,6 +753,11 @@
           "version": 1,
           "hash": "cb96b8c8413609e1224341d1b0dd1efb08387c0ff7b0ff65eba36c0b104c9ed1",
           "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "1d1b14c196221ecf6d644d7dcaa32ac9e90361b2687fa83161ff399ebc6df1bd",
+          "action": "add"
         }
       },
       "BlobRetrieval": {
@@ -1000,7 +1015,7 @@
       "WorkerSettings": {
         "1": {
           "version": 1,
-          "hash": "b8ddbe75a95b0312a64b5f25e0fc415aeac5c391975d02b515db8c848482f737",
+          "hash": "dca33003904a71688e5b07db65f8833eb4de8135aade7154076b8eafbb94d26b",
           "action": "add"
         }
       },

@@ -16,7 +16,6 @@ from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
@@ -37,7 +36,6 @@ from .api import UpdateTwinAPIEndpoint
 from .api_stash import TwinAPIEndpointStash
 
 
-@instrument
 @serializable(canonical_name="APIService", version=1)
 class APIService(AbstractService):
     store: DocumentStore
@@ -337,13 +335,14 @@ class APIService(AbstractService):
             context=context,
             endpoint_path=path,
         ).unwrap()
-
+        log_id = UID()
         job = context.server.add_api_endpoint_execution_to_queue(
             context.credentials,
             method,
             path,
             *args,
             worker_pool=custom_endpoint.worker_pool,
+            log_id=log_id,
             **kwargs,
         )
 
@@ -435,6 +434,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
         path: str,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> SyftSuccess:
         """Call a Custom API Method"""
@@ -443,7 +443,9 @@ class APIService(AbstractService):
             endpoint_path=path,
         ).unwrap()
 
-        exec_result = custom_endpoint.exec(context, *args, **kwargs).unwrap()
+        exec_result = custom_endpoint.exec(
+            context, *args, log_id=log_id, **kwargs
+        ).unwrap()
         action_obj = ActionObject.from_obj(exec_result)
         action_service = cast(ActionService, context.server.get_service(ActionService))
         try:
@@ -466,6 +468,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
         path: str,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> ActionObject:
         """Call a Custom API Method in public mode"""
@@ -474,7 +477,7 @@ class APIService(AbstractService):
             endpoint_path=path,
         ).unwrap()
         exec_result = custom_endpoint.exec_mock_function(
-            context, *args, **kwargs
+            context, *args, log_id=log_id, **kwargs
         ).unwrap()
 
         action_obj = ActionObject.from_obj(exec_result)
@@ -501,6 +504,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
         path: str,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> ActionObject:
         """Call a Custom API Method in private mode"""
@@ -510,7 +514,7 @@ class APIService(AbstractService):
         ).unwrap()
 
         exec_result = custom_endpoint.exec_private_function(
-            context, *args, **kwargs
+            context, *args, log_id=log_id, **kwargs
         ).unwrap()
 
         action_obj = ActionObject.from_obj(exec_result)
@@ -546,6 +550,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
         endpoint_uid: UID,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> Any:
         endpoint = self.get_endpoint_by_uid(context, endpoint_uid).unwrap()
@@ -553,7 +558,9 @@ class APIService(AbstractService):
         if not selected_code:
             selected_code = endpoint.mock_function
 
-        return endpoint.exec_code(selected_code, context, *args, **kwargs).unwrap()
+        return endpoint.exec_code(
+            selected_code, context, *args, log_id=log_id, **kwargs
+        ).unwrap()
 
     @as_result(StashException, NotFoundException, SyftException)
     def execute_service_side_endpoint_private_by_id(
@@ -561,11 +568,12 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
         endpoint_uid: UID,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> Any:
         endpoint = self.get_endpoint_by_uid(context, endpoint_uid).unwrap()
         return endpoint.exec_code(
-            endpoint.private_function, context, *args, **kwargs
+            endpoint.private_function, context, *args, log_id=log_id, **kwargs
         ).unwrap()
 
     @as_result(StashException, NotFoundException, SyftException)
@@ -574,11 +582,12 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
         endpoint_uid: UID,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> Any:
         endpoint = self.get_endpoint_by_uid(context, endpoint_uid).unwrap()
         return endpoint.exec_code(
-            endpoint.mock_function, context, *args, **kwargs
+            endpoint.mock_function, context, *args, log_id=log_id, **kwargs
         ).unwrap()
 
     @as_result(StashException, NotFoundException)

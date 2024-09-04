@@ -399,7 +399,6 @@ class InputPolicy(Policy):
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
-        code_item_id: UID,
     ) -> bool:
         raise NotImplementedError
 
@@ -407,7 +406,6 @@ class InputPolicy(Policy):
         self,
         kwargs: dict[Any, Any],
         context: AuthedServiceContext,
-        code_item_id: UID,
     ) -> dict[Any, Any]:
         raise NotImplementedError
 
@@ -541,7 +539,6 @@ class MixedInputPolicy(InputPolicy):
         self,
         kwargs: dict[str, UID],
         context: AuthedServiceContext,
-        code_item_id: UID,
     ) -> dict[Any, Any]:
         try:
             res = {}
@@ -571,12 +568,10 @@ class MixedInputPolicy(InputPolicy):
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
-        code_item_id: UID,
     ) -> bool:
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,
             context=context,
-            code_item_id=code_item_id,
         )
         expected_input_kwargs = set()
 
@@ -601,7 +596,7 @@ class MixedInputPolicy(InputPolicy):
 
 @as_result(SyftException, NotFoundException, StashException)
 def retrieve_from_db(
-    code_item_id: UID, allowed_inputs: dict[str, UID], context: AuthedServiceContext
+    allowed_inputs: dict[str, UID], context: AuthedServiceContext
 ) -> dict[str, Any]:
     # relative
     from ...service.action.action_object import TwinMode
@@ -685,14 +680,12 @@ class ExactMatch(InputPolicy):
         self,
         kwargs: dict[Any, Any],
         context: AuthedServiceContext,
-        code_item_id: UID,
     ) -> dict[Any, Any]:
         allowed_inputs = allowed_ids_only(
             allowed_inputs=self.inputs, kwargs=kwargs, context=context
         ).unwrap()
 
         return retrieve_from_db(
-            code_item_id=code_item_id,
             allowed_inputs=allowed_inputs,
             context=context,
         ).unwrap()
@@ -701,12 +694,10 @@ class ExactMatch(InputPolicy):
         self,
         context: AuthedServiceContext,
         usr_input_kwargs: dict,
-        code_item_id: UID,
     ) -> bool:
         filtered_input_kwargs = self.filter_kwargs(
             kwargs=usr_input_kwargs,
             context=context,
-            code_item_id=code_item_id,
         )
 
         expected_input_kwargs = set()

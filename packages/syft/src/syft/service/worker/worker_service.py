@@ -19,7 +19,6 @@ from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..service import AbstractService
 from ..service import AuthedServiceContext
 from ..service import service_method
@@ -38,7 +37,6 @@ from .worker_pool import _get_worker_container_status
 from .worker_stash import WorkerStash
 
 
-@instrument
 @serializable(canonical_name="WorkerService", version=1)
 class WorkerService(AbstractService):
     store: DocumentStore

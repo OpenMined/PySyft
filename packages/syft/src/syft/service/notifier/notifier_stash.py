@@ -13,7 +13,6 @@ from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from .notifier import NotifierSettings
 
@@ -21,7 +20,6 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
-@instrument
 @serializable(canonical_name="NotifierStash", version=1)
 class NotifierStash(NewBaseStash):
     object_type = NotifierSettings
@@ -57,17 +55,4 @@ class NotifierStash(NewBaseStash):
         # we dont use and_then logic here as it is hard because of the order of the arguments
         return (
             super().set(credentials=credentials, obj=result).unwrap()
-        )  # TODO check if result isInstance(Ok)
-
-    @as_result(StashException)
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        settings: NotifierSettings,
-        has_permission: bool = False,
-    ) -> NotifierSettings:
-        result = self.check_type(settings, self.object_type).unwrap()
-        # we dont use and_then logic here as it is hard because of the order of the arguments
-        return (
-            super().update(credentials=credentials, obj=result).unwrap()
         )  # TODO check if result isInstance(Ok)
