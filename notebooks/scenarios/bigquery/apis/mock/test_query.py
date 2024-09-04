@@ -84,6 +84,8 @@ def make_test_query(settings: dict) -> Callable:
 
         # third party
         from google.api_core.exceptions import BadRequest
+        from google.api_core.exceptions import DeadlineExceeded
+        from google.api_core.exceptions import ResourceExhausted
 
         # syft absolute
         from syft import SyftException
@@ -119,16 +121,20 @@ def make_test_query(settings: dict) -> Callable:
                 )
 
         timed_out = "TIMED OUT"
-        timed_out_post = (
-            "BadRequest: 400 POST "
-            "https://bigquery.googleapis.com/bigquery/v2/projects/project-id/"
-            "queries?prettyPrint=false: "
-        )
         if timed_out in sql_query:
             try:
-                raise BadRequest(f"{timed_out_post}. Query {sql_query} timed out.")
+                raise DeadlineExceeded(f"Query {sql_query} timed out.")
             except Exception:
                 raise SyftException(public_message=f"*query {sql_query} timed out.")
+
+        too_big_query = "TOO BIG QUERY"
+        if too_big_query in sql_query:
+            try:
+                raise ResourceExhausted(f"Query {sql_query} exhausts all resources.")
+            except Exception:
+                raise SyftException(
+                    public_message=f"*query {sql_query} exhausts all resources."
+                )
 
         if not context.code.is_valid_sql(sql_query):
             raise BadRequest(
