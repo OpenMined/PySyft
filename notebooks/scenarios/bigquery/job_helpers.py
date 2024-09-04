@@ -312,7 +312,7 @@ def resolve_request(request):
     if service_func_name.startswith("job_too_much_text"):
         request.deny(reason="too long, boring!")  # deny because it is bad
     if service_func_name.startswith("job_long_name"):
-        request.deny(reason="too long, boring!")  # deny because it is bad
+        request.approve()
     if service_func_name.startswith("job_funcname_xss"):
         request.deny(reason="too long, boring!")  # never reach doesnt matter
     if service_func_name.startswith("job_query_xss"):
@@ -330,7 +330,6 @@ create_job_functions = [
     create_simple_query_job,
     create_simple_query_job,
     create_simple_query_job,
-    create_wrong_asset_query,
     create_wrong_syntax_query,
     create_long_query_job,
     create_query_long_name,
