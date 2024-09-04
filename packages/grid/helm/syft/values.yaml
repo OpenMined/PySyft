@@ -176,7 +176,7 @@ server:
   tracing:
     enabled: false
     # OpenTelemetry Collector endpoint
-    otlpEndpoint: null
+    otlpEndpoint: ""
     otlpProtocol: grpc
 
   # Default Worker pool settings
