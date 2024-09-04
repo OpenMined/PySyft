@@ -16,6 +16,7 @@ from syft.service.request.request import UserCodeStatusChange
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
+from syft.service.user.user import UserView
 from syft.service.user.user_roles import ServiceRole
 from syft.types.errors import SyftException
 
@@ -66,14 +67,17 @@ def test_new_admin_can_list_user_code(
 
     admin = root_client.login(email=email, password=pw)
 
-    root_client.api.services.user.update(uid=admin.account.id, role=ServiceRole.ADMIN)
+    result: UserView = root_client.api.services.user.update(
+        uid=admin.account.id, role=ServiceRole.ADMIN
+    )
+    assert result.role == ServiceRole.ADMIN
 
     if delete_original_admin:
         res = root_client.api.services.user.delete(root_client.account.id)
         assert not isinstance(res, SyftError)
 
     user_code_stash = worker.get_service("usercodeservice").stash
-    user_code = user_code_stash.get_all(user_code_stash.store.root_verify_key).ok()
+    user_code = user_code_stash.get_all(user_code_stash.root_verify_key).ok()
 
     assert len(user_code) == len(admin.code.get_all())
     assert {c.id for c in user_code} == {c.id for c in admin.code}

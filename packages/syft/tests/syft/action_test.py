@@ -75,7 +75,7 @@ def test_lib_function_action(worker):
 
     assert isinstance(res, ActionObject)
     assert all(res == np.array([0, 0, 0]))
-    assert len(worker.get_service("actionservice").store.data) > 0
+    assert len(worker.get_service("actionservice").store._data) > 0
 
 
 def test_call_lib_function_action2(worker):
@@ -90,7 +90,7 @@ def test_lib_class_init_action(worker):
 
     assert isinstance(res, ActionObject)
     assert res == np.float32(4.0)
-    assert len(worker.get_service("actionservice").store.data) > 0
+    assert len(worker.get_service("actionservice").store._data) > 0
 
 
 def test_call_lib_wo_permission(worker):

@@ -367,6 +367,7 @@ class Request(SyncableSyftObject):
     __attr_searchable__ = [
         "requesting_user_verify_key",
         "approving_user_verify_key",
+        "code_id",
     ]
     __attr_unique__ = ["request_hash"]
     __repr_attrs__ = [

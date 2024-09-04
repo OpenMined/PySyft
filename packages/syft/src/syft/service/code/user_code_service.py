@@ -78,7 +78,7 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> SyftSuccess:
         """Add User Code"""
-        user_code = self._submit(context, code, exists_ok=False)
+        user_code = self._submit(context, code, exists_ok=False).unwrap()
         return SyftSuccess(
             message="User Code Submitted", require_api_update=True, value=user_code
         )
@@ -109,16 +109,17 @@ class UserCodeService(AbstractService):
                 context.credentials,
                 code_hash=get_code_hash(submit_code.code, context.credentials),
             ).unwrap()
+            # no exception, code exists
+            if exists_ok:
+                return existing_code
+            else:
+                raise SyftException(
+                    public_message="UserCode with this code already exists"
+                )
         except NotFoundException:
-            existing_code = None
-
-        if not exists_ok and existing_code is not None:
-            raise SyftException(
-                public_message="UserCode with this code already exists",
-            )
+            pass
 
         code = submit_code.to(UserCode, context=context)
-
         result = self._post_user_code_transform_ops(context, code)
 
         if result.is_err():
@@ -301,7 +302,7 @@ class UserCodeService(AbstractService):
         reason: str | None = "",
     ) -> Request:
         """Request Code execution on user code"""
-        user_code = self._submit(context, code, exists_ok=False).unwrap()
+        user_code = self._get_or_submit_user_code(context, code).unwrap()
 
         result = self._request_code_execution(
             context,

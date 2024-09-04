@@ -12,7 +12,6 @@ from ...store.blob_storage import BlobRetrieval
 from ...store.blob_storage.on_disk import OnDiskBlobDeposit
 from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ...store.document_store import DocumentStore
-from ...store.document_store import UIDPartitionKey
 from ...types.blob_storage import AzureSecureFilePathLocation
 from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry
@@ -323,8 +322,8 @@ class BlobStorageService(AbstractService):
                         public_message=f"Failed to delete blob file with id '{uid}'. Error: {e}"
                     )
 
-            self.stash.delete(
-                context.credentials, UIDPartitionKey.with_obj(uid), has_permission=True
+            self.stash.delete_by_uid(
+                context.credentials, uid, has_permission=True
             ).unwrap()
         except Exception as e:
             raise SyftException(

@@ -47,7 +47,6 @@ def mock_queue_object():
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue_stash"),
         pytest.lazy_fixture("sqlite_queue_stash"),
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
@@ -61,7 +60,6 @@ def test_queue_stash_sanity(queue: Any) -> None:
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue_stash"),
         pytest.lazy_fixture("sqlite_queue_stash"),
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
@@ -102,7 +100,6 @@ def test_queue_stash_set_get(root_verify_key, queue: Any) -> None:
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue_stash"),
         pytest.lazy_fixture("sqlite_queue_stash"),
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
@@ -133,7 +130,6 @@ def test_queue_stash_update(root_verify_key, queue: Any) -> None:
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue_stash"),
         pytest.lazy_fixture("sqlite_queue_stash"),
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
@@ -176,7 +172,6 @@ def test_queue_set_existing_queue_threading(root_verify_key, queue: Any) -> None
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue_stash"),
         pytest.lazy_fixture("sqlite_queue_stash"),
         pytest.lazy_fixture("mongo_queue_stash"),
     ],
@@ -220,7 +215,6 @@ def test_queue_update_existing_queue_threading(root_verify_key, queue: Any) -> N
 @pytest.mark.parametrize(
     "queue",
     [
-        pytest.lazy_fixture("dict_queue_stash"),
         pytest.lazy_fixture("sqlite_queue_stash"),
         pytest.lazy_fixture("mongo_queue_stash"),
     ],

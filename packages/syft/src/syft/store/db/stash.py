@@ -1,7 +1,6 @@
 # stdlib
 
 # stdlib
-from functools import cache
 from typing import Any
 from typing import Generic
 from typing import cast
@@ -359,8 +358,6 @@ class ObjectStash(Generic[StashT]):
         # TODO make unwrappable serde
         return deserialize_json(row.fields)
 
-    # TODO add cache invalidation, ignore B019
-    @cache  # noqa: B019
     def get_role(self, credentials: SyftVerifyKey) -> ServiceRole:
         # TODO error handling
         user_table = Table("User", Base.metadata)
