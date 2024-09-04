@@ -12,8 +12,6 @@ APPDIR=${APPDIR:-$HOME/app}
 RELOAD=""
 ROOT_PROC=""
 
-echo "Starting with TRACING=${TRACING}"
-
 if [[ ${DEV_MODE} == "True" ]];
 then
     echo "Hot-reload Enabled"
@@ -33,7 +31,6 @@ then
     # TODOs:
     # ? Kubernetes OTel operator is recommended by signoz
     export OTEL_PYTHON_LOG_CORRELATION=${OTEL_PYTHON_LOG_CORRELATION:-true}
-
     echo "OpenTelemetry Enabled. Endpoint=$OTEL_EXPORTER_OTLP_ENDPOINT Protocol=$OTEL_EXPORTER_OTLP_PROTOCOL"
 else
     echo "OpenTelemetry Disabled"
