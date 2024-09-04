@@ -48,6 +48,7 @@ T = TypeVar("T")
 class ObjectStash(Generic[StashT]):
     table: Table
     object_type: type[SyftObject]
+    allow_any_type: bool = False
 
     def __init__(self, store: DBManager) -> None:
         self.db = store
@@ -701,7 +702,8 @@ class ObjectStash(Generic[StashT]):
         add_storage_permission: bool = True,  # TODO: check the default value
         ignore_duplicates: bool = False,
     ) -> StashT:
-        self.check_type(obj, self.object_type).unwrap()
+        if not self.allow_any_type:
+            self.check_type(obj, self.object_type).unwrap()
         uid = obj.id
 
         # check if the object already exists
