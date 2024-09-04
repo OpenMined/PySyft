@@ -321,6 +321,9 @@ def load_jobs(users, high_client, filepath="./jobs.json"):
         data = {}
     jobs_list = []
     for user in users:
+        if user.email not in data:
+            print(f"{user.email} missing from jobs")
+            continue
         user_jobs = data[user.email]
         for user_job in user_jobs:
             test_job = TestJob(**user_job)
