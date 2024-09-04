@@ -1525,6 +1525,14 @@
     "warning": "",
     "hash": "cf90b8a370cd33abc37908bb50c09a4fa3b79fe1e374b2557ab6e753deceec79"
   },
+  "Requestservice.request.get_all_approved": {
+    "public_path": "request.get_all_approved",
+    "RBAC_permission": "DATA_SCIENTIST_ROLE_LEVEL",
+    "signature": {},
+    "return_type": "list[syft.service.request.request.Request]",
+    "warning": "",
+    "hash": "3e2a003fdd238554a545497578e1e0786edc1bf5b794c579b0bb0a61fa3f6605"
+  },
   "Requestservice.request.get_all_info": {
     "public_path": "request.get_all_info",
     "RBAC_permission": "DATA_OWNER_ROLE_LEVEL",
@@ -1535,6 +1543,22 @@
     "return_type": "list[list[syft.service.request.request.RequestInfo]] | list[syft.service.request.request.RequestInfo]",
     "warning": "",
     "hash": "b8687d0df70b62635798c6bc818cf548b7fb4887ec0938c89e396194d14d100f"
+  },
+  "Requestservice.request.get_all_pending": {
+    "public_path": "request.get_all_pending",
+    "RBAC_permission": "DATA_SCIENTIST_ROLE_LEVEL",
+    "signature": {},
+    "return_type": "list[syft.service.request.request.Request]",
+    "warning": "",
+    "hash": "a0c16eec47701f9639fac41c1871fb0956e44b84aac76dfb7845bacdfcd132bb"
+  },
+  "Requestservice.request.get_all_rejected": {
+    "public_path": "request.get_all_rejected",
+    "RBAC_permission": "DATA_SCIENTIST_ROLE_LEVEL",
+    "signature": {},
+    "return_type": "list[syft.service.request.request.Request]",
+    "warning": "",
+    "hash": "59195c8267af462cc61a2e9251ce653288327c34428c43606a5cef6044a76d4f"
   },
   "Requestservice.request.get_by_uid": {
     "public_path": "request.get_by_uid",
