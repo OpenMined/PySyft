@@ -23,6 +23,8 @@ from .action_permissions import StoragePermission
 
 @serializable(canonical_name="ActionObjectSQLStore", version=1)
 class ActionObjectStash(ObjectStash[ActionObject]):
+    allow_any_type = True
+
     @as_result(NotFoundException, SyftException)
     def get(
         self, uid: UID, credentials: SyftVerifyKey, has_permission: bool = False

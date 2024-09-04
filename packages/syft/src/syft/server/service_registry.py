@@ -3,7 +3,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from dataclasses import field
 import typing
-from typing import Any
 from typing import TYPE_CHECKING
 
 # relative
@@ -39,7 +38,6 @@ from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_service import WorkerService
-from ..store.db.stash import ObjectStash
 
 if TYPE_CHECKING:
     # relative
@@ -106,31 +104,10 @@ class ServiceRegistry:
         }
 
     @classmethod
-    def _uses_new_store(cls, service_cls: type[AbstractService]) -> bool:
-        stash_annotation = service_cls.__annotations__.get("stash")
-        try:
-            if issubclass(stash_annotation, ObjectStash):
-                return True
-            return False
-        except Exception:
-            return False
-
-    @classmethod
     def _construct_services(cls, server: "Server") -> dict[str, AbstractService]:
         service_dict = {}
         for field_name, service_cls in cls.get_service_classes().items():
-            svc_kwargs: dict[str, Any] = {}
-
-            # Use new DB
-            if cls._uses_new_store(service_cls):
-                svc_kwargs["store"] = server.db
-
-            # Use old DB
-            else:
-                svc_kwargs["store"] = server.document_store
-                print("Using old store:", service_cls)
-
-            service = service_cls(**svc_kwargs)
+            service = service_cls(store=server.db)
             service_dict[field_name] = service
         return service_dict
 
