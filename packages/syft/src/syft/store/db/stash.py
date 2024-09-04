@@ -114,10 +114,10 @@ class ObjectStash(Generic[StashT]):
                 ),
                 # TODO rename and use on SyftObject fields
                 Column(
-                    "created_at", sa.DateTime, server_default=sa.func.now(), index=True
+                    "_created_at", sa.DateTime, server_default=sa.func.now(), index=True
                 ),
-                Column("updated_at", sa.DateTime, server_onupdate=sa.func.now()),
-                Column("deleted_at", sa.DateTime, index=True),
+                Column("_updated_at", sa.DateTime, server_onupdate=sa.func.now()),
+                Column("_deleted_at", sa.DateTime, index=True),
             )
         return Base.metadata.tables[table_name]
 
@@ -398,8 +398,8 @@ class ObjectStash(Generic[StashT]):
 
         if order_by == "id":
             col = self.table.c.id
-        if order_by == "created_date" or order_by == "created_at":
-            col = self.table.c.created_at
+        if order_by == "created_date" or order_by == "_created_at":
+            col = self.table.c._created_at
         else:
             col = self.table.c.fields[order_by]
 
@@ -492,6 +492,8 @@ class ObjectStash(Generic[StashT]):
         - To fix, we either need db-supported computed fields, or know in our ORM which fields should be re-computed.
         """
 
+        self.check_type(obj, self.object_type).unwrap()
+
         # TODO has_permission is not used
         if not self.is_unique(obj):
             raise StashException(f"Some fields are not unique for {type(obj).__name__}")
@@ -503,7 +505,14 @@ class ObjectStash(Generic[StashT]):
             permission=ActionPermission.WRITE,
             has_permission=has_permission,
         )
-        stmt = stmt.values(fields=serialize_json(obj))
+        fields = serialize_json(obj)
+        try:
+            deserialize_json(fields)
+        except Exception as e:
+            raise StashException(
+                f"Error serializing object: {e}. Some fields are invalid."
+            )
+        stmt = stmt.values(fields=fields)
 
         self.session.execute(stmt)
         self.session.commit()

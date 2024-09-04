@@ -59,13 +59,9 @@ def test_get_all_inbox_for_verify_key(root_verify_key, document_store) -> None:
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
 
-    response = test_stash.get_all_inbox_for_verify_key(
+    result = test_stash.get_all_inbox_for_verify_key(
         root_verify_key, random_verify_key
-    )
-
-    assert response.is_ok()
-
-    result = response.ok()
+    ).unwrap()
     assert len(result) == 0
 
     # list of mock notifications
@@ -78,14 +74,11 @@ def test_get_all_inbox_for_verify_key(root_verify_key, document_store) -> None:
         notification_list.append(mock_notification)
 
     # returned list of notifications from stash that's sorted by created_at
-    response2 = test_stash.get_all_inbox_for_verify_key(
+    result = test_stash.get_all_inbox_for_verify_key(
         root_verify_key, random_verify_key
-    )
+    ).unwrap()
 
-    assert response2.is_ok()
-
-    result = response2.ok()
-    assert len(response2.value) == 5
+    assert len(result) == 5
 
     for notification in notification_list:
         # check if all notifications are present in the result
@@ -169,28 +162,21 @@ def test_get_all_by_verify_key_for_status(root_verify_key, document_store) -> No
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
 
-    response = test_stash.get_all_by_verify_key_for_status(
+    result = test_stash.get_all_by_verify_key_for_status(
         root_verify_key, random_verify_key, NotificationStatus.READ
-    )
-
-    assert response.is_ok()
-
-    result = response.ok()
+    ).unwrap()
     assert len(result) == 0
 
     mock_notification = add_mock_notification(
         root_verify_key, test_stash, test_verify_key, random_verify_key
     )
 
-    response2 = test_stash.get_all_by_verify_key_for_status(
+    result2 = test_stash.get_all_by_verify_key_for_status(
         root_verify_key, mock_notification.to_user_verify_key, NotificationStatus.UNREAD
-    )
-    assert response2.is_ok()
+    ).unwrap()
+    assert len(result2) == 1
 
-    result = response2.ok()
-    assert len(result) == 1
-
-    assert result[0] == mock_notification
+    assert result2[0] == mock_notification
 
     with pytest.raises(AttributeError):
         test_stash.get_all_by_verify_key_for_status(
@@ -208,7 +194,7 @@ def test_update_notification_status(root_verify_key, document_store) -> None:
             root_verify_key, uid=random_uid, status=NotificationStatus.READ
         ).unwrap()
 
-    assert exc.type is SyftException
+    assert issubclass(exc.type, SyftException)
     assert exc.value.public_message
 
     mock_notification = add_mock_notification(
@@ -234,7 +220,7 @@ def test_update_notification_status(root_verify_key, document_store) -> None:
             status=notification_expiry_status_auto,
         ).unwrap()
 
-    assert exc.type is SyftException
+    assert issubclass(exc.type, SyftException)
     assert exc.value.public_message
 
 
@@ -246,6 +232,10 @@ def test_update_notification_status_error_on_get_by_uid(
     test_stash = NotificationStash(store=document_store)
     expected_error_msg = f"No notification exists for id: {random_verify_key}"
 
+    add_mock_notification(
+        root_verify_key, test_stash, test_verify_key, random_verify_key
+    )
+
     @as_result(StashException)
     def mock_get_by_uid(root_verify_key: SyftVerifyKey, uid: UID) -> NoReturn:
         raise StashException(public_message=f"No notification exists for id: {uid}")
@@ -255,11 +245,6 @@ def test_update_notification_status_error_on_get_by_uid(
         "get_by_uid",
         mock_get_by_uid,
     )
-
-    add_mock_notification(
-        root_verify_key, test_stash, test_verify_key, random_verify_key
-    )
-
     with pytest.raises(StashException) as exc:
         test_stash.update_notification_status(
             root_verify_key, random_verify_key, NotificationStatus.READ
@@ -274,11 +259,9 @@ def test_delete_all_for_verify_key(root_verify_key, document_store) -> None:
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
 
-    response = test_stash.delete_all_for_verify_key(root_verify_key, test_verify_key)
-
-    assert response.is_ok()
-
-    result = response.ok()
+    result = test_stash.delete_all_for_verify_key(
+        root_verify_key, test_verify_key
+    ).unwrap()
     assert result is True
 
     add_mock_notification(
@@ -287,23 +270,23 @@ def test_delete_all_for_verify_key(root_verify_key, document_store) -> None:
 
     inbox_before = test_stash.get_all_inbox_for_verify_key(
         root_verify_key, random_verify_key
-    ).value
+    ).unwrap()
     assert len(inbox_before) == 1
 
-    response2 = test_stash.delete_all_for_verify_key(root_verify_key, random_verify_key)
-
-    assert response2.is_ok()
-
-    result = response2.ok()
-    assert result is True
+    result2 = test_stash.delete_all_for_verify_key(
+        root_verify_key, random_verify_key
+    ).unwrap()
+    assert result2 is True
 
     inbox_after = test_stash.get_all_inbox_for_verify_key(
         root_verify_key, random_verify_key
-    ).value
+    ).unwrap()
     assert len(inbox_after) == 0
 
     with pytest.raises(AttributeError):
-        test_stash.delete_all_for_verify_key(root_verify_key, random_signing_key)
+        test_stash.delete_all_for_verify_key(
+            root_verify_key, random_signing_key
+        ).unwrap()
 
 
 def test_delete_all_for_verify_key_error_on_get_all_inbox_for_verify_key(
