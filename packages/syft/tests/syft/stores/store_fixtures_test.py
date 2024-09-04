@@ -19,8 +19,8 @@ from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_stash import UserStash
-from syft.store.db.sqlite_db import DBManager
 from syft.store.db.sqlite_db import SQLiteDBConfig
+from syft.store.db.sqlite_db import SQLiteDBManager
 from syft.store.document_store import DocumentStore
 from syft.store.document_store import PartitionSettings
 from syft.store.locks import LockingConfig
@@ -63,7 +63,7 @@ def document_store_with_admin(
     server_uid: UID, verify_key: SyftVerifyKey
 ) -> DocumentStore:
     config = SQLiteDBConfig()
-    document_store = DBManager(
+    document_store = SQLiteDBManager(
         server_uid=server_uid, root_verify_key=verify_key, config=config
     )
 

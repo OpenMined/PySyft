@@ -98,6 +98,10 @@ class SQLiteDBManager(DBManager):
             Base.metadata.drop_all(bind=self.engine)
         Base.metadata.create_all(self.engine)
 
+    def reset(self) -> None:
+        Base.metadata.drop_all(bind=self.engine)
+        Base.metadata.create_all(self.engine)
+
     # TODO remove
     def get_session_threading_local(self) -> Session:
         if not hasattr(self.thread_local, "session"):
