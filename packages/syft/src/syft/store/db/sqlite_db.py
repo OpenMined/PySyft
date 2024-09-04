@@ -2,6 +2,7 @@
 from pathlib import Path
 import tempfile
 import threading
+import uuid
 
 # third party
 from pydantic import BaseModel
@@ -28,8 +29,8 @@ class DBConfig(BaseModel):
 
 
 class SQLiteDBConfig(DBConfig):
-    filename: str = "jsondb.sqlite"
-    path: Path = Field(default_factory=tempfile.gettempdir)
+    filename: str = Field(default_factory=lambda: f"{uuid.uuid4()}.db")
+    path: Path = Field(default_factory=lambda: Path(tempfile.gettempdir()))
 
     @property
     def connection_string(self) -> str:
@@ -95,6 +96,10 @@ class SQLiteDBManager(DBManager):
         if self.config.reset:
             # drop all tables that we know about
             Base.metadata.drop_all(bind=self.engine)
+        Base.metadata.create_all(self.engine)
+
+    def reset(self) -> None:
+        Base.metadata.drop_all(bind=self.engine)
         Base.metadata.create_all(self.engine)
 
     # TODO remove

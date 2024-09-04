@@ -27,11 +27,6 @@ from syft.service.user import user
 # relative
 # our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
 from .mongomock.mongo_client import MongoClient
-from .syft.stores.store_fixtures_test import dict_action_store
-from .syft.stores.store_fixtures_test import dict_document_store
-from .syft.stores.store_fixtures_test import dict_queue_stash
-from .syft.stores.store_fixtures_test import dict_store_partition
-from .syft.stores.store_fixtures_test import mongo_action_store
 from .syft.stores.store_fixtures_test import mongo_document_store
 from .syft.stores.store_fixtures_test import mongo_queue_stash
 from .syft.stores.store_fixtures_test import mongo_store_partition
@@ -212,8 +207,7 @@ def ds_verify_key(ds_client: DatasiteClient):
 
 @pytest.fixture
 def document_store(worker):
-    yield worker.document_store
-    worker.document_store.reset()
+    yield worker.db
 
 
 @pytest.fixture
@@ -311,16 +305,11 @@ __all__ = [
     "mongo_store_partition",
     "mongo_document_store",
     "mongo_queue_stash",
-    "mongo_action_store",
     "sqlite_store_partition",
     "sqlite_workspace",
     "sqlite_document_store",
     "sqlite_queue_stash",
     "sqlite_action_store",
-    "dict_store_partition",
-    "dict_action_store",
-    "dict_document_store",
-    "dict_queue_stash",
 ]
 
 pytest_plugins = [

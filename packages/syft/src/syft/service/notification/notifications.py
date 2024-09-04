@@ -70,6 +70,7 @@ class Notification(SyftObject):
     ]
     __repr_attrs__ = ["subject", "status", "created_at", "linked_obj"]
     __table_sort_attr__ = "Created at"
+    __order_by__ = ("created_at", "asc")
 
     def _repr_html_(self) -> str:
         return f"""

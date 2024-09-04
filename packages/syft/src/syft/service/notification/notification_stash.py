@@ -1,7 +1,3 @@
-# stdlib
-
-# third party
-
 # relative
 from ...serde.json_serde import serialize_json
 from ...serde.serializable import serializable
@@ -22,14 +18,18 @@ class NotificationStash(ObjectStash[Notification]):
     def get_all_inbox_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> list[Notification]:
+        if not isinstance(verify_key, SyftVerifyKey | str):
+            raise AttributeError("verify_key must be of type SyftVerifyKey or str")
         return self.get_all_by_field(
-            credentials, field_name="verify_key", field_value=str(verify_key)
+            credentials, field_name="to_user_verify_key", field_value=str(verify_key)
         ).unwrap()
 
     @as_result(StashException)
     def get_all_sent_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> list[Notification]:
+        if not isinstance(verify_key, SyftVerifyKey | str):
+            raise AttributeError("verify_key must be of type SyftVerifyKey or str")
         return self.get_all_by_field(
             credentials,
             field_name="from_user_verify_key",
@@ -40,8 +40,10 @@ class NotificationStash(ObjectStash[Notification]):
     def get_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> list[Notification]:
+        if not isinstance(verify_key, SyftVerifyKey | str):
+            raise AttributeError("verify_key must be of type SyftVerifyKey or str")
         return self.get_all_by_field(
-            credentials, field_name="verify_key", field_value=str(verify_key)
+            credentials, field_name="from_user_verify_key", field_value=str(verify_key)
         ).unwrap()
 
     @as_result(StashException)
@@ -51,11 +53,13 @@ class NotificationStash(ObjectStash[Notification]):
         verify_key: SyftVerifyKey,
         status: NotificationStatus,
     ) -> list[Notification]:
+        if not isinstance(verify_key, SyftVerifyKey | str):
+            raise AttributeError("verify_key must be of type SyftVerifyKey or str")
         return self.get_all_by_fields(
             credentials,
             fields={
                 "to_user_verify_key": str(verify_key),
-                "status": status.value,
+                "status": status.name,
             },
         ).unwrap()
 
@@ -82,6 +86,8 @@ class NotificationStash(ObjectStash[Notification]):
     def delete_all_for_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> bool:
+        if not isinstance(verify_key, SyftVerifyKey | str):
+            raise AttributeError("verify_key must be of type SyftVerifyKey or str")
         notifications = self.get_all_inbox_for_verify_key(
             credentials,
             verify_key=verify_key,

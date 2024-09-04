@@ -395,7 +395,9 @@ class UserService(AbstractService):
         if len(kwargs) == 0:
             raise SyftException(public_message="Invalid search parameters")
 
-        users = self.stash.find_all(credentials=context.credentials, **kwargs).unwrap()
+        users = self.stash.get_all_by_fields(
+            credentials=context.credentials, fields=kwargs
+        ).unwrap()
 
         users = [user.to(UserView) for user in users] if users is not None else []
         return _paginate(users, page_size, page_index)

@@ -13,14 +13,14 @@ import pytest
 from syft.server.credentials import SyftVerifyKey
 from syft.service.action.action_permissions import ActionObjectPermission
 from syft.service.action.action_permissions import ActionPermission
+from syft.service.action.action_store import ActionObjectStash
 from syft.service.queue.queue_stash import QueueStash
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_stash import UserStash
-from syft.store.dict_document_store import DictDocumentStore
-from syft.store.dict_document_store import DictStoreConfig
-from syft.store.dict_document_store import DictStorePartition
+from syft.store.db.sqlite_db import SQLiteDBConfig
+from syft.store.db.sqlite_db import SQLiteDBManager
 from syft.store.document_store import DocumentStore
 from syft.store.document_store import PartitionSettings
 from syft.store.locks import LockingConfig
@@ -62,8 +62,9 @@ def str_to_locking_config(conf: str) -> LockingConfig:
 def document_store_with_admin(
     server_uid: UID, verify_key: SyftVerifyKey
 ) -> DocumentStore:
-    document_store = DictDocumentStore(
-        server_uid=server_uid, root_verify_key=verify_key
+    config = SQLiteDBConfig()
+    document_store = SQLiteDBManager(
+        server_uid=server_uid, root_verify_key=verify_key, config=config
     )
 
     password = uuid.uuid4().hex
@@ -215,7 +216,7 @@ def sqlite_action_store(sqlite_workspace: tuple[Path, str], request):
     server_uid = UID()
     document_store = document_store_with_admin(server_uid, ver_key)
 
-    yield SQLiteActionStore(
+    yield ActionObjectStash(
         server_uid=server_uid,
         store_config=store_config,
         root_verify_key=ver_key,
@@ -310,88 +311,3 @@ def mongo_queue_stash(root_verify_key, mongo_client, request):
         locking_config_name=locking_config_name,
     )
     yield mongo_queue_stash_fn(store)
-
-
-@pytest.fixture(scope="function", params=locking_scenarios)
-def mongo_action_store(mongo_client, request):
-    mongo_db_name = token_hex(8)
-    locking_config_name = request.param
-    locking_config = str_to_locking_config(locking_config_name)
-
-    mongo_config = MongoStoreClientConfig(client=mongo_client)
-    store_config = MongoStoreConfig(
-        client_config=mongo_config, db_name=mongo_db_name, locking_config=locking_config
-    )
-    ver_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
-    server_uid = UID()
-    document_store = document_store_with_admin(server_uid, ver_key)
-    mongo_action_store = MongoActionStore(
-        server_uid=server_uid,
-        store_config=store_config,
-        root_verify_key=ver_key,
-        document_store=document_store,
-    )
-
-    yield mongo_action_store
-
-
-def dict_store_partition_fn(
-    root_verify_key,
-    locking_config_name: str = "nop",
-):
-    locking_config = str_to_locking_config(locking_config_name)
-    store_config = DictStoreConfig(locking_config=locking_config)
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    return DictStorePartition(
-        UID(), root_verify_key, settings=settings, store_config=store_config
-    )
-
-
-@pytest.fixture(scope="function", params=locking_scenarios)
-def dict_store_partition(root_verify_key, request):
-    locking_config_name = request.param
-    yield dict_store_partition_fn(
-        root_verify_key, locking_config_name=locking_config_name
-    )
-
-
-@pytest.fixture(scope="function", params=locking_scenarios)
-def dict_action_store(request):
-    locking_config_name = request.param
-    locking_config = str_to_locking_config(locking_config_name)
-
-    store_config = DictStoreConfig(locking_config=locking_config)
-    ver_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
-    server_uid = UID()
-    document_store = document_store_with_admin(server_uid, ver_key)
-
-    yield DictActionStore(
-        server_uid=server_uid,
-        store_config=store_config,
-        root_verify_key=ver_key,
-        document_store=document_store,
-    )
-
-
-def dict_document_store_fn(root_verify_key, locking_config_name: str = "nop"):
-    locking_config = str_to_locking_config(locking_config_name)
-    store_config = DictStoreConfig(locking_config=locking_config)
-    return DictDocumentStore(UID(), root_verify_key, store_config=store_config)
-
-
-@pytest.fixture(scope="function", params=locking_scenarios)
-def dict_document_store(root_verify_key, request):
-    locking_config_name = request.param
-    yield dict_document_store_fn(
-        root_verify_key, locking_config_name=locking_config_name
-    )
-
-
-def dict_queue_stash_fn(dict_document_store):
-    return QueueStash(store=dict_document_store)
-
-
-@pytest.fixture(scope="function")
-def dict_queue_stash(dict_document_store):
-    yield dict_queue_stash_fn(dict_document_store)

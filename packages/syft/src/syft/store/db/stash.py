@@ -75,6 +75,10 @@ class ObjectStash(Generic[StashT]):
     def root_verify_key(self) -> SyftVerifyKey:
         return self.db.root_verify_key
 
+    @property
+    def _data(self) -> list[StashT]:
+        return self.get_all(self.root_verify_key, has_permission=True).unwrap()
+
     @as_result(StashException)
     def check_type(self, obj: T, type_: type) -> T:
         if not isinstance(obj, type_):
@@ -116,10 +120,10 @@ class ObjectStash(Generic[StashT]):
                 ),
                 # TODO rename and use on SyftObject fields
                 Column(
-                    "created_at", sa.DateTime, server_default=sa.func.now(), index=True
+                    "_created_at", sa.DateTime, server_default=sa.func.now(), index=True
                 ),
-                Column("updated_at", sa.DateTime, server_onupdate=sa.func.now()),
-                Column("deleted_at", sa.DateTime, index=True),
+                Column("_updated_at", sa.DateTime, server_onupdate=sa.func.now()),
+                Column("_deleted_at", sa.DateTime, index=True),
             )
         return Base.metadata.tables[table_name]
 
@@ -198,7 +202,8 @@ class ObjectStash(Generic[StashT]):
     ) -> sa.sql.elements.BinaryExpression:
         table = table if table is not None else self.table
         if field_name == "id":
-            return table.c.id == field_value
+            uid_field_value = UID(field_value)
+            return table.c.id == uid_field_value
 
         json_value = serialize_json(field_value)
         if self.db.engine.dialect.name == "sqlite":
@@ -401,8 +406,8 @@ class ObjectStash(Generic[StashT]):
 
         if order_by == "id":
             col = self.table.c.id
-        if order_by == "created_date" or order_by == "created_at":
-            col = self.table.c.created_at
+        if order_by == "created_date" or order_by == "_created_at":
+            col = self.table.c._created_at
         else:
             col = self.table.c.fields[order_by]
 
@@ -437,7 +442,6 @@ class ObjectStash(Generic[StashT]):
         if has_permission:
             # ignoring permissions
             return stmt
-
         role = self.get_role(credentials)
         if role in (ServiceRole.ADMIN, ServiceRole.DATA_OWNER):
             # admins and data owners have all permissions
@@ -480,7 +484,7 @@ class ObjectStash(Generic[StashT]):
         result = self.session.execute(stmt).all()
         return [self.row_as_obj(row) for row in result]
 
-    @as_result(StashException)
+    @as_result(StashException, NotFoundException)
     def update(
         self,
         credentials: SyftVerifyKey,
@@ -495,6 +499,8 @@ class ObjectStash(Generic[StashT]):
         - To fix, we either need db-supported computed fields, or know in our ORM which fields should be re-computed.
         """
 
+        self.check_type(obj, self.object_type).unwrap()
+
         # TODO has_permission is not used
         if not self.is_unique(obj):
             raise StashException(f"Some fields are not unique for {type(obj).__name__}")
@@ -506,11 +512,21 @@ class ObjectStash(Generic[StashT]):
             permission=ActionPermission.WRITE,
             has_permission=has_permission,
         )
-        stmt = stmt.values(fields=serialize_json(obj))
+        fields = serialize_json(obj)
+        try:
+            deserialize_json(fields)
+        except Exception as e:
+            raise StashException(
+                f"Error serializing object: {e}. Some fields are invalid."
+            )
+        stmt = stmt.values(fields=fields)
 
-        self.session.execute(stmt)
+        result = self.session.execute(stmt)
         self.session.commit()
-
+        if result.rowcount == 0:
+            raise NotFoundException(
+                f"{self.object_type.__name__}: {obj.id} not found or no permission to update."
+            )
         return self.get_by_uid(credentials, obj.id).unwrap()
 
     def get_ownership_permissions(
@@ -523,7 +539,7 @@ class ObjectStash(Generic[StashT]):
             ActionObjectEXECUTE(uid=uid, credentials=credentials).permission_string,
         ]
 
-    @as_result(StashException)
+    @as_result(StashException, NotFoundException)
     def delete_by_uid(
         self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
     ) -> UID:
@@ -534,8 +550,12 @@ class ObjectStash(Generic[StashT]):
             permission=ActionPermission.WRITE,
             has_permission=has_permission,
         )
-        self.session.execute(stmt)
+        result = self.session.execute(stmt)
         self.session.commit()
+        if result.rowcount == 0:
+            raise NotFoundException(
+                f"{self.object_type.__name__}: {uid} not found or no permission to delete."
+            )
         return uid
 
     def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
@@ -713,7 +733,7 @@ class ObjectStash(Generic[StashT]):
             if ignore_duplicates:
                 return obj
             unique_fields_str = ", ".join(self.unique_fields)
-            raise SyftException(
+            raise StashException(
                 public_message=f"Duplication Key Error for {obj}.\n"
                 f"The fields that should be unique are {unique_fields_str}."
             )
