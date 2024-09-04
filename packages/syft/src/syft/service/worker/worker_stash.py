@@ -48,15 +48,6 @@ class WorkerStash(ObjectStash[SyftWorker]):
         )
 
     @as_result(StashException, NotFoundException)
-    def get_worker_by_name(
-        self, credentials: SyftVerifyKey, worker_name: str
-    ) -> SyftWorker:
-        self.get_one_by_fields(
-            credentials=credentials,
-            fields={"container_name": worker_name},
-        ).unwrap(public_message=f"Worker with name {worker_name} not found")
-
-    @as_result(StashException, NotFoundException)
     def update_consumer_state(
         self, credentials: SyftVerifyKey, worker_uid: UID, consumer_state: ConsumerState
     ) -> SyftWorker:
