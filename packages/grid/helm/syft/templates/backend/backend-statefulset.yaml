@@ -143,7 +143,11 @@ spec:
               value: {{ .Values.seaweedfs.minSizeBlobStorageMB | quote }}
             # Tracing
             - name: TRACING
-              value: {{ .Values.server.tracing | default "False" | quote }}
+              value: {{ .Values.server.tracing.enabled | default "False" | quote }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.server.tracing.otlpEndpoint | required "server.tracing.otlpEndpoint is required" | quote }}
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: {{ .Values.server.tracing.otlpProtocol | default "grpc" | quote }}
             # Enclave attestation
             {{- if .Values.attestation.enabled }}
             - name: ENCLAVE_ATTESTATION_ENABLED

@@ -30,18 +30,11 @@ fi
 
 if [[ ${TRACING} == "true" ]];
 then
-    echo "OpenTelemetry Enabled"
-
     # TODOs:
-    # ! Handle case when OTEL_EXPORTER_OTLP_ENDPOINT is not set.
-    # ! syft-signoz-otel-collector.platform:4317 should be plumbed through helm charts
     # ? Kubernetes OTel operator is recommended by signoz
     export OTEL_PYTHON_LOG_CORRELATION=${OTEL_PYTHON_LOG_CORRELATION:-true}
-    export OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-"http://syft-signoz-otel-collector.platform:4317"}
-    export OTEL_EXPORTER_OTLP_PROTOCOL=${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
 
-    # TODO: uvicorn postfork is not stable with OpenTelemetry
-    # ROOT_PROC="opentelemetry-instrument"
+    echo "OpenTelemetry Enabled. Endpoint=$OTEL_EXPORTER_OTLP_ENDPOINT Protocol=$OTEL_EXPORTER_OTLP_PROTOCOL"
 else
     echo "OpenTelemetry Disabled"
 fi
