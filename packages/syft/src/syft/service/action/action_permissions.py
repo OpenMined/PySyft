@@ -17,6 +17,7 @@ class ActionPermission(Enum):
     ALL_WRITE = 32
     EXECUTE = 64
     ALL_EXECUTE = 128
+    ALL_OWNER = 256
 
     @property
     def as_compound(self) -> "ActionPermission":
@@ -28,6 +29,8 @@ class ActionPermission(Enum):
             return ActionPermission.ALL_WRITE
         elif self == ActionPermission.EXECUTE:
             return ActionPermission.ALL_EXECUTE
+        elif self == ActionPermission.OWNER:
+            return ActionPermission.ALL_OWNER
         else:
             raise Exception(f"Invalid compound permission {self}")
 
@@ -36,6 +39,7 @@ COMPOUND_ACTION_PERMISSION = {
     ActionPermission.ALL_READ,
     ActionPermission.ALL_WRITE,
     ActionPermission.ALL_EXECUTE,
+    ActionPermission.ALL_OWNER,
 }
 
 

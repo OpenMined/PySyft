@@ -2,6 +2,7 @@
 from pathlib import Path
 import tempfile
 import threading
+import uuid
 
 # third party
 from pydantic import BaseModel
@@ -28,7 +29,7 @@ class DBConfig(BaseModel):
 
 
 class SQLiteDBConfig(DBConfig):
-    filename: str = "jsondb.sqlite"
+    filename: str = Field(default_factory=lambda: f"{uuid.uuid4()}.db")
     path: Path = Field(default_factory=tempfile.gettempdir)
 
     @property

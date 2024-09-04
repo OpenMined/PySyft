@@ -12,10 +12,10 @@ from typing_extensions import ParamSpec
 
 # syft absolute
 from syft.serde.serializable import serializable
-from syft.store.dict_document_store import DictDocumentStore
-from syft.store.document_store import NewBaseUIDStoreStash
+from syft.store.db.sqlite_db import DBManager
+from syft.store.db.sqlite_db import SQLiteDBConfig
+from syft.store.db.stash import ObjectStash
 from syft.store.document_store import PartitionKey
-from syft.store.document_store import PartitionSettings
 from syft.store.document_store import QueryKey
 from syft.store.document_store import QueryKeys
 from syft.store.document_store import UIDPartitionKey
@@ -45,11 +45,8 @@ DescPartitionKey = PartitionKey(key="desc", type_=str)
 ImportancePartitionKey = PartitionKey(key="importance", type_=int)
 
 
-class MockStash(NewBaseUIDStoreStash):
-    object_type = MockObject
-    settings = PartitionSettings(
-        name=MockObject.__canonical_name__, object_type=MockObject
-    )
+class MockStash(ObjectStash[MockObject]):
+    pass
 
 
 def get_object_values(obj: SyftObject) -> tuple[Any]:
@@ -80,7 +77,9 @@ def create_unique(
 
 @pytest.fixture
 def base_stash(root_verify_key) -> MockStash:
-    yield MockStash(store=DictDocumentStore(UID(), root_verify_key))
+    config = SQLiteDBConfig()
+    db_manager = DBManager(config, UID(), root_verify_key)
+    yield MockStash(store=db_manager)
 
 
 def random_sentence(faker: Faker) -> str:

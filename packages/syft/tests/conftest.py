@@ -27,10 +27,6 @@ from syft.service.user import user
 # relative
 # our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
 from .mongomock.mongo_client import MongoClient
-from .syft.stores.store_fixtures_test import dict_action_store
-from .syft.stores.store_fixtures_test import dict_document_store
-from .syft.stores.store_fixtures_test import dict_queue_stash
-from .syft.stores.store_fixtures_test import dict_store_partition
 from .syft.stores.store_fixtures_test import mongo_action_store
 from .syft.stores.store_fixtures_test import mongo_document_store
 from .syft.stores.store_fixtures_test import mongo_queue_stash
@@ -317,10 +313,6 @@ __all__ = [
     "sqlite_document_store",
     "sqlite_queue_stash",
     "sqlite_action_store",
-    "dict_store_partition",
-    "dict_action_store",
-    "dict_document_store",
-    "dict_queue_stash",
 ]
 
 pytest_plugins = [

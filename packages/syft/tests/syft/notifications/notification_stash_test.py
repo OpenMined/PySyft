@@ -8,13 +8,7 @@ from pytest import MonkeyPatch
 # syft absolute
 from syft.server.credentials import SyftSigningKey
 from syft.server.credentials import SyftVerifyKey
-from syft.service.notification.notification_stash import (
-    OrderByCreatedAtTimeStampPartitionKey,
-)
-from syft.service.notification.notification_stash import FromUserVerifyKeyPartitionKey
 from syft.service.notification.notification_stash import NotificationStash
-from syft.service.notification.notification_stash import StatusPartitionKey
-from syft.service.notification.notification_stash import ToUserVerifyKeyPartitionKey
 from syft.service.notification.notifications import Notification
 from syft.service.notification.notifications import NotificationExpiryStatus
 from syft.service.notification.notifications import NotificationStatus
@@ -58,74 +52,6 @@ def add_mock_notification(
     assert result.is_ok()
 
     return mock_notification
-
-
-def test_fromuserverifykey_partitionkey() -> None:
-    random_verify_key = SyftSigningKey.generate().verify_key
-
-    assert FromUserVerifyKeyPartitionKey.type_ == SyftVerifyKey
-    assert FromUserVerifyKeyPartitionKey.key == "from_user_verify_key"
-
-    result = FromUserVerifyKeyPartitionKey.with_obj(random_verify_key)
-
-    assert result.type_ == SyftVerifyKey
-    assert result.key == "from_user_verify_key"
-
-    assert result.value == random_verify_key
-
-    signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    with pytest.raises(AttributeError):
-        FromUserVerifyKeyPartitionKey.with_obj(signing_key)
-
-
-def test_touserverifykey_partitionkey() -> None:
-    random_verify_key = SyftSigningKey.generate().verify_key
-
-    assert ToUserVerifyKeyPartitionKey.type_ == SyftVerifyKey
-    assert ToUserVerifyKeyPartitionKey.key == "to_user_verify_key"
-
-    result = ToUserVerifyKeyPartitionKey.with_obj(random_verify_key)
-
-    assert result.type_ == SyftVerifyKey
-    assert result.key == "to_user_verify_key"
-    assert result.value == random_verify_key
-
-    signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    with pytest.raises(AttributeError):
-        ToUserVerifyKeyPartitionKey.with_obj(signing_key)
-
-
-def test_status_partitionkey() -> None:
-    assert StatusPartitionKey.key == "status"
-    assert StatusPartitionKey.type_ == NotificationStatus
-
-    result1 = StatusPartitionKey.with_obj(NotificationStatus.UNREAD)
-    result2 = StatusPartitionKey.with_obj(NotificationStatus.READ)
-
-    assert result1.type_ == NotificationStatus
-    assert result1.key == "status"
-    assert result1.value == NotificationStatus.UNREAD
-    assert result2.type_ == NotificationStatus
-    assert result2.key == "status"
-    assert result2.value == NotificationStatus.READ
-
-    notification_expiry_status_auto = NotificationExpiryStatus(0)
-
-    with pytest.raises(AttributeError):
-        StatusPartitionKey.with_obj(notification_expiry_status_auto)
-
-
-def test_orderbycreatedattimestamp_partitionkey() -> None:
-    random_datetime = DateTime.now()
-
-    assert OrderByCreatedAtTimeStampPartitionKey.key == "created_at"
-    assert OrderByCreatedAtTimeStampPartitionKey.type_ == DateTime
-
-    result = OrderByCreatedAtTimeStampPartitionKey.with_obj(random_datetime)
-
-    assert result.type_ == DateTime
-    assert result.key == "created_at"
-    assert result.value == random_datetime
 
 
 def test_get_all_inbox_for_verify_key(root_verify_key, document_store) -> None:
@@ -205,12 +131,9 @@ def test_get_all_sent_for_verify_key(root_verify_key, document_store) -> None:
 def test_get_all_for_verify_key(root_verify_key, document_store) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
-    query_key = FromUserVerifyKeyPartitionKey.with_obj(test_verify_key)
     test_stash = NotificationStash(store=document_store)
 
-    response = test_stash.get_all_for_verify_key(
-        root_verify_key, random_verify_key, query_key
-    )
+    response = test_stash.get_all_for_verify_key(root_verify_key, random_verify_key)
 
     assert response.is_ok()
 
@@ -221,11 +144,8 @@ def test_get_all_for_verify_key(root_verify_key, document_store) -> None:
         root_verify_key, test_stash, test_verify_key, random_verify_key
     )
 
-    query_key2 = FromUserVerifyKeyPartitionKey.with_obj(
-        mock_notification.from_user_verify_key
-    )
     response_from_verify_key = test_stash.get_all_for_verify_key(
-        root_verify_key, mock_notification.from_user_verify_key, query_key2
+        root_verify_key, mock_notification.from_user_verify_key
     )
     assert response_from_verify_key.is_ok()
 
@@ -235,7 +155,7 @@ def test_get_all_for_verify_key(root_verify_key, document_store) -> None:
     assert result[0] == mock_notification
 
     response_from_verify_key_string = test_stash.get_all_for_verify_key(
-        root_verify_key, test_verify_key_string, query_key2
+        root_verify_key, test_verify_key_string
     )
 
     assert response_from_verify_key_string.is_ok()

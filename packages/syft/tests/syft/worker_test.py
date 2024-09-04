@@ -16,7 +16,6 @@ from syft.server.credentials import SyftSigningKey
 from syft.server.credentials import SyftVerifyKey
 from syft.server.worker import Worker
 from syft.service.action.action_object import ActionObject
-from syft.service.action.action_store import DictActionStore
 from syft.service.context import AuthedServiceContext
 from syft.service.queue.queue_stash import QueueItem
 from syft.service.response import SyftError
@@ -78,7 +77,7 @@ def test_signing_key() -> None:
 
 def test_action_store() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    action_store = DictActionStore(server_uid=UID())
+    action_store = ...
     uid = UID()
     raw_data = np.array([1, 2, 3])
     test_object = ActionObject.from_obj(raw_data)

@@ -12,7 +12,6 @@ from syft.service.context import AuthedServiceContext
 from syft.service.request.request import Request
 from syft.service.request.request import SubmitRequest
 from syft.service.request.request_stash import RequestStash
-from syft.service.request.request_stash import RequestingUserVerifyKeyPartitionKey
 from syft.store.document_store import PartitionKey
 from syft.store.document_store import QueryKeys
 from syft.types.errors import SyftException
@@ -111,9 +110,8 @@ def test_requeststash_get_all_for_verify_key_find_index_fail(
     guest_datasite_client: SyftClient,
 ) -> None:
     verify_key: SyftVerifyKey = guest_datasite_client.credentials.verify_key
-    qks = QueryKeys(qks=[RequestingUserVerifyKeyPartitionKey.with_obj(verify_key)])
 
-    mock_error_message = f"Failed to query index or search with {qks.all[0]}"
+    mock_error_message = "Failed search with"
 
     def mock_find_index_or_search_keys_error(
         credentials: SyftVerifyKey,

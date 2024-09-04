@@ -90,7 +90,6 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.db.sqlite_db import SQLiteDBConfig
 from ..store.db.sqlite_db import SQLiteDBManager
-from ..store.dict_document_store import DictStoreConfig
 from ..store.document_store import StoreConfig
 from ..store.document_store_errors import NotFoundException
 from ..store.document_store_errors import StashException
@@ -378,13 +377,10 @@ class Server(AbstractServer):
         if reset:
             self.remove_temp_dir()
 
-        use_sqlite = local_db or (processes > 0 and not is_subprocess)
         document_store_config = document_store_config or self.get_default_store(
-            use_sqlite=use_sqlite,
             store_type="Document Store",
         )
         action_store_config = action_store_config or self.get_default_store(
-            use_sqlite=use_sqlite,
             store_type="Action Store",
         )
 
@@ -452,21 +448,19 @@ class Server(AbstractServer):
             and any("docker" in line for line in open(path))
         )
 
-    def get_default_store(self, use_sqlite: bool, store_type: str) -> StoreConfig:
-        if use_sqlite:
-            path = self.get_temp_dir("db")
-            file_name: str = f"{self.id}.sqlite"
-            if self.dev_mode:
-                # leave this until the logger shows this in the notebook
-                print(f"{store_type}'s SQLite DB path: {path/file_name}")
-                logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
-            return SQLiteStoreConfig(
-                client_config=SQLiteStoreClientConfig(
-                    filename=file_name,
-                    path=path,
-                )
+    def get_default_store(self, store_type: str) -> StoreConfig:
+        path = self.get_temp_dir("db")
+        file_name: str = f"{self.id}.sqlite"
+        if self.dev_mode:
+            # leave this until the logger shows this in the notebook
+            print(f"{store_type}'s SQLite DB path: {path/file_name}")
+            logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
+        return SQLiteStoreConfig(
+            client_config=SQLiteStoreClientConfig(
+                filename=file_name,
+                path=path,
             )
-        return DictStoreConfig()
+        )
 
     def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
         if config is None:
