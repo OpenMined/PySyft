@@ -463,16 +463,12 @@ class SyftWorkerPoolService(AbstractService):
             workers_to_delete = worker_pool.worker_list[
                 -(current_worker_count - number) :
             ]
+            worker_service = cast(
+            WorkerService, context.server.get_service("WorkerService")
+            )
 
-            worker_stash = context.server.get_service("WorkerService").stash
-            # delete linkedobj workers
             for worker in workers_to_delete:
-                worker_stash.delete_by_uid(
-                    credentials=context.credentials,
-                    uid=worker.object_uid,
-                ).unwrap()
-
-            client_warning += "Scaling down workers doesn't kill the associated jobs. Please delete them manually."
+                worker_service.delete(context=context, uid=worker.id, force=True)
 
             # update worker_pool
             worker_pool.max_count = number
