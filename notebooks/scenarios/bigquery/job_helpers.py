@@ -8,6 +8,7 @@ import random
 import re
 import secrets
 import textwrap
+from typing import Any
 
 # third party
 from helpers import TestUser
@@ -282,6 +283,15 @@ def create_jobs(users: list[TestUser], total_jobs: int = 10) -> list[TestJob]:
     return jobs
 
 
+def submit_job(job: TestJob) -> tuple[Any, str]:
+    client = job.client
+    response = client.api.services.bigquery.submit_query(
+        func_name=job.func_name, query=job.query
+    )
+    job.code_path = extract_code_path(response)
+    return response
+
+
 def extract_code_path(response) -> str | None:
     pattern = r"client\.code\.(\w+)\(\)"
     match = re.search(pattern, str(response))
@@ -291,9 +301,36 @@ def extract_code_path(response) -> str | None:
     return None
 
 
+def resolve_request(request):
+    service_func_name = request.code.service_func_name
+    if service_func_name.startswith("simple_query"):
+        request.approve()  # approve because it is good
+    if service_func_name.startswith("wrong_asset_query"):
+        request.approve()  # approve because it is bad
+    if service_func_name.startswith("wrong_syntax_query"):
+        request.approve()  # approve because it is bad
+    if service_func_name.startswith("job_too_much_text"):
+        request.deny(reason="too long, boring!")  # deny because it is bad
+    if service_func_name.startswith("job_long_name"):
+        request.deny(reason="too long, boring!")  # deny because it is bad
+    if service_func_name.startswith("job_funcname_xss"):
+        request.deny(reason="too long, boring!")  # never reach doesnt matter
+    if service_func_name.startswith("job_query_xss"):
+        request.approve()  # approve because it is bad
+    if service_func_name.startswith("job_many_columns"):
+        request.approve()  # approve because it is bad
+
+    return (request.id, request.status)
+
+
 create_job_functions = [
+    create_simple_query_job,  # quick way to increase the odds
     create_simple_query_job,
-    # create_wrong_asset_query,
+    create_simple_query_job,
+    create_simple_query_job,
+    create_simple_query_job,
+    create_simple_query_job,
+    create_wrong_asset_query,
     create_wrong_syntax_query,
     create_long_query_job,
     create_query_long_name,
