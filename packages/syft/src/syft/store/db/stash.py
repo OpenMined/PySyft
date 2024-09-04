@@ -555,13 +555,15 @@ class ObjectStash(Generic[StashT]):
             )
         return uid
 
+    @as_result(NotFoundException)
     def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
         # TODO: should do this in a single transaction
         # TODO add error handling
         for permission in permissions:
-            self.add_permission(permission)
+            self.add_permission(permission).unwrap()
         return None
 
+    @as_result(NotFoundException)
     def add_permission(self, permission: ActionObjectPermission) -> None:
         # TODO add error handling
         stmt = (
@@ -576,8 +578,12 @@ class ObjectStash(Generic[StashT]):
             )
         )
 
-        self.session.execute(stmt)
+        result = self.session.execute(stmt)
         self.session.commit()
+        if result.rowcount == 0:
+            raise NotFoundException(
+                f"{self.object_type.__name__}: {permission.uid} not found or no permission to change."
+            )
 
     def remove_permission(self, permission: ActionObjectPermission) -> None:
         # TODO not threadsafe
@@ -678,6 +684,7 @@ class ObjectStash(Generic[StashT]):
         result = self.session.execute(stmt).first()
         return result is not None
 
+    @as_result(NotFoundException)
     def add_storage_permission(self, permission: StoragePermission) -> None:
         stmt = (
             self.table.update()
@@ -690,10 +697,15 @@ class ObjectStash(Generic[StashT]):
                 )
             )
         )
-        self.session.execute(stmt)
+        result = self.session.execute(stmt)
         self.session.commit()
+        if result.rowcount == 0:
+            raise NotFoundException(
+                f"{self.object_type.__name__}: {permission.uid} not found or no permission to change."
+            )
         return None
 
+    @as_result(NotFoundException)
     def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
         for permission in permissions:
             self.add_storage_permission(permission)

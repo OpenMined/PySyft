@@ -511,10 +511,10 @@ def test_actionobject_syft_send_get(worker, testcase):
     orig_obj = testcase
     obj = helper_make_action_obj(orig_obj)
 
-    assert len(action_store.data) == 0
+    assert len(action_store._data) == 0
 
     ptr = obj.send(root_datasite_client)
-    assert len(action_store.data) == 1
+    assert len(action_store._data) == 1
     retrieved = ptr.get()
 
     assert obj.syft_action_data == retrieved

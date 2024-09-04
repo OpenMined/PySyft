@@ -26,9 +26,9 @@ def test_actionobject_method(worker):
     action_store = worker.get_service("actionservice").store
     obj = ActionObject.from_obj("abc")
     pointer = obj.send(root_datasite_client)
-    assert len(action_store.data) == 1
+    assert len(action_store._data) == 1
     res = pointer.capitalize()
-    assert len(action_store.data) == 2
+    assert len(action_store._data) == 2
     assert res[0] == "A"
 
 

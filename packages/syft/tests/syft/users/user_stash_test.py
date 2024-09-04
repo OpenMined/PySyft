@@ -1,5 +1,6 @@
 # third party
 from faker import Faker
+import pytest
 
 # syft absolute
 from syft.server.credentials import SyftSigningKey
@@ -39,16 +40,14 @@ def test_userstash_set(
 def test_userstash_set_duplicate(
     root_datasite_client, user_stash: UserStash, guest_user: User
 ) -> None:
-    result = user_stash.set(
-        root_datasite_client.credentials.verify_key, guest_user
-    ).unwrap()
+    _ = user_stash.set(root_datasite_client.credentials.verify_key, guest_user).unwrap()
     original_count = len(user_stash._data)
 
-    result = user_stash.set(root_datasite_client.credentials.verify_key, guest_user)
-    assert result.is_err()
-    exc = result.err()
-    assert type(exc) == SyftException
-    assert exc.public_message
+    with pytest.raises(SyftException) as exc:
+        _ = user_stash.set(
+            root_datasite_client.credentials.verify_key, guest_user
+        ).unwrap()
+        assert exc.public_message
 
     assert len(user_stash._data) == original_count
 
