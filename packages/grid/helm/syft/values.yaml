@@ -173,7 +173,11 @@ server:
   debuggerEnabled: false
   associationRequestAutoApproval: false
   useInternalRegistry: true
-  tracing: false
+  tracing:
+    enabled: false
+    # OpenTelemetry Collector endpoint
+    otlpEndpoint: ""
+    otlpProtocol: grpc
 
   # Default Worker pool settings
   defaultWorkerPool:

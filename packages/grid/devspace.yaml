@@ -130,7 +130,10 @@ profiles:
       - op: add
         path: deployments.syft.helm.values.server
         value:
-          tracing: true
+          tracing:
+            enabled: true
+            otlpEndpoint: "http://syft-signoz-otel-collector.platform:4317"
+            otelProtocol: "grpc"
 
   - name: bigquery-scenario-tests
     description: "Deploy a datasite for bigquery scenario testing"
