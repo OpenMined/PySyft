@@ -182,6 +182,7 @@ class SyftException(Exception):
             message=self._private_message or self.public,
             traceback_str=traceback_str,
             display=display,
+            dev_mode=is_dev_mode,
         )
         return table_html
 
