@@ -221,7 +221,7 @@ class JobService(AbstractService):
             job.id, ActionPermission.READ, user_code.user_verify_key
         )
         # TODO: make add_permission wrappable
-        return self.stash.add_permission(permission=permission)
+        return self.stash.add_permission(permission=permission).unwrap()
 
     @service_method(
         path="job.add_read_permission_log_for_code_owner",
@@ -237,7 +237,7 @@ class JobService(AbstractService):
             ActionObjectPermission(
                 log_id, ActionPermission.READ, user_code.user_verify_key
             )
-        )
+        ).unwrap()
 
     @service_method(
         path="job.create_job_for_user_code_id",

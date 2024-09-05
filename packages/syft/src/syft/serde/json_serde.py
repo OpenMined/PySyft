@@ -24,7 +24,6 @@ from ..server.credentials import SyftVerifyKey
 from ..types.datetime import DateTime
 from ..types.errors import SyftException
 from ..types.syft_object import BaseDateTime
-from ..types.syft_object import DYNAMIC_SYFT_ATTRIBUTES
 from ..types.syft_object_registry import SyftObjectRegistry
 from ..types.uid import LineageID
 from ..types.uid import UID
@@ -175,9 +174,7 @@ def _serialize_pydantic_to_json(obj: pydantic.BaseModel) -> dict[str, Json]:
         JSON_VERSION_FIELD: version,
     }
 
-    all_exclude_attrs = (
-        set(exclude_attrs) | DEFAULT_EXCLUDE_ATTRS | set(DYNAMIC_SYFT_ATTRIBUTES)
-    )
+    all_exclude_attrs = set(exclude_attrs) | DEFAULT_EXCLUDE_ATTRS
 
     for key, type_ in obj.model_fields.items():
         if key in all_exclude_attrs:

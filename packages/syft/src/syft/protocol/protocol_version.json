@@ -484,9 +484,9 @@
         }
       },
       "WorkerSettings": {
-        "1": {
-          "version": 1,
-          "hash": "b18b575d0e633fa4adbe88f08ea39f056e6882aff5ede0334911b8309d2ef489",
+        "2": {
+          "version": 2,
+          "hash": "13c6e022b939778ab37b594dbc5094aba9f54564c90d3cb0c21115382b155bfe",
           "action": "add"
         }
       },

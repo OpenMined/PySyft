@@ -160,7 +160,7 @@ class ZMQProducer(QueueProducer):
 
                 # Items to be queued
                 items_to_queue = self.queue_stash.get_by_status(
-                    self.queue_stash.partition.root_verify_key,
+                    self.queue_stash.root_verify_key,
                     status=Status.CREATED,
                 ).unwrap()
 
@@ -168,7 +168,7 @@ class ZMQProducer(QueueProducer):
 
                 # Queue Items that are in the processing state
                 items_processing = self.queue_stash.get_by_status(
-                    self.queue_stash.partition.root_verify_key,
+                    self.queue_stash.root_verify_key,
                     status=Status.PROCESSING,
                 ).unwrap()
 
@@ -284,14 +284,14 @@ class ZMQProducer(QueueProducer):
         try:
             try:
                 self.worker_stash.get_by_uid(
-                    credentials=self.worker_stash.partition.root_verify_key,
+                    credentials=self.worker_stash.root_verify_key,
                     uid=syft_worker_id,
                 ).unwrap()
             except Exception:
                 return None
 
             self.worker_stash.update_consumer_state(
-                credentials=self.worker_stash.partition.root_verify_key,
+                credentials=self.worker_stash.root_verify_key,
                 worker_uid=syft_worker_id,
                 consumer_state=consumer_state,
             ).unwrap()

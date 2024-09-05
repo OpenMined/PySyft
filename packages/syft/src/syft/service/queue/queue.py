@@ -5,6 +5,7 @@ import threading
 from threading import Thread
 import time
 from typing import Any
+from typing import cast
 
 # third party
 import psutil
@@ -165,8 +166,7 @@ def handle_message_multiprocessing(
         id=worker_settings.id,
         name=worker_settings.name,
         signing_key=worker_settings.signing_key,
-        document_store_config=worker_settings.document_store_config,
-        action_store_config=worker_settings.action_store_config,
+        db_config=worker_settings.db_config,
         blob_storage_config=worker_settings.blob_store_config,
         server_side_type=worker_settings.server_side_type,
         queue_config=queue_config,
@@ -251,7 +251,10 @@ class APICallMessageHandler(AbstractMessageHandler):
         from ...server.server import Server
 
         queue_item = deserialize(message, from_bytes=True)
+        queue_item = cast(QueueItem, queue_item)
         worker_settings = queue_item.worker_settings
+        if worker_settings is None:
+            raise ValueError("Worker settings are missing in the queue item.")
 
         queue_config = worker_settings.queue_config
         queue_config.client_config.create_producer = False
@@ -261,9 +264,7 @@ class APICallMessageHandler(AbstractMessageHandler):
             id=worker_settings.id,
             name=worker_settings.name,
             signing_key=worker_settings.signing_key,
-            document_store_config=worker_settings.document_store_config,
-            action_store_config=worker_settings.action_store_config,
-            blob_storage_config=worker_settings.blob_store_config,
+            db_config=worker_settings.db_config,
             server_side_type=worker_settings.server_side_type,
             deployment_type=worker_settings.deployment_type,
             queue_config=queue_config,

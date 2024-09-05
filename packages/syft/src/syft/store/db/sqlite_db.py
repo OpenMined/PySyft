@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
 
 # relative
+from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
@@ -21,6 +22,7 @@ from .utils import dumps
 from .utils import loads
 
 
+@serializable(canonical_name="DBConfig", version=1)
 class DBConfig(BaseModel):
     reset: bool = False
 
@@ -29,6 +31,7 @@ class DBConfig(BaseModel):
         raise NotImplementedError("Subclasses must implement this method.")
 
 
+@serializable(canonical_name="SQLiteDBConfig", version=1)
 class SQLiteDBConfig(DBConfig):
     filename: str = Field(default_factory=lambda: f"{uuid.uuid4()}.db")
     path: Path = Field(default_factory=lambda: Path(tempfile.gettempdir()))
@@ -39,6 +42,7 @@ class SQLiteDBConfig(DBConfig):
         return f"sqlite:///{filepath.resolve()}"
 
 
+@serializable(canonical_name="PostgresDBConfig", version=1)
 class PostgresDBConfig(DBConfig):
     host: str = "localhost"
     port: int = 5432

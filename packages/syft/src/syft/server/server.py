@@ -89,6 +89,7 @@ from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
+from ..store.db.sqlite_db import DBConfig
 from ..store.db.sqlite_db import SQLiteDBConfig
 from ..store.db.sqlite_db import SQLiteDBManager
 from ..store.document_store import StoreConfig
@@ -295,6 +296,7 @@ class Server(AbstractServer):
     signing_key: SyftSigningKey | None
     required_signed_calls: bool = True
     packages: str
+    db_config: DBConfig
 
     def __init__(
         self,
@@ -304,6 +306,7 @@ class Server(AbstractServer):
         signing_key: SyftSigningKey | SigningKey | None = None,
         action_store_config: StoreConfig | None = None,
         document_store_config: StoreConfig | None = None,
+        db_config: DBConfig | None = None,
         root_email: str | None = default_root_email,
         root_username: str | None = default_root_username,
         root_password: str | None = default_root_password,
@@ -394,7 +397,16 @@ class Server(AbstractServer):
             store_type="Action Store",
         )
 
-        self.init_stores()
+        if db_config is None:
+            db_config = SQLiteDBConfig(
+                filename=f"{self.id}_json.db",
+                path=self.get_temp_dir("db"),
+            )
+            # json_db_config = PostgresDBConfig(reset=False)
+
+        self.db_config = db_config
+
+        self.init_stores(db_config=self.db_config)
 
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
@@ -868,17 +880,9 @@ class Server(AbstractServer):
         if ti is not None:
             CODE_RELOADER[ti] = reload_user_code
 
-    def init_stores(
-        self,
-    ) -> None:
-        # TODO fix database filename + reset
-        json_db_config = SQLiteDBConfig(
-            filename=f"{self.id}_json.db",
-            path=self.get_temp_dir("db"),
-        )
-        # json_db_config = PostgresDBConfig(reset=False)
+    def init_stores(self, db_config: DBConfig) -> None:
         self.db = SQLiteDBManager(
-            config=json_db_config,
+            config=db_config,
             server_uid=self.id,
             root_verify_key=self.verify_key,
         )

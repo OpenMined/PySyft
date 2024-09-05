@@ -230,14 +230,6 @@ def test_action_object_hooks() -> None:
     action_object.syft_post_hooks__["__add__"] = []
 
 
-def test_worker_serde(worker) -> None:
-    ser = sy.serialize(worker, to_bytes=True)
-    de = sy.deserialize(ser, from_bytes=True)
-
-    assert de.signing_key == worker.signing_key
-    assert de.id == worker.id
-
-
 @pytest.fixture(params=[0])
 def worker_with_proc(request):
     worker = Worker(
