@@ -267,8 +267,10 @@ class UserService(AbstractService):
             )
 
         # If token expired
-        expiration_time = root_context.server.settings.pwd_token_config.token_exp_min
-        if time_difference > timedelta(minutes=expiration_time):
+        expiration_time = (
+            root_context.server.settings.pwd_token_config.token_exp_seconds
+        )
+        if time_difference > timedelta(seconds=expiration_time):
             raise SyftException(
                 public_message="Failed to reset user password. Token is invalid or expired."
             )
