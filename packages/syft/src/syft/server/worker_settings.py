@@ -37,10 +37,7 @@ class WorkerSettings(SyftObject):
 
     @classmethod
     def from_server(cls, server: AbstractServer) -> Self:
-        if server.server_side_type:
-            server_side_type: str = server.server_side_type.value
-        else:
-            server_side_type = ServerSideType.HIGH_SIDE
+        server_side_type = server.server_side_type or ServerSideType.HIGH_SIDE
         return cls(
             id=server.id,
             name=server.name,
