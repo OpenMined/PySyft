@@ -30,8 +30,9 @@ class WorkerSettings(SyftObject):
     server_side_type: ServerSideType
     deployment_type: DeploymentType = DeploymentType.REMOTE
     signing_key: SyftSigningKey
-    document_store_config: StoreConfig
-    action_store_config: StoreConfig
+    # PR NOTE: Update these fields to use new config classes
+    document_store_config: StoreConfig | None = None
+    action_store_config: StoreConfig | None = None
     blob_store_config: BlobStorageConfig | None = None
     queue_config: QueueConfig | None = None
     log_level: int | None = None
@@ -47,8 +48,6 @@ class WorkerSettings(SyftObject):
             name=server.name,
             server_type=server.server_type,
             signing_key=server.signing_key,
-            document_store_config=server.document_store_config,
-            action_store_config=server.action_store_config,
             server_side_type=server_side_type,
             blob_store_config=server.blob_store_config,
             queue_config=server.queue_config,
