@@ -1,4 +1,5 @@
 # stdlib
+from abc import ABCMeta
 from collections import OrderedDict
 from collections import deque
 from collections.abc import Callable
@@ -7,15 +8,22 @@ from collections.abc import Iterable
 from collections.abc import KeysView
 from collections.abc import Mapping
 from types import MappingProxyType
+from typing import Any
 from typing import Generic
 from typing import SupportsIndex
 from typing import TypeVar
+from typing import get_args
+from typing import get_origin
 from typing import overload
 
 # third party
+from pydantic import GetCoreSchemaHandler
+from pydantic import ValidatorFunctionWrapHandler
+from pydantic_core import CoreSchema
+from pydantic_core import core_schema
 from typing_extensions import Self
 
-_T = TypeVar("_T")
+_T = TypeVar("_T", bound="DictTuple")
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
 
@@ -40,27 +48,27 @@ _VT = TypeVar("_VT")
 # to customize the way __new__ and __init__ work together, by iterating over key_value_pairs
 # once to extract both keys and values, then passing keys to __new__, values to __init__
 # within the same function call.
-class _Meta(type):
+class _Meta(ABCMeta):
     @overload
-    def __call__(cls: type[_T]) -> _T: ...
+    def __call__(cls: type[_T], /) -> _T: ...  # type: ignore[misc]
 
     @overload
-    def __call__(cls: type[_T], __value: Iterable[tuple[_KT, _VT]]) -> _T: ...
+    def __call__(cls: type[_T], __value: Iterable[tuple[_KT, _VT]], /) -> _T: ...  # type: ignore[misc]
 
     @overload
-    def __call__(cls: type[_T], __value: Mapping[_KT, _VT]) -> _T: ...
+    def __call__(cls: type[_T], __value: Mapping[_KT, _VT], /) -> _T: ...  # type: ignore[misc]
 
     @overload
-    def __call__(
-        cls: type[_T], __value: Iterable[_VT], __key: Collection[_KT]
+    def __call__(  # type: ignore[misc]
+        cls: type[_T], __value: Iterable[_VT], __key: Collection[_KT], /
     ) -> _T: ...
 
     @overload
-    def __call__(
-        cls: type[_T], __value: Iterable[_VT], __key: Callable[[_VT], _KT]
+    def __call__(  # type: ignore[misc]
+        cls: type[_T], __value: Iterable[_VT], __key: Callable[[_VT], _KT], /
     ) -> _T: ...
 
-    def __call__(
+    def __call__(  # type: ignore[misc]
         cls: type[_T],
         __value: Iterable | None = None,
         __key: Callable | Collection | None = None,
@@ -69,7 +77,7 @@ class _Meta(type):
         # DictTuple()
         if __value is None and __key is None:
             obj = cls.__new__(cls)
-            obj.__init__()
+            obj.__init__()  # type: ignore[misc]
             return obj
 
         # DictTuple(DictTuple(...))
@@ -79,27 +87,27 @@ class _Meta(type):
         # DictTuple({"x": 123, "y": 456})
         elif isinstance(__value, Mapping) and __key is None:
             obj = cls.__new__(cls, __value.values())
-            obj.__init__(__value.keys())
+            obj.__init__(__value.keys())  # type: ignore[misc]
 
             return obj
 
         # DictTuple(EnhancedDictTuple(...))
         # EnhancedDictTuple(DictTuple(...))
         # where EnhancedDictTuple subclasses DictTuple
-        elif hasattr(__value, "items") and callable(__value.items):
-            return cls.__call__(__value.items())
+        elif callable(__value_items := getattr(__value, "items", None)):
+            return cls.__call__(__value_items())
 
         # DictTuple([("x", 123), ("y", 456)])
         elif isinstance(__value, Iterable) and __key is None:
             keys = OrderedDict()
-            values = deque()
+            values: deque = deque()
 
             for i, (k, v) in enumerate(__value):
                 keys[k] = i
                 values.append(v)
 
             obj = cls.__new__(cls, values)
-            obj.__init__(keys)
+            obj.__init__(keys)  # type: ignore[misc]
 
             return obj
 
@@ -108,15 +116,15 @@ class _Meta(type):
             keys = OrderedDict((k, i) for i, k in enumerate(__key))
 
             obj = cls.__new__(cls, __value)
-            obj.__init__(keys)
+            obj.__init__(keys)  # type: ignore[misc]
 
             return obj
 
         # DictTuple(["abc", "xyz"], lambda x: x[0])
         # equivalent to DictTuple({"a": "abc", "x": "xyz"})
         elif isinstance(__value, Iterable) and isinstance(__key, Callable):
-            obj = cls.__new__(cls, __value)
-            obj.__init__(__key)
+            obj = cls.__new__(cls, __value)  # type: ignore[misc]
+            obj.__init__(__key)  # type: ignore[misc]
 
             return obj
 
@@ -165,21 +173,23 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
 
     # These overloads are copied from _Meta.__call__ just for IDE hints
     @overload
-    def __init__(self) -> None: ...
+    def __init__(self, /) -> None: ...
 
     @overload
-    def __init__(self, __value: Iterable[tuple[_KT, _VT]]) -> None: ...
+    def __init__(self, __value: Iterable[tuple[_KT, _VT]], /) -> None: ...
 
     @overload
-    def __init__(self, __value: Mapping[_KT, _VT]) -> None: ...
+    def __init__(self, __value: Mapping[_KT, _VT], /) -> None: ...
 
     @overload
-    def __init__(self, __value: Iterable[_VT], __key: Collection[_KT]) -> None: ...
+    def __init__(self, __value: Iterable[_VT], __key: Collection[_KT], /) -> None: ...
 
     @overload
-    def __init__(self, __value: Iterable[_VT], __key: Callable[[_VT], _KT]) -> None: ...
+    def __init__(
+        self, __value: Iterable[_VT], __key: Callable[[_VT], _KT], /
+    ) -> None: ...
 
-    def __init__(self, __value=None, /):
+    def __init__(self, __value: Any = None, /) -> None:  # type: ignore[misc]
         if isinstance(__value, MappingProxyType):
             self.__mapping = __value
         elif isinstance(__value, Mapping):
@@ -204,16 +214,16 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
                 "or implement `__index__()`"
             )
 
-    @overload
-    def __getitem__(self, __key: _KT) -> _VT: ...
+    @overload  # type: ignore[override]
+    def __getitem__(self, __key: _KT, /) -> _VT: ...
+
+    @overload  # type: ignore[overload-overlap]
+    def __getitem__(self, __key: slice, /) -> Self: ...
 
     @overload
-    def __getitem__(self, __key: slice) -> Self: ...
+    def __getitem__(self, __key: SupportsIndex, /) -> _VT: ...
 
-    @overload
-    def __getitem__(self, __key: SupportsIndex) -> _VT: ...
-
-    def __getitem__(self, __key, /):
+    def __getitem__(self, __key: _KT | slice | SupportsIndex, /) -> _VT | Self:
         if isinstance(__key, slice):
             return self.__class__(
                 super().__getitem__(__key),
@@ -228,8 +238,59 @@ class DictTuple(tuple[_VT, ...], Generic[_KT, _VT], metaclass=_Meta):
     def __repr__(self) -> str:
         return f"{self.__class__.__qualname__}{super().__repr__()}"
 
+    def _repr_html_(self) -> str:
+        super_repr_html = getattr(super(), "_repr_html_", None)
+        if super_repr_html is None:
+            return repr(self)
+        if len(self) == 0:  # empty DictTuple
+            return "0 records"
+        return super_repr_html()
+
     def keys(self) -> KeysView[_KT]:
         return self.__mapping.keys()
 
     def items(self) -> Iterable[tuple[_KT, _VT]]:
         return zip(self.__mapping.keys(), self)
+
+    # https://docs.pydantic.dev/latest/concepts/types/#handling-custom-generic-classes
+    # pydantic validator
+    # this enables annotating a field with DictTuple[K, V] instead of just DictTuple
+    # inside a pydantic BaseModel, e.g.
+    #
+    # class DatasetPageView(BaseModel):
+    #     datasets: DictTuple[str, Dataset]
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        origin = get_origin(source_type)
+        if origin is None:
+            origin = source_type
+            kt, vt = (Any, Any)
+        else:
+            kt, vt, *_ = get_args(source_type)
+
+        k_schema = handler.generate_schema(MappingProxyType[kt, int])
+        v_schema = handler.generate_schema(vt)
+
+        def val_k(v: cls, handler: ValidatorFunctionWrapHandler) -> cls:
+            handler(v.__mapping)
+            return v
+
+        def val_v(v: cls, handler: ValidatorFunctionWrapHandler) -> cls:
+            handler(v)
+            return v
+
+        # pydantic validator for DictTuple[K, V]
+        # - check that object has type DictTuple
+        # - check that object is a tuple[V]
+        # - check that the keys have type K
+        return core_schema.chain_schema(
+            [
+                core_schema.is_instance_schema(cls),
+                core_schema.no_info_wrap_validator_function(
+                    val_v, core_schema.tuple_variable_schema(items_schema=v_schema)
+                ),
+                core_schema.no_info_wrap_validator_function(val_k, k_schema),
+            ]
+        )

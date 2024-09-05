@@ -1,5 +1,4 @@
 # third party
-from faker import Faker
 import pytest
 
 # syft absolute
@@ -15,31 +14,10 @@ from syft.service.request.request import ActionStoreChange
 from syft.service.request.request import ObjectMutation
 from syft.service.request.request import RequestStatus
 from syft.service.request.request import UserCodeStatusChange
-from syft.service.request.request_service import RequestService
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.settings.settings_service import SettingsService
-from syft.store.document_store import DocumentStore
 from syft.store.linked_obj import LinkedObject
-
-
-@pytest.fixture
-def request_service(document_store: DocumentStore):
-    yield RequestService(store=document_store)
-
-
-def get_ds_client(faker: Faker, root_client: SyftClient, guest_client: SyftClient):
-    guest_email = faker.email()
-    password = "mysecretpassword"
-    result = root_client.register(
-        name=faker.name(),
-        email=guest_email,
-        password=password,
-        password_verify=password,
-    )
-    assert isinstance(result, SyftSuccess)
-    ds_client = guest_client.login(email=guest_email, password=password)
-    return ds_client
+from syft.types.errors import SyftException
 
 
 def test_object_mutation(worker: Worker):
@@ -76,15 +54,13 @@ def test_object_mutation(worker: Worker):
     assert setting.organization == original_name
 
 
-def test_action_store_change(faker: Faker, worker: Worker):
+def test_action_store_change(worker: Worker, ds_client: SyftClient):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
     action_obj = data.send(root_client)
 
     assert action_obj.get() == dummy_data
-
-    ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
     action_object_link = LinkedObject.from_obj(
         action_obj, server_uid=action_obj.syft_server_uid
@@ -112,17 +88,18 @@ def test_action_store_change(faker: Faker, worker: Worker):
     result = permission_change.undo(change_context)
     assert result.is_ok()
 
-    result = action_obj_ptr.get()
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException) as exc:
+        action_obj_ptr.get()
+
+    assert exc.type is SyftException
+    assert "Permission", "denied" in exc.value.public_message
 
 
-def test_user_code_status_change(faker: Faker, worker: Worker):
+def test_user_code_status_change(worker: Worker, ds_client: SyftClient):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
     action_obj = data.send(root_client)
-
-    ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
     @syft.syft_function(
         input_policy=syft.ExactMatch(data=action_obj),
@@ -164,13 +141,11 @@ def test_user_code_status_change(faker: Faker, worker: Worker):
     assert not user_code.status.approved
 
 
-def test_code_accept_deny(faker: Faker, worker: Worker):
+def test_code_accept_deny(worker: Worker, ds_client: SyftClient):
     root_client = worker.root_client
     dummy_data = [1, 2, 3]
     data = ActionObject.from_obj(dummy_data)
     action_obj = data.send(root_client)
-
-    ds_client = get_ds_client(faker, root_client, worker.guest_client)
 
     @syft.syft_function(
         input_policy=syft.ExactMatch(data=action_obj),
@@ -180,18 +155,18 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
         return sum(data)
 
     result = ds_client.code.request_code_execution(simple_function)
-    assert not isinstance(result, SyftError)
-
     request = root_client.requests.get_all()[0]
     result = request.approve()
     assert isinstance(result, SyftSuccess)
 
     request = root_client.requests.get_all()[0]
     assert request.status == RequestStatus.APPROVED
+
     result = ds_client.code.simple_function(data=action_obj)
     assert result.get() == sum(dummy_data)
 
-    result = request.deny(reason="Function output needs differential privacy !!")
+    deny_reason = "Function output needs differential privacy!!"
+    result = request.deny(reason=deny_reason)
     assert isinstance(result, SyftSuccess)
 
     request = root_client.requests.get_all()[0]
@@ -200,6 +175,8 @@ def test_code_accept_deny(faker: Faker, worker: Worker):
     user_code = ds_client.code.get_all()[0]
     assert not user_code.status.approved
 
-    result = ds_client.code.simple_function(data=action_obj)
-    assert isinstance(result, SyftError)
-    assert "DENIED" in result.message
+    with pytest.raises(SyftException) as exc:
+        ds_client.code.simple_function(data=action_obj)
+
+    assert exc.type is SyftException
+    assert deny_reason in exc.value.public_message

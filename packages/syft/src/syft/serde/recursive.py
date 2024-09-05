@@ -368,7 +368,7 @@ def map_fqns_for_backward_compatibility(fqn: str) -> str:
     exactly why we are implementing it differently"""
     mapping = {
         "syft.service.dataset.dataset.MarkdownDescription": "syft.util.misc_objs.MarkdownDescription",
-        "syft.service.object_search.object_migration_state.SyftObjectMigrationState": "syft.service.migration.object_migration_state.SyftObjectMigrationState",  # noqa: E501
+        # "syft.service.object_search.object_migration_state.SyftObjectMigrationState": "syft.service.migration.object_migration_state.SyftObjectMigrationState",  # noqa: E501
     }
     if fqn in mapping:
         return mapping[fqn]
@@ -386,10 +386,16 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     version = getattr(proto, "version", -1)
 
     if not SyftObjectRegistry.has_serde_class(canonical_name, version):
+        # relative
+        from ..server.server import CODE_RELOADER
+
+        for load_user_code in CODE_RELOADER.values():
+            load_user_code()
         # third party
-        raise Exception(
-            f"proto2obj: {canonical_name} version {version} not in SyftObjectRegistry"
-        )
+        if not SyftObjectRegistry.has_serde_class(canonical_name, version):
+            raise Exception(
+                f"proto2obj: {canonical_name} version {version} not in SyftObjectRegistry"
+            )
 
     # TODO: 🐉 sort this out, basically sometimes the syft.user classes are not in the
     # module name space in sub-processes or threads even though they are loaded on start

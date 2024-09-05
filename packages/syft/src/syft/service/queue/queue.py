@@ -8,8 +8,6 @@ from typing import Any
 
 # third party
 import psutil
-from result import Err
-from result import Ok
 
 # relative
 from ...serde.deserialize import _deserialize as deserialize
@@ -17,8 +15,9 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...server.worker_settings import WorkerSettings
 from ...service.context import AuthedServiceContext
-from ...store.document_store import BaseStash
+from ...store.document_store import NewBaseStash
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
 from ...types.uid import UID
 from ..job.job_stash import Job
 from ..job.job_stash import JobStatus
@@ -60,7 +59,7 @@ class MonitorThread(threading.Thread):
         # Implement the monitoring logic here
         job = self.worker.job_stash.get_by_uid(
             self.credentials, self.queue_item.job_id
-        ).ok()
+        ).unwrap()
         if job and job.status == JobStatus.TERMINATING:
             self.terminate(job)
             for subjob in job.subjobs:
@@ -92,7 +91,7 @@ class QueueManager(BaseQueueManager):
         self.client_config = self.config.client_config
         self._client = self.config.client_type(self.client_config)
 
-    def close(self) -> SyftError | SyftSuccess:
+    def close(self) -> SyftSuccess:
         return self._client.close()
 
     def create_consumer(
@@ -116,7 +115,7 @@ class QueueManager(BaseQueueManager):
     def create_producer(
         self,
         queue_name: str,
-        queue_stash: type[BaseStash],
+        queue_stash: type[NewBaseStash],
         context: AuthedServiceContext,
         worker_stash: WorkerStash,
     ) -> QueueProducer:
@@ -131,7 +130,7 @@ class QueueManager(BaseQueueManager):
         self,
         message: bytes,
         queue_name: str,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         return self._client.send_message(
             message=message,
             queue_name=queue_name,
@@ -173,6 +172,7 @@ def handle_message_multiprocessing(
         queue_config=queue_config,
         is_subprocess=True,
         migrate=False,
+        deployment_type=worker_settings.deployment_type,
     )
 
     # Set monitor thread for this job.
@@ -182,8 +182,10 @@ def handle_message_multiprocessing(
     if queue_item.service == "user":
         queue_item.service = "userservice"
 
+    # in case of error
+    result = None
+
     try:
-        call_method = getattr(worker.get_service(queue_item.service), queue_item.method)
         role = worker.get_role_for_credentials(credentials=credentials)
 
         context = AuthedServiceContext(
@@ -203,44 +205,37 @@ def handle_message_multiprocessing(
             user_verify_key=credentials,
         )
 
-        result: Any = call_method(context, *queue_item.args, **queue_item.kwargs)
+        call_method = getattr(worker.get_service(queue_item.service), queue_item.method)
+        result = call_method(context, *queue_item.args, **queue_item.kwargs)
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
-
-        if isinstance(result, Ok):
-            result = result.ok()
-            if hasattr(result, "syft_action_data") and isinstance(
-                result.syft_action_data, Err
-            ):
-                status = Status.ERRORED
-                job_status = JobStatus.ERRORED
-        elif isinstance(result, SyftError) or isinstance(result, Err):
-            status = Status.ERRORED
-            job_status = JobStatus.ERRORED
-
-        else:
-            raise Exception(f"Unknown result type: {type(result)}")
     except Exception as e:
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
-        logger.error("Unhandled error in handle_message_multiprocessing", exc_info=e)
+        logger.exception("Unhandled error in handle_message_multiprocessing")
+        error_msg = e.public_message if isinstance(e, SyftException) else str(e)
+        result = SyftError(message=error_msg)
 
     queue_item.result = result
     queue_item.resolved = True
     queue_item.status = status
 
     # get new job item to get latest iter status
-    job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).ok()
-    if job_item is None:
-        raise Exception(f"Job {queue_item.job_id} not found!")
+    job_item = worker.job_stash.get_by_uid(credentials, queue_item.job_id).unwrap(
+        public_message=f"Job {queue_item.job_id} not found!"
+    )
 
     job_item.server_uid = worker.id
     job_item.result = result
     job_item.resolved = True
     job_item.status = job_status
 
-    worker.queue_stash.set_result(credentials, queue_item)
-    worker.job_stash.set_result(credentials, job_item)
+    worker.queue_stash.set_result(credentials, queue_item).unwrap(
+        public_message="Failed to set result into QueueItem after running"
+    )
+    worker.job_stash.set_result(credentials, job_item).unwrap(
+        public_message="Failed to set job after running"
+    )
 
     # Finish monitor thread
     monitor_thread.stop()
@@ -270,6 +265,7 @@ class APICallMessageHandler(AbstractMessageHandler):
             action_store_config=worker_settings.action_store_config,
             blob_storage_config=worker_settings.blob_store_config,
             server_side_type=worker_settings.server_side_type,
+            deployment_type=worker_settings.deployment_type,
             queue_config=queue_config,
             is_subprocess=True,
             migrate=False,
@@ -280,11 +276,13 @@ class APICallMessageHandler(AbstractMessageHandler):
         worker.signing_key = worker_settings.signing_key
 
         credentials = queue_item.syft_client_verify_key
-        res = worker.job_stash.get_by_uid(credentials, queue_item.job_id)
-        if res.is_err():
-            logger.warning(res.err())
-            raise Exception(res.value)
-        job_item: Job = res.ok()
+        try:
+            job_item: Job = worker.job_stash.get_by_uid(
+                credentials, queue_item.job_id
+            ).unwrap()  # type: ignore
+        except SyftException as exc:
+            logger.warning(exc._private_message or exc.public_message)
+            raise
 
         queue_item.status = Status.PROCESSING
         queue_item.server_uid = worker.id
@@ -296,13 +294,8 @@ class APICallMessageHandler(AbstractMessageHandler):
         if syft_worker_id is not None:
             job_item.job_worker_id = syft_worker_id
 
-        queue_result = worker.queue_stash.set_result(credentials, queue_item)
-        if isinstance(queue_result, SyftError):
-            raise Exception(f"{queue_result.err()}")
-
-        job_result = worker.job_stash.set_result(credentials, job_item)
-        if isinstance(job_result, SyftError):
-            raise Exception(f"{job_result.err()}")
+        worker.queue_stash.set_result(credentials, queue_item).unwrap()
+        worker.job_stash.set_result(credentials, job_item).unwrap()
 
         logger.info(
             f"Handling queue item: id={queue_item.id}, method={queue_item.method} "
@@ -326,5 +319,5 @@ class APICallMessageHandler(AbstractMessageHandler):
             )
             process.start()
             job_item.job_pid = process.pid
-            worker.job_stash.set_result(credentials, job_item)
+            worker.job_stash.set_result(credentials, job_item).unwrap()
             process.join()

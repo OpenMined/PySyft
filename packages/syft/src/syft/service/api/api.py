@@ -7,6 +7,7 @@ import keyword
 import linecache
 import re
 import textwrap
+from textwrap import dedent
 from typing import Any
 from typing import cast
 
@@ -14,15 +15,14 @@ from typing import cast
 from pydantic import ValidationError
 from pydantic import field_validator
 from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
 
 # relative
 from ...abstract_server import AbstractServer
 from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -38,6 +38,7 @@ from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..user.user import UserView
 from ..user.user_service import UserService
+from .utils import print as log_print
 
 NOT_ACCESSIBLE_STRING = "N / A"
 
@@ -176,6 +177,7 @@ class Endpoint(SyftObject):
     @classmethod
     def validate_api_code(cls, api_code: str) -> str:
         valid_code = True
+        api_code = dedent(api_code)
         try:
             ast.parse(api_code)
         except SyntaxError:
@@ -426,7 +428,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
             return True
         return False
 
-    def select_code(self, context: AuthedServiceContext) -> Result[Ok, Err]:
+    def select_code(
+        self, context: AuthedServiceContext
+    ) -> PrivateAPIEndpoint | PublicAPIEndpoint | None:
         """Select the code to execute based on the user's permissions and public code availability.
 
         Args:
@@ -435,10 +439,16 @@ class TwinAPIEndpoint(SyncableSyftObject):
             Result[Ok, Err]: The selected code to execute.
         """
         if self.has_permission(context) and self.private_function:
-            return Ok(self.private_function)
-        return Ok(self.mock_function)
+            return self.private_function
+        return self.mock_function
 
-    def exec(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> Any:
+    def exec(
+        self,
+        context: AuthedServiceContext,
+        *args: Any,
+        log_id: UID | None = None,
+        **kwargs: Any,
+    ) -> Any:
         """Execute the code based on the user's permissions and public code availability.
 
         Args:
@@ -448,24 +458,30 @@ class TwinAPIEndpoint(SyncableSyftObject):
         Returns:
             Any: The result of the executed code.
         """
-        result = self.select_code(context)
-        if result.is_err():
-            return SyftError(message=result.err())
-
-        selected_code = result.ok()
-        return self.exec_code(selected_code, context, *args, **kwargs)
+        selected_code = self.select_code(context)
+        return self.exec_code(selected_code, context, *args, log_id=log_id, **kwargs)
 
     def exec_mock_function(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self,
+        context: AuthedServiceContext,
+        *args: Any,
+        log_id: UID | None = None,
+        **kwargs: Any,
     ) -> Any:
         """Execute the public code if it exists."""
         if self.mock_function:
-            return self.exec_code(self.mock_function, context, *args, **kwargs)
+            return self.exec_code(
+                self.mock_function, context, *args, log_id=log_id, **kwargs
+            )
 
-        return SyftError(message="No public code available")
+        raise SyftException(public_message="No public code available")
 
     def exec_private_function(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self,
+        context: AuthedServiceContext,
+        *args: Any,
+        log_id: UID | None = None,
+        **kwargs: Any,
     ) -> Any:
         """Execute the private code if user is has the proper permissions.
 
@@ -477,12 +493,14 @@ class TwinAPIEndpoint(SyncableSyftObject):
             Any: The result of the executed code.
         """
         if self.private_function is None:
-            return SyftError(message="No private code available")
+            raise SyftException(public_message="No private code available")
 
         if self.has_permission(context):
-            return self.exec_code(self.private_function, context, *args, **kwargs)
+            return self.exec_code(
+                self.private_function, context, *args, log_id=log_id, **kwargs
+            )
 
-        return SyftError(message="You're not allowed to run this code.")
+        raise SyftException(public_message="You're not allowed to run this code.")
 
     def get_user_client_from_server(self, context: AuthedServiceContext) -> SyftClient:
         # get a user client
@@ -491,9 +509,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         signing_key_for_verify_key = context.server.get_service_method(
             UserService.signing_key_for_verify_key
         )
-        private_key = signing_key_for_verify_key(
-            context=context, verify_key=context.credentials
-        )
+        private_key = signing_key_for_verify_key(context.credentials)
         signing_key = private_key.signing_key
         user_client.credentials = signing_key
         return user_client
@@ -503,14 +519,27 @@ class TwinAPIEndpoint(SyncableSyftObject):
         admin_client.credentials = context.server.signing_key
         return admin_client
 
+    @as_result(SyftException)
     def exec_code(
         self,
         code: PrivateAPIEndpoint | PublicAPIEndpoint,
         context: AuthedServiceContext,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> Any:
+        # stdlib
+        import builtins as __builtin__
+        import functools
+
+        original_print = __builtin__.print
+
         try:
+            if log_id is not None:
+                print = functools.partial(log_print, context, log_id)
+            else:
+                print = original_print  # type: ignore
+
             inner_function = ast.parse(code.api_code).body[0]
             inner_function.decorator_list = []
             # compile the function
@@ -520,18 +549,26 @@ class TwinAPIEndpoint(SyncableSyftObject):
             user_client = self.get_user_client_from_server(context)
             admin_client = self.get_admin_client_from_server(context)
 
-            # load it
-            exec(raw_byte_code)  # nosec
-
             internal_context = code.build_internal_context(
                 context=context, admin_client=admin_client, user_client=user_client
             )
+            evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
+
+            _globals = {"print": print}
+            # load it
+            exec(raw_byte_code, _globals, locals())  # nosec
 
             # execute it
             evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
-            result = eval(evil_string, None, locals())  # nosec
+            result = None
+            try:
+                # users can raise SyftException in their code
+                result = eval(evil_string, _globals, locals())  # nosec
+            except SyftException as e:
+                # capture it as the result variable
+                result = e
 
-            # Update code context state
+            # run all this code to clean up the state
             code.update_state(internal_context.state)
 
             if isinstance(code, PublicAPIEndpoint):
@@ -540,25 +577,31 @@ class TwinAPIEndpoint(SyncableSyftObject):
                 self.private_function = code  # type: ignore
 
             api_service = context.server.get_service("apiservice")
-            upsert_result = api_service.stash.upsert(
+            api_service.stash.upsert(
                 context.server.get_service("userservice").admin_verify_key(), self
-            )
+            ).unwrap()
 
-            if upsert_result.is_err():
-                raise Exception(upsert_result.err())
+            print = original_print  # type: ignore
+            # if we caught a SyftException above we will raise and auto wrap to Result
+            if isinstance(result, SyftException):
+                raise result
 
+            # here we got a non Exception result which will also be wrapped in Result
             # return the results
             return result
         except Exception as e:
             # If it's admin, return the error message.
             # TODO: cleanup typeerrors
             if context.role.value == 128 or isinstance(e, TypeError):
-                return SyftError(
-                    message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}"
+                raise SyftException(
+                    public_message=f"An error was raised during the execution of the API endpoint call: \n {str(e)}"
                 )
             else:
-                return SyftError(
-                    message="Ops something went wrong during this endpoint execution, please contact your admin."
+                raise SyftException(
+                    public_message=(
+                        "Oops something went wrong during this endpoint execution, "
+                        "please contact your admin."
+                    )
                 )
 
 
@@ -692,7 +735,8 @@ def api_endpoint(
     def decorator(f: Callable) -> TwinAPIEndpoint | SyftError:
         try:
             helper_functions_dict = {
-                f.__name__: inspect.getsource(f) for f in (helper_functions or [])
+                f.__name__: dedent(inspect.getsource(f))
+                for f in (helper_functions or [])
             }
             res = CreateTwinAPIEndpoint(
                 path=path,
@@ -724,7 +768,8 @@ def api_endpoint_method(
     def decorator(f: Callable) -> Endpoint | SyftError:
         try:
             helper_functions_dict = {
-                f.__name__: inspect.getsource(f) for f in (helper_functions or [])
+                f.__name__: dedent(inspect.getsource(f))
+                for f in (helper_functions or [])
             }
             return Endpoint(
                 api_code=inspect.getsource(f),

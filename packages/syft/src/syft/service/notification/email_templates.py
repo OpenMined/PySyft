@@ -1,4 +1,5 @@
 # stdlib
+from datetime import datetime
 from typing import TYPE_CHECKING
 from typing import cast
 
@@ -22,6 +23,93 @@ class EmailTemplate:
         return ""
 
 
+@serializable(canonical_name="PasswordResetTemplate", version=1)
+class PasswordResetTemplate(EmailTemplate):
+    @staticmethod
+    def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
+        return "Password Reset Requested"
+
+    @staticmethod
+    def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
+        user_service = context.server.get_service("userservice")
+        admin_verify_key = user_service.admin_verify_key()
+        user = user_service.stash.get_by_verify_key(
+            credentials=admin_verify_key, verify_key=notification.to_user_verify_key
+        ).unwrap()
+        if not user:
+            raise Exception("User not found!")
+
+        user.reset_token = user_service.generate_new_password_reset_token(
+            context.server.settings.pwd_token_config
+        )
+        user.reset_token_date = datetime.now()
+
+        result = user_service.stash.update(
+            credentials=context.credentials, obj=user, has_permission=True
+        )
+        if result.is_err():
+            raise Exception("Couldn't update the user password")
+
+        head = """<head>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    color: #333;
+                    margin: 0;
+                    padding: 0;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 50px auto;
+                    background-color: #ffffff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                }
+                h1 {
+                    color: #333;
+                    text-align: center;
+                }
+                p {
+                    font-size: 16px;
+                    line-height: 1.5;
+                }
+                .button {
+                    display: block;
+                    width: 200px;
+                    margin: 30px auto;
+                    padding: 10px;
+                    background-color: #007BFF;
+                    color: #fff;
+                    text-align: center;
+                    text-decoration: none;
+                    border-radius: 4px;
+                }
+                .footer {
+                    text-align: center;
+                    font-size: 12px;
+                    color: #aaa;
+                    margin-top: 20px;
+                }
+            </style>
+        </head>"""
+        body = f"""<body>
+            <div class="container">
+                <h1>Password Reset</h1>
+                <p>We received a request to reset your password. Your new temporary token is:</p>
+                <h1>{user.reset_token}</h1>
+                <p> Use
+                    <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                        syft_client.reset_password(token='{user.reset_token}', new_password=*****)
+                    </code>.
+                to reset your password.</p>
+                <p>If you didn't request a password reset, please ignore this email.</p>
+            </div>
+        </body>"""
+        return f"""<html>{head} {body}</html>"""
+
+
 @serializable(canonical_name="OnboardEmailTemplate", version=1)
 class OnBoardEmailTemplate(EmailTemplate):
     @staticmethod
@@ -31,9 +119,9 @@ class OnBoardEmailTemplate(EmailTemplate):
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         user_service = context.server.get_service("userservice")
-        admin_name = user_service.get_by_verify_key(
-            user_service.admin_verify_key()
-        ).name
+        admin_verify_key = user_service.admin_verify_key()
+        admin = user_service.get_by_verify_key(admin_verify_key).unwrap()
+        admin_name = admin.name
 
         head = (
             f"""
@@ -114,14 +202,26 @@ class RequestEmailTemplate(EmailTemplate):
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
-        request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
-
+        request_obj = notification.linked_obj.resolve_with_context(
+            context=context
+        ).unwrap()
         return f"Datasite {context.server.name}: A New Request ({str(request_obj.id)[:4]}) has been received!"
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
-        request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
+        request_obj = notification.linked_obj.resolve_with_context(
+            context=context
+        ).unwrap()
+
+        request_id = request_obj.id
+        request_name = request_obj.requesting_user_name
+        request_email = request_obj.requesting_user_email
+        request_time = request_obj.request_time
+        request_status = request_obj.status.name  # fails in l0 check right now
+        request_changes = ",".join(
+            [change.__class__.__name__ for change in request_obj.changes]
+        )
 
         head = """
         <head>
@@ -230,18 +330,32 @@ class RequestEmailTemplate(EmailTemplate):
                         <div class="request-header">Request Details</div>
                         <div class="request-content">
 
-                            <p><strong>ID:</strong> {request_obj.id}</p>
+                            <p><strong>ID:</strong> {request_id}</p>
                             <p>
                             <strong>Submitted By:</strong>
-                            {request_obj.requesting_user_name} {request_obj.requesting_user_email or ""}
+                            {request_name}<{request_email}>
                             </p>
-                            <p><strong>Date:</strong> {request_obj.request_time}</p>
-                        <div style="display: flex"><p><strong>Status:</strong><div class="badge yellow">{
-                            request_obj.status.name
-                        }</div></div>
-                        <p><strong>Changes:</strong>{
-                            ",".join([change.__class__.__name__ for change in request_obj.changes])
-                        }</p>
+                            <p><strong>Date:</strong> {request_time}</p>
+                        <div style="display: flex"><p><strong>Status:</strong><div class="badge yellow">
+                            {request_status}
+                        </div></div>
+                        <p><strong>Changes:</strong>
+                            {request_changes}
+                        </p>
+
+                        <p>Use:<br />
+                        <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                            request = client.api.services.request.get_by_uid(uid=sy.UID("{request_id}"))
+                        </code><br />
+                            to get this specific request.
+                        </p>
+
+                        <p>Or you can view all requests with: <br />
+                        <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                            client.requests
+                        </code>
+                        </p>
+
                         </div>
                     </div>
                     <p>If you did not expect this request or have concerns about it,
@@ -266,8 +380,20 @@ class RequestUpdateEmailTemplate(EmailTemplate):
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
-        request_obj = notification.linked_obj.resolve_with_context(context=context).ok()
+        request_obj = notification.linked_obj.resolve_with_context(
+            context=context
+        ).unwrap()
         badge_color = "red" if request_obj.status.name == "REJECTED" else "green"
+
+        request_id = request_obj.id
+        request_name = request_obj.requesting_user_name
+        request_email = request_obj.requesting_user_email
+        request_time = request_obj.request_time
+        request_status = request_obj.status.name  # fails in l0 check right now
+        request_changes = ",".join(
+            [change.__class__.__name__ for change in request_obj.changes]
+        )
+
         head = """
         <head>
             <title>Access Request Notification</title>
@@ -376,18 +502,31 @@ class RequestUpdateEmailTemplate(EmailTemplate):
                         <div class="request-header">Request Details</div>
                         <div class="request-content">
 
-                            <p><strong>ID:</strong> {request_obj.id}</p>
+                            <p><strong>ID:</strong> {request_id}</p>
                             <p>
                             <strong>Submitted By:</strong>
-                            {request_obj.requesting_user_name} {request_obj.requesting_user_email or ""}
+                            {request_name} {request_email}
                             </p>
-                            <p><strong>Date:</strong> {request_obj.request_time}</p>
-                            <div style="display: flex"><p><strong>Status:</strong><div class="badge {badge_color}">{
-                                request_obj.status.name
-                            }</div></div>
+                            <p><strong>Date:</strong> {request_time}</p>
+                            <div style="display: flex"><p><strong>Status:</strong><div class="badge {badge_color}">
+                                {request_status}
+                            </div></div>
                             <p>
                             <strong>Changes:</strong>
-                            {",".join([change.__class__.__name__ for change in request_obj.changes])}
+                            {request_changes}
+                            </p>
+
+                            <p>Use:<br />
+                            <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                                request = client.api.services.request.get_by_uid(uid=sy.UID("{request_id}"))
+                            </code><br />
+                                to get this specific request.
+                            </p>
+
+                            <p>Or you can view all requests with: <br />
+                            <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
+                                client.requests
+                            </code>
                             </p>
                         </div>
                     </div>

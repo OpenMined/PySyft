@@ -1,6 +1,8 @@
 # stdlib
 from collections.abc import Callable
+from datetime import datetime
 from getpass import getpass
+import re
 from typing import Any
 
 # third party
@@ -9,16 +11,17 @@ from bcrypt import gensalt
 from bcrypt import hashpw
 from pydantic import EmailStr
 from pydantic import ValidationError
-from pydantic import field_validator
 
 # relative
-from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
+from ...types.errors import SyftException
 from ...types.syft_metaclass import Empty
+from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import drop
@@ -29,13 +32,13 @@ from ...types.transforms import transform
 from ...types.transforms import validate_email
 from ...types.uid import UID
 from ..notifier.notifier_enums import NOTIFIERS
-from ..response import SyftError
 from ..response import SyftSuccess
+from .errors import UserPasswordMismatchError
 from .user_roles import ServiceRole
 
 
 @serializable()
-class User(SyftObject):
+class UserV1(SyftObject):
     # version
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -68,8 +71,75 @@ class User(SyftObject):
     __repr_attrs__ = ["name", "email"]
 
 
+@serializable()
+class User(SyftObject):
+    # version
+    __canonical_name__ = "User"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    id: UID | None = None  # type: ignore[assignment]
+
+    # fields
+    notifications_enabled: dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
+    email: EmailStr | None = None
+    name: str | None = None
+    hashed_password: str | None = None
+    salt: str | None = None
+    signing_key: SyftSigningKey | None = None
+    verify_key: SyftVerifyKey | None = None
+    role: ServiceRole | None = None
+    institution: str | None = None
+    website: str | None = None
+    created_at: str | None = None
+    # TODO where do we put this flag?
+    mock_execution_permission: bool = False
+    reset_token: str | None = None
+    reset_token_date: datetime | None = None
+    # serde / storage rules
+    __attr_searchable__ = ["name", "email", "verify_key", "role", "reset_token"]
+    __attr_unique__ = ["email", "signing_key", "verify_key"]
+    __repr_attrs__ = ["name", "email"]
+
+
+@migrate(UserV1, User)
+def migrate_server_user_update_v1_current() -> list[Callable]:
+    return [
+        make_set_default("reset_token", None),
+        make_set_default("reset_token_date", None),
+        drop("__attr_searchable__"),
+        make_set_default(
+            "__attr_searchable__",
+            ["name", "email", "verify_key", "role", "reset_token"],
+        ),
+    ]
+
+
+@migrate(User, UserV1)
+def migrate_server_user_downgrade_current_v1() -> list[Callable]:
+    return [
+        drop("reset_token"),
+        drop("reset_token_date"),
+        drop("__attr_searchable__"),
+        make_set_default(
+            "__attr_searchable__", ["name", "email", "verify_key", "role"]
+        ),
+    ]
+
+
 def default_role(role: ServiceRole) -> Callable:
     return make_set_default(key="role", value=role)
+
+
+def validate_password(password: str) -> bool:
+    # Define the regex pattern for the password
+    pattern = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$")
+
+    return bool(pattern.match(password))
 
 
 def hash_password(context: TransformContext) -> TransformContext:
@@ -116,13 +186,6 @@ def check_pwd(password: str, hashed_password: str) -> bool:
 class UserUpdate(PartialSyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
-
-    @field_validator("role", mode="before")
-    @classmethod
-    def str_to_role(cls, v: Any) -> Any:
-        if isinstance(v, str) and hasattr(ServiceRole, v.upper()):
-            return getattr(ServiceRole, v.upper())
-        return v
 
     email: EmailStr
     name: str
@@ -205,23 +268,18 @@ class UserView(SyftObject):
             ),
         }
 
-    def _set_password(self, new_password: str) -> SyftError | SyftSuccess:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
+    def _set_password(self, new_password: str) -> SyftSuccess:
+        client = self.get_api()
 
-        api.services.user.update(uid=self.id, password=new_password)
+        client.services.user.update(uid=self.id, password=new_password)
+
         return SyftSuccess(
-            message=f"Successfully updated password for "
-            f"user '{self.name}' with email '{self.email}'."
+            message=f"Successfully updated password for user '{self.email}'."
         )
 
     def set_password(
         self, new_password: str | None = None, confirm: bool = True
-    ) -> SyftError | SyftSuccess:
+    ) -> SyftSuccess:
         """Set a new password interactively with confirmed password from user input"""
         # TODO: Add password validation for special characters
         if not new_password:
@@ -230,33 +288,22 @@ class UserView(SyftObject):
         if confirm:
             confirmed_password: str = getpass("Please confirm your password: ")
             if confirmed_password != new_password:
-                return SyftError(message="Passwords do not match !")
+                raise UserPasswordMismatchError
+
         return self._set_password(new_password)
 
-    def set_email(self, email: str) -> SyftSuccess | SyftError:
-        # validate email address
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
-
+    def set_email(self, email: str) -> SyftSuccess:
         try:
             user_update = UserUpdate(email=email)
         except ValidationError:
-            return SyftError(message="{email} is not a valid email address.")
+            raise SyftException(public_message=f"Invalid email: '{email}'.")
 
+        api = self.get_api()
+
+        # TODO: Shouldn't this trigger an update on self?
         result = api.services.user.update(uid=self.id, email=user_update.email)
 
-        if isinstance(result, SyftError):
-            return result
-
-        self.email = email
-        return SyftSuccess(
-            message=f"Successfully updated email for the user "
-            f"'{self.name}' to '{self.email}'."
-        )
+        return SyftSuccess(message=f"Email updated to '{result.email}'.")
 
     def update(
         self,
@@ -265,32 +312,25 @@ class UserView(SyftObject):
         website: type[Empty] | str = Empty,
         role: type[Empty] | str = Empty,
         mock_execution_permission: type[Empty] | bool = Empty,
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """Used to update name, institution, website of a user."""
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(message=f"You must login to {self.server_uid}")
-        user_update = UserUpdate(
+        api = self.get_api()
+
+        result = api.services.user.update(
+            uid=self.id,
             name=name,
             institution=institution,
             website=website,
             role=role,
             mock_execution_permission=mock_execution_permission,
         )
-        result = api.services.user.update(uid=self.id, **user_update)
-
-        if isinstance(result, SyftError):
-            return result
 
         for attr, val in result.to_dict(exclude_empty=True).items():
             setattr(self, attr, val)
 
         return SyftSuccess(message="User details successfully updated.")
 
-    def allow_mock_execution(self, allow: bool = True) -> SyftSuccess | SyftError:
+    def allow_mock_execution(self, allow: bool = True) -> SyftSuccess:
         return self.update(mock_execution_permission=allow)
 
 
@@ -325,6 +365,24 @@ def user_create_to_user() -> list[Callable]:
     ]
 
 
+@transform(UserV1, UserView)
+def userv1_to_view_user() -> list[Callable]:
+    return [
+        keep(
+            [
+                "id",
+                "email",
+                "name",
+                "role",
+                "institution",
+                "website",
+                "mock_execution_permission",
+                "notifications_enabled",
+            ]
+        )
+    ]
+
+
 @transform(User, UserView)
 def user_to_view_user() -> list[Callable]:
     return [
@@ -351,6 +409,11 @@ class UserPrivateKey(SyftObject):
     email: str
     signing_key: SyftSigningKey
     role: ServiceRole
+
+
+@transform(UserV1, UserPrivateKey)
+def userv1_to_user_verify() -> list[Callable]:
+    return [keep(["email", "signing_key", "id", "role"])]
 
 
 @transform(User, UserPrivateKey)

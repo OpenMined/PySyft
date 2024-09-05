@@ -29,6 +29,8 @@ build
 # docker compose volumes
 docker/data/*
 
+# env files
+.env
 
 # vagrant
 .vagrant
@@ -80,3 +82,9 @@ out.*
 
 # migration data
 packages/grid/helm/examples/dev/migration.yaml
+
+# dynaconf settings file
+**/settings.yaml
+
+
+notebooks/scenarios/bigquery/*.json

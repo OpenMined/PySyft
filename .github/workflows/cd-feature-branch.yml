@@ -1,0 +1,360 @@
+#TODO: Due to lack of time, this could not be de-duplicated
+# from cd-syft.yml, which have a similar structure
+name: CD - Feature Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Syft Version to Release"
+        required: true
+        type: string
+
+      release_branch:
+        description: "Branch to Release from"
+        required: true
+        type: string
+
+      release_platform:
+        description: "Release Platform"
+        required: true
+        default: "TEST_PYPI"
+        type: choice
+        options:
+          - TEST_PYPI
+          # - REAL_PYPI
+          # - REAL_AND_TEST_PYPI
+
+# Prevents concurrent runs of the same workflow
+# while the previous run is still in progress
+concurrency:
+  group: "CD - Feature Branch"
+  cancel-in-progress: false
+
+jobs:
+  build-and-push-docker-images:
+    strategy:
+      matrix:
+        runner: [sh-arc-linux-x64, sh-arc-linux-arm64]
+    runs-on: ${{ matrix.runner }}
+
+    outputs:
+      server_version: ${{ steps.release_metadata.outputs.server_version }}
+
+    steps:
+      - name: Setup Python on ${{ matrix.runner }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Git
+        run: |
+          sudo apt-get update
+          sudo apt-get install git -y
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.release_branch }}
+
+      - name: Check python version
+        run: |
+          python --version
+          python3 --version
+          which python
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2 bump2version==1.0.1
+          uv --version
+
+      - name: Generate Release Metadata
+        id: release_metadata
+        run: |
+          if [[ ${{matrix.runner}} == *"x64"* ]]; then
+            echo "release_platform=linux/amd64" >> $GITHUB_OUTPUT
+            echo "short_release_platform=amd64" >> $GITHUB_OUTPUT
+          else
+            echo "release_platform=linux/arm64" >> $GITHUB_OUTPUT
+            echo "short_release_platform=arm64" >> $GITHUB_OUTPUT
+          fi
+          echo "server_version=${{ github.event.inputs.release_version }}" >> $GITHUB_OUTPUT
+
+      - name: Bump to Final Release version
+        run: |
+          python scripts/bump_version.py --bump-to-stable ${{ steps.release_metadata.outputs.server_version}}
+
+      - name: Update Commit Hash in Syft
+        run: |
+          python packages/syft/src/syft/util/update_commit.py packages/syft/src/syft/util/commit.py
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push `syft-backend` image to DockerHub
+        id: syft-backend-build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./packages
+          file: ./packages/grid/backend/backend.dockerfile
+          platforms: ${{ steps.release_metadata.outputs.release_platform }}
+          target: backend
+          outputs: type=image,name=openmined/syft-backend,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=openmined/syft-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-backend:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
+
+      - name: Export digest for syft-backend
+        run: |
+          mkdir -p /tmp/digests/syft-backend
+          digest="${{ steps.syft-backend-build.outputs.digest }}"
+          touch "/tmp/digests/syft-backend/${digest#sha256:}"
+
+      - name: Build and push `syft-frontend` image to DockerHub
+        id: syft-frontend-build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./packages/grid/frontend
+          file: ./packages/grid/frontend/frontend.dockerfile
+          platforms: ${{ steps.release_metadata.outputs.release_platform }}
+          outputs: type=image,name=openmined/syft-frontend,push-by-digest=true,name-canonical=true,push=true
+          target: syft-ui-development
+          cache-from: type=registry,ref=openmined/syft-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-frontend:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
+
+      - name: Export digest for syft-frontend
+        run: |
+          mkdir -p /tmp/digests/syft-frontend
+          digest="${{ steps.syft-frontend-build.outputs.digest }}"
+          touch "/tmp/digests/syft-frontend/${digest#sha256:}"
+
+      - name: Build and push `syft-seaweedfs` image to DockerHub
+        id: syft-seaweedfs-build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./packages/grid/seaweedfs
+          file: ./packages/grid/seaweedfs/seaweedfs.dockerfile
+          platforms: ${{ steps.release_metadata.outputs.release_platform }}
+          outputs: type=image,name=openmined/syft-seaweedfs,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=openmined/syft-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-seaweedfs:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
+
+      - name: Export digest for syft-seaweedfs
+        run: |
+          mkdir -p /tmp/digests/syft-seaweedfs
+          digest="${{ steps.syft-seaweedfs-build.outputs.digest }}"
+          touch "/tmp/digests/syft-seaweedfs/${digest#sha256:}"
+
+      # Some of the dependencies of syft-enclave-attestation are not available for arm64
+      # Hence, we are building syft-enclave-attestation only for x64 (see the `if` conditional)
+      - name: Build and push `syft-enclave-attestation` image to DockerHub
+        if: ${{ endsWith(matrix.runner, '-x64') }}
+        id: syft-enclave-attestation-build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./packages/grid/enclave/attestation
+          file: ./packages/grid/enclave/attestation/attestation.dockerfile
+          platforms: ${{ steps.release_metadata.outputs.release_platform }}
+          outputs: type=image,name=openmined/syft-enclave-attestation,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=openmined/syft-enclave-attestation:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-enclave-attestation:cache-${{ steps.release_metadata.outputs.short_release_platform}},mode=max
+
+      - name: Export digest for syft-enclave-attestation
+        if: ${{ endsWith(matrix.runner, '-x64') }}
+        run: |
+          mkdir -p /tmp/digests/syft-enclave-attestation
+          digest="${{ steps.syft-enclave-attestation-build.outputs.digest }}"
+          touch "/tmp/digests/syft-enclave-attestation/${digest#sha256:}"
+
+      - name: Build and push `syft` image to registry
+        id: syft-build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./packages/
+          file: ./packages/grid/syft-client/syft.Dockerfile
+          outputs: type=image,name=openmined/syft-client,push-by-digest=true,name-canonical=true,push=true
+          platforms: ${{ steps.release_metadata.outputs.release_platform }}
+          cache-from: type=registry,ref=openmined/syft-client:cache-${{ steps.release_metadata.outputs.short_release_platform }}
+          cache-to: type=registry,ref=openmined/syft-client:cache-${{ steps.release_metadata.outputs.short_release_platform }},mode=max
+
+      - name: Export digest for `syft` image
+        run: |
+          mkdir -p /tmp/digests/syft
+          digest="${{ steps.syft-build.outputs.digest }}"
+          touch "/tmp/digests/syft/${digest#sha256:}"
+
+      - name: Upload digests
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ steps.release_metadata.outputs.server_version }}-${{ steps.release_metadata.outputs.short_release_platform }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  #Used to merge x64 and arm64 into one docker image
+  merge-docker-images:
+    needs: [build-and-push-docker-images]
+    if: always() && (needs.build-and-push-docker-images.result == 'success')
+
+    runs-on: sh-arc-linux-x64
+
+    outputs:
+      server_version: ${{ needs.build-and-push-docker-images.outputs.server_version }}
+
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-${{ needs.build-and-push-docker-images.outputs.server_version }}-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Create manifest list and push for syft-backend
+        working-directory: /tmp/digests/syft-backend
+        run: |
+          docker buildx imagetools create  \
+            -t openmined/syft-backend:${{ needs.build-and-push-docker-images.outputs.server_version }} \
+            $(printf 'openmined/syft-backend@sha256:%s ' *)
+
+      - name: Create manifest list and push for syft-frontend
+        working-directory: /tmp/digests/syft-frontend
+        run: |
+          docker buildx imagetools create  \
+            -t openmined/syft-frontend:${{ needs.build-and-push-docker-images.outputs.server_version }} \
+            $(printf 'openmined/syft-frontend@sha256:%s ' *)
+
+      - name: Create manifest list and push for syft-seaweedfs
+        working-directory: /tmp/digests/syft-seaweedfs
+        run: |
+          docker buildx imagetools create  \
+            -t openmined/syft-seaweedfs:${{ needs.build-and-push-docker-images.outputs.server_version }} \
+            $(printf 'openmined/syft-seaweedfs@sha256:%s ' *)
+
+      - name: Create manifest list and push for syft-enclave-attestation
+        working-directory: /tmp/digests/syft-enclave-attestation
+        run: |
+          docker buildx imagetools create  \
+            -t openmined/syft-enclave-attestation:${{ needs.build-and-push-docker-images.outputs.server_version }} \
+            $(printf 'openmined/syft-enclave-attestation@sha256:%s ' *)
+
+      - name: Create manifest list and push for syft client
+        working-directory: /tmp/digests/syft
+        run: |
+          docker buildx imagetools create  \
+            -t openmined/syft-client:${{ needs.build-and-push-docker-images.outputs.server_version }} \
+            $(printf 'openmined/syft-client@sha256:%s ' *)
+
+  deploy-syft:
+    needs: [merge-docker-images]
+    if: always() &&  needs.merge-docker-images.result == 'success'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Permission to home directory
+        run: |
+          sudo chown -R $USER:$USER $HOME
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+          ref: ${{ github.event.inputs.release_branch }}
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2 setuptools wheel twine bump2version PyYAML
+          uv --version
+
+      - name: Bump to Final Release version
+        run: |
+          python scripts/bump_version.py --bump-to-stable ${{ needs.merge-docker-images.outputs.server_version }}
+
+      - name: Update Commit Hash in Syft
+        run: |
+          python packages/syft/src/syft/util/update_commit.py packages/syft/src/syft/util/commit.py
+
+      - name: Build Helm Chart
+        shell: bash
+        run: |
+          # install k3d
+          K3D_VERSION=v5.6.3
+          wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
+          mv k3d-linux-amd64 k3d
+          chmod +x k3d
+          export PATH=`pwd`:$PATH
+          k3d version
+
+          #Install Devspace
+          DEVSPACE_VERSION=v6.3.12
+          curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
+          chmod +x devspace
+          devspace version
+
+          # Install helm
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
+
+          tox -e syft.build.helm
+          tox -e syft.package.helm
+
+      - name: Linting
+        run: |
+          tox -e lint || true
+
+      - name: Manual Build and Publish
+        run: |
+          tox -e syft.publish
+          if [[ "${{ github.event.inputs.release_platform }}" == "TEST_PYPI" ]]; then
+            twine upload -r testpypi -u __token__ -p ${{ secrets.OM_SYFT_TEST_PYPI_TOKEN }} packages/syft/dist/*
+          fi
+
+      # Checkout to gh-pages and update helm repo
+      - name: Checkout to gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          token: ${{ secrets.SYFT_BOT_COMMIT_TOKEN }}
+          path: ghpages
+
+      - name: Copy helm repo files from Syft Repo
+        run: |
+          cp packages/grid/helm/repo/syft-${{ needs.merge-docker-images.outputs.server_version  }}.tgz ghpages/helm/
+          cd ghpages/helm && helm repo index . --url https://openmined.github.io/PySyft/helm
+
+      - name: Commit changes to gh-pages
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: ${{ secrets.OM_BOT_NAME }}
+          author_email: ${{ secrets.OM_BOT_EMAIL }}
+          message: "Add Helm package for Syft Version: ${{ needs.merge-docker-images.outputs.server_version }}"
+          add: "helm/"
+          push: "origin gh-pages"
+          cwd: "./ghpages/"

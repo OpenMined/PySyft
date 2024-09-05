@@ -50,7 +50,7 @@ class DictStorePartition(KeyValueStorePartition):
     """
 
     def prune(self) -> None:
-        self.init_store()
+        self.init_store().unwrap()
 
 
 # the base document store is already a dict but we can change it later

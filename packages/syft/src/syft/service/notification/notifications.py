@@ -4,8 +4,6 @@ from enum import Enum
 from typing import cast
 
 # relative
-from ...client.api import APIRegistry
-from ...client.api import SyftAPI
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject
@@ -18,8 +16,6 @@ from ...types.transforms import add_server_uid_for_key
 from ...types.transforms import generate_id
 from ...types.transforms import transform
 from ...types.uid import UID
-from ...util import options
-from ...util.colors import SURFACE
 from ..notifier.notifier_enums import NOTIFIERS
 from .email_templates import EmailTemplate
 
@@ -77,9 +73,6 @@ class Notification(SyftObject):
 
     def _repr_html_(self) -> str:
         return f"""
-            <style>
-            .syft-request {{color: {SURFACE[options.color_theme]}; line-height: 1;}}
-            </style>
             <div class='syft-request'>
                 <h3>Notification</h3>
                 <p><strong>ID: </strong>{self.id}</p>
@@ -107,22 +100,10 @@ class Notification(SyftObject):
         }
 
     def mark_read(self) -> None:
-        api: SyftAPI = cast(
-            SyftAPI,
-            APIRegistry.api_for(
-                self.server_uid, user_verify_key=self.syft_client_verify_key
-            ),
-        )
-        return api.services.notifications.mark_as_read(uid=self.id)
+        return self.get_api().services.notifications.mark_as_read(uid=self.id)
 
     def mark_unread(self) -> None:
-        api: SyftAPI = cast(
-            SyftAPI,
-            APIRegistry.api_for(
-                self.server_uid, user_verify_key=self.syft_client_verify_key
-            ),
-        )
-        return api.services.notifications.mark_as_unread(uid=self.id)
+        return self.get_api().services.notifications.mark_as_unread(uid=self.id)
 
     def determine_status(self) -> Enum:
         # relative
