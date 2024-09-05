@@ -36,7 +36,7 @@ MIN_SERVER_NAME_LENGTH = 1
 
 
 @serializable()
-class PwdTokenResetConfig(SyftObject):
+class PwdTokenResetConfigV1(SyftObject):
     __canonical_name__ = "PwdTokenResetConfig"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -44,6 +44,17 @@ class PwdTokenResetConfig(SyftObject):
     numbers: bool = True
     token_len: int = 12
     token_exp_min: int = 30
+
+
+@serializable()
+class PwdTokenResetConfig(SyftObject):
+    __canonical_name__ = "PwdTokenResetConfig"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    ascii: bool = True
+    numbers: bool = True
+    token_len: int = 12
+    token_exp_seconds: int = 1800
 
     @model_validator(mode="after")
     def validate_char_types(self) -> Self:
@@ -390,3 +401,18 @@ def migrate_server_settings_update_current_to_v2() -> list[Callable]:
 @migrate(ServerSettingsUpdate, ServerSettingsUpdateV3)
 def migrate_server_settings_update_current_to_v3() -> list[Callable]:
     return [drop(["allow_guest_sessions"])]
+
+
+# PwdTokenResetConfig Migration
+
+
+# set seconds and drop mins
+@migrate(PwdTokenResetConfigV1, PwdTokenResetConfig)
+def migrate_pwd_token_reset_config_v1_to_current() -> list[Callable]:
+    return [make_set_default("token_exp_seconds", 1800), drop(["token_exp_min"])]
+
+
+# drop seconds and add mins
+@migrate(PwdTokenResetConfigV1, PwdTokenResetConfigV1)
+def migrate_pwd_token_reset_config_current_to_v1() -> list[Callable]:
+    return [drop(["token_exp_seconds"]), make_set_default("token_exp_min", 30)]

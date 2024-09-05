@@ -51,16 +51,26 @@ class PasswordResetTemplate(EmailTemplate):
             raise Exception("Couldn't update the user password")
 
         # Get the token expiry time from settings
+        # Option 1
         # relative
-        from ..settings.settings_service import SettingsService
+        # from ..settings.settings_service import SettingsService
 
-        method = context.server.get_service_method(SettingsService.get)
-        settings = method(context=context)
-        expiry_time = settings.pwd_token_config.token_exp_min
+        # method = context.server.get_service_method(SettingsService.get)
+        # settings = method(context=context)
+        # expiry_time = settings.pwd_token_config.token_exp_seconds
 
+        # Option 2
         # settings_service = context.server.get_service("settingsservice")
         # settings = settings_service.get(context)
-        # expiry_time = settings.pwd_token_config.token_exp_min
+        # expiry_time = settings.pwd_token_config.token_exp_seconds
+
+        # Option 3
+        expiry_time = context.server.settings.pwd_token_config.token_exp_seconds
+
+        # Option 4
+        # from ...server.service_registry import ServiceRegistry
+        # settings = ServiceRegistry.get_service("settings").get(context=context)
+        # expiry_time = settings.pwd_token_config.token_exp_seconds
 
         head = """<head>
             <style>
@@ -115,7 +125,7 @@ class PasswordResetTemplate(EmailTemplate):
                     <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
                         syft_client.reset_password(token='{user.reset_token}', new_password=*****)
                     </code>.
-                to reset your password. This token is valid for {expiry_time} minutes only.</p>
+                to reset your password. This token is valid for {expiry_time} seconds only.</p>
                 <p>If you didn't request a password reset, please ignore this email.</p>
             </div>
         </body>"""
