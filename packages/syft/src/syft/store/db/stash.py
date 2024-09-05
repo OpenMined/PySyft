@@ -360,6 +360,10 @@ class ObjectStash(Generic[StashT]):
 
     def get_role(self, credentials: SyftVerifyKey) -> ServiceRole:
         # TODO error handling
+        if Base.metadata.tables.get("User") is None:
+            # if User table does not exist, we assume the user is a guest
+            # this happens when we create stashes in tests
+            return ServiceRole.GUEST
         user_table = Table("User", Base.metadata)
         stmt = select(user_table.c.fields["role"]).where(
             self._get_field_filter("verify_key", str(credentials), table=user_table),

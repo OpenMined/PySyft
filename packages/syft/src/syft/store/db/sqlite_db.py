@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
 
 # relative
+from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
 from .models import Base
@@ -60,6 +61,12 @@ class DBManager:
         self.config = config
         self.server_uid = server_uid
         self.root_verify_key = root_verify_key
+
+    def init_tables(self) -> None:
+        pass
+
+    def reset(self) -> None:
+        pass
 
 
 class SQLiteDBManager(DBManager):
@@ -112,3 +119,20 @@ class SQLiteDBManager(DBManager):
     @property
     def session(self) -> Session:
         return self.get_session_threading_local()
+
+    @classmethod
+    def random(
+        cls,
+        *,
+        config: SQLiteDBConfig | None = None,
+        server_uid: UID | None = None,
+        root_verify_key: SyftVerifyKey | None = None,
+    ) -> "SQLiteDBManager":
+        root_verify_key = root_verify_key or SyftSigningKey.generate().verify_key
+        server_uid = server_uid or UID()
+        config = config or SQLiteDBConfig()
+        return SQLiteDBManager(
+            config=config,
+            server_uid=server_uid,
+            root_verify_key=root_verify_key,
+        )
