@@ -19,5 +19,5 @@ if use_live:
     from .live.test_query import make_test_query
 else:
     # relative
-    from .mock.schema import make_schema
-    from .mock.test_query import make_test_query
+    from .simulation.schema import make_schema
+    from .simulation.test_query import make_test_query
