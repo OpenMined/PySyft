@@ -107,6 +107,7 @@ class SQLiteDBManager(DBManager):
         if self.config.reset:
             # drop all tables that we know about
             Base.metadata.drop_all(bind=self.engine)
+            self.config.reset = False
         Base.metadata.create_all(self.engine)
 
     def reset(self) -> None:

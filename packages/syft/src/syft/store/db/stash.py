@@ -103,7 +103,7 @@ class ObjectStash(Generic[StashT]):
         storage_permissions_type = (
             JSON
             if self.db.engine.dialect.name == "sqlite"
-            else postgresql.ARRAY(UIDTypeDecorator)
+            else postgresql.ARRAY(sa.String)
         )
         if table_name not in Base.metadata.tables:
             Table(
@@ -208,7 +208,7 @@ class ObjectStash(Generic[StashT]):
         if self.db.engine.dialect.name == "sqlite":
             return table.c.fields[field_name] == func.json_quote(json_value)
         elif self.db.engine.dialect.name == "postgresql":
-            return sa.cast(table.c.fields[field_name], sa.String) == json_value
+            return table.c.fields[field_name].astext == json_value
 
     def _get_by_fields(
         self,
@@ -327,8 +327,13 @@ class ObjectStash(Generic[StashT]):
     ) -> list[StashT]:
         # TODO write filter logic, merge with get_all
 
+        if self._is_sqlite():
+            field_value = func.json_quote(field_value)
+        else:
+            field_value = [field_value]  # type: ignore
+
         stmt = self.table.select().where(
-            self.table.c.fields[field_name].contains(func.json_quote(field_value)),
+            self.table.c.fields[field_name].contains(field_value),
         )
         stmt = self._apply_permission_filter(
             stmt, credentials=credentials, has_permission=has_permission
@@ -570,17 +575,21 @@ class ObjectStash(Generic[StashT]):
     @as_result(NotFoundException)
     def add_permission(self, permission: ActionObjectPermission) -> None:
         # TODO add error handling
-        stmt = (
-            self.table.update()
-            .where(self.table.c.id == permission.uid)
-            .values(
+        stmt = self.table.update().where(self.table.c.id == permission.uid)
+        if self._is_sqlite():
+            stmt = stmt.values(
                 permissions=func.json_insert(
                     self.table.c.permissions,
                     "$[#]",
                     permission.permission_string,
                 )
             )
-        )
+        else:
+            stmt = stmt.values(
+                permissions=func.array_append(
+                    self.table.c.permissions, permission.permission_string
+                )
+            )
 
         result = self.session.execute(stmt)
         self.session.commit()
@@ -651,11 +660,18 @@ class ObjectStash(Generic[StashT]):
     def has_storage_permission(self, permission: StoragePermission) -> bool:
         return self.has_storage_permissions([permission])
 
+    def _is_sqlite(self) -> bool:
+        return self.db.engine.dialect.name == "sqlite"
+
     def has_storage_permissions(self, permissions: list[StoragePermission]) -> bool:
         permission_filters = [
             sa.and_(
                 self._get_field_filter("id", p.uid),
-                self.table.c.storage_permissions.contains(p.server_uid),
+                self.table.c.storage_permissions.contains(
+                    p.server_uid.no_dash
+                    if self._is_sqlite()
+                    else [p.server_uid.no_dash]
+                ),
             )
             for p in permissions
         ]
@@ -690,17 +706,22 @@ class ObjectStash(Generic[StashT]):
 
     @as_result(NotFoundException)
     def add_storage_permission(self, permission: StoragePermission) -> None:
-        stmt = (
-            self.table.update()
-            .where(self.table.c.id == permission.uid)
-            .values(
+        stmt = self.table.update().where(self.table.c.id == permission.uid)
+        if self._is_sqlite():
+            stmt = stmt.values(
                 storage_permissions=func.json_insert(
                     self.table.c.storage_permissions,
                     "$[#]",
                     permission.permission_string,
                 )
             )
-        )
+        else:
+            stmt = stmt.values(
+                permissions=func.array_append(
+                    self.table.c.storage_permissions, permission.server_uid.no_dash
+                )
+            )
+
         result = self.session.execute(stmt)
         self.session.commit()
         if result.rowcount == 0:
@@ -759,7 +780,7 @@ class ObjectStash(Generic[StashT]):
         storage_permissions = []
         if add_storage_permission:
             storage_permissions.append(
-                self.server_uid,
+                self.server_uid.no_dash,
             )
 
         fields = serialize_json(obj)
