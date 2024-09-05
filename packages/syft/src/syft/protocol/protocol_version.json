@@ -36,112 +36,6 @@
           "action": "add"
         }
       },
-      "StoreConfig": {
-        "1": {
-          "version": 1,
-          "hash": "a9997fce6a8a0ed2884c58b8eb9382f8554bdd18fff61f8bf0451945bcff12c7",
-          "action": "add"
-        }
-      },
-      "MongoDict": {
-        "1": {
-          "version": 1,
-          "hash": "57e36f57eed75e62b29e2bac1295035a9bf2c0e3c56719dac24cb6cc685be00b",
-          "action": "add"
-        }
-      },
-      "MongoStoreConfig": {
-        "1": {
-          "version": 1,
-          "hash": "53342b27d34165b7e2699f8e7ad70d13d125875e6a75e8fa18f5796428f41036",
-          "action": "add"
-        }
-      },
-      "LinkedObject": {
-        "1": {
-          "version": 1,
-          "hash": "d80f5ac7f51a9383be1a3cb334d56ae50e49733ed3199f3b6b5d6febd9de410b",
-          "action": "add"
-        }
-      },
-      "BaseConfig": {
-        "1": {
-          "version": 1,
-          "hash": "10bd7566041d0f0a3aa295367785fdcc2c5bbf0ded984ac9230754f37496a6a7",
-          "action": "add"
-        },
-        "2": {
-          "version": 2,
-          "hash": "890d2879ac44611db9b88ba9334a721130d0ac3aa18a303fa9e4081f14b9b8c7",
-          "action": "add"
-        }
-      },
-      "ServiceConfig": {
-        "1": {
-          "version": 1,
-          "hash": "28af8a296f5ff63de50438277eaa1f4380682e6aca9f2ca28320d7a444825e88",
-          "action": "add"
-        },
-        "2": {
-          "version": 2,
-          "hash": "93dfab144e0b0884c602358b3a9ce889bb29ab96e3b4adcfe3cef47a31694a9a",
-          "action": "add"
-        }
-      },
-      "LibConfig": {
-        "1": {
-          "version": 1,
-          "hash": "ee8f0e3f6aae81948d72e30226645e8eb5d312a6770411a1edca748168c467c0",
-          "action": "add"
-        },
-        "2": {
-          "version": 2,
-          "hash": "a8a78a8d726ee9e79f95614f3d0fa5b85edc6fce7be7651715208669be93e0e3",
-          "action": "add"
-        }
-      },
-      "APIEndpoint": {
-        "1": {
-          "version": 1,
-          "hash": "faa1cf9336a0d1233868c8c57745ff38c0be60399dc1acd0c0e8dd440e405dbd",
-          "action": "add"
-        }
-      },
-      "LibEndpoint": {
-        "1": {
-          "version": 1,
-          "hash": "a585c83a33a019d363ae5a0c6d4197193654307c19a4829dfbf8a8cfd2c1842a",
-          "action": "add"
-        }
-      },
-      "SignedSyftAPICall": {
-        "1": {
-          "version": 1,
-          "hash": "2f959455f7130f4e59360b8aa58f19785b76eaa0f8a5a9188a6cbf32b31311ca",
-          "action": "add"
-        }
-      },
-      "SyftAPICall": {
-        "1": {
-          "version": 1,
-          "hash": "59e89e7b9ea30deaed64d1ffd9bc0769b999d3082b305428432c1f5be36c6343",
-          "action": "add"
-        }
-      },
-      "SyftAPIData": {
-        "1": {
-          "version": 1,
-          "hash": "820b279c581cafd9bb5009702d4e3db22ec3a3156676426304b9038dad260a24",
-          "action": "add"
-        }
-      },
-      "SyftAPI": {
-        "1": {
-          "version": 1,
-          "hash": "cc13ab058ee36748c14b0d4bd9b9e894c7566fff09cfa4170b3eece520169f15",
-          "action": "add"
-        }
-      },
       "User": {
         "1": {
           "version": 1,
@@ -196,6 +90,34 @@
           "action": "add"
         }
       },
+      "StoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "a9997fce6a8a0ed2884c58b8eb9382f8554bdd18fff61f8bf0451945bcff12c7",
+          "action": "add"
+        }
+      },
+      "MongoDict": {
+        "1": {
+          "version": 1,
+          "hash": "57e36f57eed75e62b29e2bac1295035a9bf2c0e3c56719dac24cb6cc685be00b",
+          "action": "add"
+        }
+      },
+      "MongoStoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "53342b27d34165b7e2699f8e7ad70d13d125875e6a75e8fa18f5796428f41036",
+          "action": "add"
+        }
+      },
+      "LinkedObject": {
+        "1": {
+          "version": 1,
+          "hash": "d80f5ac7f51a9383be1a3cb334d56ae50e49733ed3199f3b6b5d6febd9de410b",
+          "action": "add"
+        }
+      },
       "DateTime": {
         "1": {
           "version": 1,
@@ -247,6 +169,42 @@
         "2": {
           "version": 2,
           "hash": "be8b52597fc628d1b7cd22b776ee81416e1adbb04a45188778eb0e32ed1416b4",
+          "action": "add"
+        }
+      },
+      "BaseConfig": {
+        "1": {
+          "version": 1,
+          "hash": "10bd7566041d0f0a3aa295367785fdcc2c5bbf0ded984ac9230754f37496a6a7",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "890d2879ac44611db9b88ba9334a721130d0ac3aa18a303fa9e4081f14b9b8c7",
+          "action": "add"
+        }
+      },
+      "ServiceConfig": {
+        "1": {
+          "version": 1,
+          "hash": "28af8a296f5ff63de50438277eaa1f4380682e6aca9f2ca28320d7a444825e88",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "93dfab144e0b0884c602358b3a9ce889bb29ab96e3b4adcfe3cef47a31694a9a",
+          "action": "add"
+        }
+      },
+      "LibConfig": {
+        "1": {
+          "version": 1,
+          "hash": "ee8f0e3f6aae81948d72e30226645e8eb5d312a6770411a1edca748168c467c0",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "a8a78a8d726ee9e79f95614f3d0fa5b85edc6fce7be7651715208669be93e0e3",
           "action": "add"
         }
       },
@@ -343,6 +301,48 @@
           "action": "add"
         }
       },
+      "APIEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "faa1cf9336a0d1233868c8c57745ff38c0be60399dc1acd0c0e8dd440e405dbd",
+          "action": "add"
+        }
+      },
+      "LibEndpoint": {
+        "1": {
+          "version": 1,
+          "hash": "a585c83a33a019d363ae5a0c6d4197193654307c19a4829dfbf8a8cfd2c1842a",
+          "action": "add"
+        }
+      },
+      "SignedSyftAPICall": {
+        "1": {
+          "version": 1,
+          "hash": "2f959455f7130f4e59360b8aa58f19785b76eaa0f8a5a9188a6cbf32b31311ca",
+          "action": "add"
+        }
+      },
+      "SyftAPICall": {
+        "1": {
+          "version": 1,
+          "hash": "59e89e7b9ea30deaed64d1ffd9bc0769b999d3082b305428432c1f5be36c6343",
+          "action": "add"
+        }
+      },
+      "SyftAPIData": {
+        "1": {
+          "version": 1,
+          "hash": "820b279c581cafd9bb5009702d4e3db22ec3a3156676426304b9038dad260a24",
+          "action": "add"
+        }
+      },
+      "SyftAPI": {
+        "1": {
+          "version": 1,
+          "hash": "cc13ab058ee36748c14b0d4bd9b9e894c7566fff09cfa4170b3eece520169f15",
+          "action": "add"
+        }
+      },
       "HTTPConnection": {
         "1": {
           "version": 1,
@@ -396,6 +396,125 @@
         "1": {
           "version": 1,
           "hash": "b3c44c7788c59c03fa1baeec656c2ca6e633f4cbd4b23ff7ece6ee94c38449f0",
+          "action": "add"
+        }
+      },
+      "BlobFile": {
+        "1": {
+          "version": 1,
+          "hash": "d99239100f1cb0b73c69b2ad7cab01a06909cc3a4976ba2b3b67cf6fe5e2f516",
+          "action": "add"
+        }
+      },
+      "BlobFileOBject": {
+        "1": {
+          "version": 1,
+          "hash": "6c40dab2c8d2220d4fff7cc653d76cc026a856db7e2b5713b6341e255adc7ea2",
+          "action": "add"
+        }
+      },
+      "SecureFilePathLocation": {
+        "1": {
+          "version": 1,
+          "hash": "ea5978b98d7773d221665b450454c9130c103a5c850669a0acd620607cd614b7",
+          "action": "add"
+        }
+      },
+      "SeaweedSecureFilePathLocation": {
+        "1": {
+          "version": 1,
+          "hash": "3fc9bfc8c1b1cf660c9747e8c1fe3eb2220e78d4e3b5d6b5c5f29a07a77ebf3e",
+          "action": "add"
+        }
+      },
+      "AzureSecureFilePathLocation": {
+        "1": {
+          "version": 1,
+          "hash": "090a9e962eeb655586ee966c5651d8996363969818a38f9a486fd64d33047e05",
+          "action": "add"
+        }
+      },
+      "BlobStorageEntry": {
+        "1": {
+          "version": 1,
+          "hash": "afdc6a1d8a24b1ee1ed9d3e79f5bac64b4f0d9d36800f07f10be0b896470345f",
+          "action": "add"
+        }
+      },
+      "BlobStorageMetadata": {
+        "1": {
+          "version": 1,
+          "hash": "9d4b61ac4ea1910c2f7c767a50a6a52544a24663548f069e79bd906f11b538e4",
+          "action": "add"
+        }
+      },
+      "CreateBlobStorageEntry": {
+        "1": {
+          "version": 1,
+          "hash": "ffc3cbfeade67d074dc5bf7d655a1eb8c83630076028a72b3cc4548f3b413e14",
+          "action": "add"
+        }
+      },
+      "BlobRetrieval": {
+        "1": {
+          "version": 1,
+          "hash": "c422c74b89a9349742acaa848566fe18bfef1a83333458b858c074baed37a859",
+          "action": "add"
+        }
+      },
+      "SyftObjectRetrieval": {
+        "1": {
+          "version": 1,
+          "hash": "b2b62447445adc4cd0b77ab59d6fa56624dd316fb50281e570daad07556b6db2",
+          "action": "add"
+        }
+      },
+      "BlobRetrievalByURL": {
+        "1": {
+          "version": 1,
+          "hash": "4db0e3b7a6334d3835356d8393866711e243e360af25a95f3cc4066f032404b5",
+          "action": "add"
+        }
+      },
+      "BlobDeposit": {
+        "1": {
+          "version": 1,
+          "hash": "6eb5cc57dc763126bfc6ec5a2b79d02e77eadf9d9efb1888a5c366b7799c1c24",
+          "action": "add"
+        }
+      },
+      "WorkerSettings": {
+        "1": {
+          "version": 1,
+          "hash": "dca33003904a71688e5b07db65f8833eb4de8135aade7154076b8eafbb94d26b",
+          "action": "add"
+        }
+      },
+      "HTTPServerRoute": {
+        "1": {
+          "version": 1,
+          "hash": "938245604a9c7e50001299afff5b669b2548364e356fed22a22780497831bf81",
+          "action": "add"
+        }
+      },
+      "PythonServerRoute": {
+        "1": {
+          "version": 1,
+          "hash": "a068d8f942d55ecb6d45af88a27c6ebf208584275bf589cbc308df3f774ab9a9",
+          "action": "add"
+        }
+      },
+      "VeilidServerRoute": {
+        "1": {
+          "version": 1,
+          "hash": "e676bc165601d2ede69707a4b6168ed4674f3f98887026d098a2dd4da4dfd097",
+          "action": "add"
+        }
+      },
+      "EnclaveMetadata": {
+        "1": {
+          "version": 1,
+          "hash": "8d2dfafa01ec909c080a790cf15a8fc78e00382d3bfe6207098ceb25a60b9c53",
           "action": "add"
         }
       },
@@ -673,62 +792,6 @@
           "action": "add"
         }
       },
-      "BlobFile": {
-        "1": {
-          "version": 1,
-          "hash": "d99239100f1cb0b73c69b2ad7cab01a06909cc3a4976ba2b3b67cf6fe5e2f516",
-          "action": "add"
-        }
-      },
-      "BlobFileOBject": {
-        "1": {
-          "version": 1,
-          "hash": "6c40dab2c8d2220d4fff7cc653d76cc026a856db7e2b5713b6341e255adc7ea2",
-          "action": "add"
-        }
-      },
-      "SecureFilePathLocation": {
-        "1": {
-          "version": 1,
-          "hash": "ea5978b98d7773d221665b450454c9130c103a5c850669a0acd620607cd614b7",
-          "action": "add"
-        }
-      },
-      "SeaweedSecureFilePathLocation": {
-        "1": {
-          "version": 1,
-          "hash": "3fc9bfc8c1b1cf660c9747e8c1fe3eb2220e78d4e3b5d6b5c5f29a07a77ebf3e",
-          "action": "add"
-        }
-      },
-      "AzureSecureFilePathLocation": {
-        "1": {
-          "version": 1,
-          "hash": "090a9e962eeb655586ee966c5651d8996363969818a38f9a486fd64d33047e05",
-          "action": "add"
-        }
-      },
-      "BlobStorageEntry": {
-        "1": {
-          "version": 1,
-          "hash": "afdc6a1d8a24b1ee1ed9d3e79f5bac64b4f0d9d36800f07f10be0b896470345f",
-          "action": "add"
-        }
-      },
-      "BlobStorageMetadata": {
-        "1": {
-          "version": 1,
-          "hash": "9d4b61ac4ea1910c2f7c767a50a6a52544a24663548f069e79bd906f11b538e4",
-          "action": "add"
-        }
-      },
-      "CreateBlobStorageEntry": {
-        "1": {
-          "version": 1,
-          "hash": "ffc3cbfeade67d074dc5bf7d655a1eb8c83630076028a72b3cc4548f3b413e14",
-          "action": "add"
-        }
-      },
       "SyftObjectMigrationState": {
         "1": {
           "version": 1,
@@ -752,34 +815,6 @@
         "2": {
           "version": 2,
           "hash": "1d1b14c196221ecf6d644d7dcaa32ac9e90361b2687fa83161ff399ebc6df1bd",
-          "action": "add"
-        }
-      },
-      "BlobRetrieval": {
-        "1": {
-          "version": 1,
-          "hash": "c422c74b89a9349742acaa848566fe18bfef1a83333458b858c074baed37a859",
-          "action": "add"
-        }
-      },
-      "SyftObjectRetrieval": {
-        "1": {
-          "version": 1,
-          "hash": "b2b62447445adc4cd0b77ab59d6fa56624dd316fb50281e570daad07556b6db2",
-          "action": "add"
-        }
-      },
-      "BlobRetrievalByURL": {
-        "1": {
-          "version": 1,
-          "hash": "4db0e3b7a6334d3835356d8393866711e243e360af25a95f3cc4066f032404b5",
-          "action": "add"
-        }
-      },
-      "BlobDeposit": {
-        "1": {
-          "version": 1,
-          "hash": "6eb5cc57dc763126bfc6ec5a2b79d02e77eadf9d9efb1888a5c366b7799c1c24",
           "action": "add"
         }
       },
@@ -808,13 +843,6 @@
         "1": {
           "version": 1,
           "hash": "febeb2a2ce81aa2c512e4c6b611b582984042aafa0541403d4584662273a166c",
-          "action": "add"
-        }
-      },
-      "DictStoreConfig": {
-        "1": {
-          "version": 1,
-          "hash": "2e1365c5535fa51c22eef79f67dd6444789bc829c27881367e3050e06e2ffbfe",
           "action": "add"
         }
       },
@@ -1007,34 +1035,6 @@
           "action": "add"
         }
       },
-      "WorkerSettings": {
-        "1": {
-          "version": 1,
-          "hash": "dca33003904a71688e5b07db65f8833eb4de8135aade7154076b8eafbb94d26b",
-          "action": "add"
-        }
-      },
-      "HTTPServerRoute": {
-        "1": {
-          "version": 1,
-          "hash": "938245604a9c7e50001299afff5b669b2548364e356fed22a22780497831bf81",
-          "action": "add"
-        }
-      },
-      "PythonServerRoute": {
-        "1": {
-          "version": 1,
-          "hash": "a068d8f942d55ecb6d45af88a27c6ebf208584275bf589cbc308df3f774ab9a9",
-          "action": "add"
-        }
-      },
-      "VeilidServerRoute": {
-        "1": {
-          "version": 1,
-          "hash": "e676bc165601d2ede69707a4b6168ed4674f3f98887026d098a2dd4da4dfd097",
-          "action": "add"
-        }
-      },
       "ServerPeer": {
         "1": {
           "version": 1,
@@ -1158,13 +1158,6 @@
         "1": {
           "version": 1,
           "hash": "ed05cb87aec832098fc464ac36cd6bceaab705463d0d2fa1b2d8e1ccc510018c",
-          "action": "add"
-        }
-      },
-      "EnclaveMetadata": {
-        "1": {
-          "version": 1,
-          "hash": "8d2dfafa01ec909c080a790cf15a8fc78e00382d3bfe6207098ceb25a60b9c53",
           "action": "add"
         }
       }
