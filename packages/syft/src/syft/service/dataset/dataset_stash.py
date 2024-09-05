@@ -13,8 +13,6 @@ from .dataset import Dataset
 @instrument
 @serializable(canonical_name="DatasetStashSQL", version=1)
 class DatasetStash(ObjectStash[Dataset]):
-    allow_set_any_type = True
-
     @as_result(StashException, NotFoundException)
     def get_by_name(self, credentials: SyftVerifyKey, name: str) -> Dataset:
         return self.get_one_by_field(
