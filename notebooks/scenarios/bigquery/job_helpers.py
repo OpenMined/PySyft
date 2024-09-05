@@ -248,7 +248,7 @@ def create_job_many_columns(user: TestUser) -> TestJob:
     return job
 
 
-def create_long_running_query_job(user: TestUser) -> TestJob:
+def create_long_running_query_job(user: TestUser, delay_secs: int = 121) -> TestJob:
     job_type = "long_running_query"
     func_name = f"{job_type}_{secrets.token_hex(3)}"
 
@@ -261,10 +261,10 @@ def create_long_running_query_job(user: TestUser) -> TestJob:
         ]
     )
 
-    # Creating a query that simulates a 121-second delay
-    query = """
+    # Creating a query that simulates a delay_secs delay
+    query = f"""
     DECLARE WAIT STRING DEFAULT 'TRUE';
-    DECLARE DELAY_TIME DATETIME DEFAULT DATETIME_ADD(CURRENT_DATETIME(), INTERVAL 121 SECOND);
+    DECLARE DELAY_TIME DATETIME DEFAULT DATETIME_ADD(CURRENT_DATETIME(), INTERVAL {delay_secs} SECOND);
     WHILE WAIT = 'TRUE' DO
         IF (DELAY_TIME < CURRENT_DATETIME()) THEN
             SET WAIT = 'FALSE';
