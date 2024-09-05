@@ -144,6 +144,10 @@ class TestUser:
             return None
         return self.to_dict()[key]
 
+    def update_password(self):
+        self.password = self.new_password
+        self.new_password = None
+
     @property
     def emails(self) -> list[Email]:
         if not self._email_server:
