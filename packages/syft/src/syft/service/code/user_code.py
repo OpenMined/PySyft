@@ -12,6 +12,7 @@ import inspect
 from io import StringIO
 import json
 import keyword
+import logging
 import random
 import re
 import sys
@@ -100,6 +101,8 @@ from .unparse import unparse
 from .utils import check_for_global_vars
 from .utils import parse_code
 from .utils import submit_subjobs_code
+
+logger = logging.getLogger(name=__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -1865,13 +1868,11 @@ def execute_byte_code(
 
             if context.job is not None:
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
-                original_print(
-                    f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
-                )
+                logger.error(f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}")
             else:
                 # for local execution
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
-                original_print(f"{time} EXCEPTION LOG:\n{error_msg}\n", file=sys.stderr)
+                logger.error(f"{time} EXCEPTION LOG:\n{error_msg}\n")
 
             if (
                 context.server is not None
