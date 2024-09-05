@@ -758,10 +758,20 @@ class ObjectStash(Generic[StashT]):
                 self.server_uid,
             )
 
+        fields = serialize_json(obj)
+        try:
+            # check if the fields are deserializable
+            # PR NOTE: Is this too much extra work?
+            deserialize_json(fields)
+        except Exception as e:
+            raise StashException(
+                f"Error serializing object: {e}. Some fields are invalid."
+            )
+
         # create the object with the permissions
         stmt = self.table.insert().values(
             id=uid,
-            fields=serialize_json(obj),
+            fields=fields,
             permissions=permissions,
             storage_permissions=storage_permissions,
         )
