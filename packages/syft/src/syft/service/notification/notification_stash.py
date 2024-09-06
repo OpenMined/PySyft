@@ -15,7 +15,6 @@ from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from .notifications import Notification
 from .notifications import NotificationStatus
 
@@ -32,7 +31,6 @@ OrderByCreatedAtTimeStampPartitionKey = PartitionKey(key="created_at", type_=Dat
 LinkedObjectPartitionKey = PartitionKey(key="linked_obj", type_=LinkedObject)
 
 
-@instrument
 @serializable(canonical_name="NotificationStash", version=1)
 class NotificationStash(NewBaseUIDStoreStash):
     object_type = Notification

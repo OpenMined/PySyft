@@ -1,7 +1,3 @@
-# stdlib
-
-# third party
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
@@ -12,14 +8,12 @@ from ...store.document_store import PartitionSettings
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from .settings import ServerSettings
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
-@instrument
 @serializable(canonical_name="SettingsStash", version=1)
 class SettingsStash(NewBaseUIDStoreStash):
     object_type = ServerSettings

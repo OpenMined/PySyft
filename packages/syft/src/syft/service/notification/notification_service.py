@@ -5,9 +5,9 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
+from ...types.result import OkErr
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..notifier.notifier import NotifierSettings
@@ -27,7 +27,6 @@ from .notifications import NotificationStatus
 from .notifications import ReplyNotification
 
 
-@instrument
 @serializable(canonical_name="NotificationService", version=1)
 class NotificationService(AbstractService):
     store: DocumentStore
@@ -105,6 +104,7 @@ class NotificationService(AbstractService):
         path="notifications.activate",
         name="activate",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def activate(
         self,
@@ -112,19 +112,25 @@ class NotificationService(AbstractService):
     ) -> Notification:
         notifier_service = context.server.get_service("notifierservice")
         result = notifier_service.activate(context)
+        if isinstance(result, OkErr) and result.is_ok():
+            # sad, TODO: remove upstream Ok
+            result = result.ok()
         return result
 
     @service_method(
         path="notifications.deactivate",
         name="deactivate",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def deactivate(
         self,
         context: AuthedServiceContext,
-    ) -> Notification:
+    ) -> SyftSuccess:
         notifier_service = context.server.get_service("notifierservice")
         result = notifier_service.deactivate(context)
+        if isinstance(result, OkErr):
+            result = result.ok()
         return result
 
     @service_method(

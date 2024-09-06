@@ -1,30 +1,26 @@
 # stdlib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import logging
 import smtplib
 
 # third party
 from pydantic import BaseModel
-from pydantic import model_validator
 
 # relative
 from ...types.errors import SyftException
+from ...types.server_url import ServerURL
 
 SOCKET_TIMEOUT = 5  # seconds
 
+logger = logging.getLogger(__name__)
+
 
 class SMTPClient(BaseModel):
-    username: str
-    password: str
     server: str
     port: int
-
-    @model_validator(mode="before")
-    @classmethod
-    def check_user_and_password(cls, values: dict) -> dict:
-        if not (values.get("username", None) and values.get("password")):
-            raise ValueError("Both username and password must be provided")
-        return values
+    password: str | None = None
+    username: str | None = None
 
     def send(self, sender: str, receiver: list[str], subject: str, body: str) -> None:
         if not (subject and body and receiver):
@@ -36,15 +32,26 @@ class SMTPClient(BaseModel):
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "html"))
 
-        with smtplib.SMTP(self.server, self.port, timeout=SOCKET_TIMEOUT) as server:
-            server.ehlo()
-            if server.has_extn("STARTTLS"):
-                server.starttls()
+        mail_url = ServerURL.from_url(f"smtp://{self.server}:{self.port}")
+        mail_url = mail_url.as_container_host()
+        try:
+            with smtplib.SMTP(
+                mail_url.host_or_ip, mail_url.port, timeout=SOCKET_TIMEOUT
+            ) as server:
                 server.ehlo()
-            server.login(self.username, self.password)
-            text = msg.as_string()
-            server.sendmail(sender, ", ".join(receiver), text)
-        # TODO: Add error handling
+                if server.has_extn("STARTTLS"):
+                    server.starttls()
+                    server.ehlo()
+                if self.username and self.password:
+                    server.login(self.username, self.password)
+                text = msg.as_string()
+                server.sendmail(sender, ", ".join(receiver), text)
+                return None
+        except Exception as e:
+            logger.error(f"Unable to send email. {e}")
+            raise SyftException(
+                public_message="Oops! Something went wrong while trying to send an email."
+            )
 
     @classmethod
     def check_credentials(
@@ -56,7 +63,13 @@ class SMTPClient(BaseModel):
             bool: True if the credentials are valid, False otherwise.
         """
         try:
-            with smtplib.SMTP(server, port, timeout=SOCKET_TIMEOUT) as smtp_server:
+            mail_url = ServerURL.from_url(f"smtp://{server}:{port}")
+            mail_url = mail_url.as_container_host()
+
+            print(f"> Validating SMTP settings: {mail_url}")
+            with smtplib.SMTP(
+                mail_url.host_or_ip, mail_url.port, timeout=SOCKET_TIMEOUT
+            ) as smtp_server:
                 smtp_server.ehlo()
                 if smtp_server.has_extn("STARTTLS"):
                     smtp_server.starttls()
@@ -64,4 +77,7 @@ class SMTPClient(BaseModel):
                 smtp_server.login(username, password)
                 return True
         except Exception as e:
+            message = f"SMTP check_credentials failed. {e}"
+            print(message)
+            logger.error(message)
             raise SyftException(public_message=str(e))

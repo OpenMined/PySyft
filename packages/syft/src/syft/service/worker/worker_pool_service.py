@@ -423,6 +423,8 @@ class SyftWorkerPoolService(AbstractService):
         Allows both scaling up and down the worker pool.
         """
 
+        client_warning = ""
+
         if not IN_KUBERNETES:
             raise SyftException(
                 public_message="Scaling is only supported in Kubernetes mode"
@@ -470,6 +472,8 @@ class SyftWorkerPoolService(AbstractService):
                     uid=worker.object_uid,
                 ).unwrap()
 
+            client_warning += "Scaling down workers doesn't kill the associated jobs. Please delete them manually."
+
             # update worker_pool
             worker_pool.max_count = number
             worker_pool.worker_list = worker_pool.worker_list[:number]
@@ -483,7 +487,10 @@ class SyftWorkerPoolService(AbstractService):
                 )
             )
 
-        return SyftSuccess(message=f"Worker pool scaled to {number} workers")
+        return SyftSuccess(
+            message=f"Worker pool scaled to {number} workers",
+            client_warnings=[client_warning] if client_warning else [],
+        )
 
     @service_method(
         path="worker_pool.filter_by_image_id",
@@ -616,7 +623,10 @@ class SyftWorkerPoolService(AbstractService):
         )
 
         if IN_KUBERNETES:
+            # Scale the workers to zero
             self.scale(context=context, number=0, pool_id=uid)
+            runner = KubernetesRunner()
+            runner.delete_pool(pool_name=worker_pool.name)
         else:
             workers = (
                 worker.resolve_with_context(context=context).unwrap()

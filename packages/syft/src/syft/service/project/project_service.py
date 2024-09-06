@@ -12,7 +12,6 @@ from ...store.linked_obj import LinkedObject
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
 from ..network.network_service import NetworkService
 from ..notification.notification_service import NotificationService
@@ -35,7 +34,6 @@ from .project import create_project_hash
 from .project_stash import ProjectStash
 
 
-@instrument
 @serializable(canonical_name="ProjectService", version=1)
 class ProjectService(AbstractService):
     store: DocumentStore

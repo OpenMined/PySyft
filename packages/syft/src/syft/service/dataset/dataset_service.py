@@ -9,7 +9,6 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_service import ActionService
@@ -70,7 +69,6 @@ def _paginate_dataset_collection(
     )
 
 
-@instrument
 @serializable(canonical_name="DatasetService", version=1)
 class DatasetService(AbstractService):
     store: DocumentStore

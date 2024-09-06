@@ -160,6 +160,8 @@ class Settings(BaseSettings):
     REVERSE_TUNNEL_ENABLED: bool = str_to_bool(
         os.getenv("REVERSE_TUNNEL_ENABLED", "false")
     )
+    TRACING_ENABLED: bool = str_to_bool(os.getenv("TRACING", "False"))
+
     model_config = SettingsConfigDict(case_sensitive=True)
 
 

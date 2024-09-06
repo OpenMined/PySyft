@@ -10,8 +10,8 @@ from syft.server.server import get_server_name
 from syft.server.server import get_server_side_type
 from syft.server.server import get_server_type
 from syft.server.server import get_server_uid_env
-from syft.service.queue.zmq_queue import ZMQClientConfig
-from syft.service.queue.zmq_queue import ZMQQueueConfig
+from syft.service.queue.zmq_client import ZMQClientConfig
+from syft.service.queue.zmq_client import ZMQQueueConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSClientConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSConfig
 from syft.store.postgresql_document_store import PostgreSQLStoreClientConfig

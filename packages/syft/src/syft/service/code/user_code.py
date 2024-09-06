@@ -12,6 +12,7 @@ import inspect
 from io import StringIO
 import json
 import keyword
+import logging
 import random
 import re
 import sys
@@ -101,6 +102,8 @@ from .unparse import unparse
 from .utils import check_for_global_vars
 from .utils import parse_code
 from .utils import submit_subjobs_code
+
+logger = logging.getLogger(name=__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -1871,13 +1874,11 @@ def execute_byte_code(
 
             if context.job is not None:
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
-                original_print(
-                    f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}", file=sys.stderr
-                )
+                logger.error(f"{time} EXCEPTION LOG ({job_id}):\n{error_msg}")
             else:
                 # for local execution
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
-                original_print(f"{time} EXCEPTION LOG:\n{error_msg}\n", file=sys.stderr)
+                logger.error(f"{time} EXCEPTION LOG:\n{error_msg}\n")
 
             if (
                 context.server is not None
@@ -1960,17 +1961,22 @@ def load_approved_policy_code(
     user_code_items: list[UserCode], context: AuthedServiceContext | None
 ) -> Any:
     """Reload the policy code in memory for user code that is approved."""
-    try:
-        for user_code in user_code_items:
+    for user_code in user_code_items:
+        try:
             if context is None:
                 status = user_code.status
             else:
                 status = user_code.get_status(context).unwrap()
+        except SyftException:
+            display(
+                SyftWarning(
+                    message=f"Failed to load UserCode {user_code.id.no_dash} {user_code.service_func_name=}"
+                )
+            )
+            continue
 
-            if status.approved:
-                if isinstance(user_code.input_policy_type, UserPolicy):
-                    load_policy_code(user_code.input_policy_type)
-                if isinstance(user_code.output_policy_type, UserPolicy):
-                    load_policy_code(user_code.output_policy_type)
-    except Exception as e:
-        raise Exception(f"Failed to load code: {user_code}: {e}")
+        if status.approved:
+            if isinstance(user_code.input_policy_type, UserPolicy):
+                load_policy_code(user_code.input_policy_type)
+            if isinstance(user_code.output_policy_type, UserPolicy):
+                load_policy_code(user_code.output_policy_type)

@@ -3,6 +3,9 @@ from string import Template
 from typing import Any
 from typing import cast
 
+# third party
+from pydantic import ValidationError
+
 # relative
 from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
@@ -118,7 +121,7 @@ class SettingsService(AbstractService):
             value=updated_settings,
         )
 
-    @as_result(StashException, NotFoundException)
+    @as_result(StashException, NotFoundException, ValidationError)
     def _update(
         self, context: AuthedServiceContext, settings: ServerSettingsUpdate
     ) -> ServerSettings:
@@ -127,6 +130,7 @@ class SettingsService(AbstractService):
             new_settings = all_settings[0].model_copy(
                 update=settings.to_dict(exclude_empty=True)
             )
+            ServerSettings.model_validate(new_settings.to_dict())
             update_result = self.stash.update(
                 context.credentials, settings=new_settings
             ).unwrap()
@@ -140,29 +144,13 @@ class SettingsService(AbstractService):
                 notifier_settings_res = notifier_service.settings(context)
                 if (
                     not notifier_settings_res.is_ok()
-                    or (notifier_settings := notifier_settings_res.ok()) is None
+                    or notifier_settings_res.ok() is None
                 ):
                     raise SyftException(
                         public_message=(
                             "Notification has not been enabled. "
                             "Please use `enable_notifications` from `user_service`."
                         )
-                    )
-
-                if settings.notifications_enabled and (
-                    not (
-                        notifier_settings.email_username
-                        and notifier_settings.email_password
-                    )
-                    or not notifier_settings.validate_email_credentials(
-                        notifier_settings.email_username,
-                        notifier_settings.email_password,
-                        notifier_settings.email_server,
-                        notifier_settings.email_port,
-                    )
-                ):
-                    raise SyftException(
-                        public_message=_NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR
                     )
 
                 notifier_service._set_notifier(
@@ -236,7 +224,6 @@ class SettingsService(AbstractService):
         path="settings.disable_notifications",
         name="disable_notifications",
         roles=ADMIN_ROLE_LEVEL,
-        unwrap_on_success=False,
     )
     def disable_notifications(
         self,

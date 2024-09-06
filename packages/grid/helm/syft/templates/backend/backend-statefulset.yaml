@@ -87,7 +87,7 @@ spec:
             {{- end }}
             {{- if .Values.server.debuggerEnabled }}
             - name: DEBUGGER_ENABLED
-              value: "true"
+              value: "True"
             {{- end }}
             {{- if eq .Values.server.type "gateway" }}
             - name: ASSOCIATION_REQUEST_AUTO_APPROVAL
@@ -143,15 +143,15 @@ spec:
             {{- end }}
             - name: MIN_SIZE_BLOB_STORAGE_MB
               value: {{ .Values.seaweedfs.minSizeBlobStorageMB | quote }}
+            {{- if .Values.server.tracing.enabled }}
             # Tracing
-            - name: TRACE
-              value: "false"
-            - name: SERVICE_NAME
-              value: "backend"
-            - name: JAEGER_HOST
-              value: "localhost"
-            - name: JAEGER_PORT
-              value: "14268"
+            - name: TRACING
+              value: {{ .Values.server.tracing.enabled | default "False" | quote }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.server.tracing.otlpEndpoint | required "server.tracing.otlpEndpoint is required" | quote }}
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: {{ .Values.server.tracing.otlpProtocol | default "grpc" | quote }}
+            {{- end }}
             # Enclave attestation
             {{- if .Values.attestation.enabled }}
             - name: ENCLAVE_ATTESTATION_ENABLED

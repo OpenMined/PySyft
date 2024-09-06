@@ -85,3 +85,6 @@ packages/grid/helm/examples/dev/migration.yaml
 
 # dynaconf settings file
 **/settings.yaml
+
+
+notebooks/scenarios/bigquery/*.json

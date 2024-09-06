@@ -13,7 +13,7 @@ from .k8s import PodStatus
 from .k8s import get_kr8s_client
 
 JSONPATH_AVAILABLE_REPLICAS = "{.status.availableReplicas}"
-CREATE_POOL_TIMEOUT_SEC = 180
+CREATE_POOL_TIMEOUT_SEC = 380
 SCALE_POOL_TIMEOUT_SEC = 60
 
 
@@ -73,12 +73,13 @@ class KubernetesRunner:
 
     def scale_pool(self, pool_name: str, replicas: int) -> StatefulSet | None:
         deployment = self.get_pool(pool_name)
+        timeout = max(SCALE_POOL_TIMEOUT_SEC * replicas, SCALE_POOL_TIMEOUT_SEC)
         if not deployment:
             return None
         deployment.scale(replicas)
         deployment.wait(
             f"jsonpath='{JSONPATH_AVAILABLE_REPLICAS}'={replicas}",
-            timeout=SCALE_POOL_TIMEOUT_SEC,
+            timeout=timeout,
         )
         return deployment
 
@@ -95,9 +96,11 @@ class KubernetesRunner:
         selector = {"app.kubernetes.io/component": pool_name}
         for _set in self.client.get("statefulsets", label_selector=selector):
             _set.delete(propagation_policy="Foreground")
+            _set.wait(conditions="delete")
 
         for _secret in self.client.get("secrets", label_selector=selector):
             _secret.delete(propagation_policy="Foreground")
+            _secret.wait(conditions="delete")
 
         return True
 

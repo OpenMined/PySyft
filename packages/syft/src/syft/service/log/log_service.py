@@ -2,7 +2,6 @@
 from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import StoragePermission
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
@@ -15,7 +14,6 @@ from .log import SyftLog
 from .log_stash import LogStash
 
 
-@instrument
 @serializable(canonical_name="LogService", version=1)
 class LogService(AbstractService):
     store: DocumentStore

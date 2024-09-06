@@ -41,7 +41,7 @@ COPY syft/src/syft/VERSION ./syft/src/syft/
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     # remove torch because we already have the cpu version pre-installed
     sed --in-place /torch==/d ./syft/setup.cfg && \
-    uv pip install -e ./syft[data_science]
+    uv pip install -e ./syft[data_science,telemetry]
 
 # ==================== [Final] Setup Syft Server ==================== #
 
@@ -79,6 +79,7 @@ ENV \
     RELEASE="production" \
     DEV_MODE="False" \
     DEBUGGER_ENABLED="False" \
+    TRACING="False" \
     CONTAINER_HOST="docker" \
     DEFAULT_ROOT_EMAIL="info@openmined.org" \
     DEFAULT_ROOT_PASSWORD="changethis" \
