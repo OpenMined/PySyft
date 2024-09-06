@@ -27,7 +27,6 @@ from ..request.request import CreateCustomImageChange
 from ..request.request import CreateCustomWorkerPoolChange
 from ..request.request import Request
 from ..request.request import SubmitRequest
-from ..request.request_service import RequestService
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -215,7 +214,9 @@ class SyftWorkerPoolService(AbstractService):
         # Create a the request object with the changes and submit it
         # for approval.
         request = SubmitRequest(changes=changes)
-        return context.server.services.request.submit(context=context, request=request, reason=reason)
+        return context.server.services.request.submit(
+            context=context, request=request, reason=reason
+        )
 
     @service_method(
         path="worker_pool.create_image_and_pool_request",
@@ -318,7 +319,9 @@ class SyftWorkerPoolService(AbstractService):
 
         # Create a request object and submit a request for approval
         request = SubmitRequest(changes=changes)
-        return context.server.services.request.submit(context=context, request=request, reason=reason)
+        return context.server.services.request.submit(
+            context=context, request=request, reason=reason
+        )
 
     @service_method(
         path="worker_pool.get_all",

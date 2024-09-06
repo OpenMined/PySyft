@@ -1266,7 +1266,7 @@ class Server(AbstractServer):
             try:
                 logger.info(f"API Call: {api_call}")
 
-                result = self.services(context, *api_call.args, **api_call.kwargs)
+                result = method(context, *api_call.args, **api_call.kwargs)
 
                 if isinstance(result, SyftError):
                     raise TypeError(

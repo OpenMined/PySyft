@@ -701,7 +701,6 @@ class Request(SyncableSyftObject):
 
     def save(self, context: AuthedServiceContext) -> SyftSuccess:
         # relative
-        from .request_service import RequestService
 
         return context.server.services.request.save(context=context, request=self)
 

@@ -37,7 +37,6 @@ from ...util.misc_objs import MarkdownDescription
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..user.user import UserView
-from ..user.user_service import UserService
 from .utils import print as log_print
 
 NOT_ACCESSIBLE_STRING = "N / A"
@@ -506,7 +505,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
         # get a user client
         guest_client = context.server.get_guest_client()
         user_client = guest_client
-        private_key = context.server.services.user.signing_key_for_verify_key(context.credentials)
+        private_key = context.server.services.user.signing_key_for_verify_key(
+            context.credentials
+        )
         signing_key = private_key.signing_key
         user_client.credentials = signing_key
         return user_client

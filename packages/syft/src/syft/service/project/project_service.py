@@ -14,7 +14,6 @@ from ...types.result import as_result
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..network.network_service import NetworkService
-from ..notification.notification_service import NotificationService
 from ..notification.notifications import CreateNotification
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -388,7 +387,9 @@ class ProjectService(AbstractService):
             )
 
             # TODO: Update noteificationservice result
-            result = context.server.services.notifications.send(context=context, notification=message)
+            result = context.server.services.notifications.send(
+                context=context, notification=message
+            )
             if isinstance(result, SyftError):
                 raise SyftException(public_message=result)
 

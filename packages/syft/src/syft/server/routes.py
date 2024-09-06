@@ -186,7 +186,9 @@ def make_routes(worker: Worker) -> APIRouter:
     ) -> Response:
         try:
             context = UnauthedServiceContext(server=server)
-            result = server.services.user.reset_password(context=context, token=token, new_password=new_password)
+            result = server.services.user.reset_password(
+                context=context, token=token, new_password=new_password
+            )
         except SyftException as e:
             result = SyftError.from_public_exception(e)
 

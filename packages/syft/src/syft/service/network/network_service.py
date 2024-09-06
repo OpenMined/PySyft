@@ -41,7 +41,6 @@ from ..metadata.server_metadata import ServerMetadata
 from ..request.request import Request
 from ..request.request import RequestStatus
 from ..request.request import SubmitRequest
-from ..request.request_service import RequestService
 from ..response import SyftInfo
 from ..response import SyftSuccess
 from ..service import AbstractService

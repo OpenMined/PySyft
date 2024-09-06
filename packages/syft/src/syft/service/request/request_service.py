@@ -14,7 +14,6 @@ from ..notification.email_templates import EmailTemplate
 from ..notification.email_templates import RequestEmailTemplate
 from ..notification.email_templates import RequestUpdateEmailTemplate
 from ..notification.notification_service import CreateNotification
-from ..notification.notification_service import NotificationService
 from ..notifier.notifier_enums import NOTIFIERS
 from ..notifier.notifier_service import RateLimitException
 from ..response import SyftSuccess
@@ -26,7 +25,6 @@ from ..user.user import UserView
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..user.user_service import UserService
 from .request import Change
 from .request import Request
 from .request import RequestInfo
@@ -157,8 +155,12 @@ class RequestService(AbstractService):
         result = self.stash.get_all(context.credentials).unwrap()
         requests: list[RequestInfo] = []
         for req in result:
-            user = context.server.services.user.get_by_verify_key(req.requesting_user_verify_key).to(UserView)
-            message = context.server.services.notifications.filter_by_obj(context=context, obj_uid=req.id).unwrap()
+            user = context.server.services.user.get_by_verify_key(
+                req.requesting_user_verify_key
+            ).to(UserView)
+            message = context.server.services.notifications.filter_by_obj(
+                context=context, obj_uid=req.id
+            ).unwrap()
             requests.append(RequestInfo(user=user, request=req, notification=message))
         if not page_size:
             return requests
@@ -220,11 +222,15 @@ class RequestService(AbstractService):
 
         context.extra_kwargs = kwargs
         result = request.apply(context=context).unwrap()
-        request_notification = context.server.services.notifications.filter_by_obj(context=context, obj_uid=uid).unwrap()
+        request_notification = context.server.services.notifications.filter_by_obj(
+            context=context, obj_uid=uid
+        ).unwrap()
 
         if not request.get_status(context) == RequestStatus.PENDING:
             if request_notification is not None:
-                context.server.services.notifications.mark_as_read(context=context, uid=request_notification.id)
+                context.server.services.notifications.mark_as_read(
+                    context=context, uid=request_notification.id
+                )
 
                 self._send_email_notification(
                     context=context,
@@ -254,7 +260,9 @@ class RequestService(AbstractService):
             notifier_types=[NOTIFIERS.EMAIL],
             email_template=email_template,
         )
-        context.server.sercices.notifications.send(context=context, notification=notification)
+        context.server.sercices.notifications.send(
+            context=context, notification=notification
+        )
 
     @service_method(path="request.undo", name="undo", unwrap_on_success=False)
     def undo(self, context: AuthedServiceContext, uid: UID, reason: str) -> SyftSuccess:

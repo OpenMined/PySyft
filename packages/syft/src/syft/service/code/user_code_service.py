@@ -26,7 +26,6 @@ from ..request.request import Request
 from ..request.request import SubmitRequest
 from ..request.request import SyncedUserCodeStatusChange
 from ..request.request import UserCodeStatusChange
-from ..request.request_service import RequestService
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -226,7 +225,9 @@ class UserCodeService(AbstractService):
     ) -> Request:
         # Cannot make multiple requests for the same code
         # FIX: Change requestservice result type
-        existing_requests = context.server.services.request.get_by_usercode_id(context, user_code.id)
+        existing_requests = context.server.services.request.get_by_usercode_id(
+            context, user_code.id
+        )
 
         if len(existing_requests) > 0:
             raise SyftException(
@@ -263,7 +264,9 @@ class UserCodeService(AbstractService):
         changes = [status_change]
 
         request = SubmitRequest(changes=changes)
-        result = context.server.services.request.submit(context=context, request=request, reason=reason)
+        result = context.server.services.request.submit(
+            context=context, request=request, reason=reason
+        )
 
         return result
 

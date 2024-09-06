@@ -40,7 +40,6 @@ from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
-from ..data_subject.data_subject_service import DataSubjectService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..response import SyftWarning
@@ -797,7 +796,9 @@ def set_data_subjects(context: TransformContext) -> TransformContext:
     data_subjects = context.output["data_subjects"]
     resultant_data_subjects = []
     for data_subject in data_subjects:
-        result = context.server.services.data_subject.get_by_name(context=context, name=data_subject.name)
+        result = context.server.services.data_subject.get_by_name(
+            context=context, name=data_subject.name
+        )
         resultant_data_subjects.append(result)
     context.output["data_subjects"] = resultant_data_subjects
     return context
