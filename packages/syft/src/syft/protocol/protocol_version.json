@@ -1,16 +1,5 @@
 {
   "1": {
     "release_name": "0.9.1.json"
-  },
-  "dev": {
-    "object_versions": {
-      "PwdTokenResetConfig": {
-        "2": {
-          "version": 2,
-          "hash": "a2f173778ffd0b01cabababe24713307ac2b3660119dd7944b0ae6c0d6209ffd",
-          "action": "add"
-        }
-      }
-    }
   }
 }
