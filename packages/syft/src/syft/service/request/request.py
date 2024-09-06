@@ -703,8 +703,7 @@ class Request(SyncableSyftObject):
         # relative
         from .request_service import RequestService
 
-        save_method = context.server.get_service_method(RequestService.save)
-        return save_method(context=context, request=self)
+        return context.server.services.request.save(context=context, request=self)
 
     def _create_action_object_for_deposited_result(
         self,

@@ -215,8 +215,7 @@ class SyftWorkerPoolService(AbstractService):
         # Create a the request object with the changes and submit it
         # for approval.
         request = SubmitRequest(changes=changes)
-        method = context.server.get_service_method(RequestService.submit)
-        return method(context=context, request=request, reason=reason)
+        return context.server.services.request.submit(context=context, request=request, reason=reason)
 
     @service_method(
         path="worker_pool.create_image_and_pool_request",
@@ -319,8 +318,7 @@ class SyftWorkerPoolService(AbstractService):
 
         # Create a request object and submit a request for approval
         request = SubmitRequest(changes=changes)
-        method = context.server.get_service_method(RequestService.submit)
-        return method(context=context, request=request, reason=reason)
+        return context.server.services.request.submit(context=context, request=request, reason=reason)
 
     @service_method(
         path="worker_pool.get_all",

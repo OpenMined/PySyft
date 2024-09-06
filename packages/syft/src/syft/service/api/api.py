@@ -506,10 +506,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
         # get a user client
         guest_client = context.server.get_guest_client()
         user_client = guest_client
-        signing_key_for_verify_key = context.server.get_service_method(
-            UserService.signing_key_for_verify_key
-        )
-        private_key = signing_key_for_verify_key(context.credentials)
+        private_key = context.server.services.user.signing_key_for_verify_key(context.credentials)
         signing_key = private_key.signing_key
         user_client.credentials = signing_key
         return user_client

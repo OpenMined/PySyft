@@ -100,11 +100,7 @@ class DataSubjectService(AbstractService):
     def get_members(
         self, context: AuthedServiceContext, data_subject_name: str
     ) -> list[DataSubject]:
-        get_relatives = context.server.get_service_method(
-            DataSubjectMemberService.get_relatives
-        )
-
-        relatives = get_relatives(context, data_subject_name)
+        relatives = context.server.services.data_subject.get_relatives(context, data_subject_name)
 
         members = []
         for relative in relatives:

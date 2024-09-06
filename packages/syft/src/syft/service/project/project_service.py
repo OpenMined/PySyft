@@ -388,8 +388,7 @@ class ProjectService(AbstractService):
             )
 
             # TODO: Update noteificationservice result
-            method = context.server.get_service_method(NotificationService.send)
-            result = method(context=context, notification=message)
+            result = context.server.services.notifications.send(context=context, notification=message)
             if isinstance(result, SyftError):
                 raise SyftException(public_message=result)
 

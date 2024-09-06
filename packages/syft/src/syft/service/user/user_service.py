@@ -183,10 +183,7 @@ class UserService(AbstractService):
                 to_user_verify_key=user.verify_key,
                 linked_obj=link,
             )
-
-            method = root_context.server.get_service_method(NotificationService.send)
-            result = method(context=root_context, notification=message)
-
+            result = root_context.server.services.notifications.send(context=root_context, notification=message)
             message = CreateNotification(
                 subject="User requested password reset.",
                 from_user_verify_key=user.verify_key,
@@ -194,7 +191,7 @@ class UserService(AbstractService):
                 linked_obj=link,
             )
 
-            result = method(context=root_context, notification=message)
+            result = root_context.server.services.notifications.send(context=root_context, notification=message)
         else:
             # Email notification is Enabled
             # Therefore, we can directly send a message to the
@@ -207,9 +204,7 @@ class UserService(AbstractService):
                 notifier_types=[NOTIFIERS.EMAIL],
                 email_template=PasswordResetTemplate,
             )
-
-            method = root_context.server.get_service_method(NotificationService.send)
-            result = method(context=root_context, notification=message)
+            result = root_context.server.services.notifications.send(context=root_context, notification=message)
 
         return SyftSuccess(message=success_msg)
 
@@ -630,9 +625,7 @@ class UserService(AbstractService):
             notifier_types=[NOTIFIERS.EMAIL],
             email_template=OnBoardEmailTemplate,
         )
-
-        method = context.server.get_service_method(NotificationService.send)
-        method(context=root_context, notification=message)
+        context.server.notifications.send(context=root_context, notification=message)
 
         if request_user_role in DATA_OWNER_ROLE_LEVEL:
             success_message += " To see users, run `[your_client].users`"

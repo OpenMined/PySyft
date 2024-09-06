@@ -1266,7 +1266,7 @@ class Server(AbstractServer):
             try:
                 logger.info(f"API Call: {api_call}")
 
-                result = method(context, *api_call.args, **api_call.kwargs)
+                result = self.services(context, *api_call.args, **api_call.kwargs)
 
                 if isinstance(result, SyftError):
                     raise TypeError(
@@ -1835,9 +1835,8 @@ def create_default_worker_pool(server: Server) -> None:
 
     if not default_image.is_built:
         logger.info(f"Building default worker image with tag={default_worker_tag}. ")
-        image_build_method = server.get_service_method(SyftWorkerImageService.build)
         # Build the Image for given tag
-        result = image_build_method(
+        result = server.services.worker_image.build(
             context,
             image_uid=default_image.id,
             tag=DEFAULT_WORKER_IMAGE_TAG,
@@ -1854,8 +1853,7 @@ def create_default_worker_pool(server: Server) -> None:
     )
     if default_worker_pool is None:
         worker_to_add_ = worker_count
-        create_pool_method = server.get_service_method(SyftWorkerPoolService.launch)
-        result = create_pool_method(
+        result = server.services.worker_pool.launch(
             context,
             pool_name=default_pool_name,
             image_uid=default_image.id,
@@ -1869,10 +1867,7 @@ def create_default_worker_pool(server: Server) -> None:
             default_worker_pool.worker_list
         )
         if worker_to_add_ > 0:
-            add_worker_method = server.get_service_method(
-                SyftWorkerPoolService.add_workers
-            )
-            result = add_worker_method(
+            result = server.services.worker_pool.add_workers(
                 context=context,
                 number=worker_to_add_,
                 pool_name=default_pool_name,
