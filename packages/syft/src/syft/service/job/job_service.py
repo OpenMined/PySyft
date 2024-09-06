@@ -179,13 +179,15 @@ class JobService(AbstractService):
                 public_message="Not possible to cancel subjobs. To stop execution, please cancel the parent job."
             )
         if job.status in [JobStatus.INTERRUPTED, JobStatus.TERMINATING]:
-            return SyftSuccess(message="Job already killed or set to terminate. Status: " + str(job.status)")
+            return SyftSuccess(
+                message="Job already killed or set to terminate. Status: "
+                + str(job.status)
+            )
 
-        
         if job.status != JobStatus.PROCESSING:
-            
-
-            raise SyftException(public_message=f"Job {job.id}is not running: " + str(job.status))
+            raise SyftException(
+                public_message=f"Job {job.id}is not running: " + str(job.status)
+            )
 
         if job.job_pid is None:
             raise SyftException(
