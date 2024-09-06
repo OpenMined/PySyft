@@ -78,28 +78,7 @@ class WorkerService(AbstractService):
                 workers, self.stash, context.as_root_context().credentials
             ).unwrap()
 
-        def terminate(job: Job) -> None:
-            job.resolved = True
-            job.status = JobStatus.INTERRUPTED
-            context.server.job_stash.set_result(context.credentials, job)
-
-        # Implement the monitoring logic here
-        running_workers = [worker.id for worker in workers]
-        jobservice = context.server.get_service("jobservice")
-        for job in jobservice.get_all(context=context):
-            if (
-                job.status in [JobStatus.PROCESSING, JobStatus.TERMINATING]
-                and job.job_worker_id not in running_workers
-            ):
-                terminate(job)
-                for subjob in jobservice.get_subjobs(context=context, uid=job.id):
-                    terminate(subjob.id)
-
-                # TODO check if popped from queue so I know if this is needed
-                # self.queue_item.status = Status.INTERRUPTED
-                # self.queue_item.resolved = True
-                # self.worker.queue_stash.set_result(self.credentials, self.queue_item)
-                # How about subjobs of subjobs?
+        
 
         return workers
 
@@ -171,7 +150,7 @@ class WorkerService(AbstractService):
 
         if force and worker.job_id is not None:
             job_service = cast(JobService, context.server.get_service(JobService))
-            job_service.kill(context=context, id=worker.job_id)
+            job_service.kill(context=context, id=worker.job_id, kill_directly=True)
 
         worker_pool_service = cast(
             SyftWorkerPoolService, context.server.get_service(SyftWorkerPoolService)

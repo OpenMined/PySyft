@@ -18,6 +18,7 @@ from ...store.linked_obj import LinkedObject
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..action.action_permissions import ActionObjectPermission
@@ -34,6 +35,7 @@ class Status(str, Enum):
 
 StatusPartitionKey = PartitionKey(key="status", type_=Status)
 _WorkerPoolPartitionKey = PartitionKey(key="worker_pool", type_=LinkedObject)
+_JobIDPartitionKey = PartitionKey(key="job_id", type_=UID)
 
 
 @serializable()
@@ -73,7 +75,6 @@ class QueueItem(SyftObject):
         if self.is_action:
             return self.kwargs["action"]
         raise SyftException(public_message="QueueItem not an Action")
-
 
 @serializable()
 class ActionQueueItem(QueueItem):
@@ -175,4 +176,9 @@ class QueueStash(NewBaseStash):
         self, credentials: SyftVerifyKey, worker_pool: LinkedObject
     ) -> list[QueueItem]:
         qks = QueryKeys(qks=_WorkerPoolPartitionKey.with_obj(worker_pool))
+        return self.query_all(credentials=credentials, qks=qks).unwrap()
+
+    @as_result(StashException)
+    def get_by_job_id(self, credentials: SyftVerifyKey, job_id: UID) -> list[QueueItem]:
+        qks = QueryKeys(qks=_JobIDPartitionKey.with_obj(job_id))
         return self.query_all(credentials=credentials, qks=qks).unwrap()

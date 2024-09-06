@@ -16,7 +16,7 @@ from ..action.action_permissions import ActionPermission
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
 from ..log.log_service import LogService
-from ..queue.queue_stash import ActionQueueItem
+from ..queue.queue_stash import ActionQueueItem, Status
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -166,13 +166,32 @@ class JobService(AbstractService):
                 results.append(res)
 
         return SyftSuccess(message="Job killed successfully!")
+    
+    def _kill_on_dead_worker(self, context: AuthedServiceContext, job: Job) -> SyftSuccess:
+        # set job and subjobs status to INTERRUPTED directly since monitor thread is presumed dead
+        if job and job.status in [JobStatus.PROCESSING, JobStatus.TERMINATING]:
+            self._terminate_job(context, job)
+            for subjob in self.get_subjobs(context=context, uid=job.id):
+                self._terminate_job(context, subjob)
+            queue_stash = context.server.queue_stash
+            queue_item = queue_stash.get_by_job_id(
+                context.credentials, job.id
+            )
+            queue_item.status = Status.INTERRUPTED
+            queue_item.resolved = True
+            queue_stash.set_result(context.credentials, queue_item)
+        
+    def _terminate_job(self, context: AuthedServiceContext, job: Job) -> None:
+        job.resolved = True
+        job.status = JobStatus.INTERRUPTED
+        self.stash.set_result(context.credentials, job)
 
     @service_method(
         path="job.kill",
         name="kill",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def kill(self, context: AuthedServiceContext, id: UID) -> SyftSuccess:
+    def kill(self, context: AuthedServiceContext, id: UID, kill_directly: bool = False) -> SyftSuccess:
         job = self.stash.get_by_uid(context.credentials, uid=id).unwrap()
         if job.parent_job_id is not None:
             raise SyftException(
@@ -194,7 +213,8 @@ class JobService(AbstractService):
                 public_message="Job termination disabled in dev mode. "
                 "Set 'dev_mode=False' or 'thread_workers=False' to enable."
             )
-
+        if kill_directly:
+            return self._kill_on_dead_worker(context, job)
         return self._kill(context, job)
 
     @service_method(
