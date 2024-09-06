@@ -90,7 +90,6 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.db.sqlite_db import DBConfig
-from ..store.db.sqlite_db import PostgresDBConfig
 from ..store.db.sqlite_db import SQLiteDBConfig
 from ..store.db.sqlite_db import SQLiteDBManager
 from ..store.document_store import StoreConfig
@@ -403,7 +402,7 @@ class Server(AbstractServer):
                 filename=f"{self.id}_json.db",
                 path=self.get_temp_dir("db"),
             )
-            db_config = PostgresDBConfig(reset=False)
+            # db_config = PostgresDBConfig(reset=False)
 
         self.db_config = db_config
 
