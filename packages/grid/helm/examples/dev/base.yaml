@@ -28,6 +28,13 @@ mongo:
   secret:
     rootPassword: example
 
+postgres:
+  resourcesPreset: null
+  resources: null
+
+  secret:
+    rootPassword: example
+
 seaweedfs:
   resourcesPreset: null
   resources: null

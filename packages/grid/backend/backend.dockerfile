@@ -84,9 +84,10 @@ ENV \
     DEFAULT_ROOT_EMAIL="info@openmined.org" \
     DEFAULT_ROOT_PASSWORD="changethis" \
     STACK_API_KEY="changeme" \
-    MONGO_HOST="localhost" \
-    MONGO_PORT="27017" \
-    MONGO_USERNAME="root" \
-    MONGO_PASSWORD="example"
+    POSTGRESQL_DBNAME="syftdb_postgres" \
+    POSTGRESQL_HOST="localhost" \
+    POSTGRESQL_PORT="5432" \
+    POSTGRESQL_USERNAME="syft_postgres" \
+    POSTGRESQL_PASSWORD="changethis"
 
 CMD ["bash", "./grid/start.sh"]

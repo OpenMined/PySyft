@@ -14,8 +14,6 @@ from syft.service.queue.zmq_client import ZMQClientConfig
 from syft.service.queue.zmq_client import ZMQQueueConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSClientConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSConfig
-from syft.store.mongo_client import MongoStoreClientConfig
-from syft.store.mongo_document_store import MongoStoreConfig
 from syft.store.sqlite_document_store import SQLiteStoreClientConfig
 from syft.store.sqlite_document_store import SQLiteStoreConfig
 from syft.types.uid import UID
@@ -34,17 +32,6 @@ def queue_config() -> ZMQQueueConfig:
         )
     )
     return queue_config
-
-
-def mongo_store_config() -> MongoStoreConfig:
-    mongo_client_config = MongoStoreClientConfig(
-        hostname=settings.MONGO_HOST,
-        port=settings.MONGO_PORT,
-        username=settings.MONGO_USERNAME,
-        password=settings.MONGO_PASSWORD,
-    )
-
-    return MongoStoreConfig(client_config=mongo_client_config)
 
 
 def sql_store_config() -> SQLiteStoreConfig:
@@ -87,20 +74,17 @@ worker_classes = {
 worker_class = worker_classes[server_type]
 
 single_container_mode = settings.SINGLE_CONTAINER_MODE
-store_config = sql_store_config() if single_container_mode else mongo_store_config()
 blob_storage_config = None if single_container_mode else seaweedfs_config()
 queue_config = queue_config()
 
 worker: Server = worker_class(
     name=server_name,
     server_side_type=server_side_type,
-    action_store_config=store_config,
-    document_store_config=store_config,
     enable_warnings=enable_warnings,
     blob_storage_config=blob_storage_config,
     local_db=single_container_mode,
     queue_config=queue_config,
-    migrate=True,
+    migrate=False,
     in_memory_workers=settings.INMEMORY_WORKERS,
     smtp_username=settings.SMTP_USERNAME,
     smtp_password=settings.SMTP_PASSWORD,

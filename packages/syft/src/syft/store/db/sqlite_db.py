@@ -44,11 +44,11 @@ class SQLiteDBConfig(DBConfig):
 
 @serializable(canonical_name="PostgresDBConfig", version=1)
 class PostgresDBConfig(DBConfig):
-    host: str = "localhost"
+    host: str = "postgres"
     port: int = 5432
-    user: str = "postgres"
-    password: str = "postgres"
-    database: str = "postgres"
+    user: str = "syft_postgres"
+    password: str = "example"
+    database: str = "syftdb_postgres"
 
     @property
     def connection_string(self) -> str:
