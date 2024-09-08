@@ -475,7 +475,7 @@ class RemoteFunction(SyftObject):
 class RemoteUserCodeFunction(RemoteFunction):
     __canonical_name__ = "RemoteUserFunction"
     __version__ = SYFT_OBJECT_VERSION_1
-    __repr_attrs__ = RemoteFunction.__repr_attrs__ + ["user_code_id"]
+    __repr_attrs__ = [*RemoteFunction.__repr_attrs__, "user_code_id"]
 
     api: SyftAPI
 
@@ -690,7 +690,7 @@ class APIModule:
         self.refresh_callback = refresh_callback
 
     def __dir__(self) -> list[str]:
-        return self._modules + ["path"]
+        return [*self._modules, "path"]
 
     def has_submodule(self, name: str) -> bool:
         """We use this as hasattr() triggers __getattribute__ which triggers recursion"""
@@ -905,11 +905,11 @@ class SyftAPI(SyftObject):
 
     def __dir__(self) -> list[str]:
         modules = getattr(self.api_module, "_modules", [])
-        return ["services"] + modules
+        return ["services", *modules]
 
     def __syft_dir__(self) -> list[str]:
         modules = getattr(self.api_module, "_modules", [])
-        return ["services"] + modules
+        return ["services", *modules]
 
     def __getattr__(self, name: str) -> Any:
         try:
@@ -1223,7 +1223,7 @@ def _render_signature(obj_signature: Signature, obj_name: str) -> str:
 
     # add up name, parameters, braces (2), and commas
     if len(obj_name) + sum(len(r) + 2 for r in result) > 75:
-        # This doesn’t fit behind “Signature: ” in an inspect window.
+        # This doesn't fit behind “Signature: ” in an inspect window.
         rendered = "{}(\n{})".format(obj_name, "".join(f"    {r},\n" for r in result))
     else:
         rendered = "{}({})".format(obj_name, ", ".join(result))

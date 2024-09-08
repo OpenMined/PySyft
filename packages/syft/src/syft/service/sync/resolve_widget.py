@@ -202,7 +202,7 @@ class MainObjectDiffWidget:
             result = VBox([widgets.HTML(warning), result])
 
         if self.with_box:
-            result._dom_classes = result._dom_classes + ("diff-container",)
+            result._dom_classes = (*result._dom_classes, "diff-container")
 
         return result
 
@@ -264,7 +264,7 @@ class CollapsableObjectDiffWidget:
             </div>
             {copy_id_button.to_html()}
             </div>
-        """  # noqa: E501
+        """
         return second_line_html
 
     def set_and_disable_sync(self) -> None:
@@ -398,7 +398,7 @@ class CollapsableObjectDiffWidget:
             checkboxes.append(sync_checkbox)
 
         accordion_header = HBox(
-            [title_html] + checkboxes,
+            [title_html, *checkboxes],
             layout=Layout(width="100%", justify_content="space-between"),
         )
 

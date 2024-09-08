@@ -304,7 +304,7 @@ def test_user_code_mock_execution(worker) -> None:
 
     # DO grants permissions
     users = root_datasite_client.users.get_all()
-    guest_user = [u for u in users if u.id == guest_user.id][0]
+    guest_user = next(u for u in users if u.id == guest_user.id)
     guest_user.allow_mock_execution()
 
     # Mock execution succeeds

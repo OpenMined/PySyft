@@ -379,9 +379,12 @@ class BaseDateTime(SyftObjectVersioned):
         return self.utc_timestamp < other.utc_timestamp
 
 
-EXCLUDED_FROM_SIGNATURE = set(
-    DYNAMIC_SYFT_ATTRIBUTES + ["created_date", "updated_date", "deleted_date"]
-)
+EXCLUDED_FROM_SIGNATURE = {
+    *DYNAMIC_SYFT_ATTRIBUTES,
+    "created_date",
+    "updated_date",
+    "deleted_date",
+}
 
 
 @serializable()
@@ -485,7 +488,7 @@ class SyftObject(SyftObjectVersioned):
             fields = list(getattr(self, "__fields__", {}).keys())  # type: ignore[unreachable]
 
         if "id" not in fields:
-            fields = ["id"] + fields
+            fields = ["id", *fields]
 
         dynam_attrs = set(DYNAMIC_SYFT_ATTRIBUTES)
         fields = [x for x in fields if x not in dynam_attrs]

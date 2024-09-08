@@ -149,8 +149,8 @@ class UserCodeStatusCollection(SyncableSyftObject):
         from ...service.sync.diff_state import AttrDiff
 
         diff_attrs = []
-        status = list(self.status_dict.values())[0]
-        ext_status = list(ext_obj.status_dict.values())[0]
+        status = next(iter(self.status_dict.values()))
+        ext_status = next(iter(ext_obj.status_dict.values()))
 
         if status != ext_status:
             diff_attr = AttrDiff(
@@ -364,7 +364,7 @@ class UserCode(SyncableSyftObject):
             return super().__setattr__(key, value)
 
     def _coll_repr_(self) -> dict[str, Any]:
-        status = [status for status, _ in self.status.status_dict.values()][0].value
+        status = next(status for status, _ in self.status.status_dict.values()).value
         if status == UserCodeStatus.PENDING.value:
             badge_color = "badge-purple"
         elif status == UserCodeStatus.APPROVED.value:
@@ -1385,7 +1385,7 @@ def parse_user_code(
     )
 
     return_stmt = ast.Return(value=ast.Name(id="result"))
-    new_body = tree.body + [call_stmt, return_stmt]
+    new_body = [*tree.body, call_stmt, return_stmt]
 
     wrapper_function = ast.FunctionDef(
         name=func_name,

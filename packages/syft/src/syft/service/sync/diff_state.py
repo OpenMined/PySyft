@@ -160,7 +160,7 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
     elif isinstance(value_attr, dict):
         dict_repr = "{\n"
         for key, elem in value_attr.items():
-            dict_repr += f"{sketchy_tab * new_num_tabs}{key}: {str(elem)}\n"
+            dict_repr += f"{sketchy_tab * new_num_tabs}{key}: {elem!s}\n"
         dict_repr += "}"
         return dict_repr
 
@@ -172,7 +172,7 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
     if isinstance(value_attr, UID):
         value_attr = short_uid(value_attr)  # type: ignore
 
-    return f"{sketchy_tab*num_tabs}{str(value_attr)}"
+    return f"{sketchy_tab*num_tabs}{value_attr!s}"
 
 
 class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
@@ -513,7 +513,9 @@ class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)
         return base_str + attr_text
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}[{self.obj_type.__name__}](#{str(self.object_id)})"
+        return (
+            f"{self.__class__.__name__}[{self.obj_type.__name__}](#{self.object_id!s})"
+        )
 
 
 def _wrap_text(text: str, width: int, indent: int = 4) -> str:
@@ -1447,7 +1449,7 @@ It will be available for review again."""
         obj_dependents = {}
         for parent, children in obj_dependencies.items():
             for child in children:
-                obj_dependents[child] = obj_dependencies.get(child, []) + [parent]
+                obj_dependents[child] = [*obj_dependencies.get(child, []), parent]
 
         for root_uid in root_ids:
             batch = ObjectDiffBatch.from_dependencies(

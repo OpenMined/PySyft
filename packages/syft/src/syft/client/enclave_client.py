@@ -63,7 +63,7 @@ class EnclaveClient(SyftClient):
         via_client: SyftClient | None = None,
         url: str | None = None,
         port: int | None = None,
-        handle: ServerHandle | None = None,  # noqa: F821
+        handle: ServerHandle | None = None,
         email: str | None = None,
         password: str | None = None,
         protocol: str | SyftProtocol = SyftProtocol.HTTP,

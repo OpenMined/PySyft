@@ -6,7 +6,6 @@ def enable_autoreload() -> None:
     try:
         # third party
         from IPython import get_ipython
-
         ipython = get_ipython()  # noqa: F821
         if hasattr(ipython, "run_line_magic"):
             ipython.run_line_magic("load_ext", "autoreload")

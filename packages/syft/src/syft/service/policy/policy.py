@@ -1233,7 +1233,7 @@ def init_policy(user_policy: UserPolicy, init_args: dict[str, Any]) -> Any:
     # Tech debt : For input policies, we required to have ServerIdentity args beforehand,
     # therefore at this stage we had to return back to the normal args.
     # Maybe there's better way to do it.
-    if len(init_args) and isinstance(list(init_args.keys())[0], ServerIdentity):
+    if len(init_args) and isinstance(next(iter(init_args.keys())), ServerIdentity):
         unwrapped_init_kwargs = init_args
         if len(init_args) > 1:
             raise SyftException(
