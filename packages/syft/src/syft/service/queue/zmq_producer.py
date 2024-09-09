@@ -7,7 +7,6 @@ import threading
 from threading import Event
 from time import sleep
 from typing import Any
-from typing import cast
 
 # third party
 import zmq
@@ -265,8 +264,10 @@ class ZMQProducer(QueueProducer):
                 self.delete_worker(worker, syft_worker.to_be_deleted)
 
                 # relative
-                from ...service.worker.worker_service import WorkerService
-                self.auth_context.server.services.worker._delete(self.auth_context, syft_worker)
+
+                self.auth_context.server.services.worker._delete(
+                    self.auth_context, syft_worker
+                )
 
     def update_consumer_state_for_worker(
         self, syft_worker_id: UID, consumer_state: ConsumerState

@@ -1175,7 +1175,9 @@ class ActionObject(SyncableSyftObject):
         # relative
         from ..job.job_stash import Job
 
-        job: Job | None = context.server.services.job.get_by_result_id(context, self.id.id)  # type: ignore
+        job: Job | None = context.server.services.job.get_by_result_id(
+            context, self.id.id
+        )  # type: ignore
         if job is not None:
             return [job.id]
         else:

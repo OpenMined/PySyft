@@ -8,7 +8,6 @@ from ...store.document_store_errors import NotFoundException
 from ...types.uid import UID
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
-from ..code.user_code_service import UserCodeService
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from ..service import AbstractService

@@ -209,7 +209,9 @@ class UserCodeService(AbstractService):
         )
 
         # Create a code history
-        context.server.services.code_history.submit_version(context=context, code=user_code)
+        context.server.services.code_history.submit_version(
+            context=context, code=user_code
+        )
 
         return user_code
 

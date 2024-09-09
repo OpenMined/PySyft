@@ -2,7 +2,6 @@
 import logging
 import threading
 import time
-from typing import cast
 
 # relative
 from ...serde.serializable import serializable
@@ -10,7 +9,6 @@ from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ..context import AuthedServiceContext
 from ..response import SyftError
-from .network_service import NetworkService
 from .network_service import ServerPeerAssociationStatus
 from .server_peer import ServerPeer
 from .server_peer import ServerPeerConnectionStatus

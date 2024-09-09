@@ -1,6 +1,5 @@
 # stdlib
 import secrets
-from typing import cast
 
 # relative
 from ...client.client import SyftClient

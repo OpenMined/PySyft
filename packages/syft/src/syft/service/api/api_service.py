@@ -16,7 +16,6 @@ from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
-from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from ..service import AbstractService

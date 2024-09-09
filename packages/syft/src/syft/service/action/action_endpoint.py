@@ -76,13 +76,15 @@ class CustomEndpointActionObject(SyftObject):
     ) -> Any:
         self.context = self.__check_context()
         if call_mode == EXECUTION_MODE.MOCK:
-            __endpoint_mode = self.context.server.services.api.execute_server_side_endpoint_mock_by_id
-        elif call_mode == EXECUTION_MODE.PRIVATE:
             __endpoint_mode = (
-                self.context.server.services.api.execute_service_side_endpoint_private_by_id
+                self.context.server.services.api.execute_server_side_endpoint_mock_by_id
             )
+        elif call_mode == EXECUTION_MODE.PRIVATE:
+            __endpoint_mode = self.context.server.services.api.execute_service_side_endpoint_private_by_id
         else:
-            __endpoint_mode = self.context.server.services.api.execute_server_side_endpoint_by_id
+            __endpoint_mode = (
+                self.context.server.services.api.execute_server_side_endpoint_by_id
+            )
 
         return __endpoint_mode(
             *args,

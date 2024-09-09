@@ -22,7 +22,6 @@ from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .image_registry import SyftImageRegistry
-from .image_registry_service import SyftImageRegistryService
 from .utils import image_build
 from .utils import image_push
 from .worker_image import SyftWorkerImage
@@ -105,7 +104,9 @@ class SyftWorkerImageService(AbstractService):
         ).unwrap()
         if registry_uid:
             # get registry from image registry service
-            registry = context.server.services.image_registry.get_by_id(context, registry_uid)
+            registry = context.server.services.image_registry.get_by_id(
+                context, registry_uid
+            )
 
         try:
             if registry:

@@ -42,8 +42,6 @@ from ..service.action.action_store import ActionStore
 from ..service.action.action_store import DictActionStore
 from ..service.action.action_store import MongoActionStore
 from ..service.action.action_store import SQLiteActionStore
-from ..service.blob_storage.service import BlobStorageService
-from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
 from ..service.context import AuthedServiceContext
 from ..service.context import ServerServiceContext
@@ -54,7 +52,6 @@ from ..service.job.job_stash import JobStash
 from ..service.job.job_stash import JobStatus
 from ..service.job.job_stash import JobType
 from ..service.metadata.server_metadata import ServerMetadata
-from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notifier.notifier_service import NotifierService
 from ..service.queue.base_queue import AbstractMessageHandler
@@ -81,12 +78,10 @@ from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
-from ..service.user.user_service import UserService
 from ..service.user.user_stash import UserStash
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
-from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool import WorkerPool
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
@@ -814,7 +809,9 @@ class Server(AbstractServer):
             credentials=self.verify_key,
             role=ServiceRole.ADMIN,
         )
-        return self.services.migration.migrate_data(context, document_store_object_types)
+        return self.services.migration.migrate_data(
+            context, document_store_object_types
+        )
 
     @property
     def guest_client(self) -> SyftClient:
@@ -1113,7 +1110,9 @@ class Server(AbstractServer):
             )
 
         client = None
-        peer = self.services.network.stash.get_by_uid(self.verify_key, server_uid).unwrap()
+        peer = self.services.network.stash.get_by_uid(
+            self.verify_key, server_uid
+        ).unwrap()
 
         # Since we have several routes to a peer
         # we need to cache the client for a given server_uid along with the route
@@ -1157,11 +1156,9 @@ class Server(AbstractServer):
         raise SyftException(public_message=(f"Server has no route to {server_uid}"))
 
     def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
-        return (
-            self.services.user
-            .get_role_for_credentials(credentials=credentials)
-            .unwrap()
-        )
+        return self.services.user.get_role_for_credentials(
+            credentials=credentials
+        ).unwrap()
 
     @instrument
     def handle_api_call(

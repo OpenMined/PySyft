@@ -159,7 +159,9 @@ class UserService(AbstractService):
         # Instead of changing the password here, we would change it in email template generation.
         link = LinkedObject.with_context(user, context=root_context)
         # Notifier is active
-        notifier = root_context.server.services.notifier.settings(context=root_context).unwrap()
+        notifier = root_context.server.services.notifier.settings(
+            context=root_context
+        ).unwrap()
         notification_is_enabled = notifier.active
         # Email is enabled
         email_is_enabled = notifier.email_enabled

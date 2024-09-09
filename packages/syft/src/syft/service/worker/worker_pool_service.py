@@ -1,7 +1,6 @@
 # stdlib
 import logging
 from typing import Any
-from typing import cast
 
 # third party
 import pydantic
@@ -589,7 +588,6 @@ class SyftWorkerPoolService(AbstractService):
         uid = worker_pool.id
 
         # relative
-        from ..queue.queue_service import QueueService
         from ..queue.queue_stash import Status
 
         queue_items = context.server.services.queue.stash._get_by_worker_pool(
@@ -632,7 +630,9 @@ class SyftWorkerPoolService(AbstractService):
                 worker_ids.append(worker.id)
 
             for id_ in worker_ids:
-                context.server.services.worker.delete(context=context, uid=id_, force=True)
+                context.server.services.worker.delete(
+                    context=context, uid=id_, force=True
+                )
 
         self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap(
             public_message=f"Failed to delete WorkerPool: {worker_pool.name} from stash"

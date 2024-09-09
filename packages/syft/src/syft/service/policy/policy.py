@@ -369,6 +369,7 @@ def user_code_arg2id(arg: Any) -> UID:
 def retrieve_item_from_db(id: UID, context: AuthedServiceContext) -> ActionObject:
     # relative
     from ...service.action.action_object import TwinMode
+
     root_context = AuthedServiceContext(
         server=context.server, credentials=context.server.verify_key
     )

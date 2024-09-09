@@ -1,7 +1,6 @@
 # stdlib
 
 # stdlib
-from typing import cast
 
 # relative
 from ...serde.serializable import serializable
@@ -13,7 +12,6 @@ from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..network.network_service import NetworkService
 from ..notification.notifications import CreateNotification
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -24,7 +22,6 @@ from ..service import service_method
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
-from ..user.user_service import UserService
 from .project import Project
 from .project import ProjectEvent
 from .project import ProjectRequest
@@ -136,13 +133,15 @@ class ProjectService(AbstractService):
         if leader_server.verify_key != context.server.verify_key:
             # FIX: networkservice stash to new BaseStash
             peer_id = context.server.id.short() if context.server.id else ""
-            leader_server_peer = context.server.services.network.stash.get_by_verify_key(
-                credentials=context.server.verify_key,
-                verify_key=leader_server.verify_key,
-            ).unwrap(
-                public_message=(
-                    f"Leader Server(id={leader_server.id.short()}) is not a "
-                    f"peer of this Server(id={peer_id})"
+            leader_server_peer = (
+                context.server.services.network.stash.get_by_verify_key(
+                    credentials=context.server.verify_key,
+                    verify_key=leader_server.verify_key,
+                ).unwrap(
+                    public_message=(
+                        f"Leader Server(id={leader_server.id.short()}) is not a "
+                        f"peer of this Server(id={peer_id})"
+                    )
                 )
             )
         else:

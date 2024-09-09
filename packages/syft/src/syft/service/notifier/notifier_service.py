@@ -12,7 +12,6 @@ from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
-from ...types.result import OkErr
 from ...types.result import as_result
 from ..context import AuthedServiceContext
 from ..notification.email_templates import PasswordResetTemplate
@@ -216,7 +215,9 @@ class NotifierService(AbstractService):
         Activate email notifications for the authenticated user.
         This will only work if the datasite owner has enabled notifications.
         """
-        return context.server.services.user.enable_notifications(context, notifier_type=notifier_type).unwrap()
+        return context.server.services.user.enable_notifications(
+            context, notifier_type=notifier_type
+        ).unwrap()
 
     @as_result(SyftException)
     def deactivate(

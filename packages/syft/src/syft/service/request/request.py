@@ -40,10 +40,8 @@ from ...util.markdown import markdown_as_class_with_fields
 from ...util.notebook_ui.icons import Icon
 from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
-from ..action.action_service import ActionService
 from ..action.action_store import ActionObjectPermission
 from ..action.action_store import ActionPermission
-from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..code.user_code import UserCodeStatusCollection
@@ -224,11 +222,15 @@ class CreateCustomImageChange(Change):
     @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
         service_context = context.to_service_ctx()
-        context.server.services.syft_worker_image.submit(service_context, worker_config=self.config)
+        context.server.services.syft_worker_image.submit(
+            service_context, worker_config=self.config
+        )
 
-        worker_image = context.server.services.syft_worker_image.stash.get_by_worker_config(
-            service_context.credentials, config=self.config
-        ).unwrap()
+        worker_image = (
+            context.server.services.syft_worker_image.stash.get_by_worker_config(
+                service_context.credentials, config=self.config
+            ).unwrap()
+        )
         if worker_image is None:
             raise SyftException(public_message="The worker image does not exist.")
 

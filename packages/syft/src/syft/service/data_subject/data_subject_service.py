@@ -20,7 +20,6 @@ from ..service import service_method
 from .data_subject import DataSubject
 from .data_subject import DataSubjectCreate
 from .data_subject import NamePartitionKey
-from .data_subject_member_service import DataSubjectMemberService
 
 
 @serializable(canonical_name="DataSubjectStash", version=1)
@@ -63,7 +62,7 @@ class DataSubjectService(AbstractService):
     def add(
         self, context: AuthedServiceContext, data_subject: DataSubjectCreate
     ) -> SyftSuccess:
-        """Register a data subject."""#
+        """Register a data subject."""  #
 
         member_relationships: set[tuple[str, str]] = data_subject.member_relationships
         if len(member_relationships) == 0:
@@ -81,7 +80,9 @@ class DataSubjectService(AbstractService):
                         ignore_duplicates=True,
                     ).unwrap()
                 # TODO: this name seems wrong, but CI might not test it
-                context.server.services.data_subject.add(context, parent_ds.name, child_ds.name)
+                context.server.services.data_subject.add(
+                    context, parent_ds.name, child_ds.name
+                )
 
         return SyftSuccess(
             message=f"{len(member_relationships)+1} Data Subjects Registered",

@@ -23,7 +23,6 @@ from syft.service.response import SyftError
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
-from syft.service.user.user_service import UserService
 from syft.types.errors import SyftException
 from syft.types.result import Ok
 from syft.types.uid import UID

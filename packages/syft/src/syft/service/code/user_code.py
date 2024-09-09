@@ -74,7 +74,6 @@ from ..context import AuthedServiceContext
 from ..dataset.dataset import Asset
 from ..job.job_stash import Job
 from ..output.output_service import ExecutionOutput
-from ..output.output_service import OutputService
 from ..policy.policy import Constant
 from ..policy.policy import CustomInputPolicy
 from ..policy.policy import CustomOutputPolicy
@@ -89,7 +88,6 @@ from ..policy.policy import filter_only_uids
 from ..policy.policy import init_policy
 from ..policy.policy import load_policy_code
 from ..policy.policy import partition_by_server
-from ..policy.policy_service import PolicyService
 from ..response import SyftError
 from ..response import SyftInfo
 from ..response import SyftSuccess
@@ -1454,7 +1452,9 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
             v.visit(tree)
             nested_calls = v.nested_calls
             for call in nested_calls:
-                user_codes = context.server.services.user_code.get_by_service_name(context, call)
+                user_codes = context.server.services.user_code.get_by_service_name(
+                    context, call
+                )
                 # TODO: Not great
                 user_code = user_codes[-1]
                 user_code_link = LinkedObject.from_obj(
@@ -1788,7 +1788,9 @@ def execute_byte_code(
                 new_args = [to_str(arg) for arg in args]
                 new_str = sep.join(new_args) + end
                 if context.server is not None:
-                    context.server.services.log.append(context=context, uid=log_id, new_str=new_str)
+                    context.server.services.log.append(
+                        context=context, uid=log_id, new_str=new_str
+                    )
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
                 return __builtin__.print(
                     f"{time} FUNCTION LOG ({job_id}):",
@@ -1853,7 +1855,9 @@ def execute_byte_code(
                 and context.job.log_id is not None
             ):
                 log_id = context.job.log_id
-                context.server.services.log.append(context=context, uid=log_id, new_err=error_msg)
+                context.server.services.log.append(
+                    context=context, uid=log_id, new_err=error_msg
+                )
 
             result_message = (
                 f"Exception encountered while running {code_item.service_func_name}"

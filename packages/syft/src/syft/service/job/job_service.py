@@ -2,7 +2,6 @@
 from collections.abc import Callable
 import inspect
 import time
-from typing import cast
 
 # relative
 from ...serde.serializable import serializable
@@ -15,7 +14,6 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
-from ..log.log_service import LogService
 from ..queue.queue_stash import ActionQueueItem
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -264,7 +262,9 @@ class JobService(AbstractService):
             user_code_id=user_code_id,
             resolved=is_resolved,
         )
-        user_code = context.server.services.user_code.get_by_uid(context=context, uid=user_code_id)
+        user_code = context.server.services.user_code.get_by_uid(
+            context=context, uid=user_code_id
+        )
 
         # The owner of the code should be able to read the job
         self.stash.set(context.credentials, job).unwrap()

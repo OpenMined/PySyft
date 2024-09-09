@@ -2,7 +2,6 @@
 from collections.abc import Collection
 from collections.abc import Sequence
 import logging
-from typing import cast
 
 # relative
 from ...serde.serializable import serializable
@@ -11,7 +10,6 @@ from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
-from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from ..service import AbstractService

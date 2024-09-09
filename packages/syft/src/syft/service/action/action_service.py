@@ -2,7 +2,6 @@
 import importlib
 import logging
 from typing import Any
-from typing import cast
 
 # third party
 import numpy as np
@@ -18,7 +17,6 @@ from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
-from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import execute_byte_code
 from ..context import AuthedServiceContext

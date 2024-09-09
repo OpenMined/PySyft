@@ -5,7 +5,6 @@ from ...serde.serializable import serializable
 from ...store.document_store import DocumentStore
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
-from ...types.result import OkErr
 from ...types.result import as_result
 from ...types.uid import UID
 from ..action.action_permissions import ActionObjectREAD
@@ -54,7 +53,9 @@ class NotificationService(AbstractService):
             context.credentials, new_notification, add_permissions=permissions
         ).unwrap()
 
-        context.server.services.notifier.dispatch_notification(context, new_notification).unwrap()
+        context.server.services.notifier.dispatch_notification(
+            context, new_notification
+        ).unwrap()
         return new_notification
 
     @service_method(path="notifications.reply", name="reply", roles=GUEST_ROLE_LEVEL)
@@ -94,7 +95,6 @@ class NotificationService(AbstractService):
         context: AuthedServiceContext,
     ) -> NotifierSettings:
         return context.server.services.notifier.settings(context).unwrap()
-        
 
     @service_method(
         path="notifications.activate",
