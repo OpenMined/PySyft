@@ -14,7 +14,7 @@ from .k8s import get_kr8s_client
 
 JSONPATH_AVAILABLE_REPLICAS = "{.status.availableReplicas}"
 CREATE_POOL_TIMEOUT_SEC = 380
-SCALE_POOL_TIMEOUT_SEC = 60
+SCALE_POOL_TIMEOUT_SEC = 120 
 
 
 class KubernetesRunner:
