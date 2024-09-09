@@ -16,6 +16,7 @@ from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
 from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
+from .queue import Handler
 from .queue_stash import QueueStash
 from .zmq_consumer import ZMQConsumer
 from .zmq_producer import ZMQProducer
@@ -76,6 +77,7 @@ class ZMQClient(QueueClient):
             else:
                 port = self.config.queue_port
 
+        print(f"Adding producer for queue: {queue_name} on: {get_queue_address(port)}")
         producer = ZMQProducer(
             queue_name=queue_name,
             queue_stash=queue_stash,
@@ -183,8 +185,8 @@ class ZMQQueueConfig(QueueConfig):
         self,
         client_type: type[ZMQClient] | None = None,
         client_config: ZMQClientConfig | None = None,
-        thread_workers: bool = False,
+        handler_type: Handler = Handler.Process,
     ):
         self.client_type = client_type or ZMQClient
         self.client_config: ZMQClientConfig = client_config or ZMQClientConfig()
-        self.thread_workers = thread_workers
+        self.handler_type = handler_type
