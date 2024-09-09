@@ -506,7 +506,7 @@ def test_actionobject_syft_get_path(testcase):
 def test_actionobject_syft_send_get(worker, testcase):
     root_datasite_client = worker.root_client
     root_datasite_client._fetch_api(root_datasite_client.credentials)
-    action_store = worker.get_service("actionservice").store
+    action_store = worker.services.action.store
 
     orig_obj = testcase
     obj = helper_make_action_obj(orig_obj)

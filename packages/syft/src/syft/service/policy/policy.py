@@ -297,7 +297,7 @@ class Constant(PolicyRule):
     def transform_kwarg(self, context: AuthedServiceContext, val: Any) -> Any:
         if isinstance(self.val, UID):
             if issubclass(self.klass, CustomEndpointActionObject):
-                obj = context.server.get_service("actionservice").get(
+                obj = context.server.services.action.get(
                     context.as_root_context(), self.val
                 )
                 return obj.syft_action_data
@@ -335,7 +335,7 @@ class UserOwned(PolicyRule):
     def is_owned(
         self, context: AuthedServiceContext, action_object: ActionObject
     ) -> bool:
-        action_store = context.server.get_service("actionservice").store
+        action_store = context.server.services.action.store
         return action_store.has_permission(
             ActionObjectPermission(
                 action_object.id, ActionPermission.OWNER, context.credentials
@@ -370,11 +370,10 @@ def retrieve_item_from_db(id: UID, context: AuthedServiceContext) -> ActionObjec
     # relative
     from ...service.action.action_object import TwinMode
 
-    action_service = context.server.get_service("actionservice")
     root_context = AuthedServiceContext(
         server=context.server, credentials=context.server.verify_key
     )
-    return action_service._get(
+    return context.server.services.action._get(
         context=root_context,
         uid=id,
         twin_mode=TwinMode.NONE,
@@ -420,9 +419,8 @@ class InputPolicy(Policy):
             server=context.server, credentials=context.approving_user_credentials
         ).as_root_context()
 
-        action_service = context.server.get_service("actionservice")
         for var_name, uid in inputs.items():
-            action_object_value = action_service.get(
+            action_object_value = context.server.services.action.get(
                 uid=uid, context=root_context
             ).unwrap()
             # resolve syft action data from blob store
@@ -605,7 +603,6 @@ def retrieve_from_db(
         # relative
         pass
 
-    action_service = context.server.get_service("actionservice")
     code_inputs = {}
 
     # When we are retrieving the code from the database, we need to use the server's
@@ -622,7 +619,7 @@ def retrieve_from_db(
         )
 
     for var_name, arg_id in allowed_inputs.items():
-        code_inputs[var_name] = action_service._get(
+        code_inputs[var_name] = context.server.services.action._get(
             context=root_context,
             uid=arg_id,
             twin_mode=TwinMode.NONE,
@@ -785,8 +782,7 @@ class OutputPolicyExecuteCount(OutputPolicy):
             output_history = output_service.get_by_output_policy_id(self.id)
         else:
             # server side
-            output_service = context.server.get_service("outputservice")
-            output_history = output_service.get_by_output_policy_id(
+            output_history = context.server.services.output.get_by_output_policy_id(
                 context, self.id
             )  # raises
 
