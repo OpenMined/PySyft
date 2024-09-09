@@ -16,7 +16,7 @@ from .base_queue import AbstractMessageHandler
 from .base_queue import QueueClient
 from .base_queue import QueueClientConfig
 from .base_queue import QueueConfig
-from .queue import Handler
+from .queue import ConsumerType
 from .queue_stash import QueueStash
 from .zmq_consumer import ZMQConsumer
 from .zmq_producer import ZMQProducer
@@ -185,8 +185,8 @@ class ZMQQueueConfig(QueueConfig):
         self,
         client_type: type[ZMQClient] | None = None,
         client_config: ZMQClientConfig | None = None,
-        handler_type: Handler = Handler.Process,
+        consumer_type: ConsumerType = ConsumerType.Process,
     ):
         self.client_type = client_type or ZMQClient
         self.client_config: ZMQClientConfig = client_config or ZMQClientConfig()
-        self.handler_type = handler_type
+        self.consumer_type = consumer_type

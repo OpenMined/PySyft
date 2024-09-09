@@ -28,7 +28,7 @@ from .server.datasite import Datasite
 from .server.enclave import Enclave
 from .server.gateway import Gateway
 from .server.uvicorn import serve_server
-from .service.queue.queue import Handler
+from .service.queue.queue import ConsumerType
 from .service.response import SyftInfo
 from .types.errors import SyftException
 from .util.util import get_random_available_port
@@ -183,7 +183,7 @@ def deploy_to_python(
     log_level: str | int | None = None,
     debug: bool = False,
     migrate: bool = False,
-    handler_type: Handler | None = None,
+    consumer_type: ConsumerType | None = None,
 ) -> ServerHandle:
     worker_classes = {
         ServerType.DATASITE: Datasite,
@@ -215,7 +215,7 @@ def deploy_to_python(
         "debug": debug,
         "migrate": migrate,
         "deployment_type": deployment_type_enum,
-        "handler_type": handler_type,
+        "consumer_type": consumer_type,
     }
 
     if port:
@@ -328,7 +328,7 @@ class Orchestra:
         debug: bool = False,
         migrate: bool = False,
         from_state_folder: str | Path | None = None,
-        handler_type: Handler | None = None,
+        consumer_type: ConsumerType | None = None,
     ) -> ServerHandle:
         if from_state_folder is not None:
             with open(f"{from_state_folder}/config.json") as f:
@@ -377,7 +377,7 @@ class Orchestra:
                 background_tasks=background_tasks,
                 debug=debug,
                 migrate=migrate,
-                handler_type=handler_type,
+                consumer_type=consumer_type,
             )
             display(
                 SyftInfo(
