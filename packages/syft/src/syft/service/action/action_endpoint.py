@@ -86,7 +86,7 @@ class CustomEndpointActionObject(SyftObject):
                 self.context.server.services.api.execute_server_side_endpoint_by_id
             )
 
-        return __endpoint_mode(
+        return __endpoint_mode(  #  type: ignore[misc]
             *args,
             context=self.context,
             endpoint_uid=self.endpoint_id,
