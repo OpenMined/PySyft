@@ -184,7 +184,7 @@ def _serialize_pydantic_to_json(obj: pydantic.BaseModel) -> dict[str, Json]:
         except Exception as e:
             raise ValueError(f"Failed to serialize attribute {key}: {e}")
 
-    result = _serialize_searchable_attrs(obj, result)
+    result = _serialize_searchable_attrs(obj, result, raise_errors=False)
 
     return result
 

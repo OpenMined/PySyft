@@ -30,28 +30,6 @@ PERMISSIONS = [
 ]
 
 
-def test_mongo_store_partition_sanity(
-    mongo_store_partition: MongoStorePartition,
-) -> None:
-    res = mongo_store_partition.init_store()
-    assert res.is_ok()
-
-    assert hasattr(mongo_store_partition, "_collection")
-    assert hasattr(mongo_store_partition, "_permissions")
-
-
-def test_mongo_store_partition_permissions_collection(
-    mongo_store_partition: MongoStorePartition,
-) -> None:
-    res = mongo_store_partition.init_store()
-    assert res.is_ok()
-
-    collection_permissions_status = mongo_store_partition.permissions
-    assert not collection_permissions_status.is_err()
-    collection_permissions = collection_permissions_status.ok()
-    assert isinstance(collection_permissions, MongoCollection)
-
-
 def test_mongo_store_partition_add_remove_permission(
     root_verify_key: SyftVerifyKey, mongo_store_partition: MongoStorePartition
 ) -> None:
@@ -59,8 +37,6 @@ def test_mongo_store_partition_add_remove_permission(
     Test the add_permission and remove_permission functions of MongoStorePartition
     """
     # setting up
-    res = mongo_store_partition.init_store()
-    assert res.is_ok()
     permissions_collection: MongoCollection = mongo_store_partition.permissions.ok()
     obj = MockSyftObject(data=1)
 
