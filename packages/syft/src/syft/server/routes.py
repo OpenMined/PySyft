@@ -49,8 +49,7 @@ def make_routes(worker: Worker) -> APIRouter:
         # relative
         from ..service.network.server_peer import route_to_connection
 
-        network_service = worker.get_service("NetworkService")
-        peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid).unwrap()
+        peer = worker.network.stash.get_by_uid(worker.verify_key, peer_uid).unwrap()
         peer_server_route = peer.pick_highest_priority_route()
         connection = route_to_connection(route=peer_server_route)
         return connection

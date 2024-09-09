@@ -115,7 +115,7 @@ class ZMQProducer(QueueProducer):
     @property
     def action_service(self) -> AbstractService:
         if self.auth_context.server is not None:
-            return self.auth_context.server.get_service("ActionService")
+            return self.auth_context.server.services.action
         else:
             raise Exception(f"{self.auth_context} does not have a server.")
 
@@ -266,11 +266,7 @@ class ZMQProducer(QueueProducer):
 
                 # relative
                 from ...service.worker.worker_service import WorkerService
-
-                worker_service = cast(
-                    WorkerService, self.auth_context.server.get_service(WorkerService)
-                )
-                worker_service._delete(self.auth_context, syft_worker)
+                self.auth_context.server.services.worker._delete(self.auth_context, syft_worker)
 
     def update_consumer_state_for_worker(
         self, syft_worker_id: UID, consumer_state: ConsumerState

@@ -764,8 +764,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
             raise ValueError(
                 "f{context}'s server is None, please log in. No trasformation happened"
             )
-        action_service = context.server.get_service("actionservice")
-        action_service._set(
+        context.server.services.action._set(
             context=context.to_server_context(),
             action_object=twin,
         ).unwrap(public_message="Failed to create and store twin")

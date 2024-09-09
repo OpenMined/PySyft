@@ -114,11 +114,7 @@ class ActionStoreChange(Change):
 
     @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
-        action_service: ActionService = context.server.get_service(ActionService)  # type: ignore[assignment]
-        blob_storage_service: BlobStorageService = context.server.get_service(
-            BlobStorageService
-        )  # type: ignore[assignment]
-        action_store = action_service.store
+        action_store = context.server.services.action.store
 
         # can we ever have a lineage ID in the store?
         obj_uid = self.linked_obj.object_uid
@@ -169,7 +165,7 @@ class ActionStoreChange(Change):
                 )
                 action_store.add_permission(requesting_permission_action_obj)
                 (
-                    blob_storage_service.stash.add_permission(
+                    context.server.services.blob_storage.stash.add_permission(
                         requesting_permission_blob_obj
                     )
                     if requesting_permission_blob_obj
@@ -180,11 +176,11 @@ class ActionStoreChange(Change):
                     action_store.remove_permission(requesting_permission_action_obj)
                 if (
                     requesting_permission_blob_obj
-                    and blob_storage_service.stash.has_permission(
+                    and context.server.services.blob_storage.stash.has_permission(
                         requesting_permission_blob_obj
                     )
                 ):
-                    blob_storage_service.stash.remove_permission(
+                    context.server.services.blob_storage.stash.remove_permission(
                         requesting_permission_blob_obj
                     )
         else:
@@ -227,12 +223,10 @@ class CreateCustomImageChange(Change):
 
     @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
-        worker_image_service = context.server.get_service("SyftWorkerImageService")
-
         service_context = context.to_service_ctx()
-        worker_image_service.submit(service_context, worker_config=self.config)
+        context.server.services.syft_worker_image.submit(service_context, worker_config=self.config)
 
-        worker_image = worker_image_service.stash.get_by_worker_config(
+        worker_image = context.server.services.syft_worker_image.stash.get_by_worker_config(
             service_context.credentials, config=self.config
         ).unwrap()
         if worker_image is None:
@@ -241,7 +235,7 @@ class CreateCustomImageChange(Change):
         build_success_message = "Image was pre-built."
 
         if not worker_image.is_prebuilt:
-            build_result = worker_image_service.build(
+            build_result = context.server.services.syft_worker_image.build(
                 service_context,
                 image_uid=worker_image.id,
                 tag=self.tag,
@@ -252,7 +246,7 @@ class CreateCustomImageChange(Change):
 
         build_success = f"Build result: {build_success_message}"
         if IN_KUBERNETES and not worker_image.is_prebuilt:
-            push_result = worker_image_service.push(
+            push_result = context.server.services.syft_worker_image.push(
                 service_context,
                 image_uid=worker_image.id,
                 username=context.extra_kwargs.get("registry_username", None),
@@ -298,16 +292,15 @@ class CreateCustomWorkerPoolChange(Change):
         """
         if apply:
             # get the worker pool service and try to launch a pool
-            worker_pool_service = context.server.get_service("SyftWorkerPoolService")
             service_context: AuthedServiceContext = context.to_service_ctx()
 
             if self.config is not None:
-                worker_image = worker_pool_service.image_stash.get_by_worker_config(
+                worker_image = context.server.services.syft_worker_pool.image_stash.get_by_worker_config(
                     service_context.credentials, self.config
                 ).unwrap()
                 self.image_uid = worker_image.id
 
-            result = worker_pool_service.launch(
+            result = context.server.services.syft_worker_pool.launch(
                 context=service_context,
                 pool_name=self.pool_name,
                 image_uid=self.image_uid,
@@ -1161,8 +1154,7 @@ def add_requesting_user_info(context: TransformContext) -> TransformContext:
     if context.output is not None and context.server is not None:
         try:
             user_key = context.output["requesting_user_verify_key"]
-            user_service = context.server.get_service("UserService")
-            user = user_service.get_by_verify_key(user_key).unwrap()
+            user = context.server.services.user.get_by_verify_key(user_key).unwrap()
             context.output["requesting_user_name"] = user.name
             context.output["requesting_user_email"] = user.email
             context.output["requesting_user_institution"] = (

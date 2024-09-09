@@ -128,7 +128,7 @@ class UserCodeService(AbstractService):
             )
 
             if code.status_link is not None:
-                _ = context.server.get_service("usercodestatusservice").remove(
+                _ = context.server.services.user_code_status.remove(
                     root_context, code.status_link.object_uid
                 )
 
@@ -203,16 +203,13 @@ class UserCodeService(AbstractService):
             raise SyftException(
                 public_message="outputs can only be distributed to input owners"
             )
-
-        worker_pool_service = context.server.get_service("SyftWorkerPoolService")
-        worker_pool_service._get_worker_pool(
+        context.server.services.syft_worker_pool._get_worker_pool(
             context,
             pool_name=user_code.worker_pool_name,
         )
 
         # Create a code history
-        code_history_service = context.server.get_service("codehistoryservice")
-        code_history_service.submit_version(context=context, code=user_code)
+        context.server.services.code_history.submit_version(context=context, code=user_code)
 
         return user_code
 
@@ -382,22 +379,19 @@ class UserCodeService(AbstractService):
     def is_execution_on_owned_args_allowed(self, context: AuthedServiceContext) -> bool:
         if context.role == ServiceRole.ADMIN:
             return True
-        user_service = context.server.get_service("userservice")
-        current_user = user_service.get_current_user(context=context)
+        current_user = context.server.services.user.get_current_user(context=context)
         return current_user.mock_execution_permission
 
     def keep_owned_kwargs(
         self, kwargs: dict[str, Any], context: AuthedServiceContext
     ) -> dict[str, Any]:
         """Return only the kwargs that are owned by the user"""
-        action_service = context.server.get_service("actionservice")
-
         mock_kwargs = {}
         for k, v in kwargs.items():
             if isinstance(v, UID):
                 # Jobs have UID kwargs instead of ActionObject
                 try:
-                    v = action_service.get(context, uid=v)
+                    v = context.server.services.action.get(context, uid=v)
                 except Exception:  # nosec: we are skipping when dont find it
                     pass
             if (
@@ -575,14 +569,11 @@ class UserCodeService(AbstractService):
                 "which is currently not supported. Run your function with `blocking=False` to run"
                 " as a job on your worker pool."
             )
-
-        action_service = context.server.get_service("actionservice")
-
-        action_obj = action_service._user_code_execute(
+        action_obj = context.server.services.action._user_code_execute(
             context, code, kwarg2id, result_id
         ).unwrap()
 
-        result = action_service.set_result_to_store(
+        result = context.server.services.action.set_result_to_store(
             action_obj, context, code.get_output_policy(context)
         ).unwrap()
 
@@ -680,8 +671,7 @@ def resolve_outputs(
         outputs = []
         for output_id in output_ids:
             if context.server is not None:
-                action_service = context.server.get_service("actionservice")
-                output = action_service.get(
+                output = context.server.services.action.get(
                     context, uid=output_id, twin_mode=TwinMode.PRIVATE
                 )
                 outputs.append(output)

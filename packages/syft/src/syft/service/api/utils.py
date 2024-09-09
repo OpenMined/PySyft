@@ -33,8 +33,7 @@ def print(
     new_args = [to_str(arg) for arg in args]
     new_str = sep.join(new_args) + end
     if context.server is not None:
-        log_service = context.server.get_service("LogService")
-        log_service.append(context=context, uid=log_id, new_str=new_str)
+        context.server.services.log.append(context=context, uid=log_id, new_str=new_str)
     time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
     return __builtin__.print(
         f"{time} FUNCTION LOG :",

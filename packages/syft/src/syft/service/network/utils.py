@@ -40,11 +40,7 @@ class PeerHealthCheckTask:
         Returns:
             None
         """
-
-        network_service = cast(
-            NetworkService, context.server.get_service(NetworkService)
-        )
-        network_stash = network_service.stash
+        network_stash = context.server.services.network.stash
 
         try:
             all_peers: list[ServerPeer] = network_stash.get_all(

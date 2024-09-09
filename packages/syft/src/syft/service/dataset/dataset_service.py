@@ -228,10 +228,7 @@ class DatasetService(AbstractService):
                     f"in Dataset {uid}"
                 )
 
-                action_service = cast(
-                    ActionService, context.server.get_service(ActionService)
-                )
-                action_service.delete(
+                context.server.services.action.delete(
                     context=context, uid=asset.action_id, soft_delete=True
                 )
 

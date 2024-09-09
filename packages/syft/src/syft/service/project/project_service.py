@@ -94,8 +94,7 @@ class ProjectService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def can_create_project(self, context: AuthedServiceContext) -> bool:
-        user_service: UserService = context.server.get_service("userservice")  # type: ignore[assignment]
-        role = user_service.get_role_for_credentials(
+        role = context.server.services.user.get_role_for_credentials(
             credentials=context.credentials
         ).unwrap()
 
@@ -136,10 +135,8 @@ class ProjectService(AbstractService):
         # For followers the leader server route is retrieved from its peer
         if leader_server.verify_key != context.server.verify_key:
             # FIX: networkservice stash to new BaseStash
-            network_service = context.server.get_service("networkservice")
-            network_service = cast(NetworkService, network_service)
             peer_id = context.server.id.short() if context.server.id else ""
-            leader_server_peer = network_service.stash.get_by_verify_key(
+            leader_server_peer = context.server.services.network.stash.get_by_verify_key(
                 credentials=context.server.verify_key,
                 verify_key=leader_server.verify_key,
             ).unwrap(
@@ -243,11 +240,10 @@ class ProjectService(AbstractService):
         self.check_for_project_request(project, project_event, context)
 
         # Broadcast the event to all the members of the project
-        network_service = context.server.get_service("networkservice")
         for member in project.members:
             if member.verify_key != context.server.verify_key:
                 # Retrieving the ServerPeer Object to communicate with the server
-                peer = network_service.stash.get_by_verify_key(
+                peer = context.server.services.network.stash.get_by_verify_key(
                     credentials=context.server.verify_key,
                     verify_key=member.verify_key,
                 ).unwrap(
@@ -335,9 +331,8 @@ class ProjectService(AbstractService):
     def add_signing_key_to_project(
         self, context: AuthedServiceContext, project: Project
     ) -> Project:
-        user_service = context.server.get_service("userservice")
         try:
-            user = user_service.stash.get_by_verify_key(
+            user = context.server.services.user.stash.get_by_verify_key(
                 credentials=context.credentials, verify_key=context.credentials
             ).unwrap()
         except NotFoundException as exc:

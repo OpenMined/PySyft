@@ -295,7 +295,6 @@ class OutputService(AbstractService):
         user_code_id: UID,
         user_verify_key: SyftVerifyKey,
     ) -> bool:
-        action_service = context.server.get_service("actionservice")
         all_outputs = self.get_by_user_code_id(context, user_code_id)
         for output in all_outputs:
             # TODO tech debt: unclear why code owner can see outputhistory without permissions.
@@ -311,7 +310,7 @@ class OutputService(AbstractService):
                 ActionObjectREAD(uid=_id.id, credentials=user_verify_key)
                 for _id in result_ids
             ]
-            if action_service.store.has_permissions(permissions):
+            if context.server.services.action.store.has_permissions(permissions):
                 return True
 
         return False

@@ -415,8 +415,7 @@ class UserCode(SyncableSyftObject):
         else:
             # Serverside
             server_identity = ServerIdentity.from_server(context.server)
-            output_service = context.server.get_service("outputservice")
-            is_approved = output_service.has_output_read_permissions(
+            is_approved = context.server.services.output.has_output_read_permissions(
                 context, self.id, self.user_verify_key
             )
         is_denied = self.l0_deny_reason is not None
@@ -666,10 +665,7 @@ class UserCode(SyncableSyftObject):
     def get_output_history(
         self, context: AuthedServiceContext
     ) -> list[ExecutionOutput]:
-        output_service = cast(
-            OutputService, context.server.get_service("outputservice")
-        )
-        return output_service.get_by_user_code_id(context, self.id)
+        return context.server.services.output.get_by_user_code_id(context, self.id)
 
     @as_result(SyftException)
     def store_execution_output(
@@ -689,10 +685,7 @@ class UserCode(SyncableSyftObject):
             )
 
         output_ids = filter_only_uids(outputs)
-
-        output_service = context.server.get_service("outputservice")
-        output_service = cast(OutputService, output_service)
-        return output_service.create(
+        return context.server.services.output.create(
             context,
             user_code_id=self.id,
             output_ids=output_ids,
@@ -1460,9 +1453,8 @@ def locate_launch_jobs(context: TransformContext) -> TransformContext:
             v = LaunchJobVisitor()
             v.visit(tree)
             nested_calls = v.nested_calls
-            user_code_service = context.server.get_service("usercodeService")
             for call in nested_calls:
-                user_codes = user_code_service.get_by_service_name(context, call)
+                user_codes = context.server.services.user_code.get_by_service_name(context, call)
                 # TODO: Not great
                 user_code = user_codes[-1]
                 user_code_link = LinkedObject.from_obj(
@@ -1511,11 +1503,10 @@ def add_credentials_for_key(key: str) -> Callable:
 
 def check_policy(policy: Any, context: TransformContext) -> TransformContext:
     if context.server is not None:
-        policy_service = context.server.get_service(PolicyService)
         if isinstance(policy, SubmitUserPolicy):
             policy = policy.to(UserPolicy, context=context)
         elif isinstance(policy, UID):
-            policy = policy_service.get_policy_by_uid(context, policy)
+            policy = context.server.services.policy.get_policy_by_uid(context, policy)
     return policy
 
 
@@ -1581,7 +1572,7 @@ def create_code_status(context: TransformContext) -> TransformContext:
             f"Invalid server type:{context.server.server_type} for code submission"
         )
 
-    res = context.server.get_service("usercodestatusservice").create(context, status)
+    res = context.server.services.user_code_status.create(context, status)
     # relative
     from .status_service import UserCodeStatusService
 
@@ -1685,43 +1676,20 @@ class SecureContext:
         if server is None:
             raise ValueError(f"{context}'s server is None")
 
-        job_service = server.get_service("jobservice")
-        action_service = server.get_service("actionservice")
-        # user_service = server.get_service("userservice")
-
         def job_set_n_iters(n_iters: int) -> None:
             job = context.job
             job.n_iters = n_iters
-            job_service.update(context, job)
+            server.services.job.update(context, job)
 
         def job_set_current_iter(current_iter: int) -> None:
             job = context.job
             job.current_iter = current_iter
-            job_service.update(context, job)
+            server.services.job.update(context, job)
 
         def job_increase_current_iter(current_iter: int) -> None:
             job = context.job
             job.current_iter += current_iter
-            job_service.update(context, job)
-
-        # def set_api_registry():
-        #     user_signing_key = [
-        #         x.signing_key
-        #         for x in user_service.stash.partition.data.values()
-        #         if x.verify_key == context.credentials
-        #     ][0]
-        #     data_protcol = get_data_protocol()
-        #     user_api = server.get_api(context.credentials, data_protcol.latest_version)
-        #     user_api.signing_key = user_signing_key
-        #     # We hardcode a python connection here since we have access to the server
-        #     # TODO: this is not secure
-        #     user_api.connection = PythonConnection(server=server)
-
-        #     APIRegistry.set_api_for(
-        #         server_uid=server.id,
-        #         user_verify_key=context.credentials,
-        #         api=user_api,
-        #     )
+            server.services.job.update(context, job)
 
         def launch_job(func: UserCode, **kwargs: Any) -> Job | None:
             # relative
@@ -1729,7 +1697,7 @@ class SecureContext:
             kw2id = {}
             for k, v in kwargs.items():
                 value = ActionObject.from_obj(v)
-                ptr = action_service.set_result_to_store(
+                ptr = server.services.action.set_result_to_store(
                     value, context, has_result_read_permission=False
                 ).unwrap()
                 kw2id[k] = ptr.id
@@ -1820,8 +1788,7 @@ def execute_byte_code(
                 new_args = [to_str(arg) for arg in args]
                 new_str = sep.join(new_args) + end
                 if context.server is not None:
-                    log_service = context.server.get_service("LogService")
-                    log_service.append(context=context, uid=log_id, new_str=new_str)
+                    context.server.services.log.append(context=context, uid=log_id, new_str=new_str)
                 time = datetime.datetime.now().strftime("%d/%m/%y %H:%M:%S")
                 return __builtin__.print(
                     f"{time} FUNCTION LOG ({job_id}):",
@@ -1886,8 +1853,7 @@ def execute_byte_code(
                 and context.job.log_id is not None
             ):
                 log_id = context.job.log_id
-                log_service = context.server.get_service("LogService")
-                log_service.append(context=context, uid=log_id, new_err=error_msg)
+                context.server.services.log.append(context=context, uid=log_id, new_err=error_msg)
 
             result_message = (
                 f"Exception encountered while running {code_item.service_func_name}"

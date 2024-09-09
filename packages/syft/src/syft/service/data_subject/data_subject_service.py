@@ -63,11 +63,7 @@ class DataSubjectService(AbstractService):
     def add(
         self, context: AuthedServiceContext, data_subject: DataSubjectCreate
     ) -> SyftSuccess:
-        """Register a data subject."""
-
-        member_relationship_add = context.server.get_service_method(
-            DataSubjectMemberService.add
-        )
+        """Register a data subject."""#
 
         member_relationships: set[tuple[str, str]] = data_subject.member_relationships
         if len(member_relationships) == 0:
@@ -84,7 +80,8 @@ class DataSubjectService(AbstractService):
                         ds.to(DataSubject, context=context),
                         ignore_duplicates=True,
                     ).unwrap()
-                member_relationship_add(context, parent_ds.name, child_ds.name)
+                # TODO: this name seems wrong, but CI might not test it
+                context.server.services.data_subject.add(context, parent_ds.name, child_ds.name)
 
         return SyftSuccess(
             message=f"{len(member_relationships)+1} Data Subjects Registered",
