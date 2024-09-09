@@ -40,6 +40,7 @@ def mock_queue_object():
         args=[],
         kwargs={},
         worker_pool=linked_worker_pool,
+        job_id=UID(),
     )
     return obj
 
@@ -449,3 +450,29 @@ def test_queue_delete_threading_mongo(root_verify_key, mongo_document_store):
         return mongo_queue_stash_fn(mongo_document_store)
 
     helper_queue_set_delete_threading(root_verify_key, create_queue_cbk)
+
+@pytest.mark.parametrize(
+    "queue",
+    [
+        pytest.lazy_fixture("dict_queue_stash"),
+        pytest.lazy_fixture("sqlite_queue_stash"),
+        pytest.lazy_fixture("mongo_queue_stash"),
+    ],
+)
+def test_queue_stash_get_by_job_id(root_verify_key, queue: Any) -> None:
+    obj = mock_queue_object()
+
+    res = queue.set(root_verify_key, obj, ignore_duplicates=False)
+    assert res.is_ok()
+    assert len(queue) == 1
+
+    # check with job_id that exists passes
+    queue_item = queue.get_by_job_id(root_verify_key, obj.job_id).unwrap()
+
+    assert queue_item == [obj]
+
+    # check with job_id that does not exist fails
+
+    empty_queue_item = queue.get_by_job_id(root_verify_key, UID()).unwrap()
+
+    assert empty_queue_item == []
