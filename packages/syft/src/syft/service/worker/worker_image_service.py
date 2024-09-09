@@ -104,7 +104,7 @@ class SyftWorkerImageService(AbstractService):
         ).unwrap()
         if registry_uid:
             # get registry from image registry service
-            registry = context.server.services.image_registry.get_by_id(
+            registry = context.server.services.syftimage_registry.get_by_id(
                 context, registry_uid
             )
 
