@@ -79,8 +79,7 @@ class DataSubjectService(AbstractService):
                         ds.to(DataSubject, context=context),
                         ignore_duplicates=True,
                     ).unwrap()
-                # TODO: this name seems wrong, but CI might not test it
-                context.server.services.data_subject.add(
+                context.server.services.data_subject_member.add(
                     context, parent_ds.name, child_ds.name
                 )
 
