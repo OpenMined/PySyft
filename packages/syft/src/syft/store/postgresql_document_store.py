@@ -109,7 +109,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         try:
             with self.lock:
                 self.cur.execute(
-                    f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                    f"CREATE TABLE IF NOT EXISTS {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
                     + "repr TEXT NOT NULL, value BYTEA NOT NULL, "  # nosec
                     + "sqltime TIMESTAMP NOT NULL DEFAULT NOW())"  # nosec
                 )
