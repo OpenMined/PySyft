@@ -150,7 +150,9 @@ class WorkerService(AbstractService):
 
         if force and worker.job_id is not None:
             job_service = cast(JobService, context.server.get_service(JobService))
-            job_service.kill(context=context, id=worker.job_id, kill_directly=True)
+            job = job_service.get(context=context, uid=worker.job_id)
+            if job.status != JobStatus.COMPLETED:
+                job_service.kill(context=context, id=worker.job_id, kill_directly=True)
 
         worker_pool_service = cast(
             SyftWorkerPoolService, context.server.get_service(SyftWorkerPoolService)

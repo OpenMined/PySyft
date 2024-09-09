@@ -174,12 +174,14 @@ class JobService(AbstractService):
             for subjob in self.get_subjobs(context=context, uid=job.id):
                 self._terminate_job(context, subjob)
             queue_stash = context.server.queue_stash
-            queue_item = queue_stash.get_by_job_id(
+            queue_items = queue_stash.get_by_job_id(
                 context.credentials, job.id
-            )
-            queue_item.status = Status.INTERRUPTED
-            queue_item.resolved = True
-            queue_stash.set_result(context.credentials, queue_item)
+            ).unwrap()
+
+            for queue_item in queue_items:
+                queue_item.status = Status.INTERRUPTED
+                queue_item.resolved = True
+                queue_stash.set_result(context.credentials, queue_item)
         
     def _terminate_job(self, context: AuthedServiceContext, job: Job) -> None:
         job.resolved = True
