@@ -21,12 +21,9 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
-from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
-from ...types.transforms import TransformContext
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
-from ...types.transforms import rename
 from ...types.uid import UID
 from ...util.misc_objs import HTMLObject
 from ...util.misc_objs import MarkdownDescription
@@ -39,25 +36,15 @@ MIN_SERVER_NAME_LENGTH = 1
 
 
 @serializable()
-class PwdTokenResetConfigV1(SyftObject):
+class PwdTokenResetConfig(SyftObject):
     __canonical_name__ = "PwdTokenResetConfig"
     __version__ = SYFT_OBJECT_VERSION_1
 
     ascii: bool = True
     numbers: bool = True
     token_len: int = 12
-    token_exp_min: int = 30
-
-
-@serializable()
-class PwdTokenResetConfig(SyftObject):
-    __canonical_name__ = "PwdTokenResetConfig"
-    __version__ = SYFT_OBJECT_VERSION_2
-
-    ascii: bool = True
-    numbers: bool = True
-    token_len: int = 12
-    token_exp_seconds: int = 1800
+    # Token expiration time in seconds (not minutes)
+    token_exp_min: int = 1800  # TODO: Rename variable to token_exp_sec
 
     @model_validator(mode="after")
     def validate_char_types(self) -> Self:
@@ -124,32 +111,13 @@ class ServerSettingsUpdateV3(PartialSyftObject):
     welcome_markdown: HTMLObject | MarkdownDescription
     eager_execution_enabled: bool
     notifications_enabled: bool
-    pwd_token_config: PwdTokenResetConfigV1
-
-
-@serializable()
-class ServerSettingsUpdateV4(PartialSyftObject):
-    __canonical_name__ = "ServerSettingsUpdate"
-    __version__ = SYFT_OBJECT_VERSION_4
-    id: UID
-    name: str
-    organization: str
-    description: str
-    on_board: bool
-    signup_enabled: bool
-    admin_email: str
-    association_request_auto_approval: bool
-    welcome_markdown: HTMLObject | MarkdownDescription
-    eager_execution_enabled: bool
-    notifications_enabled: bool
-    pwd_token_config: PwdTokenResetConfigV1
-    allow_guest_sessions: bool
+    pwd_token_config: PwdTokenResetConfig
 
 
 @serializable()
 class ServerSettingsUpdate(PartialSyftObject):
     __canonical_name__ = "ServerSettingsUpdate"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_4
     id: UID
     name: str
     organization: str
@@ -248,50 +216,13 @@ class ServerSettingsV3(SyftObject):
         text=DEFAULT_WELCOME_MSG
     )
     notifications_enabled: bool
-    pwd_token_config: PwdTokenResetConfigV1 = PwdTokenResetConfigV1()
-
-
-@serializable()
-class ServerSettingsV4(SyftObject):
-    __canonical_name__ = "ServerSettings"
-    __version__ = SYFT_OBJECT_VERSION_4
-    __repr_attrs__ = [
-        "name",
-        "organization",
-        "description",
-        "deployed_on",
-        "signup_enabled",
-        "admin_email",
-        "allow_guest_sessions",
-    ]
-
-    id: UID
-    name: str = "Server"
-    deployed_on: str
-    organization: str = "OpenMined"
-    verify_key: SyftVerifyKey
-    on_board: bool = True
-    description: str = "This is the default description for a Datasite Server."
-    server_type: ServerType = ServerType.DATASITE
-    signup_enabled: bool
-    admin_email: EmailStr
-    server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
-    show_warnings: bool
-    association_request_auto_approval: bool
-    eager_execution_enabled: bool = False
-    default_worker_pool: str = DEFAULT_WORKER_POOL_NAME
-    welcome_markdown: HTMLObject | MarkdownDescription = HTMLObject(
-        text=DEFAULT_WELCOME_MSG
-    )
-    notifications_enabled: bool
-    pwd_token_config: PwdTokenResetConfigV1 = PwdTokenResetConfigV1()
-    allow_guest_sessions: bool = True
+    pwd_token_config: PwdTokenResetConfig = PwdTokenResetConfig()
 
 
 @serializable()
 class ServerSettings(SyftObject):
     __canonical_name__ = "ServerSettings"
-    __version__ = SYFT_OBJECT_VERSION_5
+    __version__ = SYFT_OBJECT_VERSION_4
     __repr_attrs__ = [
         "name",
         "organization",
@@ -389,39 +320,6 @@ class ServerSettings(SyftObject):
             """
 
 
-# Helper functions for nested migrations
-
-
-# Write a transoform function that will take PwdTokenResetConfigV1 and convert it to PwdTokenResetConfig
-# Note that one key will change, token_exp_min to token_exp_seconds
-def convert_pwdv1_to_pwd(context: TransformContext) -> TransformContext:
-    if context.output and "pwd_token_config" in context.output:
-        pwd_token_config = context.output["pwd_token_config"]
-        if isinstance(pwd_token_config, PwdTokenResetConfigV1):
-            context.output["pwd_token_config"] = PwdTokenResetConfig(
-                ascii=pwd_token_config.ascii,
-                numbers=pwd_token_config.numbers,
-                token_len=pwd_token_config.token_len,
-                token_exp_seconds=pwd_token_config.token_exp_min * 60,
-            )
-    return context
-
-
-# Write a transform function that will take PwdTokenResetConfig and convert it to PwdTokenResetConfigV1
-# Note that one key will change, token_exp_seconds to token_exp_min
-def convert_pwd_to_pwdv1(context: TransformContext) -> TransformContext:
-    if context.output and "pwd_token_config" in context.output:
-        pwd_token_config = context.output["pwd_token_config"]
-        if isinstance(pwd_token_config, PwdTokenResetConfig):
-            context.output["pwd_token_config"] = PwdTokenResetConfigV1(
-                ascii=pwd_token_config.ascii,
-                numbers=pwd_token_config.numbers,
-                token_len=pwd_token_config.token_len,
-                token_exp_min=pwd_token_config.token_exp_seconds // 60,
-            )
-    return context
-
-
 # Server Settings Migration
 
 
@@ -433,17 +331,12 @@ def migrate_server_settings_v1_to_v2() -> list[Callable]:
 
 @migrate(ServerSettingsV2, ServerSettingsV3)
 def migrate_server_settings_v2_to_v3() -> list[Callable]:
-    return [make_set_default("pwd_token_config", PwdTokenResetConfigV1())]
+    return [make_set_default("pwd_token_config", PwdTokenResetConfig())]
 
 
-@migrate(ServerSettingsV3, ServerSettingsV4)
-def migrate_server_settings_v3_to_v4() -> list[Callable]:
+@migrate(ServerSettingsV3, ServerSettings)
+def migrate_server_settings_v3_to_current() -> list[Callable]:
     return [make_set_default("allow_guest_sessions", False)]
-
-
-@migrate(ServerSettingsV4, ServerSettings)
-def migrate_server_settings_v4_to_current() -> list[Callable]:
-    return [convert_pwdv1_to_pwd]
 
 
 # drop
@@ -459,16 +352,10 @@ def migrate_server_settings_v3_to_v2() -> list[Callable]:
     return [drop(["pwd_token_config"])]
 
 
-@migrate(ServerSettingsV4, ServerSettingsV3)
-def migrate_server_settings_v4_to_v3() -> list[Callable]:
+@migrate(ServerSettings, ServerSettingsV3)
+def migrate_server_settings_current_to_v3() -> list[Callable]:
     # Use drop function on "notifications_enabled" attrubute
     return [drop(["allow_guest_sessions"])]
-
-
-@migrate(ServerSettings, ServerSettingsV4)
-def migrate_server_settings_current_to_v4() -> list[Callable]:
-    # Use drop function on "notifications_enabled" attrubute
-    return [convert_pwd_to_pwdv1]
 
 
 # Server Settings Update Migration
@@ -482,17 +369,12 @@ def migrate_server_settings_update_v1_to_v2() -> list[Callable]:
 
 @migrate(ServerSettingsUpdateV2, ServerSettingsUpdateV3)
 def migrate_server_settings_update_v2_to_v3() -> list[Callable]:
-    return [make_set_default("pwd_token_config", PwdTokenResetConfigV1())]
+    return [make_set_default("pwd_token_config", PwdTokenResetConfig())]
 
 
-@migrate(ServerSettingsUpdateV3, ServerSettingsUpdateV4)
-def migrate_server_settings_update_v3_to_v4() -> list[Callable]:
+@migrate(ServerSettingsUpdateV3, ServerSettingsUpdate)
+def migrate_server_settings_update_v3_to_current() -> list[Callable]:
     return [make_set_default("allow_guest_sessions", False)]
-
-
-@migrate(ServerSettingsUpdateV4, ServerSettingsUpdate)
-def migrate_server_settings_update_v4_to_current() -> list[Callable]:
-    return [convert_pwdv1_to_pwd]
 
 
 # drop
@@ -502,33 +384,10 @@ def migrate_server_settings_update_v2_to_v1() -> list[Callable]:
 
 
 @migrate(ServerSettingsUpdateV3, ServerSettingsUpdateV2)
-def migrate_server_settings_update_v3_to_v2() -> list[Callable]:
+def migrate_server_settings_update_current_to_v2() -> list[Callable]:
     return [drop(["pwd_token_config"])]
 
 
-@migrate(ServerSettingsUpdateV4, ServerSettingsUpdateV3)
-def migrate_server_settings_update_v4_to_v3() -> list[Callable]:
+@migrate(ServerSettingsUpdate, ServerSettingsUpdateV3)
+def migrate_server_settings_update_current_to_v3() -> list[Callable]:
     return [drop(["allow_guest_sessions"])]
-
-
-@migrate(ServerSettingsUpdate, ServerSettingsUpdateV4)
-def migrate_server_settings_update_current_to_v4() -> list[Callable]:
-    return [convert_pwd_to_pwdv1]
-
-
-# PwdTokenResetConfig Migration
-
-
-# set seconds and drop mins
-@migrate(PwdTokenResetConfigV1, PwdTokenResetConfig)
-def migrate_pwd_token_reset_config_v1_to_current() -> list[Callable]:
-    # use rename method from transforms.py to change token_exp_min to token_exp_seconds
-    return [rename("token_exp_min", "token_exp_seconds")]
-
-
-# drop seconds and add mins
-@migrate(PwdTokenResetConfig, PwdTokenResetConfigV1)
-def migrate_pwd_token_reset_config_current_to_v1() -> list[Callable]:
-    # use rename method from transforms.py to change token_exp_seconds to token_exp_min
-    return [rename("token_exp_seconds", "token_exp_min")]
-    # return [drop(["token_exp_seconds"]), make_set_default("token_exp_min", 30)]
