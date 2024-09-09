@@ -40,7 +40,7 @@ class AbstractServer:
     server_type: ServerType | None
     server_side_type: ServerSideType | None
     in_memory_workers: bool
-    services: ServiceRegistry
+    services: "ServiceRegistry"
 
     def get_service(self, path_or_func: str | Callable) -> "AbstractService":
         raise NotImplementedError
