@@ -182,7 +182,7 @@ class UserService(AbstractService):
                 to_user_verify_key=user.verify_key,
                 linked_obj=link,
             )
-            result = root_context.server.services.notifications.send(
+            result = root_context.server.services.notification.send(
                 context=root_context, notification=message
             )
             message = CreateNotification(
@@ -192,7 +192,7 @@ class UserService(AbstractService):
                 linked_obj=link,
             )
 
-            result = root_context.server.services.notifications.send(
+            result = root_context.server.services.notification.send(
                 context=root_context, notification=message
             )
         else:
@@ -207,7 +207,7 @@ class UserService(AbstractService):
                 notifier_types=[NOTIFIERS.EMAIL],
                 email_template=PasswordResetTemplate,
             )
-            result = root_context.server.services.notifications.send(
+            result = root_context.server.services.notification.send(
                 context=root_context, notification=message
             )
 
@@ -630,7 +630,7 @@ class UserService(AbstractService):
             notifier_types=[NOTIFIERS.EMAIL],
             email_template=OnBoardEmailTemplate,
         )
-        context.server.notifications.send(context=root_context, notification=message)
+        context.server.services.notification.send(context=root_context, notification=message)
 
         if request_user_role in DATA_OWNER_ROLE_LEVEL:
             success_message += " To see users, run `[your_client].users`"

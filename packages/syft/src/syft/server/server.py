@@ -1853,7 +1853,7 @@ def create_default_worker_pool(server: Server) -> None:
     )
     if default_worker_pool is None:
         worker_to_add_ = worker_count
-        result = server.services.worker_pool.launch(
+        result = server.services.syft_worker_pool.launch(
             context,
             pool_name=default_pool_name,
             image_uid=default_image.id,
@@ -1867,7 +1867,7 @@ def create_default_worker_pool(server: Server) -> None:
             default_worker_pool.worker_list
         )
         if worker_to_add_ > 0:
-            result = server.services.worker_pool.add_workers(
+            result = server.services.syft_worker_pool.add_workers(
                 context=context,
                 number=worker_to_add_,
                 pool_name=default_pool_name,

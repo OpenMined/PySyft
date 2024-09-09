@@ -279,7 +279,7 @@ class ServerSettings(SyftObject):
         # 2) .....settings().x_enabled
         # 3) .....user_settings().x
 
-        preferences = self._get_api().services.notifications.settings()
+        preferences = self._get_api().services.notification.settings()
         if not preferences:
             notification_print_str = "Create notification settings using enable_notifications from user_service"
         else:

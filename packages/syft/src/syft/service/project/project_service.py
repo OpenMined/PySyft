@@ -387,7 +387,7 @@ class ProjectService(AbstractService):
             )
 
             # TODO: Update noteificationservice result
-            result = context.server.services.notifications.send(
+            result = context.server.services.notification.send(
                 context=context, notification=message
             )
             if isinstance(result, SyftError):

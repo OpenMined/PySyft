@@ -158,7 +158,7 @@ class RequestService(AbstractService):
             user = context.server.services.user.get_by_verify_key(
                 req.requesting_user_verify_key
             ).to(UserView)
-            message = context.server.services.notifications.filter_by_obj(
+            message = context.server.services.notification.filter_by_obj(
                 context=context, obj_uid=req.id
             ).unwrap()
             requests.append(RequestInfo(user=user, request=req, notification=message))
@@ -222,13 +222,13 @@ class RequestService(AbstractService):
 
         context.extra_kwargs = kwargs
         result = request.apply(context=context).unwrap()
-        request_notification = context.server.services.notifications.filter_by_obj(
+        request_notification = context.server.services.notification.filter_by_obj(
             context=context, obj_uid=uid
         ).unwrap()
 
         if not request.get_status(context) == RequestStatus.PENDING:
             if request_notification is not None:
-                context.server.services.notifications.mark_as_read(
+                context.server.services.notification.mark_as_read(
                     context=context, uid=request_notification.id
                 )
 
@@ -260,7 +260,7 @@ class RequestService(AbstractService):
             notifier_types=[NOTIFIERS.EMAIL],
             email_template=email_template,
         )
-        context.server.sercices.notifications.send(
+        context.server.services.notification.send(
             context=context, notification=notification
         )
 
