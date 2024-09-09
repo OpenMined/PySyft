@@ -466,9 +466,7 @@ class SyftWorkerPoolService(AbstractService):
             workers_to_delete = [
                 worker for worker in workers if worker.name in k8s_pods_to_kill
             ]
-            worker_service = cast(
-                WorkerService, context.server.get_service("WorkerService")
-            )
+            worker_service = context.server.services.worker
 
             for worker in workers_to_delete:
                 worker_service.delete(context=context, uid=worker.id, force=True)
