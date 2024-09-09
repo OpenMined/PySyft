@@ -17,7 +17,7 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
-from .models import Base
+from .schema import Base
 from .utils import dumps
 from .utils import loads
 
