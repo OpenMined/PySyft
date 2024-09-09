@@ -31,7 +31,7 @@ class PasswordResetTemplate(EmailTemplate):
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        user_service = context.server.get_service("userservice")
+        user_service = context.server.services.user
         admin_verify_key = user_service.admin_verify_key()
         user = user_service.stash.get_by_verify_key(
             credentials=admin_verify_key, verify_key=notification.to_user_verify_key
@@ -140,7 +140,7 @@ class OnBoardEmailTemplate(EmailTemplate):
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        user_service = context.server.get_service("userservice")
+        user_service = context.server.services.user
         admin_verify_key = user_service.admin_verify_key()
         admin = user_service.get_by_verify_key(admin_verify_key).unwrap()
         admin_name = admin.name

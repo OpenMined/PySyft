@@ -22,7 +22,6 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..action.action_permissions import StoragePermission
 from ..api.api import TwinAPIEndpoint
-from ..api.api_service import APIService
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
@@ -39,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Any:
     if isinstance(item, ActionObject):
-        service = context.server.get_service("actionservice")  # type: ignore
+        service = context.server.services.action  # type: ignore
         return service.store  # type: ignore
     service = context.server.get_service(TYPE_TO_SERVICE[type(item)])  # type: ignore
     return service.stash.partition
@@ -61,16 +60,14 @@ class SyncService(AbstractService):
         action_object: ActionObject,
         new_permissions: list[ActionObjectPermission],
     ) -> None:
-        store_to = context.server.get_service("actionservice").store  # type: ignore
+        store_to = context.server.services.action.store  # type: ignore
         for permission in new_permissions:
             if permission.permission == ActionPermission.READ:
                 store_to.add_permission(permission)
 
         blob_id = action_object.syft_blob_storage_entry_id
         if blob_id:
-            store_to_blob = context.server.get_service(
-                "blobstorageservice"
-            ).stash.partition  # type: ignore
+            store_to_blob = context.server.services.blob_sotrage.stash.partition  # type: ignore
             for permission in new_permissions:
                 if permission.permission == ActionPermission.READ:
                     permission_blob = ActionObjectPermission(
@@ -166,9 +163,7 @@ class SyncService(AbstractService):
         if isinstance(item, TwinAPIEndpoint):
             # we need the side effect of set function
             # to create an action object
-            apiservice: APIService = context.server.get_service("apiservice")  # type: ignore
-
-            res = apiservice.set(context=context, endpoint=item)
+            res = context.server.services.api.set(context=context, endpoint=item)
             return item
 
         if exists:
@@ -280,9 +275,7 @@ class SyncService(AbstractService):
         """
         items_for_jobs: list[SyncableSyftObject] = []
         errors = {}
-
-        job_service = context.server.get_service("jobservice")
-        jobs = job_service.get_all(context)
+        jobs = context.server.services.job.get_all(context)
 
         for job in jobs:
             try:
@@ -302,13 +295,11 @@ class SyncService(AbstractService):
     ) -> list[SyncableSyftObject]:
         job_batch = [job]
 
-        log_service = context.server.get_service("logservice")
-        log = log_service.get(context, job.log_id)
+        log = context.server.services.log.get(context, job.log_id)
         job_batch.append(log)
 
-        output_service = context.server.get_service("outputservice")
         try:
-            output = output_service.get_by_job_id(context, job.id)
+            output = context.server.services.output.get_by_job_id(context, job.id)
         except NotFoundException:
             output = None
 
@@ -321,10 +312,9 @@ class SyncService(AbstractService):
         if isinstance(job.result, ActionObject):
             job_result_ids.add(job.result.id.id)
 
-        action_service = context.server.get_service("actionservice")
         for result_id in job_result_ids:
             # TODO: unwrap
-            action_object = action_service.get(context, result_id)
+            action_object = context.server.services.action.get(context, result_id)
             job_batch.append(action_object)
 
         return job_batch
