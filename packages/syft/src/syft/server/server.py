@@ -57,6 +57,7 @@ from ..service.queue.base_queue import AbstractMessageHandler
 from ..service.queue.base_queue import QueueConsumer
 from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
+from ..service.queue.queue import ConsumerType
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_stash import APIEndpointQueueItem
 from ..service.queue.queue_stash import ActionQueueItem
@@ -335,6 +336,7 @@ class Server(AbstractServer):
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        consumer_type: ConsumerType | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -378,10 +380,15 @@ class Server(AbstractServer):
 
         self.association_request_auto_approval = association_request_auto_approval
 
+        consumer_type = (
+            consumer_type or ConsumerType.Thread
+            if thread_workers
+            else ConsumerType.Process
+        )
         self.queue_config = self.create_queue_config(
             n_consumers=n_consumers,
             create_producer=create_producer,
-            thread_workers=thread_workers,
+            consumer_type=consumer_type,
             queue_port=queue_port,
             queue_config=queue_config,
         )
@@ -580,7 +587,7 @@ class Server(AbstractServer):
         self,
         n_consumers: int,
         create_producer: bool,
-        thread_workers: bool,
+        consumer_type: ConsumerType,
         queue_port: int | None,
         queue_config: QueueConfig | None,
     ) -> QueueConfig:
@@ -589,13 +596,14 @@ class Server(AbstractServer):
         elif queue_port is not None or n_consumers > 0 or create_producer:
             if not create_producer and queue_port is None:
                 logger.warn("No queue port defined to bind consumers.")
+
             queue_config_ = ZMQQueueConfig(
                 client_config=ZMQClientConfig(
                     create_producer=create_producer,
                     queue_port=queue_port,
                     n_consumers=n_consumers,
                 ),
-                thread_workers=thread_workers,
+                consumer_type=consumer_type,
             )
         else:
             queue_config_ = ZMQQueueConfig()
@@ -729,6 +737,7 @@ class Server(AbstractServer):
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        consumer_type: ConsumerType | None = None,
     ) -> Server:
         uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -759,6 +768,7 @@ class Server(AbstractServer):
             reset=reset,
             association_request_auto_approval=association_request_auto_approval,
             background_tasks=background_tasks,
+            consumer_type=consumer_type,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
