@@ -26,10 +26,6 @@ from syft.store.document_store import PartitionSettings
 from syft.store.locks import LockingConfig
 from syft.store.locks import NoLockingConfig
 from syft.store.locks import ThreadingLockingConfig
-from syft.store.mongo_client import MongoStoreClientConfig
-from syft.store.mongo_document_store import MongoDocumentStore
-from syft.store.mongo_document_store import MongoStoreConfig
-from syft.store.mongo_document_store import MongoStorePartition
 from syft.store.sqlite_document_store import SQLiteDocumentStore
 from syft.store.sqlite_document_store import SQLiteStoreClientConfig
 from syft.store.sqlite_document_store import SQLiteStoreConfig
@@ -190,12 +186,17 @@ def sqlite_queue_stash_fn(
     return QueueStash(store=store)
 
 
-@pytest.fixture(scope="function", params=locking_scenarios)
-def sqlite_queue_stash(root_verify_key, sqlite_workspace: tuple[Path, str], request):
-    locking_config_name = request.param
-    yield sqlite_queue_stash_fn(
-        root_verify_key, sqlite_workspace, locking_config_name=locking_config_name
-    )
+@pytest.fixture(
+    scope="function",
+    params=[
+        "tODOsqlite_address",
+        "TODOpostgres_address",
+    ],
+)
+def queue_stash(request):
+    _ = request.param
+    stash = QueueStash.random()
+    yield stash
 
 
 @pytest.fixture(scope="function", params=locking_scenarios)
@@ -224,90 +225,5 @@ def sqlite_action_store(sqlite_workspace: tuple[Path, str], request):
     )
 
 
-def mongo_store_partition_fn(
-    mongo_client,
-    root_verify_key,
-    mongo_db_name: str = "mongo_db",
-    locking_config_name: str = "nop",
-):
-    mongo_config = MongoStoreClientConfig(client=mongo_client)
-
-    locking_config = str_to_locking_config(locking_config_name)
-
-    store_config = MongoStoreConfig(
-        client_config=mongo_config,
-        db_name=mongo_db_name,
-        locking_config=locking_config,
-    )
-    settings = PartitionSettings(name="test", object_type=MockObjectType)
-
-    return MongoStorePartition(
-        UID(), root_verify_key, settings=settings, store_config=store_config
-    )
-
-
-@pytest.fixture(scope="function", params=locking_scenarios)
-def mongo_store_partition(root_verify_key, mongo_client, request):
-    mongo_db_name = token_hex(8)
-    locking_config_name = request.param
-
-    partition = mongo_store_partition_fn(
-        mongo_client,
-        root_verify_key,
-        mongo_db_name=mongo_db_name,
-        locking_config_name=locking_config_name,
-    )
-    yield partition
-
-    # cleanup db
-    try:
-        mongo_client.drop_database(mongo_db_name)
-    except BaseException as e:
-        print("failed to cleanup mongo fixture", e)
-
-
-def mongo_document_store_fn(
-    mongo_client,
-    root_verify_key,
-    mongo_db_name: str = "mongo_db",
-    locking_config_name: str = "nop",
-):
-    locking_config = str_to_locking_config(locking_config_name)
-    mongo_config = MongoStoreClientConfig(client=mongo_client)
-    store_config = MongoStoreConfig(
-        client_config=mongo_config, db_name=mongo_db_name, locking_config=locking_config
-    )
-
-    mongo_client.drop_database(mongo_db_name)
-
-    return MongoDocumentStore(UID(), root_verify_key, store_config=store_config)
-
-
-@pytest.fixture(scope="function", params=locking_scenarios)
-def mongo_document_store(root_verify_key, mongo_client, request):
-    locking_config_name = request.param
-    mongo_db_name = token_hex(8)
-    yield mongo_document_store_fn(
-        mongo_client,
-        root_verify_key,
-        mongo_db_name=mongo_db_name,
-        locking_config_name=locking_config_name,
-    )
-
-
-def mongo_queue_stash_fn(mongo_document_store):
+def mongo_queue_stash(mongo_document_store):
     return QueueStash(store=mongo_document_store)
-
-
-@pytest.fixture(scope="function", params=locking_scenarios)
-def mongo_queue_stash(root_verify_key, mongo_client, request):
-    mongo_db_name = token_hex(8)
-    locking_config_name = request.param
-
-    store = mongo_document_store_fn(
-        mongo_client,
-        root_verify_key,
-        mongo_db_name=mongo_db_name,
-        locking_config_name=locking_config_name,
-    )
-    yield mongo_queue_stash_fn(store)
