@@ -216,18 +216,18 @@ class SQLiteBackingStore(KeyValueBackingStore):
             self._update(key, value)
         else:
             insert_sql = (
-                f"insert into {self.table_name} (uid, repr, value) VALUES "
-                f"({self.subs_char}, {self.subs_char}, {self.subs_char})"
-            )  # nosec
+                f"insert into {self.table_name} (uid, repr, value) VALUES "  # nosec
+                f"({self.subs_char}, {self.subs_char}, {self.subs_char})"  # nosec
+            )
             data = _serialize(value, to_bytes=True)
             self._execute(insert_sql, [str(key), _repr_debug_(value), data]).unwrap()
 
     def _update(self, key: UID, value: Any) -> None:
         insert_sql = (
-            f"update {self.table_name} set uid = {self.subs_char}, "
-            f"repr = {self.subs_char}, value = {self.subs_char} "
-            f"where uid = {self.subs_char}"
-        )  # nosec
+            f"update {self.table_name} set uid = {self.subs_char}, "  # nosec
+            f"repr = {self.subs_char}, value = {self.subs_char} "  # nosec
+            f"where uid = {self.subs_char}"  # nosec
+        )
         data = _serialize(value, to_bytes=True)
         self._execute(
             insert_sql, [str(key), _repr_debug_(value), data, str(key)]
@@ -235,9 +235,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _get(self, key: UID) -> Any:
         select_sql = (
-            f"select * from {self.table_name} where uid = {self.subs_char} "
+            f"select * from {self.table_name} where uid = {self.subs_char} "  # nosec
             "order by sqltime"
-        )  # nosec
+        )
         cursor = self._execute(select_sql, [str(key)]).unwrap(
             public_message=f"Query {select_sql} failed"
         )
