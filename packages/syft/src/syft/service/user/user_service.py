@@ -630,7 +630,9 @@ class UserService(AbstractService):
             notifier_types=[NOTIFIERS.EMAIL],
             email_template=OnBoardEmailTemplate,
         )
-        context.server.services.notification.send(context=root_context, notification=message)
+        context.server.services.notification.send(
+            context=root_context, notification=message
+        )
 
         if request_user_role in DATA_OWNER_ROLE_LEVEL:
             success_message += " To see users, run `[your_client].users`"
