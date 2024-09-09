@@ -302,7 +302,11 @@ def get_external_storage_config(
 ) -> PostgreSQLStoreConfig | None:
     if not store_client_config:
         store_client_config_json = os.environ.get("SYFT_STORE_CLIENT_CONFIG", "{}")
-        store_client_config = json.loads(store_client_config_json)
+        try:
+            store_client_config = json.loads(store_client_config_json)
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON from 'SYFT_STORE_CLIENT_CONFIG': {e}")
+            store_client_config = {}
 
     if (
         store_client_config
