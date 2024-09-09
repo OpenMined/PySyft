@@ -57,20 +57,20 @@ class PasswordResetTemplate(EmailTemplate):
 
         # method = context.server.get_service_method(SettingsService.get)
         # settings = method(context=context)
-        # expiry_time = settings.pwd_token_config.token_exp_seconds
+        # expiry_time = settings.pwd_token_config.token_exp_min
 
         # Option 2
         settings_service = context.server.get_service("settingsservice")
         settings = settings_service.get(context)
-        expiry_time = settings.pwd_token_config.token_exp_seconds
+        expiry_time = settings.pwd_token_config.token_exp_min
 
         # Option 3
-        # expiry_time = context.server.settings.pwd_token_config.token_exp_seconds
+        # expiry_time = context.server.settings.pwd_token_config.token_exp_min
 
         # Option 4
         # from ...server.service_registry import ServiceRegistry
         # settings = ServiceRegistry.get_service("settings").get(context=context)
-        # expiry_time = settings.pwd_token_config.token_exp_seconds
+        # expiry_time = settings.pwd_token_config.token_exp_min
 
         head = """<head>
             <style>
