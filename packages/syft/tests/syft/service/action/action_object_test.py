@@ -1001,7 +1001,7 @@ def test_actionobject_syft_getattr_float_history():
 
 
 @pytest.mark.skipif(
-    sys.platform != "linux",
+    sys.platform == "win32",
     reason="This is a hackish way to test attribute set/get, and it might fail on Windows or OSX",
 )
 def test_actionobject_syft_getattr_np(worker):

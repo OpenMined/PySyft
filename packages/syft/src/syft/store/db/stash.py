@@ -667,6 +667,11 @@ class ObjectStash(Generic[StashT]):
         }
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
+        if self.get_role(permission.credentials) in (
+            ServiceRole.ADMIN,
+            ServiceRole.DATA_OWNER,
+        ):
+            return True
         return self.has_permissions([permission])
 
     def has_storage_permission(self, permission: StoragePermission) -> bool:
