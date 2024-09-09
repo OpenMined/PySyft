@@ -449,28 +449,35 @@ class SyftWorkerPoolService(AbstractService):
             )
         else:
             # scale down at kubernetes control plane
+            
+
+            # scale down removes the last "n" workers
+            # workers to delete = len(workers) - number
+            workers = [
+                worker.resolve_with_context(context=context).unwrap()
+                for worker in worker_pool.worker_list
+            ]
+
+            
+            # get last "n" workers from pod list
             runner = KubernetesRunner()
+            k8s_pods = [pod.name for pod in runner.get_pool_pods(pool_name=worker_pool.name)]
+            k8s_pods_to_kill = k8s_pods[-(current_worker_count - number) :]
+            workers_to_delete = [worker for worker in workers if worker.name in k8s_pods_to_kill]
+            worker_service = cast(
+                WorkerService, context.server.get_service("WorkerService")
+            )
+
+            for worker in workers_to_delete:
+                worker_service.delete(context=context, uid=worker.id, force=True)
+
+            
             scale_kubernetes_pool(
                 runner,
                 pool_name=worker_pool.name,
                 replicas=number,
             ).unwrap()
 
-            # scale down removes the last "n" workers
-            # workers to delete = len(workers) - number
-            workers_to_delete = worker_pool.worker_list[
-                -(current_worker_count - number) :
-            ]
-
-            worker_stash = context.server.services.worker.stash
-            # delete linkedobj workers
-            for worker in workers_to_delete:
-                worker_stash.delete_by_uid(
-                    credentials=context.credentials,
-                    uid=worker.object_uid,
-                ).unwrap()
-
-            client_warning += "Scaling down workers doesn't kill the associated jobs. Please delete them manually."
 
             # update worker_pool
             worker_pool.max_count = number

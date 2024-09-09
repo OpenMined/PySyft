@@ -291,6 +291,7 @@ class ZMQConsumer(QueueConsumer):
                 credentials=self.worker_stash.partition.root_verify_key,
                 worker_uid=self.syft_worker_id,
                 consumer_state=consumer_state,
+                job_id=job_id,
             )
             if res.is_err():
                 logger.error(

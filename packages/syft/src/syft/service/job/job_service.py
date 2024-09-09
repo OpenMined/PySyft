@@ -162,10 +162,12 @@ class JobService(AbstractService):
                 results.append(res)
 
         # wait for job and subjobs to be killed by MonitorThread
-        wait_until(lambda: job.fetched_status == JobStatus.INTERRUPTED)
+        
+        wait_until(lambda: self.get(context, uid=job.id).status == JobStatus.INTERRUPTED)
+        subjob_uids = [subjob.id for subjob in self.get_subjobs(context, uid=job.id)]
         wait_until(
             lambda: all(
-                subjob.fetched_status == JobStatus.INTERRUPTED for subjob in job.subjobs
+                self.get(context, uid=subjob_id).status == JobStatus.INTERRUPTED for subjob_id in subjob_uids
             )
         )
 
