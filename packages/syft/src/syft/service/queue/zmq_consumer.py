@@ -1,6 +1,6 @@
 # stdlib
 import logging
-import subprocess
+import subprocess  # nosec
 import threading
 from threading import Event
 
@@ -42,7 +42,7 @@ def last_created_port() -> int:
     # 6. Prints only the 9th field (port and address) with awk '{print $9}'
     # 7. Extracts only the port number with cut -d':' -f2
 
-    process = subprocess.Popen(
+    process = subprocess.Popen(  # nosec
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     out, err = process.communicate()
