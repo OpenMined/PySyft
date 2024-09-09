@@ -20,8 +20,9 @@ class SyftImageRegistryStash(ObjectStash[SyftImageRegistry]):
         credentials: SyftVerifyKey,
         url: str,
     ) -> SyftImageRegistry | None:
-        return self.get_one_by_fields(
-            credentials=credentials, fields={"url": url}
+        return self.get_one(
+            credentials=credentials,
+            filters={"url": url},
         ).unwrap()
 
     @as_result(SyftException, StashException)

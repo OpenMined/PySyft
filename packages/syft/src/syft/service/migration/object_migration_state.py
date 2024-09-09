@@ -73,9 +73,9 @@ class SyftMigrationStateStash(ObjectStash[SyftObjectMigrationState]):
     def get_by_name(
         self, canonical_name: str, credentials: SyftVerifyKey
     ) -> SyftObjectMigrationState:
-        return self.get_one_by_fields(
+        return self.get_one(
             credentials=credentials,
-            fields={"canonical_name": canonical_name},
+            filters={"canonical_name": canonical_name},
         ).unwrap()
 
 

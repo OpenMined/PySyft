@@ -18,18 +18,16 @@ class RequestStash(ObjectStash[Request]):
         credentials: SyftVerifyKey,
         verify_key: SyftVerifyKey,
     ) -> list[Request]:
-        return self.get_all_by_field(
+        return self.get_all(
             credentials=credentials,
-            field_name="requesting_user_verify_key",
-            field_value=str(verify_key),
+            filters={"requesting_user_verify_key": verify_key},
         ).unwrap()
 
     @as_result(SyftException)
     def get_by_usercode_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> list[Request]:
-        return self.get_all_by_field(
+        return self.get_all(
             credentials=credentials,
-            field_name="code_id",
-            field_value=str(user_code_id),
+            filters={"code_id": user_code_id},
         ).unwrap()

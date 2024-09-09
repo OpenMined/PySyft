@@ -261,8 +261,9 @@ def test_basestash_query_one(
         base_stash.set(root_verify_key, obj)
 
     obj = random.choice(mock_objects)
-    result = base_stash.get_one_by_fields(
-        root_verify_key, fields={"name": obj.name}
+    result = base_stash.get_one(
+        root_verify_key,
+        filters={"name": obj.name},
     ).unwrap()
 
     assert result == obj
@@ -271,17 +272,24 @@ def test_basestash_query_one(
     random_name = create_unique(faker.name, existing_names)
 
     with pytest.raises(NotFoundException):
-        result = base_stash.get_one_by_fields(
-            root_verify_key, fields={"name": random_name}
+        result = base_stash.get_one(
+            root_verify_key,
+            filters={"name": random_name},
         ).unwrap()
 
     params = {"name": obj.name, "desc": obj.desc}
-    result = base_stash.get_one_by_fields(root_verify_key, fields=params).unwrap()
+    result = base_stash.get_one(
+        root_verify_key,
+        filters=params,
+    ).unwrap()
     assert result == obj
 
     params = {"name": random_name, "desc": random_sentence(faker)}
     with pytest.raises(NotFoundException):
-        result = base_stash.get_one_by_fields(root_verify_key, fields=params).unwrap()
+        result = base_stash.get_one(
+            root_verify_key,
+            filters=params,
+        ).unwrap()
 
 
 def test_basestash_query_all(
@@ -296,9 +304,7 @@ def test_basestash_query_all(
     for obj in all_objects:
         base_stash.set(root_verify_key, obj)
 
-    objects = base_stash.get_all_by_fields(
-        root_verify_key, fields={"desc": desc}
-    ).unwrap()
+    objects = base_stash.get_all(root_verify_key, filters={"desc": desc}).unwrap()
     assert len(objects) == n_same
     assert all(obj.desc == desc for obj in objects)
     original_object_values = {get_object_values(obj) for obj in similar_objects}
@@ -309,15 +315,15 @@ def test_basestash_query_all(
         random_sentence, [obj.desc for obj in all_objects], faker
     )
 
-    objects = base_stash.get_all_by_fields(
-        root_verify_key, fields={"desc": random_desc}
+    objects = base_stash.get_all(
+        root_verify_key, filters={"desc": random_desc}
     ).unwrap()
     assert len(objects) == 0
 
     obj = random.choice(similar_objects)
 
     params = {"name": obj.name, "desc": obj.desc}
-    objects = base_stash.get_all_by_fields(root_verify_key, fields=params).unwrap()
+    objects = base_stash.get_all(root_verify_key, filters=params).unwrap()
     assert len(objects) == sum(
         1 for obj_ in all_objects if (obj_.name, obj_.desc) == (obj.name, obj.desc)
     )
@@ -340,7 +346,7 @@ def test_basestash_query_all_kwargs_multiple_params(
         base_stash.set(root_verify_key, obj)
 
     params = {"importance": importance, "desc": desc}
-    objects = base_stash.get_all_by_fields(root_verify_key, fields=params).unwrap()
+    objects = base_stash.get_all(root_verify_key, filters=params).unwrap()
     assert len(objects) == n_same
     assert all(obj.desc == desc for obj in objects)
     original_object_values = {get_object_values(obj) for obj in similar_objects}
@@ -351,12 +357,12 @@ def test_basestash_query_all_kwargs_multiple_params(
         "name": create_unique(faker.name, [obj.name for obj in all_objects]),
         "desc": random_sentence(faker),
     }
-    objects = base_stash.get_all_by_fields(root_verify_key, fields=params).unwrap()
+    objects = base_stash.get_all(root_verify_key, filters=params).unwrap()
     assert len(objects) == 0
 
     obj = random.choice(similar_objects)
 
     params = {"id": obj.id, "name": obj.name, "desc": obj.desc}
-    objects = base_stash.get_all_by_fields(root_verify_key, fields=params).unwrap()
+    objects = base_stash.get_all(root_verify_key, filters=params).unwrap()
     assert len(objects) == 1
     assert objects[0] == obj

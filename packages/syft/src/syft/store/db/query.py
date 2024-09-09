@@ -1,6 +1,7 @@
 # stdlib
 from abc import ABC
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import Any
 from typing import Literal
 
@@ -26,6 +27,13 @@ from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from .sqlite_db import OBJECT_TYPE_TO_TABLE
+
+
+@dataclass
+class Filter:
+    field: str
+    operator: str
+    value: Any
 
 
 class Query(ABC):
@@ -113,34 +121,50 @@ class Query(ABC):
 
         return self
 
-    def order_by(self, field: str, order: Literal["asc", "desc"] = "asc") -> Self:
-        """Add an order by clause to the query.
+    def order_by(
+        self,
+        field: str | None = None,
+        order: Literal["asc", "desc"] | None = None,
+    ) -> Self:
+        """Add an order by clause to the query, with sensible defaults if field or order is not provided.
 
         Args:
-            field (str): field to order by.
-            order (Literal["asc", "desc"], optional): Order to use.
-                Defaults to "asc".
+            field (Optional[str]): field to order by. If None, uses the default field.
+            order (Optional[Literal["asc", "desc"]]): Order to use ("asc" or "desc").
+                Defaults to 'asc' if field is provided and order is not, or the default order otherwise.
 
         Raises:
             ValueError: If the order is not "asc" or "desc"
 
         Returns:
-            Self: The query object with the order by clause applied
+            Self: The query object with the order by clause applied.
         """
-        column = self._get_column(field)
+        # Determine the field and order defaults if not provided
+        if field is None:
+            if hasattr(self.object_type, "__order_by__"):
+                default_field, default_order = self.object_type.__order_by__
+            else:
+                default_field, default_order = "_created_at", "desc"
+            field = default_field
+        else:
+            # If field is provided but order is not, default to 'asc'
+            default_order = "asc"
+        order = order or default_order
 
+        column = self._get_column(field)
         if order.lower() == "asc":
             self.stmt = self.stmt.order_by(column)
         elif order.lower() == "desc":
             self.stmt = self.stmt.order_by(column.desc())
         else:
-            raise ValueError(f"Invalid sort order {order}")  # type: ignore
+            raise ValueError(f"Invalid sort order {order}")
 
         return self
 
-    def limit(self, limit: int) -> Self:
+    def limit(self, limit: int | None) -> Self:
         """Add a limit clause to the query."""
-        self.stmt = self.stmt.limit(limit)
+        if limit is not None:
+            self.stmt = self.stmt.limit(limit)
         return self
 
     def offset(self, offset: int) -> Self:
@@ -154,14 +178,6 @@ class Query(ABC):
         permission: ActionObjectPermission,
     ) -> sa.sql.elements.BinaryExpression:
         pass
-
-    def default_order(self) -> Self:
-        if hasattr(self.object_type, "__order_by__"):
-            field, order = self.object_type.__order_by__
-        else:
-            field, order = "_created_at", "desc"
-
-        return self.order_by(field, order)
 
     def _eq_filter(
         self,

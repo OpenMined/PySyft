@@ -19,18 +19,16 @@ class UserCodeStash(ObjectStash[UserCode]):
 
     @as_result(StashException, NotFoundException)
     def get_by_code_hash(self, credentials: SyftVerifyKey, code_hash: str) -> UserCode:
-        return self.get_one_by_field(
+        return self.get_one(
             credentials=credentials,
-            field_name="code_hash",
-            field_value=code_hash,
+            filters={"code_hash": code_hash},
         ).unwrap()
 
     @as_result(StashException)
     def get_by_service_func_name(
         self, credentials: SyftVerifyKey, service_func_name: str
     ) -> list[UserCode]:
-        return self.get_all_by_field(
+        return self.get_all(
             credentials=credentials,
-            field_name="service_func_name",
-            field_value=service_func_name,
+            filters={"service_func_name": service_func_name},
         ).unwrap()

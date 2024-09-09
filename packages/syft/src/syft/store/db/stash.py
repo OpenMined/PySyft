@@ -34,6 +34,7 @@ from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..document_store_errors import NotFoundException
 from ..document_store_errors import StashException
+from .query import Filter
 from .query import PostgresQuery
 from .query import Query
 from .query import SQLiteQuery
@@ -188,142 +189,6 @@ class ObjectStash(Generic[StashT]):
         elif self.db.engine.dialect.name == "postgresql":
             return table.c.fields[field_name].astext == json_value
 
-    def _get_by_fields(
-        self,
-        credentials: SyftVerifyKey,
-        fields: dict[str, str],
-        table: Table | None = None,
-        order_by: str | None = None,
-        sort_order: str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        has_permission: bool = False,
-    ) -> sa.Result:
-        query = self.query()
-        for field_name, field_value in fields.items():
-            query = query.filter(field_name, "==", field_value)
-
-        if not has_permission:
-            role = self.get_role(credentials)
-            query = query.with_permissions(credentials, role)
-
-        if order_by and sort_order:
-            query = query.order_by(order_by, sort_order)
-        else:
-            query = query.default_order()
-
-        if limit:
-            query = query.limit(limit)
-        if offset:
-            query = query.offset(offset)
-
-        return query.execute(self.session)
-
-    @as_result(SyftException, StashException, NotFoundException)
-    def get_one_by_field(
-        self,
-        credentials: SyftVerifyKey,
-        field_name: str,
-        field_value: str,
-        has_permission: bool = False,
-    ) -> StashT:
-        return self.get_one_by_fields(
-            credentials=credentials,
-            fields={field_name: field_value},
-            has_permission=has_permission,
-        ).unwrap()
-
-    @as_result(SyftException, StashException, NotFoundException)
-    def get_one_by_fields(
-        self,
-        credentials: SyftVerifyKey,
-        fields: dict[str, str],
-        has_permission: bool = False,
-    ) -> StashT:
-        result = self._get_by_fields(
-            credentials=credentials,
-            fields=fields,
-            has_permission=has_permission,
-        ).first()
-        if result is None:
-            raise NotFoundException(f"{self.object_type.__name__}: not found")
-        return self.row_as_obj(result)
-
-    @as_result(SyftException, StashException, NotFoundException)
-    def get_all_by_fields(
-        self,
-        credentials: SyftVerifyKey,
-        fields: dict[str, str],
-        order_by: str | None = None,
-        sort_order: str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        has_permission: bool = False,
-    ) -> list[StashT]:
-        result = self._get_by_fields(
-            credentials=credentials,
-            fields=fields,
-            order_by=order_by,
-            sort_order=sort_order,
-            limit=limit,
-            offset=offset,
-            has_permission=has_permission,
-        ).all()
-
-        return [self.row_as_obj(row) for row in result]
-
-    @as_result(SyftException, StashException, NotFoundException)
-    def get_all_by_field(
-        self,
-        credentials: SyftVerifyKey,
-        field_name: str,
-        field_value: str,
-        order_by: str | None = None,
-        sort_order: str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        has_permission: bool = False,
-    ) -> list[StashT]:
-        return self.get_all_by_fields(
-            credentials=credentials,
-            fields={field_name: field_value},
-            order_by=order_by,
-            sort_order=sort_order,
-            limit=limit,
-            offset=offset,
-            has_permission=has_permission,
-        ).unwrap()
-
-    @as_result(SyftException, StashException, NotFoundException)
-    def get_all_contains(
-        self,
-        credentials: SyftVerifyKey,
-        field_name: str,
-        field_value: str,
-        order_by: str | None = None,
-        sort_order: str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        has_permission: bool = False,
-    ) -> list[StashT]:
-        query = self.query().filter(field_name, "contains", field_value)
-
-        if not has_permission:
-            role = self.get_role(credentials)
-            query = query.with_permissions(credentials, role)
-
-        if order_by and sort_order:
-            query = query.order_by(order_by, sort_order)
-        else:
-            query = query.default_order()
-
-        if limit:
-            query = query.limit(limit)
-        if offset:
-            query = query.offset(offset)
-
-        return query.execute(self.session).all()
-
     @as_result(SyftException, StashException, NotFoundException)
     def get_index(
         self, credentials: SyftVerifyKey, index: int, has_permission: bool = False
@@ -445,30 +310,6 @@ class ObjectStash(Generic[StashT]):
             )
         )
         return stmt
-
-    @as_result(StashException)
-    def get_all(
-        self,
-        credentials: SyftVerifyKey,
-        has_permission: bool = False,
-        order_by: str | None = None,
-        sort_order: str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> list[StashT]:
-        stmt = self.table.select()
-
-        stmt = self._apply_permission_filter(
-            stmt,
-            credentials=credentials,
-            has_permission=has_permission,
-            permission=ActionPermission.READ,
-        )
-        stmt = self._apply_order_by(stmt, order_by, sort_order)
-        stmt = self._apply_limit_offset(stmt, limit, offset)
-
-        result = self.session.execute(stmt).all()
-        return [self.row_as_obj(row) for row in result]
 
     @as_result(StashException, NotFoundException)
     def update(
@@ -784,3 +625,54 @@ class ObjectStash(Generic[StashT]):
         self.session.execute(stmt)
         self.session.commit()
         return self.get_by_uid(credentials, uid).unwrap()
+
+    @as_result(StashException)
+    def get_one(
+        self,
+        credentials: SyftVerifyKey,
+        filters: dict[str, Any] | None = None,
+        has_permission: bool = False,
+        order_by: str | None = None,
+        sort_order: str | None = None,
+        offset: int = 0,
+    ) -> StashT:
+        result = self.get_all(
+            credentials=credentials,
+            filters=filters,
+            has_permission=has_permission,
+            order_by=order_by,
+            sort_order=sort_order,
+            limit=1,
+            offset=offset,
+        ).unwrap()
+        if len(result) == 0:
+            raise NotFoundException(f"{self.object_type.__name__}: not found")
+        return result[0]
+
+    @as_result(StashException)
+    def get_all(
+        self,
+        credentials: SyftVerifyKey,
+        filters: dict[str, Any] | None = None,
+        has_permission: bool = False,
+        order_by: str | None = None,
+        sort_order: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[StashT]:
+        query = self.query()
+
+        if not has_permission:
+            role = self.get_role(credentials)
+            query = query.with_permissions(credentials, role)
+
+        if filters:
+            for field_name, field_value in filters.items():
+                if isinstance(field_value, Filter):
+                    query = query.filter(field_name, field_value.op, field_value.value)
+                query = query.filter(field_name, "==", field_value)
+
+        query = query.order_by(order_by, sort_order).limit(limit).offset(offset)
+        result = query.execute(self.session).all()
+
+        return [self.row_as_obj(row) for row in result]

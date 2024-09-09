@@ -24,9 +24,9 @@ from .data_subject_member_service import DataSubjectMemberService
 class DataSubjectStash(ObjectStash[DataSubject]):
     @as_result(StashException)
     def get_by_name(self, credentials: SyftVerifyKey, name: str) -> DataSubject:
-        return self.get_one_by_fields(
+        return self.get_one(
             credentials=credentials,
-            fields={"name": name},
+            filters={"name": name},
         ).unwrap()
 
     @as_result(StashException)
