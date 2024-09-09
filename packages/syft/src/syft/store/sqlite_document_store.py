@@ -263,7 +263,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
         cursor = self._execute(select_sql, []).unwrap()
         rows = cursor.fetchall()  # type: ignore
-        if rows is None:
+        if not rows:
             return {}
 
         for row in rows:
@@ -276,7 +276,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
         cursor = self._execute(select_sql, []).unwrap()
         rows = cursor.fetchall()  # type: ignore
-        if rows is None:
+        if not rows:
             return []
 
         keys = [UID(row[0]) for row in rows]
