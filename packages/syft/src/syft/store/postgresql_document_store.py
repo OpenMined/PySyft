@@ -13,9 +13,12 @@ from pydantic import Field
 from typing_extensions import Self
 
 # relative
+from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
+from ..serde.serialize import _serialize
 from ..types.errors import SyftException
 from ..types.result import as_result
+from ..types.uid import UID
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
@@ -26,12 +29,12 @@ from .locks import NoLockingConfig
 from .locks import SyftLock
 from .sqlite_document_store import SQLiteBackingStore
 from .sqlite_document_store import SQLiteStorePartition
+from .sqlite_document_store import _repr_debug_
 from .sqlite_document_store import cache_key
 from .sqlite_document_store import special_exception_public_message
 
 logger = logging.getLogger(__name__)
 _CONNECTION_POOL_DB: dict[str, Connection] = {}
-_CONNECTION_POOL_CUR: dict[str, Cursor] = {}
 REF_COUNTS: dict[str, int] = defaultdict(int)
 
 
@@ -130,10 +133,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
 
     @property
     def cur(self) -> Cursor:
-        if cache_key(self.store_config_hash) not in _CONNECTION_POOL_CUR:
-            _CONNECTION_POOL_CUR[cache_key(self.dbname)] = self.db.cursor()
-
-        return _CONNECTION_POOL_CUR[cache_key(self.dbname)]
+        return self.db.cursor()
 
     def _close(self) -> None:
         self._commit()
@@ -143,35 +143,153 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
             # same connection
 
             self.db.close()
-            db_key = cache_key(self.store_config_hash)
-            if db_key in _CONNECTION_POOL_CUR:
-                # NOTE if we don't remove the cursor, the cursor cache_key can clash with a future thread id
-                del _CONNECTION_POOL_CUR[db_key]
             del _CONNECTION_POOL_DB[cache_key(self.store_config_hash)]
         else:
             # don't close yet because another SQLiteBackingStore is probably still open
             pass
 
+    @staticmethod
     @as_result(SyftException)
-    def _execute(self, sql: str, args: list[Any] | None) -> psycopg.Cursor:
-        with self.lock:
-            cursor: psycopg.Cursor | None = None
-            try:
-                # Ensure self.cur is a psycopg cursor object
-                cursor = self.cur  # Assuming self.cur is already set as psycopg.Cursor
-                cursor.execute(sql, args)  # Execute the SQL with arguments
-                self.db.commit()  # Commit if everything went ok
-            except InFailedSqlTransaction as ie:
-                self.db.rollback()  # Rollback if something went wrong
-                raise SyftException(
-                    public_message=f"Transaction `{sql}` failed and was rolled back. \n"
-                    f"Error: {ie}."
-                )
-            except Exception as e:
-                self.db.rollback()  # Rollback on any other exception to maintain clean state
-                public_message = special_exception_public_message(self.table_name, e)
-                raise SyftException.from_exception(e, public_message=public_message)
-            return cursor
+    def _execute(
+        lock: SyftLock,
+        cursor: Cursor,
+        db: Connection,
+        table_name: str,
+        sql: str,
+        args: list[Any] | None,
+    ) -> Cursor:
+        try:
+            cursor.execute(sql, args)  # Execute the SQL with arguments
+            db.commit()  # Commit if everything went ok
+        except InFailedSqlTransaction as ie:
+            db.rollback()  # Rollback if something went wrong
+            raise SyftException(
+                public_message=f"Transaction `{sql}` failed and was rolled back. \n"
+                f"Error: {ie}."
+            )
+        except Exception as e:
+            logger.debug(f"Rolling back SQL: {sql} with args: {args}")
+            db.rollback()  # Rollback on any other exception to maintain clean state
+            public_message = special_exception_public_message(table_name, e)
+            logger.error(public_message)
+            raise SyftException.from_exception(e, public_message=public_message)
+        return cursor
+
+    def _set(self, key: UID, value: Any) -> None:
+        if self._exists(key):
+            self._update(key, value)
+        else:
+            insert_sql = (
+                f"insert into {self.table_name} (uid, repr, value) VALUES "  # nosec
+                f"({self.subs_char}, {self.subs_char}, {self.subs_char})"  # nosec
+            )
+            data = _serialize(value, to_bytes=True)
+            with self.cur as cur:
+                self._execute(
+                    self.lock,
+                    cur,
+                    self.db,
+                    self.table_name,
+                    insert_sql,
+                    [str(key), _repr_debug_(value), data],
+                ).unwrap()
+
+    def _update(self, key: UID, value: Any) -> None:
+        insert_sql = (
+            f"update {self.table_name} set uid = {self.subs_char}, "  # nosec
+            f"repr = {self.subs_char}, value = {self.subs_char} "  # nosec
+            f"where uid = {self.subs_char}"  # nosec
+        )
+        data = _serialize(value, to_bytes=True)
+        with self.cur as cur:
+            self._execute(
+                self.lock,
+                cur,
+                self.db,
+                self.table_name,
+                insert_sql,
+                [str(key), _repr_debug_(value), data, str(key)],
+            ).unwrap()
+
+    def _get(self, key: UID) -> Any:
+        select_sql = (
+            f"select * from {self.table_name} where uid = {self.subs_char} "  # nosec
+            "order by sqltime"
+        )
+        with self.cur as cur:
+            cursor = self._execute(
+                self.lock, cur, self.db, self.table_name, select_sql, [str(key)]
+            ).unwrap(public_message=f"Query {select_sql} failed")
+            row = cursor.fetchone()
+        if row is None or len(row) == 0:
+            raise KeyError(f"{key} not in {type(self)}")
+        data = row[2]
+        return _deserialize(data, from_bytes=True)
+
+    def _exists(self, key: UID) -> bool:
+        select_sql = f"select uid from {self.table_name} where uid = {self.subs_char}"  # nosec
+        row = None
+        with self.cur as cur:
+            cursor = self._execute(
+                self.lock, cur, self.db, self.table_name, select_sql, [str(key)]
+            ).unwrap()
+            row = cursor.fetchone()  # type: ignore
+        if row is None:
+            return False
+        return bool(row)
+
+    def _get_all(self) -> Any:
+        select_sql = f"select * from {self.table_name} order by sqltime"  # nosec
+        keys = []
+        data = []
+        with self.cur as cur:
+            cursor = self._execute(
+                self.lock, cur, self.db, self.table_name, select_sql, []
+            ).unwrap()
+            rows = cursor.fetchall()  # type: ignore
+            if not rows:
+                return {}
+
+        for row in rows:
+            keys.append(UID(row[0]))
+            data.append(_deserialize(row[2], from_bytes=True))
+
+        return dict(zip(keys, data))
+
+    def _get_all_keys(self) -> Any:
+        select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
+        with self.cur as cur:
+            cursor = self._execute(
+                self.lock, cur, self.db, self.table_name, select_sql, []
+            ).unwrap()
+            rows = cursor.fetchall()  # type: ignore
+        if not rows:
+            return []
+        keys = [UID(row[0]) for row in rows]
+        return keys
+
+    def _delete(self, key: UID) -> None:
+        select_sql = f"delete from {self.table_name} where uid = {self.subs_char}"  # nosec
+        with self.cur as cur:
+            self._execute(
+                self.lock, cur, self.db, self.table_name, select_sql, [str(key)]
+            ).unwrap()
+
+    def _delete_all(self) -> None:
+        select_sql = f"delete from {self.table_name}"  # nosec
+        with self.cur as cur:
+            self._execute(
+                self.lock, cur, self.db, self.table_name, select_sql, []
+            ).unwrap()
+
+    def _len(self) -> int:
+        select_sql = f"select count(uid) from {self.table_name}"  # nosec
+        with self.cur as cur:
+            cursor = self._execute(
+                self.lock, cur, self.db, self.table_name, select_sql, []
+            ).unwrap()
+            cnt = cursor.fetchone()[0]
+        return cnt
 
 
 @serializable()

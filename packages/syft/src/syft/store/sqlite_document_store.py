@@ -7,6 +7,8 @@ from copy import deepcopy
 import logging
 from pathlib import Path
 import sqlite3
+from sqlite3 import Connection
+from sqlite3 import Cursor
 import tempfile
 from typing import Any
 
@@ -40,8 +42,8 @@ logger = logging.getLogger(__name__)
 # by its filename and optionally the thread that its running in
 # we keep track of each SQLiteBackingStore init in REF_COUNTS
 # when it hits 0 we can close the connection and release the file descriptor
-SQLITE_CONNECTION_POOL_DB: dict[str, sqlite3.Connection] = {}
-SQLITE_CONNECTION_POOL_CUR: dict[str, sqlite3.Cursor] = {}
+SQLITE_CONNECTION_POOL_DB: dict[str, Connection] = {}
+SQLITE_CONNECTION_POOL_CUR: dict[str, Cursor] = {}
 REF_COUNTS: dict[str, int] = defaultdict(int)
 
 
@@ -160,13 +162,13 @@ class SQLiteBackingStore(KeyValueBackingStore):
             raise SyftException.from_exception(e, public_message=public_message)
 
     @property
-    def db(self) -> sqlite3.Connection:
+    def db(self) -> Connection:
         if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_DB:
             self._connect()
         return SQLITE_CONNECTION_POOL_DB[cache_key(self.db_filename)]
 
     @property
-    def cur(self) -> sqlite3.Cursor:
+    def cur(self) -> Cursor:
         if cache_key(self.db_filename) not in SQLITE_CONNECTION_POOL_CUR:
             SQLITE_CONNECTION_POOL_CUR[cache_key(self.db_filename)] = self.db.cursor()
 
@@ -192,15 +194,22 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _commit(self) -> None:
         self.db.commit()
 
+    @staticmethod
     @as_result(SyftException)
-    def _execute(self, sql: str, args: list[Any] | None) -> sqlite3.Cursor:
-        with self.lock:
-            cursor: sqlite3.Cursor | None = None
-            # err = None
+    def _execute(
+        lock: SyftLock,
+        cursor: Cursor,
+        db: Connection,
+        table_name: str,
+        sql: str,
+        args: list[Any] | None,
+    ) -> Cursor:
+        with lock:
+            cur: Cursor | None = None
             try:
-                cursor = self.cur.execute(sql, args)
+                cur = cursor.execute(sql, args)
             except Exception as e:
-                public_message = special_exception_public_message(self.table_name, e)
+                public_message = special_exception_public_message(table_name, e)
                 raise SyftException.from_exception(e, public_message=public_message)
 
             # TODO: Which exception is safe to rollback on
@@ -208,8 +217,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
             # rather than halting the program like disk I/O error etc
             # self.db.rollback()  # Roll back all changes if an exception occurs.
             # err = Err(str(e))
-            self.db.commit()  # Commit if everything went ok
-            return cursor
+            db.commit()  # Commit if everything went ok
+            return cur
 
     def _set(self, key: UID, value: Any) -> None:
         if self._exists(key):
@@ -220,7 +229,14 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 f"({self.subs_char}, {self.subs_char}, {self.subs_char})"  # nosec
             )
             data = _serialize(value, to_bytes=True)
-            self._execute(insert_sql, [str(key), _repr_debug_(value), data]).unwrap()
+            self._execute(
+                self.lock,
+                self.cur,
+                self.db,
+                self.table_name,
+                insert_sql,
+                [str(key), _repr_debug_(value), data],
+            ).unwrap()
 
     def _update(self, key: UID, value: Any) -> None:
         insert_sql = (
@@ -230,7 +246,12 @@ class SQLiteBackingStore(KeyValueBackingStore):
         )
         data = _serialize(value, to_bytes=True)
         self._execute(
-            insert_sql, [str(key), _repr_debug_(value), data, str(key)]
+            self.lock,
+            self.cur,
+            self.db,
+            self.table_name,
+            insert_sql,
+            [str(key), _repr_debug_(value), data, str(key)],
         ).unwrap()
 
     def _get(self, key: UID) -> Any:
@@ -238,9 +259,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
             f"select * from {self.table_name} where uid = {self.subs_char} "  # nosec
             "order by sqltime"
         )
-        cursor = self._execute(select_sql, [str(key)]).unwrap(
-            public_message=f"Query {select_sql} failed"
-        )
+        cursor = self._execute(
+            self.lock, self.cur, self.db, self.table_name, select_sql, [str(key)]
+        ).unwrap(public_message=f"Query {select_sql} failed")
         row = cursor.fetchone()
         if row is None or len(row) == 0:
             raise KeyError(f"{key} not in {type(self)}")
@@ -249,7 +270,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _exists(self, key: UID) -> bool:
         select_sql = f"select uid from {self.table_name} where uid = {self.subs_char}"  # nosec
-        cursor = self._execute(select_sql, [str(key)]).unwrap()
+        cursor = self._execute(
+            self.lock, self.cur, self.db, self.table_name, select_sql, [str(key)]
+        ).unwrap()
         row = cursor.fetchone()  # type: ignore
         if row is None:
             return False
@@ -261,7 +284,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
         keys = []
         data = []
 
-        cursor = self._execute(select_sql, []).unwrap()
+        cursor = self._execute(
+            self.lock, self.cur, self.db, self.table_name, select_sql, []
+        ).unwrap()
         rows = cursor.fetchall()  # type: ignore
         if not rows:
             return {}
@@ -274,7 +299,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _get_all_keys(self) -> Any:
         select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
 
-        cursor = self._execute(select_sql, []).unwrap()
+        cursor = self._execute(
+            self.lock, self.cur, self.db, self.table_name, select_sql, []
+        ).unwrap()
         rows = cursor.fetchall()  # type: ignore
         if not rows:
             return []
@@ -284,15 +311,21 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _delete(self, key: UID) -> None:
         select_sql = f"delete from {self.table_name} where uid = {self.subs_char}"  # nosec
-        self._execute(select_sql, [str(key)]).unwrap()
+        self._execute(
+            self.lock, self.cur, self.db, self.table_name, select_sql, [str(key)]
+        ).unwrap()
 
     def _delete_all(self) -> None:
         select_sql = f"delete from {self.table_name}"  # nosec
-        self._execute(select_sql, []).unwrap()
+        self._execute(
+            self.lock, self.cur, self.db, self.table_name, select_sql, []
+        ).unwrap()
 
     def _len(self) -> int:
         select_sql = f"select count(uid) from {self.table_name}"  # nosec
-        cursor = self._execute(select_sql, []).unwrap()
+        cursor = self._execute(
+            self.lock, self.cur, self.db, self.table_name, select_sql, []
+        ).unwrap()
         cnt = cursor.fetchone()[0]
         return cnt
 
