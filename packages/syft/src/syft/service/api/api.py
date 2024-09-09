@@ -223,7 +223,7 @@ class Endpoint(SyftObject):
 
         helper_function_set = HelperFunctionSet(helper_function_dict)
 
-        user = context.service.services.user.get_current_user(context)
+        user = context.server.services.user.get_current_user(context)
 
         return TwinAPIAuthedContext(
             credentials=context.credentials,
