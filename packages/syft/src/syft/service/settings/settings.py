@@ -23,8 +23,10 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SYFT_OBJECT_VERSION_4
 from ...types.syft_object import SYFT_OBJECT_VERSION_5
 from ...types.syft_object import SyftObject
+from ...types.transforms import TransformContext
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
+from ...types.transforms import rename
 from ...types.uid import UID
 from ...util.misc_objs import HTMLObject
 from ...util.misc_objs import MarkdownDescription
@@ -147,7 +149,7 @@ class ServerSettingsUpdateV4(PartialSyftObject):
 @serializable()
 class ServerSettingsUpdate(PartialSyftObject):
     __canonical_name__ = "ServerSettingsUpdate"
-    __version__ = SYFT_OBJECT_VERSION_4
+    __version__ = SYFT_OBJECT_VERSION_5
     id: UID
     name: str
     organization: str
@@ -387,6 +389,39 @@ class ServerSettings(SyftObject):
             """
 
 
+# Helper functions for nested migrations
+
+
+# Write a transoform function that will take PwdTokenResetConfigV1 and convert it to PwdTokenResetConfig
+# Note that one key will change, token_exp_min to token_exp_seconds
+def convert_pwdv1_to_pwd(context: TransformContext) -> TransformContext:
+    if context.output and "pwd_token_config" in context.output:
+        pwd_token_config = context.output["pwd_token_config"]
+        if isinstance(pwd_token_config, PwdTokenResetConfigV1):
+            context.output["pwd_token_config"] = PwdTokenResetConfig(
+                ascii=pwd_token_config.ascii,
+                numbers=pwd_token_config.numbers,
+                token_len=pwd_token_config.token_len,
+                token_exp_seconds=pwd_token_config.token_exp_min * 60,
+            )
+    return context
+
+
+# Write a transform function that will take PwdTokenResetConfig and convert it to PwdTokenResetConfigV1
+# Note that one key will change, token_exp_seconds to token_exp_min
+def convert_pwd_to_pwdv1(context: TransformContext) -> TransformContext:
+    if context.output and "pwd_token_config" in context.output:
+        pwd_token_config = context.output["pwd_token_config"]
+        if isinstance(pwd_token_config, PwdTokenResetConfig):
+            context.output["pwd_token_config"] = PwdTokenResetConfigV1(
+                ascii=pwd_token_config.ascii,
+                numbers=pwd_token_config.numbers,
+                token_len=pwd_token_config.token_len,
+                token_exp_min=pwd_token_config.token_exp_seconds // 60,
+            )
+    return context
+
+
 # Server Settings Migration
 
 
@@ -408,10 +443,7 @@ def migrate_server_settings_v3_to_v4() -> list[Callable]:
 
 @migrate(ServerSettingsV4, ServerSettings)
 def migrate_server_settings_v4_to_current() -> list[Callable]:
-    return [
-        drop(["pwd_token_config"]),
-        make_set_default("pwd_token_config", PwdTokenResetConfigV1()),
-    ]
+    return [convert_pwdv1_to_pwd]
 
 
 # drop
@@ -436,10 +468,7 @@ def migrate_server_settings_v4_to_v3() -> list[Callable]:
 @migrate(ServerSettings, ServerSettingsV4)
 def migrate_server_settings_current_to_v4() -> list[Callable]:
     # Use drop function on "notifications_enabled" attrubute
-    return [
-        drop(["pwd_token_config"]),
-        make_set_default("pwd_token_config", PwdTokenResetConfig()),
-    ]
+    return [convert_pwd_to_pwdv1]
 
 
 # Server Settings Update Migration
@@ -463,10 +492,7 @@ def migrate_server_settings_update_v3_to_v4() -> list[Callable]:
 
 @migrate(ServerSettingsUpdateV4, ServerSettingsUpdate)
 def migrate_server_settings_update_v4_to_current() -> list[Callable]:
-    return [
-        drop(["pwd_token_config"]),
-        make_set_default("pwd_token_config", PwdTokenResetConfigV1()),
-    ]
+    return [convert_pwdv1_to_pwd]
 
 
 # drop
@@ -487,10 +513,7 @@ def migrate_server_settings_update_v4_to_v3() -> list[Callable]:
 
 @migrate(ServerSettingsUpdate, ServerSettingsUpdateV4)
 def migrate_server_settings_update_current_to_v4() -> list[Callable]:
-    return [
-        drop(["pwd_token_config"]),
-        make_set_default("pwd_token_config", PwdTokenResetConfig()),
-    ]
+    return [convert_pwd_to_pwdv1]
 
 
 # PwdTokenResetConfig Migration
@@ -499,10 +522,13 @@ def migrate_server_settings_update_current_to_v4() -> list[Callable]:
 # set seconds and drop mins
 @migrate(PwdTokenResetConfigV1, PwdTokenResetConfig)
 def migrate_pwd_token_reset_config_v1_to_current() -> list[Callable]:
-    return [make_set_default("token_exp_seconds", 1800), drop(["token_exp_min"])]
+    # use rename method from transforms.py to change token_exp_min to token_exp_seconds
+    return [rename("token_exp_min", "token_exp_seconds")]
 
 
 # drop seconds and add mins
 @migrate(PwdTokenResetConfig, PwdTokenResetConfigV1)
 def migrate_pwd_token_reset_config_current_to_v1() -> list[Callable]:
-    return [drop(["token_exp_seconds"]), make_set_default("token_exp_min", 30)]
+    # use rename method from transforms.py to change token_exp_seconds to token_exp_min
+    return [rename("token_exp_seconds", "token_exp_min")]
+    # return [drop(["token_exp_seconds"]), make_set_default("token_exp_min", 30)]
