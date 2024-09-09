@@ -100,9 +100,8 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
                 host=self.store_config.client_config.host,
                 port=self.store_config.client_config.port,
             )
-
             print(f"Connected to {self.store_config.client_config.dbname}")
-            print("PostgreSQL database connection:", connection._check_connection_ok())
+            print("PostgreSQL database connection:", connection)
 
             _CONNECTION_POOL_DB[cache_key(self.dbname)] = connection
 
@@ -161,17 +160,17 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
                 # Ensure self.cur is a psycopg cursor object
                 cursor = self.cur  # Assuming self.cur is already set as psycopg.Cursor
                 cursor.execute(sql, args)  # Execute the SQL with arguments
-                # cursor = self.cur.execute(sql, args)
-            except InFailedSqlTransaction:
+                self.db.commit()  # Commit if everything went ok
+            except InFailedSqlTransaction as ie:
                 self.db.rollback()  # Rollback if something went wrong
                 raise SyftException(
-                    public_message=f"Transaction {sql} failed and was rolled back."
+                    public_message=f"Transaction `{sql}` failed and was rolled back. \n"
+                    f"Error: {ie}."
                 )
             except Exception as e:
                 self.db.rollback()  # Rollback on any other exception to maintain clean state
                 public_message = special_exception_public_message(self.table_name, e)
                 raise SyftException.from_exception(e, public_message=public_message)
-            self.db.commit()  # Commit if everything went ok
             return cursor
 
 

@@ -1,3 +1,6 @@
+# stdlib
+from pprint import pprint
+
 # syft absolute
 from syft.abstract_server import ServerType
 from syft.server.datasite import Datasite
@@ -93,7 +96,7 @@ store_config = (
 )
 
 print("----------------------------Store Config----------------------------\n")
-print(store_config.model_dump())
+pprint(store_config.model_dump())
 print("\n----------------------------Store Config----------------------------")
 blob_storage_config = None if single_container_mode else seaweedfs_config()
 queue_config = queue_config()
