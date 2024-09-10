@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Generic
+from typing import Set  # noqa: UP035
 from typing import cast
 from typing import get_args
 
@@ -604,7 +605,7 @@ class ObjectStash(Generic[StashT]):
         return result is not None
 
     @as_result(StashException)
-    def _get_permissions_for_uid(self, uid: UID) -> set[str]:
+    def _get_permissions_for_uid(self, uid: UID) -> Set[str]:  # noqa: UP006
         stmt = select(self.table.c.permissions).where(self.table.c.id == uid)
         result = self.session.execute(stmt).scalar_one_or_none()
         if result is None:
@@ -612,7 +613,7 @@ class ObjectStash(Generic[StashT]):
         return set(result)
 
     @as_result(StashException)
-    def get_all_permissions(self) -> dict[UID, set[str]]:
+    def get_all_permissions(self) -> dict[UID, Set[str]]:  # noqa: UP006
         stmt = select(self.table.c.id, self.table.c.permissions)
         results = self.session.execute(stmt).all()
         return {UID(row.id): set(row.permissions) for row in results}
@@ -622,7 +623,7 @@ class ObjectStash(Generic[StashT]):
         return self.has_storage_permissions([permission])
 
     @as_result(StashException)
-    def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
+    def get_all_storage_permissions(self) -> dict[UID, Set[UID]]:  # noqa: UP006
         stmt = select(self.table.c.id, self.table.c.storage_permissions)
         results = self.session.execute(stmt).all()
 
@@ -697,7 +698,7 @@ class ObjectStash(Generic[StashT]):
         return None
 
     @as_result(StashException)
-    def _get_storage_permissions_for_uid(self, uid: UID) -> set[UID]:
+    def _get_storage_permissions_for_uid(self, uid: UID) -> Set[UID]:  # noqa: UP006
         stmt = select(self.table.c.id, self.table.c.storage_permissions).where(
             self.table.c.id == uid
         )
