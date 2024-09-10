@@ -212,6 +212,13 @@ def create_job_funcname_xss(user: TestUser) -> TestJob:
     return job
 
 
+def get_request_for_job_info(requests, job):
+    job_requests = [r for r in requests if r.code.service_func_name == job.func_name]
+    if len(job_requests) != 1:
+        raise Exception(f"Too many or too few requests: {job} in requests: {requests}")
+    return job_requests[0]
+
+
 def create_job_query_xss(user: TestUser) -> TestJob:
     job_type = "job_query_xss"
     func_name = f"{job_type}_{secrets.token_hex(3)}"
@@ -299,6 +306,29 @@ def extract_code_path(response) -> str | None:
         extracted_code = match.group(1)
         return extracted_code
     return None
+
+
+def approve_by_running(request):
+    job = request.code(blocking=False)
+    result = job.wait()
+    print("got result of type", type(result), "bool", bool(result))
+    # got result of type <class 'syft.service.action.pandas.PandasDataFrameObject'> bool False
+    # assert result won't work unless we know what type is coming back
+    job_info = job.info(result=True)
+    # need force when running multiple times
+    # todo check and dont run if its already done
+    response = request.deposit_result(job_info, approve=True, force=True)
+    return response
+
+
+def get_job_emails(jobs, client, email_server):
+    all_requests = client.requests
+    res = {}
+    for job in jobs:
+        request = get_request_for_job_info(all_requests, job)
+        emails = email_server.get_emails_for_user(request.requesting_user_email)
+        res[request.requesting_user_email] = emails
+    return res
 
 
 def resolve_request(request):

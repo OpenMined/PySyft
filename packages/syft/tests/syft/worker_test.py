@@ -23,7 +23,6 @@ from syft.service.response import SyftError
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
-from syft.service.user.user_service import UserService
 from syft.types.errors import SyftException
 from syft.types.result import Ok
 from syft.types.uid import UID
@@ -133,7 +132,7 @@ def test_user_transform() -> None:
 
 def test_user_service(worker) -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    user_service = worker.get_service(UserService)
+    user_service = worker.services.user
 
     # create a user
     new_user = UserCreate(

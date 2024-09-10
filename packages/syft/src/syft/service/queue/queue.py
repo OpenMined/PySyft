@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 import logging
 from multiprocessing import Process
 import threading
@@ -39,6 +40,13 @@ from .queue_stash import QueueItem
 from .queue_stash import Status
 
 logger = logging.getLogger(__name__)
+
+
+@serializable(canonical_name="WorkerType", version=1)
+class ConsumerType(str, Enum):
+    Thread = "thread"
+    Process = "process"
+    Synchronous = "synchronous"
 
 
 class MonitorThread(threading.Thread):
@@ -325,17 +333,17 @@ class APICallMessageHandler(AbstractMessageHandler):
         logger.info(
             f"Handling queue item: id={queue_item.id}, method={queue_item.method} "
             f"args={queue_item.args}, kwargs={queue_item.kwargs} "
-            f"service={queue_item.service}, as_thread={queue_config.thread_workers}"
+            f"service={queue_item.service}, as={queue_config.consumer_type}"
         )
 
-        if queue_config.thread_workers:
+        if queue_config.consumer_type == ConsumerType.Thread:
             thread = Thread(
                 target=handle_message_multiprocessing,
                 args=(worker_settings, queue_item, credentials),
             )
             thread.start()
             thread.join()
-        else:
+        elif queue_config.consumer_type == ConsumerType.Process:
             # if psutil.pid_exists(job_item.job_pid):
             #     psutil.Process(job_item.job_pid).terminate()
             process = Process(
@@ -346,3 +354,5 @@ class APICallMessageHandler(AbstractMessageHandler):
             job_item.job_pid = process.pid
             worker.job_stash.set_result(credentials, job_item).unwrap()
             process.join()
+        elif queue_config.consumer_type == ConsumerType.Synchronous:
+            handle_message_multiprocessing(worker_settings, queue_item, credentials)

@@ -9,6 +9,7 @@ from .types.uid import UID
 
 if TYPE_CHECKING:
     # relative
+    from .server.service_registry import ServiceRegistry
     from .service.service import AbstractService
 
 
@@ -39,6 +40,7 @@ class AbstractServer:
     server_type: ServerType | None
     server_side_type: ServerSideType | None
     in_memory_workers: bool
+    services: "ServiceRegistry"
 
     def get_service(self, path_or_func: str | Callable) -> "AbstractService":
         raise NotImplementedError

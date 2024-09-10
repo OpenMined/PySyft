@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from dataclasses import field
 import json
 import re
+import time
 from typing import Any
 
 # third party
@@ -144,6 +145,10 @@ class TestUser:
             return None
         return self.to_dict()[key]
 
+    def update_password(self):
+        self.password = self.new_password
+        self.new_password = None
+
     @property
     def emails(self) -> list[Email]:
         if not self._email_server:
@@ -273,6 +278,49 @@ class SMTPTestServer:
     async def async_stop(self):
         self.controller.stop()
         self._stop_event.set()  # Stop the server by setting the event
+
+
+class TimeoutError(Exception):
+    pass
+
+
+class Timeout:
+    def __init__(self, timeout_duration):
+        if timeout_duration > 60:
+            raise ValueError("Timeout duration cannot exceed 60 seconds.")
+        self.timeout_duration = timeout_duration
+
+    def run_with_timeout(self, condition_func, *args, **kwargs):
+        start_time = time.time()
+        result = None
+
+        while True:
+            elapsed_time = time.time() - start_time
+            if elapsed_time > self.timeout_duration:
+                raise TimeoutError(
+                    f"Function execution exceeded {self.timeout_duration} seconds."
+                )
+
+            # Check if the condition is met
+            try:
+                if condition_func():
+                    print("Condition met, exiting early.")
+                    break
+            except Exception as e:
+                print(f"Exception in target function: {e}")
+                break  # Exit the loop if an exception occurs in the function
+            time.sleep(1)
+
+        return result
+
+
+def get_email_server(reset=False):
+    email_server = EmailServer()
+    if reset:
+        email_server.reset_emails()
+    smtp_server = SMTPTestServer(email_server)
+    smtp_server.start()
+    return email_server, smtp_server
 
 
 def create_user(root_client, test_user):
