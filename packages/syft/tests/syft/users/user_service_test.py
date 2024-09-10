@@ -208,7 +208,7 @@ def test_userservice_get_all_success(
     expected_output = [x.to(UserView) for x in mock_get_all_output]
 
     @as_result(StashException)
-    def mock_get_all(credentials: SyftVerifyKey) -> list[User]:
+    def mock_get_all(credentials: SyftVerifyKey, **kwargs) -> list[User]:
         return mock_get_all_output
 
     monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
