@@ -43,7 +43,7 @@ class NotificationStash(ObjectStash[Notification]):
             raise AttributeError("verify_key must be of type SyftVerifyKey or str")
         return self.get_all(
             credentials,
-            filters={"fromuser_verify_key": verify_key},
+            filters={"from_user_verify_key": verify_key},
         ).unwrap()
 
     @as_result(StashException)

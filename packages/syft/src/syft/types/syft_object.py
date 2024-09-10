@@ -410,7 +410,7 @@ class SyftObject(SyftObjectVersioned):
                 values["id"] = id_field.annotation()
         return values
 
-    __order_by__: ClassVar[tuple[str, str]] = ("created_date", "desc")
+    __order_by__: ClassVar[tuple[str, str]] = ("_created_at", "asc")
     __attr_searchable__: ClassVar[
         list[str]
     ] = []  # keys which can be searched in the ORM

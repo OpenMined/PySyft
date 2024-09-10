@@ -33,13 +33,17 @@ class DatasetStash(ObjectStash[Dataset]):
         sort_order: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        filters: dict | None = None,
     ) -> list[Dataset]:
         # TODO standardize soft delete and move to ObjectStash.get_all
+        default_filters = {"to_be_deleted": False}
+        filters = filters or {}
+        filters.update(default_filters)
         return (
             super()
             .get_all(
                 credentials=credentials,
-                filters={"to_be_deleted": False},
+                filters=filters,
                 has_permission=has_permission,
                 order_by=order_by,
                 sort_order=sort_order,

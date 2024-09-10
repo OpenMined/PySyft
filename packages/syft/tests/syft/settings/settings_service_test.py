@@ -104,6 +104,8 @@ def test_settingsservice_set_success(
     response.syft_server_location = None
     response.pwd_token_config.syft_client_verify_key = None
     response.pwd_token_config.syft_server_location = None
+    response.welcome_markdown.syft_client_verify_key = None
+    response.welcome_markdown.syft_server_location = None
     assert response == settings
 
 
@@ -170,15 +172,6 @@ def test_settingsservice_update_success(
     assert isinstance(response, SyftSuccess)
 
 
-def test_settingsservice_update_stash_get_all_fail(
-    monkeypatch: MonkeyPatch,
-    settings_service: SettingsService,
-    update_settings: ServerSettingsUpdate,
-    authed_context: AuthedServiceContext,
-) -> None:
-    settings_service.update(context=authed_context, settings=update_settings)
-
-
 def test_settingsservice_update_stash_empty(
     settings_service: SettingsService,
     update_settings: ServerSettingsUpdate,
@@ -202,7 +195,7 @@ def test_settingsservice_update_fail(
     mock_stash_get_all_output = [settings, settings]
 
     @as_result(StashException)
-    def mock_stash_get_all(credentials) -> list[ServerSettings]:
+    def mock_stash_get_all(credentials, **kwargs) -> list[ServerSettings]:
         return mock_stash_get_all_output
 
     monkeypatch.setattr(settings_service.stash, "get_all", mock_stash_get_all)
@@ -210,7 +203,7 @@ def test_settingsservice_update_fail(
     mock_update_error_message = "Failed to update obj ServerMetadata"
 
     @as_result(StashException)
-    def mock_stash_update_error(credentials, settings: ServerSettings) -> NoReturn:
+    def mock_stash_update_error(credentials, obj: ServerSettings) -> NoReturn:
         raise StashException(public_message=mock_update_error_message)
 
     monkeypatch.setattr(settings_service.stash, "update", mock_stash_update_error)
