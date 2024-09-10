@@ -652,6 +652,7 @@ class Server(AbstractServer):
                     worker_stash=self.worker_stash,
                 )
                 producer.run()
+
                 address = producer.address
             else:
                 port = queue_config.client_config.queue_port
@@ -917,6 +918,8 @@ class Server(AbstractServer):
         document_store_config: StoreConfig,
         action_store_config: StoreConfig,
     ) -> None:
+        logger.info(f"Document store config: {document_store_config}")
+        logger.info(f"Action store config: {action_store_config}")
         self.document_store_config = document_store_config
         self.document_store = document_store_config.store_type(
             server_uid=self.id,

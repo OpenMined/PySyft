@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from contextlib import asynccontextmanager
 import json
+import logging
 import multiprocessing
 import multiprocessing.synchronize
 import os
@@ -47,6 +48,9 @@ if os_name() == "macOS":
 WAIT_TIME_SECONDS = 20
 
 
+logger = logging.getLogger("uvicorn")
+
+
 class AppSettings(BaseSettings):
     name: str
     server_type: ServerType = ServerType.DATASITE
@@ -62,6 +66,7 @@ class AppSettings(BaseSettings):
     n_consumers: int = 0
     association_request_auto_approval: bool = False
     background_tasks: bool = False
+    store_client_config: dict | None = None
 
     model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
 
@@ -92,6 +97,10 @@ def app_factory() -> FastAPI:
     worker_class = worker_classes[settings.server_type]
 
     kwargs = settings.model_dump()
+
+    logger.info(
+        f"Starting server with settings: {kwargs} and worker class: {worker_class}"
+    )
     if settings.dev_mode:
         print(
             f"WARN: private key is based on server name: {settings.name} in dev_mode. "

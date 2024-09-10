@@ -101,11 +101,8 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
                 port=self.store_config.client_config.port,
             )
             _CONNECTION_POOL_DB[cache_key(self.dbname)] = connection
-            print(f"Connected to {self.store_config.client_config.dbname}")
-            print(
-                "PostgreSQL database connection:",
-                _CONNECTION_POOL_DB[cache_key(self.dbname)],
-            )
+            logger.info(f"Connected to {self.store_config.client_config.dbname}")
+            logger.info(f"PostgreSQL database connection: {connection.info.dsn}")
 
     def create_table(self) -> None:
         db = self.db
