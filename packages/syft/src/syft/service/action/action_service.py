@@ -2,7 +2,6 @@
 import importlib
 import logging
 from typing import Any
-from typing import cast
 
 # third party
 import numpy as np
@@ -19,7 +18,6 @@ from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
-from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import execute_byte_code
 from ..context import AuthedServiceContext
@@ -195,9 +193,8 @@ class ActionService(AbstractService):
             if action_object.mock_obj.syft_action_saved_to_blob_store:
                 blob_id = action_object.mock_obj.syft_blob_storage_entry_id
                 permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service = context.server.get_service(BlobStorageService)
                 # add_permission is not resultified.
-                blob_storage_service.stash.add_permission(permission)
+                context.server.services.blob_storage.stash.add_permission(permission)
 
             if has_result_read_permission:
                 action_object = action_object.private
@@ -361,9 +358,6 @@ class ActionService(AbstractService):
         override_execution_permission = (
             context.has_execute_permissions or context.role == ServiceRole.ADMIN
         )
-        if context.server:
-            user_code_service = context.server.get_service("usercodeservice")
-
         input_policy = code_item.get_input_policy(context)
         output_policy = code_item.get_output_policy(context)
 
@@ -430,7 +424,7 @@ class ActionService(AbstractService):
                         update_policy=not override_execution_permission,
                     )
                 code_item.output_policy = output_policy  # type: ignore
-                user_code_service.update_code_state(context, code_item)
+                context.server.services.user_code.update_code_state(context, code_item)
                 if isinstance(exec_result.result, ActionObject):
                     result_action_object = ActionObject.link(
                         result_id=result_id, pointer_id=exec_result.result.id
@@ -457,7 +451,7 @@ class ActionService(AbstractService):
                         update_policy=not override_execution_permission,
                     )
                 code_item.output_policy = output_policy  # type: ignore
-                user_code_service.update_code_state(context, code_item)
+                context.server.services.user_code.update_code_state(context, code_item)
                 result_action_object_private = wrap_result(
                     result_id, private_exec_result.result
                 )
@@ -555,10 +549,6 @@ class ActionService(AbstractService):
             has_result_read_permission=True,
         ).unwrap()
 
-        blob_storage_service: AbstractService = context.server.get_service(
-            BlobStorageService
-        )
-
         def store_permission(
             x: SyftVerifyKey | None = None,
         ) -> ActionObjectPermission:
@@ -575,7 +565,7 @@ class ActionService(AbstractService):
 
             if result_blob_id is not None:
                 blob_permissions = [blob_permission(x) for x in output_readers]
-                blob_storage_service.stash.add_permissions(blob_permissions)
+                context.server.blob_storage.stash.add_permissions(blob_permissions)
 
         return set_result
 
@@ -819,12 +809,11 @@ class ActionService(AbstractService):
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = action.create_object
         elif action.action_type == ActionType.SYFTFUNCTION:
-            usercode_service = context.server.get_service("usercodeservice")
             kwarg_ids = {}
             for k, v in action.kwargs.items():
                 # transform lineage ids into ids
                 kwarg_ids[k] = v.id
-            return usercode_service._call(  # type: ignore[union-attr]
+            return context.server.services.user_code._call(  # type: ignore[union-attr]
                 context, action.user_code_id, action.result_id, **kwarg_ids
             ).unwrap()
         elif action.action_type == ActionType.FUNCTION:
@@ -936,25 +925,21 @@ class ActionService(AbstractService):
     ) -> SyftSuccess:
         deleted_blob_ids = []
 
-        blob_store_service = cast(
-            BlobStorageService, context.server.get_service(BlobStorageService)
-        )
-
         if isinstance(obj, ActionObject) and obj.syft_blob_storage_entry_id:
-            blob_store_service.delete(
+            context.server.services.blob_storage.delete(
                 context=context, uid=obj.syft_blob_storage_entry_id
             )
             deleted_blob_ids.append(obj.syft_blob_storage_entry_id)
 
         if isinstance(obj, TwinObject):
             if obj.private.syft_blob_storage_entry_id:
-                blob_store_service.delete(
+                context.server.services.blob_storage.delete(
                     context=context, uid=obj.private.syft_blob_storage_entry_id
                 )
                 deleted_blob_ids.append(obj.private.syft_blob_storage_entry_id)
 
             if obj.mock.syft_blob_storage_entry_id:
-                blob_store_service.delete(
+                context.server.services.blob_storage.delete(
                     context=context, uid=obj.mock.syft_blob_storage_entry_id
                 )
                 deleted_blob_ids.append(obj.mock.syft_blob_storage_entry_id)

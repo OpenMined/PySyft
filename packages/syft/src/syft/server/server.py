@@ -39,8 +39,6 @@ from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
 from ..service.action.action_object import ActionObject
-from ..service.blob_storage.service import BlobStorageService
-from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
 from ..service.context import AuthedServiceContext
 from ..service.context import ServerServiceContext
@@ -51,7 +49,6 @@ from ..service.job.job_stash import JobStash
 from ..service.job.job_stash import JobStatus
 from ..service.job.job_stash import JobType
 from ..service.metadata.server_metadata import ServerMetadata
-from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notifier.notifier_service import NotifierService
 from ..service.queue.base_queue import AbstractMessageHandler
@@ -78,11 +75,9 @@ from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
-from ..service.user.user_service import UserService
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
-from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool import WorkerPool
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
@@ -541,8 +536,7 @@ class Server(AbstractServer):
         from ..store.blob_storage.seaweedfs import SeaweedFSConfig
 
         if isinstance(config, SeaweedFSConfig) and self.signing_key:
-            blob_storage_service = self.get_service(BlobStorageService)
-            remote_profiles = blob_storage_service.remote_profile_stash.get_all(
+            remote_profiles = self.services.blob_storage.remote_profile_stash.get_all(
                 credentials=self.signing_key.verify_key, has_permission=True
             ).unwrap()
             for remote_profile in remote_profiles:
@@ -831,8 +825,9 @@ class Server(AbstractServer):
             credentials=self.verify_key,
             role=ServiceRole.ADMIN,
         )
-        migration_service = self.get_service("migrationservice")
-        return migration_service.migrate_data(context, document_store_object_types)
+        return self.services.migration.migrate_data(
+            context, document_store_object_types
+        )
 
     @property
     def guest_client(self) -> SyftClient:
@@ -884,11 +879,10 @@ class Server(AbstractServer):
         )
 
         if "usercodeservice" in self.service_path_map:
-            user_code_service = self.get_service(UserCodeService)
-            user_code_service.load_user_code(context=context)
+            self.services.user_code.load_user_code(context=context)
 
         def reload_user_code() -> None:
-            user_code_service.load_user_code(context=context)
+            self.services.user_code.load_user_code(context=context)
 
         ti = thread_ident()
         if ti is not None:
@@ -905,7 +899,7 @@ class Server(AbstractServer):
 
     @property
     def job_stash(self) -> JobStash:
-        return self.get_service("jobservice").stash
+        return self.services.job.stash
 
     @property
     def output_stash(self) -> JobStash:
@@ -913,7 +907,7 @@ class Server(AbstractServer):
 
     @property
     def worker_stash(self) -> WorkerStash:
-        return self.get_service("workerservice").stash
+        return self.services.worker.stash
 
     @property
     def service_path_map(self) -> dict[str, AbstractService]:
@@ -1102,9 +1096,9 @@ class Server(AbstractServer):
             )
 
         client = None
-
-        network_service = self.get_service(NetworkService)
-        peer = network_service.stash.get_by_uid(self.verify_key, server_uid).unwrap()
+        peer = self.services.network.stash.get_by_uid(
+            self.verify_key, server_uid
+        ).unwrap()
 
         # Since we have several routes to a peer
         # we need to cache the client for a given server_uid along with the route
@@ -1148,11 +1142,9 @@ class Server(AbstractServer):
         raise SyftException(public_message=(f"Server has no route to {server_uid}"))
 
     def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
-        return (
-            self.get_service("userservice")
-            .get_role_for_credentials(credentials=credentials)
-            .unwrap()
-        )
+        return self.services.user.get_role_for_credentials(
+            credentials=credentials
+        ).unwrap()
 
     @instrument
     def handle_api_call(
@@ -1399,10 +1391,7 @@ class Server(AbstractServer):
             has_execute_permissions=has_execute_permissions,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
-
-        user_service = self.get_service("UserService")
-        user_service = cast(UserService, user_service)
-        user_id = user_service.get_user_id_for_credentials(credentials).unwrap()
+        user_id = self.services.user.get_user_id_for_credentials(credentials).unwrap()
 
         return self.add_queueitem_to_queue(
             queue_item=queue_item,
@@ -1430,9 +1419,6 @@ class Server(AbstractServer):
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(server=self, credentials=credentials, role=role)
 
-        action_service = self.get_service("actionservice")
-        log_service = self.get_service("logservice")
-
         result_obj = ActionObject.empty()
         if action is not None:
             result_obj = ActionObject.obj_not_ready(
@@ -1445,10 +1431,10 @@ class Server(AbstractServer):
             result_obj.syft_server_location = self.id
             result_obj.syft_client_verify_key = credentials
 
-            action_service = self.services.action
-
-            if not action_service.store.exists(credentials, uid=action.result_id):
-                action_service.set_result_to_store(
+            if not self.services.action.store.exists(
+                credentials=credentials, uid=action.result_id
+            ):
+                self.services.action.set_result_to_store(
                     result_action_object=result_obj,
                     context=context,
                 ).unwrap()
@@ -1471,7 +1457,7 @@ class Server(AbstractServer):
         self.job_stash.set(credentials, job).unwrap()
         self.queue_stash.set_placeholder(credentials, queue_item).unwrap()
 
-        log_service.add(context, log_id, queue_item.job_id)
+        self.services.log.add(context, log_id, queue_item.job_id)
 
         return job
 
@@ -1495,8 +1481,7 @@ class Server(AbstractServer):
     def _get_existing_user_code_jobs(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> list[Job]:
-        job_service = self.get_service("jobservice")
-        jobs = job_service.get_by_user_code_id(
+        jobs = self.services.job.get_by_user_code_id(
             context=context, user_code_id=user_code_id
         )
         return self._sort_jobs(jobs)
@@ -1509,8 +1494,7 @@ class Server(AbstractServer):
     ) -> bool:
         if api_call.path != "code.call":
             return False
-        user_code_service = self.get_service("usercodeservice")
-        return user_code_service.is_execution_on_owned_args(
+        return self.services.user_code.is_execution_on_owned_args(
             context, user_code_id, api_call.kwargs
         )
 
@@ -1538,7 +1522,7 @@ class Server(AbstractServer):
             action = Action.from_api_call(unsigned_call)
             user_code_id = action.user_code_id
 
-            user = self.get_service(UserService).get_current_user(context)
+            user = self.services.user.get_current_user(context)
             user = cast(UserView, user)
 
             is_execution_on_owned_kwargs_allowed = (
@@ -1613,11 +1597,11 @@ class Server(AbstractServer):
 
     @property
     def pool_stash(self) -> SyftWorkerPoolStash:
-        return self.get_service(SyftWorkerPoolService).stash
+        return self.services.syft_worker_pool.stash
 
     @property
     def user_code_stash(self) -> UserCodeStash:
-        return self.get_service(UserCodeService).stash
+        return self.services.user_code.stash
 
     @as_result(NotFoundException)
     def get_default_worker_pool(self) -> WorkerPool | None:
@@ -1789,7 +1773,7 @@ def get_default_worker_tag_by_env(dev_mode: bool = False) -> str | None:
 def create_default_worker_pool(server: Server) -> None:
     credentials = server.verify_key
     pull_image = not server.dev_mode
-    image_stash = server.get_service(SyftWorkerImageService).stash
+    image_stash = server.services.syft_worker_image.stash
     default_pool_name = server.settings.default_worker_pool
 
     try:
@@ -1821,9 +1805,8 @@ def create_default_worker_pool(server: Server) -> None:
 
     if not default_image.is_built:
         logger.info(f"Building default worker image with tag={default_worker_tag}. ")
-        image_build_method = server.get_service_method(SyftWorkerImageService.build)
         # Build the Image for given tag
-        result = image_build_method(
+        result = server.services.worker_image.build(
             context,
             image_uid=default_image.id,
             tag=DEFAULT_WORKER_IMAGE_TAG,
@@ -1840,8 +1823,7 @@ def create_default_worker_pool(server: Server) -> None:
     )
     if default_worker_pool is None:
         worker_to_add_ = worker_count
-        create_pool_method = server.get_service_method(SyftWorkerPoolService.launch)
-        result = create_pool_method(
+        result = server.services.syft_worker_pool.launch(
             context,
             pool_name=default_pool_name,
             image_uid=default_image.id,
@@ -1855,10 +1837,7 @@ def create_default_worker_pool(server: Server) -> None:
             default_worker_pool.worker_list
         )
         if worker_to_add_ > 0:
-            add_worker_method = server.get_service_method(
-                SyftWorkerPoolService.add_workers
-            )
-            result = add_worker_method(
+            result = server.services.syft_worker_pool.add_workers(
                 context=context,
                 number=worker_to_add_,
                 pool_name=default_pool_name,

@@ -37,7 +37,6 @@ from ...util.misc_objs import MarkdownDescription
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..user.user import UserView
-from ..user.user_service import UserService
 from .utils import print as log_print
 
 NOT_ACCESSIBLE_STRING = "N / A"
@@ -224,8 +223,7 @@ class Endpoint(SyftObject):
 
         helper_function_set = HelperFunctionSet(helper_function_dict)
 
-        user_service = context.server.get_service("userservice")
-        user = user_service.get_current_user(context)
+        user = context.server.services.user.get_current_user(context)
 
         return TwinAPIAuthedContext(
             credentials=context.credentials,
@@ -506,10 +504,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
         # get a user client
         guest_client = context.server.get_guest_client()
         user_client = guest_client
-        signing_key_for_verify_key = context.server.get_service_method(
-            UserService.signing_key_for_verify_key
+        private_key = context.server.services.user.signing_key_for_verify_key(
+            context.credentials
         )
-        private_key = signing_key_for_verify_key(context.credentials)
         signing_key = private_key.signing_key
         user_client.credentials = signing_key
         return user_client
@@ -578,7 +575,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
             api_service = context.server.get_service("apiservice")
             api_service.stash.upsert(
-                context.server.get_service("userservice").admin_verify_key(), self
+                context.server.services.user.admin_verify_key(), self
             ).unwrap()
 
             print = original_print  # type: ignore
@@ -653,7 +650,7 @@ def extract_code_string(code_field: str) -> Callable:
             )
 
             context.server = cast(AbstractServer, context.server)
-            admin_key = context.server.get_service("userservice").admin_verify_key()
+            admin_key = context.server.services.user.admin_verify_key()
 
             # If endpoint exists **AND** (has visible access **OR** the user is admin)
             if endpoint_type is not None and (

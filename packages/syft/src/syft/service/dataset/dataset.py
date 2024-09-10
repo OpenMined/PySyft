@@ -41,7 +41,6 @@ from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
-from ..data_subject.data_subject_service import DataSubjectService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..response import SyftWarning
@@ -767,8 +766,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
             raise ValueError(
                 "f{context}'s server is None, please log in. No trasformation happened"
             )
-        action_service = context.server.get_service("actionservice")
-        action_service._set(
+        context.server.services.action._set(
             context=context.to_server_context(),
             action_object=twin,
         ).unwrap(public_message="Failed to create and store twin")
@@ -797,10 +795,11 @@ def set_data_subjects(context: TransformContext) -> TransformContext:
             public_message="f{context}'s server is None, please log in. No trasformation happened"
         )
     data_subjects = context.output["data_subjects"]
-    get_data_subject = context.server.get_service_method(DataSubjectService.get_by_name)
     resultant_data_subjects = []
     for data_subject in data_subjects:
-        result = get_data_subject(context=context, name=data_subject.name)
+        result = context.server.services.data_subject.get_by_name(
+            context=context, name=data_subject.name
+        )
         resultant_data_subjects.append(result)
     context.output["data_subjects"] = resultant_data_subjects
     return context
