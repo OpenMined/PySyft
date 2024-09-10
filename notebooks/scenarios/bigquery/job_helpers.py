@@ -328,6 +328,7 @@ def get_job_emails(jobs, client, email_server):
         request = get_request_for_job_info(all_requests, job)
         emails = email_server.get_emails_for_user(request.requesting_user_email)
         res[request.requesting_user_email] = emails
+    return res
 
 
 def resolve_request(request):
