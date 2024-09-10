@@ -6,7 +6,6 @@ from typing import get_args
 
 # third party
 import sqlalchemy as sa
-from sqlalchemy import Column
 from sqlalchemy import Row
 from sqlalchemy import Table
 from sqlalchemy import func
@@ -269,50 +268,6 @@ class ObjectStash(Generic[StashT]):
             self.table.c.permissions.contains(permission_string),
             self.table.c.permissions.contains(compound_permission_string),
         )
-
-    def _apply_limit_offset(
-        self,
-        stmt: T,
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> T:
-        if offset is not None:
-            stmt = stmt.offset(offset)
-        if limit is not None:
-            stmt = stmt.limit(limit)
-        return stmt
-
-    def _get_order_by_col(self, order_by: str, sort_order: str | None = None) -> Column:
-        # TODO connect+rename created_date to created_at
-        if sort_order is None:
-            sort_order = "asc"
-
-        if order_by == "id":
-            col = self.table.c.id
-        if order_by == "created_date" or order_by == "_created_at":
-            col = self.table.c._created_at
-        else:
-            col = self.table.c.fields[order_by]
-
-        return col.desc() if sort_order.lower() == "desc" else col.asc()
-
-    def _apply_order_by(
-        self,
-        stmt: T,
-        order_by: str | None = None,
-        sort_order: str | None = None,
-    ) -> T:
-        if order_by is None:
-            order_by, default_sort_order = self.object_type.__order_by__
-            sort_order = sort_order or default_sort_order
-
-        order_by_col = self._get_order_by_col(order_by, sort_order)
-
-        if order_by == "id":
-            return stmt.order_by(order_by_col)
-        else:
-            secondary_order_by = self._get_order_by_col("id", sort_order)
-            return stmt.order_by(order_by_col, secondary_order_by)
 
     def _apply_permission_filter(
         self,

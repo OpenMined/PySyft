@@ -10,6 +10,7 @@ from pytest import MonkeyPatch
 
 # syft absolute
 from syft import orchestra
+from syft.client.client import SyftClient
 from syft.server.credentials import SyftVerifyKey
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
@@ -773,3 +774,22 @@ def test_userservice_update_via_client_with_mixed_args():
         email="new_user@openmined.org", password="newpassword"
     )
     assert user_client.account.name == "User name"
+
+
+def test_reset_password():
+    server = orchestra.launch(name="datasite-test", reset=True)
+
+    datasite_client = server.login(email="info@openmined.org", password="changethis")
+    datasite_client.register(
+        email="new_syft_user@openmined.org",
+        password="verysecurepassword",
+        password_verify="verysecurepassword",
+        name="New User",
+    )
+    guest_client: SyftClient = server.login_as_guest()
+    guest_client.forgot_password(email="new_syft_user@openmined.org")
+    temp_token = datasite_client.users.request_password_reset(
+        datasite_client.notifications[-1].linked_obj.resolve.id
+    )
+    guest_client.reset_password(token=temp_token, new_password="Password123")
+    server.login(email="new_syft_user@openmined.org", password="Password123")
