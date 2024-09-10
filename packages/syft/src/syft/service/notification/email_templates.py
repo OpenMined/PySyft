@@ -118,7 +118,6 @@ class FailedJobTemplate(EmailTemplate):
                 </div>
 
                 <p class="footer">If you need assistance, feel free to reach out to our support team.</p>
-                <p class="footer">Thank you,<br>The Team</p>
               </div>
             </body>
         """
