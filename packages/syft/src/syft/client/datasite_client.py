@@ -25,6 +25,7 @@ from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.dataset.dataset import Dataset
+from ..service.dataset.dataset import _check_asset_must_contain_mock
 from ..service.metadata.server_metadata import ServerMetadataJSON
 from ..service.migration.object_migration_state import MigrationData
 from ..service.response import SyftError
@@ -34,6 +35,7 @@ from ..service.response import SyftWarning
 from ..service.sync.diff_state import ResolvedSyncState
 from ..service.sync.sync_state import SyncState
 from ..service.user.roles import Roles
+from ..service.user.user import ServiceRole
 from ..service.user.user import UserView
 from ..types.blob_storage import BlobFile
 from ..types.twin_object import TwinObject
@@ -99,6 +101,56 @@ class DatasiteClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DatasiteClient: {self.name}>"
 
+    def upload_dataset(
+        self, dataset: CreateDataset, force_replace: bool = False
+    ) -> SyftSuccess | SyftError:
+        if self.users is None:
+            return SyftError(message=f"can't get user service for {self}")
+        user = self.users.get_current_user()
+
+        if user.role not in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+            return SyftError(message="You don't have permission to upload datasets.")
+
+        dataset = add_default_uploader(user, dataset)
+        for i in range(len(dataset.asset_list)):
+            asset = dataset.asset_list[i]
+            dataset.asset_list[i] = add_default_uploader(user, asset)
+
+        # TODO: Refactor so that object can also be passed to generate warnings
+        self.api.connection = cast(ServerConnection, self.api.connection)
+
+        metadata: SyftError | ServerMetadataJSON = (
+            self.api.connection.get_server_metadata(self.api.signing_key)
+        )
+
+        if (
+            metadata.show_warnings
+            and metadata.server_side_type == ServerSideType.HIGH_SIDE.value
+        ):
+            message = (
+                "You're approving a request on "
+                f"{metadata.server_side_type} side {metadata.server_type} "
+                "which may host datasets with private information."
+            )
+            prompt_warning_message(message=message, confirm=True)
+
+        # check if the a dataset with the same name already exists
+        search_res = self.api.services.dataset.search(dataset.name)
+        if isinstance(search_res, SyftError):
+            return search_res
+        dataset_exists: bool = len(search_res) > 0
+
+        if not dataset_exists:
+            return self._upload_new_dataset(dataset)
+
+        existed_dataset: Dataset = search_res[0]
+        if not force_replace:
+            return SyftError(
+                message=f"Dataset with name the '{dataset.name}' already exists. "
+                "Please use `upload_dataset(dataset, force_replace=True)` to overwrite."
+            )
+        return self._replace_dataset(existed_dataset, dataset)
+
     def _upload_assets(self, assets: list[CreateAsset]) -> float | SyftError:
         total_assets_size: float = 0.0
 
@@ -151,6 +203,7 @@ class DatasiteClient(SyftClient):
 
         # check if the types of the assets are valid
         dataset.mb_size = total_assets_size
+        _check_asset_must_contain_mock(dataset.asset_list)
         valid = dataset.check()
         if isinstance(valid, SyftError):
             return valid
@@ -173,6 +226,7 @@ class DatasiteClient(SyftClient):
         # check if the types of the assets are valid
         dataset.mb_size = total_assets_size
         valid = dataset.check()
+        _check_asset_must_contain_mock(dataset.asset_list)
         if isinstance(valid, SyftError):
             return valid
         try:
@@ -181,52 +235,6 @@ class DatasiteClient(SyftClient):
             )
         except Exception as e:
             return SyftError(message=f"Failed to replace dataset. {e}")
-
-    def upload_dataset(
-        self, dataset: CreateDataset, force_replace: bool = False
-    ) -> SyftSuccess | SyftError:
-        if self.users is None:
-            return SyftError(message=f"can't get user service for {self}")
-        user = self.users.get_current_user()
-
-        dataset = add_default_uploader(user, dataset)
-        for i in range(len(dataset.asset_list)):
-            asset = dataset.asset_list[i]
-            dataset.asset_list[i] = add_default_uploader(user, asset)
-
-        # TODO: Refactor so that object can also be passed to generate warnings
-        self.api.connection = cast(ServerConnection, self.api.connection)
-        metadata: SyftError | ServerMetadataJSON = (
-            self.api.connection.get_server_metadata(self.api.signing_key)
-        )
-        if (
-            not isinstance(metadata, SyftError)
-            and metadata.show_warnings
-            and metadata.server_side_type == ServerSideType.HIGH_SIDE.value
-        ):
-            message = (
-                "You're approving a request on "
-                f"{metadata.server_side_type} side {metadata.server_type} "
-                "which may host datasets with private information."
-            )
-            prompt_warning_message(message=message, confirm=True)
-
-        # check if the a dataset with the same name already exists
-        search_res = self.api.services.dataset.search(dataset.name)
-        if isinstance(search_res, SyftError):
-            return search_res
-        dataset_exists: bool = len(search_res) > 0
-
-        if not dataset_exists:
-            return self._upload_new_dataset(dataset)
-
-        existed_dataset: Dataset = search_res[0]
-        if not force_replace:
-            return SyftError(
-                message=f"Dataset with name the '{dataset.name}' already exists. "
-                "Please use `upload_dataset(dataset, force_replace=True)` to overwrite."
-            )
-        return self._replace_dataset(existed_dataset, dataset)
 
     def forgot_password(self, email: str) -> SyftSuccess | SyftError:
         return self.connection.forgot_password(email=email)
