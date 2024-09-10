@@ -47,7 +47,7 @@ class UserStash(ObjectStash[User]):
         return self.get_one(
             credentials=credentials,
             filters={"reset_token": token},
-        )
+        ).unwrap()
 
     @as_result(StashException, NotFoundException)
     def get_by_email(self, credentials: SyftVerifyKey, email: str) -> User:

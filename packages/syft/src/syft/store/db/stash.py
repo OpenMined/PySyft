@@ -392,7 +392,7 @@ class ObjectStash(Generic[StashT]):
         stmt = select(self.table.c.permissions).where(self.table.c.id == uid)
         result = self.session.execute(stmt).scalar_one_or_none()
         if result is None:
-            return NotFoundException(f"No permissions found for uid: {uid}")
+            raise NotFoundException(f"No permissions found for uid: {uid}")
         return set(result)
 
     @as_result(StashException)

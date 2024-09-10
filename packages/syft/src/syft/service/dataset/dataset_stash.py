@@ -19,13 +19,13 @@ class DatasetStash(ObjectStash[Dataset]):
 
     @as_result(StashException)
     def search_action_ids(self, credentials: SyftVerifyKey, uid: UID) -> list[Dataset]:
-        return self.get_all(
+        return self.get_all_active(
             credentials=credentials,
             filters={"action_ids__contains": uid},
         ).unwrap()
 
     @as_result(StashException)
-    def get_all(
+    def get_all_active(
         self,
         credentials: SyftVerifyKey,
         has_permission: bool = False,

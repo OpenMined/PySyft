@@ -118,7 +118,6 @@ class MigrationService(AbstractService):
         return self._get_all_store_metadata(
             context,
             document_store_object_types=document_store_object_types,
-            include_action_store=include_action_store,
         ).unwrap()
 
     @as_result(SyftException)
