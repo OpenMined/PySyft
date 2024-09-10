@@ -82,9 +82,9 @@ class NetworkStash(ObjectStash[ServerPeer]):
     @as_result(StashException, NotFoundException)
     def get_by_name(self, credentials: SyftVerifyKey, name: str) -> ServerPeer:
         try:
-            return self.get_one_by_fields(
+            return self.get_one(
                 credentials=credentials,
-                fields={"name": name},
+                filters={"name": name},
             ).unwrap()
         except NotFoundException as e:
             raise NotFoundException.from_exception(

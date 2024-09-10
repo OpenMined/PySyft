@@ -16,7 +16,7 @@ class UserPolicyStash(ObjectStash[UserPolicy]):
     def get_all_by_user_verify_key(
         self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
     ) -> list[UserPolicy]:
-        return self.get_all_by_fields(
+        return self.get_all(
             credentials=credentials,
-            fields={"user_verify_key": str(user_verify_key)},
+            filters={"user_verify_key": str(user_verify_key)},
         ).unwrap()

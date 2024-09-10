@@ -21,18 +21,18 @@ class DataSubjectMemberStash(ObjectStash[DataSubjectMemberRelationship]):
     def get_all_for_parent(
         self, credentials: SyftVerifyKey, name: str
     ) -> list[DataSubjectMemberRelationship]:
-        return self.get_all_by_fields(
+        return self.get_all(
             credentials=credentials,
-            fields={"parent": name},
+            filters={"parent": name},
         ).unwrap()
 
     @as_result(StashException)
     def get_all_for_child(
         self, credentials: SyftVerifyKey, name: str
     ) -> list[DataSubjectMemberRelationship]:
-        return self.get_all_by_fields(
+        return self.get_all(
             credentials=credentials,
-            fields={"child": name},
+            filters={"child": name},
         ).unwrap()
 
 

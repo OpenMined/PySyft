@@ -187,30 +187,27 @@ class OutputStash(ObjectStash[ExecutionOutput]):
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> list[ExecutionOutput]:
-        return self.get_all_by_field(
+        return self.get_all(
             credentials=credentials,
-            field_name="user_code_id",
-            field_value=str(user_code_id),
+            filters={"user_code_id": user_code_id},
         ).unwrap()
 
     @as_result(StashException)
     def get_by_job_id(
         self, credentials: SyftVerifyKey, job_id: UID
     ) -> ExecutionOutput | None:
-        return self.get_one_by_field(
+        return self.get_one(
             credentials=credentials,
-            field_name="job_id",
-            field_value=str(job_id),
+            filters={"job_id": job_id},
         ).unwrap()
 
     @as_result(StashException)
     def get_by_output_policy_id(
         self, credentials: SyftVerifyKey, output_policy_id: UID
     ) -> list[ExecutionOutput]:
-        return self.get_all_by_field(
+        return self.get_all(
             credentials=credentials,
-            field_name="output_policy_id",
-            field_value=str(output_policy_id),
+            filters={"output_policy_id": output_policy_id},
         ).unwrap()
 
 

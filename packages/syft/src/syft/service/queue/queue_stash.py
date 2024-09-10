@@ -148,9 +148,9 @@ class QueueStash(ObjectStash[QueueItem]):
         self, credentials: SyftVerifyKey, status: Status
     ) -> list[QueueItem]:
         # TODO do we need json serialization for Status?
-        return self.get_all_by_fields(
+        return self.get_all(
             credentials=credentials,
-            fields={"status": status},
+            filters={"status": status},
         ).unwrap()
 
     @as_result(StashException)
@@ -159,7 +159,7 @@ class QueueStash(ObjectStash[QueueItem]):
     ) -> list[QueueItem]:
         worker_pool_id = worker_pool.object_uid
 
-        return self.get_all_by_fields(
+        return self.get_all(
             credentials=credentials,
-            fields={"worker_pool_id": worker_pool_id},
+            filters={"worker_pool_id": worker_pool_id},
         ).unwrap()

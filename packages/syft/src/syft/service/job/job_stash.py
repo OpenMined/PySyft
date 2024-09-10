@@ -761,33 +761,35 @@ class JobStash(ObjectStash[Job]):
         )
 
     def get_active(self, credentials: SyftVerifyKey) -> list[Job]:
-        return self.get_all_by_field(
-            credentials=credentials, field_name="status", field_value=JobStatus.CREATED
+        return self.get_all(
+            credentials=credentials,
+            filters={"status": JobStatus.CREATED},
         ).unwrap()
 
     def get_by_worker(self, credentials: SyftVerifyKey, worker_id: str) -> list[Job]:
-        return self.get_all_by_field(
-            credentials=credentials, field_name="worker_id", field_value=str(worker_id)
+        return self.get_all(
+            credentials=credentials,
+            filters={"job_worker_id": worker_id},
         ).unwrap()
 
     @as_result(StashException)
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> list[Job]:
-        return self.get_all_by_field(
+        return self.get_all(
             credentials=credentials,
-            field_name="user_code_id",
-            field_value=str(user_code_id),
+            filter={"user_code_id": user_code_id},
         ).unwrap()
 
     @as_result(StashException)
     def get_by_parent_id(self, credentials: SyftVerifyKey, uid: UID) -> list[Job]:
-        return self.get_all_by_field(
-            credentials=credentials, field_name="parent_job_id", field_value=str(uid)
+        return self.get_all(
+            credentials=credentials,
+            filters={"parent_job_id": uid},
         ).unwrap()
 
     @as_result(StashException)
     def get_by_result_id(self, credentials: SyftVerifyKey, uid: UID) -> Job:
-        return self.get_one_by_field(
-            credentials=credentials, field_name="result_id", field_value=str(uid)
+        return self.get_one(
+            credentials=credentials, filters={"result_id": uid}
         ).unwrap()
