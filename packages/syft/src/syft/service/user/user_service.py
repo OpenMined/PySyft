@@ -325,15 +325,11 @@ class UserService(AbstractService):
         page_size: int | None = 0,
         page_index: int | None = 0,
     ) -> list[UserView]:
-        if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
-            users = self.stash.get_all(
-                context.credentials,
-                has_permission=True,
-                order_by=order_by,
-                sort_order=sort_order,
-            ).unwrap()
-        else:
-            users = self.stash.get_all(context.credentials).unwrap()
+        users = self.stash.get_all(
+            context.credentials,
+            order_by=order_by,
+            sort_order=sort_order,
+        ).unwrap()
         users = [user.to(UserView) for user in users]
         return _paginate(users, page_size, page_index)
 

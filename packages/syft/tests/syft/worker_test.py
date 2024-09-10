@@ -24,6 +24,7 @@ from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
 from syft.service.user.user_service import UserService
+from syft.service.user.user_stash import UserStash
 from syft.store.db.sqlite_db import SQLiteDBManager
 from syft.types.errors import SyftException
 from syft.types.result import Ok
@@ -76,11 +77,18 @@ def test_signing_key() -> None:
     assert test_verify_key == test_verify_key_2
 
 
-@pytest.fixture
+@pytest.fixture(
+    scope="function",
+    params=[
+        "tODOsqlite_address",
+        "TODOpostgres_address",
+    ],
+)
 def action_object_stash() -> ActionObjectStash:
     root_verify_key = SyftVerifyKey.from_string(test_verify_key_string)
     db_manager = SQLiteDBManager.random(root_verify_key=root_verify_key)
     stash = ActionObjectStash(store=db_manager)
+    _ = UserStash(store=db_manager)
     stash.db.init_tables()
     yield stash
 

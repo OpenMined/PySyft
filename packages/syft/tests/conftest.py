@@ -22,19 +22,12 @@ from syft.protocol.data_protocol import get_data_protocol
 from syft.protocol.data_protocol import protocol_release_dir
 from syft.protocol.data_protocol import stage_protocol_changes
 from syft.server.worker import Worker
+from syft.service.queue.queue_stash import QueueStash
 from syft.service.user import user
 
 # relative
 # our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
 from .mongomock.mongo_client import MongoClient
-from .syft.stores.store_fixtures_test import mongo_document_store
-from .syft.stores.store_fixtures_test import mongo_queue_stash
-from .syft.stores.store_fixtures_test import mongo_store_partition
-from .syft.stores.store_fixtures_test import sqlite_action_store
-from .syft.stores.store_fixtures_test import sqlite_document_store
-from .syft.stores.store_fixtures_test import sqlite_queue_stash
-from .syft.stores.store_fixtures_test import sqlite_store_partition
-from .syft.stores.store_fixtures_test import sqlite_workspace
 
 
 def patch_protocol_file(filepath: Path):
@@ -301,16 +294,18 @@ def big_dataset() -> Dataset:
     yield dataset
 
 
-__all__ = [
-    "mongo_store_partition",
-    "mongo_document_store",
-    "mongo_queue_stash",
-    "sqlite_store_partition",
-    "sqlite_workspace",
-    "sqlite_document_store",
-    "sqlite_queue_stash",
-    "sqlite_action_store",
-]
+@pytest.fixture(
+    scope="function",
+    params=[
+        "tODOsqlite_address",
+        "TODOpostgres_address",
+    ],
+)
+def queue_stash(request):
+    _ = request.param
+    stash = QueueStash.random()
+    yield stash
+
 
 pytest_plugins = [
     "tests.syft.users.fixtures",
