@@ -351,6 +351,7 @@ class Server(AbstractServer):
         self.server_side_type = ServerSideType(server_side_type)
         self.client_cache: dict = {}
         self.peer_client_cache: dict = {}
+        self._settings = None
 
         if isinstance(server_type, str):
             server_type = ServerType(server_type)
@@ -968,6 +969,8 @@ class Server(AbstractServer):
     # it should be removed once the settings are refactored and the inconsistencies between
     # settings and services are resolved.
     def get_settings(self) -> ServerSettings | None:
+        if self._settings:
+            return self._settings
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
 
@@ -979,6 +982,7 @@ class Server(AbstractServer):
             if len(settings) > 0:
                 setting = settings[0]
                 self.update_self(setting)
+                self._settings = setting
                 return setting
             else:
                 return None

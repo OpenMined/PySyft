@@ -76,7 +76,6 @@ class User(SyftObject):
     # version
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_2
-    __order_by__ = ("email", "asc")
 
     id: UID | None = None  # type: ignore[assignment]
 
@@ -105,7 +104,6 @@ class User(SyftObject):
     __attr_searchable__ = ["name", "email", "verify_key", "role", "reset_token"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
     __repr_attrs__ = ["name", "email"]
-    __order_by__ = ("created_at", "asc")
 
 
 @migrate(UserV1, User)
