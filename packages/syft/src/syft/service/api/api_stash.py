@@ -15,10 +15,9 @@ class TwinAPIEndpointStash(ObjectStash[TwinAPIEndpoint]):
     @as_result(StashException, NotFoundException)
     def get_by_path(self, credentials: SyftVerifyKey, path: str) -> TwinAPIEndpoint:
         # TODO standardize by returning None if endpoint doesnt exist.
-        res = self.get_one_by_field(
+        res = self.get_one(
             credentials=credentials,
-            field_name="path",
-            field_value=path,
+            filters={"path": path},
         ).unwrap()
 
         if res is None:

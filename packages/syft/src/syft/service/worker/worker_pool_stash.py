@@ -19,9 +19,9 @@ from .worker_pool import WorkerPool
 class SyftWorkerPoolStash(ObjectStash[WorkerPool]):
     @as_result(StashException, NotFoundException)
     def get_by_name(self, credentials: SyftVerifyKey, pool_name: str) -> WorkerPool:
-        result = self.get_one_by_fields(
+        result = self.get_one(
             credentials=credentials,
-            fields={"name": pool_name},
+            filters={"name": pool_name},
         )
 
         return result.unwrap(

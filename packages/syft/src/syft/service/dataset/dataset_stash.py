@@ -15,16 +15,13 @@ from .dataset import Dataset
 class DatasetStash(ObjectStash[Dataset]):
     @as_result(StashException, NotFoundException)
     def get_by_name(self, credentials: SyftVerifyKey, name: str) -> Dataset:
-        return self.get_one_by_field(
-            credentials=credentials, field_name="name", field_value=name
-        ).unwrap()
+        return self.get_one(credentials=credentials, filters={"name": name}).unwrap()
 
     @as_result(StashException)
     def search_action_ids(self, credentials: SyftVerifyKey, uid: UID) -> list[Dataset]:
-        return self.get_all_contains(
+        return self.get_all(
             credentials=credentials,
-            field_name="action_ids",
-            field_value=uid.no_dash,
+            filters={"action_ids__contains": uid},
         ).unwrap()
 
     @as_result(StashException)
@@ -33,18 +30,21 @@ class DatasetStash(ObjectStash[Dataset]):
         credentials: SyftVerifyKey,
         has_permission: bool = False,
         order_by: str | None = None,
-        sort_order: str = "asc",
+        sort_order: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
     ) -> list[Dataset]:
         # TODO standardize soft delete and move to ObjectStash.get_all
-        return self.get_all_by_field(
-            credentials=credentials,
-            has_permission=has_permission,
-            field_name="to_be_deleted",
-            field_value=False,
-            order_by=order_by,
-            sort_order=sort_order,
-            limit=limit,
-            offset=offset,
-        ).unwrap()
+        return (
+            super()
+            .get_all(
+                credentials=credentials,
+                filters={"to_be_deleted": False},
+                has_permission=has_permission,
+                order_by=order_by,
+                sort_order=sort_order,
+                limit=limit,
+                offset=offset,
+            )
+            .unwrap()
+        )

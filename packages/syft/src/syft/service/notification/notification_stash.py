@@ -1,5 +1,4 @@
 # relative
-from ...serde.json_serde import serialize_json
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
@@ -20,8 +19,9 @@ class NotificationStash(ObjectStash[Notification]):
     ) -> list[Notification]:
         if not isinstance(verify_key, SyftVerifyKey | str):
             raise AttributeError("verify_key must be of type SyftVerifyKey or str")
-        return self.get_all_by_field(
-            credentials, field_name="to_user_verify_key", field_value=str(verify_key)
+        return self.get_all(
+            credentials,
+            filters={"to_user_verify_key": verify_key},
         ).unwrap()
 
     @as_result(StashException)
@@ -30,10 +30,9 @@ class NotificationStash(ObjectStash[Notification]):
     ) -> list[Notification]:
         if not isinstance(verify_key, SyftVerifyKey | str):
             raise AttributeError("verify_key must be of type SyftVerifyKey or str")
-        return self.get_all_by_field(
+        return self.get_all(
             credentials,
-            field_name="from_user_verify_key",
-            field_value=str(verify_key),
+            filters={"from_user_verify_key": verify_key},
         ).unwrap()
 
     @as_result(StashException)
@@ -42,8 +41,9 @@ class NotificationStash(ObjectStash[Notification]):
     ) -> list[Notification]:
         if not isinstance(verify_key, SyftVerifyKey | str):
             raise AttributeError("verify_key must be of type SyftVerifyKey or str")
-        return self.get_all_by_field(
-            credentials, field_name="from_user_verify_key", field_value=str(verify_key)
+        return self.get_all(
+            credentials,
+            filters={"fromuser_verify_key": verify_key},
         ).unwrap()
 
     @as_result(StashException)
@@ -55,9 +55,9 @@ class NotificationStash(ObjectStash[Notification]):
     ) -> list[Notification]:
         if not isinstance(verify_key, SyftVerifyKey | str):
             raise AttributeError("verify_key must be of type SyftVerifyKey or str")
-        return self.get_all_by_fields(
+        return self.get_all(
             credentials,
-            fields={
+            filters={
                 "to_user_verify_key": str(verify_key),
                 "status": status.name,
             },
@@ -70,8 +70,11 @@ class NotificationStash(ObjectStash[Notification]):
         linked_obj: LinkedObject,
     ) -> Notification:
         # TODO does this work?
-        return self.get_one_by_fields(
-            credentials, fields={"linked_obj": serialize_json(linked_obj)}
+        return self.get_one(
+            credentials,
+            filters={
+                "linked_obj": linked_obj,
+            },
         ).unwrap()
 
     @as_result(StashException, NotFoundException)

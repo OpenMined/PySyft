@@ -1,11 +1,8 @@
 # stdlib
-
-# stdlib
 from typing import Any
 from typing import Generic
 from typing import cast
 from typing import get_args
-import uuid
 
 # third party
 import sqlalchemy as sa
@@ -14,9 +11,7 @@ from sqlalchemy import Row
 from sqlalchemy import Table
 from sqlalchemy import func
 from sqlalchemy import select
-from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session
-from sqlalchemy.types import JSON
 from typing_extensions import Self
 from typing_extensions import TypeVar
 
@@ -38,13 +33,32 @@ from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..document_store_errors import NotFoundException
 from ..document_store_errors import StashException
-from .models import Base
-from .models import UIDTypeDecorator
+from .query import PostgresQuery
+from .query import Query
+from .query import SQLiteQuery
+from .schema import Base
+from .schema import create_table
 from .sqlite_db import DBManager
 from .sqlite_db import SQLiteDBManager
 
 StashT = TypeVar("StashT", bound=SyftObject)
 T = TypeVar("T")
+
+
+def parse_filters(filter_dict: dict[str, Any] | None) -> list[tuple[str, str, Any]]:
+    # NOTE using django style filters, e.g. {"age__gt": 18}
+    if filter_dict is None:
+        return []
+    filters = []
+    for key, value in filter_dict.items():
+        key_split = key.split("__")
+        # Operator is eq if not specified
+        if len(key_split) == 1:
+            field, operator = key, "eq"
+        elif len(key_split) == 2:
+            field, operator = key_split
+        filters.append((field, operator, value))
+    return filters
 
 
 class ObjectStash(Generic[StashT]):
@@ -55,10 +69,18 @@ class ObjectStash(Generic[StashT]):
     def __init__(self, store: DBManager) -> None:
         self.db = store
         self.object_type = self.get_object_type()
-        self.table = self._create_table()
+        self.table = create_table(self.object_type, self.dialect)
+
+    @property
+    def dialect(self) -> sa.engine.interfaces.Dialect:
+        return self.db.engine.dialect
 
     @classmethod
     def get_object_type(cls) -> type[StashT]:
+        """
+        Get the object type this stash is storing. This is the generic argument of the
+        ObjectStash class.
+        """
         generic_args = get_args(cls.__orig_bases__[0])
         if len(generic_args) != 1:
             raise TypeError("ObjectStash must have a single generic argument")
@@ -90,6 +112,15 @@ class ObjectStash(Generic[StashT]):
     def _data(self) -> list[StashT]:
         return self.get_all(self.root_verify_key, has_permission=True).unwrap()
 
+    def query(self) -> Query:
+        """Creates a query for this stash's object type."""
+        if self.dialect.name == "sqlite":
+            return SQLiteQuery(self.object_type)
+        elif self.dialect.name == "postgresql":
+            return PostgresQuery(self.object_type)
+        else:
+            raise NotImplementedError(f"Query not implemented for {self.dialect.name}")
+
     @as_result(StashException)
     def check_type(self, obj: T, type_: type) -> T:
         if not isinstance(obj, type_):
@@ -99,44 +130,6 @@ class ObjectStash(Generic[StashT]):
     @property
     def session(self) -> Session:
         return self.db.session
-
-    def _create_table(self) -> Table:
-        # need to call Base.metadata.create_all(engine) to create the table
-        table_name = self.object_type.__canonical_name__
-
-        fields_type = (
-            JSON if self.db.engine.dialect.name == "sqlite" else postgresql.JSONB
-        )
-        permissons_type = (
-            JSON
-            if self.db.engine.dialect.name == "sqlite"
-            else postgresql.ARRAY(sa.String)
-        )
-        storage_permissions_type = (
-            JSON
-            if self.db.engine.dialect.name == "sqlite"
-            else postgresql.ARRAY(sa.String)
-        )
-        if table_name not in Base.metadata.tables:
-            Table(
-                self.object_type.__canonical_name__,
-                Base.metadata,
-                Column("id", UIDTypeDecorator, primary_key=True, default=uuid.uuid4),
-                Column("fields", fields_type, default={}),
-                Column("permissions", permissons_type, default=[]),
-                Column(
-                    "storage_permissions",
-                    storage_permissions_type,
-                    default=[],
-                ),
-                # TODO rename and use on SyftObject fields
-                Column(
-                    "_created_at", sa.DateTime, server_default=sa.func.now(), index=True
-                ),
-                Column("_updated_at", sa.DateTime, server_onupdate=sa.func.now()),
-                Column("_deleted_at", sa.DateTime, index=True),
-            )
-        return Base.metadata.tables[table_name]
 
     def _drop_table(self) -> None:
         table_name = self.object_type.__canonical_name__
@@ -193,14 +186,13 @@ class ObjectStash(Generic[StashT]):
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
     ) -> StashT:
-        stmt = self.table.select()
-        stmt = stmt.where(self._get_field_filter("id", uid))
-        stmt = self._apply_permission_filter(
-            stmt, credentials=credentials, has_permission=has_permission
-        )
+        query = self.query().filter("id", "eq", uid)
 
-        result = self.session.execute(stmt).first()
+        if not has_permission:
+            role = self.get_role(credentials)
+            query = query.with_permissions(credentials, role)
 
+        result = query.execute(self.session).first()
         if result is None:
             raise NotFoundException(f"{self.object_type.__name__}: {uid} not found")
         return self.row_as_obj(result)
@@ -221,140 +213,6 @@ class ObjectStash(Generic[StashT]):
             return table.c.fields[field_name] == func.json_quote(json_value)
         elif self.db.engine.dialect.name == "postgresql":
             return table.c.fields[field_name].astext == json_value
-
-    def _get_by_fields(
-        self,
-        credentials: SyftVerifyKey,
-        fields: dict[str, str],
-        table: Table | None = None,
-        order_by: str | None = None,
-        sort_order: str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        has_permission: bool = False,
-    ) -> sa.Result:
-        table = table if table is not None else self.table
-        filters = []
-        for field_name, field_value in fields.items():
-            filt = self._get_field_filter(field_name, field_value, table=table)
-            filters.append(filt)
-
-        stmt = table.select()
-        stmt = stmt.where(sa.and_(*filters))
-        stmt = self._apply_permission_filter(
-            stmt, credentials=credentials, has_permission=has_permission
-        )
-        stmt = self._apply_order_by(stmt, order_by, sort_order)
-        stmt = self._apply_limit_offset(stmt, limit, offset)
-
-        result = self.session.execute(stmt)
-        return result
-
-    @as_result(SyftException, StashException, NotFoundException)
-    def get_one_by_field(
-        self,
-        credentials: SyftVerifyKey,
-        field_name: str,
-        field_value: str,
-        has_permission: bool = False,
-    ) -> StashT:
-        return self.get_one_by_fields(
-            credentials=credentials,
-            fields={field_name: field_value},
-            has_permission=has_permission,
-        ).unwrap()
-
-    @as_result(SyftException, StashException, NotFoundException)
-    def get_one_by_fields(
-        self,
-        credentials: SyftVerifyKey,
-        fields: dict[str, str],
-        has_permission: bool = False,
-    ) -> StashT:
-        result = self._get_by_fields(
-            credentials=credentials,
-            fields=fields,
-            has_permission=has_permission,
-        ).first()
-        if result is None:
-            raise NotFoundException(f"{self.object_type.__name__}: not found")
-        return self.row_as_obj(result)
-
-    @as_result(SyftException, StashException, NotFoundException)
-    def get_all_by_fields(
-        self,
-        credentials: SyftVerifyKey,
-        fields: dict[str, str],
-        order_by: str | None = None,
-        sort_order: str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        has_permission: bool = False,
-    ) -> list[StashT]:
-        result = self._get_by_fields(
-            credentials=credentials,
-            fields=fields,
-            order_by=order_by,
-            sort_order=sort_order,
-            limit=limit,
-            offset=offset,
-            has_permission=has_permission,
-        ).all()
-
-        return [self.row_as_obj(row) for row in result]
-
-    @as_result(SyftException, StashException, NotFoundException)
-    def get_all_by_field(
-        self,
-        credentials: SyftVerifyKey,
-        field_name: str,
-        field_value: str,
-        order_by: str | None = None,
-        sort_order: str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        has_permission: bool = False,
-    ) -> list[StashT]:
-        return self.get_all_by_fields(
-            credentials=credentials,
-            fields={field_name: field_value},
-            order_by=order_by,
-            sort_order=sort_order,
-            limit=limit,
-            offset=offset,
-            has_permission=has_permission,
-        ).unwrap()
-
-    @as_result(SyftException, StashException, NotFoundException)
-    def get_all_contains(
-        self,
-        credentials: SyftVerifyKey,
-        field_name: str,
-        field_value: str,
-        order_by: str | None = None,
-        sort_order: str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-        has_permission: bool = False,
-    ) -> list[StashT]:
-        # TODO write filter logic, merge with get_all
-
-        if self._is_sqlite():
-            field_value = func.json_quote(field_value)
-        else:
-            field_value = [field_value]  # type: ignore
-
-        stmt = self.table.select().where(
-            self.table.c.fields[field_name].contains(field_value),
-        )
-        stmt = self._apply_permission_filter(
-            stmt, credentials=credentials, has_permission=has_permission
-        )
-        stmt = self._apply_order_by(stmt, order_by, sort_order)
-        stmt = self._apply_limit_offset(stmt, limit, offset)
-
-        result = self.session.execute(stmt).all()
-        return [self.row_as_obj(row) for row in result]
 
     @as_result(SyftException, StashException, NotFoundException)
     def get_index(
@@ -478,30 +336,6 @@ class ObjectStash(Generic[StashT]):
         )
         return stmt
 
-    @as_result(StashException)
-    def get_all(
-        self,
-        credentials: SyftVerifyKey,
-        has_permission: bool = False,
-        order_by: str | None = None,
-        sort_order: str | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> list[StashT]:
-        stmt = self.table.select()
-
-        stmt = self._apply_permission_filter(
-            stmt,
-            credentials=credentials,
-            has_permission=has_permission,
-            permission=ActionPermission.READ,
-        )
-        stmt = self._apply_order_by(stmt, order_by, sort_order)
-        stmt = self._apply_limit_offset(stmt, limit, offset)
-
-        result = self.session.execute(stmt).all()
-        return [self.row_as_obj(row) for row in result]
-
     @as_result(StashException, NotFoundException)
     def update(
         self,
@@ -511,13 +345,14 @@ class ObjectStash(Generic[StashT]):
     ) -> StashT:
         """
         NOTE: We cannot do partial updates on the database,
-        because we are using computed fields that are not known to the DB or ORM:
+        because we are using computed fields that are not known to the DB:
         - serialize_json will add computed fields to the JSON stored in the database
         - If we update a single field in the JSON, the computed fields can get out of sync.
         - To fix, we either need db-supported computed fields, or know in our ORM which fields should be re-computed.
         """
 
-        self.check_type(obj, self.object_type).unwrap()
+        if not self.allow_any_type:
+            self.check_type(obj, self.object_type).unwrap()
 
         # TODO has_permission is not used
         if not self.is_unique(obj):
@@ -820,3 +655,74 @@ class ObjectStash(Generic[StashT]):
         self.session.execute(stmt)
         self.session.commit()
         return self.get_by_uid(credentials, uid).unwrap()
+
+    @as_result(StashException)
+    def get_one(
+        self,
+        credentials: SyftVerifyKey,
+        filters: dict[str, Any] | None = None,
+        has_permission: bool = False,
+        order_by: str | None = None,
+        sort_order: str | None = None,
+        offset: int = 0,
+    ) -> StashT:
+        result = self.get_all(
+            credentials=credentials,
+            filters=filters,
+            has_permission=has_permission,
+            order_by=order_by,
+            sort_order=sort_order,
+            limit=1,
+            offset=offset,
+        ).unwrap()
+        if len(result) == 0:
+            raise NotFoundException(f"{self.object_type.__name__}: not found")
+        return result[0]
+
+    @as_result(StashException)
+    def get_all(
+        self,
+        credentials: SyftVerifyKey,
+        filters: dict[str, Any] | None = None,
+        has_permission: bool = False,
+        order_by: str | None = None,
+        sort_order: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[StashT]:
+        """
+        Get all objects from the stash, optionally filtered.
+
+        Args:
+            credentials (SyftVerifyKey): credentials of the user
+            filters (dict[str, Any] | None, optional): dictionary of filters,
+                where the key is the field name and the value is the filter value.
+                Operators other than equals can be used in the key,
+                e.g. {"name": "Bob", "friends__contains": "Alice"}. Defaults to None.
+            has_permission (bool, optional): If True, overrides the permission check.
+                Defaults to False.
+            order_by (str | None, optional): If provided, the results will be ordered by this field.
+                If not provided, the default order and field defined on the SyftObject.__order_by__ are used.
+                Defaults to None.
+            sort_order (str | None, optional): "asc" or "desc" If not defined,
+                the default order defined on the SyftObject.__order_by__ is used.
+                Defaults to None.
+            limit (int | None, optional): limit the number of results. Defaults to None.
+            offset (int, optional): offset the results. Defaults to 0.
+
+        Returns:
+            list[StashT]: list of objects.
+        """
+        query = self.query()
+
+        if not has_permission:
+            role = self.get_role(credentials)
+            query = query.with_permissions(credentials, role)
+
+        for field_name, operator, field_value in parse_filters(filters):
+            query = query.filter(field_name, operator, field_value)
+
+        query = query.order_by(order_by, sort_order).limit(limit).offset(offset)
+        result = query.execute(self.session).all()
+
+        return [self.row_as_obj(row) for row in result]

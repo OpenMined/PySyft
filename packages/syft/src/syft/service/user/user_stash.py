@@ -44,14 +44,16 @@ class UserStash(ObjectStash[User]):
 
     @as_result(StashException, NotFoundException)
     def get_by_reset_token(self, credentials: SyftVerifyKey, token: str) -> User:
-        return self.get_one_by_field(
-            credentials=credentials, field_name="reset_token", field_value=token
-        ).unwrap()
+        return self.get_one(
+            credentials=credentials,
+            filters={"reset_token": token},
+        )
 
     @as_result(StashException, NotFoundException)
     def get_by_email(self, credentials: SyftVerifyKey, email: str) -> User:
-        return self.get_one_by_field(
-            credentials=credentials, field_name="email", field_value=email
+        return self.get_one(
+            credentials=credentials,
+            filters={"email": email},
         ).unwrap()
 
     @as_result(StashException)
@@ -65,8 +67,9 @@ class UserStash(ObjectStash[User]):
     @as_result(StashException, NotFoundException)
     def get_by_role(self, credentials: SyftVerifyKey, role: ServiceRole) -> User:
         try:
-            return self.get_one_by_field(
-                credentials=credentials, field_name="role", field_value=role.name
+            return self.get_one(
+                credentials=credentials,
+                filters={"role": role},
             ).unwrap()
         except NotFoundException as exc:
             private_msg = f"User with role {role} not found"
@@ -77,10 +80,9 @@ class UserStash(ObjectStash[User]):
         self, credentials: SyftVerifyKey, signing_key: SyftSigningKey | str
     ) -> User:
         try:
-            return self.get_one_by_field(
+            return self.get_one(
                 credentials=credentials,
-                field_name="signing_key",
-                field_value=str(signing_key),
+                filters={"signing_key": signing_key},
             ).unwrap()
         except NotFoundException as exc:
             private_msg = f"User with signing key {signing_key} not found"
@@ -91,11 +93,11 @@ class UserStash(ObjectStash[User]):
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> User:
         try:
-            return self.get_one_by_field(
+            return self.get_one(
                 credentials=credentials,
-                field_name="verify_key",
-                field_value=str(verify_key),
+                filters={"verify_key": verify_key},
             ).unwrap()
+
         except NotFoundException as exc:
             private_msg = f"User with verify key {verify_key} not found"
             raise NotFoundException.from_exception(exc, private_message=private_msg)

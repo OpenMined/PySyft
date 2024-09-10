@@ -16,9 +16,9 @@ class CodeHistoryStash(ObjectStash[CodeHistory]):
         service_func_name: str,
         user_verify_key: SyftVerifyKey,
     ) -> CodeHistory:
-        return self.get_one_by_fields(
+        return self.get_one(
             credentials=credentials,
-            fields={
+            filters={
                 "user_verify_key": str(user_verify_key),
                 "service_func_name": service_func_name,
             },
@@ -28,18 +28,16 @@ class CodeHistoryStash(ObjectStash[CodeHistory]):
     def get_by_service_func_name(
         self, credentials: SyftVerifyKey, service_func_name: str
     ) -> list[CodeHistory]:
-        return self.get_all_by_field(
+        return self.get_all(
             credentials=credentials,
-            field_name="service_func_name",
-            field_value=service_func_name,
+            filters={"service_func_name": service_func_name},
         )
 
     @as_result(StashException)
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
     ) -> list[CodeHistory]:
-        return self.get_all_by_field(
+        return self.get_all(
             credentials=credentials,
-            field_name="user_verify_key",
-            field_value=str(user_verify_key),
+            filters={"user_verify_key": user_verify_key},
         ).unwrap()
