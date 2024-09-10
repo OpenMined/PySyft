@@ -141,12 +141,12 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
     def _execute(
         lock: SyftLock,
         cursor: Cursor,
+        db: Connection,
         table_name: str,
         sql: str,
         args: list[Any] | None,
     ) -> Cursor:
         with lock:
-            db = cursor.connection
             try:
                 cursor.execute(sql, args)  # Execute the SQL with arguments
                 db.commit()  # Commit if everything went ok
@@ -177,6 +177,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
                 self._execute(
                     self.lock,
                     cur,
+                    cur.connection,
                     self.table_name,
                     insert_sql,
                     [str(key), _repr_debug_(value), data],
@@ -193,6 +194,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
             self._execute(
                 self.lock,
                 cur,
+                cur.connection,
                 self.table_name,
                 insert_sql,
                 [str(key), _repr_debug_(value), data, str(key)],
@@ -205,7 +207,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         )
         with self.cur as cur:
             cursor = self._execute(
-                self.lock, cur, self.table_name, select_sql, [str(key)]
+                self.lock, cur, cur.connection, self.table_name, select_sql, [str(key)]
             ).unwrap(public_message=f"Query {select_sql} failed")
             row = cursor.fetchone()
         if row is None or len(row) == 0:
@@ -218,7 +220,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         row = None
         with self.cur as cur:
             cursor = self._execute(
-                self.lock, cur, self.table_name, select_sql, [str(key)]
+                self.lock, cur, cur.connection, self.table_name, select_sql, [str(key)]
             ).unwrap()
             row = cursor.fetchone()  # type: ignore
         if row is None:
@@ -231,7 +233,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         data = []
         with self.cur as cur:
             cursor = self._execute(
-                self.lock, cur, self.table_name, select_sql, []
+                self.lock, cur, cur.connection, self.table_name, select_sql, []
             ).unwrap()
             rows = cursor.fetchall()  # type: ignore
             if not rows:
@@ -247,7 +249,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
         with self.cur as cur:
             cursor = self._execute(
-                self.lock, cur, self.table_name, select_sql, []
+                self.lock, cur, cur.connection, self.table_name, select_sql, []
             ).unwrap()
             rows = cursor.fetchall()  # type: ignore
         if not rows:
@@ -265,13 +267,15 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
     def _delete_all(self) -> None:
         select_sql = f"delete from {self.table_name}"  # nosec
         with self.cur as cur:
-            self._execute(self.lock, cur, self.table_name, select_sql, []).unwrap()
+            self._execute(
+                self.lock, cur, cur.connection, self.table_name, select_sql, []
+            ).unwrap()
 
     def _len(self) -> int:
         select_sql = f"select count(uid) from {self.table_name}"  # nosec
         with self.cur as cur:
             cursor = self._execute(
-                self.lock, cur, self.table_name, select_sql, []
+                self.lock, cur, cur.connection, self.table_name, select_sql, []
             ).unwrap()
             cnt = cursor.fetchone()[0]
         return cnt
