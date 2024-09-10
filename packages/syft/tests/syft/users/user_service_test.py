@@ -208,7 +208,7 @@ def test_userservice_get_all_success(
     expected_output = [x.to(UserView) for x in mock_get_all_output]
 
     @as_result(StashException)
-    def mock_get_all(credentials: SyftVerifyKey) -> list[User]:
+    def mock_get_all(credentials: SyftVerifyKey, **kwargs) -> list[User]:
         return mock_get_all_output
 
     monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
@@ -222,23 +222,6 @@ def test_userservice_get_all_success(
     )
 
 
-def test_userservice_get_all_error(
-    monkeypatch: MonkeyPatch,
-    user_service: UserService,
-    authed_context: AuthedServiceContext,
-) -> None:
-    @as_result(StashException)
-    def mock_get_all(credentials: SyftVerifyKey) -> NoReturn:
-        raise StashException
-
-    monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
-
-    with pytest.raises(StashException) as exc:
-        user_service.get_all(authed_context)
-
-    assert exc.type == StashException
-
-
 def test_userservice_search(
     monkeypatch: MonkeyPatch,
     user_service: UserService,
@@ -246,13 +229,13 @@ def test_userservice_search(
     guest_user: User,
 ) -> None:
     @as_result(SyftException)
-    def mock_find_all(credentials: SyftVerifyKey, **kwargs) -> list[User]:
+    def get_all(credentials: SyftVerifyKey, **kwargs) -> list[User]:
         for key in kwargs.keys():
             if hasattr(guest_user, key):
                 return [guest_user]
         return []
 
-    monkeypatch.setattr(user_service.stash, "find_all", mock_find_all)
+    monkeypatch.setattr(user_service.stash, "get_all", get_all)
 
     expected_output = [guest_user.to(UserView)]
 

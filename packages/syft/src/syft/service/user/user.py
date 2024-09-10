@@ -105,6 +105,7 @@ class User(SyftObject):
     __attr_searchable__ = ["name", "email", "verify_key", "role", "reset_token"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
     __repr_attrs__ = ["name", "email"]
+    __order_by__ = ("created_at", "asc")
 
 
 @migrate(UserV1, User)
