@@ -1,5 +1,16 @@
 {
   "1": {
     "release_name": "0.9.1.json"
+  },
+  "dev": {
+    "object_versions": {
+      "CreateAsset": {
+        "2": {
+          "version": 2,
+          "hash": "1637c1e35c8cb65c9d667ad91c824b2cc5cf5b281e93770915a68c4926e6a567",
+          "action": "add"
+        }
+      }
+    }
   }
 }
