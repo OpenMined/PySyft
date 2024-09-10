@@ -297,203 +297,6 @@ class ObjectStash(Generic[StashT]):
         )
         return stmt
 
-    def get_ownership_permissions(
-        self, uid: UID, credentials: SyftVerifyKey
-    ) -> list[str]:
-        return [
-            ActionObjectOWNER(uid=uid, credentials=credentials).permission_string,
-            ActionObjectWRITE(uid=uid, credentials=credentials).permission_string,
-            ActionObjectREAD(uid=uid, credentials=credentials).permission_string,
-            ActionObjectEXECUTE(uid=uid, credentials=credentials).permission_string,
-        ]
-
-    @as_result(NotFoundException)
-    def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
-        # TODO: should do this in a single transaction
-        # TODO add error handling
-        for permission in permissions:
-            self.add_permission(permission).unwrap()
-        return None
-
-    @as_result(NotFoundException)
-    def add_permission(self, permission: ActionObjectPermission) -> None:
-        # TODO add error handling
-        stmt = self.table.update().where(self.table.c.id == permission.uid)
-        if self._is_sqlite():
-            stmt = stmt.values(
-                permissions=func.json_insert(
-                    self.table.c.permissions,
-                    "$[#]",
-                    permission.permission_string,
-                )
-            )
-        else:
-            stmt = stmt.values(
-                permissions=func.array_append(
-                    self.table.c.permissions, permission.permission_string
-                )
-            )
-
-        result = self.session.execute(stmt)
-        self.session.commit()
-        if result.rowcount == 0:
-            raise NotFoundException(
-                f"{self.object_type.__name__}: {permission.uid} not found or no permission to change."
-            )
-
-    def remove_permission(self, permission: ActionObjectPermission) -> None:
-        # TODO not threadsafe
-        try:
-            permissions = self._get_permissions_for_uid(permission.uid).unwrap()
-            permissions.remove(permission.permission_string)
-        except (NotFoundException, KeyError):
-            # TODO add error handling to permissions
-            return None
-
-        stmt = (
-            self.table.update()
-            .where(self.table.c.id == permission.uid)
-            .values(permissions=list(permissions))
-        )
-        self.session.execute(stmt)
-        self.session.commit()
-        return None
-
-    def has_permission(self, permission: ActionObjectPermission) -> bool:
-        if self.get_role(permission.credentials) in (
-            ServiceRole.ADMIN,
-            ServiceRole.DATA_OWNER,
-        ):
-            return True
-        return self.has_permissions([permission])
-
-    def has_permissions(self, permissions: list[ActionObjectPermission]) -> bool:
-        # TODO: we should use a permissions table to check all permissions at once
-        # TODO: should check for compound permissions
-
-        permission_filters = [
-            sa.and_(
-                self._get_field_filter("id", p.uid),
-                self._get_permission_filter_from_permisson(permission=p),
-            )
-            for p in permissions
-        ]
-
-        stmt = self.table.select().where(
-            sa.and_(
-                *permission_filters,
-            ),
-        )
-        result = self.session.execute(stmt).first()
-        return result is not None
-
-    @as_result(StashException)
-    def _get_permissions_for_uid(self, uid: UID) -> set[str]:
-        stmt = select(self.table.c.permissions).where(self.table.c.id == uid)
-        result = self.session.execute(stmt).scalar_one_or_none()
-        if result is None:
-            raise NotFoundException(f"No permissions found for uid: {uid}")
-        return set(result)
-
-    @as_result(StashException)
-    def get_all_permissions(self) -> dict[UID, set[str]]:
-        stmt = select(self.table.c.id, self.table.c.permissions)
-        results = self.session.execute(stmt).all()
-        return {UID(row.id): set(row.permissions) for row in results}
-
-    def has_storage_permission(self, permission: StoragePermission) -> bool:
-        return self.has_storage_permissions([permission])
-
-    @as_result(StashException)
-    def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
-        stmt = select(self.table.c.id, self.table.c.storage_permissions)
-        results = self.session.execute(stmt).all()
-
-        return {
-            UID(row.id): {UID(uid) for uid in row.storage_permissions}
-            for row in results
-        }
-
-    @as_result(NotFoundException)
-    def add_storage_permission(self, permission: StoragePermission) -> None:
-        stmt = self.table.update().where(self.table.c.id == permission.uid)
-        if self._is_sqlite():
-            stmt = stmt.values(
-                storage_permissions=func.json_insert(
-                    self.table.c.storage_permissions,
-                    "$[#]",
-                    permission.permission_string,
-                )
-            )
-        else:
-            stmt = stmt.values(
-                permissions=func.array_append(
-                    self.table.c.storage_permissions, permission.server_uid.no_dash
-                )
-            )
-
-        result = self.session.execute(stmt)
-        self.session.commit()
-        if result.rowcount == 0:
-            raise NotFoundException(
-                f"{self.object_type.__name__}: {permission.uid} not found or no permission to change."
-            )
-        return None
-
-    def has_storage_permissions(self, permissions: list[StoragePermission]) -> bool:
-        permission_filters = [
-            sa.and_(
-                self._get_field_filter("id", p.uid),
-                self.table.c.storage_permissions.contains(
-                    p.server_uid.no_dash
-                    if self._is_sqlite()
-                    else [p.server_uid.no_dash]
-                ),
-            )
-            for p in permissions
-        ]
-
-        stmt = self.table.select().where(
-            sa.and_(
-                *permission_filters,
-            )
-        )
-        result = self.session.execute(stmt).first()
-        return result is not None
-
-    def remove_storage_permission(self, permission: StoragePermission) -> None:
-        # TODO not threadsafe
-        try:
-            permissions = self._get_storage_permissions_for_uid(permission.uid).unwrap()
-            permissions.remove(permission.server_uid)
-        except (NotFoundException, KeyError):
-            # TODO add error handling to permissions
-            return None
-
-        stmt = (
-            self.table.update()
-            .where(self.table.c.id == permission.uid)
-            .values(storage_permissions=[str(uid) for uid in permissions])
-        )
-        self.session.execute(stmt)
-        self.session.commit()
-        return None
-
-    @as_result(StashException)
-    def _get_storage_permissions_for_uid(self, uid: UID) -> set[UID]:
-        stmt = select(self.table.c.id, self.table.c.storage_permissions).where(
-            self.table.c.id == uid
-        )
-        result = self.session.execute(stmt).first()
-        if result is None:
-            raise NotFoundException(f"No storage permissions found for uid: {uid}")
-        return {UID(uid) for uid in result.storage_permissions}
-
-    @as_result(NotFoundException)
-    def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
-        for permission in permissions:
-            self.add_storage_permission(permission).unwrap()
-
     @as_result(SyftException, StashException)
     def set(
         self,
@@ -708,3 +511,202 @@ class ObjectStash(Generic[StashT]):
         query = query.order_by(order_by, sort_order).limit(limit).offset(offset)
         result = query.execute(self.session).all()
         return [self.row_as_obj(row) for row in result]
+
+    # PERMISSIONS
+    def get_ownership_permissions(
+        self, uid: UID, credentials: SyftVerifyKey
+    ) -> list[str]:
+        return [
+            ActionObjectOWNER(uid=uid, credentials=credentials).permission_string,
+            ActionObjectWRITE(uid=uid, credentials=credentials).permission_string,
+            ActionObjectREAD(uid=uid, credentials=credentials).permission_string,
+            ActionObjectEXECUTE(uid=uid, credentials=credentials).permission_string,
+        ]
+
+    @as_result(NotFoundException)
+    def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
+        # TODO: should do this in a single transaction
+        # TODO add error handling
+        for permission in permissions:
+            self.add_permission(permission).unwrap()
+        return None
+
+    @as_result(NotFoundException)
+    def add_permission(self, permission: ActionObjectPermission) -> None:
+        # TODO add error handling
+        stmt = self.table.update().where(self.table.c.id == permission.uid)
+        if self._is_sqlite():
+            stmt = stmt.values(
+                permissions=func.json_insert(
+                    self.table.c.permissions,
+                    "$[#]",
+                    permission.permission_string,
+                )
+            )
+        else:
+            stmt = stmt.values(
+                permissions=func.array_append(
+                    self.table.c.permissions, permission.permission_string
+                )
+            )
+
+        result = self.session.execute(stmt)
+        self.session.commit()
+        if result.rowcount == 0:
+            raise NotFoundException(
+                f"{self.object_type.__name__}: {permission.uid} not found or no permission to change."
+            )
+
+    def remove_permission(self, permission: ActionObjectPermission) -> None:
+        # TODO not threadsafe
+        try:
+            permissions = self._get_permissions_for_uid(permission.uid).unwrap()
+            permissions.remove(permission.permission_string)
+        except (NotFoundException, KeyError):
+            # TODO add error handling to permissions
+            return None
+
+        stmt = (
+            self.table.update()
+            .where(self.table.c.id == permission.uid)
+            .values(permissions=list(permissions))
+        )
+        self.session.execute(stmt)
+        self.session.commit()
+        return None
+
+    def has_permission(self, permission: ActionObjectPermission) -> bool:
+        if self.get_role(permission.credentials) in (
+            ServiceRole.ADMIN,
+            ServiceRole.DATA_OWNER,
+        ):
+            return True
+        return self.has_permissions([permission])
+
+    def has_permissions(self, permissions: list[ActionObjectPermission]) -> bool:
+        # TODO: we should use a permissions table to check all permissions at once
+        # TODO: should check for compound permissions
+
+        permission_filters = [
+            sa.and_(
+                self._get_field_filter("id", p.uid),
+                self._get_permission_filter_from_permisson(permission=p),
+            )
+            for p in permissions
+        ]
+
+        stmt = self.table.select().where(
+            sa.and_(
+                *permission_filters,
+            ),
+        )
+        result = self.session.execute(stmt).first()
+        return result is not None
+
+    @as_result(StashException)
+    def _get_permissions_for_uid(self, uid: UID) -> set[str]:
+        stmt = select(self.table.c.permissions).where(self.table.c.id == uid)
+        result = self.session.execute(stmt).scalar_one_or_none()
+        if result is None:
+            raise NotFoundException(f"No permissions found for uid: {uid}")
+        return set(result)
+
+    @as_result(StashException)
+    def get_all_permissions(self) -> dict[UID, set[str]]:
+        stmt = select(self.table.c.id, self.table.c.permissions)
+        results = self.session.execute(stmt).all()
+        return {UID(row.id): set(row.permissions) for row in results}
+
+    # STORAGE PERMISSIONS
+    def has_storage_permission(self, permission: StoragePermission) -> bool:
+        return self.has_storage_permissions([permission])
+
+    @as_result(StashException)
+    def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
+        stmt = select(self.table.c.id, self.table.c.storage_permissions)
+        results = self.session.execute(stmt).all()
+
+        return {
+            UID(row.id): {UID(uid) for uid in row.storage_permissions}
+            for row in results
+        }
+
+    @as_result(NotFoundException)
+    def add_storage_permission(self, permission: StoragePermission) -> None:
+        stmt = self.table.update().where(self.table.c.id == permission.uid)
+        if self._is_sqlite():
+            stmt = stmt.values(
+                storage_permissions=func.json_insert(
+                    self.table.c.storage_permissions,
+                    "$[#]",
+                    permission.permission_string,
+                )
+            )
+        else:
+            stmt = stmt.values(
+                permissions=func.array_append(
+                    self.table.c.storage_permissions, permission.server_uid.no_dash
+                )
+            )
+
+        result = self.session.execute(stmt)
+        self.session.commit()
+        if result.rowcount == 0:
+            raise NotFoundException(
+                f"{self.object_type.__name__}: {permission.uid} not found or no permission to change."
+            )
+        return None
+
+    def has_storage_permissions(self, permissions: list[StoragePermission]) -> bool:
+        permission_filters = [
+            sa.and_(
+                self._get_field_filter("id", p.uid),
+                self.table.c.storage_permissions.contains(
+                    p.server_uid.no_dash
+                    if self._is_sqlite()
+                    else [p.server_uid.no_dash]
+                ),
+            )
+            for p in permissions
+        ]
+
+        stmt = self.table.select().where(
+            sa.and_(
+                *permission_filters,
+            )
+        )
+        result = self.session.execute(stmt).first()
+        return result is not None
+
+    def remove_storage_permission(self, permission: StoragePermission) -> None:
+        # TODO not threadsafe
+        try:
+            permissions = self._get_storage_permissions_for_uid(permission.uid).unwrap()
+            permissions.remove(permission.server_uid)
+        except (NotFoundException, KeyError):
+            # TODO add error handling to permissions
+            return None
+
+        stmt = (
+            self.table.update()
+            .where(self.table.c.id == permission.uid)
+            .values(storage_permissions=[str(uid) for uid in permissions])
+        )
+        self.session.execute(stmt)
+        self.session.commit()
+        return None
+
+    @as_result(StashException)
+    def _get_storage_permissions_for_uid(self, uid: UID) -> set[UID]:
+        stmt = select(self.table.c.id, self.table.c.storage_permissions).where(
+            self.table.c.id == uid
+        )
+        result = self.session.execute(stmt).first()
+        if result is None:
+            raise NotFoundException(f"No storage permissions found for uid: {uid}")
+        return {UID(uid) for uid in result.storage_permissions}
+
+    @as_result(NotFoundException)
+    def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
+        for permission in permissions:
+            self.add_storage_permission(permission).unwrap()

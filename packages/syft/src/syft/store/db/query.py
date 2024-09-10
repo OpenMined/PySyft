@@ -58,6 +58,7 @@ class Query(ABC):
 
     @classmethod
     def create(cls, object_type: type[SyftObject], dialect: str | Dialect) -> "Query":
+        """Create a query object for the given object type and dialect."""
         query_class = cls.get_query_class(dialect)
         return query_class(object_type)
 
