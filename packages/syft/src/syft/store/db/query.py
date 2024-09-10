@@ -70,13 +70,13 @@ class Query(ABC):
         if role in (ServiceRole.ADMIN, ServiceRole.DATA_OWNER):
             return self
 
-        permission = ActionObjectPermission(
+        ao_permission = ActionObjectPermission(
             uid=UID(),  # dummy uid, we just need the permission string
             credentials=credentials,
             permission=permission,
         )
 
-        permission_clause = self._make_permissions_clause(permission)
+        permission_clause = self._make_permissions_clause(ao_permission)
         self.stmt = self.stmt.where(permission_clause)
 
         return self

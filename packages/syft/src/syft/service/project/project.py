@@ -1252,7 +1252,7 @@ class ProjectSubmit(SyftObject):
         if return_all_projects:
             return list(projects_map.values())
 
-        return projects_map[leader.id]
+        return projects_map[leader.id]  # type: ignore
 
     def _pre_submit_checks(self, clients: list[SyftClient]) -> bool:
         try:

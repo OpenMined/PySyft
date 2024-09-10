@@ -31,7 +31,7 @@ class CodeHistoryStash(ObjectStash[CodeHistory]):
         return self.get_all(
             credentials=credentials,
             filters={"service_func_name": service_func_name},
-        )
+        ).unwrap()
 
     @as_result(StashException)
     def get_by_verify_key(

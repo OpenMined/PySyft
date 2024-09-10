@@ -46,7 +46,7 @@ class CodeHistoryService(AbstractService):
         if isinstance(code, SubmitUserCode):
             code = context.server.services.user_code._submit(
                 context=context, submit_code=code
-            )
+            ).unwrap()
 
         try:
             code_history = self.stash.get_by_service_func_name_and_verify_key(

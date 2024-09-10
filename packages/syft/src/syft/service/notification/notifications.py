@@ -61,7 +61,7 @@ class Notification(SyftObject):
     linked_obj: LinkedObject | None = None
     notifier_types: list[NOTIFIERS] = []
     email_template: type[EmailTemplate] | None = None
-    replies: list[ReplyNotification] | None = []
+    replies: list[ReplyNotification] = []
 
     __attr_searchable__ = [
         "from_user_verify_key",

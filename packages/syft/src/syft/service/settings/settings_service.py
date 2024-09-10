@@ -180,7 +180,7 @@ class SettingsService(AbstractService):
         ).unwrap()
         if len(current_settings) > 0:
             new_settings = current_settings[0]
-            new_settings.server_side_type = server_side_type
+            new_settings.server_side_type = ServerSideType(server_side_type)
             updated_settings = self.stash.update(
                 context.credentials, new_settings
             ).unwrap()

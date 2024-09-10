@@ -116,13 +116,11 @@ class DatasetService(AbstractService):
         page_index: int | None = 0,
     ) -> DatasetPageView | DictTuple[str, Dataset]:
         """Get a Dataset"""
-        datasets = self.stash.get_all(context.credentials).unwrap()
+        datasets = self.stash.get_all_active(context.credentials).unwrap()
 
         for dataset in datasets:
             if context.server is not None:
                 dataset.server_uid = context.server.id
-            if dataset.to_be_deleted:
-                datasets.remove(dataset)
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index

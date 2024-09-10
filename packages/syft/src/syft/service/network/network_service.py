@@ -486,7 +486,6 @@ class NetworkService(AbstractService):
     def delete_peer_by_id(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         """Delete Server Peer"""
         peer_to_delete = self.stash.get_by_uid(context.credentials, uid).unwrap()
-        peer_to_delete = cast(ServerPeer, peer_to_delete)
 
         server_side_type = cast(ServerType, context.server.server_type)
         if server_side_type.value == ServerType.GATEWAY.value:
