@@ -155,12 +155,20 @@ class Query(ABC):
 
     def limit(self, limit: int | None) -> Self:
         """Add a limit clause to the query."""
-        if limit is not None:
-            self.stmt = self.stmt.limit(limit)
+        if limit is None:
+            return self
+
+        if limit < 0:
+            raise ValueError("Limit must be a positive integer")
+        self.stmt = self.stmt.limit(limit)
+
         return self
 
     def offset(self, offset: int) -> Self:
         """Add an offset clause to the query."""
+        if offset < 0:
+            raise ValueError("Offset must be a positive integer")
+
         self.stmt = self.stmt.offset(offset)
         return self
 
