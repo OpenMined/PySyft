@@ -1,7 +1,6 @@
 # stdlib
 from pathlib import Path
 import tempfile
-import threading
 import uuid
 
 # third party
@@ -9,7 +8,6 @@ from pydantic import BaseModel
 from pydantic import Field
 import sqlalchemy as sa
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
 
 # relative
@@ -18,8 +16,6 @@ from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
 from .schema import Base
-from .utils import dumps
-from .utils import loads
 
 
 @serializable(canonical_name="DBConfig", version=1)
@@ -58,13 +54,25 @@ class PostgresDBConfig(DBConfig):
 class DBManager:
     def __init__(
         self,
-        config: DBConfig,
+        config: SQLiteDBConfig,
         server_uid: UID,
         root_verify_key: SyftVerifyKey,
     ) -> None:
         self.config = config
-        self.server_uid = server_uid
         self.root_verify_key = root_verify_key
+        self.server_uid = server_uid
+        self.engine = create_engine(
+            config.connection_string,
+            # json_serializer=dumps,
+            # json_deserializer=loads,
+        )
+        print(f"Connecting to {config.connection_string}")
+        self.sessionmaker = sessionmaker(bind=self.engine)
+
+        self.update_settings()
+
+    def update_settings(self) -> None:
+        pass
 
     def init_tables(self) -> None:
         pass
@@ -74,27 +82,8 @@ class DBManager:
 
 
 class SQLiteDBManager(DBManager):
-    def __init__(
-        self,
-        config: SQLiteDBConfig,
-        server_uid: UID,
-        root_verify_key: SyftVerifyKey,
-    ) -> None:
-        self.config = config
-        self.root_verify_key = root_verify_key
-        self.server_uid = server_uid
-        self.engine = create_engine(
-            config.connection_string, json_serializer=dumps, json_deserializer=loads
-        )
-        print(f"Connecting to {config.connection_string}")
-        self.Session = sessionmaker(bind=self.engine)
-
-        # TODO use AuthedServiceContext for session management instead of threading.local
-        self.thread_local = threading.local()
-
-        self.update_settings()
-
     def update_settings(self) -> None:
+        # TODO split SQLite / PostgresDBManager
         connection = self.engine.connect()
 
         if self.engine.dialect.name == "sqlite":
@@ -113,17 +102,6 @@ class SQLiteDBManager(DBManager):
     def reset(self) -> None:
         Base.metadata.drop_all(bind=self.engine)
         Base.metadata.create_all(self.engine)
-
-    # TODO remove
-    def get_session_threading_local(self) -> Session:
-        if not hasattr(self.thread_local, "session"):
-            self.thread_local.session = self.Session()
-        return self.thread_local.session
-
-    # TODO remove
-    @property
-    def session(self) -> Session:
-        return self.get_session_threading_local()
 
     @classmethod
     def random(

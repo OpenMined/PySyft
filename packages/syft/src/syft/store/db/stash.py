@@ -1,6 +1,10 @@
 # stdlib
+from collections.abc import Callable
+from functools import wraps
+import inspect
 from typing import Any
 from typing import Generic
+from typing import ParamSpec
 from typing import Set  # noqa: UP035
 from typing import cast
 from typing import get_args
@@ -42,6 +46,7 @@ from .sqlite_db import SQLiteDBManager
 
 StashT = TypeVar("StashT", bound=SyftObject)
 T = TypeVar("T")
+P = ParamSpec("P")
 
 
 def parse_filters(filter_dict: dict[str, Any] | None) -> list[tuple[str, str, Any]]:
@@ -60,6 +65,29 @@ def parse_filters(filter_dict: dict[str, Any] | None) -> list[tuple[str, str, An
     return filters
 
 
+def with_session(func: Callable[P, T]) -> Callable[P, T]:  # type: ignore
+    """
+    Decorator to inject a session into the function kwargs if it is not provided.
+
+    TODO: This decorator is a temporary fix, we want to move to a DI approach instead:
+    move db connection and session to context, and pass context to all stash methods.
+    """
+
+    # inspect if the function has a session kwarg
+    sig = inspect.signature(func)
+    inject_session: bool = "session" in sig.parameters
+
+    @wraps(func)
+    def wrapper(self: "ObjectStash[StashT]", *args: Any, **kwargs: Any) -> Any:
+        if inject_session and kwargs.get("session") is None:
+            with self.sessionmaker() as session:
+                kwargs["session"] = session
+                return func(self, *args, **kwargs)
+        return func(self, *args, **kwargs)
+
+    return wrapper  # type: ignore
+
+
 class ObjectStash(Generic[StashT]):
     table: Table
     object_type: type[SyftObject]
@@ -69,6 +97,7 @@ class ObjectStash(Generic[StashT]):
         self.db = store
         self.object_type = self.get_object_type()
         self.table = create_table(self.object_type, self.dialect)
+        self.sessionmaker = self.db.sessionmaker
 
     @property
     def dialect(self) -> sa.engine.interfaces.Dialect:
@@ -89,8 +118,9 @@ class ObjectStash(Generic[StashT]):
             )
         return generic_args[0]
 
-    def __len__(self) -> int:
-        return self.session.query(self.table).count()
+    @with_session
+    def __len__(self, session: Session = None) -> int:
+        return session.query(self.table).count()
 
     @classmethod
     def random(cls, **kwargs: dict) -> Self:
@@ -140,7 +170,7 @@ class ObjectStash(Generic[StashT]):
         print(
             stmt.compile(
                 compile_kwargs={"literal_binds": True},
-                dialect=self.session.bind.dialect,
+                dialect=self.db.engine.dialect,
             )
         )
 
@@ -148,7 +178,8 @@ class ObjectStash(Generic[StashT]):
     def unique_fields(self) -> list[str]:
         return getattr(self.object_type, "__attr_unique__", [])
 
-    def is_unique(self, obj: StashT) -> bool:
+    @with_session
+    def is_unique(self, obj: StashT, session: Session = None) -> bool:
         unique_fields = self.unique_fields
         if not unique_fields:
             return True
@@ -169,7 +200,7 @@ class ObjectStash(Generic[StashT]):
             *filters,
         )
 
-        results = query.execute(self.session).all()
+        results = query.execute(session).all()
 
         if len(results) > 1:
             return False
@@ -178,20 +209,31 @@ class ObjectStash(Generic[StashT]):
             return result.id == obj.id
         return True
 
-    def exists(self, credentials: SyftVerifyKey, uid: UID) -> bool:
+    @with_session
+    def exists(
+        self, credentials: SyftVerifyKey, uid: UID, session: Session = None
+    ) -> bool:
         # TODO should be @as_result
         # TODO needs credentials check?
         # TODO use COUNT(*) instead of SELECT
         query = self.query().filter("id", "eq", uid)
-        result = query.execute(self.session).first()
+        result = query.execute(session).first()
         return result is not None
 
     @as_result(SyftException, StashException, NotFoundException)
+    @with_session
     def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
+        self,
+        credentials: SyftVerifyKey,
+        uid: UID,
+        has_permission: bool = False,
+        session: Session = None,
     ) -> StashT:
         return self.get_one(
-            credentials=credentials, filters={"id": uid}, has_permission=has_permission
+            credentials=credentials,
+            filters={"id": uid},
+            has_permission=has_permission,
+            session=session,
         ).unwrap()
 
     def _get_field_filter(
@@ -237,7 +279,10 @@ class ObjectStash(Generic[StashT]):
         # TODO make unwrappable serde
         return deserialize_json(row.fields)
 
-    def get_role(self, credentials: SyftVerifyKey) -> ServiceRole:
+    @with_session
+    def get_role(
+        self, credentials: SyftVerifyKey, session: Session = None
+    ) -> ServiceRole:
         # relative
         from ...service.user.user import User
 
@@ -248,7 +293,7 @@ class ObjectStash(Generic[StashT]):
             return ServiceRole.GUEST
 
         query = self.query(User).filter("verify_key", "eq", credentials)
-        user = query.execute(self.session).first()
+        user = query.execute(session).first()
         if user is None:
             return ServiceRole.GUEST
 
@@ -261,7 +306,7 @@ class ObjectStash(Generic[StashT]):
         permission_string = permission.permission_string
         compound_permission_string = permission.compound_permission_string
 
-        if self.session.bind.dialect.name == "postgresql":
+        if self.db.engine.dialect.name == "postgresql":
             permission_string = [permission_string]  # type: ignore
             compound_permission_string = [compound_permission_string]  # type: ignore
         return sa.or_(
@@ -269,6 +314,7 @@ class ObjectStash(Generic[StashT]):
             self.table.c.permissions.contains(compound_permission_string),
         )
 
+    @with_session
     def _apply_permission_filter(
         self,
         stmt: T,
@@ -276,11 +322,12 @@ class ObjectStash(Generic[StashT]):
         credentials: SyftVerifyKey,
         permission: ActionPermission = ActionPermission.READ,
         has_permission: bool = False,
+        session: Session = None,
     ) -> T:
         if has_permission:
             # ignoring permissions
             return stmt
-        role = self.get_role(credentials)
+        role = self.get_role(credentials, session=session)
         if role in (ServiceRole.ADMIN, ServiceRole.DATA_OWNER):
             # admins and data owners have all permissions
             return stmt
@@ -299,6 +346,7 @@ class ObjectStash(Generic[StashT]):
         return stmt
 
     @as_result(SyftException, StashException)
+    @with_session
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -306,6 +354,7 @@ class ObjectStash(Generic[StashT]):
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,  # TODO: check the default value
         ignore_duplicates: bool = False,
+        session: Session = None,
     ) -> StashT:
         if not self.allow_any_type:
             self.check_type(obj, self.object_type).unwrap()
@@ -349,16 +398,18 @@ class ObjectStash(Generic[StashT]):
             permissions=permissions,
             storage_permissions=storage_permissions,
         )
-        self.session.execute(stmt)
-        self.session.commit()
-        return self.get_by_uid(credentials, uid).unwrap()
+        session.execute(stmt)
+        session.commit()
+        return self.get_by_uid(credentials, uid, session=session).unwrap()
 
     @as_result(StashException, NotFoundException)
+    @with_session
     def update(
         self,
         credentials: SyftVerifyKey,
         obj: StashT,
         has_permission: bool = False,
+        session: Session = None,
     ) -> StashT:
         """
         NOTE: We cannot do partial updates on the database,
@@ -381,6 +432,7 @@ class ObjectStash(Generic[StashT]):
             credentials=credentials,
             permission=ActionPermission.WRITE,
             has_permission=has_permission,
+            session=session,
         )
         fields = serialize_json(obj)
         try:
@@ -391,8 +443,8 @@ class ObjectStash(Generic[StashT]):
             )
         stmt = stmt.values(fields=fields)
 
-        result = self.session.execute(stmt)
-        self.session.commit()
+        result = session.execute(stmt)
+        session.commit()
         if result.rowcount == 0:
             raise NotFoundException(
                 f"{self.object_type.__name__}: {obj.id} not found or no permission to update."
@@ -400,8 +452,13 @@ class ObjectStash(Generic[StashT]):
         return self.get_by_uid(credentials, obj.id).unwrap()
 
     @as_result(StashException, NotFoundException)
+    @with_session
     def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
+        self,
+        credentials: SyftVerifyKey,
+        uid: UID,
+        has_permission: bool = False,
+        session: Session = None,
     ) -> UID:
         stmt = self.table.delete().where(self._get_field_filter("id", uid))
         stmt = self._apply_permission_filter(
@@ -409,9 +466,10 @@ class ObjectStash(Generic[StashT]):
             credentials=credentials,
             permission=ActionPermission.WRITE,
             has_permission=has_permission,
+            session=session,
         )
-        result = self.session.execute(stmt)
-        self.session.commit()
+        result = session.execute(stmt)
+        session.commit()
         if result.rowcount == 0:
             raise NotFoundException(
                 f"{self.object_type.__name__}: {uid} not found or no permission to delete."
@@ -419,6 +477,7 @@ class ObjectStash(Generic[StashT]):
         return uid
 
     @as_result(StashException)
+    @with_session
     def get_one(
         self,
         credentials: SyftVerifyKey,
@@ -427,6 +486,7 @@ class ObjectStash(Generic[StashT]):
         order_by: str | None = None,
         sort_order: str | None = None,
         offset: int = 0,
+        session: Session = None,
     ) -> StashT:
         """
         Get first objects from the stash, optionally filtered.
@@ -453,20 +513,21 @@ class ObjectStash(Generic[StashT]):
         query = self.query()
 
         if not has_permission:
-            role = self.get_role(credentials)
+            role = self.get_role(credentials, session=session)
             query = query.with_permissions(credentials, role)
 
         for field_name, operator, field_value in parse_filters(filters):
             query = query.filter(field_name, operator, field_value)
 
         query = query.order_by(order_by, sort_order).offset(offset)
-        result = query.execute(self.session).first()
+        result = query.execute(session).first()
         if result is None:
             raise NotFoundException(f"{self.object_type.__name__}: not found")
 
         return self.row_as_obj(result)
 
     @as_result(StashException)
+    @with_session
     def get_all(
         self,
         credentials: SyftVerifyKey,
@@ -476,6 +537,7 @@ class ObjectStash(Generic[StashT]):
         sort_order: str | None = None,
         limit: int | None = None,
         offset: int = 0,
+        session: Session = None,
     ) -> list[StashT]:
         """
         Get all objects from the stash, optionally filtered.
@@ -503,14 +565,14 @@ class ObjectStash(Generic[StashT]):
         query = self.query()
 
         if not has_permission:
-            role = self.get_role(credentials)
+            role = self.get_role(credentials, session=session)
             query = query.with_permissions(credentials, role)
 
         for field_name, operator, field_value in parse_filters(filters):
             query = query.filter(field_name, operator, field_value)
 
         query = query.order_by(order_by, sort_order).limit(limit).offset(offset)
-        result = query.execute(self.session).all()
+        result = query.execute(session).all()
         return [self.row_as_obj(row) for row in result]
 
     # PERMISSIONS
@@ -525,15 +587,21 @@ class ObjectStash(Generic[StashT]):
         ]
 
     @as_result(NotFoundException)
-    def add_permissions(self, permissions: list[ActionObjectPermission]) -> None:
+    @with_session
+    def add_permissions(
+        self, permissions: list[ActionObjectPermission], session: Session = None
+    ) -> None:
         # TODO: should do this in a single transaction
         # TODO add error handling
         for permission in permissions:
-            self.add_permission(permission).unwrap()
+            self.add_permission(permission, session=session).unwrap()
         return None
 
     @as_result(NotFoundException)
-    def add_permission(self, permission: ActionObjectPermission) -> None:
+    @with_session
+    def add_permission(
+        self, permission: ActionObjectPermission, session: Session = None
+    ) -> None:
         # TODO add error handling
         stmt = self.table.update().where(self.table.c.id == permission.uid)
         if self._is_sqlite():
@@ -551,14 +619,17 @@ class ObjectStash(Generic[StashT]):
                 )
             )
 
-        result = self.session.execute(stmt)
-        self.session.commit()
+        result = session.execute(stmt)
+        session.commit()
         if result.rowcount == 0:
             raise NotFoundException(
                 f"{self.object_type.__name__}: {permission.uid} not found or no permission to change."
             )
 
-    def remove_permission(self, permission: ActionObjectPermission) -> None:
+    @with_session
+    def remove_permission(
+        self, permission: ActionObjectPermission, session: Session = None
+    ) -> None:
         # TODO not threadsafe
         try:
             permissions = self._get_permissions_for_uid(permission.uid).unwrap()
@@ -572,19 +643,25 @@ class ObjectStash(Generic[StashT]):
             .where(self.table.c.id == permission.uid)
             .values(permissions=list(permissions))
         )
-        self.session.execute(stmt)
-        self.session.commit()
+        session.execute(stmt)
+        session.commit()
         return None
 
-    def has_permission(self, permission: ActionObjectPermission) -> bool:
-        if self.get_role(permission.credentials) in (
+    @with_session
+    def has_permission(
+        self, permission: ActionObjectPermission, session: Session = None
+    ) -> bool:
+        if self.get_role(permission.credentials, session=session) in (
             ServiceRole.ADMIN,
             ServiceRole.DATA_OWNER,
         ):
             return True
-        return self.has_permissions([permission])
+        return self.has_permissions([permission], session=session)
 
-    def has_permissions(self, permissions: list[ActionObjectPermission]) -> bool:
+    @with_session
+    def has_permissions(
+        self, permissions: list[ActionObjectPermission], session: Session = None
+    ) -> bool:
         # TODO: we should use a permissions table to check all permissions at once
         # TODO: should check for compound permissions
 
@@ -601,31 +678,39 @@ class ObjectStash(Generic[StashT]):
                 *permission_filters,
             ),
         )
-        result = self.session.execute(stmt).first()
+        result = session.execute(stmt).first()
         return result is not None
 
     @as_result(StashException)
-    def _get_permissions_for_uid(self, uid: UID) -> Set[str]:  # noqa: UP006
+    @with_session
+    def _get_permissions_for_uid(self, uid: UID, session: Session = None) -> Set[str]:  # noqa: UP006
         stmt = select(self.table.c.permissions).where(self.table.c.id == uid)
-        result = self.session.execute(stmt).scalar_one_or_none()
+        result = session.execute(stmt).scalar_one_or_none()
         if result is None:
             raise NotFoundException(f"No permissions found for uid: {uid}")
         return set(result)
 
     @as_result(StashException)
-    def get_all_permissions(self) -> dict[UID, Set[str]]:  # noqa: UP006
+    @with_session
+    def get_all_permissions(self, session: Session = None) -> dict[UID, Set[str]]:  # noqa: UP006
         stmt = select(self.table.c.id, self.table.c.permissions)
-        results = self.session.execute(stmt).all()
+        results = session.execute(stmt).all()
         return {UID(row.id): set(row.permissions) for row in results}
 
     # STORAGE PERMISSIONS
-    def has_storage_permission(self, permission: StoragePermission) -> bool:
-        return self.has_storage_permissions([permission])
+    @with_session
+    def has_storage_permission(
+        self, permission: StoragePermission, session: Session = None
+    ) -> bool:
+        return self.has_storage_permissions([permission], session=session)
 
     @as_result(StashException)
-    def get_all_storage_permissions(self) -> dict[UID, Set[UID]]:  # noqa: UP006
+    @with_session
+    def get_all_storage_permissions(
+        self, session: Session = None
+    ) -> dict[UID, Set[UID]]:  # noqa: UP006
         stmt = select(self.table.c.id, self.table.c.storage_permissions)
-        results = self.session.execute(stmt).all()
+        results = session.execute(stmt).all()
 
         return {
             UID(row.id): {UID(uid) for uid in row.storage_permissions}
@@ -633,7 +718,10 @@ class ObjectStash(Generic[StashT]):
         }
 
     @as_result(NotFoundException)
-    def add_storage_permission(self, permission: StoragePermission) -> None:
+    @with_session
+    def add_storage_permission(
+        self, permission: StoragePermission, session: Session = None
+    ) -> None:
         stmt = self.table.update().where(self.table.c.id == permission.uid)
         if self._is_sqlite():
             stmt = stmt.values(
@@ -650,15 +738,18 @@ class ObjectStash(Generic[StashT]):
                 )
             )
 
-        result = self.session.execute(stmt)
-        self.session.commit()
+        result = session.execute(stmt)
+        session.commit()
         if result.rowcount == 0:
             raise NotFoundException(
                 f"{self.object_type.__name__}: {permission.uid} not found or no permission to change."
             )
         return None
 
-    def has_storage_permissions(self, permissions: list[StoragePermission]) -> bool:
+    @with_session
+    def has_storage_permissions(
+        self, permissions: list[StoragePermission], session: Session = None
+    ) -> bool:
         permission_filters = [
             sa.and_(
                 self._get_field_filter("id", p.uid),
@@ -676,10 +767,13 @@ class ObjectStash(Generic[StashT]):
                 *permission_filters,
             )
         )
-        result = self.session.execute(stmt).first()
+        result = session.execute(stmt).first()
         return result is not None
 
-    def remove_storage_permission(self, permission: StoragePermission) -> None:
+    @with_session
+    def remove_storage_permission(
+        self, permission: StoragePermission, session: Session = None
+    ) -> None:
         # TODO not threadsafe
         try:
             permissions = self._get_storage_permissions_for_uid(permission.uid).unwrap()
@@ -693,21 +787,27 @@ class ObjectStash(Generic[StashT]):
             .where(self.table.c.id == permission.uid)
             .values(storage_permissions=[str(uid) for uid in permissions])
         )
-        self.session.execute(stmt)
-        self.session.commit()
+        session.execute(stmt)
+        session.commit()
         return None
 
     @as_result(StashException)
-    def _get_storage_permissions_for_uid(self, uid: UID) -> Set[UID]:  # noqa: UP006
+    @with_session
+    def _get_storage_permissions_for_uid(
+        self, uid: UID, session: Session = None
+    ) -> Set[UID]:  # noqa: UP006
         stmt = select(self.table.c.id, self.table.c.storage_permissions).where(
             self.table.c.id == uid
         )
-        result = self.session.execute(stmt).first()
+        result = session.execute(stmt).first()
         if result is None:
             raise NotFoundException(f"No storage permissions found for uid: {uid}")
         return {UID(uid) for uid in result.storage_permissions}
 
     @as_result(NotFoundException)
-    def add_storage_permissions(self, permissions: list[StoragePermission]) -> None:
+    @with_session
+    def add_storage_permissions(
+        self, permissions: list[StoragePermission], session: Session = None
+    ) -> None:
         for permission in permissions:
-            self.add_storage_permission(permission).unwrap()
+            self.add_storage_permission(permission, session=session).unwrap()
