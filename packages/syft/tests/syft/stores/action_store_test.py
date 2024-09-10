@@ -19,8 +19,7 @@ from syft.service.user.user_stash import UserStash
 from syft.store.db.sqlite_db import DBManager
 from syft.types.uid import UID
 
-# first party
-from packages.syft.tests.syft.worker_test import action_object_stash  # noqa: F401
+# from packages.syft.tests.syft.worker_test import action_object_stash  # noqa: F401
 
 permissions = [
     ActionObjectOWNER,
