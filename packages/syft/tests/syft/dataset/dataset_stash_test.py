@@ -43,5 +43,5 @@ def test_dataset_search_action_ids(
 
     # passing random object
     random_obj = object()
-    with pytest.raises(AttributeError):
+    with pytest.raises(ValueError):
         result = mock_dataset_stash.search_action_ids(root_verify_key, uid=random_obj)

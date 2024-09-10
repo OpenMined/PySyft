@@ -778,7 +778,7 @@ class JobStash(ObjectStash[Job]):
     ) -> list[Job]:
         return self.get_all(
             credentials=credentials,
-            filter={"user_code_id": user_code_id},
+            filters={"user_code_id": user_code_id},
         ).unwrap()
 
     @as_result(StashException)

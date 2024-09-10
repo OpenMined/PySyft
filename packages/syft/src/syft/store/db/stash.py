@@ -218,11 +218,18 @@ class ObjectStash(Generic[StashT]):
     def get_index(
         self, credentials: SyftVerifyKey, index: int, has_permission: bool = False
     ) -> StashT:
+        order_by, sort_order = self.object_type.__order_by__
+        if index < 0:
+            index = -1 - index
+            sort_order = "desc" if sort_order == "asc" else "asc"
+
         items = self.get_all(
             credentials,
             has_permission=has_permission,
             limit=1,
             offset=index,
+            order_by=order_by,
+            sort_order=sort_order,
         ).unwrap()
 
         if len(items) == 0:
