@@ -256,6 +256,7 @@ passthrough_attrs = [
     "deleted_date",  # syft
     "to_mongo",  # syft 🟡 TODO 23: Add composeable / inheritable object passthrough attrs
     "__attr_searchable__",  # syft
+    "__attr_unique__",  # syft
     "__canonical_name__",  # syft
     "__version__",  # syft
     "__args__",  # pydantic

@@ -8,6 +8,7 @@ from typing import Literal
 # third party
 import sqlalchemy as sa
 from sqlalchemy import Column
+from sqlalchemy import Dialect
 from sqlalchemy import Result
 from sqlalchemy import Select
 from sqlalchemy import Table
@@ -42,6 +43,23 @@ class Query(ABC):
         if cname not in Base.metadata.tables:
             raise ValueError(f"Table for {cname} not found")
         return Base.metadata.tables[cname]
+
+    @staticmethod
+    def get_query_class(dialect: str | Dialect) -> "type[Query]":
+        if isinstance(dialect, Dialect):
+            dialect = dialect.name
+
+        if dialect == "sqlite":
+            return SQLiteQuery
+        elif dialect == "postgresql":
+            return PostgresQuery
+        else:
+            raise ValueError(f"Unsupported dialect {dialect}")
+
+    @classmethod
+    def create(cls, object_type: type[SyftObject], dialect: str | Dialect) -> "Query":
+        query_class = cls.get_query_class(dialect)
+        return query_class(object_type)
 
     def execute(self, session: Session) -> Result:
         """Execute the query using the given session."""
@@ -99,6 +117,73 @@ class Query(ABC):
         Returns:
             Self: The query object with the filter applied
         """
+        filter = self._create_filter_clause(self.table, field, operator, value)
+        self.stmt = self.stmt.where(filter)
+        return self
+
+    def filter_and(self, *filters: tuple[str, str | FilterOperator, Any]) -> Self:
+        """Add filters to the query using an AND clause.
+
+        example usage:
+        Query(User).filter_and(
+            ("name", "eq", "Alice"),
+            ("age", "eq", 30),
+        )
+
+        Args:
+            field (str): Field to filter on
+            operator (str): Operator to use for the filter
+            value (Any): Value to filter on
+
+        Raises:
+            ValueError: If the operator is not supported
+
+        Returns:
+            Self: The query object with the filter applied
+        """
+        filter_clauses = [
+            self._create_filter_clause(self.table, field, operator, value)
+            for field, operator, value in filters
+        ]
+
+        self.stmt = self.stmt.where(sa.and_(*filter_clauses))
+        return self
+
+    def filter_or(self, *filters: tuple[str, str | FilterOperator, Any]) -> Self:
+        """Add filters to the query using an OR clause.
+
+        example usage:
+        Query(User).filter_or(
+            ("name", "eq", "Alice"),
+            ("age", "eq", 30),
+        )
+
+        Args:
+            field (str): Field to filter on
+            operator (str): Operator to use for the filter
+            value (Any): Value to filter on
+
+        Raises:
+            ValueError: If the operator is not supported
+
+        Returns:
+            Self: The query object with the filter applied
+        """
+        filter_clauses = [
+            self._create_filter_clause(self.table, field, operator, value)
+            for field, operator, value in filters
+        ]
+
+        self.stmt = self.stmt.where(sa.or_(*filter_clauses))
+        return self
+
+    def _create_filter_clause(
+        self,
+        table: Table,
+        field: str,
+        operator: str | FilterOperator,
+        value: Any,
+    ) -> sa.sql.elements.BinaryExpression:
         if isinstance(operator, str):
             try:
                 operator = FilterOperator(operator.lower())
@@ -106,12 +191,9 @@ class Query(ABC):
                 raise ValueError(f"Filter operator {operator} not supported")
 
         if operator == FilterOperator.EQ:
-            filter = self._eq_filter(self.table, field, value)
+            return self._eq_filter(table, field, value)
         elif operator == FilterOperator.CONTAINS:
-            filter = self._contains_filter(self.table, field, value)
-
-        self.stmt = self.stmt.where(filter)
-        return self
+            return self._contains_filter(table, field, value)
 
     def order_by(
         self,

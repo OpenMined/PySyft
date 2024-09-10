@@ -35,8 +35,8 @@ JSON_CANONICAL_NAME_FIELD = "__canonical_name__"
 JSON_VERSION_FIELD = "__version__"
 JSON_DATA_FIELD = "data"
 
-
-Json = str | int | float | bool | None | list["Json"] | dict[str, "Json"]
+JsonPrimitive = str | int | float | bool | None
+Json = JsonPrimitive | list["Json"] | dict[str, "Json"]
 
 
 class JSONSerdeError(SyftException):
@@ -179,10 +179,7 @@ def _serialize_pydantic_to_json(obj: pydantic.BaseModel) -> dict[str, Json]:
     for key, type_ in obj.model_fields.items():
         if key in all_exclude_attrs:
             continue
-        try:
-            result[key] = serialize_json(getattr(obj, key), type_.annotation)
-        except Exception as e:
-            raise ValueError(f"Failed to serialize attribute {key}: {e}")
+        result[key] = serialize_json(getattr(obj, key), type_.annotation)
 
     result = _serialize_searchable_attrs(obj, result, raise_errors=False)
 
@@ -206,7 +203,7 @@ def _serialize_searchable_attrs(
     obj: pydantic.BaseModel, obj_dict: dict[str, Json], raise_errors: bool = True
 ) -> dict[str, Json]:
     """
-    Add searchable attrs to the serialized object dict, if they are not already present.
+    Add searchable attrs  and unique attrs to the serialized object dict, if they are not already present.
     Needed for adding non-field attributes (like @property)
 
     Args:
@@ -222,7 +219,10 @@ def _serialize_searchable_attrs(
         dict[str, Json]: Serialized object dict including searchable attributes.
     """
     searchable_attrs: list[str] = getattr(obj, "__attr_searchable__", [])
-    for attr in searchable_attrs:
+    unique_attrs: list[str] = getattr(obj, "__attr_unique__", [])
+
+    attrs_to_add = set(searchable_attrs) | set(unique_attrs)
+    for attr in attrs_to_add:
         if attr not in obj_dict:
             try:
                 value = getattr(obj, attr)
@@ -451,3 +451,8 @@ def deserialize_json(value: Json, annotation: Any = None) -> Any:
         return _deserialize_from_json_bytes(value)
     else:
         raise ValueError(f"Cannot deserialize {value} to {annotation}")
+
+
+def is_json_primitive(value: Any) -> bool:
+    serialized = serialize_json(value, validate=False)
+    return isinstance(serialized, JsonPrimitive)  # type: ignore
