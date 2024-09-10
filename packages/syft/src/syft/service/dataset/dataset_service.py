@@ -245,6 +245,7 @@ class DatasetService(AbstractService):
         path="dataset.replace",
         name="replace",
         roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def replace(
         self,
