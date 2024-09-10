@@ -88,7 +88,7 @@ class ServiceRegistry:
     service_path_map: dict[str, AbstractService] = field(
         default_factory=dict, init=False
     )
-    stashes: dict[StashT, ObjectStash[StashT]] = {}
+    stashes: dict[StashT, ObjectStash[StashT]] = field(default_factory=dict, init=False)
 
     @classmethod
     def for_server(cls, server: "Server") -> "ServiceRegistry":
@@ -100,7 +100,8 @@ class ServiceRegistry:
             self.services.append(service)
             self.service_path_map[service_cls.__name__.lower()] = service
 
-            if hasattr(service, "stash"):
+            # TODO ActionService now has same stash, but interface is still different. Fix this.
+            if hasattr(service, "stash") and not issubclass(service_cls, ActionService):
                 stash: ObjectStash = service.stash
                 self.stashes[stash.object_type] = stash
 

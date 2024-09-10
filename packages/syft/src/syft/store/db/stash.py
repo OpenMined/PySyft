@@ -662,7 +662,7 @@ class ObjectStash(Generic[StashT]):
         results = self.session.execute(stmt).all()
 
         return {
-            UID(row.id): {(UID(uid) for uid in row.storage_permissions)}
+            UID(row.id): {UID(uid) for uid in row.storage_permissions}
             for row in results
         }
 
