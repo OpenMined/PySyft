@@ -5,11 +5,9 @@ from __future__ import annotations
 from collections import defaultdict
 from enum import Enum
 from typing import Any
+from typing import cast
 
 # third party
-from result import Err
-from result import Ok
-from result import Result
 from typing_extensions import Self
 
 # relative
@@ -24,9 +22,11 @@ from ..service.action.action_permissions import ActionPermission
 from ..service.action.action_permissions import StoragePermission
 from ..service.context import AuthedServiceContext
 from ..service.response import SyftSuccess
+from ..types.errors import SyftException
+from ..types.result import as_result
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
-from .document_store import BaseStash
+from .document_store import NewBaseStash
 from .document_store import PartitionKey
 from .document_store import PartitionKeys
 from .document_store import QueryKey
@@ -97,10 +97,9 @@ class KeyValueStorePartition(StorePartition):
             Backend specific configuration
     """
 
-    def init_store(self) -> Result[Ok, Err]:
-        store_status = super().init_store()
-        if store_status.is_err():
-            return store_status
+    @as_result(SyftException)
+    def init_store(self) -> bool:
+        super().init_store().unwrap()
 
         try:
             self.data = self.store_config.backing_store(
@@ -112,6 +111,7 @@ class KeyValueStorePartition(StorePartition):
             self.searchable_keys = self.store_config.backing_store(
                 "searchable_keys", self.settings, self.store_config
             )
+
             # uid -> set['<uid>_permission']
             self.permissions: dict[UID, set[str]] = self.store_config.backing_store(
                 "permissions", self.settings, self.store_config, ddtype=set
@@ -137,19 +137,20 @@ class KeyValueStorePartition(StorePartition):
                 if pk_key not in self.searchable_keys:
                     self.searchable_keys[pk_key] = defaultdict(list)
         except BaseException as e:
-            return Err(str(e))
+            raise SyftException.from_exception(e)
 
-        return Ok(True)
+        return True
 
     def __len__(self) -> int:
         return len(self.data)
 
+    @as_result(SyftException, KeyError)
     def _get(
         self,
         uid: UID,
         credentials: SyftVerifyKey,
         has_permission: bool | None = False,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         # relative
         from ..service.action.action_store import ActionObjectREAD
 
@@ -158,8 +159,8 @@ class KeyValueStorePartition(StorePartition):
 
         if self.has_permission(read_permission) or has_permission:
             syft_object = self.data[uid]
-            return Ok(syft_object)
-        return Err(f"Permission: {read_permission} denied")
+            return syft_object
+        raise SyftException(public_message=f"Permission: {read_permission} denied")
 
     # Potentially thread-unsafe methods.
     # CAUTION:
@@ -167,6 +168,7 @@ class KeyValueStorePartition(StorePartition):
     #       * Do not call the public thread-safe methods here(with locking).
     # These methods are called from the public thread-safe API, and will hang the process.
 
+    @as_result(SyftException)
     def _set(
         self,
         credentials: SyftVerifyKey,
@@ -174,84 +176,82 @@ class KeyValueStorePartition(StorePartition):
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
-    ) -> Result[SyftObject, str]:
-        try:
-            # if obj.id is None:
-            # obj.id = UID()
-            store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
-            uid = store_query_key.value
-            write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
-            can_write = self.has_permission(write_permission)
-            unique_query_keys: QueryKeys = self.settings.unique_keys.with_obj(obj)
-            store_key_exists = store_query_key.value in self.data
-            searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
+    ) -> SyftObject:
+        store_query_key: QueryKey = self.settings.store_key.with_obj(obj)
+        uid = store_query_key.value
+        write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
+        unique_query_keys: QueryKeys = self.settings.unique_keys.with_obj(obj)
+        store_key_exists = store_query_key.value in self.data
+        searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
 
-            ck_check = self._check_partition_keys_unique(
-                unique_query_keys=unique_query_keys
+        ck_check = self._check_partition_keys_unique(
+            unique_query_keys=unique_query_keys
+        ).unwrap()
+
+        can_write = self.has_permission(write_permission)
+
+        if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
+            # attempt to claim it for writing
+            can_write = self.take_ownership(uid=uid, credentials=credentials).unwrap()
+        elif not ignore_duplicates:
+            keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
+            raise SyftException(
+                public_message=f"Duplication Key Error for {obj}.\n"
+                f"The fields that should be unique are {keys}."
             )
+        else:
+            # we are not throwing an error, because we are ignoring duplicates
+            # we are also not writing though
+            return obj
 
-            if not store_key_exists and ck_check == UniqueKeyCheck.EMPTY:
-                # attempt to claim it for writing
-                ownership_result = self.take_ownership(uid=uid, credentials=credentials)
-                can_write = ownership_result.is_ok()
-            elif not ignore_duplicates:
-                keys = ", ".join(f"`{key.key}`" for key in unique_query_keys.all)
-                return Err(
-                    f"Duplication Key Error for {obj}.\n"
-                    f"The fields that should be unique are {keys}."
+        if not can_write:
+            raise SyftException(public_message=f"Permission: {write_permission} denied")
+
+        self._set_data_and_keys(
+            store_query_key=store_query_key,
+            unique_query_keys=unique_query_keys,
+            searchable_query_keys=searchable_query_keys,
+            obj=obj,
+        )
+        self.data[uid] = obj
+
+        # Add default permissions
+        if uid not in self.permissions:
+            self.permissions[uid] = set()
+
+        self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
+
+        if add_permissions is not None:
+            self.add_permissions(add_permissions)
+
+        if uid not in self.storage_permissions:
+            self.storage_permissions[uid] = set()
+
+        if add_storage_permission:
+            self.add_storage_permission(
+                StoragePermission(
+                    uid=uid,
+                    server_uid=self.server_uid,
                 )
-            else:
-                # we are not throwing an error, because we are ignoring duplicates
-                # we are also not writing though
-                return Ok(obj)
-
-            if can_write:
-                self._set_data_and_keys(
-                    store_query_key=store_query_key,
-                    unique_query_keys=unique_query_keys,
-                    searchable_query_keys=searchable_query_keys,
-                    obj=obj,
-                )
-                self.data[uid] = obj
-
-                # Add default permissions
-                if uid not in self.permissions:
-                    self.permissions[uid] = set()
-                self.add_permission(ActionObjectREAD(uid=uid, credentials=credentials))
-                if add_permissions is not None:
-                    self.add_permissions(add_permissions)
-
-                if uid not in self.storage_permissions:
-                    self.storage_permissions[uid] = set()
-                if add_storage_permission:
-                    self.add_storage_permission(
-                        StoragePermission(
-                            uid=uid,
-                            server_uid=self.server_uid,
-                        )
-                    )
-
-                return Ok(obj)
-            else:
-                return Err(f"Permission: {write_permission} denied")
-        except Exception as e:
-            return Err(f"Failed to write obj {obj}. {e}")
-
-    def take_ownership(
-        self, uid: UID, credentials: SyftVerifyKey
-    ) -> Result[SyftSuccess, str]:
-        # first person using this UID can claim ownership
-        if uid not in self.permissions and uid not in self.data:
-            self.add_permissions(
-                [
-                    ActionObjectOWNER(uid=uid, credentials=credentials),
-                    ActionObjectWRITE(uid=uid, credentials=credentials),
-                    ActionObjectREAD(uid=uid, credentials=credentials),
-                    ActionObjectEXECUTE(uid=uid, credentials=credentials),
-                ]
             )
-            return Ok(SyftSuccess(message=f"Ownership of ID: {uid} taken."))
-        return Err(f"UID: {uid} already owned.")
+        return obj
+
+    @as_result(SyftException)
+    def take_ownership(self, uid: UID, credentials: SyftVerifyKey) -> bool:
+        if uid in self.permissions or uid in self.data:
+            raise SyftException(public_message=f"UID: {uid} already owned.")
+
+        # The first person using this UID can claim ownership
+        self.add_permissions(
+            [
+                ActionObjectOWNER(uid=uid, credentials=credentials),
+                ActionObjectWRITE(uid=uid, credentials=credentials),
+                ActionObjectREAD(uid=uid, credentials=credentials),
+                ActionObjectEXECUTE(uid=uid, credentials=credentials),
+            ]
+        )
+
+        return True
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
         permissions = self.permissions[permission.uid]
@@ -309,13 +309,15 @@ class KeyValueStorePartition(StorePartition):
 
         return False
 
-    def _get_permissions_for_uid(self, uid: UID) -> Result[set[str], Err]:
+    @as_result(SyftException)
+    def _get_permissions_for_uid(self, uid: UID) -> set[str]:
         if uid in self.permissions:
-            return Ok(self.permissions[uid])
-        return Err(f"No permissions found for uid: {uid}")
+            return self.permissions[uid]
+        raise SyftException(public_message=f"No permissions found for uid: {uid}")
 
-    def get_all_permissions(self) -> Result[dict[UID, set[str]], str]:
-        return Ok(dict(self.permissions.items()))
+    @as_result(SyftException)
+    def get_all_permissions(self) -> dict[UID, set[str]]:
+        return self.permissions
 
     def add_storage_permission(self, permission: StoragePermission) -> None:
         permissions = self.storage_permissions[permission.uid]
@@ -339,27 +341,33 @@ class KeyValueStorePartition(StorePartition):
             return permission.server_uid in self.storage_permissions[permission.uid]
         return False
 
-    def _get_storage_permissions_for_uid(self, uid: UID) -> Result[set[UID], Err]:
+    @as_result(SyftException)
+    def _get_storage_permissions_for_uid(self, uid: UID) -> set[UID]:
         if uid in self.storage_permissions:
-            return Ok(self.storage_permissions[uid])
-        return Err(f"No storage permissions found for uid: {uid}")
+            return self.storage_permissions[uid]
+        raise SyftException(
+            public_message=f"No storage permissions found for uid: {uid}"
+        )
 
-    def get_all_storage_permissions(self) -> Result[dict[UID, set[UID]], str]:
-        return Ok(dict(self.storage_permissions.items()))
+    @as_result(SyftException)
+    def get_all_storage_permissions(self) -> dict[UID, set[UID]]:
+        return self.storage_permissions
 
+    @as_result(SyftException)
     def _all(
         self,
         credentials: SyftVerifyKey,
         order_by: PartitionKey | None = None,
         has_permission: bool | None = False,
-    ) -> Result[list[BaseStash.object_type], str]:
+    ) -> list[NewBaseStash.object_type]:  # type: ignore
         # this checks permissions
         res = [self._get(uid, credentials, has_permission) for uid in self.data.keys()]
         result = [x.ok() for x in res if x.is_ok()]
         if order_by is not None:
             result = sorted(result, key=lambda x: getattr(x, order_by.key, ""))
-        return Ok(result)
+        return result
 
+    @as_result(SyftException)
     def _remove_keys(
         self,
         store_key: QueryKey,
@@ -370,7 +378,8 @@ class KeyValueStorePartition(StorePartition):
         for qk in uqks:
             pk_key, pk_value = qk.key, qk.value
             ck_col = self.unique_keys[pk_key]
-            ck_col.pop(pk_value, None)
+            # ck_col.pop(pk_value, None)
+            ck_col.pop(store_key.value, None)
             self.unique_keys[pk_key] = ck_col
 
         sqks = searchable_query_keys.all
@@ -389,13 +398,14 @@ class KeyValueStorePartition(StorePartition):
                     ck_col[pk_value].remove(store_key.value)
             self.searchable_keys[pk_key] = ck_col
 
+    @as_result(SyftException)
     def _find_index_or_search_keys(
         self,
         credentials: SyftVerifyKey,
         index_qks: QueryKeys,
         search_qks: QueryKeys,
         order_by: PartitionKey | None = None,
-    ) -> Result[list[SyftObject], str]:
+    ) -> list[SyftObject]:
         ids: set | None = None
         errors = []
         # third party
@@ -403,7 +413,8 @@ class KeyValueStorePartition(StorePartition):
             index_results = self._get_keys_index(qks=index_qks)
             if index_results.is_ok():
                 if ids is None:
-                    ids = index_results.ok()
+                    ids = index_results.ok() if index_results.ok() else set()
+                ids = cast(set, ids)
                 ids = ids.intersection(index_results.ok())
             else:
                 errors.append(index_results.err())
@@ -414,22 +425,24 @@ class KeyValueStorePartition(StorePartition):
 
             if search_results.is_ok():
                 if ids is None:
-                    ids = search_results.ok()
+                    ids = search_results.ok() if search_results.ok() else set()
+                ids = cast(set, ids)
                 ids = ids.intersection(search_results.ok())
             else:
                 errors.append(search_results.err())
 
         if len(errors) > 0:
-            return Err(" ".join(errors))
+            raise SyftException(public_message=" ".join([str(e) for e in errors]))
 
         if ids is None:
-            return Ok([])
+            return []
 
         qks: QueryKeys = self.store_query_keys(ids)
         return self._get_all_from_store(
             credentials=credentials, qks=qks, order_by=order_by
-        )
+        ).unwrap()
 
+    @as_result(SyftException)
     def _update(
         self,
         credentials: SyftVerifyKey,
@@ -438,10 +451,12 @@ class KeyValueStorePartition(StorePartition):
         has_permission: bool = False,
         overwrite: bool = False,
         allow_missing_keys: bool = False,
-    ) -> Result[SyftObject, str]:
+    ) -> SyftObject:
         try:
             if qk.value not in self.data:
-                return Err(f"No object exists for query key: {qk}")
+                raise SyftException(
+                    public_message=f"No {type(obj)} exists for query key: {qk}"
+                )
 
             if has_permission or self.has_permission(
                 ActionObjectWRITE(uid=qk.value, credentials=credentials)
@@ -466,7 +481,6 @@ class KeyValueStorePartition(StorePartition):
                     )
 
                 store_query_key = self.settings.store_key.with_obj(_original_obj)
-
                 # remove old keys
                 self._remove_keys(
                     store_key=store_query_key,
@@ -498,19 +512,22 @@ class KeyValueStorePartition(StorePartition):
 
                 # 🟡 TODO 28: Add locking in this transaction
 
-                return Ok(_original_obj)
+                return _original_obj
             else:
-                return Err(f"Failed to update obj {obj}, you have no permission")
+                raise SyftException(
+                    public_message=f"Failed to update obj {obj}, you have no permission"
+                )
 
         except Exception as e:
-            return Err(f"Failed to update obj {obj} with error: {e}")
+            raise SyftException.from_exception(e)
 
+    @as_result(SyftException)
     def _get_all_from_store(
         self,
         credentials: SyftVerifyKey,
         qks: QueryKeys,
         order_by: PartitionKey | None = None,
-    ) -> Result[list[SyftObject], str]:
+    ) -> list[SyftObject]:
         matches = []
         for qk in qks.all:
             if qk.value in self.data:
@@ -520,14 +537,15 @@ class KeyValueStorePartition(StorePartition):
                     matches.append(self.data[qk.value])
         if order_by is not None:
             matches = sorted(matches, key=lambda x: getattr(x, order_by.key, ""))
-        return Ok(matches)
+        return matches
 
-    def create(self, obj: SyftObject) -> Result[SyftObject, str]:
+    def create(self, obj: SyftObject) -> None:
         pass
 
+    @as_result(SyftException)
     def _delete(
         self, credentials: SyftVerifyKey, qk: QueryKey, has_permission: bool = False
-    ) -> Result[SyftSuccess, Err]:
+    ) -> SyftSuccess:
         try:
             if has_permission or self.has_permission(
                 ActionObjectWRITE(uid=qk.value, credentials=credentials)
@@ -537,23 +555,27 @@ class KeyValueStorePartition(StorePartition):
                 self.storage_permissions.pop(qk.value)
                 self._delete_unique_keys_for(_obj)
                 self._delete_search_keys_for(_obj)
-                return Ok(SyftSuccess(message="Deleted"))
+                return SyftSuccess(message="Deleted")
             else:
-                return Err(
-                    f"Failed to delete with query key {qk}, you have no permission"
+                raise SyftException(
+                    public_message=f"Failed to delete with query key {qk}, you have no permission"
                 )
         except Exception as e:
-            return Err(f"Failed to delete with query key {qk} with error: {e}")
+            raise SyftException(
+                public_message=f"Failed to delete with query key {qk} with error: {e}"
+            )
 
-    def _delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
+    @as_result(SyftException)
+    def _delete_unique_keys_for(self, obj: SyftObject) -> SyftSuccess:
         for _unique_ck in self.unique_cks:
             qk = _unique_ck.with_obj(obj)
             unique_keys = self.unique_keys[qk.key]
             unique_keys.pop(qk.value, None)
             self.unique_keys[qk.key] = unique_keys
-        return Ok(SyftSuccess(message="Deleted"))
+        return SyftSuccess(message="Deleted")
 
-    def _delete_search_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
+    @as_result(SyftException)
+    def _delete_search_keys_for(self, obj: SyftObject) -> SyftSuccess:
         for _search_ck in self.searchable_cks:
             qk: QueryKey = _search_ck.with_obj(obj)
             search_keys: defaultdict = self.searchable_keys[qk.key]
@@ -563,9 +585,10 @@ class KeyValueStorePartition(StorePartition):
             else:
                 search_keys.pop(qk.value, None)
             self.searchable_keys[qk.key] = search_keys
-        return Ok(SyftSuccess(message="Deleted"))
+        return SyftSuccess(message="Deleted")
 
-    def _get_keys_index(self, qks: QueryKeys) -> Result[set[Any], str]:
+    @as_result(SyftException)
+    def _get_keys_index(self, qks: QueryKeys) -> set[Any]:
         try:
             # match AND
             subsets: list = []
@@ -573,7 +596,9 @@ class KeyValueStorePartition(StorePartition):
                 subset: set = set()
                 pk_key, pk_value = qk.key, qk.value
                 if pk_key not in self.unique_keys:
-                    return Err(f"Failed to query index with {qk}")
+                    raise SyftException(
+                        public_message=f"Failed to query index with {qk}"
+                    )
                 ck_col = self.unique_keys[pk_key]
                 if pk_value not in ck_col.keys():
                     # must be at least one in all query keys
@@ -582,17 +607,18 @@ class KeyValueStorePartition(StorePartition):
                 subsets.append({store_value})
 
             if len(subsets) == 0:
-                return Ok(set())
+                return set()
             # AND
             subset = subsets.pop()
             for s in subsets:
                 subset = subset.intersection(s)
 
-            return Ok(subset)
+            return subset
         except Exception as e:
-            return Err(f"Failed to query with {qks}. {e}")
+            raise SyftException(public_message=f"Failed to query with {qks}. {e}")
 
-    def _find_keys_search(self, qks: QueryKeys) -> Result[set[QueryKey], str]:
+    @as_result(SyftException)
+    def _find_keys_search(self, qks: QueryKeys) -> set[QueryKey]:
         try:
             # match AND
             subsets = []
@@ -600,7 +626,7 @@ class KeyValueStorePartition(StorePartition):
                 subset: set = set()
                 pk_key, pk_value = qk.key, qk.value
                 if pk_key not in self.searchable_keys:
-                    return Err(f"Failed to search with {qk}")
+                    raise SyftException(public_message=f"Failed to search with {qk}")
                 ck_col = self.searchable_keys[pk_key]
                 if qk.type_list:
                     # 🟡 TODO: change this hacky way to do on to many relationships
@@ -627,15 +653,16 @@ class KeyValueStorePartition(StorePartition):
                     subsets.append(set(store_values))
 
             if len(subsets) == 0:
-                return Ok(set())
+                return set()
             # AND
             subset = subsets.pop()
             for s in subsets:
                 subset = subset.intersection(s)
-            return Ok(subset)
+            return subset
         except Exception as e:
-            return Err(f"Failed to query with {qks}. {e}")
+            raise SyftException(public_message=f"Failed to query with {qks}. {e}")
 
+    @as_result(SyftException)
     def _check_partition_keys_unique(
         self, unique_query_keys: QueryKeys
     ) -> UniqueKeyCheck:
@@ -649,8 +676,8 @@ class KeyValueStorePartition(StorePartition):
         for qk in qks:
             pk_key, pk_value = qk.key, qk.value
             if pk_key not in self.unique_keys:
-                raise Exception(
-                    f"pk_key: {pk_key} not in unique_keys: {self.unique_keys.keys()}"
+                raise SyftException(
+                    public_message=f"pk_key: {pk_key} not in unique_keys: {self.unique_keys.keys()}"
                 )
             ck_col = self.unique_keys[pk_key]
             if pk_value in ck_col:
@@ -701,9 +728,10 @@ class KeyValueStorePartition(StorePartition):
 
         self.data[store_query_key.value] = obj
 
+    @as_result(SyftException)
     def _migrate_data(
         self, to_klass: SyftObject, context: AuthedServiceContext, has_permission: bool
-    ) -> Result[bool, str]:
+    ) -> bool:
         credentials = context.credentials
         has_permission = (credentials == self.root_verify_key) or has_permission
         if has_permission:
@@ -711,22 +739,21 @@ class KeyValueStorePartition(StorePartition):
                 try:
                     migrated_value = value.migrate_to(to_klass.__version__, context)
                 except Exception:
-                    return Err(
-                        f"Failed to migrate data to {to_klass} for qk {to_klass.__version__}: {key}"
+                    raise SyftException(
+                        public_message=f"Failed to migrate data to {to_klass} for qk {to_klass.__version__}: {key}"
                     )
                 qk = self.settings.store_key.with_obj(key)
-                result = self._update(
+                self._update(
                     credentials,
                     qk=qk,
                     obj=migrated_value,
                     has_permission=has_permission,
                     overwrite=True,
                     allow_missing_keys=True,
-                )
+                ).unwrap()
 
-                if result.is_err():
-                    return result.err()
+            return True
 
-            return Ok(True)
-
-        return Err("You don't have permissions to migrate data.")
+        raise SyftException(
+            public_message="You don't have permissions to migrate data."
+        )

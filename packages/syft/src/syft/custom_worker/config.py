@@ -14,9 +14,9 @@ import yaml
 
 # relative
 from ..serde.serializable import serializable
-from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
+from ..types.errors import SyftException
 from .utils import iterator_to_string
 
 PYTHON_DEFAULT_VER = "3.12"
@@ -168,12 +168,12 @@ class DockerWorkerConfig(WorkerConfig):
     def set_description(self, description_text: str) -> None:
         self.description = description_text
 
-    def test_image_build(self, tag: str, **kwargs: Any) -> SyftSuccess | SyftError:
+    def test_image_build(self, tag: str, **kwargs: Any) -> SyftSuccess:
         try:
             with contextlib.closing(docker.from_env()) as client:
                 if not client.ping():
-                    return SyftError(
-                        message="Cannot reach docker server. Please check if docker is running."
+                    raise SyftException(
+                        "Cannot reach docker server. Please check if docker is running."
                     )
 
                 kwargs["fileobj"] = io.BytesIO(self.dockerfile.encode("utf-8"))
@@ -188,4 +188,6 @@ class DockerWorkerConfig(WorkerConfig):
             # stdlib
             import traceback
 
-            return SyftError(message=f"Failed to build: {e} {traceback.format_exc()}")
+            raise SyftException(
+                public_message=f"Failed to build: {e} {traceback.format_exc()}"
+            )

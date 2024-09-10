@@ -12,26 +12,28 @@ from typing import Any
 # third party
 from pydantic import Field
 from pydantic import model_validator
-from result import Err
-from result import Ok
-from result import Result
 from typing_extensions import Self
 
 # relative
-from ...client.api import APIRegistry
 from ...client.api import SyftAPICall
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
-from ...store.document_store import BaseUIDStoreStash
 from ...store.document_store import DocumentStore
+from ...store.document_store import NewBaseUIDStoreStash
 from ...store.document_store import PartitionKey
 from ...store.document_store import PartitionSettings
 from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
+from ...store.document_store_errors import TooManyItemsFoundException
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
+from ...types.errors import SyftException
+from ...types.result import Err
+from ...types.result import as_result
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -40,7 +42,6 @@ from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.markdown import as_markdown_code
-from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
@@ -94,7 +95,10 @@ class Job(SyncableSyftObject):
 
     id: UID
     server_uid: UID
-    result: Any | None = None
+    result: Any | None = (
+        None  # Currently result can either have the error or the result
+    )
+    # we should split this out into two different fields
     resolved: bool = False
     status: JobStatus = JobStatus.CREATED
     log_id: UID | None = None
@@ -173,12 +177,11 @@ class Job(SyncableSyftObject):
     @property
     def user_code_name(self) -> str | None:
         if self.user_code_id is not None:
-            api = APIRegistry.api_for(
-                server_uid=self.syft_server_location,
-                user_verify_key=self.syft_client_verify_key,
-            )
-            if api is None:
+            api = self.get_api_wrapped()
+            if api.is_err():
                 return None
+            else:
+                api = api.unwrap()
             user_code = api.services.code.get_by_id(self.user_code_id)
             return user_code.service_func_name
         return None
@@ -201,15 +204,8 @@ class Job(SyncableSyftObject):
         return None
 
     @property
-    def worker(self) -> SyftWorker | SyftError:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(
-                message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+    def worker(self) -> SyftWorker:
+        api = self.get_api()
         return api.services.worker.get(self.job_worker_id)
 
     @property
@@ -275,14 +271,7 @@ class Job(SyncableSyftObject):
             self.result = info.result
 
     def restart(self, kill: bool = False) -> None:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise ValueError(
-                f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+        api = self.get_api()
         call = SyftAPICall(
             server_uid=self.server_uid,
             path="job.restart",
@@ -294,15 +283,8 @@ class Job(SyncableSyftObject):
         self.fetch()
         return res
 
-    def kill(self) -> SyftError | SyftSuccess:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(
-                message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+    def kill(self) -> SyftSuccess:
+        api = self.get_api()
         call = SyftAPICall(
             server_uid=self.server_uid,
             path="job.kill",
@@ -315,24 +297,8 @@ class Job(SyncableSyftObject):
         return res
 
     def fetch(self) -> None:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise ValueError(
-                f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
-        call = SyftAPICall(
-            server_uid=self.server_uid,
-            path="job.get",
-            args=[],
-            kwargs={"uid": self.id},
-            blocking=True,
-        )
-        job: Job | None = api.make_call(call)
-        if job is None:
-            return None
+        api = self.get_api()
+        job = api.job.get(self.id)
         self.resolved = job.resolved
         if job.resolved:
             self.result = job.result
@@ -342,53 +308,24 @@ class Job(SyncableSyftObject):
         self.current_iter = job.current_iter
 
     @property
-    def subjobs(self) -> list["Job"] | SyftError:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(
-                message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+    def subjobs(self) -> list["Job"]:
+        api = self.get_api()
         return api.services.job.get_subjobs(self.id)
 
-    def get_subjobs(self, context: AuthedServiceContext) -> list["Job"] | SyftError:
-        job_service = context.server.get_service("jobservice")
-        return job_service.get_subjobs(context, self.id)
+    def get_subjobs(self, context: AuthedServiceContext) -> list["Job"]:
+        return context.server.services.job.get_subjobs(context, self.id)
 
     @property
-    def owner(self) -> UserView | SyftError:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(
-                message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
-        return api.services.user.get_current_user(self.id)
+    def owner(self) -> UserView:
+        return self.get_api().services.user.get_current_user(self.id)
 
-    def _get_log_objs(self) -> SyftLog | SyftError:
-        api = APIRegistry.api_for(
-            server_uid=self.server_uid,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            raise ValueError(f"api is None. You must login to {self.server_uid}")
-        return api.services.log.get(self.log_id)
+    def _get_log_objs(self) -> SyftLog:
+        return self.get_api().services.log.get(self.log_id)
 
     def logs(
         self, stdout: bool = True, stderr: bool = True, _print: bool = True
     ) -> str | None:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return (
-                f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
+        api = self.get_api()
 
         has_permissions = True
 
@@ -543,50 +480,25 @@ class Job(SyncableSyftObject):
         return self.status
 
     @property
-    def requesting_user(self) -> UserView | SyftError:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(
-                message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
-        return api.services.user.view(self.requested_by)
+    def requesting_user(self) -> UserView | None:
+        try:
+            return self.get_api().services.user.view(self.requested_by)
+        except SyftException:
+            return None
 
     @property
-    def server_name(self) -> str | SyftError | None:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(
-                message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
-        return api.server_name
+    def server_name(self) -> str | None:
+        return self.get_api().server_name
 
     @property
-    def parent(self) -> Self | SyftError:
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-        if api is None:
-            return SyftError(
-                message=f"Can't access Syft API. You must login to {self.syft_server_location}"
-            )
-        return api.services.job.get(self.parent_job_id)
+    def parent(self) -> Self:
+        return self.get_api().services.job.get(self.parent_job_id)
 
     @property
-    def ancestors_name_list(self) -> list[str] | SyftError:
+    def ancestors_name_list(self) -> list[str]:
         if self.parent_job_id:
             parent = self.parent
-            if isinstance(parent, SyftError):
-                return parent
             parent_name_list = parent.ancestors_name_list
-            if isinstance(parent_name_list, SyftError):
-                return parent_name_list
             parent_name_list.append(parent.user_code_name)
             return parent_name_list
         return []
@@ -600,8 +512,6 @@ class Job(SyncableSyftObject):
         logs_tab_id = f"Logs_{identifier}"
         job_type = "JOB" if not self.parent_job_id else "SUBJOB"
         ancestor_name_list = self.ancestors_name_list
-        if isinstance(ancestor_name_list, SyftError):
-            return ancestor_name_list
         api_header = f"{self.server_name}/jobs/" + "/".join(ancestor_name_list)
         copy_id_button = CopyIDButton(copy_text=str(self.id), max_width=60)
         button_html = copy_id_button.to_html()
@@ -609,15 +519,16 @@ class Job(SyncableSyftObject):
         updated_at = str(self.updated_at)[:-7] if self.updated_at else "--"
 
         user_repr = "--"
-        if self.requested_by and not isinstance(
-            requesting_user := self.requesting_user, SyftError
-        ):
+        if self.requested_by and (requesting_user := self.requesting_user) is not None:
             user_repr = f"{requesting_user.name} {requesting_user.email}"
 
         worker_attr = ""
         if self.job_worker_id:
-            worker = self.worker
-            if not isinstance(worker, SyftError):
+            try:
+                worker = self.worker
+            except SyftException:
+                worker = None
+            if worker is not None:
                 worker_pool_id_button = CopyIDButton(
                     copy_text=str(worker.worker_pool_name), max_width=60
                 )
@@ -657,25 +568,15 @@ class Job(SyncableSyftObject):
 
     def wait(
         self, job_only: bool = False, timeout: int | None = None
-    ) -> Any | SyftNotReady | SyftError:
+    ) -> Any | SyftNotReady:
         self.fetch()
         if self.resolved:
             return self.resolve
-
-        api = APIRegistry.api_for(
-            server_uid=self.syft_server_location,
-            user_verify_key=self.syft_client_verify_key,
-        )
-
-        if api is None:
-            raise ValueError(
-                f"Can't access Syft API. You must login to server with id '{self.syft_server_location}'"
-            )
-
+        api = self.get_api()
         workers = api.services.worker.get_all()
-        if not isinstance(workers, SyftError) and len(workers) == 0:
-            return SyftError(
-                message=f"Server {self.syft_server_location} has no workers. "
+        if len(workers) == 0:
+            raise SyftException(
+                public_message=f"Server {self.syft_server_location} has no workers. "
                 f"You need to start a worker to run jobs "
                 f"by setting n_consumers > 0."
             )
@@ -710,10 +611,10 @@ class Job(SyncableSyftObject):
             if timeout is not None:
                 counter += 1
                 if counter > timeout:
-                    return SyftError(message="Reached Timeout!")
+                    raise SyftException(public_message="Reached Timeout!")
 
         # if self.resolve returns self.result as error, then we
-        # return SyftError and not wait for the result
+        # raise SyftException and not wait for the result
         # otherwise if a job is resolved and not errored out, we wait for the result
         if not job_only and self.result is not None:  # type: ignore[unreachable]
             self.result.wait(timeout)
@@ -738,22 +639,20 @@ class Job(SyncableSyftObject):
             dependencies.append(self.log_id)
 
         subjobs = self.get_subjobs(context)
-        if isinstance(subjobs, SyftError):
-            return subjobs
-
         subjob_ids = [subjob.id for subjob in subjobs]
         dependencies.extend(subjob_ids)
 
         if self.user_code_id is not None:
             dependencies.append(self.user_code_id)
 
-        output = context.server.get_service("outputservice").get_by_job_id(  # type: ignore
-            context, self.id
-        )
-        if isinstance(output, SyftError):
-            return output
-        elif output is not None:
-            dependencies.append(output.id)
+        try:
+            output = context.server.services.output.get_by_job_id(  # type: ignore
+                context, self.id
+            )
+            if output is not None:
+                dependencies.append(output.id)
+        except NotFoundException:
+            pass
 
         return dependencies
 
@@ -841,9 +740,8 @@ class JobInfo(SyftObject):
         return info
 
 
-@instrument
 @serializable(canonical_name="JobStash", version=1)
-class JobStash(BaseUIDStoreStash):
+class JobStash(NewBaseUIDStoreStash):
     object_type = Job
     settings: PartitionSettings = PartitionSettings(
         name=Job.__canonical_name__, object_type=Job
@@ -852,65 +750,58 @@ class JobStash(BaseUIDStoreStash):
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
+    @as_result(StashException)
     def set_result(
         self,
         credentials: SyftVerifyKey,
         item: Job,
         add_permissions: list[ActionObjectPermission] | None = None,
-    ) -> Result[Job | None, str]:
-        valid = self.check_type(item, self.object_type)
-        if valid.is_err():
-            return SyftError(message=valid.err())
-
-        # Ensure we never save cached result data in the database,
-        # as they can be arbitrarily large
+    ) -> Job:
+        # raises
+        self.check_type(item, self.object_type).unwrap()
         if (
             isinstance(item.result, ActionObject)
             and item.result.syft_blob_storage_entry_id is not None
         ):
             item.result._clear_cache()
+        return (
+            super()
+            .update(credentials, item, add_permissions)
+            .unwrap(public_message="Failed to update")
+        )
 
-        return super().update(credentials, item, add_permissions)
-
+    @as_result(StashException)
     def get_by_result_id(
         self,
         credentials: SyftVerifyKey,
         result_id: UID,
-    ) -> Result[Job | None, str]:
+    ) -> Job:
         qks = QueryKeys(
             qks=[PartitionKey(key="result_id", type_=UID).with_obj(result_id)]
         )
-        res = self.query_all(credentials=credentials, qks=qks)
-        if res.is_err():
-            return res
+        res = self.query_all(credentials=credentials, qks=qks).unwrap()
 
-        res = res.ok()
         if len(res) == 0:
-            return Ok(None)
+            raise NotFoundException()
         elif len(res) > 1:
-            return Err("multiple Jobs found")
+            raise TooManyItemsFoundException()
         else:
-            return Ok(res[0])
+            return res[0]
 
-    def get_by_parent_id(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Job | None, str]:
+    @as_result(StashException)
+    def get_by_parent_id(self, credentials: SyftVerifyKey, uid: UID) -> list[Job]:
         qks = QueryKeys(
             qks=[PartitionKey(key="parent_job_id", type_=UID).with_obj(uid)]
         )
-        item = self.query_all(credentials=credentials, qks=qks)
-        return item
+        return self.query_all(credentials=credentials, qks=qks).unwrap()
 
-    def delete_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[SyftSuccess, str]:
+    @as_result(StashException)
+    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> bool:  # type: ignore[override]
         qk = UIDPartitionKey.with_obj(uid)
-        result = super().delete(credentials=credentials, qk=qk)
-        if result.is_ok():
-            return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-        return result
+        return super().delete(credentials=credentials, qk=qk).unwrap()
 
-    def get_active(self, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
+    @as_result(StashException)
+    def get_active(self, credentials: SyftVerifyKey) -> list[Job]:
         qks = QueryKeys(
             qks=[
                 PartitionKey(key="status", type_=JobStatus).with_obj(
@@ -918,24 +809,23 @@ class JobStash(BaseUIDStoreStash):
                 )
             ]
         )
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(credentials=credentials, qks=qks).unwrap()
 
-    def get_by_worker(
-        self, credentials: SyftVerifyKey, worker_id: str
-    ) -> Result[list[Job], str]:
+    @as_result(StashException)
+    def get_by_worker(self, credentials: SyftVerifyKey, worker_id: str) -> list[Job]:
         qks = QueryKeys(
             qks=[PartitionKey(key="job_worker_id", type_=str).with_obj(worker_id)]
         )
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(credentials=credentials, qks=qks).unwrap()
 
+    @as_result(StashException)
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
-    ) -> Result[list[Job], str]:
+    ) -> list[Job]:
         qks = QueryKeys(
             qks=[PartitionKey(key="user_code_id", type_=UID).with_obj(user_code_id)]
         )
-
-        return self.query_all(credentials=credentials, qks=qks)
+        return self.query_all(credentials=credentials, qks=qks).unwrap()
 
 
 @serializable()

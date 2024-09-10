@@ -20,8 +20,8 @@ from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
 from syft.service.response import SyftError
-from syft.service.response import SyftException
 from syft.service.response import SyftSuccess
+from syft.types.errors import SyftException
 
 
 def random_hash() -> str:
@@ -128,10 +128,12 @@ def test_cannot_set_empty_mock_with_true_mock_is_real(
     asset = Asset(**asset_with_mock, mock_is_real=True)
     assert asset.mock_is_real
 
-    with pytest.raises(SyftException):
+    with pytest.raises(SyftException) as exc:
         asset.set_mock(empty_mock, mock_is_real=True)
 
     assert asset.mock is asset_with_mock["mock"]
+    assert exc.type == SyftException
+    assert exc.value.public_message
 
 
 def test_dataset_cannot_have_assets_with_none_mock() -> None:
@@ -219,11 +221,10 @@ def test_datasite_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> 
     dataset.asset_list[0].mock = None
 
     root_datasite_client = worker.root_client
-    upload_res = root_datasite_client.upload_dataset(dataset)
+    with pytest.raises(ValueError) as excinfo:
+        root_datasite_client.upload_dataset(dataset)
 
-    assert isinstance(upload_res, SyftError)
-
-    assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in upload_res.message
+    assert _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE in str(excinfo.value)
 
 
 def test_adding_contributors_with_duplicate_email():
@@ -233,12 +234,16 @@ def test_adding_contributors_with_duplicate_email():
     res1 = dataset.add_contributor(
         role=sy.roles.UPLOADER, name="Alice", email="alice@naboo.net"
     )
-    res2 = dataset.add_contributor(
-        role=sy.roles.UPLOADER, name="Alice Smith", email="alice@naboo.net"
-    )
 
     assert isinstance(res1, SyftSuccess)
-    assert isinstance(res2, SyftError)
+
+    with pytest.raises(SyftException) as exc:
+        dataset.add_contributor(
+            role=sy.roles.UPLOADER, name="Alice Smith", email="alice@naboo.net"
+        )
+    assert exc.type == SyftException
+    assert exc.value.public_message
+
     assert len(dataset.contributors) == 1
 
     # Assets
@@ -248,13 +253,18 @@ def test_adding_contributors_with_duplicate_email():
         role=sy.roles.UPLOADER, name="Bob", email="bob@naboo.net"
     )
 
-    res4 = asset.add_contributor(
-        role=sy.roles.UPLOADER, name="Bob Abraham", email="bob@naboo.net"
-    )
+    assert isinstance(res3, SyftSuccess)
+
+    with pytest.raises(SyftException) as exc:
+        asset.add_contributor(
+            role=sy.roles.UPLOADER, name="Bob Abraham", email="bob@naboo.net"
+        )
+
+    assert exc.type == SyftException
+    assert exc.value.public_message
+
     dataset.add_asset(asset)
 
-    assert isinstance(res3, SyftSuccess)
-    assert isinstance(res4, SyftError)
     assert len(asset.contributors) == 1
 
 
@@ -302,7 +312,7 @@ def test_upload_dataset_with_assets_of_different_data_types(
 
 def test_upload_delete_small_dataset(worker: Worker, small_dataset: Dataset) -> None:
     root_client = worker.root_client
-    assert not can_upload_to_blob_storage(small_dataset, root_client.metadata)
+    assert not can_upload_to_blob_storage(small_dataset, root_client.metadata).unwrap()
     upload_res = root_client.upload_dataset(small_dataset)
     assert isinstance(upload_res, SyftSuccess)
 
@@ -332,18 +342,20 @@ def test_upload_delete_small_dataset(worker: Worker, small_dataset: Dataset) -> 
     )
     assert isinstance(del_res, SyftSuccess)
     assert asset.data is None
-    assert isinstance(asset.mock, SyftError)
+    with pytest.raises(SyftException):
+        print(asset.mock)
     assert len(root_client.api.services.dataset.get_all()) == 0
 
 
 def test_upload_delete_big_dataset(worker: Worker, big_dataset: Dataset) -> None:
     root_client = worker.root_client
-    assert can_upload_to_blob_storage(big_dataset, root_client.metadata)
+    assert can_upload_to_blob_storage(big_dataset, root_client.metadata).unwrap()
     upload_res = root_client.upload_dataset(big_dataset)
     assert isinstance(upload_res, SyftSuccess)
 
     dataset = root_client.api.services.dataset.get_all()[0]
     asset = dataset.asset_list[0]
+
     assert isinstance(asset.data, np.ndarray)
     assert isinstance(asset.mock, np.ndarray)
     # test that the data is saved in the blob storage
@@ -370,7 +382,8 @@ def test_upload_delete_big_dataset(worker: Worker, big_dataset: Dataset) -> None
     )
     assert isinstance(del_res, SyftSuccess)
     assert asset.data is None
-    assert isinstance(asset.mock, SyftError)
+    with pytest.raises(SyftException):
+        print(asset.mock)
     assert len(root_client.api.services.blob_storage.get_all()) == 0
     assert len(root_client.api.services.dataset.get_all()) == 0
 
@@ -388,15 +401,14 @@ def test_reupload_dataset(worker: Worker, small_dataset: Dataset) -> None:
     assert isinstance(del_res, SyftSuccess)
     assert len(root_client.api.services.dataset.get_all()) == 0
     assert len(root_client.api.services.dataset.get_all(include_deleted=True)) == 1
-    search_res = root_client.api.services.dataset.search(dataset.name)
+    search_res = root_client.api.services.dataset.search(small_dataset.name)
     assert len(search_res) == 0
-
     # reupload a dataset with the same name should be successful
     reupload_res = root_client.upload_dataset(small_dataset)
     assert isinstance(reupload_res, SyftSuccess)
     assert len(root_client.api.services.dataset.get_all()) == 1
     assert len(root_client.api.services.dataset.get_all(include_deleted=True)) == 2
-    search_res = root_client.api.services.dataset.search(dataset.name)
+    search_res = root_client.api.services.dataset.search(small_dataset.name)
     assert len(search_res) == 1
     assert all(small_dataset.assets[0].data == search_res[0].assets[0].data)
     assert all(small_dataset.assets[0].mock == search_res[0].assets[0].mock)

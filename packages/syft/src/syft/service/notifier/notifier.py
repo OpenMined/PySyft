@@ -9,18 +9,18 @@
 # stdlib
 from collections.abc import Callable
 from datetime import datetime
+import logging
 from typing import Any
 from typing import TypeVar
 
 # third party
 from pydantic import BaseModel
-from result import Err
-from result import Ok
-from result import Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -34,12 +34,15 @@ from ..response import SyftSuccess
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
+logger = logging.getLogger(__name__)
+
 
 class BaseNotifier(BaseModel):
+    @as_result(SyftException)
     def send(
-        self, target: SyftVerifyKey, notification: Notification
-    ) -> SyftSuccess | SyftError:
-        return SyftError(message="Not implemented")
+        self, context: AuthedServiceContext, notification: Notification
+    ) -> SyftSuccess:
+        raise SyftException(public_message="Not implemented")
 
 
 TBaseNotifier = TypeVar("TBaseNotifier", bound=BaseNotifier)
@@ -78,27 +81,35 @@ class EmailNotifier(BaseNotifier):
         password: str,
         server: str,
         port: int = 587,
-    ) -> Result[Ok, Err]:
-        return SMTPClient.check_credentials(
-            server=server,
-            port=port,
-            username=username,
-            password=password,
-        )
+    ) -> bool:
+        try:
+            SMTPClient.check_credentials(
+                server=server,
+                port=port,
+                username=username,
+                password=password,
+            )
+            return True
+        except Exception:
+            logger.exception("Credentials validation failed")
+            return False
 
+    @as_result(SyftException)
     def send(
         self, context: AuthedServiceContext, notification: Notification
-    ) -> Result[Ok, Err]:
+    ) -> SyftSuccess | SyftError:
+        subject = None
+        receiver_email = None
+        sender = None
         try:
-            user_service = context.server.get_service("userservice")
-
-            receiver = user_service.get_by_verify_key(notification.to_user_verify_key)
-
+            sender = self.sender
+            receiver = context.server.services.user.get_by_verify_key(
+                notification.to_user_verify_key
+            ).unwrap()
             if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
-                return Ok(
-                    "Email notifications are disabled for this user."
+                return SyftSuccess(
+                    message="Email notifications are disabled for this user."
                 )  # TODO: Should we return an error here?
-
             receiver_email = receiver.email
 
             if notification.email_template:
@@ -116,13 +127,23 @@ class EmailNotifier(BaseNotifier):
                 receiver_email = [receiver_email]
 
             self.smtp_client.send(  # type: ignore
-                sender=self.sender, receiver=receiver_email, subject=subject, body=body
+                sender=sender, receiver=receiver_email, subject=subject, body=body
             )
-            return Ok("Email sent successfully!")
-        except Exception:
-            return Err(
-                "Some notifications failed to be delivered. Please check the health of the mailing server."
-            )
+            message = f"> Sent email: {subject} to {receiver_email}"
+            print(message)
+            logging.info(message)
+            return SyftSuccess(message="Email sent successfully!")
+        except Exception as e:
+            message = f"> Error sending email: {subject} to {receiver_email} from: {sender}. {e}"
+            logger.error(message)
+            return SyftError(message="Failed to send an email.")
+            # raise SyftException.from_exception(
+            #     exc,
+            #     public_message=(
+            #         "Some notifications failed to be delivered."
+            #         " Please check the health of the mailing server."
+            #     ),
+            # )
 
 
 @serializable()
@@ -226,7 +247,7 @@ class NotifierSettings(SyftObject):
         password: str,
         server: str,
         port: int,
-    ) -> Result[Ok, Err]:
+    ) -> bool:
         return self.notifiers[NOTIFIERS.EMAIL].check_credentials(
             server=server,
             port=port,
@@ -234,19 +255,18 @@ class NotifierSettings(SyftObject):
             password=password,
         )
 
+    @as_result(SyftException)
     def send_notifications(
         self,
         context: AuthedServiceContext,
         notification: Notification,
-    ) -> Result[Ok, Err]:
-        notifier_objs: list = self.select_notifiers(notification)
+    ) -> int:
+        notifier_objs: list[BaseNotifier] = self.select_notifiers(notification)
 
         for notifier in notifier_objs:
-            result = notifier.send(context, notification)
-            if result.err():
-                return result
+            notifier.send(context=context, notification=notification).unwrap()
 
-        return Ok("Notification sent successfully!")
+        return len(notifier_objs)
 
     def select_notifiers(self, notification: Notification) -> list[BaseNotifier]:
         """
@@ -272,6 +292,7 @@ class NotifierSettings(SyftObject):
                             password=self.email_password,
                             sender=self.email_sender,
                             server=self.email_server,
+                            port=self.email_port,
                         )
                     )
                 # If notifier is not email, we just create the notifier object
