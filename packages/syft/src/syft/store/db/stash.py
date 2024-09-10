@@ -628,18 +628,43 @@ class ObjectStash(Generic[StashT]):
         sort_order: str | None = None,
         offset: int = 0,
     ) -> StashT:
-        result = self.get_all(
-            credentials=credentials,
-            filters=filters,
-            has_permission=has_permission,
-            order_by=order_by,
-            sort_order=sort_order,
-            limit=1,
-            offset=offset,
-        ).unwrap()
-        if len(result) == 0:
+        """
+        Get first objects from the stash, optionally filtered.
+
+        Args:
+            credentials (SyftVerifyKey): credentials of the user
+            filters (dict[str, Any] | None, optional): dictionary of filters,
+                where the key is the field name and the value is the filter value.
+                Operators other than equals can be used in the key,
+                e.g. {"name": "Bob", "friends__contains": "Alice"}. Defaults to None.
+            has_permission (bool, optional): If True, overrides the permission check.
+                Defaults to False.
+            order_by (str | None, optional): If provided, the results will be ordered by this field.
+                If not provided, the default order and field defined on the SyftObject.__order_by__ are used.
+                Defaults to None.
+            sort_order (str | None, optional): "asc" or "desc" If not defined,
+                the default order defined on the SyftObject.__order_by__ is used.
+                Defaults to None.
+            offset (int, optional): offset the results. Defaults to 0.
+
+        Returns:
+            list[StashT]: list of objects.
+        """
+        query = self.query()
+
+        if not has_permission:
+            role = self.get_role(credentials)
+            query = query.with_permissions(credentials, role)
+
+        for field_name, operator, field_value in parse_filters(filters):
+            query = query.filter(field_name, operator, field_value)
+
+        query = query.order_by(order_by, sort_order).offset(offset)
+        result = query.execute(self.session).first()
+        if result is None:
             raise NotFoundException(f"{self.object_type.__name__}: not found")
-        return result[0]
+
+        return self.row_as_obj(result)
 
     @as_result(StashException)
     def get_all(
@@ -686,5 +711,4 @@ class ObjectStash(Generic[StashT]):
 
         query = query.order_by(order_by, sort_order).limit(limit).offset(offset)
         result = query.execute(self.session).all()
-
         return [self.row_as_obj(row) for row in result]

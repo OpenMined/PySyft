@@ -39,6 +39,10 @@ class DatasetStash(ObjectStash[Dataset]):
         default_filters = {"to_be_deleted": False}
         filters = filters or {}
         filters.update(default_filters)
+
+        if offset is None:
+            offset = 0
+
         return (
             super()
             .get_all(
