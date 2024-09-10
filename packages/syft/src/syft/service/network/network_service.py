@@ -41,7 +41,6 @@ from ..metadata.server_metadata import ServerMetadata
 from ..request.request import Request
 from ..request.request import RequestStatus
 from ..request.request import SubmitRequest
-from ..request.request_service import RequestService
 from ..response import SyftInfo
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -347,16 +346,12 @@ class NetworkService(AbstractService):
             changes=[association_request_change],
             requesting_user_verify_key=context.credentials,
         )
-        request_submit_method = context.server.get_service_method(RequestService.submit)
-        request = request_submit_method(context, submit_request)
+        request = context.server.services.request.submit(context, submit_request)
         if (
             isinstance(request, Request)
             and context.server.settings.association_request_auto_approval
         ):
-            request_apply_method = context.server.get_service_method(
-                RequestService.apply
-            )
-            return request_apply_method(context, uid=request.id)
+            return context.server.services.request.apply(context, uid=request.id)
 
         return request
 
@@ -519,10 +514,7 @@ class NetworkService(AbstractService):
             context=context, peer_id=uid
         )
         for request in association_requests:
-            request_delete_method = context.server.get_service_method(
-                RequestService.delete_by_uid
-            )
-            request_delete_method(context, request.id)
+            context.server.services.request.delete_by_uid(context, request.id)
         # TODO: Notify the peer (either by email or by other form of notifications)
         # that it has been deleted from the network
         return SyftSuccess(message=f"Server Peer with id {uid} deleted.")
@@ -860,10 +852,7 @@ class NetworkService(AbstractService):
         """
         Get all the association requests from a peer. The association requests are sorted by request_time.
         """
-        request_get_all_method: Callable = context.server.get_service_method(
-            RequestService.get_all
-        )
-        all_requests: list[Request] = request_get_all_method(context)
+        all_requests: list[Request] = context.server.services.request.get_all(context)
         association_requests: list[Request] = [
             request
             for request in all_requests

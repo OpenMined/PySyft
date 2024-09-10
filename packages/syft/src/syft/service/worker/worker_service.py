@@ -56,8 +56,7 @@ class WorkerService(AbstractService):
     ) -> list[ContainerSpawnStatus]:
         """Add a Container Image."""
 
-        worker_pool_service = context.server.get_service("SyftWorkerPoolService")
-        return worker_pool_service.add_workers(
+        return context.server.services.syft_worker_pool.add_workers(
             context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME
         )
 
@@ -138,19 +137,10 @@ class WorkerService(AbstractService):
         self, context: AuthedServiceContext, worker: SyftWorker, force: bool = False
     ) -> SyftSuccess:
         uid = worker.id
-
-        # relative
-        from ...service.job.job_service import JobService
-        from .worker_pool_service import SyftWorkerPoolService
-
         if force and worker.job_id is not None:
-            job_service = cast(JobService, context.server.get_service(JobService))
-            job_service.kill(context=context, id=worker.job_id)
+            context.server.services.job.kill(context=context, id=worker.job_id)
 
-        worker_pool_service = cast(
-            SyftWorkerPoolService, context.server.get_service(SyftWorkerPoolService)
-        )
-        worker_pool_stash = worker_pool_service.stash
+        worker_pool_stash = context.server.services.syft_worker_pool.stash
         worker_pool = worker_pool_stash.get_by_name(
             credentials=context.credentials, pool_name=worker.worker_pool_name
         ).unwrap()

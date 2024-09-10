@@ -31,7 +31,7 @@ ADMIN_ROLES = [
 
 
 def get_users(worker):
-    return worker.get_service("UserService").get_all(
+    return worker.services.user.get_all(
         AuthedServiceContext(server=worker, credentials=worker.signing_key.verify_key)
     )
 
