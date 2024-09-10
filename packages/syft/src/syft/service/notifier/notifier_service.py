@@ -12,7 +12,6 @@ from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
-from ...types.result import OkErr
 from ...types.result import as_result
 from ..context import AuthedServiceContext
 from ..notification.email_templates import PasswordResetTemplate
@@ -62,8 +61,7 @@ class NotifierService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotificationPreferences:
-        user_service = context.server.get_service("userservice")
-        user_view = user_service.get_current_user(context)
+        user_view = context.server.services.user.get_current_user(context)
         notifications = user_view.notifications_enabled
         return NotificationPreferences(
             email=notifications[NOTIFIERS.EMAIL],
@@ -190,8 +188,7 @@ class NotifierService(AbstractService):
         )
 
         self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
-        settings_service = context.server.get_service("settingsservice")
-        settings_service.update(context, notifications_enabled=True)
+        context.server.services.settings.update(context, notifications_enabled=True)
         return SyftSuccess(message="Notifications enabled successfully.")
 
     @as_result(StashException)
@@ -207,9 +204,7 @@ class NotifierService(AbstractService):
 
         notifier.active = False
         self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
-
-        settings_service = context.server.get_service("settingsservice")
-        settings_service.update(context, notifications_enabled=False)
+        context.server.services.settings.update(context, notifications_enabled=False)
         return SyftSuccess(message="Notifications disabled succesfullly")
 
     @as_result(SyftException)
@@ -220,12 +215,9 @@ class NotifierService(AbstractService):
         Activate email notifications for the authenticated user.
         This will only work if the datasite owner has enabled notifications.
         """
-        user_service = context.server.get_service("userservice")
-        result = user_service.enable_notifications(context, notifier_type=notifier_type)
-        if isinstance(result, OkErr) and result.is_ok():
-            # sad, TODO: remove upstream Ok
-            result = result.ok()
-        return result
+        return context.server.services.user.enable_notifications(
+            context, notifier_type=notifier_type
+        ).unwrap()
 
     @as_result(SyftException)
     def deactivate(
@@ -234,8 +226,7 @@ class NotifierService(AbstractService):
         """Deactivate email notifications for the authenticated user
         This will only work if the datasite owner has enabled notifications.
         """
-        user_service = context.server.get_service("userservice")
-        result = user_service.disable_notifications(
+        result = context.server.services.user.disable_notifications(
             context, notifier_type=notifier_type
         )
         return result
@@ -333,7 +324,7 @@ class NotifierService(AbstractService):
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
     ) -> SyftSuccess:
-        admin_key = context.server.get_service("userservice").admin_verify_key()
+        admin_key = context.server.services.user.admin_verify_key()
 
         # Silently fail on notification not delivered
         try:

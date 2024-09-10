@@ -33,7 +33,7 @@ def authed_context(worker):
 
 @pytest.fixture(scope="function")
 def blob_storage(worker):
-    yield worker.get_service("BlobStorageService")
+    yield worker.services.blob_storage
 
 
 def test_blob_storage_allocate(authed_context, blob_storage):
@@ -46,7 +46,7 @@ def test_blob_storage_write():
     random.seed()
     name = "".join(str(random.randint(0, 9)) for i in range(8))
     worker = sy.Worker.named(name=name)
-    blob_storage = worker.get_service("BlobStorageService")
+    blob_storage = worker.services.blob_storage
     authed_context = AuthedServiceContext(
         server=worker, credentials=worker.signing_key.verify_key
     )
@@ -64,7 +64,7 @@ def test_blob_storage_write_syft_object():
     random.seed()
     name = "".join(str(random.randint(0, 9)) for i in range(8))
     worker = sy.Worker.named(name=name)
-    blob_storage = worker.get_service("BlobStorageService")
+    blob_storage = worker.services.blob_storage
     authed_context = AuthedServiceContext(
         server=worker, credentials=worker.signing_key.verify_key
     )
@@ -82,7 +82,7 @@ def test_blob_storage_read():
     random.seed()
     name = "".join(str(random.randint(0, 9)) for i in range(8))
     worker = sy.Worker.named(name=name)
-    blob_storage = worker.get_service("BlobStorageService")
+    blob_storage = worker.services.blob_storage
     authed_context = AuthedServiceContext(
         server=worker, credentials=worker.signing_key.verify_key
     )
@@ -142,7 +142,7 @@ def test_action_obj_send_save_to_blob_storage(worker):
     root_authed_ctx = AuthedServiceContext(
         server=worker, credentials=root_client.verify_key
     )
-    blob_storage = worker.get_service("BlobStorageService")
+    blob_storage = worker.services.blob_storage
     syft_retrieved_data = blob_storage.read(
         root_authed_ctx, action_obj_2.syft_blob_storage_entry_id
     )

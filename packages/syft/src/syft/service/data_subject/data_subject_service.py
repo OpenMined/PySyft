@@ -17,7 +17,6 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from .data_subject import DataSubject
 from .data_subject import DataSubjectCreate
-from .data_subject_member_service import DataSubjectMemberService
 
 
 @serializable(canonical_name="DataSubjectSQLStash", version=1)
@@ -61,11 +60,7 @@ class DataSubjectService(AbstractService):
     def add(
         self, context: AuthedServiceContext, data_subject: DataSubjectCreate
     ) -> SyftSuccess:
-        """Register a data subject."""
-
-        member_relationship_add = context.server.get_service_method(
-            DataSubjectMemberService.add
-        )
+        """Register a data subject."""  #
 
         member_relationships: set[tuple[str, str]] = data_subject.member_relationships
         if len(member_relationships) == 0:
@@ -82,7 +77,9 @@ class DataSubjectService(AbstractService):
                         ds.to(DataSubject, context=context),
                         ignore_duplicates=True,
                     ).unwrap()
-                member_relationship_add(context, parent_ds.name, child_ds.name)
+                context.server.services.data_subject_member.add(
+                    context, parent_ds.name, child_ds.name
+                )
 
         return SyftSuccess(
             message=f"{len(member_relationships)+1} Data Subjects Registered",
@@ -98,11 +95,9 @@ class DataSubjectService(AbstractService):
     def get_members(
         self, context: AuthedServiceContext, data_subject_name: str
     ) -> list[DataSubject]:
-        get_relatives = context.server.get_service_method(
-            DataSubjectMemberService.get_relatives
+        relatives = context.server.services.data_subject.get_relatives(
+            context, data_subject_name
         )
-
-        relatives = get_relatives(context, data_subject_name)
 
         members = []
         for relative in relatives:

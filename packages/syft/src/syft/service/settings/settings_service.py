@@ -1,7 +1,6 @@
 # stdlib
 from string import Template
 from typing import Any
-from typing import cast
 
 # third party
 from pydantic import ValidationError
@@ -27,7 +26,6 @@ from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
 from ..notifier.notifier_enums import EMAIL_TYPES
-from ..notifier.notifier_service import NotifierService
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -137,13 +135,11 @@ class SettingsService(AbstractService):
                 context.credentials, obj=new_settings
             ).unwrap()
 
-            notifier_service = cast(
-                NotifierService, context.server.get_service("notifierservice")
-            )
-
             # If notifications_enabled is present in the update, we need to update the notifier settings
             if settings.notifications_enabled is not Empty:  # type: ignore[comparison-overlap]
-                notifier_settings_res = notifier_service.settings(context)
+                notifier_settings_res = context.server.services.notifier.settings(
+                    context
+                )
                 if (
                     not notifier_settings_res.is_ok()
                     or notifier_settings_res.ok() is None
@@ -155,7 +151,7 @@ class SettingsService(AbstractService):
                         )
                     )
 
-                notifier_service._set_notifier(
+                context.server.services.notifier._set_notifier(
                     context, active=settings.notifications_enabled
                 )
 
@@ -213,8 +209,7 @@ class SettingsService(AbstractService):
         email_server: str | None = None,
         email_port: str | None = None,
     ) -> SyftSuccess:
-        notifier_service = context.server.get_service("notifierservice")
-        notifier_service.turn_on(
+        context.server.services.notifier.turn_on(
             context=context,
             email_username=email_username,
             email_password=email_password,
@@ -233,8 +228,7 @@ class SettingsService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> SyftSuccess:
-        notifier_service = context.server.get_service("notifierservice")
-        notifier_service.turn_off(context=context).unwrap()
+        context.server.services.notifier.turn_off(context=context).unwrap()
         return SyftSuccess(message="Notifications disabled")
 
     @service_method(
@@ -276,8 +270,9 @@ class SettingsService(AbstractService):
     def set_email_rate_limit(
         self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int
     ) -> SyftSuccess:
-        notifier_service = context.server.get_service("notifierservice")
-        return notifier_service.set_email_rate_limit(context, email_type, daily_limit)
+        return context.server.services.notifier.set_email_rate_limit(
+            context, email_type, daily_limit
+        )
 
     @service_method(
         path="settings.allow_association_request_auto_approval",
@@ -356,8 +351,9 @@ class SettingsService(AbstractService):
         all_settings = self.stash.get_all(
             context.server.signing_key.verify_key
         ).unwrap()
-        user_service = context.server.get_service("userservice")
-        role = user_service.get_role_for_credentials(context.credentials).unwrap()
+        role = context.server.services.user.get_role_for_credentials(
+            context.credentials
+        ).unwrap()
 
         # check if the settings list is empty
         if len(all_settings) == 0:

@@ -31,7 +31,7 @@ class PasswordResetTemplate(EmailTemplate):
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        user_service = context.server.get_service("userservice")
+        user_service = context.server.services.user
         admin_verify_key = user_service.admin_verify_key()
         user = user_service.stash.get_by_verify_key(
             credentials=admin_verify_key, verify_key=notification.to_user_verify_key
@@ -49,6 +49,10 @@ class PasswordResetTemplate(EmailTemplate):
         )
         if result.is_err():
             raise Exception("Couldn't update the user password")
+
+        expiry_time = context.server.services.settings.get(
+            context=context
+        ).pwd_token_config.token_exp_min
 
         head = """<head>
             <style>
@@ -103,7 +107,7 @@ class PasswordResetTemplate(EmailTemplate):
                     <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
                         syft_client.reset_password(token='{user.reset_token}', new_password=*****)
                     </code>.
-                to reset your password.</p>
+                to reset your password. This token is valid for {expiry_time} seconds only.</p>
                 <p>If you didn't request a password reset, please ignore this email.</p>
             </div>
         </body>"""
@@ -118,7 +122,7 @@ class OnBoardEmailTemplate(EmailTemplate):
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        user_service = context.server.get_service("userservice")
+        user_service = context.server.services.user
         admin_verify_key = user_service.admin_verify_key()
         admin = user_service.get_by_verify_key(admin_verify_key).unwrap()
         admin_name = admin.name

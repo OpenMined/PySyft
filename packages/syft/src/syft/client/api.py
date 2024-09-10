@@ -743,6 +743,11 @@ class APIModule:
             return self.get_all()[key]
         raise NotImplementedError
 
+    def __iter__(self) -> Any:
+        if hasattr(self, "get_all"):
+            return iter(self.get_all())
+        raise NotImplementedError
+
     def _repr_html_(self) -> Any:
         if self.path == "settings":
             return self.get()._repr_html_()

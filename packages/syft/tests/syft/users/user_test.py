@@ -31,7 +31,7 @@ ADMIN_ROLES = [
 
 
 def get_users(worker):
-    return worker.get_service("UserService").get_all(
+    return worker.services.user.get_all(
         AuthedServiceContext(server=worker, credentials=worker.signing_key.verify_key)
     )
 
@@ -424,6 +424,7 @@ def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> Non
 
     with pytest.raises(SyftException):
         ds_client.account.update(role="guest")
+    with pytest.raises(SyftException):
         ds_client.account.update(role="data_scientist")
 
     # now we set sheldon's role to admin. Only now he can change his role

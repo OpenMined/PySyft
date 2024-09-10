@@ -1,6 +1,4 @@
 # stdlib
-
-# stdlib
 from typing import Any
 from typing import Generic
 from typing import cast
@@ -14,6 +12,7 @@ from sqlalchemy import Table
 from sqlalchemy import func
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from typing_extensions import Self
 from typing_extensions import TypeVar
 
 # relative
@@ -41,6 +40,7 @@ from .query import SQLiteQuery
 from .schema import Base
 from .schema import create_table
 from .sqlite_db import DBManager
+from .sqlite_db import SQLiteDBManager
 
 StashT = TypeVar("StashT", bound=SyftObject)
 T = TypeVar("T")
@@ -74,6 +74,16 @@ class ObjectStash(Generic[StashT]):
                 "ObjectStash generic argument must be a subclass of SyftObject"
             )
         return generic_args[0]
+
+    def __len__(self) -> int:
+        return self.session.query(self.table).count()
+
+    @classmethod
+    def random(cls, **kwargs: dict) -> Self:
+        db_manager = SQLiteDBManager.random(**kwargs)
+        stash = cls(store=db_manager)
+        stash.db.init_tables()
+        return stash
 
     @property
     def server_uid(self) -> UID:
@@ -472,11 +482,16 @@ class ObjectStash(Generic[StashT]):
         results = self.session.execute(stmt).all()
 
         return {
-            UID(row.id): {(UID(uid) for uid in row.storage_permissions)}
+            UID(row.id): {UID(uid) for uid in row.storage_permissions}
             for row in results
         }
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
+        if self.get_role(permission.credentials) in (
+            ServiceRole.ADMIN,
+            ServiceRole.DATA_OWNER,
+        ):
+            return True
         return self.has_permissions([permission])
 
     def has_storage_permission(self, permission: StoragePermission) -> bool:

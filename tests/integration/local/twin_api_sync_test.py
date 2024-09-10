@@ -124,8 +124,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     # verify updating twin api endpoint works
 
     timeout_before = (
-        full_low_worker.python_server.get_service("apiservice")
-        .stash.get_all(
+        full_low_worker.python_server.services.api.stash.get_all(
             credentials=full_low_worker.client.credentials, has_permission=True
         )
         .ok()[0]
@@ -141,8 +140,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
     assert result, result
 
     timeout_after = (
-        full_low_worker.python_server.get_service("apiservice")
-        .stash.get_all(
+        full_low_worker.python_server.services.api.stash.get_all(
             credentials=full_low_worker.client.credentials, has_permission=True
         )
         .ok()[0]

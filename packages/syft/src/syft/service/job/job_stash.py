@@ -308,8 +308,7 @@ class Job(SyncableSyftObject):
         return api.services.job.get_subjobs(self.id)
 
     def get_subjobs(self, context: AuthedServiceContext) -> list["Job"]:
-        job_service = context.server.get_service("jobservice")
-        return job_service.get_subjobs(context, self.id)
+        return context.server.services.job.get_subjobs(context, self.id)
 
     @property
     def owner(self) -> UserView:
@@ -642,7 +641,7 @@ class Job(SyncableSyftObject):
             dependencies.append(self.user_code_id)
 
         try:
-            output = context.server.get_service("outputservice").get_by_job_id(  # type: ignore
+            output = context.server.services.output.get_by_job_id(  # type: ignore
                 context, self.id
             )
             if output is not None:
