@@ -261,7 +261,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         select_sql = f"delete from {self.table_name} where uid = {self.subs_char}"  # nosec
         with self.cur as cur:
             self._execute(
-                self.lock, cur, self.table_name, select_sql, [str(key)]
+                self.lock, cur, cur.connection, self.table_name, select_sql, [str(key)]
             ).unwrap()
 
     def _delete_all(self) -> None:
