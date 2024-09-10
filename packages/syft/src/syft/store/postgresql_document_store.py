@@ -99,6 +99,9 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
                 password=self.store_config.client_config.password,
                 host=self.store_config.client_config.host,
                 port=self.store_config.client_config.port,
+                # This should default to None,
+                # https://www.psycopg.org/psycopg3/docs/advanced/prepare.html#using-prepared-statements-with-pgbouncer
+                prepare_threshold=None,
             )
             _CONNECTION_POOL_DB[cache_key(self.dbname)] = connection
             logger.info(f"Connected to {self.store_config.client_config.dbname}")
