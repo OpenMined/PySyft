@@ -1,5 +1,4 @@
 # stdlib
-from collections import defaultdict
 import logging
 from typing import Any
 
@@ -35,7 +34,6 @@ from .sqlite_document_store import special_exception_public_message
 
 logger = logging.getLogger(__name__)
 _CONNECTION_POOL_DB: dict[str, Connection] = {}
-REF_COUNTS: dict[str, int] = defaultdict(int)
 
 
 # https://www.psycopg.org/docs/module.html#psycopg2.connect
@@ -91,7 +89,6 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
 
         self.lock = SyftLock(NoLockingConfig())
         self.create_table()
-        REF_COUNTS[cache_key(self.dbname)] += 1
         self.subs_char = r"%s"  # thanks postgresql
 
     def _connect(self) -> None:
@@ -103,24 +100,28 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
                 host=self.store_config.client_config.host,
                 port=self.store_config.client_config.port,
             )
-            print(f"Connected to {self.store_config.client_config.dbname}")
-            print("PostgreSQL database connection:", connection)
-
             _CONNECTION_POOL_DB[cache_key(self.dbname)] = connection
+            print(f"Connected to {self.store_config.client_config.dbname}")
+            print(
+                "PostgreSQL database connection:",
+                _CONNECTION_POOL_DB[cache_key(self.dbname)],
+            )
 
     def create_table(self) -> None:
+        db = self.db
         try:
             with self.lock:
-                self.cur.execute(
-                    f"CREATE TABLE IF NOT EXISTS {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
-                    + "repr TEXT NOT NULL, value BYTEA NOT NULL, "  # nosec
-                    + "sqltime TIMESTAMP NOT NULL DEFAULT NOW())"  # nosec
-                )
-                self.db.commit()
+                with db.cursor() as cur:
+                    cur.execute(
+                        f"CREATE TABLE IF NOT EXISTS {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                        + "repr TEXT NOT NULL, value BYTEA NOT NULL, "  # nosec
+                        + "sqltime TIMESTAMP NOT NULL DEFAULT NOW())"  # nosec
+                    )
+                    cur.connection.commit()
         except DuplicateTable:
             pass
         except InFailedSqlTransaction:
-            self.db.rollback()
+            db.rollback()
         except Exception as e:
             public_message = special_exception_public_message(self.table_name, e)
             raise SyftException.from_exception(e, public_message=public_message)
@@ -135,44 +136,32 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
     def cur(self) -> Cursor:
         return self.db.cursor()
 
-    def _close(self) -> None:
-        self._commit()
-        REF_COUNTS[cache_key(self.store_config_hash)] -= 1
-        if REF_COUNTS[cache_key(self.store_config_hash)] <= 0:
-            # once you close it seems like other object references can't re-use the
-            # same connection
-
-            self.db.close()
-            del _CONNECTION_POOL_DB[cache_key(self.store_config_hash)]
-        else:
-            # don't close yet because another SQLiteBackingStore is probably still open
-            pass
-
     @staticmethod
     @as_result(SyftException)
     def _execute(
         lock: SyftLock,
         cursor: Cursor,
-        db: Connection,
         table_name: str,
         sql: str,
         args: list[Any] | None,
     ) -> Cursor:
-        try:
-            cursor.execute(sql, args)  # Execute the SQL with arguments
-            db.commit()  # Commit if everything went ok
-        except InFailedSqlTransaction as ie:
-            db.rollback()  # Rollback if something went wrong
-            raise SyftException(
-                public_message=f"Transaction `{sql}` failed and was rolled back. \n"
-                f"Error: {ie}."
-            )
-        except Exception as e:
-            logger.debug(f"Rolling back SQL: {sql} with args: {args}")
-            db.rollback()  # Rollback on any other exception to maintain clean state
-            public_message = special_exception_public_message(table_name, e)
-            logger.error(public_message)
-            raise SyftException.from_exception(e, public_message=public_message)
+        with lock:
+            db = cursor.connection
+            try:
+                cursor.execute(sql, args)  # Execute the SQL with arguments
+                db.commit()  # Commit if everything went ok
+            except InFailedSqlTransaction as ie:
+                db.rollback()  # Rollback if something went wrong
+                raise SyftException(
+                    public_message=f"Transaction `{sql}` failed and was rolled back. \n"
+                    f"Error: {ie}."
+                )
+            except Exception as e:
+                logger.debug(f"Rolling back SQL: {sql} with args: {args}")
+                db.rollback()  # Rollback on any other exception to maintain clean state
+                public_message = special_exception_public_message(table_name, e)
+                logger.error(public_message)
+                raise SyftException.from_exception(e, public_message=public_message)
         return cursor
 
     def _set(self, key: UID, value: Any) -> None:
@@ -188,7 +177,6 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
                 self._execute(
                     self.lock,
                     cur,
-                    self.db,
                     self.table_name,
                     insert_sql,
                     [str(key), _repr_debug_(value), data],
@@ -205,7 +193,6 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
             self._execute(
                 self.lock,
                 cur,
-                self.db,
                 self.table_name,
                 insert_sql,
                 [str(key), _repr_debug_(value), data, str(key)],
@@ -218,7 +205,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         )
         with self.cur as cur:
             cursor = self._execute(
-                self.lock, cur, self.db, self.table_name, select_sql, [str(key)]
+                self.lock, cur, self.table_name, select_sql, [str(key)]
             ).unwrap(public_message=f"Query {select_sql} failed")
             row = cursor.fetchone()
         if row is None or len(row) == 0:
@@ -231,7 +218,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         row = None
         with self.cur as cur:
             cursor = self._execute(
-                self.lock, cur, self.db, self.table_name, select_sql, [str(key)]
+                self.lock, cur, self.table_name, select_sql, [str(key)]
             ).unwrap()
             row = cursor.fetchone()  # type: ignore
         if row is None:
@@ -244,7 +231,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         data = []
         with self.cur as cur:
             cursor = self._execute(
-                self.lock, cur, self.db, self.table_name, select_sql, []
+                self.lock, cur, self.table_name, select_sql, []
             ).unwrap()
             rows = cursor.fetchall()  # type: ignore
             if not rows:
@@ -260,7 +247,7 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         select_sql = f"select uid from {self.table_name} order by sqltime"  # nosec
         with self.cur as cur:
             cursor = self._execute(
-                self.lock, cur, self.db, self.table_name, select_sql, []
+                self.lock, cur, self.table_name, select_sql, []
             ).unwrap()
             rows = cursor.fetchall()  # type: ignore
         if not rows:
@@ -272,24 +259,32 @@ class PostgreSQLBackingStore(SQLiteBackingStore):
         select_sql = f"delete from {self.table_name} where uid = {self.subs_char}"  # nosec
         with self.cur as cur:
             self._execute(
-                self.lock, cur, self.db, self.table_name, select_sql, [str(key)]
+                self.lock, cur, self.table_name, select_sql, [str(key)]
             ).unwrap()
 
     def _delete_all(self) -> None:
         select_sql = f"delete from {self.table_name}"  # nosec
         with self.cur as cur:
-            self._execute(
-                self.lock, cur, self.db, self.table_name, select_sql, []
-            ).unwrap()
+            self._execute(self.lock, cur, self.table_name, select_sql, []).unwrap()
 
     def _len(self) -> int:
         select_sql = f"select count(uid) from {self.table_name}"  # nosec
         with self.cur as cur:
             cursor = self._execute(
-                self.lock, cur, self.db, self.table_name, select_sql, []
+                self.lock, cur, self.table_name, select_sql, []
             ).unwrap()
             cnt = cursor.fetchone()[0]
         return cnt
+
+    def _close(self) -> None:
+        self._commit()
+        if cache_key(self.dbname) in _CONNECTION_POOL_DB:
+            conn = _CONNECTION_POOL_DB[cache_key(self.dbname)]
+            conn.close()
+            _CONNECTION_POOL_DB.pop(cache_key(self.dbname), None)
+
+    def _commit(self) -> None:
+        self.db.commit()
 
 
 @serializable()
