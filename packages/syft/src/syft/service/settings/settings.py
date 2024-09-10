@@ -43,7 +43,8 @@ class PwdTokenResetConfig(SyftObject):
     ascii: bool = True
     numbers: bool = True
     token_len: int = 12
-    token_exp_min: int = 30
+    # Token expiration time in seconds (not minutes)
+    token_exp_min: int = 1800  # TODO: Rename variable to token_exp_sec
 
     @model_validator(mode="after")
     def validate_char_types(self) -> Self:

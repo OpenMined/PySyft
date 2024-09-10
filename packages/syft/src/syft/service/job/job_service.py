@@ -2,7 +2,6 @@
 from collections.abc import Callable
 import inspect
 import time
-from typing import cast
 
 # relative
 from ...serde.serializable import serializable
@@ -15,7 +14,6 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
-from ..log.log_service import LogService
 from ..queue.queue_stash import ActionQueueItem
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -133,10 +131,9 @@ class JobService(AbstractService):
         context.server.queue_stash.set_placeholder(
             context.credentials, queue_item
         ).unwrap()
-        self.stash.set(context.credentials, job).unwrap()
 
-        log_service = context.server.get_service("logservice")
-        log_service.restart(context, job.log_id)
+        self.stash.set(context.credentials, job).unwrap()
+        context.server.services.log.restart(context, job.log_id)
 
         return SyftSuccess(message="Great Success!")
 
@@ -231,9 +228,7 @@ class JobService(AbstractService):
     def add_read_permission_log_for_code_owner(
         self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
     ) -> None:
-        log_service = context.server.get_service("logservice")
-        log_service = cast(LogService, log_service)
-        return log_service.stash.add_permission(
+        return context.server.services.log.stash.add_permission(
             ActionObjectPermission(
                 log_id, ActionPermission.READ, user_code.user_verify_key
             )
@@ -267,14 +262,13 @@ class JobService(AbstractService):
             user_code_id=user_code_id,
             resolved=is_resolved,
         )
-        user_code_service = context.server.get_service("usercodeservice")
-        user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
+        user_code = context.server.services.user_code.get_by_uid(
+            context=context, uid=user_code_id
+        )
 
         # The owner of the code should be able to read the job
         self.stash.set(context.credentials, job).unwrap()
-
-        log_service = context.server.get_service("logservice")
-        log_service.add(
+        context.server.services.log.add(
             context,
             job.log_id,
             job.id,

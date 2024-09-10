@@ -48,7 +48,7 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
     user_id = worker.root_client.users[-1].id
 
     def get_role(verify_key):
-        users = worker.get_service("UserService").stash.get_all(root_verify_key).ok()
+        users = worker.services.user.stash.get_all(root_verify_key).ok()
         user = [u for u in users if u.verify_key == verify_key][0]
         return user.role
 

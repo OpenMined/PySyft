@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from dataclasses import field
 import typing
 from typing import TYPE_CHECKING
+from typing import TypeVar
 
 # relative
 from ..serde.serializable import serializable
@@ -38,10 +39,15 @@ from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_service import WorkerService
+from ..store.db.stash import ObjectStash
+from ..types.syft_object import SyftObject
 
 if TYPE_CHECKING:
     # relative
     from .server import Server
+
+
+StashT = TypeVar("StashT", bound=SyftObject)
 
 
 @serializable(canonical_name="ServiceRegistry", version=1)
@@ -82,6 +88,7 @@ class ServiceRegistry:
     service_path_map: dict[str, AbstractService] = field(
         default_factory=dict, init=False
     )
+    stashes: dict[StashT, ObjectStash[StashT]] = {}
 
     @classmethod
     def for_server(cls, server: "Server") -> "ServiceRegistry":
@@ -92,6 +99,10 @@ class ServiceRegistry:
             service = getattr(self, name)
             self.services.append(service)
             self.service_path_map[service_cls.__name__.lower()] = service
+
+            if hasattr(service, "stash"):
+                stash: ObjectStash = service.stash
+                self.stashes[stash.object_type] = stash
 
     @classmethod
     def get_service_classes(

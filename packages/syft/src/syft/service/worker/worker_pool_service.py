@@ -1,7 +1,6 @@
 # stdlib
 import logging
 from typing import Any
-from typing import cast
 
 # third party
 import pydantic
@@ -27,7 +26,6 @@ from ..request.request import CreateCustomImageChange
 from ..request.request import CreateCustomWorkerPoolChange
 from ..request.request import Request
 from ..request.request import SubmitRequest
-from ..request.request_service import RequestService
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -127,8 +125,7 @@ class SyftWorkerPoolService(AbstractService):
             credentials=context.credentials, uid=image_uid
         ).unwrap()
 
-        worker_service: AbstractService = context.server.get_service("WorkerService")
-        worker_stash = worker_service.stash
+        worker_stash = context.server.services.worker.stash
 
         # Create worker pool from given image, with the given worker pool
         # and with the desired number of workers
@@ -215,8 +212,9 @@ class SyftWorkerPoolService(AbstractService):
         # Create a the request object with the changes and submit it
         # for approval.
         request = SubmitRequest(changes=changes)
-        method = context.server.get_service_method(RequestService.submit)
-        return method(context=context, request=request, reason=reason)
+        return context.server.services.request.submit(
+            context=context, request=request, reason=reason
+        )
 
     @service_method(
         path="worker_pool.create_image_and_pool_request",
@@ -319,8 +317,9 @@ class SyftWorkerPoolService(AbstractService):
 
         # Create a request object and submit a request for approval
         request = SubmitRequest(changes=changes)
-        method = context.server.get_service_method(RequestService.submit)
-        return method(context=context, request=request, reason=reason)
+        return context.server.services.request.submit(
+            context=context, request=request, reason=reason
+        )
 
     @service_method(
         path="worker_pool.get_all",
@@ -384,8 +383,7 @@ class SyftWorkerPoolService(AbstractService):
             uid=worker_pool.image_id,
         ).unwrap()
 
-        worker_service: AbstractService = context.server.get_service("WorkerService")
-        worker_stash = worker_service.stash
+        worker_stash = context.server.services.worker.stash
 
         # Add workers to given pool from the given image
         worker_list, container_statuses = _create_workers_in_pool(
@@ -464,7 +462,7 @@ class SyftWorkerPoolService(AbstractService):
                 -(current_worker_count - number) :
             ]
 
-            worker_stash = context.server.get_service("WorkerService").stash
+            worker_stash = context.server.services.worker.stash
             # delete linkedobj workers
             for worker in workers_to_delete:
                 worker_stash.delete_by_uid(
@@ -590,11 +588,9 @@ class SyftWorkerPoolService(AbstractService):
         uid = worker_pool.id
 
         # relative
-        from ..queue.queue_service import QueueService
         from ..queue.queue_stash import Status
 
-        queue_service = cast(QueueService, context.server.get_service(QueueService))
-        queue_items = queue_service.stash._get_by_worker_pool(
+        queue_items = context.server.services.queue.stash._get_by_worker_pool(
             credentials=context.credentials,
             worker_pool=LinkedObject.from_obj(
                 obj=worker_pool,
@@ -613,14 +609,10 @@ class SyftWorkerPoolService(AbstractService):
 
         for item in items_to_interrupt:
             item.status = Status.INTERRUPTED
-            queue_service.stash.update(
+            context.server.services.queue.stash.update(
                 credentials=context.credentials,
                 obj=item,
             ).unwrap()
-
-        worker_service = cast(
-            WorkerService, context.server.get_service("WorkerService")
-        )
 
         if IN_KUBERNETES:
             # Scale the workers to zero
@@ -638,7 +630,9 @@ class SyftWorkerPoolService(AbstractService):
                 worker_ids.append(worker.id)
 
             for id_ in worker_ids:
-                worker_service.delete(context=context, uid=id_, force=True)
+                context.server.services.worker.delete(
+                    context=context, uid=id_, force=True
+                )
 
         self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap(
             public_message=f"Failed to delete WorkerPool: {worker_pool.name} from stash"

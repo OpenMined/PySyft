@@ -76,11 +76,11 @@ def test_new_admin_can_list_user_code(
         res = root_client.api.services.user.delete(root_client.account.id)
         assert not isinstance(res, SyftError)
 
-    user_code_stash = worker.get_service("usercodeservice").stash
-    user_code = user_code_stash._data
+    user_code_stash = worker.services.user_code.stash
+    user_codes = user_code_stash._data
 
     assert 1 == len(admin.code.get_all())
-    assert {c.id for c in user_code} == {c.id for c in admin.code}
+    assert {c.id for c in user_codes} == {c.id for c in admin.code}
 
 
 def test_user_code(worker) -> None:
