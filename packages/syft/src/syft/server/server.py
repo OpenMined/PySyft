@@ -17,6 +17,7 @@ import sys
 from time import sleep
 import traceback
 from typing import Any
+from typing import TypeVar
 from typing import cast
 
 # third party
@@ -92,6 +93,7 @@ from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.db.sqlite_db import DBConfig
 from ..store.db.sqlite_db import SQLiteDBConfig
 from ..store.db.sqlite_db import SQLiteDBManager
+from ..store.db.stash import ObjectStash
 from ..store.document_store import StoreConfig
 from ..store.document_store_errors import NotFoundException
 from ..store.document_store_errors import StashException
@@ -125,6 +127,8 @@ from .utils import remove_temp_dir_for_server
 from .worker_settings import WorkerSettings
 
 logger = logging.getLogger(__name__)
+
+SyftT = TypeVar("SyftT", bound=SyftObject)
 
 # if user code needs to be serded and its not available we can call this to refresh
 # the code for a specific server UID and thread
@@ -916,6 +920,12 @@ class Server(AbstractServer):
 
     def get_service(self, path_or_func: str | Callable) -> AbstractService:
         return self.services.get_service(path_or_func)
+
+    @as_result(ValueError)
+    def get_stash(self, object_type: SyftT) -> ObjectStash[SyftT]:
+        if object_type not in self.services.stashes:
+            raise ValueError(f"Stash for {object_type} not found.")
+        return self.services.stashes[object_type]
 
     def _get_service_method_from_path(self, path: str) -> Callable:
         path_list = path.split(".")

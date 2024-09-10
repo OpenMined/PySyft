@@ -7,6 +7,7 @@ import syft
 
 # relative
 from ...serde.serializable import serializable
+from ...store.db.stash import ObjectStash
 from ...store.document_store import DocumentStore
 from ...store.document_store import StorePartition
 from ...store.document_store_errors import NotFoundException
@@ -15,6 +16,7 @@ from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
+from ...types.twin_object import TwinObject
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
@@ -165,6 +167,7 @@ class MigrationService(AbstractService):
         document_store_object_types: list[type[SyftObject]] | None = None,
         include_action_store: bool = True,
     ) -> dict[type[SyftObject], StoreMetadata]:
+        # metadata = permissions + storage permissions
         if document_store_object_types is None:
             document_store_object_types = self.store.get_partition_object_types()
 
@@ -272,24 +275,27 @@ class MigrationService(AbstractService):
         return dict(result)
 
     @as_result(SyftException)
-    def _search_partition_for_object(
+    def _search_stash_for_object(
         self, context: AuthedServiceContext, obj: SyftObject
-    ) -> StorePartition:
+    ) -> ObjectStash:
+        stashes: dict[str, ObjectStash] = {
+            t.__canonical_name__: stash
+            for t, stash in context.server.services.stashes.items()
+        }
+
         klass = type(obj)
         mro = klass.__mro__
         class_index = 0
-        object_partition = None
+        object_stash = None
         while len(mro) > class_index:
             canonical_name = mro[class_index].__canonical_name__
-            object_partition = self.store.partitions.get(canonical_name)
-            if object_partition is not None:
+            object_stash = stashes.get(canonical_name)
+            if object_stash is not None:
                 break
             class_index += 1
-        if object_partition is None:
-            raise SyftException(
-                public_message=f"Object partition not found for {klass}"
-            )
-        return object_partition
+        if object_stash is None:
+            raise SyftException(public_message=f"Object stash not found for {klass}")
+        return object_stash
 
     @service_method(
         path="migration.create_migrated_objects",
@@ -314,12 +320,9 @@ class MigrationService(AbstractService):
         ignore_existing: bool = True,
     ) -> SyftSuccess:
         for migrated_object in migrated_objects:
-            object_partition = self._search_partition_for_object(
-                context, migrated_object
-            ).unwrap()
+            stash = self._search_stash_for_object(context, migrated_object).unwrap()
 
-            # upsert the object
-            result = object_partition.set(
+            result = stash.set(
                 context.credentials,
                 obj=migrated_object,
             )
@@ -338,34 +341,18 @@ class MigrationService(AbstractService):
                     result.unwrap()  # this will raise the exception inside the wrapper
         return SyftSuccess(message="Created migrate objects!")
 
-    @service_method(
-        path="migration.update_migrated_objects",
-        name="update_migrated_objects",
-        roles=ADMIN_ROLE_LEVEL,
-    )
-    def update_migrated_objects(
-        self, context: AuthedServiceContext, migrated_objects: list[SyftObject]
-    ) -> None:
-        self._update_migrated_objects(context, migrated_objects).unwrap()
-
     @as_result(SyftException)
     def _update_migrated_objects(
         self, context: AuthedServiceContext, migrated_objects: list[SyftObject]
     ) -> SyftSuccess:
         for migrated_object in migrated_objects:
-            object_partition = self._search_partition_for_object(
-                context, migrated_object
+            stash = self._search_stash_for_object(context, migrated_object).unwrap()
+
+            stash.update(
+                context.credentials,
+                obj=migrated_object,
             ).unwrap()
 
-            qk = object_partition.settings.store_key.with_obj(migrated_object.id)
-            object_partition._update(
-                context.credentials,
-                qk=qk,
-                obj=migrated_object,
-                has_permission=True,
-                overwrite=True,
-                allow_missing_keys=True,
-            ).unwrap()
         return SyftSuccess(message="Updated migration objects!")
 
     @as_result(SyftException)
@@ -403,33 +390,18 @@ class MigrationService(AbstractService):
         context: AuthedServiceContext,
         document_store_object_types: list[type[SyftObject]] | None = None,
     ) -> SyftSuccess:
-        # Track all object type that need migration for document store
-
-        # get all objects, keyed by type (because we might want to have different rules for different types)
-        # Q: will this be tricky with the protocol????
-        # A: For now we will assume that the client will have the same version
-
-        # Then, locally we write stuff that says
-        # for klass, objects in migration_dict.items():
-        # for object in objects:
-        #   if isinstance(object, X):
-        #        do something custom
-        #   else:
-        #       migrated_value = object.migrate_to(klass.__version__, context)
-        #
-        # migrated_values = [SyftObject]
-        # client.migration.write_migrated_values(migrated_values)
-
         migration_objects = self._get_migration_objects(
             context, document_store_object_types
         ).unwrap()
         migrated_objects = self._migrate_objects(context, migration_objects).unwrap()
         self._update_migrated_objects(context, migrated_objects).unwrap()
+
         migration_actionobjects = self._get_migration_actionobjects(context).unwrap()
         migrated_actionobjects = self._migrate_objects(
             context, migration_actionobjects
         ).unwrap()
         self._update_migrated_actionobjects(context, migrated_actionobjects).unwrap()
+
         return SyftSuccess(message="Data upgraded to the latest version")
 
     @service_method(
@@ -447,7 +419,7 @@ class MigrationService(AbstractService):
         self, context: AuthedServiceContext, get_all: bool = False
     ) -> dict[type[SyftObject], list[SyftObject]]:
         # Track all object types from action store
-        action_object_types = [Action, ActionObject]
+        action_object_types = [Action, ActionObject, TwinObject]
         action_object_types.extend(ActionObject.__subclasses__())
         klass_by_canonical_name: dict[str, type[SyftObject]] = {
             klass.__canonical_name__: klass for klass in action_object_types
@@ -457,10 +429,8 @@ class MigrationService(AbstractService):
             context=context, object_types=action_object_types
         ).unwrap()
         result_dict: dict[type[SyftObject], list[SyftObject]] = defaultdict(list)
-        action_store = context.server.action_store
-        action_store_objects = action_store.get_all(
-            context.credentials, has_permission=True
-        ).unwrap()
+        action_stash = context.server.services.action.stash
+        action_store_objects = action_stash.get_all(context.credentials).unwrap()
 
         for obj in action_store_objects:
             if get_all or type(obj) in action_object_pending_migration:
