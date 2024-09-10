@@ -54,7 +54,7 @@ class UserStash(ObjectStash[User]):
         return self.get_one(
             credentials=credentials,
             filters={"email": email},
-        )
+        ).unwrap()
 
     @as_result(StashException)
     def email_exists(self, email: str) -> bool:

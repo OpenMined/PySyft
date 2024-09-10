@@ -33,7 +33,6 @@ from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..document_store_errors import NotFoundException
 from ..document_store_errors import StashException
-from .query import Filter
 from .query import PostgresQuery
 from .query import Query
 from .query import SQLiteQuery
@@ -44,6 +43,22 @@ from .sqlite_db import SQLiteDBManager
 
 StashT = TypeVar("StashT", bound=SyftObject)
 T = TypeVar("T")
+
+
+def parse_filters(filter_dict: dict[str, Any] | None) -> list[tuple[str, str, Any]]:
+    # NOTE using django style filters, e.g. {"age__gt": 18}
+    if filter_dict is None:
+        return []
+    filters = []
+    for key, value in filter_dict.items():
+        key_split = key.split("__")
+        # Operator is eq if not specified
+        if len(key_split) == 1:
+            field, operator = key, "eq"
+        elif len(key_split) == 2:
+            field, operator = key_split
+        filters.append((field, operator, value))
+    return filters
 
 
 class ObjectStash(Generic[StashT]):
@@ -171,7 +186,7 @@ class ObjectStash(Generic[StashT]):
     def get_by_uid(
         self, credentials: SyftVerifyKey, uid: UID, has_permission: bool = False
     ) -> StashT:
-        query = self.query().filter("id", "==", uid)
+        query = self.query().filter("id", "eq", uid)
 
         if not has_permission:
             role = self.get_role(credentials)
@@ -675,17 +690,37 @@ class ObjectStash(Generic[StashT]):
         limit: int | None = None,
         offset: int = 0,
     ) -> list[StashT]:
+        """
+        Get all objects from the stash, optionally filtered.
+
+        Args:
+            credentials (SyftVerifyKey): credentials of the user
+            filters (dict[str, Any] | None, optional): dictionary of filters,
+                where the key is the field name and the value is the filter value.
+                Operators other than equals can be used in the key,
+                e.g. {"name": "Bob", "friends__contains": "Alice"}. Defaults to None.
+            has_permission (bool, optional): If True, overrides the permission check.
+                Defaults to False.
+            order_by (str | None, optional): If provided, the results will be ordered by this field.
+                If not provided, the default order and field defined on the SyftObject.__order_by__ are used.
+                Defaults to None.
+            sort_order (str | None, optional): "asc" or "desc" If not defined,
+                the default order defined on the SyftObject.__order_by__ is used.
+                Defaults to None.
+            limit (int | None, optional): limit the number of results. Defaults to None.
+            offset (int, optional): offset the results. Defaults to 0.
+
+        Returns:
+            list[StashT]: list of objects.
+        """
         query = self.query()
 
         if not has_permission:
             role = self.get_role(credentials)
             query = query.with_permissions(credentials, role)
 
-        if filters:
-            for field_name, field_value in filters.items():
-                if isinstance(field_value, Filter):
-                    query = query.filter(field_name, field_value.op, field_value.value)
-                query = query.filter(field_name, "==", field_value)
+        for field_name, operator, field_value in parse_filters(filters):
+            query = query.filter(field_name, operator, field_value)
 
         query = query.order_by(order_by, sort_order).limit(limit).offset(offset)
         result = query.execute(self.session).all()

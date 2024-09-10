@@ -1,20 +1,17 @@
 # stdlib
 from abc import ABC
 from abc import abstractmethod
-from dataclasses import dataclass
+import enum
 from typing import Any
 from typing import Literal
 
 # third party
 import sqlalchemy as sa
 from sqlalchemy import Column
-from sqlalchemy import Dialect
 from sqlalchemy import Result
 from sqlalchemy import Select
 from sqlalchemy import Table
-from sqlalchemy import dialects
 from sqlalchemy import func
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 from typing_extensions import Self
 
@@ -26,32 +23,25 @@ from ...service.action.action_permissions import ActionPermission
 from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from .sqlite_db import OBJECT_TYPE_TO_TABLE
+from .schema import Base
 
 
-@dataclass
-class Filter:
-    field: str
-    operator: str
-    value: Any
+class FilterOperator(enum.Enum):
+    EQ = "eq"
+    CONTAINS = "contains"
 
 
 class Query(ABC):
-    dialect: Dialect
-
     def __init__(self, object_type: type[SyftObject]) -> None:
         self.object_type: type = object_type
-        self.table: Table = OBJECT_TYPE_TO_TABLE[object_type]
-        self.stmt: Select = select([self.table])
+        self.table: Table = self._get_table(object_type)
+        self.stmt: Select = self.table.select()
 
-    def compile(self) -> str:
-        """
-        Compile the query to a string, for debugging purposes.
-        """
-        return self.stmt.compile(
-            compile_kwargs={"literal_binds": True},
-            dialect=self.dialect,
-        )
+    def _get_table(self, object_type: type[SyftObject]) -> Table:
+        cname = object_type.__canonical_name__
+        if cname not in Base.metadata.tables:
+            raise ValueError(f"Table for {cname} not found")
+        return Base.metadata.tables[cname]
 
     def execute(self, session: Session) -> Result:
         """Execute the query using the given session."""
@@ -77,7 +67,7 @@ class Query(ABC):
         Returns:
             Self: The query object with the permission check applied
         """
-        if role in (ServiceRole.ADMIN, ServiceRole.SUPER_ADMIN):
+        if role in (ServiceRole.ADMIN, ServiceRole.DATA_OWNER):
             return self
 
         permission = ActionObjectPermission(
@@ -91,11 +81,11 @@ class Query(ABC):
 
         return self
 
-    def filter(self, field: str, operator: str, value: Any) -> Self:
+    def filter(self, field: str, operator: str | FilterOperator, value: Any) -> Self:
         """Add a filter to the query.
 
         example usage:
-        Query(User).filter("name", "==", "Alice")
+        Query(User).filter("name", "eq", "Alice")
         Query(User).filter("friends", "contains", "Bob")
 
         Args:
@@ -109,16 +99,18 @@ class Query(ABC):
         Returns:
             Self: The query object with the filter applied
         """
-        if operator not in {"==", "!=", "contains"}:
-            raise ValueError(f"Operation {operator} not supported")
+        if isinstance(operator, str):
+            try:
+                operator = FilterOperator(operator.lower())
+            except ValueError:
+                raise ValueError(f"Filter operator {operator} not supported")
 
-        if operator == "==":
+        if operator == FilterOperator.EQ:
             filter = self._eq_filter(self.table, field, value)
-            self.stmt = self.stmt.where(filter)
-        elif operator == "contains":
+        elif operator == FilterOperator.CONTAINS:
             filter = self._contains_filter(self.table, field, value)
-            self.stmt = self.stmt.where(filter)
 
+        self.stmt = self.stmt.where(filter)
         return self
 
     def order_by(
@@ -214,8 +206,6 @@ class Query(ABC):
 
 
 class SQLiteQuery(Query):
-    dialect = dialects.sqlite.dialect
-
     def _make_permissions_clause(
         self,
         permission: ActionObjectPermission,
@@ -238,8 +228,6 @@ class SQLiteQuery(Query):
 
 
 class PostgresQuery(Query):
-    dialect = dialects.postgresql.dialect
-
     def _make_permissions_clause(
         self, permission: ActionObjectPermission
     ) -> sa.sql.elements.BinaryExpression:

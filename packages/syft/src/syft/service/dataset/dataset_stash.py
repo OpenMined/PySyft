@@ -1,7 +1,6 @@
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.db.query import Filter
 from ...store.db.stash import ObjectStash
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
@@ -22,7 +21,7 @@ class DatasetStash(ObjectStash[Dataset]):
     def search_action_ids(self, credentials: SyftVerifyKey, uid: UID) -> list[Dataset]:
         return self.get_all(
             credentials=credentials,
-            filters={"action_ids": Filter("action_ids", "contains", uid)},
+            filters={"action_ids__contains": uid},
         ).unwrap()
 
     @as_result(StashException)
