@@ -335,7 +335,7 @@ class UserOwned(PolicyRule):
     def is_owned(
         self, context: AuthedServiceContext, action_object: ActionObject
     ) -> bool:
-        action_store = context.server.services.action.store
+        action_store = context.server.services.action.stash
         return action_store.has_permission(
             ActionObjectPermission(
                 action_object.id, ActionPermission.OWNER, context.credentials

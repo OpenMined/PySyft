@@ -8,7 +8,7 @@ from pydantic import ValidationError
 # relative
 from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.sqlite_document_store import SQLiteStoreConfig
@@ -48,11 +48,9 @@ _NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR = (
 
 @serializable(canonical_name="SettingsService", version=1)
 class SettingsService(AbstractService):
-    store: DocumentStore
     stash: SettingsStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = SettingsStash(store=store)
 
     @service_method(path="settings.get", name="get")

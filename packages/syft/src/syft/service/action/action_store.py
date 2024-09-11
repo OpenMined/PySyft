@@ -67,14 +67,14 @@ class ActionObjectStash(ObjectStash[ActionObject]):
         if has_permissions:
             if isinstance(obj, TwinObject):
                 return obj.private.syft_point_to(server_uid)
-            return obj.syft_point_to(server_uid)
+            return obj.syft_point_to(server_uid)  # type: ignore
 
         # if its a twin with a mock anyone can have this
         if isinstance(obj, TwinObject):
             return obj.mock.syft_point_to(server_uid)
 
         # finally worst case you get ActionDataEmpty so you can still trace
-        return obj.as_empty().syft_point_to(server_uid)
+        return obj.as_empty().syft_point_to(server_uid)  # type: ignore
 
     @as_result(SyftException, StashException)
     def set_or_update(  # type: ignore

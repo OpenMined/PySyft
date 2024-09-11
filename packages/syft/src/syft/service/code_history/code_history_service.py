@@ -3,7 +3,7 @@
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...types.uid import UID
 from ..code.user_code import SubmitUserCode
@@ -24,11 +24,9 @@ from .code_history_stash import CodeHistoryStash
 
 @serializable(canonical_name="CodeHistoryService", version=1)
 class CodeHistoryService(AbstractService):
-    store: DocumentStore
     stash: CodeHistoryStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = CodeHistoryStash(store=store)
 
     @service_method(

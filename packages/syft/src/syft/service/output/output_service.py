@@ -7,8 +7,8 @@ from pydantic import model_validator
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...store.db.sqlite_db import DBManager
 from ...store.db.stash import ObjectStash
-from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionKey
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
@@ -213,11 +213,9 @@ class OutputStash(ObjectStash[ExecutionOutput]):
 
 @serializable(canonical_name="OutputService", version=1)
 class OutputService(AbstractService):
-    store: DocumentStore
     stash: OutputStash
 
-    def __init__(self, store: DocumentStore):
-        self.store = store
+    def __init__(self, store: DBManager):
         self.stash = OutputStash(store=store)
 
     @service_method(
@@ -286,7 +284,7 @@ class OutputService(AbstractService):
                 ActionObjectREAD(uid=_id.id, credentials=user_verify_key)
                 for _id in result_ids
             ]
-            if context.server.services.action.store.has_permissions(permissions):
+            if context.server.services.action.stash.has_permissions(permissions):
                 return True
 
         return False

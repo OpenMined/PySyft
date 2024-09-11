@@ -20,6 +20,7 @@ from syft.service.service import AbstractService
 from syft.service.service import ServiceConfigRegistry
 from syft.service.service import service_method
 from syft.service.user.user_roles import GUEST_ROLE_LEVEL
+from syft.store.db.sqlite_db import DBManager
 from syft.store.document_store import DocumentStore
 from syft.store.document_store import NewBaseStash
 from syft.store.document_store import PartitionSettings
@@ -85,7 +86,7 @@ def get_stash_klass(syft_object: type[SyftBaseObject]):
             object_type=syft_object,
         )
 
-        def __init__(self, store: DocumentStore) -> None:
+        def __init__(self, store: DBManager) -> None:
             super().__init__(store=store)
 
     return SyftMockObjectStash
@@ -103,8 +104,7 @@ def setup_service_method(syft_object):
         stash: stash_klass  # type: ignore
         __module__: str = "syft.test"
 
-        def __init__(self, store: DocumentStore) -> None:
-            self.store = store
+        def __init__(self, store: DBManager) -> None:
             self.stash = stash_klass(store=store)
 
         @service_method(

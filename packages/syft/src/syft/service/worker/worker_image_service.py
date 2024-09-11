@@ -10,7 +10,7 @@ from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
@@ -31,11 +31,9 @@ from .worker_image_stash import SyftWorkerImageStash
 
 @serializable(canonical_name="SyftWorkerImageService", version=1)
 class SyftWorkerImageService(AbstractService):
-    store: DocumentStore
     stash: SyftWorkerImageStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = SyftWorkerImageStash(store=store)
 
     @service_method(

@@ -420,7 +420,7 @@ class Server(AbstractServer):
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
         self.db.init_tables()
         # self.services.user.stash.init_root_user()
-        self.action_store = self.services.action.store
+        self.action_store = self.services.action.stash
 
         create_admin_new(
             name=root_username,
@@ -1436,7 +1436,7 @@ class Server(AbstractServer):
             result_obj.syft_server_location = self.id
             result_obj.syft_client_verify_key = credentials
 
-            if not self.services.action.store.exists(
+            if not self.services.action.stash.exists(
                 credentials=credentials, uid=action.result_id
             ):
                 self.services.action.set_result_to_store(

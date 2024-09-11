@@ -4,8 +4,8 @@
 
 # relative
 from ...serde.serializable import serializable
+from ...store.db.sqlite_db import DBManager
 from ...store.db.stash import ObjectStash
-from ...store.document_store import DocumentStore
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
 from ...util.trace_decorator import instrument
@@ -30,11 +30,9 @@ class StatusStash(ObjectStash[UserCodeStatusCollection]):
 
 @serializable(canonical_name="UserCodeStatusService", version=1)
 class UserCodeStatusService(AbstractService):
-    store: DocumentStore
     stash: StatusStash
 
-    def __init__(self, store: DocumentStore):
-        self.store = store
+    def __init__(self, store: DBManager):
         self.stash = StatusStash(store=store)
 
     @service_method(path="code_status.create", name="create", roles=ADMIN_ROLE_LEVEL)

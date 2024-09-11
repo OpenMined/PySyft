@@ -15,8 +15,8 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...server.worker_settings import WorkerSettings
 from ...service.settings.settings import ServerSettings
+from ...store.db.sqlite_db import DBManager
 from ...store.db.stash import ObjectStash
-from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
@@ -137,11 +137,9 @@ class NetworkStash(ObjectStash[ServerPeer]):
 
 @serializable(canonical_name="NetworkService", version=1)
 class NetworkService(AbstractService):
-    store: DocumentStore
     stash: NetworkStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = NetworkStash(store=store)
         if reverse_tunnel_enabled():
             self.rtunnel_service = ReverseTunnelService()

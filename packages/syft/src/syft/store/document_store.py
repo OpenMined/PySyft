@@ -680,7 +680,6 @@ class NewBaseStash:
     partition: StorePartition
 
     def __init__(self, store: DocumentStore) -> None:
-        self.store = store
         self.partition = store.partition(type(self).settings)
 
     @as_result(StashException)

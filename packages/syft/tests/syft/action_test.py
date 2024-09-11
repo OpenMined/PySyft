@@ -23,7 +23,7 @@ from ..utils.custom_markers import currently_fail_on_python_3_12
 def test_actionobject_method(worker):
     root_datasite_client = worker.root_client
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
-    action_store = worker.services.action.store
+    action_store = worker.services.action.stash
     obj = ActionObject.from_obj("abc")
     pointer = obj.send(root_datasite_client)
     assert len(action_store._data) == 1
@@ -75,7 +75,7 @@ def test_lib_function_action(worker):
 
     assert isinstance(res, ActionObject)
     assert all(res == np.array([0, 0, 0]))
-    assert len(worker.services.action.store._data) > 0
+    assert len(worker.services.action.stash._data) > 0
 
 
 def test_call_lib_function_action2(worker):
@@ -90,7 +90,7 @@ def test_lib_class_init_action(worker):
 
     assert isinstance(res, ActionObject)
     assert res == np.float32(4.0)
-    assert len(worker.services.action.store._data) > 0
+    assert len(worker.services.action.stash._data) > 0
 
 
 def test_call_lib_wo_permission(worker):

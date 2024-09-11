@@ -6,7 +6,7 @@ import time
 # relative
 from ...serde.serializable import serializable
 from ...server.worker_settings import WorkerSettings
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...types.errors import SyftException
 from ...types.uid import UID
 from ..action.action_object import ActionObject
@@ -40,11 +40,9 @@ def wait_until(predicate: Callable[[], bool], timeout: int = 10) -> SyftSuccess:
 
 @serializable(canonical_name="JobService", version=1)
 class JobService(AbstractService):
-    store: DocumentStore
     stash: JobStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = JobStash(store=store)
 
     @service_method(

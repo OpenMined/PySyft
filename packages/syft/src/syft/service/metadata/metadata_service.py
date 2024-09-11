@@ -2,7 +2,7 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ..context import AuthedServiceContext
 from ..service import AbstractService
 from ..service import service_method
@@ -12,8 +12,8 @@ from .server_metadata import ServerMetadata
 
 @serializable(canonical_name="MetadataService", version=1)
 class MetadataService(AbstractService):
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
+        pass
 
     @service_method(
         path="metadata.get_metadata", name="get_metadata", roles=GUEST_ROLE_LEVEL
