@@ -64,6 +64,16 @@ class UserStash(ObjectStash[User]):
         except NotFoundException:
             return False
 
+    @as_result(StashException)
+    def verify_key_exists(self, verify_key: SyftVerifyKey) -> bool:
+        try:
+            self.get_by_verify_key(
+                credentials=self.admin_verify_key(), verify_key=verify_key
+            ).unwrap()
+            return True
+        except NotFoundException:
+            return False
+
     @as_result(StashException, NotFoundException)
     def get_by_role(self, credentials: SyftVerifyKey, role: ServiceRole) -> User:
         try:

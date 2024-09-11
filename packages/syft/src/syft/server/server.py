@@ -422,7 +422,7 @@ class Server(AbstractServer):
         # self.services.user.stash.init_root_user()
         self.action_store = self.services.action.store
 
-        create_admin_new(
+        create_root_admin(
             name=root_username,
             email=root_email,
             password=root_password,  # nosec
@@ -1700,17 +1700,32 @@ class Server(AbstractServer):
             ).unwrap()
 
 
-def create_admin_new(
+def create_root_admin(
     name: str,
     email: str,
     password: str,
     server: Server,
 ) -> User | None:
+    """
+    If no root admin exists:
+    - all exists checks on the user stash will fail, as we cannot get the role for the admin to check if it exists
+    - result: a new admin is always created
+
+    If a root admin exists with a different email:
+    - cause: DEFAULT_USER_EMAIL env variable is set to a different email than the root admin in the db
+    - verify_key_exists will return True
+    - result: no new admin is created, as the server already has a root admin
+    """
     user_stash = server.services.user.stash
 
-    user_exists = user_stash.email_exists(email=email).unwrap()
-    if user_exists:
-        logger.debug("Admin not created, admin already exists")
+    email_exists = user_stash.email_exists(email=email).unwrap()
+    if email_exists:
+        logger.debug("Admin not created, a user with this email already exists")
+        return None
+
+    verify_key_exists = user_stash.verify_key_exists(server.verify_key).unwrap()
+    if verify_key_exists:
+        logger.debug("Admin not created, this server already has a root admin")
         return None
 
     create_user = UserCreate(
