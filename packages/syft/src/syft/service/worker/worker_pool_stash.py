@@ -2,10 +2,14 @@
 
 # third party
 
+# third party
+import sqlalchemy as sa
+
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
+from ...store.db.stash import with_session
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
@@ -29,6 +33,7 @@ class SyftWorkerPoolStash(ObjectStash[WorkerPool]):
         )
 
     @as_result(StashException)
+    @with_session
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -36,6 +41,7 @@ class SyftWorkerPoolStash(ObjectStash[WorkerPool]):
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
+        session: sa.Session = None,
     ) -> WorkerPool:
         # By default all worker pools have all read permission
         add_permissions = [] if add_permissions is None else add_permissions
@@ -58,7 +64,7 @@ class SyftWorkerPoolStash(ObjectStash[WorkerPool]):
     def get_by_image_uid(
         self, credentials: SyftVerifyKey, image_uid: UID
     ) -> list[WorkerPool]:
-        return self.get_by_fields(
+        return self.get_all(
             credentials=credentials,
-            fields={"image_id": image_uid.no_dash},
+            filters={"image_id": image_uid.no_dash},
         ).unwrap()

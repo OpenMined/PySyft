@@ -119,7 +119,7 @@ class ServiceRegistry:
     def _construct_services(cls, server: "Server") -> dict[str, AbstractService]:
         service_dict = {}
         for field_name, service_cls in cls.get_service_classes().items():
-            service = service_cls(store=server.db)
+            service = service_cls(store=server.db)  # type: ignore
             service_dict[field_name] = service
         return service_dict
 

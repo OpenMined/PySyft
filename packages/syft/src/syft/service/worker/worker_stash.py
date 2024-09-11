@@ -2,10 +2,14 @@
 
 # third party
 
+# third party
+import sqlalchemy as sa
+
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
+from ...store.db.stash import with_session
 from ...store.document_store import PartitionKey
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
@@ -22,6 +26,7 @@ WorkerContainerNamePartitionKey = PartitionKey(key="container_name", type_=str)
 @serializable(canonical_name="WorkerSQLStash", version=1)
 class WorkerStash(ObjectStash[SyftWorker]):
     @as_result(StashException)
+    @with_session
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -29,6 +34,7 @@ class WorkerStash(ObjectStash[SyftWorker]):
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
+        session: sa.Session = None,
     ) -> SyftWorker:
         # By default all worker pools have all read permission
         add_permissions = [] if add_permissions is None else add_permissions

@@ -557,9 +557,7 @@ class UserService(AbstractService):
             )
 
         # TODO: Remove notifications for the deleted user
-        self.stash.delete_by_uid(
-            credentials=context.credentials, uid=uid, has_permission=True
-        ).unwrap()
+        self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
         return uid
 

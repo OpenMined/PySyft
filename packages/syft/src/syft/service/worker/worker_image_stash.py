@@ -2,12 +2,16 @@
 
 # third party
 
+# third party
+import sqlalchemy as sa
+
 # relative
 from ...custom_worker.config import DockerWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
+from ...store.db.stash import with_session
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
@@ -20,6 +24,7 @@ from .worker_image import SyftWorkerImage
 @serializable(canonical_name="SyftWorkerImageSQLStash", version=1)
 class SyftWorkerImageStash(ObjectStash[SyftWorkerImage]):
     @as_result(SyftException, StashException, NotFoundException)
+    @with_session
     def set(
         self,
         credentials: SyftVerifyKey,
@@ -27,6 +32,7 @@ class SyftWorkerImageStash(ObjectStash[SyftWorkerImage]):
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
+        session: sa.Session = None,
     ) -> SyftWorkerImage:
         # By default syft images have all read permission
         add_permissions = [] if add_permissions is None else add_permissions

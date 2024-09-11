@@ -51,6 +51,7 @@ from ..service.job.job_stash import JobType
 from ..service.metadata.server_metadata import ServerMetadata
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notifier.notifier_service import NotifierService
+from ..service.output.output_service import OutputStash
 from ..service.queue.base_queue import AbstractMessageHandler
 from ..service.queue.base_queue import QueueConsumer
 from ..service.queue.base_queue import QueueProducer
@@ -903,8 +904,8 @@ class Server(AbstractServer):
         return self.services.job.stash
 
     @property
-    def output_stash(self) -> JobStash:
-        return self.get_service("outputservice").stash
+    def output_stash(self) -> OutputStash:
+        return self.services.output.stash
 
     @property
     def worker_stash(self) -> WorkerStash:

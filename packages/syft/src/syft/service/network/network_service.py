@@ -17,8 +17,6 @@ from ...server.worker_settings import WorkerSettings
 from ...service.settings.settings import ServerSettings
 from ...store.db.stash import ObjectStash
 from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import QueryKeys
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
@@ -59,10 +57,6 @@ from .server_peer import ServerPeerUpdate
 
 logger = logging.getLogger(__name__)
 
-VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
-ServerTypePartitionKey = PartitionKey(key="server_type", type_=ServerType)
-OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
-
 REVERSE_TUNNEL_ENABLED = "REVERSE_TUNNEL_ENABLED"
 
 
@@ -90,20 +84,6 @@ class NetworkStash(ObjectStash[ServerPeer]):
             raise NotFoundException.from_exception(
                 e, public_message=f"ServerPeer with {name} not found"
             )
-
-    @as_result(StashException)
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        peer_update: ServerPeerUpdate,
-        has_permission: bool = False,
-    ) -> ServerPeer:
-        self.check_type(peer_update, ServerPeerUpdate).unwrap()
-        return (
-            super()
-            .update(credentials, peer_update, has_permission=has_permission)
-            .unwrap()
-        )
 
     @as_result(StashException)
     def create_or_update_peer(
@@ -140,18 +120,18 @@ class NetworkStash(ObjectStash[ServerPeer]):
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> ServerPeer:
-        qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
-        return self.query_one(credentials, qks).unwrap(
-            private_message=f"ServerPeer with {verify_key} not found"
-        )
+        return self.get_one(
+            credentials=credentials,
+            filters={"verify_key": verify_key},
+        ).unwrap()
 
     @as_result(StashException)
     def get_by_server_type(
         self, credentials: SyftVerifyKey, server_type: ServerType
     ) -> list[ServerPeer]:
-        qks = QueryKeys(qks=[ServerTypePartitionKey.with_obj(server_type)])
-        return self.query_all(
-            credentials=credentials, qks=qks, order_by=OrderByNamePartitionKey
+        return self.get(
+            credentials=credentials,
+            filters={"server_type": server_type},
         ).unwrap()
 
 
@@ -399,7 +379,8 @@ class NetworkService(AbstractService):
         """Get all Peers"""
         return self.stash.get_all(
             credentials=context.server.verify_key,
-            order_by=OrderByNamePartitionKey,
+            order_by="name",
+            sort_order="asc",
         ).unwrap()
 
     @service_method(
@@ -439,7 +420,7 @@ class NetworkService(AbstractService):
 
         peer = self.stash.update(
             credentials=context.server.verify_key,
-            peer_update=peer_update,
+            obj=peer_update,
         ).unwrap()
 
         self.set_reverse_tunnel_config(context=context, remote_server_peer=peer)
@@ -599,7 +580,7 @@ class NetworkService(AbstractService):
         )
         self.stash.update(
             credentials=context.server.verify_key,
-            peer_update=peer_update,
+            obj=peer_update,
         ).unwrap()
 
         return SyftSuccess(
@@ -727,7 +708,7 @@ class NetworkService(AbstractService):
                 id=remote_server_peer.id, server_routes=remote_server_peer.server_routes
             )
             self.stash.update(
-                credentials=context.server.verify_key, peer_update=peer_update
+                credentials=context.server.verify_key, obj=peer_update
             ).unwrap()
 
         return SyftSuccess(message=return_message)

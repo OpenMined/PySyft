@@ -28,24 +28,6 @@ class DataSubjectStash(ObjectStash[DataSubject]):
             filters={"name": name},
         ).unwrap()
 
-    @as_result(StashException)
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        data_subject: DataSubject,
-        has_permission: bool = False,
-    ) -> DataSubject:
-        self.check_type(data_subject, DataSubject).unwrap()
-        return (
-            super()
-            .update(
-                credentials=credentials,
-                obj=data_subject,
-                has_permission=has_permission,
-            )
-            .unwrap()
-        )
-
 
 @serializable(canonical_name="DataSubjectService", version=1)
 class DataSubjectService(AbstractService):

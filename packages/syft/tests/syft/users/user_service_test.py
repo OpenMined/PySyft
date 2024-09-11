@@ -9,6 +9,7 @@ import pytest
 from pytest import MonkeyPatch
 
 # syft absolute
+import syft as sy
 from syft import orchestra
 from syft.client.client import SyftClient
 from syft.server.credentials import SyftVerifyKey
@@ -793,3 +794,24 @@ def test_reset_password():
     )
     guest_client.reset_password(token=temp_token, new_password="Password123")
     server.login(email="new_syft_user@openmined.org", password="Password123")
+
+
+def test_root_cannot_be_deleted():
+    server = orchestra.launch(name="datasite-test", reset=True)
+    datasite_client = server.login(email="info@openmined.org", password="changethis")
+
+    new_admin_email = "admin@openmined.org"
+    new_admin_pass = "changethis2"
+    datasite_client.register(
+        name="second admin",
+        email=new_admin_email,
+        password=new_admin_pass,
+        password_verify=new_admin_pass,
+    )
+    # update role
+    new_user_id = datasite_client.users.search(email=new_admin_email)[0].id
+    datasite_client.users.update(uid=new_user_id, role="admin")
+
+    new_admin_client = server.login(email=new_admin_email, password=new_admin_pass)
+    with sy.raises(sy.SyftException):
+        new_admin_client.users.delete(datasite_client.account.id)
