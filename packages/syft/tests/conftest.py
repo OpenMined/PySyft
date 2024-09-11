@@ -25,16 +25,10 @@ from syft.server.worker import Worker
 from syft.service.user import user
 
 # relative
-# our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
-from .mongomock.mongo_client import MongoClient
 from .syft.stores.store_fixtures_test import dict_action_store
 from .syft.stores.store_fixtures_test import dict_document_store
 from .syft.stores.store_fixtures_test import dict_queue_stash
 from .syft.stores.store_fixtures_test import dict_store_partition
-from .syft.stores.store_fixtures_test import mongo_action_store
-from .syft.stores.store_fixtures_test import mongo_document_store
-from .syft.stores.store_fixtures_test import mongo_queue_stash
-from .syft.stores.store_fixtures_test import mongo_store_partition
 from .syft.stores.store_fixtures_test import sqlite_action_store
 from .syft.stores.store_fixtures_test import sqlite_document_store
 from .syft.stores.store_fixtures_test import sqlite_queue_stash
@@ -221,31 +215,6 @@ def action_store(worker):
     yield worker.action_store
 
 
-@pytest.fixture(scope="session")
-def mongo_client(testrun_uid):
-    """
-    A race-free fixture that starts a MongoDB server for an entire pytest session.
-    Cleans up the server when the session ends, or when the last client disconnects.
-    """
-    db_name = f"pytest_mongo_{testrun_uid}"
-
-    # rand conn str
-    conn_str = f"mongodb://localhost:27017/{db_name}"
-
-    # create a client, and test the connection
-    client = MongoClient(conn_str)
-    assert client.server_info().get("ok") == 1.0
-
-    yield client
-
-    # stop_mongo_server(db_name)
-
-
-@pytest.fixture(autouse=True)
-def patched_mongo_client(monkeypatch):
-    monkeypatch.setattr("pymongo.mongo_client.MongoClient", MongoClient)
-
-
 @pytest.fixture(autouse=True)
 def patched_session_cache(monkeypatch):
     # patching compute heavy hashing to speed up tests
@@ -308,10 +277,6 @@ def big_dataset() -> Dataset:
 
 
 __all__ = [
-    "mongo_store_partition",
-    "mongo_document_store",
-    "mongo_queue_stash",
-    "mongo_action_store",
     "sqlite_store_partition",
     "sqlite_workspace",
     "sqlite_document_store",
