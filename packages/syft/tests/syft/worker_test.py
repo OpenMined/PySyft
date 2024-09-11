@@ -6,7 +6,6 @@ from typing import Any
 from nacl.exceptions import BadSignatureError
 import numpy as np
 import pytest
-from result import Ok
 
 # syft absolute
 import syft as sy
@@ -20,12 +19,12 @@ from syft.service.action.action_object import ActionObject
 from syft.service.action.action_store import DictActionStore
 from syft.service.context import AuthedServiceContext
 from syft.service.queue.queue_stash import QueueItem
-from syft.service.response import SyftAttributeError
 from syft.service.response import SyftError
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
-from syft.service.user.user_service import UserService
+from syft.types.errors import SyftException
+from syft.types.result import Ok
 from syft.types.uid import UID
 
 test_signing_key_string = (
@@ -97,7 +96,9 @@ def test_action_store() -> None:
     test_verift_key_2 = SyftVerifyKey.from_string(test_verify_key_string_2)
     test_object_result_fail = action_store.get(uid=uid, credentials=test_verift_key_2)
     assert test_object_result_fail.is_err()
-    assert "denied" in test_object_result_fail.err()
+    exc = test_object_result_fail.err()
+    assert type(exc) == SyftException
+    assert "denied" in exc.public_message
 
 
 def test_user_transform() -> None:
@@ -131,7 +132,7 @@ def test_user_transform() -> None:
 
 def test_user_service(worker) -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    user_service = worker.get_service(UserService)
+    user_service = worker.services.user
 
     # create a user
     new_user = UserCreate(
@@ -245,7 +246,7 @@ def worker_with_proc(request):
     "path, kwargs",
     [
         ("data_subject.get_all", {}),
-        ("data_subject.get_by_name", {"name": "test"}),
+        ("user.get_all", {}),
         ("dataset.get_all", {}),
         ("dataset.search", {"name": "test"}),
         ("metadata", {}),
@@ -258,6 +259,7 @@ def test_worker_handle_api_request(
     kwargs: dict,
     blocking: bool,
 ) -> None:
+    print(f"run: blocking: {blocking} path: {path} kwargs: {kwargs}")
     server_uid = worker_with_proc.id
     root_client = worker_with_proc.root_client
     assert root_client.api is not None
@@ -271,33 +273,31 @@ def test_worker_handle_api_request(
         server_uid=server_uid, path=path, args=[], kwargs=kwargs, blocking=blocking
     )
     # should fail on unsigned requests
-    result = worker_with_proc.handle_api_call(api_call).message.data
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException):
+        _ = worker_with_proc.handle_api_call(api_call).message.data
 
     signed_api_call = api_call.sign(root_client.api.signing_key)
 
     # should work on signed api calls
-    result = worker_with_proc.handle_api_call(signed_api_call).message.data
-    assert not isinstance(result, SyftError)
+    _ = worker_with_proc.handle_api_call(signed_api_call).message.data
 
     # Guest client should not have access to the APIs
     guest_signed_api_call = api_call.sign(root_client.api.signing_key)
-    result = worker_with_proc.handle_api_call(guest_signed_api_call).message
-    assert not isinstance(result, SyftAttributeError)
+    _ = worker_with_proc.handle_api_call(guest_signed_api_call).message
 
     # should fail on altered requests
     bogus_api_call = signed_api_call
     bogus_api_call.serialized_message += b"hacked"
 
-    result = worker_with_proc.handle_api_call(bogus_api_call).message.data
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException):
+        _ = worker_with_proc.handle_api_call(bogus_api_call).message.data
 
 
 @pytest.mark.parametrize(
     "path, kwargs",
     [
         ("data_subject.get_all", {}),
-        ("data_subject.get_by_name", {"name": "test"}),
+        ("user.get_all", {}),
         ("dataset.get_all", {}),
         ("dataset.search", {"name": "test"}),
         ("metadata", {}),
@@ -313,6 +313,8 @@ def test_worker_handle_api_response(
     server_uid = worker_with_proc.id
     n_processes = worker_with_proc.processes
     root_client = worker_with_proc.root_client
+
+    assert root_client.settings.allow_guest_signup(enable=True)
     assert root_client.api is not None
 
     guest_client = root_client.guest()

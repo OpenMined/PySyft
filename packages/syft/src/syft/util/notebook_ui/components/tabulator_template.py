@@ -1,6 +1,7 @@
 # stdlib
 import json
 import logging
+import re
 import secrets
 from typing import Any
 
@@ -20,8 +21,15 @@ from ..icons import Icon
 
 logger = logging.getLogger(__name__)
 
+
+def make_links(text: str) -> str:
+    file_pattern = re.compile(r"([\w/.-]+\.py)\", line (\d+)")
+    return file_pattern.sub(r'<a href="file://\1#L\2">\1, line \2</a>', text)
+
+
 DEFAULT_ID_WIDTH = 110
-env = jinja2.Environment(loader=jinja2.PackageLoader("syft", "assets/jinja"))  # nosec
+jinja_env = jinja2.Environment(loader=jinja2.PackageLoader("syft", "assets/jinja"))  # nosec
+jinja_env.filters["make_links"] = make_links
 
 
 def create_tabulator_columns(
@@ -116,7 +124,7 @@ def _render_tabulator_table(
     pagination: bool,
     header_sort: bool,
 ) -> str:
-    table_template = env.get_template("table.jinja2")
+    table_template = jinja_env.get_template("table.jinja2")
     tabulator_js = load_js("tabulator.min.js")
     tabulator_css = load_css("tabulator_pysyft.min.css")
     js = load_js("table.js")

@@ -3,11 +3,6 @@ from collections.abc import Callable
 from enum import Enum
 import logging
 
-# third party
-from result import Err
-from result import Ok
-from result import Result
-
 # relative
 from ...abstract_server import ServerType
 from ...client.client import ServerConnection
@@ -15,8 +10,9 @@ from ...client.client import SyftClient
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
-from ...service.response import SyftError
 from ...types.datetime import DateTime
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
@@ -157,10 +153,12 @@ class ServerPeer(SyftObject):
         for new_route in new_routes:
             self.update_route(new_route)
 
+    @as_result(SyftException)
     def update_existed_route_priority(
         self, route: ServerRoute, priority: int | None = None
-    ) -> ServerRouteType | SyftError:
-        """Update the priority of an existing route.
+    ) -> ServerRouteType:
+        """
+        Update the priority of an existed route.
 
         Args:
             route (ServerRoute): The route whose priority is to be updated.
@@ -168,18 +166,22 @@ class ServerPeer(SyftObject):
                 the route will be assigned the highest priority.
 
         Returns:
-            ServerRouteType | SyftError: The route with updated priority if the route exists,
-            otherwise a SyftError.
+            ServerRouteType: The route with updated priority.
+            
+        Raises:
+            SyftException: Route doesn't exist or priority is incorrect.
         """
         if priority is not None and priority <= 0:
-            return SyftError(
-                message=f"Priority must be greater than 0. Now it is {priority}."
+            raise SyftException(
+                public_message="Priority must be greater than 0. Now it is {priority}."
             )
 
         existed, index = self.existed_route(route=route)
 
         if not existed or index is None:
-            return SyftError(message=f"Route with id {route.id} does not exist.")
+            raise SyftException(
+                public_message=f"Route with id {route.id} does not exist."
+            )
 
         if priority is not None:
             self.server_routes[index].priority = priority
@@ -220,59 +222,52 @@ class ServerPeer(SyftObject):
         """
         return self.server_routes[-1] if self.server_routes else None
 
-    def client_with_context(
-        self, context: ServerServiceContext
-    ) -> Result[type[SyftClient], str]:
+    @as_result(SyftException)
+    def client_with_context(self, context: ServerServiceContext) -> SyftClient:
         """Create a SyftClient using the context of a ServerService.
 
         Args:
             context (ServerServiceContext): The context to use for creating the client.
 
         Returns:
-            Result[type[SyftClient], str]: A Result object containing the SyftClient
-            type if successful, or an error message if unsuccessful.
-
-        Raises:
-            ValueError: If there are no routes to the peer.
+            SyftClient: The SyftClient object
+            
+        Raises: 
+            SyftException: If there are no routes to the peer. 
         """
         if len(self.server_routes) < 1:
-            raise ValueError(f"No routes to peer: {self}")
+            raise SyftException(f"No routes to peer: {self}")
         final_route: ServerRoute = self.pick_highest_priority_route()
         connection: ServerConnection = route_to_connection(route=final_route)
-        try:
-            client_type = connection.get_client_type()
-        except Exception as e:
-            msg = f"Failed to establish a connection with {self.server_type} '{self.name}'"
-            logger.error(msg, exc_info=e)
-            return Err(msg)
-        if isinstance(client_type, SyftError):
-            return Err(client_type.message)
-        return Ok(
-            client_type(connection=connection, credentials=context.server.signing_key)
+        client_type = connection.get_client_type().unwrap(
+            public_message=f"Failed to establish a connection with {self.server_type} '{self.name}'"
         )
 
-    def client_with_key(self, credentials: SyftSigningKey) -> SyftClient | SyftError:
+        return client_type(
+            connection=connection, credentials=context.server.signing_key
+        )
+
+
+    @as_result(SyftException)
+    def client_with_key(self, credentials: SyftSigningKey) -> SyftClient:
         """Create a SyftClient using a signing key.
 
         Args:
             credentials (SyftSigningKey): The signing key to use for creating the client.
 
         Returns:
-            SyftClient | SyftError: The created SyftClient, or a SyftError if unsuccessful.
+            SyftClient: The created SyftClient, or a SyftError if unsuccessful.
 
         Raises:
-            ValueError: If there are no routes to the peer.
+            SyftException: If there are no routes to the peer.
         """
         if len(self.server_routes) < 1:
-            raise ValueError(f"No routes to peer: {self}")
+            raise SyftException(public_message=f"No routes to peer: {self}")
 
         final_route: ServerRoute = self.pick_highest_priority_route()
 
         connection = route_to_connection(route=final_route)
-        client_type = connection.get_client_type()
-        if isinstance(client_type, SyftError):
-            return client_type
-
+        client_type = connection.get_client_type().unwrap()
         return client_type(connection=connection, credentials=credentials)
 
     @property
@@ -283,7 +278,7 @@ class ServerPeer(SyftObject):
             SyftClient: The created guest SyftClient.
         """
         guest_key = SyftSigningKey.generate()
-        return self.client_with_key(credentials=guest_key)
+        return self.client_with_key(credentials=guest_key).unwrap()
 
     def proxy_from(self, client: SyftClient) -> SyftClient:
         """Create a proxy SyftClient from an existing client.
@@ -307,21 +302,22 @@ class ServerPeer(SyftObject):
                 return route
         return None
 
-    def delete_route(self, route: ServerRouteType) -> SyftError | None:
+    def delete_route(self, route: ServerRouteType) -> None:
         """Delete a route from the peer's route list.
+           Takes O(n) where is n is the number of routes in self.server_routes.
 
         Args:
             route (ServerRouteType): The route to be deleted.
 
         Returns:
-            SyftError | None: A SyftError if the deletion fails, or None if successful.
+            None: If successful.
         """
         if route:
             try:
                 self.server_routes = [r for r in self.server_routes if r != route]
             except Exception as e:
-                return SyftError(
-                    message=f"Error deleting route with id {route.id}. Exception: {e}"
+                raise SyftException(
+                    public_message=f"Error deleting route with id {route.id}. Exception: {e}"
                 )
 
         return None

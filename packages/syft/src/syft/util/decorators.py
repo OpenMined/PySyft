@@ -5,7 +5,7 @@ from typing import Any
 import warnings
 
 # relative
-from ..service.response import SyftError
+from ..types.errors import SyftException
 
 
 def singleton(cls: Any) -> Callable:
@@ -61,7 +61,7 @@ def deprecated(
         def wrapper(*args: list, **kwargs: dict) -> Any:
             message = f"{func.__qualname__} is deprecated: {reason}"
             if return_syfterror:
-                return SyftError(message=message)
+                raise SyftException(public_message=message)
             warnings.warn(
                 message,
                 category=DeprecationWarning,

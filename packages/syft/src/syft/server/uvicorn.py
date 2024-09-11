@@ -1,6 +1,6 @@
 # stdlib
 from collections.abc import Callable
-import logging
+from contextlib import asynccontextmanager
 import multiprocessing
 import multiprocessing.synchronize
 import os
@@ -24,13 +24,16 @@ import uvicorn
 # relative
 from ..abstract_server import ServerSideType
 from ..client.client import API_PATH
+from ..deployment_type import DeploymentType
 from ..util.autoreload import enable_autoreload
 from ..util.constants import DEFAULT_TIMEOUT
+from ..util.telemetry import TRACING_ENABLED
 from ..util.util import os_name
 from .datasite import Datasite
 from .enclave import Enclave
 from .gateway import Gateway
 from .routes import make_routes
+from .server import Server
 from .server import ServerType
 from .utils import get_named_server_uid
 from .utils import remove_temp_dir_for_server
@@ -47,6 +50,7 @@ class AppSettings(BaseSettings):
     name: str
     server_type: ServerType = ServerType.DATASITE
     server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
+    deployment_type: DeploymentType = DeploymentType.REMOTE
     processes: int = 1
     reset: bool = False
     dev_mode: bool = False
@@ -59,6 +63,17 @@ class AppSettings(BaseSettings):
     background_tasks: bool = False
 
     model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
+
+
+def get_lifetime(worker: Server) -> Callable:
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> Any:
+        try:
+            yield
+        finally:
+            worker.stop()
+
+    return lifespan
 
 
 def app_factory() -> FastAPI:
@@ -85,7 +100,9 @@ def app_factory() -> FastAPI:
     else:
         worker = worker_class(**kwargs)
 
-    app = FastAPI(title=settings.name)
+    worker_lifespan = get_lifetime(worker=worker)
+
+    app = FastAPI(title=settings.name, lifespan=worker_lifespan)
     router = make_routes(worker=worker)
     api_router = APIRouter()
     api_router.include_router(router)
@@ -97,6 +114,14 @@ def app_factory() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    if TRACING_ENABLED:
+        # third party
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        FastAPIInstrumentor().instrument_app(app)
+        print("> Added OTEL FastAPIInstrumentor")
+
     return app
 
 
@@ -123,6 +148,7 @@ def run_uvicorn(
     starting_uvicorn_event: multiprocessing.synchronize.Event,
     **kwargs: Any,
 ) -> None:
+    log_level = kwargs.get("log_level")
     dev_mode = kwargs.get("dev_mode")
     should_reset = dev_mode and kwargs.get("reset")
 
@@ -141,12 +167,6 @@ def run_uvicorn(
                 time.sleep(1)
         except Exception:  # nosec
             print(f"Failed to kill python process on port: {port}")
-
-    log_level = "critical"
-    if dev_mode:
-        log_level = "info"
-        logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
-        logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
 
     if kwargs.get("debug"):
         attach_debugger()
@@ -184,6 +204,7 @@ def serve_server(
     name: str,
     server_type: ServerType = ServerType.DATASITE,
     server_side_type: ServerSideType = ServerSideType.HIGH_SIDE,
+    deployment_type: DeploymentType = DeploymentType.REMOTE,
     host: str = "0.0.0.0",  # nosec
     port: int = 8080,
     processes: int = 1,
@@ -192,6 +213,7 @@ def serve_server(
     tail: bool = False,
     enable_warnings: bool = False,
     in_memory_workers: bool = True,
+    log_level: str | int | None = None,
     queue_port: int | None = None,
     create_producer: bool = False,
     n_consumers: int = 0,
@@ -218,6 +240,7 @@ def serve_server(
             "server_side_type": server_side_type,
             "enable_warnings": enable_warnings,
             "in_memory_workers": in_memory_workers,
+            "log_level": log_level,
             "queue_port": queue_port,
             "create_producer": create_producer,
             "n_consumers": n_consumers,
@@ -225,6 +248,7 @@ def serve_server(
             "background_tasks": background_tasks,
             "debug": debug,
             "starting_uvicorn_event": starting_uvicorn_event,
+            "deployment_type": deployment_type,
         },
     )
 

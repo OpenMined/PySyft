@@ -70,7 +70,7 @@ class DictStorePartition(KeyValueStorePartition):
 
     def prune(self) -> None:
         """Reset the partition by reinitializing the store."""
-        self.init_store()
+        self.init_store().unwrap()
 
 
 @serializable(canonical_name="DictDocumentStore", version=1)

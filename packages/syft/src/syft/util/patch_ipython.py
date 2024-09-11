@@ -1,9 +1,11 @@
 # stdlib
+import html
 import re
 from types import MethodType
 from typing import Any
 
 # relative
+from ..service.response import SyftResponseMessage
 from ..types.dicttuple import DictTuple
 from ..types.syft_object import SyftObject
 from .table import render_itable_template
@@ -116,7 +118,8 @@ def _patch_ipython_sanitization() -> None:
         if callable(getattr(obj, "_repr_markdown_", None)):
             md = obj._repr_markdown_()
             if md is not None:
-                return sanitize_html(md)
+                md_sanitized = sanitize_html(md)
+                return html.unescape(md_sanitized)
         return None
 
     ip.display_formatter.formatters["text/html"].for_type(
@@ -127,6 +130,9 @@ def _patch_ipython_sanitization() -> None:
     )
     ip.display_formatter.formatters["text/markdown"].for_type(
         SyftObject, display_sanitized_md
+    )
+    ip.display_formatter.formatters["text/html"].for_type(
+        SyftResponseMessage, display_sanitized_html
     )
 
 

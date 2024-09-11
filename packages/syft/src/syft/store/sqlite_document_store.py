@@ -13,15 +13,14 @@ from typing import Any
 # third party
 from pydantic import Field
 from pydantic import field_validator
-from result import Err
-from result import Ok
-from result import Result
 from typing_extensions import Self
 
 # relative
 from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
+from ..types.errors import SyftException
+from ..types.result import as_result
 from ..types.uid import UID
 from ..util.util import thread_ident
 from .document_store import DocumentStore
@@ -56,21 +55,25 @@ def _repr_debug_(value: Any) -> str:
     return repr(value)
 
 
-def raise_exception(table_name: str, e: Exception) -> None:
-    if "disk I/O error" in str(e):
-        message = f"Error usually related to concurrent writes. {str(e)}"
-        raise Exception(message)
+def special_exception_public_message(table_name: str, e: Exception) -> str:
+    error_msg = (
+        str(e)
+        if not isinstance(e, SyftException)
+        else e._private_message or e.public_message
+    )
 
-    if "Cannot operate on a closed database" in str(e):
+    if "disk I/O error" in error_msg:
+        message = f"Error usually related to concurrent writes. {error_msg}"
+        return message
+
+    if "Cannot operate on a closed database" in error_msg:
         message = (
             "Error usually related to calling self.db.close()"
-            + f"before last SQLiteBackingStore.__del__ gets called. {str(e)}"
+            + f"before last SQLiteBackingStore.__del__ gets called. {error_msg}"
         )
-        raise Exception(message)
+        return message
 
-    # if its something else other than "table already exists" raise original e
-    if f"table {table_name} already exists" not in str(e):
-        raise e
+    return error_msg
 
 
 @serializable(
@@ -140,14 +143,16 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def create_table(self) -> None:
         try:
             with self.lock:
+                # TODO: add to backing_store an option for "if_exists_ok"
                 self.cur.execute(
-                    f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                    f"create table if not exists {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
                     + "repr TEXT NOT NULL, value BLOB NOT NULL, "  # nosec
                     + "sqltime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)"  # nosec
                 )
                 self.db.commit()
         except Exception as e:
-            raise_exception(self.table_name, e)
+            public_message = special_exception_public_message(self.table_name, e)
+            raise SyftException.from_exception(e, public_message=public_message)
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -182,16 +187,16 @@ class SQLiteBackingStore(KeyValueBackingStore):
     def _commit(self) -> None:
         self.db.commit()
 
-    def _execute(
-        self, sql: str, *args: list[Any] | None
-    ) -> Result[Ok[sqlite3.Cursor], Err[str]]:
+    @as_result(SyftException)
+    def _execute(self, sql: str, *args: list[Any] | None) -> sqlite3.Cursor:
         with self.lock:
             cursor: sqlite3.Cursor | None = None
             # err = None
             try:
                 cursor = self.cur.execute(sql, *args)
             except Exception as e:
-                raise_exception(self.table_name, e)
+                public_message = special_exception_public_message(self.table_name, e)
+                raise SyftException.from_exception(e, public_message=public_message)
 
             # TODO: Which exception is safe to rollback on?
             # we should map out some more clear exceptions that can be returned
@@ -199,11 +204,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             # self.db.rollback()  # Roll back all changes if an exception occurs.
             # err = Err(str(e))
             self.db.commit()  # Commit if everything went ok
-
-            # if err is not None:
-            #     return err
-
-            return Ok(cursor)
+            return cursor
 
     def _set(self, key: UID, value: Any) -> None:
         if self._exists(key):
@@ -213,26 +214,22 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
             )
             data = _serialize(value, to_bytes=True)
-            res = self._execute(insert_sql, [str(key), _repr_debug_(value), data])
-            if res.is_err():
-                raise ValueError(res.err())
+            self._execute(insert_sql, [str(key), _repr_debug_(value), data]).unwrap()
 
     def _update(self, key: UID, value: Any) -> None:
         insert_sql = (
             f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
         )
         data = _serialize(value, to_bytes=True)
-        res = self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
-        if res.is_err():
-            raise ValueError(res.err())
+        self._execute(
+            insert_sql, [str(key), _repr_debug_(value), data, str(key)]
+        ).unwrap()
 
     def _get(self, key: UID) -> Any:
         select_sql = f"select * from {self.table_name} where uid = ? order by sqltime"  # nosec
-        res = self._execute(select_sql, [str(key)])
-        if res.is_err():
-            raise KeyError(f"Query {select_sql} failed")
-        cursor = res.ok()
-
+        cursor = self._execute(select_sql, [str(key)]).unwrap(
+            public_message=f"Query {select_sql} failed"
+        )
         row = cursor.fetchone()
         if row is None or len(row) == 0:
             raise KeyError(f"{key} not in {type(self)}")
@@ -247,7 +244,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             return False
         cursor = res.ok()
 
-        row = cursor.fetchone()
+        row = cursor.fetchone()  # type: ignore
         if row is None:
             return False
 
@@ -263,7 +260,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             return {}
         cursor = res.ok()
 
-        rows = cursor.fetchall()
+        rows = cursor.fetchall()  # type: ignore
         if rows is None:
             return {}
 
@@ -280,7 +277,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             return []
         cursor = res.ok()
 
-        rows = cursor.fetchall()
+        rows = cursor.fetchall()  # type: ignore
         if rows is None:
             return []
 
@@ -289,22 +286,15 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
     def _delete(self, key: UID) -> None:
         select_sql = f"delete from {self.table_name} where uid = ?"  # nosec
-        res = self._execute(select_sql, [str(key)])
-        if res.is_err():
-            raise ValueError(res.err())
+        self._execute(select_sql, [str(key)]).unwrap()
 
     def _delete_all(self) -> None:
         select_sql = f"delete from {self.table_name}"  # nosec
-        res = self._execute(select_sql)
-        if res.is_err():
-            raise ValueError(res.err())
+        self._execute(select_sql).unwrap()
 
     def _len(self) -> int:
         select_sql = f"select count(uid) from {self.table_name}"  # nosec
-        res = self._execute(select_sql)
-        if res.is_err():
-            raise ValueError(res.err())
-        cursor = res.ok()
+        cursor = self._execute(select_sql).unwrap()
         cnt = cursor.fetchone()[0]
         return cnt
 
