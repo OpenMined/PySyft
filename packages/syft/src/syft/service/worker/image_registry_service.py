@@ -2,7 +2,7 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...types.errors import SyftException
 from ...types.uid import UID
 from ..context import AuthedServiceContext
@@ -20,11 +20,9 @@ __all__ = ["SyftImageRegistryService"]
 
 @serializable(canonical_name="SyftImageRegistryService", version=1)
 class SyftImageRegistryService(AbstractService):
-    store: DocumentStore
     stash: SyftImageRegistryStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = SyftImageRegistryStash(store=store)
 
     @service_method(

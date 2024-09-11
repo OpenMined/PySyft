@@ -5,7 +5,7 @@ from typing import TypeVar
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
@@ -60,11 +60,9 @@ class IsExecutionAllowedEnum(str, Enum):
 
 @serializable(canonical_name="UserCodeService", version=1)
 class UserCodeService(AbstractService):
-    store: DocumentStore
     stash: UserCodeStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = UserCodeStash(store=store)
 
     @service_method(

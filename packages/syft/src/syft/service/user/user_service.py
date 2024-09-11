@@ -11,7 +11,7 @@ from ...abstract_server import ServerType
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
@@ -81,11 +81,9 @@ def _paginate(
 
 @serializable(canonical_name="UserService", version=1)
 class UserService(AbstractService):
-    store: DocumentStore
     stash: UserStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = UserStash(store=store)
 
     @as_result(StashException)
@@ -522,7 +520,7 @@ class UserService(AbstractService):
         ).unwrap()
 
         if user.role == ServiceRole.ADMIN:
-            settings_stash = SettingsStash(store=self.store)
+            settings_stash = SettingsStash(store=self.stash.db)
             settings = settings_stash.get_all(
                 context.credentials, limit=1, sort_order="desc"
             ).unwrap()

@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from ...serde.serializable import serializable
 from ...service.action.action_endpoint import CustomEndpointActionObject
 from ...service.action.action_object import ActionObject
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
@@ -37,11 +37,9 @@ from .api_stash import TwinAPIEndpointStash
 
 @serializable(canonical_name="APIService", version=1)
 class APIService(AbstractService):
-    store: DocumentStore
     stash: TwinAPIEndpointStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = TwinAPIEndpointStash(store=store)
 
     @service_method(

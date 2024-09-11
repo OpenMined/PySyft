@@ -6,8 +6,8 @@ import syft
 
 # relative
 from ...serde.serializable import serializable
+from ...store.db.sqlite_db import DBManager
 from ...store.db.stash import ObjectStash
-from ...store.document_store import DocumentStore
 from ...store.document_store_errors import NotFoundException
 from ...types.blob_storage import BlobStorageEntry
 from ...types.errors import SyftException
@@ -34,11 +34,9 @@ from .object_migration_state import SyftObjectMigrationState
 
 @serializable(canonical_name="MigrationService", version=1)
 class MigrationService(AbstractService):
-    store: DocumentStore
     stash: SyftMigrationStateStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = SyftMigrationStateStash(store=store)
 
     @service_method(path="migration", name="get_version")

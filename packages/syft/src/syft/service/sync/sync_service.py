@@ -6,8 +6,8 @@ from typing import Any
 # relative
 from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
+from ...store.db.sqlite_db import DBManager
 from ...store.db.stash import ObjectStash
-from ...store.document_store import DocumentStore
 from ...store.document_store import NewBaseStash
 from ...store.document_store_errors import NotFoundException
 from ...store.linked_obj import LinkedObject
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> ObjectStash:
     if isinstance(item, ActionObject):
         service = context.server.services.action  # type: ignore
-        return service.store  # type: ignore
+        return service.stash  # type: ignore
     service = context.server.get_service(TYPE_TO_SERVICE[type(item)])  # type: ignore
     return service.stash
 
@@ -48,11 +48,9 @@ def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Object
 @instrument
 @serializable(canonical_name="SyncService", version=1)
 class SyncService(AbstractService):
-    store: DocumentStore
     stash: SyncStash
 
-    def __init__(self, store: DocumentStore):
-        self.store = store
+    def __init__(self, store: DBManager):
         self.stash = SyncStash(store=store)
 
     def add_actionobject_read_permissions(
@@ -61,7 +59,7 @@ class SyncService(AbstractService):
         action_object: ActionObject,
         new_permissions: list[ActionObjectPermission],
     ) -> None:
-        store_to = context.server.services.action.store  # type: ignore
+        store_to = context.server.services.action.stash  # type: ignore
         for permission in new_permissions:
             if permission.permission == ActionPermission.READ:
                 store_to.add_permission(permission)

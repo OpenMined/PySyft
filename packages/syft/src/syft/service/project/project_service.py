@@ -4,7 +4,7 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
@@ -32,11 +32,9 @@ from .project_stash import ProjectStash
 
 @serializable(canonical_name="ProjectService", version=1)
 class ProjectService(AbstractService):
-    store: DocumentStore
     stash: ProjectStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = ProjectStash(store=store)
 
     @as_result(SyftException)

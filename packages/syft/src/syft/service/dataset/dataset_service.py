@@ -5,7 +5,7 @@ import logging
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..action.action_permissions import ActionObjectPermission
@@ -68,11 +68,9 @@ def _paginate_dataset_collection(
 
 @serializable(canonical_name="DatasetService", version=1)
 class DatasetService(AbstractService):
-    store: DocumentStore
     stash: DatasetStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = DatasetStash(store=store)
 
     @service_method(

@@ -233,7 +233,7 @@ def handle_message_multiprocessing(
         public_message=f"Job {queue_item.job_id} not found!"
     )
 
-    job_item.server_uid = worker.id
+    job_item.server_uid = worker.id  # type: ignore[assignment]
     job_item.result = result
     job_item.resolved = True
     job_item.status = job_status

@@ -112,7 +112,7 @@ class ActionStoreChange(Change):
 
     @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
-        action_store = context.server.services.action.store
+        action_store = context.server.services.action.stash
 
         # can we ever have a lineage ID in the store?
         obj_uid = self.linked_obj.object_uid

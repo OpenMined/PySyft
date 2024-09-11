@@ -8,7 +8,7 @@ from pydantic import EmailStr
 # relative
 from ...abstract_server import AbstractServer
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
@@ -34,11 +34,9 @@ class RateLimitException(SyftException):
 
 @serializable(canonical_name="NotifierService", version=1)
 class NotifierService(AbstractService):
-    store: DocumentStore
     stash: NotifierStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = NotifierStash(store=store)
 
     @as_result(StashException)
