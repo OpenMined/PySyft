@@ -113,7 +113,7 @@ class NotifierService(AbstractService):
             email_port (int | None): Email server port. Defaults to 587.
 
         Returns:
-            SyftSuccess : SyftSuccess if successful.
+            SyftSuccess: SyftSuccess if successful.
 
         Raises:
             SyftException: any error that occurs during the process
@@ -243,9 +243,10 @@ class NotifierService(AbstractService):
         Returns:
             SyftSuccess: SyftSuccess if successful.
         """
-        return context.server.services.user.disable_notifications(
+        result = context.server.services.user.disable_notifications(
             context, notifier_type=notifier_type
-        ).unwrap()
+        )
+        return result
 
     @staticmethod
     @as_result(SyftException)
@@ -271,7 +272,7 @@ class NotifierService(AbstractService):
             smtp_host (str | None): SMTP server host. Defaults to None.
 
         Returns:
-            SyftSuccess:
+            SyftSuccess: SyftSuccess if successful.
 
         Raises:
             SyftException: Error in creating or initializing notifier
