@@ -25,7 +25,6 @@ from ..job.job_stash import Job
 from ..job.job_stash import JobStatus
 from ..notification.email_templates import FailedJobTemplate
 from ..notification.notification_service import CreateNotification
-from ..notification.notification_service import NotificationService
 from ..notifier.notifier_enums import NOTIFIERS
 from ..queue.queue_service import QueueService
 from ..response import SyftError
