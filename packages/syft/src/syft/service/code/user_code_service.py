@@ -154,8 +154,13 @@ class UserCodeService(AbstractService):
         # FIX: Check if this works (keep commented):
         # self.stash.update(context.credentials, code).unwrap()
 
+        # TODO fix this
         if code_update.l0_deny_reason is not Empty:  # type: ignore[comparison-overlap]
             code.l0_deny_reason = code_update.l0_deny_reason
+            
+        if code_update.origin_server_side_type is not None:
+            code.origin_server_side_type = code_update.origin_server_side_type
+            code.status_link = None
 
         updated_code = self.stash.update(context.credentials, code).unwrap()
         return SyftSuccess(message="UserCode updated successfully", value=updated_code)
@@ -254,7 +259,7 @@ class UserCodeService(AbstractService):
         if user_code.is_l0_deployment:
             status_change = SyncedUserCodeStatusChange(
                 value=UserCodeStatus.APPROVED,
-                linked_obj=user_code.status_link,
+                linked_obj=user_code.status_link, # maybe this is just None
                 linked_user_code=code_link,
             )
         else:

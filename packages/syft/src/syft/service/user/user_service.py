@@ -126,6 +126,26 @@ class UserService(AbstractService):
         new_user = self._add_user(context.credentials, user).unwrap()
         return new_user.to(UserView)
 
+    @service_method(path="user._add_batch", name="_add_batch")
+    def _add_batch(
+        self, context:AuthedServiceContext, users: list[User]
+    ) -> list[UserView]:
+        new_users = []
+        for user in users:
+            user_exists = self._check_if_email_exists(
+                credentials=context.credentials, email=user.email
+            )
+
+            # On a fresh deployment, this would only happen for the admin user
+            # maybe we need to change the user to be the same as the admin user on the high side
+            # (name, institute, etc)
+            if user_exists:
+                continue 
+
+            new_user = self._add_user(context.credentials, user).unwrap()
+            new_users.append(new_user.to(UserView))
+        return new_users
+
     def forgot_password(
         self, context: UnauthedServiceContext, email: str
     ) -> SyftSuccess:
@@ -331,6 +351,19 @@ class UserService(AbstractService):
             users = self.stash.get_all(context.credentials).unwrap()
         users = [user.to(UserView) for user in users]
         return _paginate(users, page_size, page_index)
+    
+    @service_method(path="user._get_all", name="_get_all", roles=DATA_OWNER_ROLE_LEVEL)
+    def _get_all(
+        self,
+        context: AuthedServiceContext,
+    ) -> list[User]:
+        if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
+            users = self.stash.get_all(
+                context.credentials, has_permission=True
+            ).unwrap()
+        else:
+            users = self.stash.get_all(context.credentials).unwrap()
+        return users
 
     def signing_key_for_verify_key(self, verify_key: SyftVerifyKey) -> UserPrivateKey:
         user = self.stash.get_by_verify_key(

@@ -346,6 +346,8 @@ class SyncService(AbstractService):
         for service_name in services_to_sync:
             service = context.server.get_service(service_name)
             items = service.get_all(context)
+            import sys
+            print(len(items), service_name, file=sys.stderr)
             all_items.extend(items)
 
         # Gather jobs, logs, outputs and action objects
@@ -423,7 +425,10 @@ class SyncService(AbstractService):
             errors=errors,
         )
 
+        import sys
+        print(objects, file=sys.stderr)
         new_state.add_objects(objects, context)
+        print(new_state.objects, file=sys.stderr)
 
         return new_state
 

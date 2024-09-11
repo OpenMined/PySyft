@@ -23,7 +23,7 @@ from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user import UserView
-from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import ADMIN_ROLE_LEVEL, DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_service import UserService
@@ -78,6 +78,12 @@ class RequestService(AbstractService):
                 email_template=RequestEmailTemplate,
             )
         return request
+    
+    @service_method(
+        path="request._update", name="_update", roles=DATA_OWNER_ROLE_LEVEL
+    )
+    def _update(self, context: AuthedServiceContext, request: Request) -> Request:
+        return self.stash.update(context.credentials, request).unwrap()
 
     @service_method(
         path="request.get_by_uid", name="get_by_uid", roles=DATA_SCIENTIST_ROLE_LEVEL

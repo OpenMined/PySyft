@@ -1007,6 +1007,7 @@ class UserCodeUpdate(PartialSyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     l0_deny_reason: str | None
+    origin_server_side_type: ServerSideType | None
 
 
 @serializable(without=["local_function"])

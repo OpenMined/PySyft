@@ -871,6 +871,8 @@ class NewBaseStash:
     ) -> NewBaseStash.object_type:
         # TODO: See what breaks:
         # this is for when we pass an somelike like a UserUpdate obj
+        # import ipdb
+        # ipdb.set_trace()
         if isinstance(obj, PartialSyftObject):
             current = self.find_one(credentials, id=obj.id).unwrap()
             obj.apply(to=current)

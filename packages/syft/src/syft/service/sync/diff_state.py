@@ -1183,6 +1183,8 @@ class ServerDiff(SyftObject):
         obj_uid_to_diff = {}
         show_deletion_warning = False
         for obj_id in set(low_state.objects.keys()) | set(high_state.objects.keys()):
+            import sys
+            print("from_sync_state:", obj_id, file=sys.stderr)
             low_obj = low_state.objects.get(obj_id, None)
             high_obj = high_state.objects.get(obj_id, None)
 
@@ -1205,6 +1207,7 @@ class ServerDiff(SyftObject):
             # We don't support deletion of objects yet.
             # So, skip if the object is not present on the *source* side
             source_obj = low_obj if direction == SyncDirection.LOW_TO_HIGH else high_obj
+            print(f"{source_obj=}", obj_id)
             if source_obj is None:
                 show_deletion_warning = True
                 continue
@@ -1226,7 +1229,10 @@ class ServerDiff(SyftObject):
             obj_uid_to_diff[diff.object_id] = diff
 
         # TODO move static methods to ServerDiff __init__
+        print(list(obj_uid_to_diff.keys()), file=sys.stderr)
         obj_dependencies = ServerDiff.dependencies_from_states(low_state, high_state)
+        import ipdb
+        # ipdb.set_trace()
         all_batches = ServerDiff._create_batches(
             low_state,
             high_state,
