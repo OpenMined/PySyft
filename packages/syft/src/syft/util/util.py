@@ -1358,11 +1358,11 @@ def generate_token() -> str:
     return secrets.token_hex(64)
 
 
-def sanitize_html(html: str) -> str:
+def sanitize_html(html_str: str) -> str:
     """Sanitize HTML content by allowing specific tags and attributes.
 
     Args:
-        html (str): The HTML content to sanitize.
+        html_str (str): The HTML content to sanitize.
 
     Returns:
         str: The sanitized HTML content.
