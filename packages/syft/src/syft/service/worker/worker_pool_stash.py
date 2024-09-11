@@ -3,7 +3,7 @@
 # third party
 
 # third party
-import sqlalchemy as sa
+from sqlalchemy.orm import Session
 
 # relative
 from ...serde.serializable import serializable
@@ -41,7 +41,7 @@ class SyftWorkerPoolStash(ObjectStash[WorkerPool]):
         add_permissions: list[ActionObjectPermission] | None = None,
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
-        session: sa.Session = None,
+        session: Session = None,
     ) -> WorkerPool:
         # By default all worker pools have all read permission
         add_permissions = [] if add_permissions is None else add_permissions
@@ -56,6 +56,7 @@ class SyftWorkerPoolStash(ObjectStash[WorkerPool]):
                 add_permissions=add_permissions,
                 add_storage_permission=add_storage_permission,
                 ignore_duplicates=ignore_duplicates,
+                session=session,
             )
             .unwrap()
         )
