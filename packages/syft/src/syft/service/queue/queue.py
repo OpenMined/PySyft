@@ -239,8 +239,7 @@ def handle_message_multiprocessing(
             notifier_types=[NOTIFIERS.EMAIL],
             email_template=FailedJobTemplate,
         )
-
-        method = worker.get_service_method(NotificationService.send)
+        method = worker.services.notification.send
         result = method(context=root_context, notification=message)
 
         status = Status.ERRORED
