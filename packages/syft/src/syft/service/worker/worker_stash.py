@@ -49,6 +49,7 @@ class WorkerStash(ObjectStash[SyftWorker]):
                 add_permissions=add_permissions,
                 ignore_duplicates=ignore_duplicates,
                 add_storage_permission=add_storage_permission,
+                session=session,
             )
             .unwrap()
         )

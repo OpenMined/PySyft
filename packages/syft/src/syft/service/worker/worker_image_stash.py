@@ -57,6 +57,7 @@ class SyftWorkerImageStash(ObjectStash[SyftWorkerImage]):
                 add_permissions=add_permissions,
                 add_storage_permission=add_storage_permission,
                 ignore_duplicates=ignore_duplicates,
+                session=session,
             )
             .unwrap()
         )

@@ -89,6 +89,7 @@ class SQLiteDBManager(DBManager):
         if self.engine.dialect.name == "sqlite":
             connection.execute(sa.text("PRAGMA journal_mode = WAL"))
             connection.execute(sa.text("PRAGMA busy_timeout = 5000"))
+            # TODO check
             connection.execute(sa.text("PRAGMA temp_store = 2"))
             connection.execute(sa.text("PRAGMA synchronous = 1"))
 
