@@ -167,7 +167,7 @@ class ServerPeer(SyftObject):
 
         Returns:
             ServerRouteType: The route with updated priority.
-            
+
         Raises:
             SyftException: Route doesn't exist or priority is incorrect.
         """
@@ -231,9 +231,9 @@ class ServerPeer(SyftObject):
 
         Returns:
             SyftClient: The SyftClient object
-            
-        Raises: 
-            SyftException: If there are no routes to the peer. 
+
+        Raises:
+            SyftException: If there are no routes to the peer.
         """
         if len(self.server_routes) < 1:
             raise SyftException(f"No routes to peer: {self}")
@@ -246,7 +246,6 @@ class ServerPeer(SyftObject):
         return client_type(
             connection=connection, credentials=context.server.signing_key
         )
-
 
     @as_result(SyftException)
     def client_with_key(self, credentials: SyftSigningKey) -> SyftClient:

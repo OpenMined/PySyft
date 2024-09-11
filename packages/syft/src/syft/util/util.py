@@ -1451,7 +1451,6 @@ def get_latest_tag(registry: str, repo: str) -> str | None:
     return None
 
 
-
 def get_caller_file_path() -> str | None:
     stack = inspect.stack()
 

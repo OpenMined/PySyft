@@ -572,9 +572,7 @@ def send_action_side_effect(
 
 
 @as_result(SyftException)
-def propagate_server_uid(
-    context: PreHookContext, op: str, result: Any
-) -> Any:
+def propagate_server_uid(context: PreHookContext, op: str, result: Any) -> Any:
     """Patch the result to include the syft_server_uid.
 
     Args:
@@ -583,7 +581,7 @@ def propagate_server_uid(
         result (Any): The result to patch.
 
     Returns:
-        Any: 
+        Any:
 
     Raises:
         SyftException: If the parent object does not have a syft_server_uid or

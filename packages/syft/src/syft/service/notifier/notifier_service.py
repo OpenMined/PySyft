@@ -83,7 +83,7 @@ class NotifierService(AbstractService):
 
     def set_notifier_active_to_false(
         self, context: AuthedServiceContext
-    ) -> SyftSuccess | SyftError:
+    ) -> SyftSuccess:
         """
         Essentially a duplicate of turn_off method.
         """
@@ -114,7 +114,7 @@ class NotifierService(AbstractService):
 
         Returns:
             SyftSuccess : SyftSuccess if successful.
-        
+
         Raises:
             SyftException: any error that occurs during the process
         """
@@ -233,7 +233,7 @@ class NotifierService(AbstractService):
     def deactivate(
         self, context: AuthedServiceContext, notifier_type: NOTIFIERS = NOTIFIERS.EMAIL
     ) -> SyftSuccess:
-                """Deactivate email notifications for the authenticated user.
+        """Deactivate email notifications for the authenticated user.
         This will only work if the datasite owner has enabled notifications.
 
         Args:
@@ -271,7 +271,7 @@ class NotifierService(AbstractService):
             smtp_host (str | None): SMTP server host. Defaults to None.
 
         Returns:
-            SyftSuccess: 
+            SyftSuccess:
 
         Raises:
             SyftException: Error in creating or initializing notifier
@@ -365,9 +365,9 @@ class NotifierService(AbstractService):
 
         Returns:
             SyftSuccess: SyftSuccess if the notification was successfully dispatched.
-            
-        Raises: 
-            SyftException | RateLimitException: 
+
+        Raises:
+            SyftException | RateLimitException:
             - SyftException: Notifier settings not found or few other things.
             - RateLimitException: Surpassed email threshold limit
         """

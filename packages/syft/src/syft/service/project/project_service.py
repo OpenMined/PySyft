@@ -366,8 +366,8 @@ class ProjectService(AbstractService):
 
         Returns:
             None: No return
-            
-        Raises: 
+
+        Raises:
             SyftException: If notification failed to send.
         """
         if (
