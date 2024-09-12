@@ -6,7 +6,6 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
 from .base import DBManager
-from .schema import Base
 from .sqlite_db import DBConfig
 
 
@@ -30,21 +29,9 @@ class PostgresDBConfig(DBConfig):
         ).render_as_string(hide_password=False)
 
 
-class PostgresDBManager(DBManager):
+class PostgresDBManager(DBManager[PostgresDBConfig]):
     def update_settings(self) -> None:
         return super().update_settings()
-
-    def init_tables(self) -> None:
-        if self.config.reset:
-            # drop all tables that we know about
-            Base.metadata.drop_all(bind=self.engine)
-            self.config.reset = False
-
-        Base.metadata.create_all(self.engine)
-
-    def reset(self) -> None:
-        Base.metadata.drop_all(bind=self.engine)
-        Base.metadata.create_all(self.engine)
 
     @classmethod
     def random(

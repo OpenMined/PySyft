@@ -1,5 +1,7 @@
 # stdlib
 import logging
+from typing import Generic
+from typing import TypeVar
 
 # third party
 from pydantic import BaseModel
@@ -10,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
+from .schema import Base
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +26,10 @@ class DBConfig(BaseModel):
         raise NotImplementedError("Subclasses must implement this method.")
 
 
-class DBManager:
+ConfigT = TypeVar("ConfigT", bound=DBConfig)
+
+
+class DBManager(Generic[ConfigT]):
     def __init__(
         self,
         config: DBConfig,
@@ -40,14 +46,19 @@ class DBManager:
         )
         logger.info(f"Connecting to {config.connection_string}")
         self.sessionmaker = sessionmaker(bind=self.engine)
-        logger.info(f"Successfully connected to {config.connection_string}")
         self.update_settings()
+        logger.info(f"Successfully connected to {config.connection_string}")
 
     def update_settings(self) -> None:
         pass
 
     def init_tables(self) -> None:
-        pass
+        if self.config.reset:
+            # drop all tables that we know about
+            Base.metadata.drop_all(bind=self.engine)
+            self.config.reset = False
+        Base.metadata.create_all(self.engine)
 
     def reset(self) -> None:
-        pass
+        Base.metadata.drop_all(bind=self.engine)
+        Base.metadata.create_all(self.engine)

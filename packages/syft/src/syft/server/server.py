@@ -88,8 +88,8 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.db.base import DBConfig
-from ..store.db.postgres_db import PostgresDBConfig
-from ..store.db.postgres_db import PostgresDBManager
+from ..store.db.postgres import PostgresDBConfig
+from ..store.db.postgres import PostgresDBManager
 from ..store.db.sqlite_db import SQLiteDBConfig
 from ..store.db.sqlite_db import SQLiteDBManager
 from ..store.db.stash import ObjectStash
