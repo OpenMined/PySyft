@@ -322,7 +322,7 @@ class NotifierService(AbstractService):
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
     ) -> SyftSuccess:
-        admin_key = context.server.services.user.admin_verify_key()
+        admin_key = context.server.services.user.root_verify_key
 
         # Silently fail on notification not delivered
         try:

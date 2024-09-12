@@ -1,3 +1,5 @@
+# third party
+
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
@@ -31,13 +33,10 @@ class UserStash(ObjectStash[User]):
                 ),
             )
 
-    def admin_verify_key(self) -> SyftVerifyKey:
-        return self.root_verify_key
-
     @as_result(StashException, NotFoundException)
     def admin_user(self) -> User:
         # TODO: This returns only one user, the first user with the role ADMIN
-        admin_credentials = self.admin_verify_key()
+        admin_credentials = self.root_verify_key
         return self.get_by_role(
             credentials=admin_credentials, role=ServiceRole.ADMIN
         ).unwrap()
@@ -59,7 +58,7 @@ class UserStash(ObjectStash[User]):
     @as_result(StashException)
     def email_exists(self, email: str) -> bool:
         try:
-            self.get_by_email(credentials=self.admin_verify_key(), email=email).unwrap()
+            self.get_by_email(credentials=self.root_verify_key, email=email).unwrap()
             return True
         except NotFoundException:
             return False
@@ -68,7 +67,7 @@ class UserStash(ObjectStash[User]):
     def verify_key_exists(self, verify_key: SyftVerifyKey) -> bool:
         try:
             self.get_by_verify_key(
-                credentials=self.admin_verify_key(), verify_key=verify_key
+                credentials=self.root_verify_key, verify_key=verify_key
             ).unwrap()
             return True
         except NotFoundException:

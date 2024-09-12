@@ -261,7 +261,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
     ) -> list[TwinAPIEndpointView]:
         """Retrieves a list of available API endpoints view available to the user."""
-        admin_key = context.server.services.user.admin_verify_key()
+        admin_key = context.server.services.user.root_verify_key
         all_api_endpoints = self.stash.get_all(admin_key).unwrap()
 
         api_endpoint_view = [
@@ -585,7 +585,7 @@ class APIService(AbstractService):
     def get_endpoint_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> TwinAPIEndpoint:
-        admin_key = context.server.services.user.admin_verify_key()
+        admin_key = context.server.services.user.root_verify_key
         return self.stash.get_by_uid(admin_key, uid).unwrap()
 
     @as_result(StashException)
