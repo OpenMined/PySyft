@@ -1,5 +1,30 @@
 {
   "1": {
     "release_name": "0.9.1.json"
+  },
+  "dev": {
+    "object_versions": {
+      "ApprovalDecision": {
+        "1": {
+          "version": 1,
+          "hash": "ecce7c6e01af68b0c0a73605f0c2226917f0784ecce69e9f64ce004b243252d4",
+          "action": "add"
+        }
+      },
+      "UserCodeStatusCollection": {
+        "2": {
+          "version": 2,
+          "hash": "aacbdcc19141d96914ab10b6c3f9f4684fb3f71d405254df70602655539044c7",
+          "action": "add"
+        }
+      },
+      "UserCode": {
+        "2": {
+          "version": 2,
+          "hash": "c127aa856b208f06f50131cd114a910b5b147e252efc9c962f0fe424a1edd264",
+          "action": "add"
+        }
+      }
+    }
   }
 }

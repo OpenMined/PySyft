@@ -133,10 +133,13 @@ class UserCodeStatus(Enum):
         return hash(self.value)
 
 
-@serializable(canonical_name="UserCodeStatusDecision", version=1)
+@serializable()
 class ApprovalDecision(SyftObject):
     status: UserCodeStatus
     reason: str | None = None
+
+    __canonical_name__ = "ApprovalDecision"
+    __version__ = 1
 
     @property
     def non_empty_reason(self):
@@ -144,6 +147,26 @@ class ApprovalDecision(SyftObject):
             return None
         return self.reason
 
+
+@serializable()
+class UserCodeStatusCollectionV1(SyncableSyftObject):
+    """Currently this is a class that implements a mixed bag of two statusses
+    The first status is for a level 0 Request, which only uses the status dict
+    for denied decision. If there is no denied decision, it computes the status
+    by checking the backend for whether it has readable outputs.
+    The second use case is for a level 2 Request, in this case we store the status
+    dict on the object and use it as is for both denied and approved status
+    """
+
+    __canonical_name__ = "UserCodeStatusCollection"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    __repr_attrs__ = ["approved", "status_dict"]
+
+    # this is empty in the case of l0
+    status_dict: dict[ServerIdentity, tuple[UserCodeStatus, str]] = {}
+
+    user_code_link: LinkedObject
 
 @serializable()
 class UserCodeStatusCollection(SyncableSyftObject):
@@ -156,7 +179,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
     """
 
     __canonical_name__ = "UserCodeStatusCollection"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __repr_attrs__ = ["approved", "status_dict"]
 
@@ -350,10 +373,81 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
 
 @serializable()
-class UserCode(SyncableSyftObject):
+class UserCodeV1(SyncableSyftObject):
     # version
     __canonical_name__ = "UserCode"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    server_uid: UID | None = None
+    user_verify_key: SyftVerifyKey
+    raw_code: str
+    input_policy_type: type[InputPolicy] | UserPolicy
+    input_policy_init_kwargs: dict[Any, Any] | None = None
+    input_policy_state: bytes = b""
+    output_policy_type: type[OutputPolicy] | UserPolicy
+    output_policy_init_kwargs: dict[Any, Any] | None = None
+    output_policy_state: bytes = b""
+    parsed_code: str
+    service_func_name: str
+    unique_func_name: str
+    user_unique_func_name: str
+    code_hash: str
+    signature: inspect.Signature
+    status_link: LinkedObject | None = None
+    input_kwargs: list[str]
+    submit_time: DateTime | None = None
+    # tracks if the code calls datasite.something, variable is set during parsing
+    uses_datasite: bool = False
+
+    nested_codes: dict[str, tuple[LinkedObject, dict]] | None = {}
+    worker_pool_name: str | None = None
+    origin_server_side_type: ServerSideType
+    l0_deny_reason: str | None = None
+    _has_output_read_permissions_cache: bool | None = None
+
+    __table_coll_widths__ = [
+        "min-content",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+        "auto",
+    ]
+
+    __attr_searchable__: ClassVar[list[str]] = [
+        "user_verify_key",
+        "service_func_name",
+        "code_hash",
+    ]
+    __attr_unique__: ClassVar[list[str]] = []
+    __repr_attrs__: ClassVar[list[str]] = [
+        "service_func_name",
+        "input_owners",
+        "code_status",
+        "worker_pool_name",
+        "l0_deny_reason",
+        "raw_code",
+    ]
+
+    __exclude_sync_diff_attrs__: ClassVar[list[str]] = [
+        "server_uid",
+        "code_status",
+        "input_policy_type",
+        "input_policy_init_kwargs",
+        "input_policy_state",
+        "output_policy_type",
+        "output_policy_init_kwargs",
+        "output_policy_state",
+    ]
+
+@serializable()
+class UserCode(SyncableSyftObject):
+    # version
+    __canonical_name__ = "UserCode"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID
     server_uid: UID | None = None
