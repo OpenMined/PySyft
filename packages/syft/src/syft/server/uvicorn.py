@@ -27,7 +27,7 @@ import uvicorn
 from ..abstract_server import ServerSideType
 from ..client.client import API_PATH
 from ..deployment_type import DeploymentType
-from ..store.db.sqlite_db import DBConfig
+from ..store.db.db import DBConfig
 from ..util.autoreload import enable_autoreload
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.telemetry import TRACING_ENABLED

@@ -12,8 +12,8 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
-from .sqlite_db import DBConfig
-from .sqlite_db import DBManager
+from .db import DBConfig
+from .db import DBManager
 
 
 @serializable(canonical_name="SQLiteDBConfig", version=1)
