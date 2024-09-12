@@ -31,6 +31,11 @@ class CustomWorkerBuilder:
 
     @cached_property
     def builder(self) -> BuilderBase:
+        """Returns the appropriate builder instance based on the environment.
+
+        Returns:
+            BuilderBase: An instance of either KubernetesBuilder or DockerBuilder.
+        """
         if IN_KUBERNETES:
             return KubernetesBuilder()
         else:
@@ -39,16 +44,22 @@ class CustomWorkerBuilder:
     def build_image(
         self,
         config: WorkerConfig,
-        tag: str | None = None,
+        tag: str | None,
         **kwargs: Any,
     ) -> ImageBuildResult:
-        """
-        Builds a Docker image from the given configuration.
+        """Builds a Docker image from the given configuration.
+
         Args:
             config (WorkerConfig): The configuration for building the Docker image.
-            tag (str): The tag to use for the image.
-        """
+            tag (str | None): The tag to use for the image. Defaults to None.
+            **kwargs (Any): Additional keyword arguments for the build process.
 
+        Returns:
+            ImageBuildResult: The result of the image build process.
+
+        Raises:
+            TypeError: If the config type is not recognized.
+        """
         if isinstance(config, DockerWorkerConfig):
             return self._build_dockerfile(config, tag, **kwargs)
         elif isinstance(config, CustomWorkerConfig):
@@ -64,13 +75,18 @@ class CustomWorkerBuilder:
         password: str,
         **kwargs: Any,
     ) -> ImagePushResult:
-        """
-        Pushes a Docker image to the given repo.
-        Args:
-            repo (str): The repo to push the image to.
-            tag (str): The tag to use for the image.
-        """
+        """Pushes a Docker image to the given registry.
 
+        Args:
+            tag (str): The tag of the image to push.
+            registry_url (str): The URL of the registry.
+            username (str): The username for registry authentication.
+            password (str): The password for registry authentication.
+            **kwargs (Any): Additional keyword arguments for the push process.
+
+        Returns:
+            ImagePushResult: The result of the image push process.
+        """
         return self.builder.push_image(
             tag=tag,
             username=username,
@@ -84,6 +100,16 @@ class CustomWorkerBuilder:
         tag: str,
         **kwargs: Any,
     ) -> ImageBuildResult:
+        """Builds a Docker image using a Dockerfile.
+
+        Args:
+            config (DockerWorkerConfig): The configuration containing the Dockerfile.
+            tag (str): The tag to use for the image.
+            **kwargs (Any): Additional keyword arguments for the build process.
+
+        Returns:
+            ImageBuildResult: The result of the image build process.
+        """
         return self.builder.build_image(
             dockerfile=config.dockerfile,
             tag=tag,
@@ -95,8 +121,18 @@ class CustomWorkerBuilder:
         config: CustomWorkerConfig,
         **kwargs: Any,
     ) -> ImageBuildResult:
-        # Builds a Docker pre-made CPU/GPU image template using a CustomWorkerConfig
-        # remove once GPU is supported
+        """Builds a Docker image using a pre-made template.
+
+        Args:
+            config (CustomWorkerConfig): The configuration containing template settings.
+            **kwargs (Any): Additional keyword arguments for the build process.
+
+        Returns:
+            ImageBuildResult: The result of the image build process.
+
+        Raises:
+            Exception: If GPU support is requested but not supported.
+        """
         if config.build.gpu:
             raise Exception("GPU custom worker is not supported yet")
 
@@ -120,16 +156,19 @@ class CustomWorkerBuilder:
         )
 
     def find_worker_image(self, type: str) -> Path:
-        """
-        Find the Worker Dockerfile and it's context path
-        - PROD will be in `$APPDIR/grid/`
-        - DEV will be in `packages/grid/backend/grid/images`
-        - In both the cases context dir does not matter (unless we're calling COPY)
+        """Finds the Worker Dockerfile and its context path.
+
+        The production Dockerfile will be located at `$APPDIR/grid/`.
+        The development Dockerfile will be located in `packages/grid/backend/grid/images`.
 
         Args:
-            type (str): The type of worker.
+            type (str): The type of worker (e.g., 'cpu' or 'gpu').
+
         Returns:
             Path: The path to the Dockerfile.
+
+        Raises:
+            FileNotFoundError: If the Dockerfile is not found in any of the expected locations.
         """
         filename = f"worker_{type}.dockerfile"
         lookup_paths = [

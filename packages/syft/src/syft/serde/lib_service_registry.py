@@ -120,15 +120,16 @@ class CMPBase:
         child_obj: type | object,
         absolute_path: str,
     ) -> Self | None:
-        """Get the child of parent as a CMPBase object
+        """Get the child of parent as a CMPBase object.
 
         Args:
-            parent_obj (_type_): parent object
-            child_path (_type_): _description_
-            child_obj (_type_): _description_
+            parent_obj (type | object): The parent object.
+            child_path (str): The path of the child object.
+            child_obj (type | object): The child object.
+            absolute_path (str): The absolute path of the child object.
 
         Returns:
-            _type_: _description_
+            Self | None: The initialized CMPBase object or None if not applicable.
         """
         parent_is_parent_module = CMPBase.parent_is_parent_module(parent_obj, child_obj)
         if CMPBase.isfunction(child_obj) and parent_is_parent_module:

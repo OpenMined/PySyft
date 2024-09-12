@@ -44,9 +44,8 @@ from .locks import SyftLock
 class BasePartitionSettings(SyftBaseModel):
     """Basic Partition Settings
 
-    Parameters:
-        name: str
-            Identifier to be used as prefix by stores and for partitioning
+    Attributes:
+        name (str): Identifier to be used as a prefix by stores and for partitioning.
     """
 
     name: str
@@ -163,7 +162,6 @@ class QueryKey(PartitionKey):
         pk_key = partition_key.key
         pk_type = partition_key.type_
 
-        # 🟡 TODO: support more advanced types than List[type]
         if partition_key.type_list:
             pk_value = partition_key.extract_list(obj)
         else:
@@ -171,10 +169,6 @@ class QueryKey(PartitionKey):
                 pk_value = obj
             else:
                 pk_value = getattr(obj, pk_key)
-                # object has a method for getting these types
-                # we can't use properties because we don't seem to be able to get the
-                # return types
-                # TODO: fix the mypy issue
                 if isinstance(pk_value, types.FunctionType | types.MethodType):  # type: ignore[unreachable]
                     pk_value = pk_value()  # type: ignore[unreachable]
 
@@ -194,7 +188,6 @@ class QueryKey(PartitionKey):
         if key == "id":
             key = "_id"
         if self.type_list:
-            # We want to search inside the list of values
             return {key: {"$in": self.value}}
         return {key: self.value}
 
@@ -217,19 +210,15 @@ class QueryKeys(SyftBaseModel):
 
     @property
     def all(self) -> tuple[QueryKey, ...] | list[QueryKey]:
-        # make sure we always return a list even if there's a single value
         return self.qks if isinstance(self.qks, tuple | list) else [self.qks]
 
     @staticmethod
     def from_obj(partition_keys: PartitionKeys, obj: SyftObject) -> QueryKeys:
         qks = []
         for partition_key in partition_keys.all:
-            pk_key = partition_key.key  # name of the attribute
+            pk_key = partition_key.key
             pk_type = partition_key.type_
             pk_value = getattr(obj, pk_key)
-            # object has a method for getting these types
-            # we can't use properties because we don't seem to be able to get the
-            # return types
             if isinstance(pk_value, types.FunctionType | types.MethodType):
                 pk_value = pk_value()
             if partition_key.type_list:
@@ -282,7 +271,6 @@ class QueryKeys(SyftBaseModel):
             if qk_key == "id":
                 qk_key = "_id"
             if qk.type_list:
-                # We want to search inside the list of values
                 qk_dict[qk_key] = {"$in": qk_value}
             else:
                 qk_dict[qk_key] = qk_value
@@ -313,14 +301,7 @@ class PartitionSettings(BasePartitionSettings):
     version=1,
 )
 class StorePartition:
-    """Base StorePartition
-
-    Parameters:
-        settings: PartitionSettings
-            PySyft specific settings
-        store_config: StoreConfig
-            Backend specific configuration
-    """
+    """Base StorePartition"""
 
     def __init__(
         self,
@@ -330,6 +311,18 @@ class StorePartition:
         store_config: StoreConfig,
         has_admin_permissions: Callable[[SyftVerifyKey], bool] | None = None,
     ) -> None:
+        """Base store partition initialization
+
+        Args:
+            server_uid (UID): Unique identifier for the server instance.
+            root_verify_key (SyftVerifyKey | None): Root signature verification key.
+            settings (PartitionSettings): PySyft specific settings.
+            store_config (StoreConfig): Backend specific configuration.
+            has_admin_permissions (Callable[[SyftVerifyKey], bool] | None): Callback to check admin permissions.
+
+        Raises:
+            RuntimeError: If the store initialization fails.
+        """
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
         self.server_uid = server_uid
@@ -601,12 +594,7 @@ class StorePartition:
 
 @serializable(canonical_name="DocumentStore", version=1)
 class DocumentStore:
-    """Base Document Store
-
-    Parameters:
-        store_config: StoreConfig
-            Store specific configuration.
-    """
+    """Base Document Store"""
 
     partitions: dict[str, StorePartition]
     partition_type: type[StorePartition]
@@ -617,6 +605,16 @@ class DocumentStore:
         root_verify_key: SyftVerifyKey | None,
         store_config: StoreConfig,
     ) -> None:
+        """Base document store initialization
+
+        Args:
+            server_uid (UID): Unique identifier for the server instance.
+            root_verify_key (SyftVerifyKey | None): Root signature verification key.
+            store_config (StoreConfig): Store specific configuration.
+
+        Raises:
+            Exception: If store config is not found
+        """
         if store_config is None:
             raise Exception("must have store config")
         self.partitions = {}
@@ -674,6 +672,11 @@ class DocumentStore:
 @serializable()
 class StoreConfig(SyftBaseObject):
     """Base Store configuration
+
+    Attributes:
+        store_type (type[DocumentStore]): Document Store type.
+        client_config (StoreClientConfig | None): Backend-specific config.
+        locking_config (LockingConfig): The config used for store locking.
 
     Parameters:
         store_type: Type

@@ -9,15 +9,6 @@ import time
 
 @contextlib.contextmanager
 def pyspy() -> None:  # type: ignore
-    """Profile a block of code using py-spy. Intended for development purposes only.
-
-    Example:
-    ```
-    with pyspy():
-        # do some work
-        a = [i for i in range(1000000)]
-    ```
-    """
     fd, fname = tempfile.mkstemp(".svg")
     os.close(fd)
 

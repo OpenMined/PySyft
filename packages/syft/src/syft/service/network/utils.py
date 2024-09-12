@@ -36,7 +36,7 @@ class PeerHealthCheckTask:
             context (AuthedServiceContext): The authenticated service context.
 
         Returns:
-            None
+            SyftError | None:
         """
         network_stash = context.server.services.network.stash
 

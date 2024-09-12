@@ -93,7 +93,7 @@ class NotificationService(AbstractService):
     def settings(
         self,
         context: AuthedServiceContext,
-    ) -> NotifierSettings:
+    ) -> NotifierSettings | None:
         return context.server.services.notifier.settings(context).unwrap()
 
     @service_method(

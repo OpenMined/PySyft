@@ -120,13 +120,14 @@ def from_mongo(
 
 @serializable(attrs=["storage_type"], canonical_name="MongoStorePartition", version=1)
 class MongoStorePartition(StorePartition):
-    """Mongo StorePartition
+    """Mongo StorePartition.
 
-    Parameters:
-        `settings`: PartitionSettings
-            PySyft specific settings, used for partitioning and indexing.
-        `store_config`: MongoStoreConfig
-            Mongo specific configuration
+    Attributes:
+        storage_type (type[StorableObjectType]): The storage type for objects in the partition.
+
+    Args:
+        settings (PartitionSettings): PySyft specific settings, used for partitioning and indexing.
+        store_config (MongoStoreConfig): Mongo specific configuration.
     """
 
     storage_type: type[StorableObjectType] = MongoBsonObject
@@ -450,7 +451,7 @@ class MongoStorePartition(StorePartition):
             )
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
-        """Check if the permission is inside the permission collection"""
+        """Check if the permission is inside the permission collection."""
         collection_permissions_status = self.permissions
         if collection_permissions_status.is_err():
             return False
@@ -737,12 +738,7 @@ class MongoStorePartition(StorePartition):
 
 @serializable(canonical_name="MongoDocumentStore", version=1)
 class MongoDocumentStore(DocumentStore):
-    """Mongo Document Store
-
-    Parameters:
-        `store_config`: MongoStoreConfig
-            Mongo specific configuration, including connection configuration, database name, or client class type.
-    """
+    """Mongo Document Store."""
 
     partition_type = MongoStorePartition
 
@@ -754,18 +750,13 @@ class MongoDocumentStore(DocumentStore):
 )
 class MongoBackingStore(KeyValueBackingStore):
     """
-    Core logic for the MongoDB key-value store
+    Core logic for the MongoDB key-value store.
 
-    Parameters:
-        `index_name`: str
-            Index name (can be either 'data' or 'permissions')
-        `settings`: PartitionSettings
-            Syft specific settings
-        `store_config`: StoreConfig
-            Connection Configuration
-         `ddtype`: Type
-            Optional and should be None
-            Used to make a consistent interface with SQLiteBackingStore
+    Args:
+        index_name (str): Index name (can be either 'data' or 'permissions').
+        settings (PartitionSettings): Syft specific settings.
+        store_config (StoreConfig): Connection configuration.
+        ddtype (type | None): Optional and should be None. Used to make a consistent interface with SQLiteBackingStore.
     """
 
     def __init__(
@@ -939,19 +930,15 @@ class MongoBackingStore(KeyValueBackingStore):
 @serializable()
 class MongoStoreConfig(StoreConfig):
     __canonical_name__ = "MongoStoreConfig"
-    """Mongo Store configuration
+    """Mongo Store configuration.
 
-    Parameters:
-        `client_config`: MongoStoreClientConfig
-            Mongo connection details: hostname, port, user, password etc.
-        `store_type`: Type[DocumentStore]
-            The type of the DocumentStore. Default: MongoDocumentStore
-        `db_name`: str
-            Database name
-        locking_config: LockingConfig
-            The config used for store locking. Available options:
-                * NoLockingConfig: no locking, ideal for single-thread stores.
-                * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
+    Args:
+        client_config (MongoStoreClientConfig): Mongo connection details: hostname, port, user, password etc.
+        store_type (Type[DocumentStore]): The type of the DocumentStore. Default: MongoDocumentStore.
+        db_name (str): Database name.
+        locking_config (LockingConfig): The config used for store locking. Available options:
+            * NoLockingConfig: no locking, ideal for single-thread stores.
+            * ThreadingLockingConfig: threading-based locking, ideal for same-process in-memory stores.
             Defaults to NoLockingConfig.
     """
 

@@ -88,27 +88,16 @@ class SettingsService(AbstractService):
         Update the Server Settings using the provided values.
 
         Args:
-            name: Optional[str]
-                Server name
-            organization: Optional[str]
-                Organization name
-            description: Optional[str]
-                Server description
-            on_board: Optional[bool]
-                Show onboarding panel when a user logs in for the first time
-            signup_enabled: Optional[bool]
-                Enable/Disable registration
-            admin_email: Optional[str]
-                Administrator email
-            association_request_auto_approval: Optional[bool]
+            context (AuthedServiceContext): The authenticated service context.
+            settings (ServerSettingsUpdate): The settings to update.
 
         Returns:
             SyftSuccess: Message indicating the success of the operation, with the
                 update server settings as the value property.
 
         Example:
-        >>> server_client.update(name='foo', organization='bar', description='baz', signup_enabled=True)
-        SyftSuccess: Settings updated successfully.
+            >>> server_client.update(settings=ServerSettingsUpdate(signup_enabled=True))
+            SyftSuccess: Settings updated successfully.
         """
         updated_settings = self._update(context, settings).unwrap()
         return SyftSuccess(

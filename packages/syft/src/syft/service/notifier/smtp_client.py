@@ -23,6 +23,17 @@ class SMTPClient(BaseModel):
     username: str | None = None
 
     def send(self, sender: str, receiver: list[str], subject: str, body: str) -> None:
+        """Send an email using the SMTP server.
+
+        Args:
+            sender (str): The sender's email address.
+            receiver (list[str]): A list of recipient email addresses.
+            subject (str): The subject of the email.
+            body (str): The HTML body of the email.
+
+        Raises:
+            ValueError: If subject, body, or receiver is not provided.
+        """
         if not (subject and body and receiver):
             raise ValueError("Subject, body, and recipient email(s) are required")
 
@@ -57,7 +68,13 @@ class SMTPClient(BaseModel):
     def check_credentials(
         cls, server: str, port: int, username: str, password: str
     ) -> bool:
-        """Check if the credentials are valid.
+        """Check if the provided SMTP credentials are valid.
+
+        Args:
+            server (str): The SMTP server address.
+            port (int): The port number to connect to.
+            username (str): The username for the SMTP server.
+            password (str): The password for the SMTP server.
 
         Returns:
             bool: True if the credentials are valid, False otherwise.

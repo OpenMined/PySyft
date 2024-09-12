@@ -365,7 +365,10 @@ class ProjectService(AbstractService):
             context (AuthedServiceContext): Context of the server
 
         Returns:
-            SyftSuccess: SyftSuccess if message is created else SyftError
+            None: No return
+
+        Raises:
+            SyftException: If notification failed to send.
         """
         if (
             isinstance(project_event, ProjectRequest)

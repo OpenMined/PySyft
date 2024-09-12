@@ -579,7 +579,7 @@ class NetworkService(AbstractService):
             called_by_peer (bool): The flag to indicate that it's called by a remote peer.
 
         Returns:
-            SyftSuccess
+            SyftSuccess : Success message or error message.
         """
         # verify if the peer is truly the one sending the request to add the route to itself
         if called_by_peer and peer_verify_key != context.credentials:
@@ -637,9 +637,10 @@ class NetworkService(AbstractService):
             route (ServerRoute): The route to be deleted.
 
         Returns:
-            SyftSuccess: If the route is successfully deleted.
-            SyftInfo: If there is only one route left for the peer and
-                the admin chose not to remove it
+            SyftSuccess | SyftInfo: Success or informational response.
+            - SyftSuccess: If the route is successfully deleted.
+            - SyftInfo: If there is only one route left for the peer and
+                  the admin chose not to remove it
         """
         # creates a client on the remote server based on the credentials
         # of the current server's client
@@ -666,18 +667,19 @@ class NetworkService(AbstractService):
     ) -> SyftSuccess | SyftInfo:
         """
         Delete a route for a given peer.
-        If a peer has no routes left, there will be a prompt asking if the user want to remove it.
+        If a peer has no routes left, there will be a prompt asking if the user wants to remove it.
         If the answer is yes, it will be removed from the stash and will no longer be a peer.
 
         Args:
             context (AuthedServiceContext): The authentication context for the service.
             peer_verify_key (SyftVerifyKey): The verify key of the remote server peer.
-            route (ServerRoute): The route to be deleted.
+            route (ServerRoute | None): The route to be deleted.
             called_by_peer (bool): The flag to indicate that it's called by a remote peer.
 
         Returns:
-            SyftSuccess: If the route is successfully deleted.
-            SyftInfo: If there is only one route left for the peer and
+            SyftSuccess | SyftInfo: Success or informational response.
+            - SyftSuccess: If the route is successfully deleted.
+            - SyftInfo: If there is only one route left for the peer and
                 the admin chose not to remove it
         """
         if called_by_peer and peer_verify_key != context.credentials:
@@ -759,9 +761,9 @@ class NetworkService(AbstractService):
         Args:
             context (AuthedServiceContext): The authentication context.
             peer (ServerPeer): The peer representing the remote server.
-            route (ServerRoute): The route to be added.
+            route (ServerRoute): The route to be updated.
             priority (int | None): The new priority value for the route. If not
-                provided, it will be assigned the highest priority among all peers
+                provided, it will be assigned the highest priority among all peers.
 
         Returns:
             SyftSuccess: A success message if the route is verified,
@@ -793,14 +795,15 @@ class NetworkService(AbstractService):
         called_by_peer: bool = False,
     ) -> SyftSuccess:
         """
-        Updates a route's priority for the given peer
+        Updates a route's priority for the given peer.
 
         Args:
             context (AuthedServiceContext): The authentication context for the service.
             peer_verify_key (SyftVerifyKey): The verify key of the peer whose route priority needs to be updated.
             route (ServerRoute): The route for which the priority needs to be updated.
             priority (int | None): The new priority value for the route. If not
-                provided, it will be assigned the highest priority among all peers
+                provided, it will be assigned the highest priority among all peers.
+            called_by_peer (bool): The flag to indicate that it's called by a remote peer.
 
         Returns:
             SyftSuccess : Successful response
