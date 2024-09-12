@@ -1,26 +1,32 @@
-cluster_default := "syft-dev"
-cluster_high := "syft-high"
-cluster_low := "syft-low"
-cluster_gw := "syft-gw"
-cluster_signoz := "signoz"
+cluster_default := "k3d-syft-dev"
+cluster_high := "k3d-syft-high"
+cluster_low := "k3d-syft-low"
+cluster_gw := "k3d-syft-gw"
+cluster_signoz := "k3d-signoz"
+
 port_default := "8080"
 port_high := port_default
 port_low := "8081"
 port_gw := "8082"
 port_signoz := "3301"
 port_registry := "5800"
+
 ns_default := "syft"
 ns_high := "high"
 ns_low := "low"
 ns_gw := "gw"
-profile_noop := ""
+
+registry_url := "k3d-registry.localhost:" + port_registry
 signoz_url := "http://host.k3d.internal:" + port_signoz
+
 profiles := ""
 tracing := "true"
-_all_profiles := if tracing == "true" { profiles + ",tracing" } else { profiles }
+
+_g_profiles := if tracing == "true" { profiles + ",tracing" } else { profiles }
+
+# ---------------------------------------------------------------------------------------------------------------------
 
 @default:
-    echo "This is Syft"
     just --list
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -37,7 +43,7 @@ start-registry:
     fi
 
     @curl --silent --retry 5 --retry-all-errors http://k3d-registry.localhost:{{ port_registry }}/v2/_catalog | jq
-    @echo "\033[1;32mStarted registry at http://k3d-registry.localhost:{{ port_registry }} \033[0m"
+    @echo "\033[1;32mRegistring running at http://k3d-registry.localhost:{{ port_registry }}\033[0m"
 
 [group('registry')]
 stop-registry:
@@ -81,7 +87,7 @@ stop-low: (cluster-delete cluster_low)
     @echo "Stopped Syft Datasite (low-side)"
 
 [group('lowside')]
-deploy-low: (devspace-deploy cluster_low ns_default _all_profiles + ",datasite-low")
+deploy-low: (devspace-deploy cluster_low ns_default "-p datasite-low")
     @echo "Done"
 
 [group('lowside')]
@@ -105,7 +111,7 @@ stop-gw: (cluster-delete cluster_gw)
     @echo "Stopped Syft Gateway"
 
 [group('gateway')]
-deploy-gw: (devspace-deploy cluster_gw ns_default _all_profiles + ",gateway")
+deploy-gw: (devspace-deploy cluster_gw ns_default "-p gateway")
     @echo "Done"
 
 [group('gateway')]
@@ -140,7 +146,7 @@ delete-ns-high: (ns-cleanup cluster_default ns_high)
 
 # Deploy to "low" namespace on the shared cluster
 [group('shared')]
-deploy-ns-low: (devspace-deploy cluster_default ns_low _all_profiles + ",datasite-low")
+deploy-ns-low: (devspace-deploy cluster_default ns_low "-p datasite-low")
     @echo "Deployed Syft Gateway on {{ cluster_default }}"
 
 # Delete the "low" namespace
@@ -150,7 +156,7 @@ delete-ns-low: (ns-cleanup cluster_default ns_low)
 
 # Deploy to "gw" namespace on the shared cluster
 [group('shared')]
-deploy-ns-gw: (devspace-deploy cluster_default ns_gw _all_profiles + ",gateway")
+deploy-ns-gw: (devspace-deploy cluster_default ns_gw "-p gateway")
     @echo "Deployed Syft Gateway on {{ cluster_default }}"
 
 # Delete the "gw" namespace
@@ -163,7 +169,7 @@ delete-ns-gw: (ns-cleanup cluster_default ns_gw)
 # Launch SigNoz on http://localhost:{{port_signoz}}
 [group('signoz')]
 start-signoz: && apply-signoz setup-signoz
-    k3d cluster create {{ cluster_signoz }} \
+    k3d cluster create signoz \
         --port {{ port_signoz }}:3301@loadbalancer \
         --port 4317:4317@loadbalancer \
         --k3s-arg "--disable=metrics-server@server:*"
@@ -181,11 +187,11 @@ stop-signoz: (cluster-delete cluster_signoz)
 
 [group('signoz')]
 [private]
-apply-collector cluster=cluster_default:
+apply-collector cluster:
     @echo "Installing SigNoz OTel Collector"
     helm install k8s-infra k8s-infra \
         --repo https://charts.signoz.io \
-        --kube-context k3d-{{ cluster }} \
+        --kube-context {{ cluster }} \
         --set global.deploymentEnvironment=local \
         --set clusterName={{ cluster }} \
         --set otelCollectorEndpoint=http://{{ signoz_url }}:4317 \
@@ -199,6 +205,7 @@ apply-signoz:
     @echo "Installing SigNoz on the cluster"
     helm install signoz signoz \
         --repo https://charts.signoz.io \
+        --kube-context {{ cluster_signoz }} \
         --namespace platform \
         --create-namespace \
         --version 0.52.0 \
@@ -210,7 +217,7 @@ apply-signoz:
 [private]
 setup-signoz:
     @echo "Waiting for SigNoz frontend to be available..."
-    @WAIT_TIME=5 ./packages/grid/scripts/wait_for.sh service signoz-frontend --namespace platform --context k3d-signoz &> /dev/null
+    @WAIT_TIME=5 ./packages/grid/scripts/wait_for.sh service signoz-frontend --namespace platform --context {{ cluster_signoz }} &> /dev/null
 
     @echo "Setting up SigNoz account"
     @curl --retry 5 --retry-all-errors -X POST \
@@ -224,20 +231,31 @@ setup-signoz:
 
 [group('cluster')]
 [private]
-cluster-create name=cluster_default port=port_default *args='': start-registry && (apply-coredns name) (apply-collector name)
-    k3d cluster create {{ name }} \
+cluster-create cluster port *args='': start-registry && (apply-coredns cluster) (apply-collector cluster)
+    #!/bin/bash
+    set -euox pipefail
+
+    # remove the k3d- prefix
+    CLUSTER_NAME=$(echo "{{ cluster }}" | sed -e 's/k3d-//g')
+
+    k3d cluster create $CLUSTER_NAME \
         --port {{ port }}:80@loadbalancer \
         --registry-use k3d-registry.localhost:5800 {{ args }}
 
 [group('cluster')]
 [private]
-cluster-delete *args=cluster_default:
-    k3d cluster delete {{ args }}
+cluster-delete *args='':
+    #!/bin/bash
+    set -euox pipefail
+
+    # remove the k3d- prefix
+    ARGS=$(echo "{{ args }}" | sed -e 's/k3d-//g')
+    k3d cluster delete $ARGS
 
 [group('cluster')]
 [private]
-ns-cleanup name=cluster_default ns=ns_default:
-    kubectl delete namespace {{ ns }} --force --grace-period=0 --context k3d-{{ cluster_high }}
+ns-cleanup context namespace:
+    kubectl delete ns {{ namespace }} --force --grace-period=0 --context {{ context }}
 
 [group('cluster')]
 cluster-list:
@@ -250,64 +268,89 @@ stop-all: (cluster-delete cluster_high cluster_low cluster_gw cluster_signoz)
 
 [group('cluster')]
 [private]
-apply-coredns cluster=cluster_default:
+apply-coredns cluster:
     @echo "Applying custom CoreDNS config"
 
-    kubectl apply -f ./scripts/k8s-coredns-custom.yml --context k3d-{{ cluster }}
-    kubectl delete pod -n kube-system -l k8s-app=kube-dns --context k3d-{{ cluster }}
+    kubectl apply -f ./scripts/k8s-coredns-custom.yml --context {{ cluster }}
+    kubectl delete pod -n kube-system -l k8s-app=kube-dns --context {{ cluster }}
 
 [group('cluster')]
 k9s-high:
-    k9s --context k3d-{{ cluster_high }}
+    k9s --context {{ cluster_high }}
 
 [group('cluster')]
 k9s-low:
-    k9s --context k3d-{{ cluster_low }}
+    k9s --context {{ cluster_low }}
 
 [group('cluster')]
 k9s-gw:
-    k9s --context k3d-{{ cluster_gw }}
+    k9s --context {{ cluster_gw }}
 
 [group('cluster')]
 k9s-signoz:
-    k9s --context k3d-{{ cluster_signoz }}
+    k9s --context {{ cluster_signoz }}
 
 [group('cluster')]
 k9s-shared:
-    k9s --context k3d-{{ cluster_default }}
+    k9s --context {{ cluster_default }}
 
 # ---------------------------------------------------------------------------------------------------------------------
 
 [private]
-devspace-deploy cluster namespace profile=_all_profiles:
+devspace-deploy cluster namespace *args='':
     #!/bin/bash
-    set -euxo pipefail
+    set -euo pipefail
 
     cd packages/grid
 
-    PROFILE="{{ profile }}"
+    PROFILE="{{ _g_profiles }}"
+    PROFILE=$(echo "$PROFILE" | sed -E 's/^,*|,*$//g')
     if [ -n "$PROFILE" ]; then
-        PROFILE=$(echo "$PROFILE" | sed 's/^,*//; s/,*$//')
         PROFILE="-p $PROFILE"
     fi
 
-    echo devspace deploy -b \
-        --kube-context k3d-{{ cluster }} \
+    devspace deploy -b \
         --no-warn \
-        --namespace {{ namespace }} $PROFILE \
-        --var CONTAINER_REGISTRY=k3d-registry.localhost:5800
+        --kube-context {{ cluster }} \
+        --namespace {{ namespace }} \
+        $PROFILE \
+        {{ args }} \
+        --var CONTAINER_REGISTRY={{ registry_url }}
 
 [private]
 devspace-purge cluster namespace:
     #!/bin/bash
+    set -euo pipefail
+
     cd packages/grid
-    devspace purge --force-purge --kube-context k3d-{{ cluster }} --no-warn --namespace {{ namespace }}
+    devspace purge --force-purge --kube-context {{ cluster }} --no-warn --namespace {{ namespace }}
     sleep 3
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+[group('cloud')]
+[private]
+deploy-cloud cluster registry namespace profile:
+    #!/bin/bash
+    set -euo pipefail
+
+    kubectl config get-contexts {{ cluster }} > /dev/null
+    # cloud deployments always have tracing false + platform=amd64
+    just tracing=false registry_url={{ registry }} devspace-deploy {{ cluster }} {{ namespace }} "-p {{ profile }} --var PLATFORM=amd64"
+
+[group('cloud')]
+deploy-gcp-high gke_cluster gcp_registry namespace="syft": (deploy-cloud gke_cluster gcp_registry namespace "gcp")
+
+[group('cloud')]
+deploy-gcp-low gke_cluster gcp_registry namespace="syft": (deploy-cloud gke_cluster gcp_registry namespace "gcp-low")
+
+[group('cloud')]
+deploy-az-high aks_cluster az_registry namespace="syft": (deploy-cloud aks_cluster az_registry namespace "azure")
 
 # ---------------------------------------------------------------------------------------------------------------------
 
 [group('syft')]
 [private]
-state-reset name=cluster_default namespace=ns_default:
-    kubectl config use-context k3d-{{ name }}
+state-reset name namespace:
+    kubectl config use-context {{ name }}
     scripts/reset_k8s.sh
