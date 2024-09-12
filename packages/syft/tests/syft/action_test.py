@@ -32,11 +32,9 @@ def test_actionobject_method(worker):
     assert res[0] == "A"
 
 
-@pytest.mark.parametrize("delete_original_admin", [False, True])
 def test_new_admin_has_action_object_permission(
     worker: Worker,
     faker: Faker,
-    delete_original_admin: bool,
 ) -> None:
     root_client = worker.root_client
 
@@ -59,10 +57,6 @@ def test_new_admin_has_action_object_permission(
     admin = root_client.login(email=email, password=pw)
 
     root_client.api.services.user.update(uid=admin.account.id, role=ServiceRole.ADMIN)
-
-    if delete_original_admin:
-        res = root_client.api.services.user.delete(root_client.account.id)
-        assert not isinstance(res, SyftError)
 
     assert admin.api.services.action.get(obj.id) == obj
 

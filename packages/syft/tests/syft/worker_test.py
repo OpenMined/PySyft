@@ -97,7 +97,6 @@ def test_action_store(action_object_stash: ActionObjectStash) -> None:
     test_verify_key = test_signing_key.verify_key
     raw_data = np.array([1, 2, 3])
     test_object = ActionObject.from_obj(raw_data)
-    # PR NOTE: Why `uid`  was not `uid = test_object.id`?
     uid = test_object.id
 
     action_object_stash.set_or_update(

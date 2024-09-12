@@ -8,7 +8,7 @@ from pydantic import EmailStr
 # relative
 from ...abstract_server import AbstractServer
 from ...serde.serializable import serializable
-from ...store.db.sqlite_db import DBManager
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
@@ -322,7 +322,7 @@ class NotifierService(AbstractService):
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
     ) -> SyftSuccess:
-        admin_key = context.server.services.user.admin_verify_key()
+        admin_key = context.server.services.user.root_verify_key
 
         # Silently fail on notification not delivered
         try:

@@ -526,27 +526,10 @@ def test_userservice_user_verify_key_invalid_email(
     assert exc.value.public_message == expected_output
 
 
-def test_userservice_admin_verify_key_error(
-    monkeypatch: MonkeyPatch, user_service: UserService
-) -> None:
-    expected_output = "failed to get admin verify_key"
-
-    def mock_admin_verify_key() -> UID:
-        raise SyftException(public_message=expected_output)
-
-    monkeypatch.setattr(user_service.stash, "admin_verify_key", mock_admin_verify_key)
-
-    with pytest.raises(SyftException) as exc:
-        user_service.admin_verify_key()
-
-    assert exc.type == SyftException
-    assert exc.value.public_message == expected_output
-
-
 def test_userservice_admin_verify_key_success(
     monkeypatch: MonkeyPatch, user_service: UserService, worker
 ) -> None:
-    response = user_service.admin_verify_key()
+    response = user_service.root_verify_key
     assert isinstance(response, SyftVerifyKey)
     assert response == worker.root_client.credentials.verify_key
 

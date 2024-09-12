@@ -10,6 +10,7 @@ from typing import cast
 from typing import get_args
 
 # third party
+from pydantic import ValidationError
 import sqlalchemy as sa
 from sqlalchemy import Row
 from sqlalchemy import Table
@@ -34,15 +35,16 @@ from ...service.action.action_permissions import StoragePermission
 from ...service.user.user_roles import ServiceRole
 from ...types.errors import SyftException
 from ...types.result import as_result
+from ...types.syft_metaclass import Empty
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..document_store_errors import NotFoundException
 from ..document_store_errors import StashException
+from .db import DBManager
 from .query import Query
 from .schema import Base
 from .schema import create_table
 from .sqlite import SQLiteDBManager
-from .sqlite_db import DBManager
 
 StashT = TypeVar("StashT", bound=SyftObject)
 T = TypeVar("T")
@@ -384,7 +386,8 @@ class ObjectStash(Generic[StashT]):
         fields = serialize_json(obj)
         try:
             # check if the fields are deserializable
-            # PR NOTE: Is this too much extra work?
+            # TODO: Ideally, we want to make sure we don't serialize what we cannot deserialize
+            #       and remove this check.
             deserialize_json(fields)
         except Exception as e:
             raise StashException(
@@ -402,7 +405,26 @@ class ObjectStash(Generic[StashT]):
         session.commit()
         return self.get_by_uid(credentials, uid, session=session).unwrap()
 
-    @as_result(StashException, NotFoundException)
+    @as_result(ValidationError, AttributeError)
+    def apply_partial_update(
+        self, original_obj: StashT, update_obj: SyftObject
+    ) -> StashT:
+        for key, value in update_obj.__dict__.items():
+            if value is Empty:
+                continue
+
+            if key in original_obj.__dict__:
+                setattr(original_obj, key, value)
+            else:
+                raise AttributeError(
+                    f"{type(update_obj).__name__}.{key} not found in {type(original_obj).__name__}"
+                )
+
+        # validate the new fields
+        self.object_type.model_validate(original_obj)
+        return original_obj
+
+    @as_result(StashException, NotFoundException, AttributeError, ValidationError)
     @with_session
     def update(
         self,
@@ -419,8 +441,13 @@ class ObjectStash(Generic[StashT]):
         - To fix, we either need db-supported computed fields, or know in our ORM which fields should be re-computed.
         """
 
-        if not self.allow_any_type:
-            self.check_type(obj, self.object_type).unwrap()
+        if not isinstance(obj, self.object_type):
+            original_obj = self.get_by_uid(
+                credentials, obj.id, session=session
+            ).unwrap()
+            obj = self.apply_partial_update(
+                original_obj=original_obj, update_obj=obj
+            ).unwrap()
 
         # TODO has_permission is not used
         if not self.is_unique(obj):
@@ -519,7 +546,7 @@ class ObjectStash(Generic[StashT]):
         for field_name, operator, field_value in parse_filters(filters):
             query = query.filter(field_name, operator, field_value)
 
-        query = query.order_by(order_by, sort_order).offset(offset)
+        query = query.order_by(order_by, sort_order).offset(offset).limit(1)
         result = query.execute(session).first()
         if result is None:
             raise NotFoundException(f"{self.object_type.__name__}: not found")
@@ -663,7 +690,6 @@ class ObjectStash(Generic[StashT]):
         self, permissions: list[ActionObjectPermission], session: Session = None
     ) -> bool:
         # TODO: we should use a permissions table to check all permissions at once
-        # TODO: should check for compound permissions
 
         permission_filters = [
             sa.and_(

@@ -135,7 +135,7 @@
       "Notification": {
         "1": {
           "version": 1,
-          "hash": "af4cb232bff390c431e399975f048b34da7e940ace8b23b940a3b398c91c5326",
+          "hash": "cbd07fe9c549c5f05d0880d1417f18a5bfaa71eba65c63ff9cb761e274fffc54",
           "action": "add"
         }
       },
@@ -218,7 +218,7 @@
       "SyftWorkerImage": {
         "1": {
           "version": 1,
-          "hash": "44da7badfbe573d5403d3ab78c077f17dbefc560b81fdf927b671815be047441",
+          "hash": "3771910757bf7534369ceb3e6cf1fc2e3a5438d8d094a67b0b548d501a0ec63f",
           "action": "add"
         }
       },

@@ -99,7 +99,6 @@ def test_settingsservice_set_success(
 ) -> None:
     response = settings_service.set(authed_context, settings)
     assert isinstance(response, ServerSettings)
-    # PR NOTE do we write syft_client_verify_key and syft_server_location to the stash or not?
     response.syft_client_verify_key = None
     response.syft_server_location = None
     response.pwd_token_config.syft_client_verify_key = None

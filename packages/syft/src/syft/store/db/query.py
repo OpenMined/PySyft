@@ -274,6 +274,10 @@ class Query(ABC):
         if field == "id":
             return table.c.id == UID(value)
 
+        if "." in field:
+            # magic!
+            field = field.split(".")  # type: ignore
+
         json_value = serialize_json(value)
         if self.json_quote:
             return table.c.fields[field] == self.json_quote(json_value)

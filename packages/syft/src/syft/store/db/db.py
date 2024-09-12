@@ -32,7 +32,7 @@ ConfigT = TypeVar("ConfigT", bound=DBConfig)
 class DBManager(Generic[ConfigT]):
     def __init__(
         self,
-        config: DBConfig,
+        config: ConfigT,
         server_uid: UID,
         root_verify_key: SyftVerifyKey,
     ) -> None:

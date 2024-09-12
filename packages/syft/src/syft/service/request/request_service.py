@@ -4,7 +4,7 @@ import logging
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.db.sqlite_db import DBManager
+from ...store.db.db import DBManager
 from ...store.linked_obj import LinkedObject
 from ...types.errors import SyftException
 from ...types.result import as_result
@@ -57,7 +57,7 @@ class RequestService(AbstractService):
             request,
         ).unwrap()
 
-        root_verify_key = context.server.services.user.admin_verify_key()
+        root_verify_key = context.server.services.user.root_verify_key
 
         if send_message:
             message_subject = f"Result to request {str(request.id)[:4]}...{str(request.id)[-3:]}\

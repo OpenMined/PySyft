@@ -2,7 +2,7 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.db.sqlite_db import DBManager
+from ...store.db.db import DBManager
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result

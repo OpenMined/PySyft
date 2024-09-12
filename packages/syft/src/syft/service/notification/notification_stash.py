@@ -69,11 +69,10 @@ class NotificationStash(ObjectStash[Notification]):
         credentials: SyftVerifyKey,
         linked_obj: LinkedObject,
     ) -> Notification:
-        # TODO does this work?
         return self.get_one(
             credentials,
             filters={
-                "linked_obj": linked_obj,
+                "linked_obj.id": linked_obj.id,
             },
         ).unwrap()
 
