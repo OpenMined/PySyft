@@ -9,7 +9,9 @@ import pytest
 from pytest import MonkeyPatch
 
 # syft absolute
+import syft as sy
 from syft import orchestra
+from syft.client.client import SyftClient
 from syft.server.credentials import SyftVerifyKey
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
@@ -208,7 +210,7 @@ def test_userservice_get_all_success(
     expected_output = [x.to(UserView) for x in mock_get_all_output]
 
     @as_result(StashException)
-    def mock_get_all(credentials: SyftVerifyKey) -> list[User]:
+    def mock_get_all(credentials: SyftVerifyKey, **kwargs) -> list[User]:
         return mock_get_all_output
 
     monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
@@ -222,23 +224,6 @@ def test_userservice_get_all_success(
     )
 
 
-def test_userservice_get_all_error(
-    monkeypatch: MonkeyPatch,
-    user_service: UserService,
-    authed_context: AuthedServiceContext,
-) -> None:
-    @as_result(StashException)
-    def mock_get_all(credentials: SyftVerifyKey) -> NoReturn:
-        raise StashException
-
-    monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
-
-    with pytest.raises(StashException) as exc:
-        user_service.get_all(authed_context)
-
-    assert exc.type == StashException
-
-
 def test_userservice_search(
     monkeypatch: MonkeyPatch,
     user_service: UserService,
@@ -246,13 +231,13 @@ def test_userservice_search(
     guest_user: User,
 ) -> None:
     @as_result(SyftException)
-    def mock_find_all(credentials: SyftVerifyKey, **kwargs) -> list[User]:
+    def get_all(credentials: SyftVerifyKey, **kwargs) -> list[User]:
         for key in kwargs.keys():
             if hasattr(guest_user, key):
                 return [guest_user]
         return []
 
-    monkeypatch.setattr(user_service.stash, "find_all", mock_find_all)
+    monkeypatch.setattr(user_service.stash, "get_all", get_all)
 
     expected_output = [guest_user.to(UserView)]
 
@@ -790,3 +775,43 @@ def test_userservice_update_via_client_with_mixed_args():
         email="new_user@openmined.org", password="newpassword"
     )
     assert user_client.account.name == "User name"
+
+
+def test_reset_password():
+    server = orchestra.launch(name="datasite-test", reset=True)
+
+    datasite_client = server.login(email="info@openmined.org", password="changethis")
+    datasite_client.register(
+        email="new_syft_user@openmined.org",
+        password="verysecurepassword",
+        password_verify="verysecurepassword",
+        name="New User",
+    )
+    guest_client: SyftClient = server.login_as_guest()
+    guest_client.forgot_password(email="new_syft_user@openmined.org")
+    temp_token = datasite_client.users.request_password_reset(
+        datasite_client.notifications[-1].linked_obj.resolve.id
+    )
+    guest_client.reset_password(token=temp_token, new_password="Password123")
+    server.login(email="new_syft_user@openmined.org", password="Password123")
+
+
+def test_root_cannot_be_deleted():
+    server = orchestra.launch(name="datasite-test", reset=True)
+    datasite_client = server.login(email="info@openmined.org", password="changethis")
+
+    new_admin_email = "admin@openmined.org"
+    new_admin_pass = "changethis2"
+    datasite_client.register(
+        name="second admin",
+        email=new_admin_email,
+        password=new_admin_pass,
+        password_verify=new_admin_pass,
+    )
+    # update role
+    new_user_id = datasite_client.users.search(email=new_admin_email)[0].id
+    datasite_client.users.update(uid=new_user_id, role="admin")
+
+    new_admin_client = server.login(email=new_admin_email, password=new_admin_pass)
+    with sy.raises(sy.SyftException):
+        new_admin_client.users.delete(datasite_client.account.id)

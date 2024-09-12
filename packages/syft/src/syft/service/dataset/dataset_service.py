@@ -5,7 +5,7 @@ import logging
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..action.action_permissions import ActionObjectPermission
@@ -25,7 +25,6 @@ from .dataset import Asset
 from .dataset import CreateDataset
 from .dataset import Dataset
 from .dataset import DatasetPageView
-from .dataset import DatasetUpdate
 from .dataset_stash import DatasetStash
 
 logger = logging.getLogger(__name__)
@@ -69,11 +68,9 @@ def _paginate_dataset_collection(
 
 @serializable(canonical_name="DatasetService", version=1)
 class DatasetService(AbstractService):
-    store: DocumentStore
     stash: DatasetStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = DatasetStash(store=store)
 
     @service_method(
@@ -117,13 +114,11 @@ class DatasetService(AbstractService):
         page_index: int | None = 0,
     ) -> DatasetPageView | DictTuple[str, Dataset]:
         """Get a Dataset"""
-        datasets = self.stash.get_all(context.credentials).unwrap()
+        datasets = self.stash.get_all_active(context.credentials).unwrap()
 
         for dataset in datasets:
             if context.server is not None:
                 dataset.server_uid = context.server.id
-            if dataset.to_be_deleted:
-                datasets.remove(dataset)
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index
@@ -234,11 +229,9 @@ class DatasetService(AbstractService):
                 return_msg.append(f"Asset with id '{asset.id}' successfully deleted.")
 
         # soft delete the dataset object from the store
-        dataset_update = DatasetUpdate(
-            id=uid, name=f"_deleted_{dataset.name}_{uid}", to_be_deleted=True
-        )
-        self.stash.update(context.credentials, dataset_update).unwrap()
-
+        dataset.name = f"_deleted_{dataset.name}_{uid}"
+        dataset.to_be_deleted = True
+        self.stash.update(context.credentials, dataset).unwrap()
         return_msg.append(f"Dataset with id '{uid}' successfully deleted.")
         return SyftSuccess(message="\n".join(return_msg))
 

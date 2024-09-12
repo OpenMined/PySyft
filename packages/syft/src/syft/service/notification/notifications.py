@@ -61,7 +61,7 @@ class Notification(SyftObject):
     linked_obj: LinkedObject | None = None
     notifier_types: list[NOTIFIERS] = []
     email_template: type[EmailTemplate] | None = None
-    replies: list[ReplyNotification] | None = []
+    replies: list[ReplyNotification] = []
 
     __attr_searchable__ = [
         "from_user_verify_key",
@@ -70,6 +70,7 @@ class Notification(SyftObject):
     ]
     __repr_attrs__ = ["subject", "status", "created_at", "linked_obj"]
     __table_sort_attr__ = "Created at"
+    __order_by__ = ("created_at", "asc")
 
     def _repr_html_(self) -> str:
         return f"""

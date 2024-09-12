@@ -17,8 +17,14 @@ class SyftWorkerImage(SyftObject):
     __canonical_name__ = "SyftWorkerImage"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    __attr_unique__ = ["config"]
-    __attr_searchable__ = ["config", "image_hash", "created_by"]
+    __attr_unique__ = ["config_hash"]
+    __attr_searchable__ = [
+        "config",
+        "image_hash",
+        "created_by",
+        "config_hash",
+    ]
+
     __repr_attrs__ = [
         "image_identifier",
         "image_hash",
@@ -34,6 +40,10 @@ class SyftWorkerImage(SyftObject):
     image_identifier: SyftWorkerImageIdentifier | None = None
     image_hash: str | None = None
     built_at: DateTime | None = None
+
+    @property
+    def config_hash(self) -> str:
+        return self.config.hash()
 
     @property
     def is_built(self) -> bool:

@@ -6,7 +6,7 @@ import time
 # relative
 from ...serde.serializable import serializable
 from ...server.worker_settings import WorkerSettings
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...types.errors import SyftException
 from ...types.uid import UID
 from ..action.action_object import ActionObject
@@ -40,11 +40,9 @@ def wait_until(predicate: Callable[[], bool], timeout: int = 10) -> SyftSuccess:
 
 @serializable(canonical_name="JobService", version=1)
 class JobService(AbstractService):
-    store: DocumentStore
     stash: JobStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = JobStash(store=store)
 
     @service_method(
@@ -132,7 +130,7 @@ class JobService(AbstractService):
             context.credentials, queue_item
         ).unwrap()
 
-        context.server.job_stash.set(context.credentials, job).unwrap()
+        self.stash.set(context.credentials, job).unwrap()
         context.server.services.log.restart(context, job.log_id)
 
         return SyftSuccess(message="Great Success!")
@@ -218,7 +216,7 @@ class JobService(AbstractService):
             job.id, ActionPermission.READ, user_code.user_verify_key
         )
         # TODO: make add_permission wrappable
-        return self.stash.add_permission(permission=permission)
+        return self.stash.add_permission(permission=permission).unwrap()
 
     @service_method(
         path="job.add_read_permission_log_for_code_owner",
@@ -232,7 +230,7 @@ class JobService(AbstractService):
             ActionObjectPermission(
                 log_id, ActionPermission.READ, user_code.user_verify_key
             )
-        )
+        ).unwrap()
 
     @service_method(
         path="job.create_job_for_user_code_id",

@@ -1247,12 +1247,12 @@ class ProjectSubmit(SyftObject):
         projects_map = self._create_projects(self.clients)
 
         # bootstrap project with pending events on leader server's project
-        self._bootstrap_events(projects_map[leader])
+        self._bootstrap_events(projects_map[leader.id])  # type: ignore
 
         if return_all_projects:
             return list(projects_map.values())
 
-        return projects_map[leader]
+        return projects_map[leader.id]  # type: ignore
 
     def _pre_submit_checks(self, clients: list[SyftClient]) -> bool:
         try:
@@ -1277,12 +1277,12 @@ class ProjectSubmit(SyftObject):
 
         self.leader_server_route = connection_to_route(leader.connection)
 
-    def _create_projects(self, clients: list[SyftClient]) -> dict[SyftClient, Project]:
-        projects: dict[SyftClient, Project] = {}
+    def _create_projects(self, clients: list[SyftClient]) -> dict[UID, Project]:
+        projects: dict[UID, Project] = {}
 
         for client in clients:
             result = client.api.services.project.create_project(project=self).value
-            projects[client] = result
+            projects[client.id] = result  # type: ignore
 
         return projects
 

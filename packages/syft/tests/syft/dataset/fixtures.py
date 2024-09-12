@@ -60,7 +60,9 @@ def mock_asset(worker, root_datasite_client) -> Asset:
 
 
 @pytest.fixture
-def mock_dataset(root_verify_key, mock_dataset_stash, mock_asset) -> Dataset:
+def mock_dataset(
+    root_verify_key, mock_dataset_stash: DatasetStash, mock_asset
+) -> Dataset:
     uploader = Contributor(
         role=str(Roles.UPLOADER),
         name="test",
@@ -70,7 +72,7 @@ def mock_dataset(root_verify_key, mock_dataset_stash, mock_asset) -> Dataset:
         id=UID(), name="test_dataset", uploader=uploader, contributors=[uploader]
     )
     mock_dataset.asset_list.append(mock_asset)
-    result = mock_dataset_stash.partition.set(root_verify_key, mock_dataset)
+    result = mock_dataset_stash.set(root_verify_key, mock_dataset)
     mock_dataset = result.ok()
     yield mock_dataset
 

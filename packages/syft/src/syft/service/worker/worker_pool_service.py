@@ -12,7 +12,7 @@ from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.sqlite_db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
@@ -52,11 +52,9 @@ logger = logging.getLogger(__name__)
 
 @serializable(canonical_name="SyftWorkerPoolService", version=1)
 class SyftWorkerPoolService(AbstractService):
-    store: DocumentStore
     stash: SyftWorkerPoolStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = SyftWorkerPoolStash(store=store)
         self.image_stash = SyftWorkerImageStash(store=store)
 
