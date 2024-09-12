@@ -1143,7 +1143,7 @@ def test_settings() -> Any:
     return test_settings
 
 
-def add_helper_path_to_python_path() -> Any:
+def add_helper_path_to_python_path() -> None:
     current_path = "."
 
     # jupyter uses "." which resolves to the notebook
