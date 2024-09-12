@@ -25,9 +25,7 @@ from syft.server.worker import Worker
 from syft.service.queue.queue_stash import QueueStash
 from syft.service.user import user
 
-# relative
 # our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
-from .mongomock.mongo_client import MongoClient
 
 
 def patch_protocol_file(filepath: Path):
@@ -206,31 +204,6 @@ def document_store(worker):
 @pytest.fixture
 def action_store(worker):
     yield worker.action_store
-
-
-@pytest.fixture(scope="session")
-def mongo_client(testrun_uid):
-    """
-    A race-free fixture that starts a MongoDB server for an entire pytest session.
-    Cleans up the server when the session ends, or when the last client disconnects.
-    """
-    db_name = f"pytest_mongo_{testrun_uid}"
-
-    # rand conn str
-    conn_str = f"mongodb://localhost:27017/{db_name}"
-
-    # create a client, and test the connection
-    client = MongoClient(conn_str)
-    assert client.server_info().get("ok") == 1.0
-
-    yield client
-
-    # stop_mongo_server(db_name)
-
-
-@pytest.fixture(autouse=True)
-def patched_mongo_client(monkeypatch):
-    monkeypatch.setattr("pymongo.mongo_client.MongoClient", MongoClient)
 
 
 @pytest.fixture(autouse=True)

@@ -183,6 +183,7 @@ def deploy_to_python(
     log_level: str | int | None = None,
     debug: bool = False,
     migrate: bool = False,
+    store_client_config: dict | None = None,
     consumer_type: ConsumerType | None = None,
 ) -> ServerHandle:
     worker_classes = {
@@ -215,6 +216,7 @@ def deploy_to_python(
         "debug": debug,
         "migrate": migrate,
         "deployment_type": deployment_type_enum,
+        "store_client_config": store_client_config,
         "consumer_type": consumer_type,
     }
 
@@ -327,6 +329,7 @@ class Orchestra:
         background_tasks: bool = False,
         debug: bool = False,
         migrate: bool = False,
+        store_client_config: dict | None = None,
         from_state_folder: str | Path | None = None,
         consumer_type: ConsumerType | None = None,
     ) -> ServerHandle:
@@ -377,12 +380,13 @@ class Orchestra:
                 background_tasks=background_tasks,
                 debug=debug,
                 migrate=migrate,
+                store_client_config=store_client_config,
                 consumer_type=consumer_type,
             )
             display(
                 SyftInfo(
                     message=f"You have launched a development server at http://{host}:{server_handle.port}."
-                    + "It is intended only for local use."
+                    + " It is intended only for local use."
                 )
             )
             return server_handle

@@ -88,8 +88,11 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.db.db import DBConfig
-from ..store.db.db import SQLiteDBConfig
-from ..store.db.db import SQLiteDBManager
+from ..store.db.db import DBManager
+from ..store.db.postgres import PostgresDBConfig
+from ..store.db.postgres import PostgresDBManager
+from ..store.db.sqlite import SQLiteDBConfig
+from ..store.db.sqlite import SQLiteDBManager
 from ..store.db.stash import ObjectStash
 from ..store.document_store import StoreConfig
 from ..store.document_store_errors import NotFoundException
@@ -410,11 +413,13 @@ class Server(AbstractServer):
                 filename=f"{self.id}_json.db",
                 path=self.get_temp_dir("db"),
             )
-            # db_config = PostgresDBConfig(reset=False)
+
+        if reset:
+            db_config.reset = True
 
         self.db_config = db_config
 
-        self.init_stores(db_config=self.db_config)
+        self.db = self.init_stores(db_config=self.db_config)
 
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
@@ -631,6 +636,7 @@ class Server(AbstractServer):
                     worker_stash=self.worker_stash,
                 )
                 producer.run()
+
                 address = producer.address
             else:
                 port = queue_config.client_config.queue_port
@@ -737,6 +743,7 @@ class Server(AbstractServer):
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
         consumer_type: ConsumerType | None = None,
+        db_config: DBConfig | None = None,
     ) -> Server:
         uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -768,6 +775,7 @@ class Server(AbstractServer):
             association_request_auto_approval=association_request_auto_approval,
             background_tasks=background_tasks,
             consumer_type=consumer_type,
+            db_config=db_config,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -889,14 +897,25 @@ class Server(AbstractServer):
         if ti is not None:
             CODE_RELOADER[ti] = reload_user_code
 
-    def init_stores(self, db_config: DBConfig) -> None:
-        self.db = SQLiteDBManager(
-            config=db_config,
-            server_uid=self.id,
-            root_verify_key=self.verify_key,
-        )
+    def init_stores(self, db_config: DBConfig) -> DBManager:
+        if isinstance(db_config, SQLiteDBConfig):
+            db = SQLiteDBManager(
+                config=db_config,
+                server_uid=self.id,
+                root_verify_key=self.verify_key,
+            )
+        elif isinstance(db_config, PostgresDBConfig):
+            db = PostgresDBManager(  # type: ignore
+                config=db_config,
+                server_uid=self.id,
+                root_verify_key=self.verify_key,
+            )
+        else:
+            raise SyftException(public_message=f"Unsupported DB config: {db_config}")
 
-        self.queue_stash = QueueStash(store=self.db)
+        self.queue_stash = QueueStash(store=db)
+
+        return db
 
     @property
     def job_stash(self) -> JobStash:
@@ -970,7 +989,7 @@ class Server(AbstractServer):
     # settings and services are resolved.
     def get_settings(self) -> ServerSettings | None:
         if self._settings:
-            return self._settings
+            return self._settings  # type: ignore
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
 

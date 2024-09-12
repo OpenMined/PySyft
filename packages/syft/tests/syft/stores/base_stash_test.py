@@ -14,8 +14,8 @@ from typing_extensions import ParamSpec
 from syft.serde.serializable import serializable
 from syft.service.queue.queue_stash import Status
 from syft.service.request.request_service import RequestService
-from syft.store.db.db import SQLiteDBConfig
-from syft.store.db.db import SQLiteDBManager
+from syft.store.db.sqlite import SQLiteDBConfig
+from syft.store.db.sqlite import SQLiteDBManager
 from syft.store.db.stash import ObjectStash
 from syft.store.document_store import PartitionKey
 from syft.store.document_store_errors import NotFoundException
