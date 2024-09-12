@@ -19,7 +19,7 @@ class CodeHistoryStash(ObjectStash[CodeHistory]):
         return self.get_one(
             credentials=credentials,
             filters={
-                "user_verify_key": str(user_verify_key),
+                "user_verify_key": user_verify_key,
                 "service_func_name": service_func_name,
             },
         ).unwrap()

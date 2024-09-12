@@ -67,5 +67,5 @@ class SyftWorkerPoolStash(ObjectStash[WorkerPool]):
     ) -> list[WorkerPool]:
         return self.get_all(
             credentials=credentials,
-            filters={"image_id": image_uid.no_dash},
+            filters={"image_id": image_uid},
         ).unwrap()

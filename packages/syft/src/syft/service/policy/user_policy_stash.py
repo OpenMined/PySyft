@@ -18,5 +18,5 @@ class UserPolicyStash(ObjectStash[UserPolicy]):
     ) -> list[UserPolicy]:
         return self.get_all(
             credentials=credentials,
-            filters={"user_verify_key": str(user_verify_key)},
+            filters={"user_verify_key": user_verify_key},
         ).unwrap()

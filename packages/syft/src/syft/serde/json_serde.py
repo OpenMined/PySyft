@@ -45,7 +45,6 @@ class JSONSerdeError(SyftException):
 
 @dataclass
 class JSONSerde(Generic[T]):
-    # TODO add json schema
     klass: type[T]
     serialize_fn: Callable[[T], Json] | None = None
     deserialize_fn: Callable[[Json], T] | None = None
