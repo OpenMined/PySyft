@@ -12,7 +12,7 @@ from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...serde.serializable import serializable
-from ...store.db.sqlite_db import DBManager
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject

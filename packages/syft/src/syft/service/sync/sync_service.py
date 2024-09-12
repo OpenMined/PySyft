@@ -6,7 +6,7 @@ from typing import Any
 # relative
 from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
-from ...store.db.sqlite_db import DBManager
+from ...store.db.db import DBManager
 from ...store.db.stash import ObjectStash
 from ...store.document_store import NewBaseStash
 from ...store.document_store_errors import NotFoundException

@@ -87,9 +87,9 @@ from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
-from ..store.db.sqlite_db import DBConfig
-from ..store.db.sqlite_db import SQLiteDBConfig
-from ..store.db.sqlite_db import SQLiteDBManager
+from ..store.db.db import DBConfig
+from ..store.db.db import SQLiteDBConfig
+from ..store.db.db import SQLiteDBManager
 from ..store.db.stash import ObjectStash
 from ..store.document_store import StoreConfig
 from ..store.document_store_errors import NotFoundException

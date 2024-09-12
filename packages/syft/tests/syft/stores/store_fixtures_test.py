@@ -9,8 +9,8 @@ from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_stash import UserStash
-from syft.store.db.sqlite_db import SQLiteDBConfig
-from syft.store.db.sqlite_db import SQLiteDBManager
+from syft.store.db.db import SQLiteDBConfig
+from syft.store.db.db import SQLiteDBManager
 from syft.store.document_store import DocumentStore
 from syft.types.uid import UID
 

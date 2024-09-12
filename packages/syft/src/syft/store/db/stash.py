@@ -38,11 +38,11 @@ from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ..document_store_errors import NotFoundException
 from ..document_store_errors import StashException
+from .db import DBManager
+from .db import SQLiteDBManager
 from .query import Query
 from .schema import Base
 from .schema import create_table
-from .sqlite_db import DBManager
-from .sqlite_db import SQLiteDBManager
 
 StashT = TypeVar("StashT", bound=SyftObject)
 T = TypeVar("T")
