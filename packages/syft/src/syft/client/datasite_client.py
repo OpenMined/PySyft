@@ -109,7 +109,7 @@ class DatasiteClient(SyftClient):
             if request.status == RequestStatus.REJECTED:
                 deny_reason = request.code.status.get_deny_reason()
                 self.code.update(
-                    id=user_code.id, 
+                    id=request.code_id, 
                     origin_server_side_type=ServerSideType.LOW_SIDE,
                     l0_deny_reason=deny_reason
                 )
@@ -145,8 +145,8 @@ class DatasiteClient(SyftClient):
 
         server_diff = compare_clients(self, low_side_client)
         widget = server_diff.resolve()
-        widget.click_share_all_private_data()
-        res = widget.click_sync()
+        widget._share_all()
+        res = widget._sync_all()
         return res
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess:
