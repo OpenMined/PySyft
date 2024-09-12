@@ -264,10 +264,11 @@ class ZMQProducer(QueueProducer):
                 self.delete_worker(worker, syft_worker.to_be_deleted)
 
                 # relative
-
-                self.auth_context.server.services.worker._delete(
-                    self.auth_context, syft_worker
-                )
+                # if worker has expired, then delete it. Otherwise, it should be handled by the monitor thread
+                # should also delete if monitor thread is not alive
+                """ self.auth_context.server.services.worker.delete(
+                    self.auth_context, syft_worker, force=True
+                ) """
 
     def update_consumer_state_for_worker(
         self, syft_worker_id: UID, consumer_state: ConsumerState

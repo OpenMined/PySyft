@@ -75,7 +75,10 @@ class MonitorThread(threading.Thread):
         ).unwrap()
         if job and job.status == JobStatus.TERMINATING:
             self.terminate(job)
-            for subjob in job.subjobs:
+            subjobs = self.worker.job_stash.get_by_parent_id(
+                self.credentials, job.id
+            ).unwrap()
+            for subjob in subjobs:
                 self.terminate(subjob)
 
             self.queue_item.status = Status.INTERRUPTED

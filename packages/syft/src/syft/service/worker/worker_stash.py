@@ -77,4 +77,7 @@ class WorkerStash(NewBaseUIDStoreStash):
         worker.consumer_state = consumer_state
         if job_id is not None:
             worker.job_id = job_id
+        
+        if worker.consumer_state == ConsumerState.IDLE:
+            worker.job_id = None
         return self.update(credentials=credentials, obj=worker).unwrap()

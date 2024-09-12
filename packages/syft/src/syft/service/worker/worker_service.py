@@ -35,6 +35,7 @@ from .worker_pool import WorkerStatus
 from .worker_pool import _get_worker_container
 from .worker_pool import _get_worker_container_status
 from .worker_stash import WorkerStash
+from ..job.job_stash import JobStatus
 
 
 @serializable(canonical_name="WorkerService", version=1)
@@ -144,11 +145,26 @@ class WorkerService(AbstractService):
         worker_pool = worker_pool_stash.get_by_name(
             credentials=context.credentials, pool_name=worker.worker_pool_name
         ).unwrap()
+        # remove the worker from the pool
+        try:
+            worker_linked_object = next(
+                obj for obj in worker_pool.worker_list if obj.object_uid == uid
+            )
+            worker_pool.worker_list.remove(worker_linked_object)
+        except StopIteration:
+            pass
+
+        # Delete worker from worker stash
+        self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap()
+
+        # Update worker pool
+        
+        worker_pool_stash.update(context.credentials, obj=worker_pool).unwrap()
 
         if IN_KUBERNETES:
             # Kubernetes will only restart the worker NOT REMOVE IT
             runner = KubernetesRunner()
-            runner.delete_pod(pod_name=worker.name)
+            # runner.delete_pod(pod_name=worker.name)
             return SyftSuccess(
                 # pod deletion is not supported in Kubernetes, removing and recreating the pod.
                 message=(
@@ -165,20 +181,7 @@ class WorkerService(AbstractService):
             # kill the in memory worker thread
             context.server.remove_consumer_with_id(syft_worker_id=worker.id)
 
-        # remove the worker from the pool
-        try:
-            worker_linked_object = next(
-                obj for obj in worker_pool.worker_list if obj.object_uid == uid
-            )
-            worker_pool.worker_list.remove(worker_linked_object)
-        except StopIteration:
-            pass
-
-        # Delete worker from worker stash
-        self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap()
-
-        # Update worker pool
-        worker_pool_stash.update(context.credentials, obj=worker_pool).unwrap()
+        
 
         return SyftSuccess(
             message=f"Worker with id: {uid} deleted successfully from pool: {worker_pool.name}"

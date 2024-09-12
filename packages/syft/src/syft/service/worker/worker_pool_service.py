@@ -459,17 +459,17 @@ class SyftWorkerPoolService(AbstractService):
 
             # get last "n" workers from pod list
             runner = KubernetesRunner()
-            k8s_pods = [
-                pod.name for pod in runner.get_pool_pods(pool_name=worker_pool.name)
-            ]
-            k8s_pods_to_kill = k8s_pods[-(current_worker_count - number) :]
-            workers_to_delete = [
-                worker for worker in workers if worker.name in k8s_pods_to_kill
-            ]
+            workers_to_delete = workers[
+                -(current_worker_count - number) :]
             worker_service = context.server.services.worker
 
+            # update workers to to be deleted and wait for producer thread to call deletions
             for worker in workers_to_delete:
-                worker_service.delete(context=context, uid=worker.id, force=True)
+                worker.to_delete = True
+
+                worker_stash = context.server.services.worker.stash
+                worker_stash.update(context.credentials)
+                #worker_service.delete(context=context, uid=worker.id, force=True)
 
             scale_kubernetes_pool(
                 runner,
