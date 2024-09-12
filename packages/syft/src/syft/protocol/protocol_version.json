@@ -90,27 +90,6 @@
           "action": "add"
         }
       },
-      "StoreConfig": {
-        "1": {
-          "version": 1,
-          "hash": "a9997fce6a8a0ed2884c58b8eb9382f8554bdd18fff61f8bf0451945bcff12c7",
-          "action": "add"
-        }
-      },
-      "MongoDict": {
-        "1": {
-          "version": 1,
-          "hash": "57e36f57eed75e62b29e2bac1295035a9bf2c0e3c56719dac24cb6cc685be00b",
-          "action": "add"
-        }
-      },
-      "MongoStoreConfig": {
-        "1": {
-          "version": 1,
-          "hash": "53342b27d34165b7e2699f8e7ad70d13d125875e6a75e8fa18f5796428f41036",
-          "action": "add"
-        }
-      },
       "LinkedObject": {
         "1": {
           "version": 1,
@@ -169,6 +148,13 @@
         "2": {
           "version": 2,
           "hash": "be8b52597fc628d1b7cd22b776ee81416e1adbb04a45188778eb0e32ed1416b4",
+          "action": "add"
+        }
+      },
+      "StoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "a9997fce6a8a0ed2884c58b8eb9382f8554bdd18fff61f8bf0451945bcff12c7",
           "action": "add"
         }
       },
@@ -544,13 +530,6 @@
           "action": "add"
         }
       },
-      "DataSubjectMemberRelationship": {
-        "1": {
-          "version": 1,
-          "hash": "0810483ea76ea10c8f286c6035dc0b2085291f345183be50c179f3a05a577110",
-          "action": "add"
-        }
-      },
       "Contributor": {
         "1": {
           "version": 1,
@@ -818,69 +797,6 @@
           "action": "add"
         }
       },
-      "OnDiskBlobDeposit": {
-        "1": {
-          "version": 1,
-          "hash": "817bf1bee4a35bfa1cd25d6779a10d8d180b1b3f1e837952f81f48b9411d1970",
-          "action": "add"
-        }
-      },
-      "RemoteConfig": {
-        "1": {
-          "version": 1,
-          "hash": "179d067099a178d748c6d9a0477e8de7c3b55577439669eca7150258f2409567",
-          "action": "add"
-        }
-      },
-      "AzureRemoteConfig": {
-        "1": {
-          "version": 1,
-          "hash": "a143811fec0da5fd881e927643ef667c91c78a2c90519cf88da7da20738bd187",
-          "action": "add"
-        }
-      },
-      "SeaweedFSBlobDeposit": {
-        "1": {
-          "version": 1,
-          "hash": "febeb2a2ce81aa2c512e4c6b611b582984042aafa0541403d4584662273a166c",
-          "action": "add"
-        }
-      },
-      "NumpyArrayObject": {
-        "1": {
-          "version": 1,
-          "hash": "05dd2917b7692b3daf4e7ad083a46fa7ec7a2be8faac8d4a654809189c986443",
-          "action": "add"
-        }
-      },
-      "NumpyScalarObject": {
-        "1": {
-          "version": 1,
-          "hash": "8753e5c78270a5cacbf0439447724772f4765351a4a8b58b0a5c416a6b2c8b6e",
-          "action": "add"
-        }
-      },
-      "NumpyBoolObject": {
-        "1": {
-          "version": 1,
-          "hash": "331c44f8fa3d0a077f1aaad7313bae2c43b386d04def7b8bedae9fdf7690134d",
-          "action": "add"
-        }
-      },
-      "PandasDataframeObject": {
-        "1": {
-          "version": 1,
-          "hash": "5e8018364cea31d5f185a901da4ab89846b02153ee7d041ee8a6d305ece31f90",
-          "action": "add"
-        }
-      },
-      "PandasSeriesObject": {
-        "1": {
-          "version": 1,
-          "hash": "b8bd482bf16fc7177e9778292cd42f8835b6ced2ce8dc88908b4b8e6d7c7528f",
-          "action": "add"
-        }
-      },
       "Change": {
         "1": {
           "version": 1,
@@ -1084,10 +1000,80 @@
           "action": "add"
         }
       },
+      "OnDiskBlobDeposit": {
+        "1": {
+          "version": 1,
+          "hash": "817bf1bee4a35bfa1cd25d6779a10d8d180b1b3f1e837952f81f48b9411d1970",
+          "action": "add"
+        }
+      },
+      "RemoteConfig": {
+        "1": {
+          "version": 1,
+          "hash": "179d067099a178d748c6d9a0477e8de7c3b55577439669eca7150258f2409567",
+          "action": "add"
+        }
+      },
+      "AzureRemoteConfig": {
+        "1": {
+          "version": 1,
+          "hash": "a143811fec0da5fd881e927643ef667c91c78a2c90519cf88da7da20738bd187",
+          "action": "add"
+        }
+      },
+      "SeaweedFSBlobDeposit": {
+        "1": {
+          "version": 1,
+          "hash": "febeb2a2ce81aa2c512e4c6b611b582984042aafa0541403d4584662273a166c",
+          "action": "add"
+        }
+      },
       "SQLiteStoreConfig": {
         "1": {
           "version": 1,
           "hash": "ad062a5f863ae84683867d2a6a5e1d4420c010a64b88bc7b392106e33d71ac03",
+          "action": "add"
+        }
+      },
+      "NumpyArrayObject": {
+        "1": {
+          "version": 1,
+          "hash": "05dd2917b7692b3daf4e7ad083a46fa7ec7a2be8faac8d4a654809189c986443",
+          "action": "add"
+        }
+      },
+      "NumpyScalarObject": {
+        "1": {
+          "version": 1,
+          "hash": "8753e5c78270a5cacbf0439447724772f4765351a4a8b58b0a5c416a6b2c8b6e",
+          "action": "add"
+        }
+      },
+      "NumpyBoolObject": {
+        "1": {
+          "version": 1,
+          "hash": "331c44f8fa3d0a077f1aaad7313bae2c43b386d04def7b8bedae9fdf7690134d",
+          "action": "add"
+        }
+      },
+      "PandasDataframeObject": {
+        "1": {
+          "version": 1,
+          "hash": "5e8018364cea31d5f185a901da4ab89846b02153ee7d041ee8a6d305ece31f90",
+          "action": "add"
+        }
+      },
+      "PandasSeriesObject": {
+        "1": {
+          "version": 1,
+          "hash": "b8bd482bf16fc7177e9778292cd42f8835b6ced2ce8dc88908b4b8e6d7c7528f",
+          "action": "add"
+        }
+      },
+      "DataSubjectMemberRelationship": {
+        "1": {
+          "version": 1,
+          "hash": "0810483ea76ea10c8f286c6035dc0b2085291f345183be50c179f3a05a577110",
           "action": "add"
         }
       },
