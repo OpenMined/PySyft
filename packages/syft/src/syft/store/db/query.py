@@ -1,6 +1,7 @@
 # stdlib
 from abc import ABC
 from abc import abstractmethod
+from collections.abc import Callable
 import enum
 from typing import Any
 from typing import Literal
@@ -33,6 +34,8 @@ class FilterOperator(enum.Enum):
 
 
 class Query(ABC):
+    json_quote: Callable | None = None
+
     def __init__(self, object_type: type[SyftObject]) -> None:
         self.object_type: type = object_type
         self.table: Table = self._get_table(object_type)
@@ -276,7 +279,10 @@ class Query(ABC):
             field = field.split(".")  # type: ignore
 
         json_value = serialize_json(value)
-        return table.c.fields[field] == func.json_quote(json_value)
+        if self.json_quote:
+            return table.c.fields[field] == self.json_quote(json_value)
+        else:
+            return table.c.fields[field].astext == json_value
 
     @abstractmethod
     def _contains_filter(
@@ -301,6 +307,8 @@ class Query(ABC):
 
 
 class SQLiteQuery(Query):
+    json_quote = func.json_quote
+
     def _make_permissions_clause(
         self,
         permission: ActionObjectPermission,
@@ -319,7 +327,9 @@ class SQLiteQuery(Query):
         value: Any,
     ) -> sa.sql.elements.BinaryExpression:
         field_value = serialize_json(value)
-        return table.c.fields[field].contains(func.json_quote(field_value))
+        return table.c.fields[field].contains(
+            self.json_quote(field_value) if self.json_quote else field_value
+        )
 
 
 class PostgresQuery(Query):

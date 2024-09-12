@@ -88,6 +88,6 @@ ENV \
     POSTGRESQL_HOST="localhost" \
     POSTGRESQL_PORT="5432" \
     POSTGRESQL_USERNAME="syft_postgres" \
-    POSTGRESQL_PASSWORD="changethis"
+    POSTGRESQL_PASSWORD="example"
 
 CMD ["bash", "./grid/start.sh"]

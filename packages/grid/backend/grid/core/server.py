@@ -1,3 +1,5 @@
+# stdlib
+
 # syft absolute
 from syft.abstract_server import ServerType
 from syft.server.datasite import Datasite
@@ -14,8 +16,8 @@ from syft.service.queue.zmq_client import ZMQClientConfig
 from syft.service.queue.zmq_client import ZMQQueueConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSClientConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSConfig
-from syft.store.sqlite_document_store import SQLiteStoreClientConfig
-from syft.store.sqlite_document_store import SQLiteStoreConfig
+from syft.store.db.postgres import PostgresDBConfig
+from syft.store.db.sqlite import SQLiteDBConfig
 from syft.types.uid import UID
 
 # server absolute
@@ -34,12 +36,21 @@ def queue_config() -> ZMQQueueConfig:
     return queue_config
 
 
-def sql_store_config() -> SQLiteStoreConfig:
-    client_config = SQLiteStoreClientConfig(
+def sql_store_config() -> SQLiteDBConfig:
+    return SQLiteDBConfig(
         filename=f"{UID.from_string(get_server_uid_env())}.sqlite",
         path=settings.SQLITE_PATH,
     )
-    return SQLiteStoreConfig(client_config=client_config)
+
+
+def postgresql_store_config() -> PostgresDBConfig:
+    return PostgresDBConfig(
+        host=settings.POSTGRESQL_HOST,
+        port=settings.POSTGRESQL_PORT,
+        user=settings.POSTGRESQL_USERNAME,
+        password=settings.POSTGRESQL_PASSWORD,
+        database=settings.POSTGRESQL_DBNAME,
+    )
 
 
 def seaweedfs_config() -> SeaweedFSConfig:
@@ -74,6 +85,8 @@ worker_classes = {
 worker_class = worker_classes[server_type]
 
 single_container_mode = settings.SINGLE_CONTAINER_MODE
+db_config = sql_store_config() if single_container_mode else postgresql_store_config()
+
 blob_storage_config = None if single_container_mode else seaweedfs_config()
 queue_config = queue_config()
 
@@ -93,4 +106,5 @@ worker: Server = worker_class(
     smtp_host=settings.SMTP_HOST,
     association_request_auto_approval=settings.ASSOCIATION_REQUEST_AUTO_APPROVAL,
     background_tasks=True,
+    db_config=db_config,
 )

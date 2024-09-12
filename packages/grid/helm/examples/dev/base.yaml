@@ -21,13 +21,6 @@ server:
   secret:
     defaultRootPassword: changethis
 
-mongo:
-  resourcesPreset: null
-  resources: null
-
-  secret:
-    rootPassword: example
-
 postgres:
   resourcesPreset: null
   resources: null
