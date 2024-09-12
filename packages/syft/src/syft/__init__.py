@@ -155,6 +155,14 @@ def _test_settings() -> Any:
 
 
 @module_property
+def _get_helpers() -> Any:
+    # relative
+    from .util.util import add_helper_path
+
+    return add_helper_path()
+
+
+@module_property
 def hello_baby() -> None:
     print("Hello baby!")
     print("Welcome to the world. \u2764\ufe0f")
