@@ -254,14 +254,12 @@ class SyncService(AbstractService):
             if store is not None:
                 # TODO fix error handling
                 uid = item.id.id
-                item_permissions = store._get_permissions_for_uid(uid)
-                if not item_permissions.is_err():
-                    permissions[uid] = item_permissions.ok()  # type: ignore
+                permissions[uid] = store._get_permissions_for_uid(uid).unwrap()
 
                 # TODO fix error handling for storage permissions
-                item_storage_permissions = store._get_storage_permissions_for_uid(uid)
-                if not item_storage_permissions.is_err():
-                    storage_permissions[uid] = item_storage_permissions.ok()  # type: ignore
+                storage_permissions[uid] = store._get_storage_permissions_for_uid(
+                    uid
+                ).unwrap()
         return permissions, storage_permissions
 
     @as_result(SyftException)
