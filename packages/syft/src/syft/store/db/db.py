@@ -107,6 +107,8 @@ class SQLiteDBManager(DBManager[SQLiteDBConfig]):
         server_uid: UID | None = None,
         root_verify_key: SyftVerifyKey | None = None,
     ) -> "SQLiteDBManager":
+        """Get a SQLiteDBManager with random values for the config, server_uid, and root_verify_key.
+        Intended for testing purposes only."""
         root_verify_key = root_verify_key or SyftSigningKey.generate().verify_key
         server_uid = server_uid or UID()
         config = config or SQLiteDBConfig()
@@ -126,6 +128,8 @@ class PostgresDBManager(DBManager[PostgresDBConfig]):
         server_uid: UID | None = None,
         root_verify_key: SyftVerifyKey | None = None,
     ) -> "PostgresDBManager":
+        """Get a PostgresDBManager with random values for the config, server_uid, and root_verify_key.
+        Intended for testing purposes only."""
         if config is None:
             raise ValueError("Cannot create a postgres db without a config")
 

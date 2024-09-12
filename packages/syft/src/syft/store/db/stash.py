@@ -545,7 +545,7 @@ class ObjectStash(Generic[StashT]):
         for field_name, operator, field_value in parse_filters(filters):
             query = query.filter(field_name, operator, field_value)
 
-        query = query.order_by(order_by, sort_order).offset(offset)
+        query = query.order_by(order_by, sort_order).offset(offset).limit(1)
         result = query.execute(session).first()
         if result is None:
             raise NotFoundException(f"{self.object_type.__name__}: not found")

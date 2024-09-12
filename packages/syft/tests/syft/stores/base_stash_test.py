@@ -12,12 +12,14 @@ from typing_extensions import ParamSpec
 
 # syft absolute
 from syft.serde.serializable import serializable
+from syft.service.request.request_service import RequestService
 from syft.store.db.db import SQLiteDBConfig
 from syft.store.db.db import SQLiteDBManager
 from syft.store.db.stash import ObjectStash
 from syft.store.document_store import PartitionKey
 from syft.store.document_store_errors import NotFoundException
 from syft.store.document_store_errors import StashException
+from syft.store.linked_obj import LinkedObject
 from syft.types.errors import SyftException
 from syft.types.syft_object import SyftObject
 from syft.types.uid import UID
@@ -32,6 +34,7 @@ class MockObject(SyftObject):
     desc: str
     importance: int
     value: int
+    linked_obj: LinkedObject | None = None
 
     __attr_searchable__ = ["id", "name", "desc", "importance"]
     __attr_unique__ = ["id", "name"]
@@ -290,6 +293,27 @@ def test_basestash_query_one(
             root_verify_key,
             filters=params,
         ).unwrap()
+
+
+def test_basestash_query_linked_obj(
+    root_verify_key, base_stash: MockStash, mock_object: MockObject
+) -> None:
+    mock_object.linked_obj = LinkedObject(
+        object_type=MockObject,
+        object_uid=UID(),
+        id=UID(),
+        tags=["tag1", "tag2"],
+        server_uid=UID(),
+        service_type=RequestService,
+    )
+    base_stash.set(root_verify_key, mock_object).unwrap()
+
+    result = base_stash.get_one(
+        root_verify_key,
+        filters={"linked_obj.id": mock_object.linked_obj.id},
+    ).unwrap()
+
+    assert result == mock_object
 
 
 def test_basestash_query_all(
