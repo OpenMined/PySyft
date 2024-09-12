@@ -94,6 +94,7 @@ dev:
       - port: "8888" # filer
       - port: "8333" # S3
       - port: "4001" # mount azure
+      - port: "5432" # mount postgres
   backend:
     labelSelector:
       app.kubernetes.io/name: syft

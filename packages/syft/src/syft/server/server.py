@@ -744,6 +744,7 @@ class Server(AbstractServer):
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
         consumer_type: ConsumerType | None = None,
+        db_config: DBConfig | None = None,
     ) -> Server:
         uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -775,6 +776,7 @@ class Server(AbstractServer):
             association_request_auto_approval=association_request_auto_approval,
             background_tasks=background_tasks,
             consumer_type=consumer_type,
+            db_config=db_config,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -904,7 +906,7 @@ class Server(AbstractServer):
                 root_verify_key=self.verify_key,
             )
         elif isinstance(db_config, PostgresDBConfig):
-            db = PostgresDBManager(
+            db = PostgresDBManager(  # type: ignore
                 config=db_config,
                 server_uid=self.id,
                 root_verify_key=self.verify_key,
