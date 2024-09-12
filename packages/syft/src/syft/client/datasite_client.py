@@ -13,6 +13,7 @@ from typing import cast
 
 # third party
 import markdown
+from syft.store.linked_obj import LinkedObject
 from tqdm import tqdm
 
 # relative
@@ -26,7 +27,7 @@ from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
 from ..service.dataset.dataset import _check_asset_must_contain_mock
 from ..service.migration.object_migration_state import MigrationData
-from ..service.request.request import Request
+from ..service.request.request import Request, RequestStatus, SyncedUserCodeStatusChange, UserCodeStatusChange
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.sync.diff_state import ResolvedSyncState
@@ -97,6 +98,48 @@ def add_default_uploader(
 class DatasiteClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DatasiteClient: {self.name}>"
+    
+    def upgrade_to_l0(self, low_side_client: DatasiteClient):
+        # transfer users
+        # Maybe we need to also remove the users from this node 
+        low_side_client.users._add_batch(self.api.users)
+        
+        # prepare requests
+        for request in self.requests: 
+            if request.status == RequestStatus.REJECTED:
+                deny_reason = request.code.status.get_deny_reason()
+                self.code.update(
+                    id=user_code.id, 
+                    origin_server_side_type=ServerSideType.LOW_SIDE,
+                    l0_deny_reason=deny_reason
+                )
+            
+            new_changes = [
+                SyncedUserCodeStatusChange(
+                id=change.id,
+                value=change.value,
+                linked_obj=None,
+                linked_user_code=LinkedObject(
+                        server_uid=low_side_client.id,
+                        service_type=change.linked_user_code.service_type,
+                        object_type=change.linked_user_code.object_type,
+                        object_uid=change.linked_user_code.object_uid,    
+                    ),
+                nested_solved=change.nested_solved,
+                match_type=change.match_type,
+                ) if isinstance(change, UserCodeStatusChange) else change for change in request.changes]
+            request.changes = new_changes
+            self.requests._update(request)
+            
+        # prepare usercodes
+        for user_code in self.code:
+            if user_code.origin_server_side_type is not ServerSideType.LOW_SIDE:
+                self.code.update(id=user_code.id, origin_server_side_type=ServerSideType.LOW_SIDE)
+            
+        
+        # prepare usercodestatuscollection
+        
+        # optional: move permissions
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess:
         # relative

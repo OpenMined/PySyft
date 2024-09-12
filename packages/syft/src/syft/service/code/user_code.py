@@ -143,6 +143,19 @@ class UserCodeStatusCollection(SyncableSyftObject):
     __repr_attrs__ = ["approved", "status_dict"]
     status_dict: dict[ServerIdentity, tuple[UserCodeStatus, str]] = {}
     user_code_link: LinkedObject
+    
+    def get_deny_reason(self) -> str | None:
+        if len(self.status_dict.keys()) == 1:
+            status = self.status_dict.values()[0]
+            if status[0] == UserCodeStatus.DENIED:
+                return status[1]
+            return None
+        deny_reason = " ".join([f"{value[0]}: {value[1]}." 
+                         if value[0] == UserCodeStatus.DENIED else ""
+                         for value in self.status_dict.values()])
+        if deny_reason == " ":
+            return None
+        return deny_reason
 
     def syft_get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
         # relative
