@@ -97,12 +97,10 @@ class SyncTableObject(HTMLComponentBase):
             return f"Status: {self.object.status.value}"
         elif isinstance(self.object, Request):
             code = self.object.code
-            statusses = list(code.status.status_dict.values())
-            if len(statusses) != 1:
+            approval_decisions = list(code.status.status_dict.values())
+            if len(approval_decisions) != 1:
                 raise ValueError("Request code should have exactly one status")
-            status_tuple = statusses[0]
-            status, _ = status_tuple
-            return status.value
+            return approval_decisions[0].status.value
         return ""  # type: ignore
 
     def get_updated_by(self) -> str:

@@ -42,6 +42,7 @@ from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_store import ActionObjectPermission
 from ..action.action_store import ActionPermission
+from ..code.user_code import ApprovalDecision
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..code.user_code import UserCodeStatusCollection
@@ -1427,8 +1428,11 @@ class UserCodeStatusChange(Change):
         undo: bool,
     ) -> UserCodeStatusCollection:
         reason: str = context.extra_kwargs.get("reason", "")
+        ApprovalDecision
         return status.mutate(
-            value=(UserCodeStatus.DENIED if undo else self.value, reason),
+            value=ApprovalDecision(
+                decision=UserCodeStatus.DENIED if undo else self.value, reason=reason
+            ),
             server_name=context.server.name,
             server_id=context.server.id,
             verify_key=context.server.signing_key.verify_key,

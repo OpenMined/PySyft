@@ -132,9 +132,9 @@ class UserCodeStatus(Enum):
     def __hash__(self) -> int:
         return hash(self.value)
 
+
 @serializable(canonical_name="UserCodeStatusDecision", version=1)
 class ApprovalDecision(SyftObject):
-
     status: UserCodeStatus
     reason: str | None = None
 
@@ -145,16 +145,16 @@ class ApprovalDecision(SyftObject):
         return self.reason
 
 
-
 @serializable()
 class UserCodeStatusCollection(SyncableSyftObject):
     """Currently this is a class that implements a mixed bag of two statusses
     The first status is for a level 0 Request, which only uses the status dict
     for denied decision. If there is no denied decision, it computes the status
-    by checking the backend for whether it has readable outputs.  
+    by checking the backend for whether it has readable outputs.
     The second use case is for a level 2 Request, in this case we store the status
     dict on the object and use it as is for both denied and approved status
     """
+
     __canonical_name__ = "UserCodeStatusCollection"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -169,7 +169,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
     _was_requested_on_lowside: bool = False
 
     # ugly and buggy optimization, remove at some point
-    _has_output_read_permissions_cache: bool | None = None
+    _has_readable_outputs_cache: bool | None = None
 
     @property
     def approved(self) -> bool:
@@ -177,20 +177,34 @@ class UserCodeStatusCollection(SyncableSyftObject):
         # of using the context
         self.get_approved(None)
 
-    def get_approved(self, context: AuthedServiceContext | None):
+    def get_approved(self, context: AuthedServiceContext | None) -> bool:
+        return self._compute_status(context) == UserCodeStatus.APPROVED
+
+    def _compute_status(
+        self, context: AuthedServiceContext | None = None
+    ) -> UserCodeStatus:
         if self._was_requested_on_lowside:
-            return self._compute_status_l0(context) == UserCodeStatus.APPROVED
+            return self._compute_status_l0(context)
         else:
-            return all(x == UserCodeStatus.APPROVED for x, _ in self.status_dict.values())
+            return self._compute_status_l2()
 
     @property
     def denied(self) -> bool:
         # for denied we use the status dict both for level 0 and level 2
-        return any([approval_dec.status == UserCodeStatus.DENIED for approval_dec in self.status_dict.values()])
+        return any(
+            [
+                approval_dec.status == UserCodeStatus.DENIED
+                for approval_dec in self.status_dict.values()
+            ]
+        )
 
     def _compute_status_l0(
         self, context: AuthedServiceContext | None = None
     ) -> UserCodeStatus:
+        # for l0, if denied in status dict, its denied
+        # if not, and it has readable outputs, its approved,
+        # else pending
+
         has_readable_outputs = self._has_readable_outputs(context)
 
         if self.denied:
@@ -204,19 +218,33 @@ class UserCodeStatusCollection(SyncableSyftObject):
             return UserCodeStatus.APPROVED
         else:
             return UserCodeStatus.PENDING
-    
+
+    def _compute_status_l2(self) -> UserCodeStatus:
+        any_denied = any(
+            x == UserCodeStatus.DENIED for x, _ in self.status_dict.values()
+        )
+        all_approved = all(
+            x == UserCodeStatus.APPROVED for x, _ in self.status_dict.values()
+        )
+        if any_denied:
+            return UserCodeStatus.DENIED
+        elif all_approved:
+            return UserCodeStatus.APPROVED
+        else:
+            return UserCodeStatus.PENDING
+
     def _has_readable_outputs(self, context: AuthedServiceContext | None = None):
         if context is None:
             # Clientside
             api = self._get_api()
-            if self._has_output_read_permissions_cache is None:
+            if self._has_readable_outputs_cache is None:
                 has_readable_outputs = api.output.has_output_read_permissions(
                     self.user_code_link.object_uid, self.user_verify_key
                 )
-                self._has_output_read_permissions_cache = has_readable_outputs
+                self._has_readable_outputs_cache = has_readable_outputs
                 return has_readable_outputs
             else:
-                return self._has_output_read_permissions_cache
+                return self._has_readable_outputs_cache
         else:
             # Serverside
             return context.server.services.output.has_output_read_permissions(
@@ -224,9 +252,12 @@ class UserCodeStatusCollection(SyncableSyftObject):
             )
 
     @property
-    def denial_reason_l0(self):
-        denial_reasons = [x.non_empty_reason for x in self.status_dict.values() 
-                          if x.status == UserCodeStatus.DENIED and x.non_empty_reason is not None]
+    def first_denial_reason(self) -> str:
+        denial_reasons = [
+            x.non_empty_reason
+            for x in self.status_dict.values()
+            if x.status == UserCodeStatus.DENIED and x.non_empty_reason is not None
+        ]
         return next(iter(denial_reasons), "")
 
     def syft_get_diffs(self, ext_obj: Any) -> list[AttrDiff]:
@@ -255,41 +286,39 @@ class UserCodeStatusCollection(SyncableSyftObject):
                     <h3 style="line-height: 25%; margin-top: 25px;">User Code Status</h3>
                     <p style="margin-left: 3px;">
             """
-        for server_identity, (status, reason) in self.status_dict.items():
+        for server_identity, approval_decision in self.status_dict.items():
             server_name_str = f"{server_identity.server_name}"
             uid_str = f"{server_identity.server_id}"
-            status_str = f"{status.value}"
+            status_str = f"{approval_decision.status.value}"
             string += f"""
                     &#x2022; <strong>UID: </strong>{uid_str}&nbsp;
                     <strong>Server name: </strong>{server_name_str}&nbsp;
                     <strong>Status: </strong>{status_str};
-                    <strong>Reason: </strong>{reason}
+                    <strong>Reason: </strong>{approval_decision.reason}
                     <br>
                 """
         string += "</p></div>"
         return string
 
     def __repr_syft_nested__(self) -> str:
-        string = ""
-        for server_identity, (status, reason) in self.status_dict.items():
-            string += f"{server_identity.server_name}: {status}, {reason}<br>"
-        return string
+        # this currently assumes that there is only one status
+        status_str = self._compute_status().value
 
-    def get_status_message(self, context: AuthedServiceContext) -> str:
+        if self.denied:
+            status_str = f"{status_str}: self.first_denial_reason"
+        return status_str
+
+    def get_status_message_l2(self, context: AuthedServiceContext) -> str:
         if self.get_approved(context):
             return f"{type(self)} approved"
         denial_string = ""
         string = ""
 
-        status_dict = self._refresh_cache(context)
-
-        for server_identity, (status, reason) in status_dict.items():
-            denial_string += f"Code status on server '{server_identity.server_name}' is '{status}'. Reason: {reason}"
-            if not reason.endswith("."):
+        for server_identity, approval_decision in self.status_dict.items():
+            denial_string += f"Code status on server '{server_identity.server_name}' is '{approval_decision.status}'. Reason: {approval_decision.reason}"
+            if not approval_decision.reason.endswith("."):
                 denial_string += "."
-            string += (
-                f"Code status on server '{server_identity.server_name}' is '{status}'."
-            )
+            string += f"Code status on server '{server_identity.server_name}' is '{approval_decision.status}'."
         if self.denied:
             return f"{type(self)} Your code cannot be run: {denial_string}"
         else:
@@ -298,7 +327,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
     @as_result(SyftException)
     def mutate(
         self,
-        value: tuple[UserCodeStatus, str],
+        value: ApprovalDecision,
         server_name: str,
         server_id: UID,
         verify_key: SyftVerifyKey,
@@ -411,14 +440,14 @@ class UserCode(SyncableSyftObject):
             return super().__setattr__(key, value)
 
     def _coll_repr_(self) -> dict[str, Any]:
-        status = [status for status, _ in self.status.status_dict.values()][0].value
-        if status == UserCodeStatus.PENDING.value:
+        status = self.status._compute_status()
+        if status == UserCodeStatus.PENDING:
             badge_color = "badge-purple"
-        elif status == UserCodeStatus.APPROVED.value:
+        elif status == UserCodeStatus.APPROVED:
             badge_color = "badge-green"
         else:
             badge_color = "badge-red"
-        status_badge = {"value": status, "type": badge_color}
+        status_badge = {"value": status.value, "type": badge_color}
         return {
             "Input Policy": self.input_policy_type.__canonical_name__,
             "Output Policy": self.output_policy_type.__canonical_name__,
@@ -450,7 +479,9 @@ class UserCode(SyncableSyftObject):
         return self.get_status(None)
 
     @as_result(SyftException)
-    def get_status(self, context: AuthedServiceContext | None) -> UserCodeStatusCollection:
+    def get_status(
+        self, context: AuthedServiceContext | None
+    ) -> UserCodeStatusCollection:
         return self.status_link.resolve_dynamic(context, load_cached=True)
 
     @property
@@ -485,13 +516,8 @@ class UserCode(SyncableSyftObject):
         return None
 
     @property
-    def code_status(self) -> list:
-        status_list = []
-        for server_view, (status, _) in self.status.status_dict.items():
-            status_list.append(
-                f"Server: {server_view.server_name}, Status: {status.value}",
-            )
-        return status_list
+    def code_status_str(self) -> str:
+        return f"Status: {self.status._compute_status().value}"
 
     @property
     def input_policy(self) -> InputPolicy | None:
@@ -859,7 +885,7 @@ class UserCode(SyncableSyftObject):
     id: UID = {self.id}
     service_func_name: str = {self.service_func_name}
     shareholders: list = {self.input_owners}
-    status: list = {self.code_status}
+    status: str = {self.code_status_str}
     {constants_str}
     {shared_with_line}
     inputs: dict = {inputs_str}
@@ -914,7 +940,7 @@ class UserCode(SyncableSyftObject):
     <p>{tabs}<strong>id:</strong> UID = {self.id}</p>
     <p>{tabs}<strong>service_func_name:</strong> str = {self.service_func_name}</p>
     <p>{tabs}<strong>shareholders:</strong> list = {self.input_owners}</p>
-    <p>{tabs}<strong>status:</strong> list = {self.code_status}</p>
+    <p>{tabs}<strong>status:</strong> str = {self.code_status_str}</p>
     {tabs}{constants_str}
     {tabs}{shared_with_line}
     <p>{tabs}<strong>inputs:</strong> dict = <pre>{self._inputs_json}</pre></p>
@@ -1517,10 +1543,12 @@ def create_code_status(context: TransformContext) -> TransformContext:
         return context
 
     # # Low side requests have a computed status
-    # if 
+    # if
     #     return context
 
-    was_requested_on_lowside = context.server.server_side_type == ServerSideType.LOW_SIDE
+    was_requested_on_lowside = (
+        context.server.server_side_type == ServerSideType.LOW_SIDE
+    )
 
     code_link = LinkedObject.from_uid(
         context.output["id"],
@@ -1535,15 +1563,19 @@ def create_code_status(context: TransformContext) -> TransformContext:
             verify_key=context.server.signing_key.verify_key,
         )
         status = UserCodeStatusCollection(
-            status_dict={server_identity: (UserCodeStatus.PENDING, "")},
+            status_dict={
+                server_identity: ApprovalDecision(status=UserCodeStatus.PENDING)
+            },
             user_code_link=code_link,
             user_verify_key=context.credentials,
-            _was_requested_on_lowside=was_requested_on_lowside
+            _was_requested_on_lowside=was_requested_on_lowside,
         )
 
     elif context.server.server_type == ServerType.ENCLAVE:
         input_keys = list(context.output["input_policy_init_kwargs"].keys())
-        status_dict = {key: (UserCodeStatus.PENDING, "") for key in input_keys}
+        status_dict = {
+            key: ApprovalDecision(status=UserCodeStatus.PENDING) for key in input_keys
+        }
         status = UserCodeStatusCollection(
             status_dict=status_dict,
             user_code_link=code_link,

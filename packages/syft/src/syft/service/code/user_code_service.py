@@ -502,7 +502,9 @@ class UserCodeService(AbstractService):
                 # code is from low side (L0 setup)
                 status = code.get_status(context).unwrap()
 
-                if not status.get_approved(context):
+                if context.server_allows_execution_for_ds and not status.get_approved(
+                    context
+                ):
                     raise SyftException(
                         public_message=status.get_status_message(context)
                     )
