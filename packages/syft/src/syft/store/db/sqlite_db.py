@@ -1,6 +1,8 @@
 # stdlib
 from pathlib import Path
 import tempfile
+from typing import Generic
+from typing import TypeVar
 import uuid
 
 # third party
@@ -51,10 +53,13 @@ class PostgresDBConfig(DBConfig):
         return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
 
 
-class DBManager:
+ConfigT = TypeVar("ConfigT", bound=DBConfig)
+
+
+class DBManager(Generic[ConfigT]):
     def __init__(
         self,
-        config: SQLiteDBConfig,
+        config: ConfigT,
         server_uid: UID,
         root_verify_key: SyftVerifyKey,
     ) -> None:
@@ -75,25 +80,6 @@ class DBManager:
         pass
 
     def init_tables(self) -> None:
-        pass
-
-    def reset(self) -> None:
-        pass
-
-
-class SQLiteDBManager(DBManager):
-    def update_settings(self) -> None:
-        # TODO split SQLite / PostgresDBManager
-        connection = self.engine.connect()
-
-        if self.engine.dialect.name == "sqlite":
-            connection.execute(sa.text("PRAGMA journal_mode = WAL"))
-            connection.execute(sa.text("PRAGMA busy_timeout = 5000"))
-            # TODO check
-            connection.execute(sa.text("PRAGMA temp_store = 2"))
-            connection.execute(sa.text("PRAGMA synchronous = 1"))
-
-    def init_tables(self) -> None:
         if self.config.reset:
             # drop all tables that we know about
             Base.metadata.drop_all(bind=self.engine)
@@ -103,6 +89,15 @@ class SQLiteDBManager(DBManager):
     def reset(self) -> None:
         Base.metadata.drop_all(bind=self.engine)
         Base.metadata.create_all(self.engine)
+
+
+class SQLiteDBManager(DBManager[SQLiteDBConfig]):
+    def update_settings(self) -> None:
+        connection = self.engine.connect()
+        connection.execute(sa.text("PRAGMA journal_mode = WAL"))
+        connection.execute(sa.text("PRAGMA busy_timeout = 5000"))
+        connection.execute(sa.text("PRAGMA temp_store = 2"))
+        connection.execute(sa.text("PRAGMA synchronous = 1"))
 
     @classmethod
     def random(
@@ -116,6 +111,28 @@ class SQLiteDBManager(DBManager):
         server_uid = server_uid or UID()
         config = config or SQLiteDBConfig()
         return SQLiteDBManager(
+            config=config,
+            server_uid=server_uid,
+            root_verify_key=root_verify_key,
+        )
+
+
+class PostgresDBManager(DBManager[PostgresDBConfig]):
+    @classmethod
+    def random(
+        cls,
+        *,
+        config: PostgresDBConfig | None = None,
+        server_uid: UID | None = None,
+        root_verify_key: SyftVerifyKey | None = None,
+    ) -> "PostgresDBManager":
+        if config is None:
+            raise ValueError("Cannot create a postgres db without a config")
+
+        root_verify_key = root_verify_key or SyftSigningKey.generate().verify_key
+        server_uid = server_uid or UID()
+        config = config or PostgresDBConfig()
+        return PostgresDBManager(
             config=config,
             server_uid=server_uid,
             root_verify_key=root_verify_key,
