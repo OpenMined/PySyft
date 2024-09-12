@@ -87,7 +87,9 @@ from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
-from ..store.db.sqlite_db import DBConfig
+from ..store.db.base import DBConfig
+from ..store.db.postgres_db import PostgresDBConfig
+from ..store.db.postgres_db import PostgresDBManager
 from ..store.db.sqlite_db import SQLiteDBConfig
 from ..store.db.sqlite_db import SQLiteDBManager
 from ..store.db.stash import ObjectStash
@@ -336,7 +338,6 @@ class Server(AbstractServer):
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
-        store_client_config: dict | None = None,
         consumer_type: ConsumerType | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
@@ -411,9 +412,12 @@ class Server(AbstractServer):
                 filename=f"{self.id}_json.db",
                 path=self.get_temp_dir("db"),
             )
-            # db_config = PostgresDBConfig(reset=False)
+
+        if reset:
+            db_config.reset = True
 
         self.db_config = db_config
+        self.db: PostgresDBManager | SQLiteDBManager | None = None
 
         self.init_stores(db_config=self.db_config)
 
@@ -739,7 +743,6 @@ class Server(AbstractServer):
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
-        store_client_config: dict | None = None,
         consumer_type: ConsumerType | None = None,
     ) -> Server:
         uid = get_named_server_uid(name)
@@ -771,7 +774,6 @@ class Server(AbstractServer):
             reset=reset,
             association_request_auto_approval=association_request_auto_approval,
             background_tasks=background_tasks,
-            store_client_config=store_client_config,
             consumer_type=consumer_type,
         )
 
@@ -895,11 +897,20 @@ class Server(AbstractServer):
             CODE_RELOADER[ti] = reload_user_code
 
     def init_stores(self, db_config: DBConfig) -> None:
-        self.db = SQLiteDBManager(
-            config=db_config,
-            server_uid=self.id,
-            root_verify_key=self.verify_key,
-        )
+        if isinstance(db_config, SQLiteDBConfig):
+            self.db = SQLiteDBManager(
+                config=db_config,
+                server_uid=self.id,
+                root_verify_key=self.verify_key,
+            )
+        elif isinstance(db_config, PostgresDBConfig):
+            self.db = PostgresDBManager(
+                config=db_config,
+                server_uid=self.id,
+                root_verify_key=self.verify_key,
+            )
+        else:
+            raise SyftException(public_message=f"Unsupported DB config: {db_config}")
 
         self.queue_stash = QueueStash(store=self.db)
 
@@ -975,7 +986,7 @@ class Server(AbstractServer):
     # settings and services are resolved.
     def get_settings(self) -> ServerSettings | None:
         if self._settings:
-            return self._settings
+            return self._settings  # type: ignore
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
 

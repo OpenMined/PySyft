@@ -1,6 +1,6 @@
 # relative
 from ...serde.serializable import serializable
-from ...store.db.sqlite_db import DBManager
+from ...store.db.base import DBManager
 from ...types.uid import UID
 from ..action.action_permissions import StoragePermission
 from ..context import AuthedServiceContext

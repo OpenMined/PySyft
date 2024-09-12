@@ -3,7 +3,7 @@
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.db.sqlite_db import DBManager
+from ...store.db.base import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...types.uid import UID
 from ..code.user_code import SubmitUserCode

@@ -11,7 +11,7 @@ from ...service.action.action_object import ActionObject
 from ...store.blob_storage import BlobRetrieval
 from ...store.blob_storage.on_disk import OnDiskBlobDeposit
 from ...store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
-from ...store.db.sqlite_db import DBManager
+from ...store.db.base import DBManager
 from ...types.blob_storage import AzureSecureFilePathLocation
 from ...types.blob_storage import BlobFileType
 from ...types.blob_storage import BlobStorageEntry

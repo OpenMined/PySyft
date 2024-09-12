@@ -13,7 +13,7 @@ from ..serde.serializable import serializable
 from ..server.credentials import SyftSigningKey
 from ..service.queue.base_queue import QueueConfig
 from ..store.blob_storage import BlobStorageConfig
-from ..store.db.sqlite_db import DBConfig
+from ..store.db.base import DBConfig
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
 from ..types.uid import UID

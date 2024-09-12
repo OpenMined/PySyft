@@ -6,7 +6,7 @@ import requests
 
 # relative
 from ...serde.serializable import serializable
-from ...store.db.sqlite_db import DBManager
+from ...store.db.base import DBManager
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...util.util import str_to_bool

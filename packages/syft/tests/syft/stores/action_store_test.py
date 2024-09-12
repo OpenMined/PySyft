@@ -16,7 +16,7 @@ from syft.service.action.action_store import ActionObjectWRITE
 from syft.service.user.user import User
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_stash import UserStash
-from syft.store.db.sqlite_db import DBManager
+from syft.store.db.base import DBManager
 from syft.types.uid import UID
 
 # relative

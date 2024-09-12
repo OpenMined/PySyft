@@ -4,7 +4,7 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.db.sqlite_db import DBManager
+from ...store.db.base import DBManager
 from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID

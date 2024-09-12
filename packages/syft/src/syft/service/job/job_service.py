@@ -6,7 +6,7 @@ import time
 # relative
 from ...serde.serializable import serializable
 from ...server.worker_settings import WorkerSettings
-from ...store.db.sqlite_db import DBManager
+from ...store.db.base import DBManager
 from ...types.errors import SyftException
 from ...types.uid import UID
 from ..action.action_object import ActionObject

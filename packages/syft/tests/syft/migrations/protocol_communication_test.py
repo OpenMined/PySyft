@@ -20,7 +20,7 @@ from syft.service.service import AbstractService
 from syft.service.service import ServiceConfigRegistry
 from syft.service.service import service_method
 from syft.service.user.user_roles import GUEST_ROLE_LEVEL
-from syft.store.db.sqlite_db import DBManager
+from syft.store.db.base import DBManager
 from syft.store.document_store import DocumentStore
 from syft.store.document_store import NewBaseStash
 from syft.store.document_store import PartitionSettings

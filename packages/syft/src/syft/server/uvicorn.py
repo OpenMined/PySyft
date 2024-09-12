@@ -27,6 +27,7 @@ import uvicorn
 from ..abstract_server import ServerSideType
 from ..client.client import API_PATH
 from ..deployment_type import DeploymentType
+from ..store.db.base import DBConfig
 from ..util.autoreload import enable_autoreload
 from ..util.constants import DEFAULT_TIMEOUT
 from ..util.telemetry import TRACING_ENABLED
@@ -66,7 +67,7 @@ class AppSettings(BaseSettings):
     n_consumers: int = 0
     association_request_auto_approval: bool = False
     background_tasks: bool = False
-    store_client_config: dict | None = None
+    db_config: DBConfig | None = None
 
     model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
 
@@ -232,7 +233,6 @@ def serve_server(
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
     debug: bool = False,
-    store_client_config: dict | None = None,
 ) -> tuple[Callable, Callable]:
     starting_uvicorn_event = multiprocessing.Event()
 
@@ -262,7 +262,6 @@ def serve_server(
             "debug": debug,
             "starting_uvicorn_event": starting_uvicorn_event,
             "deployment_type": deployment_type,
-            "store_client_config": store_client_config,
         },
     )
 

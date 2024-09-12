@@ -8,7 +8,7 @@ from pydantic import ValidationError
 # relative
 from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
-from ...store.db.sqlite_db import DBManager
+from ...store.db.base import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.sqlite_document_store import SQLiteStoreConfig
