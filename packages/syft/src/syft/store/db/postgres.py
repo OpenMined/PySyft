@@ -5,8 +5,8 @@ from sqlalchemy import URL
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
-from .base import DBManager
-from .sqlite_db import DBConfig
+from .sqlite import DBConfig
+from .sqlite_db import DBManager
 
 
 @serializable(canonical_name="PostgresDBConfig", version=1)

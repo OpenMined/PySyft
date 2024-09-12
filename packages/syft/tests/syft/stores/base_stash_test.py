@@ -12,8 +12,8 @@ from typing_extensions import ParamSpec
 
 # syft absolute
 from syft.serde.serializable import serializable
-from syft.store.db.sqlite_db import SQLiteDBConfig
-from syft.store.db.sqlite_db import SQLiteDBManager
+from syft.store.db.sqlite import SQLiteDBConfig
+from syft.store.db.sqlite import SQLiteDBManager
 from syft.store.db.stash import ObjectStash
 from syft.store.document_store import PartitionKey
 from syft.store.document_store_errors import NotFoundException

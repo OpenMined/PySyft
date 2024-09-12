@@ -2,7 +2,7 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.db.base import DBManager
+from ...store.db.sqlite_db import DBManager
 from ..context import AuthedServiceContext
 from ..service import AbstractService
 from ..service import service_method

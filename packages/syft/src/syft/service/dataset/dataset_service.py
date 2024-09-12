@@ -5,7 +5,7 @@ import logging
 
 # relative
 from ...serde.serializable import serializable
-from ...store.db.base import DBManager
+from ...store.db.sqlite_db import DBManager
 from ...types.dicttuple import DictTuple
 from ...types.uid import UID
 from ..action.action_permissions import ActionObjectPermission

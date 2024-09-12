@@ -2,7 +2,7 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.db.base import DBManager
+from ...store.db.sqlite_db import DBManager
 from ...types.errors import SyftException
 from ...types.uid import UID
 from ..context import AuthedServiceContext

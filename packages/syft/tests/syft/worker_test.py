@@ -24,7 +24,7 @@ from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
 from syft.service.user.user_stash import UserStash
-from syft.store.db.sqlite_db import SQLiteDBManager
+from syft.store.db.sqlite import SQLiteDBManager
 from syft.types.errors import SyftException
 from syft.types.result import Ok
 

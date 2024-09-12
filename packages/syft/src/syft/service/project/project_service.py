@@ -4,7 +4,7 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.db.base import DBManager
+from ...store.db.sqlite_db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject

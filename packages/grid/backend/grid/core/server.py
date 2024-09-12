@@ -17,7 +17,7 @@ from syft.service.queue.zmq_client import ZMQQueueConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSClientConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSConfig
 from syft.store.db.postgres import PostgresDBConfig
-from syft.store.db.sqlite_db import SQLiteDBConfig
+from syft.store.db.sqlite import SQLiteDBConfig
 from syft.types.uid import UID
 
 # server absolute
