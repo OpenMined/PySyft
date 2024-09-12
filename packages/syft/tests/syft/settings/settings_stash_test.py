@@ -4,7 +4,6 @@ from syft.service.settings.settings import ServerSettingsUpdate
 from syft.service.settings.settings_stash import SettingsStash
 
 
-# NOTE: Is this test necessary? It is just testing set and update methods
 def test_settingsstash_set(
     root_verify_key,
     settings_stash: SettingsStash,

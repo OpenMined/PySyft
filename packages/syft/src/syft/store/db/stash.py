@@ -386,7 +386,8 @@ class ObjectStash(Generic[StashT]):
         fields = serialize_json(obj)
         try:
             # check if the fields are deserializable
-            # PR NOTE: Is this too much extra work?
+            # TODO: Ideally, we want to make sure we don't serialize what we cannot deserialize
+            #       and remove this check.
             deserialize_json(fields)
         except Exception as e:
             raise StashException(
@@ -689,7 +690,6 @@ class ObjectStash(Generic[StashT]):
         self, permissions: list[ActionObjectPermission], session: Session = None
     ) -> bool:
         # TODO: we should use a permissions table to check all permissions at once
-        # TODO: should check for compound permissions
 
         permission_filters = [
             sa.and_(
