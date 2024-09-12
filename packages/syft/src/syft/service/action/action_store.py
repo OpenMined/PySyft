@@ -23,6 +23,7 @@ from .action_permissions import StoragePermission
 
 @serializable(canonical_name="ActionObjectSQLStore", version=1)
 class ActionObjectStash(ObjectStash[ActionObject]):
+    # We are storing ActionObject, Action, TwinObject
     allow_any_type = True
 
     @as_result(NotFoundException, SyftException)

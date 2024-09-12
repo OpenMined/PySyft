@@ -18,13 +18,13 @@ class TwinAPIEndpointStash(ObjectStash[TwinAPIEndpoint]):
         res = self.get_one(
             credentials=credentials,
             filters={"path": path},
-        ).unwrap()
+        )
 
-        if res is None:
+        if res.is_err():
             raise NotFoundException(
                 public_message=MISSING_PATH_STRING.format(path=path)
             )
-        return res
+        return res.unwrap()
 
     @as_result(StashException)
     def path_exists(self, credentials: SyftVerifyKey, path: str) -> bool:
