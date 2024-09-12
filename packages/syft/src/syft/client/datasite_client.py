@@ -102,7 +102,7 @@ class DatasiteClient(SyftClient):
     def upgrade_to_l0(self, low_side_client: DatasiteClient):
         # transfer users
         # Maybe we need to also remove the users from this node 
-        low_side_client.users._add_batch(self.api.users)
+        low_side_client.api.user._add_batch(self.api.user._get_all())
         
         # prepare requests
         for request in self.requests: 
@@ -135,11 +135,19 @@ class DatasiteClient(SyftClient):
         for user_code in self.code:
             if user_code.origin_server_side_type is not ServerSideType.LOW_SIDE:
                 self.code.update(id=user_code.id, origin_server_side_type=ServerSideType.LOW_SIDE)
-            
         
         # prepare usercodestatuscollection
         
         # optional: move permissions
+        
+        # when ready, sync
+        from .syncing import compare_clients
+
+        server_diff = compare_clients(self, low_side_client)
+        widget = server_diff.resolve()
+        widget.click_share_all_private_data()
+        res = widget.click_sync()
+        return res
 
     def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess:
         # relative

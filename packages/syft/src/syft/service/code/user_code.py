@@ -146,13 +146,13 @@ class UserCodeStatusCollection(SyncableSyftObject):
     
     def get_deny_reason(self) -> str | None:
         if len(self.status_dict.keys()) == 1:
-            status = self.status_dict.values()[0]
+            status = list(self.status_dict.values())[0]
             if status[0] == UserCodeStatus.DENIED:
                 return status[1]
             return None
         deny_reason = " ".join([f"{value[0]}: {value[1]}." 
                          if value[0] == UserCodeStatus.DENIED else ""
-                         for value in self.status_dict.values()])
+                         for value in list(self.status_dict.values())])
         if deny_reason == " ":
             return None
         return deny_reason
