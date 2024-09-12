@@ -12,7 +12,6 @@ from ...store.linked_obj import LinkedObject
 from ...types.errors import SyftException
 from ...types.result import Err
 from ...types.result import as_result
-from ...types.syft_metaclass import Empty
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ..action.action_object import ActionObject
@@ -149,14 +148,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code_update: UserCodeUpdate,
     ) -> SyftSuccess:
-        code = self.stash.get_by_uid(context.credentials, code_update.id).unwrap()
-        # FIX: Check if this works (keep commented):
-        # self.stash.update(context.credentials, code).unwrap()
-
-        if code_update.l0_deny_reason is not Empty:  # type: ignore[comparison-overlap]
-            code.l0_deny_reason = code_update.l0_deny_reason
-
-        updated_code = self.stash.update(context.credentials, code).unwrap()
+        updated_code = self.stash.update(context.credentials, code_update).unwrap()
         return SyftSuccess(message="UserCode updated successfully", value=updated_code)
 
     @service_method(
@@ -360,7 +352,7 @@ class UserCodeService(AbstractService):
         output_policy: OutputPolicy | None,
     ) -> IsExecutionAllowedEnum:
         status = code.get_status(context).unwrap()
-        if not status.approved:
+        if not status.get_approved(context):
             return IsExecutionAllowedEnum.NOT_APPROVED
         elif self.has_code_permission(code, context) is HasCodePermissionEnum.DENIED:
             # TODO: Check enum above
@@ -510,8 +502,10 @@ class UserCodeService(AbstractService):
                 # code is from low side (L0 setup)
                 status = code.get_status(context).unwrap()
 
-                if not status.approved:
-                    raise SyftException(public_message=status.get_status_message())
+                if not status.get_approved(context):
+                    raise SyftException(
+                        public_message=status.get_status_message(context)
+                    )
 
                 output_policy_is_valid = False
                 try:
@@ -647,7 +641,7 @@ class UserCodeService(AbstractService):
 
         is_admin = context.role == ServiceRole.ADMIN
 
-        if not code.is_status_approved(context) and not is_admin:
+        if not code.get_status(context).get_approved(context) and not is_admin:
             raise SyftException(public_message="This UserCode is not approved")
 
         return code.store_execution_output(

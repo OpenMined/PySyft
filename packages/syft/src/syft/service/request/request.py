@@ -66,8 +66,10 @@ class RequestStatus(Enum):
     APPROVED = 2
 
     @classmethod
-    def from_usercode_status(cls, status: UserCodeStatusCollection) -> "RequestStatus":
-        if status.approved:
+    def from_usercode_status(
+        cls, status: UserCodeStatusCollection, context: AuthedServiceContext
+    ) -> "RequestStatus":
+        if status.get_approved(context):
             return RequestStatus.APPROVED
         elif status.denied:
             return RequestStatus.REJECTED
@@ -531,7 +533,7 @@ class Request(SyncableSyftObject):
                 code_status = (
                     self.code.get_status(context) if context else self.code.status
                 )
-                return RequestStatus.from_usercode_status(code_status)
+                return RequestStatus.from_usercode_status(code_status, context)
         except Exception:  # nosec
             # this breaks when coming from a user submitting a request
             # which tries to send an email to the admin and ends up here
@@ -612,7 +614,7 @@ class Request(SyncableSyftObject):
                     "This request already has results published to the data scientist. "
                     "They will still be able to access those results."
                 )
-            api.code.update(id=self.code_id, l0_deny_reason=reason)
+            api.code_status.update(id=self.code_id, l0_deny_reason=reason)
             return SyftSuccess(message=f"Request denied with reason: {reason}")
 
         return api.services.request.undo(uid=self.id, reason=reason)

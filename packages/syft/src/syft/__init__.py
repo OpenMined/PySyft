@@ -53,7 +53,7 @@ from .service.action.plan import planify
 from .service.api.api import api_endpoint
 from .service.api.api import api_endpoint_method
 from .service.api.api import create_new_api_endpoint as TwinAPIEndpoint
-from .service.code.user_code import UserCodeStatus
+from .service.code.user_code import UsercodeStatus
 from .service.code.user_code import syft_function
 from .service.code.user_code import syft_function_single_use
 from .service.data_subject import DataSubjectCreate as DataSubject

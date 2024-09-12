@@ -12,6 +12,8 @@ from ...store.document_store import QueryKeys
 from ...store.document_store import UIDPartitionKey
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
+from ...types.syft_object import PartialSyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
@@ -45,6 +47,13 @@ class StatusStash(NewBaseUIDStoreStash):
         return self.query_one(credentials=credentials, qks=qks).unwrap()
 
 
+class CodeStatusUpdate(PartialSyftObject):
+    __canonical_name__ = "CodeStatusUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+
+
 @serializable(canonical_name="UserCodeStatusService", version=1)
 class UserCodeStatusService(AbstractService):
     store: DocumentStore
@@ -64,6 +73,19 @@ class UserCodeStatusService(AbstractService):
             credentials=context.credentials,
             obj=status,
         ).unwrap()
+
+    @service_method(
+        path="code_status.update",
+        name="update",
+        roles=ADMIN_ROLE_LEVEL,
+        autosplat=["code_update"],
+        unwrap_on_success=False,
+    )
+    def update(
+        self, context: AuthedServiceContext, code_update: CodeStatusUpdate
+    ) -> SyftSuccess:
+        res = self.status.update(context.credentials, code_update).unwrap()
+        return SyftSuccess(message="UserCode updated successfully", value=res)
 
     @service_method(
         path="code_status.get_by_uid", name="get_by_uid", roles=GUEST_ROLE_LEVEL

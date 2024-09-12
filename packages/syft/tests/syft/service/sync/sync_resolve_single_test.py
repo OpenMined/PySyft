@@ -414,7 +414,7 @@ def test_deny_and_sync(low_worker, high_worker):
     assert low_client.requests[0].status == RequestStatus.REJECTED
 
     # Un-deny. NOTE: not supported by current UX, this is just used to re-deny on high side
-    low_client.api.code.update(id=request_low.code_id, l0_deny_reason=None)
+    low_client.api.code_status.update(id=request_low.code_id, l0_deny_reason=None)
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Sync request to high side
