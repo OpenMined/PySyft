@@ -615,8 +615,9 @@ class PythonConnection(ServerConnection):
             )
         else:
             service_context = ServerServiceContext(server=self.server)
-            method = self.server.get_service_method(UserService.register)
-            response = method(context=service_context, new_user=new_user)
+            response = self.server.services.user.register(
+                context=service_context, new_user=new_user
+            )
             response = post_process_result(response, unwrap_on_success=False)
         return response
 

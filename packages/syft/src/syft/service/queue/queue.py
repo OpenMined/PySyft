@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 import logging
 from multiprocessing import Process
 import threading
@@ -16,11 +17,16 @@ from ...server.credentials import SyftVerifyKey
 from ...server.worker_settings import WorkerSettings
 from ...service.context import AuthedServiceContext
 from ...store.document_store import NewBaseStash
+from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.uid import UID
 from ..job.job_stash import Job
 from ..job.job_stash import JobStatus
+from ..notification.email_templates import FailedJobTemplate
+from ..notification.notification_service import CreateNotification
+from ..notifier.notifier_enums import NOTIFIERS
+from ..queue.queue_service import QueueService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..worker.worker_stash import WorkerStash
@@ -33,6 +39,13 @@ from .queue_stash import QueueItem
 from .queue_stash import Status
 
 logger = logging.getLogger(__name__)
+
+
+@serializable(canonical_name="WorkerType", version=1)
+class ConsumerType(str, Enum):
+    Thread = "thread"
+    Process = "process"
+    Synchronous = "synchronous"
 
 
 class MonitorThread(threading.Thread):
@@ -210,6 +223,24 @@ def handle_message_multiprocessing(
         status = Status.COMPLETED
         job_status = JobStatus.COMPLETED
     except Exception as e:
+        root_context = AuthedServiceContext(
+            server=context.server,
+            credentials=worker.signing_key.verify_key,  # type: ignore
+        )
+        link = LinkedObject.with_context(
+            queue_item, context=root_context, service_type=QueueService
+        )
+        message = CreateNotification(
+            subject=f"Job {queue_item.job_id} failed!",
+            from_user_verify_key=worker.signing_key.verify_key,  # type: ignore
+            to_user_verify_key=credentials,
+            linked_obj=link,
+            notifier_types=[NOTIFIERS.EMAIL],
+            email_template=FailedJobTemplate,
+        )
+        method = worker.services.notification.send
+        result = method(context=root_context, notification=message)
+
         status = Status.ERRORED
         job_status = JobStatus.ERRORED
         logger.exception("Unhandled error in handle_message_multiprocessing")
@@ -300,17 +331,17 @@ class APICallMessageHandler(AbstractMessageHandler):
         logger.info(
             f"Handling queue item: id={queue_item.id}, method={queue_item.method} "
             f"args={queue_item.args}, kwargs={queue_item.kwargs} "
-            f"service={queue_item.service}, as_thread={queue_config.thread_workers}"
+            f"service={queue_item.service}, as={queue_config.consumer_type}"
         )
 
-        if queue_config.thread_workers:
+        if queue_config.consumer_type == ConsumerType.Thread:
             thread = Thread(
                 target=handle_message_multiprocessing,
                 args=(worker_settings, queue_item, credentials),
             )
             thread.start()
             thread.join()
-        else:
+        elif queue_config.consumer_type == ConsumerType.Process:
             # if psutil.pid_exists(job_item.job_pid):
             #     psutil.Process(job_item.job_pid).terminate()
             process = Process(
@@ -321,3 +352,5 @@ class APICallMessageHandler(AbstractMessageHandler):
             job_item.job_pid = process.pid
             worker.job_stash.set_result(credentials, job_item).unwrap()
             process.join()
+        elif queue_config.consumer_type == ConsumerType.Synchronous:
+            handle_message_multiprocessing(worker_settings, queue_item, credentials)

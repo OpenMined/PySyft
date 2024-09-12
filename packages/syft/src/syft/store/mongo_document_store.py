@@ -627,6 +627,7 @@ class MongoStorePartition(StorePartition):
                 )
             )
 
+    @as_result(SyftException)
     def _get_storage_permissions_for_uid(self, uid: UID) -> Set[UID]:  # noqa: UP006
         storage_permissions_collection: MongoCollection = (
             self.storage_permissions.unwrap()
