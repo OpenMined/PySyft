@@ -1,6 +1,9 @@
 # future
 from __future__ import annotations
 
+# stdlib
+from collections.abc import Callable
+
 # third party
 from typing_extensions import Self
 
@@ -14,8 +17,13 @@ from ..server.credentials import SyftSigningKey
 from ..service.queue.base_queue import QueueConfig
 from ..store.blob_storage import BlobStorageConfig
 from ..store.db.db import DBConfig
+from ..store.document_store import StoreConfig
+from ..types.syft_migration import migrate
+from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
+from ..types.transforms import drop
+from ..types.transforms import make_set_default
 from ..types.uid import UID
 
 
@@ -50,3 +58,30 @@ class WorkerSettings(SyftObject):
             log_level=server.log_level,
             deployment_type=server.deployment_type,
         )
+
+
+@serializable()
+class WorkerSettingsV1(SyftObject):
+    __canonical_name__ = "WorkerSettings"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    name: str
+    server_type: ServerType
+    server_side_type: ServerSideType
+    deployment_type: DeploymentType = DeploymentType.REMOTE
+    signing_key: SyftSigningKey
+    document_store_config: StoreConfig
+    action_store_config: StoreConfig
+    blob_store_config: BlobStorageConfig | None = None
+    queue_config: QueueConfig | None = None
+    log_level: int | None = None
+
+
+@migrate(WorkerSettingsV1, WorkerSettings)
+def migrate_workersettings_v1_to_v2() -> list[Callable]:
+    return [
+        drop("document_store_config"),
+        drop("action_store_config"),
+        make_set_default("db_config", DBConfig()),
+    ]

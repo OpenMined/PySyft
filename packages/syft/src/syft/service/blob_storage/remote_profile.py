@@ -1,8 +1,10 @@
 # relative
 from ...serde.serializable import serializable
+from ...store.db.db import DBManager
 from ...store.db.stash import ObjectStash
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ..service import AbstractService
 
 
 @serializable()
@@ -25,3 +27,11 @@ class AzureRemoteProfile(RemoteProfile):
 @serializable(canonical_name="RemoteProfileSQLStash", version=1)
 class RemoteProfileStash(ObjectStash[RemoteProfile]):
     pass
+
+
+@serializable(canonical_name="RemoteProfileService", version=1)
+class RemoteProfileService(AbstractService):
+    stash: RemoteProfileStash
+
+    def __init__(self, store: DBManager) -> None:
+        self.stash = RemoteProfileStash(store=store)

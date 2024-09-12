@@ -6,7 +6,6 @@ from ...store.db.stash import ObjectStash
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
-from ...types.uid import UID
 from ...util.trace_decorator import instrument
 from .user import User
 from .user_roles import ServiceRole
@@ -15,22 +14,6 @@ from .user_roles import ServiceRole
 @instrument
 @serializable(canonical_name="UserStashSQL", version=1)
 class UserStash(ObjectStash[User]):
-    @as_result(StashException)
-    def init_root_user(self) -> None:
-        # start a transaction
-        users = self.get_all(self.root_verify_key, has_permission=True).unwrap()
-        if not users:
-            # NOTE this is not thread safe, should use a session and transaction
-            super().set(
-                self.root_verify_key,
-                User(
-                    id=UID(),
-                    email="_internal@root.com",
-                    role=ServiceRole.ADMIN,
-                    verify_key=self.root_verify_key,
-                ),
-            )
-
     @as_result(StashException, NotFoundException)
     def admin_user(self) -> User:
         # TODO: This returns only one user, the first user with the role ADMIN

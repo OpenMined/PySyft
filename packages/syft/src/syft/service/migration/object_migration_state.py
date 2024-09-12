@@ -244,6 +244,14 @@ class MigrationData(SyftObject):
                 return v
         return []
 
+    def get_metadata_by_canonical_name(self, canonical_name: str) -> StoreMetadata:
+        for k, v in self.metadata.items():
+            if k.__canonical_name__ == canonical_name:
+                return v
+        return StoreMetadata(
+            object_type=SyftObject, permissions={}, storage_permissions={}
+        )
+
     def copy_without_workerpools(self) -> "MigrationData":
         items_to_exclude = [
             WorkerPool.__canonical_name__,

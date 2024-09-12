@@ -484,9 +484,14 @@
         }
       },
       "WorkerSettings": {
+        "1": {
+          "version": 1,
+          "hash": "dca33003904a71688e5b07db65f8833eb4de8135aade7154076b8eafbb94d26b",
+          "action": "add"
+        },
         "2": {
           "version": 2,
-          "hash": "13c6e022b939778ab37b594dbc5094aba9f54564c90d3cb0c21115382b155bfe",
+          "hash": "91c375dd40d06c81fc6403751ee48cbc94b9877f91e65a7e302303218dfe71fa",
           "action": "add"
         }
       },
@@ -1059,21 +1064,36 @@
       "QueueItem": {
         "1": {
           "version": 1,
-          "hash": "1db212c46b6c56ccc5579cfe2141b693f0cd9286e2ede71210393e8455379bf1",
+          "hash": "6ba7a6e0413a59cf1997dc94c67615d6acab89bceee989f70239eea556789c5a",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "1d8615f6daabcd2a285b2f36fd7bef1df76cdd119dd49c02069c50fd1b9c3ff4",
           "action": "add"
         }
       },
       "ActionQueueItem": {
         "1": {
           "version": 1,
-          "hash": "396d579dfc2e2b36b9fbed2f204bffcca1bea7ee2db7175045dd3328ebf08718",
+          "hash": "a06effcbba3b76435daf6ca518611433bb603d62f913d703685a65fc49d2b0e9",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "bfda6ef87e4045d663324bb91a215ea06e1f173aec1fb4d9ddd337cdc1f0787f",
           "action": "add"
         }
       },
       "APIEndpointQueueItem": {
         "1": {
           "version": 1,
-          "hash": "f04b3990a8d29c116d301e70df54d58f188895307a411dc13a666ff764ffd8dd",
+          "hash": "626341cefd3543be351e6060a5ff273a5f23bc257467e4a1ee1b6d63951cfb33",
+          "action": "add"
+        },
+        "2": {
+          "version": 2,
+          "hash": "3a46370205152fa23a7d2bfa47130dbf2e2bc7ef31f6d3fe4c92fd8d683770b5",
           "action": "add"
         }
       },

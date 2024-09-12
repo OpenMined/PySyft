@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 from typing import Any
 
@@ -6,6 +7,7 @@ from typing import Any
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...server.worker_settings import WorkerSettings
+from ...server.worker_settings import WorkerSettingsV1
 from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionKey
 from ...store.document_store_errors import NotFoundException
@@ -13,8 +15,11 @@ from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
 from ...types.errors import SyftException
 from ...types.result import as_result
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
+from ...types.transforms import TransformContext
 from ...types.uid import UID
 from ..action.action_permissions import ActionObjectPermission
 
@@ -35,7 +40,7 @@ _WorkerPoolPartitionKey = PartitionKey(key="worker_pool", type_=LinkedObject)
 @serializable()
 class QueueItem(SyftObject):
     __canonical_name__ = "QueueItem"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_searchable__ = ["status", "worker_pool_id"]
 
@@ -78,7 +83,7 @@ class QueueItem(SyftObject):
 @serializable()
 class ActionQueueItem(QueueItem):
     __canonical_name__ = "ActionQueueItem"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     method: str = "execute"
     service: str = "actionservice"
@@ -87,7 +92,7 @@ class ActionQueueItem(QueueItem):
 @serializable()
 class APIEndpointQueueItem(QueueItem):
     __canonical_name__ = "APIEndpointQueueItem"
-    __version__ = SYFT_OBJECT_VERSION_1
+    __version__ = SYFT_OBJECT_VERSION_2
 
     method: str
     service: str = "apiservice"
@@ -162,3 +167,79 @@ class QueueStash(ObjectStash[QueueItem]):
             credentials=credentials,
             filters={"worker_pool_id": worker_pool_id},
         ).unwrap()
+
+
+@serializable()
+class QueueItemV1(SyftObject):
+    __canonical_name__ = "QueueItem"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    __attr_searchable__ = ["status", "worker_pool_id"]
+
+    id: UID
+    server_uid: UID
+    result: Any | None = None
+    resolved: bool = False
+    status: Status = Status.CREATED
+
+    method: str
+    service: str
+    args: list
+    kwargs: dict[str, Any]
+    job_id: UID | None = None
+    worker_settings: WorkerSettingsV1 | None = None
+    has_execute_permissions: bool = False
+    worker_pool: LinkedObject
+
+
+@serializable()
+class ActionQueueItemV1(QueueItemV1):
+    __canonical_name__ = "ActionQueueItem"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    method: str = "execute"
+    service: str = "actionservice"
+
+
+@serializable()
+class APIEndpointQueueItemV1(QueueItemV1):
+    __canonical_name__ = "APIEndpointQueueItem"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    method: str
+    service: str = "apiservice"
+
+
+def migrate_worker_settings_v1_to_v2(context: TransformContext) -> TransformContext:
+    if context.output is None:
+        return context
+
+    worker_settings_old: WorkerSettingsV1 | None = context.output.get(
+        "worker_settings", None
+    )
+    if worker_settings_old is None:
+        return context
+
+    if not isinstance(worker_settings_old, WorkerSettingsV1):
+        raise ValueError(
+            f"Expected WorkerSettingsV1, but got {type(worker_settings_old)}"
+        )
+    worker_settings = worker_settings_old.migrate_to(WorkerSettings.__version__)
+    context.output["worker_settings"] = worker_settings
+
+    return context
+
+
+@migrate(QueueItemV1, QueueItem)
+def migrate_queue_item_v1_to_v2() -> list[Callable]:
+    return [migrate_worker_settings_v1_to_v2]
+
+
+@migrate(ActionQueueItemV1, ActionQueueItem)
+def migrate_action_queue_item_v1_to_v2() -> list[Callable]:
+    return migrate_queue_item_v1_to_v2()
+
+
+@migrate(APIEndpointQueueItemV1, APIEndpointQueueItem)
+def migrate_api_endpoint_queue_item_v1_to_v2() -> list[Callable]:
+    return migrate_queue_item_v1_to_v2()

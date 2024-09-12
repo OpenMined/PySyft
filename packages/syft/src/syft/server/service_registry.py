@@ -11,6 +11,7 @@ from ..serde.serializable import serializable
 from ..service.action.action_service import ActionService
 from ..service.api.api_service import APIService
 from ..service.attestation.attestation_service import AttestationService
+from ..service.blob_storage.remote_profile import RemoteProfileService
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.status_service import UserCodeStatusService
 from ..service.code.user_code_service import UserCodeService
@@ -83,6 +84,7 @@ class ServiceRegistry:
     sync: SyncService
     output: OutputService
     user_code_status: UserCodeStatusService
+    remote_profile: RemoteProfileService
 
     services: list[AbstractService] = field(default_factory=list, init=False)
     service_path_map: dict[str, AbstractService] = field(

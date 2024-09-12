@@ -616,12 +616,19 @@ class ObjectStash(Generic[StashT]):
     @as_result(NotFoundException)
     @with_session
     def add_permissions(
-        self, permissions: list[ActionObjectPermission], session: Session = None
+        self,
+        permissions: list[ActionObjectPermission],
+        session: Session = None,
+        ignore_missing: bool = False,
     ) -> None:
         # TODO: should do this in a single transaction
         # TODO add error handling
         for permission in permissions:
-            self.add_permission(permission, session=session).unwrap()
+            try:
+                self.add_permission(permission, session=session).unwrap()
+            except NotFoundException:
+                if not ignore_missing:
+                    raise
         return None
 
     @as_result(NotFoundException)
@@ -833,7 +840,14 @@ class ObjectStash(Generic[StashT]):
     @as_result(NotFoundException)
     @with_session
     def add_storage_permissions(
-        self, permissions: list[StoragePermission], session: Session = None
+        self,
+        permissions: list[StoragePermission],
+        session: Session = None,
+        ignore_missing: bool = False,
     ) -> None:
         for permission in permissions:
-            self.add_storage_permission(permission, session=session).unwrap()
+            try:
+                self.add_storage_permission(permission, session=session).unwrap()
+            except NotFoundException:
+                if not ignore_missing:
+                    raise

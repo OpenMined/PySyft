@@ -419,7 +419,6 @@ class Server(AbstractServer):
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
         self.db.init_tables()
-        # self.services.user.stash.init_root_user()
         self.action_store = self.services.action.stash
 
         create_root_admin(

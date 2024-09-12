@@ -159,8 +159,8 @@ class MigrationService(AbstractService):
             for server_uid in server_uids
         ]
 
-        stash.add_permissions(permissions)
-        stash.add_storage_permissions(storage_permissions)
+        stash.add_permissions(permissions, ignore_missing=True).unwrap()
+        stash.add_storage_permissions(storage_permissions, ignore_missing=True).unwrap()
 
     @as_result(SyftException)
     def _update_store_metadata(
@@ -210,6 +210,9 @@ class MigrationService(AbstractService):
     def _search_stash_for_klass(
         self, context: AuthedServiceContext, klass: type[SyftObject]
     ) -> ObjectStash:
+        if issubclass(klass, ActionObject | TwinObject | Action):
+            return context.server.services.action.stash
+
         stashes: dict[str, ObjectStash] = {
             t.__canonical_name__: stash
             for t, stash in context.server.services.stashes.items()
@@ -219,7 +222,11 @@ class MigrationService(AbstractService):
         class_index = 0
         object_stash = None
         while len(mro) > class_index:
-            canonical_name = mro[class_index].__canonical_name__
+            try:
+                canonical_name = mro[class_index].__canonical_name__
+            except AttributeError:
+                # Classes without cname dont have a stash
+                break
             object_stash = stashes.get(canonical_name)
             if object_stash is not None:
                 break
