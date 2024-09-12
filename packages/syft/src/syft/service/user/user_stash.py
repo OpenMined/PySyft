@@ -1,5 +1,3 @@
-# third party
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
