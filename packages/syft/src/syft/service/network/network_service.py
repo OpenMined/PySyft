@@ -129,7 +129,7 @@ class NetworkStash(ObjectStash[ServerPeer]):
     def get_by_server_type(
         self, credentials: SyftVerifyKey, server_type: ServerType
     ) -> list[ServerPeer]:
-        return self.get(
+        return self.get_all(
             credentials=credentials,
             filters={"server_type": server_type},
         ).unwrap()
