@@ -147,7 +147,6 @@ class QueueStash(ObjectStash[QueueItem]):
     def get_by_status(
         self, credentials: SyftVerifyKey, status: Status
     ) -> list[QueueItem]:
-        # TODO do we need json serialization for Status?
         return self.get_all(
             credentials=credentials,
             filters={"status": status},

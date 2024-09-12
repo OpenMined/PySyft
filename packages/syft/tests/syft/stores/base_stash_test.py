@@ -12,6 +12,7 @@ from typing_extensions import ParamSpec
 
 # syft absolute
 from syft.serde.serializable import serializable
+from syft.service.queue.queue_stash import Status
 from syft.service.request.request_service import RequestService
 from syft.store.db.db import SQLiteDBConfig
 from syft.store.db.db import SQLiteDBManager
@@ -35,6 +36,7 @@ class MockObject(SyftObject):
     importance: int
     value: int
     linked_obj: LinkedObject | None = None
+    status: Status = Status.CREATED
 
     __attr_searchable__ = ["id", "name", "desc", "importance"]
     __attr_unique__ = ["id", "name"]
@@ -292,6 +294,23 @@ def test_basestash_query_one(
         result = base_stash.get_one(
             root_verify_key,
             filters=params,
+        ).unwrap()
+
+
+def test_basestash_query_enum(
+    root_verify_key, base_stash: MockStash, mock_object: MockObject
+) -> None:
+    base_stash.set(root_verify_key, mock_object).unwrap()
+    result = base_stash.get_one(
+        root_verify_key,
+        filters={"status": Status.CREATED},
+    ).unwrap()
+
+    assert result == mock_object
+    with pytest.raises(NotFoundException):
+        result = base_stash.get_one(
+            root_verify_key,
+            filters={"status": Status.PROCESSING},
         ).unwrap()
 
 
