@@ -88,6 +88,7 @@ from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
 from ..store.db.db import DBConfig
+from ..store.db.db import DBManager
 from ..store.db.postgres import PostgresDBConfig
 from ..store.db.postgres import PostgresDBManager
 from ..store.db.sqlite import SQLiteDBConfig
@@ -417,9 +418,8 @@ class Server(AbstractServer):
             db_config.reset = True
 
         self.db_config = db_config
-        self.db: PostgresDBManager | SQLiteDBManager | None = None
 
-        self.init_stores(db_config=self.db_config)
+        self.db = self.init_stores(db_config=self.db_config)
 
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
@@ -896,15 +896,15 @@ class Server(AbstractServer):
         if ti is not None:
             CODE_RELOADER[ti] = reload_user_code
 
-    def init_stores(self, db_config: DBConfig) -> None:
+    def init_stores(self, db_config: DBConfig) -> DBManager:
         if isinstance(db_config, SQLiteDBConfig):
-            self.db = SQLiteDBManager(
+            db = SQLiteDBManager(
                 config=db_config,
                 server_uid=self.id,
                 root_verify_key=self.verify_key,
             )
         elif isinstance(db_config, PostgresDBConfig):
-            self.db = PostgresDBManager(
+            db = PostgresDBManager(
                 config=db_config,
                 server_uid=self.id,
                 root_verify_key=self.verify_key,
@@ -912,7 +912,9 @@ class Server(AbstractServer):
         else:
             raise SyftException(public_message=f"Unsupported DB config: {db_config}")
 
-        self.queue_stash = QueueStash(store=self.db)
+        self.queue_stash = QueueStash(store=db)
+
+        return db
 
     @property
     def job_stash(self) -> JobStash:

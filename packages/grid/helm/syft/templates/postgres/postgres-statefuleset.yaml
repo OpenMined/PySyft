@@ -32,7 +32,7 @@ spec:
       {{- end }}
       containers:
         - name: postgres-container
-          image: postgres:13
+          image: postgres:16.1
           imagePullPolicy: Always
           resources: {{ include "common.resources.set" (dict "resources" .Values.postgres.resources "preset" .Values.postgres.resourcesPreset) | nindent 12 }}
           env:
