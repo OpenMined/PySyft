@@ -149,11 +149,11 @@ class ApprovalDecision(SyftObject):
 @serializable()
 class UserCodeStatusCollection(SyncableSyftObject):
     """Currently this is a class that implements a mixed bag of two statusses
-    The first status is for a level 0 Request, which does not have an explicit
-    status_dict. However, when we call .denied, or .approved, we compute the
-    status on the fly.
+    The first status is for a level 0 Request, which only uses the status dict
+    for denied decision. If there is no denied decision, it computes the status
+    by checking the backend for whether it has readable outputs.  
     The second use case is for a level 2 Request, in this case we store the status
-    dict on the object and use it as is.
+    dict on the object and use it as is for both denied and approved status
     """
     __canonical_name__ = "UserCodeStatusCollection"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -191,7 +191,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
     def _compute_status_l0(
         self, context: AuthedServiceContext | None = None
     ) -> UserCodeStatus:
-        has_readable_outputs = self.has_readable_outputs(context)
+        has_readable_outputs = self._has_readable_outputs(context)
 
         if self.denied:
             if has_readable_outputs:
@@ -204,8 +204,8 @@ class UserCodeStatusCollection(SyncableSyftObject):
             return UserCodeStatus.APPROVED
         else:
             return UserCodeStatus.PENDING
-
-    def has_readable_outputs(self, context: AuthedServiceContext | None = None):
+    
+    def _has_readable_outputs(self, context: AuthedServiceContext | None = None):
         if context is None:
             # Clientside
             api = self._get_api()
@@ -225,7 +225,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
     @property
     def denial_reason_l0(self):
-        denial_reasons = [x.non_empty_reason for x in self.status_dict.values()
+        denial_reasons = [x.non_empty_reason for x in self.status_dict.values() 
                           if x.status == UserCodeStatus.DENIED and x.non_empty_reason is not None]
         return next(iter(denial_reasons), "")
 
@@ -271,7 +271,6 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
     def __repr_syft_nested__(self) -> str:
         string = ""
-        status_dict =
         for server_identity, (status, reason) in self.status_dict.items():
             string += f"{server_identity.server_name}: {status}, {reason}<br>"
         return string
@@ -1518,7 +1517,7 @@ def create_code_status(context: TransformContext) -> TransformContext:
         return context
 
     # # Low side requests have a computed status
-    # if
+    # if 
     #     return context
 
     was_requested_on_lowside = context.server.server_side_type == ServerSideType.LOW_SIDE
