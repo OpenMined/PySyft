@@ -39,6 +39,10 @@ class Query(ABC):
         self.table: Table = self._get_table(object_type)
         self.stmt: Select = self.table.select()
 
+    @abstractmethod
+    def _get_table(self, object_type: type[SyftObject]) -> Table:
+        raise NotImplementedError
+
     @staticmethod
     def get_query_class(dialect: str | Dialect) -> "type[Query]":
         if isinstance(dialect, Dialect):
