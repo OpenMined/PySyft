@@ -227,11 +227,14 @@ class Query(ABC):
 
         column = self._get_column(field)
 
+        if isinstance(column.type, sa.JSON):
+            column = sa.cast(column, sa.String)
+
         if order.lower() == "asc":
-            self.stmt = self.stmt.order_by(sa.cast(column, sa.String).asc())
+            self.stmt = self.stmt.order_by(column.asc())
 
         elif order.lower() == "desc":
-            self.stmt = self.stmt.order_by(sa.cast(column, sa.String).desc())
+            self.stmt = self.stmt.order_by(column.desc())
         else:
             raise ValueError(f"Invalid sort order {order}")
 
