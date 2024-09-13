@@ -16,7 +16,9 @@ def build_and_launch_worker_pool_from_docker_str(
     result = client.api.services.image_registry.add(external_registry)
     assert "success" in result.message
 
-    local_registry = result.value
+    # For some reason, when using k9s, result.value is empty so can't use the below line
+    # local_registry = result.value
+    local_registry = client.api.services.image_registry[0]
 
     docker_config = sy.DockerWorkerConfig(dockerfile=worker_dockerfile)
     assert docker_config.dockerfile == worker_dockerfile
