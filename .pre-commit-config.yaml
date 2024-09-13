@@ -161,6 +161,7 @@ repos:
             "--non-interactive",
             "--config-file=tox.ini",
           ]
+        excludes: ^packages/syft/src/syft/util/test_helpers
 
   - repo: https://github.com/kynan/nbstripout
     rev: 0.7.1
