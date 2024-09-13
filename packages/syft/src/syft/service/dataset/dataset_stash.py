@@ -6,11 +6,9 @@ from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.trace_decorator import instrument
 from .dataset import Dataset
 
 
-@instrument
 @serializable(canonical_name="DatasetStashSQL", version=1)
 class DatasetStash(ObjectStash[Dataset]):
     @as_result(StashException, NotFoundException)

@@ -5,11 +5,9 @@ from ...store.db.stash import ObjectStash
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.trace_decorator import instrument
 from .request import Request
 
 
-@instrument
 @serializable(canonical_name="RequestStashSQL", version=1)
 class RequestStash(ObjectStash[Request]):
     @as_result(SyftException)

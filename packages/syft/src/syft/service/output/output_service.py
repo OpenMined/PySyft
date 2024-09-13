@@ -17,7 +17,6 @@ from ...types.result import as_result
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
-from ...util.trace_decorator import instrument
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
@@ -180,7 +179,6 @@ class ExecutionOutput(SyncableSyftObject):
         return res
 
 
-@instrument
 @serializable(canonical_name="OutputStashSQL", version=1)
 class OutputStash(ObjectStash[ExecutionOutput]):
     @as_result(StashException)

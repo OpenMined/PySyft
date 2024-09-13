@@ -8,7 +8,6 @@ from ...store.db.db import DBManager
 from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionSettings
 from ...types.uid import UID
-from ...util.trace_decorator import instrument
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -19,7 +18,6 @@ from ..user.user_roles import GUEST_ROLE_LEVEL
 from .user_code import UserCodeStatusCollection
 
 
-@instrument
 @serializable(canonical_name="StatusSQLStash", version=1)
 class StatusStash(ObjectStash[UserCodeStatusCollection]):
     settings: PartitionSettings = PartitionSettings(

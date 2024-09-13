@@ -9,11 +9,9 @@ from ...store.db.stash import ObjectStash
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
-from ...util.trace_decorator import instrument
 from .project import Project
 
 
-@instrument  # noqa: F821
 @serializable(canonical_name="ProjectSQLStash", version=1)
 class ProjectStash(ObjectStash[Project]):
     @as_result(StashException)

@@ -6,12 +6,10 @@ from ...store.db.stash import ObjectStash
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
-from ...util.trace_decorator import instrument
 from .user import User
 from .user_roles import ServiceRole
 
 
-@instrument
 @serializable(canonical_name="UserStashSQL", version=1)
 class UserStash(ObjectStash[User]):
     @as_result(StashException, NotFoundException)

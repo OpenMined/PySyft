@@ -34,7 +34,6 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.markdown import as_markdown_code
-from ...util.trace_decorator import instrument
 from ...util.util import prompt_warning_message
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
@@ -735,7 +734,6 @@ class JobInfo(SyftObject):
         return info
 
 
-@instrument
 @serializable(canonical_name="JobStashSQL", version=1)
 class JobStash(ObjectStash[Job]):
     settings: PartitionSettings = PartitionSettings(

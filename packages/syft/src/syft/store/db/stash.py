@@ -38,6 +38,7 @@ from ...types.result import as_result
 from ...types.syft_metaclass import Empty
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from ...util.telemetry import instrument
 from ..document_store_errors import NotFoundException
 from ..document_store_errors import StashException
 from .db import DBManager
@@ -91,6 +92,7 @@ def with_session(func: Callable[P, T]) -> Callable[P, T]:  # type: ignore
     return wrapper  # type: ignore
 
 
+@instrument
 class ObjectStash(Generic[StashT]):
     allow_any_type: bool = False
 
