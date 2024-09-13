@@ -52,6 +52,7 @@ def build_and_launch_worker_pool_from_docker_str(
         result = client.worker_pools.scale(number=scale_to, pool_name=worker_pool_name)
         print(result)
 
+
 def launch_worker_pool_from_docker_tag_and_registry(
     environment: str,
     client: sy.DatasiteClient,
