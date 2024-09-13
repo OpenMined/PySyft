@@ -8,7 +8,8 @@ port_default := "8080"
 port_high := port_default
 port_low := "8081"
 port_gw := "8082"
-port_signoz := "3301"
+port_signoz_ui := "3301"
+port_signoz_otel := "4317"
 port_registry := "5800"
 
 ns_default := "syft"
@@ -17,12 +18,14 @@ ns_low := "low"
 ns_gw := "gw"
 
 registry_url := "k3d-registry.localhost:" + port_registry
-signoz_url := "http://host.k3d.internal:" + port_signoz
+signoz_otel_url := "http://host.k3d.internal:" + port_signoz_otel
 
 profiles := ""
 tracing := "true"
 
 _g_profiles := if tracing == "true" { profiles + ",tracing" } else { profiles }
+
+python_path := `which python || which python3`
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -39,7 +42,7 @@ start-registry:
     @-k3d registry create registry.localhost --port {{ port_registry }} -v k3d-registry-vol:/var/lib/registry --no-help
 
     if ! grep -q k3d-registry.localhost /etc/hosts; then \
-        sudo python3 scripts/patch_hosts.py --add-k3d-registry --fix-docker-hosts; \
+        sudo {{python_path}} scripts/patch_hosts.py --add-k3d-registry --fix-docker-hosts; \
     fi
 
     @curl --silent --retry 5 --retry-all-errors http://k3d-registry.localhost:{{ port_registry }}/v2/_catalog | jq
@@ -124,9 +127,9 @@ cleanup-gw: (devspace-purge cluster_gw ns_default) && (ns-cleanup cluster_gw ns_
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-# Launch a Syft beefy cluster on http://localhost:{{port_default}}
+# Launch a Syft shared cluster on http://localhost:{{port_default}}
 [group('shared')]
-start-shared: (cluster-create cluster_default port_default "--servers 5")
+start-shared: (cluster-create cluster_default port_default "--agents 2 --servers 1")
     @echo "Started Syft on http://localhost:{{ port_default }}/"
 
 # Stop Syft shared cluster
@@ -166,15 +169,15 @@ delete-ns-gw: (ns-cleanup cluster_default ns_gw)
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-# Launch SigNoz on http://localhost:{{port_signoz}}
+# Launch SigNoz on http://localhost:{{port_signoz_ui}}
 [group('signoz')]
 start-signoz: && apply-signoz setup-signoz
     k3d cluster create signoz \
-        --port {{ port_signoz }}:3301@loadbalancer \
-        --port 4317:4317@loadbalancer \
+        --port {{ port_signoz_ui }}:3301@loadbalancer \
+        --port {{ port_signoz_otel }}:4317@loadbalancer \
         --k3s-arg "--disable=metrics-server@server:*"
 
-    @echo "Started SigNoz on http://localhost:{{ port_signoz }}"
+    @printf "Started SigNoz\nDashboard: http://localhost:{{ port_signoz_ui }}\nOTEL Endpoint: http://localhost:{{ port_signoz_otel }}\n"
 
 [group('signoz')]
 delete-collector:
@@ -194,7 +197,7 @@ apply-collector cluster:
         --kube-context {{ cluster }} \
         --set global.deploymentEnvironment=local \
         --set clusterName={{ cluster }} \
-        --set otelCollectorEndpoint=http://{{ signoz_url }}:4317 \
+        --set otelCollectorEndpoint={{ signoz_otel_url }} \
         --set otelInsecure=true \
         --set presets.otlpExporter.enabled=true \
         --set presets.loggingExporter.enabled=true
@@ -217,7 +220,7 @@ apply-signoz:
 [private]
 setup-signoz:
     @echo "Waiting for SigNoz frontend to be available..."
-    @WAIT_TIME=5 ./packages/grid/scripts/wait_for.sh service signoz-frontend --namespace platform --context {{ cluster_signoz }} &> /dev/null
+    @bash ./packages/grid/scripts/wait_for.sh service signoz-frontend --namespace platform --context {{ cluster_signoz }} &> /dev/null
 
     @echo "Setting up SigNoz account"
     @curl --retry 5 --retry-all-errors -X POST \
@@ -233,7 +236,7 @@ setup-signoz:
 [private]
 cluster-create cluster port *args='': start-registry && (apply-coredns cluster) (apply-collector cluster)
     #!/bin/bash
-    set -euox pipefail
+    set -euo pipefail
 
     # remove the k3d- prefix
     CLUSTER_NAME=$(echo "{{ cluster }}" | sed -e 's/k3d-//g')
@@ -246,7 +249,7 @@ cluster-create cluster port *args='': start-registry && (apply-coredns cluster) 
 [private]
 cluster-delete *args='':
     #!/bin/bash
-    set -euox pipefail
+    set -euo pipefail
 
     # remove the k3d- prefix
     ARGS=$(echo "{{ args }}" | sed -e 's/k3d-//g')
@@ -263,7 +266,7 @@ cluster-list:
 
 # Stop all Syft clusters
 [group('cluster')]
-stop-all: (cluster-delete cluster_high cluster_low cluster_gw cluster_signoz)
+stop-all: (cluster-delete cluster_default cluster_high cluster_low cluster_gw cluster_signoz)
     @echo "Stopped all Syft clusters"
 
 [group('cluster')]
