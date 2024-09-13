@@ -9,7 +9,7 @@ ARG TORCH_VERSION="2.2.2"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
 
-FROM cgr.dev/chainguard/wolfi-base as syft_deps
+FROM cgr.dev/chainguard/wolfi-base AS syft_deps
 
 ARG PYTHON_VERSION
 ARG UV_VERSION
@@ -45,7 +45,7 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
 
 # ==================== [Final] Setup Syft Server ==================== #
 
-FROM cgr.dev/chainguard/wolfi-base as backend
+FROM cgr.dev/chainguard/wolfi-base AS backend
 
 ARG PYTHON_VERSION
 ARG UV_VERSION

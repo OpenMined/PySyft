@@ -138,7 +138,7 @@ class Settings(BaseSettings):
         True if os.getenv("CREATE_PRODUCER", "false").lower() == "true" else False
     )
     N_CONSUMERS: int = int(os.getenv("N_CONSUMERS", 1))
-    SQLITE_PATH: str = os.path.expandvars("$HOME/data/db/")
+    SQLITE_PATH: str = os.path.expandvars("/tmp/syft/")
     SINGLE_CONTAINER_MODE: bool = str_to_bool(os.getenv("SINGLE_CONTAINER_MODE", False))
     CONSUMER_SERVICE_NAME: str | None = os.getenv("CONSUMER_SERVICE_NAME")
     INMEMORY_WORKERS: bool = str_to_bool(os.getenv("INMEMORY_WORKERS", True))
