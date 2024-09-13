@@ -2,6 +2,7 @@
 import logging
 from typing import Generic
 from typing import TypeVar
+from urllib.parse import urlparse
 
 # third party
 from pydantic import BaseModel
@@ -12,7 +13,8 @@ from sqlalchemy.orm import sessionmaker
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
-from .schema import Base
+from .schema import PostgresBase
+from .schema import SQLiteBase
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +26,26 @@ class DBConfig(BaseModel):
     @property
     def connection_string(self) -> str:
         raise NotImplementedError("Subclasses must implement this method.")
+
+    @classmethod
+    def from_connection_string(cls, conn_str: str) -> "DBConfig":
+        # relative
+        from .postgres import PostgresDBConfig
+        from .sqlite import SQLiteDBConfig
+
+        parsed = urlparse(conn_str)
+        if parsed.scheme == "postgresql":
+            return PostgresDBConfig(
+                host=parsed.hostname,
+                port=parsed.port,
+                user=parsed.username,
+                password=parsed.password,
+                database=parsed.path.lstrip("/"),
+            )
+        elif parsed.scheme == "sqlite":
+            return SQLiteDBConfig(path=parsed.path)
+        else:
+            raise ValueError(f"Unsupported database scheme {parsed.scheme}")
 
 
 ConfigT = TypeVar("ConfigT", bound=DBConfig)
@@ -53,6 +75,7 @@ class DBManager(Generic[ConfigT]):
         pass
 
     def init_tables(self) -> None:
+        Base = SQLiteBase if self.engine.dialect.name == "sqlite" else PostgresBase
         if self.config.reset:
             # drop all tables that we know about
             Base.metadata.drop_all(bind=self.engine)
@@ -60,5 +83,6 @@ class DBManager(Generic[ConfigT]):
         Base.metadata.create_all(self.engine)
 
     def reset(self) -> None:
+        Base = SQLiteBase if self.engine.dialect.name == "sqlite" else PostgresBase
         Base.metadata.drop_all(bind=self.engine)
         Base.metadata.create_all(self.engine)

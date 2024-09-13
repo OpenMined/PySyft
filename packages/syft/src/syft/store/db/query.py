@@ -1,7 +1,6 @@
 # stdlib
 from abc import ABC
 from abc import abstractmethod
-from collections.abc import Callable
 import enum
 from typing import Any
 from typing import Literal
@@ -25,7 +24,8 @@ from ...service.action.action_permissions import ActionPermission
 from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
-from .schema import Base
+from .schema import PostgresBase
+from .schema import SQLiteBase
 
 
 class FilterOperator(enum.Enum):
@@ -34,18 +34,10 @@ class FilterOperator(enum.Enum):
 
 
 class Query(ABC):
-    json_quote: Callable | None = None
-
     def __init__(self, object_type: type[SyftObject]) -> None:
         self.object_type: type = object_type
         self.table: Table = self._get_table(object_type)
         self.stmt: Select = self.table.select()
-
-    def _get_table(self, object_type: type[SyftObject]) -> Table:
-        cname = object_type.__canonical_name__
-        if cname not in Base.metadata.tables:
-            raise ValueError(f"Table for {cname} not found")
-        return Base.metadata.tables[cname]
 
     @staticmethod
     def get_query_class(dialect: str | Dialect) -> "type[Query]":
@@ -265,25 +257,6 @@ class Query(ABC):
     ) -> sa.sql.elements.BinaryExpression:
         pass
 
-    def _eq_filter(
-        self,
-        table: Table,
-        field: str,
-        value: Any,
-    ) -> sa.sql.elements.BinaryExpression:
-        if field == "id":
-            return table.c.id == UID(value)
-
-        if "." in field:
-            # magic!
-            field = field.split(".")  # type: ignore
-
-        json_value = serialize_json(value)
-        if self.json_quote:
-            return table.c.fields[field] == self.json_quote(json_value)
-        else:
-            return table.c.fields[field].astext == json_value
-
     @abstractmethod
     def _contains_filter(
         self,
@@ -307,8 +280,6 @@ class Query(ABC):
 
 
 class SQLiteQuery(Query):
-    json_quote = func.json_quote
-
     def _make_permissions_clause(
         self,
         permission: ActionObjectPermission,
@@ -320,6 +291,12 @@ class SQLiteQuery(Query):
             self.table.c.permissions.contains(compound_permission_string),
         )
 
+    def _get_table(self, object_type: type[SyftObject]) -> Table:
+        cname = object_type.__canonical_name__
+        if cname not in SQLiteBase.metadata.tables:
+            raise ValueError(f"Table for {cname} not found")
+        return SQLiteBase.metadata.tables[cname]
+
     def _contains_filter(
         self,
         table: Table,
@@ -327,9 +304,23 @@ class SQLiteQuery(Query):
         value: Any,
     ) -> sa.sql.elements.BinaryExpression:
         field_value = serialize_json(value)
-        return table.c.fields[field].contains(
-            self.json_quote(field_value) if self.json_quote else field_value
-        )
+        return table.c.fields[field].contains(func.json_quote(field_value))
+
+    def _eq_filter(
+        self,
+        table: Table,
+        field: str,
+        value: Any,
+    ) -> sa.sql.elements.BinaryExpression:
+        if field == "id":
+            return table.c.id == UID(value)
+
+        if "." in field:
+            # magic!
+            field = field.split(".")  # type: ignore
+
+        json_value = serialize_json(value)
+        return table.c.fields[field] == func.json_quote(json_value)
 
 
 class PostgresQuery(Query):
@@ -349,5 +340,27 @@ class PostgresQuery(Query):
         field: str,
         value: Any,
     ) -> sa.sql.elements.BinaryExpression:
-        field_value = [serialize_json(value)]
+        field_value = serialize_json(value)
         return table.c.fields[field].contains(field_value)
+
+    def _get_table(self, object_type: type[SyftObject]) -> Table:
+        cname = object_type.__canonical_name__
+        if cname not in PostgresBase.metadata.tables:
+            raise ValueError(f"Table for {cname} not found")
+        return PostgresBase.metadata.tables[cname]
+
+    def _eq_filter(
+        self,
+        table: Table,
+        field: str,
+        value: Any,
+    ) -> sa.sql.elements.BinaryExpression:
+        if field == "id":
+            return table.c.id == UID(value)
+
+        if "." in field:
+            # magic!
+            field = field.split(".")  # type: ignore
+
+        json_value = serialize_json(value)
+        return table.c.fields[field].astext == json_value

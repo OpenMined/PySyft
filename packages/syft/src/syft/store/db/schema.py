@@ -18,7 +18,11 @@ from ...types.syft_object import SyftObject
 from ...types.uid import UID
 
 
-class Base(DeclarativeBase):
+class SQLiteBase(DeclarativeBase):
+    pass
+
+
+class PostgresBase(DeclarativeBase):
     pass
 
 
@@ -56,10 +60,12 @@ def create_table(
     dialect_name = dialect.name
 
     fields_type = JSON if dialect_name == "sqlite" else postgresql.JSONB
-    permissons_type = JSON if dialect_name == "sqlite" else postgresql.ARRAY(sa.String)
+    permissions_type = JSON if dialect_name == "sqlite" else postgresql.ARRAY(sa.String)
     storage_permissions_type = (
         JSON if dialect_name == "sqlite" else postgresql.ARRAY(sa.String)
     )
+
+    Base = SQLiteBase if dialect_name == "sqlite" else PostgresBase
 
     if table_name not in Base.metadata.tables:
         Table(
@@ -67,7 +73,7 @@ def create_table(
             Base.metadata,
             Column("id", UIDTypeDecorator, primary_key=True, default=uuid.uuid4),
             Column("fields", fields_type, default={}),
-            Column("permissions", permissons_type, default=[]),
+            Column("permissions", permissions_type, default=[]),
             Column(
                 "storage_permissions",
                 storage_permissions_type,

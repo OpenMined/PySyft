@@ -300,7 +300,6 @@ class Server(AbstractServer):
     signing_key: SyftSigningKey | None
     required_signed_calls: bool = True
     packages: str
-    db_config: DBConfig
 
     def __init__(
         self,
@@ -340,6 +339,7 @@ class Server(AbstractServer):
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
         consumer_type: ConsumerType | None = None,
+        db_url: str | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -407,6 +407,7 @@ class Server(AbstractServer):
         action_store_config = action_store_config or self.get_default_store(
             store_type="Action Store",
         )
+        db_config = DBConfig.from_connection_string(db_url) if db_url else db_config
 
         if db_config is None:
             db_config = SQLiteDBConfig(
@@ -513,10 +514,10 @@ class Server(AbstractServer):
     def get_default_store(self, store_type: str) -> StoreConfig:
         path = self.get_temp_dir("db")
         file_name: str = f"{self.id}.sqlite"
-        if self.dev_mode:
-            # leave this until the logger shows this in the notebook
-            print(f"{store_type}'s SQLite DB path: {path/file_name}")
-            logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
+        # if self.dev_mode:
+        # leave this until the logger shows this in the notebook
+        # print(f"{store_type}'s SQLite DB path: {path/file_name}")
+        # logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
         return SQLiteStoreConfig(
             client_config=SQLiteStoreClientConfig(
                 filename=file_name,
@@ -743,6 +744,7 @@ class Server(AbstractServer):
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
         consumer_type: ConsumerType | None = None,
+        db_url: str | None = None,
         db_config: DBConfig | None = None,
     ) -> Server:
         uid = get_named_server_uid(name)
@@ -775,7 +777,7 @@ class Server(AbstractServer):
             association_request_auto_approval=association_request_auto_approval,
             background_tasks=background_tasks,
             consumer_type=consumer_type,
-            db_config=db_config,
+            db_url=db_url,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -914,6 +916,8 @@ class Server(AbstractServer):
             raise SyftException(public_message=f"Unsupported DB config: {db_config}")
 
         self.queue_stash = QueueStash(store=db)
+
+        print(f"Using {db_config.__class__.__name__} and {db_config.connection_string}")
 
         return db
 

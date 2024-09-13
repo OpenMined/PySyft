@@ -42,7 +42,8 @@ from ..document_store_errors import NotFoundException
 from ..document_store_errors import StashException
 from .db import DBManager
 from .query import Query
-from .schema import Base
+from .schema import PostgresBase
+from .schema import SQLiteBase
 from .schema import create_table
 from .sqlite import SQLiteDBManager
 
@@ -91,8 +92,6 @@ def with_session(func: Callable[P, T]) -> Callable[P, T]:  # type: ignore
 
 
 class ObjectStash(Generic[StashT]):
-    table: Table
-    object_type: type[SyftObject]
     allow_any_type: bool = False
 
     def __init__(self, store: DBManager) -> None:
@@ -126,6 +125,7 @@ class ObjectStash(Generic[StashT]):
 
     @classmethod
     def random(cls, **kwargs: dict) -> Self:
+        """Create a random stash with a random server_uid and root_verify_key. Useful for development."""
         db_manager = SQLiteDBManager.random(**kwargs)
         stash = cls(store=db_manager)
         stash.db.init_tables()
@@ -163,6 +163,7 @@ class ObjectStash(Generic[StashT]):
 
     def _drop_table(self) -> None:
         table_name = self.object_type.__canonical_name__
+        Base = SQLiteBase if self._is_sqlite() else PostgresBase
         if table_name in Base.metadata.tables:
             Base.metadata.tables[table_name].drop(self.db.engine)
         else:
@@ -287,6 +288,8 @@ class ObjectStash(Generic[StashT]):
     ) -> ServiceRole:
         # relative
         from ...service.user.user import User
+
+        Base = SQLiteBase if self._is_sqlite() else PostgresBase
 
         # TODO error handling
         if Base.metadata.tables.get("User") is None:
@@ -624,17 +627,18 @@ class ObjectStash(Generic[StashT]):
         # TODO: should do this in a single transaction
         # TODO add error handling
         for permission in permissions:
-            try:
-                self.add_permission(permission, session=session).unwrap()
-            except NotFoundException:
-                if not ignore_missing:
-                    raise
+            self.add_permission(
+                permission, session=session, ignore_missing=ignore_missing
+            ).unwrap()
         return None
 
     @as_result(NotFoundException)
     @with_session
     def add_permission(
-        self, permission: ActionObjectPermission, session: Session = None
+        self,
+        permission: ActionObjectPermission,
+        session: Session = None,
+        ignore_missing: bool = False,
     ) -> None:
         # TODO add error handling
         stmt = self.table.update().where(self.table.c.id == permission.uid)
@@ -655,7 +659,7 @@ class ObjectStash(Generic[StashT]):
 
         result = session.execute(stmt)
         session.commit()
-        if result.rowcount == 0:
+        if result.rowcount == 0 and not ignore_missing:
             raise NotFoundException(
                 f"{self.object_type.__name__}: {permission.uid} not found or no permission to change."
             )

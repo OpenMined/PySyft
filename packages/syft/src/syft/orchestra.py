@@ -185,6 +185,7 @@ def deploy_to_python(
     migrate: bool = False,
     store_client_config: dict | None = None,
     consumer_type: ConsumerType | None = None,
+    db_url: str | None = None,
 ) -> ServerHandle:
     worker_classes = {
         ServerType.DATASITE: Datasite,
@@ -218,6 +219,7 @@ def deploy_to_python(
         "deployment_type": deployment_type_enum,
         "store_client_config": store_client_config,
         "consumer_type": consumer_type,
+        "db_url": db_url,
     }
 
     if port:
@@ -332,6 +334,7 @@ class Orchestra:
         store_client_config: dict | None = None,
         from_state_folder: str | Path | None = None,
         consumer_type: ConsumerType | None = None,
+        db_url: str | None = None,
     ) -> ServerHandle:
         if from_state_folder is not None:
             with open(f"{from_state_folder}/config.json") as f:
@@ -382,6 +385,7 @@ class Orchestra:
                 migrate=migrate,
                 store_client_config=store_client_config,
                 consumer_type=consumer_type,
+                db_url=db_url,
             )
             display(
                 SyftInfo(

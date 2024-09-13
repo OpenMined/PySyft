@@ -59,14 +59,14 @@ class SyncService(AbstractService):
         action_object: ActionObject,
         new_permissions: list[ActionObjectPermission],
     ) -> None:
-        store_to = context.server.services.action.stash  # type: ignore
+        action_stash = context.server.services.action.stash
         for permission in new_permissions:
             if permission.permission == ActionPermission.READ:
-                store_to.add_permission(permission)
+                action_stash.add_permission(permission)
 
         blob_id = action_object.syft_blob_storage_entry_id
         if blob_id:
-            store_to_blob = context.server.services.blob_sotrage.stash.partition  # type: ignore
+            blob_stash = context.server.services.blob_storage.stash
             for permission in new_permissions:
                 if permission.permission == ActionPermission.READ:
                     permission_blob = ActionObjectPermission(
@@ -74,7 +74,7 @@ class SyncService(AbstractService):
                         permission=permission.permission,
                         credentials=permission.credentials,
                     )
-                    store_to_blob.add_permission(permission_blob)
+                    blob_stash.add_permission(permission_blob)
 
     def set_obj_ids(self, context: AuthedServiceContext, x: Any) -> None:
         if hasattr(x, "__dict__") and isinstance(x, SyftObject):
