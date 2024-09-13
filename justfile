@@ -22,7 +22,6 @@ signoz_otel_url := "http://host.k3d.internal:" + port_signoz_otel
 
 profiles := ""
 tracing := "true"
-
 _g_profiles := if tracing == "true" { profiles + ",tracing" } else { profiles }
 
 python_path := `which python || which python3`
@@ -42,7 +41,7 @@ start-registry:
     @-k3d registry create registry.localhost --port {{ port_registry }} -v k3d-registry-vol:/var/lib/registry --no-help
 
     if ! grep -q k3d-registry.localhost /etc/hosts; then \
-        sudo {{python_path}} scripts/patch_hosts.py --add-k3d-registry --fix-docker-hosts; \
+        sudo {{ python_path }} scripts/patch_hosts.py --add-k3d-registry --fix-docker-hosts; \
     fi
 
     @curl --silent --retry 5 --retry-all-errors http://k3d-registry.localhost:{{ port_registry }}/v2/_catalog | jq
@@ -58,114 +57,91 @@ stop-registry:
 # Launch Syft Datasite high-side cluster on http://localhost:{{port_high}}
 [group('highside')]
 start-high: (cluster-delete cluster_high) (cluster-create cluster_high port_high)
-    @echo "Started Syft Datasite (high-side) on http://localhost:{{ port_high }}/"
 
 # Stop Syft Datasite high-side cluster
 [group('highside')]
 stop-high: (cluster-delete cluster_high)
-    @echo "Stopped Syft Datasite (high-side)"
 
 [group('highside')]
 deploy-high: (devspace-deploy cluster_high ns_default)
-    @echo "Done"
 
 [group('highside')]
 reset-high: (state-reset cluster_high ns_default)
-    @echo "Done"
 
 [group('highside')]
 cleanup-high: (devspace-purge cluster_high ns_default) && (ns-cleanup cluster_high ns_default)
-    @echo "Done"
 
 # ---------------------------------------------------------------------------------------------------------------------
 
 # Launch Syft Datasite low-side cluster on http://localhost:{{port_low}}
 [group('lowside')]
 start-low: (cluster-create cluster_low port_low)
-    @echo "Started Syft Datasite (low-side) on http://localhost:{{ port_low }}/"
 
 # Stop Syft Datasite low-side cluster
 [group('lowside')]
 stop-low: (cluster-delete cluster_low)
-    @echo "Stopped Syft Datasite (low-side)"
 
 [group('lowside')]
 deploy-low: (devspace-deploy cluster_low ns_default "-p datasite-low")
-    @echo "Done"
 
 [group('lowside')]
 reset-low: (state-reset cluster_low ns_default)
-    @echo "Done"
 
 [group('lowside')]
 cleanup-low: (devspace-purge cluster_low ns_default) && (ns-cleanup cluster_low ns_default)
-    @echo "Done"
 
 # ---------------------------------------------------------------------------------------------------------------------
 
 # Launch Syft Gateway cluster on http://localhost:{{port_gw}}
 [group('gateway')]
 start-gw: (cluster-create cluster_gw port_gw)
-    @echo "Started Syft Gateway on http://localhost:{{ port_gw }}/"
 
 # Stop Syft Gateway cluster
 [group('gateway')]
 stop-gw: (cluster-delete cluster_gw)
-    @echo "Stopped Syft Gateway"
 
 [group('gateway')]
 deploy-gw: (devspace-deploy cluster_gw ns_default "-p gateway")
-    @echo "Done"
 
 [group('gateway')]
 reset-gw: (state-reset cluster_gw ns_default)
-    @echo "Done"
 
 [group('gateway')]
 cleanup-gw: (devspace-purge cluster_gw ns_default) && (ns-cleanup cluster_gw ns_default)
-    @echo "Done"
 
 # ---------------------------------------------------------------------------------------------------------------------
 
 # Launch a Syft shared cluster on http://localhost:{{port_default}}
 [group('shared')]
-start-shared: (cluster-create cluster_default port_default "--agents 2 --servers 1")
-    @echo "Started Syft on http://localhost:{{ port_default }}/"
+start-shared: (cluster-create cluster_default port_default "--agents 2")
 
 # Stop Syft shared cluster
 [group('shared')]
 stop-shared: (cluster-delete cluster_default)
-    @echo "Stopped Syft cluster"
 
 # Deploy to "high" namespace on the shared cluster
 [group('shared')]
 deploy-ns-high: (devspace-deploy cluster_default ns_high)
-    @echo "Deployed Syft Gateway on {{ cluster_default }}"
 
 # Delete the "high" namespace
 [group('shared')]
 delete-ns-high: (ns-cleanup cluster_default ns_high)
-    @echo "Done"
 
 # Deploy to "low" namespace on the shared cluster
 [group('shared')]
 deploy-ns-low: (devspace-deploy cluster_default ns_low "-p datasite-low")
-    @echo "Deployed Syft Gateway on {{ cluster_default }}"
 
 # Delete the "low" namespace
 [group('shared')]
 delete-ns-low: (ns-cleanup cluster_default ns_low)
-    @echo "Done"
 
 # Deploy to "gw" namespace on the shared cluster
 [group('shared')]
 deploy-ns-gw: (devspace-deploy cluster_default ns_gw "-p gateway")
-    @echo "Deployed Syft Gateway on {{ cluster_default }}"
 
 # Delete the "gw" namespace
 [group('shared')]
 delete-ns-gw: (ns-cleanup cluster_default ns_gw)
-    @echo "Done"
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -186,7 +162,6 @@ delete-collector:
 # Stop SigNoz cluster
 [group('signoz')]
 stop-signoz: (cluster-delete cluster_signoz)
-    @echo "Stopped SigNoz cluster"
 
 [group('signoz')]
 [private]
