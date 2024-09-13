@@ -187,11 +187,13 @@ class CodeHistoryService(AbstractService):
     ) -> list[CodeHistory]:
         user_verify_key = context.server.services.user.user_verify_key(user_email)
 
-        kwargs = {
+        filters = {
             "id": user_id,
             "email": user_email,
             "verify_key": user_verify_key,
             "service_func_name": service_func_name,
         }
 
-        return self.stash.find_all(credentials=context.credentials, **kwargs).unwrap()
+        return self.stash.get_all(
+            credentials=context.credentials, filters=filters
+        ).unwrap()

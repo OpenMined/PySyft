@@ -136,8 +136,8 @@ class BlobStorageService(AbstractService):
     def get_files_from_bucket(
         self, context: AuthedServiceContext, bucket_name: str
     ) -> list:
-        bse_list = self.stash.find_all(
-            context.credentials, bucket_name=bucket_name
+        bse_list = self.stash.get_all(
+            context.credentials, filters={"bucket_name": bucket_name}
         ).unwrap()
 
         blob_files = []

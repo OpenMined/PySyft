@@ -76,6 +76,7 @@ class DBManager(Generic[ConfigT]):
 
     def init_tables(self) -> None:
         Base = SQLiteBase if self.engine.dialect.name == "sqlite" else PostgresBase
+
         if self.config.reset:
             # drop all tables that we know about
             Base.metadata.drop_all(bind=self.engine)
