@@ -226,10 +226,12 @@ class Query(ABC):
         order = order or default_order
 
         column = self._get_column(field)
+
         if order.lower() == "asc":
-            self.stmt = self.stmt.order_by(column)
+            self.stmt = self.stmt.order_by(sa.cast(column, sa.String).asc())
+
         elif order.lower() == "desc":
-            self.stmt = self.stmt.order_by(column.desc())
+            self.stmt = self.stmt.order_by(sa.cast(column, sa.String).desc())
         else:
             raise ValueError(f"Invalid sort order {order}")
 
