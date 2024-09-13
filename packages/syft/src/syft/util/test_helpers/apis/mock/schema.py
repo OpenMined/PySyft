@@ -26,8 +26,8 @@ def make_schema(settings, worker_pool) -> Callable:
     def mock_schema(
         context,
     ) -> str:
-        # relative
-        from ..... import SyftException
+        # syft absolute
+        from syft import SyftException
 
         # Store a dict with the calltimes for each user, via the email.
         if context.settings["rate_limiter_enabled"]:

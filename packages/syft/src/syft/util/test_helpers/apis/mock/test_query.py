@@ -85,8 +85,8 @@ def make_test_query(settings: dict) -> Callable:
         # third party
         from google.api_core.exceptions import BadRequest
 
-        # relative
-        from ..... import SyftException
+        # syft absolute
+        from syft import SyftException
 
         # Store a dict with the calltimes for each user, via the email.
         if context.settings["rate_limiter_enabled"]:

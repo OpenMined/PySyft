@@ -47,7 +47,8 @@ repos:
               packages/syft/src/syft/proto.*|
               packages/syft/tests/syft/lib/python.*|
               packages/grid.*|
-              packages/syft/src/syft/federated/model_serialization/protos.py
+              packages/syft/src/syft/federated/model_serialization/protos.py|
+              packages/syft/src/syft/util/test_helpers/.*|
           )$
 
   - repo: https://github.com/MarcoGorelli/absolufy-imports

@@ -41,8 +41,8 @@ def make_schema(settings: dict, worker_pool: str) -> Callable:
         from google.oauth2 import service_account
         import pandas as pd
 
-        # relative
-        from ..... import SyftException
+        # syft absolute
+        from syft import SyftException
 
         # Auth for Bigquer based on the workload identity
         credentials = service_account.Credentials.from_service_account_info(

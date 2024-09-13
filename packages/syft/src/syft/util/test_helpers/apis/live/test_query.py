@@ -34,8 +34,8 @@ def make_test_query(settings) -> Callable:
         from google.cloud import bigquery  # noqa: F811
         from google.oauth2 import service_account
 
-        # relative
-        from ..... import SyftException
+        # syft absolute
+        from syft import SyftException
 
         # Auth for Bigquer based on the workload identity
         credentials = service_account.Credentials.from_service_account_info(
