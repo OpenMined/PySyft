@@ -415,15 +415,14 @@ class Server(AbstractServer):
                 path=self.get_temp_dir("db"),
             )
 
-        if reset:
-            db_config.reset = True
-
         self.db_config = db_config
 
         self.db = self.init_stores(db_config=self.db_config)
 
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
+        if reset:
+            self.db.reset()
         self.db.init_tables()
         self.action_store = self.services.action.stash
 
@@ -778,6 +777,7 @@ class Server(AbstractServer):
             background_tasks=background_tasks,
             consumer_type=consumer_type,
             db_url=db_url,
+            db_config=db_config,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:

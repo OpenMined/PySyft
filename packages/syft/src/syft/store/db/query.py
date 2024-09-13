@@ -226,10 +226,12 @@ class Query(ABC):
         order = order or default_order
 
         column = self._get_column(field)
+
         if order.lower() == "asc":
-            self.stmt = self.stmt.order_by(column)
+            self.stmt = self.stmt.order_by(sa.cast(column, sa.String).asc())
+
         elif order.lower() == "desc":
-            self.stmt = self.stmt.order_by(column.desc())
+            self.stmt = self.stmt.order_by(sa.cast(column, sa.String).desc())
         else:
             raise ValueError(f"Invalid sort order {order}")
 
@@ -345,7 +347,9 @@ class PostgresQuery(Query):
         value: Any,
     ) -> sa.sql.elements.BinaryExpression:
         field_value = serialize_json(value)
-        return table.c.fields[field].contains(field_value)
+        col = sa.cast(table.c.fields[field], sa.Text)
+        val = sa.cast(field_value, sa.Text)
+        return col.contains(val)
 
     def _get_table(self, object_type: type[SyftObject]) -> Table:
         cname = object_type.__canonical_name__
@@ -367,4 +371,5 @@ class PostgresQuery(Query):
             field = field.split(".")  # type: ignore
 
         json_value = serialize_json(value)
-        return table.c.fields[field].astext == json_value
+        # NOTE: there might be a bug with casting everything to text
+        return table.c.fields[field].astext == sa.cast(json_value, sa.Text)

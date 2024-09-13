@@ -213,7 +213,7 @@ class MigrationService(AbstractService):
         if issubclass(klass, ActionObject | TwinObject | Action):
             return context.server.services.action.stash
 
-        stashes: dict[str, ObjectStash] = {
+        stashes: dict[str, ObjectStash] = {  # type: ignore
             t.__canonical_name__: stash
             for t, stash in context.server.services.stashes.items()
         }

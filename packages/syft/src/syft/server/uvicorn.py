@@ -68,6 +68,7 @@ class AppSettings(BaseSettings):
     association_request_auto_approval: bool = False
     background_tasks: bool = False
     db_config: DBConfig | None = None
+    db_url: str | None = None
 
     model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
 
@@ -233,6 +234,7 @@ def serve_server(
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
     debug: bool = False,
+    db_url: str | None = None,
 ) -> tuple[Callable, Callable]:
     starting_uvicorn_event = multiprocessing.Event()
 
@@ -262,6 +264,7 @@ def serve_server(
             "debug": debug,
             "starting_uvicorn_event": starting_uvicorn_event,
             "deployment_type": deployment_type,
+            "db_url": db_url,
         },
     )
 

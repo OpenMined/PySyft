@@ -254,7 +254,7 @@ class ObjectStash(Generic[StashT]):
         if self.db.engine.dialect.name == "sqlite":
             return table.c.fields[field_name] == func.json_quote(json_value)
         elif self.db.engine.dialect.name == "postgresql":
-            return table.c.fields[field_name].astext == json_value
+            return table.c.fields[field_name].astext == cast(json_value, sa.String)
 
     @as_result(SyftException, StashException, NotFoundException)
     def get_index(

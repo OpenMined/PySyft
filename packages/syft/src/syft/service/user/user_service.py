@@ -365,7 +365,7 @@ class UserService(AbstractService):
                 return role
             elif isinstance(credentials, SyftSigningKey):
                 user = self.stash.get_by_signing_key(
-                    credentials=credentials,
+                    credentials=credentials.verify_key,
                     signing_key=credentials,  # type: ignore
                 ).unwrap()
             else:
