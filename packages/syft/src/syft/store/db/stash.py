@@ -770,7 +770,7 @@ class ObjectStash(Generic[StashT]):
             )
         else:
             stmt = stmt.values(
-                permissions=func.array_append(
+                storage_permissions=func.array_append(
                     self.table.c.storage_permissions, permission.server_uid.no_dash
                 )
             )
