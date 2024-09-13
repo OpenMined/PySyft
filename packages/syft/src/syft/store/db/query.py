@@ -324,7 +324,7 @@ class SQLiteQuery(Query):
             field = field.split(".")  # type: ignore
 
         json_value = serialize_json(value)
-        return table.c.fields[field] == func.to_jsonb(json_value)
+        return table.c.fields[field] == func.json_quote(json_value)
 
 
 class PostgresQuery(Query):
