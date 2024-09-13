@@ -320,7 +320,7 @@ class SQLiteQuery(Query):
             field = field.split(".")  # type: ignore
 
         json_value = serialize_json(value)
-        return table.c.fields[field] == func.json_quote(json_value)
+        return table.c.fields[field] == func.to_jsonb(json_value)
 
 
 class PostgresQuery(Query):
@@ -363,4 +363,5 @@ class PostgresQuery(Query):
             field = field.split(".")  # type: ignore
 
         json_value = serialize_json(value)
-        return table.c.fields[field].astext == json_value
+        # NOTE: there might be a bug with casting everything to text
+        return table.c.fields[field].astext == sa.cast(json_value, sa.Text)

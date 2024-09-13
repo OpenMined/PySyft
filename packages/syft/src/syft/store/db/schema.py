@@ -59,11 +59,9 @@ def create_table(
     table_name = object_type.__canonical_name__
     dialect_name = dialect.name
 
-    fields_type = JSON if dialect_name == "sqlite" else postgresql.JSONB
-    permissions_type = JSON if dialect_name == "sqlite" else postgresql.ARRAY(sa.String)
-    storage_permissions_type = (
-        JSON if dialect_name == "sqlite" else postgresql.ARRAY(sa.String)
-    )
+    fields_type = JSON if dialect_name == "sqlite" else postgresql.JSON
+    permissions_type = JSON if dialect_name == "sqlite" else postgresql.JSONB
+    storage_permissions_type = JSON if dialect_name == "sqlite" else postgresql.JSONB
 
     Base = SQLiteBase if dialect_name == "sqlite" else PostgresBase
 
