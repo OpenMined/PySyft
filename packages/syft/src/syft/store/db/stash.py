@@ -618,51 +618,43 @@ class ObjectStash(Generic[StashT]):
 
     @as_result(NotFoundException)
     @with_session
-    def add_permissions(
-        self,
-        permissions: list[ActionObjectPermission],
-        session: Session = None,
-        ignore_missing: bool = False,
-    ) -> None:
-        # TODO: should do this in a single transaction
-        # TODO add error handling
-        for permission in permissions:
-            self.add_permission(
-                permission, session=session, ignore_missing=ignore_missing
-            ).unwrap()
-        return None
-
-    @as_result(NotFoundException)
-    @with_session
     def add_permission(
         self,
         permission: ActionObjectPermission,
         session: Session = None,
         ignore_missing: bool = False,
     ) -> None:
-        # TODO add error handling
-        stmt = self.table.update().where(self.table.c.id == permission.uid)
-        if self._is_sqlite():
-            stmt = stmt.values(
-                permissions=func.json_insert(
-                    self.table.c.permissions,
-                    "$[#]",
-                    permission.permission_string,
-                )
-            )
-        else:
-            stmt = stmt.values(
-                permissions=func.array_append(
-                    self.table.c.permissions, permission.permission_string
-                )
-            )
+        try:
+            existing_permissions = self._get_permissions_for_uid(
+                permission.uid, session=session
+            ).unwrap()
+        except NotFoundException:
+            if ignore_missing:
+                return None
+            raise
 
-        result = session.execute(stmt)
+        existing_permissions.add(permission.permission_string)
+
+        stmt = self.table.update().where(self.table.c.id == permission.uid)
+        stmt = stmt.values(permissions=list(existing_permissions))
+        session.execute(stmt)
         session.commit()
-        if result.rowcount == 0 and not ignore_missing:
-            raise NotFoundException(
-                f"{self.object_type.__name__}: {permission.uid} not found or no permission to change."
-            )
+
+        return None
+
+    @as_result(NotFoundException)
+    @with_session
+    def add_permissions(
+        self,
+        permissions: list[ActionObjectPermission],
+        ignore_missing: bool = False,
+        session: Session = None,
+    ) -> None:
+        for permission in permissions:
+            self.add_permission(
+                permission, session=session, ignore_missing=ignore_missing
+            ).unwrap()
+        return None
 
     @with_session
     def remove_permission(
@@ -741,48 +733,6 @@ class ObjectStash(Generic[StashT]):
     ) -> bool:
         return self.has_storage_permissions([permission], session=session)
 
-    @as_result(StashException)
-    @with_session
-    def get_all_storage_permissions(
-        self, session: Session = None
-    ) -> dict[UID, Set[UID]]:  # noqa: UP006
-        stmt = select(self.table.c.id, self.table.c.storage_permissions)
-        results = session.execute(stmt).all()
-
-        return {
-            UID(row.id): {UID(uid) for uid in row.storage_permissions}
-            for row in results
-        }
-
-    @as_result(NotFoundException)
-    @with_session
-    def add_storage_permission(
-        self, permission: StoragePermission, session: Session = None
-    ) -> None:
-        stmt = self.table.update().where(self.table.c.id == permission.uid)
-        if self._is_sqlite():
-            stmt = stmt.values(
-                storage_permissions=func.json_insert(
-                    self.table.c.storage_permissions,
-                    "$[#]",
-                    permission.permission_string,
-                )
-            )
-        else:
-            stmt = stmt.values(
-                permissions=func.array_append(
-                    self.table.c.storage_permissions, permission.server_uid.no_dash
-                )
-            )
-
-        result = session.execute(stmt)
-        session.commit()
-        if result.rowcount == 0:
-            raise NotFoundException(
-                f"{self.object_type.__name__}: {permission.uid} not found or no permission to change."
-            )
-        return None
-
     @with_session
     def has_storage_permissions(
         self, permissions: list[StoragePermission], session: Session = None
@@ -807,15 +757,71 @@ class ObjectStash(Generic[StashT]):
         result = session.execute(stmt).first()
         return result is not None
 
+    @as_result(StashException)
+    @with_session
+    def get_all_storage_permissions(
+        self, session: Session = None
+    ) -> dict[UID, Set[UID]]:  # noqa: UP006
+        stmt = select(self.table.c.id, self.table.c.storage_permissions)
+        results = session.execute(stmt).all()
+
+        return {
+            UID(row.id): {UID(uid) for uid in row.storage_permissions}
+            for row in results
+        }
+
+    @as_result(NotFoundException)
+    @with_session
+    def add_storage_permissions(
+        self,
+        permissions: list[StoragePermission],
+        session: Session = None,
+        ignore_missing: bool = False,
+    ) -> None:
+        for permission in permissions:
+            self.add_storage_permission(
+                permission, session=session, ignore_missing=ignore_missing
+            ).unwrap()
+
+        return None
+
+    @as_result(NotFoundException)
+    @with_session
+    def add_storage_permission(
+        self,
+        permission: StoragePermission,
+        session: Session = None,
+        ignore_missing: bool = False,
+    ) -> None:
+        try:
+            existing_permissions = self._get_storage_permissions_for_uid(
+                permission.uid, session=session
+            ).unwrap()
+        except NotFoundException:
+            if ignore_missing:
+                return None
+            raise
+
+        existing_permissions.add(permission.server_uid)
+
+        stmt = (
+            self.table.update()
+            .where(self.table.c.id == permission.uid)
+            .values(storage_permissions=[str(uid) for uid in existing_permissions])
+        )
+
+        session.execute(stmt)
+
     @with_session
     def remove_storage_permission(
         self, permission: StoragePermission, session: Session = None
     ) -> None:
-        # TODO not threadsafe
         try:
-            permissions = self._get_storage_permissions_for_uid(permission.uid).unwrap()
-            permissions.remove(permission.server_uid)
-        except (NotFoundException, KeyError):
+            permissions = self._get_storage_permissions_for_uid(
+                permission.uid, session=session
+            ).unwrap()
+            permissions.discard(permission.server_uid)
+        except NotFoundException:
             # TODO add error handling to permissions
             return None
 
@@ -840,18 +846,3 @@ class ObjectStash(Generic[StashT]):
         if result is None:
             raise NotFoundException(f"No storage permissions found for uid: {uid}")
         return {UID(uid) for uid in result.storage_permissions}
-
-    @as_result(NotFoundException)
-    @with_session
-    def add_storage_permissions(
-        self,
-        permissions: list[StoragePermission],
-        session: Session = None,
-        ignore_missing: bool = False,
-    ) -> None:
-        for permission in permissions:
-            try:
-                self.add_storage_permission(permission, session=session).unwrap()
-            except NotFoundException:
-                if not ignore_missing:
-                    raise
