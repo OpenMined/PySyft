@@ -27,6 +27,7 @@ class SyncStash(ObjectStash[SyncState]):
 
         states = self.get_all(
             credentials=credentials,
+            order_by="created_at",
             sort_order="desc",
             limit=1,
         ).unwrap()
