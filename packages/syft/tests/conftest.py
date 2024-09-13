@@ -115,7 +115,7 @@ def faker():
 
 @pytest.fixture(scope="function")
 def worker() -> Worker:
-    worker = sy.Worker.named(name=token_hex(8))
+    worker = sy.Worker.named(name=token_hex(16))
     yield worker
     worker.cleanup()
     del worker
@@ -124,7 +124,7 @@ def worker() -> Worker:
 @pytest.fixture(scope="function")
 def second_worker() -> Worker:
     # Used in server syncing tests
-    worker = sy.Worker.named(name=token_hex(8))
+    worker = sy.Worker.named(name=token_hex(16))
     yield worker
     worker.cleanup()
     del worker
