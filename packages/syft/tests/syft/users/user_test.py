@@ -1,5 +1,6 @@
 # stdlib
 from secrets import token_hex
+import time
 
 # third party
 from faker import Faker
@@ -387,6 +388,9 @@ def test_user_view_update_name_institution_website(
 def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> None:
     admin_client = get_mock_client(worker.root_client, ServiceRole.ADMIN)
     assert admin_client.account.role == ServiceRole.ADMIN
+
+    # wait for the user to be created for sorting purposes
+    time.sleep(0.01)
 
     admin_client.register(
         name="Sheldon Cooper",

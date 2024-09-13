@@ -347,7 +347,9 @@ class PostgresQuery(Query):
         value: Any,
     ) -> sa.sql.elements.BinaryExpression:
         field_value = serialize_json(value)
-        return table.c.fields[field].contains(field_value)
+        col = sa.cast(table.c.fields[field], sa.Text)
+        val = sa.cast(field_value, sa.Text)
+        return col.contains(val)
 
     def _get_table(self, object_type: type[SyftObject]) -> Table:
         cname = object_type.__canonical_name__

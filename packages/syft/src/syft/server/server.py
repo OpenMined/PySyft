@@ -777,6 +777,7 @@ class Server(AbstractServer):
             background_tasks=background_tasks,
             consumer_type=consumer_type,
             db_url=db_url,
+            db_config=db_config,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
