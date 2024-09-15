@@ -373,13 +373,17 @@ auth-gcloud gcp_project gcp_region gcp_cluster gcp_registry:
     #!/bin/bash
     set -euo pipefail
 
+    # login to gcloud
     ACCOUNT=$(gcloud config get-value account)
     if [ -z "$ACCOUNT" ]; then
         gcloud auth login
     fi
 
     # install gke-gcloud-auth-plugin
-    gcloud components install gke-gcloud-auth-plugin
+    gke_installed=$(gcloud components list --only-local-state --filter gke-gcloud-auth-plugin --format=list 2>/dev/null)
+    if [ -z "$gke_installed" ]; then
+        gcloud components install gke-gcloud-auth-plugin
+    fi
 
     # get artifact registry registry
     gcloud auth configure-docker {{ gcp_registry }} --quiet
