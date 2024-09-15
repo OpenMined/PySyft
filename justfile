@@ -73,9 +73,11 @@ start-high: (delete-cluster cluster_high) (create-cluster cluster_high port_high
 [group('highside')]
 delete-high: (delete-cluster cluster_high)
 
+# Deploy Syft to the high-side cluster
 [group('highside')]
 deploy-high: (deploy-devspace cluster_high ns_default)
 
+# Reset Syft DB state in the high-side cluster
 [group('highside')]
 reset-high: (reset-syft cluster_high ns_default)
 
@@ -162,6 +164,7 @@ cleanup-gw: (purge-devspace cluster_gw ns_default) (delete-ns cluster_gw ns_defa
 [group('signoz')]
 start-signoz: && apply-signoz setup-signoz
     k3d cluster create signoz \
+        --no-image-volume \
         --port {{ port_signoz_ui }}:3301@loadbalancer \
         --port {{ port_signoz_otel }}:4317@loadbalancer \
         --k3s-arg "--disable=metrics-server@server:*"
@@ -170,11 +173,12 @@ start-signoz: && apply-signoz setup-signoz
         Dashboard: \033[1;36mhttp://localhost:{{ port_signoz_ui }}\033[0m\n\
         OTEL Endpoint: \033[1;36mhttp://localhost:{{ port_signoz_otel }}\033[0m\n"
 
+# Remove SigNoz from the cluster
 [group('signoz')]
 delete-collector:
     helm uninstall k8s-infra
 
-# Stop SigNoz cluster
+# Remove SigNoz from the cluster
 [group('signoz')]
 delete-signoz: (delete-cluster cluster_signoz)
 
@@ -232,7 +236,6 @@ list-clusters:
 
 # Stop all clusters
 [group('cluster')]
-[confirm('Confirm delete all clusters?')]
 delete-clusters:
     k3d cluster delete --all
 
@@ -312,7 +315,7 @@ purge-devspace cluster namespace:
 [private]
 deploy-cloud cluster registry namespace profile:
     #!/bin/bash
-    set -euo pipefail
+    set -euox pipefail
 
     kubectl config get-contexts {{ cluster }} > /dev/null
     # cloud deployments always have tracing false + platform=amd64
@@ -383,6 +386,20 @@ k9s-signoz:
 
 # Stop all Syft clusters + registry
 [group('utils')]
-[confirm('Confirm delete all clusters, registry and volume?')]
 delete-all: delete-clusters delete-registry
     @echo "Stopped all Syft components"
+
+[group('utils')]
+[confirm('Confirm prune all docker resources?')]
+prune-docker:
+    -docker container prune -f
+    -docker volume prune -af
+    -docker image prune -af
+    -docker builder prune -af
+    -docker buildx prune -af
+    -docker system prune -af --volumes
+
+[group('utils')]
+yank-ns namespace:
+    -kubectl delete ns {{ namespace }} --now --timeout=5s
+    kubectl get ns {{ namespace }} -o json | jq '.spec.finalizers = []' | kubectl replace --raw /api/v1/namespaces/{{ namespace }}/finalize -f -
