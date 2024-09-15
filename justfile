@@ -370,8 +370,20 @@ purge-cloud cluster namespace:
 # Auth all components required for deploying Syft to Google Cloud
 [group('cloud-gcp')]
 auth-gcloud gcp_project gcp_region gcp_cluster gcp_registry:
+    #!/bin/bash
+    set -euo pipefail
+
+    ACCOUNT=$(gcloud config get-value account)
+    if [ -z "$ACCOUNT" ]; then
+        gcloud auth login
+    fi
+
+    # install gke-gcloud-auth-plugin
+    gcloud components install gke-gcloud-auth-plugin
+
     # get artifact registry registry
     gcloud auth configure-docker {{ gcp_registry }} --quiet
+
     # get cluster credentials
     gcloud container clusters get-credentials {{ gcp_cluster }} --region {{ gcp_region }} --project {{ gcp_project }}
 
