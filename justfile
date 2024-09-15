@@ -291,6 +291,8 @@ deploy-devspace cluster namespace *args='':
         PROFILE="-p $PROFILE"
     fi
 
+    echo "Deploying to {{ cluster }}"
+
     devspace deploy -b \
         --no-warn \
         --kube-context {{ cluster }} \
@@ -313,14 +315,40 @@ purge-devspace cluster namespace:
 
 [group('cloud')]
 [private]
-deploy-cloud cluster registry namespace profile:
+check-platform:
     #!/bin/bash
-    set -euox pipefail
+    set -euo pipefail
 
-    kubectl config get-contexts {{ cluster }} > /dev/null
+    OSTYPE=$(uname -sm)
+    MSG="==================================================================================================\n\
+    Deploying dev->cloud k8s (x64 nodes) requires images to be built with --platform=linux/amd64\n\
+    On Apple Silicon, cross-platform image is unstable on different providers\n\n\
+    Current status:\n\
+    ✅ | Docker Desktop | 4.34.0+ | *Enable* containerd and *uncheck* 'Use Rosetta for x86_64/amd64...'\n\
+    ❌ | OrbStack       | 1.7.2   | Rosetta: gets stuck & qemu: errors with 'illegal instruction'\n\
+    ❌ | Lima VM/Colima | 0.23.2  | Rosetta: gets stuck & qemu: errors with 'illegal instruction'\n\
+    =================================================================================================="
+
+    if [[ "$OSTYPE" == "Darwin arm64" ]]; then
+        echo -e $MSG
+    fi
+
+[group('cloud')]
+[private]
+deploy-cloud cluster registry namespace profile: check-platform
+    #!/bin/bash
+    set -euo pipefail
+
+    CONTEXT_NAME=$(kubectl config get-contexts -o=name | grep "{{ cluster }}")
+
+    if [ -z "$CONTEXT_NAME" ]; then
+        echo "No context found for cluster '{{ cluster }}'"
+        exit 1
+    fi
+
     # cloud deployments always have tracing false + platform=amd64
     just tracing=false registry_url={{ registry }} \
-        deploy-devspace {{ cluster }} {{ namespace }} "-p {{ profile }} --var PLATFORM=amd64"
+        deploy-devspace $CONTEXT_NAME {{ namespace }} "-p {{ profile }} --var PLATFORM=amd64"
 
 [group('cloud')]
 [private]
@@ -328,8 +356,14 @@ purge-cloud cluster namespace:
     #!/bin/bash
     set -euo pipefail
 
-    kubectl config get-contexts {{ cluster }} > /dev/null
-    just purge-devspace {{ cluster }} {{ namespace }}
+    CONTEXT_NAME=$(kubectl config get-contexts -o=name | grep "{{ cluster }}")
+
+    if [ -z "$CONTEXT_NAME" ]; then
+        echo "No context found for cluster '{{ cluster }}'"
+        exit 1
+    fi
+
+    just purge-devspace $CONTEXT_NAME {{ namespace }}
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -344,6 +378,9 @@ auth-gcloud gcp_project gcp_region gcp_cluster gcp_registry:
 # Deploy local code as datasite-high to Google Kubernetes Engine
 [group('cloud-gcp')]
 deploy-gcp-high gcp_cluster gcp_registry namespace="syft": (deploy-cloud gcp_cluster gcp_registry namespace "gcp")
+
+[group('cloud-gcp')]
+purge-gcp-high gcp_cluster namespace: (purge-cloud gcp_cluster namespace)
 
 # Deploy local code as datasite-high to Google Kubernetes Engine
 [group('cloud-gcp')]
