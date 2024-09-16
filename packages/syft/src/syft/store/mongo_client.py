@@ -1,5 +1,4 @@
 # stdlib
-import logging
 from threading import Lock
 from typing import Any
 
@@ -13,24 +12,13 @@ from pymongo.mongo_client import MongoClient as PyMongoClient
 from ..serde.serializable import serializable
 from ..types.errors import SyftException
 from ..types.result import as_result
-from ..util.telemetry import TRACING_ENABLED
+from ..util.telemetry import instrument_mongo
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .mongo_codecs import SYFT_CODEC_OPTIONS
 
-if TRACING_ENABLED:
-    try:
-        # third party
-        from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
-
-        PymongoInstrumentor().instrument()
-        message = "> Added OTEL PymongoInstrumentor"
-        print(message)
-        logger = logging.getLogger(__name__)
-        logger.info(message)
-    except Exception:  # nosec
-        pass
+instrument_mongo()
 
 
 @serializable(canonical_name="MongoStoreClientConfig", version=1)

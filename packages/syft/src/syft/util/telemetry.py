@@ -1,36 +1,29 @@
 # stdlib
-from collections.abc import Callable
 import logging
 import os
 from typing import Any
-from typing import TypeVar
 
 # relative
+from . import trace_decorator
 from .. import __version__
 from .util import str_to_bool
 
-__all__ = ["TRACING_ENABLED", "instrument"]
-
-logger = logging.getLogger(__name__)
+__all__ = [
+    "TRACING_ENABLED",
+    "instrument",
+    "instrument_fastapi",
+    "instrument_mongo",
+    "instrument_botocore",
+]
 
 TRACING_ENABLED = str_to_bool(os.environ.get("TRACING", "False"))
-
-T = TypeVar("T", bound=Callable | type)
-
-
-def noop(__func_or_class: T | None = None, /, *args: Any, **kwargs: Any) -> T:
-    def noop_wrapper(__func_or_class: T) -> T:
-        return __func_or_class
-
-    if __func_or_class is None:
-        return noop_wrapper  # type: ignore
-    else:
-        return __func_or_class
+logger = logging.getLogger(__name__)
 
 
-if not TRACING_ENABLED:
-    instrument = noop
-else:
+def setup_instrumenter() -> Any:
+    if not TRACING_ENABLED:
+        return trace_decorator.no_instrument
+
     try:
         # third party
         from opentelemetry import trace
@@ -43,14 +36,11 @@ else:
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-        # relative
-        from .trace_decorator import instrument as _instrument
-
         # create a resource
         resource = Resource({"syft.version": __version__})
         resource = resource.merge(OTELResourceDetector().detect())
         resource = resource.merge(ProcessResourceDetector().detect())
-        logger.info(f"OTEL Resource: {resource.__dict__}")
+        logger.debug(f"OTEL resource : {resource.__dict__}")
 
         # create a trace provider from the resource
         provider = TracerProvider(resource=resource)
@@ -63,8 +53,53 @@ else:
         # set the global trace provider
         trace.set_tracer_provider(provider)
 
-        # expose the instrument decorator
-        instrument = _instrument
+        logger.info("Added TracerProvider with BatchSpanProcessor")
+        return trace_decorator.instrument
     except Exception as e:
         logger.error("Failed to import opentelemetry", exc_info=e)
-        instrument = noop
+        return trace_decorator.no_instrument
+
+
+def instrument_fastapi(app: Any) -> None:
+    if not TRACING_ENABLED:
+        return
+
+    try:
+        # third party
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        FastAPIInstrumentor().instrument_app(app)
+        logger.info("Added OTEL FastAPIInstrumentor")
+    except Exception as e:
+        logger.error(f"Failed to load FastAPIInstrumentor. {e}")
+
+
+def instrument_mongo() -> None:
+    if not TRACING_ENABLED:
+        return
+
+    try:
+        # third party
+        from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
+
+        PymongoInstrumentor().instrument()
+        logger.info("Added OTEL PymongoInstrumentor")
+    except Exception as e:
+        logger.error(f"Failed to load PymongoInstrumentor. {e}")
+
+
+def instrument_botocore() -> None:
+    if not TRACING_ENABLED:
+        return
+
+    try:
+        # third party
+        from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
+
+        BotocoreInstrumentor().instrument()
+        logger.info("Added OTEL BotocoreInstrumentor")
+    except Exception as e:
+        logger.error(f"Failed to load BotocoreInstrumentor. {e}")
+
+
+instrument = setup_instrumenter()

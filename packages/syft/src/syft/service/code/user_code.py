@@ -101,7 +101,7 @@ from .utils import check_for_global_vars
 from .utils import parse_code
 from .utils import submit_subjobs_code
 
-logger = logging.getLogger(name=__name__)
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative

@@ -48,7 +48,7 @@ then
     export OTEL_SERVICE_NAME="${DEPLOYMENT_ENV}-${OTEL_SERVICE_NAME:-"backend"}"
     export OTEL_RESOURCE_ATTRIBUTES=$(IFS=, ; echo "${RESOURCE_ATTRS[*]}")
 
-    echo "OpenTelemetry Enabled."
+    echo "OpenTelemetry Enabled"
     env | grep OTEL_
 else
     echo "OpenTelemetry Disabled"
