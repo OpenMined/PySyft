@@ -1,4 +1,5 @@
 # stdlib
+from pathlib import Path
 
 # syft absolute
 from syft.abstract_server import ServerType
@@ -37,6 +38,11 @@ def queue_config() -> ZMQQueueConfig:
 
 
 def sql_store_config() -> SQLiteDBConfig:
+    # Check if the directory exists, and create it if it doesn't
+    sqlite_path = Path(settings.SQLITE_PATH)
+    if not sqlite_path.exists():
+        sqlite_path.mkdir(parents=True, exist_ok=True)
+
     return SQLiteDBConfig(
         filename=f"{UID.from_string(get_server_uid_env())}.sqlite",
         path=settings.SQLITE_PATH,
