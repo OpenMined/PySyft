@@ -6,6 +6,7 @@ from typing import Any
 from typing import TypeVar
 
 # relative
+from .. import __version__
 from .util import str_to_bool
 
 __all__ = ["TRACING_ENABLED", "instrument"]
@@ -37,15 +38,21 @@ else:
             OTLPSpanExporter,
         )
         from opentelemetry.sdk.resources import OTELResourceDetector
+        from opentelemetry.sdk.resources import ProcessResourceDetector
+        from opentelemetry.sdk.resources import Resource
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
         # relative
         from .trace_decorator import instrument as _instrument
 
-        # create a provider
-        resource = OTELResourceDetector().detect()
-        logger.info(f"OTEL Resource: {resource}")
+        # create a resource
+        resource = Resource({"syft.version": __version__})
+        resource = resource.merge(OTELResourceDetector().detect())
+        resource = resource.merge(ProcessResourceDetector())
+        logger.info(f"OTEL Resource: {resource.__dict__}")
+
+        # create a trace provider from the resource
         provider = TracerProvider(resource=resource)
 
         # create a span processor

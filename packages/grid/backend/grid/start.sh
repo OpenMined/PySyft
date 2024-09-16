@@ -39,6 +39,9 @@ then
         "service.instance.id=$SERVER_UID"
         "k8s.pod.name=${K8S_POD_NAME:-"none"}"
         "k8s.namespace.name=${K8S_NAMESPACE:"none"}"
+        "syft.server.uid=$SERVER_UID"
+        "syft.server.type=$SERVER_TYPE"
+        "syft.server.side.type=$SERVER_SIDE_TYPE"
     )
 
     # environ is always prefixed with the server type
