@@ -223,7 +223,7 @@ def upgrade_worker_settings_for_queue(context: TransformContext) -> TransformCon
         )
         context.output["worker_settings"] = worker_settings
 
-        return context
+    return context
 
 
 @migrate(QueueItemV1, QueueItem)
