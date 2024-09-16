@@ -49,7 +49,7 @@ else:
         # create a resource
         resource = Resource({"syft.version": __version__})
         resource = resource.merge(OTELResourceDetector().detect())
-        resource = resource.merge(ProcessResourceDetector())
+        resource = resource.merge(ProcessResourceDetector().detect())
         logger.info(f"OTEL Resource: {resource.__dict__}")
 
         # create a trace provider from the resource
