@@ -164,7 +164,6 @@ cleanup-gw: (purge-devspace cluster_gw ns_default) (delete-ns cluster_gw ns_defa
 [group('signoz')]
 start-signoz: && apply-signoz setup-signoz
     k3d cluster create signoz \
-        --no-image-volume \
         --port {{ port_signoz_ui }}:3301@loadbalancer \
         --port {{ port_signoz_otel }}:4317@loadbalancer \
         --k3s-arg "--disable=metrics-server@server:*"
