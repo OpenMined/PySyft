@@ -11,7 +11,7 @@ import textwrap
 from typing import Any
 
 # third party
-from helpers import TestUser
+from email_helpers import TestUser
 
 # syft absolute
 from syft import test_settings
