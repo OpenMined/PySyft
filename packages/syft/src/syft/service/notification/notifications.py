@@ -8,7 +8,9 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_credentials_for_key
@@ -48,9 +50,34 @@ class ReplyNotification(SyftObject):
 
 
 @serializable()
-class Notification(SyftObject):
+class NotificationV1(SyftObject):
     __canonical_name__ = "Notification"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    subject: str
+    server_uid: UID
+    from_user_verify_key: SyftVerifyKey
+    to_user_verify_key: SyftVerifyKey
+    created_at: DateTime
+    status: NotificationStatus = NotificationStatus.UNREAD
+    linked_obj: LinkedObject | None = None
+    notifier_types: list[NOTIFIERS] = []
+    email_template: type[EmailTemplate] | None = None
+    replies: list[ReplyNotification] | None = []
+
+    __attr_searchable__ = [
+        "from_user_verify_key",
+        "to_user_verify_key",
+        "status",
+    ]
+    __repr_attrs__ = ["subject", "status", "created_at", "linked_obj"]
+    __table_sort_attr__ = "Created at"
+
+
+@serializable()
+class Notification(SyftObject):
+    __canonical_name__ = "Notification"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     subject: str
     server_uid: UID
@@ -146,3 +173,8 @@ def createnotification_to_notification() -> list[Callable]:
         add_credentials_for_key("from_user_verify_key"),
         add_server_uid_for_key("server_uid"),
     ]
+
+
+@migrate(NotificationV1, Notification)
+def migrate_nofitication_v1_to_v2() -> list[Callable]:
+    return []  # skip migration, no changes in the class

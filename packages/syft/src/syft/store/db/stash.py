@@ -36,6 +36,7 @@ from ...service.user.user_roles import ServiceRole
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_metaclass import Empty
+from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
 from ...util.telemetry import instrument
@@ -446,7 +447,7 @@ class ObjectStash(Generic[StashT]):
         - To fix, we either need db-supported computed fields, or know in our ORM which fields should be re-computed.
         """
 
-        if not isinstance(obj, self.object_type):
+        if issubclass(type(obj), PartialSyftObject):
             original_obj = self.get_by_uid(
                 credentials, obj.id, session=session
             ).unwrap()

@@ -183,7 +183,6 @@ def deploy_to_python(
     log_level: str | int | None = None,
     debug: bool = False,
     migrate: bool = False,
-    store_client_config: dict | None = None,
     consumer_type: ConsumerType | None = None,
     db_url: str | None = None,
 ) -> ServerHandle:
@@ -217,7 +216,6 @@ def deploy_to_python(
         "debug": debug,
         "migrate": migrate,
         "deployment_type": deployment_type_enum,
-        "store_client_config": store_client_config,
         "consumer_type": consumer_type,
         "db_url": db_url,
     }
@@ -331,7 +329,6 @@ class Orchestra:
         background_tasks: bool = False,
         debug: bool = False,
         migrate: bool = False,
-        store_client_config: dict | None = None,
         from_state_folder: str | Path | None = None,
         consumer_type: ConsumerType | None = None,
         db_url: str | None = None,
@@ -383,7 +380,6 @@ class Orchestra:
                 background_tasks=background_tasks,
                 debug=debug,
                 migrate=migrate,
-                store_client_config=store_client_config,
                 consumer_type=consumer_type,
                 db_url=db_url,
             )

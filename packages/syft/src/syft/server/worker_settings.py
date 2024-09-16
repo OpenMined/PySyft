@@ -22,8 +22,8 @@ from ..types.syft_migration import migrate
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
 from ..types.syft_object import SyftObject
+from ..types.transforms import TransformContext
 from ..types.transforms import drop
-from ..types.transforms import make_set_default
 from ..types.uid import UID
 
 
@@ -78,10 +78,18 @@ class WorkerSettingsV1(SyftObject):
     log_level: int | None = None
 
 
+def set_db_config(context: TransformContext) -> TransformContext:
+    if context.output:
+        context.output["db_config"] = (
+            context.server.db_config if context.server is not None else DBConfig()
+        )
+    return context
+
+
 @migrate(WorkerSettingsV1, WorkerSettings)
 def migrate_workersettings_v1_to_v2() -> list[Callable]:
     return [
         drop("document_store_config"),
         drop("action_store_config"),
-        make_set_default("db_config", DBConfig()),
+        set_db_config,
     ]
