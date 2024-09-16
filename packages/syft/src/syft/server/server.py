@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import subprocess  # nosec
 import sys
+import threading
 from time import sleep
 import traceback
 from typing import Any
@@ -455,6 +456,29 @@ class Server(AbstractServer):
             self.run_peer_health_checks(context=context)
 
         ServerRegistry.set_server_for(self.id, self)
+        email_dispatcher = threading.Thread(target=self.email_notification_dispatcher)
+        email_dispatcher.daemon = True
+        email_dispatcher.start()
+
+    def email_notification_dispatcher(self) -> None:
+        while True:
+            context = AuthedServiceContext(
+                server=self,
+                credentials=self.verify_key,
+                role=ServiceRole.ADMIN,
+            )
+
+            notifier_settings = self.services.notifier.settings(
+                context=context
+            ).unwrap()
+
+            for email_template, email_queue in notifier_settings.email_queue.items():
+                email_frequency = notifier_settings.email_frequency[email_template]
+                notifier_settings.send_batched_notification(
+                    context, email_queue, email_frequency
+                )
+            # print(f"Email Frequency: {notifier_settings.email_queue}")
+            sleep(5)
 
     def set_log_level(self, log_level: int | str | None) -> None:
         def determine_log_level(
