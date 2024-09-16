@@ -21,8 +21,6 @@ logger = logging.getLogger(__name__)
 
 @serializable(canonical_name="DBConfig", version=1)
 class DBConfig(BaseModel):
-    reset: bool = False
-
     @property
     def connection_string(self) -> str:
         raise NotImplementedError("Subclasses must implement this method.")
@@ -74,16 +72,10 @@ class DBManager(Generic[ConfigT]):
     def update_settings(self) -> None:
         pass
 
-    def init_tables(self) -> None:
+    def init_tables(self, reset: bool = False) -> None:
         Base = SQLiteBase if self.engine.dialect.name == "sqlite" else PostgresBase
 
-        if self.config.reset:
-            # drop all tables that we know about
-            Base.metadata.drop_all(bind=self.engine)
-            self.config.reset = False
-        Base.metadata.create_all(self.engine)
-
-    def reset(self) -> None:
-        Base = SQLiteBase if self.engine.dialect.name == "sqlite" else PostgresBase
-        Base.metadata.drop_all(bind=self.engine)
-        Base.metadata.create_all(self.engine)
+        with self.sessionmaker().begin() as _:
+            if reset:
+                Base.metadata.drop_all(bind=self.engine)
+            Base.metadata.create_all(self.engine)

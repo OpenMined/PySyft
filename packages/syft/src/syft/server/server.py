@@ -421,9 +421,7 @@ class Server(AbstractServer):
 
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
-        if reset:
-            self.db.reset()
-        self.db.init_tables()
+        self.db.init_tables(reset=reset)
         self.action_store = self.services.action.stash
 
         create_root_admin(
