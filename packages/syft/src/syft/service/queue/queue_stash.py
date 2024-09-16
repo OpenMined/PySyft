@@ -213,7 +213,7 @@ class QueueStash(ObjectStash[QueueItem]):
 
 
 def upgrade_worker_settings_for_queue(context: TransformContext) -> TransformContext:
-    if context.output and context.output["worker_settings"] is None:
+    if context.output and context.output["worker_settings"] is not None:
         worker_settings_old: WorkerSettingsV1 | None = context.output["worker_settings"]
         if worker_settings_old is None:
             return context
