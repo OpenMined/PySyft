@@ -52,6 +52,27 @@
           "hash": "2e1365c5535fa51c22eef79f67dd6444789bc829c27881367e3050e06e2ffbfe",
           "action": "remove"
         }
+      },
+      "QueueItem": {
+        "2": {
+          "version": 2,
+          "hash": "1d8615f6daabcd2a285b2f36fd7bef1df76cdd119dd49c02069c50fd1b9c3ff4",
+          "action": "add"
+        }
+      },
+      "ActionQueueItem": {
+        "2": {
+          "version": 2,
+          "hash": "bfda6ef87e4045d663324bb91a215ea06e1f173aec1fb4d9ddd337cdc1f0787f",
+          "action": "add"
+        }
+      },
+      "APIEndpointQueueItem": {
+        "2": {
+          "version": 2,
+          "hash": "3a46370205152fa23a7d2bfa47130dbf2e2bc7ef31f6d3fe4c92fd8d683770b5",
+          "action": "add"
+        }
       }
     }
   }

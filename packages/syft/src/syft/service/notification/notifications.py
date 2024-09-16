@@ -8,6 +8,7 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
@@ -172,3 +173,8 @@ def createnotification_to_notification() -> list[Callable]:
         add_credentials_for_key("from_user_verify_key"),
         add_server_uid_for_key("server_uid"),
     ]
+
+
+@migrate(NotificationV1, Notification)
+def migrate_nofitication_v1_to_v2() -> list[Callable]:
+    return []  # skip migration, no changes in the class

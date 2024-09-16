@@ -79,7 +79,7 @@ class WorkerSettingsV1(SyftObject):
 
 
 def set_db_config(context: TransformContext) -> TransformContext:
-    if context.output and context.output["db_config"] is None:
+    if context.output:
         context.output["db_config"] = (
             context.server.db_config if context.server is not None else DBConfig()
         )
