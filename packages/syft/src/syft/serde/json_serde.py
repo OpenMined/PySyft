@@ -22,7 +22,6 @@ import syft as sy
 from ..server.credentials import SyftSigningKey
 from ..server.credentials import SyftVerifyKey
 from ..types.datetime import DateTime
-from ..types.errors import SyftException
 from ..types.syft_object import BaseDateTime
 from ..types.syft_object_registry import SyftObjectRegistry
 from ..types.uid import LineageID
@@ -39,31 +38,21 @@ JsonPrimitive = str | int | float | bool | None
 Json = JsonPrimitive | list["Json"] | dict[str, "Json"]
 
 
-class JSONSerdeError(SyftException):
-    pass
+def _noop_fn(obj: Any) -> Any:
+    return obj
 
 
 @dataclass
 class JSONSerde(Generic[T]):
     klass: type[T]
-    serialize_fn: Callable[[T], Json] | None = None
-    deserialize_fn: Callable[[Json], T] | None = None
-
-    def _check_type(self, obj: Any) -> None:
-        if not isinstance(obj, self.klass):
-            raise JSONSerdeError(f"Expected {self.klass}, got {type(obj)}")
+    serialize_fn: Callable[[T], Json]
+    deserialize_fn: Callable[[Json], T]
 
     def serialize(self, obj: T) -> Json:
-        if self.serialize_fn is None:
-            return obj  # type: ignore
-        else:
-            return self.serialize_fn(obj)
+        return self.serialize_fn(obj)
 
     def deserialize(self, obj: Json) -> T:
-        if self.deserialize_fn is None:
-            return obj  # type: ignore
-        else:
-            return self.deserialize_fn(obj)  # type: ignore
+        return self.deserialize_fn(obj)
 
 
 JSON_SERDE_REGISTRY: dict[type[T], JSONSerde[T]] = {}
@@ -77,7 +66,13 @@ def register_json_serde(
     if type_ in JSON_SERDE_REGISTRY:
         raise ValueError(f"Type {type_} is already registered")
 
-    JSON_SERDE_REGISTRY[(type_)] = JSONSerde(
+    if serialize is None:
+        serialize = _noop_fn
+
+    if deserialize is None:
+        deserialize = _noop_fn
+
+    JSON_SERDE_REGISTRY[type_] = JSONSerde(
         klass=type_,
         serialize_fn=serialize,
         deserialize_fn=deserialize,
