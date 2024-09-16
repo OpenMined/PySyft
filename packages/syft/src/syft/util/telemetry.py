@@ -36,7 +36,7 @@ else:
         from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
             OTLPSpanExporter,
         )
-        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.sdk.resources import OTELResourceDetector
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
@@ -44,8 +44,8 @@ else:
         from .trace_decorator import instrument as _instrument
 
         # create a provider
-        service_name = os.environ.get("OTEL_SERVICE_NAME", "syft-backend")
-        resource = Resource.create({"service.name": service_name})
+        resource = OTELResourceDetector().detect()
+        logger.info(f"OTEL Resource: {resource}")
         provider = TracerProvider(resource=resource)
 
         # create a span processor
