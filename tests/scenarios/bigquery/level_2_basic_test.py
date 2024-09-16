@@ -206,9 +206,14 @@ async def set_endpoint_settings(
 
 
 def query_sql():
-    query = f"SELECT {test_settings.table_2_col_id}, AVG({test_settings.table_2_col_score}) AS average_score \
-        FROM {test_settings.dataset_2}.{test_settings.table_2} \
-        GROUP BY {test_settings.table_2_col_id} \
+    dataset_2 = test_settings.get("dataset_2", default="dataset_2")
+    table_2 = test_settings.get("table_2", default="table_2")
+    table_2_col_id = test_settings.get("table_2_col_id", default="table_id")
+    table_2_col_score = test_settings.get("table_2_col_score", default="colname")
+
+    query = f"SELECT {table_2_col_id}, AVG({table_2_col_score}) AS average_score \
+        FROM {dataset_2}.{table_2} \
+        GROUP BY {table_2_col_id} \
         LIMIT 10000"
     return query
 
