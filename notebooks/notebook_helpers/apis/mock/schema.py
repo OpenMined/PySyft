@@ -21,7 +21,7 @@ def make_schema(settings, worker_pool) -> Callable:
         description="This endpoint allows for visualising the metadata of tables available in BigQuery.",
         settings=updated_settings,
         helper_functions=[is_within_rate_limit],
-        worker_pool=worker_pool,
+        worker_pool_name=worker_pool,
     )
     def mock_schema(
         context,

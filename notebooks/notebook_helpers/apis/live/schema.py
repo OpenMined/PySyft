@@ -28,7 +28,7 @@ def make_schema(settings: dict, worker_pool: str) -> Callable:
         helper_functions=[
             is_within_rate_limit
         ],  # Adds ratelimit as this is also a method available to data scientists
-        worker_pool=worker_pool,
+        worker_pool_name=worker_pool,
     )
     def live_schema(
         context,
