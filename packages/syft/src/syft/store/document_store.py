@@ -875,7 +875,6 @@ class NewBaseStash:
             current = self.find_one(credentials, id=obj.id).unwrap()
             obj.apply(to=current)
             obj = current
-
         obj = self.check_type(obj, self.object_type).unwrap()
         qk = self.partition.store_query_key(obj)
         return self.partition.update(

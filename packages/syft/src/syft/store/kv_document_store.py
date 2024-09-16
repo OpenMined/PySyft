@@ -378,6 +378,7 @@ class KeyValueStorePartition(StorePartition):
         for qk in uqks:
             pk_key, pk_value = qk.key, qk.value
             ck_col = self.unique_keys[pk_key]
+            # ck_col.pop(pk_value, None)
             ck_col.pop(store_key.value, None)
             self.unique_keys[pk_key] = ck_col
 
@@ -480,7 +481,6 @@ class KeyValueStorePartition(StorePartition):
                     )
 
                 store_query_key = self.settings.store_key.with_obj(_original_obj)
-
                 # remove old keys
                 self._remove_keys(
                     store_key=store_query_key,

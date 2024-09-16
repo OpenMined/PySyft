@@ -24,6 +24,7 @@ from ..service.code_history.code_history import UsersCodeHistoriesDict
 from ..service.dataset.dataset import Contributor
 from ..service.dataset.dataset import CreateAsset
 from ..service.dataset.dataset import CreateDataset
+from ..service.dataset.dataset import Dataset
 from ..service.dataset.dataset import _check_asset_must_contain_mock
 from ..service.migration.object_migration_state import MigrationData
 from ..service.request.request import Request
@@ -36,6 +37,7 @@ from ..service.user.user import ServiceRole
 from ..service.user.user import UserView
 from ..types.blob_storage import BlobFile
 from ..types.errors import SyftException
+from ..types.twin_object import TwinObject
 from ..types.uid import UID
 from ..util.misc_objs import HTMLObject
 from ..util.util import get_mb_size
@@ -98,27 +100,24 @@ class DatasiteClient(SyftClient):
     def __repr__(self) -> str:
         return f"<DatasiteClient: {self.name}>"
 
-    def upload_dataset(self, dataset: CreateDataset) -> SyftSuccess:
-        # relative
-        from ..types.twin_object import TwinObject
-
+    def upload_dataset(
+        self, dataset: CreateDataset, force_replace: bool = False
+    ) -> SyftSuccess | SyftError:
         if self.users is None:
             raise SyftException(public_message=f"can't get user service for {self}")
 
         user = self.users.get_current_user()
+
         if user.role not in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
             return SyftError(message="You don't have permission to upload datasets.")
+
         dataset = add_default_uploader(user, dataset)
 
         for i in range(len(dataset.asset_list)):
             asset = dataset.asset_list[i]
             dataset.asset_list[i] = add_default_uploader(user, asset)
 
-        # dataset._check_asset_must_contain_mock()
-        dataset_size: float = 0.0
-
         # TODO: Refactor so that object can also be passed to generate warnings
-
         self.api.connection = cast(ServerConnection, self.api.connection)
 
         metadata = self.api.connection.get_server_metadata(self.api.signing_key)
@@ -134,10 +133,27 @@ class DatasiteClient(SyftClient):
             )
             prompt_warning_message(message=message, confirm=True)
 
-        with tqdm(
-            total=len(dataset.asset_list), colour="green", desc="Uploading"
-        ) as pbar:
-            for asset in dataset.asset_list:
+        # check if the a dataset with the same name already exists
+        search_res = self.api.services.dataset.search(dataset.name)
+        dataset_exists: bool = len(search_res) > 0
+
+        if not dataset_exists:
+            return self._upload_new_dataset(dataset)
+
+        existed_dataset: Dataset = search_res[0]
+        if not force_replace:
+            return SyftError(
+                message=f"Dataset with name the '{dataset.name}' already exists. "
+                "Please use `upload_dataset(dataset, force_replace=True)` to overwrite."
+            )
+        return self._replace_dataset(existed_dataset, dataset)
+
+    def _upload_assets(self, assets: list[CreateAsset]) -> float | SyftError:
+        total_assets_size: float = 0.0
+
+        with tqdm(total=len(assets), colour="green", desc="Uploading") as pbar:
+            for asset in assets:
+                # create and save a twin object representing the asset to the blob store
                 try:
                     contains_empty: bool = asset.contains_empty()
                     twin = TwinObject(
@@ -163,16 +179,55 @@ class DatasiteClient(SyftClient):
 
                 asset.action_id = twin.id
                 asset.server_uid = self.id
-                dataset_size += get_mb_size(asset.data)
+
+                total_assets_size += get_mb_size(asset.data)
 
                 # Update the progress bar and set the dynamic description
                 pbar.set_description(f"Uploading: {asset.name}")
                 pbar.update(1)
 
-        dataset.mb_size = dataset_size
+        return total_assets_size
+
+    def _upload_new_dataset(self, dataset: CreateDataset) -> SyftSuccess | SyftError:
+        # upload the assets
+        total_assets_size: float | SyftError = self._upload_assets(dataset.asset_list)
+        if isinstance(total_assets_size, SyftError):
+            return total_assets_size
+
+        # check if the types of the assets are valid
+        dataset.mb_size = total_assets_size
         _check_asset_must_contain_mock(dataset.asset_list)
-        dataset.check()
-        return self.api.services.dataset.add(dataset=dataset)
+        valid = dataset.check()
+        if isinstance(valid, SyftError):
+            return valid
+
+        # add the dataset object to the dataset store
+        try:
+            return self.api.services.dataset.add(dataset=dataset)
+        except Exception as e:
+            return SyftError(message=f"Failed to upload dataset. {e}")
+
+    def _replace_dataset(
+        self, existed_dataset: Dataset, dataset: CreateDataset
+    ) -> SyftSuccess | SyftError:
+        # TODO: is there a way to check if the assets already exist and have not changed,
+        # since if uploading the assets will have different UIDs
+        total_assets_size: float | SyftError = self._upload_assets(dataset.asset_list)
+        if isinstance(total_assets_size, SyftError):
+            return total_assets_size
+
+        # check if the types of the assets are valid
+        dataset.mb_size = total_assets_size
+        valid = dataset.check()
+        _check_asset_must_contain_mock(dataset.asset_list)
+        if isinstance(valid, SyftError):
+            return valid
+        try:
+            return self.api.services.dataset.replace(
+                existed_dataset_uid=existed_dataset.id, dataset=dataset
+            )
+        except Exception as e:
+            return SyftError(message=f"Failed to replace dataset. {e}")
 
     def forgot_password(self, email: str) -> SyftSuccess | SyftError:
         return self.connection.forgot_password(email=email)

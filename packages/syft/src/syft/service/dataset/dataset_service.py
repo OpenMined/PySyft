@@ -115,15 +115,16 @@ class DatasetService(AbstractService):
         context: AuthedServiceContext,
         page_size: int | None = 0,
         page_index: int | None = 0,
+        include_deleted: bool = False,
     ) -> DatasetPageView | DictTuple[str, Dataset]:
         """Get a Dataset"""
-        datasets = self.stash.get_all(context.credentials).unwrap()
+        datasets = self.stash.get_all(
+            context.credentials, include_deleted=include_deleted
+        ).unwrap()
 
         for dataset in datasets:
             if context.server is not None:
                 dataset.server_uid = context.server.id
-            if dataset.to_be_deleted:
-                datasets.remove(dataset)
 
         return _paginate_dataset_collection(
             datasets=datasets, page_size=page_size, page_index=page_index
@@ -141,9 +142,7 @@ class DatasetService(AbstractService):
         results = self.get_all(context)
 
         filtered_results = [
-            dataset
-            for dataset_name, dataset in results.items()
-            if name in dataset_name and not dataset.to_be_deleted
+            dataset for dataset_name, dataset in results.items() if name in dataset_name
         ]
 
         return _paginate_dataset_collection(
@@ -241,6 +240,28 @@ class DatasetService(AbstractService):
 
         return_msg.append(f"Dataset with id '{uid}' successfully deleted.")
         return SyftSuccess(message="\n".join(return_msg))
+
+    @service_method(
+        path="dataset.replace",
+        name="replace",
+        roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
+    def replace(
+        self,
+        context: AuthedServiceContext,
+        existed_dataset_uid: UID,
+        dataset: CreateDataset,
+    ) -> SyftSuccess:
+        dataset = dataset.to(Dataset, context=context)
+        dataset.id = existed_dataset_uid
+        self.stash.update(
+            credentials=context.credentials, dataset_update=dataset
+        ).unwrap()
+        # TODO: should we delete the existed dataset's asssets after force replace?
+        return SyftSuccess(
+            message=f"Dataset with id '{existed_dataset_uid}' successfully replaced."
+        )
 
 
 TYPE_TO_SERVICE[Dataset] = DatasetService

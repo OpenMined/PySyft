@@ -77,12 +77,27 @@ def handle_union_type_klass_name(type_klass_name: str) -> str:
     return type_klass_name
 
 
+def get_klass_or_canonical_name(arg: Any) -> str:
+    """Get the class name or canonical name of the object.
+
+    If the object is a subclass of SyftBaseObject, then use canonical name
+    to identify the object.
+
+    """
+
+    return (
+        arg.__canonical_name__  # If SyftBaseObject subclass, ignore class name
+        if hasattr(arg, "__canonical_name__")
+        else getattr(arg, "__name__", str(arg))
+    )
+
+
 def handle_annotation_repr_(annotation: type) -> str:
     """Handle typing representation."""
     origin = typing.get_origin(annotation)
     args = typing.get_args(annotation)
     if origin and args:
-        args_repr = ", ".join(getattr(arg, "__name__", str(arg)) for arg in args)
+        args_repr = ", ".join(get_klass_or_canonical_name(arg) for arg in args)
         origin_repr = getattr(origin, "__name__", str(origin))
 
         # Handle typing.Union and types.UnionType

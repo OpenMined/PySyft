@@ -136,8 +136,8 @@ class SyftBaseObject(pydantic.BaseModel, SyftHashableObject):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     # the name which doesn't change even when there are multiple classes
-    __canonical_name__: str
-    __version__: int  # data is always versioned
+    __canonical_name__: str = "SyftBaseObject"
+    __version__: int = SYFT_OBJECT_VERSION_1  # data is always versioned
 
     syft_server_location: UID | None = Field(default=None, exclude=True)
     syft_client_verify_key: SyftVerifyKey | None = Field(default=None, exclude=True)

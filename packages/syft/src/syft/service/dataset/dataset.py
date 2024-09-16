@@ -98,7 +98,6 @@ class Asset(SyftObject):
     shape: tuple | None = None
     created_at: DateTime = DateTime.now()
     uploader: Contributor | None = None
-
     # _kwarg_name and _dataset_name are set by the UserCode.assets
     _kwarg_name: str | None = None
     _dataset_name: str | None = None
@@ -314,10 +313,34 @@ def check_mock(data: Any, mock: Any) -> bool:
 
 
 @serializable()
-class CreateAsset(SyftObject):
+class CreateAssetV1(SyftObject):
     # version
     __canonical_name__ = "CreateAsset"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID | None = None  # type:ignore[assignment]
+    name: str
+    description: MarkdownDescription | None = None
+    contributors: set[Contributor] = set()
+    data_subjects: list[DataSubjectCreate] = []
+    server_uid: UID | None = None
+    action_id: UID | None = None
+    data: Any | None = None
+    mock: Any | None = None
+    shape: tuple | None = None
+    mock_is_real: bool = False
+    created_at: DateTime | None = None
+    uploader: Contributor | None = None
+
+    __repr_attrs__ = ["name"]
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
+
+
+@serializable()
+class CreateAsset(SyftObject):
+    # version
+    __canonical_name__ = "CreateAsset"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     id: UID | None = None  # type:ignore[assignment]
     name: str
@@ -514,9 +537,7 @@ class Dataset(SyftObject):
             """
         else:
             description_info_message = ""
-        if self.to_be_deleted:
-            return "This dataset has been marked for deletion. The underlying data may be not available."
-        return f"""
+        repr_html = f"""
             <div class='syft-dataset'>
             <h1>{self.name}</h1>
             <h2><strong><span class='pr-8'>Summary</span></strong></h2>
@@ -529,9 +550,19 @@ class Dataset(SyftObject):
             </span></strong><a href='{self.url}'>{self.url}</a></p>
             <p class='paragraph-sm'><strong><span class='pr-8'>Contributors:</span></strong>
             To see full details call <strong>dataset.contributors</strong>.</p>
-            <h2><strong><span class='pr-8'>Assets</span></strong></h2>
-            {self.assets._repr_html_()}
-            """
+        """
+        if self.to_be_deleted:
+            repr_html += (
+                "<h2><strong><span class='pr-8'>"
+                "This dataset has been marked for deletion. The underlying data may be not available"
+                "</span></strong></h2>"
+            )
+        else:
+            repr_html += f"""
+                        <h2><strong><span class='pr-8'>Assets</span></strong></h2>
+                        {self.assets._repr_html_()}
+                    """
+        return repr_html
 
     def action_ids(self) -> list[UID]:
         return [asset.action_id for asset in self.asset_list if asset.action_id]
@@ -874,3 +905,10 @@ class DatasetUpdate(PartialSyftObject):
 
     name: str
     to_be_deleted: bool
+    asset_list: list[Asset]
+    contributors: set[Contributor]
+    citation: str
+    url: str
+    description: MarkdownDescription
+    uploader: Contributor
+    summary: str

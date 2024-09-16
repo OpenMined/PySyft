@@ -33,6 +33,23 @@ class DatasetStash(NewBaseUIDStoreStash):
         return self.query_one(credentials=credentials, qks=qks).unwrap()
 
     @as_result(StashException)
+    def update(
+        self,
+        credentials: SyftVerifyKey,
+        dataset_update: DatasetUpdate | Dataset,
+        has_permission: bool = False,
+    ) -> Dataset:
+        return (
+            super()
+            .update(
+                credentials=credentials,
+                obj=dataset_update,
+                has_permission=has_permission,
+            )
+            .unwrap()
+        )
+
+    @as_result(StashException)
     def search_action_ids(self, credentials: SyftVerifyKey, uid: UID) -> list[Dataset]:
         qks = QueryKeys(qks=[ActionIDsPartitionKey.with_obj(uid)])
         return self.query_all(credentials=credentials, qks=qks).unwrap()
@@ -43,22 +60,13 @@ class DatasetStash(NewBaseUIDStoreStash):
         credentials: SyftVerifyKey,
         order_by: PartitionKey | None = None,
         has_permission: bool = False,
+        include_deleted: bool = False,
     ) -> list:
         result = super().get_all(credentials, order_by, has_permission).unwrap()
-        filtered_datasets = [dataset for dataset in result if not dataset.to_be_deleted]
+        if not include_deleted:
+            filtered_datasets = [
+                dataset for dataset in result if not dataset.to_be_deleted
+            ]
+        else:
+            filtered_datasets = result
         return filtered_datasets
-
-    # FIX: This shouldn't be the update method, it just marks the dataset for deletion
-    @as_result(StashException)
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        obj: DatasetUpdate,
-        has_permission: bool = False,
-    ) -> Dataset:
-        _obj = self.check_type(obj, DatasetUpdate).unwrap()
-        # FIX: This method needs a revamp
-        qk = self.partition.store_query_key(obj)
-        return self.partition.update(
-            credentials=credentials, qk=qk, obj=_obj, has_permission=has_permission
-        ).unwrap()

@@ -19,6 +19,7 @@ from syft.service.blob_storage.util import can_upload_to_blob_storage
 from syft.service.dataset.dataset import CreateAsset as Asset
 from syft.service.dataset.dataset import CreateDataset as Dataset
 from syft.service.dataset.dataset import _ASSET_WITH_NONE_MOCK_ERROR_MESSAGE
+from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.types.errors import SyftException
 
@@ -220,7 +221,6 @@ def test_datasite_client_cannot_upload_dataset_with_non_mock(worker: Worker) -> 
     dataset.asset_list[0].mock = None
 
     root_datasite_client = worker.root_client
-
     with pytest.raises(ValueError) as excinfo:
         root_datasite_client.upload_dataset(dataset)
 
@@ -310,7 +310,7 @@ def test_upload_dataset_with_assets_of_different_data_types(
     )
 
 
-def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
+def test_upload_delete_small_dataset(worker: Worker, small_dataset: Dataset) -> None:
     root_client = worker.root_client
     assert not can_upload_to_blob_storage(small_dataset, root_client.metadata).unwrap()
     upload_res = root_client.upload_dataset(small_dataset)
@@ -320,6 +320,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
     asset = dataset.asset_list[0]
     assert isinstance(asset.data, np.ndarray)
     assert isinstance(asset.mock, np.ndarray)
+    assert len(root_client.api.services.blob_storage.get_all()) == 0
 
     # delete the dataset without deleting its assets
     del_res = root_client.api.services.dataset.delete(
@@ -329,6 +330,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
     assert isinstance(asset.data, np.ndarray)
     assert isinstance(asset.mock, np.ndarray)
     assert len(root_client.api.services.dataset.get_all()) == 0
+
     # we can still get back the deleted dataset by uid
     deleted_dataset = root_client.api.services.dataset.get_by_id(uid=dataset.id)
     assert deleted_dataset.name == f"_deleted_{dataset.name}_{dataset.id}"
@@ -345,7 +347,7 @@ def test_delete_small_datasets(worker: Worker, small_dataset: Dataset) -> None:
     assert len(root_client.api.services.dataset.get_all()) == 0
 
 
-def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
+def test_upload_delete_big_dataset(worker: Worker, big_dataset: Dataset) -> None:
     root_client = worker.root_client
     assert can_upload_to_blob_storage(big_dataset, root_client.metadata).unwrap()
     upload_res = root_client.upload_dataset(big_dataset)
@@ -384,3 +386,132 @@ def test_delete_big_datasets(worker: Worker, big_dataset: Dataset) -> None:
         print(asset.mock)
     assert len(root_client.api.services.blob_storage.get_all()) == 0
     assert len(root_client.api.services.dataset.get_all()) == 0
+
+
+def test_reupload_dataset(worker: Worker, small_dataset: Dataset) -> None:
+    root_client = worker.root_client
+
+    # upload a dataset
+    upload_res = root_client.upload_dataset(small_dataset)
+    assert isinstance(upload_res, SyftSuccess)
+    dataset = root_client.api.services.dataset.get_all()[0]
+
+    # delete the dataset
+    del_res = root_client.api.services.dataset.delete(dataset.id)
+    assert isinstance(del_res, SyftSuccess)
+    assert len(root_client.api.services.dataset.get_all()) == 0
+    assert len(root_client.api.services.dataset.get_all(include_deleted=True)) == 1
+    search_res = root_client.api.services.dataset.search(small_dataset.name)
+    assert len(search_res) == 0
+    # reupload a dataset with the same name should be successful
+    reupload_res = root_client.upload_dataset(small_dataset)
+    assert isinstance(reupload_res, SyftSuccess)
+    assert len(root_client.api.services.dataset.get_all()) == 1
+    assert len(root_client.api.services.dataset.get_all(include_deleted=True)) == 2
+    search_res = root_client.api.services.dataset.search(small_dataset.name)
+    assert len(search_res) == 1
+    assert all(small_dataset.assets[0].data == search_res[0].assets[0].data)
+    assert all(small_dataset.assets[0].mock == search_res[0].assets[0].mock)
+
+
+def test_upload_dataset_with_force_replace_small_dataset(
+    worker: Worker, small_dataset: Dataset
+) -> None:
+    root_client = worker.root_client
+
+    # upload a dataset
+    upload_res = root_client.upload_dataset(small_dataset)
+    assert isinstance(upload_res, SyftSuccess)
+    first_uploaded_dataset = root_client.api.services.dataset.get_all()[0]
+
+    # upload again without the `force_replace` flag should fail
+    reupload_res = root_client.upload_dataset(small_dataset)
+    assert isinstance(reupload_res, SyftError)
+
+    # change something about the dataset, then upload it again with `force_replace`
+    dataset = Dataset(
+        name=small_dataset.name,
+        asset_list=[
+            sy.Asset(
+                name="small_dataset",
+                data=np.array([3, 2, 1]),
+                mock=np.array([2, 2, 2]),
+            )
+        ],
+        description="This is my numpy data",
+        url="https://mydataset.com",
+        summary="contain some super secret data",
+    )
+    force_replace_upload_res = root_client.upload_dataset(dataset, force_replace=True)
+    assert isinstance(force_replace_upload_res, SyftSuccess)
+    assert len(root_client.api.services.dataset.get_all()) == 1
+
+    updated_dataset = root_client.api.services.dataset.get_all()[0]
+    assert updated_dataset.id == first_uploaded_dataset.id
+    assert updated_dataset.name == small_dataset.name
+    assert updated_dataset.description.text == dataset.description.text
+    assert updated_dataset.summary == dataset.summary
+    assert updated_dataset.url == dataset.url
+    assert all(updated_dataset.assets[0].data == dataset.assets[0].data)
+    assert all(updated_dataset.assets[0].mock == dataset.assets[0].mock)
+
+
+def test_upload_dataset_with_force_replace_big_dataset(
+    worker: Worker, big_dataset: Dataset
+) -> None:
+    root_client = worker.root_client
+    assert can_upload_to_blob_storage(big_dataset, root_client.metadata)
+
+    # upload a dataset
+    upload_res = root_client.upload_dataset(big_dataset)
+    assert isinstance(upload_res, SyftSuccess)
+    first_uploaded_dataset = root_client.api.services.dataset.get_all()[0]
+
+    # change about the dataset metadata and also its data and mock, but keep its name,
+    # then upload it again with `force_replace=True`
+    updated_mock = big_dataset.assets[0].mock * 2
+    updated_data = big_dataset.assets[0].data + 1
+
+    dataset = Dataset(
+        name=big_dataset.name,
+        asset_list=[
+            sy.Asset(
+                name="big_dataset",
+                data=updated_data,
+                mock=updated_mock,
+            )
+        ],
+        description="This is my numpy data",
+        url="https://mydataset.com",
+        summary="contain some super secret data",
+    )
+    force_replace_upload_res = root_client.upload_dataset(dataset, force_replace=True)
+    assert isinstance(force_replace_upload_res, SyftSuccess)
+    # TODO: Old data were not removed from the blob storage after force replace. What to do?
+    assert len(root_client.api.services.blob_storage.get_all()) == 4
+    assert len(root_client.api.services.dataset.get_all()) == 1
+
+    updated_dataset = root_client.api.services.dataset.get_all()[0]
+    assert updated_dataset.id == first_uploaded_dataset.id
+    assert updated_dataset.name == big_dataset.name
+    assert updated_dataset.description.text == dataset.description.text
+    assert updated_dataset.summary == dataset.summary
+    assert updated_dataset.url == dataset.url
+    assert all(updated_dataset.assets[0].data == dataset.assets[0].data)
+    assert all(updated_dataset.assets[0].mock == dataset.assets[0].mock)
+
+    mock_obj: ActionObject = root_client.api.services.action.get(
+        updated_dataset.assets[0].action_id, TwinMode.MOCK
+    )
+    retrieved_mock = root_client.api.services.blob_storage.read(
+        mock_obj.syft_blob_storage_entry_id
+    ).read()
+    assert np.sum(retrieved_mock - updated_mock) == 0
+
+    data_obj: ActionObject = root_client.api.services.action.get(
+        updated_dataset.assets[0].action_id, TwinMode.PRIVATE
+    )
+    retrieved_data = root_client.api.services.blob_storage.read(
+        data_obj.syft_blob_storage_entry_id
+    ).read()
+    assert np.sum(retrieved_data - updated_data) == 0
