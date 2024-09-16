@@ -271,7 +271,7 @@ def big_dataset() -> Dataset:
     scope="function",
     params=[
         "tODOsqlite_address",
-        "TODOpostgres_address",
+        # "TODOpostgres_address", # will be used when we have a postgres CI tests
     ],
 )
 def queue_stash(request):
