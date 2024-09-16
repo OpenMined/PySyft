@@ -111,13 +111,14 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.mongo.secretKeyName | required "mongo.secretKeyName is required" }}
                   key: rootPassword
+            {{- if .Values.server.smtp.enabled }}
             # SMTP
             - name: SMTP_HOST
-              value: {{ .Values.server.smtp.host | quote }}
+              value: {{ .Values.server.smtp.host | required "server.smtp.host is required" | quote }}
             - name: SMTP_PORT
-              value: {{ .Values.server.smtp.port | quote }}
+              value: {{ .Values.server.smtp.port | required "server.smtp.port is required" | quote }}
             - name: SMTP_USERNAME
-              value: {{ .Values.server.smtp.username | quote }}
+              value: {{ .Values.server.smtp.username | required "server.smtp.username is required" | quote }}
             - name: SMTP_PASSWORD
               {{- if .Values.server.smtp.existingSecret }}
               valueFrom:
@@ -125,10 +126,11 @@ spec:
                   name: {{ .Values.server.smtp.existingSecret }}
                   key: smtpPassword
               {{ else }}
-              value: {{ .Values.server.smtp.password | quote }}
+              value: {{ .Values.server.smtp.password | required "server.smtp.password is required" | quote }}
               {{ end }}
             - name: EMAIL_SENDER
-              value: {{ .Values.server.smtp.from | quote}}
+              value: {{ .Values.server.smtp.from | required "server.smtp.from is required" | quote}}
+            {{- end }}
             # SeaweedFS
             {{- if ne .Values.server.type "gateway"}}
             - name: S3_ROOT_USER
