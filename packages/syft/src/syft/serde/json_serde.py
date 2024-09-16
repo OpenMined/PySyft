@@ -180,7 +180,7 @@ def _serialize_pydantic_to_json(obj: pydantic.BaseModel) -> dict[str, Json]:
             continue
         result[key] = serialize_json(getattr(obj, key), type_.annotation)
 
-    result = _serialize_searchable_attrs(obj, result, raise_errors=False)
+    result = _add_searchable_and_unique_attrs(obj, result, raise_errors=False)
 
     return result
 
@@ -198,11 +198,11 @@ def get_property_return_type(obj: Any, attr_name: str) -> Any:
     return None
 
 
-def _serialize_searchable_attrs(
+def _add_searchable_and_unique_attrs(
     obj: pydantic.BaseModel, obj_dict: dict[str, Json], raise_errors: bool = True
 ) -> dict[str, Json]:
     """
-    Add searchable attrs  and unique attrs to the serialized object dict, if they are not already present.
+    Add searchable attrs and unique attrs to the serialized object dict, if they are not already present.
     Needed for adding non-field attributes (like @property)
 
     Args:
