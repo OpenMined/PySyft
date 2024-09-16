@@ -22,6 +22,7 @@ from .notifier import NotificationPreferences
 from .notifier import NotifierSettings
 from .notifier import UserNotificationActivity
 from .notifier_enums import EMAIL_TYPES
+from .notifier_enums import NOTIFICATION_FREQUENCY
 from .notifier_enums import NOTIFIERS
 from .notifier_stash import NotifierStash
 
@@ -387,11 +388,31 @@ class NotifierService(AbstractService):
                     )
                 }
 
-            self.stash.update(credentials=admin_key, obj=notifier).unwrap()
+            email_frequency = notifier.email_frequency.get(
+                notification.email_template.__name__, NOTIFICATION_FREQUENCY.INSTANT
+            )
 
-            notifier.send_notifications(
-                context=context, notification=notification
-            ).unwrap()
+            if email_frequency == NOTIFICATION_FREQUENCY.INSTANT:
+                notifier.send_notifications(
+                    context=context, notification=notification
+                ).unwrap()
+            else:
+                queue_dict = notifier.email_queue.get(
+                    notification.email_template.__name__, {}
+                )
+                if len(queue_dict) == 0:
+                    notifier.email_queue[notification.email_template.__name__] = (
+                        queue_dict
+                    )
+
+                user_queue = queue_dict.get(notification.to_user_verify_key, [])
+
+                if len(user_queue) == 0:
+                    queue_dict[notification.to_user_verify_key] = user_queue
+
+                user_queue.append(notification)
+
+            self.stash.update(credentials=admin_key, obj=notifier).unwrap()
 
         # If notifier isn't active, return None
         return SyftSuccess(message="Notification dispatched successfully")
