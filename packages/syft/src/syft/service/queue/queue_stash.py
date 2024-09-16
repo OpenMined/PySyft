@@ -115,7 +115,7 @@ class ActionQueueItem(QueueItem):
 
 
 @serializable()
-class APIEndpointQueueItemV1(QueueItem):
+class APIEndpointQueueItem(QueueItem):
     __canonical_name__ = "APIEndpointQueueItem"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -133,7 +133,7 @@ class ActionQueueItemV1(QueueItemV1):
 
 
 @serializable()
-class APIEndpointQueueItem(QueueItemV1):
+class APIEndpointQueueItemV1(QueueItemV1):
     __canonical_name__ = "APIEndpointQueueItem"
     __version__ = SYFT_OBJECT_VERSION_1
 
