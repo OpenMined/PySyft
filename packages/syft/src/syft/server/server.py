@@ -426,7 +426,7 @@ class Server(AbstractServer):
         self.db.init_tables()
         self.action_store = self.services.action.stash
 
-        create_root_admin(
+        create_root_admin_if_not_exists(
             name=root_username,
             email=root_email,
             password=root_password,  # nosec
@@ -1722,7 +1722,7 @@ class Server(AbstractServer):
             ).unwrap()
 
 
-def create_root_admin(
+def create_root_admin_if_not_exists(
     name: str,
     email: str,
     password: str,
