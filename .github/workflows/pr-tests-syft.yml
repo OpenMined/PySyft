@@ -270,7 +270,6 @@ jobs:
           TOX_PYTHON: python${{ matrix.python-version }}
         shell: bash
         run: |
-          export PATH="/usr/share/miniconda/bin:$PATH"
           tox -e syft.test.scenario
 
   pr-tests-syft-notebook-scenario:

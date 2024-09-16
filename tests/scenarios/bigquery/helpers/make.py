@@ -8,18 +8,19 @@ from unsync import unsync
 
 # syft absolute
 import syft as sy
+from syft.util.util import find_base_dir_with_tox_ini
 
 # TODO remove hacky imports once https://github.com/OpenMined/PySyft/pull/9291/ is merged
-notebook_helpers_module_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../../../notebooks/notebook_helpers/")
-)
+base_dir = find_base_dir_with_tox_ini()
+notebook_helpers_module_path = os.path.abspath(os.path.join(base_dir, "notebooks/"))
 if notebook_helpers_module_path not in sys.path:
     sys.path.append(notebook_helpers_module_path)
 
 
 # third party
-from apis import make_schema  # noqa: E402
-from apis import make_test_query  # noqa: E402
+# The below two imports work only after the above sys.path.append
+from notebook_helpers.apis import make_schema  # noqa: E402
+from notebook_helpers.apis import make_test_query  # noqa: E402
 
 
 # Define any helper methods for our rate limiter

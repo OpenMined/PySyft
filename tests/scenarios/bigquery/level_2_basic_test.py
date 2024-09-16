@@ -57,7 +57,6 @@ async def create_prebuilt_worker_image(events, client, expected_tag, event_name)
     docker_config = sy.PrebuiltWorkerConfig(tag=f"{external_registry}/{expected_tag}")
     result = client.api.services.worker_image.submit(worker_config=docker_config)
     assert isinstance(result, sy.SyftSuccess)
-    asyncio.sleep(5)
     events.register(event_name)
 
 
