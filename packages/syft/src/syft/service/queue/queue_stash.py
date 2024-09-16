@@ -115,7 +115,7 @@ class ActionQueueItem(QueueItem):
 
 
 @serializable()
-class APIEndpointQueueItemV1(QueueItem):
+class APIEndpointQueueItem(QueueItem):
     __canonical_name__ = "APIEndpointQueueItem"
     __version__ = SYFT_OBJECT_VERSION_2
 
@@ -133,7 +133,7 @@ class ActionQueueItemV1(QueueItemV1):
 
 
 @serializable()
-class APIEndpointQueueItem(QueueItemV1):
+class APIEndpointQueueItemV1(QueueItemV1):
     __canonical_name__ = "APIEndpointQueueItem"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -223,7 +223,7 @@ def upgrade_worker_settings_for_queue(context: TransformContext) -> TransformCon
         )
         context.output["worker_settings"] = worker_settings
 
-        return context
+    return context
 
 
 @migrate(QueueItemV1, QueueItem)
