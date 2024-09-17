@@ -80,7 +80,7 @@ def test_signing_key() -> None:
     scope="function",
     params=[
         "tODOsqlite_address",
-        "TODOpostgres_address",
+        # "TODOpostgres_address", # will be used when we have a postgres CI tests
     ],
 )
 def action_object_stash() -> ActionObjectStash:

@@ -164,14 +164,6 @@ class ObjectStash(Generic[StashT]):
     def session(self) -> Session:
         return self.db.session
 
-    def _drop_table(self) -> None:
-        table_name = self.object_type.__canonical_name__
-        Base = SQLiteBase if self._is_sqlite() else PostgresBase
-        if table_name in Base.metadata.tables:
-            Base.metadata.tables[table_name].drop(self.db.engine)
-        else:
-            raise StashException(f"Table {table_name} does not exist")
-
     def _print_query(self, stmt: sa.sql.select) -> None:
         print(
             stmt.compile(

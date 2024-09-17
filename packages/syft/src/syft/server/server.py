@@ -410,12 +410,10 @@ class Server(AbstractServer):
 
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
-        if reset:
-            self.db.reset()
-        self.db.init_tables()
+        self.db.init_tables(reset=reset)
         self.action_store = self.services.action.stash
 
-        create_root_admin(
+        create_root_admin_if_not_exists(
             name=root_username,
             email=root_email,
             password=root_password,  # nosec
@@ -1697,7 +1695,7 @@ class Server(AbstractServer):
             ).unwrap()
 
 
-def create_root_admin(
+def create_root_admin_if_not_exists(
     name: str,
     email: str,
     password: str,
