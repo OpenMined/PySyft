@@ -73,6 +73,13 @@
           "hash": "3a46370205152fa23a7d2bfa47130dbf2e2bc7ef31f6d3fe4c92fd8d683770b5",
           "action": "add"
         }
+      },
+      "SQLiteStoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "ad062a5f863ae84683867d2a6a5e1d4420c010a64b88bc7b392106e33d71ac03",
+          "action": "remove"
+        }
       }
     }
   }
