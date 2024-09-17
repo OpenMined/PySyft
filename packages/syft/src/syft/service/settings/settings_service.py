@@ -414,7 +414,6 @@ class SettingsService(AbstractService):
             "server_side_type": server.server_side_type,
             # "port": server.port,
             "processes": server.processes,
-            # "local_db": isinstance(server.document_store_config, SQLiteStoreConfig),
             "dev_mode": server.dev_mode,
             "reset": True,  # we should be able to get all the objects from migration data
             "tail": False,
