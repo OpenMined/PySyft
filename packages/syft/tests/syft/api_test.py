@@ -45,7 +45,7 @@ def test_api_cache_invalidation_login(root_verify_key, worker):
         name="q", email="a@b.org", password="aaa", password_verify="aaa"
     )
     guest_client = guest_client.login(email="a@b.org", password="aaa")
-    user_id = worker.document_store.partitions["User"].all(root_verify_key).value[-1].id
+    user_id = worker.root_client.users[-1].id
 
     def get_role(verify_key):
         users = worker.services.user.stash.get_all(root_verify_key).ok()
