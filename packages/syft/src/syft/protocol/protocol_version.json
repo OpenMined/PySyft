@@ -4,6 +4,27 @@
   },
   "dev": {
     "object_versions": {
+      "Notification": {
+        "2": {
+          "version": 2,
+          "hash": "812d3a612422fb1cf53caa13ec34a7bdfcf033a7c24b7518f527af144cb45f3c",
+          "action": "add"
+        }
+      },
+      "SyftWorkerImage": {
+        "2": {
+          "version": 2,
+          "hash": "afd3a69719cd6d08b1121676ca8d80ca37be96ee5ed5893dc73733fbf47fd035",
+          "action": "add"
+        }
+      },
+      "WorkerSettings": {
+        "2": {
+          "version": 2,
+          "hash": "91c375dd40d06c81fc6403751ee48cbc94b9877f91e65a7e302303218dfe71fa",
+          "action": "add"
+        }
+      },
       "ApprovalDecision": {
         "1": {
           "version": 1,
@@ -14,15 +35,64 @@
       "UserCodeStatusCollection": {
         "2": {
           "version": 2,
-          "hash": "aacbdcc19141d96914ab10b6c3f9f4684fb3f71d405254df70602655539044c7",
+          "hash": "22a1574d4d2d5dcfa26791f2a5007bf3885dae707e175bf8cc20d0803ae54dec",
           "action": "add"
         }
       },
       "UserCode": {
         "2": {
           "version": 2,
-          "hash": "c127aa856b208f06f50131cd114a910b5b147e252efc9c962f0fe424a1edd264",
+          "hash": "726bc406449178029c04b0b21b50f86ea12b18ea5b7dd030ad7dbfc6e60f6909",
           "action": "add"
+        }
+      },
+      "QueueItem": {
+        "2": {
+          "version": 2,
+          "hash": "1d8615f6daabcd2a285b2f36fd7bef1df76cdd119dd49c02069c50fd1b9c3ff4",
+          "action": "add"
+        }
+      },
+      "ActionQueueItem": {
+        "2": {
+          "version": 2,
+          "hash": "bfda6ef87e4045d663324bb91a215ea06e1f173aec1fb4d9ddd337cdc1f0787f",
+          "action": "add"
+        }
+      },
+      "APIEndpointQueueItem": {
+        "2": {
+          "version": 2,
+          "hash": "3a46370205152fa23a7d2bfa47130dbf2e2bc7ef31f6d3fe4c92fd8d683770b5",
+          "action": "add"
+        }
+      },
+      "MongoDict": {
+        "1": {
+          "version": 1,
+          "hash": "57e36f57eed75e62b29e2bac1295035a9bf2c0e3c56719dac24cb6cc685be00b",
+          "action": "remove"
+        }
+      },
+      "MongoStoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "53342b27d34165b7e2699f8e7ad70d13d125875e6a75e8fa18f5796428f41036",
+          "action": "remove"
+        }
+      },
+      "JobItem": {
+        "1": {
+          "version": 1,
+          "hash": "0b32277b7d3b9bdc14a2a51cc9005f8254e7f7b6ec059ddcccbcd681a807afb6",
+          "action": "remove"
+        }
+      },
+      "DictStoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "2e1365c5535fa51c22eef79f67dd6444789bc829c27881367e3050e06e2ffbfe",
+          "action": "remove"
         }
       }
     }

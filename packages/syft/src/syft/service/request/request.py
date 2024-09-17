@@ -40,8 +40,8 @@ from ...util.markdown import markdown_as_class_with_fields
 from ...util.notebook_ui.icons import Icon
 from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
-from ..action.action_store import ActionObjectPermission
-from ..action.action_store import ActionPermission
+from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import ActionPermission
 from ..code.user_code import ApprovalDecision
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
@@ -115,7 +115,7 @@ class ActionStoreChange(Change):
 
     @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
-        action_store = context.server.services.action.store
+        action_store = context.server.services.action.stash
 
         # can we ever have a lineage ID in the store?
         obj_uid = self.linked_obj.object_uid
@@ -365,6 +365,7 @@ class Request(SyncableSyftObject):
     __attr_searchable__ = [
         "requesting_user_verify_key",
         "approving_user_verify_key",
+        "code_id",
     ]
     __attr_unique__ = ["request_hash"]
     __repr_attrs__ = [

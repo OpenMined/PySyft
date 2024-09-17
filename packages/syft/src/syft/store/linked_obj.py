@@ -95,7 +95,7 @@ class LinkedObject(SyftObject):
             raise SyftException(public_message=f"context {context}'s server is None")
         service = context.server.get_service(self.service_type)
         if hasattr(service, "stash"):
-            result = service.stash.update(credentials, obj)
+            result = service.stash.update(credentials, obj).unwrap()
         else:
             raise SyftException(
                 public_message=f"service {service} does not have a stash"

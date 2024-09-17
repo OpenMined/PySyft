@@ -22,6 +22,6 @@ def test_action_service_sanity(worker):
     obj = ActionObject.from_obj("abc")
     pointer = obj.send(root_datasite_client)
 
-    assert len(service.store.data) == 1
+    assert len(service.stash._data) == 1
     res = pointer.capitalize()
     assert res[0] == "A"

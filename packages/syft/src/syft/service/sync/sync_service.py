@@ -6,7 +6,8 @@ from typing import Any
 # relative
 from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
+from ...store.db.stash import ObjectStash
 from ...store.document_store import NewBaseStash
 from ...store.document_store_errors import NotFoundException
 from ...store.linked_obj import LinkedObject
@@ -36,22 +37,20 @@ from .sync_state import SyncState
 logger = logging.getLogger(__name__)
 
 
-def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> Any:
+def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> ObjectStash:
     if isinstance(item, ActionObject):
         service = context.server.services.action  # type: ignore
-        return service.store  # type: ignore
+        return service.stash  # type: ignore
     service = context.server.get_service(TYPE_TO_SERVICE[type(item)])  # type: ignore
-    return service.stash.partition
+    return service.stash
 
 
 @instrument
 @serializable(canonical_name="SyncService", version=1)
 class SyncService(AbstractService):
-    store: DocumentStore
     stash: SyncStash
 
-    def __init__(self, store: DocumentStore):
-        self.store = store
+    def __init__(self, store: DBManager):
         self.stash = SyncStash(store=store)
 
     def add_actionobject_read_permissions(
@@ -60,14 +59,14 @@ class SyncService(AbstractService):
         action_object: ActionObject,
         new_permissions: list[ActionObjectPermission],
     ) -> None:
-        store_to = context.server.services.action.store  # type: ignore
+        action_stash = context.server.services.action.stash
         for permission in new_permissions:
             if permission.permission == ActionPermission.READ:
-                store_to.add_permission(permission)
+                action_stash.add_permission(permission)
 
         blob_id = action_object.syft_blob_storage_entry_id
         if blob_id:
-            store_to_blob = context.server.services.blob_sotrage.stash.partition  # type: ignore
+            blob_stash = context.server.services.blob_storage.stash
             for permission in new_permissions:
                 if permission.permission == ActionPermission.READ:
                     permission_blob = ActionObjectPermission(
@@ -75,7 +74,7 @@ class SyncService(AbstractService):
                         permission=permission.permission,
                         credentials=permission.credentials,
                     )
-                    store_to_blob.add_permission(permission_blob)
+                    blob_stash.add_permission(permission_blob)
 
     def set_obj_ids(self, context: AuthedServiceContext, x: Any) -> None:
         if hasattr(x, "__dict__") and isinstance(x, SyftObject):
@@ -246,23 +245,21 @@ class SyncService(AbstractService):
         self,
         context: AuthedServiceContext,
         items: list[SyncableSyftObject],
-    ) -> tuple[dict[UID, set[str]], dict[UID, set[str]]]:
-        permissions = {}
-        storage_permissions = {}
+    ) -> tuple[dict[UID, set[str]], dict[UID, set[UID]]]:
+        permissions: dict[UID, set[str]] = {}
+        storage_permissions: dict[UID, set[UID]] = {}
 
         for item in items:
             store = get_store(context, item)
             if store is not None:
                 # TODO fix error handling
                 uid = item.id.id
-                item_permissions = store._get_permissions_for_uid(uid)
-                if not item_permissions.is_err():
-                    permissions[uid] = item_permissions.ok()
+                permissions[uid] = store._get_permissions_for_uid(uid).unwrap()
 
                 # TODO fix error handling for storage permissions
-                item_storage_permissions = store._get_storage_permissions_for_uid(uid)
-                if not item_storage_permissions.is_err():
-                    storage_permissions[uid] = item_storage_permissions.ok()
+                storage_permissions[uid] = store._get_storage_permissions_for_uid(
+                    uid
+                ).unwrap()
         return permissions, storage_permissions
 
     @as_result(SyftException)
@@ -371,7 +368,9 @@ class SyncService(AbstractService):
             storage_permissions = {}
 
         try:
-            previous_state = self.stash.get_latest(context=context).unwrap()
+            previous_state = self.stash.get_latest(
+                credentials=context.credentials
+            ).unwrap()
         except NotFoundException:
             previous_state = None
 

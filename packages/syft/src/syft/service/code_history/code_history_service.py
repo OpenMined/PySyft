@@ -3,7 +3,7 @@
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...types.uid import UID
 from ..code.user_code import SubmitUserCode
@@ -24,11 +24,9 @@ from .code_history_stash import CodeHistoryStash
 
 @serializable(canonical_name="CodeHistoryService", version=1)
 class CodeHistoryService(AbstractService):
-    store: DocumentStore
     stash: CodeHistoryStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = CodeHistoryStash(store=store)
 
     @service_method(
@@ -46,7 +44,7 @@ class CodeHistoryService(AbstractService):
         if isinstance(code, SubmitUserCode):
             code = context.server.services.user_code._submit(
                 context=context, submit_code=code
-            )
+            ).unwrap()
 
         try:
             code_history = self.stash.get_by_service_func_name_and_verify_key(
@@ -189,11 +187,13 @@ class CodeHistoryService(AbstractService):
     ) -> list[CodeHistory]:
         user_verify_key = context.server.services.user.user_verify_key(user_email)
 
-        kwargs = {
+        filters = {
             "id": user_id,
             "email": user_email,
             "verify_key": user_verify_key,
             "service_func_name": service_func_name,
         }
 
-        return self.stash.find_all(credentials=context.credentials, **kwargs).unwrap()
+        return self.stash.get_all(
+            credentials=context.credentials, filters=filters
+        ).unwrap()

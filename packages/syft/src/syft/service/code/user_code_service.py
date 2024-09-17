@@ -5,7 +5,7 @@ from typing import TypeVar
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
@@ -59,11 +59,9 @@ class IsExecutionAllowedEnum(str, Enum):
 
 @serializable(canonical_name="UserCodeService", version=1)
 class UserCodeService(AbstractService):
-    store: DocumentStore
     stash: UserCodeStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = UserCodeStash(store=store)
 
     @service_method(
@@ -76,11 +74,12 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> SyftSuccess:
         """Add User Code"""
-        user_code = self._submit(context, code, exists_ok=False)
+        user_code = self._submit(context, code, exists_ok=False).unwrap()
         return SyftSuccess(
             message="User Code Submitted", require_api_update=True, value=user_code
         )
 
+    @as_result(SyftException)
     def _submit(
         self,
         context: AuthedServiceContext,
@@ -106,17 +105,17 @@ class UserCodeService(AbstractService):
                 context.credentials,
                 code_hash=get_code_hash(submit_code.code, context.credentials),
             ).unwrap()
-
-            if not exists_ok:
+            # no exception, code exists
+            if exists_ok:
+                return existing_code
+            else:
                 raise SyftException(
-                    public_message="The code to be submitted already exists"
+                    public_message="UserCode with this code already exists"
                 )
-            return existing_code
         except NotFoundException:
             pass
 
         code = submit_code.to(UserCode, context=context)
-
         result = self._post_user_code_transform_ops(context, code)
 
         if result.is_err():
@@ -273,17 +272,11 @@ class UserCodeService(AbstractService):
         - If the code is a SubmitUserCode and the code hash does not exist, submit the code
         """
         if isinstance(code, UserCode):
-            # Get existing UserCode
-            try:
-                return self.stash.get_by_uid(context.credentials, code.id).unwrap()
-            except NotFoundException as exc:
-                raise NotFoundException.from_exception(
-                    exc, public_message=f"UserCode {code.id} not found on this server"
-                )
+            return self.stash.get_by_uid(context.credentials, code.id).unwrap()
         else:  # code: SubmitUserCode
             # Submit new UserCode, or get existing UserCode with the same code hash
             # TODO: Why is this tagged as unreachable?
-            return self._submit(context, code, exists_ok=True)  # type: ignore[unreachable]
+            return self._submit(context, code, exists_ok=True).unwrap()  # type: ignore[unreachable]
 
     @service_method(
         path="code.request_code_execution",
