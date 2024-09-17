@@ -719,6 +719,12 @@ class Server(AbstractServer):
             if consumer_to_pop is not None:
                 consumers.pop(consumer_to_pop)
 
+    def remove_all_consumers(self) -> None:
+        for consumers in self.queue_manager.consumers.values():
+            for consumer in consumers:
+                consumer.close()
+            consumers.clear()
+
     @classmethod
     def named(
         cls: type[Server],

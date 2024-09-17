@@ -115,7 +115,7 @@ def test_get_migration_data(worker, tmp_path):
 @contextmanager
 def named_worker_context(name):
     # required to launch worker with same name twice within the same test + ensure cleanup
-    worker = sy.Worker.named(name=name, db_url="sqlite://")
+    worker = sy.Worker.named(name=name)
     try:
         yield worker
     finally:
