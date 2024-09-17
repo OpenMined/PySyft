@@ -114,7 +114,7 @@ def as_result(
                 if isinstance(output, Ok) or isinstance(output, Err):
                     raise _AsResultError(
                         f"Functions decorated with `as_result` should not return Result.\n"
-                        f"Did you forget to unwrap() the result?\n"
+                        f"Did you forget to unwrap() the result in {func.__name__}?\n"
                         f"result: {output}"
                     )
                 return Ok(output)

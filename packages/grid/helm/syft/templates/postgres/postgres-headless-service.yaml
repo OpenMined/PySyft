@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongo-headless
+  name: postgres-headless
   labels:
     {{- include "common.labels" . | nindent 4 }}
-    app.kubernetes.io/component: mongo
+    app.kubernetes.io/component: postgres
 spec:
   clusterIP: None
   ports:
-    - name: mongo
-      port: 27017
+    - name: postgres
+      port: 5432
   selector:
     {{- include "common.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: mongo
+    app.kubernetes.io/component: postgres

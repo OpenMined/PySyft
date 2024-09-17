@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from ...serde.serializable import serializable
 from ...service.action.action_endpoint import CustomEndpointActionObject
 from ...service.action.action_object import ActionObject
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
@@ -37,11 +37,9 @@ from .api_stash import TwinAPIEndpointStash
 
 @serializable(canonical_name="APIService", version=1)
 class APIService(AbstractService):
-    store: DocumentStore
     stash: TwinAPIEndpointStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = TwinAPIEndpointStash(store=store)
 
     @service_method(
@@ -263,7 +261,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
     ) -> list[TwinAPIEndpointView]:
         """Retrieves a list of available API endpoints view available to the user."""
-        admin_key = context.server.services.user.admin_verify_key()
+        admin_key = context.server.services.user.root_verify_key
         all_api_endpoints = self.stash.get_all(admin_key).unwrap()
 
         api_endpoint_view = [
@@ -587,7 +585,7 @@ class APIService(AbstractService):
     def get_endpoint_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> TwinAPIEndpoint:
-        admin_key = context.server.services.user.admin_verify_key()
+        admin_key = context.server.services.user.root_verify_key
         return self.stash.get_by_uid(admin_key, uid).unwrap()
 
     @as_result(StashException)

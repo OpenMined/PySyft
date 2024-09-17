@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 def make_links(text: str) -> str:
     file_pattern = re.compile(r"([\w/.-]+\.py)\", line (\d+)")
-    return file_pattern.sub(r'<a href="file://\1#L\2">\1, line \2</a>', text)
+    return file_pattern.sub(r'<a href="file://\1:\2">\1, line \2</a>', text)
 
 
 DEFAULT_ID_WIDTH = 110

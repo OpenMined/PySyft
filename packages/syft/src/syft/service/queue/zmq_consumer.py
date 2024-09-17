@@ -288,7 +288,7 @@ class ZMQConsumer(QueueConsumer):
                 ConsumerState.IDLE if job_id is None else ConsumerState.CONSUMING
             )
             res = self.worker_stash.update_consumer_state(
-                credentials=self.worker_stash.partition.root_verify_key,
+                credentials=self.worker_stash.root_verify_key,
                 worker_uid=self.syft_worker_id,
                 consumer_state=consumer_state,
             )
