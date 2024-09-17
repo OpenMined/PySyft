@@ -73,6 +73,13 @@
           "hash": "3a46370205152fa23a7d2bfa47130dbf2e2bc7ef31f6d3fe4c92fd8d683770b5",
           "action": "add"
         }
+      },
+      "NotifierSettings": {
+        "3": {
+          "version": 3,
+          "hash": "d0ea0aec527cbf809f20cba4631c21a48e501ca74b74bc2e57fac14b25aeabde",
+          "action": "add"
+        }
       }
     }
   }
