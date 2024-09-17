@@ -116,6 +116,11 @@ def faker():
 
 @pytest.fixture(scope="function")
 def worker() -> Worker:
+    """
+    NOTE in-memory sqlite is not shared between connections, so:
+    - using 2 workers (high/low) will not share a db
+    - re-using a connection (e.g. for a Job worker) will not share a db
+    """
     worker = sy.Worker.named(name=token_hex(16), db_url="sqlite://")
     yield worker
     worker.cleanup()
