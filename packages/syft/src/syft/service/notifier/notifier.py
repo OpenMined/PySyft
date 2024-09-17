@@ -309,9 +309,7 @@ class NotifierSettings(SyftObject):
     email_port: int | None = 587
     email_username: str | None = ""
     email_password: str | None = ""
-    email_frequency: dict[str, NOTIFICATION_FREQUENCY] = {
-        EMAIL_TYPES.REQUEST_EMAIL.value: NOTIFICATION_FREQUENCY.SIX_HOURS
-    }
+    email_frequency: dict[str, NOTIFICATION_FREQUENCY] = {}
     email_queue: dict[str, dict[SyftVerifyKey, list[Notification]]] = {}
     email_activity: dict[str, dict[SyftVerifyKey, UserNotificationActivity]] = {}
     email_rate_limit: dict[str, int] = {}
