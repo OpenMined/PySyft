@@ -129,14 +129,14 @@ class NotifierService(AbstractService):
                 public_message="You must provide both server and port to enable notifications."
             )
 
-        logging.debug("Got notifier from db")
+        logger.debug("Got notifier from db")
         skip_auth: bool = False
         # If no new credentials provided, check for existing ones
         if not (email_username and email_password):
             if not (notifier.email_username and notifier.email_password):
                 skip_auth = True
             else:
-                logging.debug("No new credentials provided. Using existing ones.")
+                logger.debug("No new credentials provided. Using existing ones.")
                 email_password = notifier.email_password
                 email_username = notifier.email_username
 
@@ -150,7 +150,7 @@ class NotifierService(AbstractService):
             )
 
         if not valid_credentials:
-            logging.error("Invalid SMTP credentials.")
+            logger.error("Invalid SMTP credentials.")
             raise SyftException(public_message=("Invalid SMTP credentials."))
 
         notifier.email_password = email_password
@@ -181,7 +181,7 @@ class NotifierService(AbstractService):
             notifier.email_sender = email_sender
 
         notifier.active = True
-        logging.debug(
+        logger.debug(
             "Email credentials are valid. Updating the notifier settings in the db."
         )
 
@@ -238,7 +238,7 @@ class NotifierService(AbstractService):
         email_sender: str | None = None,
         smtp_port: int | None = None,
         smtp_host: str | None = None,
-    ) -> SyftSuccess:
+    ) -> SyftSuccess | None:
         """Initialize Notifier settings for a Server.
         If settings already exist, it will use the existing one.
         If not, it will create a new one.
@@ -343,7 +343,7 @@ class NotifierService(AbstractService):
 
         # If notifier is active
         if notifier.active and notification.email_template is not None:
-            logging.debug("Checking user email activity")
+            logger.debug("Checking user email activity")
 
             if notifier.email_activity.get(notification.email_template.__name__, None):
                 user_activity = notifier.email_activity[
