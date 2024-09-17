@@ -3,6 +3,7 @@
 # third party
 
 # relative
+from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.document_store import DocumentStore
@@ -22,6 +23,7 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from .user_code import ApprovalDecision
 from .user_code import UserCodeStatusCollection
 
 
@@ -52,6 +54,7 @@ class CodeStatusUpdate(PartialSyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
+    decision: ApprovalDecision
 
 
 @serializable(canonical_name="UserCodeStatusService", version=1)
@@ -69,10 +72,11 @@ class UserCodeStatusService(AbstractService):
         context: AuthedServiceContext,
         status: UserCodeStatusCollection,
     ) -> UserCodeStatusCollection:
-        return self.stash.set(
+        res = self.stash.set(
             credentials=context.credentials,
             obj=status,
         ).unwrap()
+        return res
 
     @service_method(
         path="code_status.update",
@@ -84,7 +88,13 @@ class UserCodeStatusService(AbstractService):
     def update(
         self, context: AuthedServiceContext, code_update: CodeStatusUpdate
     ) -> SyftSuccess:
-        res = self.status.update(context.credentials, code_update).unwrap()
+        existing_status = self.stash.get_by_uid(
+            context.credentials, uid=code_update.id
+        ).unwrap()
+        server_identity = ServerIdentity.from_server(context.server)
+        existing_status.status_dict[server_identity] = code_update.decision
+
+        res = self.stash.update(context.credentials, existing_status).unwrap()
         return SyftSuccess(message="UserCode updated successfully", value=res)
 
     @service_method(

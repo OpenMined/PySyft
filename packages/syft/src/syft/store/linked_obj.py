@@ -44,7 +44,7 @@ class LinkedObject(SyftObject):
     def resolve(self) -> SyftObject:
         return self._resolve()
 
-    def _resolve(self, load_cached=False) -> SyftObject:
+    def _resolve(self, load_cached: bool = False) -> SyftObject:
         api = None
         if load_cached and self._resolve_cache is not None:
             return self._resolve_cache
@@ -58,16 +58,20 @@ class LinkedObject(SyftObject):
             logger.error(">>> Failed to resolve object", type(api), e)
             raise e
 
-    def resolve_dynamic(self, context: ServerServiceContext | None, load_cached=False):
+    def resolve_dynamic(
+        self, context: ServerServiceContext | None, load_cached: bool = False
+    ) -> SyftObject:
         if context is not None:
-            return self.resolve_with_context(context, load_cached)
+            return self.resolve_with_context(context, load_cached).unwrap()
         else:
             return self._resolve(load_cached)
 
     @as_result(SyftException)
     def resolve_with_context(
-        self, context: ServerServiceContext, load_cached=False
+        self, context: ServerServiceContext, load_cached: bool = False
     ) -> Any:
+        if load_cached and self._resolve_cache is not None:
+            return self._resolve_cache
         if context.server is None:
             raise ValueError(f"context {context}'s server is None")
         res = (

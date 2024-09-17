@@ -142,7 +142,8 @@ class ApprovalDecision(SyftObject):
     __version__ = 1
 
     @property
-    def non_empty_reason(self):
+    def reason_or_none(self) -> str | None:
+        # TODO: move to class creation
         if self.reason == "":
             return None
         return self.reason
@@ -168,6 +169,7 @@ class UserCodeStatusCollectionV1(SyncableSyftObject):
 
     user_code_link: LinkedObject
 
+
 @serializable()
 class UserCodeStatusCollection(SyncableSyftObject):
     """Currently this is a class that implements a mixed bag of two statusses
@@ -189,7 +191,7 @@ class UserCodeStatusCollection(SyncableSyftObject):
     user_code_link: LinkedObject
     user_verify_key: SyftVerifyKey
 
-    _was_requested_on_lowside: bool = False
+    was_requested_on_lowside: bool = False
 
     # ugly and buggy optimization, remove at some point
     _has_readable_outputs_cache: bool | None = None
@@ -198,15 +200,15 @@ class UserCodeStatusCollection(SyncableSyftObject):
     def approved(self) -> bool:
         # only use this on the client side, in this case we can use self.get_api instead
         # of using the context
-        self.get_approved(None)
+        return self.get_is_approved(None)
 
-    def get_approved(self, context: AuthedServiceContext | None) -> bool:
+    def get_is_approved(self, context: AuthedServiceContext | None) -> bool:
         return self._compute_status(context) == UserCodeStatus.APPROVED
 
     def _compute_status(
         self, context: AuthedServiceContext | None = None
     ) -> UserCodeStatus:
-        if self._was_requested_on_lowside:
+        if self.was_requested_on_lowside:
             return self._compute_status_l0(context)
         else:
             return self._compute_status_l2()
@@ -215,10 +217,8 @@ class UserCodeStatusCollection(SyncableSyftObject):
     def denied(self) -> bool:
         # for denied we use the status dict both for level 0 and level 2
         return any(
-            [
-                approval_dec.status == UserCodeStatus.DENIED
-                for approval_dec in self.status_dict.values()
-            ]
+            approval_dec.status == UserCodeStatus.DENIED
+            for approval_dec in self.status_dict.values()
         )
 
     def _compute_status_l0(
@@ -244,10 +244,12 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
     def _compute_status_l2(self) -> UserCodeStatus:
         any_denied = any(
-            x == UserCodeStatus.DENIED for x, _ in self.status_dict.values()
+            approval_dec.status == UserCodeStatus.DENIED
+            for approval_dec in self.status_dict.values()
         )
         all_approved = all(
-            x == UserCodeStatus.APPROVED for x, _ in self.status_dict.values()
+            approval_dec.status == UserCodeStatus.APPROVED
+            for approval_dec in self.status_dict.values()
         )
         if any_denied:
             return UserCodeStatus.DENIED
@@ -256,7 +258,9 @@ class UserCodeStatusCollection(SyncableSyftObject):
         else:
             return UserCodeStatus.PENDING
 
-    def _has_readable_outputs(self, context: AuthedServiceContext | None = None):
+    def _has_readable_outputs(
+        self, context: AuthedServiceContext | None = None
+    ) -> bool:
         if context is None:
             # Clientside
             api = self._get_api()
@@ -277,9 +281,9 @@ class UserCodeStatusCollection(SyncableSyftObject):
     @property
     def first_denial_reason(self) -> str:
         denial_reasons = [
-            x.non_empty_reason
+            x.reason_or_none
             for x in self.status_dict.values()
-            if x.status == UserCodeStatus.DENIED and x.non_empty_reason is not None
+            if x.status == UserCodeStatus.DENIED and x.reason_or_none is not None
         ]
         return next(iter(denial_reasons), "")
 
@@ -332,14 +336,17 @@ class UserCodeStatusCollection(SyncableSyftObject):
         return status_str
 
     def get_status_message_l2(self, context: AuthedServiceContext) -> str:
-        if self.get_approved(context):
+        if self.get_is_approved(context):
             return f"{type(self)} approved"
         denial_string = ""
         string = ""
 
         for server_identity, approval_decision in self.status_dict.items():
-            denial_string += f"Code status on server '{server_identity.server_name}' is '{approval_decision.status}'. Reason: {approval_decision.reason}"
-            if not approval_decision.reason.endswith("."):
+            denial_string += (
+                f"Code status on server '{server_identity.server_name}' is '{approval_decision.status}'."
+                f" Reason: {approval_decision.reason}"
+            )
+            if approval_decision.reason and not approval_decision.reason.endswith("."):  # type: ignore
                 denial_string += "."
             string += f"Code status on server '{server_identity.server_name}' is '{approval_decision.status}'."
         if self.denied:
@@ -443,6 +450,7 @@ class UserCodeV1(SyncableSyftObject):
         "output_policy_state",
     ]
 
+
 @serializable()
 class UserCode(SyncableSyftObject):
     # version
@@ -465,7 +473,7 @@ class UserCode(SyncableSyftObject):
     user_unique_func_name: str
     code_hash: str
     signature: inspect.Signature
-    status_link: LinkedObject | None = None
+    status_link: LinkedObject
     input_kwargs: list[str]
     submit_time: DateTime | None = None
     # tracks if the code calls datasite.something, variable is set during parsing
@@ -496,9 +504,9 @@ class UserCode(SyncableSyftObject):
     __repr_attrs__: ClassVar[list[str]] = [
         "service_func_name",
         "input_owners",
-        "code_status",
+        "status",
         "worker_pool_name",
-        "l0_deny_reason",
+        # "l0_deny_reason",
         "raw_code",
     ]
 
@@ -570,7 +578,7 @@ class UserCode(SyncableSyftObject):
     @property
     def status(self) -> UserCodeStatusCollection:
         # only use this client side
-        return self.get_status(None)
+        return self.get_status(None).unwrap()
 
     @as_result(SyftException)
     def get_status(
@@ -621,7 +629,7 @@ class UserCode(SyncableSyftObject):
 
     def get_input_policy(self, context: AuthedServiceContext) -> InputPolicy | None:
         status = self.get_status(context).unwrap()
-        if status.get_approved(context) or self.input_policy_type.has_safe_serde:
+        if status.get_is_approved(context) or self.input_policy_type.has_safe_serde:
             return self._get_input_policy()
         return None
 
@@ -683,7 +691,7 @@ class UserCode(SyncableSyftObject):
 
     def get_output_policy(self, context: AuthedServiceContext) -> OutputPolicy | None:
         status = self.get_status(context).unwrap()
-        if status.get_approved(context) or self.output_policy_type.has_safe_serde:
+        if status.get_is_approved(context) or self.output_policy_type.has_safe_serde:
             return self._get_output_policy()
         return None
 
@@ -1662,7 +1670,7 @@ def create_code_status(context: TransformContext) -> TransformContext:
             },
             user_code_link=code_link,
             user_verify_key=context.credentials,
-            _was_requested_on_lowside=was_requested_on_lowside,
+            was_requested_on_lowside=was_requested_on_lowside,
         )
 
     elif context.server.server_type == ServerType.ENCLAVE:

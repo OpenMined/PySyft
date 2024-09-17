@@ -352,7 +352,7 @@ class UserCodeService(AbstractService):
         output_policy: OutputPolicy | None,
     ) -> IsExecutionAllowedEnum:
         status = code.get_status(context).unwrap()
-        if not status.get_approved(context):
+        if not status.get_is_approved(context):
             return IsExecutionAllowedEnum.NOT_APPROVED
         elif self.has_code_permission(code, context) is HasCodePermissionEnum.DENIED:
             # TODO: Check enum above
@@ -502,11 +502,12 @@ class UserCodeService(AbstractService):
                 # code is from low side (L0 setup)
                 status = code.get_status(context).unwrap()
 
-                if context.server_allows_execution_for_ds and not status.get_approved(
-                    context
+                if (
+                    context.server_allows_execution_for_ds
+                    and not status.get_is_approved(context)
                 ):
                     raise SyftException(
-                        public_message=status.get_status_message(context)
+                        public_message=status.get_status_message_l2(context)
                     )
 
                 output_policy_is_valid = False
@@ -643,7 +644,10 @@ class UserCodeService(AbstractService):
 
         is_admin = context.role == ServiceRole.ADMIN
 
-        if not code.get_status(context).get_approved(context) and not is_admin:
+        if (
+            not code.get_status(context).unwrap().get_is_approved(context)
+            and not is_admin
+        ):
             raise SyftException(public_message="This UserCode is not approved")
 
         return code.store_execution_output(

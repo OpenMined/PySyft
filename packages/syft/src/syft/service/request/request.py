@@ -70,7 +70,7 @@ class RequestStatus(Enum):
     def from_usercode_status(
         cls, status: UserCodeStatusCollection, context: AuthedServiceContext
     ) -> "RequestStatus":
-        if status.get_approved(context):
+        if status.get_is_approved(context):
             return RequestStatus.APPROVED
         elif status.denied:
             return RequestStatus.REJECTED
@@ -487,6 +487,15 @@ class Request(SyncableSyftObject):
         )
 
     @property
+    def status_id(self) -> UID:
+        for change in self.changes:
+            if isinstance(change, UserCodeStatusChange):
+                return change.linked_obj.object_uid
+        raise SyftException(
+            public_message="This type of request does not have code associated with it."
+        )
+
+    @property
     def codes(self) -> Any:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
@@ -615,7 +624,11 @@ class Request(SyncableSyftObject):
                     "This request already has results published to the data scientist. "
                     "They will still be able to access those results."
                 )
-            api.code_status.update(id=self.code_id, l0_deny_reason=reason)
+            api.code_status.update(
+                id=self.code.status_link.object_uid,
+                decision=ApprovalDecision(status=UserCodeStatus.DENIED, reason=reason),
+            )
+
             return SyftSuccess(message=f"Request denied with reason: {reason}")
 
         return api.services.request.undo(uid=self.id, reason=reason)
@@ -1081,9 +1094,7 @@ class Request(SyncableSyftObject):
         pass
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
-        dependencies = []
-        dependencies.append(self.code_id)
-        return dependencies
+        return [self.code_id, self.status_id]
 
 
 @serializable()
@@ -1428,10 +1439,9 @@ class UserCodeStatusChange(Change):
         undo: bool,
     ) -> UserCodeStatusCollection:
         reason: str = context.extra_kwargs.get("reason", "")
-        ApprovalDecision
         return status.mutate(
             value=ApprovalDecision(
-                decision=UserCodeStatus.DENIED if undo else self.value, reason=reason
+                status=UserCodeStatus.DENIED if undo else self.value, reason=reason
             ),
             server_name=context.server.name,
             server_id=context.server.id,
