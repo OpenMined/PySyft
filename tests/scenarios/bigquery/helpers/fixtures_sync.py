@@ -5,6 +5,7 @@ from typing import Any
 from faker import Faker
 from helpers.users import TestUser
 import pandas as pd
+from unsync import unsync
 
 # syft absolute
 import syft as sy
@@ -120,6 +121,7 @@ def create_dataset(name: str):
 
 
 def make_server(request: Any | None = None, server_name: str | None = None) -> Any:
+    # TODO: make it compatible with remote deployments
     print("making server")
     if server_name is None:
         faker = Faker()
@@ -142,3 +144,10 @@ def make_server(request: Any | None = None, server_name: str | None = None) -> A
     else:
         request.addfinalizer(cleanup)
     return server
+
+
+@unsync
+async def create_users(root_client, events, users, event_name):
+    for test_user in users:
+        create_user(root_client, test_user)
+    events.register(event_name)

@@ -10,25 +10,27 @@ import time
 # third party
 from unsync import unsync
 
-EVENT_USER_ADMIN_CREATED = "user_admin_created"
-EVENT_USERS_CREATED = "users_created"
-EVENT_DATASET_UPLOADED = "dataset_uploaded"
-EVENT_DATASET_MOCK_READABLE = "dataset_mock_readable"
-EVENT_PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED = "prebuilt_worker_image_bigquery_created"
-EVENT_EXTERNAL_REGISTRY_BIGQUERY_CREATED = "external_registry_bigquery_created"
-EVENT_WORKER_POOL_CREATED = "worker_pool_created"
-EVENT_ALLOW_GUEST_SIGNUP_DISABLED = "allow_guest_signup_disabled"
-EVENT_USERS_CREATED_CHECKED = "users_created_checked"
-EVENT_SCHEMA_ENDPOINT_CREATED = "schema_endpoint_created"
-EVENT_SUBMIT_QUERY_ENDPOINT_CREATED = "submit_query_endpoint_created"
-EVENT_SUBMIT_QUERY_ENDPOINT_CONFIGURED = "submit_query_endpoint_configured"
-EVENT_USERS_CAN_QUERY_MOCK = "users_can_query_mock"
-EVENT_USERS_CAN_SUBMIT_QUERY = "users_can_submit_query"
-EVENT_ADMIN_APPROVED_FIRST_REQUEST = "admin_approved_first_request"
-EVENT_USERS_CAN_GET_APPROVED_RESULT = "users_can_get_approved_result"
-EVENT_USERS_QUERY_NOT_READY = "users_query_not_ready"
-EVENT_QUERY_ENDPOINT_CREATED = "query_endpoint_created"
-EVENT_QUERY_ENDPOINT_CONFIGURED = "query_endpoint_configured"
+
+class Event:
+    USER_ADMIN_CREATED = "user_admin_created"
+    USERS_CREATED = "users_created"
+    DATASET_UPLOADED = "dataset_uploaded"
+    DATASET_MOCK_READABLE = "dataset_mock_readable"
+    PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED = "prebuilt_worker_image_bigquery_created"
+    EXTERNAL_REGISTRY_BIGQUERY_CREATED = "external_registry_bigquery_created"
+    WORKER_POOL_CREATED = "worker_pool_created"
+    ALLOW_GUEST_SIGNUP_DISABLED = "allow_guest_signup_disabled"
+    USERS_CREATED_CHECKED = "users_created_checked"
+    SCHEMA_ENDPOINT_CREATED = "schema_endpoint_created"
+    SUBMIT_QUERY_ENDPOINT_CREATED = "submit_query_endpoint_created"
+    SUBMIT_QUERY_ENDPOINT_CONFIGURED = "submit_query_endpoint_configured"
+    USERS_CAN_QUERY_MOCK = "users_can_query_mock"
+    USERS_CAN_SUBMIT_QUERY = "users_can_submit_query"
+    ADMIN_APPROVED_FIRST_REQUEST = "admin_approved_first_request"
+    USERS_CAN_GET_APPROVED_RESULT = "users_can_get_approved_result"
+    USERS_QUERY_NOT_READY = "users_query_not_ready"
+    QUERY_ENDPOINT_CREATED = "query_endpoint_created"
+    QUERY_ENDPOINT_CONFIGURED = "query_endpoint_configured"
 
 
 @dataclass

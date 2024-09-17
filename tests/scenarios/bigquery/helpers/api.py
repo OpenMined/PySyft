@@ -3,7 +3,6 @@ import os
 import sys
 
 # third party
-from helpers.fixtures_sync import create_user
 from unsync import unsync
 
 # syft absolute
@@ -40,13 +39,6 @@ def is_within_rate_limit(context):
     ]
 
     return sum(calls_last_min) < settings["CALLS_PER_MIN"]
-
-
-@unsync
-async def create_users(root_client, events, users, event_name):
-    for test_user in users:
-        create_user(root_client, test_user)
-    events.register(event_name)
 
 
 @unsync
@@ -152,3 +144,30 @@ async def create_endpoints_submit_query(
             events.register(register)
         else:
             print("Failed to add api endpoint")
+
+
+@unsync
+async def set_endpoint_settings(
+    events, client, path, kwargs, after: str, register: str
+):
+    if after:
+        await events.await_for(event_name=after)
+
+    # Here, we update the endpoint to timeout after 100s (rather the default of 60s)
+    result = client.api.services.api.update(endpoint_path=path, **kwargs)
+    if isinstance(result, sy.SyftSuccess):
+        events.register(register)
+
+
+def api_for_path(client, path):
+    root = client.api.services
+    for part in path.split("."):
+        if hasattr(root, part):
+            root = getattr(root, part)
+    return root
+
+
+def run_api_path(client, path, **kwargs):
+    api_method = api_for_path(client, path)
+    result = api_method(**kwargs)
+    return result
