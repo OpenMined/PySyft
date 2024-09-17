@@ -46,7 +46,6 @@ from ...serde.serialize import _serialize
 from ...serde.signature import signature_remove_context
 from ...serde.signature import signature_remove_self
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import PartitionKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
@@ -106,11 +105,6 @@ logger = logging.getLogger(name=__name__)
 if TYPE_CHECKING:
     # relative
     from ...service.sync.diff_state import AttrDiff
-
-UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
-CodeHashPartitionKey = PartitionKey(key="code_hash", type_=str)
-ServiceFuncNamePartitionKey = PartitionKey(key="service_func_name", type_=str)
-SubmitTimePartitionKey = PartitionKey(key="submit_time", type_=DateTime)
 
 PyCodeObject = Any
 

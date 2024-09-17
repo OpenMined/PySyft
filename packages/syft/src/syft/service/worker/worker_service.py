@@ -13,7 +13,7 @@ from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store import SyftSuccess
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
@@ -39,11 +39,9 @@ from .worker_stash import WorkerStash
 
 @serializable(canonical_name="WorkerService", version=1)
 class WorkerService(AbstractService):
-    store: DocumentStore
     stash: WorkerStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = WorkerStash(store=store)
 
     @service_method(

@@ -144,20 +144,12 @@ def test_get_all_success(
         NotificationStatus.UNREAD,
     )
 
-    @as_result(StashException)
-    def mock_get_all_inbox_for_verify_key(*args, **kwargs) -> list[Notification]:
-        return [expected_message]
-
-    monkeypatch.setattr(
-        notification_service.stash,
-        "get_all_inbox_for_verify_key",
-        mock_get_all_inbox_for_verify_key,
-    )
-
     response = test_notification_service.get_all(authed_context)
 
     assert len(response) == 1
     assert isinstance(response[0], Notification)
+    response[0].syft_client_verify_key = None
+    response[0].syft_server_location = None
     assert response[0] == expected_message
 
 
@@ -188,9 +180,6 @@ def test_get_all_error_on_get_all_inbox(
 
 
 def test_get_sent_success(
-    root_verify_key,
-    monkeypatch: MonkeyPatch,
-    notification_service: NotificationService,
     authed_context: AuthedServiceContext,
     document_store: DocumentStore,
 ) -> None:
@@ -207,20 +196,12 @@ def test_get_sent_success(
         NotificationStatus.UNREAD,
     )
 
-    @as_result(StashException)
-    def mock_get_all_sent_for_verify_key(credentials, verify_key) -> list[Notification]:
-        return [expected_message]
-
-    monkeypatch.setattr(
-        notification_service.stash,
-        "get_all_sent_for_verify_key",
-        mock_get_all_sent_for_verify_key,
-    )
-
     response = test_notification_service.get_all_sent(authed_context)
 
     assert len(response) == 1
     assert isinstance(response[0], Notification)
+    response[0].syft_server_location = None
+    response[0].syft_client_verify_key = None
     assert response[0] == expected_message
 
 
@@ -340,19 +321,12 @@ def test_get_all_read_success(
         NotificationStatus.READ,
     )
 
-    def mock_get_all_by_verify_key_for_status() -> list[Notification]:
-        return [expected_message]
-
-    monkeypatch.setattr(
-        notification_service.stash,
-        "get_all_by_verify_key_for_status",
-        mock_get_all_by_verify_key_for_status,
-    )
-
     response = test_notification_service.get_all_read(authed_context)
 
     assert len(response) == 1
     assert isinstance(response[0], Notification)
+    response[0].syft_server_location = None
+    response[0].syft_client_verify_key = None
     assert response[0] == expected_message
 
 
@@ -404,19 +378,11 @@ def test_get_all_unread_success(
         NotificationStatus.UNREAD,
     )
 
-    @as_result(StashException)
-    def mock_get_all_by_verify_key_for_status() -> list[Notification]:
-        return [expected_message]
-
-    monkeypatch.setattr(
-        notification_service.stash,
-        "get_all_by_verify_key_for_status",
-        mock_get_all_by_verify_key_for_status,
-    )
-
     response = test_notification_service.get_all_unread(authed_context)
     assert len(response) == 1
     assert isinstance(response[0], Notification)
+    response[0].syft_server_location = None
+    response[0].syft_client_verify_key = None
     assert response[0] == expected_message
 
 

@@ -12,10 +12,12 @@ global:
 
 # =================================================================================
 
-mongo:
-  # MongoDB config
-  port: 27017
-  username: root
+postgres:
+# Postgres config
+  port: 5432
+  username: syft_postgres
+  dbname: syftdb_postgres
+  host: postgres
 
   # Extra environment vars
   env: null
@@ -35,12 +37,11 @@ mongo:
   storageSize: 5Gi
 
   # Mongo secret name. Override this if you want to use a self-managed secret.
-  secretKeyName: mongo-secret
+  secretKeyName: postgres-secret
 
   # default/custom secret raw values
   secret:
-    rootPassword: null
-
+      rootPassword: null
 # =================================================================================
 
 frontend:

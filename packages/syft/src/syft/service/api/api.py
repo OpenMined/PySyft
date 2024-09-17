@@ -575,7 +575,7 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
             api_service = context.server.get_service("apiservice")
             api_service.stash.upsert(
-                context.server.services.user.admin_verify_key(), self
+                context.server.services.user.root_verify_key, self
             ).unwrap()
 
             print = original_print  # type: ignore
@@ -650,7 +650,7 @@ def extract_code_string(code_field: str) -> Callable:
             )
 
             context.server = cast(AbstractServer, context.server)
-            admin_key = context.server.services.user.admin_verify_key()
+            admin_key = context.server.services.user.root_verify_key
 
             # If endpoint exists **AND** (has visible access **OR** the user is admin)
             if endpoint_type is not None and (

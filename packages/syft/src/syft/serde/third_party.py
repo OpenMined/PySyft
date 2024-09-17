@@ -18,7 +18,6 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pydantic
 from pydantic._internal._model_construction import ModelMetaclass
-from pymongo.collection import Collection
 
 # relative
 from ..types.dicttuple import DictTuple
@@ -57,11 +56,6 @@ recursive_serde_register(
 
 # exceptions
 recursive_serde_register(cls=TypeError, canonical_name="TypeError", version=1)
-
-# mongo collection
-recursive_serde_register_type(
-    Collection, canonical_name="pymongo_collection", version=1
-)
 
 
 def serialize_dataframe(df: DataFrame) -> bytes:

@@ -1,6 +1,5 @@
 # stdlib
 import io
-import random
 
 # third party
 import numpy as np
@@ -42,10 +41,7 @@ def test_blob_storage_allocate(authed_context, blob_storage):
     assert isinstance(blob_deposit, BlobDeposit)
 
 
-def test_blob_storage_write():
-    random.seed()
-    name = "".join(str(random.randint(0, 9)) for i in range(8))
-    worker = sy.Worker.named(name=name)
+def test_blob_storage_write(worker):
     blob_storage = worker.services.blob_storage
     authed_context = AuthedServiceContext(
         server=worker, credentials=worker.signing_key.verify_key
@@ -60,10 +56,7 @@ def test_blob_storage_write():
     worker.cleanup()
 
 
-def test_blob_storage_write_syft_object():
-    random.seed()
-    name = "".join(str(random.randint(0, 9)) for i in range(8))
-    worker = sy.Worker.named(name=name)
+def test_blob_storage_write_syft_object(worker):
     blob_storage = worker.services.blob_storage
     authed_context = AuthedServiceContext(
         server=worker, credentials=worker.signing_key.verify_key
@@ -78,10 +71,7 @@ def test_blob_storage_write_syft_object():
     worker.cleanup()
 
 
-def test_blob_storage_read():
-    random.seed()
-    name = "".join(str(random.randint(0, 9)) for i in range(8))
-    worker = sy.Worker.named(name=name)
+def test_blob_storage_read(worker):
     blob_storage = worker.services.blob_storage
     authed_context = AuthedServiceContext(
         server=worker, credentials=worker.signing_key.verify_key
