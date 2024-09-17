@@ -238,7 +238,7 @@ class NotifierService(AbstractService):
         email_sender: str | None = None,
         smtp_port: int | None = None,
         smtp_host: str | None = None,
-    ) -> SyftSuccess:
+    ) -> SyftSuccess | None:
         """Initialize Notifier settings for a Server.
         If settings already exist, it will use the existing one.
         If not, it will create a new one.
@@ -258,13 +258,13 @@ class NotifierService(AbstractService):
             logger.error(
                 "SMTP server and port are required to initialize the notifier."
             )
-            return
+            return None
 
         if not email_username and not email_password:
             logger.error(
                 "Email username and password are required to initialize the notifier."
             )
-            return
+            return None
 
         try:
             # Create a new NotifierStash since its a static method.
