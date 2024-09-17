@@ -6,7 +6,6 @@ from secrets import token_hex
 import shutil
 import sys
 from tempfile import gettempdir
-from tempfile import mkstemp
 from unittest import mock
 from uuid import uuid4
 
@@ -26,7 +25,6 @@ from syft.protocol.data_protocol import stage_protocol_changes
 from syft.server.worker import Worker
 from syft.service.queue.queue_stash import QueueStash
 from syft.service.user import user
-from syft.store.db.sqlite import SQLiteDBConfig
 
 # our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
 
@@ -117,38 +115,26 @@ def faker():
 
 
 @pytest.fixture(scope="function")
-def db_config() -> SQLiteDBConfig:
-    file_handle, path = mkstemp(suffix=".db")
-    # close the file handle
-    os.close(file_handle)
-    temp_path = Path(path)
-    temp_path.parent.mkdir(parents=True, exist_ok=True)
-    yield SQLiteDBConfig(filename=temp_path.name, path=temp_path.parent)
-    temp_path.unlink()
-
-
-@pytest.fixture(scope="function")
-def worker(db_config: SQLiteDBConfig) -> Worker:
-    worker = sy.Worker.named(name=token_hex(16), db_config=db_config)
+def worker() -> Worker:
+    worker = sy.Worker.named(name=token_hex(16), db_url="sqlite://")
     yield worker
     worker.cleanup()
     del worker
 
 
 @pytest.fixture(scope="function")
-def second_worker(db_config: SQLiteDBConfig) -> Worker:
+def second_worker() -> Worker:
     # Used in server syncing tests
-    worker = sy.Worker.named(name=uuid4().hex, db_config=db_config)
+    worker = sy.Worker.named(name=uuid4().hex, db_url="sqlite://")
     yield worker
     worker.cleanup()
     del worker
 
 
 @pytest.fixture(scope="function")
-def high_worker(db_config: SQLiteDBConfig) -> Worker:
+def high_worker() -> Worker:
     worker = sy.Worker.named(
-        name=token_hex(8),
-        server_side_type=ServerSideType.HIGH_SIDE,
+        name=token_hex(8), server_side_type=ServerSideType.HIGH_SIDE, db_url="sqlite://"
     )
     yield worker
     worker.cleanup()
@@ -156,12 +142,12 @@ def high_worker(db_config: SQLiteDBConfig) -> Worker:
 
 
 @pytest.fixture(scope="function")
-def low_worker(db_config: SQLiteDBConfig) -> Worker:
+def low_worker() -> Worker:
     worker = sy.Worker.named(
         name=token_hex(8),
         server_side_type=ServerSideType.LOW_SIDE,
         dev_mode=True,
-        db_config=db_config,
+        db_url="sqlite://",
     )
     yield worker
     worker.cleanup()
