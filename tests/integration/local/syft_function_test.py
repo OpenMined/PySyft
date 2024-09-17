@@ -23,7 +23,6 @@ def server():
         n_consumers=3,
         create_producer=True,
         queue_port=None,
-        local_db=False,
     )
     # startup code here
     yield _server
