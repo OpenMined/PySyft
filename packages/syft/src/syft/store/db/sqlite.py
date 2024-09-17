@@ -23,8 +23,13 @@ class SQLiteDBConfig(DBConfig):
 
     @property
     def connection_string(self) -> str:
+        """
+        NOTE in-memory sqlite is not shared between connections, so:
+        - using 2 workers (high/low) will not share a db
+        - re-using a connection (e.g. for a Job worker) will not share a db
+        """
         if self.path == Path("."):
-            # Use in-memory database
+            # Use in-memory database, only for unittests
             return "sqlite://"
         filepath = self.path / self.filename
         return f"sqlite:///{filepath.resolve()}"

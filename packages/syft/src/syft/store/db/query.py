@@ -13,6 +13,7 @@ from sqlalchemy import Result
 from sqlalchemy import Select
 from sqlalchemy import Table
 from sqlalchemy import func
+from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm import Session
 from typing_extensions import Self
 
@@ -24,6 +25,7 @@ from ...service.action.action_permissions import ActionPermission
 from ...service.user.user_roles import ServiceRole
 from ...types.syft_object import SyftObject
 from ...types.uid import UID
+from .errors import StashDBException
 from .schema import PostgresBase
 from .schema import SQLiteBase
 
@@ -63,7 +65,10 @@ class Query(ABC):
 
     def execute(self, session: Session) -> Result:
         """Execute the query using the given session."""
-        return session.execute(self.stmt)
+        try:
+            return session.execute(self.stmt)
+        except DatabaseError as e:
+            raise StashDBException.from_sqlalchemy_error(e) from e
 
     def with_permissions(
         self,
