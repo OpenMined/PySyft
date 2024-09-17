@@ -7,6 +7,7 @@ import shutil
 import sys
 from tempfile import gettempdir
 from unittest import mock
+from uuid import uuid4
 
 # third party
 from faker import Faker
@@ -115,7 +116,7 @@ def faker():
 
 @pytest.fixture(scope="function")
 def worker() -> Worker:
-    worker = sy.Worker.named(name=token_hex(16))
+    worker = sy.Worker.named(name=token_hex(16), db_url="sqlite://")
     yield worker
     worker.cleanup()
     del worker
@@ -124,7 +125,7 @@ def worker() -> Worker:
 @pytest.fixture(scope="function")
 def second_worker() -> Worker:
     # Used in server syncing tests
-    worker = sy.Worker.named(name=token_hex(16))
+    worker = sy.Worker.named(name=uuid4().hex, db_url="sqlite://")
     yield worker
     worker.cleanup()
     del worker
@@ -133,7 +134,7 @@ def second_worker() -> Worker:
 @pytest.fixture(scope="function")
 def high_worker() -> Worker:
     worker = sy.Worker.named(
-        name=token_hex(8), server_side_type=ServerSideType.HIGH_SIDE
+        name=token_hex(8), server_side_type=ServerSideType.HIGH_SIDE, db_url="sqlite://"
     )
     yield worker
     worker.cleanup()
@@ -143,7 +144,10 @@ def high_worker() -> Worker:
 @pytest.fixture(scope="function")
 def low_worker() -> Worker:
     worker = sy.Worker.named(
-        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE, dev_mode=True
+        name=token_hex(8),
+        server_side_type=ServerSideType.LOW_SIDE,
+        dev_mode=True,
+        db_url="sqlite://",
     )
     yield worker
     worker.cleanup()
