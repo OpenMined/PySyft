@@ -255,7 +255,7 @@ def test_settings_allow_guest_registration(
         new_callable=mock.PropertyMock,
         return_value=mock_server_settings,
     ):
-        worker = syft.Worker.named(name=faker.name(), reset=True)
+        worker = syft.Worker.named(name=faker.name(), reset=True, db_url="sqlite://")
         guest_datasite_client = worker.guest_client
         root_datasite_client = worker.root_client
 
@@ -289,7 +289,7 @@ def test_settings_allow_guest_registration(
         new_callable=mock.PropertyMock,
         return_value=mock_server_settings,
     ):
-        worker = syft.Worker.named(name=faker.name(), reset=True)
+        worker = syft.Worker.named(name=faker.name(), reset=True, db_url="sqlite://")
         guest_datasite_client = worker.guest_client
         root_datasite_client = worker.root_client
 
@@ -348,7 +348,7 @@ def test_settings_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker)
         new_callable=mock.PropertyMock,
         return_value=mock_server_settings,
     ):
-        worker = syft.Worker.named(name=faker.name(), reset=True)
+        worker = syft.Worker.named(name=faker.name(), reset=True, db_url="sqlite://")
         root_client = worker.root_client
 
         emails_added = []

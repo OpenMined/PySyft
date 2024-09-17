@@ -554,7 +554,7 @@ def test_userservice_register_user_exists(
         new_callable=mock.PropertyMock,
         return_value=settings_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named(name="mock-server")
+        mock_worker = Worker.named(name="mock-server", db_url="sqlite://")
         server_context = ServerServiceContext(server=mock_worker)
 
         with pytest.raises(SyftException) as exc:
@@ -584,7 +584,7 @@ def test_userservice_register_error_on_get_email(
         new_callable=mock.PropertyMock,
         return_value=settings_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named(name="mock-server")
+        mock_worker = Worker.named(name="mock-server", db_url="sqlite://")
         server_context = ServerServiceContext(server=mock_worker)
 
         with pytest.raises(StashException) as exc:
@@ -613,7 +613,7 @@ def test_userservice_register_success(
         new_callable=mock.PropertyMock,
         return_value=settings_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named(name="mock-server")
+        mock_worker = Worker.named(name="mock-server", db_url="sqlite://")
         server_context = ServerServiceContext(server=mock_worker)
 
         monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -652,7 +652,7 @@ def test_userservice_register_set_fail(
         new_callable=mock.PropertyMock,
         return_value=settings_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named(name="mock-server")
+        mock_worker = Worker.named(name="mock-server", db_url="sqlite://")
         server_context = ServerServiceContext(server=mock_worker)
 
         monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)

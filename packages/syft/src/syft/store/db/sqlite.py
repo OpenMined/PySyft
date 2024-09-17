@@ -23,6 +23,9 @@ class SQLiteDBConfig(DBConfig):
 
     @property
     def connection_string(self) -> str:
+        if self.path == Path("."):
+            # Use in-memory database
+            return "sqlite://"
         filepath = self.path / self.filename
         return f"sqlite:///{filepath.resolve()}"
 
