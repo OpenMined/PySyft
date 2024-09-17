@@ -253,19 +253,6 @@ class NotifierService(AbstractService):
         Returns:
             SyftSuccess
         """
-
-        if not smtp_host and not smtp_port:
-            logger.error(
-                "SMTP server and port are required to initialize the notifier."
-            )
-            return None
-
-        if not email_username and not email_password:
-            logger.error(
-                "Email username and password are required to initialize the notifier."
-            )
-            return None
-
         try:
             # Create a new NotifierStash since its a static method.
             notifier_stash = NotifierStash(store=server.db)
