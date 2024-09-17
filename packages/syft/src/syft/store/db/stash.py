@@ -292,7 +292,12 @@ class ObjectStash(Generic[StashT]):
             # this happens when we create stashes in tests
             return ServiceRole.GUEST
 
-        query = self.query(User).filter("verify_key", "eq", credentials)
+        try:
+            query = self.query(User).filter("verify_key", "eq", credentials)
+        except Exception as e:
+            print("Error getting role", e)
+            raise e
+
         user = query.execute(session).first()
         if user is None:
             return ServiceRole.GUEST

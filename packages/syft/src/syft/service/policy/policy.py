@@ -174,7 +174,6 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
     from ..action.action_object import ActionObject
 
     # fetches the all the current api's connected
-    api_list = APIRegistry.get_all_api()
     output_kwargs = {}
     for k, v in kwargs.items():
         uid = v
@@ -190,7 +189,7 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
             raise Exception(f"Input {k} must have a UID not {type(v)}")
 
         _obj_exists = False
-        for api in api_list:
+        for identity, api in APIRegistry.__api_registry__.items():
             try:
                 if api.services.action.exists(uid):
                     server_identity = ServerIdentity.from_api(api)
@@ -205,6 +204,9 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
                 # To handle the cases , where there an old api objects in
                 # in APIRegistry
                 continue
+            except Exception as e:
+                print(f"Error in partition_by_server with identity {identity}", e)
+                raise e
 
         if not _obj_exists:
             raise Exception(f"Input data {k}:{uid} does not belong to any Datasite")
