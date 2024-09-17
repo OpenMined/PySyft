@@ -4,7 +4,7 @@ import logging
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.linked_obj import LinkedObject
 from ...types.errors import SyftException
 from ...types.result import as_result
@@ -37,11 +37,9 @@ logger = logging.getLogger(__name__)
 
 @serializable(canonical_name="RequestService", version=1)
 class RequestService(AbstractService):
-    store: DocumentStore
     stash: RequestStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = RequestStash(store=store)
 
     @service_method(path="request.submit", name="submit", roles=GUEST_ROLE_LEVEL)
@@ -59,7 +57,7 @@ class RequestService(AbstractService):
             request,
         ).unwrap()
 
-        root_verify_key = context.server.services.user.admin_verify_key()
+        root_verify_key = context.server.services.user.root_verify_key
 
         if send_message:
             message_subject = f"Result to request {str(request.id)[:4]}...{str(request.id)[-3:]}\

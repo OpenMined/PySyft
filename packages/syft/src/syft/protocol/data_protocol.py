@@ -81,8 +81,14 @@ def handle_annotation_repr_(annotation: type) -> str:
     """Handle typing representation."""
     origin = typing.get_origin(annotation)
     args = typing.get_args(annotation)
+
+    def get_annotation_repr_for_arg(arg: type) -> str:
+        if hasattr(arg, "__canonical_name__"):
+            return arg.__canonical_name__
+        return getattr(arg, "__name__", str(arg))
+
     if origin and args:
-        args_repr = ", ".join(getattr(arg, "__name__", str(arg)) for arg in args)
+        args_repr = ", ".join(get_annotation_repr_for_arg(arg) for arg in args)
         origin_repr = getattr(origin, "__name__", str(origin))
 
         # Handle typing.Union and types.UnionType

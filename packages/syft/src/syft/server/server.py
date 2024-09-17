@@ -17,6 +17,7 @@ import sys
 from time import sleep
 import traceback
 from typing import Any
+from typing import TypeVar
 from typing import cast
 
 # third party
@@ -38,10 +39,6 @@ from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
 from ..service.action.action_object import ActionObject
-from ..service.action.action_store import ActionStore
-from ..service.action.action_store import DictActionStore
-from ..service.action.action_store import MongoActionStore
-from ..service.action.action_store import SQLiteActionStore
 from ..service.code.user_code_stash import UserCodeStash
 from ..service.context import AuthedServiceContext
 from ..service.context import ServerServiceContext
@@ -54,6 +51,7 @@ from ..service.job.job_stash import JobType
 from ..service.metadata.server_metadata import ServerMetadata
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notifier.notifier_service import NotifierService
+from ..service.output.output_service import OutputStash
 from ..service.queue.base_queue import AbstractMessageHandler
 from ..service.queue.base_queue import QueueConsumer
 from ..service.queue.base_queue import QueueProducer
@@ -74,12 +72,10 @@ from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
 from ..service.settings.settings import ServerSettings
 from ..service.settings.settings import ServerSettingsUpdate
-from ..service.settings.settings_stash import SettingsStash
 from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
-from ..service.user.user_stash import UserStash
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
@@ -91,12 +87,17 @@ from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
-from ..store.dict_document_store import DictStoreConfig
+from ..store.db.db import DBConfig
+from ..store.db.db import DBManager
+from ..store.db.postgres import PostgresDBConfig
+from ..store.db.postgres import PostgresDBManager
+from ..store.db.sqlite import SQLiteDBConfig
+from ..store.db.sqlite import SQLiteDBManager
+from ..store.db.stash import ObjectStash
 from ..store.document_store import StoreConfig
 from ..store.document_store_errors import NotFoundException
 from ..store.document_store_errors import StashException
 from ..store.linked_obj import LinkedObject
-from ..store.mongo_document_store import MongoStoreConfig
 from ..store.sqlite_document_store import SQLiteStoreClientConfig
 from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
@@ -126,6 +127,8 @@ from .utils import remove_temp_dir_for_server
 from .worker_settings import WorkerSettings
 
 logger = logging.getLogger(__name__)
+
+SyftT = TypeVar("SyftT", bound=SyftObject)
 
 # if user code needs to be serded and its not available we can call this to refresh
 # the code for a specific server UID and thread
@@ -306,6 +309,7 @@ class Server(AbstractServer):
         signing_key: SyftSigningKey | SigningKey | None = None,
         action_store_config: StoreConfig | None = None,
         document_store_config: StoreConfig | None = None,
+        db_config: DBConfig | None = None,
         root_email: str | None = default_root_email,
         root_username: str | None = default_root_username,
         root_password: str | None = default_root_password,
@@ -335,6 +339,7 @@ class Server(AbstractServer):
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
         consumer_type: ConsumerType | None = None,
+        db_url: str | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -350,6 +355,7 @@ class Server(AbstractServer):
         self.server_side_type = ServerSideType(server_side_type)
         self.client_cache: dict = {}
         self.peer_client_cache: dict = {}
+        self._settings = None
 
         if isinstance(server_type, str):
             server_type = ServerType(server_type)
@@ -395,27 +401,33 @@ class Server(AbstractServer):
         if reset:
             self.remove_temp_dir()
 
-        use_sqlite = local_db or (processes > 0 and not is_subprocess)
         document_store_config = document_store_config or self.get_default_store(
-            use_sqlite=use_sqlite,
             store_type="Document Store",
         )
         action_store_config = action_store_config or self.get_default_store(
-            use_sqlite=use_sqlite,
             store_type="Action Store",
         )
-        self.init_stores(
-            action_store_config=action_store_config,
-            document_store_config=document_store_config,
-        )
+        db_config = DBConfig.from_connection_string(db_url) if db_url else db_config
+
+        if db_config is None:
+            db_config = SQLiteDBConfig(
+                filename=f"{self.id}_json.db",
+                path=self.get_temp_dir("db"),
+            )
+
+        self.db_config = db_config
+
+        self.db = self.init_stores(db_config=self.db_config)
 
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
+        self.db.init_tables(reset=reset)
+        self.action_store = self.services.action.stash
 
-        create_admin_new(  # nosec B106
+        create_root_admin_if_not_exists(
             name=root_username,
             email=root_email,
-            password=root_password,
+            password=root_password,  # nosec
             server=self,
         )
 
@@ -496,21 +508,19 @@ class Server(AbstractServer):
             and any("docker" in line for line in open(path))
         )
 
-    def get_default_store(self, use_sqlite: bool, store_type: str) -> StoreConfig:
-        if use_sqlite:
-            path = self.get_temp_dir("db")
-            file_name: str = f"{self.id}.sqlite"
-            if self.dev_mode:
-                # leave this until the logger shows this in the notebook
-                print(f"{store_type}'s SQLite DB path: {path/file_name}")
-                logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
-            return SQLiteStoreConfig(
-                client_config=SQLiteStoreClientConfig(
-                    filename=file_name,
-                    path=path,
-                )
+    def get_default_store(self, store_type: str) -> StoreConfig:
+        path = self.get_temp_dir("db")
+        file_name: str = f"{self.id}.sqlite"
+        # if self.dev_mode:
+        # leave this until the logger shows this in the notebook
+        # print(f"{store_type}'s SQLite DB path: {path/file_name}")
+        # logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
+        return SQLiteStoreConfig(
+            client_config=SQLiteStoreClientConfig(
+                filename=file_name,
+                path=path,
             )
-        return DictStoreConfig()
+        )
 
     def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
         if config is None:
@@ -624,6 +634,7 @@ class Server(AbstractServer):
                     worker_stash=self.worker_stash,
                 )
                 producer.run()
+
                 address = producer.address
             else:
                 port = queue_config.client_config.queue_port
@@ -730,6 +741,8 @@ class Server(AbstractServer):
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
         consumer_type: ConsumerType | None = None,
+        db_url: str | None = None,
+        db_config: DBConfig | None = None,
     ) -> Server:
         uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -761,6 +774,8 @@ class Server(AbstractServer):
             association_request_auto_approval=association_request_auto_approval,
             background_tasks=background_tasks,
             consumer_type=consumer_type,
+            db_url=db_url,
+            db_config=db_config,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -882,58 +897,35 @@ class Server(AbstractServer):
         if ti is not None:
             CODE_RELOADER[ti] = reload_user_code
 
-    def init_stores(
-        self,
-        document_store_config: StoreConfig,
-        action_store_config: StoreConfig,
-    ) -> None:
-        # We add the python id of the current server in order
-        # to create one connection per Server object in MongoClientCache
-        # so that we avoid closing the connection from a
-        # different thread through the garbage collection
-        if isinstance(document_store_config, MongoStoreConfig):
-            document_store_config.client_config.server_obj_python_id = id(self)
-
-        self.document_store_config = document_store_config
-        self.document_store = document_store_config.store_type(
-            server_uid=self.id,
-            root_verify_key=self.verify_key,
-            store_config=document_store_config,
-        )
-
-        if isinstance(action_store_config, SQLiteStoreConfig):
-            self.action_store: ActionStore = SQLiteActionStore(
+    def init_stores(self, db_config: DBConfig) -> DBManager:
+        if isinstance(db_config, SQLiteDBConfig):
+            db = SQLiteDBManager(
+                config=db_config,
                 server_uid=self.id,
-                store_config=action_store_config,
                 root_verify_key=self.verify_key,
-                document_store=self.document_store,
             )
-        elif isinstance(action_store_config, MongoStoreConfig):
-            # We add the python id of the current server in order
-            # to create one connection per Server object in MongoClientCache
-            # so that we avoid closing the connection from a
-            # different thread through the garbage collection
-            action_store_config.client_config.server_obj_python_id = id(self)
-
-            self.action_store = MongoActionStore(
+        elif isinstance(db_config, PostgresDBConfig):
+            db = PostgresDBManager(  # type: ignore
+                config=db_config,
                 server_uid=self.id,
                 root_verify_key=self.verify_key,
-                store_config=action_store_config,
-                document_store=self.document_store,
             )
         else:
-            self.action_store = DictActionStore(
-                server_uid=self.id,
-                root_verify_key=self.verify_key,
-                document_store=self.document_store,
-            )
+            raise SyftException(public_message=f"Unsupported DB config: {db_config}")
 
-        self.action_store_config = action_store_config
-        self.queue_stash = QueueStash(store=self.document_store)
+        self.queue_stash = QueueStash(store=db)
+
+        print(f"Using {db_config.__class__.__name__} and {db_config.connection_string}")
+
+        return db
 
     @property
     def job_stash(self) -> JobStash:
         return self.services.job.stash
+
+    @property
+    def output_stash(self) -> OutputStash:
+        return self.services.output.stash
 
     @property
     def worker_stash(self) -> WorkerStash:
@@ -954,6 +946,12 @@ class Server(AbstractServer):
 
     def get_service(self, path_or_func: str | Callable) -> AbstractService:
         return self.services.get_service(path_or_func)
+
+    @as_result(ValueError)
+    def get_stash(self, object_type: SyftT) -> ObjectStash[SyftT]:
+        if object_type not in self.services.stashes:
+            raise ValueError(f"Stash for {object_type} not found.")
+        return self.services.stashes[object_type]
 
     def _get_service_method_from_path(self, path: str) -> Callable:
         path_list = path.split(".")
@@ -992,10 +990,12 @@ class Server(AbstractServer):
     # it should be removed once the settings are refactored and the inconsistencies between
     # settings and services are resolved.
     def get_settings(self) -> ServerSettings | None:
+        if self._settings:
+            return self._settings  # type: ignore
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
 
-        settings_stash = SettingsStash(store=self.document_store)
+        settings_stash = self.services.settings.stash
 
         try:
             settings = settings_stash.get_all(self.signing_key.verify_key).unwrap()
@@ -1003,6 +1003,7 @@ class Server(AbstractServer):
             if len(settings) > 0:
                 setting = settings[0]
                 self.update_self(setting)
+                self._settings = setting
                 return setting
             else:
                 return None
@@ -1015,7 +1016,7 @@ class Server(AbstractServer):
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
 
-        settings_stash = SettingsStash(store=self.document_store)
+        settings_stash = self.services.settings.stash
         error_msg = f"Cannot get server settings for '{self.name}'"
 
         all_settings = settings_stash.get_all(self.signing_key.verify_key).unwrap(
@@ -1455,7 +1456,9 @@ class Server(AbstractServer):
             result_obj.syft_server_location = self.id
             result_obj.syft_client_verify_key = credentials
 
-            if not self.services.action.store.exists(uid=action.result_id):
+            if not self.services.action.stash.exists(
+                credentials=credentials, uid=action.result_id
+            ):
                 self.services.action.set_result_to_store(
                     result_action_object=result_obj,
                     context=context,
@@ -1663,7 +1666,7 @@ class Server(AbstractServer):
 
     @as_result(SyftException, StashException)
     def create_initial_settings(self, admin_email: str) -> ServerSettings:
-        settings_stash = SettingsStash(store=self.document_store)
+        settings_stash = self.services.settings.stash
 
         if self.signing_key is None:
             logger.debug("create_initial_settings failed as there is no signing key")
@@ -1717,17 +1720,32 @@ class Server(AbstractServer):
             ).unwrap()
 
 
-def create_admin_new(
+def create_root_admin_if_not_exists(
     name: str,
     email: str,
     password: str,
-    server: AbstractServer,
+    server: Server,
 ) -> User | None:
-    user_stash = UserStash(store=server.document_store)
+    """
+    If no root admin exists:
+    - all exists checks on the user stash will fail, as we cannot get the role for the admin to check if it exists
+    - result: a new admin is always created
 
-    user_exists = user_stash.email_exists(email=email).unwrap()
-    if user_exists:
-        logger.debug("Admin not created, admin already exists")
+    If a root admin exists with a different email:
+    - cause: DEFAULT_USER_EMAIL env variable is set to a different email than the root admin in the db
+    - verify_key_exists will return True
+    - result: no new admin is created, as the server already has a root admin
+    """
+    user_stash = server.services.user.stash
+
+    email_exists = user_stash.email_exists(email=email).unwrap()
+    if email_exists:
+        logger.debug("Admin not created, a user with this email already exists")
+        return None
+
+    verify_key_exists = user_stash.verify_key_exists(server.verify_key).unwrap()
+    if verify_key_exists:
+        logger.debug("Admin not created, this server already has a root admin")
         return None
 
     create_user = UserCreate(
@@ -1742,12 +1760,12 @@ def create_admin_new(
     # 🟡 TODO: change later but for now this gives the main user super user automatically
     user = create_user.to(User)
     user.signing_key = server.signing_key
-    user.verify_key = user.signing_key.verify_key
+    user.verify_key = server.verify_key
 
     new_user = user_stash.set(
-        credentials=server.signing_key.verify_key,
+        credentials=server.verify_key,
         obj=user,
-        ignore_duplicates=True,
+        ignore_duplicates=False,
     ).unwrap()
 
     logger.debug(f"Created admin {new_user.email}")

@@ -11,7 +11,7 @@ from ...abstract_server import ServerType
 from ...serde.serializable import serializable
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
@@ -81,23 +81,21 @@ def _paginate(
 
 @serializable(canonical_name="UserService", version=1)
 class UserService(AbstractService):
-    store: DocumentStore
     stash: UserStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = UserStash(store=store)
 
     @as_result(StashException)
     def _add_user(self, credentials: SyftVerifyKey, user: User) -> User:
-        action_object_permissions = ActionObjectPermission(
-            uid=user.id, permission=ActionPermission.ALL_READ
-        )
-
         return self.stash.set(
             credentials=credentials,
             obj=user,
-            add_permissions=[action_object_permissions],
+            add_permissions=[
+                ActionObjectPermission(
+                    uid=user.id, permission=ActionPermission.ALL_READ
+                ),
+            ],
         ).unwrap()
 
     def _check_if_email_exists(self, credentials: SyftVerifyKey, email: str) -> bool:
@@ -132,7 +130,7 @@ class UserService(AbstractService):
             "If the email is valid, we sent a password "
             + "reset token to your email or a password request to the admin."
         )
-        root_key = self.admin_verify_key()
+        root_key = self.root_verify_key
 
         root_context = AuthedServiceContext(server=context.server, credentials=root_key)
 
@@ -243,7 +241,7 @@ class UserService(AbstractService):
         self, context: UnauthedServiceContext, token: str, new_password: str
     ) -> SyftSuccess:
         """Resets a certain user password using a temporary token."""
-        root_key = self.admin_verify_key()
+        root_key = self.root_verify_key
 
         root_context = AuthedServiceContext(server=context.server, credentials=root_key)
         try:
@@ -321,21 +319,36 @@ class UserService(AbstractService):
     def get_all(
         self,
         context: AuthedServiceContext,
+        order_by: str | None = None,
+        sort_order: str | None = None,
         page_size: int | None = 0,
         page_index: int | None = 0,
     ) -> list[UserView]:
-        if context.role in [ServiceRole.DATA_OWNER, ServiceRole.ADMIN]:
-            users = self.stash.get_all(
-                context.credentials, has_permission=True
-            ).unwrap()
-        else:
-            users = self.stash.get_all(context.credentials).unwrap()
+        users = self.stash.get_all(
+            context.credentials,
+            order_by=order_by,
+            sort_order=sort_order,
+        ).unwrap()
         users = [user.to(UserView) for user in users]
         return _paginate(users, page_size, page_index)
 
+    @service_method(
+        path="user.get_index", name="get_index", roles=DATA_OWNER_ROLE_LEVEL
+    )
+    def get_index(
+        self,
+        context: AuthedServiceContext,
+        index: int,
+    ) -> UserView:
+        return (
+            self.stash.get_index(credentials=context.credentials, index=index)
+            .unwrap()
+            .to(UserView)
+        )
+
     def signing_key_for_verify_key(self, verify_key: SyftVerifyKey) -> UserPrivateKey:
         user = self.stash.get_by_verify_key(
-            credentials=self.stash.admin_verify_key(), verify_key=verify_key
+            credentials=self.stash.root_verify_key, verify_key=verify_key
         ).unwrap()
 
         return user.to(UserPrivateKey)
@@ -348,12 +361,11 @@ class UserService(AbstractService):
             # they could be different
             # TODO: This fn is cryptic -- when does each situation occur?
             if isinstance(credentials, SyftVerifyKey):
-                user = self.stash.get_by_verify_key(
-                    credentials=credentials, verify_key=credentials
-                ).unwrap()
+                role = self.stash.get_role(credentials=credentials)
+                return role
             elif isinstance(credentials, SyftSigningKey):
                 user = self.stash.get_by_signing_key(
-                    credentials=credentials,
+                    credentials=credentials.verify_key,
                     signing_key=credentials,  # type: ignore
                 ).unwrap()
             else:
@@ -378,7 +390,9 @@ class UserService(AbstractService):
         if len(kwargs) == 0:
             raise SyftException(public_message="Invalid search parameters")
 
-        users = self.stash.find_all(credentials=context.credentials, **kwargs).unwrap()
+        users = self.stash.get_all(
+            credentials=context.credentials, filters=kwargs
+        ).unwrap()
 
         users = [user.to(UserView) for user in users] if users is not None else []
         return _paginate(users, page_size, page_index)
@@ -506,44 +520,53 @@ class UserService(AbstractService):
         ).unwrap()
 
         if user.role == ServiceRole.ADMIN:
-            settings_stash = SettingsStash(store=self.store)
-            settings = settings_stash.get_all(context.credentials).unwrap()
+            settings_stash = SettingsStash(store=self.stash.db)
+            settings = settings_stash.get_all(
+                context.credentials, limit=1, sort_order="desc"
+            ).unwrap()
 
             # TODO: Chance to refactor here in settings, as we're always doing get_att[0]
             if len(settings) > 0:
                 settings_data = settings[0]
                 settings_data.admin_email = user.email
                 settings_stash.update(
-                    credentials=context.credentials, settings=settings_data
+                    credentials=context.credentials, obj=settings_data
                 )
 
         return user.to(UserView)
 
     @service_method(path="user.delete", name="delete", roles=GUEST_ROLE_LEVEL)
     def delete(self, context: AuthedServiceContext, uid: UID) -> UID:
-        user = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
+        user_to_delete = self.stash.get_by_uid(
+            credentials=context.credentials, uid=uid
+        ).unwrap()
 
-        if (
+        # Cannot delete root user
+        if user_to_delete.verify_key == self.root_verify_key:
+            raise UserPermissionError(
+                private_message=f"User {context.credentials} attempted to delete root user."
+            )
+
+        # - Admins can delete any user
+        # - Data Owners can delete Data Scientists and Guests
+        has_delete_permissions = (
             context.role == ServiceRole.ADMIN
             or context.role == ServiceRole.DATA_OWNER
-            and user.role
-            in [
-                ServiceRole.GUEST,
-                ServiceRole.DATA_SCIENTIST,
-            ]
-        ):
-            pass
-        else:
+            and user_to_delete.role in [ServiceRole.GUEST, ServiceRole.DATA_SCIENTIST]
+        )
+
+        if not has_delete_permissions:
             raise UserPermissionError(
-                f"User {context.credentials} ({context.role}) tried to delete user {uid} ({user.role})"
+                private_message=(
+                    f"User {context.credentials} ({context.role}) tried to delete user "
+                    f"{uid} ({user_to_delete.role})"
+                )
             )
 
         # TODO: Remove notifications for the deleted user
-        self.stash.delete_by_uid(
-            credentials=context.credentials, uid=uid, has_permission=True
+        return self.stash.delete_by_uid(
+            credentials=context.credentials, uid=uid
         ).unwrap()
-
-        return uid
 
     def exchange_credentials(self, context: UnauthedServiceContext) -> SyftSuccess:
         """Verify user
@@ -554,7 +577,7 @@ class UserService(AbstractService):
             raise SyftException(public_message="Invalid login credentials")
 
         user = self.stash.get_by_email(
-            credentials=self.admin_verify_key(), email=context.login_credentials.email
+            credentials=self.root_verify_key, email=context.login_credentials.email
         ).unwrap()
 
         if check_pwd(context.login_credentials.password, user.hashed_password):
@@ -573,9 +596,9 @@ class UserService(AbstractService):
 
         return SyftSuccess(message="Login successful.", value=user.to(UserPrivateKey))
 
-    def admin_verify_key(self) -> SyftVerifyKey:
-        # TODO: Remove passthrough method?
-        return self.stash.admin_verify_key()
+    @property
+    def root_verify_key(self) -> SyftVerifyKey:
+        return self.stash.root_verify_key
 
     def register(
         self, context: ServerServiceContext, new_user: UserCreate
@@ -616,7 +639,7 @@ class UserService(AbstractService):
         success_message = f"User '{user.name}' successfully registered!"
 
         # Notification Step
-        root_key = self.admin_verify_key()
+        root_key = self.root_verify_key
         root_context = AuthedServiceContext(server=context.server, credentials=root_key)
         link = None
 
@@ -643,7 +666,7 @@ class UserService(AbstractService):
     @as_result(StashException)
     def user_verify_key(self, email: str) -> SyftVerifyKey:
         # we are bypassing permissions here, so dont use to return a result directly to the user
-        credentials = self.admin_verify_key()
+        credentials = self.root_verify_key
         user = self.stash.get_by_email(credentials=credentials, email=email).unwrap()
         if user.verify_key is None:
             raise UserError(f"User {email} has no verify key")
@@ -652,7 +675,7 @@ class UserService(AbstractService):
     @as_result(StashException)
     def get_by_verify_key(self, verify_key: SyftVerifyKey) -> UserView:
         # we are bypassing permissions here, so dont use to return a result directly to the user
-        credentials = self.admin_verify_key()
+        credentials = self.root_verify_key
         user = self.stash.get_by_verify_key(
             credentials=credentials, verify_key=verify_key
         ).unwrap()
