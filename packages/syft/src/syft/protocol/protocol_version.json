@@ -4,12 +4,6 @@
   },
   "dev": {
     "object_versions": {
-      "NotifierSettings": {
-        "3": {
-          "version": 3,
-          "hash": "85e2f6d9a6a12e6029b153be4fd2b4efae3bb2b48e617c08b447c5db01bea6c4",
-        }
-      },
       "Notification": {
         "2": {
           "version": 2,
