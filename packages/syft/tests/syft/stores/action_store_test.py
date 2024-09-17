@@ -1,24 +1,26 @@
 # stdlib
-import sys
-from typing import Any
 
 # third party
 import pytest
 
 # syft absolute
+from syft.server.credentials import SyftSigningKey
 from syft.server.credentials import SyftVerifyKey
+from syft.service.action.action_object import ActionObject
+from syft.service.action.action_permissions import ActionObjectOWNER
+from syft.service.action.action_permissions import ActionObjectPermission
 from syft.service.action.action_store import ActionObjectEXECUTE
-from syft.service.action.action_store import ActionObjectOWNER
 from syft.service.action.action_store import ActionObjectREAD
+from syft.service.action.action_store import ActionObjectStash
 from syft.service.action.action_store import ActionObjectWRITE
+from syft.service.user.user import User
+from syft.service.user.user_roles import ServiceRole
+from syft.service.user.user_stash import UserStash
+from syft.store.db.db import DBManager
 from syft.types.uid import UID
 
 # relative
-from .store_constants_test import TEST_VERIFY_KEY_NEW_ADMIN
-from .store_constants_test import TEST_VERIFY_KEY_STRING_CLIENT
-from .store_constants_test import TEST_VERIFY_KEY_STRING_HACKER
-from .store_constants_test import TEST_VERIFY_KEY_STRING_ROOT
-from .store_mocks_test import MockSyftObject
+from ..worker_test import action_object_stash  # noqa: F401
 
 permissions = [
     ActionObjectOWNER,
@@ -28,134 +30,119 @@ permissions = [
 ]
 
 
-@pytest.mark.parametrize(
-    "store",
-    [
-        pytest.lazy_fixture("dict_action_store"),
-        pytest.lazy_fixture("sqlite_action_store"),
-        pytest.lazy_fixture("mongo_action_store"),
-    ],
-)
-def test_action_store_sanity(store: Any):
-    assert hasattr(store, "store_config")
-    assert hasattr(store, "settings")
-    assert hasattr(store, "data")
-    assert hasattr(store, "permissions")
-    assert hasattr(store, "root_verify_key")
-    assert store.root_verify_key.verify == TEST_VERIFY_KEY_STRING_ROOT
+def add_user(db_manager: DBManager, role: ServiceRole) -> SyftVerifyKey:
+    user_stash = UserStash(store=db_manager)
+    verify_key = SyftSigningKey.generate().verify_key
+    user_stash.set(
+        credentials=db_manager.root_verify_key,
+        obj=User(verify_key=verify_key, role=role, id=UID()),
+    ).unwrap()
+    return verify_key
+
+
+def add_test_object(
+    stash: ActionObjectStash, verify_key: SyftVerifyKey
+) -> ActionObject:
+    test_object = ActionObject.from_obj([1, 2, 3])
+    uid = test_object.id
+    stash.set_or_update(
+        uid=uid,
+        credentials=verify_key,
+        syft_object=test_object,
+        has_result_read_permission=True,
+    ).unwrap()
+    return uid
 
 
 @pytest.mark.parametrize(
-    "store",
+    "stash",
     [
-        pytest.lazy_fixture("dict_action_store"),
-        pytest.lazy_fixture("sqlite_action_store"),
-        pytest.lazy_fixture("mongo_action_store"),
+        pytest.lazy_fixture("action_object_stash"),
     ],
 )
 @pytest.mark.parametrize("permission", permissions)
-@pytest.mark.flaky(reruns=3, reruns_delay=3)
-@pytest.mark.skipif(sys.platform == "darwin", reason="skip on mac")
-def test_action_store_test_permissions(store: Any, permission: Any):
-    client_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_CLIENT)
-    root_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
-    hacker_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
-    new_admin_key = TEST_VERIFY_KEY_NEW_ADMIN
+def test_action_store_test_permissions(
+    stash: ActionObjectStash, permission: ActionObjectPermission
+) -> None:
+    client_key = add_user(stash.db, ServiceRole.DATA_SCIENTIST)
+    root_key = add_user(stash.db, ServiceRole.ADMIN)
+    hacker_key = add_user(stash.db, ServiceRole.DATA_SCIENTIST)
+    new_admin_key = add_user(stash.db, ServiceRole.ADMIN)
 
-    access = permission(uid=UID(), credentials=client_key)
-    access_root = permission(uid=UID(), credentials=root_key)
-    access_hacker = permission(uid=UID(), credentials=hacker_key)
-    access_new_admin = permission(uid=UID(), credentials=new_admin_key)
+    test_item_id = add_test_object(stash, client_key)
 
-    # add permission
-    store.add_permission(access)
+    access = permission(uid=test_item_id, credentials=client_key)
+    access_root = permission(uid=test_item_id, credentials=root_key)
+    access_hacker = permission(uid=test_item_id, credentials=hacker_key)
+    access_new_admin = permission(uid=test_item_id, credentials=new_admin_key)
 
-    assert store.has_permission(access)
-    assert store.has_permission(access_root)
-    assert store.has_permission(access_new_admin)
-    assert not store.has_permission(access_hacker)
+    stash.add_permission(access)
+    assert stash.has_permission(access)
+    assert stash.has_permission(access_root)
+    assert stash.has_permission(access_new_admin)
+    assert not stash.has_permission(access_hacker)
 
     # remove permission
-    store.remove_permission(access)
+    stash.remove_permission(access)
 
-    assert not store.has_permission(access)
-    assert store.has_permission(access_root)
-    assert store.has_permission(access_new_admin)
-    assert not store.has_permission(access_hacker)
+    assert not stash.has_permission(access)
+    assert stash.has_permission(access_root)
+    assert stash.has_permission(access_new_admin)
+    assert not stash.has_permission(access_hacker)
 
     # take ownership with new UID
-    client_uid2 = UID()
-    access = permission(uid=client_uid2, credentials=client_key)
+    item2_id = add_test_object(stash, client_key)
+    access = permission(uid=item2_id, credentials=client_key)
 
-    store.take_ownership(client_uid2, client_key)
-    assert store.has_permission(access)
-    assert store.has_permission(access_root)
-    assert store.has_permission(access_new_admin)
-    assert not store.has_permission(access_hacker)
+    stash.add_permission(ActionObjectREAD(uid=item2_id, credentials=client_key))
+    assert stash.has_permission(access)
+    assert stash.has_permission(access_root)
+    assert stash.has_permission(access_new_admin)
+    assert not stash.has_permission(access_hacker)
 
     # delete UID as hacker
-    access_hacker_ro = ActionObjectREAD(uid=UID(), credentials=hacker_key)
-    store.add_permission(access_hacker_ro)
 
-    res = store.delete(client_uid2, hacker_key)
+    res = stash.delete_by_uid(hacker_key, item2_id)
 
     assert res.is_err()
-    assert store.has_permission(access)
-    assert store.has_permission(access_new_admin)
-    assert store.has_permission(access_hacker_ro)
+    assert stash.has_permission(access)
+    assert stash.has_permission(access_root)
+    assert stash.has_permission(access_new_admin)
+    assert not stash.has_permission(access_hacker)
 
     # delete UID as owner
-    res = store.delete(client_uid2, client_key)
+    res = stash.delete_by_uid(client_key, item2_id)
     assert res.is_ok()
-    assert not store.has_permission(access)
-    assert store.has_permission(access_new_admin)
-    assert not store.has_permission(access_hacker)
+    assert not stash.has_permission(access)
+    assert stash.has_permission(access_new_admin)
+    assert not stash.has_permission(access_hacker)
 
 
 @pytest.mark.parametrize(
-    "store",
+    "stash",
     [
-        pytest.lazy_fixture("dict_action_store"),
-        pytest.lazy_fixture("sqlite_action_store"),
-        pytest.lazy_fixture("mongo_action_store"),
+        pytest.lazy_fixture("action_object_stash"),
     ],
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=3)
-def test_action_store_test_dataset_get(store: Any):
-    client_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_CLIENT)
-    root_key = SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_ROOT)
-    SyftVerifyKey.from_string(TEST_VERIFY_KEY_STRING_HACKER)
+def test_action_store_test_dataset_get(stash: ActionObjectStash) -> None:
+    client_key = add_user(stash.db, ServiceRole.DATA_SCIENTIST)
+    root_key = add_user(stash.db, ServiceRole.ADMIN)
 
-    permission_only_uid = UID()
-    access = ActionObjectWRITE(uid=permission_only_uid, credentials=client_key)
-    access_root = ActionObjectWRITE(uid=permission_only_uid, credentials=root_key)
-    read_permission = ActionObjectREAD(uid=permission_only_uid, credentials=client_key)
+    data_uid = add_test_object(stash, client_key)
+    access = ActionObjectWRITE(uid=data_uid, credentials=client_key)
+    access_root = ActionObjectWRITE(uid=data_uid, credentials=root_key)
+    read_permission = ActionObjectREAD(uid=data_uid, credentials=client_key)
 
     # add permission
-    store.add_permission(access)
+    stash.add_permission(access)
 
-    assert store.has_permission(access)
-    assert store.has_permission(access_root)
+    assert stash.has_permission(access)
+    assert stash.has_permission(access_root)
 
-    store.add_permission(read_permission)
-    assert store.has_permission(read_permission)
+    stash.add_permission(read_permission)
+    assert stash.has_permission(read_permission)
 
     # check that trying to get action data that doesn't exist returns an error, even if have permissions
-    res = store.get(permission_only_uid, client_key)
-    assert res.is_err()
-
-    # add data
-    data_uid = UID()
-    obj = MockSyftObject(data=1)
-
-    res = store.set(data_uid, client_key, obj, has_result_read_permission=True)
-    assert res.is_ok()
-    res = store.get(data_uid, client_key)
-    assert res.is_ok()
-    assert res.ok() == obj
-
-    assert store.exists(data_uid)
-    res = store.delete(data_uid, client_key)
-    assert res.is_ok()
-    res = store.delete(data_uid, client_key)
+    stash.delete_by_uid(client_key, data_uid)
+    res = stash.get(data_uid, client_key)
     assert res.is_err()
