@@ -218,8 +218,8 @@ def user_exists(root_client, email: str) -> bool:
 
 
 class SMTPTestServer:
-    def __init__(self, email_server):
-        self.port = 9025
+    def __init__(self, email_server, port=9025):
+        self.port = port
         self.hostname = "0.0.0.0"
         self._stop_event = asyncio.Event()
 
@@ -251,7 +251,7 @@ class SMTPTestServer:
             print(f"> Error initializing SMTPTestServer Controller: {e}")
 
     def start(self):
-        print(f"> Starting SMTPTestServer on: {self.hostname}:{self.port}")
+        # print(f"> Starting SMTPTestServer on: {self.hostname}:{self.port}")
         asyncio.create_task(self.async_loop())
 
     async def async_loop(self):
@@ -314,11 +314,21 @@ class Timeout:
         return result
 
 
-def get_email_server(reset=False):
-    email_server = EmailServer()
+def get_email_server(reset=False, server_side_type="high"):
+    if server_side_type == "high":
+        email_file = "./emails_high.json"
+        port = 9026
+    elif server_side_type == "low":
+        email_file = "./emails_low.json"
+        port = 9025
+    else:
+        email_file = "./emails.json"
+        port = 9025
+
+    email_server = EmailServer(filepath=email_file)
     if reset:
         email_server.reset_emails()
-    smtp_server = SMTPTestServer(email_server)
+    smtp_server = SMTPTestServer(email_server, port=port)
     smtp_server.start()
     return email_server, smtp_server
 
