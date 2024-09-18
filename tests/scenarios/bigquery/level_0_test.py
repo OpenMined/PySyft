@@ -1,5 +1,6 @@
 # stdlib
 import asyncio
+from functools import wraps
 import random
 
 # third party
@@ -26,7 +27,35 @@ from unsync import unsync
 random.seed(42069)
 
 
-@unsync
+def unsync_guard():
+    "Make sure we exit early if an exception occurs"
+
+    def decorator(func):
+        @wraps(func)
+        @unsync
+        async def wrapper(*args, **kwargs):
+            try:
+                result = await func(*args, **kwargs)
+                return result
+            except Exception as e:
+                print(f"Exception occurred: {e}")
+                for arg in args:
+                    if isinstance(arg, EventManager):
+                        print("Registering exception event")
+                        arg.register(Event.EXCEPTION_OCCURRED)
+                        break
+                raise
+
+        return wrapper
+
+    return decorator
+
+
+unsync_ = unsync_guard()
+# unsync_ = unsync
+
+
+@unsync_
 async def guest_user_setup_flow(_, events, user):
     user_client = make_guest_client(url="http://localhost:8081")
     print(f"Logged in as guest user {user.email}")
@@ -34,7 +63,7 @@ async def guest_user_setup_flow(_, events, user):
     print(f"Requested password reset {user.email}")
 
 
-@unsync
+@unsync_
 async def user_low_side_activity(_, events, user, after=None):
     # loop: guest user creation is allowed
     if after:
@@ -56,7 +85,7 @@ async def user_low_side_activity(_, events, user, after=None):
     pass
 
 
-@unsync
+@unsync_
 async def root_sync_activity(_, events, after):
     if after:
         await events.await_for(event_name=after)
@@ -84,7 +113,7 @@ async def root_sync_activity(_, events, after):
         )
 
 
-@unsync
+@unsync_
 async def admin_create_worker_pool(
     _,
     admin_client,
@@ -146,7 +175,7 @@ async def admin_create_worker_pool(
     # )
 
 
-@unsync
+@unsync_
 async def mark_completed(events, register, after):
     if after:
         await events.await_for(event_name=after)
@@ -154,7 +183,7 @@ async def mark_completed(events, register, after):
     events.register(register)
 
 
-@unsync
+@unsync_
 async def admin_low_side_activity(_, events):
     """
     Typical admin activity on low-side server
@@ -206,7 +235,7 @@ async def admin_low_side_activity(_, events):
     )
 
 
-@unsync
+@unsync_
 async def admin_create_api_endpoint(
     _,
     events,
@@ -269,7 +298,7 @@ async def admin_create_api_endpoint(
     )
 
 
-@unsync
+@unsync_
 async def admin_high_side_activity(_, events):
     # login
     admin_client_high = make_client(

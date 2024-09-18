@@ -40,6 +40,8 @@ class Event:
     ADMIN_SYNC_HIGH_TO_LOW = "admin_sync_high_to_low"
     ADMIN_SYNC_LOW_TO_HIGH = "admin_sync_low_to_high"
 
+    EXCEPTION_OCCURRED = "exception_occurred"
+
 
 @dataclass
 class Scenario:
@@ -103,7 +105,7 @@ class EventManager:
                 print(
                     f"async await_for_scenario: {scenario_name}. Time left: {time_left}"
                 )
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
         return False
 
     def scenario_completed(self, scenario_name: str) -> bool:
@@ -114,6 +116,9 @@ class EventManager:
                 incomplete_events = [
                     event for event in scenario_events if events.get(event) is None
                 ]
+                if Event.EXCEPTION_OCCURRED in events:
+                    msg = f"Scenario '{scenario_name}' failed due to an exception. Missing events: {incomplete_events}"
+                    raise Exception(msg)
 
                 if incomplete_events:
                     print(
@@ -201,7 +206,7 @@ class EventManager:
             if show:
                 time_left = timeout - (time.time() - start_time)
                 print(f"async await_for: {event_names}. Time left: {time_left}")
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
         return False
 
     def happened(self, event_name: str) -> bool:
