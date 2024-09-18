@@ -491,7 +491,7 @@ class Request(SyncableSyftObject):
     def status_id(self) -> UID:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
-                return change.linked_obj.object_uid
+                return change.linked_obj.object_uid  # type: ignore
         raise SyftException(
             public_message="This type of request does not have code associated with it."
         )

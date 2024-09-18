@@ -578,7 +578,7 @@ class UserCode(SyncableSyftObject):
     def get_status(
         self, context: AuthedServiceContext | None
     ) -> UserCodeStatusCollection:
-        return self.status_link.resolve_dynamic(context, load_cached=True)
+        return self.status_link.resolve_dynamic(context, load_cached=False)
 
     @property
     def input_owners(self) -> list[str] | None:
