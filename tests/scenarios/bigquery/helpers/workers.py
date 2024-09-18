@@ -7,8 +7,8 @@ from syft import test_settings
 
 
 @unsync
-async def get_prebuilt_worker_image(events, client, expected_tag, event_name):
-    await events.await_for(event_name=event_name, show=True)
+async def get_prebuilt_worker_image(events, client, expected_tag, after):
+    await events.await_for(event_name=after, show=True)
     worker_images = client.images.get_all()
     for worker_image in worker_images:
         if expected_tag in str(worker_image.image_identifier):
@@ -35,7 +35,11 @@ async def add_external_registry(events, client, event_name):
 
 @unsync
 async def create_worker_pool(
-    events, client, worker_pool_name, worker_pool_result, event_name
+    events,
+    client,
+    worker_pool_name,
+    worker_pool_result,
+    event_name,
 ):
     # block until this is available
     worker_image = worker_pool_result.result(timeout=5)
@@ -53,11 +57,27 @@ async def create_worker_pool(
 
 
 @unsync
-async def check_worker_pool_exists(events, client, worker_pool_name, event_name):
+async def check_worker_pool_exists(events, client, worker_pool_name, after):
     timeout = 30
-    await events.await_for(event_name=event_name, timeout=timeout)
+    await events.await_for(event_name=after, timeout=timeout)
     pools = client.worker_pools.get_all()
     for pool in pools:
         if worker_pool_name == pool.name:
             assert worker_pool_name == pool.name
             return worker_pool_name == pool.name
+
+
+@unsync
+async def scale_worker_pool(
+    events, client, worker_pool_name, num_workers, event_name, after
+):
+    if after:
+        await events.await_for(event_name=after)
+
+    result = client.api.services.worker_pool.scale(
+        pool_name=worker_pool_name,
+        num_workers=num_workers,
+    )
+
+    assert isinstance(result, sy.SyftSuccess)
+    events.register(event_name)

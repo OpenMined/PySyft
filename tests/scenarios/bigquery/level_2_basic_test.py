@@ -1,5 +1,3 @@
-# stdlib
-
 # third party
 from helpers.api import create_endpoints_query
 from helpers.api import create_endpoints_schema
@@ -235,6 +233,7 @@ async def test_level_2_basic_scenario(request):
     assert res is True
 
     await events.await_scenario(
-        scenario_name="test_create_apis_and_triage_requests", timeout=30
+        scenario_name="test_create_apis_and_triage_requests",
+        timeout=30,
     )
     assert events.scenario_completed("test_create_apis_and_triage_requests")

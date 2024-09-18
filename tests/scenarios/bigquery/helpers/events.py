@@ -19,6 +19,8 @@ class Event:
     PREBUILT_WORKER_IMAGE_BIGQUERY_CREATED = "prebuilt_worker_image_bigquery_created"
     EXTERNAL_REGISTRY_BIGQUERY_CREATED = "external_registry_bigquery_created"
     WORKER_POOL_CREATED = "worker_pool_created"
+    WORKER_POOL_SCALED = "worker_pool_scaled"
+    ALLOW_GUEST_SIGNUP_ENABLED = "allow_guest_signup_enabled"
     ALLOW_GUEST_SIGNUP_DISABLED = "allow_guest_signup_disabled"
     USERS_CREATED_CHECKED = "users_created_checked"
     SCHEMA_ENDPOINT_CREATED = "schema_endpoint_created"
@@ -26,11 +28,15 @@ class Event:
     SUBMIT_QUERY_ENDPOINT_CONFIGURED = "submit_query_endpoint_configured"
     USERS_CAN_QUERY_MOCK = "users_can_query_mock"
     USERS_CAN_SUBMIT_QUERY = "users_can_submit_query"
+    ADMIN_APPROVED_REQUEST = "admin_approved_request"
     ADMIN_APPROVED_FIRST_REQUEST = "admin_approved_first_request"
     USERS_CAN_GET_APPROVED_RESULT = "users_can_get_approved_result"
     USERS_QUERY_NOT_READY = "users_query_not_ready"
     QUERY_ENDPOINT_CREATED = "query_endpoint_created"
     QUERY_ENDPOINT_CONFIGURED = "query_endpoint_configured"
+
+    ADMIN_LOW_SIDE_WORKFLOW_COMPLETED = "admin_low_side_workflow_completed"
+    ADMIN_HIGH_SIDE_WORKFLOW_COMPLETED = "admin_high_side_workflow_completed"
 
 
 @dataclass

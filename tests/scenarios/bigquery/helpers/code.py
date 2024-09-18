@@ -61,11 +61,11 @@ def get_pending(client):
 
 
 @unsync
-async def triage_requests(events, client, after, register):
+async def triage_requests(events, client, after, register, sleep=2):
     if after:
         await events.await_for(event_name=after)
     while True:
-        await asyncio.sleep(2)
+        await asyncio.sleep(sleep)
         requests = get_pending(client)
         for request in requests:
             approve_and_deposit(client, request.id)

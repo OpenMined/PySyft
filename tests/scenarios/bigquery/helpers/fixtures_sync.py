@@ -146,6 +146,14 @@ def make_server(request: Any | None = None, server_name: str | None = None) -> A
     return server
 
 
+def make_client(url: str, email: str, password: str) -> Any:
+    return sy.login(url=url, email=email, password=password)
+
+
+def sync_clients(from_client, to_client):
+    return sy.sync(from_client, to_client)
+
+
 @unsync
 async def create_users(root_client, events, users, event_name):
     for test_user in users:
