@@ -474,23 +474,28 @@ class Server(AbstractServer):
 
     def email_notification_dispatcher(self) -> None:
         while True:
+            # Use admin context to have access to the notifier obj
             context = AuthedServiceContext(
                 server=self,
                 credentials=self.verify_key,
                 role=ServiceRole.ADMIN,
             )
 
+            # Get notitifer settings
             notifier_settings = self.services.notifier.settings(
                 context=context
             ).unwrap()
-
+            # Iterate over email_types and its queues
+            # Ex: {'EmailRequest': {VerifyKey: [], VerifyKey: [], ...}}
             for email_template, email_queue in notifier_settings.email_queue.items():
-                email_frequency = notifier_settings.email_frequency[email_template]
-                notifier_settings.send_batched_notification(
-                    context, email_queue, email_frequency
-                )
-            # print(f"Email Frequency: {notifier_settings.email_queue}")
-            sleep(5)
+                # Get the email frequency of that specific email type
+                # email_frequency = notifier_settings.email_frequency[email_template]
+                for verify_key, queue in email_queue.items():
+                    notifier_settings.send_batched_notification(
+                        context=context, notification_queue=queue
+                    ).unwrap()
+                    notifier_settings.email_queue[email_template][verify_key] = []
+            sleep(15)
 
     def set_log_level(self, log_level: int | str | None) -> None:
         def determine_log_level(
