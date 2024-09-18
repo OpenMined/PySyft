@@ -1143,6 +1143,21 @@ def test_settings() -> Any:
     return test_settings
 
 
+def add_helper_path_to_python_path() -> None:
+    current_path = "."
+
+    # jupyter uses "." which resolves to the notebook
+    if not is_interpreter_jupyter():
+        # python uses the file which has from syft import test_settings in it
+        import_path = get_caller_file_path()
+        if import_path:
+            current_path = import_path
+
+    base_dir = find_base_dir_with_tox_ini(current_path)
+    notebook_helper_path = os.path.join(base_dir, "test_helpers")
+    sys.path.append(notebook_helper_path)
+
+
 class CustomRepr(reprlib.Repr):
     def repr_str(self, obj: Any, level: int = 0) -> str:
         if len(obj) <= self.maxstring:
