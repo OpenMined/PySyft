@@ -188,13 +188,16 @@ server:
 
   # SMTP Settings
   smtp:
+    enabled: false
+
+    host: null
+    port: null
+    from: null
+    username: null
+    password: null
+
     # Existing secret for SMTP with key 'smtpPassword'
     existingSecret: null
-    host: hostname
-    port: 587
-    from: noreply@openmined.org
-    username: apikey
-    password: password
 
   # Extra environment vars
   env: null

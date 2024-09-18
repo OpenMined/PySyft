@@ -1154,7 +1154,7 @@ def add_helper_path_to_python_path() -> None:
             current_path = import_path
 
     base_dir = find_base_dir_with_tox_ini(current_path)
-    notebook_helper_path = os.path.join(base_dir, "notebooks/notebook_helpers")
+    notebook_helper_path = os.path.join(base_dir, "test_helpers")
     sys.path.append(notebook_helper_path)
 
 
