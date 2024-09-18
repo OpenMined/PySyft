@@ -37,6 +37,8 @@ class Event:
 
     ADMIN_LOW_SIDE_WORKFLOW_COMPLETED = "admin_low_side_workflow_completed"
     ADMIN_HIGH_SIDE_WORKFLOW_COMPLETED = "admin_high_side_workflow_completed"
+    ADMIN_SYNC_HIGH_TO_LOW = "admin_sync_high_to_low"
+    ADMIN_SYNC_LOW_TO_HIGH = "admin_sync_low_to_high"
 
 
 @dataclass

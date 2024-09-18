@@ -150,8 +150,18 @@ def make_client(url: str, email: str, password: str) -> Any:
     return sy.login(url=url, email=email, password=password)
 
 
-def sync_clients(from_client, to_client):
-    return sy.sync(from_client, to_client)
+def make_guest_client(url: str) -> Any:
+    return sy.login_as_guest(url=url)
+
+
+@unsync
+async def sync_clients(events, from_client, to_client, event_name, after=None):
+    if after:
+        await events.await_for(event_name=after)
+    widget = sy.sync(from_client, to_client)
+    widget._share_all()
+    widget._sync_all()
+    events.register(event_name)
 
 
 @unsync
