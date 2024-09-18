@@ -119,4 +119,5 @@ extraResources:
       name: seaweedfs-mount-secret
     type: Opaque
     data:
-      gcs_creds.json: base64 encoded value
+      # base 64 encoded value
+      gcs_creds.json: e30=
