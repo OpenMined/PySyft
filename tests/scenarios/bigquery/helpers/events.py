@@ -105,7 +105,7 @@ class EventManager:
                 print(
                     f"async await_for_scenario: {scenario_name}. Time left: {time_left}"
                 )
-            await asyncio.sleep(5)
+            await asyncio.sleep(1)
         return False
 
     def scenario_completed(self, scenario_name: str) -> bool:
