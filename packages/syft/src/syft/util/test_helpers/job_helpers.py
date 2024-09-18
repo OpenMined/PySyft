@@ -85,7 +85,7 @@ def make_query(settings: dict) -> str:
     SELECT {settings['groupby_col']}, AVG({settings['score_col']}) AS average_score
     FROM {settings['dataset']}.{settings['table']}
     GROUP BY {settings['groupby_col']}
-    LIMIT {settings['limit']}""".strip()
+    LIMIT {settings['limit']}""".strip()  # nosec: B608
 
     return textwrap.dedent(query)
 
@@ -94,14 +94,14 @@ def create_simple_query_job(user: TestUser) -> TestJob:
     job_type = "simple_query"
     func_name = f"{job_type}_{secrets.token_hex(3)}"
 
-    dataset = random.choice([dataset_1, dataset_2])
-    table, groupby_col, score_col = random.choice(
+    dataset = random.choice([dataset_1, dataset_2])  # nosec: B311
+    table, groupby_col, score_col = random.choice(  # nosec: B311
         [
             (table_1, table_1_col_id, table_1_col_score),
             (table_2, table_2_col_id, table_2_col_score),
         ]
     )
-    limit = random.randint(1, 1_000_000)
+    limit = random.randint(1, 1_000_000)  # nosec: B311
 
     settings = {
         "dataset": dataset,
@@ -131,7 +131,7 @@ def create_wrong_asset_query(user: TestUser) -> TestJob:
 
     valid_job = create_simple_query_job(user)
     settings = valid_job.settings
-    corrupted_asset = random.choice(["dataset", "table"])
+    corrupted_asset = random.choice(["dataset", "table"])  # nosec: B311
     settings[corrupted_asset] = "wrong_asset"
     query = make_query(settings)
 
@@ -238,7 +238,7 @@ def create_job_many_columns(user: TestUser) -> TestJob:
     job.job_type = job_type
     job.func_name = func_name
     settings = job.settings
-    job.settings["num_extra_cols"] = random.randint(100, 1000)
+    job.settings["num_extra_cols"] = random.randint(100, 1000)  # nosec: B311
 
     new_columns_string = ", ".join(
         f"{settings['score_col']} as col_{i}" for i in range(settings["num_extra_cols"])
@@ -248,13 +248,13 @@ def create_job_many_columns(user: TestUser) -> TestJob:
     SELECT {settings['groupby_col']}, AVG({settings['score_col']}) AS average_score, {new_columns_string}
     FROM {settings['dataset']}.{settings['table']}
     GROUP BY {settings['groupby_col']}
-    LIMIT {settings['limit']}""".strip()
+    LIMIT {settings['limit']}""".strip()  # nosec: B608
 
     return job
 
 
 def create_random_job(user: TestUser) -> TestJob:
-    job_func = random.choice(create_job_functions)
+    job_func = random.choice(create_job_functions)  # nosec: B311
     return job_func(user)
 
 
