@@ -220,7 +220,7 @@ def user_exists(root_client, email: str) -> bool:
 class SMTPTestServer:
     def __init__(self, email_server):
         self.port = 9025
-        self.hostname = "127.0.0.1"
+        self.hostname = "0.0.0.0"
         self._stop_event = asyncio.Event()
 
         # Simple email handler class
