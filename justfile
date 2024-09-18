@@ -1,3 +1,7 @@
+set dotenv-load
+
+# ---------------------------------------------------------------------------------------------------------------------
+
 cluster_default := "k3d-syft-dev"
 cluster_high := "k3d-syft-high"
 cluster_low := "k3d-syft-low"
@@ -334,41 +338,44 @@ check-platform:
 
 [group('cloud')]
 [private]
-deploy-cloud cluster registry namespace profile: check-platform
+deploy-cloud cluster_ctx registry_url namespace profile: check-platform
     #!/bin/bash
-    set -euo pipefail
 
-    CONTEXT_NAME=$(kubectl config get-contexts -o=name | grep "{{ cluster }}")
+    CONTEXT_NAME=$(kubectl config get-contexts -o=name | grep "{{ cluster_ctx }}")
 
     if [ -z "$CONTEXT_NAME" ]; then
-        echo "No context found for cluster '{{ cluster }}'"
+        echo "Context not found: {{ cluster_ctx }}. Authorized with cloud providers to get relevant K8s cluster contexts"
         exit 1
     fi
 
+    set -euo pipefail
+
     # cloud deployments always have tracing false + platform=amd64
-    just tracing=false registry_url={{ registry }} \
+    just tracing=false registry_url={{ registry_url }} \
         deploy-devspace $CONTEXT_NAME {{ namespace }} "-p {{ profile }} --var PLATFORM=amd64"
 
 [group('cloud')]
 [private]
-purge-cloud cluster namespace:
+purge-cloud cluster_ctx namespace:
     #!/bin/bash
-    set -euo pipefail
 
-    CONTEXT_NAME=$(kubectl config get-contexts -o=name | grep "{{ cluster }}")
+    CONTEXT_NAME=$(kubectl config get-contexts -o=name | grep "{{ cluster_ctx }}")
 
     if [ -z "$CONTEXT_NAME" ]; then
-        echo "No context found for cluster '{{ cluster }}'"
+        echo "Context not found: {{ cluster_ctx }}. Authorized with cloud providers to get relevant K8s cluster contexts"
         exit 1
     fi
 
+    set -euo pipefail
+
     just purge-devspace $CONTEXT_NAME {{ namespace }}
+    kubectl delete ns {{ namespace }} --force --grace-period=0 --context $CONTEXT_NAME
 
 # ---------------------------------------------------------------------------------------------------------------------
 
 # Auth all components required for deploying Syft to Google Cloud
 [group('cloud-gcp')]
-auth-gcloud gcp_project gcp_region gcp_cluster gcp_registry:
+auth-gcloud:
     #!/bin/bash
     set -euo pipefail
 
@@ -378,30 +385,40 @@ auth-gcloud gcp_project gcp_region gcp_cluster gcp_registry:
         gcloud auth login
     fi
 
+    echo "Logged in as \"$(gcloud config get-value account)\""
+
     # install gke-gcloud-auth-plugin
     gke_installed=$(gcloud components list --only-local-state --filter gke-gcloud-auth-plugin --format=list 2>/dev/null)
     if [ -z "$gke_installed" ]; then
         gcloud components install gke-gcloud-auth-plugin
+        echo "Installed gke-gcloud-auth-plugin"
     fi
 
-    # get artifact registry registry
-    gcloud auth configure-docker {{ gcp_registry }} --quiet
-
-    # get cluster credentials
-    gcloud container clusters get-credentials {{ gcp_cluster }} --region {{ gcp_region }} --project {{ gcp_project }}
+# Deploy local code as datasite-high to Google Kubernetes Engine
+[group('cloud-gcp')]
+deploy-gcp-high gcp_cluster gcp_registry_url namespace="syft": (deploy-cloud gcp_cluster gcp_registry_url namespace "gcp")
 
 # Deploy local code as datasite-high to Google Kubernetes Engine
 [group('cloud-gcp')]
-deploy-gcp-high gcp_cluster gcp_registry namespace="syft": (deploy-cloud gcp_cluster gcp_registry namespace "gcp")
+deploy-gcp-low gcp_cluster gcp_registry_url namespace="syft": (deploy-cloud gcp_cluster gcp_registry_url namespace "gcp-low")
 
+# Purge deployment from a cluster
 [group('cloud-gcp')]
-purge-gcp-high gcp_cluster namespace: (purge-cloud gcp_cluster namespace)
-
-# Deploy local code as datasite-high to Google Kubernetes Engine
-[group('cloud-gcp')]
-deploy-gcp-low gcp_cluster gcp_registry namespace="syft": (deploy-cloud gcp_cluster gcp_registry namespace "gcp-low")
+purge-gcp gcp_cluster namespace="syft": (purge-cloud gcp_cluster namespace)
 
 # ---------------------------------------------------------------------------------------------------------------------
+
+[group('cloud-az')]
+auth-az tenant="creditsopenmined.onmicrosoft.com":
+    #!/bin/bash
+
+    # login to azure
+    ACCOUNT=$(az account show --query user.name)
+    if [ -z "$ACCOUNT" ]; then
+        az login --tenant {{ tenant }}
+    fi
+
+    echo "Logged in as $(az account show --query user.name)"
 
 # Deploy local code as datasite-high to Azure Kubernetes Service
 [group('cloud-az')]
@@ -441,8 +458,8 @@ k9s-signoz:
 delete-all: delete-clusters delete-registry
     @echo "Stopped all Syft components"
 
-[group('utils')]
 [confirm('Confirm prune all docker resources?')]
+[group('utils')]
 prune-docker:
     -docker container prune -f
     -docker volume prune -af
