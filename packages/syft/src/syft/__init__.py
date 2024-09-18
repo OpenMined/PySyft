@@ -1,4 +1,4 @@
-__version__ = "0.9.2-beta.2"
+__version__ = "0.9.2-beta.3"
 
 # stdlib
 from collections.abc import Callable
@@ -155,7 +155,7 @@ def _test_settings() -> Any:
 
 
 @module_property
-def _get_helpers() -> None:
+def _test_helpers() -> None:
     # relative
     from .util.util import add_helper_path_to_python_path
 

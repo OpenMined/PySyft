@@ -8,7 +8,7 @@ from pydantic import ValidationError
 # relative
 from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.sqlite_document_store import SQLiteStoreConfig
@@ -48,11 +48,9 @@ _NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR = (
 
 @serializable(canonical_name="SettingsService", version=1)
 class SettingsService(AbstractService):
-    store: DocumentStore
     stash: SettingsStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = SettingsStash(store=store)
 
     @service_method(path="settings.get", name="get")
@@ -123,14 +121,16 @@ class SettingsService(AbstractService):
     def _update(
         self, context: AuthedServiceContext, settings: ServerSettingsUpdate
     ) -> ServerSettings:
-        all_settings = self.stash.get_all(context.credentials).unwrap()
+        all_settings = self.stash.get_all(
+            context.credentials, limit=1, sort_order="desc"
+        ).unwrap()
         if len(all_settings) > 0:
             new_settings = all_settings[0].model_copy(
                 update=settings.to_dict(exclude_empty=True)
             )
             ServerSettings.model_validate(new_settings.to_dict())
             update_result = self.stash.update(
-                context.credentials, settings=new_settings
+                context.credentials, obj=new_settings
             ).unwrap()
 
             # If notifications_enabled is present in the update, we need to update the notifier settings
@@ -173,10 +173,12 @@ class SettingsService(AbstractService):
                 public_message=f"Not a valid server_side_type, please use one of the options from: {side_type_options}"
             )
 
-        current_settings = self.stash.get_all(context.credentials).unwrap()
+        current_settings = self.stash.get_all(
+            context.credentials, limit=1, sort_order="desc"
+        ).unwrap()
         if len(current_settings) > 0:
             new_settings = current_settings[0]
-            new_settings.server_side_type = server_side_type
+            new_settings.server_side_type = ServerSideType(server_side_type)
             updated_settings = self.stash.update(
                 context.credentials, new_settings
             ).unwrap()
