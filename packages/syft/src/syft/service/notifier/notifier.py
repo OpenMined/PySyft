@@ -32,7 +32,6 @@ from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
-from .notifier_enums import EMAIL_TYPES
 from .notifier_enums import NOTIFICATION_FREQUENCY
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
@@ -123,11 +122,11 @@ class EmailNotifier(BaseNotifier):
                 )  # TODO: Should we return an error here?
             receiver_email = receiver.email
             if notification_sample.email_template:
-                subject = notification_sample.email_template.email_title(
-                    notification_queue, context=context
+                subject = notification_sample.email_template.batched_email_title(
+                    notifications=notification_queue, context=context
                 )
-                body = notification_sample.email_template.email_body(
-                    notification_queue, context=context
+                body = notification_sample.email_template.batched_email_body(
+                    notifications=notification_queue, context=context
                 )
             else:
                 subject = notification_sample.subject
@@ -348,15 +347,13 @@ class NotifierSettings(SyftObject):
     def send_batched_notification(
         self,
         context: AuthedServiceContext,
-        notification_queue: dict[SyftVerifyKey, list[Notification]],
-        notification_frequency: NOTIFICATION_FREQUENCY,
+        notification_queue: list[Notification],
     ) -> None:
-        for _, queue in notification_queue:
-            notifier_objs: list[BaseNotifier] = self.select_notifiers(queue[0])
-            for notifier in notifier_objs:
-                notifier.send_batches(
-                    context=context, notification_queue=queue
-                ).unwrap()
+        notifier_objs: list[BaseNotifier] = self.select_notifiers(notification_queue[0])
+        for notifier in notifier_objs:
+            notifier.send_batches(
+                context=context, notification_queue=notification_queue
+            ).unwrap()
         return None
 
     @as_result(SyftException)
