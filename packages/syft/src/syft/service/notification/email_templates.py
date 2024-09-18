@@ -16,11 +16,31 @@ if TYPE_CHECKING:
 class EmailTemplate:
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
-        return ""
+        raise NotImplementedError(
+            "Email Template subclasses must implement the email_title method."
+        )
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        return ""
+        raise NotImplementedError(
+            "Email Template subclasses must implement the email_body method."
+        )
+
+    @staticmethod
+    def batched_email_title(
+        notifications: list["Notification"], context: AuthedServiceContext
+    ) -> str:
+        raise NotImplementedError(
+            "Email Template subclasses must implement the batched_email_title method."
+        )
+
+    @staticmethod
+    def batched_email_body(
+        notifications: list["Notification"], context: AuthedServiceContext
+    ) -> str:
+        raise NotImplementedError(
+            "Email Template subclasses must implement the batched_email_body method."
+        )
 
 
 @serializable(canonical_name="FailedJobTemplate", version=1)
@@ -473,6 +493,153 @@ class RequestEmailTemplate(EmailTemplate):
             </div>
         </body>
         """
+        return f"""<html>{head} {body}</html>"""
+
+    @staticmethod
+    def batched_email_title(
+        notifications: list["Notification"], context: AuthedServiceContext
+    ) -> str:
+        return "Batched Requests Notifications"
+
+    @staticmethod
+    def batched_email_body(
+        notifications: list["Notification"], context: AuthedServiceContext
+    ) -> str:
+        notifications_info = ""
+        for notification in notifications:
+            notification.linked_obj = cast(LinkedObject, notification.linked_obj)
+            request_obj = notification.linked_obj.resolve_with_context(
+                context=context
+            ).unwrap()
+
+            request_id = request_obj.id
+            request_name = request_obj.requesting_user_name
+            request_email = request_obj.requesting_user_email
+            request_time = request_obj.request_time
+            request_status = request_obj.status.name  # fails in l0 check right now
+            request_changes = ",".join(
+                [change.__class__.__name__ for change in request_obj.changes]
+            )
+
+            notifications_info += f"""<tr>
+                                <td>{request_id[:4]}</td>
+                                <td>{request_name}</td>
+                                <td>{request_email}</td>
+                                <td>{request_time}</td>
+                                <td>{request_status}</td>
+                                <td>{request_changes}</td>
+                            </tr>"""
+
+        head = """<head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Batched Requests Notification</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f4f4f4;
+                    margin: 0;
+                    padding: 0;
+                    color: #333;
+                }
+                .container {
+                    width: 100%;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background-color: #ffffff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                }
+                .header {
+                    font-size: 18px;
+                    font-weight: bold;
+                    margin-bottom: 20px;
+                    color: #4CAF50;
+                }
+                .content {
+                    font-size: 14px;
+                    line-height: 1.6;
+                    color: #555555;
+                }
+                .content p {
+                    margin: 10px 0;
+                }
+                .request-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 20px;
+                }
+                .request-table th, .request-table td {
+                    text-align: left;
+                    padding: 12px;
+                    border: 1px solid #ddd;
+                }
+                .request-table th {
+                    background-color: #f8f8f8;
+                    color: #333;
+                    font-weight: bold;
+                }
+                .request-table tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                .more-requests {
+                    font-size: 13px;
+                    color: #FF5722;
+                    margin-top: 10px;
+                }
+                .footer {
+                    margin-top: 20px;
+                    font-size: 12px;
+                    color: #777777;
+                }
+                .button {
+                    background-color: #4CAF50;
+                    color: #ffffff;
+                    padding: 10px 20px;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    font-size: 14px;
+                    display: inline-block;
+                    margin-top: 20px;
+                }
+            </style>
+        </head>"""
+        body = f"""<body>
+            <div class="container">
+                <div class="header">
+                    Batched Requests Notification
+                </div>
+                <div class="content">
+                    <p>Hello Admin,</p>
+                    <p>This is to inform you that a batch of requests has been processed.
+                    Below are the details of the most recent requests:</p>
+
+                    <table class="request-table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>User </th>
+                                <th>User Email </th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Changes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {notifications_info}
+                            <!-- Only show the first 3 requests -->
+                        </tbody>
+                    </table>
+
+                    <p class="more-requests">+ X more requests processed during this time period.
+                    Connect to the server to check all requests.</p>
+                </div>
+                <div class="footer">
+                    <p>Thank you,</p>
+                </div>
+            </div>
+        </body>"""
         return f"""<html>{head} {body}</html>"""
 
 
