@@ -1,17 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongo
+  name: postgres
   labels:
     {{- include "common.labels" . | nindent 4 }}
-    app.kubernetes.io/component: mongo
+    app.kubernetes.io/component: postgres
 spec:
   type: ClusterIP
   selector:
     {{- include "common.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: mongo
+    app.kubernetes.io/component: postgres
   ports:
-    - name: mongo
-      port: 27017
+    - name: postgres
+      port: 5432
       protocol: TCP
-      targetPort: 27017
+      targetPort: 5432

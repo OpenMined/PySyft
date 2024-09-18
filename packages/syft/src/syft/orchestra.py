@@ -184,6 +184,7 @@ def deploy_to_python(
     debug: bool = False,
     migrate: bool = False,
     consumer_type: ConsumerType | None = None,
+    db_url: str | None = None,
 ) -> ServerHandle:
     worker_classes = {
         ServerType.DATASITE: Datasite,
@@ -216,6 +217,7 @@ def deploy_to_python(
         "migrate": migrate,
         "deployment_type": deployment_type_enum,
         "consumer_type": consumer_type,
+        "db_url": db_url,
     }
 
     if port:
@@ -329,6 +331,7 @@ class Orchestra:
         migrate: bool = False,
         from_state_folder: str | Path | None = None,
         consumer_type: ConsumerType | None = None,
+        db_url: str | None = None,
     ) -> ServerHandle:
         if from_state_folder is not None:
             with open(f"{from_state_folder}/config.json") as f:
@@ -378,11 +381,12 @@ class Orchestra:
                 debug=debug,
                 migrate=migrate,
                 consumer_type=consumer_type,
+                db_url=db_url,
             )
             display(
                 SyftInfo(
                     message=f"You have launched a development server at http://{host}:{server_handle.port}."
-                    + "It is intended only for local use."
+                    + " It is intended only for local use."
                 )
             )
             return server_handle

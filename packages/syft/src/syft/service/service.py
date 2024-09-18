@@ -37,6 +37,7 @@ from ..serde.signature import Signature
 from ..serde.signature import signature_remove_context
 from ..serde.signature import signature_remove_self
 from ..server.credentials import SyftVerifyKey
+from ..store.db.stash import ObjectStash
 from ..store.document_store import DocumentStore
 from ..store.linked_obj import LinkedObject
 from ..types.errors import SyftException
@@ -71,6 +72,7 @@ class AbstractService:
     server: AbstractServer
     server_uid: UID
     store_type: type = DocumentStore
+    stash: ObjectStash
 
     @as_result(SyftException)
     def resolve_link(
