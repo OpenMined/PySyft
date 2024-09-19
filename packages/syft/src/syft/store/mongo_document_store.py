@@ -17,15 +17,15 @@ class MongoBsonObject(StorableObjectType):
     pass
 
 
-class MongoBackingStore(KeyValueBackingStore):
-    pass
-
-
 @serializable(
     attrs=["index_name", "settings", "store_config"],
     canonical_name="MongoBackingStore",
     version=1,
 )
+class MongoBackingStore(KeyValueBackingStore):
+    pass
+
+
 @serializable(attrs=["storage_type"], canonical_name="MongoStorePartition", version=1)
 class MongoStorePartition(StorePartition):
     """Mongo StorePartition
