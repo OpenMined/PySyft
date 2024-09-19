@@ -192,19 +192,34 @@ start-signoz: && (apply-signoz _ctx_signoz) (setup-signoz _ctx_signoz)
         Dashboard: \033[1;36mhttp://localhost:{{ port_signoz_ui }}\033[0m\n\
         OTEL Endpoint: \033[1;36mhttp://localhost:{{ port_signoz_otel }}\033[0m\n"
 
+# Remove SigNoz from the cluster
+[group('signoz')]
+delete-signoz: (delete-cluster _name_signoz)
+
+# Remove all SigNoz data without deleting
+[group('signoz')]
+reset-signoz:
+    @kubectl exec --context {{ _ctx_signoz }} -n platform chi-signoz-clickhouse-cluster-0-0-0 --container clickhouse -- \
+        clickhouse-client --multiline --multiquery "\
+        TRUNCATE TABLE signoz_analytics.rule_state_history_v0; \
+        TRUNCATE TABLE signoz_logs.logs_v2; \
+        TRUNCATE TABLE signoz_logs.logs; \
+        TRUNCATE TABLE signoz_logs.usage; \
+        TRUNCATE TABLE signoz_metrics.usage; \
+        TRUNCATE TABLE signoz_traces.durationSort; \
+        TRUNCATE TABLE signoz_traces.signoz_error_index_v2; \
+        TRUNCATE TABLE signoz_traces.signoz_index_v2; \
+        TRUNCATE TABLE signoz_traces.signoz_spans; \
+        TRUNCATE TABLE signoz_traces.top_level_operations; \
+        TRUNCATE TABLE signoz_traces.usage_explorer; \
+        TRUNCATE TABLE signoz_traces.usage;"
+
+    @echo "Done. Traces & logs are cleared, but graphs may still show old content."
+
 # K9s into the Signoz cluster
 [group('signoz')]
 k9s-signoz:
     k9s --context {{ _ctx_signoz }}
-
-# Remove SigNoz from the cluster
-[group('signoz')]
-delete-collector:
-    helm uninstall k8s-infra
-
-# Remove SigNoz from the cluster
-[group('signoz')]
-delete-signoz: (delete-cluster _name_signoz)
 
 [group('signoz')]
 [private]
@@ -219,6 +234,11 @@ apply-collector kube_context:
         --set otelInsecure=true \
         --set presets.otlpExporter.enabled=true \
         --set presets.loggingExporter.enabled=true
+
+# Remove SigNoz from the cluster
+[group('signoz')]
+delete-collector:
+    helm uninstall k8s-infra
 
 [group('signoz')]
 [private]
