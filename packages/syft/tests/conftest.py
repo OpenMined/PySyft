@@ -26,7 +26,6 @@ from syft.server.worker import Worker
 from syft.service.queue.queue_stash import QueueStash
 from syft.service.user import user
 
-# our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
 
 
 def patch_protocol_file(filepath: Path):

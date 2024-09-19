@@ -12,7 +12,6 @@ __all__ = [
     "TRACING_ENABLED",
     "instrument",
     "instrument_fastapi",
-    "instrument_mongo",
     "instrument_botocore",
 ]
 
@@ -73,19 +72,6 @@ def instrument_fastapi(app: Any) -> None:
     except Exception as e:
         logger.error(f"Failed to load FastAPIInstrumentor. {e}")
 
-
-def instrument_mongo() -> None:
-    if not TRACING_ENABLED:
-        return
-
-    try:
-        # third party
-        from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
-
-        PymongoInstrumentor().instrument()
-        logger.info("Added OTEL PymongoInstrumentor")
-    except Exception as e:
-        logger.error(f"Failed to load PymongoInstrumentor. {e}")
 
 
 def instrument_botocore() -> None:
