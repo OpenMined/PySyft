@@ -473,6 +473,7 @@ class Server(AbstractServer):
         email_dispatcher.start()
 
     def email_notification_dispatcher(self) -> None:
+        lock = threading.Lock()
         while True:
             # Use admin context to have access to the notifier obj
             context = AuthedServiceContext(
@@ -480,11 +481,11 @@ class Server(AbstractServer):
                 credentials=self.verify_key,
                 role=ServiceRole.ADMIN,
             )
-
             # Get notitifer settings
             notifier_settings = self.services.notifier.settings(
                 context=context
             ).unwrap()
+            lock.acquire()
             # Iterate over email_types and its queues
             # Ex: {'EmailRequest': {VerifyKey: [], VerifyKey: [], ...}}
             for email_template, email_queue in notifier_settings.email_queue.items():
@@ -495,6 +496,10 @@ class Server(AbstractServer):
                         context=context, notification_queue=queue
                     ).unwrap()
                     notifier_settings.email_queue[email_template][verify_key] = []
+                    self.services.notifier.stash.update(
+                        credentials=self.verify_key, obj=notifier_settings
+                    ).unwrap()
+            lock.release()
             sleep(15)
 
     def set_log_level(self, log_level: int | str | None) -> None:

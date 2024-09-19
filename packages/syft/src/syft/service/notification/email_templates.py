@@ -506,7 +506,9 @@ class RequestEmailTemplate(EmailTemplate):
         notifications: list["Notification"], context: AuthedServiceContext
     ) -> str:
         notifications_info = ""
-        for notification in notifications:
+        for i, notification in enumerate(notifications):
+            if i > 3:
+                break
             notification.linked_obj = cast(LinkedObject, notification.linked_obj)
             request_obj = notification.linked_obj.resolve_with_context(
                 context=context
@@ -522,7 +524,7 @@ class RequestEmailTemplate(EmailTemplate):
             )
 
             notifications_info += f"""<tr>
-                                <td>{request_id[:4]}</td>
+                                <td>{str(request_id)[:4] + "..."}</td>
                                 <td>{request_name}</td>
                                 <td>{request_email}</td>
                                 <td>{request_time}</td>
@@ -530,116 +532,125 @@ class RequestEmailTemplate(EmailTemplate):
                                 <td>{request_changes}</td>
                             </tr>"""
 
-        head = """<head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Batched Requests Notification</title>
-            <style>
+        see_more_info = ""
+        if len(notifications) > 4:
+            see_more_info = f"""<p class="more-requests">{len(notifications) - 4}
+                  more requests made during this time period.
+                  Connect to the server to check all requests.</p>"""
+        head = """
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Batched Requests Notification</title>
+              <style>
                 body {
-                    font-family: Arial, sans-serif;
-                    background-color: #f4f4f4;
-                    margin: 0;
-                    padding: 0;
-                    color: #333;
+                  font-family: Arial, sans-serif;
+                  background-color: #f4f4f4;
+                  margin: 0;
+                  padding: 0;
+                  color: #333;
                 }
                 .container {
-                    width: 100%;
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background-color: #ffffff;
-                    padding: 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                  width: 100%;
+                  max-width: 600px;
+                  margin: 0 auto;
+                  background-color: #ffffff;
+                  padding: 20px;
+                  border-radius: 8px;
+                  box-sizing: border-box; /* Added to include padding in width */
+                  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
                 }
                 .header {
-                    font-size: 18px;
-                    font-weight: bold;
-                    margin-bottom: 20px;
-                    color: #4CAF50;
+                  font-size: 18px;
+                  font-weight: bold;
+                  margin-bottom: 20px;
+                  color: #4CAF50;
                 }
                 .content {
-                    font-size: 14px;
-                    line-height: 1.6;
-                    color: #555555;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #555555;
                 }
                 .content p {
-                    margin: 10px 0;
+                  margin: 10px 0;
                 }
                 .request-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-top: 20px;
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin-top: 20px;
+                  table-layout: fixed; /* Added to fix table layout */
                 }
                 .request-table th, .request-table td {
-                    text-align: left;
-                    padding: 12px;
-                    border: 1px solid #ddd;
+                  text-align: left;
+                  padding: 12px;
+                  border: 1px solid #ddd;
+                  word-wrap: break-word; /* Added to wrap long content */
                 }
                 .request-table th {
-                    background-color: #f8f8f8;
-                    color: #333;
-                    font-weight: bold;
+                  background-color: #f8f8f8;
+                  color: #333;
+                  font-weight: bold;
                 }
                 .request-table tr:nth-child(even) {
-                    background-color: #f9f9f9;
+                  background-color: #f9f9f9;
                 }
                 .more-requests {
-                    font-size: 13px;
-                    color: #FF5722;
-                    margin-top: 10px;
+                  font-size: 13px;
+                  color: #FF5722;
+                  margin-top: 10px;
                 }
                 .footer {
-                    margin-top: 20px;
-                    font-size: 12px;
-                    color: #777777;
+                  margin-top: 20px;
+                  font-size: 12px;
+                  color: #777777;
                 }
                 .button {
-                    background-color: #4CAF50;
-                    color: #ffffff;
-                    padding: 10px 20px;
-                    text-decoration: none;
-                    border-radius: 5px;
-                    font-size: 14px;
-                    display: inline-block;
-                    margin-top: 20px;
+                  background-color: #4CAF50;
+                  color: #ffffff;
+                  padding: 10px 20px;
+                  text-decoration: none;
+                  border-radius: 5px;
+                  font-size: 14px;
+                  display: inline-block;
+                  margin-top: 20px;
                 }
-            </style>
-        </head>"""
-        body = f"""<body>
-            <div class="container">
+              </style>
+            </head>
+        """
+        body = f"""
+            <body>
+              <div class="container">
                 <div class="header">
-                    Batched Requests Notification
+                  Batched Requests Notification
                 </div>
                 <div class="content">
-                    <p>Hello Admin,</p>
-                    <p>This is to inform you that a batch of requests has been processed.
-                    Below are the details of the most recent requests:</p>
-
-                    <table class="request-table">
-                        <thead>
-                            <tr>
-                                <th>Request ID</th>
-                                <th>User </th>
-                                <th>User Email </th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Changes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {notifications_info}
-                            <!-- Only show the first 3 requests -->
-                        </tbody>
-                    </table>
-
-                    <p class="more-requests">+ X more requests processed during this time period.
-                    Connect to the server to check all requests.</p>
+                  <p>Hello Admin,</p>
+                  <p>This is to inform you that a batch of requests has been processed.
+                  Below are the details of the most recent requests:</p>
+                  <table class="request-table">
+                    <thead>
+                      <tr>
+                        <th>Request ID</th>
+                        <th>User</th>
+                        <th>User Email</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Changes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {notifications_info}
+                      <!-- Only show the first 3 requests -->
+                    </tbody>
+                  </table>
+                  {see_more_info}
                 </div>
                 <div class="footer">
-                    <p>Thank you,</p>
+                  <p>Thank you,</p>
                 </div>
-            </div>
-        </body>"""
+              </div>
+            </body>
+        """
         return f"""<html>{head} {body}</html>"""
 
 

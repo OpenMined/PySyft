@@ -349,6 +349,8 @@ class NotifierSettings(SyftObject):
         context: AuthedServiceContext,
         notification_queue: list[Notification],
     ) -> None:
+        if len(notification_queue) == 0:
+            return None
         notifier_objs: list[BaseNotifier] = self.select_notifiers(notification_queue[0])
         for notifier in notifier_objs:
             notifier.send_batches(
