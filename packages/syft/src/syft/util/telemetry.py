@@ -73,7 +73,6 @@ def instrument_fastapi(app: Any) -> None:
         logger.error(f"Failed to load FastAPIInstrumentor. {e}")
 
 
-
 def instrument_botocore() -> None:
     if not TRACING_ENABLED:
         return
@@ -86,6 +85,34 @@ def instrument_botocore() -> None:
         logger.info("Added OTEL BotocoreInstrumentor")
     except Exception as e:
         logger.error(f"Failed to load BotocoreInstrumentor. {e}")
+
+
+def instrument_threads() -> None:
+    if not TRACING_ENABLED:
+        return
+
+    try:
+        # third party
+        from opentelemetry.instrumentation.threading import ThreadingInstrumentor
+
+        ThreadingInstrumentor().instrument()
+        logger.info("Added OTEL ThreadingInstrumentor")
+    except Exception as e:
+        logger.error(f"Failed to load ThreadingInstrumentor. {e}")
+
+
+def instrument_sqlalchemny() -> None:
+    if not TRACING_ENABLED:
+        return
+
+    try:
+        # third party
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+        SQLAlchemyInstrumentor().instrument(enable_commenter=True, commenter_options={})
+        logger.info("Added OTEL SQLAlchemyInstrumentor")
+    except Exception as e:
+        logger.error(f"Failed to load SQLAlchemyInstrumentor. {e}")
 
 
 instrument = setup_instrumenter()

@@ -3,7 +3,7 @@ disable_existing_loggers: True
 
 formatters:
   default:
-    format: "ROOT %(asctime)s - %(levelname)s - %(name)s - %(message)s"
+    format: "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
   uvicorn.default:
     "()": uvicorn.logging.DefaultFormatter
     format: "%(asctime)s - %(levelname)s - %(name)s - %(message)s"

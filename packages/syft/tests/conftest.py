@@ -27,7 +27,6 @@ from syft.service.queue.queue_stash import QueueStash
 from syft.service.user import user
 
 
-
 def patch_protocol_file(filepath: Path):
     dp = get_data_protocol()
     shutil.copyfile(src=dp.file_path, dst=filepath)
