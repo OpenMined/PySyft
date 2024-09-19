@@ -314,7 +314,7 @@ class Timeout:
         return result
 
 
-def get_email_server(reset=False, server_side_type="high"):
+def get_email_server(reset=False, server_side_type=""):
     if server_side_type == "high":
         email_file = "./emails_high.json"
         port = 9026
