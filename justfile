@@ -254,7 +254,7 @@ create-cluster cluster port *args='': start-registry && (apply-coredns cluster) 
 
     # Since k3d adds k3d- prefix to the cluster name
     # we create a new context without the prefix
-    kubectl config rename-context k3d-{{cluster}} {{cluster}}
+    kubectl config set-context {{ cluster }} --cluster=k3d-{{ cluster}} --user=admin@k3d-{{ cluster}}
 
 [group('cluster')]
 [private]
