@@ -167,10 +167,15 @@ cleanup-gw: (purge-devspace cluster_gw ns_default) (delete-ns cluster_gw ns_defa
 # Launch SigNoz on http://localhost:{{port_signoz_ui}}
 [group('signoz')]
 start-signoz: && apply-signoz setup-signoz
-    k3d cluster create signoz \
+    k3d cluster create {{ cluster_signoz }} \
         --port {{ port_signoz_ui }}:3301@loadbalancer \
         --port {{ port_signoz_otel }}:4317@loadbalancer \
         --k3s-arg "--disable=metrics-server@server:*"
+
+    # Since k3d adds k3d- prefix to the cluster name
+    # we create a new context without the prefix
+    kubectl config set-context {{ cluster_signoz }} --cluster=k3d-{{ cluster_signoz }} \
+        --user=admin@k3d-{{ cluster_signoz }}
 
     @printf "Started SigNoz\n\
         Dashboard: \033[1;36mhttp://localhost:{{ port_signoz_ui }}\033[0m\n\
@@ -178,7 +183,7 @@ start-signoz: && apply-signoz setup-signoz
 
 # Remove SigNoz from the cluster
 [group('signoz')]
-delete-collector:
+delete-signoz-agent:
     helm uninstall k8s-infra
 
 # Remove SigNoz from the cluster
@@ -187,8 +192,8 @@ delete-signoz: (delete-cluster cluster_signoz)
 
 [group('signoz')]
 [private]
-apply-collector cluster:
-    @echo "Installing SigNoz OTel Collector"
+apply-signoz-agent cluster:
+    @echo "Installing SigNoz OTel Agent"
     helm install k8s-infra k8s-infra \
         --repo https://charts.signoz.io \
         --kube-context {{ cluster }} \
@@ -244,7 +249,7 @@ delete-clusters:
 
 [group('cluster')]
 [private]
-create-cluster cluster port *args='': start-registry && (apply-coredns cluster) (apply-collector cluster)
+create-cluster cluster port *args='': start-registry && (apply-coredns cluster) (apply-signoz-agent cluster)
     #!/bin/bash
     set -euo pipefail
 
@@ -426,6 +431,7 @@ deploy-az-high aks_cluster az_registry namespace="syft": (deploy-cloud aks_clust
 # ---------------------------------------------------------------------------------------------------------------------
 
 # Reset Syft state in a cluster
+# TODO: make reset_k8s.sh take in context and namespace as args
 [group('utils')]
 [private]
 reset-syft name namespace:
