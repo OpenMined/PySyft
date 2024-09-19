@@ -377,9 +377,13 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
 
 @migrate(UserCodeStatusCollectionV1, UserCodeStatusCollection)
-def migrate_user_code_to_v2() -> list[Callable]:
+def migrate_user_code_status_to_v2() -> list[Callable]:
     def update_statusdict(context: TransformContext) -> TransformContext:
         res = {}
+        if not isinstance(context.obj, UserCodeStatusCollectionV1):
+            raise Exception("Invalid object type")
+        if context.output is None:
+            raise Exception("Output is None")
         for server_identity, (status, reason) in context.obj.status_dict.items():
             res[server_identity] = ApprovalDecision(status=status, reason=reason)
         context.output["status_dict"] = res
@@ -387,6 +391,10 @@ def migrate_user_code_to_v2() -> list[Callable]:
 
     def set_user_verify_key(context: TransformContext) -> TransformContext:
         authed_context = context.to_server_context()
+        if not isinstance(context.obj, UserCodeStatusCollectionV1):
+            raise Exception("Invalid object type")
+        if context.output is None:
+            raise Exception("Output is None")
         user_code = context.obj.user_code_link.resolve_with_context(
             authed_context
         ).unwrap()
