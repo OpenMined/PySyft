@@ -30,8 +30,6 @@ class TransformContext(Context):
 
     @classmethod
     def from_context(cls, obj: Any, context: Context | None = None) -> Self:
-        if isinstance(context, TransformContext):
-            return context
         t_context = cls()
         t_context.obj = obj
         try:

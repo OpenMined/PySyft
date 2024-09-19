@@ -9,6 +9,7 @@ from ...serde.serializable import serializable
 from ...store.db.db import DBManager
 from ...store.db.stash import ObjectStash
 from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import UniqueConstraintException
 from ...types.blob_storage import BlobStorageEntry
 from ...types.errors import SyftException
 from ...types.result import as_result
@@ -24,7 +25,6 @@ from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
-from ..user.user import User
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..worker.utils import DEFAULT_WORKER_POOL_NAME
 from .object_migration_state import MigrationData
@@ -289,20 +289,17 @@ class MigrationService(AbstractService):
         self, context: AuthedServiceContext, migrated_objects: list[SyftObject]
     ) -> SyftSuccess:
         for migrated_object in migrated_objects:
-            if (
-                isinstance(migrated_object, User)
-                and migrated_object.verify_key == context.server.verify_key
-            ):
-                self.stash.update_root_user(context, migrated_object).unwrap()
-            else:
-                stash = self._search_stash_for_klass(
-                    context, type(migrated_object)
-                ).unwrap()
+            stash = self._search_stash_for_klass(
+                context, type(migrated_object)
+            ).unwrap()
 
+            try:
                 stash.update(
                     context.credentials,
                     obj=migrated_object,
                 ).unwrap()
+            except UniqueConstraintException as e:
+                print(f"Failed to update {migrated_object}: {e}")
 
         return SyftSuccess(message="Updated migration objects!")
 
