@@ -2,11 +2,11 @@ set dotenv-load
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-cluster_default := "k3d-syft-dev"
-cluster_high := "k3d-syft-high"
-cluster_low := "k3d-syft-low"
-cluster_gw := "k3d-syft-gw"
-cluster_signoz := "k3d-signoz"
+cluster_default := "syft-dev"
+cluster_high := "syft-high"
+cluster_low := "syft-low"
+cluster_gw := "syft-gw"
+cluster_signoz := "signoz"
 ns_default := "syft"
 ns_high := "high"
 ns_low := "low"
@@ -248,12 +248,13 @@ create-cluster cluster port *args='': start-registry && (apply-coredns cluster) 
     #!/bin/bash
     set -euo pipefail
 
-    # remove the k3d- prefix
-    CLUSTER_NAME=$(echo "{{ cluster }}" | sed -e 's/k3d-//g')
-
-    k3d cluster create $CLUSTER_NAME \
+    k3d cluster create {{cluster}} \
         --port {{ port }}:80@loadbalancer \
         --registry-use k3d-registry.localhost:5800 {{ args }}
+
+    # Since k3d adds k3d- prefix to the cluster name
+    # we create a new context without the prefix
+    kubectl config rename-context k3d-{{cluster}} {{cluster}}
 
 [group('cluster')]
 [private]
@@ -261,8 +262,6 @@ delete-cluster *args='':
     #!/bin/bash
     set -euo pipefail
 
-    # remove the k3d- prefix
-    ARGS=$(echo "{{ args }}" | sed -e 's/k3d-//g')
     k3d cluster delete $ARGS
 
 [group('cluster')]
