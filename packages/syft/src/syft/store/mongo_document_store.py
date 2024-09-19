@@ -1,5 +1,4 @@
 # third party
-from deprecated import deprecated
 from pydantic import Field
 
 # relative
@@ -51,9 +50,6 @@ class MongoDocumentStore(DocumentStore):
     partition_type = MongoStorePartition
 
 
-@deprecated(
-    version="0.9.1", reason="Use syft.store.db.postgres.PostgresDBConfig instead."
-)
 @serializable()
 class MongoStoreConfig(StoreConfig):
     __canonical_name__ = "MongoStoreConfig"
