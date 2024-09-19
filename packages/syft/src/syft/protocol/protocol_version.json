@@ -66,6 +66,13 @@
           "hash": "2e1365c5535fa51c22eef79f67dd6444789bc829c27881367e3050e06e2ffbfe",
           "action": "remove"
         }
+      },
+      "SyftWorker": {
+        "2": {
+          "version": 2,
+          "hash": "e996dabbb8ad4ff0bc5d19528077c11f73b9300d810735d367916e4e5b9149b6",
+          "action": "add"
+        }
       }
     }
   }
