@@ -246,9 +246,10 @@ class MigrationService(AbstractService):
         migrated_objects: list[SyftObject],
         ignore_existing: bool = True,
     ) -> SyftSuccess:
-        return self._create_migrated_objects(
+        self._create_migrated_objects(
             context, migrated_objects, ignore_existing=ignore_existing
         ).unwrap()
+        return SyftSuccess(message="Created migration objects!")
 
     @as_result(SyftException)
     def _create_migrated_objects(
@@ -310,11 +311,6 @@ class MigrationService(AbstractService):
         migration_objects: dict[type[SyftObject], list[SyftObject]],
     ) -> list[SyftObject]:
         migrated_objects = []
-
-        # def get_sorting_key_migration(klass):
-        #     canonical_name = klass.__canonical_name__
-        #     latest_version = SyftObjectRegistry.get_latest_version(canonical_name)
-        #     return getattr(latest_version, "__migration_priority__", 0)
 
         for klass, objects in migration_objects.items():
             canonical_name = klass.__canonical_name__
