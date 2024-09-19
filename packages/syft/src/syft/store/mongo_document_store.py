@@ -14,7 +14,7 @@ from .locks import NoLockingConfig
 from .mongo_client import MongoStoreClientConfig
 
 
-class MongoBsonObject:
+class MongoBsonObject(StorableObjectType):
     pass
 
 
