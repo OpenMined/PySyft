@@ -262,7 +262,7 @@ delete-cluster *args='':
     #!/bin/bash
     set -euo pipefail
 
-    k3d cluster delete $ARGS
+    k3d cluster delete {{ args }}
 
 [group('cluster')]
 [private]
