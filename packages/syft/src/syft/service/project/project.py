@@ -786,10 +786,10 @@ class ProjectCode(ProjectEventAddObject):
             else "NVIDIA H100 GPU"
         )
 
-        mock_report_prefix = "🛑 Mock" if mock_report else ""
+        mock_report_prefix = "🛑 Mock " if mock_report else ""
         print(
-            f"⏳ Retrieving {mock_report_prefix} attestation token from {machine_type}"
-            + f"Enclave at {provider.route}...",
+            f"⏳ Retrieving {mock_report_prefix}attestation token from {machine_type}"
+            + f" Enclave at {provider.route}...",
             flush=True,
         )
         client = provider.get_guest_client()
