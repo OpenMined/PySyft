@@ -218,7 +218,7 @@ def user_exists(root_client, email: str) -> bool:
 
 
 class SMTPTestServer:
-    def __init__(self, email_server, port=9025):
+    def __init__(self, email_server, port=9025, ready_timeout=20):
         self.port = port
         self.hostname = "0.0.0.0"
         self._stop_event = asyncio.Event()
@@ -245,7 +245,10 @@ class SMTPTestServer:
         try:
             self.handler = SimpleHandler()
             self.controller = Controller(
-                self.handler, hostname=self.hostname, port=self.port
+                self.handler,
+                hostname=self.hostname,
+                port=self.port,
+                ready_timeout=ready_timeout,
             )
         except Exception as e:
             print(f"> Error initializing SMTPTestServer Controller: {e}")
