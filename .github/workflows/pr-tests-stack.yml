@@ -579,13 +579,13 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Check for file changes
-        uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          base: ${{ github.ref }}
-          token: ${{ github.token }}
-          filters: .github/file-filters.yml
+      # - name: Check for file changes
+      #   uses: dorny/paths-filter@v3
+      #   id: changes
+      #   with:
+      #     base: ${{ github.ref }}
+      #     token: ${{ github.token }}
+      #     filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
