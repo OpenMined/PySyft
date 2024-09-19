@@ -17,8 +17,10 @@ from IPython.display import JSON
 from IPython.display import Markdown
 from IPython.display import display
 import ipywidgets as widgets
+import jwt
 from pydantic import Field
 from pydantic import field_validator
+from result import Ok
 from rich.progress import Progress
 from typing_extensions import Self
 
@@ -121,10 +123,7 @@ class ProjectEvent(SyftObject):
     def _coll_repr_(self) -> dict[str, str | dict]:
         return {
             "Created at": str(self.timestamp),
-            "Details": {
-                "type": "events",
-                "value": self.get_event_details()
-            }
+            "Details": {"type": "events", "value": self.get_event_details()},
         }
 
     def __repr_syft_nested__(self) -> tuple[str, str]:
@@ -814,12 +813,15 @@ class ProjectCode(ProjectEventAddObject):
             flush=True,
         )
 
-        # If Mock Report is enabled, we don't need to verify the expiration
-        report = verify_attestation_report(
-            token=raw_jwt_report,
-            attestation_type=attestation_type,
-            verify_expiration=False if mock_report else True,
-        )
+        # If Mock Report is enabled, we don't need to verify the report
+        if mock_report:
+            report = Ok(jwt.decode(raw_jwt_report, options={"verify_signature": False}))
+        else:
+            report = verify_attestation_report(
+                token=raw_jwt_report,
+                attestation_type=attestation_type,
+            )
+
         if report.is_err():
             print(
                 f"❌ Attestation report verification failed. {report.err()}", flush=True
