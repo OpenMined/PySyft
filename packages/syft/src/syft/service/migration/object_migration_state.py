@@ -6,6 +6,7 @@ import sys
 from typing import Any
 
 # third party
+import sqlalchemy
 from typing_extensions import Self
 import yaml
 
@@ -16,6 +17,7 @@ from ...serde.serialize import _serialize
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
+from ...store.db.stash import with_session
 from ...store.document_store import PartitionKey
 from ...store.document_store_errors import NotFoundException
 from ...types.blob_storage import BlobStorageEntry
@@ -32,7 +34,9 @@ from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.util import prompt_warning_message
+from ..context import AuthedServiceContext
 from ..response import SyftSuccess
+from ..user.user import User
 from ..worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..worker.worker_image import SyftWorkerImage
 from ..worker.worker_pool import SyftWorker
@@ -77,6 +81,31 @@ class SyftMigrationStateStash(ObjectStash[SyftObjectMigrationState]):
             credentials=credentials,
             filters={"canonical_name": canonical_name},
         ).unwrap()
+
+    @as_result(SyftException)
+    @with_session
+    def update_root_user(
+        self,
+        context: AuthedServiceContext,
+        root_user: User,
+        session: sqlalchemy.orm.session,
+    ) -> SyftSuccess:
+        user_stash = context.server.services.user.stash
+        existing_user = user_stash.get_by_verify_key(
+            context.credentials, root_user.verify_key
+        ).unwrap()
+        stmt = user_stash.table.update().where(
+            user_stash.table.c.id == existing_user.id
+        )
+        stmt = stmt.values(id=root_user.id)
+        result = session.execute(stmt)
+        session.commit()
+        if result.rowcount == 0:
+            raise NotFoundException(
+                f"User: {root_user.id} not found or no permission to update."
+            )
+
+        return user_stash.update(context.credentials, obj=root_user).unwrap()
 
 
 @serializable()

@@ -24,6 +24,7 @@ from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..user.user import User
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..worker.utils import DEFAULT_WORKER_POOL_NAME
 from .object_migration_state import MigrationData
@@ -256,6 +257,7 @@ class MigrationService(AbstractService):
         context: AuthedServiceContext,
         migrated_objects: list[SyftObject],
         ignore_existing: bool = True,
+        skip_check_type: bool = False,
     ) -> SyftSuccess:
         for migrated_object in migrated_objects:
             stash = self._search_stash_for_klass(
@@ -265,6 +267,7 @@ class MigrationService(AbstractService):
             result = stash.set(
                 context.credentials,
                 obj=migrated_object,
+                skip_check_type=skip_check_type,
             )
             # Exception from the new Error Handling pattern, no need to change
             if result.is_err():
@@ -286,14 +289,20 @@ class MigrationService(AbstractService):
         self, context: AuthedServiceContext, migrated_objects: list[SyftObject]
     ) -> SyftSuccess:
         for migrated_object in migrated_objects:
-            stash = self._search_stash_for_klass(
-                context, type(migrated_object)
-            ).unwrap()
+            if (
+                isinstance(migrated_object, User)
+                and migrated_object.verify_key == context.server.verify_key
+            ):
+                self.stash.update_root_user(context, migrated_object).unwrap()
+            else:
+                stash = self._search_stash_for_klass(
+                    context, type(migrated_object)
+                ).unwrap()
 
-            stash.update(
-                context.credentials,
-                obj=migrated_object,
-            ).unwrap()
+                stash.update(
+                    context.credentials,
+                    obj=migrated_object,
+                ).unwrap()
 
         return SyftSuccess(message="Updated migration objects!")
 
@@ -304,6 +313,12 @@ class MigrationService(AbstractService):
         migration_objects: dict[type[SyftObject], list[SyftObject]],
     ) -> list[SyftObject]:
         migrated_objects = []
+
+        # def get_sorting_key_migration(klass):
+        #     canonical_name = klass.__canonical_name__
+        #     latest_version = SyftObjectRegistry.get_latest_version(canonical_name)
+        #     return getattr(latest_version, "__migration_priority__", 0)
+
         for klass, objects in migration_objects.items():
             canonical_name = klass.__canonical_name__
             latest_version = SyftObjectRegistry.get_latest_version(canonical_name)
@@ -435,11 +450,19 @@ class MigrationService(AbstractService):
                 "please use 'client.load_migration_data' instead."
             )
 
+        pre_objects = [
+            o for objects in migration_data.store_objects.values() for o in objects
+        ]
+        self._create_migrated_objects(
+            context, pre_objects, skip_check_type=True
+        ).unwrap()
+        print("UPDATING")
+
         # migrate + apply store objects
         migrated_objects = self._migrate_objects(
             context, migration_data.store_objects
         ).unwrap()
-        self._create_migrated_objects(context, migrated_objects).unwrap()
+        self._update_migrated_objects(context, migrated_objects).unwrap()
 
         # migrate+apply action objects
         migrated_actionobjects = self._migrate_objects(

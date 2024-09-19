@@ -204,7 +204,13 @@ class ObjectStash(Generic[StashT]):
             return False
         elif len(results) == 1:
             result = results[0]
-            return result.id == obj.id
+            res = result.id == obj.id
+            if not res:
+                # third party
+                import ipdb
+
+                ipdb.set_trace()
+            return res
         return True
 
     @with_session
@@ -360,8 +366,9 @@ class ObjectStash(Generic[StashT]):
         add_storage_permission: bool = True,  # TODO: check the default value
         ignore_duplicates: bool = False,
         session: Session = None,
+        skip_check_type: bool = False,
     ) -> StashT:
-        if not self.allow_any_type:
+        if not self.allow_any_type and not skip_check_type:
             self.check_type(obj, self.object_type).unwrap()
         uid = obj.id
 

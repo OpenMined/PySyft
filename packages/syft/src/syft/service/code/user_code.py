@@ -51,6 +51,7 @@ from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
 from ...types.result import as_result
+from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
@@ -58,7 +59,9 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
 from ...types.transforms import add_server_uid_for_key
+from ...types.transforms import drop
 from ...types.transforms import generate_id
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util.decorators import deprecated
@@ -371,6 +374,31 @@ class UserCodeStatusCollection(SyncableSyftObject):
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
         return [self.user_code_link.object_uid]
+
+
+@migrate(UserCodeStatusCollectionV1, UserCodeStatusCollection)
+def migrate_user_code_to_v2() -> list[Callable]:
+    def update_statusdict(context: TransformContext) -> TransformContext:
+        res = {}
+        for server_identity, (status, reason) in context.obj.status_dict.items():
+            res[server_identity] = ApprovalDecision(status=status, reason=reason)
+        context.output["status_dict"] = res
+        return context
+
+    def set_user_verify_key(context: TransformContext) -> TransformContext:
+        authed_context = context.to_server_context()
+        user_code = context.obj.user_code_link.resolve_with_context(
+            authed_context
+        ).unwrap()
+        context.output["user_verify_key"] = user_code.user_verify_key
+        return context
+
+    return [
+        make_set_default("was_requested_on_lowside", False),
+        make_set_default("_has_readable_outputs_cache", None),
+        update_statusdict,
+        set_user_verify_key,
+    ]
 
 
 @serializable()
@@ -2060,3 +2088,8 @@ def load_approved_policy_code(
                 load_policy_code(user_code.input_policy_type)
             if isinstance(user_code.output_policy_type, UserPolicy):
                 load_policy_code(user_code.output_policy_type)
+
+
+@migrate(UserCodeV1, UserCode)
+def migrate_user_code_to_v2() -> list[Callable]:
+    return [drop("l0_deny_reason"), drop("_has_output_read_permissions_cache")]
