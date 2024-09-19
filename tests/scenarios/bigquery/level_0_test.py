@@ -7,7 +7,9 @@ import random
 from helpers.api import create_endpoints_query
 from helpers.api import create_endpoints_schema
 from helpers.api import create_endpoints_submit_query
+from helpers.api import run_api_path
 from helpers.api import set_endpoint_settings
+from helpers.asserts import result_is
 from helpers.events import Event
 from helpers.events import EventManager
 from helpers.events import Scenario
@@ -21,6 +23,7 @@ from helpers.workers import check_worker_pool_exists
 from helpers.workers import create_prebuilt_worker_image
 from helpers.workers import create_worker_pool
 from helpers.workers import get_prebuilt_worker_image
+from level_2_basic_test import query_sql
 import pytest
 from unsync import unsync
 
@@ -72,9 +75,23 @@ async def user_low_side_activity(_, events, user, after=None):
     guest_user_setup_flow(user.email)
 
     # login_user
+    user_client = user.client()
 
     # submit_code
     # request_approval
+    test_query_path = "bigquery.test_query"
+    await result_is(
+        events,
+        lambda: len(run_api_path(user_client, test_query_path, sql_query=query_sql()))
+        == 10000,
+        matches=True,
+        after=[
+            Event.QUERY_ENDPOINT_CONFIGURED,
+            Event.USERS_CREATED_CHECKED,
+            Event.ADMIN_SYNC_HIGH_TO_LOW,
+        ],
+        register=Event.USERS_CAN_QUERY_MOCK,
+    )
 
     # loop: wait for approval
 
@@ -236,7 +253,7 @@ async def admin_low_side_activity(_, events):
 
 
 @unsync_
-async def admin_create_api_endpoint(
+async def admin_create_sync_api_endpoints(
     _,
     events,
     admin_client_high,
@@ -323,7 +340,7 @@ async def admin_high_side_activity(_, events):
         events,
     )
 
-    admin_create_api_endpoint(
+    admin_create_sync_api_endpoints(
         _,
         events,
         admin_client_high,
@@ -356,11 +373,11 @@ async def test_level_0_k8s(request):
     events.add_scenario(scenario)
     events.monitor()
 
-    # start admin activity on high side
+    # start admin activity on low side
     admin_low_side_activity(request, events)
 
     # todo
-    # admin_high_side_activity(request, events)
+    admin_high_side_activity(request, events)
 
     # todo - only start syncing after the root user created other admin users
     # root_sync_activity(request, events, after=Event.USER_ADMIN_CREATED)

@@ -18,7 +18,7 @@ def make_user(
     email: str | None = None,
     password: str | None = None,
     role: ServiceRole = ServiceRole.DATA_SCIENTIST,
-):
+) -> TestUser:
     fake = Faker()
     if name is None:
         name = fake.name()
