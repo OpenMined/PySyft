@@ -3,9 +3,9 @@ from collections.abc import Callable
 
 # syft absolute
 import syft as sy
-from syft import test_settings
 
 # relative
+from ..... import test_settings
 from ..rate_limiter import is_within_rate_limit
 
 
