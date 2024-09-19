@@ -2,11 +2,11 @@ set dotenv-load
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-cluster_default := "syft-dev"
-cluster_high := "syft-high"
-cluster_low := "syft-low"
-cluster_gw := "syft-gw"
-cluster_signoz := "signoz"
+cluster_default := "k3d-syft-dev"
+cluster_high := "k3d-syft-high"
+cluster_low := "k3d-syft-low"
+cluster_gw := "k3d-syft-gw"
+cluster_signoz := "k3d-signoz"
 ns_default := "syft"
 ns_high := "high"
 ns_low := "low"
@@ -167,15 +167,10 @@ cleanup-gw: (purge-devspace cluster_gw ns_default) (delete-ns cluster_gw ns_defa
 # Launch SigNoz on http://localhost:{{port_signoz_ui}}
 [group('signoz')]
 start-signoz: && apply-signoz setup-signoz
-    k3d cluster create {{ cluster_signoz }} \
+    k3d cluster create signoz \
         --port {{ port_signoz_ui }}:3301@loadbalancer \
         --port {{ port_signoz_otel }}:4317@loadbalancer \
         --k3s-arg "--disable=metrics-server@server:*"
-
-    # Since k3d adds k3d- prefix to the cluster name
-    # we create a new context without the prefix
-    kubectl config set-context {{ cluster_signoz }} --cluster=k3d-{{ cluster_signoz }} \
-        --user=admin@k3d-{{ cluster_signoz }}
 
     @printf "Started SigNoz\n\
         Dashboard: \033[1;36mhttp://localhost:{{ port_signoz_ui }}\033[0m\n\
@@ -183,7 +178,7 @@ start-signoz: && apply-signoz setup-signoz
 
 # Remove SigNoz from the cluster
 [group('signoz')]
-delete-signoz-agent:
+delete-collector:
     helm uninstall k8s-infra
 
 # Remove SigNoz from the cluster
@@ -192,8 +187,8 @@ delete-signoz: (delete-cluster cluster_signoz)
 
 [group('signoz')]
 [private]
-apply-signoz-agent cluster:
-    @echo "Installing SigNoz OTel Agent"
+apply-collector cluster:
+    @echo "Installing SigNoz OTel Collector"
     helm install k8s-infra k8s-infra \
         --repo https://charts.signoz.io \
         --kube-context {{ cluster }} \
@@ -249,17 +244,16 @@ delete-clusters:
 
 [group('cluster')]
 [private]
-create-cluster cluster port *args='': start-registry && (apply-coredns cluster) (apply-signoz-agent cluster)
+create-cluster cluster port *args='': start-registry && (apply-coredns cluster) (apply-collector cluster)
     #!/bin/bash
     set -euo pipefail
 
-    k3d cluster create {{cluster}} \
+    # remove the k3d- prefix
+    CLUSTER_NAME=$(echo "{{ cluster }}" | sed -e 's/k3d-//g')
+
+    k3d cluster create $CLUSTER_NAME \
         --port {{ port }}:80@loadbalancer \
         --registry-use k3d-registry.localhost:5800 {{ args }}
-
-    # Since k3d adds k3d- prefix to the cluster name
-    # we create a new context without the prefix
-    kubectl config set-context {{ cluster }} --cluster=k3d-{{ cluster}} --user=admin@k3d-{{ cluster}}
 
 [group('cluster')]
 [private]
@@ -267,7 +261,9 @@ delete-cluster *args='':
     #!/bin/bash
     set -euo pipefail
 
-    k3d cluster delete {{ args }}
+    # remove the k3d- prefix
+    ARGS=$(echo "{{ args }}" | sed -e 's/k3d-//g')
+    k3d cluster delete $ARGS
 
 [group('cluster')]
 [private]
@@ -431,7 +427,6 @@ deploy-az-high aks_cluster az_registry namespace="syft": (deploy-cloud aks_clust
 # ---------------------------------------------------------------------------------------------------------------------
 
 # Reset Syft state in a cluster
-# TODO: make reset_k8s.sh take in context and namespace as args
 [group('utils')]
 [private]
 reset-syft name namespace:
