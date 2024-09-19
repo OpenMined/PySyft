@@ -619,7 +619,7 @@ jobs:
       - name: Run migration tests
         if: steps.changes.outputs.syft == 'true'
         run: |
-          tox -e migration.test
+          tox -e migration.k8s.test
 
   pr-tests-notebook-scenario-k8s-sync:
     strategy:
