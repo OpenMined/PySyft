@@ -7,14 +7,10 @@ from pydantic import model_validator
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
-from ...store.document_store import NewBaseUIDStoreStash
+from ...store.db.db import DBManager
+from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
-from ...store.document_store_errors import TooManyItemsFoundException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.result import as_result
@@ -183,65 +179,41 @@ class ExecutionOutput(SyncableSyftObject):
         return res
 
 
-@serializable(canonical_name="OutputStash", version=1)
-class OutputStash(NewBaseUIDStoreStash):
-    object_type = ExecutionOutput
-    settings: PartitionSettings = PartitionSettings(
-        name=ExecutionOutput.__canonical_name__, object_type=ExecutionOutput
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store)
-        self.store = store
-        self.settings = self.settings
-        self._object_type = self.object_type
-
+@serializable(canonical_name="OutputStashSQL", version=1)
+class OutputStash(ObjectStash[ExecutionOutput]):
     @as_result(StashException)
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> list[ExecutionOutput]:
-        qks = QueryKeys(
-            qks=[UserCodeIdPartitionKey.with_obj(user_code_id)],
-        )
-        return self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+        return self.get_all(
+            credentials=credentials,
+            filters={"user_code_id": user_code_id},
         ).unwrap()
 
     @as_result(StashException)
     def get_by_job_id(
-        self, credentials: SyftVerifyKey, user_code_id: UID
-    ) -> ExecutionOutput:
-        qks = QueryKeys(
-            qks=[JobIdPartitionKey.with_obj(user_code_id)],
-        )
-        res = self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+        self, credentials: SyftVerifyKey, job_id: UID
+    ) -> ExecutionOutput | None:
+        return self.get_one(
+            credentials=credentials,
+            filters={"job_id": job_id},
         ).unwrap()
-        if len(res) == 0:
-            raise NotFoundException()
-        elif len(res) > 1:
-            raise TooManyItemsFoundException()
-        return res[0]
 
     @as_result(StashException)
     def get_by_output_policy_id(
         self, credentials: SyftVerifyKey, output_policy_id: UID
     ) -> list[ExecutionOutput]:
-        qks = QueryKeys(
-            qks=[OutputPolicyIdPartitionKey.with_obj(output_policy_id)],
-        )
-        return self.query_all(
-            credentials=credentials, qks=qks, order_by=CreatedAtPartitionKey
+        return self.get_all(
+            credentials=credentials,
+            filters={"output_policy_id": output_policy_id},
         ).unwrap()
 
 
 @serializable(canonical_name="OutputService", version=1)
 class OutputService(AbstractService):
-    store: DocumentStore
     stash: OutputStash
 
-    def __init__(self, store: DocumentStore):
-        self.store = store
+    def __init__(self, store: DBManager):
         self.stash = OutputStash(store=store)
 
     @service_method(
@@ -310,7 +282,7 @@ class OutputService(AbstractService):
                 ActionObjectREAD(uid=_id.id, credentials=user_verify_key)
                 for _id in result_ids
             ]
-            if context.server.services.action.store.has_permissions(permissions):
+            if context.server.services.action.stash.has_permissions(permissions):
                 return True
 
         return False
@@ -321,11 +293,11 @@ class OutputService(AbstractService):
         roles=ADMIN_ROLE_LEVEL,
     )
     def get_by_job_id(
-        self, context: AuthedServiceContext, user_code_id: UID
+        self, context: AuthedServiceContext, job_id: UID
     ) -> ExecutionOutput:
         return self.stash.get_by_job_id(
             credentials=context.server.verify_key,  # type: ignore
-            user_code_id=user_code_id,
+            job_id=job_id,
         ).unwrap()
 
     @service_method(
