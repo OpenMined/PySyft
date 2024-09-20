@@ -742,9 +742,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p ./k8s-logs
-          kubectl describe all -A --context k3d-syft-migration-source --namespace syft > ./k8s-logs/syft-migration-source-desc-${{ steps.date.outputs.date }}.txt
+          # kubectl describe all -A --context k3d-syft-migration-source --namespace syft > ./k8s-logs/syft-migration-source-desc-${{ steps.date.outputs.date }}.txt
+          # kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-syft-migration-source --namespace syft > ./k8s-logs/syft-migration-source-logs-${{ steps.date.outputs.date }}.txt
           kubectl describe all -A --context k3d-test-datasite-1 --namespace syft > ./k8s-logs/test-datasite-1-desc-${{ steps.date.outputs.date }}.txt
-          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-syft-migration-source --namespace syft > ./k8s-logs/syft-migration-source-logs-${{ steps.date.outputs.date }}.txt
           kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-test-datasite-1 --namespace syft > ./k8s-logs/test-datasite-1-logs-${{ steps.date.outputs.date }}.txt
           ls -la ./k8s-logs
 
