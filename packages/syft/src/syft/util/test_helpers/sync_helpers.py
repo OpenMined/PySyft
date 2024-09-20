@@ -3,15 +3,17 @@ from tqdm import tqdm
 
 # syft absolute
 import syft as sy
-from syft.client.datasite_client import DatasiteClient
-from syft.client.syncing import compare_clients
-from syft.service.code.user_code import UserCode
-from syft.service.job.job_stash import Job
-from syft.service.job.job_stash import JobStatus
-from syft.service.request.request import Request
-from syft.service.request.request import RequestStatus
-from syft.service.sync.diff_state import ObjectDiffBatch
-from syft.types.result import Err
+
+# relative
+from ...client.datasite_client import DatasiteClient
+from ...client.syncing import compare_clients
+from ...service.code.user_code import UserCode
+from ...service.job.job_stash import Job
+from ...service.job.job_stash import JobStatus
+from ...service.request.request import Request
+from ...service.request.request import RequestStatus
+from ...service.sync.diff_state import ObjectDiffBatch
+from ...types.result import Err
 
 
 def deny_requests_without_autosync_tag(client_low: DatasiteClient):
