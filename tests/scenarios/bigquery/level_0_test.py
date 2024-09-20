@@ -10,6 +10,7 @@ from helpers.api import create_endpoints_submit_query
 from helpers.api import run_api_path
 from helpers.api import set_endpoint_settings
 from helpers.asserts import result_is
+from helpers.code import run_code
 from helpers.events import Event
 from helpers.events import EventManager
 from helpers.events import Scenario
@@ -26,6 +27,9 @@ from helpers.workers import get_prebuilt_worker_image
 from level_2_basic_test import query_sql
 import pytest
 from unsync import unsync
+
+# syft absolute
+import syft as sy
 
 random.seed(42069)
 
@@ -68,7 +72,6 @@ async def guest_user_setup_flow(_, events, user):
 
 @unsync_
 async def user_low_side_activity(_, events, user, after=None):
-    # loop: guest user creation is allowed
     if after:
         await events.await_for(event_name=after)
 
@@ -78,11 +81,10 @@ async def user_low_side_activity(_, events, user, after=None):
     user_client = user.client()
 
     # submit_code
-    # request_approval
-    test_query_path = "bigquery.test_query"
+    submit_query_path = "bigquery.test_query"
     await result_is(
         events,
-        lambda: len(run_api_path(user_client, test_query_path, sql_query=query_sql()))
+        lambda: len(run_api_path(user_client, submit_query_path, sql_query=query_sql()))
         == 10000,
         matches=True,
         after=[
@@ -93,13 +95,32 @@ async def user_low_side_activity(_, events, user, after=None):
         register=Event.USERS_CAN_QUERY_MOCK,
     )
 
-    # loop: wait for approval
+    func_name = "test_func"
+    await result_is(
+        events,
+        lambda: run_api_path(
+            user_client,
+            submit_query_path,
+            func_name=func_name,
+            query=query_sql(),
+        ),
+        matches="*Query submitted*",
+        after=[Event.SUBMIT_QUERY_ENDPOINT_CONFIGURED, Event.USERS_CREATED_CHECKED],
+        register=Event.USERS_CAN_SUBMIT_QUERY,
+    )
 
-    # execute code
-    # get result
+    # this should fail to complete because no work will be approved or denied
+    await result_is(
+        events,
+        lambda: run_code(user_client, method_name=f"{func_name}*"),
+        matches=sy.SyftException(public_message="*Your code is waiting for approval*"),
+        after=[Event.USERS_CAN_SUBMIT_QUERY],
+        register=Event.USERS_QUERY_NOT_READY,
+    )
 
     # dump result in a file
-    pass
+
+    events.register(Event.USER_LOW_SIDE_WAITING_FOR_APPROVAL)
 
 
 @unsync_
