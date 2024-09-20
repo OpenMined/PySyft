@@ -36,12 +36,8 @@ PROTOCOL_TYPE = str | int
 
 IGNORE_TYPES = [
     "mock_type",
-    "MockStore",
-    "MockSyftObject",
-    "MockStoreConfig",
     "MockWrapper",
     "base_stash_mock_object_type",
-    "MockKeyValueBackingStore",
     "MockObjectFromSyftBaseObj",
     "MockObjectToSyftBaseObj",
 ]
@@ -237,9 +233,7 @@ class DataProtocol:
             cls, version = serde_properties[7], serde_properties[9]
             if issubclass(cls, SyftBaseObject):
                 canonical_name = cls.__canonical_name__
-                if canonical_name in IGNORE_TYPES or canonical_name.startswith(
-                    "MockSyftObject_"
-                ):
+                if canonical_name in IGNORE_TYPES:
                     continue
 
                 hash_str = DataProtocol._calculate_object_hash(cls)

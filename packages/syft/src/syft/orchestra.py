@@ -171,7 +171,6 @@ def deploy_to_python(
     tail: bool,
     dev_mode: bool,
     processes: int,
-    local_db: bool,
     server_side_type: ServerSideType,
     enable_warnings: bool,
     n_consumers: int,
@@ -248,7 +247,6 @@ def deploy_to_python(
             server_side_type=server_side_type,
         )
     else:
-        kwargs["local_db"] = local_db
         kwargs["thread_workers"] = thread_workers
         if server_type_enum in worker_classes:
             worker_class = worker_classes[server_type_enum]
@@ -314,7 +312,6 @@ class Orchestra:
         # worker related inputs
         port: int | str | None = None,
         processes: int = 1,  # temporary work around for jax in subprocess
-        local_db: bool = False,
         dev_mode: bool = False,
         reset: bool = False,
         log_level: str | int | None = None,
@@ -368,7 +365,6 @@ class Orchestra:
                 tail=tail,
                 dev_mode=dev_mode,
                 processes=processes,
-                local_db=local_db,
                 server_side_type=server_side_type_enum,
                 enable_warnings=enable_warnings,
                 log_level=log_level,
