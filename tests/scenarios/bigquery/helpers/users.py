@@ -4,7 +4,7 @@ from typing import Any
 
 # third party
 from faker import Faker
-from unsync import unsync
+from helpers.events import unsync
 
 # syft absolute
 import syft as sy

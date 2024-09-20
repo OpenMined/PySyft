@@ -3,9 +3,9 @@ from typing import Any
 
 # third party
 from faker import Faker
+from helpers.events import unsync
 from helpers.users import TestUser
 import pandas as pd
-from unsync import unsync
 
 # syft absolute
 import syft as sy

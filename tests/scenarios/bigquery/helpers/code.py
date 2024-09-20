@@ -3,7 +3,7 @@ import asyncio
 
 # third party
 from helpers.api import api_for_path
-from unsync import unsync
+from helpers.events import unsync
 
 # syft absolute
 from syft.service.code.user_code import UserCode

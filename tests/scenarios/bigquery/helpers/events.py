@@ -1,6 +1,7 @@
 # stdlib
 import asyncio
 from dataclasses import dataclass
+from functools import wraps
 import inspect
 import json
 import os
@@ -8,7 +9,9 @@ from threading import Lock
 import time
 
 # third party
-from unsync import unsync
+import unsync as unsync_lib
+
+__all__ = ["Event", "EventManager", "Scenario", "unsync"]
 
 
 class Event:
@@ -231,7 +234,7 @@ class EventManager:
             with open(self.event_file, "w") as f:
                 json.dump({}, f)
 
-    @unsync
+    @unsync_lib.unsync
     async def monitor(self, period: float = 2):
         while True:
             await asyncio.sleep(period)
@@ -260,3 +263,30 @@ class EventManager:
         # if os.path.exists(self.event_file):
         #     os.remove(self.event_file)
         pass
+
+
+def unsync_guard():
+    "Make sure we exit early if an exception occurs"
+
+    def decorator(func):
+        @wraps(func)
+        @unsync_lib.unsync
+        async def wrapper(*args, **kwargs):
+            try:
+                result = await func(*args, **kwargs)
+                return result
+            except Exception as e:
+                print(f"Exception occurred: {e}")
+                for arg in args:
+                    if isinstance(arg, EventManager):
+                        print("Registering exception event")
+                        arg.register(Event.EXCEPTION_OCCURRED)
+                        break
+                raise
+
+        return wrapper
+
+    return decorator
+
+
+unsync = unsync_guard()

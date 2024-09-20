@@ -1,6 +1,5 @@
 # stdlib
 import asyncio
-from functools import wraps
 
 # third party
 from helpers.api import create_endpoints_query
@@ -14,8 +13,8 @@ from helpers.code import run_code
 from helpers.events import Event
 from helpers.events import EventManager
 from helpers.events import Scenario
+from helpers.events import unsync
 from helpers.fixtures_sync import make_client
-from helpers.fixtures_sync import make_guest_client
 from helpers.fixtures_sync import make_user
 from helpers.fixtures_sync import sync_clients
 from helpers.workers import add_external_registry
@@ -24,49 +23,12 @@ from helpers.workers import create_prebuilt_worker_image
 from helpers.workers import create_worker_pool
 from helpers.workers import get_prebuilt_worker_image
 import pytest
-from unsync import unsync
 
 # syft absolute
 import syft as sy
 
 
-def unsync_guard():
-    "Make sure we exit early if an exception occurs"
-
-    def decorator(func):
-        @wraps(func)
-        @unsync
-        async def wrapper(*args, **kwargs):
-            try:
-                result = await func(*args, **kwargs)
-                return result
-            except Exception as e:
-                print(f"Exception occurred: {e}")
-                for arg in args:
-                    if isinstance(arg, EventManager):
-                        print("Registering exception event")
-                        arg.register(Event.EXCEPTION_OCCURRED)
-                        break
-                raise
-
-        return wrapper
-
-    return decorator
-
-
-unsync_ = unsync_guard()
-# unsync_ = unsync
-
-
-@unsync_
-async def guest_user_setup_flow(_, events, user):
-    user_client = make_guest_client(url="http://localhost:8081")
-    print(f"Logged in as guest user {user.email}")
-    user_client.forgot_password(email=user.email)
-    print(f"Requested password reset {user.email}")
-
-
-@unsync_
+@unsync
 async def user_low_side_activity(_, events, user, after=None):
     if after:
         await events.await_for(event_name=after)
@@ -117,7 +79,7 @@ async def user_low_side_activity(_, events, user, after=None):
     events.register(Event.USER_LOW_SIDE_WAITING_FOR_APPROVAL)
 
 
-@unsync_
+@unsync
 async def root_sync_activity(_, events, after):
     if after:
         await events.await_for(event_name=after)
@@ -145,7 +107,7 @@ async def root_sync_activity(_, events, after):
         )
 
 
-@unsync_
+@unsync
 async def admin_create_worker_pool(
     _,
     events,
@@ -197,14 +159,14 @@ async def admin_create_worker_pool(
     )
 
 
-@unsync_
+@unsync
 async def mark_completed(events, register, after):
     if after:
         await events.await_for(event_name=after)
     events.register(register)
 
 
-@unsync_
+@unsync
 async def admin_signup_users(_, events, admin_client, users, register):
     for user in users:
         print(f"Registering user {user.name} ({user.email})")
@@ -218,7 +180,7 @@ async def admin_signup_users(_, events, admin_client, users, register):
     events.register(register)
 
 
-@unsync_
+@unsync
 async def admin_low_side_activity(_, events, users):
     """
     Typical admin activity on low-side server
@@ -261,7 +223,7 @@ async def admin_low_side_activity(_, events, users):
     )
 
 
-@unsync_
+@unsync
 async def admin_create_sync_api_endpoints(
     _,
     events,
@@ -324,7 +286,7 @@ async def admin_create_sync_api_endpoints(
     )
 
 
-@unsync_
+@unsync
 async def admin_high_side_activity(_, events):
     # login
     admin_client_high = make_client(
@@ -372,7 +334,6 @@ async def test_level_0_k8s(request):
     scenario = Scenario(
         name="test_level_0_k8s",
         events=[
-            Event.ALLOW_GUEST_SIGNUP_ENABLED,
             Event.ADMIN_LOW_SIDE_WORKFLOW_COMPLETED,
             # Event.ADMIN_HIGH_SIDE_WORKFLOW_COMPLETED,
         ],

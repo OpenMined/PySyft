@@ -1,5 +1,5 @@
 # third party
-from unsync import unsync
+from helpers.events import unsync
 
 # syft absolute
 import syft as sy
