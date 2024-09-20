@@ -705,9 +705,9 @@ class KeyValueStorePartition(StorePartition):
             ck_col[pk_value] = store_query_key.value
             self.unique_keys[pk_key] = ck_col
 
-        self.unique_keys[store_query_key.key][store_query_key.value] = (
+        self.unique_keys[store_query_key.key][
             store_query_key.value
-        )
+        ] = store_query_key.value
 
         sqks = searchable_query_keys.all
         for qk in sqks:

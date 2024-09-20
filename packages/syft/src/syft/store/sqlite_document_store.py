@@ -269,7 +269,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return _deserialize(data, from_bytes=True)
 
     def _exists(self, key: UID) -> bool:
-        select_sql = f"select uid from {self.table_name} where uid = {self.subs_char}"  # nosec
+        select_sql = (
+            f"select uid from {self.table_name} where uid = {self.subs_char}"  # nosec
+        )
         cursor = self._execute(
             self.lock, self.cur, self.db, self.table_name, select_sql, [str(key)]
         ).unwrap()
@@ -310,7 +312,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return keys
 
     def _delete(self, key: UID) -> None:
-        select_sql = f"delete from {self.table_name} where uid = {self.subs_char}"  # nosec
+        select_sql = (
+            f"delete from {self.table_name} where uid = {self.subs_char}"  # nosec
+        )
         self._execute(
             self.lock, self.cur, self.db, self.table_name, select_sql, [str(key)]
         ).unwrap()

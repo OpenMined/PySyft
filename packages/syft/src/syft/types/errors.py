@@ -352,6 +352,8 @@ for pid in psutil.pids():
 # not pick up exceptions if they have a custom exception handler (fail silently)
 if not runs_in_pytest:
     try:
-        get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
+        get_ipython().set_custom_exc(
+            (SyftException,), syft_exception_handler
+        )  # noqa: F821
     except Exception:
         pass  # nosec

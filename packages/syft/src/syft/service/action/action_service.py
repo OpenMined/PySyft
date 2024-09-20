@@ -715,7 +715,9 @@ class ActionService(AbstractService):
                 mock_obj_id=action.result_id,
             )
         else:
-            return execute_object(self, context, resolved_self, action).unwrap()  # type:ignore[unreachable]
+            return execute_object(
+                self, context, resolved_self, action
+            ).unwrap()  # type:ignore[unreachable]
 
     as_result(SyftException)
 
@@ -1118,13 +1120,17 @@ def execute_object(
         )
     elif twin_mode == twin_mode.PRIVATE:  # type:ignore
         # twin private path
-        private_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()  # type:ignore[unreachable]
+        private_args = filter_twin_args(
+            args, twin_mode=twin_mode
+        ).unwrap()  # type:ignore[unreachable]
         private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode).unwrap()
         result = target_method(*private_args, **private_kwargs)
         result_action_object = wrap_result(action.result_id, result)
     elif twin_mode == twin_mode.MOCK:  # type:ignore
         # twin mock path
-        mock_args = filter_twin_args(args, twin_mode=twin_mode).unwrap()  # type:ignore[unreachable]
+        mock_args = filter_twin_args(
+            args, twin_mode=twin_mode
+        ).unwrap()  # type:ignore[unreachable]
         mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode).unwrap()
         target_method = getattr(unboxed_resolved_self, action.op, None)
         result = target_method(*mock_args, **mock_kwargs)

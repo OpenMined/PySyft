@@ -36,10 +36,10 @@ class SyftWorkerImageV1(SyftObject):
     image_identifier: SyftWorkerImageIdentifier | None = None
     image_hash: str | None = None
     built_at: DateTime | None = None
+
     @property
     def is_prebuilt(self) -> bool:
         return isinstance(self.config, PrebuiltWorkerConfig)
-
 
 
 @serializable()

@@ -712,7 +712,9 @@ class ObjectStash(Generic[StashT]):
 
     @as_result(StashException)
     @with_session
-    def _get_permissions_for_uid(self, uid: UID, session: Session = None) -> Set[str]:  # noqa: UP006
+    def _get_permissions_for_uid(
+        self, uid: UID, session: Session = None
+    ) -> Set[str]:  # noqa: UP006
         stmt = select(self.table.c.permissions).where(self.table.c.id == uid)
         result = session.execute(stmt).scalar_one_or_none()
         if result is None:
@@ -721,7 +723,9 @@ class ObjectStash(Generic[StashT]):
 
     @as_result(StashException)
     @with_session
-    def get_all_permissions(self, session: Session = None) -> dict[UID, Set[str]]:  # noqa: UP006
+    def get_all_permissions(
+        self, session: Session = None
+    ) -> dict[UID, Set[str]]:  # noqa: UP006
         stmt = select(self.table.c.id, self.table.c.permissions)
         results = session.execute(stmt).all()
         return {UID(row.id): set(row.permissions) for row in results}

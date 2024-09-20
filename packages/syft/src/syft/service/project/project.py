@@ -1075,9 +1075,7 @@ class Project(SyftObject):
                 while not progress.finished:
                     event = unsynced_events[curr_val]
                     curr_val += 1
-                    progress.tasks[
-                        task1
-                    ].description = (
+                    progress.tasks[task1].description = (
                         f"[bold white]Syncing... {curr_val}/{len(unsynced_events)}"
                     )
                     progress.update(task1, advance=1)
