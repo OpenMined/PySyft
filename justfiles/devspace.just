@@ -24,32 +24,6 @@ deploy-devspace cluster namespace *args='':
         {{ args }} \
         --var CONTAINER_REGISTRY={{ registry_url }}
 
-
-[group('devspace')]
-[private]
-hotreload-devspace cluster namespace *args='':
-    #!/bin/bash
-    set -euo pipefail
-
-    cd packages/grid
-
-    PROFILE="{{ _g_profiles }}"
-    PROFILE=$(echo "$PROFILE" | sed -E 's/^,*|,*$//g')
-    if [ -n "$PROFILE" ]; then
-        PROFILE="-p $PROFILE"
-    fi
-
-    echo "Deploying to {{ cluster }}"
-
-    devspace dev \
-        --no-warn \
-        --kube-context {{ cluster }} \
-        --namespace {{ namespace }} \
-        $PROFILE \
-        {{ args }} \
-        --var CONTAINER_REGISTRY={{ registry_url }}
-
-
 [group('devspace')]
 [private]
 purge-devspace cluster namespace:
