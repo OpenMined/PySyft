@@ -32,7 +32,6 @@ def _launch(
         server_type=server_type,
         dev_mode=True,
         reset=True,
-        local_db=True,
         association_request_auto_approval=association_request_auto_approval,
         port=port,
         background_tasks=True,

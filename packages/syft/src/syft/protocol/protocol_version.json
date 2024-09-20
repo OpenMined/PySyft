@@ -18,6 +18,13 @@
           "action": "add"
         }
       },
+      "SyftWorker": {
+        "2": {
+          "version": 2,
+          "hash": "e996dabbb8ad4ff0bc5d19528077c11f73b9300d810735d367916e4e5b9149b6",
+          "action": "add"
+        }
+      },
       "WorkerSettings": {
         "2": {
           "version": 2,
@@ -71,13 +78,6 @@
         "1": {
           "version": 1,
           "hash": "57e36f57eed75e62b29e2bac1295035a9bf2c0e3c56719dac24cb6cc685be00b",
-          "action": "remove"
-        }
-      },
-      "MongoStoreConfig": {
-        "1": {
-          "version": 1,
-          "hash": "53342b27d34165b7e2699f8e7ad70d13d125875e6a75e8fa18f5796428f41036",
           "action": "remove"
         }
       },
