@@ -12,6 +12,10 @@ delete-high: (delete-cluster cluster_high)
 [group('highside')]
 deploy-high: (deploy-devspace cluster_high ns_default)
 
+# Deploy Syft to the high-side cluster in Hot Reload Mode
+[group('highside')]
+hotreload-high: (hotreload-devspace cluster_high ns_default)
+
 # Reset Syft DB state in the high-side cluster
 [group('highside')]
 reset-high: (reset-syft cluster_high ns_default)
@@ -34,6 +38,10 @@ delete-low: (delete-cluster cluster_low)
 [group('lowside')]
 deploy-low: (deploy-devspace cluster_low ns_default "-p datasite-low")
 
+# Deploy Syft to the low-side cluster in Hot Reload Mode
+[group('lowside')]
+hotreload-low: (hotreload-devspace cluster_low ns_default "-p datasite-low")
+
 # Reset Syft DB state in the low-side cluster
 [group('lowside')]
 reset-low: (reset-syft cluster_low ns_default)
@@ -55,6 +63,10 @@ delete-gw: (delete-cluster cluster_gw)
 # Deploy Syft to the gateway cluster
 [group('gateway')]
 deploy-gw: (deploy-devspace cluster_gw ns_default "-p gateway")
+
+# Deploy Syft to the gateway cluster in Hot Reload Mode
+[group('gateway')]
+hotreload-gw: (hotreload-devspace cluster_gw ns_default "-p gateway")
 
 # Reset Syft DB state in the gateway cluster
 [group('gateway')]
