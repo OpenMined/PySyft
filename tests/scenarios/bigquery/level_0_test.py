@@ -1,12 +1,12 @@
 # stdlib
 import asyncio
 from functools import wraps
-import random
 
 # third party
 from helpers.api import create_endpoints_query
 from helpers.api import create_endpoints_schema
 from helpers.api import create_endpoints_submit_query
+from helpers.api import query_sql
 from helpers.api import run_api_path
 from helpers.api import set_endpoint_settings
 from helpers.asserts import result_is
@@ -18,20 +18,16 @@ from helpers.fixtures_sync import make_client
 from helpers.fixtures_sync import make_guest_client
 from helpers.fixtures_sync import make_user
 from helpers.fixtures_sync import sync_clients
-from helpers.users import set_settings_allow_guest_signup
 from helpers.workers import add_external_registry
 from helpers.workers import check_worker_pool_exists
 from helpers.workers import create_prebuilt_worker_image
 from helpers.workers import create_worker_pool
 from helpers.workers import get_prebuilt_worker_image
-from level_2_basic_test import query_sql
 import pytest
 from unsync import unsync
 
 # syft absolute
 import syft as sy
-
-random.seed(42069)
 
 
 def unsync_guard():
@@ -74,8 +70,6 @@ async def guest_user_setup_flow(_, events, user):
 async def user_low_side_activity(_, events, user, after=None):
     if after:
         await events.await_for(event_name=after)
-
-    guest_user_setup_flow(user.email)
 
     # login_user
     user_client = user.client()
@@ -154,17 +148,16 @@ async def root_sync_activity(_, events, after):
 @unsync_
 async def admin_create_worker_pool(
     _,
+    events,
     admin_client,
     worker_pool_name,
     worker_docker_tag,
-    events,
 ):
     """
-    Worker pool creation typically involves
+    Worker pool flow:
     - Register custom image
     - Launch worker pool
     - Scale worker pool
-
     """
 
     create_prebuilt_worker_image(
@@ -203,32 +196,35 @@ async def admin_create_worker_pool(
         after=Event.WORKER_POOL_CREATED,
     )
 
-    # TODO
-    # scale_worker_pool(
-    #     events,
-    #     admin_client,
-    #     worker_pool_name,
-    #     event_name=Event.WORKER_POOL_SCALED,
-    #     after=Event.WORKER_POOL_CREATED,
-    # )
-
 
 @unsync_
 async def mark_completed(events, register, after):
     if after:
         await events.await_for(event_name=after)
+    events.register(register)
+
+
+@unsync_
+async def admin_signup_users(_, events, admin_client, users, register):
+    for user in users:
+        print(f"Registering user {user.name} ({user.email})")
+        admin_client.register(
+            name=user.name,
+            email=user.email,
+            password=user.password,
+            password_verify=user.password,
+        )
 
     events.register(register)
 
 
 @unsync_
-async def admin_low_side_activity(_, events):
+async def admin_low_side_activity(_, events, users):
     """
     Typical admin activity on low-side server
-    1. Login to low-side server
-    2. Enable guest sign up
-    3. Create a worker pool
-    3. Start checking requests every 'n' seconds
+    - Login to low-side server
+    - Create users
+    - Create a worker pool
     """
 
     worker_pool_name = "bigquery-pool"
@@ -241,30 +237,22 @@ async def admin_low_side_activity(_, events):
         password="changethis",
     )
 
-    # enable guest sign up
-    set_settings_allow_guest_signup(
+    admin_signup_users(
+        _,
         events,
         admin_client,
-        True,
-        Event.ALLOW_GUEST_SIGNUP_ENABLED,
+        users,
+        register=Event.USERS_CREATED,
     )
 
     # create worker pool on low side
     admin_create_worker_pool(
         _,
+        events,
         admin_client,
         worker_pool_name,
         worker_docker_tag,
-        events,
     )
-
-    # start checking requests every 5s
-    # triage_requests(
-    #     events,
-    #     admin_client,
-    #     register=Event.ADMIN_APPROVED_REQUEST,
-    #     sleep=5,
-    # )
 
     mark_completed(
         events,
@@ -355,10 +343,10 @@ async def admin_high_side_activity(_, events):
 
     admin_create_worker_pool(
         _,
+        events,
         admin_client_high,
         worker_pool_name,
         worker_docker_tag,
-        events,
     )
 
     admin_create_sync_api_endpoints(
@@ -394,8 +382,10 @@ async def test_level_0_k8s(request):
     events.add_scenario(scenario)
     events.monitor()
 
+    users = [make_user(password="password") for _ in range(2)]
+
     # start admin activity on low side
-    admin_low_side_activity(request, events)
+    admin_low_side_activity(request, events, users)
 
     # todo
     admin_high_side_activity(request, events)
@@ -405,14 +395,8 @@ async def test_level_0_k8s(request):
 
     # todo
     [
-        user_low_side_activity(
-            request,
-            events,
-            make_user(),
-            after=Event.ALLOW_GUEST_SIGNUP_ENABLED,
-        )
-        for i in range(5)
+        user_low_side_activity(request, events, user, after=Event.USERS_CREATED)
+        for user in users
     ]
-
     await events.await_scenario(scenario_name="test_level_0_k8s", timeout=30)
     assert events.scenario_completed("test_level_0_k8s")

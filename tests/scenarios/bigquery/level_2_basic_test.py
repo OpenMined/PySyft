@@ -2,6 +2,7 @@
 from helpers.api import create_endpoints_query
 from helpers.api import create_endpoints_schema
 from helpers.api import create_endpoints_submit_query
+from helpers.api import query_sql
 from helpers.api import run_api_path
 from helpers.api import set_endpoint_settings
 from helpers.asserts import ensure_package_installed
@@ -28,20 +29,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft import test_settings
-
-
-def query_sql():
-    dataset_2 = test_settings.get("dataset_2", default="dataset_2")
-    table_2 = test_settings.get("table_2", default="table_2")
-    table_2_col_id = test_settings.get("table_2_col_id", default="table_id")
-    table_2_col_score = test_settings.get("table_2_col_score", default="colname")
-
-    query = f"SELECT {table_2_col_id}, AVG({table_2_col_score}) AS average_score \
-        FROM {dataset_2}.{table_2} \
-        GROUP BY {table_2_col_id} \
-        LIMIT 10000"
-    return query
 
 
 @pytest.mark.asyncio
