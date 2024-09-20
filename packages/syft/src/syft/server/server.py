@@ -95,12 +95,9 @@ from ..store.db.postgres import PostgresDBManager
 from ..store.db.sqlite import SQLiteDBConfig
 from ..store.db.sqlite import SQLiteDBManager
 from ..store.db.stash import ObjectStash
-from ..store.document_store import StoreConfig
 from ..store.document_store_errors import NotFoundException
 from ..store.document_store_errors import StashException
 from ..store.linked_obj import LinkedObject
-from ..store.sqlite_document_store import SQLiteStoreClientConfig
-from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
 from ..types.errors import SyftException
 from ..types.result import Result
@@ -308,8 +305,6 @@ class Server(AbstractServer):
         name: str | None = None,
         id: UID | None = None,
         signing_key: SyftSigningKey | SigningKey | None = None,
-        action_store_config: StoreConfig | None = None,
-        document_store_config: StoreConfig | None = None,
         db_config: DBConfig | None = None,
         root_email: str | None = default_root_email,
         root_username: str | None = default_root_username,
@@ -318,7 +313,6 @@ class Server(AbstractServer):
         is_subprocess: bool = False,
         server_type: str | ServerType = ServerType.DATASITE,
         deployment_type: str | DeploymentType = "remote",
-        local_db: bool = False,
         reset: bool = False,
         blob_storage_config: BlobStorageConfig | None = None,
         queue_config: QueueConfig | None = None,
@@ -402,12 +396,6 @@ class Server(AbstractServer):
         if reset:
             self.remove_temp_dir()
 
-        document_store_config = document_store_config or self.get_default_store(
-            store_type="Document Store",
-        )
-        action_store_config = action_store_config or self.get_default_store(
-            store_type="Action Store",
-        )
         db_config = DBConfig.from_connection_string(db_url) if db_url else db_config
 
         if db_config is None:
@@ -540,20 +528,6 @@ class Server(AbstractServer):
             os.path.exists("/.dockerenv")
             or os.path.isfile(path)
             and any("docker" in line for line in open(path))
-        )
-
-    def get_default_store(self, store_type: str) -> StoreConfig:
-        path = self.get_temp_dir("db")
-        file_name: str = f"{self.id}.sqlite"
-        # if self.dev_mode:
-        # leave this until the logger shows this in the notebook
-        # print(f"{store_type}'s SQLite DB path: {path/file_name}")
-        # logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
-        return SQLiteStoreConfig(
-            client_config=SQLiteStoreClientConfig(
-                filename=file_name,
-                path=path,
-            )
         )
 
     def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
@@ -760,7 +734,6 @@ class Server(AbstractServer):
         name: str,
         processes: int = 0,
         reset: bool = False,
-        local_db: bool = False,
         server_type: str | ServerType = ServerType.DATASITE,
         server_side_type: str | ServerSideType = ServerSideType.HIGH_SIDE,
         deployment_type: str | DeploymentType = "remote",
@@ -791,7 +764,6 @@ class Server(AbstractServer):
             id=uid,
             signing_key=key,
             processes=processes,
-            local_db=local_db,
             server_type=server_type,
             server_side_type=server_side_type,
             deployment_type=deployment_type,

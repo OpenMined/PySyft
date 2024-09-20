@@ -28,6 +28,14 @@ postgres:
   secret:
     rootPassword: example
 
+# Deprecated, support will be removed in 0.9.3
+mongo:
+  resourcesPreset: null
+  resources: null
+
+  secret:
+    rootPassword: example
+
 seaweedfs:
   resourcesPreset: null
   resources: null
