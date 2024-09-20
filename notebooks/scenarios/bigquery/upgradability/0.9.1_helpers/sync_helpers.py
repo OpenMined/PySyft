@@ -3,8 +3,6 @@ from tqdm import tqdm
 
 # syft absolute
 import syft as sy
-
-# relative
 from syft.client.datasite_client import DatasiteClient
 from syft.client.syncing import compare_clients
 from syft.service.code.user_code import UserCode

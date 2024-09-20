@@ -3,8 +3,6 @@ from collections.abc import Callable
 
 # syft absolute
 import syft as sy
-
-# relative
 from syft import test_settings
 from syft.rate_limiter import is_within_rate_limit
 

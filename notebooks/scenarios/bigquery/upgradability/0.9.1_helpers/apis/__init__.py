@@ -1,8 +1,10 @@
 # stdlib
 import os
 
-# relative
+# syft absolute
 from syft.util.util import str_to_bool
+
+# relative
 from .submit_query import make_submit_query
 
 env_var = "TEST_BIGQUERY_APIS_LIVE"

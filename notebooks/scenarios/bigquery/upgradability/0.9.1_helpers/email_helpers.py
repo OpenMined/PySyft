@@ -11,7 +11,7 @@ from typing import Any
 from aiosmtpd.controller import Controller
 from faker import Faker
 
-# relative
+# syft absolute
 from syft.service.user.user_roles import ServiceRole
 
 fake = Faker()

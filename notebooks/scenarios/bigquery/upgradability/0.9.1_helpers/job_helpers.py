@@ -10,9 +10,11 @@ import secrets
 import textwrap
 from typing import Any
 
-# relative
-from syft import test_settings
+# third party
 from email_helpers import TestUser
+
+# syft absolute
+from syft import test_settings
 
 from syft.client.client import SyftClient  # noqa
 
