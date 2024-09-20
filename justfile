@@ -81,6 +81,10 @@ delete-high: (delete-cluster cluster_high)
 [group('highside')]
 deploy-high: (deploy-devspace cluster_high ns_default)
 
+# Deploy Syft to the high-side cluster in Hot Reload mode
+[group('highside')]
+dev-high: (dev-devspace cluster_high ns_default)
+
 # Reset Syft DB state in the high-side cluster
 [group('highside')]
 reset-high: (reset-syft cluster_high ns_default)
@@ -103,6 +107,10 @@ delete-low: (delete-cluster cluster_low)
 [group('lowside')]
 deploy-low: (deploy-devspace cluster_low ns_default "-p datasite-low")
 
+# Deploy Syft to the low-side cluster in Hot Reload mode
+[group('lowside')]
+dev-low: (dev-devspace cluster_low ns_default "-p datasite-low")
+
 # Reset Syft DB state in the low-side cluster
 [group('lowside')]
 reset-low: (reset-syft cluster_low ns_default)
@@ -124,6 +132,10 @@ delete-gw: (delete-cluster cluster_gw)
 # Deploy Syft to the gateway cluster
 [group('gateway')]
 deploy-gw: (deploy-devspace cluster_gw ns_default "-p gateway")
+
+# Deploy Syft to the gateway cluster in Hot Reload mode
+[group('gateway')]
+dev-gw: (dev-devspace cluster_gw ns_default "-p gateway")
 
 # Reset Syft DB state in the gateway cluster
 [group('gateway')]
@@ -301,6 +313,30 @@ deploy-devspace cluster namespace *args='':
     echo "Deploying to {{ cluster }}"
 
     devspace deploy -b \
+        --no-warn \
+        --kube-context {{ cluster }} \
+        --namespace {{ namespace }} \
+        $PROFILE \
+        {{ args }} \
+        --var CONTAINER_REGISTRY={{ registry_url }}
+
+[group('devspace')]
+[private]
+dev-devspace cluster namespace *args='':
+    #!/bin/bash
+    set -euo pipefail
+
+    cd packages/grid
+
+    PROFILE="{{ _g_profiles }}"
+    PROFILE=$(echo "$PROFILE" | sed -E 's/^,*|,*$//g')
+    if [ -n "$PROFILE" ]; then
+        PROFILE="-p $PROFILE"
+    fi
+
+    echo "Deploying to {{ cluster }}"
+
+    devspace dev \
         --no-warn \
         --kube-context {{ cluster }} \
         --namespace {{ namespace }} \
