@@ -3,13 +3,8 @@ from unsync import unsync
 
 # syft absolute
 import syft as sy
-from syft import test_helpers  # noqa: F401
-
-# the fuck? fix test_helpers
-if True:
-    # third party
-    from apis import make_schema  # type: ignore
-    from apis import make_test_query
+from syft.util.test_helpers.apis import make_schema
+from syft.util.test_helpers.apis import make_test_query
 
 
 # Define any helper methods for our rate limiter
