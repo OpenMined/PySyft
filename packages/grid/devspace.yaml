@@ -133,7 +133,7 @@ profiles:
         value:
           tracing:
             enabled: true
-            otlpEndpoint: "http://syft-signoz-otel-collector.platform:4317"
+            otlpEndpoint: "http://host.k3d.internal:4317"
             otelProtocol: "grpc"
 
   - name: bigquery-scenario-tests
