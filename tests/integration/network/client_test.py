@@ -6,7 +6,7 @@ import syft as sy
 from syft.client.datasite_client import DatasiteClient
 from syft.client.gateway_client import GatewayClient
 
-DATASITE_PORT = 9082
+DATASITE_PORT = 8081
 NETWORK_PORT = 9081
 
 

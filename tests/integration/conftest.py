@@ -28,12 +28,12 @@ def gateway_port() -> int:
 
 @pytest.fixture
 def datasite_1_port() -> int:
-    return 9082
+    return 8081
 
 
 @pytest.fixture
 def datasite_2_port() -> int:
-    return 9083
+    return 8082
 
 
 @pytest.fixture

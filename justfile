@@ -14,10 +14,10 @@ ns_gw := "gw"
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-port_default := "8080"
+port_default := "8081"
 port_high := port_default
 port_low := "8081"
-port_gw := "8082"
+port_gw := "9081"
 port_signoz_ui := "3301"
 port_signoz_otel := "4317"
 port_registry := "5800"
