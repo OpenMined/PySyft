@@ -279,6 +279,15 @@ class NotifierSettingsV2(SyftObject):
 
 
 @serializable()
+class EmailFrequency(SyftObject):
+    __canonical_name__ = "EmailFrequency"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    frequency: NOTIFICATION_FREQUENCY
+    start_time: datetime = datetime.now()
+
+
+@serializable()
 class NotifierSettings(SyftObject):
     __canonical_name__ = "NotifierSettings"
     __version__ = SYFT_OBJECT_VERSION_3
@@ -308,7 +317,7 @@ class NotifierSettings(SyftObject):
     email_port: int | None = 587
     email_username: str | None = ""
     email_password: str | None = ""
-    email_frequency: dict[str, NOTIFICATION_FREQUENCY] = {}
+    email_frequency: dict[str, EmailFrequency] = {}
     email_queue: dict[str, dict[SyftVerifyKey, list[Notification]]] = {}
     email_activity: dict[str, dict[SyftVerifyKey, UserNotificationActivity]] = {}
     email_rate_limit: dict[str, int] = {}
