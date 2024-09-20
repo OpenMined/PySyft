@@ -483,7 +483,6 @@ class Server(AbstractServer):
                     if self.services.notifier.is_time_to_dispatch(
                         email_frequency, datetime.now()
                     ):
-                        print("Yeah!")
                         notifier_settings.send_batched_notification(
                             context=context, notification_queue=queue
                         ).unwrap()
@@ -491,8 +490,6 @@ class Server(AbstractServer):
                         self.services.notifier.stash.update(
                             credentials=self.verify_key, obj=notifier_settings
                         ).unwrap()
-                    else:
-                        print("No yet...")
             lock.release()
             sleep(15)
 
