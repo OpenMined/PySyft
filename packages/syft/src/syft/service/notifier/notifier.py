@@ -415,15 +415,29 @@ class NotifierSettings(SyftObject):
         return notifier_objs
 
 
-@migrate(NotifierSettingsV1, NotifierSettings)
-def migrate_server_settings_v1_to_current() -> list[Callable]:
+@migrate(NotifierSettingsV1, NotifierSettingsV2)
+def migrate_server_settings_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("email_activity", {}),
         make_set_default("email_rate_limit", {}),
     ]
 
 
-@migrate(NotifierSettings, NotifierSettingsV1)
+@migrate(NotifierSettingsV2, NotifierSettingsV1)
 def migrate_server_settings_v2_to_v1() -> list[Callable]:
     # Use drop function on "notifications_enabled" attrubute
     return [drop(["email_activity"]), drop(["email_rate_limit"])]
+
+
+@migrate(NotifierSettingsV2, NotifierSettings)
+def migrate_server_settings_v2_to_current() -> list[Callable]:
+    return [
+        make_set_default("email_frequency", {}),
+        make_set_default("email_queue", {}),
+    ]
+
+
+@migrate(NotifierSettings, NotifierSettingsV2)
+def migrate_server_settings_current_to_v2() -> list[Callable]:
+    # Use drop function on "notifications_enabled" attrubute
+    return [drop(["email_frequency"]), drop(["email_queue"])]
