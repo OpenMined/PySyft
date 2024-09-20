@@ -263,9 +263,7 @@ class SMTPTestServer:
             self.controller.start()
         except Exception as e:
             print(f"> Error with SMTPTestServer: {e}")
-        await (
-            self._stop_event.wait()
-        )  # Wait until the event is set to stop the server
+        await self._stop_event.wait()  # Wait until the event is set to stop the server
 
     def stop(self):
         try:
@@ -345,7 +343,7 @@ def get_email_server(reset=False, server_side_type=""):
         smtp_server.start()
     else:
         smtp_server.start()
-    
+
     return email_server, smtp_server
 
 
