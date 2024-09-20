@@ -18,10 +18,38 @@
           "action": "add"
         }
       },
+      "SyftWorker": {
+        "2": {
+          "version": 2,
+          "hash": "e996dabbb8ad4ff0bc5d19528077c11f73b9300d810735d367916e4e5b9149b6",
+          "action": "add"
+        }
+      },
       "WorkerSettings": {
         "2": {
           "version": 2,
           "hash": "91c375dd40d06c81fc6403751ee48cbc94b9877f91e65a7e302303218dfe71fa",
+          "action": "add"
+        }
+      },
+      "ApprovalDecision": {
+        "1": {
+          "version": 1,
+          "hash": "ecce7c6e01af68b0c0a73605f0c2226917f0784ecce69e9f64ce004b243252d4",
+          "action": "add"
+        }
+      },
+      "UserCodeStatusCollection": {
+        "2": {
+          "version": 2,
+          "hash": "22a1574d4d2d5dcfa26791f2a5007bf3885dae707e175bf8cc20d0803ae54dec",
+          "action": "add"
+        }
+      },
+      "UserCode": {
+        "2": {
+          "version": 2,
+          "hash": "726bc406449178029c04b0b21b50f86ea12b18ea5b7dd030ad7dbfc6e60f6909",
           "action": "add"
         }
       },
@@ -65,13 +93,6 @@
           "version": 1,
           "hash": "2e1365c5535fa51c22eef79f67dd6444789bc829c27881367e3050e06e2ffbfe",
           "action": "remove"
-        }
-      },
-      "SyftWorker": {
-        "2": {
-          "version": 2,
-          "hash": "e996dabbb8ad4ff0bc5d19528077c11f73b9300d810735d367916e4e5b9149b6",
-          "action": "add"
         }
       }
     }

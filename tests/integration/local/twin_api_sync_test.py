@@ -136,8 +136,7 @@ def test_twin_api_integration(full_high_worker, full_low_worker):
         endpoint_path="testapi.query", endpoint_timeout=expected_timeout_after
     )
     widget = sy.sync(from_client=high_client, to_client=low_client)
-    result = widget[0].click_sync()
-    assert result, result
+    widget._sync_all()
 
     timeout_after = (
         full_low_worker.python_server.services.api.stash.get_all(

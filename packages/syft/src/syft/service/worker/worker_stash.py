@@ -35,6 +35,7 @@ class WorkerStash(ObjectStash[SyftWorker]):
         add_storage_permission: bool = True,
         ignore_duplicates: bool = False,
         session: Session = None,
+        skip_check_type: bool = False,
     ) -> SyftWorker:
         # By default all worker pools have all read permission
         add_permissions = [] if add_permissions is None else add_permissions
