@@ -3,10 +3,13 @@
 # third party
 
 # relative
+from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
 from ...store.db.db import DBManager
 from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionSettings
+from ...types.syft_object import PartialSyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
@@ -15,6 +18,7 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from .user_code import ApprovalDecision
 from .user_code import UserCodeStatusCollection
 
 
@@ -24,6 +28,14 @@ class StatusStash(ObjectStash[UserCodeStatusCollection]):
         name=UserCodeStatusCollection.__canonical_name__,
         object_type=UserCodeStatusCollection,
     )
+
+
+class CodeStatusUpdate(PartialSyftObject):
+    __canonical_name__ = "CodeStatusUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    decision: ApprovalDecision
 
 
 @serializable(canonical_name="UserCodeStatusService", version=1)
@@ -39,10 +51,30 @@ class UserCodeStatusService(AbstractService):
         context: AuthedServiceContext,
         status: UserCodeStatusCollection,
     ) -> UserCodeStatusCollection:
-        return self.stash.set(
+        res = self.stash.set(
             credentials=context.credentials,
             obj=status,
         ).unwrap()
+        return res
+
+    @service_method(
+        path="code_status.update",
+        name="update",
+        roles=ADMIN_ROLE_LEVEL,
+        autosplat=["code_update"],
+        unwrap_on_success=False,
+    )
+    def update(
+        self, context: AuthedServiceContext, code_update: CodeStatusUpdate
+    ) -> SyftSuccess:
+        existing_status = self.stash.get_by_uid(
+            context.credentials, uid=code_update.id
+        ).unwrap()
+        server_identity = ServerIdentity.from_server(context.server)
+        existing_status.status_dict[server_identity] = code_update.decision
+
+        res = self.stash.update(context.credentials, existing_status).unwrap()
+        return SyftSuccess(message="UserCode updated successfully", value=res)
 
     @service_method(
         path="code_status.get_by_uid", name="get_by_uid", roles=GUEST_ROLE_LEVEL

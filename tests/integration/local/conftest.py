@@ -27,7 +27,6 @@ def server(server_args: dict[str, Any]) -> Generator[ServerHandle, None, None]:
             "dev_mode": False,
             "reset": True,
             "queue_port": None,
-            "local_db": False,
             **server_args,
         }
     )

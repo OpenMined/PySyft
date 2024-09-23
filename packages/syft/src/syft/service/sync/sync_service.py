@@ -100,9 +100,9 @@ class SyncService(AbstractService):
         if isinstance(item, UserCodeStatusCollection):
             identity = ServerIdentity.from_server(context.server)
             res = {}
-            for key in item.status_dict.keys():
+            for approval_decision in item.status_dict.values():
                 # todo, check if they are actually only two servers
-                res[identity] = item.status_dict[key]
+                res[identity] = approval_decision
             item.status_dict = res
 
         self.set_obj_ids(context, item)

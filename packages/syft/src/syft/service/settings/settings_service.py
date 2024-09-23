@@ -11,7 +11,6 @@ from ...serde.serializable import serializable
 from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
-from ...store.sqlite_document_store import SQLiteStoreConfig
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_metaclass import Empty
@@ -415,7 +414,6 @@ class SettingsService(AbstractService):
             "server_side_type": server.server_side_type,
             # "port": server.port,
             "processes": server.processes,
-            "local_db": isinstance(server.document_store_config, SQLiteStoreConfig),
             "dev_mode": server.dev_mode,
             "reset": True,  # we should be able to get all the objects from migration data
             "tail": False,
