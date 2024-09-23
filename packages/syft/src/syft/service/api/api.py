@@ -568,16 +568,6 @@ class TwinAPIEndpoint(SyncableSyftObject):
             # run all this code to clean up the state
             code.update_state(internal_context.state)
 
-            if isinstance(code, PublicAPIEndpoint):
-                self.mock_function = code
-            else:
-                self.private_function = code  # type: ignore
-
-            api_service = context.server.get_service("apiservice")
-            api_service.stash.upsert(
-                context.server.services.user.root_verify_key, self
-            ).unwrap()
-
             print = original_print  # type: ignore
             # if we caught a SyftException above we will raise and auto wrap to Result
             if isinstance(result, SyftException):
