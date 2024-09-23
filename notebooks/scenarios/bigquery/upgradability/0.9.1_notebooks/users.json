@@ -1,8 +1,8 @@
 [
   {
-    "name": "William Thompson",
-    "email": "william-thompson-fake@openmined.org",
-    "password": "H&4TFK4nd1",
+    "name": "Michael Adams",
+    "email": "michael-adams-fake@openmined.org",
+    "password": "qRPt9Ua0_6",
     "role": "ServiceRole.DATA_SCIENTIST",
     "new_password": null,
     "email_disabled": true,
@@ -10,19 +10,19 @@
     "reset_token": null
   },
   {
-    "name": "Eric Hahn",
-    "email": "eric-hahn-fake@openmined.org",
-    "password": "iqeU$Fme@4",
+    "name": "Lisa Clark",
+    "email": "lisa-clark-fake@openmined.org",
+    "password": "tC9fZrku_o",
     "role": "ServiceRole.DATA_SCIENTIST",
     "new_password": null,
     "email_disabled": false,
     "reset_password": true,
-    "reset_token": "2o2tvKn3HVYt"
+    "reset_token": "D9893xYYM1HO"
   },
   {
-    "name": "Paul Lloyd",
-    "email": "paul-lloyd-fake@openmined.org",
-    "password": "O7c9DBMh!b",
+    "name": "Anthony Simpson",
+    "email": "anthony-simpson-fake@openmined.org",
+    "password": ")@28JBEb4c",
     "role": "ServiceRole.DATA_SCIENTIST",
     "new_password": null,
     "email_disabled": false,
@@ -30,9 +30,9 @@
     "reset_token": null
   },
   {
-    "name": "John Garrett",
-    "email": "john-garrett-fake@openmined.org",
-    "password": ")pDQ4r%PX8",
+    "name": "Ian Ray",
+    "email": "ian-ray-fake@openmined.org",
+    "password": "rA9miV^sX$",
     "role": "ServiceRole.DATA_SCIENTIST",
     "new_password": null,
     "email_disabled": false,
@@ -40,9 +40,9 @@
     "reset_token": null
   },
   {
-    "name": "Anthony Escobar",
-    "email": "anthony-escobar-fake@openmined.org",
-    "password": "3J6uWe25a%",
+    "name": "Marie Russo",
+    "email": "marie-russo-fake@openmined.org",
+    "password": "$4Asq)sSVb",
     "role": "ServiceRole.DATA_SCIENTIST",
     "new_password": null,
     "email_disabled": false,
