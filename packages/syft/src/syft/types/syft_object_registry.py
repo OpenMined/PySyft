@@ -24,9 +24,9 @@ class SyftObjectRegistry:
     ) -> None:
         if canonical_name not in cls.__object_serialization_registry__:
             cls.__object_serialization_registry__[canonical_name] = {}
-        cls.__object_serialization_registry__[canonical_name][
-            version
-        ] = serde_attributes
+        cls.__object_serialization_registry__[canonical_name][version] = (
+            serde_attributes
+        )
 
         cls.__type_to_canonical_name__[serde_attributes[7]] = (canonical_name, version)
 

@@ -1,1 +1,52 @@
-[{"name": "Arthur Smith", "email": "arthur-smith-fake@openmined.org", "password": "@DP8JSytU^", "role": "ServiceRole.DATA_SCIENTIST", "new_password": null, "email_disabled": true, "reset_password": false, "reset_token": null}, {"name": "Noah Hinton", "email": "noah-hinton-fake@openmined.org", "password": "j)5S!RJvsl", "role": "ServiceRole.DATA_SCIENTIST", "new_password": null, "email_disabled": false, "reset_password": true, "reset_token": "ugpbqHrAwOQ7"}, {"name": "Samantha Heath", "email": "samantha-heath-fake@openmined.org", "password": "hI6OKBkfw%", "role": "ServiceRole.DATA_SCIENTIST", "new_password": null, "email_disabled": false, "reset_password": false, "reset_token": null}, {"name": "Eric Morales", "email": "eric-morales-fake@openmined.org", "password": "$+L*Z74f)2", "role": "ServiceRole.DATA_SCIENTIST", "new_password": null, "email_disabled": false, "reset_password": false, "reset_token": null}, {"name": "Lisa Guerra", "email": "lisa-guerra-fake@openmined.org", "password": "^DW28G^jW+", "role": "ServiceRole.DATA_SCIENTIST", "new_password": null, "email_disabled": false, "reset_password": false, "reset_token": null}]
+[
+  {
+    "name": "Arthur Smith",
+    "email": "arthur-smith-fake@openmined.org",
+    "password": "@DP8JSytU^",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": true,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "Noah Hinton",
+    "email": "noah-hinton-fake@openmined.org",
+    "password": "j)5S!RJvsl",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": true,
+    "reset_token": "ugpbqHrAwOQ7"
+  },
+  {
+    "name": "Samantha Heath",
+    "email": "samantha-heath-fake@openmined.org",
+    "password": "hI6OKBkfw%",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "Eric Morales",
+    "email": "eric-morales-fake@openmined.org",
+    "password": "$+L*Z74f)2",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "Lisa Guerra",
+    "email": "lisa-guerra-fake@openmined.org",
+    "password": "^DW28G^jW+",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  }
+]

@@ -411,14 +411,14 @@ class SyftObject(SyftObjectVersioned):
         return values
 
     __order_by__: ClassVar[tuple[str, str]] = ("_created_at", "asc")
-    __attr_searchable__: ClassVar[list[str]] = (
-        []
-    )  # keys which can be searched in the ORM
+    __attr_searchable__: ClassVar[
+        list[str]
+    ] = []  # keys which can be searched in the ORM
     __attr_unique__: ClassVar[list[str]] = []
     # the unique keys for the particular Collection the objects will be stored in
-    __serde_overrides__: dict[str, Sequence[Callable]] = (
-        {}
-    )  # List of attributes names which require a serde override.
+    __serde_overrides__: dict[
+        str, Sequence[Callable]
+    ] = {}  # List of attributes names which require a serde override.
     __owner__: str
 
     __repr_attrs__: ClassVar[list[str]] = []  # show these in html repr collections

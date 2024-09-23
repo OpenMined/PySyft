@@ -431,9 +431,9 @@ with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 
         # Update older file path to newer file path
         latest_protocol_fp.rename(new_protocol_file_path)
-        protocol_history[latest_protocol][
-            "release_name"
-        ] = f"{current_syft_version}.json"
+        protocol_history[latest_protocol]["release_name"] = (
+            f"{current_syft_version}.json"
+        )
 
         # Save history
         self.file_path.write_text(json.dumps(protocol_history, indent=2) + "\n")

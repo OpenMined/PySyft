@@ -28,9 +28,7 @@ def make_links(text: str) -> str:
 
 
 DEFAULT_ID_WIDTH = 110
-jinja_env = jinja2.Environment(
-    loader=jinja2.PackageLoader("syft", "assets/jinja")
-)  # nosec
+jinja_env = jinja2.Environment(loader=jinja2.PackageLoader("syft", "assets/jinja"))  # nosec
 jinja_env.filters["make_links"] = make_links
 
 
