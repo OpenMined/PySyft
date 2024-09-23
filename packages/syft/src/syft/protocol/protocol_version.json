@@ -18,6 +18,13 @@
           "action": "add"
         }
       },
+      "SyftWorker": {
+        "2": {
+          "version": 2,
+          "hash": "e996dabbb8ad4ff0bc5d19528077c11f73b9300d810735d367916e4e5b9149b6",
+          "action": "add"
+        }
+      },
       "WorkerSettings": {
         "2": {
           "version": 2,
@@ -25,32 +32,25 @@
           "action": "add"
         }
       },
-      "MongoDict": {
+      "ApprovalDecision": {
         "1": {
           "version": 1,
-          "hash": "57e36f57eed75e62b29e2bac1295035a9bf2c0e3c56719dac24cb6cc685be00b",
-          "action": "remove"
+          "hash": "ecce7c6e01af68b0c0a73605f0c2226917f0784ecce69e9f64ce004b243252d4",
+          "action": "add"
         }
       },
-      "MongoStoreConfig": {
-        "1": {
-          "version": 1,
-          "hash": "53342b27d34165b7e2699f8e7ad70d13d125875e6a75e8fa18f5796428f41036",
-          "action": "remove"
+      "UserCodeStatusCollection": {
+        "2": {
+          "version": 2,
+          "hash": "22a1574d4d2d5dcfa26791f2a5007bf3885dae707e175bf8cc20d0803ae54dec",
+          "action": "add"
         }
       },
-      "JobItem": {
-        "1": {
-          "version": 1,
-          "hash": "0b32277b7d3b9bdc14a2a51cc9005f8254e7f7b6ec059ddcccbcd681a807afb6",
-          "action": "remove"
-        }
-      },
-      "DictStoreConfig": {
-        "1": {
-          "version": 1,
-          "hash": "2e1365c5535fa51c22eef79f67dd6444789bc829c27881367e3050e06e2ffbfe",
-          "action": "remove"
+      "UserCode": {
+        "2": {
+          "version": 2,
+          "hash": "726bc406449178029c04b0b21b50f86ea12b18ea5b7dd030ad7dbfc6e60f6909",
+          "action": "add"
         }
       },
       "QueueItem": {
@@ -72,6 +72,27 @@
           "version": 2,
           "hash": "3a46370205152fa23a7d2bfa47130dbf2e2bc7ef31f6d3fe4c92fd8d683770b5",
           "action": "add"
+        }
+      },
+      "MongoDict": {
+        "1": {
+          "version": 1,
+          "hash": "57e36f57eed75e62b29e2bac1295035a9bf2c0e3c56719dac24cb6cc685be00b",
+          "action": "remove"
+        }
+      },
+      "JobItem": {
+        "1": {
+          "version": 1,
+          "hash": "0b32277b7d3b9bdc14a2a51cc9005f8254e7f7b6ec059ddcccbcd681a807afb6",
+          "action": "remove"
+        }
+      },
+      "DictStoreConfig": {
+        "1": {
+          "version": 1,
+          "hash": "2e1365c5535fa51c22eef79f67dd6444789bc829c27881367e3050e06e2ffbfe",
+          "action": "remove"
         }
       }
     }

@@ -505,20 +505,25 @@ class ResolveWidget:
         return dependent_diff_widgets
 
     @property
-    def dependent_root_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
+    def dependency_root_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
         dependencies = self.obj_diff_batch.get_dependencies(
             include_roots=True, include_batch_root=False
         )
-        other_roots = [
-            d for d in dependencies if d.object_id in self.obj_diff_batch.global_roots
-        ]
+
+        # we show these above the line
+        dependents = self.obj_diff_batch.get_dependents(
+            include_roots=False, include_batch_root=False
+        )
+        dependent_ids = [x.object_id for x in dependents]
+        # we skip the ones we already show above the line in the widget
+        context_diffs = [d for d in dependencies if d.object_id not in dependent_ids]
         widgets = [
             CollapsableObjectDiffWidget(
                 diff,
                 direction=self.obj_diff_batch.sync_direction,
                 build_state=self.build_state,
             )
-            for diff in other_roots
+            for diff in context_diffs
         ]
         return widgets
 
@@ -559,7 +564,7 @@ class ResolveWidget:
         self.id2widget = {}
 
         batch_diff_widgets = self.batch_diff_widgets
-        dependent_batch_diff_widgets = self.dependent_root_diff_widgets
+        dependent_batch_diff_widgets = self.dependency_root_diff_widgets
         main_object_diff_widget = self.main_object_diff_widget
 
         self.id2widget[main_object_diff_widget.diff.object_id] = main_object_diff_widget

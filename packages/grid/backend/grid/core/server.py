@@ -101,7 +101,6 @@ worker: Server = worker_class(
     server_side_type=server_side_type,
     enable_warnings=enable_warnings,
     blob_storage_config=blob_storage_config,
-    local_db=single_container_mode,
     queue_config=queue_config,
     migrate=False,
     in_memory_workers=settings.INMEMORY_WORKERS,

@@ -1,12 +1,13 @@
 #!/bin/bash
 
-echo $1
+KUBECTL_ARGS="$@"
+NAMESPACE="syft"
+POSTGRES_POD_NAME="postgres-0"
 
-# Default pod name
-DEFAULT_POD_NAME="postgres-0"
-
-# Use the provided pod name or the default
-POSTGRES_POD_NAME=${1:-$DEFAULT_POD_NAME}
+# if kubectl args doesn't have a namespace, add it
+if [[ ! "$KUBECTL_ARGS" =~ (-n|--namespace) ]]; then
+    KUBECTL_ARGS="$KUBECTL_ARGS --namespace $NAMESPACE"
+fi
 
 # SQL commands to reset all tables
 RESET_COMMAND="
@@ -38,32 +39,31 @@ END \$\$;
 "
 
 # Execute the SQL commands
-echo "Resetting all tables in $POSTGRES_POD_NAME..."
-kubectl exec -i -n syft $POSTGRES_POD_NAME -- psql -U syft_postgres -d syftdb_postgres << EOF
+echo ">>> Resetting database '$POSTGRES_POD_NAME'. psql output:"
+kubectl exec $KUBECTL_ARGS -i $POSTGRES_POD_NAME -- psql -U syft_postgres -d syftdb_postgres << EOF
 $RESET_COMMAND
 EOF
 
-echo "All tables in $POSTGRES_POD_NAME have been reset."
+# Deleting StatefulSets that end with -pool
+POOL_STATEFULSETS=$(kubectl get statefulsets $KUBECTL_ARGS -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep -E ".*-pool$")
+if [ -n "$POOL_STATEFULSETS" ]; then
+    echo ">>> Deleting '$POOL_STATEFULSETS'"
+    for STATEFULSET in $POOL_STATEFULSETS; do
+        kubectl delete statefulsets $KUBECTL_ARGS $STATEFULSET
+        kubectl delete pods $KUBECTL_ARGS -l "app.kubernetes.io/component=$STATEFULSET" --grace-period=0 --force
+    done
+fi
 
 # Resetting the backend pod
-BACKEND_POD=$(kubectl get pods -n syft -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep -E ".*backend.*")
+BACKEND_POD=$(kubectl get pods $KUBECTL_ARGS -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep -E ".*backend.*")
 if [ -n "$BACKEND_POD" ]; then
-    kubectl delete pod -n syft $BACKEND_POD
-    echo "Backend pod $BACKEND_POD has been deleted and will be restarted."
-else
-    echo "No backend pod found."
+    echo ">>> Re-creating '$BACKEND_POD'"
+    kubectl delete pod $KUBECTL_ARGS $BACKEND_POD --grace-period=0 --force
+
+    # wait for backend to come back up
+    echo ">>> Waiting for '$BACKEND_POD' to be ready..."
+    export WAIT_TIME=5
+    bash packages/grid/scripts/wait_for.sh service backend $KUBECTL_ARGS > /dev/null
 fi
 
-# Deleting StatefulSets that end with -pool
-POOL_STATEFULSETS=$(kubectl get statefulsets -n syft -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep -E ".*-pool$")
-if [ -n "$POOL_STATEFULSETS" ]; then
-    for STATEFULSET in $POOL_STATEFULSETS; do
-        kubectl delete statefulset -n syft $STATEFULSET
-        echo "StatefulSet $STATEFULSET has been deleted."
-    done
-else
-    echo "No StatefulSets ending with '-pool' found."
-fi
-
-# wait for backend to come back up
-bash packages/grid/scripts/wait_for.sh service backend --namespace syft
+echo ">>> Done"
