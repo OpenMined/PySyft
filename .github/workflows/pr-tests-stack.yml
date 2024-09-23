@@ -682,7 +682,6 @@ jobs:
           tox -e migration.scenarios.test
 
   pr-tests-migrations-k8s:
-    if: false # skipping this job for now
     strategy:
       max-parallel: 99
       matrix:
