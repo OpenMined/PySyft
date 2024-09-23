@@ -862,7 +862,9 @@ class ObjectStash(Generic[StashT]):
         obj: StashT,
         session: Session = None,
     ) -> StashT:
-        """Upsert an endpoint. This method is atomic thanks to session."""
+        """Insert or update an object in the stash if it already exists.
+        Atomic operation when using the same session for both operations.
+        """
 
         try:
             return self.set(
