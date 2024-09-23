@@ -317,18 +317,8 @@ class Timeout:
         return result
 
 
-def get_email_server(reset=False, server_side_type=""):
-    if server_side_type == "high":
-        email_file = "./emails_high.json"
-        port = 9026
-    elif server_side_type == "low":
-        email_file = "./emails_low.json"
-        port = 9025
-    else:
-        email_file = "./emails.json"
-        port = 9025
-
-    email_server = EmailServer(filepath=email_file)
+def get_email_server(reset=False, port=9025):
+    email_server = EmailServer()
     if reset:
         email_server.reset_emails()
     smtp_server = SMTPTestServer(email_server, port=port)
