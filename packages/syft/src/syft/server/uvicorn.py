@@ -195,14 +195,20 @@ def run_uvicorn(
     # Signal the parent process that we are starting the uvicorn server.
     starting_uvicorn_event.set()
 
+    reload_dev = False
+    reload_dirs = None
+    if os.getenv("UVICORN_HOTRELOAD", "false").lower() == "true":
+        reload_dev = True
+        reload_dirs = [Path(__file__).parent.parent]
+
     # Finally, run the uvicorn server.
     uvicorn.run(
         "syft.server.uvicorn:app_factory",
         host=host,
         port=port,
         factory=True,
-        reload=dev_mode,
-        reload_dirs=[Path(__file__).parent.parent] if dev_mode else None,
+        reload=reload_dev,
+        reload_dirs=reload_dirs,
         log_level=log_level,
     )
 
