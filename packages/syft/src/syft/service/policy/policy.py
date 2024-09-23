@@ -644,7 +644,7 @@ def allowed_ids_only(
 
     allowed_inputs_for_server = None
     for identity, inputs in allowed_inputs.items():
-        if identity.server_id == context.server.server_id:
+        if identity.server_id == context.server.id:
             allowed_inputs_for_server = inputs
             break
     if allowed_inputs_for_server is None:
