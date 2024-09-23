@@ -44,6 +44,7 @@ class Event(BaseEvent):
     # admin sync
     ADMIN_SYNC_COMPLETED = auto()
     ADMIN_SYNCED_HIGH_TO_LOW = auto()
+    ADMIN_SYNCED_LOW_TO_HIGH = auto()
     # users
     GUEST_USERS_CREATED = auto()
     USER_CAN_QUERY_TEST_ENDPOINT = auto()
@@ -74,11 +75,7 @@ def get_code_from_msg(msg: str):
 
 
 @sim_activity(
-    # ! yeah this is fucking ugly
-    wait_for=[
-        Event.ADMIN_BQ_TEST_ENDPOINT_CREATED,
-        Event.ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE,
-    ],
+    wait_for=Event.ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE,
     trigger=Event.USER_CAN_QUERY_TEST_ENDPOINT,
 )
 async def user_query_test_endpoint(ctx: SimulatorContext, client: sy.DatasiteClient):
@@ -86,26 +83,34 @@ async def user_query_test_endpoint(ctx: SimulatorContext, client: sy.DatasiteCli
 
     user = client.logged_in_user
 
-    ctx.logger.info(f"User: {user} - Calling client.api.bigquery.test_query")
-    res = client.api.bigquery.test_query(sql_query=query_sql())
-    assert len(res) == 10000
-    ctx.logger.info(f"User: {user} - Received {len(res)} rows")
+    def _query_endpoint():
+        ctx.logger.info(f"User: {user} - Calling client.api.bigquery.test_query (mock)")
+        res = client.api.bigquery.test_query(sql_query=query_sql())
+        assert len(res) == 10000
+        ctx.logger.info(f"User: {user} - Received {len(res)} rows")
+
+    await asyncio.to_thread(_query_endpoint)
 
 
 @sim_activity(
-    wait_for=[
-        Event.ADMIN_BQ_SUBMIT_ENDPOINT_CREATED,
-        Event.USER_CAN_QUERY_TEST_ENDPOINT,
-    ],
+    wait_for=Event.USER_CAN_QUERY_TEST_ENDPOINT,
     trigger=Event.USER_CAN_SUBMIT_QUERY,
 )
 async def user_bq_submit(ctx: SimulatorContext, client: sy.DatasiteClient):
     """Submit query to be run on private data"""
     user = client.logged_in_user
 
-    ctx.logger.info(f"User: {user} - Calling client.api.services.bigquery.submit_query")
-    res = client.api.bigquery.submit_query(func_name="invalid_func", query=query_sql())
-    ctx.logger.info(f"User: {user} - Received {res}")
+    def _submit_endpoint():
+        ctx.logger.info(
+            f"User: {user} - Calling client.api.services.bigquery.submit_query"
+        )
+        res = client.api.bigquery.submit_query(
+            func_name="invalid_func",
+            query=query_sql(),
+        )
+        ctx.logger.info(f"User: {user} - Received {res}")
+
+    await asyncio.to_thread(_submit_endpoint)
 
 
 @sim_activity(wait_for=Event.GUEST_USERS_CREATED, trigger=Event.USER_FLOW_COMPLETED)
@@ -117,10 +122,8 @@ async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
     )
     ctx.logger.info(f"User: {client.logged_in_user} - logged in")
 
-    await asyncio.gather(
-        user_query_test_endpoint(ctx, client),
-        # user_bq_submit(ctx, client),
-    )
+    await user_query_test_endpoint(ctx, client)
+    await user_bq_submit(ctx, client)
 
 
 # ------------------------------------------------------------------------------------------------
@@ -141,7 +144,7 @@ async def admin_signup_users(
 
 
 @sim_activity(trigger=Event.ADMIN_BQ_SCHEMA_ENDPOINT_CREATED)
-async def bq_schema_endpoint(
+async def admin_endpoint_bq_schema(
     ctx: SimulatorContext,
     admin_client: SyftClient,
     worker_pool: str | None = None,
@@ -163,7 +166,7 @@ async def bq_schema_endpoint(
 
 
 @sim_activity(trigger=Event.ADMIN_BQ_TEST_ENDPOINT_CREATED)
-async def bq_test_endpoint(
+async def admin_endpoint_bq_test(
     ctx: SimulatorContext,
     admin_client: SyftClient,
     worker_pool: str | None = None,
@@ -199,7 +202,7 @@ async def bq_test_endpoint(
 
 
 @sim_activity(trigger=Event.ADMIN_BQ_SUBMIT_ENDPOINT_CREATED)
-async def bq_submit_endpoint(
+async def admin_endpoint_bq_submit(
     ctx: SimulatorContext,
     admin_client: sy.DatasiteClient,
     worker_pool: str | None = None,
@@ -264,14 +267,20 @@ async def admin_create_endpoint(ctx: SimulatorContext, admin_client: SyftClient)
     worker_pool = "biquery-pool"
 
     await asyncio.gather(
-        bq_test_endpoint(ctx, admin_client, worker_pool=worker_pool),
-        bq_submit_endpoint(ctx, admin_client, worker_pool=worker_pool),
-        bq_schema_endpoint(ctx, admin_client, worker_pool=worker_pool),
+        admin_endpoint_bq_test(ctx, admin_client, worker_pool=worker_pool),
+        admin_endpoint_bq_submit(ctx, admin_client, worker_pool=worker_pool),
+        admin_endpoint_bq_schema(ctx, admin_client, worker_pool=worker_pool),
     )
     ctx.logger.info("Admin: Created all endpoints")
 
 
-@sim_activity(wait_for=Event.ADMIN_SYNCED_HIGH_TO_LOW)
+@sim_activity(
+    wait_for=[
+        Event.ADMIN_SYNCED_HIGH_TO_LOW,
+        # endpoints work only after low side worker pool is created
+        Event.ADMIN_LOWSIDE_WORKER_POOL_CREATED,
+    ]
+)
 async def admin_watch_sync(ctx: SimulatorContext, admin_client: SyftClient):
     # fuckall function that just watches for ADMIN_SYNCED_HIGH_TO_LOW
     # only to trigger ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE that
@@ -326,6 +335,27 @@ async def admin_create_bq_pool_low(ctx: SimulatorContext, admin_client: SyftClie
     await admin_create_bq_pool(ctx, admin_client)
 
 
+@sim_activity(
+    wait_for=[
+        Event.USER_CAN_SUBMIT_QUERY,
+        Event.ADMIN_SYNCED_LOW_TO_HIGH,
+    ]
+)
+async def admin_triage_requests(ctx: SimulatorContext, admin_client: SyftClient):
+    while True:
+        await asyncio.sleep(random.uniform(5, 10))
+
+        # check if there are any requests
+        for request in admin_client.requests:
+            ctx.logger.info(f"Admin: Found request {request.__dict__}")
+            pass
+            # ! approve or deny.
+            #   * If func_name has `invalid_func` in it, deny.
+            #   * If not, then approve
+            # ! approved ones can exec succesfully or fail
+            # ! whatever is the case, after that just sync back to low-side (taken care by admin_sync_to_low_flow)
+
+
 @sim_activity(trigger=Event.ADMIN_HIGHSIDE_FLOW_COMPLETED)
 async def admin_high_side(ctx: SimulatorContext, admin_auth):
     admin_client = sy.login(**admin_auth)
@@ -334,6 +364,7 @@ async def admin_high_side(ctx: SimulatorContext, admin_auth):
     await asyncio.gather(
         admin_create_bq_pool_high(ctx, admin_client),
         admin_create_endpoint(ctx, admin_client),
+        admin_triage_requests(ctx, admin_client),
     )
 
 
@@ -343,9 +374,9 @@ async def admin_low_side(ctx: SimulatorContext, admin_auth, users):
     ctx.logger.info("Admin low-side: logged in")
 
     await asyncio.gather(
-        admin_watch_sync(ctx, admin_client),
         admin_signup_users(ctx, admin_client, users),
         admin_create_bq_pool_low(ctx, admin_client),
+        admin_watch_sync(ctx, admin_client),
     )
 
 
@@ -353,7 +384,11 @@ async def admin_low_side(ctx: SimulatorContext, admin_auth, users):
 
 
 @sim_activity(trigger=Event.ADMIN_SYNC_COMPLETED)
-async def admin_sync_flow(ctx: SimulatorContext, admin_auth_high, admin_auth_low):
+async def admin_sync_to_low_flow(
+    ctx: SimulatorContext,
+    admin_auth_high,
+    admin_auth_low,
+):
     high_client = sy.login(**admin_auth_high)
     ctx.logger.info("Admin: logged in to high-side")
 
@@ -365,7 +400,7 @@ async def admin_sync_flow(ctx: SimulatorContext, admin_auth_high, admin_auth_low
 
         result = sy.sync(high_client, low_client)
         if isinstance(result, sy.SyftSuccess):
-            ctx.logger.info("Admin: Nothing to sync")
+            ctx.logger.info("Admin: Nothing to sync high->low")
             continue
 
         ctx.logger.info(f"Admin: Syncing high->low {result}")
@@ -375,7 +410,32 @@ async def admin_sync_flow(ctx: SimulatorContext, admin_auth_high, admin_auth_low
         # trigger an event so that guest users can start querying
         ctx.events.trigger(Event.ADMIN_SYNCED_HIGH_TO_LOW)
         ctx.logger.info("Admin: Synced high->low")
-        break
+
+
+@sim_activity(trigger=Event.ADMIN_SYNC_COMPLETED)
+async def admin_sync_to_high_flow(
+    ctx: SimulatorContext, admin_auth_high, admin_auth_low
+):
+    high_client = sy.login(**admin_auth_high)
+    ctx.logger.info("Admin: logged in to high-side")
+
+    low_client = sy.login(**admin_auth_low)
+    ctx.logger.info("Admin: logged in to low-side")
+
+    while True:
+        await asyncio.sleep(random.uniform(5, 10))
+
+        result = sy.sync(low_client, high_client)
+        if isinstance(result, sy.SyftSuccess):
+            ctx.logger.info("Admin: Nothing to sync low->high")
+            continue
+
+        ctx.logger.info(f"Admin: Syncing low->high {result}")
+        result._share_all()
+        result._sync_all()
+
+        ctx.events.trigger(Event.ADMIN_SYNCED_LOW_TO_HIGH)
+        ctx.logger.info("Admin: Synced low->high")
 
 
 # ------------------------------------------------------------------------------------------------
@@ -410,7 +470,8 @@ async def sim_l0_scenario(ctx: SimulatorContext):
     await asyncio.gather(
         admin_low_side(ctx, admin_auth_low, users),
         admin_high_side(ctx, admin_auth_high),
-        admin_sync_flow(ctx, admin_auth_high, admin_auth_low),
+        admin_sync_to_low_flow(ctx, admin_auth_high, admin_auth_low),
+        admin_sync_to_high_flow(ctx, admin_auth_high, admin_auth_low),
         *[user_flow(ctx, server_url_low, user) for user in users],
     )
 
