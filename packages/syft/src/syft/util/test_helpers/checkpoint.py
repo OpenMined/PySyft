@@ -112,12 +112,20 @@ def last_checkpoint_path_for_nb(server_uid: str, nb_name: str = None) -> Path | 
 
 
 def load_from_checkpoint(
-    prev_nb_filename: str,
     client: SyftClient,
-    root_email: str = "info@openmined.org",
-    root_pwd: str = "changethis",
+    prev_nb_filename: str | None = None,
+    root_email: str | None = None,
+    root_pwd: str | None = None,
+    reset_db: bool = False,
 ) -> None:
     """Load the last saved checkpoint for the given notebook state."""
+    if prev_nb_filename is None:
+        print("Loading from the last checkpoint of the current notebook.")
+        prev_nb_filename = current_nbname().stem
+
+    root_email = "info@openmined.org" if root_email is None else root_email
+    root_pwd = "changethis" if root_pwd is None else root_pwd
+
     root_client = (
         client
         if is_admin(client)
@@ -128,8 +136,15 @@ def load_from_checkpoint(
     )
 
     if latest_checkpoint_dir is None:
-        print("No previous checkpoint found!")
+        print(f"No last checkpoint found for notebook: {prev_nb_filename}")
         return
+
+    if reset_db:
+        print("Resetting the database before loading the checkpoint.")
+        result = root_client.settings.reset_database()
+
+        if isinstance(result, SyftError):
+            raise SyftException(message=result.message)
 
     print(f"Loading from checkpoint: {latest_checkpoint_dir}")
     result = root_client.load_migration_data(
