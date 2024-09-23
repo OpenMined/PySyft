@@ -190,6 +190,30 @@ def test_basestash_update(
     assert retrieved == updated_obj
 
 
+def test_basestash_upsert(
+    root_verify_key, base_stash: MockStash, mock_object: MockObject, faker: Faker
+) -> None:
+    base_stash.set(root_verify_key, mock_object).unwrap()
+
+    updated_obj = mock_object.copy()
+    updated_obj.name = faker.name()
+
+    retrieved = base_stash.upsert(root_verify_key, updated_obj).unwrap()
+    assert retrieved == updated_obj
+
+    updated_obj.id = UID()
+
+    with pytest.raises(StashException):
+        # fails because the name should be unique
+        base_stash.upsert(root_verify_key, updated_obj).unwrap()
+
+    updated_obj.name = faker.name()
+
+    retrieved = base_stash.upsert(root_verify_key, updated_obj).unwrap()
+    assert retrieved == updated_obj
+    assert len(base_stash.get_all(root_verify_key).unwrap()) == 2
+
+
 def test_basestash_cannot_update_non_existent(
     root_verify_key, base_stash: MockStash, mock_object: MockObject, faker: Faker
 ) -> None:
