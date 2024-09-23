@@ -221,10 +221,9 @@ class NotifierService(AbstractService):
         notifier.email_frequency[email_type.value] = EmailFrequency(
             frequency=frequency, start_time=time_obj
         )
-        result = self.stash.update(
+        self.stash.update(
             credentials=context.credentials, obj=notifier
         ).unwrap()
-        print("I'm here with ", result.email_frequency)
         return SyftSuccess(message="Configuration set successfully.")
 
     @as_result(StashException)
@@ -274,6 +273,8 @@ class NotifierService(AbstractService):
         start_time = notification_frequency.start_time
 
         # Define period_timedelta based on frequency
+        if frequency == NOTIFICATION_FREQUENCY.INSTANT:
+            return True
         if frequency == NOTIFICATION_FREQUENCY.SIX_HOURS:
             period = timedelta(hours=6)
         elif frequency == NOTIFICATION_FREQUENCY.TWELVE_HOURS:
