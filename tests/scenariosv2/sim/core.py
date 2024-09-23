@@ -19,10 +19,10 @@ logging.Formatter.formatTime = (
 )
 
 DEFAULT_FORMATTER = logging.Formatter(
-    "%(asctime)s - %(levelname)s - %(message)s",
+    "%(asctime)s - %(threadName)s - %(levelname)s - %(message)s",
 )
 EVENT_FORMATTER = logging.Formatter(
-    "%(asctime)s - %(message)s",
+    "%(asctime)s - %(threadName)s - %(message)s",
 )
 
 
@@ -88,8 +88,12 @@ class SimulatorContext:
         return evts
 
     @staticmethod
+    async def blocking_call(func, /, *args, **kwargs):
+        return await asyncio.to_thread(func, *args, **kwargs)
+
+    @staticmethod
     async def gather(*tasks):
-        return asyncio.gather(*tasks)
+        return await asyncio.gather(*tasks)
 
 
 class Simulator:
@@ -126,8 +130,11 @@ def sim_entrypoint():
                 result = await func(ctx, *args, **kwargs)
                 ctx._elogger.info(f"Completed: {func.__name__}")
                 return result
-            except Exception as e:
-                ctx._elogger.error(f"{func.__name__} - {str(e)}")
+            except Exception:
+                ctx._elogger.error(
+                    f"sim_entrypoint - {func.__name__} - Unhandled exception",
+                    exc_info=True,
+                )
                 raise
 
         return wrapper
@@ -172,8 +179,10 @@ def sim_activity(
                     ctx.events.trigger(_trigger)
 
                 return result
-            except Exception as e:
-                ctx._elogger.error(f"{fsig} - {str(e)}")
+            except Exception:
+                ctx._elogger.error(
+                    f"sim_activity - {fsig} - Unhandled exception", exc_info=True
+                )
                 raise
 
         return wrapper

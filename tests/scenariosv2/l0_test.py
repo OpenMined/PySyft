@@ -299,7 +299,10 @@ async def admin_create_bq_pool(ctx: SimulatorContext, admin_client: SyftClient):
 
     ctx.logger.info(f"Admin: Creating worker pool with tag='{worker_image_tag}'")
 
-    build_and_launch_worker_pool_from_docker_str(
+    # build_and_launch_worker_pool_from_docker_str is a blocking call
+    # so you just run it in a different thread.
+    await ctx.blocking_call(
+        build_and_launch_worker_pool_from_docker_str,
         environment="remote",
         client=admin_client,
         worker_pool_name=worker_pool,
@@ -310,6 +313,7 @@ async def admin_create_bq_pool(ctx: SimulatorContext, admin_client: SyftClient):
         custom_pool_pod_labels=None,
         scale_to=1,
     )
+    ctx.logger.info(f"Admin: Worker pool created with tag='{worker_image_tag}'")
 
 
 @sim_activity(trigger=Event.ADMIN_HIGHSIDE_WORKER_POOL_CREATED)
