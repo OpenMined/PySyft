@@ -205,25 +205,27 @@ class NotifierService(AbstractService):
                 "If frequency isn't INSTANT, you must set a start time for the notifications to be dispatched."
             )
 
-        start_time = start_time.lower()
-        try:
-            if "pm" in start_time or "am" in start_time:
-                time_obj = datetime.strptime(start_time, "%I:%M %p")
-            else:
-                time_obj = datetime.strptime(start_time, "%H:%M")
-        except ValueError:
-            raise SyftException(
-                "Invalid time format."
-                + "Please enter the start time in one of the following format examples:"
-                + "'14:00' or '2:00 PM'."
-            )
+        if frequency is not NOTIFICATION_FREQUENCY.INSTANT:
+            start_time = start_time.lower()
+            try:
+                if "pm" in start_time or "am" in start_time:
+                    time_obj = datetime.strptime(start_time, "%I:%M %p")
+                else:
+                    time_obj = datetime.strptime(start_time, "%H:%M")
+            except ValueError:
+                raise SyftException(
+                    "Invalid time format."
+                    + "Please enter the start time in one of the following format examples:"
+                    + "'14:00' or '2:00 PM'."
+                )
+        else:
+            time_obj = datetime.now()
+
         notifier = self.stash.get(credentials=context.credentials).unwrap()
         notifier.email_frequency[email_type.value] = EmailFrequency(
             frequency=frequency, start_time=time_obj
         )
-        self.stash.update(
-            credentials=context.credentials, obj=notifier
-        ).unwrap()
+        self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
         return SyftSuccess(message="Configuration set successfully.")
 
     @as_result(StashException)
@@ -283,9 +285,6 @@ class NotifierService(AbstractService):
             period = timedelta(days=1)
         elif frequency == NOTIFICATION_FREQUENCY.WEEKLY:
             period = timedelta(weeks=1)
-        else:
-            # Unknown frequency
-            return False
 
         # Calculate how many full periods have passed since start_time
         elapsed_time = current_time - start_time
