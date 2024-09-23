@@ -218,7 +218,7 @@ def user_exists(root_client, email: str) -> bool:
 
 
 class SMTPTestServer:
-    def __init__(self, email_server, port=9025, ready_timeout=5):
+    def __init__(self, email_server, port=9025, ready_timeout=20):
         self.port = port
         self.hostname = "0.0.0.0"
         self._stop_event = asyncio.Event()
@@ -261,9 +261,11 @@ class SMTPTestServer:
         try:
             print(f"> Starting SMTPTestServer on: {self.hostname}:{self.port}")
             self.controller.start()
+            await (
+                self._stop_event.wait()
+            )  # Wait until the event is set to stop the server
         except Exception as e:
             print(f"> Error with SMTPTestServer: {e}")
-        await self._stop_event.wait()  # Wait until the event is set to stop the server
 
     def stop(self):
         try:
@@ -277,12 +279,8 @@ class SMTPTestServer:
             print(f"> Error stopping SMTPTestServer: {e}")
 
     async def async_stop(self):
-        try:
-            self.controller.stop()
-        except Exception as e:
-            print(f"> Error stopping SMTPTestServer: {e}")
-        finally:
-            self._stop_event.set()  # Stop the server by setting the event
+        self.controller.stop()
+        self._stop_event.set()  # Stop the server by setting the event
 
 
 class TimeoutError(Exception):
@@ -334,16 +332,7 @@ def get_email_server(reset=False, server_side_type=""):
     if reset:
         email_server.reset_emails()
     smtp_server = SMTPTestServer(email_server, port=port)
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(smtp_server.start())
-        smtp_server.start()
-    else:
-        smtp_server.start()
-
+    smtp_server.start()
     return email_server, smtp_server
 
 
