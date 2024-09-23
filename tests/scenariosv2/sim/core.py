@@ -32,7 +32,7 @@ class TestFailure(Exception):
     pass
 
 
-class Event(Enum):
+class BaseEvent(Enum):
     """Base class for events. Subclass this to define your specific events."""
 
     pass
@@ -47,18 +47,18 @@ class EventManager:
         self.logger.addHandler(file_handler)
         self.logger.setLevel(logging.INFO)
 
-    async def wait_for(self, event: Event):
+    async def wait_for(self, event: BaseEvent):
         if event not in self.events:
             self.events[event] = asyncio.Event()
         await self.events[event].wait()
 
-    def trigger(self, event: Event):
+    def trigger(self, event: BaseEvent):
         if event not in self.events:
             self.events[event] = asyncio.Event()
         self.logger.info(f"Triggered: {event.name}")
         self.events[event].set()
 
-    def is_set(self, event: Event) -> bool:
+    def is_set(self, event: BaseEvent) -> bool:
         if event not in self.events:
             return False
         return self.events[event].is_set()
@@ -82,14 +82,14 @@ class SimulatorContext:
         self._elogger.addHandler(file_handler)
         self._elogger.setLevel(logging.DEBUG)
 
-    def unfired_events(self, events: list[Event]):
+    def unfired_events(self, events: list[BaseEvent]):
         evts = filter(lambda e: not self.events.is_set(e), events)
         evts = [e.name for e in evts]
         return evts
 
     @staticmethod
     async def gather(*tasks):
-        return await asyncio.gather(*tasks)
+        return asyncio.gather(*tasks)
 
 
 class Simulator:
@@ -136,14 +136,15 @@ def sim_entrypoint():
 
 
 def sim_activity(
-    wait_for: Event | list[Event] | None = None,
-    trigger: Event | None = None,
+    wait_for: BaseEvent | list[BaseEvent] | None = None,
+    trigger: BaseEvent | None = None,
 ):
     def decorator(func):
         @wraps(func)
         async def wrapper(ctx: SimulatorContext, *args, **kwargs):
             fsig = f"{func.__name__}({args}, {kwargs})"
 
+            # ! todo: this isn't working
             _wait_for = kwargs.get("wait_for", wait_for)
             _trigger = kwargs.get("after", trigger)
 
@@ -165,7 +166,6 @@ def sim_activity(
                 start = time.time()
                 result = await func(ctx, *args, **kwargs)
                 total = time.time() - start
-
                 ctx._elogger.info(f"Completed: {fsig} time_taken={total:.3f}s")
 
                 if _trigger:
