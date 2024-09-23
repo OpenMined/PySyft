@@ -4,12 +4,14 @@ from dataclasses import dataclass
 from dataclasses import field
 import json
 import re
+from tempfile import mktemp
 import time
 from typing import Any
 
 # third party
 from aiosmtpd.controller import Controller
 from faker import Faker
+from filelock import FileLock
 
 # relative
 from ...service.user.user_roles import ServiceRole
@@ -40,13 +42,19 @@ class Email:
 
 
 class EmailServer:
-    def __init__(self, filepath="./emails.json"):
-        self.filepath = filepath
+    def __init__(self, filepath=None):
+        self.filepath = filepath or mktemp(prefix="tmp_email_", suffix=".json")
+        lockpath = self.filepath + ".lock"
+
         self._emails: dict[str, list[Email]] = self.load_emails()
+        self._lock = FileLock(lock_file=lockpath)
 
     def load_emails(self) -> dict[str, list[Email]]:
         try:
-            with open(self.filepath) as f:
+            with (
+                self._lock as _,
+                open(self.filepath) as f,
+            ):
                 data = json.load(f)
                 return {k: [Email(**email) for email in v] for k, v in data.items()}
         except Exception as e:
@@ -54,25 +62,30 @@ class EmailServer:
             return {}
 
     def save_emails(self) -> None:
-        with open(self.filepath, "w") as f:
+        with (
+            self._lock as _,
+            open(self.filepath, "w") as f,
+        ):
             data = {
                 k: [email.to_dict() for email in v] for k, v in self._emails.items()
             }
             f.write(json.dumps(data))
 
     def add_email_for_user(self, user_email: str, email: Email) -> None:
-        if user_email not in self._emails:
-            self._emails[user_email] = []
-        self._emails[user_email].append(email)
-        self.save_emails()
+        with self._lock:
+            if user_email not in self._emails:
+                self._emails[user_email] = []
+            self._emails[user_email].append(email)
+            self.save_emails()
 
     def get_emails_for_user(self, user_email: str) -> list[Email]:
         self._emails: dict[str, list[Email]] = self.load_emails()
         return self._emails.get(user_email, [])
 
     def reset_emails(self) -> None:
-        self._emails = {}
-        self.save_emails()
+        with self._lock:
+            self._emails = {}
+            self.save_emails()
 
 
 SENDER = "noreply@openmined.org"
