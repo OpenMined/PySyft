@@ -42,6 +42,7 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..document_store_errors import NotFoundException
 from ..document_store_errors import StashException
+from ..document_store_errors import UniqueConstraintException
 from .db import DBManager
 from .query import Query
 from .schema import PostgresBase
@@ -204,7 +205,8 @@ class ObjectStash(Generic[StashT]):
             return False
         elif len(results) == 1:
             result = results[0]
-            return result.id == obj.id
+            res = result.id == obj.id
+            return res
         return True
 
     @with_session
@@ -360,8 +362,9 @@ class ObjectStash(Generic[StashT]):
         add_storage_permission: bool = True,  # TODO: check the default value
         ignore_duplicates: bool = False,
         session: Session = None,
+        skip_check_type: bool = False,
     ) -> StashT:
-        if not self.allow_any_type:
+        if not self.allow_any_type and not skip_check_type:
             self.check_type(obj, self.object_type).unwrap()
         uid = obj.id
 
@@ -427,7 +430,13 @@ class ObjectStash(Generic[StashT]):
         self.object_type.model_validate(original_obj)
         return original_obj
 
-    @as_result(StashException, NotFoundException, AttributeError, ValidationError)
+    @as_result(
+        StashException,
+        NotFoundException,
+        AttributeError,
+        ValidationError,
+        UniqueConstraintException,
+    )
     @with_session
     def update(
         self,
@@ -454,7 +463,9 @@ class ObjectStash(Generic[StashT]):
 
         # TODO has_permission is not used
         if not self.is_unique(obj):
-            raise StashException(f"Some fields are not unique for {type(obj).__name__}")
+            raise UniqueConstraintException(
+                f"Some fields are not unique for {type(obj).__name__} and unique fields {self.unique_fields}"
+            )
 
         stmt = self.table.update().where(self._get_field_filter("id", obj.id))
         stmt = self._apply_permission_filter(
