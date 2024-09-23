@@ -88,3 +88,6 @@ packages/grid/helm/examples/dev/migration.yaml
 
 
 notebooks/scenarios/bigquery/*.json
+
+notebooks/tutorials/version-upgrades/*.yaml
+notebooks/tutorials/version-upgrades/*.blob
