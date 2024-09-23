@@ -1,1 +1,52 @@
-[{"name": "William Thompson", "email": "william-thompson-fake@openmined.org", "password": "H&4TFK4nd1", "role": "ServiceRole.DATA_SCIENTIST", "new_password": null, "email_disabled": true, "reset_password": false, "reset_token": null}, {"name": "Eric Hahn", "email": "eric-hahn-fake@openmined.org", "password": "iqeU$Fme@4", "role": "ServiceRole.DATA_SCIENTIST", "new_password": null, "email_disabled": false, "reset_password": true, "reset_token": "2o2tvKn3HVYt"}, {"name": "Paul Lloyd", "email": "paul-lloyd-fake@openmined.org", "password": "O7c9DBMh!b", "role": "ServiceRole.DATA_SCIENTIST", "new_password": null, "email_disabled": false, "reset_password": false, "reset_token": null}, {"name": "John Garrett", "email": "john-garrett-fake@openmined.org", "password": ")pDQ4r%PX8", "role": "ServiceRole.DATA_SCIENTIST", "new_password": null, "email_disabled": false, "reset_password": false, "reset_token": null}, {"name": "Anthony Escobar", "email": "anthony-escobar-fake@openmined.org", "password": "3J6uWe25a%", "role": "ServiceRole.DATA_SCIENTIST", "new_password": null, "email_disabled": false, "reset_password": false, "reset_token": null}]
+[
+  {
+    "name": "William Thompson",
+    "email": "william-thompson-fake@openmined.org",
+    "password": "H&4TFK4nd1",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": true,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "Eric Hahn",
+    "email": "eric-hahn-fake@openmined.org",
+    "password": "iqeU$Fme@4",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": true,
+    "reset_token": "2o2tvKn3HVYt"
+  },
+  {
+    "name": "Paul Lloyd",
+    "email": "paul-lloyd-fake@openmined.org",
+    "password": "O7c9DBMh!b",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "John Garrett",
+    "email": "john-garrett-fake@openmined.org",
+    "password": ")pDQ4r%PX8",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "Anthony Escobar",
+    "email": "anthony-escobar-fake@openmined.org",
+    "password": "3J6uWe25a%",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  }
+]
