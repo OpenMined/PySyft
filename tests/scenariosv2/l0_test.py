@@ -86,10 +86,10 @@ async def user_query_test_endpoint(ctx: SimulatorContext, client: sy.DatasiteCli
 
     user = client.logged_in_user
 
-    ctx.logger.info(f"User {user}: Calling client.api.bigquery.test_query")
+    ctx.logger.info(f"User: {user} - Calling client.api.bigquery.test_query")
     res = client.api.bigquery.test_query(sql_query=query_sql())
     assert len(res) == 10000
-    ctx.logger.info(f"User: {user}: Received {len(res)} rows")
+    ctx.logger.info(f"User: {user} - Received {len(res)} rows")
 
 
 @sim_activity(
@@ -103,9 +103,9 @@ async def user_bq_submit(ctx: SimulatorContext, client: sy.DatasiteClient):
     """Submit query to be run on private data"""
     user = client.logged_in_user
 
-    ctx.logger.info(f"User {user}: Calling client.api.services.bigquery.submit_query")
+    ctx.logger.info(f"User: {user} - Calling client.api.services.bigquery.submit_query")
     res = client.api.bigquery.submit_query(func_name="invalid_func", query=query_sql())
-    ctx.logger.info(f"User {user}: Received {res}")
+    ctx.logger.info(f"User: {user} - Received {res}")
 
 
 @sim_activity(wait_for=Event.GUEST_USERS_CREATED, trigger=Event.USER_FLOW_COMPLETED)
@@ -115,7 +115,7 @@ async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
         email=user["email"],
         password=user["password"],
     )
-    ctx.logger.info(f"User {client.logged_in_user}: logged in")
+    ctx.logger.info(f"User: {client.logged_in_user} - logged in")
 
     await asyncio.gather(
         user_query_test_endpoint(ctx, client),
