@@ -416,8 +416,14 @@ class DatasiteClient(SyftClient):
 
         return res
 
-    def load_migration_data(self, path: str | Path) -> SyftSuccess:
-        migration_data = MigrationData.from_file(path)
+    def load_migration_data(
+        self, path_or_data: str | Path | MigrationData
+    ) -> SyftSuccess:
+        if isinstance(path_or_data, MigrationData):
+            migration_data = path_or_data
+        else:
+            migration_data = MigrationData.from_file(path_or_data)
+
         migration_data._set_obj_location_(self.id, self.verify_key)
 
         if self.id != migration_data.server_uid:
