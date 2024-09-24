@@ -1,10 +1,9 @@
 # stdlib
-import asyncio
 from dataclasses import dataclass
 from dataclasses import field
 import json
 import re
-from tempfile import mktemp
+from tempfile import mkstemp
 import time
 from typing import Any
 
@@ -43,11 +42,10 @@ class Email:
 
 class EmailServer:
     def __init__(self, filepath=None):
-        self.filepath = filepath or mktemp(prefix="tmp_email_", suffix=".json")
+        self.filepath = filepath or mkstemp(prefix="tmp_email_", suffix=".json")[1]
         lockpath = self.filepath + ".lock"
-
-        self._emails: dict[str, list[Email]] = self.load_emails()
         self._lock = FileLock(lock_file=lockpath)
+        self._emails: dict[str, list[Email]] = self.load_emails()
 
     def load_emails(self) -> dict[str, list[Email]]:
         try:
@@ -58,7 +56,7 @@ class EmailServer:
                 data = json.load(f)
                 return {k: [Email(**email) for email in v] for k, v in data.items()}
         except Exception as e:
-            print("Issues reading email file", e)
+            print("Issues reading email file. Using empty email dict.", e)
             return {}
 
     def save_emails(self) -> None:
@@ -234,7 +232,7 @@ class SMTPTestServer:
     def __init__(self, email_server, port=9025, ready_timeout=5):
         self.port = port
         self.hostname = "0.0.0.0"
-        self._stop_event = asyncio.Event()
+        self.controller = None
 
         # Simple email handler class
         class SimpleHandler:
@@ -267,104 +265,14 @@ class SMTPTestServer:
             print(f"> Error initializing SMTPTestServer Controller: {e}")
 
     def start(self):
-        asyncio.create_task(self.async_loop())
-
-    async def async_loop(self):
-        try:
-            print(f"> Starting SMTPTestServer on: {self.hostname}:{self.port}")
-            self.controller.start()
-        except Exception as e:
-            print(f"> Error with SMTPTestServer: {e}")
-        await self._stop_event.wait()  # Wait until the event is set to stop the server
+        self.controller.start()
 
     def stop(self):
-        try:
-            print("> Stopping SMTPTestServer")
-            loop = asyncio.get_running_loop()
-            if loop.is_running():
-                loop.create_task(
-                    self.async_stop()
-                )  # Always use create_task() in running loop
-            else:
-                asyncio.run(
-                    self.async_stop()
-                )  # Only use asyncio.run() when no loop is running
-        except Exception as e:
-            print(f"> Error stopping SMTPTestServer: {e}")
+        self.controller.stop()
 
-    async def async_stop(self):
-        try:
-            self.controller.stop()  # Ensure this is non-blocking and properly awaited if necessary
-        except Exception as e:
-            print(f"> Error stopping SMTPTestServer: {e}")
-        finally:
-            self._stop_event.set()  # Set the event to stop the server
-
-
-# class SMTPTestServer:
-#     def __init__(self, email_server, port=9025, ready_timeout=20):
-#         self.port = port
-#         self.hostname = "0.0.0.0"
-#         self._stop_event = asyncio.Event()
-
-#         # Simple email handler class
-#         class SimpleHandler:
-#             async def handle_DATA(self, server, session, envelope):
-#                 try:
-#                     print(f"> SMTPTestServer got an email for {envelope.rcpt_tos}")
-#                     email = Email(
-#                         email_from=envelope.mail_from,
-#                         email_to=envelope.rcpt_tos,
-#                         email_content=envelope.content.decode(
-#                             "utf-8", errors="replace"
-#                         ),
-#                     )
-#                     email_server.add_email_for_user(envelope.rcpt_tos[0], email)
-#                     email_server.save_emails()
-#                     return "250 Message accepted for delivery"
-#                 except Exception as e:
-#                     print(f"> Error handling email: {e}")
-#                     return "550 Internal Server Error"
-
-#         try:
-#             self.handler = SimpleHandler()
-#             self.controller = Controller(
-#                 self.handler,
-#                 hostname=self.hostname,
-#                 port=self.port,
-#                 ready_timeout=ready_timeout,
-#             )
-#         except Exception as e:
-#             print(f"> Error initializing SMTPTestServer Controller: {e}")
-
-#     def start(self):
-#         # print(f"> Starting SMTPTestServer on: {self.hostname}:{self.port}")
-#         asyncio.create_task(self.async_loop())
-
-#     async def async_loop(self):
-#         try:
-#             print(f"> Starting SMTPTestServer on: {self.hostname}:{self.port}")
-#             self.controller.start()
-#             await (
-#                 self._stop_event.wait()
-#             )  # Wait until the event is set to stop the server
-#         except Exception as e:
-#             print(f"> Error with SMTPTestServer: {e}")
-
-#     def stop(self):
-#         try:
-#             print("> Stopping SMTPTestServer")
-#             loop = asyncio.get_running_loop()
-#             if loop.is_running():
-#                 loop.create_task(self.async_stop())
-#             else:
-#                 asyncio.run(self.async_stop())
-#         except Exception as e:
-#             print(f"> Error stopping SMTPTestServer: {e}")
-
-#     async def async_stop(self):
-#         self.controller.stop()
-#         self._stop_event.set()  # Stop the server by setting the event
+    def __del__(self):
+        if self.controller:
+            self.stop()
 
 
 class TimeoutError(Exception):
@@ -402,12 +310,21 @@ class Timeout:
 
 
 def get_email_server(reset=False, port=9025):
-    email_server = EmailServer()
+    email_server = EmailServer(filepath="emails.json")
     if reset:
         email_server.reset_emails()
-    smtp_server = SMTPTestServer(email_server, port=port)
-    smtp_server.start()
-    return email_server, smtp_server
+    for _ in range(5):
+        try:
+            smtp_server = SMTPTestServer(email_server, port=port)
+            smtp_server.start()
+            return email_server, smtp_server
+
+        except TimeoutError:
+            del smtp_server
+            print("SMTP server timed out. Retrying...")
+            continue
+        except Exception as e:
+            print(f"> Error starting SMTP server: {e}")
 
 
 def create_user(root_client, test_user):
