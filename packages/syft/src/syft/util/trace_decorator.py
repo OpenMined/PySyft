@@ -17,7 +17,7 @@ from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Tracer
 from opentelemetry.trace.span import Span
 
-__all__ = ["instrument", "no_instrument", "T"]
+__all__ = ["instrument"]
 
 T = TypeVar("T", bound=Callable | type)
 
@@ -172,13 +172,3 @@ def instrument(
         return span_decorator(_func_or_class)
     else:
         return span_decorator  # type: ignore
-
-
-def no_instrument(__func_or_class: T | None = None, /, *args: Any, **kwargs: Any) -> T:
-    def noop_wrapper(__func_or_class: T) -> T:
-        return __func_or_class
-
-    if __func_or_class is None:
-        return noop_wrapper  # type: ignore
-    else:
-        return __func_or_class
