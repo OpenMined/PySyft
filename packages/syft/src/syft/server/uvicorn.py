@@ -30,7 +30,7 @@ from ..deployment_type import DeploymentType
 from ..store.db.db import DBConfig
 from ..util.autoreload import enable_autoreload
 from ..util.constants import DEFAULT_TIMEOUT
-from ..util.telemetry import TRACING_ENABLED
+from ..util.telemetry import instrument_fastapi
 from ..util.util import os_name
 from .datasite import Datasite
 from .enclave import Enclave
@@ -126,14 +126,7 @@ def app_factory() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    if TRACING_ENABLED:
-        # third party
-        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-
-        FastAPIInstrumentor().instrument_app(app)
-        print("> Added OTEL FastAPIInstrumentor")
-
+    instrument_fastapi(app)
     return app
 
 
