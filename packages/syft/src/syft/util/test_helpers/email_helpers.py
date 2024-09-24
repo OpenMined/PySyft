@@ -325,6 +325,7 @@ def get_email_server(reset=False, port=9025):
             continue
         except Exception as e:
             print(f"> Error starting SMTP server: {e}")
+    raise Exception("Failed to start SMTP server in 5 attempts.")
 
 
 def create_user(root_client, test_user):
