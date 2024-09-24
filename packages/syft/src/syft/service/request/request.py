@@ -542,7 +542,9 @@ class Request(SyncableSyftObject):
             )
             if is_l0_deployment:
                 code_status = (
-                    self.code.get_status(context) if context else self.code.status
+                    self.code.get_status(context).unwrap()
+                    if context
+                    else self.code.status
                 )
                 return RequestStatus.from_usercode_status(code_status, context)
         except Exception:  # nosec
