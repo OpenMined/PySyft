@@ -16,6 +16,7 @@ from sim.core import sim_entrypoint
 import syft as sy
 from syft import test_settings
 from syft.client.client import SyftClient
+from syft.service.request.request import RequestStatus
 from syft.util.test_helpers.apis import make_schema
 from syft.util.test_helpers.apis import make_test_query
 from syft.util.test_helpers.worker_helpers import (
@@ -101,11 +102,13 @@ async def user_bq_submit(ctx: SimulatorContext, client: sy.DatasiteClient):
     user = client.logged_in_user
 
     def _submit_endpoint():
+        func_name = "invalid_func" if random.random() < 0.5 else "test_query"
         ctx.logger.info(
-            f"User: {user} - Calling client.api.services.bigquery.submit_query"
+            f"User: {user} - Calling client.api.services.bigquery.submit_query func_name={func_name}"
         )
+
         res = client.api.bigquery.submit_query(
-            func_name="invalid_func",
+            func_name=func_name,
             query=query_sql(),
         )
         ctx.logger.info(f"User: {user} - Received {res}")
@@ -341,19 +344,31 @@ async def admin_create_bq_pool_low(ctx: SimulatorContext, admin_client: SyftClie
         Event.ADMIN_SYNCED_LOW_TO_HIGH,
     ]
 )
-async def admin_triage_requests(ctx: SimulatorContext, admin_client: SyftClient):
+async def admin_triage_requests_high(ctx: SimulatorContext, admin_client: SyftClient):
     while True:
         await asyncio.sleep(random.uniform(5, 10))
 
         # check if there are any requests
-        for request in admin_client.requests:
-            ctx.logger.info(f"Admin: Found request {request.__dict__}")
+        # BUG: request that are executed request.code() are always in pending state
+        pending_requests = [
+            req
+            for req in admin_client.requests
+            if req.get_status() == RequestStatus.PENDING
+        ]
+        for request in pending_requests:
+            ctx.logger.info(f"Admin high: Found request {request.__dict__}")
+            if getattr(request, "code", None):
+                if "invalid_func" in request.code.service_func_name:
+                    ctx.logger.info(f"Admin high: Denying request {request}")
+                    request.deny("You gave me an `invalid_func` function")
+                else:
+                    ctx.logger.info(
+                        f"Admin high: Approving request by executing {request}"
+                    )
+                    job = request.code(blocking=False)
+                    result = job.wait()
+                    ctx.logger.info(f"Admin high: Request result {result}")
             pass
-            # ! approve or deny.
-            #   * If func_name has `invalid_func` in it, deny.
-            #   * If not, then approve
-            # ! approved ones can exec succesfully or fail
-            # ! whatever is the case, after that just sync back to low-side (taken care by admin_sync_to_low_flow)
 
 
 @sim_activity(trigger=Event.ADMIN_HIGHSIDE_FLOW_COMPLETED)
@@ -364,7 +379,7 @@ async def admin_high_side(ctx: SimulatorContext, admin_auth):
     await asyncio.gather(
         admin_create_bq_pool_high(ctx, admin_client),
         admin_create_endpoint(ctx, admin_client),
-        admin_triage_requests(ctx, admin_client),
+        admin_triage_requests_high(ctx, admin_client),
     )
 
 
@@ -400,16 +415,16 @@ async def admin_sync_to_low_flow(
 
         result = sy.sync(high_client, low_client)
         if isinstance(result, sy.SyftSuccess):
-            ctx.logger.info("Admin: Nothing to sync high->low")
+            ctx.logger.info("Admin high: Nothing to sync high->low")
             continue
 
-        ctx.logger.info(f"Admin: Syncing high->low {result}")
+        ctx.logger.info(f"Admin high: Syncing high->low {result}")
         result._share_all()
         result._sync_all()
 
         # trigger an event so that guest users can start querying
         ctx.events.trigger(Event.ADMIN_SYNCED_HIGH_TO_LOW)
-        ctx.logger.info("Admin: Synced high->low")
+        ctx.logger.info("Admin high: Synced high->low")
 
 
 @sim_activity(trigger=Event.ADMIN_SYNC_COMPLETED)
@@ -417,25 +432,25 @@ async def admin_sync_to_high_flow(
     ctx: SimulatorContext, admin_auth_high, admin_auth_low
 ):
     high_client = sy.login(**admin_auth_high)
-    ctx.logger.info("Admin: logged in to high-side")
+    ctx.logger.info("Admin low: logged in to high-side")
 
     low_client = sy.login(**admin_auth_low)
-    ctx.logger.info("Admin: logged in to low-side")
+    ctx.logger.info("Admin low: logged in to low-side")
 
     while True:
         await asyncio.sleep(random.uniform(5, 10))
 
         result = sy.sync(low_client, high_client)
         if isinstance(result, sy.SyftSuccess):
-            ctx.logger.info("Admin: Nothing to sync low->high")
+            ctx.logger.info("Admin low: Nothing to sync low->high")
             continue
 
-        ctx.logger.info(f"Admin: Syncing low->high {result}")
+        ctx.logger.info(f"Admin low: Syncing low->high {result}")
         result._share_all()
         result._sync_all()
 
         ctx.events.trigger(Event.ADMIN_SYNCED_LOW_TO_HIGH)
-        ctx.logger.info("Admin: Synced low->high")
+        ctx.logger.info("Admin low: Synced low->high")
 
 
 # ------------------------------------------------------------------------------------------------
