@@ -1,5 +1,6 @@
 # stdlib
 import logging
+from pathlib import Path
 from typing import Generic
 from typing import TypeVar
 from urllib.parse import urlparse
@@ -41,9 +42,10 @@ class DBConfig(BaseModel):
                 database=parsed.path.lstrip("/"),
             )
         elif parsed.scheme == "sqlite":
-            return SQLiteDBConfig(path=parsed.path)
+            path = Path(parsed.path)
+            return SQLiteDBConfig(path=path.parent, filename=path.name)
         else:
-            raise ValueError(f"Unsupported database scheme {parsed.scheme}")
+            raise ValueError(f"Unsupported database scheme: {parsed.scheme}")
 
 
 ConfigT = TypeVar("ConfigT", bound=DBConfig)

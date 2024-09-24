@@ -485,8 +485,8 @@ class ResolveWidget:
         )
 
         self.set_widget_result_state(res)
-        if self.on_sync_callback:
-            self.on_sync_callback()
+        # if self.on_sync_callback:
+        #     self.on_sync_callback()
         return res
 
     @property
