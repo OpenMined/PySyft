@@ -6,6 +6,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from datetime import MINYEAR
 from datetime import datetime
+from datetime import timezone
 from functools import partial
 import hashlib
 import json
@@ -481,7 +482,7 @@ class Server(AbstractServer):
                 email_frequency = notifier_settings.email_frequency[email_template]
                 for verify_key, queue in email_queue.items():
                     if self.services.notifier.is_time_to_dispatch(
-                        email_frequency, datetime.now()
+                        email_frequency, datetime.now(timezone.utc)
                     ):
                         notifier_settings.send_batched_notification(
                             context=context, notification_queue=queue
