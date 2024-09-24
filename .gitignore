@@ -91,3 +91,5 @@ notebooks/scenarios/bigquery/*.json
 
 notebooks/tutorials/version-upgrades/*.yaml
 notebooks/tutorials/version-upgrades/*.blob
+
+notebooks/scenarios/bigquery/sync/emails.json

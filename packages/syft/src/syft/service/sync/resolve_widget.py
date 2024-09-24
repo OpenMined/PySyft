@@ -791,6 +791,9 @@ class PaginatedResolveWidget:
     def __getitem__(self, index: int) -> ResolveWidget:
         return self.resolve_widgets[index]
 
+    def __len__(self) -> int:
+        return len(self.resolve_widgets)
+
     def on_paginate(self, index: int) -> None:
         return highlight_single_row(self.table_uid, index, jump_to_row=True)
 
