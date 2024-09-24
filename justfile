@@ -257,17 +257,20 @@ apply-signoz kube_context:
 [group('signoz')]
 [private]
 setup-signoz kube_context:
-    @echo "Waiting for SigNoz frontend to be available..."
-    @bash ./packages/grid/scripts/wait_for.sh service signoz-frontend \
+    #!/bin/bash
+    set -euo pipefail
+
+    echo "Waiting for SigNoz frontend to be available..."
+    bash ./packages/grid/scripts/wait_for.sh service signoz-frontend \
         --namespace platform --context {{ kube_context }} &> /dev/null
 
-    @echo "Setting up SigNoz account"
-    @curl --retry 5 --retry-all-errors -X POST \
+    echo "Setting up SigNoz account"
+    curl --retry 5 --retry-all-errors -X POST \
         -H "Content-Type: application/json" \
         --data '{"email":"admin@localhost","name":"admin","orgName":"openmined","password":"password"}' \
         http://localhost:3301/api/v1/register
 
-    @printf '\nSignoz is running on http://localhost:3301\n\
+    printf '\nSignoz is running on http://localhost:3301\n\
         Email: \033[1;36madmin@localhost\033[0m\n\
         Password: \033[1;36mpassword\033[0m\n'
 
