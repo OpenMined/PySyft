@@ -642,15 +642,16 @@ def allowed_ids_only(
             public_message=f"Invalid server type for code submission: {context.server.server_type}"
         )
 
-    server_identity = ServerIdentity(
-        server_name=context.server.name,
-        server_id=context.server.id,
-        verify_key=context.server.signing_key.verify_key,
-    )
-    allowed_inputs = allowed_inputs.get(server_identity, {})
+    allowed_inputs_for_server = None
+    for identity, inputs in allowed_inputs.items():
+        if identity.server_id == context.server.id:
+            allowed_inputs_for_server = inputs
+            break
+    if allowed_inputs_for_server is None:
+        allowed_inputs_for_server = {}
 
     filtered_kwargs = {}
-    for key in allowed_inputs.keys():
+    for key in allowed_inputs_for_server.keys():
         if key in kwargs:
             value = kwargs[key]
             uid = value
@@ -658,7 +659,7 @@ def allowed_ids_only(
             if not isinstance(uid, UID):
                 uid = getattr(value, "id", None)
 
-            if uid != allowed_inputs[key]:
+            if uid != allowed_inputs_for_server[key]:
                 raise SyftException(
                     public_message=f"Input with uid: {uid} for `{key}` not in allowed inputs: {allowed_inputs}"
                 )
