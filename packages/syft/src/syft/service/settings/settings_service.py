@@ -8,9 +8,6 @@ from pydantic import ValidationError
 # relative
 from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
-from ...server.env import get_default_root_email
-from ...server.env import get_default_root_password
-from ...server.env import get_default_root_username
 from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
@@ -29,14 +26,12 @@ from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
 from ..notifier.notifier_enums import EMAIL_TYPES
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
-from ..user.utils import create_root_admin_if_not_exists
 from ..warnings import HighSideCRUDWarning
 from .settings import ServerSettings
 from .settings import ServerSettingsUpdate
@@ -402,31 +397,31 @@ class SettingsService(AbstractService):
             return welcome_msg_class(text=result)
         raise SyftException(public_message="There's no welcome message")
 
-    @service_method(
-        path="settings.reset_database",
-        name="reset_database",
-        roles=ADMIN_ROLE_LEVEL,
-        unwrap_on_success=False,
-    )
-    def reset_database(
-        self,
-        context: AuthedServiceContext,
-    ) -> SyftSuccess | SyftError:
-        try:
-            context.server.db.init_tables(reset=True)
-            create_root_admin_if_not_exists(
-                name=get_default_root_username(),
-                email=get_default_root_email(),
-                password=get_default_root_password(),
-                server=context.server,
-            )
-        except Exception as e:
-            return SyftError.from_exception(
-                context=context,
-                exc=e,
-                include_traceback=True,
-            )
-        return SyftSuccess(message="Database reset successfully.")
+    # @service_method(
+    #     path="settings.reset_database",
+    #     name="reset_database",
+    #     roles=ADMIN_ROLE_LEVEL,
+    #     unwrap_on_success=False,
+    # )
+    # def reset_database(
+    #     self,
+    #     context: AuthedServiceContext,
+    # ) -> SyftSuccess | SyftError:
+    #     try:
+    #         context.server.db.init_tables(reset=True)
+    #         create_root_admin_if_not_exists(
+    #             name=get_default_root_username(),
+    #             email=get_default_root_email(),
+    #             password=get_default_root_password(),
+    #             server=context.server,
+    #         )
+    #     except Exception as e:
+    #         return SyftError.from_exception(
+    #             context=context,
+    #             exc=e,
+    #             include_traceback=True,
+    #         )
+    #     return SyftSuccess(message="Database reset successfully.")
 
     @service_method(
         path="settings.get_server_config",

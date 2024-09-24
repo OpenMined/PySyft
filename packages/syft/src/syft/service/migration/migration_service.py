@@ -1,5 +1,6 @@
 # stdlib
 from collections import defaultdict
+import logging
 
 # syft absolute
 import syft
@@ -21,15 +22,22 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import StoragePermission
 from ..action.action_store import ActionObjectStash
 from ..context import AuthedServiceContext
+from ..notifier.notifier import NotifierSettings
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..settings.settings import ServerSettings
+from ..user.user import User
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..worker.utils import DEFAULT_WORKER_POOL_NAME
+from ..worker.worker_pool import SyftWorker
+from ..worker.worker_pool import WorkerPool
 from .object_migration_state import MigrationData
 from .object_migration_state import StoreMetadata
 from .object_migration_state import SyftMigrationStateStash
 from .object_migration_state import SyftObjectMigrationState
+
+logger = logging.getLogger(__name__)
 
 
 @serializable(canonical_name="MigrationService", version=1)
@@ -257,10 +265,32 @@ class MigrationService(AbstractService):
         migrated_objects: list[SyftObject],
         ignore_existing: bool = True,
     ) -> SyftSuccess:
+        # These tables are considered as startup tables, if the object is in this table and already exists,
+        # we need to overwrite the existing object with the migrated object.
+        STARTUP_TABLES = [
+            User,
+            ServerSettings,
+            NotifierSettings,
+            WorkerPool,
+            SyftWorker,
+        ]
         for migrated_object in migrated_objects:
             stash = self._search_stash_for_klass(
                 context, type(migrated_object)
             ).unwrap()
+
+            # If the object is in the startup tables, we need to overwrite the existing object
+            if type(migrated_object) in STARTUP_TABLES:
+                try:
+                    existing_obj = stash.get_by_unique_fields(
+                        credentials=context.credentials,
+                        obj=migrated_object,
+                    ).unwrap()
+                    stash.delete_by_uid(
+                        context.credentials, uid=existing_obj.id
+                    ).unwrap()
+                except NotFoundException:
+                    pass
 
             result = stash.set(
                 context.credentials,
@@ -309,7 +339,7 @@ class MigrationService(AbstractService):
             latest_version = SyftObjectRegistry.get_latest_version(canonical_name)
 
             # Migrate data for objects in document store
-            print(
+            logger.info(
                 f"Migrating data for: {canonical_name} table to version {latest_version}"
             )
             for object in objects:
