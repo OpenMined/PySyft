@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from dataclasses import field
 import json
 import re
-from tempfile import mkstemp
 import time
 from typing import Any
 
@@ -41,8 +40,8 @@ class Email:
 
 
 class EmailServer:
-    def __init__(self, filepath=None):
-        self.filepath = filepath or mkstemp(prefix="tmp_email_", suffix=".json")[1]
+    def __init__(self, filepath="emails.json"):
+        self.filepath = filepath
         lockpath = self.filepath + ".lock"
         self._lock = FileLock(lock_file=lockpath)
         self._emails: dict[str, list[Email]] = self.load_emails()
