@@ -280,22 +280,24 @@ jobs:
       max-parallel: 99
       matrix:
         # Disable on windows until its flakyness is reduced.
+        # Also disable on macos for now since SMTP server
+        # fails to write to emails.json in CI runner.
         # os: [ubuntu-latest, macos-latest, windows-latest]
-        os: [macos-latest]
+        os: [ubuntu-latest]
         python-version: ["3.12"]
         deployment-type: ["python"]
         bump-version: ["False"]
-        # include:
-        #   - python-version: "3.11"
-        #     os: "ubuntu-latest"
-        #     deployment-type: "python"
-        #   - python-version: "3.10"
-        #     os: "ubuntu-latest"
-        #     deployment-type: "python"
-        #   - python-version: "3.12"
-        #     os: "ubuntu-latest"
-        #     deployment-type: "python"
-        #     bump-version: "True"
+        include:
+          - python-version: "3.11"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+          - python-version: "3.10"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+          - python-version: "3.12"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+            bump-version: "True"
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -359,7 +361,7 @@ jobs:
         with:
           timeout_seconds: 2400
           max_attempts: 3
-          command: curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T WcYAUxVX5tmMwCwxHtWXVa 5rW9jU2gavj0Av2uRYqcM3; tox -e syft.test.notebook.scenario.sync
+          command: tox -e syft.test.notebook.scenario.sync
 
   pr-tests-syft-notebook-single-container:
     strategy:
