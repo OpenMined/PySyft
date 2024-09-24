@@ -231,7 +231,7 @@ def user_exists(root_client, email: str) -> bool:
 class SMTPTestServer:
     def __init__(self, email_server, port=9025, ready_timeout=5):
         self.port = port
-        self.hostname = "0.0.0.0"
+        self.hostname = "0.0.0.0"  # nosec: B104
         self.controller = None
 
         # Simple email handler class
@@ -310,7 +310,7 @@ class Timeout:
 
 
 def get_email_server(reset=False, port=9025):
-    email_server = EmailServer(filepath="emails.json")
+    email_server = EmailServer()
     if reset:
         email_server.reset_emails()
     for _ in range(5):
