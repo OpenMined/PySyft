@@ -72,7 +72,7 @@ class APIService(AbstractService):
                     public_message="An API endpoint already exists at the given path."
                 )
 
-        result = self.stash.upsert(context.credentials, endpoint=new_endpoint).unwrap()
+        result = self.stash.upsert(context.credentials, obj=new_endpoint).unwrap()
         action_obj = ActionObject.from_obj(
             id=new_endpoint.action_object_id,
             syft_action_data=CustomEndpointActionObject(endpoint_id=result.id),
@@ -157,7 +157,7 @@ class APIService(AbstractService):
             endpoint.mock_function.view_access = view_access
 
         # save changes
-        self.stash.upsert(context.credentials, endpoint=endpoint).unwrap()
+        self.stash.upsert(context.credentials, obj=endpoint).unwrap()
         return SyftSuccess(message="Endpoint successfully updated.")
 
     @service_method(
@@ -218,7 +218,7 @@ class APIService(AbstractService):
         if mock and api_endpoint.mock_function:
             api_endpoint.mock_function.state = state
 
-        self.stash.upsert(context.credentials, endpoint=api_endpoint).unwrap()
+        self.stash.upsert(context.credentials, obj=api_endpoint).unwrap()
         return SyftSuccess(message=f"APIEndpoint {api_path} state updated.")
 
     @service_method(
@@ -248,7 +248,7 @@ class APIService(AbstractService):
         if mock and api_endpoint.mock_function:
             api_endpoint.mock_function.settings = settings
 
-        self.stash.upsert(context.credentials, endpoint=api_endpoint).unwrap()
+        self.stash.upsert(context.credentials, obj=api_endpoint).unwrap()
         return SyftSuccess(message=f"APIEndpoint {api_path} settings updated.")
 
     @service_method(
