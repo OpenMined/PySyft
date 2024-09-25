@@ -58,11 +58,11 @@ while [[ "$#" -gt 0 ]]; do
             PORT="$2"
             shift 2
             ;;
-        -email|--root-email)
+        -email|--email|--root-email)
             DEFAULT_ROOT_EMAIL="$2"
             shift 2
             ;;
-        -password|--root-password)
+        -password|--password|--root-password)
             DEFAULT_ROOT_PASSWORD="$2"
             shift 2
             ;;
