@@ -14,10 +14,12 @@ from sqlalchemy.orm import sessionmaker
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...types.uid import UID
+from ...util.telemetry import instrument_sqlalchemny
 from .schema import PostgresBase
 from .schema import SQLiteBase
 
 logger = logging.getLogger(__name__)
+instrument_sqlalchemny()
 
 
 @serializable(canonical_name="DBConfig", version=1)

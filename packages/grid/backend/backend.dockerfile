@@ -75,7 +75,7 @@ ENV \
     APPDIR="/root/app" \
     SERVER_NAME="default_server_name" \
     SERVER_TYPE="datasite" \
-    SERVICE_NAME="backend" \
+    SERVER_SIDE_TYPE="high" \
     RELEASE="production" \
     DEV_MODE="False" \
     DEBUGGER_ENABLED="False" \
