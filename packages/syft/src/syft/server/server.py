@@ -6,11 +6,13 @@ from collections import OrderedDict
 from collections.abc import Callable
 from datetime import MINYEAR
 from datetime import datetime
+from datetime import timezone
 from functools import partial
 import hashlib
 import logging
 import os
 from pathlib import Path
+import threading
 from time import sleep
 import traceback
 from typing import Any
@@ -90,12 +92,9 @@ from ..store.db.postgres import PostgresDBManager
 from ..store.db.sqlite import SQLiteDBConfig
 from ..store.db.sqlite import SQLiteDBManager
 from ..store.db.stash import ObjectStash
-from ..store.document_store import StoreConfig
 from ..store.document_store_errors import NotFoundException
 from ..store.document_store_errors import StashException
 from ..store.linked_obj import LinkedObject
-from ..store.sqlite_document_store import SQLiteStoreClientConfig
-from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
 from ..types.errors import SyftException
 from ..types.result import Result
@@ -202,8 +201,6 @@ class Server(AbstractServer):
         name: str | None = None,
         id: UID | None = None,
         signing_key: SyftSigningKey | SigningKey | None = None,
-        action_store_config: StoreConfig | None = None,
-        document_store_config: StoreConfig | None = None,
         db_config: DBConfig | None = None,
         root_email: str | None = default_root_email,
         root_username: str | None = default_root_username,
@@ -212,7 +209,6 @@ class Server(AbstractServer):
         is_subprocess: bool = False,
         server_type: str | ServerType = ServerType.DATASITE,
         deployment_type: str | DeploymentType = "remote",
-        local_db: bool = False,
         reset: bool = False,
         blob_storage_config: BlobStorageConfig | None = None,
         queue_config: QueueConfig | None = None,
@@ -296,12 +292,6 @@ class Server(AbstractServer):
         if reset:
             self.remove_temp_dir()
 
-        document_store_config = document_store_config or self.get_default_store(
-            store_type="Document Store",
-        )
-        action_store_config = action_store_config or self.get_default_store(
-            store_type="Action Store",
-        )
         db_config = DBConfig.from_connection_string(db_url) if db_url else db_config
 
         if db_config is None:
@@ -362,6 +352,42 @@ class Server(AbstractServer):
             self.run_peer_health_checks(context=context)
 
         ServerRegistry.set_server_for(self.id, self)
+        email_dispatcher = threading.Thread(target=self.email_notification_dispatcher)
+        email_dispatcher.daemon = True
+        email_dispatcher.start()
+
+    def email_notification_dispatcher(self) -> None:
+        lock = threading.Lock()
+        while True:
+            # Use admin context to have access to the notifier obj
+            context = AuthedServiceContext(
+                server=self,
+                credentials=self.verify_key,
+                role=ServiceRole.ADMIN,
+            )
+            # Get notitifer settings
+            notifier_settings = self.services.notifier.settings(
+                context=context
+            ).unwrap()
+            lock.acquire()
+            # Iterate over email_types and its queues
+            # Ex: {'EmailRequest': {VerifyKey: [], VerifyKey: [], ...}}
+            for email_template, email_queue in notifier_settings.email_queue.items():
+                # Get the email frequency of that specific email type
+                email_frequency = notifier_settings.email_frequency[email_template]
+                for verify_key, queue in email_queue.items():
+                    if self.services.notifier.is_time_to_dispatch(
+                        email_frequency, datetime.now(timezone.utc)
+                    ):
+                        notifier_settings.send_batched_notification(
+                            context=context, notification_queue=queue
+                        ).unwrap()
+                        notifier_settings.email_queue[email_template][verify_key] = []
+                        self.services.notifier.stash.update(
+                            credentials=self.verify_key, obj=notifier_settings
+                        ).unwrap()
+            lock.release()
+            sleep(15)
 
     def set_log_level(self, log_level: int | str | None) -> None:
         def determine_log_level(
@@ -401,20 +427,6 @@ class Server(AbstractServer):
             os.path.exists("/.dockerenv")
             or os.path.isfile(path)
             and any("docker" in line for line in open(path))
-        )
-
-    def get_default_store(self, store_type: str) -> StoreConfig:
-        path = self.get_temp_dir("db")
-        file_name: str = f"{self.id}.sqlite"
-        # if self.dev_mode:
-        # leave this until the logger shows this in the notebook
-        # print(f"{store_type}'s SQLite DB path: {path/file_name}")
-        # logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
-        return SQLiteStoreConfig(
-            client_config=SQLiteStoreClientConfig(
-                filename=file_name,
-                path=path,
-            )
         )
 
     def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
@@ -621,7 +633,6 @@ class Server(AbstractServer):
         name: str,
         processes: int = 0,
         reset: bool = False,
-        local_db: bool = False,
         server_type: str | ServerType = ServerType.DATASITE,
         server_side_type: str | ServerSideType = ServerSideType.HIGH_SIDE,
         deployment_type: str | DeploymentType = "remote",
@@ -638,6 +649,7 @@ class Server(AbstractServer):
         consumer_type: ConsumerType | None = None,
         db_url: str | None = None,
         db_config: DBConfig | None = None,
+        log_level: int | None = None,
     ) -> Server:
         uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -652,7 +664,6 @@ class Server(AbstractServer):
             id=uid,
             signing_key=key,
             processes=processes,
-            local_db=local_db,
             server_type=server_type,
             server_side_type=server_side_type,
             deployment_type=deployment_type,
@@ -671,6 +682,7 @@ class Server(AbstractServer):
             consumer_type=consumer_type,
             db_url=db_url,
             db_config=db_config,
+            log_level=log_level,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:

@@ -1,11 +1,15 @@
 # stdlib
 
+# stdlib
+from collections.abc import Callable
+
 # relative
 from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...types.datetime import DateTime
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
@@ -36,6 +40,10 @@ class SyftWorkerImageV1(SyftObject):
     image_identifier: SyftWorkerImageIdentifier | None = None
     image_hash: str | None = None
     built_at: DateTime | None = None
+
+    @property
+    def is_prebuilt(self) -> bool:
+        return isinstance(self.config, PrebuiltWorkerConfig)
 
 
 @serializable()
@@ -88,3 +96,8 @@ class SyftWorkerImage(SyftObject):
         if self.is_built and self.image_identifier:
             return self.image_identifier.full_name_with_tag
         return None
+
+
+@migrate(SyftWorkerImageV1, SyftWorkerImage)
+def migrate_syft_worker_image_v1_to_v2() -> list[Callable]:
+    return []  # no migrations needed at data level, only unique and searchable attributes changed

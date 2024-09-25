@@ -42,6 +42,7 @@ from ...types.uid import UID
 from ...util.telemetry import instrument
 from ..document_store_errors import NotFoundException
 from ..document_store_errors import StashException
+from ..document_store_errors import UniqueConstraintException
 from .db import DBManager
 from .query import Query
 from .schema import PostgresBase
@@ -74,6 +75,8 @@ def with_session(func: Callable[P, T]) -> Callable[P, T]:  # type: ignore
     """
     Decorator to inject a session into the function kwargs if it is not provided.
 
+    Make sure to pass session as a keyword argument to the function.
+
     TODO: This decorator is a temporary fix, we want to move to a DI approach instead:
     move db connection and session to context, and pass context to all stash methods.
     """
@@ -86,8 +89,9 @@ def with_session(func: Callable[P, T]) -> Callable[P, T]:  # type: ignore
     def wrapper(self: "ObjectStash[StashT]", *args: Any, **kwargs: Any) -> Any:
         if inject_session and kwargs.get("session") is None:
             with self.sessionmaker() as session:
-                kwargs["session"] = session
-                return func(self, *args, **kwargs)
+                with session.begin():
+                    kwargs["session"] = session
+                    return func(self, *args, **kwargs)
         return func(self, *args, **kwargs)
 
     return wrapper  # type: ignore
@@ -101,7 +105,7 @@ class ObjectStash(Generic[StashT]):
         self.db = store
         self.object_type = self.get_object_type()
         self.table = create_table(self.object_type, self.dialect)
-        self.sessionmaker = self.db.sessionmaker
+        self.sessionmaker: Callable[[], Session] = self.db.sessionmaker
 
     @property
     def dialect(self) -> sa.engine.interfaces.Dialect:
@@ -252,7 +256,8 @@ class ObjectStash(Generic[StashT]):
             return False
         elif len(results) == 1:
             result = results[0]
-            return result.id == obj.id
+            res = result.id == obj.id
+            return res
         return True
 
     @with_session
@@ -408,17 +413,20 @@ class ObjectStash(Generic[StashT]):
         add_storage_permission: bool = True,  # TODO: check the default value
         ignore_duplicates: bool = False,
         session: Session = None,
+        skip_check_type: bool = False,
     ) -> StashT:
-        if not self.allow_any_type:
+        if not self.allow_any_type and not skip_check_type:
             self.check_type(obj, self.object_type).unwrap()
         uid = obj.id
 
         # check if the object already exists
-        if self.exists(credentials, uid) or not self.is_unique(obj):
+        if self.exists(credentials, uid, session=session) or not self.is_unique(
+            obj, session=session
+        ):
             if ignore_duplicates:
                 return obj
             unique_fields_str = ", ".join(self.unique_fields)
-            raise StashException(
+            raise UniqueConstraintException(
                 public_message=f"Duplication Key Error for {obj}.\n"
                 f"The fields that should be unique are {unique_fields_str}."
             )
@@ -444,7 +452,6 @@ class ObjectStash(Generic[StashT]):
             raise StashException(
                 f"Error serializing object: {e}. Some fields are invalid."
             )
-
         # create the object with the permissions
         stmt = self.table.insert().values(
             id=uid,
@@ -453,7 +460,6 @@ class ObjectStash(Generic[StashT]):
             storage_permissions=storage_permissions,
         )
         session.execute(stmt)
-        session.commit()
         return self.get_by_uid(credentials, uid, session=session).unwrap()
 
     @as_result(ValidationError, AttributeError)
@@ -475,7 +481,13 @@ class ObjectStash(Generic[StashT]):
         self.object_type.model_validate(original_obj)
         return original_obj
 
-    @as_result(StashException, NotFoundException, AttributeError, ValidationError)
+    @as_result(
+        StashException,
+        NotFoundException,
+        AttributeError,
+        ValidationError,
+        UniqueConstraintException,
+    )
     @with_session
     def update(
         self,
@@ -501,8 +513,10 @@ class ObjectStash(Generic[StashT]):
             ).unwrap()
 
         # TODO has_permission is not used
-        if not self.is_unique(obj):
-            raise StashException(f"Some fields are not unique for {type(obj).__name__}")
+        if not self.is_unique(obj, session=session):
+            raise UniqueConstraintException(
+                f"Some fields are not unique for {type(obj).__name__} and unique fields {self.unique_fields}"
+            )
 
         stmt = self.table.update().where(self._get_field_filter("id", obj.id))
         stmt = self._apply_permission_filter(
@@ -520,14 +534,12 @@ class ObjectStash(Generic[StashT]):
                 f"Error serializing object: {e}. Some fields are invalid."
             )
         stmt = stmt.values(fields=fields)
-
         result = session.execute(stmt)
-        session.commit()
         if result.rowcount == 0:
             raise NotFoundException(
                 f"{self.object_type.__name__}: {obj.id} not found or no permission to update."
             )
-        return self.get_by_uid(credentials, obj.id).unwrap()
+        return self.get_by_uid(credentials, obj.id, session=session).unwrap()
 
     @as_result(StashException, NotFoundException)
     @with_session
@@ -547,7 +559,6 @@ class ObjectStash(Generic[StashT]):
             session=session,
         )
         result = session.execute(stmt)
-        session.commit()
         if result.rowcount == 0:
             raise NotFoundException(
                 f"{self.object_type.__name__}: {uid} not found or no permission to delete."
@@ -686,8 +697,6 @@ class ObjectStash(Generic[StashT]):
         stmt = self.table.update().where(self.table.c.id == permission.uid)
         stmt = stmt.values(permissions=list(existing_permissions))
         session.execute(stmt)
-        session.commit()
-
         return None
 
     @as_result(NotFoundException)
@@ -722,7 +731,6 @@ class ObjectStash(Generic[StashT]):
             .values(permissions=list(permissions))
         )
         session.execute(stmt)
-        session.commit()
         return None
 
     @with_session
@@ -879,7 +887,6 @@ class ObjectStash(Generic[StashT]):
             .values(storage_permissions=[str(uid) for uid in permissions])
         )
         session.execute(stmt)
-        session.commit()
         return None
 
     @as_result(StashException)
@@ -894,3 +901,26 @@ class ObjectStash(Generic[StashT]):
         if result is None:
             raise NotFoundException(f"No storage permissions found for uid: {uid}")
         return {UID(uid) for uid in result.storage_permissions}
+
+    @with_session
+    @as_result(StashException)
+    def upsert(
+        self,
+        credentials: SyftVerifyKey,
+        obj: StashT,
+        session: Session = None,
+    ) -> StashT:
+        """Insert or update an object in the stash if it already exists.
+        Atomic operation when using the same session for both operations.
+        """
+
+        try:
+            return self.set(
+                credentials=credentials,
+                obj=obj,
+                session=session,
+            ).unwrap()
+        except UniqueConstraintException:
+            return self.update(
+                credentials=credentials, obj=obj, session=session
+            ).unwrap()

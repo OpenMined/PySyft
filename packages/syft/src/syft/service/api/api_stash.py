@@ -33,22 +33,3 @@ class TwinAPIEndpointStash(ObjectStash[TwinAPIEndpoint]):
             return True
         except NotFoundException:
             return False
-
-    @as_result(StashException)
-    def upsert(
-        self,
-        credentials: SyftVerifyKey,
-        endpoint: TwinAPIEndpoint,
-        has_permission: bool = False,
-    ) -> TwinAPIEndpoint:
-        """Upsert an endpoint."""
-        exists = self.path_exists(credentials=credentials, path=endpoint.path).unwrap()
-
-        if exists:
-            super().delete_by_uid(credentials=credentials, uid=endpoint.id).unwrap()
-
-        return (
-            super()
-            .set(credentials=credentials, obj=endpoint, ignore_duplicates=False)
-            .unwrap()
-        )

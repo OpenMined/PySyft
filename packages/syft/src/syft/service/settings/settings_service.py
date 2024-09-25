@@ -11,7 +11,6 @@ from ...serde.serializable import serializable
 from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
-from ...store.sqlite_document_store import SQLiteStoreConfig
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_metaclass import Empty
@@ -26,6 +25,7 @@ from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
 from ..notifier.notifier_enums import EMAIL_TYPES
+from ..notifier.notifier_enums import NOTIFICATION_FREQUENCY
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -192,6 +192,26 @@ class SettingsService(AbstractService):
         else:
             # TODO: Turn this into a function?
             raise NotFoundException(public_message="Server settings not found")
+
+    @service_method(
+        path="settings.batch_notifications",
+        name="batch_notifications",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def batch_notifications(
+        self,
+        context: AuthedServiceContext,
+        email_type: EMAIL_TYPES,
+        frequency: NOTIFICATION_FREQUENCY,
+        start_time: str = "",
+    ) -> SyftSuccess:
+        result = context.server.services.notifier.set_email_batch(
+            context=context,
+            email_type=email_type,
+            frequency=frequency,
+            start_time=start_time,
+        ).unwrap()
+        return result
 
     @service_method(
         path="settings.enable_notifications",
@@ -415,7 +435,6 @@ class SettingsService(AbstractService):
             "server_side_type": server.server_side_type,
             # "port": server.port,
             "processes": server.processes,
-            "local_db": isinstance(server.document_store_config, SQLiteStoreConfig),
             "dev_mode": server.dev_mode,
             "reset": True,  # we should be able to get all the objects from migration data
             "tail": False,

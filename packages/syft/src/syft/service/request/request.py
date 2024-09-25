@@ -42,6 +42,7 @@ from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
+from ..code.user_code import ApprovalDecision
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..code.user_code import UserCodeStatusCollection
@@ -66,8 +67,10 @@ class RequestStatus(Enum):
     APPROVED = 2
 
     @classmethod
-    def from_usercode_status(cls, status: UserCodeStatusCollection) -> "RequestStatus":
-        if status.approved:
+    def from_usercode_status(
+        cls, status: UserCodeStatusCollection, context: AuthedServiceContext
+    ) -> "RequestStatus":
+        if status.get_is_approved(context):
             return RequestStatus.APPROVED
         elif status.denied:
             return RequestStatus.REJECTED
@@ -485,6 +488,15 @@ class Request(SyncableSyftObject):
         )
 
     @property
+    def status_id(self) -> UID:
+        for change in self.changes:
+            if isinstance(change, UserCodeStatusChange):
+                return change.linked_obj.object_uid  # type: ignore
+        raise SyftException(
+            public_message="This type of request does not have code associated with it."
+        )
+
+    @property
     def codes(self) -> Any:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
@@ -530,9 +542,11 @@ class Request(SyncableSyftObject):
             )
             if is_l0_deployment:
                 code_status = (
-                    self.code.get_status(context) if context else self.code.status
+                    self.code.get_status(context).unwrap()
+                    if context
+                    else self.code.status
                 )
-                return RequestStatus.from_usercode_status(code_status)
+                return RequestStatus.from_usercode_status(code_status, context)
         except Exception:  # nosec
             # this breaks when coming from a user submitting a request
             # which tries to send an email to the admin and ends up here
@@ -613,7 +627,11 @@ class Request(SyncableSyftObject):
                     "This request already has results published to the data scientist. "
                     "They will still be able to access those results."
                 )
-            api.code.update(id=self.code_id, l0_deny_reason=reason)
+            api.code_status.update(
+                id=self.code.status_link.object_uid,
+                decision=ApprovalDecision(status=UserCodeStatus.DENIED, reason=reason),
+            )
+
             return SyftSuccess(message=f"Request denied with reason: {reason}")
 
         return api.services.request.undo(uid=self.id, reason=reason)
@@ -1079,9 +1097,7 @@ class Request(SyncableSyftObject):
         pass
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
-        dependencies = []
-        dependencies.append(self.code_id)
-        return dependencies
+        return [self.code_id, self.status_id]
 
 
 @serializable()
@@ -1427,7 +1443,9 @@ class UserCodeStatusChange(Change):
     ) -> UserCodeStatusCollection:
         reason: str = context.extra_kwargs.get("reason", "")
         return status.mutate(
-            value=(UserCodeStatus.DENIED if undo else self.value, reason),
+            value=ApprovalDecision(
+                status=UserCodeStatus.DENIED if undo else self.value, reason=reason
+            ),
             server_name=context.server.name,
             server_id=context.server.id,
             verify_key=context.server.signing_key.verify_key,

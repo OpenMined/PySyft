@@ -921,15 +921,15 @@ class ObjectDiffBatch(SyftObject):
         return ""  # Turns off the _repr_markdown_ of SyftObject
 
     def _get_visual_hierarchy(
-        self, server: ObjectDiff, visited: set[UID] | None = None
+        self, node: ObjectDiff, visited: set[UID] | None = None
     ) -> dict[ObjectDiff, dict]:
         visited = visited if visited is not None else set()
-        visited.add(server.object_id)
+        visited.add(node.object_id)
 
         _, child_types_map = self.visual_hierarchy
-        child_types = child_types_map.get(server.obj_type, [])
-        dep_ids = self.dependencies.get(server.object_id, []) + self.dependents.get(
-            server.object_id, []
+        child_types = child_types_map.get(node.obj_type, [])
+        dep_ids = self.dependencies.get(node.object_id, []) + self.dependents.get(
+            node.object_id, []
         )
 
         result = {}
@@ -1444,10 +1444,10 @@ It will be available for review again."""
                 root_ids.append(diff.object_id)  # type: ignore
 
         # Dependents are the reverse edges of the dependency graph
-        obj_dependents = {}
+        obj_dependents: dict = {}
         for parent, children in obj_dependencies.items():
             for child in children:
-                obj_dependents[child] = obj_dependencies.get(child, []) + [parent]
+                obj_dependents[child] = obj_dependents.get(child, []) + [parent]
 
         for root_uid in root_ids:
             batch = ObjectDiffBatch.from_dependencies(

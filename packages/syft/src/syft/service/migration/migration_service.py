@@ -253,17 +253,19 @@ class MigrationService(AbstractService):
         migrated_objects: list[SyftObject],
         ignore_existing: bool = True,
     ) -> SyftSuccess:
-        return self._create_migrated_objects(
+        self._create_migrated_objects(
             context, migrated_objects, ignore_existing=ignore_existing
         ).unwrap()
+        return SyftSuccess(message="Created migration objects!")
 
     @as_result(SyftException)
     def _create_migrated_objects(
         self,
         context: AuthedServiceContext,
-        migrated_objects: list[SyftObject],
+        migrated_objects: dict[type[SyftObject], list[SyftObject]],
         ignore_existing: bool = True,
-    ) -> SyftSuccess:
+        skip_check_type: bool = False,
+    ) -> dict[type[SyftObject], list[SyftObject]]:
         # These tables are considered as startup tables, if the object is in this table and already exists,
         # we need to overwrite the existing object with the migrated object.
         STARTUP_TABLES = [
@@ -271,42 +273,48 @@ class MigrationService(AbstractService):
             ServerSettings,
             NotifierSettings,
         ]
-        for migrated_object in migrated_objects:
-            stash = self._search_stash_for_klass(
-                context, type(migrated_object)
-            ).unwrap()
+        created_objects: dict[type[SyftObject], list[SyftObject]] = {}
 
-            # If the object is in the startup tables, we need to overwrite the existing object
-            if type(migrated_object) in STARTUP_TABLES:
-                try:
-                    existing_obj = stash.get_by_unique_fields(
-                        credentials=context.credentials,
-                        obj=migrated_object,
-                    ).unwrap()
-                    stash.delete_by_uid(
-                        context.credentials, uid=existing_obj.id
-                    ).unwrap()
-                except NotFoundException:
-                    pass
+        for key, objects in migrated_objects.items():
+            created_objects[key] = []
+            for migrated_object in objects:
+                stash = self._search_stash_for_klass(
+                    context, type(migrated_object)
+                ).unwrap()
 
-            result = stash.set(
-                context.credentials,
-                obj=migrated_object,
-            )
-            # Exception from the new Error Handling pattern, no need to change
-            if result.is_err():
-                # TODO: subclass a DuplicationKeyError
-                if ignore_existing and (
-                    "Duplication Key Error" in result.err()._private_message  # type: ignore
-                    or "Duplication Key Error" in result.err().public_message  # type: ignore
-                ):
-                    print(
-                        f"{type(migrated_object)} #{migrated_object.id} already exists"
-                    )
-                    continue
-                else:
-                    result.unwrap()  # this will raise the exception inside the wrapper
-        return SyftSuccess(message="Created migrate objects!")
+                # If the object is in the startup tables, we need to overwrite the existing object
+                if type(migrated_object) in STARTUP_TABLES:
+                    try:
+                        existing_obj = stash.get_by_unique_fields(
+                            credentials=context.credentials,
+                            obj=migrated_object,
+                        ).unwrap()
+                        stash.delete_by_uid(
+                            context.credentials, uid=existing_obj.id
+                        ).unwrap()
+                    except NotFoundException:
+                        pass
+
+                result = stash.set(
+                    context.credentials,
+                    obj=migrated_object,
+                    skip_check_type=skip_check_type,
+                )
+                # Exception from the new Error Handling pattern, no need to change
+                if result.is_err():
+                    # TODO: subclass a DuplicationKeyError
+                    if ignore_existing and (
+                        "Duplication Key Error" in result.err()._private_message  # type: ignore
+                        or "Duplication Key Error" in result.err().public_message  # type: ignore
+                    ):
+                        print(
+                            f"{type(migrated_object)} #{migrated_object.id} already exists"
+                        )
+                        continue
+                    else:
+                        result.unwrap()  # this will raise the exception inside the wrapper
+                created_objects[key].append(result.unwrap())
+        return created_objects
 
     @as_result(SyftException)
     def _update_migrated_objects(
@@ -331,6 +339,7 @@ class MigrationService(AbstractService):
         migration_objects: dict[type[SyftObject], list[SyftObject]],
     ) -> list[SyftObject]:
         migrated_objects = []
+
         for klass, objects in migration_objects.items():
             canonical_name = klass.__canonical_name__
             latest_version = SyftObjectRegistry.get_latest_version(canonical_name)
@@ -462,11 +471,16 @@ class MigrationService(AbstractService):
                 "please use 'client.load_migration_data' instead."
             )
 
+        created_objects = self._create_migrated_objects(
+            context, migration_data.store_objects, skip_check_type=True
+        ).unwrap()
+
         # migrate + apply store objects
         migrated_objects = self._migrate_objects(
-            context, migration_data.store_objects
+            context,
+            created_objects,
         ).unwrap()
-        self._create_migrated_objects(context, migrated_objects).unwrap()
+        self._update_migrated_objects(context, migrated_objects).unwrap()
 
         # migrate+apply action objects
         migrated_actionobjects = self._migrate_objects(

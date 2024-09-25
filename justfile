@@ -188,10 +188,6 @@ start-signoz: && (apply-signoz _ctx_signoz) (setup-signoz _ctx_signoz)
         --port {{ port_signoz_otel }}:4317@loadbalancer \
         --k3s-arg "--disable=metrics-server@server:*"
 
-    @printf "Started SigNoz\n\
-        Dashboard: \033[1;36mhttp://localhost:{{ port_signoz_ui }}\033[0m\n\
-        OTEL Endpoint: \033[1;36mhttp://localhost:{{ port_signoz_otel }}\033[0m\n"
-
 # Remove SigNoz from the cluster
 [group('signoz')]
 delete-signoz: (delete-cluster _name_signoz)
@@ -257,19 +253,50 @@ apply-signoz kube_context:
 [group('signoz')]
 [private]
 setup-signoz kube_context:
-    @echo "Waiting for SigNoz frontend to be available..."
-    @bash ./packages/grid/scripts/wait_for.sh service signoz-frontend \
+    #!/bin/bash
+    set -euo pipefail
+
+    SIGNOZ_URL="http://localhost:3301"
+    USERNAME="admin@localhost"
+    PASSWORD="password"
+    DASHBOARDS=(
+        "https://raw.githubusercontent.com/SigNoz/dashboards/refs/heads/main/k8s-infra-metrics/kubernetes-pod-metrics-detailed.json"
+        "https://raw.githubusercontent.com/SigNoz/dashboards/refs/heads/main/k8s-infra-metrics/kubernetes-node-metrics-detailed.json"
+        "https://raw.githubusercontent.com/SigNoz/dashboards/refs/heads/main/k8s-infra-metrics/kubernetes-cluster-metrics.json"
+    )
+
+    echo "Waiting for SigNoz frontend to be available..."
+    bash ./packages/grid/scripts/wait_for.sh service signoz-frontend \
         --namespace platform --context {{ kube_context }} &> /dev/null
 
-    @echo "Setting up SigNoz account"
-    @curl --retry 5 --retry-all-errors -X POST \
+    echo "Setting up SigNoz account..."
+    curl -s --retry 5 --retry-all-errors -X POST \
         -H "Content-Type: application/json" \
-        --data '{"email":"admin@localhost","name":"admin","orgName":"openmined","password":"password"}' \
-        http://localhost:3301/api/v1/register
+        --data "{\"email\":\"$USERNAME\",\"name\":\"admin\",\"orgName\":\"openmined\",\"password\":\"$PASSWORD\"}" \
+        "$SIGNOZ_URL/api/v1/register"
 
-    @printf '\nSignoz is running on http://localhost:3301\n\
-        Email: \033[1;36madmin@localhost\033[0m\n\
-        Password: \033[1;36mpassword\033[0m\n'
+    echo "Adding some dashboards..."
+    AUTH_TOKEN=$(curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -d "{\"email\":\"$USERNAME\",\"password\":\"$PASSWORD\"}" \
+        "$SIGNOZ_URL/api/v1/login" | jq -r .accessJwt)
+
+    if [ -z "$AUTH_TOKEN" ] || [ "$AUTH_TOKEN" = "null" ]; then
+        echo "Could not set up dashboards. But you can do it manually from the dashboard."
+        exit 0
+    fi
+
+    for URL in "${DASHBOARDS[@]}"; do
+        curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $AUTH_TOKEN" \
+            -d "$(curl -s --retry 3 --retry-all-errors "$URL")" \
+            "$SIGNOZ_URL/api/v1/dashboards" &> /dev/null
+    done
+
+    printf "\nSignoz is ready and running on %s\n" "$SIGNOZ_URL"
+    printf "Email: \033[1;36m%s\033[0m\n" "$USERNAME"
+    printf "Password: \033[1;36m%s\033[0m\n" "$PASSWORD"
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -288,6 +315,7 @@ delete-clusters:
 create-cluster cluster_name port *args='': start-registry && (apply-coredns "k3d-" + cluster_name) (apply-collector "k3d-" + cluster_name)
     k3d cluster create {{ cluster_name }} \
         --port {{ port }}:80@loadbalancer \
+        --k3s-arg "--disable=metrics-server@server:*" \
         --registry-use {{ registry_url }} {{ args }}
 
 [group('cluster')]

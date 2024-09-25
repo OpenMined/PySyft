@@ -1,5 +1,6 @@
 # stdlib
 from datetime import datetime
+from datetime import timedelta
 import logging
 
 # third party
@@ -18,10 +19,12 @@ from ..notification.email_templates import PasswordResetTemplate
 from ..notification.notifications import Notification
 from ..response import SyftSuccess
 from ..service import AbstractService
+from .notifier import EmailFrequency
 from .notifier import NotificationPreferences
 from .notifier import NotifierSettings
 from .notifier import UserNotificationActivity
 from .notifier_enums import EMAIL_TYPES
+from .notifier_enums import NOTIFICATION_FREQUENCY
 from .notifier_enums import NOTIFIERS
 from .notifier_stash import NotifierStash
 
@@ -189,6 +192,42 @@ class NotifierService(AbstractService):
         context.server.services.settings.update(context, notifications_enabled=True)
         return SyftSuccess(message="Notifications enabled successfully.")
 
+    @as_result(SyftException)
+    def set_email_batch(
+        self,
+        context: AuthedServiceContext,
+        email_type: EMAIL_TYPES,
+        frequency: NOTIFICATION_FREQUENCY,
+        start_time: str = "",
+    ) -> SyftSuccess:
+        if start_time == "" and frequency is not NOTIFICATION_FREQUENCY.INSTANT:
+            raise SyftException(
+                "If frequency isn't INSTANT, you must set a start time for the notifications to be dispatched."
+            )
+
+        if frequency is not NOTIFICATION_FREQUENCY.INSTANT:
+            start_time = start_time.lower()
+            try:
+                if "pm" in start_time or "am" in start_time:
+                    time_obj = datetime.strptime(start_time, "%I:%M %p")
+                else:
+                    time_obj = datetime.strptime(start_time, "%H:%M")
+            except ValueError:
+                raise SyftException(
+                    "Invalid time format."
+                    + "Please enter the start time in one of the following format examples:"
+                    + "'14:00' or '2:00 PM'."
+                )
+        else:
+            time_obj = datetime.now()
+
+        notifier = self.stash.get(credentials=context.credentials).unwrap()
+        notifier.email_frequency[email_type.value] = EmailFrequency(
+            frequency=frequency, start_time=time_obj
+        )
+        self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
+        return SyftSuccess(message="Configuration set successfully.")
+
     @as_result(StashException)
     def turn_off(
         self,
@@ -228,6 +267,39 @@ class NotifierService(AbstractService):
             context, notifier_type=notifier_type
         )
         return result
+
+    def is_time_to_dispatch(
+        self, notification_frequency: EmailFrequency, current_time: datetime
+    ) -> bool:
+        frequency = notification_frequency.frequency
+        start_time = notification_frequency.start_time
+
+        # Define period_timedelta based on frequency
+        if frequency == NOTIFICATION_FREQUENCY.INSTANT:
+            return True
+        if frequency == NOTIFICATION_FREQUENCY.SIX_HOURS:
+            period = timedelta(hours=6)
+        elif frequency == NOTIFICATION_FREQUENCY.TWELVE_HOURS:
+            period = timedelta(hours=12)
+        elif frequency == NOTIFICATION_FREQUENCY.DAILY:
+            period = timedelta(days=1)
+        elif frequency == NOTIFICATION_FREQUENCY.WEEKLY:
+            period = timedelta(weeks=1)
+
+        # Calculate how many full periods have passed since start_time
+        elapsed_time = current_time - start_time
+        if elapsed_time < timedelta(0):
+            return False  # Current time is before the start time
+
+        periods_elapsed = int(elapsed_time // period)
+        next_dispatch_time = start_time + periods_elapsed * period
+
+        # Allow a small margin of error (e.g., 1 minute) to account for processing delays
+        margin = timedelta(minutes=1)
+        time_difference = current_time - next_dispatch_time
+
+        # Check if current_time is within the margin of the scheduled dispatch time
+        return timedelta(0) <= time_difference <= margin
 
     @staticmethod
     @as_result(SyftException)
@@ -385,11 +457,32 @@ class NotifierService(AbstractService):
                     )
                 }
 
-            self.stash.update(credentials=admin_key, obj=notifier).unwrap()
+            email_frequency = notifier.email_frequency.get(
+                notification.email_template.__name__,
+                EmailFrequency(frequency=NOTIFICATION_FREQUENCY.INSTANT),
+            )
 
-            notifier.send_notifications(
-                context=context, notification=notification
-            ).unwrap()
+            if email_frequency.frequency == NOTIFICATION_FREQUENCY.INSTANT:
+                notifier.send_notifications(
+                    context=context, notification=notification
+                ).unwrap()
+            else:
+                queue_dict = notifier.email_queue.get(
+                    notification.email_template.__name__, {}
+                )
+                if len(queue_dict) == 0:
+                    notifier.email_queue[notification.email_template.__name__] = (
+                        queue_dict
+                    )
+
+                user_queue = queue_dict.get(notification.to_user_verify_key, [])
+
+                if len(user_queue) == 0:
+                    queue_dict[notification.to_user_verify_key] = user_queue
+
+                user_queue.append(notification)
+
+            self.stash.update(credentials=admin_key, obj=notifier).unwrap()
 
         # If notifier isn't active, return None
         return SyftSuccess(message="Notification dispatched successfully")

@@ -14,7 +14,7 @@ repos:
         exclude: ^(packages/grid/frontend/|.vscode)
       - id: check-added-large-files
         always_run: true
-        exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif)
+        exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif|^notebooks/scenarios/bigquery/upgradability/sync/migration_.*\.blob)
       - id: check-yaml
         always_run: true
         exclude: ^(packages/grid/k8s/rendered/|packages/grid/helm/)
