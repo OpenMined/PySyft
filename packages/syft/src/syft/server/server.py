@@ -6,6 +6,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from datetime import MINYEAR
 from datetime import datetime
+from datetime import timezone
 from functools import partial
 import hashlib
 import json
@@ -14,6 +15,7 @@ import os
 from pathlib import Path
 import subprocess  # nosec
 import sys
+import threading
 from time import sleep
 import traceback
 from typing import Any
@@ -455,6 +457,42 @@ class Server(AbstractServer):
             self.run_peer_health_checks(context=context)
 
         ServerRegistry.set_server_for(self.id, self)
+        email_dispatcher = threading.Thread(target=self.email_notification_dispatcher)
+        email_dispatcher.daemon = True
+        email_dispatcher.start()
+
+    def email_notification_dispatcher(self) -> None:
+        lock = threading.Lock()
+        while True:
+            # Use admin context to have access to the notifier obj
+            context = AuthedServiceContext(
+                server=self,
+                credentials=self.verify_key,
+                role=ServiceRole.ADMIN,
+            )
+            # Get notitifer settings
+            notifier_settings = self.services.notifier.settings(
+                context=context
+            ).unwrap()
+            lock.acquire()
+            # Iterate over email_types and its queues
+            # Ex: {'EmailRequest': {VerifyKey: [], VerifyKey: [], ...}}
+            for email_template, email_queue in notifier_settings.email_queue.items():
+                # Get the email frequency of that specific email type
+                email_frequency = notifier_settings.email_frequency[email_template]
+                for verify_key, queue in email_queue.items():
+                    if self.services.notifier.is_time_to_dispatch(
+                        email_frequency, datetime.now(timezone.utc)
+                    ):
+                        notifier_settings.send_batched_notification(
+                            context=context, notification_queue=queue
+                        ).unwrap()
+                        notifier_settings.email_queue[email_template][verify_key] = []
+                        self.services.notifier.stash.update(
+                            credentials=self.verify_key, obj=notifier_settings
+                        ).unwrap()
+            lock.release()
+            sleep(15)
 
     def set_log_level(self, log_level: int | str | None) -> None:
         def determine_log_level(
