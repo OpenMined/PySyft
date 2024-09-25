@@ -303,8 +303,6 @@ async def admin_watch_sync(ctx: SimulatorContext, admin_client: SyftClient):
         # Check if all requests are approved or denied
         requests = admin_client.requests.get_all()
         ctx.logger.info(f"Number of requests: {len(requests)}")
-        for req in requests:
-            ctx.logger.info(f"Request status: {req.get_status()}")
         if len(requests) == NUM_USERS:  # NOTE: currently hard coding this since
             # each user in `user_flow` submits 1 query request
             pending_requests = []
@@ -315,6 +313,7 @@ async def admin_watch_sync(ctx: SimulatorContext, admin_client: SyftClient):
                 ctx.logger.info("Admin low: All requests are approved / denined.")
                 ctx.logger.info(f"Requests: {requests}")
                 ctx.events.trigger(Event.ADMIN_LOW_ALL_RESULTS_AVAILABLE)
+                break
             else:
                 ctx.logger.info(f"Admin low: Pending requests: {pending_requests}")
 
@@ -442,7 +441,7 @@ async def admin_sync_to_low_flow(
     low_client = sy.login(**admin_auth_low)
     ctx.logger.info("Admin: logged in to low-side")
 
-    while not ctx.events.is_set(Event.ADMIN_HIGHSIDE_FLOW_COMPLETED):
+    while True:
         await asyncio.sleep(random.uniform(5, 10))
 
         result = sy.sync(high_client, low_client)
@@ -457,6 +456,10 @@ async def admin_sync_to_low_flow(
         # trigger an event so that guest users can start querying
         ctx.events.trigger(Event.ADMIN_SYNCED_HIGH_TO_LOW)
         ctx.logger.info("Admin high: Synced high->low")
+
+        if ctx.events.is_set(Event.ADMIN_HIGHSIDE_FLOW_COMPLETED):
+            ctx.logger.info("Admin high: Done syncing high->low")
+            break
 
 
 @sim_activity(trigger=Event.ADMIN_SYNC_COMPLETED)
@@ -483,6 +486,10 @@ async def admin_sync_to_high_flow(
 
         ctx.events.trigger(Event.ADMIN_SYNCED_LOW_TO_HIGH)
         ctx.logger.info("Admin low: Synced low->high")
+
+        if ctx.events.is_set(Event.ADMIN_HIGHSIDE_FLOW_COMPLETED):
+            ctx.logger.info("Admin high: Done syncing high->low")
+            break
 
 
 # ------------------------------------------------------------------------------------------------
@@ -534,6 +541,7 @@ async def test_l0_scenario(request):
             # admin lowside
             Event.GUEST_USERS_CREATED,
             Event.ADMIN_LOWSIDE_WORKER_POOL_CREATED,
+            Event.ADMIN_LOW_ALL_RESULTS_AVAILABLE,
             Event.ADMIN_LOWSIDE_FLOW_COMPLETED,
             # admin high side
             Event.ADMIN_ALL_ENDPOINTS_CREATED,
@@ -542,8 +550,8 @@ async def test_l0_scenario(request):
             # admin sync
             Event.ADMIN_SYNC_COMPLETED,
             # users
-            # Event.USER_CAN_QUERY_TEST_ENDPOINT,
-            # Event.USER_FLOW_COMPLETED,
+            Event.USER_CAN_QUERY_TEST_ENDPOINT,
+            Event.USER_FLOW_COMPLETED,
         ],
         timeout=300,
     )
