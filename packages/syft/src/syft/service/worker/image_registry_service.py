@@ -41,9 +41,10 @@ class SyftImageRegistryService(AbstractService):
         except Exception as e:
             raise SyftException(public_message=f"Failed to create registry. {e}")
 
-        self.stash.set(context.credentials, registry).unwrap()
+        stored_registry = self.stash.set(context.credentials, registry).unwrap()
         return SyftSuccess(
-            message=f"Image Registry ID: {registry.id} created successfully"
+            message=f"Image Registry ID: {registry.id} created successfully",
+            value=stored_registry,
         )
 
     @service_method(

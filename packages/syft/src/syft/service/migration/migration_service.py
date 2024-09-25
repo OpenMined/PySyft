@@ -23,6 +23,7 @@ from ..action.action_permissions import StoragePermission
 from ..action.action_store import ActionObjectStash
 from ..context import AuthedServiceContext
 from ..notifier.notifier import NotifierSettings
+from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -30,8 +31,6 @@ from ..settings.settings import ServerSettings
 from ..user.user import User
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..worker.utils import DEFAULT_WORKER_POOL_NAME
-from ..worker.worker_pool import SyftWorker
-from ..worker.worker_pool import WorkerPool
 from .object_migration_state import MigrationData
 from .object_migration_state import StoreMetadata
 from .object_migration_state import SyftMigrationStateStash
@@ -271,8 +270,6 @@ class MigrationService(AbstractService):
             User,
             ServerSettings,
             NotifierSettings,
-            WorkerPool,
-            SyftWorker,
         ]
         for migrated_object in migrated_objects:
             stash = self._search_stash_for_klass(
@@ -480,3 +477,28 @@ class MigrationService(AbstractService):
         # apply metadata
         self._update_store_metadata(context, migration_data.metadata).unwrap()
         return SyftSuccess(message="Migration completed successfully")
+
+    # @service_method(
+    #     path="migration.reset_and_restore",
+    #     name="reset_and_restore",
+    #     roles=ADMIN_ROLE_LEVEL,
+    #     unwrap_on_success=False,
+    # )
+    def reset_and_migrate(
+        self,
+        context: AuthedServiceContext,
+        migration_data: MigrationData,
+    ) -> SyftSuccess | SyftError:
+        try:
+            root_verify_key = context.server.verify_key
+            context.server.db.init_tables(reset=True)
+            context.credentials = root_verify_key
+            self.apply_migration_data(context, migration_data)
+        except Exception as e:
+            return SyftError.from_exception(
+                context=context,
+                exc=e,
+                include_traceback=True,
+            )
+
+        return SyftSuccess(message="Database reset successfully.")

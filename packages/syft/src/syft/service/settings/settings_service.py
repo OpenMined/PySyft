@@ -397,32 +397,6 @@ class SettingsService(AbstractService):
             return welcome_msg_class(text=result)
         raise SyftException(public_message="There's no welcome message")
 
-    # @service_method(
-    #     path="settings.reset_database",
-    #     name="reset_database",
-    #     roles=ADMIN_ROLE_LEVEL,
-    #     unwrap_on_success=False,
-    # )
-    # def reset_database(
-    #     self,
-    #     context: AuthedServiceContext,
-    # ) -> SyftSuccess | SyftError:
-    #     try:
-    #         context.server.db.init_tables(reset=True)
-    #         create_root_admin_if_not_exists(
-    #             name=get_default_root_username(),
-    #             email=get_default_root_email(),
-    #             password=get_default_root_password(),
-    #             server=context.server,
-    #         )
-    #     except Exception as e:
-    #         return SyftError.from_exception(
-    #             context=context,
-    #             exc=e,
-    #             include_traceback=True,
-    #         )
-    #     return SyftSuccess(message="Database reset successfully.")
-
     @service_method(
         path="settings.get_server_config",
         name="get_server_config",
