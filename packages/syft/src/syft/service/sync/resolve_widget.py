@@ -20,6 +20,7 @@ from ipywidgets import VBox
 
 # relative
 from ...client.sync_decision import SyncDirection
+from ...types.errors import SyftException
 from ...types.uid import UID
 from ...util.notebook_ui.components.sync import Alert
 from ...util.notebook_ui.components.sync import CopyIDButton
@@ -33,13 +34,13 @@ from ...util.notebook_ui.styles import CSS_CODE
 from ..action.action_object import ActionObject
 from ..api.api import TwinAPIEndpoint
 from ..log.log import SyftLog
-from ..response import SyftError
 from ..response import SyftSuccess
 from .diff_state import ObjectDiff
 from .diff_state import ObjectDiffBatch
+from .widget_output import Output
 
 # Standard div Jupyter Lab uses for notebook outputs
-# This is needed to use alert styles from SyftSuccess and SyftError
+# This is needed to use alert styles from SyftSuccess and SyftException
 NOTEBOOK_OUTPUT_DIV = """
 <div class="lm-Widget
             jp-RenderedHTMLCommon
@@ -434,7 +435,7 @@ class ResolveWidget:
         ] = {}
         self.on_sync_callback = on_sync_callback
         self.main_widget = self.build()
-        self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftError
+        self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftException
         self.widget = VBox(
             [self.build_css_widget(), self.main_widget, self.result_widget]
         )
@@ -451,11 +452,11 @@ class ResolveWidget:
         for widget in self.id2widget.values():
             widget.set_share_private_data()
 
-    def click_share_private_data(self, uid: UID | str) -> SyftError | SyftSuccess:
+    def click_share_private_data(self, uid: UID | str) -> SyftSuccess:
         if isinstance(uid, str):
             uid = UID(uid)
         if uid not in self.id2widget:
-            return SyftError(message="Object not found in this widget")
+            raise SyftException(public_message="Object not found in this widget")
 
         widget = self.id2widget[uid]
         widget.set_share_private_data()
@@ -469,13 +470,13 @@ class ResolveWidget:
     def get_mockify_state(self) -> dict[UID, bool]:
         return {uid: widget.mockify for uid, widget in self.id2widget.items()}
 
-    def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess | SyftError:
+    def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess:
         # relative
         from ...client.syncing import handle_sync_batch
 
         if self.is_synced:
-            return SyftError(
-                message="The changes in this widget have already been synced."
+            raise SyftException(
+                public_message="The changes in this widget have already been synced."
             )
 
         res = handle_sync_batch(
@@ -505,20 +506,25 @@ class ResolveWidget:
         return dependent_diff_widgets
 
     @property
-    def dependent_root_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
+    def dependency_root_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
         dependencies = self.obj_diff_batch.get_dependencies(
             include_roots=True, include_batch_root=False
         )
-        other_roots = [
-            d for d in dependencies if d.object_id in self.obj_diff_batch.global_roots
-        ]
+
+        # we show these above the line
+        dependents = self.obj_diff_batch.get_dependents(
+            include_roots=False, include_batch_root=False
+        )
+        dependent_ids = [x.object_id for x in dependents]
+        # we skip the ones we already show above the line in the widget
+        context_diffs = [d for d in dependencies if d.object_id not in dependent_ids]
         widgets = [
             CollapsableObjectDiffWidget(
                 diff,
                 direction=self.obj_diff_batch.sync_direction,
                 build_state=self.build_state,
             )
-            for diff in other_roots
+            for diff in context_diffs
         ]
         return widgets
 
@@ -531,13 +537,13 @@ class ResolveWidget:
         )
         return obj_diff_widget
 
-    def set_widget_result_state(self, res: SyftSuccess | SyftError) -> None:
+    def set_widget_result_state(self, res: SyftSuccess) -> None:
         self.is_synced = True
         self.set_result_message(res)
         self.hide_main_widget()
         self.show_result_widget()
 
-    def set_result_message(self, result: SyftSuccess | SyftError) -> None:
+    def set_result_message(self, result: SyftSuccess) -> None:
         result_html = result._repr_html_()
         # Wrap in div to match Jupyter Lab output styling
         result_html = NOTEBOOK_OUTPUT_DIV.format(content=result_html)
@@ -559,7 +565,7 @@ class ResolveWidget:
         self.id2widget = {}
 
         batch_diff_widgets = self.batch_diff_widgets
-        dependent_batch_diff_widgets = self.dependent_root_diff_widgets
+        dependent_batch_diff_widgets = self.dependency_root_diff_widgets
         main_object_diff_widget = self.main_object_diff_widget
 
         self.id2widget[main_object_diff_widget.diff.object_id] = main_object_diff_widget
@@ -636,7 +642,7 @@ class PaginationControl:
         self.previous_button.on_click(self.go_to_previous)
         self.next_button.on_click(self.go_to_next)
         self.last_button.on_click(self.go_to_last)
-        self.output = widgets.Output()
+        self.output = Output()
 
         self.buttons = widgets.HBox(
             [
@@ -759,7 +765,7 @@ class PaginatedResolveWidget:
             on_paginate_callback=self.on_paginate,
         )
 
-        self.table_output = widgets.Output()
+        self.table_output = Output()
         with self.table_output:
             display.display(display.HTML(self.batch_table))
             highlight_single_row(
@@ -792,7 +798,7 @@ class PaginatedResolveWidget:
     def build(self) -> widgets.VBox:
         return widgets.VBox([self.table_output, self.paginated_widget.build()])
 
-    def click_sync(self, index: int) -> SyftSuccess | SyftError:
+    def click_sync(self, index: int) -> SyftSuccess:
         return self.resolve_widgets[index].click_sync()
 
     def click_share_all_private_data(self, index: int) -> None:

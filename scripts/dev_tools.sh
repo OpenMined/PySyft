@@ -23,15 +23,13 @@ function docker_list_exposed_ports() {
 
 if [[ -z "$1" ]]; then
     # list db, redis, rabbitmq, and seaweedfs ports
-    docker_list_exposed_ports "db\|redis\|queue\|seaweedfs\|jaeger\|mongo"
+    docker_list_exposed_ports "db\|seaweedfs"
 else
     PORT=$1
     if docker ps | grep ":${PORT}" | grep -q 'redis'; then
         ${command} redis://127.0.0.1:${PORT}
     elif docker ps | grep ":${PORT}" | grep -q 'postgres'; then
         ${command} postgresql://postgres:changethis@127.0.0.1:${PORT}/app
-    elif docker ps | grep ":${PORT}" | grep -q 'mongo'; then
-        ${command} mongodb://root:example@127.0.0.1:${PORT}
     else
         ${command} http://localhost:${PORT}
     fi

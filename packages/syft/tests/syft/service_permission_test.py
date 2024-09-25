@@ -2,19 +2,15 @@
 import pytest
 
 # syft absolute
-from syft import SyftError
 from syft.client.api import SyftAPICall
+from syft.types.errors import SyftException
 from syft.types.syft_object import EXCLUDED_FROM_SIGNATURE
 
 
 @pytest.fixture
 def guest_mock_user(root_verify_key, user_stash, guest_user):
-    result = user_stash.partition.set(root_verify_key, guest_user)
-    assert result.is_ok()
-
-    user = result.ok()
+    user = user_stash.set(root_verify_key, guest_user).unwrap()
     assert user is not None
-
     yield user
 
 
@@ -53,6 +49,5 @@ def test_directly_call_service_no_permission(guest_datasite_client):
         server_uid=guest_datasite_client.id, path="user.get_all", args=[], kwargs={}
     )
     signed_call = api_call.sign(guest_datasite_client.api.signing_key)
-    signed_result = guest_datasite_client.api.connection.make_call(signed_call)
-    result = signed_result.message.data
-    assert isinstance(result, SyftError)
+    with pytest.raises(SyftException):
+        guest_datasite_client.api.connection.make_call(signed_call)

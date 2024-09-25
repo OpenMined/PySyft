@@ -9,7 +9,7 @@ ARG TORCH_VERSION="2.2.2"
 
 # ==================== [BUILD STEP] Python Dev Base ==================== #
 
-FROM cgr.dev/chainguard/wolfi-base as syft_deps
+FROM cgr.dev/chainguard/wolfi-base AS syft_deps
 
 ARG PYTHON_VERSION
 ARG UV_VERSION
@@ -41,11 +41,11 @@ COPY syft/src/syft/VERSION ./syft/src/syft/
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     # remove torch because we already have the cpu version pre-installed
     sed --in-place /torch==/d ./syft/setup.cfg && \
-    uv pip install -e ./syft[data_science]
+    uv pip install -e ./syft[data_science,telemetry]
 
 # ==================== [Final] Setup Syft Server ==================== #
 
-FROM cgr.dev/chainguard/wolfi-base as backend
+FROM cgr.dev/chainguard/wolfi-base AS backend
 
 ARG PYTHON_VERSION
 ARG UV_VERSION
@@ -75,17 +75,19 @@ ENV \
     APPDIR="/root/app" \
     SERVER_NAME="default_server_name" \
     SERVER_TYPE="datasite" \
-    SERVICE_NAME="backend" \
+    SERVER_SIDE_TYPE="high" \
     RELEASE="production" \
     DEV_MODE="False" \
     DEBUGGER_ENABLED="False" \
+    TRACING="False" \
     CONTAINER_HOST="docker" \
     DEFAULT_ROOT_EMAIL="info@openmined.org" \
     DEFAULT_ROOT_PASSWORD="changethis" \
     STACK_API_KEY="changeme" \
-    MONGO_HOST="localhost" \
-    MONGO_PORT="27017" \
-    MONGO_USERNAME="root" \
-    MONGO_PASSWORD="example"
+    POSTGRESQL_DBNAME="syftdb_postgres" \
+    POSTGRESQL_HOST="localhost" \
+    POSTGRESQL_PORT="5432" \
+    POSTGRESQL_USERNAME="syft_postgres" \
+    POSTGRESQL_PASSWORD="example"
 
 CMD ["bash", "./grid/start.sh"]

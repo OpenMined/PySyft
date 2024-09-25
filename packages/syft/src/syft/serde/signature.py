@@ -86,6 +86,15 @@ def signature_remove_context(signature: Signature) -> Signature:
     )
 
 
+def signature_remove(signature: Signature, args: list[str]) -> Signature:
+    params = dict(signature.parameters)
+    for arg in args:
+        params.pop(arg, None)
+    return Signature(
+        list(params.values()), return_annotation=signature.return_annotation
+    )
+
+
 def get_str_signature_from_docstring(doc: str, callable_name: str) -> str | None:
     if not doc or callable_name not in doc:
         return None

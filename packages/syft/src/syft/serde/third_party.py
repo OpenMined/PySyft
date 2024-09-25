@@ -18,9 +18,6 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pydantic
 from pydantic._internal._model_construction import ModelMetaclass
-from pymongo.collection import Collection
-from result import Err
-from result import Ok
 
 # relative
 from ..types.dicttuple import DictTuple
@@ -56,20 +53,9 @@ recursive_serde_register(
 
 
 # result Ok and Err
-recursive_serde_register(
-    Ok, serialize_attrs=["_value"], canonical_name="result_Ok", version=1
-)
-recursive_serde_register(
-    Err, serialize_attrs=["_value"], canonical_name="result_Err", version=1
-)
 
 # exceptions
 recursive_serde_register(cls=TypeError, canonical_name="TypeError", version=1)
-
-# mongo collection
-recursive_serde_register_type(
-    Collection, canonical_name="pymongo_collection", version=1
-)
 
 
 def serialize_dataframe(df: DataFrame) -> bytes:

@@ -1,59 +1,48 @@
 # stdlib
 
 # third party
-from result import Result
 
 # relative
+from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
-from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
+from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
+from ...types.syft_object import PartialSyftObject
+from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
+from .user_code import ApprovalDecision
 from .user_code import UserCodeStatusCollection
 
 
-@instrument
-@serializable(canonical_name="StatusStash", version=1)
-class StatusStash(BaseUIDStoreStash):
-    object_type = UserCodeStatusCollection
+@serializable(canonical_name="StatusSQLStash", version=1)
+class StatusStash(ObjectStash[UserCodeStatusCollection]):
     settings: PartitionSettings = PartitionSettings(
         name=UserCodeStatusCollection.__canonical_name__,
         object_type=UserCodeStatusCollection,
     )
 
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store)
-        self.store = store
-        self.settings = self.settings
-        self._object_type = self.object_type
 
-    def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[UserCodeStatusCollection, str]:
-        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        return self.query_one(credentials=credentials, qks=qks)
+class CodeStatusUpdate(PartialSyftObject):
+    __canonical_name__ = "CodeStatusUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    decision: ApprovalDecision
 
 
-@instrument
 @serializable(canonical_name="UserCodeStatusService", version=1)
 class UserCodeStatusService(AbstractService):
-    store: DocumentStore
     stash: StatusStash
 
-    def __init__(self, store: DocumentStore):
-        self.store = store
+    def __init__(self, store: DBManager):
         self.stash = StatusStash(store=store)
 
     @service_method(path="code_status.create", name="create", roles=ADMIN_ROLE_LEVEL)
@@ -61,46 +50,56 @@ class UserCodeStatusService(AbstractService):
         self,
         context: AuthedServiceContext,
         status: UserCodeStatusCollection,
-    ) -> UserCodeStatusCollection | SyftError:
-        result = self.stash.set(
+    ) -> UserCodeStatusCollection:
+        res = self.stash.set(
             credentials=context.credentials,
             obj=status,
-        )
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        ).unwrap()
+        return res
+
+    @service_method(
+        path="code_status.update",
+        name="update",
+        roles=ADMIN_ROLE_LEVEL,
+        autosplat=["code_update"],
+        unwrap_on_success=False,
+    )
+    def update(
+        self, context: AuthedServiceContext, code_update: CodeStatusUpdate
+    ) -> SyftSuccess:
+        existing_status = self.stash.get_by_uid(
+            context.credentials, uid=code_update.id
+        ).unwrap()
+        server_identity = ServerIdentity.from_server(context.server)
+        existing_status.status_dict[server_identity] = code_update.decision
+
+        res = self.stash.update(context.credentials, existing_status).unwrap()
+        return SyftSuccess(message="UserCode updated successfully", value=res)
 
     @service_method(
         path="code_status.get_by_uid", name="get_by_uid", roles=GUEST_ROLE_LEVEL
     )
     def get_status(
         self, context: AuthedServiceContext, uid: UID
-    ) -> UserCodeStatusCollection | SyftError:
+    ) -> UserCodeStatusCollection:
         """Get the status of a user code item"""
-        result = self.stash.get_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        return self.stash.get_by_uid(context.credentials, uid=uid).unwrap()
 
     @service_method(path="code_status.get_all", name="get_all", roles=ADMIN_ROLE_LEVEL)
-    def get_all(
-        self, context: AuthedServiceContext
-    ) -> list[UserCodeStatusCollection] | SyftError:
+    def get_all(self, context: AuthedServiceContext) -> list[UserCodeStatusCollection]:
         """Get all user code item statuses"""
-        result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        return self.stash.get_all(context.credentials).unwrap()
 
-    @service_method(path="code_status.remove", name="remove", roles=ADMIN_ROLE_LEVEL)
-    def remove(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> SyftSuccess | SyftError:
+    @service_method(
+        path="code_status.remove",
+        name="remove",
+        roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
+    def remove(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         """Remove a user code item status"""
-        result = self.stash.delete_by_uid(context.credentials, uid=uid)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+        self.stash.delete_by_uid(context.credentials, uid=uid).unwrap()
+        return SyftSuccess(message=f"{uid} successfully deleted", value=uid)
 
 
 TYPE_TO_SERVICE[UserCodeStatusCollection] = UserCodeStatusService

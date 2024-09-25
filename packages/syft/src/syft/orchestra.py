@@ -5,11 +5,12 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Callable
-from enum import Enum
 import getpass
 import inspect
+import json
 import logging
 import os
+from pathlib import Path
 import sys
 from typing import Any
 
@@ -21,13 +22,15 @@ from .abstract_server import ServerSideType
 from .abstract_server import ServerType
 from .client.client import login as sy_login
 from .client.client import login_as_guest as sy_login_as_guest
+from .deployment_type import DeploymentType
 from .protocol.data_protocol import stage_protocol_changes
 from .server.datasite import Datasite
 from .server.enclave import Enclave
 from .server.gateway import Gateway
 from .server.uvicorn import serve_server
-from .service.response import SyftError
+from .service.queue.queue import ConsumerType
 from .service.response import SyftInfo
+from .types.errors import SyftException
 from .util.util import get_random_available_port
 
 logger = logging.getLogger(__name__)
@@ -61,13 +64,6 @@ def get_deployment_type(deployment_type: str | None) -> DeploymentType | None:
             f"deployment_type: {deployment_type} is not a valid DeploymentType: {DeploymentType}"
         )
     return None
-
-
-# Can also be specified by the environment variable
-# ORCHESTRA_DEPLOYMENT_TYPE
-class DeploymentType(Enum):
-    PYTHON = "python"
-    REMOTE = "remote"
 
 
 class ServerHandle:
@@ -142,7 +138,7 @@ class ServerHandle:
         if not password_verify:
             password_verify = getpass.getpass("Confirm Password: ")
         if password != password_verify:
-            return SyftError(message="Passwords do not match")
+            raise SyftException(public_message="Passwords do not match")
 
         client = self.client
         return client.register(
@@ -175,7 +171,6 @@ def deploy_to_python(
     tail: bool,
     dev_mode: bool,
     processes: int,
-    local_db: bool,
     server_side_type: ServerSideType,
     enable_warnings: bool,
     n_consumers: int,
@@ -184,8 +179,11 @@ def deploy_to_python(
     queue_port: int | None = None,
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
+    log_level: str | int | None = None,
     debug: bool = False,
     migrate: bool = False,
+    consumer_type: ConsumerType | None = None,
+    db_url: str | None = None,
 ) -> ServerHandle:
     worker_classes = {
         ServerType.DATASITE: Datasite,
@@ -212,9 +210,13 @@ def deploy_to_python(
         "n_consumers": n_consumers,
         "create_producer": create_producer,
         "association_request_auto_approval": association_request_auto_approval,
+        "log_level": log_level,
         "background_tasks": background_tasks,
         "debug": debug,
         "migrate": migrate,
+        "deployment_type": deployment_type_enum,
+        "consumer_type": consumer_type,
+        "db_url": db_url,
     }
 
     if port:
@@ -245,7 +247,6 @@ def deploy_to_python(
             server_side_type=server_side_type,
         )
     else:
-        kwargs["local_db"] = local_db
         kwargs["thread_workers"] = thread_workers
         if server_type_enum in worker_classes:
             worker_class = worker_classes[server_type_enum]
@@ -311,9 +312,9 @@ class Orchestra:
         # worker related inputs
         port: int | str | None = None,
         processes: int = 1,  # temporary work around for jax in subprocess
-        local_db: bool = False,
         dev_mode: bool = False,
         reset: bool = False,
+        log_level: str | int | None = None,
         tail: bool = False,
         host: str | None = "0.0.0.0",  # nosec
         enable_warnings: bool = False,
@@ -325,7 +326,19 @@ class Orchestra:
         background_tasks: bool = False,
         debug: bool = False,
         migrate: bool = False,
+        from_state_folder: str | Path | None = None,
+        consumer_type: ConsumerType | None = None,
+        db_url: str | None = None,
     ) -> ServerHandle:
+        if from_state_folder is not None:
+            with open(f"{from_state_folder}/config.json") as f:
+                kwargs = json.load(f)
+                server_handle = Orchestra.launch(**kwargs)
+                client = server_handle.login(  # nosec
+                    email="info@openmined.org", password="changethis"
+                )
+                client.load_migration_data(f"{from_state_folder}/migration.blob")
+                return server_handle
         if dev_mode is True:
             thread_workers = True
         os.environ["DEV_MODE"] = str(dev_mode)
@@ -352,9 +365,9 @@ class Orchestra:
                 tail=tail,
                 dev_mode=dev_mode,
                 processes=processes,
-                local_db=local_db,
                 server_side_type=server_side_type_enum,
                 enable_warnings=enable_warnings,
+                log_level=log_level,
                 n_consumers=n_consumers,
                 thread_workers=thread_workers,
                 create_producer=create_producer,
@@ -363,11 +376,13 @@ class Orchestra:
                 background_tasks=background_tasks,
                 debug=debug,
                 migrate=migrate,
+                consumer_type=consumer_type,
+                db_url=db_url,
             )
             display(
                 SyftInfo(
                     message=f"You have launched a development server at http://{host}:{server_handle.port}."
-                    + "It is intended only for local use."
+                    + " It is intended only for local use."
                 )
             )
             return server_handle

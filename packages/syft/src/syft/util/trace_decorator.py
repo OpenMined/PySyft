@@ -6,16 +6,20 @@ import asyncio
 from collections.abc import Callable
 from functools import wraps
 import inspect
+import threading
 from typing import Any
 from typing import ClassVar
 from typing import TypeVar
-from typing import cast
 
 # third party
 from opentelemetry import trace
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Tracer
 from opentelemetry.trace.span import Span
+
+__all__ = ["instrument"]
+
+T = TypeVar("T", bound=Callable | type)
 
 
 class TracingDecoratorOptions:
@@ -40,11 +44,8 @@ class TracingDecoratorOptions:
                 cls.default_attributes[att] = attributes[att]
 
 
-T = TypeVar("T", bound=Callable | type)
-
-
 def instrument(
-    _func_or_class: T,
+    _func_or_class: T | None = None,
     /,
     *,
     span_name: str = "",
@@ -99,15 +100,11 @@ def instrument(
 
         return cls
 
-    # Check if this is a span or class decorator
-    if inspect.isclass(_func_or_class):
-        return decorate_class(_func_or_class)
-
     def span_decorator(func_or_class: T) -> T:
-        if inspect.isclass(func_or_class):
+        if ignore:
+            return func_or_class
+        elif inspect.isclass(func_or_class):
             return decorate_class(func_or_class)
-
-        # sig = inspect.signature(func_or_class)
 
         # Check if already decorated (happens if both class and function
         # decorated). If so, we keep the function decorator settings only
@@ -121,10 +118,13 @@ def instrument(
         tracer = existing_tracer or trace.get_tracer(func_or_class.__module__)
 
         def _set_semantic_attributes(span: Span, func: Callable) -> None:
+            thread = threading.current_thread()
             span.set_attribute(SpanAttributes.CODE_NAMESPACE, func.__module__)
             span.set_attribute(SpanAttributes.CODE_FUNCTION, func.__qualname__)
             span.set_attribute(SpanAttributes.CODE_FILEPATH, func.__code__.co_filename)
             span.set_attribute(SpanAttributes.CODE_LINENO, func.__code__.co_firstlineno)
+            span.set_attribute(SpanAttributes.THREAD_ID, thread.ident)
+            span.set_attribute(SpanAttributes.THREAD_NAME, thread.name)
 
         def _set_attributes(
             span: Span, attributes_dict: dict[str, str] | None = None
@@ -155,16 +155,20 @@ def instrument(
                 _set_attributes(span, attributes)
                 return await func_or_class(*args, **kwargs)
 
-        if ignore:
-            return func_or_class
-
-        wrapper = (
+        span_wrapper = (
             wrap_with_span_async
             if asyncio.iscoroutinefunction(func_or_class)
             else wrap_with_span_sync
         )
-        wrapper.__signature__ = inspect.signature(func_or_class)
+        span_wrapper.__signature__ = inspect.signature(func_or_class)
 
-        return cast(T, wrapper)
+        return span_wrapper  # type: ignore
 
-    return span_decorator(_func_or_class)
+    # decorator factory on a class or func
+    # @instrument or @instrument(span_name="my_span", ...)
+    if _func_or_class and inspect.isclass(_func_or_class):
+        return decorate_class(_func_or_class)
+    elif _func_or_class:
+        return span_decorator(_func_or_class)
+    else:
+        return span_decorator  # type: ignore

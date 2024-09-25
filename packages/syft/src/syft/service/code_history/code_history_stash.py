@@ -1,62 +1,43 @@
-# stdlib
-
-# third party
-from result import Result
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.db.stash import ObjectStash
+from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from .code_history import CodeHistory
 
-NamePartitionKey = PartitionKey(key="service_func_name", type_=str)
-VerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 
-
-@serializable(canonical_name="CodeHistoryStash", version=1)
-class CodeHistoryStash(BaseUIDStoreStash):
-    object_type = CodeHistory
-    settings: PartitionSettings = PartitionSettings(
-        name=CodeHistory.__canonical_name__, object_type=CodeHistory
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
+@serializable(canonical_name="CodeHistoryStashSQL", version=1)
+class CodeHistoryStash(ObjectStash[CodeHistory]):
+    @as_result(StashException)
     def get_by_service_func_name_and_verify_key(
         self,
         credentials: SyftVerifyKey,
         service_func_name: str,
         user_verify_key: SyftVerifyKey,
-    ) -> Result[list[CodeHistory], str]:
-        qks = QueryKeys(
-            qks=[
-                NamePartitionKey.with_obj(service_func_name),
-                VerifyKeyPartitionKey.with_obj(user_verify_key),
-            ]
-        )
-        return self.query_one(credentials=credentials, qks=qks)
+    ) -> CodeHistory:
+        return self.get_one(
+            credentials=credentials,
+            filters={
+                "user_verify_key": user_verify_key,
+                "service_func_name": service_func_name,
+            },
+        ).unwrap()
 
+    @as_result(StashException)
     def get_by_service_func_name(
         self, credentials: SyftVerifyKey, service_func_name: str
-    ) -> Result[list[CodeHistory], str]:
-        qks = QueryKeys(qks=[NamePartitionKey.with_obj(service_func_name)])
-        return self.query_all(credentials=credentials, qks=qks)
+    ) -> list[CodeHistory]:
+        return self.get_all(
+            credentials=credentials,
+            filters={"service_func_name": service_func_name},
+        ).unwrap()
 
+    @as_result(StashException)
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, user_verify_key: SyftVerifyKey
-    ) -> Result[CodeHistory | None, str]:
-        if isinstance(user_verify_key, str):
-            user_verify_key = SyftVerifyKey.from_string(user_verify_key)
-        qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(user_verify_key)])
-        return self.query_all(credentials=credentials, qks=qks)
-
-    # def get_version(self, name:str, version:int) -> Optional[UserCode]:
-    #     for obj in self.objs.values():
-    #         if obj.name == name and obj.version == version:
-    #             return obj
-    #     return None
+    ) -> list[CodeHistory]:
+        return self.get_all(
+            credentials=credentials,
+            filters={"user_verify_key": user_verify_key},
+        ).unwrap()

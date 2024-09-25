@@ -2,13 +2,14 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
+from ...store.document_store_errors import StashException
+from ...types.errors import SyftException
+from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..notifier.notifier import NotifierSettings
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -25,20 +26,17 @@ from .notifications import NotificationStatus
 from .notifications import ReplyNotification
 
 
-@instrument
 @serializable(canonical_name="NotificationService", version=1)
 class NotificationService(AbstractService):
-    store: DocumentStore
     stash: NotificationStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = NotificationStash(store=store)
 
     @service_method(path="notifications.send", name="send")
     def send(
         self, context: AuthedServiceContext, notification: CreateNotification
-    ) -> Notification | SyftError:
+    ) -> Notification:
         """Send a new notification"""
         new_notification = notification.to(Notification, context=context)
 
@@ -49,44 +47,31 @@ class NotificationService(AbstractService):
             )
         ]
 
-        result = self.stash.set(
+        self.stash.set(
             context.credentials, new_notification, add_permissions=permissions
-        )
+        ).unwrap()
 
-        notifier_service = context.server.get_service("notifierservice")
-
-        res = notifier_service.dispatch_notification(context, new_notification)
-        if isinstance(res, SyftError):
-            return res
-
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        return result.ok()
+        context.server.services.notifier.dispatch_notification(
+            context, new_notification
+        ).unwrap()
+        return new_notification
 
     @service_method(path="notifications.reply", name="reply", roles=GUEST_ROLE_LEVEL)
     def reply(
         self,
         context: AuthedServiceContext,
         reply: ReplyNotification,
-    ) -> ReplyNotification | SyftError:
+    ) -> ReplyNotification:
         msg = self.stash.get_by_uid(
             credentials=context.credentials, uid=reply.target_msg
+        ).unwrap(
+            public_message=f"The target notification id {reply.target_msg} was not found!"
         )
-        if msg.is_err():
-            return SyftError(
-                message=f"The target notification id {reply.target_msg} was not found!. Error: {msg.err()}"
-            )
-        msg = msg.ok()
         reply.from_user_verify_key = context.credentials
         msg.replies.append(reply)
-        result = self.stash.update(credentials=context.credentials, obj=msg)
-
-        if result.is_err():
-            return SyftError(
-                message=f"Couldn't add a new notification reply in the target notification. Error: {result.err()}"
-            )
-
-        return result.ok()
+        return self.stash.update(credentials=context.credentials, obj=msg).unwrap(
+            public_message="Couldn't add a new notification reply in the target notification"
+        )
 
     @service_method(
         path="notifications.user_settings",
@@ -95,9 +80,8 @@ class NotificationService(AbstractService):
     def user_settings(
         self,
         context: AuthedServiceContext,
-    ) -> NotifierSettings | SyftError:
-        notifier_service = context.server.get_service("notifierservice")
-        return notifier_service.user_settings(context)
+    ) -> NotifierSettings:
+        return context.server.services.notifier.user_settings(context)
 
     @service_method(
         path="notifications.settings",
@@ -107,36 +91,32 @@ class NotificationService(AbstractService):
     def settings(
         self,
         context: AuthedServiceContext,
-    ) -> NotifierSettings | SyftError:
-        notifier_service = context.server.get_service("notifierservice")
-        result = notifier_service.settings(context)
-        return result
+    ) -> NotifierSettings:
+        return context.server.services.notifier.settings(context).unwrap()
 
     @service_method(
         path="notifications.activate",
         name="activate",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def activate(
         self,
         context: AuthedServiceContext,
-    ) -> Notification | SyftError:
-        notifier_service = context.server.get_service("notifierservice")
-        result = notifier_service.activate(context)
-        return result
+    ) -> Notification:
+        return context.server.services.notifier.activate(context).unwrap()
 
     @service_method(
         path="notifications.deactivate",
         name="deactivate",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def deactivate(
         self,
         context: AuthedServiceContext,
-    ) -> Notification | SyftError:
-        notifier_service = context.server.get_service("notifierservice")
-        result = notifier_service.deactivate(context)
-        return result
+    ) -> SyftSuccess:
+        return context.server.services.notifier.deactivate(context).unwrap()
 
     @service_method(
         path="notifications.get_all",
@@ -146,47 +126,34 @@ class NotificationService(AbstractService):
     def get_all(
         self,
         context: AuthedServiceContext,
-    ) -> list[Notification] | SyftError:
-        result = self.stash.get_all_inbox_for_verify_key(
+    ) -> list[Notification]:
+        return self.stash.get_all_inbox_for_verify_key(
             context.credentials,
             verify_key=context.credentials,
-        )
-        if result.err():
-            return SyftError(message=str(result.err()))
-        notifications = result.ok()
-        return notifications
+        ).unwrap()
 
     @service_method(
         path="notifications.get_all_sent",
         name="outbox",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
-    def get_all_sent(
-        self, context: AuthedServiceContext
-    ) -> list[Notification] | SyftError:
-        result = self.stash.get_all_sent_for_verify_key(
+    def get_all_sent(self, context: AuthedServiceContext) -> list[Notification]:
+        return self.stash.get_all_sent_for_verify_key(
             context.credentials, context.credentials
-        )
-        if result.err():
-            return SyftError(message=str(result.err()))
-        notifications = result.ok()
-        return notifications
+        ).unwrap()
 
     # get_all_read and unread cover the same functionality currently as
     # get_all_for_status. However, there may be more statuses added in the future,
     # so we are keeping the more generic get_all_for_status method.
+    @as_result(StashException)
     def get_all_for_status(
         self,
         context: AuthedServiceContext,
         status: NotificationStatus,
-    ) -> list[Notification] | SyftError:
-        result = self.stash.get_all_by_verify_key_for_status(
+    ) -> list[Notification]:
+        return self.stash.get_all_by_verify_key_for_status(
             context.credentials, verify_key=context.credentials, status=status
-        )
-        if result.err():
-            return SyftError(message=str(result.err()))
-        notifications = result.ok()
-        return notifications
+        ).unwrap()
 
     @service_method(
         path="notifications.get_all_read",
@@ -196,11 +163,11 @@ class NotificationService(AbstractService):
     def get_all_read(
         self,
         context: AuthedServiceContext,
-    ) -> list[Notification] | SyftError:
+    ) -> list[Notification]:
         return self.get_all_for_status(
             context=context,
             status=NotificationStatus.READ,
-        )
+        ).unwrap()
 
     @service_method(
         path="notifications.get_all_unread",
@@ -210,33 +177,23 @@ class NotificationService(AbstractService):
     def get_all_unread(
         self,
         context: AuthedServiceContext,
-    ) -> list[Notification] | SyftError:
+    ) -> list[Notification]:
         return self.get_all_for_status(
             context=context,
             status=NotificationStatus.UNREAD,
-        )
+        ).unwrap()
 
     @service_method(path="notifications.mark_as_read", name="mark_as_read")
-    def mark_as_read(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Notification | SyftError:
-        result = self.stash.update_notification_status(
+    def mark_as_read(self, context: AuthedServiceContext, uid: UID) -> Notification:
+        return self.stash.update_notification_status(
             context.credentials, uid=uid, status=NotificationStatus.READ
-        )
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        return result.ok()
+        ).unwrap()
 
     @service_method(path="notifications.mark_as_unread", name="mark_as_unread")
-    def mark_as_unread(
-        self, context: AuthedServiceContext, uid: UID
-    ) -> Notification | SyftError:
-        result = self.stash.update_notification_status(
+    def mark_as_unread(self, context: AuthedServiceContext, uid: UID) -> Notification:
+        return self.stash.update_notification_status(
             context.credentials, uid=uid, status=NotificationStatus.UNREAD
-        )
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        return result.ok()
+        ).unwrap()
 
     @service_method(
         path="notifications.resolve_object",
@@ -245,35 +202,29 @@ class NotificationService(AbstractService):
     )
     def resolve_object(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
-    ) -> Notification | SyftError:
+    ) -> Notification:
         service = context.server.get_service(linked_obj.service_type)
-        result = service.resolve_link(context=context, linked_obj=linked_obj)
-        if result.is_err():
-            return SyftError(message=str(result.err()))
-        return result.ok()
+        return service.resolve_link(context=context, linked_obj=linked_obj).unwrap()
 
-    @service_method(path="notifications.clear", name="clear")
-    def clear(self, context: AuthedServiceContext) -> SyftError | SyftSuccess:
-        result = self.stash.delete_all_for_verify_key(
+    @service_method(path="notifications.clear", name="clear", unwrap_on_success=False)
+    def clear(self, context: AuthedServiceContext) -> SyftSuccess:
+        self.stash.delete_all_for_verify_key(
             credentials=context.credentials, verify_key=context.credentials
-        )
-        if result.is_ok():
-            return SyftSuccess(message="All notifications cleared !!")
-        return SyftError(message=str(result.err()))
+        ).unwrap()
+        return SyftSuccess(message="Cleared all notifications")
 
+    @as_result(SyftException)
     def filter_by_obj(
         self, context: AuthedServiceContext, obj_uid: UID
-    ) -> Notification | SyftError:
-        notifications = self.stash.get_all(context.credentials)
-        if notifications.is_err():
-            return SyftError(message="Could not get notifications!!")
-        for notification in notifications.ok():
+    ) -> Notification:
+        notifications = self.stash.get_all(context.credentials).unwrap()
+        for notification in notifications:
             if (
                 notification.linked_obj
                 and notification.linked_obj.object_uid == obj_uid
             ):
                 return notification
-        return SyftError(message="Could not get notifications!!")
+        raise SyftException(public_message="Could not get notifications!!")
 
 
 TYPE_TO_SERVICE[Notification] = NotificationService

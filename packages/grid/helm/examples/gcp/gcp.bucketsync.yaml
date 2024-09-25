@@ -1,0 +1,123 @@
+# =================================================================================
+# Syft on GKE Cluster
+#
+# Server side : high
+# Automount : YES. 1 GCS bucket mounted to seaweedfs
+# Ingress   : gce
+# Extras:
+#  - BackendConfig for increased timeout
+#  - Secret for seaweedfs mount
+# =================================================================================
+
+server:
+  # Basic Server Config
+  name: syft-gcp
+  side: high
+
+  # Skip intermediate registry & directly build & push container images to target registry
+  # Useful when workload identity is setup
+  useInternalRegistry: false
+
+  # Force backend to write results to this bucket
+  # should be same as mountApi.mounts.local_bucket
+  defaultBucketName: syft-bucket-high-gcs
+
+  # For autopilot clusters with GKE 1.28+, uncomment this
+  # nodeSelector:
+  #   cloud.google.com/compute-class: Performance
+  #   cloud.google.com/machine-family: c3
+
+  # Pod resources set inline with c3-standard-4 machine type
+  resources:
+    requests:
+      cpu: 2
+      memory: "8Gi"
+    limits:
+      cpu: 4
+      memory: "16Gi"
+
+# =================================================================================
+
+seaweedfs:
+  # SeaweedFS PVC size
+  storageSize: 100Gi
+
+  # For autopilot clusters with GKE 1.28+, uncomment this
+  # nodeSelector:
+  #   cloud.google.com/compute-class: Performance
+  #   cloud.google.com/machine-family: c3
+
+  # Automount Config
+  # -- Mounts GCS bucket "syft-bucket-high" to SeaweedFS bucket "syft-bucket-high-gcs"
+  # -- "gcs_creds.json" must exist in "seaweedfs-mount-secret"
+  # -- "seaweedfs-mount-secret" must be provisioned externally or in extraResources
+  mountApi:
+    mounts:
+      - local_bucket: syft-bucket-high-gcs
+        remote_bucket:
+          type: gcs
+          bucket_name: syft-bucket-high
+          creds: /run/secrets/mount/gcs_creds.json
+    secretKeyName: seaweedfs-mount-secret
+
+  # Pod resources set inline with c3-standard-4 machine type
+  resources:
+    requests:
+      cpu: 2
+      memory: "8Gi"
+    limits:
+      cpu: 4
+      memory: "16Gi"
+
+# =================================================================================
+
+ingress:
+  # GKE 1.28+ needs ingressClassName
+  className: gce
+  class: gce
+
+# =================================================================================
+
+proxy:
+  resourcesPreset: medium
+
+  # Use custom backend config for increased timeout
+  serviceAnnotations:
+    cloud.google.com/backend-config: '{"default": "custom-backend-config"}'
+
+# =================================================================================
+
+registry:
+  resourcesPreset: medium
+
+# =================================================================================
+
+frontend:
+  resourcesPreset: medium
+
+# =================================================================================
+
+postgres:
+  resourcesPreset: large
+
+# =================================================================================
+
+extraResources:
+  # Configure GCE load balancer backend
+  # https://cloud.google.com/kubernetes-engine/docs/how-to/ingress-configuration#configuring_ingress_features_through_backendconfig_parameters
+  - apiVersion: cloud.google.com/v1
+    kind: BackendConfig
+    metadata:
+      name: custom-backend-config
+    spec:
+      timeoutSec: 1800
+
+  # Secret to mount GCS bucket in seaweedfs
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: seaweedfs-mount-secret
+    type: Opaque
+    data:
+      # base 64 encoded value
+      gcs_creds.json: e30=

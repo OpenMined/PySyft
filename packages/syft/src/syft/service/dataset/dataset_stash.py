@@ -1,73 +1,56 @@
-# stdlib
-
-# third party
-from result import Err
-from result import Ok
-from result import Result
-
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.db.stash import ObjectStash
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from .dataset import Dataset
-from .dataset import DatasetUpdate
-
-NamePartitionKey = PartitionKey(key="name", type_=str)
-ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=list[UID])
 
 
-@instrument
-@serializable(canonical_name="DatasetStash", version=1)
-class DatasetStash(BaseUIDStoreStash):
-    object_type = Dataset
-    settings: PartitionSettings = PartitionSettings(
-        name=Dataset.__canonical_name__, object_type=Dataset
-    )
+@serializable(canonical_name="DatasetStashSQL", version=1)
+class DatasetStash(ObjectStash[Dataset]):
+    @as_result(StashException, NotFoundException)
+    def get_by_name(self, credentials: SyftVerifyKey, name: str) -> Dataset:
+        return self.get_one(credentials=credentials, filters={"name": name}).unwrap()
 
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
+    @as_result(StashException)
+    def search_action_ids(self, credentials: SyftVerifyKey, uid: UID) -> list[Dataset]:
+        return self.get_all_active(
+            credentials=credentials,
+            filters={"action_ids__contains": uid},
+        ).unwrap()
 
-    def get_by_name(
-        self, credentials: SyftVerifyKey, name: str
-    ) -> Result[Dataset | None, str]:
-        qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
-        return self.query_one(credentials=credentials, qks=qks)
-
-    def update(
+    @as_result(StashException)
+    def get_all_active(
         self,
         credentials: SyftVerifyKey,
-        dataset_update: DatasetUpdate,
         has_permission: bool = False,
-    ) -> Result[Dataset, str]:
-        res = self.check_type(dataset_update, DatasetUpdate)
-        # we dont use and_then logic here as it is hard because of the order of the arguments
-        if res.is_err():
-            return res
-        return super().update(credentials=credentials, obj=res.ok())
+        order_by: str | None = None,
+        sort_order: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        filters: dict | None = None,
+    ) -> list[Dataset]:
+        # TODO standardize soft delete and move to ObjectStash.get_all
+        default_filters = {"to_be_deleted": False}
+        filters = filters or {}
+        filters.update(default_filters)
 
-    def search_action_ids(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[list[Dataset], str]:
-        qks = QueryKeys(qks=[ActionIDsPartitionKey.with_obj(uid)])
-        return self.query_all(credentials=credentials, qks=qks)
+        if offset is None:
+            offset = 0
 
-    def get_all(
-        self,
-        credentials: SyftVerifyKey,
-        order_by: PartitionKey | None = None,
-        has_permission: bool = False,
-    ) -> Ok[list] | Err[str]:
-        result = super().get_all(credentials, order_by, has_permission)
-
-        if result.is_err():
-            return result
-        filtered_datasets = [
-            dataset for dataset in result.ok_value if not dataset.to_be_deleted
-        ]
-        return Ok(filtered_datasets)
+        return (
+            super()
+            .get_all(
+                credentials=credentials,
+                filters=filters,
+                has_permission=has_permission,
+                order_by=order_by,
+                sort_order=sort_order,
+                limit=limit,
+                offset=offset,
+            )
+            .unwrap()
+        )

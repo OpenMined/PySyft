@@ -23,20 +23,18 @@ from ..utils.custom_markers import currently_fail_on_python_3_12
 def test_actionobject_method(worker):
     root_datasite_client = worker.root_client
     assert root_datasite_client.settings.enable_eager_execution(enable=True)
-    action_store = worker.get_service("actionservice").store
+    action_store = worker.services.action.stash
     obj = ActionObject.from_obj("abc")
     pointer = obj.send(root_datasite_client)
-    assert len(action_store.data) == 1
+    assert len(action_store._data) == 1
     res = pointer.capitalize()
-    assert len(action_store.data) == 2
+    assert len(action_store._data) == 2
     assert res[0] == "A"
 
 
-@pytest.mark.parametrize("delete_original_admin", [False, True])
 def test_new_admin_has_action_object_permission(
     worker: Worker,
     faker: Faker,
-    delete_original_admin: bool,
 ) -> None:
     root_client = worker.root_client
 
@@ -60,10 +58,6 @@ def test_new_admin_has_action_object_permission(
 
     root_client.api.services.user.update(uid=admin.account.id, role=ServiceRole.ADMIN)
 
-    if delete_original_admin:
-        res = root_client.api.services.user.delete(root_client.account.id)
-        assert not isinstance(res, SyftError)
-
     assert admin.api.services.action.get(obj.id) == obj
 
 
@@ -75,7 +69,7 @@ def test_lib_function_action(worker):
 
     assert isinstance(res, ActionObject)
     assert all(res == np.array([0, 0, 0]))
-    assert len(worker.get_service("actionservice").store.data) > 0
+    assert len(worker.services.action.stash._data) > 0
 
 
 def test_call_lib_function_action2(worker):
@@ -90,7 +84,7 @@ def test_lib_class_init_action(worker):
 
     assert isinstance(res, ActionObject)
     assert res == np.float32(4.0)
-    assert len(worker.get_service("actionservice").store.data) > 0
+    assert len(worker.services.action.stash._data) > 0
 
 
 def test_call_lib_wo_permission(worker):

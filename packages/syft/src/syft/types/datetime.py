@@ -1,6 +1,7 @@
 # stdlib
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from functools import total_ordering
 import re
 from typing import Any
@@ -33,23 +34,26 @@ class DateTime(SyftObject):
 
     @classmethod
     def now(cls) -> Self:
-        return cls(utc_timestamp=datetime.utcnow().timestamp())
+        utc_datetime = datetime.now(tz=timezone.utc)
+        return cls(utc_timestamp=utc_datetime.timestamp())
 
     @classmethod
     def from_str(cls, datetime_str: str) -> "DateTime":
-        dt = datetime.strptime(datetime_str, DATETIME_FORMAT)
-        return cls(utc_timestamp=dt.timestamp())
+        utc_datetime = datetime.strptime(datetime_str, DATETIME_FORMAT).replace(
+            tzinfo=timezone.utc
+        )
+        return cls(utc_timestamp=utc_datetime.timestamp())
 
     def __str__(self) -> str:
-        utc_datetime = datetime.utcfromtimestamp(self.utc_timestamp)
+        utc_datetime = datetime.fromtimestamp(self.utc_timestamp, tz=timezone.utc)
         return utc_datetime.strftime(DATETIME_FORMAT)
 
     def __hash__(self) -> int:
         return hash(self.utc_timestamp)
 
-    def __sub__(self, other: "DateTime") -> "DateTime":
-        res = self.utc_timestamp - other.utc_timestamp
-        return DateTime(utc_timestamp=res)
+    def __sub__(self, other: "DateTime") -> timedelta:
+        res = self.timedelta(other)
+        return res
 
     def __eq__(self, other: Any) -> bool:
         if other is None:
@@ -62,6 +66,15 @@ class DateTime(SyftObject):
     def timedelta(self, other: "DateTime") -> timedelta:
         utc_timestamp_delta = self.utc_timestamp - other.utc_timestamp
         return timedelta(seconds=utc_timestamp_delta)
+
+    @classmethod
+    def from_timestamp(cls, ts: float) -> datetime:
+        return cls(utc_timestamp=ts)
+
+    @classmethod
+    def from_datetime(cls, dt: datetime) -> "DateTime":
+        utc_datetime = dt.astimezone(timezone.utc)
+        return cls(utc_timestamp=utc_datetime.timestamp())
 
 
 def format_timedelta(local_timedelta: timedelta) -> str:

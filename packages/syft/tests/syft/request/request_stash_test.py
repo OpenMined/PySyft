@@ -1,7 +1,4 @@
 # third party
-import pytest
-from pytest import MonkeyPatch
-from result import Err
 
 # syft absolute
 from syft.client.client import SyftClient
@@ -10,9 +7,6 @@ from syft.service.context import AuthedServiceContext
 from syft.service.request.request import Request
 from syft.service.request.request import SubmitRequest
 from syft.service.request.request_stash import RequestStash
-from syft.service.request.request_stash import RequestingUserVerifyKeyPartitionKey
-from syft.store.document_store import PartitionKey
-from syft.store.document_store import QueryKeys
 
 
 def test_requeststash_get_all_for_verify_key_no_requests(
@@ -30,7 +24,6 @@ def test_requeststash_get_all_for_verify_key_no_requests(
     assert len(requests.ok()) == 0
 
 
-@pytest.mark.xfail
 def test_requeststash_get_all_for_verify_key_success(
     root_verify_key,
     request_stash: RequestStash,
@@ -74,57 +67,3 @@ def test_requeststash_get_all_for_verify_key_success(
         requests.ok()[1] == stash_set_result_2.ok()
         or requests.ok()[0] == stash_set_result_2.ok()
     )
-
-
-def test_requeststash_get_all_for_verify_key_fail(
-    root_verify_key,
-    request_stash: RequestStash,
-    monkeypatch: MonkeyPatch,
-    guest_datasite_client: SyftClient,
-) -> None:
-    verify_key: SyftVerifyKey = guest_datasite_client.credentials.verify_key
-    mock_error_message = (
-        "verify key not in the document store's unique or searchable keys"
-    )
-
-    def mock_query_all_error(
-        credentials: SyftVerifyKey, qks: QueryKeys, order_by: PartitionKey | None
-    ) -> Err:
-        return Err(mock_error_message)
-
-    monkeypatch.setattr(request_stash, "query_all", mock_query_all_error)
-
-    requests = request_stash.get_all_for_verify_key(root_verify_key, verify_key)
-
-    assert requests.is_err() is True
-    assert requests.err() == mock_error_message
-
-
-def test_requeststash_get_all_for_verify_key_find_index_fail(
-    root_verify_key,
-    request_stash: RequestStash,
-    monkeypatch: MonkeyPatch,
-    guest_datasite_client: SyftClient,
-) -> None:
-    verify_key: SyftVerifyKey = guest_datasite_client.credentials.verify_key
-    qks = QueryKeys(qks=[RequestingUserVerifyKeyPartitionKey.with_obj(verify_key)])
-
-    mock_error_message = f"Failed to query index or search with {qks.all[0]}"
-
-    def mock_find_index_or_search_keys_error(
-        credentials: SyftVerifyKey,
-        index_qks: QueryKeys,
-        search_qks: QueryKeys,
-        order_by: PartitionKey | None,
-    ) -> Err:
-        return Err(mock_error_message)
-
-    monkeypatch.setattr(
-        request_stash.partition,
-        "find_index_or_search_keys",
-        mock_find_index_or_search_keys_error,
-    )
-
-    requests = request_stash.get_all_for_verify_key(root_verify_key, verify_key)
-    assert requests.is_err() is True
-    assert requests.err() == mock_error_message

@@ -1,18 +1,15 @@
 # stdlib
 
 # third party
-from result import Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import DocumentStore
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...util.telemetry import instrument
+from ...store.db.db import DBManager
+from ...store.db.stash import ObjectStash
+from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from ..context import AuthedServiceContext
-from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -20,128 +17,79 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from .data_subject import DataSubject
 from .data_subject import DataSubjectCreate
-from .data_subject import NamePartitionKey
-from .data_subject_member_service import DataSubjectMemberService
 
 
-@instrument
-@serializable(canonical_name="DataSubjectStash", version=1)
-class DataSubjectStash(BaseUIDStoreStash):
-    object_type = DataSubject
-    settings: PartitionSettings = PartitionSettings(
-        name=DataSubject.__canonical_name__, object_type=DataSubject
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
-    def get_by_name(
-        self, credentials: SyftVerifyKey, name: str
-    ) -> Result[DataSubject | None, str]:
-        qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
-        return self.query_one(credentials, qks=qks)
-
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        data_subject: DataSubject,
-        has_permission: bool = False,
-    ) -> Result[DataSubject, str]:
-        res = self.check_type(data_subject, DataSubject)
-        # we dont use and_then logic here as it is hard because of the order of the arguments
-        if res.is_err():
-            return res
-        return super().update(credentials=credentials, obj=res.ok())
+@serializable(canonical_name="DataSubjectSQLStash", version=1)
+class DataSubjectStash(ObjectStash[DataSubject]):
+    @as_result(StashException)
+    def get_by_name(self, credentials: SyftVerifyKey, name: str) -> DataSubject:
+        return self.get_one(
+            credentials=credentials,
+            filters={"name": name},
+        ).unwrap()
 
 
-@instrument
 @serializable(canonical_name="DataSubjectService", version=1)
 class DataSubjectService(AbstractService):
-    store: DocumentStore
     stash: DataSubjectStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = DataSubjectStash(store=store)
 
     @service_method(path="data_subject.add", name="add_data_subject")
     def add(
         self, context: AuthedServiceContext, data_subject: DataSubjectCreate
-    ) -> SyftSuccess | SyftError:
-        """Register a data subject."""
-
-        member_relationship_add = context.server.get_service_method(
-            DataSubjectMemberService.add
-        )
+    ) -> SyftSuccess:
+        """Register a data subject."""  #
 
         member_relationships: set[tuple[str, str]] = data_subject.member_relationships
         if len(member_relationships) == 0:
-            result = self.stash.set(
+            self.stash.set(
                 context.credentials,
                 data_subject.to(DataSubject, context=context),
-            )
-            if result.is_err():
-                return SyftError(message=str(result.err()))
+            ).unwrap()
         else:
             for member_relationship in member_relationships:
                 parent_ds, child_ds = member_relationship
                 for ds in [parent_ds, child_ds]:
-                    result = self.stash.set(
+                    self.stash.set(
                         context.credentials,
                         ds.to(DataSubject, context=context),
                         ignore_duplicates=True,
-                    )
-                    if result.is_err():
-                        return SyftError(message=str(result.err()))
-                result = member_relationship_add(context, parent_ds.name, child_ds.name)
-                if isinstance(result, SyftError):
-                    return result
+                    ).unwrap()
+                context.server.services.data_subject_member.add(
+                    context, parent_ds.name, child_ds.name
+                )
 
         return SyftSuccess(
-            message=f"{len(member_relationships)+1} Data Subjects Registered"
+            message=f"{len(member_relationships)+1} Data Subjects Registered",
+            value=member_relationships,
         )
 
     @service_method(path="data_subject.get_all", name="get_all")
-    def get_all(self, context: AuthedServiceContext) -> list[DataSubject] | SyftError:
+    def get_all(self, context: AuthedServiceContext) -> list[DataSubject]:
         """Get all Data subjects"""
-        result = self.stash.get_all(context.credentials)
-        if result.is_ok():
-            data_subjects = result.ok()
-            return data_subjects
-        return SyftError(message=result.err())
+        return self.stash.get_all(context.credentials).unwrap()
 
     @service_method(path="data_subject.get_members", name="members_for")
     def get_members(
         self, context: AuthedServiceContext, data_subject_name: str
-    ) -> list[DataSubject] | SyftError:
-        get_relatives = context.server.get_service_method(
-            DataSubjectMemberService.get_relatives
+    ) -> list[DataSubject]:
+        relatives = context.server.services.data_subject.get_relatives(
+            context, data_subject_name
         )
-
-        relatives = get_relatives(context, data_subject_name)
-
-        if isinstance(relatives, SyftError):
-            return relatives
 
         members = []
         for relative in relatives:
             result = self.get_by_name(context=context, name=relative.child)
-            if isinstance(result, SyftError):
-                return result
             members.append(result)
 
         return members
 
     @service_method(path="data_subject.get_by_name", name="get_by_name")
-    def get_by_name(
-        self, context: AuthedServiceContext, name: str
-    ) -> SyftSuccess | SyftError:
+    def get_by_name(self, context: AuthedServiceContext, name: str) -> DataSubject:
         """Get a Data Subject by its name."""
-        result = self.stash.get_by_name(context.credentials, name=name)
-        if result.is_ok():
-            data_subject = result.ok()
-            return data_subject
-        return SyftError(message=result.err())
+        return self.stash.get_by_name(context.credentials, name=name).unwrap()
 
 
 TYPE_TO_SERVICE[DataSubject] = DataSubjectService

@@ -11,7 +11,6 @@ from syft import ActionObject
 from syft import syft_function
 from syft import syft_function_single_use
 from syft.service.job.job_stash import Job
-from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 
 
@@ -24,7 +23,6 @@ def server():
         n_consumers=3,
         create_producer=True,
         queue_port=None,
-        local_db=False,
     )
     # startup code here
     yield _server
@@ -92,7 +90,6 @@ def test_nested_jobs(server):
     # Approve & run
     res = ds_client.code.request_code_execution(process_all)
     print(res)
-    assert not isinstance(res, SyftError)
 
     assert ds_client.code[-1].worker_pool_name is not None
     client.requests[-1].approve(approve_nested=True)

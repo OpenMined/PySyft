@@ -1,53 +1,31 @@
 # stdlib
 
 # third party
-from result import Result
 
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import BaseUIDStoreStash
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
-from ...types.uid import UID
-from ...util.telemetry import instrument
-from ..request.request import Request
-from ..response import SyftError
+from ...store.db.stash import ObjectStash
+from ...store.document_store_errors import NotFoundException
+from ...store.document_store_errors import StashException
+from ...types.result import as_result
 from .project import Project
 
-VerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
-NamePartitionKey = PartitionKey(key="name", type_=str)
 
-
-@instrument
-@serializable(canonical_name="ProjectStash", version=1)
-class ProjectStash(BaseUIDStoreStash):
-    object_type = Project
-    settings: PartitionSettings = PartitionSettings(
-        name=Project.__canonical_name__, object_type=Project
-    )
-
+@serializable(canonical_name="ProjectSQLStash", version=1)
+class ProjectStash(ObjectStash[Project]):
+    @as_result(StashException)
     def get_all_for_verify_key(
-        self, credentials: SyftVerifyKey, verify_key: VerifyKeyPartitionKey
-    ) -> Result[list[Request], SyftError]:
-        if isinstance(verify_key, str):
-            verify_key = SyftVerifyKey.from_string(verify_key)
-        qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
-        return self.query_all(
+        self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
+    ) -> list[Project]:
+        return self.get_all(
             credentials=credentials,
-            qks=qks,
-        )
+            filters={"user_verify_key": verify_key},
+        ).unwrap()
 
-    def get_by_uid(
-        self, credentials: SyftVerifyKey, uid: UID
-    ) -> Result[Project | None, str]:
-        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        return self.query_one(credentials=credentials, qks=qks)
-
-    def get_by_name(
-        self, credentials: SyftVerifyKey, project_name: str
-    ) -> Result[Project | None, str]:
-        qks = QueryKeys(qks=[NamePartitionKey.with_obj(project_name)])
-        return self.query_one(credentials=credentials, qks=qks)
+    @as_result(StashException, NotFoundException)
+    def get_by_name(self, credentials: SyftVerifyKey, project_name: str) -> Project:
+        return self.get_one(
+            credentials=credentials,
+            filters={"name": project_name},
+        ).unwrap()

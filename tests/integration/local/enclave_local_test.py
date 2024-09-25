@@ -6,7 +6,7 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.service.response import SyftError
+from syft.types.errors import SyftException
 
 
 @pytest.mark.local_server
@@ -16,9 +16,8 @@ def test_enclave_root_client_exception():
         server_type=sy.ServerType.ENCLAVE,
         dev_mode=True,
         reset=True,
-        local_db=True,
     )
-    res = enclave_server.login(email="info@openmined.org", password="changethis")
-    assert isinstance(res, SyftError)
+    with pytest.raises(SyftException):
+        enclave_server.login(email="info@openmined.org", password="changethis")
     enclave_server.python_server.cleanup()
     enclave_server.land()

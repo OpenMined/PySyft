@@ -14,9 +14,10 @@ import yaml
 
 # relative
 from ..serde.serializable import serializable
-from ..service.response import SyftError
+from ..serde.serialize import _serialize
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
+from ..types.errors import SyftException
 from .utils import iterator_to_string
 
 PYTHON_DEFAULT_VER = "3.12"
@@ -82,6 +83,10 @@ class CustomBuildConfig(SyftBaseModel):
 @serializable(canonical_name="WorkerConfig", version=1)
 class WorkerConfig(SyftBaseModel):
     pass
+
+    def hash(self) -> str:
+        _bytes = _serialize(self, to_bytes=True, for_hashing=True)
+        return sha256(_bytes).digest().hex()
 
 
 @serializable(canonical_name="CustomWorkerConfig", version=1)
@@ -168,11 +173,11 @@ class DockerWorkerConfig(WorkerConfig):
     def set_description(self, description_text: str) -> None:
         self.description = description_text
 
-    def test_image_build(self, tag: str, **kwargs: Any) -> SyftSuccess | SyftError:
+    def test_image_build(self, tag: str, **kwargs: Any) -> SyftSuccess:
         try:
             with contextlib.closing(docker.from_env()) as client:
                 if not client.ping():
-                    return SyftError(
+                    raise SyftException(
                         "Cannot reach docker server. Please check if docker is running."
                     )
 
@@ -188,4 +193,6 @@ class DockerWorkerConfig(WorkerConfig):
             # stdlib
             import traceback
 
-            return SyftError(message=f"Failed to build: {e} {traceback.format_exc()}")
+            raise SyftException(
+                public_message=f"Failed to build: {e} {traceback.format_exc()}"
+            )

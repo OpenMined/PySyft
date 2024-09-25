@@ -3,9 +3,9 @@ import json
 from typing import Any
 
 # relative
-from ...client.api import APIRegistry
 from ...serde.serializable import serializable
 from ...service.user.user_roles import ServiceRole
+from ...types.errors import SyftException
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
 from ...types.syft_object import SyftVerifyKey
@@ -15,7 +15,6 @@ from ...util.notebook_ui.components.tabulator_template import (
 )
 from ...util.table import prepare_table_data
 from ..code.user_code import UserCode
-from ..response import SyftError
 
 
 @serializable()
@@ -70,23 +69,17 @@ class CodeHistoryView(SyftObject):
 
         return build_tabulator_table_with_data(rows, metadata)
 
-    def __getitem__(self, index: int | str) -> UserCode | SyftError:
+    def __getitem__(self, index: int | str) -> UserCode:
         if isinstance(index, str):
             raise TypeError(f"index {index} must be an integer, not a string")
-        api = APIRegistry.api_for(
-            self.syft_server_location, self.syft_client_verify_key
-        )
-        if api is None:
-            return SyftError(
-                message=f"Can't access the api. You must login to {self.server_uid}"
-            )
+        api = self.get_api()
         if (
             api.user.get_current_user().role.value >= ServiceRole.DATA_OWNER.value
             and index < 0
         ):
             # negative index would dynamically resolve to a different version
-            return SyftError(
-                message="For security concerns we do not allow negative indexing. \
+            raise SyftException(
+                public_message="For security concerns we do not allow negative indexing. \
                 Try using absolute values when indexing"
             )
         return self.user_code_history[index]
@@ -137,13 +130,8 @@ class UsersCodeHistoriesDict(SyftObject):
     def available_keys(self) -> str:
         return json.dumps(self.user_dict, sort_keys=True, indent=4)
 
-    def __getitem__(self, key: str | int) -> CodeHistoriesDict | SyftError:
-        api = APIRegistry.api_for(self.server_uid, self.syft_client_verify_key)
-        if api is None:
-            return SyftError(
-                message=f"Can't access the api. You must login to {self.server_uid}"
-            )
-        return api.services.code_history.get_history_for_user(key)
+    def __getitem__(self, key: str | int) -> CodeHistoriesDict:
+        return self.get_api().services.code_history.get_history_for_user(key)
 
     def _repr_html_(self) -> str | None:
         rows = [
