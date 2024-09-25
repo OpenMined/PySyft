@@ -108,6 +108,27 @@
           "hash": "7659117222a461a959eac7aa1aaf280033c2ca4f1029f97e76051e0474e56759",
           "action": "add"
         }
+      },
+      "CustomAPIView": {
+        "2": {
+          "version": 2,
+          "hash": "7eb2cd60e9526299c3f989930733b8bfd2e81d4e93a1b82217dec2e0a786ba10",
+          "action": "add"
+        }
+      },
+      "CreateTwinAPIEndpoint": {
+        "2": {
+          "version": 2,
+          "hash": "f4048d6cf886ea519df25300af17912c818095288d42f7ef9183372c9c19db79",
+          "action": "add"
+        }
+      },
+      "TwinAPIEndpoint": {
+        "2": {
+          "version": 2,
+          "hash": "40229be687cd4290447fe8b409ba3dc1b8d410c5dac37cebb9856fb34d7507cd",
+          "action": "add"
+        }
       }
     }
   }
