@@ -684,7 +684,11 @@ class RequestUpdateEmailTemplate(EmailTemplate):
 
         deny_reason_html = ""
         if request_status == RequestStatus.REJECTED:
-            deny_reason = request_obj.get_deny_reason(context=context)
+            deny_reason_or_err = request_obj.get_deny_reason(context=context)
+            if deny_reason_or_err.is_err():
+                deny_reason = None
+            deny_reason = deny_reason_or_err.unwrap()
+
             if not isinstance(deny_reason, str) or not len(deny_reason):
                 deny_reason = (
                     "No reason provided, please contact the admin for more information."

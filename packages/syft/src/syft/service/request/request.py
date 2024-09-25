@@ -464,8 +464,9 @@ class Request(SyncableSyftObject):
         code_status: UserCodeStatusCollection = code.status_link.resolve
         return code_status.first_denial_reason
 
+    @as_result(SyftException)
     def get_deny_reason(self, context: AuthedServiceContext) -> str | None:
-        code = self.get_user_code(context)
+        code = self.get_user_code(context).unwrap()
         if code is None:
             return None
 
@@ -536,10 +537,11 @@ class Request(SyncableSyftObject):
             message="This type of request does not have code associated with it."
         )
 
+    @as_result(SyftException)
     def get_user_code(self, context: AuthedServiceContext) -> UserCode | None:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
-                return change.get_user_code(context)
+                return change.get_user_code(context).unwrap()
         return None
 
     @property
@@ -672,7 +674,7 @@ class Request(SyncableSyftObject):
         return bool(self.code) and self.code.is_l0_deployment
 
     def get_is_l0_deployment(self, context: AuthedServiceContext) -> bool:
-        code = self.get_user_code(context)
+        code = self.get_user_code(context).unwrap()
         if code:
             return code.is_l0_deployment
         else:
@@ -1386,6 +1388,7 @@ class UserCodeStatusChange(Change):
             return self.linked_user_code._resolve_cache
         return self.linked_user_code.resolve
 
+    @as_result(SyftException)
     def get_user_code(self, context: AuthedServiceContext) -> UserCode:
         return self.linked_user_code.resolve_with_context(context).unwrap()
 
