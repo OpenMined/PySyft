@@ -455,7 +455,27 @@ class Request(SyncableSyftObject):
 
         return desc
 
+    @property
+    def deny_reason(self) -> str | SyftError:
+        code = self.code
+        if isinstance(code, SyftError):
+            return code
+
+        code_status: UserCodeStatusCollection = code.status_link.resolve
+        return code_status.first_denial_reason
+
+    def get_deny_reason(self, context: AuthedServiceContext) -> str | None:
+        code = self.get_user_code(context)
+        if code is None:
+            return None
+
+        code_status = code.get_status(context).unwrap()
+        return code_status.first_denial_reason
+
     def _coll_repr_(self) -> dict[str, str | dict[str, str]]:
+        # relative
+        from ...util.notebook_ui.components.sync import Badge
+
         if self.status == RequestStatus.APPROVED:
             badge_color = "badge-green"
         elif self.status == RequestStatus.PENDING:
@@ -463,7 +483,18 @@ class Request(SyncableSyftObject):
         else:
             badge_color = "badge-red"
 
-        status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
+        status_badge = Badge(
+            value=self.status.name.capitalize(),
+            badge_class=badge_color,
+        ).to_html()
+
+        if self.status == RequestStatus.REJECTED:
+            deny_reason = self.deny_reason
+            if isinstance(deny_reason, str) and len(deny_reason) > 0:
+                status_badge += (
+                    "<br><span style='margin-top: 8px; display: block;'>"
+                    f"<strong>Deny Reason:</strong> {deny_reason}</span>"
+                )
 
         user_data = [
             self.requesting_user_name,
