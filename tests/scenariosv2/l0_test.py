@@ -24,6 +24,8 @@ from syft.util.test_helpers.worker_helpers import (
 )
 
 fake = Faker()
+NUM_USERS = 3
+NUM_ENDPOINTS = 3  # test_query, submit_query, schema_query
 
 
 class Event(BaseEvent):
@@ -31,6 +33,7 @@ class Event(BaseEvent):
     INIT = auto()
     ADMIN_LOWSIDE_FLOW_COMPLETED = auto()
     ADMIN_HIGHSIDE_FLOW_COMPLETED = auto()
+    ADMIN_LOW_ALL_RESULTS_AVAILABLE = auto()
     USER_FLOW_COMPLETED = auto()
     # admin - endpoints
     ADMIN_ALL_ENDPOINTS_CREATED = auto()
@@ -137,7 +140,7 @@ async def admin_signup_users(
     ctx: SimulatorContext, admin_client: SyftClient, users: list[dict]
 ):
     for user in users:
-        ctx.logger.info(f"Admin: Creating guest user {user['email']}")
+        ctx.logger.info(f"Admin low: Creating guest user {user['email']}")
         admin_client.register(
             name=user["name"],
             email=user["email"],
@@ -161,11 +164,11 @@ async def admin_endpoint_bq_schema(
     )
 
     try:
-        ctx.logger.info(f"Admin: Creating endpoint '{path}'")
+        ctx.logger.info(f"Admin high: Creating endpoint '{path}'")
         result = admin_client.custom_api.add(endpoint=schema_function)
         assert isinstance(result, sy.SyftSuccess), result
     except sy.SyftException as e:
-        ctx.logger.error(f"Admin: Failed to add api endpoint '{path}' - {e}")
+        ctx.logger.error(f"Admin high: Failed to add api endpoint '{path}' - {e}")
 
 
 @sim_activity(trigger=Event.ADMIN_BQ_TEST_ENDPOINT_CREATED)
@@ -197,11 +200,11 @@ async def admin_endpoint_bq_test(
     )
 
     try:
-        ctx.logger.info(f"Admin: Creating endpoint '{path}'")
+        ctx.logger.info(f"Admin high: Creating endpoint '{path}'")
         result = admin_client.custom_api.add(endpoint=new_endpoint)
         assert isinstance(result, sy.SyftSuccess), result
     except sy.SyftException as e:
-        ctx.logger.error(f"Admin: Failed to add api endpoint '{path}' - {e}")
+        ctx.logger.error(f"Admin high: Failed to add api endpoint '{path}' - {e}")
 
 
 @sim_activity(trigger=Event.ADMIN_BQ_SUBMIT_ENDPOINT_CREATED)
@@ -258,11 +261,11 @@ async def admin_endpoint_bq_submit(
         return f"Query submitted {request}. Use `client.code.{func_name}()` to run your query"
 
     try:
-        ctx.logger.info(f"Admin: Creating endpoint '{path}'")
+        ctx.logger.info(f"Admin high: Creating endpoint '{path}'")
         result = admin_client.custom_api.add(endpoint=submit_query)
         assert isinstance(result, sy.SyftSuccess), result
     except sy.SyftException as e:
-        ctx.logger.error(f"Admin: Failed to add api endpoint '{path}' - {e}")
+        ctx.logger.error(f"Admin high: Failed to add api endpoint '{path}' - {e}")
 
 
 @sim_activity(trigger=Event.ADMIN_ALL_ENDPOINTS_CREATED)
@@ -274,7 +277,7 @@ async def admin_create_endpoint(ctx: SimulatorContext, admin_client: SyftClient)
         admin_endpoint_bq_submit(ctx, admin_client, worker_pool=worker_pool),
         admin_endpoint_bq_schema(ctx, admin_client, worker_pool=worker_pool),
     )
-    ctx.logger.info("Admin: Created all endpoints")
+    ctx.logger.info("Admin high: Created all endpoints")
 
 
 @sim_activity(
@@ -285,12 +288,35 @@ async def admin_create_endpoint(ctx: SimulatorContext, admin_client: SyftClient)
     ]
 )
 async def admin_watch_sync(ctx: SimulatorContext, admin_client: SyftClient):
-    # fuckall function that just watches for ADMIN_SYNCED_HIGH_TO_LOW
-    # only to trigger ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE that
-    ctx.logger.info("Admin: Got a sync from high-side.")
+    while True:
+        await asyncio.sleep(random.uniform(5, 10))
 
-    # trigger any event we want after sync
-    ctx.events.trigger(Event.ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE)
+        # Check if endpoints are available
+        endpoints = admin_client.custom_api.get_all()
+        if len(endpoints) == NUM_ENDPOINTS:
+            ctx.logger.info(
+                f"Admin low: All {NUM_ENDPOINTS} API endpoints are synced from high."
+            )
+            ctx.logger.info(f"Endpoints: {endpoints}")
+            ctx.events.trigger(Event.ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE)
+
+        # Check if all requests are approved or denied
+        requests = admin_client.requests.get_all()
+        ctx.logger.info(f"Number of requests: {len(requests)}")
+        for req in requests:
+            ctx.logger.info(f"Request status: {req.get_status()}")
+        if len(requests) == NUM_USERS:  # NOTE: currently hard coding this since
+            # each user in `user_flow` submits 1 query request
+            pending_requests = []
+            for req in admin_client.requests:
+                if req.get_status() == RequestStatus.PENDING:
+                    pending_requests.append(req)
+            if len(pending_requests) == 0:
+                ctx.logger.info("Admin low: All requests are approved / denined.")
+                ctx.logger.info(f"Requests: {requests}")
+                ctx.events.trigger(Event.ADMIN_LOW_ALL_RESULTS_AVAILABLE)
+            else:
+                ctx.logger.info(f"Admin low: Pending requests: {pending_requests}")
 
 
 # @sim_activity(trigger=Event.ADMIN_WORKER_POOL_CREATED)
@@ -342,7 +368,8 @@ async def admin_create_bq_pool_low(ctx: SimulatorContext, admin_client: SyftClie
     wait_for=[
         Event.USER_CAN_SUBMIT_QUERY,
         Event.ADMIN_SYNCED_LOW_TO_HIGH,
-    ]
+    ],
+    trigger=Event.ADMIN_HIGHSIDE_FLOW_COMPLETED,
 )
 async def admin_triage_requests_high(ctx: SimulatorContext, admin_client: SyftClient):
     while True:
@@ -355,6 +382,7 @@ async def admin_triage_requests_high(ctx: SimulatorContext, admin_client: SyftCl
             for req in admin_client.requests
             if req.get_status() == RequestStatus.PENDING
         ]
+        ctx.logger.info(f"Admin high: Found {len(pending_requests)} pending requests")
         for request in pending_requests:
             ctx.logger.info(f"Admin high: Found request {request.__dict__}")
             if getattr(request, "code", None):
@@ -368,7 +396,11 @@ async def admin_triage_requests_high(ctx: SimulatorContext, admin_client: SyftCl
                     job = request.code(blocking=False)
                     result = job.wait()
                     ctx.logger.info(f"Admin high: Request result {result}")
-            pass
+
+        if ctx.events.is_set(Event.ADMIN_LOW_ALL_RESULTS_AVAILABLE):
+            break
+
+    ctx.logger.info("Admin high: Done approving / denying all requests")
 
 
 @sim_activity(trigger=Event.ADMIN_HIGHSIDE_FLOW_COMPLETED)
@@ -410,7 +442,7 @@ async def admin_sync_to_low_flow(
     low_client = sy.login(**admin_auth_low)
     ctx.logger.info("Admin: logged in to low-side")
 
-    while True:
+    while not ctx.events.is_set(Event.ADMIN_HIGHSIDE_FLOW_COMPLETED):
         await asyncio.sleep(random.uniform(5, 10))
 
         result = sy.sync(high_client, low_client)
@@ -437,7 +469,7 @@ async def admin_sync_to_high_flow(
     low_client = sy.login(**admin_auth_low)
     ctx.logger.info("Admin low: logged in to low-side")
 
-    while True:
+    while not ctx.events.is_set(Event.ADMIN_HIGHSIDE_FLOW_COMPLETED):
         await asyncio.sleep(random.uniform(5, 10))
 
         result = sy.sync(low_client, high_client)
@@ -464,7 +496,7 @@ async def sim_l0_scenario(ctx: SimulatorContext):
             email=fake.email(),
             password="password",
         )
-        for i in range(3)
+        for _ in range(NUM_USERS)
     ]
 
     server_url_high = "http://localhost:8080"
