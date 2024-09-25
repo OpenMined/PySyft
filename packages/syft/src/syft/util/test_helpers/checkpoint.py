@@ -157,7 +157,7 @@ def load_from_checkpoint(
 
     print(f"Loading from checkpoint: {latest_checkpoint_dir}")
     result = root_client.load_migration_data(
-        path=latest_checkpoint_dir / "migration.blob"
+        path_or_data=latest_checkpoint_dir / "migration.blob"
     )
 
     if isinstance(result, SyftError):
