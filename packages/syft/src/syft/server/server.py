@@ -754,6 +754,7 @@ class Server(AbstractServer):
         consumer_type: ConsumerType | None = None,
         db_url: str | None = None,
         db_config: DBConfig | None = None,
+        log_level: int | None = None,
     ) -> Server:
         uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -786,6 +787,7 @@ class Server(AbstractServer):
             consumer_type=consumer_type,
             db_url=db_url,
             db_config=db_config,
+            log_level=log_level,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
