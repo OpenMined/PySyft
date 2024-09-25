@@ -31,7 +31,7 @@ def current_nbname() -> Path:
     """Retrieve the current Jupyter notebook name."""
     curr_kernel_file = Path(ipykernel.get_connection_file())
     kernel_file = json.loads(curr_kernel_file.read_text())
-    nb_name = kernel_file["jupyter_session"]
+    nb_name = kernel_file.get("jupyter_session", "")
     return Path(nb_name)
 
 
@@ -43,7 +43,7 @@ def checkpoint_parent_dir(server_uid: str, nb_name: str | None = None) -> Path:
     """Return the checkpoint directory for the current notebook and server."""
     if is_interpreter_jupyter:
         nb_name = nb_name if nb_name else current_nbname().stem
-        return Path(f"{nb_name}/{server_uid}")
+        return Path(f"{nb_name}/{server_uid}") if nb_name else Path(server_uid)
     return Path(server_uid)
 
 
