@@ -37,6 +37,7 @@ from ..log.log import SyftLog
 from ..response import SyftSuccess
 from .diff_state import ObjectDiff
 from .diff_state import ObjectDiffBatch
+from .widget_output import Output
 
 # Standard div Jupyter Lab uses for notebook outputs
 # This is needed to use alert styles from SyftSuccess and SyftException
@@ -641,7 +642,7 @@ class PaginationControl:
         self.previous_button.on_click(self.go_to_previous)
         self.next_button.on_click(self.go_to_next)
         self.last_button.on_click(self.go_to_last)
-        self.output = widgets.Output()
+        self.output = Output()
 
         self.buttons = widgets.HBox(
             [
@@ -764,7 +765,7 @@ class PaginatedResolveWidget:
             on_paginate_callback=self.on_paginate,
         )
 
-        self.table_output = widgets.Output()
+        self.table_output = Output()
         with self.table_output:
             display.display(display.HTML(self.batch_table))
             highlight_single_row(
