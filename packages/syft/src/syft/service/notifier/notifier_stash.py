@@ -6,7 +6,6 @@
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
-from ...store.document_store import PartitionSettings
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
@@ -17,10 +16,6 @@ from .notifier import NotifierSettings
 @instrument
 @serializable(canonical_name="NotifierSQLStash", version=1)
 class NotifierStash(ObjectStash[NotifierSettings]):
-    settings: PartitionSettings = PartitionSettings(
-        name=NotifierSettings.__canonical_name__, object_type=NotifierSettings
-    )
-
     @as_result(StashException, NotFoundException)
     def get(self, credentials: SyftVerifyKey) -> NotifierSettings:
         """Get Settings"""

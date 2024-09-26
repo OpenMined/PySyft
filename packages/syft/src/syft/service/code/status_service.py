@@ -7,7 +7,6 @@ from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
 from ...store.db.db import DBManager
 from ...store.db.stash import ObjectStash
-from ...store.document_store import PartitionSettings
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
@@ -24,10 +23,7 @@ from .user_code import UserCodeStatusCollection
 
 @serializable(canonical_name="StatusSQLStash", version=1)
 class StatusStash(ObjectStash[UserCodeStatusCollection]):
-    settings: PartitionSettings = PartitionSettings(
-        name=UserCodeStatusCollection.__canonical_name__,
-        object_type=UserCodeStatusCollection,
-    )
+    pass
 
 
 class CodeStatusUpdate(PartialSyftObject):

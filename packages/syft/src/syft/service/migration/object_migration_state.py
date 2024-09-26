@@ -16,7 +16,6 @@ from ...serde.serialize import _serialize
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
 from ...store.db.stash import ObjectStash
-from ...store.document_store import PartitionKey
 from ...store.document_store_errors import NotFoundException
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
@@ -62,9 +61,6 @@ class SyftObjectMigrationState(SyftObject):
     @property
     def supported_versions(self) -> list:
         return SyftObjectRegistry.get_versions(self.canonical_name)
-
-
-KlassNamePartitionKey = PartitionKey(key="canonical_name", type_=str)
 
 
 @serializable(canonical_name="SyftMigrationStateSQLStash", version=1)

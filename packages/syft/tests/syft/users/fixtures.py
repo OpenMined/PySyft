@@ -16,7 +16,6 @@ from syft.service.user.user import UserView
 from syft.service.user.user_roles import ServiceRole
 from syft.service.user.user_service import UserService
 from syft.service.user.user_stash import UserStash
-from syft.store.document_store import DocumentStore
 
 
 @pytest.fixture
@@ -107,12 +106,12 @@ def guest_user_search(guest_user) -> UserSearch:
 
 
 @pytest.fixture
-def user_stash(document_store: DocumentStore) -> UserStash:
+def user_stash(document_store) -> UserStash:
     yield UserStash(store=document_store)
 
 
 @pytest.fixture
-def user_service(document_store: DocumentStore):
+def user_service(document_store):
     yield UserService(store=document_store)
 
 

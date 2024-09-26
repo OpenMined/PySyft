@@ -17,7 +17,6 @@ from ..server.credentials import SyftSigningKey
 from ..service.queue.base_queue import QueueConfig
 from ..store.blob_storage import BlobStorageConfig
 from ..store.db.db import DBConfig
-from ..store.document_store import StoreConfig
 from ..types.syft_migration import migrate
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SYFT_OBJECT_VERSION_2
@@ -71,8 +70,6 @@ class WorkerSettingsV1(SyftObject):
     server_side_type: ServerSideType
     deployment_type: DeploymentType = DeploymentType.REMOTE
     signing_key: SyftSigningKey
-    document_store_config: StoreConfig
-    action_store_config: StoreConfig
     blob_store_config: BlobStorageConfig | None = None
     queue_config: QueueConfig | None = None
     log_level: int | None = None

@@ -21,9 +21,6 @@ from syft.service.service import ServiceConfigRegistry
 from syft.service.service import service_method
 from syft.service.user.user_roles import GUEST_ROLE_LEVEL
 from syft.store.db.db import DBManager
-from syft.store.document_store import DocumentStore
-from syft.store.document_store import NewBaseStash
-from syft.store.document_store import PartitionSettings
 from syft.types.syft_migration import migrate
 from syft.types.syft_object import SYFT_OBJECT_VERSION_1
 from syft.types.syft_object import SyftBaseObject

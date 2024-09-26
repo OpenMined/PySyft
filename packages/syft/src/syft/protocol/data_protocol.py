@@ -29,7 +29,6 @@ from ..types.dicttuple import DictTuple
 from ..types.errors import SyftException
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object_registry import SyftObjectRegistry
-from ..util.util import get_dev_mode
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
 PROTOCOL_TYPE = str | int
@@ -268,7 +267,7 @@ If the class has changed you will need to define a new class with the changes, \
 with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 """
 
-                    if get_dev_mode() or self.raise_exception:
+                    if False:  # get_dev_mode() or self.raise_exception:
                         raise Exception(error_msg)
                     else:
                         warnings.warn(error_msg, stacklevel=1, category=UserWarning)

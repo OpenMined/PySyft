@@ -9,7 +9,6 @@ from ...server.credentials import SyftVerifyKey
 from ...server.worker_settings import WorkerSettings
 from ...server.worker_settings import WorkerSettingsV1
 from ...store.db.stash import ObjectStash
-from ...store.document_store import PartitionKey
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
@@ -33,10 +32,6 @@ class Status(str, Enum):
     ERRORED = "errored"
     COMPLETED = "completed"
     INTERRUPTED = "interrupted"
-
-
-StatusPartitionKey = PartitionKey(key="status", type_=Status)
-_WorkerPoolPartitionKey = PartitionKey(key="worker_pool", type_=LinkedObject)
 
 
 @serializable()

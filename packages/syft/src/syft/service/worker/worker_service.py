@@ -14,11 +14,11 @@ from ...custom_worker.runner_k8s import KubernetesRunner
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.db import DBManager
-from ...store.document_store import SyftSuccess
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
+from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import AuthedServiceContext
 from ..service import service_method
