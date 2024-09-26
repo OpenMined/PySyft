@@ -349,7 +349,7 @@ async def admin_sync_to_high_flow(
 # ------------------------------------------------------------------------------------------------
 
 
-@sim_entrypoint()
+@sim_entrypoint
 async def sim_l0_scenario(ctx: SimulatorContext):
     users = [
         dict(  # noqa: C408

@@ -106,7 +106,9 @@ async def user_flow(ctx: SimulatorContext, server_url: str, user: dict):
 
 
 # ---------------------------------- test ----------------------------------
-@sim_entrypoint()
+
+
+@sim_entrypoint
 async def sim_l2_scenario(ctx: SimulatorContext):
     users = [
         {

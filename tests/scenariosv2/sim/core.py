@@ -131,25 +131,22 @@ class Simulator:
         return results
 
 
-def sim_entrypoint():
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(ctx: SimulatorContext, *args, **kwargs):
-            try:
-                ctx._elogger.info(f"Started: {func.__name__}")
-                result = await func(ctx, *args, **kwargs)
-                ctx._elogger.info(f"Completed: {func.__name__}")
-                return result
-            except Exception:
-                ctx._elogger.error(
-                    f"sim_entrypoint - {func.__name__} - Unhandled exception",
-                    exc_info=True,
-                )
-                raise
+def sim_entrypoint(func):
+    @wraps(func)
+    async def wrapper(ctx: SimulatorContext, *args, **kwargs):
+        try:
+            ctx._elogger.info(f"Started: {func.__name__}")
+            result = await func(ctx, *args, **kwargs)
+            ctx._elogger.info(f"Completed: {func.__name__}")
+            return result
+        except Exception:
+            ctx._elogger.error(
+                f"sim_entrypoint - {func.__name__} - Unhandled exception",
+                exc_info=True,
+            )
+            raise
 
-        return wrapper
-
-    return decorator
+    return wrapper
 
 
 def sim_activity(
@@ -189,11 +186,11 @@ def sim_activity(
                     ctx.events.trigger(_trigger)
 
                 return result
-            except Exception:
+            except Exception as e:
                 ctx._elogger.error(
                     f"sim_activity - {fsig} - Unhandled exception", exc_info=True
                 )
-                raise
+                raise TestFailure(e)
 
         return wrapper
 
