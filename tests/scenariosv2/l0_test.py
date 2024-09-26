@@ -15,6 +15,7 @@ from syft.util.test_helpers.apis import make_test_query
 
 # relative
 from .flows.admin_bigquery_pool import bq_create_pool
+from .flows.admin_common import register_user
 from .flows.user_bigquery_api import bq_check_query_results
 from .flows.user_bigquery_api import bq_submit_query
 from .flows.user_bigquery_api import bq_test_query
@@ -89,7 +90,7 @@ async def user_bq_results(ctx: SimulatorContext, client: sy.DatasiteClient):
 @sim_activity(wait_for=Event.GUEST_USERS_CREATED, trigger=Event.USER_FLOW_COMPLETED)
 async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
     """
-    Replicates user's flow on the low side
+    User flow on low-side:
     - User logs in
     - User invokes the test query endpoint to get mock results - user_bq_test_query
     - User submits a query to be run on the private data for approval - user_bq_submit_query
@@ -115,17 +116,12 @@ async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
 
 
 @sim_activity(trigger=Event.GUEST_USERS_CREATED)
-async def admin_signup_users(
+async def admin_register_users(
     ctx: SimulatorContext, admin_client: sy.DatasiteClient, users: list[dict]
 ):
-    for user in users:
-        ctx.logger.info(f"Admin low: Creating guest user {user['email']}")
-        admin_client.register(
-            name=user["name"],
-            email=user["email"],
-            password=user["password"],
-            password_verify=user["password"],
-        )
+    await asyncio.gather(
+        *[asyncio.to_thread(register_user, ctx, admin_client, user) for user in users],
+    )
 
 
 @sim_activity(trigger=Event.ADMIN_BQ_SCHEMA_ENDPOINT_CREATED)
@@ -370,7 +366,7 @@ async def admin_low_side(ctx: SimulatorContext, admin_auth, users):
     ctx.logger.info("Admin low-side: logged in")
 
     await asyncio.gather(
-        admin_signup_users(ctx, admin_client, users),
+        admin_register_users(ctx, admin_client, users),
         admin_create_bq_pool_low(ctx, admin_client),
         admin_watch_sync(ctx, admin_client),
     )

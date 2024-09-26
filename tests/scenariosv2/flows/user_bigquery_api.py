@@ -46,7 +46,7 @@ def bq_submit_query(ctx: SimulatorContext, client: sy.DatasiteClient):
         func_name=func_name,
         query=query_sql(),
     )
-    assert isinstance(res, sy.SyftSuccess), res
+    assert "Query submitted" in str(res)
     ctx.logger.info(f"User: {user} - Received {res}")
     return res
 
