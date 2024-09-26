@@ -6,22 +6,25 @@ import random
 # third party
 from faker import Faker
 import pytest
-from sim.core import BaseEvent
-from sim.core import Simulator
-from sim.core import SimulatorContext
-from sim.core import sim_activity
-from sim.core import sim_entrypoint
 
 # syft absolute
 import syft as sy
-from syft import test_settings
-from syft.client.client import SyftClient
 from syft.service.request.request import RequestStatus
 from syft.util.test_helpers.apis import make_schema
 from syft.util.test_helpers.apis import make_test_query
 from syft.util.test_helpers.worker_helpers import (
     build_and_launch_worker_pool_from_docker_str,
 )
+
+# relative
+from .flows.user_bigquery_api import bq_submit_query
+from .flows.user_bigquery_api import bq_submit_query_results
+from .flows.user_bigquery_api import bq_test_query
+from .sim.core import BaseEvent
+from .sim.core import Simulator
+from .sim.core import SimulatorContext
+from .sim.core import sim_activity
+from .sim.core import sim_entrypoint
 
 fake = Faker()
 NUM_USERS = 3
@@ -59,42 +62,13 @@ class Event(BaseEvent):
 # ------------------------------------------------------------------------------------------------
 
 
-def query_sql():
-    dataset_2 = test_settings.get("dataset_2", default="dataset_2")
-    table_2 = test_settings.get("table_2", default="table_2")
-    table_2_col_id = test_settings.get("table_2_col_id", default="table_id")
-    table_2_col_score = test_settings.get("table_2_col_score", default="colname")
-
-    query = f"SELECT {table_2_col_id}, AVG({table_2_col_score}) AS average_score \
-        FROM {dataset_2}.{table_2} \
-        GROUP BY {table_2_col_id} \
-        LIMIT 10000"
-    return query
-
-
-def get_code_from_msg(msg: str):
-    return str(msg.split("`")[1].replace("()", "").replace("client.", ""))
-
-
-# ------------------------------------------------------------------------------------------------
-
-
 @sim_activity(
     wait_for=Event.ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE,
     trigger=Event.USER_CAN_QUERY_TEST_ENDPOINT,
 )
 async def user_query_test_endpoint(ctx: SimulatorContext, client: sy.DatasiteClient):
     """Run query on test endpoint"""
-
-    user = client.logged_in_user
-
-    def _query_endpoint():
-        ctx.logger.info(f"User: {user} - Calling client.api.bigquery.test_query (mock)")
-        res = client.api.bigquery.test_query(sql_query=query_sql())
-        assert len(res) == 10000
-        ctx.logger.info(f"User: {user} - Received {len(res)} rows")
-
-    await asyncio.to_thread(_query_endpoint)
+    await asyncio.to_thread(bq_test_query, ctx, client)
 
 
 @sim_activity(
@@ -103,21 +77,7 @@ async def user_query_test_endpoint(ctx: SimulatorContext, client: sy.DatasiteCli
 )
 async def user_bq_submit(ctx: SimulatorContext, client: sy.DatasiteClient):
     """Submit query to be run on private data"""
-    user = client.logged_in_user
-
-    def _submit_endpoint():
-        func_name = "invalid_func" if random.random() < 0.5 else "test_query"
-        ctx.logger.info(
-            f"User: {user} - Calling client.api.services.bigquery.submit_query func_name={func_name}"
-        )
-
-        res = client.api.bigquery.submit_query(
-            func_name=func_name,
-            query=query_sql(),
-        )
-        ctx.logger.info(f"User: {user} - Received {res}")
-
-    await asyncio.to_thread(_submit_endpoint)
+    await asyncio.to_thread(bq_submit_query, ctx, client)
 
 
 @sim_activity(
@@ -125,18 +85,7 @@ async def user_bq_submit(ctx: SimulatorContext, client: sy.DatasiteClient):
     trigger=Event.USER_CHECKED_RESULTS,
 )
 async def user_checks_results(ctx: SimulatorContext, client: sy.DatasiteClient):
-    def _check_results():
-        for request in client.requests:
-            if request.get_status() == RequestStatus.APPROVED:
-                job = request.code(blocking=False)
-                result = job.wait()
-                assert len(result) == 10000
-            if request.get_status() == RequestStatus.REJECTED:
-                ctx.logger.info(
-                    f"User: Request with function named {request.code.service_func_name} was rejected"
-                )
-
-    await asyncio.to_thread(_check_results)
+    await asyncio.to_thread(bq_submit_query_results, ctx, client)
 
 
 @sim_activity(wait_for=Event.GUEST_USERS_CREATED, trigger=Event.USER_FLOW_COMPLETED)
@@ -148,6 +97,7 @@ async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
     )
     ctx.logger.info(f"User: {client.logged_in_user} - logged in")
 
+    # this must be executed sequentially.
     await user_query_test_endpoint(ctx, client)
     await user_bq_submit(ctx, client)
     await user_checks_results(ctx, client)
@@ -158,7 +108,7 @@ async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
 
 @sim_activity(trigger=Event.GUEST_USERS_CREATED)
 async def admin_signup_users(
-    ctx: SimulatorContext, admin_client: SyftClient, users: list[dict]
+    ctx: SimulatorContext, admin_client: sy.DatasiteClient, users: list[dict]
 ):
     for user in users:
         ctx.logger.info(f"Admin low: Creating guest user {user['email']}")
@@ -173,7 +123,7 @@ async def admin_signup_users(
 @sim_activity(trigger=Event.ADMIN_BQ_SCHEMA_ENDPOINT_CREATED)
 async def admin_endpoint_bq_schema(
     ctx: SimulatorContext,
-    admin_client: SyftClient,
+    admin_client: sy.DatasiteClient,
     worker_pool: str | None = None,
 ):
     path = "bigquery.schema"
@@ -195,7 +145,7 @@ async def admin_endpoint_bq_schema(
 @sim_activity(trigger=Event.ADMIN_BQ_TEST_ENDPOINT_CREATED)
 async def admin_endpoint_bq_test(
     ctx: SimulatorContext,
-    admin_client: SyftClient,
+    admin_client: sy.DatasiteClient,
     worker_pool: str | None = None,
 ):
     path = "bigquery.test_query"
@@ -290,7 +240,7 @@ async def admin_endpoint_bq_submit(
 
 
 @sim_activity(trigger=Event.ADMIN_ALL_ENDPOINTS_CREATED)
-async def admin_create_endpoint(ctx: SimulatorContext, admin_client: SyftClient):
+async def admin_create_endpoint(ctx: SimulatorContext, admin_client: sy.DatasiteClient):
     worker_pool = "biquery-pool"
 
     await asyncio.gather(
@@ -308,7 +258,7 @@ async def admin_create_endpoint(ctx: SimulatorContext, admin_client: SyftClient)
         Event.ADMIN_LOWSIDE_WORKER_POOL_CREATED,
     ]
 )
-async def admin_watch_sync(ctx: SimulatorContext, admin_client: SyftClient):
+async def admin_watch_sync(ctx: SimulatorContext, admin_client: sy.DatasiteClient):
     while True:
         await asyncio.sleep(random.uniform(5, 10))
 
@@ -340,7 +290,7 @@ async def admin_watch_sync(ctx: SimulatorContext, admin_client: SyftClient):
 
 
 # @sim_activity(trigger=Event.ADMIN_WORKER_POOL_CREATED)
-async def admin_create_bq_pool(ctx: SimulatorContext, admin_client: SyftClient):
+async def admin_create_bq_pool(ctx: SimulatorContext, admin_client: sy.DatasiteClient):
     worker_pool = "biquery-pool"
 
     base_image = admin_client.images.get_all()[0]
@@ -375,12 +325,16 @@ async def admin_create_bq_pool(ctx: SimulatorContext, admin_client: SyftClient):
 
 
 @sim_activity(trigger=Event.ADMIN_HIGHSIDE_WORKER_POOL_CREATED)
-async def admin_create_bq_pool_high(ctx: SimulatorContext, admin_client: SyftClient):
+async def admin_create_bq_pool_high(
+    ctx: SimulatorContext, admin_client: sy.DatasiteClient
+):
     await admin_create_bq_pool(ctx, admin_client)
 
 
 @sim_activity(trigger=Event.ADMIN_LOWSIDE_WORKER_POOL_CREATED)
-async def admin_create_bq_pool_low(ctx: SimulatorContext, admin_client: SyftClient):
+async def admin_create_bq_pool_low(
+    ctx: SimulatorContext, admin_client: sy.DatasiteClient
+):
     await admin_create_bq_pool(ctx, admin_client)
 
 
@@ -391,7 +345,9 @@ async def admin_create_bq_pool_low(ctx: SimulatorContext, admin_client: SyftClie
     ],
     trigger=Event.ADMIN_HIGHSIDE_FLOW_COMPLETED,
 )
-async def admin_triage_requests_high(ctx: SimulatorContext, admin_client: SyftClient):
+async def admin_triage_requests_high(
+    ctx: SimulatorContext, admin_client: sy.DatasiteClient
+):
     while True:
         await asyncio.sleep(random.uniform(5, 10))
 
@@ -452,9 +408,7 @@ async def admin_low_side(ctx: SimulatorContext, admin_auth, users):
 
 @sim_activity(trigger=Event.ADMIN_SYNC_COMPLETED)
 async def admin_sync_to_low_flow(
-    ctx: SimulatorContext,
-    admin_auth_high,
-    admin_auth_low,
+    ctx: SimulatorContext, admin_auth_high: dict, admin_auth_low: dict
 ):
     high_client = sy.login(**admin_auth_high)
     ctx.logger.info("Admin: logged in to high-side")
@@ -485,7 +439,7 @@ async def admin_sync_to_low_flow(
 
 @sim_activity(trigger=Event.ADMIN_SYNC_COMPLETED)
 async def admin_sync_to_high_flow(
-    ctx: SimulatorContext, admin_auth_high, admin_auth_low
+    ctx: SimulatorContext, admin_auth_high: dict, admin_auth_low: dict
 ):
     high_client = sy.login(**admin_auth_high)
     ctx.logger.info("Admin low: logged in to high-side")

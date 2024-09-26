@@ -7,20 +7,22 @@ import random
 
 # third party
 from faker import Faker
-from l0_test import Event
-from l0_test import admin_create_bq_pool_high
-from l0_test import admin_create_endpoint
-from l0_test import admin_signup_users
-from l0_test import query_sql
 import pytest
-from sim.core import Simulator
-from sim.core import SimulatorContext
-from sim.core import sim_activity
-from sim.core import sim_entrypoint
 
 # syft absolute
 import syft as sy
-from syft.client.client import SyftClient
+
+# relative
+from .flows.user_bigquery_api import bq_submit_query
+from .flows.user_bigquery_api import bq_test_query
+from .l0_test import Event
+from .l0_test import admin_create_bq_pool_high
+from .l0_test import admin_create_endpoint
+from .l0_test import admin_signup_users
+from .sim.core import Simulator
+from .sim.core import SimulatorContext
+from .sim.core import sim_activity
+from .sim.core import sim_entrypoint
 
 fake = Faker()
 
@@ -31,7 +33,7 @@ fake = Faker()
         Event.USER_CAN_SUBMIT_QUERY,
     ]
 )
-async def admin_triage_requests(ctx: SimulatorContext, admin_client: SyftClient):
+async def admin_triage_requests(ctx: SimulatorContext, admin_client: sy.DatasiteClient):
     while True:
         await asyncio.sleep(random.uniform(3, 5))
         ctx.logger.info("Admin: Triaging requests")
@@ -72,16 +74,7 @@ async def admin_flow(
 )
 async def user_query_test_endpoint(ctx: SimulatorContext, client: sy.DatasiteClient):
     """Run query on test endpoint"""
-
-    user = client.logged_in_user
-
-    def _query_endpoint():
-        ctx.logger.info(f"User: {user} - Calling client.api.bigquery.test_query (mock)")
-        res = client.api.bigquery.test_query(sql_query=query_sql())
-        assert len(res) == 10000
-        ctx.logger.info(f"User: {user} - Received {len(res)} rows")
-
-    await asyncio.to_thread(_query_endpoint)
+    await asyncio.to_thread(bq_test_query, ctx, client)
 
 
 @sim_activity(
@@ -93,19 +86,7 @@ async def user_query_test_endpoint(ctx: SimulatorContext, client: sy.DatasiteCli
 )
 async def user_bq_submit(ctx: SimulatorContext, client: sy.DatasiteClient):
     """Submit query to be run on private data"""
-    user = client.logged_in_user
-
-    def _submit_endpoint():
-        ctx.logger.info(
-            f"User: {user} - Calling client.api.services.bigquery.submit_query"
-        )
-        res = client.api.bigquery.submit_query(
-            func_name="invalid_func",
-            query=query_sql(),
-        )
-        ctx.logger.info(f"User: {user} - Received {res}")
-
-    await asyncio.to_thread(_submit_endpoint)
+    await asyncio.to_thread(bq_submit_query, ctx, client)
 
 
 @sim_activity(
