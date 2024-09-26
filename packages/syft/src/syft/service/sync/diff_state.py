@@ -1137,6 +1137,7 @@ class ServerDiff(SyftObject):
 
         # relative
         from .resolve_widget import PaginatedResolveWidget
+
         if filter_ignored:
             batches = [b for b in self.batches if b.decision != SyncDecision.IGNORE]
         else:
@@ -1534,7 +1535,8 @@ It will be available for review again."""
             )
         if include_types is not None:
             include_types_ = {
-                t.__name__.lower() if isinstance(t, type) else t.lower() for t in include_types
+                t.__name__.lower() if isinstance(t, type) else t.lower()
+                for t in include_types
             }
             new_filters.append(
                 ServerDiffFilter(FilterProperty.TYPE, include_types_, operator.contains)

@@ -19,7 +19,8 @@ from ipywidgets import Layout
 from ipywidgets import VBox
 
 # relative
-from ...client.sync_decision import SyncDecision, SyncDirection
+from ...client.sync_decision import SyncDecision
+from ...client.sync_decision import SyncDirection
 from ...types.errors import SyftException
 from ...types.uid import UID
 from ...util.notebook_ui.components.sync import Alert
@@ -477,10 +478,12 @@ class ResolveWidget:
         if self.on_ignore_callback:
             self.on_ignore_callback()
 
-    def deny_and_ignore(self, reason:str):
+    def deny_and_ignore(self, reason: str):
         self.ignore()
         batch = self.obj_diff_batch
-        from syft.service.request.request import Request
+        # relative
+        from ..request.request import Request
+
         assert batch.root_type == Request, "method can only be excecuted on requests"
         request = batch.root.low_obj
         assert request is not None
@@ -838,7 +841,10 @@ class PaginatedResolveWidget:
 
     def _sync_all(self) -> None:
         for idx, widget in enumerate(self.resolve_widgets):
-            if widget.obj_diff_batch.decision in [SyncDecision.IGNORE, SyncDecision.SKIP]:
+            if widget.obj_diff_batch.decision in [
+                SyncDecision.IGNORE,
+                SyncDecision.SKIP,
+            ]:
                 print(f"skipping row {idx} (skipped/ignored)")
             else:
                 widget.click_sync()

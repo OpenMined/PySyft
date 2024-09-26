@@ -292,7 +292,10 @@ class UserCodeStatusCollection(SyncableSyftObject):
         approval_decision = list(self.status_dict.values())[0]
         ext_approval_decision = list(ext_obj.status_dict.values())[0]
 
-        if approval_decision.status != ext_approval_decision.status or approval_decision.reason != ext_approval_decision.reason:
+        if (
+            approval_decision.status != ext_approval_decision.status
+            or approval_decision.reason != ext_approval_decision.reason
+        ):
             diff_attr = AttrDiff(
                 attr_name="status_dict",
                 low_attr=approval_decision,

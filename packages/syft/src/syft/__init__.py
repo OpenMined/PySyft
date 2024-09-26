@@ -54,8 +54,6 @@ from .service.api.api import api_endpoint
 from .service.api.api import api_endpoint_method
 from .service.api.api import create_new_api_endpoint as TwinAPIEndpoint
 from .service.code.user_code import UserCodeStatus
-from .util.reset_server import make_copy
-from .util.reset_server import restore_copy
 from .service.code.user_code import syft_function
 from .service.code.user_code import syft_function_single_use
 from .service.data_subject import DataSubjectCreate as DataSubject
@@ -93,6 +91,8 @@ from .util.autoreload import disable_autoreload
 from .util.autoreload import enable_autoreload
 from .util.commit import __commit__
 from .util.patch_ipython import patch_ipython
+from .util.reset_server import make_copy
+from .util.reset_server import restore_copy
 from .util.telemetry import instrument
 from .util.util import autocache
 from .util.util import get_root_data_path
