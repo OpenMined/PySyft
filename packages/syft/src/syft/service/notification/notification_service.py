@@ -2,12 +2,11 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..notifier.notifier import NotifierSettings
@@ -27,14 +26,11 @@ from .notifications import NotificationStatus
 from .notifications import ReplyNotification
 
 
-@instrument
 @serializable(canonical_name="NotificationService", version=1)
 class NotificationService(AbstractService):
-    store: DocumentStore
     stash: NotificationStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = NotificationStash(store=store)
 
     @service_method(path="notifications.send", name="send")
@@ -55,9 +51,9 @@ class NotificationService(AbstractService):
             context.credentials, new_notification, add_permissions=permissions
         ).unwrap()
 
-        notifier_service = context.server.get_service("notifierservice")
-        notifier_service.dispatch_notification(context, new_notification).unwrap()
-
+        context.server.services.notifier.dispatch_notification(
+            context, new_notification
+        ).unwrap()
         return new_notification
 
     @service_method(path="notifications.reply", name="reply", roles=GUEST_ROLE_LEVEL)
@@ -85,8 +81,7 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotifierSettings:
-        notifier_service = context.server.get_service("notifierservice")
-        return notifier_service.user_settings(context)
+        return context.server.services.notifier.user_settings(context)
 
     @service_method(
         path="notifications.settings",
@@ -97,35 +92,31 @@ class NotificationService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotifierSettings:
-        notifier_service = context.server.get_service("notifierservice")
-        result = notifier_service.settings(context).unwrap()
-        return result
+        return context.server.services.notifier.settings(context).unwrap()
 
     @service_method(
         path="notifications.activate",
         name="activate",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def activate(
         self,
         context: AuthedServiceContext,
     ) -> Notification:
-        notifier_service = context.server.get_service("notifierservice")
-        result = notifier_service.activate(context)
-        return result
+        return context.server.services.notifier.activate(context).unwrap()
 
     @service_method(
         path="notifications.deactivate",
         name="deactivate",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def deactivate(
         self,
         context: AuthedServiceContext,
-    ) -> Notification:
-        notifier_service = context.server.get_service("notifierservice")
-        result = notifier_service.deactivate(context)
-        return result
+    ) -> SyftSuccess:
+        return context.server.services.notifier.deactivate(context).unwrap()
 
     @service_method(
         path="notifications.get_all",

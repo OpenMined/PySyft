@@ -188,16 +188,6 @@ class QueryKey(PartitionKey):
     def as_dict(self) -> dict[str, Any]:
         return {self.key: self.value}
 
-    @property
-    def as_dict_mongo(self) -> dict[str, Any]:
-        key = self.key
-        if key == "id":
-            key = "_id"
-        if self.type_list:
-            # We want to search inside the list of values
-            return {key: {"$in": self.value}}
-        return {key: self.value}
-
 
 @serializable(canonical_name="PartitionKeysWithUID", version=1)
 class PartitionKeysWithUID(PartitionKeys):
@@ -273,21 +263,6 @@ class QueryKeys(SyftBaseModel):
             qk_dict[qk_key] = qk_value
         return qk_dict
 
-    @property
-    def as_dict_mongo(self) -> dict:
-        qk_dict = {}
-        for qk in self.all:
-            qk_key = qk.key
-            qk_value = qk.value
-            if qk_key == "id":
-                qk_key = "_id"
-            if qk.type_list:
-                # We want to search inside the list of values
-                qk_dict[qk_key] = {"$in": qk_value}
-            else:
-                qk_dict[qk_key] = qk_value
-        return qk_dict
-
 
 UIDPartitionKey = PartitionKey(key="id", type_=UID)
 
@@ -307,7 +282,6 @@ class PartitionSettings(BasePartitionSettings):
         return PartitionKeys.from_dict(self.object_type._syft_searchable_keys_dict())
 
 
-@instrument
 @serializable(
     attrs=["settings", "store_config", "unique_cks", "searchable_cks"],
     canonical_name="StorePartition",
@@ -600,7 +574,6 @@ class StorePartition:
         raise NotImplementedError
 
 
-@instrument
 @serializable(canonical_name="DocumentStore", version=1)
 class DocumentStore:
     """Base Document Store
@@ -629,30 +602,8 @@ class DocumentStore:
     def __has_admin_permissions(
         self, settings: PartitionSettings
     ) -> Callable[[SyftVerifyKey], bool]:
-        # relative
-        from ..service.user.user import User
-        from ..service.user.user_roles import ServiceRole
-        from ..service.user.user_stash import UserStash
-
-        # leave out UserStash to avoid recursion
-        # TODO: pass the callback from BaseStash instead of DocumentStore
-        # so that this works with UserStash after the sqlite thread fix is merged
-        if settings.object_type is User:
-            return lambda credentials: False
-
-        user_stash = UserStash(store=self)
-
         def has_admin_permissions(credentials: SyftVerifyKey) -> bool:
-            res = user_stash.get_by_verify_key(
-                credentials=credentials,
-                verify_key=credentials,
-            )
-
-            return (
-                res.is_ok()
-                and (user := res.ok()) is not None
-                and user.role in (ServiceRole.DATA_OWNER, ServiceRole.ADMIN)
-            )
+            return credentials == self.root_verify_key
 
         return has_admin_permissions
 
@@ -704,7 +655,6 @@ class NewBaseStash:
     partition: StorePartition
 
     def __init__(self, store: DocumentStore) -> None:
-        self.store = store
         self.partition = store.partition(type(self).settings)
 
     @as_result(StashException)

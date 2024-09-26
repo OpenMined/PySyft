@@ -130,8 +130,7 @@ class PythonServerRoute(SyftObject, ServerRoute):
             server_type=self.worker_settings.server_type,
             server_side_type=self.worker_settings.server_side_type,
             signing_key=self.worker_settings.signing_key,
-            document_store_config=self.worker_settings.document_store_config,
-            action_store_config=self.worker_settings.action_store_config,
+            db_config=self.worker_settings.db_config,
             processes=1,
         )
         return server

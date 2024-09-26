@@ -42,13 +42,16 @@ from ...types.server_url import ServerURL
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.uid import UID
 from ...util.constants import DEFAULT_TIMEOUT
-
-logger = logging.getLogger(__name__)
+from ...util.telemetry import instrument_botocore
 
 MAX_QUEUE_SIZE = 100
 WRITE_EXPIRATION_TIME = 900  # seconds
 DEFAULT_FILE_PART_SIZE = 1024**3  # 1GB
 DEFAULT_UPLOAD_CHUNK_SIZE = 1024 * 800  # 800KB
+
+logger = logging.getLogger(__name__)
+
+instrument_botocore()
 
 
 @serializable()

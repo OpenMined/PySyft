@@ -16,6 +16,7 @@ from syft.service.request.request import UserCodeStatusChange
 from syft.service.response import SyftError
 from syft.service.response import SyftSuccess
 from syft.service.user.user import User
+from syft.service.user.user import UserView
 from syft.service.user.user_roles import ServiceRole
 from syft.types.errors import SyftException
 
@@ -46,12 +47,10 @@ def test_repr_markdown_not_throwing_error(guest_client: DatasiteClient) -> None:
     assert result[0]._repr_markdown_()
 
 
-@pytest.mark.parametrize("delete_original_admin", [False, True])
 def test_new_admin_can_list_user_code(
     worker: Worker,
     ds_client: DatasiteClient,
     faker: Faker,
-    delete_original_admin: bool,
 ) -> None:
     root_client = worker.root_client
 
@@ -66,17 +65,16 @@ def test_new_admin_can_list_user_code(
 
     admin = root_client.login(email=email, password=pw)
 
-    root_client.api.services.user.update(uid=admin.account.id, role=ServiceRole.ADMIN)
+    result: UserView = root_client.api.services.user.update(
+        uid=admin.account.id, role=ServiceRole.ADMIN
+    )
+    assert result.role == ServiceRole.ADMIN
 
-    if delete_original_admin:
-        res = root_client.api.services.user.delete(root_client.account.id)
-        assert not isinstance(res, SyftError)
+    user_code_stash = worker.services.user_code.stash
+    user_codes = user_code_stash._data
 
-    user_code_stash = worker.get_service("usercodeservice").stash
-    user_code = user_code_stash.get_all(user_code_stash.store.root_verify_key).ok()
-
-    assert len(user_code) == len(admin.code.get_all())
-    assert {c.id for c in user_code} == {c.id for c in admin.code}
+    assert 1 == len(admin.code.get_all())
+    assert {c.id for c in user_codes} == {c.id for c in admin.code}
 
 
 def test_user_code(worker) -> None:

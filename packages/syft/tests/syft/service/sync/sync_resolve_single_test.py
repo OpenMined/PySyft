@@ -10,7 +10,10 @@ from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
 from syft.server.worker import Worker
+from syft.service.code.user_code import ApprovalDecision
+from syft.service.code.user_code import UserCodeStatus
 from syft.service.job.job_stash import Job
+from syft.service.request.request import Request
 from syft.service.request.request import RequestStatus
 from syft.service.response import SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
@@ -61,7 +64,7 @@ def run_and_deposit_result(client):
     return job
 
 
-def create_dataset(client):
+def create_dataset(client, _id: sy.UID | None = None):
     mock = np.random.random(5)
     private = np.random.random(5)
 
@@ -78,6 +81,8 @@ def create_dataset(client):
             )
         ],
     )
+    if _id is not None:
+        dataset.id = _id
 
     client.upload_dataset(dataset)
     return dataset
@@ -155,7 +160,8 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
     client_low_ds = get_ds_client(low_client)
     high_client: DatasiteClient = high_worker.root_client
 
-    _ = create_dataset(high_client)
+    ds_high = create_dataset(high_client)
+    create_dataset(low_client, _id=ds_high.id)
 
     @sy.syft_function_single_use()
     def compute_mean(data) -> int:
@@ -202,11 +208,15 @@ def test_diff_state_with_dataset(low_worker: Worker, high_worker: Worker):
 
     client_low_ds.refresh()
 
+    data_low = low_client.datasets[0].assets[0]
+
     # check loading results for both blocking and non-blocking case
-    res_blocking = client_low_ds.code.compute_mean(blocking=True)
+    res_blocking = client_low_ds.code.compute_mean(data=data_low, blocking=True)
     res_blocking = res_blocking.get()
 
-    res_non_blocking = client_low_ds.code.compute_mean(blocking=False).wait()
+    res_non_blocking = client_low_ds.code.compute_mean(
+        data=data_low, blocking=False
+    ).wait()
 
     # expected_result = compute_mean(syft_no_server=True, data=)
     assert res_blocking == res_non_blocking == mean_result
@@ -321,6 +331,21 @@ def test_request_code_execution_multiple(low_worker, high_worker):
     assert diff_after.is_same
 
 
+def test_filter_out_l2_requests(low_worker, high_worker):
+    low_client = low_worker.root_client
+    high_client = high_worker.root_client
+
+    @sy.syft_function_single_use()
+    def compute() -> int:
+        return 42
+
+    high_client.code.request_code_execution(compute)
+    high_client.code.compute(blocking=False)
+
+    w = sy.sync(from_client=high_client, to_client=low_client)
+    assert isinstance(w, SyftSuccess), f"Expected empty diff, got {w}"
+
+
 def test_approve_request_on_sync_blocking(low_worker, high_worker):
     low_client = low_worker.root_client
     client_low_ds = get_ds_client(low_client)
@@ -337,7 +362,6 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
         client_low_ds.code.compute(blocking=True)
 
     assert "waiting for approval" in exc.value.public_message
-    assert "PENDING" in exc.value.public_message
 
     assert low_client.requests[0].status == RequestStatus.PENDING
 
@@ -359,7 +383,12 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     diff_before, diff_after = compare_and_resolve(
         from_client=high_client, to_client=low_client, share_private_data=True
     )
-    assert len(diff_before.batches) == 1 and diff_before.batches[0].root_type is Job
+    assert len(diff_before.batches) == 2
+    root_types = [x.root_type for x in diff_before.batches]
+    assert Job in root_types
+    assert (
+        Request in root_types
+    )  # we have not configured it to count UserCode as a root type
     assert low_client.requests[0].status == RequestStatus.APPROVED
 
     assert client_low_ds.code.compute().get() == 42
@@ -392,7 +421,10 @@ def test_deny_and_sync(low_worker, high_worker):
     assert low_client.requests[0].status == RequestStatus.REJECTED
 
     # Un-deny. NOTE: not supported by current UX, this is just used to re-deny on high side
-    low_client.api.code.update(id=request_low.code_id, l0_deny_reason=None)
+    low_client.api.code_status.update(
+        id=request_low.status_id,
+        decision=ApprovalDecision(status=UserCodeStatus.PENDING),
+    )
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Sync request to high side

@@ -19,15 +19,10 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
-from ...store.document_store import DocumentStore
-from ...store.document_store import NewBaseUIDStoreStash
-from ...store.document_store import PartitionKey
+from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
-from ...store.document_store import UIDPartitionKey
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
-from ...store.document_store_errors import TooManyItemsFoundException
 from ...types.datetime import DateTime
 from ...types.datetime import format_timedelta
 from ...types.errors import SyftException
@@ -39,7 +34,6 @@ from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ...util.markdown import as_markdown_code
-from ...util.telemetry import instrument
 from ...util.util import prompt_warning_message
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
@@ -123,6 +117,7 @@ class Job(SyncableSyftObject):
         "user_code_id",
         "result_id",
     ]
+
     __repr_attrs__ = [
         "id",
         "result",
@@ -131,6 +126,7 @@ class Job(SyncableSyftObject):
         "creation_time",
         "user_code_name",
     ]
+
     __exclude_sync_diff_attrs__ = ["action", "server_uid"]
     __table_coll_widths__ = [
         "min-content",
@@ -311,8 +307,7 @@ class Job(SyncableSyftObject):
         return api.services.job.get_subjobs(self.id)
 
     def get_subjobs(self, context: AuthedServiceContext) -> list["Job"]:
-        job_service = context.server.get_service("jobservice")
-        return job_service.get_subjobs(context, self.id)
+        return context.server.services.job.get_subjobs(context, self.id)
 
     @property
     def owner(self) -> UserView:
@@ -644,11 +639,14 @@ class Job(SyncableSyftObject):
         if self.user_code_id is not None:
             dependencies.append(self.user_code_id)
 
-        output = context.server.get_service("outputservice").get_by_job_id(  # type: ignore
-            context, self.id
-        )
-        if output is not None:
-            dependencies.append(output.id)
+        try:
+            output = context.server.services.output.get_by_job_id(  # type: ignore
+                context, self.id
+            )
+            if output is not None:
+                dependencies.append(output.id)
+        except NotFoundException:
+            pass
 
         return dependencies
 
@@ -736,16 +734,11 @@ class JobInfo(SyftObject):
         return info
 
 
-@instrument
-@serializable(canonical_name="JobStash", version=1)
-class JobStash(NewBaseUIDStoreStash):
-    object_type = Job
+@serializable(canonical_name="JobStashSQL", version=1)
+class JobStash(ObjectStash[Job]):
     settings: PartitionSettings = PartitionSettings(
         name=Job.__canonical_name__, object_type=Job
     )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
 
     @as_result(StashException)
     def set_result(
@@ -761,65 +754,40 @@ class JobStash(NewBaseUIDStoreStash):
             and item.result.syft_blob_storage_entry_id is not None
         ):
             item.result._clear_cache()
-        return (
-            super()
-            .update(credentials, item, add_permissions)
-            .unwrap(public_message="Failed to update")
+        return self.update(credentials, item, add_permissions).unwrap(
+            public_message="Failed to update"
         )
 
-    @as_result(StashException)
-    def get_by_result_id(
-        self,
-        credentials: SyftVerifyKey,
-        result_id: UID,
-    ) -> Job:
-        qks = QueryKeys(
-            qks=[PartitionKey(key="result_id", type_=UID).with_obj(result_id)]
-        )
-        res = self.query_all(credentials=credentials, qks=qks).unwrap()
-
-        if len(res) == 0:
-            raise NotFoundException()
-        elif len(res) > 1:
-            raise TooManyItemsFoundException()
-        else:
-            return res[0]
-
-    @as_result(StashException)
-    def get_by_parent_id(self, credentials: SyftVerifyKey, uid: UID) -> list[Job]:
-        qks = QueryKeys(
-            qks=[PartitionKey(key="parent_job_id", type_=UID).with_obj(uid)]
-        )
-        return self.query_all(credentials=credentials, qks=qks).unwrap()
-
-    @as_result(StashException)
-    def delete_by_uid(self, credentials: SyftVerifyKey, uid: UID) -> bool:  # type: ignore[override]
-        qk = UIDPartitionKey.with_obj(uid)
-        return super().delete(credentials=credentials, qk=qk).unwrap()
-
-    @as_result(StashException)
     def get_active(self, credentials: SyftVerifyKey) -> list[Job]:
-        qks = QueryKeys(
-            qks=[
-                PartitionKey(key="status", type_=JobStatus).with_obj(
-                    JobStatus.PROCESSING
-                )
-            ]
-        )
-        return self.query_all(credentials=credentials, qks=qks).unwrap()
+        return self.get_all(
+            credentials=credentials,
+            filters={"status": JobStatus.CREATED},
+        ).unwrap()
 
-    @as_result(StashException)
     def get_by_worker(self, credentials: SyftVerifyKey, worker_id: str) -> list[Job]:
-        qks = QueryKeys(
-            qks=[PartitionKey(key="job_worker_id", type_=str).with_obj(worker_id)]
-        )
-        return self.query_all(credentials=credentials, qks=qks).unwrap()
+        return self.get_all(
+            credentials=credentials,
+            filters={"job_worker_id": worker_id},
+        ).unwrap()
 
     @as_result(StashException)
     def get_by_user_code_id(
         self, credentials: SyftVerifyKey, user_code_id: UID
     ) -> list[Job]:
-        qks = QueryKeys(
-            qks=[PartitionKey(key="user_code_id", type_=UID).with_obj(user_code_id)]
-        )
-        return self.query_all(credentials=credentials, qks=qks).unwrap()
+        return self.get_all(
+            credentials=credentials,
+            filters={"user_code_id": user_code_id},
+        ).unwrap()
+
+    @as_result(StashException)
+    def get_by_parent_id(self, credentials: SyftVerifyKey, uid: UID) -> list[Job]:
+        return self.get_all(
+            credentials=credentials,
+            filters={"parent_job_id": uid},
+        ).unwrap()
+
+    @as_result(StashException)
+    def get_by_result_id(self, credentials: SyftVerifyKey, uid: UID) -> Job:
+        return self.get_one(
+            credentials=credentials, filters={"result_id": uid}
+        ).unwrap()

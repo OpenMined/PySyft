@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 # third party
+from pydantic import EmailStr
 from pydantic import field_validator
 from pydantic import model_validator
 from typing_extensions import Self
@@ -30,6 +31,9 @@ from ...util.schema import DEFAULT_WELCOME_MSG
 
 logger = logging.getLogger(__name__)
 
+MIN_ORG_NAME_LENGTH = 1
+MIN_SERVER_NAME_LENGTH = 1
+
 
 @serializable()
 class PwdTokenResetConfig(SyftObject):
@@ -39,7 +43,8 @@ class PwdTokenResetConfig(SyftObject):
     ascii: bool = True
     numbers: bool = True
     token_len: int = 12
-    token_exp_min: int = 30
+    # Token expiration time in seconds (not minutes)
+    token_exp_min: int = 1800  # TODO: Rename variable to token_exp_sec
 
     @model_validator(mode="after")
     def validate_char_types(self) -> Self:
@@ -237,7 +242,7 @@ class ServerSettings(SyftObject):
     description: str = "This is the default description for a Datasite Server."
     server_type: ServerType = ServerType.DATASITE
     signup_enabled: bool
-    admin_email: str
+    admin_email: EmailStr
     server_side_type: ServerSideType = ServerSideType.HIGH_SIDE
     show_warnings: bool
     association_request_auto_approval: bool
@@ -249,6 +254,22 @@ class ServerSettings(SyftObject):
     notifications_enabled: bool
     pwd_token_config: PwdTokenResetConfig = PwdTokenResetConfig()
     allow_guest_sessions: bool = True
+
+    @field_validator("organization")
+    def organization_length(cls, v: str) -> str:
+        if len(v) < MIN_ORG_NAME_LENGTH:
+            raise ValueError(
+                f"'organization' must be at least {MIN_ORG_NAME_LENGTH} characters long"
+            )
+        return v
+
+    @field_validator("name")
+    def name_length(cls, v: str) -> str:
+        if len(v) < MIN_SERVER_NAME_LENGTH:
+            raise ValueError(
+                f'"name" must be at least {MIN_SERVER_NAME_LENGTH} characters long'
+            )
+        return v
 
     def _repr_html_(self) -> Any:
         # .api.services.notifications.settings() is how the server itself would dispatch notifications.

@@ -1,3 +1,4 @@
+# futureserver.py
 # future
 from __future__ import annotations
 
@@ -6,6 +7,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from datetime import MINYEAR
 from datetime import datetime
+from datetime import timezone
 from functools import partial
 import hashlib
 import json
@@ -14,9 +16,11 @@ import os
 from pathlib import Path
 import subprocess  # nosec
 import sys
+import threading
 from time import sleep
 import traceback
 from typing import Any
+from typing import TypeVar
 from typing import cast
 
 # third party
@@ -33,16 +37,11 @@ from ..client.api import SyftAPICall
 from ..client.api import SyftAPIData
 from ..client.api import debox_signed_syftapicall_response
 from ..client.client import SyftClient
+from ..deployment_type import DeploymentType
 from ..protocol.data_protocol import PROTOCOL_TYPE
 from ..protocol.data_protocol import get_data_protocol
 from ..service.action.action_object import Action
 from ..service.action.action_object import ActionObject
-from ..service.action.action_store import ActionStore
-from ..service.action.action_store import DictActionStore
-from ..service.action.action_store import MongoActionStore
-from ..service.action.action_store import SQLiteActionStore
-from ..service.blob_storage.service import BlobStorageService
-from ..service.code.user_code_service import UserCodeService
 from ..service.code.user_code_stash import UserCodeStash
 from ..service.context import AuthedServiceContext
 from ..service.context import ServerServiceContext
@@ -53,21 +52,22 @@ from ..service.job.job_stash import JobStash
 from ..service.job.job_stash import JobStatus
 from ..service.job.job_stash import JobType
 from ..service.metadata.server_metadata import ServerMetadata
-from ..service.network.network_service import NetworkService
 from ..service.network.utils import PeerHealthCheckTask
 from ..service.notifier.notifier_service import NotifierService
+from ..service.output.output_service import OutputStash
 from ..service.queue.base_queue import AbstractMessageHandler
 from ..service.queue.base_queue import QueueConsumer
 from ..service.queue.base_queue import QueueProducer
 from ..service.queue.queue import APICallMessageHandler
+from ..service.queue.queue import ConsumerType
 from ..service.queue.queue import QueueManager
 from ..service.queue.queue_stash import APIEndpointQueueItem
 from ..service.queue.queue_stash import ActionQueueItem
 from ..service.queue.queue_stash import QueueItem
 from ..service.queue.queue_stash import QueueStash
-from ..service.queue.zmq_queue import QueueConfig
-from ..service.queue.zmq_queue import ZMQClientConfig
-from ..service.queue.zmq_queue import ZMQQueueConfig
+from ..service.queue.zmq_client import QueueConfig
+from ..service.queue.zmq_client import ZMQClientConfig
+from ..service.queue.zmq_client import ZMQQueueConfig
 from ..service.response import SyftError
 from ..service.response import SyftSuccess
 from ..service.service import AbstractService
@@ -75,17 +75,13 @@ from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
 from ..service.settings.settings import ServerSettings
 from ..service.settings.settings import ServerSettingsUpdate
-from ..service.settings.settings_stash import SettingsStash
 from ..service.user.user import User
 from ..service.user.user import UserCreate
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
-from ..service.user.user_service import UserService
-from ..service.user.user_stash import UserStash
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
-from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool import WorkerPool
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_pool_stash import SyftWorkerPoolStash
@@ -94,14 +90,16 @@ from ..store.blob_storage import BlobStorageConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageClientConfig
 from ..store.blob_storage.on_disk import OnDiskBlobStorageConfig
 from ..store.blob_storage.seaweedfs import SeaweedFSBlobDeposit
-from ..store.dict_document_store import DictStoreConfig
-from ..store.document_store import StoreConfig
+from ..store.db.db import DBConfig
+from ..store.db.db import DBManager
+from ..store.db.postgres import PostgresDBConfig
+from ..store.db.postgres import PostgresDBManager
+from ..store.db.sqlite import SQLiteDBConfig
+from ..store.db.sqlite import SQLiteDBManager
+from ..store.db.stash import ObjectStash
 from ..store.document_store_errors import NotFoundException
 from ..store.document_store_errors import StashException
 from ..store.linked_obj import LinkedObject
-from ..store.mongo_document_store import MongoStoreConfig
-from ..store.sqlite_document_store import SQLiteStoreClientConfig
-from ..store.sqlite_document_store import SQLiteStoreConfig
 from ..types.datetime import DATETIME_FORMAT
 from ..types.errors import SyftException
 from ..types.result import Result
@@ -129,6 +127,8 @@ from .utils import remove_temp_dir_for_server
 from .worker_settings import WorkerSettings
 
 logger = logging.getLogger(__name__)
+
+SyftT = TypeVar("SyftT", bound=SyftObject)
 
 # if user code needs to be serded and its not available we can call this to refresh
 # the code for a specific server UID and thread
@@ -296,7 +296,6 @@ class AuthServerContextRegistry:
         return cls.__server_context_registry__.get(key)
 
 
-@instrument
 class Server(AbstractServer):
     signing_key: SyftSigningKey | None
     required_signed_calls: bool = True
@@ -308,15 +307,14 @@ class Server(AbstractServer):
         name: str | None = None,
         id: UID | None = None,
         signing_key: SyftSigningKey | SigningKey | None = None,
-        action_store_config: StoreConfig | None = None,
-        document_store_config: StoreConfig | None = None,
+        db_config: DBConfig | None = None,
         root_email: str | None = default_root_email,
         root_username: str | None = default_root_username,
         root_password: str | None = default_root_password,
         processes: int = 0,
         is_subprocess: bool = False,
         server_type: str | ServerType = ServerType.DATASITE,
-        local_db: bool = False,
+        deployment_type: str | DeploymentType = "remote",
         reset: bool = False,
         blob_storage_config: BlobStorageConfig | None = None,
         queue_config: QueueConfig | None = None,
@@ -329,6 +327,7 @@ class Server(AbstractServer):
         dev_mode: bool = False,
         migrate: bool = False,
         in_memory_workers: bool = True,
+        log_level: int | None = None,
         smtp_username: str | None = None,
         smtp_password: str | None = None,
         email_sender: str | None = None,
@@ -336,6 +335,8 @@ class Server(AbstractServer):
         smtp_host: str | None = None,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        consumer_type: ConsumerType | None = None,
+        db_url: str | None = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -351,10 +352,19 @@ class Server(AbstractServer):
         self.server_side_type = ServerSideType(server_side_type)
         self.client_cache: dict = {}
         self.peer_client_cache: dict = {}
+        self._settings = None
 
         if isinstance(server_type, str):
             server_type = ServerType(server_type)
+
         self.server_type = server_type
+
+        if isinstance(deployment_type, str):
+            deployment_type = DeploymentType(deployment_type)
+        self.deployment_type = deployment_type
+
+        # do this after we set the deployment type
+        self.set_log_level(log_level)
 
         if isinstance(server_side_type, str):
             server_side_type = ServerSideType(server_side_type)
@@ -371,10 +381,15 @@ class Server(AbstractServer):
 
         self.association_request_auto_approval = association_request_auto_approval
 
+        consumer_type = (
+            consumer_type or ConsumerType.Thread
+            if thread_workers
+            else ConsumerType.Process
+        )
         self.queue_config = self.create_queue_config(
             n_consumers=n_consumers,
             create_producer=create_producer,
-            thread_workers=thread_workers,
+            consumer_type=consumer_type,
             queue_port=queue_port,
             queue_config=queue_config,
         )
@@ -383,27 +398,27 @@ class Server(AbstractServer):
         if reset:
             self.remove_temp_dir()
 
-        use_sqlite = local_db or (processes > 0 and not is_subprocess)
-        document_store_config = document_store_config or self.get_default_store(
-            use_sqlite=use_sqlite,
-            store_type="Document Store",
-        )
-        action_store_config = action_store_config or self.get_default_store(
-            use_sqlite=use_sqlite,
-            store_type="Action Store",
-        )
-        self.init_stores(
-            action_store_config=action_store_config,
-            document_store_config=document_store_config,
-        )
+        db_config = DBConfig.from_connection_string(db_url) if db_url else db_config
+
+        if db_config is None:
+            db_config = SQLiteDBConfig(
+                filename=f"{self.id}_json.db",
+                path=self.get_temp_dir("db"),
+            )
+
+        self.db_config = db_config
+
+        self.db = self.init_stores(db_config=self.db_config)
 
         # construct services only after init stores
         self.services: ServiceRegistry = ServiceRegistry.for_server(self)
+        self.db.init_tables(reset=reset)
+        self.action_store = self.services.action.stash
 
-        create_admin_new(  # nosec B106
+        create_root_admin_if_not_exists(
             name=root_username,
             email=root_email,
-            password=root_password,
+            password=root_password,  # nosec
             server=self,
         )
 
@@ -443,6 +458,73 @@ class Server(AbstractServer):
             self.run_peer_health_checks(context=context)
 
         ServerRegistry.set_server_for(self.id, self)
+        email_dispatcher = threading.Thread(target=self.email_notification_dispatcher)
+        email_dispatcher.daemon = True
+        email_dispatcher.start()
+
+    def email_notification_dispatcher(self) -> None:
+        lock = threading.Lock()
+        while True:
+            # Use admin context to have access to the notifier obj
+            context = AuthedServiceContext(
+                server=self,
+                credentials=self.verify_key,
+                role=ServiceRole.ADMIN,
+            )
+            # Get notitifer settings
+            notifier_settings = self.services.notifier.settings(
+                context=context
+            ).unwrap()
+            lock.acquire()
+            # Iterate over email_types and its queues
+            # Ex: {'EmailRequest': {VerifyKey: [], VerifyKey: [], ...}}
+            for email_template, email_queue in notifier_settings.email_queue.items():
+                # Get the email frequency of that specific email type
+                email_frequency = notifier_settings.email_frequency[email_template]
+                for verify_key, queue in email_queue.items():
+                    if self.services.notifier.is_time_to_dispatch(
+                        email_frequency, datetime.now(timezone.utc)
+                    ):
+                        notifier_settings.send_batched_notification(
+                            context=context, notification_queue=queue
+                        ).unwrap()
+                        notifier_settings.email_queue[email_template][verify_key] = []
+                        self.services.notifier.stash.update(
+                            credentials=self.verify_key, obj=notifier_settings
+                        ).unwrap()
+            lock.release()
+            sleep(15)
+
+    def set_log_level(self, log_level: int | str | None) -> None:
+        def determine_log_level(
+            log_level: str | int | None, default: int
+        ) -> int | None:
+            if log_level is None:
+                return default
+            if isinstance(log_level, str):
+                level = logging.getLevelName(log_level.upper())
+                if isinstance(level, str) and level.startswith("Level "):
+                    level = logging.INFO  # defaults to info otherwise
+                return level  # type: ignore
+            return log_level
+
+        default = logging.CRITICAL
+        if self.deployment_type == DeploymentType.PYTHON:
+            default = logging.CRITICAL
+        elif self.dev_mode:  # if real deployment and dev mode
+            default = logging.INFO
+
+        self.log_level = determine_log_level(log_level, default)
+
+        logging.getLogger().setLevel(self.log_level)
+
+        if log_level == logging.DEBUG:
+            # only do this if specifically set, very noisy
+            logging.getLogger("uvicorn").setLevel(logging.DEBUG)
+            logging.getLogger("uvicorn.access").setLevel(logging.DEBUG)
+        else:
+            logging.getLogger("uvicorn").setLevel(logging.CRITICAL)
+            logging.getLogger("uvicorn.access").setLevel(logging.CRITICAL)
 
     @property
     def runs_in_docker(self) -> bool:
@@ -452,20 +534,6 @@ class Server(AbstractServer):
             or os.path.isfile(path)
             and any("docker" in line for line in open(path))
         )
-
-    def get_default_store(self, use_sqlite: bool, store_type: str) -> StoreConfig:
-        if use_sqlite:
-            path = self.get_temp_dir("db")
-            file_name: str = f"{self.id}.sqlite"
-            if self.dev_mode:
-                logger.debug(f"{store_type}'s SQLite DB path: {path/file_name}")
-            return SQLiteStoreConfig(
-                client_config=SQLiteStoreClientConfig(
-                    filename=file_name,
-                    path=path,
-                )
-            )
-        return DictStoreConfig()
 
     def init_blob_storage(self, config: BlobStorageConfig | None = None) -> None:
         if config is None:
@@ -485,8 +553,7 @@ class Server(AbstractServer):
         from ..store.blob_storage.seaweedfs import SeaweedFSConfig
 
         if isinstance(config, SeaweedFSConfig) and self.signing_key:
-            blob_storage_service = self.get_service(BlobStorageService)
-            remote_profiles = blob_storage_service.remote_profile_stash.get_all(
+            remote_profiles = self.services.blob_storage.remote_profile_stash.get_all(
                 credentials=self.signing_key.verify_key, has_permission=True
             ).unwrap()
             for remote_profile in remote_profiles:
@@ -535,7 +602,7 @@ class Server(AbstractServer):
         self,
         n_consumers: int,
         create_producer: bool,
-        thread_workers: bool,
+        consumer_type: ConsumerType,
         queue_port: int | None,
         queue_config: QueueConfig | None,
     ) -> QueueConfig:
@@ -544,13 +611,14 @@ class Server(AbstractServer):
         elif queue_port is not None or n_consumers > 0 or create_producer:
             if not create_producer and queue_port is None:
                 logger.warn("No queue port defined to bind consumers.")
+
             queue_config_ = ZMQQueueConfig(
                 client_config=ZMQClientConfig(
                     create_producer=create_producer,
                     queue_port=queue_port,
                     n_consumers=n_consumers,
                 ),
-                thread_workers=thread_workers,
+                consumer_type=consumer_type,
             )
         else:
             queue_config_ = ZMQQueueConfig()
@@ -579,6 +647,7 @@ class Server(AbstractServer):
                     worker_stash=self.worker_stash,
                 )
                 producer.run()
+
                 address = producer.address
             else:
                 port = queue_config.client_config.queue_port
@@ -620,7 +689,7 @@ class Server(AbstractServer):
     ) -> None:
         """Starts in-memory workers for the server."""
 
-        worker_pools = self.pool_stash.get_all(credentials=self.verify_key).ok()
+        worker_pools = self.pool_stash.get_all(credentials=self.verify_key).unwrap()
         for worker_pool in worker_pools:  # type: ignore
             # Skip the default worker pool
             if worker_pool.name == DEFAULT_WORKER_POOL_NAME:
@@ -670,9 +739,9 @@ class Server(AbstractServer):
         name: str,
         processes: int = 0,
         reset: bool = False,
-        local_db: bool = False,
         server_type: str | ServerType = ServerType.DATASITE,
         server_side_type: str | ServerSideType = ServerSideType.HIGH_SIDE,
+        deployment_type: str | DeploymentType = "remote",
         enable_warnings: bool = False,
         n_consumers: int = 0,
         thread_workers: bool = False,
@@ -683,6 +752,10 @@ class Server(AbstractServer):
         in_memory_workers: bool = True,
         association_request_auto_approval: bool = False,
         background_tasks: bool = False,
+        consumer_type: ConsumerType | None = None,
+        db_url: str | None = None,
+        db_config: DBConfig | None = None,
+        log_level: int | None = None,
     ) -> Server:
         uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -697,9 +770,9 @@ class Server(AbstractServer):
             id=uid,
             signing_key=key,
             processes=processes,
-            local_db=local_db,
             server_type=server_type,
             server_side_type=server_side_type,
+            deployment_type=deployment_type,
             enable_warnings=enable_warnings,
             blob_storage_config=blob_storage_config,
             queue_port=queue_port,
@@ -712,6 +785,10 @@ class Server(AbstractServer):
             reset=reset,
             association_request_auto_approval=association_request_auto_approval,
             background_tasks=background_tasks,
+            consumer_type=consumer_type,
+            db_url=db_url,
+            db_config=db_config,
+            log_level=log_level,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -770,8 +847,9 @@ class Server(AbstractServer):
             credentials=self.verify_key,
             role=ServiceRole.ADMIN,
         )
-        migration_service = self.get_service("migrationservice")
-        return migration_service.migrate_data(context, document_store_object_types)
+        return self.services.migration.migrate_data(
+            context, document_store_object_types
+        )
 
     @property
     def guest_client(self) -> SyftClient:
@@ -823,72 +901,48 @@ class Server(AbstractServer):
         )
 
         if "usercodeservice" in self.service_path_map:
-            user_code_service = self.get_service(UserCodeService)
-            user_code_service.load_user_code(context=context)
+            self.services.user_code.load_user_code(context=context)
 
         def reload_user_code() -> None:
-            user_code_service.load_user_code(context=context)
+            self.services.user_code.load_user_code(context=context)
 
         ti = thread_ident()
         if ti is not None:
             CODE_RELOADER[ti] = reload_user_code
 
-    def init_stores(
-        self,
-        document_store_config: StoreConfig,
-        action_store_config: StoreConfig,
-    ) -> None:
-        # We add the python id of the current server in order
-        # to create one connection per Server object in MongoClientCache
-        # so that we avoid closing the connection from a
-        # different thread through the garbage collection
-        if isinstance(document_store_config, MongoStoreConfig):
-            document_store_config.client_config.server_obj_python_id = id(self)
-
-        self.document_store_config = document_store_config
-        self.document_store = document_store_config.store_type(
-            server_uid=self.id,
-            root_verify_key=self.verify_key,
-            store_config=document_store_config,
-        )
-
-        if isinstance(action_store_config, SQLiteStoreConfig):
-            self.action_store: ActionStore = SQLiteActionStore(
+    def init_stores(self, db_config: DBConfig) -> DBManager:
+        if isinstance(db_config, SQLiteDBConfig):
+            db = SQLiteDBManager(
+                config=db_config,
                 server_uid=self.id,
-                store_config=action_store_config,
                 root_verify_key=self.verify_key,
-                document_store=self.document_store,
             )
-        elif isinstance(action_store_config, MongoStoreConfig):
-            # We add the python id of the current server in order
-            # to create one connection per Server object in MongoClientCache
-            # so that we avoid closing the connection from a
-            # different thread through the garbage collection
-            action_store_config.client_config.server_obj_python_id = id(self)
-
-            self.action_store = MongoActionStore(
+        elif isinstance(db_config, PostgresDBConfig):
+            db = PostgresDBManager(  # type: ignore
+                config=db_config,
                 server_uid=self.id,
                 root_verify_key=self.verify_key,
-                store_config=action_store_config,
-                document_store=self.document_store,
             )
         else:
-            self.action_store = DictActionStore(
-                server_uid=self.id,
-                root_verify_key=self.verify_key,
-                document_store=self.document_store,
-            )
+            raise SyftException(public_message=f"Unsupported DB config: {db_config}")
 
-        self.action_store_config = action_store_config
-        self.queue_stash = QueueStash(store=self.document_store)
+        self.queue_stash = QueueStash(store=db)
+
+        print(f"Using {db_config.__class__.__name__} and {db_config.connection_string}")
+
+        return db
 
     @property
     def job_stash(self) -> JobStash:
-        return self.get_service("jobservice").stash
+        return self.services.job.stash
+
+    @property
+    def output_stash(self) -> OutputStash:
+        return self.services.output.stash
 
     @property
     def worker_stash(self) -> WorkerStash:
-        return self.get_service("workerservice").stash
+        return self.services.worker.stash
 
     @property
     def service_path_map(self) -> dict[str, AbstractService]:
@@ -905,6 +959,12 @@ class Server(AbstractServer):
 
     def get_service(self, path_or_func: str | Callable) -> AbstractService:
         return self.services.get_service(path_or_func)
+
+    @as_result(ValueError)
+    def get_stash(self, object_type: SyftT) -> ObjectStash[SyftT]:
+        if object_type not in self.services.stashes:
+            raise ValueError(f"Stash for {object_type} not found.")
+        return self.services.stashes[object_type]
 
     def _get_service_method_from_path(self, path: str) -> Callable:
         path_list = path.split(".")
@@ -943,10 +1003,12 @@ class Server(AbstractServer):
     # it should be removed once the settings are refactored and the inconsistencies between
     # settings and services are resolved.
     def get_settings(self) -> ServerSettings | None:
+        if self._settings:
+            return self._settings  # type: ignore
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
 
-        settings_stash = SettingsStash(store=self.document_store)
+        settings_stash = self.services.settings.stash
 
         try:
             settings = settings_stash.get_all(self.signing_key.verify_key).unwrap()
@@ -954,6 +1016,7 @@ class Server(AbstractServer):
             if len(settings) > 0:
                 setting = settings[0]
                 self.update_self(setting)
+                self._settings = setting
                 return setting
             else:
                 return None
@@ -966,7 +1029,7 @@ class Server(AbstractServer):
         if self.signing_key is None:
             raise ValueError(f"{self} has no signing key")
 
-        settings_stash = SettingsStash(store=self.document_store)
+        settings_stash = self.services.settings.stash
         error_msg = f"Cannot get server settings for '{self.name}'"
 
         all_settings = settings_stash.get_all(self.signing_key.verify_key).unwrap(
@@ -1048,6 +1111,7 @@ class Server(AbstractServer):
                 return result
             sleep(0.1)
 
+    @instrument
     def resolve_future(self, credentials: SyftVerifyKey, uid: UID) -> QueueItem:
         queue_obj = self.queue_stash.pop_on_complete(credentials, uid).unwrap()
         queue_obj._set_obj_location_(
@@ -1056,6 +1120,7 @@ class Server(AbstractServer):
         )
         return queue_obj
 
+    @instrument
     def forward_message(
         self, api_call: SyftAPICall | SignedSyftAPICall
     ) -> Result | QueueItem | SyftObject | Any:
@@ -1069,9 +1134,9 @@ class Server(AbstractServer):
             )
 
         client = None
-
-        network_service = self.get_service(NetworkService)
-        peer = network_service.stash.get_by_uid(self.verify_key, server_uid).unwrap()
+        peer = self.services.network.stash.get_by_uid(
+            self.verify_key, server_uid
+        ).unwrap()
 
         # Since we have several routes to a peer
         # we need to cache the client for a given server_uid along with the route
@@ -1115,12 +1180,11 @@ class Server(AbstractServer):
         raise SyftException(public_message=(f"Server has no route to {server_uid}"))
 
     def get_role_for_credentials(self, credentials: SyftVerifyKey) -> ServiceRole:
-        return (
-            self.get_service("userservice")
-            .get_role_for_credentials(credentials=credentials)
-            .unwrap()
-        )
+        return self.services.user.get_role_for_credentials(
+            credentials=credentials
+        ).unwrap()
 
+    @instrument
     def handle_api_call(
         self,
         api_call: SyftAPICall | SignedSyftAPICall,
@@ -1266,22 +1330,23 @@ class Server(AbstractServer):
         credentials: SyftVerifyKey,
         method: str,
         path: str,
+        log_id: UID,
         *args: Any,
-        worker_pool: str | None = None,
+        worker_pool_name: str | None = None,
         **kwargs: Any,
     ) -> Job:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_server(server=self)
 
-        if worker_pool is None:
-            worker_pool = self.get_default_worker_pool().unwrap()
+        if worker_pool_name is None:
+            worker_pool_name = self.get_default_worker_pool().unwrap()
         else:
-            worker_pool = self.get_worker_pool_by_name(worker_pool).unwrap()
+            worker_pool_name = self.get_worker_pool_by_name(worker_pool_name).unwrap()
 
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
-            worker_pool,
+            worker_pool_name,
             service_type=SyftWorkerPoolService,
             server_uid=self.id,
         )
@@ -1294,7 +1359,7 @@ class Server(AbstractServer):
             job_id=job_id,
             worker_settings=worker_settings,
             args=args,
-            kwargs={"path": path, **kwargs},
+            kwargs={"path": path, "log_id": log_id, **kwargs},
             has_execute_permissions=True,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
@@ -1327,6 +1392,7 @@ class Server(AbstractServer):
         )
         return worker_pool_ref
 
+    @instrument
     @as_result(SyftException)
     def add_action_to_queue(
         self,
@@ -1363,10 +1429,7 @@ class Server(AbstractServer):
             has_execute_permissions=has_execute_permissions,
             worker_pool=worker_pool_ref,  # set worker pool reference as part of queue item
         )
-
-        user_service = self.get_service("UserService")
-        user_service = cast(UserService, user_service)
-        user_id = user_service.get_user_id_for_credentials(credentials).unwrap()
+        user_id = self.services.user.get_user_id_for_credentials(credentials).unwrap()
 
         return self.add_queueitem_to_queue(
             queue_item=queue_item,
@@ -1376,6 +1439,7 @@ class Server(AbstractServer):
             user_id=user_id,
         ).unwrap()
 
+    @instrument
     @as_result(SyftException)
     def add_queueitem_to_queue(
         self,
@@ -1385,14 +1449,13 @@ class Server(AbstractServer):
         action: Action | None = None,
         parent_job_id: UID | None = None,
         user_id: UID | None = None,
+        log_id: UID | None = None,
         job_type: JobType = JobType.JOB,
     ) -> Job:
-        log_id = UID()
+        if log_id is None:
+            log_id = UID()
         role = self.get_role_for_credentials(credentials=credentials)
         context = AuthedServiceContext(server=self, credentials=credentials, role=role)
-
-        action_service = self.get_service("actionservice")
-        log_service = self.get_service("logservice")
 
         result_obj = ActionObject.empty()
         if action is not None:
@@ -1406,10 +1469,10 @@ class Server(AbstractServer):
             result_obj.syft_server_location = self.id
             result_obj.syft_client_verify_key = credentials
 
-            action_service = self.get_service("actionservice")
-
-            if not action_service.store.exists(uid=action.result_id):
-                action_service.set_result_to_store(
+            if not self.services.action.stash.exists(
+                credentials=credentials, uid=action.result_id
+            ):
+                self.services.action.set_result_to_store(
                     result_action_object=result_obj,
                     context=context,
                 ).unwrap()
@@ -1432,7 +1495,7 @@ class Server(AbstractServer):
         self.job_stash.set(credentials, job).unwrap()
         self.queue_stash.set_placeholder(credentials, queue_item).unwrap()
 
-        log_service.add(context, log_id, queue_item.job_id)
+        self.services.log.add(context, log_id, queue_item.job_id)
 
         return job
 
@@ -1456,8 +1519,7 @@ class Server(AbstractServer):
     def _get_existing_user_code_jobs(
         self, context: AuthedServiceContext, user_code_id: UID
     ) -> list[Job]:
-        job_service = self.get_service("jobservice")
-        jobs = job_service.get_by_user_code_id(
+        jobs = self.services.job.get_by_user_code_id(
             context=context, user_code_id=user_code_id
         )
         return self._sort_jobs(jobs)
@@ -1470,11 +1532,11 @@ class Server(AbstractServer):
     ) -> bool:
         if api_call.path != "code.call":
             return False
-        user_code_service = self.get_service("usercodeservice")
-        return user_code_service.is_execution_on_owned_args(
+        return self.services.user_code.is_execution_on_owned_args(
             context, user_code_id, api_call.kwargs
         )
 
+    @instrument
     def add_api_call_to_queue(
         self, api_call: SyftAPICall, parent_job_id: UID | None = None
     ) -> SyftSuccess:
@@ -1498,7 +1560,7 @@ class Server(AbstractServer):
             action = Action.from_api_call(unsigned_call)
             user_code_id = action.user_code_id
 
-            user = self.get_service(UserService).get_current_user(context)
+            user = self.services.user.get_current_user(context)
             user = cast(UserView, user)
 
             is_execution_on_owned_kwargs_allowed = (
@@ -1573,11 +1635,11 @@ class Server(AbstractServer):
 
     @property
     def pool_stash(self) -> SyftWorkerPoolStash:
-        return self.get_service(SyftWorkerPoolService).stash
+        return self.services.syft_worker_pool.stash
 
     @property
     def user_code_stash(self) -> UserCodeStash:
-        return self.get_service(UserCodeService).stash
+        return self.services.user_code.stash
 
     @as_result(NotFoundException)
     def get_default_worker_pool(self) -> WorkerPool | None:
@@ -1592,6 +1654,7 @@ class Server(AbstractServer):
             credentials=self.verify_key, pool_name=name
         ).unwrap()
 
+    @instrument
     def get_api(
         self,
         for_user: SyftVerifyKey | None = None,
@@ -1616,7 +1679,7 @@ class Server(AbstractServer):
 
     @as_result(SyftException, StashException)
     def create_initial_settings(self, admin_email: str) -> ServerSettings:
-        settings_stash = SettingsStash(store=self.document_store)
+        settings_stash = self.services.settings.stash
 
         if self.signing_key is None:
             logger.debug("create_initial_settings failed as there is no signing key")
@@ -1670,17 +1733,32 @@ class Server(AbstractServer):
             ).unwrap()
 
 
-def create_admin_new(
+def create_root_admin_if_not_exists(
     name: str,
     email: str,
     password: str,
-    server: AbstractServer,
+    server: Server,
 ) -> User | None:
-    user_stash = UserStash(store=server.document_store)
+    """
+    If no root admin exists:
+    - all exists checks on the user stash will fail, as we cannot get the role for the admin to check if it exists
+    - result: a new admin is always created
 
-    user_exists = user_stash.email_exists(email=email).unwrap()
-    if user_exists:
-        logger.debug("Admin not created, admin already exists")
+    If a root admin exists with a different email:
+    - cause: DEFAULT_USER_EMAIL env variable is set to a different email than the root admin in the db
+    - verify_key_exists will return True
+    - result: no new admin is created, as the server already has a root admin
+    """
+    user_stash = server.services.user.stash
+
+    email_exists = user_stash.email_exists(email=email).unwrap()
+    if email_exists:
+        logger.debug("Admin not created, a user with this email already exists")
+        return None
+
+    verify_key_exists = user_stash.verify_key_exists(server.verify_key).unwrap()
+    if verify_key_exists:
+        logger.debug("Admin not created, this server already has a root admin")
         return None
 
     create_user = UserCreate(
@@ -1695,12 +1773,12 @@ def create_admin_new(
     # 🟡 TODO: change later but for now this gives the main user super user automatically
     user = create_user.to(User)
     user.signing_key = server.signing_key
-    user.verify_key = user.signing_key.verify_key
+    user.verify_key = server.verify_key
 
     new_user = user_stash.set(
-        credentials=server.signing_key.verify_key,
+        credentials=server.verify_key,
         obj=user,
-        ignore_duplicates=True,
+        ignore_duplicates=False,
     ).unwrap()
 
     logger.debug(f"Created admin {new_user.email}")
@@ -1748,7 +1826,7 @@ def get_default_worker_tag_by_env(dev_mode: bool = False) -> str | None:
 def create_default_worker_pool(server: Server) -> None:
     credentials = server.verify_key
     pull_image = not server.dev_mode
-    image_stash = server.get_service(SyftWorkerImageService).stash
+    image_stash = server.services.syft_worker_image.stash
     default_pool_name = server.settings.default_worker_pool
 
     try:
@@ -1780,9 +1858,8 @@ def create_default_worker_pool(server: Server) -> None:
 
     if not default_image.is_built:
         logger.info(f"Building default worker image with tag={default_worker_tag}. ")
-        image_build_method = server.get_service_method(SyftWorkerImageService.build)
         # Build the Image for given tag
-        result = image_build_method(
+        result = server.services.worker_image.build(
             context,
             image_uid=default_image.id,
             tag=DEFAULT_WORKER_IMAGE_TAG,
@@ -1799,8 +1876,7 @@ def create_default_worker_pool(server: Server) -> None:
     )
     if default_worker_pool is None:
         worker_to_add_ = worker_count
-        create_pool_method = server.get_service_method(SyftWorkerPoolService.launch)
-        result = create_pool_method(
+        result = server.services.syft_worker_pool.launch(
             context,
             pool_name=default_pool_name,
             image_uid=default_image.id,
@@ -1814,10 +1890,7 @@ def create_default_worker_pool(server: Server) -> None:
             default_worker_pool.worker_list
         )
         if worker_to_add_ > 0:
-            add_worker_method = server.get_service_method(
-                SyftWorkerPoolService.add_workers
-            )
-            result = add_worker_method(
+            result = server.services.syft_worker_pool.add_workers(
                 context=context,
                 number=worker_to_add_,
                 pool_name=default_pool_name,

@@ -10,7 +10,7 @@ from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
@@ -22,7 +22,6 @@ from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .image_registry import SyftImageRegistry
-from .image_registry_service import SyftImageRegistryService
 from .utils import image_build
 from .utils import image_push
 from .worker_image import SyftWorkerImage
@@ -32,11 +31,9 @@ from .worker_image_stash import SyftWorkerImageStash
 
 @serializable(canonical_name="SyftWorkerImageService", version=1)
 class SyftWorkerImageService(AbstractService):
-    store: DocumentStore
     stash: SyftWorkerImageStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = SyftWorkerImageStash(store=store)
 
     @service_method(
@@ -64,7 +61,15 @@ class SyftWorkerImageService(AbstractService):
             created_by=context.credentials,
             image_identifier=image_identifier,
         )
-        stored_image = self.stash.set(context.credentials, worker_image).unwrap()
+
+        # TODO: I think this was working in python mode due to a bug because
+        # it wasn't saying it was duplicate
+        # why can we only have a prebuilt or a non prebuilt with the same tag?
+        # bigquery uses prebuilt but we need to build and then test that prebuilt works
+        # so we kind of need to use one then the other and have it pull from the first
+        stored_image = self.stash.set(
+            context.credentials, worker_image, ignore_duplicates=True
+        ).unwrap()
 
         return SyftSuccess(
             message=f"Dockerfile ID: {worker_image.id} successfully submitted.",
@@ -97,10 +102,9 @@ class SyftWorkerImageService(AbstractService):
         ).unwrap()
         if registry_uid:
             # get registry from image registry service
-            image_registry_service: AbstractService = context.server.get_service(
-                SyftImageRegistryService
+            registry = context.server.services.syft_image_registry.get_by_id(
+                context, registry_uid
             )
-            registry = image_registry_service.get_by_id(context, registry_uid)
 
         try:
             if registry:

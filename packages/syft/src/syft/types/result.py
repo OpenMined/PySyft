@@ -2,6 +2,7 @@
 from collections.abc import Callable
 import functools
 from typing import Any
+from typing import Final
 from typing import Generic
 from typing import Literal
 from typing import NoReturn
@@ -90,6 +91,7 @@ class Err(Generic[E]):
         raise TypeError("Error is not a BaseException")
 
 
+OkErr: Final = (Ok, Err)
 Result: TypeAlias = Ok[T] | Err[E]
 
 
@@ -112,7 +114,7 @@ def as_result(
                 if isinstance(output, Ok) or isinstance(output, Err):
                     raise _AsResultError(
                         f"Functions decorated with `as_result` should not return Result.\n"
-                        f"Did you forget to unwrap() the result?\n"
+                        f"Did you forget to unwrap() the result in {func.__name__}?\n"
                         f"result: {output}"
                     )
                 return Ok(output)

@@ -7,6 +7,7 @@ import keyword
 import linecache
 import re
 import textwrap
+from textwrap import dedent
 from typing import Any
 from typing import cast
 
@@ -22,21 +23,25 @@ from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
 from ...types.errors import SyftException
 from ...types.result import as_result
+from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
+from ...types.transforms import drop
 from ...types.transforms import generate_action_object_id
 from ...types.transforms import generate_id
 from ...types.transforms import keep
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util.misc_objs import MarkdownDescription
 from ..context import AuthedServiceContext
 from ..response import SyftError
 from ..user.user import UserView
-from ..user.user_service import UserService
+from .utils import print as log_print
 
 NOT_ACCESSIBLE_STRING = "N / A"
 
@@ -87,7 +92,7 @@ def register_fn_in_linecache(fname: str, src: str) -> None:
 
 
 @serializable()
-class TwinAPIEndpointView(SyftObject):
+class TwinAPIEndpointViewV1(SyftObject):
     # version
     __canonical_name__ = "CustomAPIView"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -104,10 +109,29 @@ class TwinAPIEndpointView(SyftObject):
     worker_pool: str | None = None
     endpoint_timeout: int = 60
 
+
+@serializable()
+class TwinAPIEndpointView(SyftObject):
+    # version
+    __canonical_name__ = "CustomAPIView"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    path: str
+    action_object_id: UID
+    signature: Signature
+    access: str = "Public"
+    mock_function: str | None = None
+    private_function: str | None = None
+    description: MarkdownDescription | None = None
+    mock_helper_functions: list[str] | None = None
+    private_helper_functions: list[str] | None = None
+    worker_pool_name: str | None = None
+    endpoint_timeout: int = 60
+
     __repr_attrs__ = [
         "path",
         "signature",
-        "worker_pool",
+        "worker_pool_name",
         "endpoint_timeout",
     ]
 
@@ -132,16 +156,16 @@ class TwinAPIEndpointView(SyftObject):
         else:
             private_function_name = NOT_ACCESSIBLE_STRING
 
-        worker_pool = "UNSET (DEFAULT)"
-        if self.worker_pool is not None:
-            worker_pool = self.worker_pool
+        worker_pool_name = "UNSET (DEFAULT)"
+        if self.worker_pool_name is not None:
+            worker_pool_name = self.worker_pool_name
         return {
             "API path": self.path,
             "Signature": self.path + str(self.signature),
             "Access": self.access,
             "Mock Function": mock_function_name,
             "Private Function": private_function_name,
-            "Worker Pool": worker_pool,
+            "Worker Pool": worker_pool_name,
         }
 
 
@@ -175,6 +199,7 @@ class Endpoint(SyftObject):
     @classmethod
     def validate_api_code(cls, api_code: str) -> str:
         valid_code = True
+        api_code = dedent(api_code)
         try:
             ast.parse(api_code)
         except SyntaxError:
@@ -221,8 +246,7 @@ class Endpoint(SyftObject):
 
         helper_function_set = HelperFunctionSet(helper_function_dict)
 
-        user_service = context.server.get_service("userservice")
-        user = user_service.get_current_user(context)
+        user = context.server.services.user.get_current_user(context)
 
         return TwinAPIAuthedContext(
             credentials=context.credentials,
@@ -356,7 +380,7 @@ class UpdateTwinAPIEndpoint(PartialSyftObject, BaseTwinAPIEndpoint):
 
 
 @serializable()
-class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
+class CreateTwinAPIEndpointV1(BaseTwinAPIEndpoint):
     # version
     __canonical_name__ = "CreateTwinAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -369,6 +393,21 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     worker_pool: str | None = None
     endpoint_timeout: int = 60
 
+
+@serializable()
+class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
+    # version
+    __canonical_name__ = "CreateTwinAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    path: str
+    private_function: PrivateAPIEndpoint | None = None
+    mock_function: PublicAPIEndpoint
+    signature: Signature
+    description: MarkdownDescription | None = None
+    worker_pool_name: str | None = None
+    endpoint_timeout: int = 60
+
     def __init__(
         self, description: str | MarkdownDescription | None = "", **kwargs: Any
     ) -> None:
@@ -379,7 +418,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
 
 
 @serializable()
-class TwinAPIEndpoint(SyncableSyftObject):
+class TwinAPIEndpointV1(SyncableSyftObject):
     # version
     __canonical_name__: str = "TwinAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -398,6 +437,39 @@ class TwinAPIEndpoint(SyncableSyftObject):
     description: MarkdownDescription | None = None
     action_object_id: UID
     worker_pool: str | None = None
+    endpoint_timeout: int = 60
+
+    __attr_searchable__ = ["path"]
+    __attr_unique__ = ["path"]
+    __repr_attrs__ = [
+        "path",
+        "description",
+        "private_function",
+        "mock_function",
+        "endpoint_timeout",
+    ]
+
+
+@serializable()
+class TwinAPIEndpoint(SyncableSyftObject):
+    # version
+    __canonical_name__: str = "TwinAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_2
+    __exclude_sync_diff_attrs__ = ["private_function"]
+    __private_sync_attr_mocks__ = {
+        "private_function": None,
+    }
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+
+    path: str
+    private_function: PrivateAPIEndpoint | None = None
+    mock_function: PublicAPIEndpoint
+    signature: Signature
+    description: MarkdownDescription | None = None
+    action_object_id: UID
+    worker_pool_name: str | None = None
     endpoint_timeout: int = 60
 
     __attr_searchable__ = ["path"]
@@ -439,7 +511,13 @@ class TwinAPIEndpoint(SyncableSyftObject):
             return self.private_function
         return self.mock_function
 
-    def exec(self, context: AuthedServiceContext, *args: Any, **kwargs: Any) -> Any:
+    def exec(
+        self,
+        context: AuthedServiceContext,
+        *args: Any,
+        log_id: UID | None = None,
+        **kwargs: Any,
+    ) -> Any:
         """Execute the code based on the user's permissions and public code availability.
 
         Args:
@@ -450,19 +528,29 @@ class TwinAPIEndpoint(SyncableSyftObject):
             Any: The result of the executed code.
         """
         selected_code = self.select_code(context)
-        return self.exec_code(selected_code, context, *args, **kwargs)
+        return self.exec_code(selected_code, context, *args, log_id=log_id, **kwargs)
 
     def exec_mock_function(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self,
+        context: AuthedServiceContext,
+        *args: Any,
+        log_id: UID | None = None,
+        **kwargs: Any,
     ) -> Any:
         """Execute the public code if it exists."""
         if self.mock_function:
-            return self.exec_code(self.mock_function, context, *args, **kwargs)
+            return self.exec_code(
+                self.mock_function, context, *args, log_id=log_id, **kwargs
+            )
 
         raise SyftException(public_message="No public code available")
 
     def exec_private_function(
-        self, context: AuthedServiceContext, *args: Any, **kwargs: Any
+        self,
+        context: AuthedServiceContext,
+        *args: Any,
+        log_id: UID | None = None,
+        **kwargs: Any,
     ) -> Any:
         """Execute the private code if user is has the proper permissions.
 
@@ -477,7 +565,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
             raise SyftException(public_message="No private code available")
 
         if self.has_permission(context):
-            return self.exec_code(self.private_function, context, *args, **kwargs)
+            return self.exec_code(
+                self.private_function, context, *args, log_id=log_id, **kwargs
+            )
 
         raise SyftException(public_message="You're not allowed to run this code.")
 
@@ -485,10 +575,9 @@ class TwinAPIEndpoint(SyncableSyftObject):
         # get a user client
         guest_client = context.server.get_guest_client()
         user_client = guest_client
-        signing_key_for_verify_key = context.server.get_service_method(
-            UserService.signing_key_for_verify_key
+        private_key = context.server.services.user.signing_key_for_verify_key(
+            context.credentials
         )
-        private_key = signing_key_for_verify_key(context.credentials)
         signing_key = private_key.signing_key
         user_client.credentials = signing_key
         return user_client
@@ -504,9 +593,21 @@ class TwinAPIEndpoint(SyncableSyftObject):
         code: PrivateAPIEndpoint | PublicAPIEndpoint,
         context: AuthedServiceContext,
         *args: Any,
+        log_id: UID | None = None,
         **kwargs: Any,
     ) -> Any:
+        # stdlib
+        import builtins as __builtin__
+        import functools
+
+        original_print = __builtin__.print
+
         try:
+            if log_id is not None:
+                print = functools.partial(log_print, context, log_id)
+            else:
+                print = original_print  # type: ignore
+
             inner_function = ast.parse(code.api_code).body[0]
             inner_function.decorator_list = []
             # compile the function
@@ -516,18 +617,26 @@ class TwinAPIEndpoint(SyncableSyftObject):
             user_client = self.get_user_client_from_server(context)
             admin_client = self.get_admin_client_from_server(context)
 
-            # load it
-            exec(raw_byte_code)  # nosec
-
             internal_context = code.build_internal_context(
                 context=context, admin_client=admin_client, user_client=user_client
             )
+            evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
+
+            _globals = {"print": print}
+            # load it
+            exec(raw_byte_code, _globals, locals())  # nosec
 
             # execute it
             evil_string = f"{code.func_name}(*args, **kwargs,context=internal_context)"
-            result = eval(evil_string, None, locals())  # nosec
+            result = None
+            try:
+                # users can raise SyftException in their code
+                result = eval(evil_string, _globals, locals())  # nosec
+            except SyftException as e:
+                # capture it as the result variable
+                result = e
 
-            # Update code context state
+            # run all this code to clean up the state
             code.update_state(internal_context.state)
 
             if isinstance(code, PublicAPIEndpoint):
@@ -537,9 +646,15 @@ class TwinAPIEndpoint(SyncableSyftObject):
 
             api_service = context.server.get_service("apiservice")
             api_service.stash.upsert(
-                context.server.get_service("userservice").admin_verify_key(), self
+                context.server.services.user.root_verify_key, self
             ).unwrap()
 
+            print = original_print  # type: ignore
+            # if we caught a SyftException above we will raise and auto wrap to Result
+            if isinstance(result, SyftException):
+                raise result
+
+            # here we got a non Exception result which will also be wrapped in Result
             # return the results
             return result
         except Exception as e:
@@ -551,7 +666,10 @@ class TwinAPIEndpoint(SyncableSyftObject):
                 )
             else:
                 raise SyftException(
-                    public_message="Ops something went wrong during this endpoint execution, please contact your admin."
+                    public_message=(
+                        "Oops something went wrong during this endpoint execution, "
+                        "please contact your admin."
+                    )
                 )
 
 
@@ -603,7 +721,7 @@ def extract_code_string(code_field: str) -> Callable:
             )
 
             context.server = cast(AbstractServer, context.server)
-            admin_key = context.server.get_service("userservice").admin_verify_key()
+            admin_key = context.server.services.user.root_verify_key
 
             # If endpoint exists **AND** (has visible access **OR** the user is admin)
             if endpoint_type is not None and (
@@ -674,18 +792,67 @@ def endpoint_to_public_endpoint() -> list[Callable]:
     ]
 
 
+@migrate(TwinAPIEndpointV1, TwinAPIEndpoint)
+def migrate_twin_api_endpoint_v1_to_current() -> list[Callable]:
+    return [
+        drop(["worker_pool"]),
+        make_set_default("worker_pool_name", None),
+    ]
+
+
+@migrate(CreateTwinAPIEndpointV1, CreateTwinAPIEndpoint)
+def migrate_create_twin_api_endpoint_v1_to_current() -> list[Callable]:
+    return [
+        drop(["worker_pool"]),
+        make_set_default("worker_pool_name", None),
+    ]
+
+
+@migrate(TwinAPIEndpointViewV1, TwinAPIEndpointView)
+def migrate_twin_api_endpoint_view_v1_to_current() -> list[Callable]:
+    return [
+        drop(["worker_pool"]),
+        make_set_default("worker_pool_name", None),
+    ]
+
+
+@migrate(TwinAPIEndpointView, TwinAPIEndpointViewV1)
+def migrate_twin_api_endpoint_view_current_to_v1() -> list[Callable]:
+    return [
+        drop(["worker_pool_name"]),
+        make_set_default("worker_pool", None),
+    ]
+
+
+@migrate(CreateTwinAPIEndpoint, CreateTwinAPIEndpointV1)
+def migrate_create_twin_api_endpoint_current_to_v1() -> list[Callable]:
+    return [
+        drop(["worker_pool_name"]),
+        make_set_default("worker_pool", None),
+    ]
+
+
+@migrate(TwinAPIEndpoint, TwinAPIEndpointV1)
+def migrate_twin_api_endpoint_current_to_v1() -> list[Callable]:
+    return [
+        drop(["worker_pool_name"]),
+        make_set_default("worker_pool", None),
+    ]
+
+
 def api_endpoint(
     path: str,
     settings: dict[str, str] | None = None,
     helper_functions: list[Callable] | None = None,
     description: MarkdownDescription | None = None,
-    worker_pool: str | None = None,
+    worker_pool_name: str | None = None,
     endpoint_timeout: int = 60,
 ) -> Callable[..., TwinAPIEndpoint | SyftError]:
     def decorator(f: Callable) -> TwinAPIEndpoint | SyftError:
         try:
             helper_functions_dict = {
-                f.__name__: inspect.getsource(f) for f in (helper_functions or [])
+                f.__name__: dedent(inspect.getsource(f))
+                for f in (helper_functions or [])
             }
             res = CreateTwinAPIEndpoint(
                 path=path,
@@ -698,7 +865,7 @@ def api_endpoint(
                 ),
                 signature=inspect.signature(f),
                 description=description,
-                worker_pool=worker_pool,
+                worker_pool_name=worker_pool_name,
                 endpoint_timeout=endpoint_timeout,
             )
         except ValidationError as e:
@@ -717,7 +884,8 @@ def api_endpoint_method(
     def decorator(f: Callable) -> Endpoint | SyftError:
         try:
             helper_functions_dict = {
-                f.__name__: inspect.getsource(f) for f in (helper_functions or [])
+                f.__name__: dedent(inspect.getsource(f))
+                for f in (helper_functions or [])
             }
             return Endpoint(
                 api_code=inspect.getsource(f),
@@ -740,7 +908,7 @@ def create_new_api_endpoint(
     mock_function: Endpoint,
     private_function: Endpoint | None = None,
     description: MarkdownDescription | None = None,
-    worker_pool: str | None = None,
+    worker_pool_name: str | None = None,
     endpoint_timeout: int = 60,
     hide_mock_definition: bool = False,
     hide_private_definition: bool = True,
@@ -762,7 +930,7 @@ def create_new_api_endpoint(
                 mock_function=mock_function.to(PublicAPIEndpoint),
                 signature=endpoint_signature,
                 description=description,
-                worker_pool=worker_pool,
+                worker_pool_name=worker_pool_name,
                 endpoint_timeout=endpoint_timeout,
             )
 
@@ -770,7 +938,7 @@ def create_new_api_endpoint(
             path=path,
             prublic_code=mock_function.to(PublicAPIEndpoint),
             signature=endpoint_signature,
-            worker_pool=worker_pool,
+            worker_pool_name=worker_pool_name,
             endpoint_timeout=endpoint_timeout,
         )
     except ValidationError as e:

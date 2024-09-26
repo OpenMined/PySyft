@@ -9,6 +9,7 @@
 # stdlib
 from collections.abc import Callable
 from datetime import datetime
+import logging
 from typing import Any
 from typing import TypeVar
 
@@ -23,19 +24,32 @@ from ...types.result import as_result
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
 from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
+from ..response import SyftError
 from ..response import SyftSuccess
+from .notifier_enums import NOTIFICATION_FREQUENCY
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
+
+logger = logging.getLogger(__name__)
 
 
 class BaseNotifier(BaseModel):
     @as_result(SyftException)
-    def send(self, target: SyftVerifyKey, notification: Notification) -> SyftSuccess:
+    def send(
+        self, context: AuthedServiceContext, notification: Notification
+    ) -> SyftSuccess:
+        raise SyftException(public_message="Not implemented")
+
+    @as_result(SyftException)
+    def send_batches(
+        self, context: AuthedServiceContext, notification_queue: list[Notification]
+    ) -> SyftSuccess:
         raise SyftException(public_message="Not implemented")
 
 
@@ -82,27 +96,72 @@ class EmailNotifier(BaseNotifier):
                 port=port,
                 username=username,
                 password=password,
-            ).unwrap()
+            )
             return True
         except Exception:
+            logger.exception("Credentials validation failed")
             return False
 
     @as_result(SyftException)
-    def send(
-        self, context: AuthedServiceContext, notification: Notification
-    ) -> SyftSuccess:
+    def send_batches(
+        self, context: AuthedServiceContext, notification_queue: list[Notification]
+    ) -> SyftSuccess | SyftError:
+        subject = None
+        receiver_email = None
+        sender = None
+
+        notification_sample = notification_queue[0]
         try:
-            user_service = context.server.get_service("userservice")
-
-            receiver = user_service.get_by_verify_key(
-                notification.to_user_verify_key
+            sender = self.sender
+            receiver = context.server.services.user.get_by_verify_key(
+                notification_sample.to_user_verify_key
             ).unwrap()
-
             if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
                 return SyftSuccess(
                     message="Email notifications are disabled for this user."
                 )  # TODO: Should we return an error here?
+            receiver_email = receiver.email
+            if notification_sample.email_template:
+                subject = notification_sample.email_template.batched_email_title(
+                    notifications=notification_queue, context=context
+                )
+                body = notification_sample.email_template.batched_email_body(
+                    notifications=notification_queue, context=context
+                )
+            else:
+                subject = notification_sample.subject
+                body = notification_sample._repr_html_()
 
+            if isinstance(receiver_email, str):
+                receiver_email = [receiver_email]
+
+            self.smtp_client.send(  # type: ignore
+                sender=sender, receiver=receiver_email, subject=subject, body=body
+            )
+            message = f"> Sent email: {subject} to {receiver_email}"
+            logging.info(message)
+            return SyftSuccess(message="Email sent successfully!")
+        except Exception as e:
+            message = f"> Error sending email: {subject} to {receiver_email} from: {sender}. {e}"
+            logger.error(message)
+            return SyftError(message="Failed to send an email.")
+
+    @as_result(SyftException)
+    def send(
+        self, context: AuthedServiceContext, notification: Notification
+    ) -> SyftSuccess | SyftError:
+        subject = None
+        receiver_email = None
+        sender = None
+        try:
+            sender = self.sender
+            receiver = context.server.services.user.get_by_verify_key(
+                notification.to_user_verify_key
+            ).unwrap()
+            if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
+                return SyftSuccess(
+                    message="Email notifications are disabled for this user."
+                )  # TODO: Should we return an error here?
             receiver_email = receiver.email
 
             if notification.email_template:
@@ -120,16 +179,23 @@ class EmailNotifier(BaseNotifier):
                 receiver_email = [receiver_email]
 
             self.smtp_client.send(  # type: ignore
-                sender=self.sender, receiver=receiver_email, subject=subject, body=body
+                sender=sender, receiver=receiver_email, subject=subject, body=body
             )
+            message = f"> Sent email: {subject} to {receiver_email}"
+            print(message)
+            logging.info(message)
             return SyftSuccess(message="Email sent successfully!")
-        except Exception:
-            raise SyftException(
-                public_message=(
-                    "Some notifications failed to be delivered."
-                    " Please check the health of the mailing server."
-                )
-            )
+        except Exception as e:
+            message = f"> Error sending email: {subject} to {receiver_email} from: {sender}. {e}"
+            logger.error(message)
+            return SyftError(message="Failed to send an email.")
+            # raise SyftException.from_exception(
+            #     exc,
+            #     public_message=(
+            #         "Some notifications failed to be delivered."
+            #         " Please check the health of the mailing server."
+            #     ),
+            # )
 
 
 @serializable()
@@ -178,7 +244,7 @@ class NotifierSettingsV1(SyftObject):
 
 
 @serializable()
-class NotifierSettings(SyftObject):
+class NotifierSettingsV2(SyftObject):
     __canonical_name__ = "NotifierSettings"
     __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [
@@ -208,6 +274,51 @@ class NotifierSettings(SyftObject):
     email_username: str | None = ""
     email_password: str | None = ""
 
+    email_activity: dict[str, dict[SyftVerifyKey, UserNotificationActivity]] = {}
+    email_rate_limit: dict[str, int] = {}
+
+
+@serializable()
+class EmailFrequency(SyftObject):
+    __canonical_name__ = "EmailFrequency"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    frequency: NOTIFICATION_FREQUENCY
+    start_time: datetime = datetime.now()
+
+
+@serializable()
+class NotifierSettings(SyftObject):
+    __canonical_name__ = "NotifierSettings"
+    __version__ = SYFT_OBJECT_VERSION_3
+    __repr_attrs__ = [
+        "active",
+        "email_enabled",
+    ]
+    active: bool = False
+    # Flag to identify which notification is enabled
+    # For now, consider only the email notification
+    # In future, Admin, must be able to have a better
+    # control on diff notifications.
+
+    notifiers: dict[NOTIFIERS, type[TBaseNotifier]] = {
+        NOTIFIERS.EMAIL: EmailNotifier,
+    }
+
+    notifiers_status: dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
+
+    email_sender: str | None = ""
+    email_server: str | None = ""
+    email_port: int | None = 587
+    email_username: str | None = ""
+    email_password: str | None = ""
+    email_frequency: dict[str, EmailFrequency] = {}
+    email_queue: dict[str, dict[SyftVerifyKey, list[Notification]]] = {}
     email_activity: dict[str, dict[SyftVerifyKey, UserNotificationActivity]] = {}
     email_rate_limit: dict[str, int] = {}
 
@@ -242,6 +353,21 @@ class NotifierSettings(SyftObject):
         )
 
     @as_result(SyftException)
+    def send_batched_notification(
+        self,
+        context: AuthedServiceContext,
+        notification_queue: list[Notification],
+    ) -> None:
+        if len(notification_queue) == 0:
+            return None
+        notifier_objs: list[BaseNotifier] = self.select_notifiers(notification_queue[0])
+        for notifier in notifier_objs:
+            notifier.send_batches(
+                context=context, notification_queue=notification_queue
+            ).unwrap()
+        return None
+
+    @as_result(SyftException)
     def send_notifications(
         self,
         context: AuthedServiceContext,
@@ -250,7 +376,7 @@ class NotifierSettings(SyftObject):
         notifier_objs: list[BaseNotifier] = self.select_notifiers(notification)
 
         for notifier in notifier_objs:
-            notifier.send(target=context, notification=notification).unwrap()
+            notifier.send(context=context, notification=notification).unwrap()
 
         return len(notifier_objs)
 
@@ -278,6 +404,7 @@ class NotifierSettings(SyftObject):
                             password=self.email_password,
                             sender=self.email_sender,
                             server=self.email_server,
+                            port=self.email_port,
                         )
                     )
                 # If notifier is not email, we just create the notifier object
@@ -288,15 +415,29 @@ class NotifierSettings(SyftObject):
         return notifier_objs
 
 
-@migrate(NotifierSettingsV1, NotifierSettings)
-def migrate_server_settings_v1_to_current() -> list[Callable]:
+@migrate(NotifierSettingsV1, NotifierSettingsV2)
+def migrate_server_settings_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("email_activity", {}),
         make_set_default("email_rate_limit", {}),
     ]
 
 
-@migrate(NotifierSettings, NotifierSettingsV1)
+@migrate(NotifierSettingsV2, NotifierSettingsV1)
 def migrate_server_settings_v2_to_v1() -> list[Callable]:
     # Use drop function on "notifications_enabled" attrubute
     return [drop(["email_activity"]), drop(["email_rate_limit"])]
+
+
+@migrate(NotifierSettingsV2, NotifierSettings)
+def migrate_server_settings_v2_to_current() -> list[Callable]:
+    return [
+        make_set_default("email_frequency", {}),
+        make_set_default("email_queue", {}),
+    ]
+
+
+@migrate(NotifierSettings, NotifierSettingsV2)
+def migrate_server_settings_current_to_v2() -> list[Callable]:
+    # Use drop function on "notifications_enabled" attrubute
+    return [drop(["email_frequency"]), drop(["email_queue"])]

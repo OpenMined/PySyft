@@ -13,13 +13,12 @@ from ...custom_worker.k8s import PodStatus
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store import SyftSuccess
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..service import AbstractService
 from ..service import AuthedServiceContext
 from ..service import service_method
@@ -38,14 +37,11 @@ from .worker_pool import _get_worker_container_status
 from .worker_stash import WorkerStash
 
 
-@instrument
 @serializable(canonical_name="WorkerService", version=1)
 class WorkerService(AbstractService):
-    store: DocumentStore
     stash: WorkerStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = WorkerStash(store=store)
 
     @service_method(
@@ -58,8 +54,7 @@ class WorkerService(AbstractService):
     ) -> list[ContainerSpawnStatus]:
         """Add a Container Image."""
 
-        worker_pool_service = context.server.get_service("SyftWorkerPoolService")
-        return worker_pool_service.add_workers(
+        return context.server.services.syft_worker_pool.add_workers(
             context, number=n, pool_name=DEFAULT_WORKER_POOL_NAME
         )
 
@@ -140,19 +135,10 @@ class WorkerService(AbstractService):
         self, context: AuthedServiceContext, worker: SyftWorker, force: bool = False
     ) -> SyftSuccess:
         uid = worker.id
-
-        # relative
-        from ...service.job.job_service import JobService
-        from .worker_pool_service import SyftWorkerPoolService
-
         if force and worker.job_id is not None:
-            job_service = cast(JobService, context.server.get_service(JobService))
-            job_service.kill(context=context, id=worker.job_id)
+            context.server.services.job.kill(context=context, id=worker.job_id)
 
-        worker_pool_service = cast(
-            SyftWorkerPoolService, context.server.get_service(SyftWorkerPoolService)
-        )
-        worker_pool_stash = worker_pool_service.stash
+        worker_pool_stash = context.server.services.syft_worker_pool.stash
         worker_pool = worker_pool_stash.get_by_name(
             credentials=context.credentials, pool_name=worker.worker_pool_name
         ).unwrap()

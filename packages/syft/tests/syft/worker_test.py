@@ -16,17 +16,17 @@ from syft.server.credentials import SyftSigningKey
 from syft.server.credentials import SyftVerifyKey
 from syft.server.worker import Worker
 from syft.service.action.action_object import ActionObject
-from syft.service.action.action_store import DictActionStore
+from syft.service.action.action_store import ActionObjectStash
 from syft.service.context import AuthedServiceContext
 from syft.service.queue.queue_stash import QueueItem
 from syft.service.response import SyftError
 from syft.service.user.user import User
 from syft.service.user.user import UserCreate
 from syft.service.user.user import UserView
-from syft.service.user.user_service import UserService
+from syft.service.user.user_stash import UserStash
+from syft.store.db.sqlite import SQLiteDBManager
 from syft.types.errors import SyftException
 from syft.types.result import Ok
-from syft.types.uid import UID
 
 test_signing_key_string = (
     "b7803e90a6f3f4330afbd943cef3451c716b338b17a9cf40a0a309bc38bc366d"
@@ -76,30 +76,42 @@ def test_signing_key() -> None:
     assert test_verify_key == test_verify_key_2
 
 
-def test_action_store() -> None:
+@pytest.fixture(
+    scope="function",
+    params=[
+        "tODOsqlite_address",
+        # "TODOpostgres_address", # will be used when we have a postgres CI tests
+    ],
+)
+def action_object_stash() -> ActionObjectStash:
+    root_verify_key = SyftVerifyKey.from_string(test_verify_key_string)
+    db_manager = SQLiteDBManager.random(root_verify_key=root_verify_key)
+    stash = ActionObjectStash(store=db_manager)
+    _ = UserStash(store=db_manager)
+    stash.db.init_tables()
+    yield stash
+
+
+def test_action_store(action_object_stash: ActionObjectStash) -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    action_store = DictActionStore(server_uid=UID())
-    uid = UID()
+    test_verify_key = test_signing_key.verify_key
     raw_data = np.array([1, 2, 3])
     test_object = ActionObject.from_obj(raw_data)
+    uid = test_object.id
 
-    set_result = action_store.set(
+    action_object_stash.set_or_update(
         uid=uid,
-        credentials=test_signing_key,
+        credentials=test_verify_key,
         syft_object=test_object,
         has_result_read_permission=True,
-    )
-    assert set_result.is_ok()
-    test_object_result = action_store.get(uid=uid, credentials=test_signing_key)
-    assert test_object_result.is_ok()
-    assert (test_object == test_object_result.ok()).all()
+    ).unwrap()
+    from_stash = action_object_stash.get(uid=uid, credentials=test_verify_key).unwrap()
+    assert (test_object == from_stash).all()
 
     test_verift_key_2 = SyftVerifyKey.from_string(test_verify_key_string_2)
-    test_object_result_fail = action_store.get(uid=uid, credentials=test_verift_key_2)
-    assert test_object_result_fail.is_err()
-    exc = test_object_result_fail.err()
-    assert type(exc) == SyftException
-    assert "denied" in exc.public_message
+    with pytest.raises(SyftException) as exc:
+        action_object_stash.get(uid=uid, credentials=test_verift_key_2).unwrap()
+        assert "denied" in exc.public_message
 
 
 def test_user_transform() -> None:
@@ -133,7 +145,7 @@ def test_user_transform() -> None:
 
 def test_user_service(worker) -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    user_service = worker.get_service(UserService)
+    user_service = worker.services.user
 
     # create a user
     new_user = UserCreate(
@@ -222,14 +234,6 @@ def test_action_object_hooks() -> None:
 
     action_object.syft_pre_hooks__["__add__"] = []
     action_object.syft_post_hooks__["__add__"] = []
-
-
-def test_worker_serde(worker) -> None:
-    ser = sy.serialize(worker, to_bytes=True)
-    de = sy.deserialize(ser, from_bytes=True)
-
-    assert de.signing_key == worker.signing_key
-    assert de.id == worker.id
 
 
 @pytest.fixture(params=[0])

@@ -1,8 +1,7 @@
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...types.uid import UID
-from ...util.telemetry import instrument
 from ..action.action_permissions import StoragePermission
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
@@ -15,14 +14,11 @@ from .log import SyftLog
 from .log_stash import LogStash
 
 
-@instrument
 @serializable(canonical_name="LogService", version=1)
 class LogService(AbstractService):
-    store: DocumentStore
     stash: LogStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = LogStash(store=store)
 
     @service_method(path="log.add", name="add", roles=DATA_SCIENTIST_ROLE_LEVEL)

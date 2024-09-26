@@ -2,7 +2,6 @@
 import logging
 import threading
 import time
-from typing import cast
 
 # relative
 from ...serde.serializable import serializable
@@ -10,7 +9,6 @@ from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ..context import AuthedServiceContext
 from ..response import SyftError
-from .network_service import NetworkService
 from .network_service import ServerPeerAssociationStatus
 from .server_peer import ServerPeer
 from .server_peer import ServerPeerConnectionStatus
@@ -40,11 +38,7 @@ class PeerHealthCheckTask:
         Returns:
             None
         """
-
-        network_service = cast(
-            NetworkService, context.server.get_service(NetworkService)
-        )
-        network_stash = network_service.stash
+        network_stash = context.server.services.network.stash
 
         try:
             all_peers: list[ServerPeer] = network_stash.get_all(
@@ -94,7 +88,7 @@ class PeerHealthCheckTask:
 
             result = network_stash.update(
                 credentials=context.server.verify_key,
-                peer_update=peer_update,
+                obj=peer_update,
                 has_permission=True,
             )
 

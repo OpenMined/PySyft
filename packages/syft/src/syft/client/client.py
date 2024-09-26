@@ -55,7 +55,6 @@ from ..types.result import as_result
 from ..types.server_url import ServerURL
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.uid import UID
-from ..util.telemetry import instrument
 from ..util.util import prompt_warning_message
 from ..util.util import thread_ident
 from ..util.util import verify_tls
@@ -383,7 +382,7 @@ class HTTPConnection(ServerConnection):
     ) -> SyftSigningKey | None:
         credentials = {"email": email, "password": password}
         if self.proxy_target_uid:
-            obj = forward_message_to_proxy(
+            response = forward_message_to_proxy(
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="login",
@@ -391,9 +390,10 @@ class HTTPConnection(ServerConnection):
             )
         else:
             response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
-            obj = _deserialize(response, from_bytes=True)
+            response = _deserialize(response, from_bytes=True)
+            response = post_process_result(response, unwrap_on_success=True)
 
-        return obj
+        return response
 
     def forgot_password(
         self,
@@ -570,7 +570,7 @@ class PythonConnection(ServerConnection):
     def get_cache_key(self) -> str:
         return str(self.server.id)
 
-    def exchange_credentials(self, email: str, password: str) -> UserPrivateKey | None:
+    def exchange_credentials(self, email: str, password: str) -> SyftSuccess | None:
         context = self.server.get_unauthed_context(
             login_credentials=UserLoginCredentials(email=email, password=password)
         )
@@ -593,7 +593,7 @@ class PythonConnection(ServerConnection):
         password: str,
     ) -> SyftSigningKey | None:
         if self.proxy_target_uid:
-            obj = forward_message_to_proxy(
+            result = forward_message_to_proxy(
                 self.make_call,
                 proxy_target_uid=self.proxy_target_uid,
                 path="login",
@@ -601,7 +601,51 @@ class PythonConnection(ServerConnection):
             )
 
         else:
-            obj = self.exchange_credentials(email=email, password=password)
+            result = self.exchange_credentials(email=email, password=password)
+            result = post_process_result(result, unwrap_on_success=True)
+        return result
+
+    def forgot_password(
+        self,
+        email: str,
+    ) -> SyftSigningKey | None:
+        credentials = {"email": email}
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="forgot_password",
+                kwargs=credentials,
+            )
+        else:
+            response = self.server.services.user.forgot_password(
+                context=ServerServiceContext(server=self.server), email=email
+            )
+            obj = post_process_result(response, unwrap_on_success=True)
+
+        return obj
+
+    def reset_password(
+        self,
+        token: str,
+        new_password: str,
+    ) -> SyftSigningKey | None:
+        payload = {"token": token, "new_password": new_password}
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="reset_password",
+                kwargs=payload,
+            )
+        else:
+            response = self.server.services.user.reset_password(
+                context=ServerServiceContext(server=self.server),
+                token=token,
+                new_password=new_password,
+            )
+            obj = post_process_result(response, unwrap_on_success=True)
+
         return obj
 
     def register(self, new_user: UserCreate) -> SyftSigningKey | None:
@@ -614,8 +658,9 @@ class PythonConnection(ServerConnection):
             )
         else:
             service_context = ServerServiceContext(server=self.server)
-            method = self.server.get_service_method(UserService.register)
-            response = method(context=service_context, new_user=new_user)
+            response = self.server.services.user.register(
+                context=service_context, new_user=new_user
+            )
             response = post_process_result(response, unwrap_on_success=False)
         return response
 
@@ -646,7 +691,6 @@ class PythonConnection(ServerConnection):
             raise SyftException(message=f"Unknown server type {metadata.server_type}")
 
 
-@instrument
 @serializable(canonical_name="SyftClient", version=1)
 class SyftClient:
     connection: ServerConnection
@@ -937,7 +981,10 @@ class SyftClient:
                 email=email, password=password, password_verify=password, **kwargs
             )
 
-        user_private_key = self.connection.login(email=email, password=password)
+        try:
+            user_private_key = self.connection.login(email=email, password=password)
+        except Exception as e:
+            raise SyftException(public_message=e.public_message)
 
         signing_key = None if user_private_key is None else user_private_key.signing_key
 
@@ -1112,7 +1159,6 @@ class SyftClient:
         return _api
 
 
-@instrument
 def connect(
     url: str | ServerURL = DEFAULT_SYFT_UI_ADDRESS,
     server: AbstractServer | None = None,
@@ -1130,7 +1176,6 @@ def connect(
     return client_type(connection=connection)
 
 
-@instrument
 def register(
     url: str | ServerURL,
     port: int,
@@ -1150,7 +1195,6 @@ def register(
     )
 
 
-@instrument
 def login_as_guest(
     # HTTPConnection
     url: str | ServerURL = DEFAULT_SYFT_UI_ADDRESS,
@@ -1174,7 +1218,6 @@ def login_as_guest(
     return _client.guest()
 
 
-@instrument
 def login(
     email: str,
     # HTTPConnection

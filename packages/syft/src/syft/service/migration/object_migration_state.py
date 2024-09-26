@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 from io import BytesIO
 from pathlib import Path
 import sys
@@ -14,24 +15,28 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
-from ...store.document_store import NewBaseStash
+from ...store.db.stash import ObjectStash
 from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
 from ...store.document_store_errors import NotFoundException
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
 from ...types.errors import SyftException
 from ...types.result import as_result
+from ...types.syft_migration import migrate
 from ...types.syft_object import Context
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftBaseObject
 from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
+from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.util import prompt_warning_message
-from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftSuccess
+from ..worker.utils import DEFAULT_WORKER_POOL_NAME
+from ..worker.worker_image import SyftWorkerImage
+from ..worker.worker_pool import SyftWorker
+from ..worker.worker_pool import WorkerPool
 
 
 @serializable()
@@ -62,45 +67,16 @@ class SyftObjectMigrationState(SyftObject):
 KlassNamePartitionKey = PartitionKey(key="canonical_name", type_=str)
 
 
-@serializable(canonical_name="SyftMigrationStateStash", version=1)
-class SyftMigrationStateStash(NewBaseStash):
-    object_type = SyftObjectMigrationState
-    settings: PartitionSettings = PartitionSettings(
-        name=SyftObjectMigrationState.__canonical_name__,
-        object_type=SyftObjectMigrationState,
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
-    @as_result(SyftException)
-    def set(  # type: ignore [override]
-        self,
-        credentials: SyftVerifyKey,
-        migration_state: SyftObjectMigrationState,
-        add_permissions: list[ActionObjectPermission] | None = None,
-        add_storage_permission: bool = True,
-        ignore_duplicates: bool = False,
-    ) -> SyftObjectMigrationState:
-        obj = self.check_type(migration_state, self.object_type).unwrap()
-        return (
-            super()
-            .set(
-                credentials=credentials,
-                obj=obj,
-                add_permissions=add_permissions,
-                add_storage_permission=add_storage_permission,
-                ignore_duplicates=ignore_duplicates,
-            )
-            .unwrap()
-        )
-
+@serializable(canonical_name="SyftMigrationStateSQLStash", version=1)
+class SyftMigrationStateStash(ObjectStash[SyftObjectMigrationState]):
     @as_result(SyftException, NotFoundException)
     def get_by_name(
         self, canonical_name: str, credentials: SyftVerifyKey
     ) -> SyftObjectMigrationState:
-        qks = KlassNamePartitionKey.with_obj(canonical_name)
-        return self.query_one(credentials=credentials, qks=qks).unwrap()
+        return self.get_one(
+            credentials=credentials,
+            filters={"canonical_name": canonical_name},
+        ).unwrap()
 
 
 @serializable()
@@ -116,8 +92,9 @@ class StoreMetadata(SyftBaseObject):
 @serializable()
 class MigrationData(SyftObject):
     __canonical_name__ = "MigrationData"
-    __version__ = SYFT_OBJECT_VERSION_1
-
+    __version__ = SYFT_OBJECT_VERSION_2
+    syft_version: str = ""
+    default_pool_name: str = DEFAULT_WORKER_POOL_NAME
     server_uid: UID
     signing_key: SyftSigningKey
     store_objects: dict[type[SyftObject], list[SyftObject]]
@@ -151,6 +128,24 @@ class MigrationData(SyftObject):
         blob_ids = [obj.id for obj in self.blob_storage_objects]
         return set(self.blobs.keys()) == set(blob_ids)
 
+    @property
+    def includes_custom_workerpools(self) -> bool:
+        cname = WorkerPool.__canonical_name__
+        worker_pools = None
+        for k, v in self.store_objects.items():
+            if k.__canonical_name__ == cname:
+                worker_pools = v
+
+        if worker_pools is None:
+            return False
+
+        custom_pools = [
+            pool
+            for pool in worker_pools
+            if getattr(pool, "name", None) != self.default_pool_name
+        ]
+        return len(custom_pools) > 0
+
     def make_migration_config(self) -> dict[str, Any]:
         server_uid = self.server_uid.to_string()
         server_private_key = str(self.signing_key)
@@ -171,7 +166,14 @@ class MigrationData(SyftObject):
             raise SyftException(f"File {str(path)} does not exist.")
 
         with open(path, "rb") as f:
-            res: MigrationData = _deserialize(f.read(), from_bytes=True)
+            res: SyftObject = _deserialize(f.read(), from_bytes=True)
+
+        if not isinstance(res, MigrationData):
+            latest_version = SyftObjectRegistry.get_latest_version(  # type: ignore[unreachable]
+                MigrationData.__canonical_name__
+            )
+            print("Upgrading MigrationData object to latest version...")
+            res = res.migrate_to(latest_version)
 
         return res
 
@@ -232,6 +234,51 @@ class MigrationData(SyftObject):
         )
         return blob_deposit_object.write(BytesIO(serialized)).unwrap()
 
+    def get_items_by_canonical_name(self, canonical_name: str) -> list[SyftObject]:
+        for k, v in self.store_objects.items():
+            if k.__canonical_name__ == canonical_name:
+                return v
+
+        for k, v in self.action_objects.items():
+            if k.__canonical_name__ == canonical_name:
+                return v
+        return []
+
+    def get_metadata_by_canonical_name(self, canonical_name: str) -> StoreMetadata:
+        for k, v in self.metadata.items():
+            if k.__canonical_name__ == canonical_name:
+                return v
+        return StoreMetadata(
+            object_type=SyftObject, permissions={}, storage_permissions={}
+        )
+
+    def copy_without_workerpools(self) -> "MigrationData":
+        items_to_exclude = [
+            WorkerPool.__canonical_name__,
+            SyftWorkerImage.__canonical_name__,
+            SyftWorker.__canonical_name__,
+        ]
+
+        store_objects = {
+            k: v
+            for k, v in self.store_objects.items()
+            if k.__canonical_name__ not in items_to_exclude
+        }
+        metadata = {
+            k: v
+            for k, v in self.metadata.items()
+            if k.__canonical_name__ not in items_to_exclude
+        }
+        return self.__class__(
+            server_uid=self.server_uid,
+            signing_key=self.signing_key,
+            store_objects=store_objects,
+            metadata=metadata,
+            action_objects=self.action_objects,
+            blob_storage_objects=self.blob_storage_objects,
+            blobs=self.blobs,
+        )
+
     def copy_without_blobs(self) -> "MigrationData":
         # Create a shallow copy of the MigrationData instance, removing blob-related data
         # This is required for sending the MigrationData to the backend.
@@ -245,3 +292,25 @@ class MigrationData(SyftObject):
             blobs={},
         )
         return copy_data
+
+
+@serializable()
+class MigrationDataV1(SyftObject):
+    __canonical_name__ = "MigrationData"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    server_uid: UID
+    signing_key: SyftSigningKey
+    store_objects: dict[type[SyftObject], list[SyftObject]]
+    metadata: dict[type[SyftObject], StoreMetadata]
+    action_objects: dict[type[SyftObject], list[SyftObject]]
+    blob_storage_objects: list[SyftObject]
+    blobs: dict[UID, Any] = {}
+
+
+@migrate(MigrationDataV1, MigrationData)
+def migrate_migrationdata_v1_to_v2() -> list[Callable]:
+    return [
+        make_set_default("default_pool_name", DEFAULT_WORKER_POOL_NAME),
+        make_set_default("syft_version", ""),
+    ]

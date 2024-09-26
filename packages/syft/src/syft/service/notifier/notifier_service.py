@@ -1,5 +1,6 @@
 # stdlib
 from datetime import datetime
+from datetime import timedelta
 import logging
 
 # third party
@@ -8,7 +9,7 @@ from pydantic import EmailStr
 # relative
 from ...abstract_server import AbstractServer
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
@@ -18,23 +19,27 @@ from ..notification.email_templates import PasswordResetTemplate
 from ..notification.notifications import Notification
 from ..response import SyftSuccess
 from ..service import AbstractService
+from .notifier import EmailFrequency
 from .notifier import NotificationPreferences
 from .notifier import NotifierSettings
 from .notifier import UserNotificationActivity
 from .notifier_enums import EMAIL_TYPES
+from .notifier_enums import NOTIFICATION_FREQUENCY
 from .notifier_enums import NOTIFIERS
 from .notifier_stash import NotifierStash
 
 logger = logging.getLogger(__name__)
 
 
+class RateLimitException(SyftException):
+    public_message = "Rate limit exceeded."
+
+
 @serializable(canonical_name="NotifierService", version=1)
 class NotifierService(AbstractService):
-    store: DocumentStore
-    stash: NotifierStash  # Which stash should we use?
+    stash: NotifierStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = NotifierStash(store=store)
 
     @as_result(StashException)
@@ -57,8 +62,7 @@ class NotifierService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> NotificationPreferences:
-        user_service = context.server.get_service("userservice")
-        user_view = user_service.get_current_user(context)
+        user_view = context.server.services.user.get_current_user(context)
         notifications = user_view.notifications_enabled
         return NotificationPreferences(
             email=notifications[NOTIFIERS.EMAIL],
@@ -67,13 +71,15 @@ class NotifierService(AbstractService):
             app=notifications[NOTIFIERS.APP],
         )
 
-    def set_notifier_active_to_true(self, context: AuthedServiceContext) -> SyftSuccess:
+    def _set_notifier(self, context: AuthedServiceContext, active: bool) -> SyftSuccess:
         notifier = self.stash.get(credentials=context.credentials).unwrap(
             public_message="Notifier settings not found."
         )
-        notifier.active = True
-        self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
-        return SyftSuccess(message="notifier.active set to true.")
+        notifier.active = active
+        self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
+
+        active_s = "active" if active else "inactive"
+        return SyftSuccess(message=f"Notifier set to {active_s}")
 
     def set_notifier_active_to_false(
         self, context: AuthedServiceContext
@@ -83,7 +89,7 @@ class NotifierService(AbstractService):
         """
         notifier = self.stash.get(credentials=context.credentials).unwrap()
         notifier.active = False
-        self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
+        self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
         return SyftSuccess(message="notifier.active set to false.")
 
     @as_result(SyftException)
@@ -106,19 +112,15 @@ class NotifierService(AbstractService):
             SyftSuccess: success response.
 
         Raises:
-            None
-
+            SyftException: any error that occurs during the process
         """
 
         # 1 -  If something went wrong at db level, return the error
         notifier = self.stash.get(credentials=context.credentials).unwrap()
 
         # 2 - If one of the credentials are set alone, return an error
-        if (
-            email_username
-            and not email_password
-            or email_password
-            and not email_username
+        if (email_username and not email_password) or (
+            not email_username and email_password
         ):
             raise SyftException(
                 public_message="You must provide both username and password"
@@ -130,32 +132,29 @@ class NotifierService(AbstractService):
                 public_message="You must provide both server and port to enable notifications."
             )
 
-        logging.debug("Got notifier from db")
+        logger.debug("Got notifier from db")
+        skip_auth: bool = False
         # If no new credentials provided, check for existing ones
         if not (email_username and email_password):
             if not (notifier.email_username and notifier.email_password):
-                raise SyftException(
-                    message="No valid token has been added to the datasite."
-                    + "You can add a pair of SMTP credentials via "
-                    + "<client>.settings.enable_notifications(email=<>, password=<>)"
-                )
+                skip_auth = True
             else:
-                logging.debug("No new credentials provided. Using existing ones.")
+                logger.debug("No new credentials provided. Using existing ones.")
                 email_password = notifier.email_password
                 email_username = notifier.email_username
 
-        validation_result = notifier.validate_email_credentials(
-            username=email_username,
-            password=email_password,
-            server=email_server if email_server else notifier.email_server,
-            port=email_port if email_port else notifier.email_port,
-        )
-
-        if validation_result.is_err():
-            logging.error(f"Invalid SMTP credentials {validation_result.err()}")
-            validation_result.unwrap(
-                public_message="Invalid SMTP credentials. Please check your username and password."
+        valid_credentials = True
+        if not skip_auth:
+            valid_credentials = notifier.validate_email_credentials(
+                username=email_username,
+                password=email_password,
+                server=email_server or notifier.email_server,
+                port=email_port or notifier.email_port,
             )
+
+        if not valid_credentials:
+            logger.error("Invalid SMTP credentials.")
+            raise SyftException(public_message=("Invalid SMTP credentials."))
 
         notifier.email_password = email_password
         notifier.email_username = email_username
@@ -185,14 +184,49 @@ class NotifierService(AbstractService):
             notifier.email_sender = email_sender
 
         notifier.active = True
-        logging.debug(
+        logger.debug(
             "Email credentials are valid. Updating the notifier settings in the db."
         )
 
-        self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
-        settings_service = context.server.get_service("settingsservice")
-        settings_service.update(context, notifications_enabled=True)
+        self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
+        context.server.services.settings.update(context, notifications_enabled=True)
         return SyftSuccess(message="Notifications enabled successfully.")
+
+    @as_result(SyftException)
+    def set_email_batch(
+        self,
+        context: AuthedServiceContext,
+        email_type: EMAIL_TYPES,
+        frequency: NOTIFICATION_FREQUENCY,
+        start_time: str = "",
+    ) -> SyftSuccess:
+        if start_time == "" and frequency is not NOTIFICATION_FREQUENCY.INSTANT:
+            raise SyftException(
+                "If frequency isn't INSTANT, you must set a start time for the notifications to be dispatched."
+            )
+
+        if frequency is not NOTIFICATION_FREQUENCY.INSTANT:
+            start_time = start_time.lower()
+            try:
+                if "pm" in start_time or "am" in start_time:
+                    time_obj = datetime.strptime(start_time, "%I:%M %p")
+                else:
+                    time_obj = datetime.strptime(start_time, "%H:%M")
+            except ValueError:
+                raise SyftException(
+                    "Invalid time format."
+                    + "Please enter the start time in one of the following format examples:"
+                    + "'14:00' or '2:00 PM'."
+                )
+        else:
+            time_obj = datetime.now()
+
+        notifier = self.stash.get(credentials=context.credentials).unwrap()
+        notifier.email_frequency[email_type.value] = EmailFrequency(
+            frequency=frequency, start_time=time_obj
+        )
+        self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
+        return SyftSuccess(message="Configuration set successfully.")
 
     @as_result(StashException)
     def turn_off(
@@ -206,10 +240,8 @@ class NotifierService(AbstractService):
         notifier = self.stash.get(credentials=context.credentials).unwrap()
 
         notifier.active = False
-        self.stash.update(credentials=context.credentials, settings=notifier).unwrap()
-
-        settings_service = context.server.get_service("settingsservice")
-        settings_service.update(context, notifications_enabled=False)
+        self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
+        context.server.services.settings.update(context, notifications_enabled=False)
         return SyftSuccess(message="Notifications disabled succesfullly")
 
     @as_result(SyftException)
@@ -220,8 +252,9 @@ class NotifierService(AbstractService):
         Activate email notifications for the authenticated user.
         This will only work if the datasite owner has enabled notifications.
         """
-        user_service = context.server.get_service("userservice")
-        return user_service.enable_notifications(context, notifier_type=notifier_type)
+        return context.server.services.user.enable_notifications(
+            context, notifier_type=notifier_type
+        ).unwrap()
 
     @as_result(SyftException)
     def deactivate(
@@ -230,9 +263,43 @@ class NotifierService(AbstractService):
         """Deactivate email notifications for the authenticated user
         This will only work if the datasite owner has enabled notifications.
         """
+        result = context.server.services.user.disable_notifications(
+            context, notifier_type=notifier_type
+        )
+        return result
 
-        user_service = context.server.get_service("userservice")
-        return user_service.disable_notifications(context, notifier_type=notifier_type)
+    def is_time_to_dispatch(
+        self, notification_frequency: EmailFrequency, current_time: datetime
+    ) -> bool:
+        frequency = notification_frequency.frequency
+        start_time = notification_frequency.start_time
+
+        # Define period_timedelta based on frequency
+        if frequency == NOTIFICATION_FREQUENCY.INSTANT:
+            return True
+        if frequency == NOTIFICATION_FREQUENCY.SIX_HOURS:
+            period = timedelta(hours=6)
+        elif frequency == NOTIFICATION_FREQUENCY.TWELVE_HOURS:
+            period = timedelta(hours=12)
+        elif frequency == NOTIFICATION_FREQUENCY.DAILY:
+            period = timedelta(days=1)
+        elif frequency == NOTIFICATION_FREQUENCY.WEEKLY:
+            period = timedelta(weeks=1)
+
+        # Calculate how many full periods have passed since start_time
+        elapsed_time = current_time - start_time
+        if elapsed_time < timedelta(0):
+            return False  # Current time is before the start time
+
+        periods_elapsed = int(elapsed_time // period)
+        next_dispatch_time = start_time + periods_elapsed * period
+
+        # Allow a small margin of error (e.g., 1 minute) to account for processing delays
+        margin = timedelta(minutes=1)
+        time_difference = current_time - next_dispatch_time
+
+        # Check if current_time is within the margin of the scheduled dispatch time
+        return timedelta(0) <= time_difference <= margin
 
     @staticmethod
     @as_result(SyftException)
@@ -243,7 +310,7 @@ class NotifierService(AbstractService):
         email_sender: str | None = None,
         smtp_port: int | None = None,
         smtp_host: str | None = None,
-    ) -> SyftSuccess:
+    ) -> SyftSuccess | None:
         """Initialize Notifier settings for a Server.
         If settings already exist, it will use the existing one.
         If not, it will create a new one.
@@ -260,7 +327,7 @@ class NotifierService(AbstractService):
         """
         try:
             # Create a new NotifierStash since its a static method.
-            notifier_stash = NotifierStash(store=server.document_store)
+            notifier_stash = NotifierStash(store=server.db)
             should_update = False
 
             # Get the notifier
@@ -298,7 +365,7 @@ class NotifierService(AbstractService):
 
             if should_update:
                 notifier_stash.update(
-                    credentials=server.signing_key.verify_key, settings=notifier
+                    credentials=server.signing_key.verify_key, obj=notifier
                 ).unwrap()
             else:
                 notifier_stash.set(server.signing_key.verify_key, notifier).unwrap()
@@ -317,17 +384,17 @@ class NotifierService(AbstractService):
             public_message="Couldn't set the email rate limit."
         )
         notifier.email_rate_limit[email_type.value] = daily_limit
-        self.stash.update(credentials=context.credentials, settings=notifier)
+        self.stash.update(credentials=context.credentials, obj=notifier)
 
         return SyftSuccess(message="Email rate limit updated!")
 
     # This is not a public API.
     # This method is used by other services to dispatch notifications internally
-    @as_result(SyftException)
+    @as_result(SyftException, RateLimitException)
     def dispatch_notification(
         self, context: AuthedServiceContext, notification: Notification
     ) -> SyftSuccess:
-        admin_key = context.server.get_service("userservice").admin_verify_key()
+        admin_key = context.server.services.user.root_verify_key
 
         # Silently fail on notification not delivered
         try:
@@ -348,11 +415,13 @@ class NotifierService(AbstractService):
 
         # If notifier is active
         if notifier.active and notification.email_template is not None:
-            logging.debug("Checking user email activity")
+            logger.debug("Checking user email activity")
+
             if notifier.email_activity.get(notification.email_template.__name__, None):
                 user_activity = notifier.email_activity[
                     notification.email_template.__name__
                 ].get(notification.to_user_verify_key, None)
+
                 # If there's no user activity
                 if user_activity is None:
                     notifier.email_activity[notification.email_template.__name__][
@@ -377,7 +446,7 @@ class NotifierService(AbstractService):
                         current_state.count += 1
                         current_state.date = datetime.now()
                     else:
-                        raise SyftException(
+                        raise RateLimitException(
                             public_message="Couldn't send the email. You have surpassed the"
                             + " email threshold limit. Please try again later."
                         )
@@ -388,11 +457,32 @@ class NotifierService(AbstractService):
                     )
                 }
 
-            self.stash.update(credentials=admin_key, settings=notifier).unwrap()
+            email_frequency = notifier.email_frequency.get(
+                notification.email_template.__name__,
+                EmailFrequency(frequency=NOTIFICATION_FREQUENCY.INSTANT),
+            )
 
-            notifier.send_notifications(
-                context=context, notification=notification
-            ).unwrap()
+            if email_frequency.frequency == NOTIFICATION_FREQUENCY.INSTANT:
+                notifier.send_notifications(
+                    context=context, notification=notification
+                ).unwrap()
+            else:
+                queue_dict = notifier.email_queue.get(
+                    notification.email_template.__name__, {}
+                )
+                if len(queue_dict) == 0:
+                    notifier.email_queue[notification.email_template.__name__] = (
+                        queue_dict
+                    )
+
+                user_queue = queue_dict.get(notification.to_user_verify_key, [])
+
+                if len(user_queue) == 0:
+                    queue_dict[notification.to_user_verify_key] = user_queue
+
+                user_queue.append(notification)
+
+            self.stash.update(credentials=admin_key, obj=notifier).unwrap()
 
         # If notifier isn't active, return None
         return SyftSuccess(message="Notification dispatched successfully")

@@ -5,7 +5,6 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 # third party
-from IPython.display import display
 from typing_extensions import Self
 
 # relative
@@ -51,7 +50,6 @@ class SyftResponseMessage(SyftBaseModel):
             "__version__",
         ] or name.startswith("_repr"):
             return super().__getattr__(name)
-        display(self)
         raise AttributeError(
             f"You have tried accessing `{name}` on a {type(self).__name__} with message: {self.message}"
         )
@@ -105,6 +103,13 @@ class SyftError(SyftResponseMessage):
 
     def is_ok(self) -> bool:
         return False
+
+    @classmethod
+    def from_public_exception(
+        cls,
+        exc: Exception,
+    ) -> Self:
+        return cls(message=exc.public_message)
 
     @classmethod
     def from_exception(

@@ -29,6 +29,35 @@ test_verify_key_string = (
 test_verify_key = SyftVerifyKey.from_string(test_verify_key_string)
 
 
+class MockSMTP:
+    def __init__(self, smtp_server, smtp_port, timeout):
+        self.sent_mail = []
+        self.smtp_server = smtp_server
+        self.smtp_port = smtp_port
+        self.timeout = timeout
+
+    def sendmail(self, from_addr, to_addrs, msg):
+        self.sent_mail.append((from_addr, to_addrs, msg))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+    def ehlo(self):
+        return True
+
+    def has_extn(self, extn):
+        return True
+
+    def login(self, username, password):
+        return True
+
+    def starttls(self):
+        return True
+
+
 def add_mock_notification(
     root_verify_key,
     notification_stash: NotificationStash,
@@ -115,20 +144,12 @@ def test_get_all_success(
         NotificationStatus.UNREAD,
     )
 
-    @as_result(StashException)
-    def mock_get_all_inbox_for_verify_key(*args, **kwargs) -> list[Notification]:
-        return [expected_message]
-
-    monkeypatch.setattr(
-        notification_service.stash,
-        "get_all_inbox_for_verify_key",
-        mock_get_all_inbox_for_verify_key,
-    )
-
     response = test_notification_service.get_all(authed_context)
 
     assert len(response) == 1
     assert isinstance(response[0], Notification)
+    response[0].syft_client_verify_key = None
+    response[0].syft_server_location = None
     assert response[0] == expected_message
 
 
@@ -159,9 +180,6 @@ def test_get_all_error_on_get_all_inbox(
 
 
 def test_get_sent_success(
-    root_verify_key,
-    monkeypatch: MonkeyPatch,
-    notification_service: NotificationService,
     authed_context: AuthedServiceContext,
     document_store: DocumentStore,
 ) -> None:
@@ -178,20 +196,12 @@ def test_get_sent_success(
         NotificationStatus.UNREAD,
     )
 
-    @as_result(StashException)
-    def mock_get_all_sent_for_verify_key(credentials, verify_key) -> list[Notification]:
-        return [expected_message]
-
-    monkeypatch.setattr(
-        notification_service.stash,
-        "get_all_sent_for_verify_key",
-        mock_get_all_sent_for_verify_key,
-    )
-
     response = test_notification_service.get_all_sent(authed_context)
 
     assert len(response) == 1
     assert isinstance(response[0], Notification)
+    response[0].syft_server_location = None
+    response[0].syft_client_verify_key = None
     assert response[0] == expected_message
 
 
@@ -311,19 +321,12 @@ def test_get_all_read_success(
         NotificationStatus.READ,
     )
 
-    def mock_get_all_by_verify_key_for_status() -> list[Notification]:
-        return [expected_message]
-
-    monkeypatch.setattr(
-        notification_service.stash,
-        "get_all_by_verify_key_for_status",
-        mock_get_all_by_verify_key_for_status,
-    )
-
     response = test_notification_service.get_all_read(authed_context)
 
     assert len(response) == 1
     assert isinstance(response[0], Notification)
+    response[0].syft_server_location = None
+    response[0].syft_client_verify_key = None
     assert response[0] == expected_message
 
 
@@ -375,19 +378,11 @@ def test_get_all_unread_success(
         NotificationStatus.UNREAD,
     )
 
-    @as_result(StashException)
-    def mock_get_all_by_verify_key_for_status() -> list[Notification]:
-        return [expected_message]
-
-    monkeypatch.setattr(
-        notification_service.stash,
-        "get_all_by_verify_key_for_status",
-        mock_get_all_by_verify_key_for_status,
-    )
-
     response = test_notification_service.get_all_unread(authed_context)
     assert len(response) == 1
     assert isinstance(response[0], Notification)
+    response[0].syft_server_location = None
+    response[0].syft_client_verify_key = None
     assert response[0] == expected_message
 
 
@@ -734,3 +729,63 @@ def test_clear_error_on_delete_all_for_verify_key(
     assert exc.type is StashException
     assert exc.value.public_message == expected_error
     assert len(inbox_after_delete) == 1
+
+
+# a list of all the mock objects created
+mock_smtps = []
+
+
+def test_send_email(worker, monkeypatch, mock_create_notification, authed_context):
+    # stdlib
+    import smtplib
+
+    # we use this to have a reference to all the mock objects we create
+    def create_smtp(*args, **kwargs):
+        # we sum over all the mocks
+        global mock_smtps
+        res = MockSMTP(*args, **kwargs)
+        mock_smtps.append(res)
+        return res
+
+    monkeypatch.setattr(smtplib, "SMTP", create_smtp)
+    root_client = worker.root_client
+    mock_create_notification.to_user_verify_key = root_client.verify_key
+    mock_create_notification.from_user_verify_key = root_client.verify_key
+
+    root_client.settings.enable_notifications(
+        email_sender="someone@example.com",
+        email_port="2525",
+        email_server="localhost",
+        email_username="someuser",
+        email_password="password",
+    )
+
+    def emails_sent():
+        global mock_smtps
+        return sum([len(x.sent_mail) for x in mock_smtps])
+
+    mock_create_notification.to(Notification, authed_context)
+    root_client.notifications.send(mock_create_notification)
+
+    assert emails_sent() == 1
+
+    mock_create_notification.id = UID()
+
+    root_client.settings.disable_notifications()
+    root_client.notifications.send(mock_create_notification)
+    assert emails_sent() == 1
+
+    new_port = "2526"
+
+    root_client.settings.enable_notifications(
+        email_sender="someone@example.com",
+        email_port=new_port,
+        email_server="localhost",
+        email_username="someuser",
+        email_password="password",
+    )
+
+    mock_create_notification.id = UID()
+    root_client.notifications.send(mock_create_notification)
+    assert emails_sent() == 2
+    assert int(mock_smtps[-1].smtp_port) == int(new_port)

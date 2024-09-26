@@ -9,6 +9,9 @@ import pytest
 from pytest import MonkeyPatch
 
 # syft absolute
+import syft as sy
+from syft import orchestra
+from syft.client.client import SyftClient
 from syft.server.credentials import SyftVerifyKey
 from syft.server.worker import Worker
 from syft.service.context import AuthedServiceContext
@@ -207,7 +210,7 @@ def test_userservice_get_all_success(
     expected_output = [x.to(UserView) for x in mock_get_all_output]
 
     @as_result(StashException)
-    def mock_get_all(credentials: SyftVerifyKey) -> list[User]:
+    def mock_get_all(credentials: SyftVerifyKey, **kwargs) -> list[User]:
         return mock_get_all_output
 
     monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
@@ -221,23 +224,6 @@ def test_userservice_get_all_success(
     )
 
 
-def test_userservice_get_all_error(
-    monkeypatch: MonkeyPatch,
-    user_service: UserService,
-    authed_context: AuthedServiceContext,
-) -> None:
-    @as_result(StashException)
-    def mock_get_all(credentials: SyftVerifyKey) -> NoReturn:
-        raise StashException
-
-    monkeypatch.setattr(user_service.stash, "get_all", mock_get_all)
-
-    with pytest.raises(StashException) as exc:
-        user_service.get_all(authed_context)
-
-    assert exc.type == StashException
-
-
 def test_userservice_search(
     monkeypatch: MonkeyPatch,
     user_service: UserService,
@@ -245,13 +231,13 @@ def test_userservice_search(
     guest_user: User,
 ) -> None:
     @as_result(SyftException)
-    def mock_find_all(credentials: SyftVerifyKey, **kwargs) -> list[User]:
+    def get_all(credentials: SyftVerifyKey, **kwargs) -> list[User]:
         for key in kwargs.keys():
             if hasattr(guest_user, key):
                 return [guest_user]
         return []
 
-    monkeypatch.setattr(user_service.stash, "find_all", mock_find_all)
+    monkeypatch.setattr(user_service.stash, "get_all", get_all)
 
     expected_output = [guest_user.to(UserView)]
 
@@ -304,14 +290,22 @@ def test_userservice_search(
 
 
 def test_userservice_search_with_invalid_kwargs(
-    user_service: UserService, authed_context: AuthedServiceContext
+    worker, user_service: UserService, authed_context: AuthedServiceContext
 ) -> None:
-    # Search with invalid kwargs
-    with pytest.raises(SyftException) as exc:
+    # Direct calls will fail with a type error
+    with pytest.raises(TypeError) as exc:
         user_service.search(context=authed_context, role=ServiceRole.GUEST)
 
-    assert exc.type == SyftException
-    assert "Invalid search parameters" in exc.value.public_message
+    assert "UserService.search() got an unexpected keyword argument 'role'" == str(
+        exc.value
+    )
+
+    root_client = worker.root_client
+    # Client calls fails at autosplat check
+    with pytest.raises(SyftException) as exc:
+        root_client.users.search(role=ServiceRole.GUEST)
+
+    assert "Invalid parameter: `role`" in exc.value.public_message
 
 
 def test_userservice_update_get_by_uid_fails(
@@ -373,8 +367,8 @@ def test_userservice_update_success(
     def mock_update(
         credentials: SyftVerifyKey, obj: User, has_permission: bool
     ) -> User:
-        guest_user.name = update_user.name
-        guest_user.email = update_user.email
+        guest_user.name = obj.name
+        guest_user.email = obj.email
         return guest_user
 
     monkeypatch.setattr(user_service.stash, "update", mock_update)
@@ -386,6 +380,12 @@ def test_userservice_update_success(
     assert isinstance(user, UserView)
     assert user.email == update_user.email
     assert user.name == update_user.name
+
+    another_update = UserUpdate(name="name", email="email@openmined.org")
+    user = user_service.update(authed_context, guest_user.id, **another_update)
+    assert isinstance(user, UserView)
+    assert user.name == "name"
+    assert user.email == "email@openmined.org"
 
 
 def test_userservice_update_fails(
@@ -526,27 +526,10 @@ def test_userservice_user_verify_key_invalid_email(
     assert exc.value.public_message == expected_output
 
 
-def test_userservice_admin_verify_key_error(
-    monkeypatch: MonkeyPatch, user_service: UserService
-) -> None:
-    expected_output = "failed to get admin verify_key"
-
-    def mock_admin_verify_key() -> UID:
-        raise SyftException(public_message=expected_output)
-
-    monkeypatch.setattr(user_service.stash, "admin_verify_key", mock_admin_verify_key)
-
-    with pytest.raises(SyftException) as exc:
-        user_service.admin_verify_key()
-
-    assert exc.type == SyftException
-    assert exc.value.public_message == expected_output
-
-
 def test_userservice_admin_verify_key_success(
     monkeypatch: MonkeyPatch, user_service: UserService, worker
 ) -> None:
-    response = user_service.admin_verify_key()
+    response = user_service.root_verify_key
     assert isinstance(response, SyftVerifyKey)
     assert response == worker.root_client.credentials.verify_key
 
@@ -571,7 +554,7 @@ def test_userservice_register_user_exists(
         new_callable=mock.PropertyMock,
         return_value=settings_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named(name="mock-server")
+        mock_worker = Worker.named(name="mock-server", db_url="sqlite://")
         server_context = ServerServiceContext(server=mock_worker)
 
         with pytest.raises(SyftException) as exc:
@@ -601,7 +584,7 @@ def test_userservice_register_error_on_get_email(
         new_callable=mock.PropertyMock,
         return_value=settings_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named(name="mock-server")
+        mock_worker = Worker.named(name="mock-server", db_url="sqlite://")
         server_context = ServerServiceContext(server=mock_worker)
 
         with pytest.raises(StashException) as exc:
@@ -630,7 +613,7 @@ def test_userservice_register_success(
         new_callable=mock.PropertyMock,
         return_value=settings_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named(name="mock-server")
+        mock_worker = Worker.named(name="mock-server", db_url="sqlite://")
         server_context = ServerServiceContext(server=mock_worker)
 
         monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -669,7 +652,7 @@ def test_userservice_register_set_fail(
         new_callable=mock.PropertyMock,
         return_value=settings_with_signup_enabled(worker),
     ):
-        mock_worker = Worker.named(name="mock-server")
+        mock_worker = Worker.named(name="mock-server", db_url="sqlite://")
         server_context = ServerServiceContext(server=mock_worker)
 
         monkeypatch.setattr(user_service.stash, "get_by_email", mock_get_by_email)
@@ -699,8 +682,8 @@ def test_userservice_exchange_credentials(
     expected_user_private_key = guest_user.to(UserPrivateKey)
 
     response = user_service.exchange_credentials(unauthed_context)
-    assert isinstance(response, UserPrivateKey)
-    assert response == expected_user_private_key
+    assert isinstance(response.value, UserPrivateKey)
+    assert response.value == expected_user_private_key
 
 
 def test_userservice_exchange_credentials_invalid_user(
@@ -728,7 +711,6 @@ def test_userservice_exchange_credentials_get_email_fails(
     monkeypatch: MonkeyPatch,
     user_service: UserService,
     unauthed_context: UnauthedServiceContext,
-    guest_user: User,
 ) -> None:
     get_by_email_error = "Failed to connect to server."
 
@@ -743,3 +725,76 @@ def test_userservice_exchange_credentials_get_email_fails(
 
     assert exc.type == StashException
     assert exc.value.public_message == get_by_email_error
+
+
+def test_userservice_update_via_client_with_mixed_args():
+    server = orchestra.launch(name="datasite-test", reset=True)
+
+    root_client = server.login(email="info@openmined.org", password="changethis")
+    root_client.register(
+        name="New user",
+        email="new_user@openmined.org",
+        password="password",
+        password_verify="password",
+    )
+    assert len(root_client.users.get_all()) == 2
+
+    user_list = root_client.users.search(email="new_user@openmined.org")
+    assert len(user_list) == 1
+
+    user = user_list[0]
+    assert user.name == "New user"
+
+    root_client.users.update(uid=user.id, name="Updated user name")
+    user = root_client.users.search(email="new_user@openmined.org")[0]
+    assert user.name == "Updated user name"
+
+    root_client.users.update(user.id, name="User name")
+    user = root_client.users.search(email="new_user@openmined.org")[0]
+    assert user.name == "User name"
+
+    root_client.users.update(user.id, password="newpassword")
+    user_client = root_client.login(
+        email="new_user@openmined.org", password="newpassword"
+    )
+    assert user_client.account.name == "User name"
+
+
+def test_reset_password():
+    server = orchestra.launch(name="datasite-test", reset=True)
+
+    datasite_client = server.login(email="info@openmined.org", password="changethis")
+    datasite_client.register(
+        email="new_syft_user@openmined.org",
+        password="verysecurepassword",
+        password_verify="verysecurepassword",
+        name="New User",
+    )
+    guest_client: SyftClient = server.login_as_guest()
+    guest_client.forgot_password(email="new_syft_user@openmined.org")
+    temp_token = datasite_client.users.request_password_reset(
+        datasite_client.notifications[-1].linked_obj.resolve.id
+    )
+    guest_client.reset_password(token=temp_token, new_password="Password123")
+    server.login(email="new_syft_user@openmined.org", password="Password123")
+
+
+def test_root_cannot_be_deleted():
+    server = orchestra.launch(name="datasite-test", reset=True)
+    datasite_client = server.login(email="info@openmined.org", password="changethis")
+
+    new_admin_email = "admin@openmined.org"
+    new_admin_pass = "changethis2"
+    datasite_client.register(
+        name="second admin",
+        email=new_admin_email,
+        password=new_admin_pass,
+        password_verify=new_admin_pass,
+    )
+    # update role
+    new_user_id = datasite_client.users.search(email=new_admin_email)[0].id
+    datasite_client.users.update(uid=new_user_id, role="admin")
+
+    new_admin_client = server.login(email=new_admin_email, password=new_admin_pass)
+    with sy.raises(sy.SyftException):
+        new_admin_client.users.delete(datasite_client.account.id)

@@ -915,31 +915,21 @@ class ObjectDiffBatch(SyftObject):
         return self.root_diff
 
     def __repr__(self) -> Any:
-        try:
-            return f"""{self.hierarchy_str('low')}
-
-    {self.hierarchy_str('high')}
-    """
-        except Exception as _:
-            raise SyftException(
-                public_message=html.escape(
-                    "Could not render batch, please use resolve(<batch>) instead."
-                )
-            )
+        return f"{self.__class__.__name__}[{self.root_type.__name__}](#{str(self.root_id)})"
 
     def _repr_markdown_(self, wrap_as_python: bool = True, indent: int = 0) -> str:
         return ""  # Turns off the _repr_markdown_ of SyftObject
 
     def _get_visual_hierarchy(
-        self, server: ObjectDiff, visited: set[UID] | None = None
+        self, node: ObjectDiff, visited: set[UID] | None = None
     ) -> dict[ObjectDiff, dict]:
         visited = visited if visited is not None else set()
-        visited.add(server.object_id)
+        visited.add(node.object_id)
 
         _, child_types_map = self.visual_hierarchy
-        child_types = child_types_map.get(server.obj_type, [])
-        dep_ids = self.dependencies.get(server.object_id, []) + self.dependents.get(
-            server.object_id, []
+        child_types = child_types_map.get(node.obj_type, [])
+        dep_ids = self.dependencies.get(node.object_id, []) + self.dependents.get(
+            node.object_id, []
         )
 
         result = {}
@@ -1248,6 +1238,7 @@ class ServerDiff(SyftObject):
         # TODO: Check if high and low ignored batches are the same else error
         previously_ignored_batches = low_state.ignored_batches
         ServerDiff.apply_previous_ignore_state(all_batches, previously_ignored_batches)
+        ServerDiff.ignore_high_side_code(all_batches)
 
         res = cls(
             low_server_uid=low_state.server_uid,
@@ -1319,6 +1310,23 @@ It will be available for review again."""
                                 # if there is overlap
                                 if len(required_dependencies & other_batch_root_id):
                                     other_batch.decision = None
+
+    @staticmethod
+    def ignore_high_side_code(batches: list[ObjectDiffBatch]) -> None:
+        # relative
+        from ...abstract_server import ServerSideType
+        from ...client.syncing import get_other_ignore_batches
+
+        for batch in batches:
+            if not issubclass(batch.root_type, UserCode):
+                continue
+
+            user_code: UserCode = batch.root.non_empty_object  # type: ignore
+            if user_code.origin_server_side_type == ServerSideType.HIGH_SIDE:
+                batch.decision = SyncDecision.IGNORE
+                other_batches = get_other_ignore_batches(batch, batches)
+                for other_batch in other_batches:
+                    other_batch.decision = SyncDecision.IGNORE
 
     @staticmethod
     def dependencies_from_states(
@@ -1436,10 +1444,10 @@ It will be available for review again."""
                 root_ids.append(diff.object_id)  # type: ignore
 
         # Dependents are the reverse edges of the dependency graph
-        obj_dependents = {}
+        obj_dependents: dict = {}
         for parent, children in obj_dependencies.items():
             for child in children:
-                obj_dependents[child] = obj_dependencies.get(child, []) + [parent]
+                obj_dependents[child] = obj_dependents.get(child, []) + [parent]
 
         for root_uid in root_ids:
             batch = ObjectDiffBatch.from_dependencies(

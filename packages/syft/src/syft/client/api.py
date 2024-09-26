@@ -29,8 +29,7 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..serde.signature import Signature
-from ..serde.signature import signature_remove_context
-from ..serde.signature import signature_remove_self
+from ..serde.signature import signature_remove
 from ..server.credentials import SyftSigningKey
 from ..server.credentials import SyftVerifyKey
 from ..service.context import AuthedServiceContext
@@ -59,7 +58,6 @@ from ..types.uid import UID
 from ..util.autoreload import autoreload_enabled
 from ..util.markdown import as_markdown_python_code
 from ..util.notebook_ui.components.tabulator_template import build_tabulator_table
-from ..util.telemetry import instrument
 from ..util.util import index_syft_by_module_name
 from ..util.util import prompt_warning_message
 from .connection import ServerConnection
@@ -237,7 +235,6 @@ class SignedSyftAPICall(SyftObject):
         return True
 
 
-@instrument
 @serializable()
 class SyftAPICall(SyftObject):
     # version
@@ -264,7 +261,6 @@ class SyftAPICall(SyftObject):
         return f"SyftAPICall(path={self.path}, args={self.args}, kwargs={self.kwargs}, blocking={self.blocking})"
 
 
-@instrument
 @serializable()
 class SyftAPIData(SyftBaseObject):
     # version
@@ -741,8 +737,15 @@ class APIModule:
             )
 
     def __getitem__(self, key: str | int) -> Any:
+        if hasattr(self, "get_index"):
+            return self.get_index(key)
         if hasattr(self, "get_all"):
             return self.get_all()[key]
+        raise NotImplementedError
+
+    def __iter__(self) -> Any:
+        if hasattr(self, "get_all"):
+            return iter(self.get_all())
         raise NotImplementedError
 
     def _repr_html_(self) -> Any:
@@ -874,7 +877,6 @@ def result_needs_api_update(api_call_result: Any) -> bool:
     return False
 
 
-@instrument
 @serializable(
     attrs=[
         "endpoints",
@@ -1121,9 +1123,10 @@ class SyftAPI(SyftObject):
             api_module = APIModule(path="", refresh_callback=self.refresh_api_callback)
             for v in endpoints.values():
                 signature = v.signature
+                args_to_remove = ["context"]
                 if not v.has_self:
-                    signature = signature_remove_self(signature)
-                signature = signature_remove_context(signature)
+                    args_to_remove.append("self")
+                signature = signature_remove(signature, args_to_remove)
                 if isinstance(v, APIEndpoint):
                     endpoint_function = generate_remote_function(
                         self,
@@ -1334,10 +1337,19 @@ def validate_callable_args_and_kwargs(
     else:
         for key, value in kwargs.items():
             if key not in signature.parameters:
+                valid_parameters = list(signature.parameters)
+                valid_parameters_msg = (
+                    f"Valid parameter: {valid_parameters}"
+                    if len(valid_parameters) == 1
+                    else f"Valid parameters: {valid_parameters}"
+                )
+
                 raise SyftException(
-                    public_message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}
-                    f"{_signature_error_message(_format_signature(signature))}"
-"""
+                    public_message=(
+                        f"Invalid parameter: `{key}`\n"
+                        f"{valid_parameters_msg}\n"
+                        f"{_signature_error_message(_format_signature(signature))}"
+                    )
                 )
             param = signature.parameters[key]
             if isinstance(param.annotation, str):
@@ -1351,11 +1363,13 @@ def validate_callable_args_and_kwargs(
                 try:
                     _check_type(value, t)
                 except ValueError:
-                    _type_str = getattr(t, "__name__", str(t))
-                    raise SyftException(
-                        public_message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
-                        f"{_signature_error_message(_format_signature(signature))}"
-                    )
+                    # TODO: fix this properly
+                    if not (t == type(Any)):
+                        _type_str = getattr(t, "__name__", str(t))
+                        raise SyftException(
+                            public_message=f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
+                            f"{_signature_error_message(_format_signature(signature))}"
+                        )
 
             _valid_kwargs[key] = value
 

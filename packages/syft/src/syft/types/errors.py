@@ -15,6 +15,7 @@ import uuid
 from IPython import get_ipython
 from IPython.display import HTML
 from IPython.display import display
+import psutil
 from typing_extensions import Self
 
 # relative
@@ -160,10 +161,10 @@ class SyftException(Exception):
         server_trace = self._server_trace
         message = self._private_message or self.public
 
-        return f"""
-{message}
-server_trace: {server_trace}
-"""
+        if server_trace:
+            message = f"{message}\nserver_trace: {server_trace}"
+
+        return message
 
     def _repr_html_(self) -> str:
         is_dev_mode = os.getenv("DEV_MODE", "false").lower() == "true"
@@ -181,6 +182,7 @@ server_trace: {server_trace}
             message=self._private_message or self.public,
             traceback_str=traceback_str,
             display=display,
+            dev_mode=is_dev_mode,
         )
         return table_html
 
@@ -195,16 +197,31 @@ class raises:
         pass
 
     def __exit__(self, exc_type, exc_value, traceback):  # type: ignore
+        message = None
+        expected_exception_type = self.expected_exception
+        if not isinstance(expected_exception_type, type):
+            expected_exception_type = type(self.expected_exception)
+            if hasattr(self.expected_exception, "public_message"):
+                message = self.expected_exception.public_message.replace("*", "")
+
         # After block of code
         if exc_type is None:
             raise AssertionError(
-                f"Expected {self.expected_exception} to be raised, but no exception was raised."
+                f"Expected {self.expected_exception} to be raised, "
+                "but no exception was raised."
             )
-        if not issubclass(exc_type, self.expected_exception):
+        if not issubclass(exc_type, expected_exception_type):
             raise AssertionError(
-                f"Expected {self.expected_exception} to be raised, but got {exc_type}."
+                f"Expected {expected_exception_type} to be raised, but got {exc_type}."
+            )
+        if message and message not in exc_value.public_message:
+            raise AssertionError(
+                f"Expected {expected_exception_type} to be raised, "
+                f"did not contain {message}."
             )
         if self.show:
+            # keep this print!
+            print("with sy.raises successfully caught the following exception:")
             if hasattr(exc_value, "_repr_html_"):
                 display(HTML(exc_value._repr_html_()))
             else:
@@ -322,7 +339,19 @@ def syft_exception_handler(
     display(HTML(evalue._repr_html_()))
 
 
-try:
-    get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
-except Exception:
-    pass  # nosec
+runs_in_pytest = False
+for pid in psutil.pids():
+    try:
+        if "PYTEST_CURRENT_TEST" in psutil.Process(pid).environ():
+            runs_in_pytest = True
+    except Exception:
+        pass  # nosec
+
+
+# be very careful when changing this. pytest (with nbmake) will
+# not pick up exceptions if they have a custom exception handler (fail silently)
+if not runs_in_pytest:
+    try:
+        get_ipython().set_custom_exc((SyftException,), syft_exception_handler)  # noqa: F821
+    except Exception:
+        pass  # nosec

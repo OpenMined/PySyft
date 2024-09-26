@@ -12,7 +12,7 @@ from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...custom_worker.runner_k8s import KubernetesRunner
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
@@ -26,7 +26,6 @@ from ..request.request import CreateCustomImageChange
 from ..request.request import CreateCustomWorkerPoolChange
 from ..request.request import Request
 from ..request.request import SubmitRequest
-from ..request.request_service import RequestService
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -53,11 +52,9 @@ logger = logging.getLogger(__name__)
 
 @serializable(canonical_name="SyftWorkerPoolService", version=1)
 class SyftWorkerPoolService(AbstractService):
-    store: DocumentStore
     stash: SyftWorkerPoolStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = SyftWorkerPoolStash(store=store)
         self.image_stash = SyftWorkerImageStash(store=store)
 
@@ -126,8 +123,7 @@ class SyftWorkerPoolService(AbstractService):
             credentials=context.credentials, uid=image_uid
         ).unwrap()
 
-        worker_service: AbstractService = context.server.get_service("WorkerService")
-        worker_stash = worker_service.stash
+        worker_stash = context.server.services.worker.stash
 
         # Create worker pool from given image, with the given worker pool
         # and with the desired number of workers
@@ -214,8 +210,9 @@ class SyftWorkerPoolService(AbstractService):
         # Create a the request object with the changes and submit it
         # for approval.
         request = SubmitRequest(changes=changes)
-        method = context.server.get_service_method(RequestService.submit)
-        return method(context=context, request=request, reason=reason)
+        return context.server.services.request.submit(
+            context=context, request=request, reason=reason
+        )
 
     @service_method(
         path="worker_pool.create_image_and_pool_request",
@@ -234,7 +231,7 @@ class SyftWorkerPoolService(AbstractService):
         pull_image: bool = True,
         pod_annotations: dict[str, str] | None = None,
         pod_labels: dict[str, str] | None = None,
-    ) -> SyftSuccess:
+    ) -> Request:
         """
         Create a request to launch the worker pool based on a built image.
 
@@ -318,8 +315,9 @@ class SyftWorkerPoolService(AbstractService):
 
         # Create a request object and submit a request for approval
         request = SubmitRequest(changes=changes)
-        method = context.server.get_service_method(RequestService.submit)
-        return method(context=context, request=request, reason=reason)
+        return context.server.services.request.submit(
+            context=context, request=request, reason=reason
+        )
 
     @service_method(
         path="worker_pool.get_all",
@@ -383,8 +381,7 @@ class SyftWorkerPoolService(AbstractService):
             uid=worker_pool.image_id,
         ).unwrap()
 
-        worker_service: AbstractService = context.server.get_service("WorkerService")
-        worker_stash = worker_service.stash
+        worker_stash = context.server.services.worker.stash
 
         # Add workers to given pool from the given image
         worker_list, container_statuses = _create_workers_in_pool(
@@ -408,6 +405,7 @@ class SyftWorkerPoolService(AbstractService):
         path="worker_pool.scale",
         name="scale",
         roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def scale(
         self,
@@ -420,6 +418,8 @@ class SyftWorkerPoolService(AbstractService):
         Scale the worker pool to the given number of workers in Kubernetes.
         Allows both scaling up and down the worker pool.
         """
+
+        client_warning = ""
 
         if not IN_KUBERNETES:
             raise SyftException(
@@ -460,13 +460,15 @@ class SyftWorkerPoolService(AbstractService):
                 -(current_worker_count - number) :
             ]
 
-            worker_stash = context.server.get_service("WorkerService").stash
+            worker_stash = context.server.services.worker.stash
             # delete linkedobj workers
             for worker in workers_to_delete:
                 worker_stash.delete_by_uid(
                     credentials=context.credentials,
                     uid=worker.object_uid,
                 ).unwrap()
+
+            client_warning += "Scaling down workers doesn't kill the associated jobs. Please delete them manually."
 
             # update worker_pool
             worker_pool.max_count = number
@@ -481,7 +483,10 @@ class SyftWorkerPoolService(AbstractService):
                 )
             )
 
-        return SyftSuccess(message=f"Worker pool scaled to {number} workers")
+        return SyftSuccess(
+            message=f"Worker pool scaled to {number} workers",
+            client_warnings=[client_warning] if client_warning else [],
+        )
 
     @service_method(
         path="worker_pool.filter_by_image_id",
@@ -507,12 +512,13 @@ class SyftWorkerPoolService(AbstractService):
         path="worker_pool.sync_pool_from_request",
         name="sync_pool_from_request",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
+        unwrap_on_success=False,
     )
     def sync_pool_from_request(
         self,
         context: AuthedServiceContext,
         request: Request,
-    ) -> SyftSuccess:
+    ) -> Request:
         """Re-submit request from a different server"""
 
         num_of_changes = len(request.changes)
@@ -560,6 +566,77 @@ class SyftWorkerPoolService(AbstractService):
                     f"{request.changes}"
                 )
             )
+
+    @service_method(
+        path="worker_pool.delete",
+        name="delete",
+        roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
+    def delete(
+        self,
+        context: AuthedServiceContext,
+        pool_id: UID | None = None,
+        pool_name: str | None = None,
+    ) -> SyftSuccess:
+        worker_pool = self._get_worker_pool(
+            context, pool_id=pool_id, pool_name=pool_name
+        ).unwrap(public_message=f"Failed to get WorkerPool: {pool_id or pool_name}")
+
+        uid = worker_pool.id
+
+        # relative
+        from ..queue.queue_stash import Status
+
+        queue_items = context.server.services.queue.stash._get_by_worker_pool(
+            credentials=context.credentials,
+            worker_pool=LinkedObject.from_obj(
+                obj=worker_pool,
+                service_type=self.__class__,
+                server_uid=context.server.id,
+            ),
+        ).unwrap(
+            public_message=f"Failed to get queue items mapped to WorkerPool: {worker_pool.name}"
+        )
+
+        items_to_interrupt = (
+            item
+            for item in queue_items
+            if item.status in (Status.CREATED, Status.PROCESSING)
+        )
+
+        for item in items_to_interrupt:
+            item.status = Status.INTERRUPTED
+            context.server.services.queue.stash.update(
+                credentials=context.credentials,
+                obj=item,
+            ).unwrap()
+
+        if IN_KUBERNETES:
+            # Scale the workers to zero
+            self.scale(context=context, number=0, pool_id=uid)
+            runner = KubernetesRunner()
+            runner.delete_pool(pool_name=worker_pool.name)
+        else:
+            workers = (
+                worker.resolve_with_context(context=context).unwrap()
+                for worker in worker_pool.worker_list
+            )
+
+            worker_ids = []
+            for worker in workers:
+                worker_ids.append(worker.id)
+
+            for id_ in worker_ids:
+                context.server.services.worker.delete(
+                    context=context, uid=id_, force=True
+                )
+
+        self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap(
+            public_message=f"Failed to delete WorkerPool: {worker_pool.name} from stash"
+        )
+
+        return SyftSuccess(message=f"Successfully deleted worker pool with id {uid}")
 
     @as_result(StashException, SyftException)
     def _get_worker_pool(

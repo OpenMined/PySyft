@@ -352,6 +352,13 @@ def create_kubernetes_pool(
                 "N_CONSUMERS": "1",
                 "CREATE_PRODUCER": "False",
                 "INMEMORY_WORKERS": "False",
+                "OTEL_SERVICE_NAME": f"{pool_name}",
+                "OTEL_EXPORTER_OTLP_ENDPOINT": os.environ.get(
+                    "OTEL_EXPORTER_OTLP_ENDPOINT"
+                ),
+                "OTEL_EXPORTER_OTLP_PROTOCOL": os.environ.get(
+                    "OTEL_EXPORTER_OTLP_PROTOCOL"
+                ),
             },
         )
 

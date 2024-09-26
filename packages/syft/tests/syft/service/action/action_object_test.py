@@ -506,15 +506,15 @@ def test_actionobject_syft_get_path(testcase):
 def test_actionobject_syft_send_get(worker, testcase):
     root_datasite_client = worker.root_client
     root_datasite_client._fetch_api(root_datasite_client.credentials)
-    action_store = worker.get_service("actionservice").store
+    action_store = worker.services.action.stash
 
     orig_obj = testcase
     obj = helper_make_action_obj(orig_obj)
 
-    assert len(action_store.data) == 0
+    assert len(action_store._data) == 0
 
     ptr = obj.send(root_datasite_client)
-    assert len(action_store.data) == 1
+    assert len(action_store._data) == 1
     retrieved = ptr.get()
 
     assert obj.syft_action_data == retrieved
@@ -1001,7 +1001,7 @@ def test_actionobject_syft_getattr_float_history():
 
 
 @pytest.mark.skipif(
-    sys.platform != "linux",
+    sys.platform == "win32",
     reason="This is a hackish way to test attribute set/get, and it might fail on Windows or OSX",
 )
 def test_actionobject_syft_getattr_np(worker):

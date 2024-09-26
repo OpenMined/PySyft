@@ -6,6 +6,7 @@ from typing_extensions import Self
 
 # relative
 from ..abstract_server import AbstractServer
+from ..abstract_server import ServerSideType
 from ..server.credentials import SyftVerifyKey
 from ..server.credentials import UserLoginCredentials
 from ..types.syft_object import Context
@@ -52,6 +53,16 @@ class AuthedServiceContext(ServerServiceContext):
         return AuthedServiceContext(
             credentials=credentials, role=role, server=self.server
         )
+
+    @property
+    def is_l0_lowside(self) -> bool:
+        """Returns True if this is a low side of a Level 0 deployment"""
+        return self.server.server_side_type == ServerSideType.LOW_SIDE
+
+    @property
+    def server_allows_execution_for_ds(self) -> bool:
+        """Returns True if this is a low side of a Level 0 deployment"""
+        return not self.is_l0_lowside
 
     def as_root_context(self) -> Self:
         return AuthedServiceContext(

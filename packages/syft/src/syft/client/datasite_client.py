@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import json
 import logging
 from pathlib import Path
 import re
@@ -415,8 +416,14 @@ class DatasiteClient(SyftClient):
 
         return res
 
-    def load_migration_data(self, path: str | Path) -> SyftSuccess:
-        migration_data = MigrationData.from_file(path)
+    def load_migration_data(
+        self, path_or_data: str | Path | MigrationData
+    ) -> SyftSuccess:
+        if isinstance(path_or_data, MigrationData):
+            migration_data = path_or_data
+        else:
+            migration_data = MigrationData.from_file(path_or_data)
+
         migration_data._set_obj_location_(self.id, self.verify_key)
 
         if self.id != migration_data.server_uid:
@@ -430,11 +437,31 @@ class DatasiteClient(SyftClient):
                 public_message="Root verify key in migration data does not match this client's verify key"
             )
 
+        if migration_data.includes_custom_workerpools:
+            prompt_warning_message(
+                "This migration data includes custom workers, "
+                "which need to be migrated separately with `sy.upgrade_custom_workerpools` "
+                "after finishing the migration."
+            )
+
         migration_data.migrate_and_upload_blobs()
-        migration_data_without_blobs = migration_data.copy_without_blobs()
-        return self.api.services.migration.apply_migration_data(
-            migration_data_without_blobs
-        )
+
+        migration_data = migration_data.copy_without_workerpools().copy_without_blobs()
+        return self.api.services.migration.apply_migration_data(migration_data)
+
+    def dump_state(self, path: str | Path) -> None:
+        if isinstance(path, str):
+            path = Path(path)
+        path.mkdir(exist_ok=True)
+        blob_path = path / "migration.blob"
+        yaml_path = path / "migration.yaml"
+        config_path = path / "config.json"
+
+        migration_data = self.get_migration_data(include_blobs=True)
+        migration_data.save(blob_path, yaml_path=yaml_path)
+        server_config = self.api.services.settings.get_server_config()
+        with open(config_path, "w") as fp:
+            json.dump(server_config, fp)
 
     def get_project(
         self,
