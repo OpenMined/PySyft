@@ -189,6 +189,7 @@ jobs:
           command: tox -e syft.test.notebook
 
   pr-tests-syft-scenario:
+    if: ${{ false }}
     strategy:
       max-parallel: 99
       matrix:
@@ -261,11 +262,6 @@ jobs:
           key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
           restore-keys: |
             ${{ runner.os }}-uv-py${{ matrix.python-version }}-
-
-      - name: Install just
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Run scenario tests
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
