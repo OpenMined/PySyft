@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from collections.abc import Container
 import random
+import threading
 from typing import Any
 from typing import TypeVar
 
@@ -12,6 +13,8 @@ from typing_extensions import ParamSpec
 
 # syft absolute
 from syft.serde.serializable import serializable
+from syft.server.credentials import SyftSigningKey
+from syft.server.credentials import SyftVerifyKey
 from syft.service.queue.queue_stash import Status
 from syft.service.request.request_service import RequestService
 from syft.store.db.sqlite import SQLiteDBConfig
@@ -68,6 +71,11 @@ def create_unique(
         x = gen(*args, **kwargs)
 
     return x
+
+
+@pytest.fixture
+def root_verify_key() -> SyftVerifyKey:
+    return SyftSigningKey.generate().verify_key
 
 
 @pytest.fixture
@@ -433,3 +441,15 @@ def test_basestash_query_all_kwargs_multiple_params(
     objects = base_stash.get_all(root_verify_key, filters=params).unwrap()
     assert len(objects) == 1
     assert objects[0] == obj
+
+
+def test_stash_thread_support(
+    root_verify_key, base_stash: MockStash, mock_object: MockObject
+) -> None:
+    assert not base_stash._data
+    t = threading.Thread(target=base_stash.set, args=(root_verify_key, mock_object))
+    t.start()
+    t.join(timeout=5)
+
+    result = base_stash.get_by_uid(root_verify_key, mock_object.id).unwrap()
+    assert result == mock_object
