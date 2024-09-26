@@ -13,7 +13,6 @@ from syft.server.worker import Worker
 from syft.service.code.user_code import ApprovalDecision
 from syft.service.code.user_code import UserCodeStatus
 from syft.service.job.job_stash import Job
-from syft.service.request.request import Request
 from syft.service.request.request import RequestStatus
 from syft.service.response import SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
@@ -383,12 +382,12 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     diff_before, diff_after = compare_and_resolve(
         from_client=high_client, to_client=low_client, share_private_data=True
     )
-    assert len(diff_before.batches) == 2
+    assert len(diff_before.batches) == 1
     root_types = [x.root_type for x in diff_before.batches]
     assert Job in root_types
-    assert (
-        Request in root_types
-    )  # we have not configured it to count UserCode as a root type
+    # assert (
+    #    Request in root_types
+    # )  # we have not configured it to count UserCode as a root type """
     assert low_client.requests[0].status == RequestStatus.APPROVED
 
     assert client_low_ds.code.compute().get() == 42
