@@ -195,7 +195,7 @@ def load_from_checkpoint(
     )
     for worker_pool in worker_pool_list:
         previous_worker_cnt = worker_pool.max_count
-        purge_res = root_client.worker_pools.purge_worker_pool(pool_id=worker_pool.id)
+        purge_res = root_client.worker_pools.purge_workers(pool_id=worker_pool.id)
         print(purge_res)
         add_res = root_client.worker_pools.add_workers(
             number=previous_worker_cnt,

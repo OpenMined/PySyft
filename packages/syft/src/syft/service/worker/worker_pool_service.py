@@ -585,7 +585,7 @@ class SyftWorkerPoolService(AbstractService):
 
         uid = worker_pool.id
 
-        self.purge_worker_pool(context=context, pool_id=pool_id, pool_name=pool_name)
+        self.purge_workers(context=context, pool_id=pool_id, pool_name=pool_name)
 
         self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap(
             public_message=f"Failed to delete WorkerPool: {worker_pool.name} from stash"
@@ -594,12 +594,12 @@ class SyftWorkerPoolService(AbstractService):
         return SyftSuccess(message=f"Successfully deleted worker pool with id {uid}")
 
     @service_method(
-        path="worker_pool.purge_worker_pool",
-        name="purge_worker_pool",
+        path="worker_pool.purge_workers",
+        name="purge_workers",
         roles=DATA_OWNER_ROLE_LEVEL,
         unwrap_on_success=False,
     )
-    def purge_worker_pool(
+    def purge_workers(
         self,
         context: AuthedServiceContext,
         pool_id: UID | None = None,
