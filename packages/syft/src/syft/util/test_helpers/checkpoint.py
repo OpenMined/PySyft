@@ -16,12 +16,7 @@ from syft.util.util import get_root_data_path
 from syft.util.util import is_interpreter_jupyter
 
 # relative
-from ...service.migration.object_migration_state import MigrationData
-from ...service.response import SyftSuccess
-from ...service.worker.worker_image import SyftWorkerImage
-from ...service.worker.worker_pool import WorkerPool
 from .worker_helpers import build_and_push_image
-from .worker_helpers import prune_worker_pool_and_images
 
 CHECKPOINT_ROOT = "checkpoints"
 CHECKPOINT_DIR_PREFIX = "chkpt"
@@ -169,7 +164,7 @@ def load_from_checkpoint(
 
     print(f"Loading from checkpoint: {latest_checkpoint_dir}")
     result = root_client.load_migration_data(
-        path_or_data=latest_checkpoint_dir / "migration.blob"
+        path_or_data=latest_checkpoint_dir / "migration.blob", include_worker_pools=True
     )
 
     if isinstance(result, SyftError):
@@ -177,89 +172,29 @@ def load_from_checkpoint(
 
     print("Successfully loaded data from checkpoint.")
 
-    migration_data = MigrationData.from_file(latest_checkpoint_dir / "migration.blob")
-
-    # klass_for_migrate_data = [
-    #     WorkerPool.__canonical_name__,
-    #     SyftWorkerImage.__canonical_name__,
-    # ]
-
-    # pool_and_image_data = MigrationData(
-    #     server_uid=migration_data.server_uid,
-    #     signing_key=migration_data.signing_key,
-    #     store_objects={
-    #         k: v
-    #         for k, v in migration_data.store_objects.items()
-    #         if k.__canonical_name__ in klass_for_migrate_data
-    #     },
-    #     metadata={
-    #         k: v
-    #         for k, v in migration_data.metadata.items()
-    #         if k.__canonical_name__ not in klass_for_migrate_data
-    #     },
-    #     action_objects=[],
-    #     blob_storage_objects=[],
-    #     blobs={},
-    # )
-
-    prune_worker_pool_and_images(root_client)
-
-    worker_images: list[SyftWorkerImage] = migration_data.get_items_by_canonical_name(
-        SyftWorkerImage.__canonical_name__
-    )
-
-    # Overwrite the registry credentials if provided, else use the environment variables
-    env_registry_username, env_registry_password = get_registry_credentials()
-    registry_password = (
-        registry_password if registry_password else env_registry_password
-    )
-    registry_username = (
-        registry_username if registry_username else env_registry_username
-    )
-
-    old_image_to_new_image_id_map = {}
-    for old_image in worker_images:
-        submit_result = root_client.api.services.worker_image.submit(
-            worker_config=old_image.config
+    # Step 1: Build and push the worker images
+    for worker_image in root_client.worker_images:
+        build_and_push_image(
+            root_client,
+            worker_image,
+            registry_uid=worker_image.image_identifier.registry.id,
+            tag=worker_image.image_identifier.repo_with_tag,
+            reg_password=registry_username,
+            reg_username=registry_password,
+            force_build=True,
         )
 
-        assert isinstance(submit_result, SyftSuccess)
-
-        new_image = submit_result.value
-
-        old_image_to_new_image_id_map[old_image.id] = new_image.id
-
-        if not new_image.is_prebuilt:
-            registry_uid = (
-                old_image.image_identifier.registry.id
-                if old_image.image_identifier.registry
-                else None
-            )
-
-            # TODO: Later add prompt support for registry credentials
-
-            build_and_push_image(
-                root_client,
-                new_image,
-                registry_uid=registry_uid,
-                tag=old_image.image_identifier.repo_with_tag,
-                reg_password=registry_username,
-                reg_username=registry_password,
-            )
-
-    worker_pools: list[WorkerPool] = migration_data.get_items_by_canonical_name(
-        WorkerPool.__canonical_name__
-    )
-
-    for old_pool in worker_pools:
-        new_image_uid = old_image_to_new_image_id_map[old_image.id]
-
-        root_client.worker_pools.launch(
-            pool_name=old_pool.name,
-            image_uid=new_image_uid,
-            num_workers=old_pool.max_count,
+    # Step 2: Recreate the worker pools
+    for worker_pool in root_client.worker_pools:
+        previous_worker_cnt = worker_pool.max_count
+        purge_res = root_client.worker_pools.purge_worker_pool(pool_id=worker_pool.id)
+        print(purge_res)
+        add_res = root_client.worker_pools.add_workers(
+            number=previous_worker_cnt,
+            pool_id=worker_pool.id,
             registry_username=registry_username,
-            registry_password=registry_username,
+            registry_password=registry_password,
         )
+        print(add_res)
 
     print("Successfully loaded worker pool data from checkpoint.")

@@ -107,13 +107,14 @@ def build_and_push_image(
     registry_uid: UID | None = None,
     reg_username: str | None = None,
     reg_password: str | None = None,
+    force_build: bool = False,
 ) -> None:
     """Build and push the image to the given registry."""
     if image.is_prebuilt:
         return
 
     build_result = client.api.services.worker_image.build(
-        image_uid=image.id, registry_uid=registry_uid, tag=tag
+        image_uid=image.id, registry_uid=registry_uid, tag=tag, force_build=force_build
     )
     print(build_result.message)
 

@@ -417,7 +417,9 @@ class DatasiteClient(SyftClient):
         return res
 
     def load_migration_data(
-        self, path_or_data: str | Path | MigrationData
+        self,
+        path_or_data: str | Path | MigrationData,
+        include_worker_pools: bool = False,
     ) -> SyftSuccess:
         if isinstance(path_or_data, MigrationData):
             migration_data = path_or_data
@@ -437,7 +439,7 @@ class DatasiteClient(SyftClient):
                 public_message="Root verify key in migration data does not match this client's verify key"
             )
 
-        if migration_data.includes_custom_workerpools:
+        if migration_data.includes_custom_workerpools and not include_worker_pools:
             prompt_warning_message(
                 "This migration data includes custom workers, "
                 "which need to be migrated separately with `sy.upgrade_custom_workerpools` "
@@ -445,9 +447,12 @@ class DatasiteClient(SyftClient):
             )
 
         migration_data.migrate_and_upload_blobs()
+        migration_data = migration_data.copy_without_blobs()
 
-        migration_data = migration_data.copy_without_workerpools().copy_without_blobs()
-        return self.api.services.migration.apply_migration_data(migration_data)
+        if not include_worker_pools:
+            migration_data = migration_data.copy_without_workerpools()
+
+        return self.api.services.migration.reset_and_restore(migration_data)
 
     def dump_state(self, path: str | Path) -> None:
         if isinstance(path, str):
