@@ -2,14 +2,13 @@
 from collections import defaultdict
 import logging
 from typing import Any
-from typing import TypeVar
-from typing import cast
 
 # relative
 from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
 from ...store.db.db import DBManager
 from ...store.db.stash import ObjectStash
+from ...store.document_store import NewBaseStash
 from ...store.document_store_errors import NotFoundException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -36,7 +35,6 @@ from .sync_stash import SyncStash
 from .sync_state import SyncState
 
 logger = logging.getLogger(__name__)
-T = TypeVar("T", bound=SyncableSyftObject)
 
 
 def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> ObjectStash:
@@ -111,17 +109,16 @@ class SyncService(AbstractService):
         return item
 
     def get_stash_for_item(
-        self, context: AuthedServiceContext, item: T
-    ) -> ObjectStash[T]:
+        self, context: AuthedServiceContext, item: SyftObject
+    ) -> NewBaseStash:
         services = list(context.server.service_path_map.values())  # type: ignore
 
-        all_stashes: dict[T : ObjectStash[T]] = {}
+        all_stashes = {}
         for serv in services:
             if (_stash := getattr(serv, "stash", None)) is not None:
-                _stash = cast(ObjectStash[T], _stash)
                 all_stashes[_stash.object_type] = _stash
 
-        stash = all_stashes.get(type(item))
+        stash = all_stashes.get(type(item), None)
         return stash
 
     def add_permissions_for_item(
