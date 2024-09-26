@@ -12,6 +12,7 @@ from syft.service.notification.notification_stash import NotificationStash
 from syft.service.notification.notifications import Notification
 from syft.service.notification.notifications import NotificationExpiryStatus
 from syft.service.notification.notifications import NotificationStatus
+from syft.store.db.db import DBManager
 from syft.store.document_store_errors import StashException
 from syft.types.datetime import DateTime
 from syft.types.errors import SyftException
@@ -54,7 +55,9 @@ def add_mock_notification(
     return mock_notification
 
 
-def test_get_all_inbox_for_verify_key(root_verify_key, document_store) -> None:
+def test_get_all_inbox_for_verify_key(
+    root_verify_key, document_store: DBManager
+) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
@@ -92,7 +95,9 @@ def test_get_all_inbox_for_verify_key(root_verify_key, document_store) -> None:
     assert result == sorted_notification_list
 
 
-def test_get_all_sent_for_verify_key(root_verify_key, document_store) -> None:
+def test_get_all_sent_for_verify_key(
+    root_verify_key, document_store: DBManager
+) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
@@ -121,7 +126,7 @@ def test_get_all_sent_for_verify_key(root_verify_key, document_store) -> None:
         test_stash.get_all_sent_for_verify_key(root_verify_key, random_signing_key)
 
 
-def test_get_all_for_verify_key(root_verify_key, document_store) -> None:
+def test_get_all_for_verify_key(root_verify_key, document_store: DBManager) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
@@ -157,7 +162,9 @@ def test_get_all_for_verify_key(root_verify_key, document_store) -> None:
     assert len(result) == 1
 
 
-def test_get_all_by_verify_key_for_status(root_verify_key, document_store) -> None:
+def test_get_all_by_verify_key_for_status(
+    root_verify_key, document_store: DBManager
+) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
@@ -184,7 +191,7 @@ def test_get_all_by_verify_key_for_status(root_verify_key, document_store) -> No
         )
 
 
-def test_update_notification_status(root_verify_key, document_store) -> None:
+def test_update_notification_status(root_verify_key, document_store: DBManager) -> None:
     random_uid = UID()
     random_verify_key = SyftSigningKey.generate().verify_key
     test_stash = NotificationStash(store=document_store)
@@ -254,7 +261,7 @@ def test_update_notification_status_error_on_get_by_uid(
     assert exc.value.public_message == expected_error_msg
 
 
-def test_delete_all_for_verify_key(root_verify_key, document_store) -> None:
+def test_delete_all_for_verify_key(root_verify_key, document_store: DBManager) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
     test_stash = NotificationStash(store=document_store)
