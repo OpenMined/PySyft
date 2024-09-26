@@ -155,7 +155,7 @@ async def sim_l2_scenario(ctx: SimulatorContext):
 
 @pytest.mark.asyncio
 async def test_l2_scenario(request):
-    sim = Simulator()
+    sim = Simulator("l2_scenario")
 
     await sim.start(
         sim_l2_scenario,

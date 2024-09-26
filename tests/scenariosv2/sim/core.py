@@ -8,14 +8,7 @@ from pathlib import Path
 import random
 import time
 
-TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
-LOGS_DIR = Path(__file__).resolve().parents[1] / "logs" / TIMESTAMP
-LOGS_DIR.mkdir(parents=True, exist_ok=True)
-
-EXECUTIONS_LOG = LOGS_DIR / "sim.executions.log"
-EVENTS_LOG = LOGS_DIR / "sim.events.log"
-ACTIVITY_LOG = LOGS_DIR / "sim.activity.log"
-
+LOGS_DIR = Path(__file__).resolve().parents[1] / ".logs"
 
 logging.Formatter.formatTime = (
     lambda self, record, datefmt=None: datetime.fromtimestamp(record.created).isoformat(
@@ -32,6 +25,24 @@ EVENT_FORMATTER = logging.Formatter(
 )
 
 
+def make_logger(
+    name: str,
+    instance: str,
+    formatter=DEFAULT_FORMATTER,
+    level=logging.INFO,
+):
+    log_file = f"{int(time.time())}_{instance}"
+    log_path = Path(LOGS_DIR, log_file, name).with_suffix(".log")
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    logger = logging.getLogger(name)
+    file_handler = logging.FileHandler(log_path, mode="w")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    logger.setLevel(level)
+    return logger
+
+
 class TestFailure(Exception):
     """Custom exception to signal test failures"""
 
@@ -45,14 +56,10 @@ class BaseEvent(Enum):
 
 
 class EventManager:
-    def __init__(self):
+    def __init__(self, name: str):
+        self.name = name
         self.events = {}
-        self.logger = logging.getLogger("events")
-        file_handler = logging.FileHandler(EVENTS_LOG, mode="w")
-        file_handler.setFormatter(EVENT_FORMATTER)
-        self.logger.addHandler(file_handler)
-        self.logger.setLevel(logging.INFO)
-        print(f"EvenManager initialized. Logs are saved in: {LOGS_DIR}")
+        self.logger = make_logger("events", instance=name, level=logging.INFO)
 
     async def wait_for(self, event: BaseEvent):
         if event not in self.events:
@@ -72,22 +79,13 @@ class EventManager:
 
 
 class SimulatorContext:
-    def __init__(self, random_wait=None):
-        self.events = EventManager()
+    def __init__(self, name: str, random_wait=None):
+        self.name = name
+        self.events = EventManager(name)
         self.random_wait = random_wait
 
-        self.logger = logging.getLogger("activity")
-        file_handler = logging.FileHandler(ACTIVITY_LOG, mode="w")
-        file_handler.setFormatter(DEFAULT_FORMATTER)
-        self.logger.addHandler(file_handler)
-        self.logger.setLevel(logging.INFO)
-
-        # private logger
-        self._elogger = logging.getLogger("executions")
-        file_handler = logging.FileHandler(EXECUTIONS_LOG, mode="w")
-        file_handler.setFormatter(DEFAULT_FORMATTER)
-        self._elogger.addHandler(file_handler)
-        self._elogger.setLevel(logging.DEBUG)
+        self.logger = make_logger("activity", instance=name, level=logging.INFO)
+        self._elogger = make_logger("executions", instance=name, level=logging.DEBUG)
 
     def unfired_events(self, events: list[BaseEvent]):
         evts = filter(lambda e: not self.events.is_set(e), events)
@@ -104,8 +102,11 @@ class SimulatorContext:
 
 
 class Simulator:
+    def __init__(self, name: str):
+        self.name = name
+
     async def start(self, *tasks, check_events=None, random_wait=None, timeout=60):
-        context = SimulatorContext(random_wait)
+        context = SimulatorContext(self.name, random_wait)
         results = None
 
         try:
