@@ -27,10 +27,12 @@ def query_sql():
 
 def bq_test_query(ctx: SimulatorContext, client: sy.DatasiteClient):
     user = client.logged_in_user
-    ctx.logger.info(f"User: {user} - Calling client.api.bigquery.test_query (mock)")
+
+    msg = f"User: {user} - bigquery.test_query"
+    ctx.logger.info(f"{msg} = Invoked")
     res = client.api.bigquery.test_query(sql_query=query_sql())
     assert len(res) == 10000
-    ctx.logger.info(f"User: {user} - Received {len(res)} rows")
+    ctx.logger.info(f"{msg} - Response - {len(res)} rows")
     return res
 
 
@@ -39,15 +41,14 @@ def bq_submit_query(ctx: SimulatorContext, client: sy.DatasiteClient):
     # Randomly define a func_name a function to call
     func_name = "invalid_func" if random.random() < 0.5 else "test_query"
 
-    ctx.logger.info(
-        f"User: {user} - Calling client.api.services.bigquery.submit_query func_name={func_name}"
-    )
+    msg = f"User: {user} - bigquery.submit_query(func_name={func_name})"
+    ctx.logger.info(f"{msg} - Calling")
     res = client.api.bigquery.submit_query(
         func_name=func_name,
         query=query_sql(),
     )
     assert "Query submitted" in str(res)
-    ctx.logger.info(f"User: {user} - Received {res}")
+    ctx.logger.info(f"{msg} - Response - {res}")
     return res
 
 
@@ -57,20 +58,16 @@ def bq_check_query_results(ctx: SimulatorContext, client: sy.DatasiteClient):
     for request in client.requests:
         status = request.get_status()
 
+        msg = f"User: {user} - Request {request.code.service_func_name}"
+
         if status == RequestStatus.APPROVED:
             job = request.code(blocking=False)
             result = job.wait()
             assert len(result) == 10000
-            ctx.logger.info(
-                f"User: {user} - {request.code.service_func_name} - Request approved"
-            )
+            ctx.logger.info(f"{msg} - Approved")
         elif status == RequestStatus.REJECTED:
-            ctx.logger.info(
-                f"User: {user} - {request.code.service_func_name} - Request rejected"
-            )
+            ctx.logger.info(f"{user} - Rejected")
         else:
-            ctx.logger.info(
-                f"User: {user} - {request.code.service_func_name} - Request pending"
-            )
+            ctx.logger.info(f"{user} - Pending")
 
     return True

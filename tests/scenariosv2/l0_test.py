@@ -10,10 +10,11 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.service.request.request import RequestStatus
-from syft.util.test_helpers.apis import make_schema
-from syft.util.test_helpers.apis import make_test_query
 
 # relative
+from .flows.admin_bigquery_api import bq_schema_endpoint
+from .flows.admin_bigquery_api import bq_submit_endpoint
+from .flows.admin_bigquery_api import bq_test_endpoint
 from .flows.admin_bigquery_pool import bq_create_pool
 from .flows.admin_common import register_user
 from .flows.user_bigquery_api import bq_check_query_results
@@ -125,132 +126,40 @@ async def admin_register_users(
 
 
 @sim_activity(trigger=Event.ADMIN_BQ_SCHEMA_ENDPOINT_CREATED)
-async def admin_endpoint_bq_schema(
-    ctx: SimulatorContext,
-    admin_client: sy.DatasiteClient,
-    worker_pool: str | None = None,
+async def admin_create_bq_schema_endpoint(
+    ctx: SimulatorContext, admin_client: sy.DatasiteClient, worker_pool: str
 ):
-    path = "bigquery.schema"
-    schema_function = make_schema(
-        settings={
-            "calls_per_min": 5,
-        },
-        worker_pool_name=worker_pool,
-    )
-
-    try:
-        ctx.logger.info(f"Admin high: Creating endpoint '{path}'")
-        result = admin_client.custom_api.add(endpoint=schema_function)
-        assert isinstance(result, sy.SyftSuccess), result
-    except sy.SyftException as e:
-        ctx.logger.error(f"Admin high: Failed to add api endpoint '{path}' - {e}")
+    await asyncio.to_thread(bq_schema_endpoint, ctx, admin_client, worker_pool)
 
 
 @sim_activity(trigger=Event.ADMIN_BQ_TEST_ENDPOINT_CREATED)
-async def admin_endpoint_bq_test(
+async def admin_create_bq_test_endpoint(
     ctx: SimulatorContext,
     admin_client: sy.DatasiteClient,
-    worker_pool: str | None = None,
+    worker_pool: str,
 ):
-    path = "bigquery.test_query"
-
-    private_query_function = make_test_query(
-        settings={
-            "rate_limiter_enabled": False,
-        }
-    )
-    mock_query_function = make_test_query(
-        settings={
-            "rate_limiter_enabled": True,
-            "calls_per_min": 10,
-        }
-    )
-
-    new_endpoint = sy.TwinAPIEndpoint(
-        path=path,
-        description="This endpoint allows to query Bigquery storage via SQL queries.",
-        private_function=private_query_function,
-        mock_function=mock_query_function,
-        worker_pool_name=worker_pool,
-    )
-
-    try:
-        ctx.logger.info(f"Admin high: Creating endpoint '{path}'")
-        result = admin_client.custom_api.add(endpoint=new_endpoint)
-        assert isinstance(result, sy.SyftSuccess), result
-    except sy.SyftException as e:
-        ctx.logger.error(f"Admin high: Failed to add api endpoint '{path}' - {e}")
+    await asyncio.to_thread(bq_test_endpoint, ctx, admin_client, worker_pool)
 
 
 @sim_activity(trigger=Event.ADMIN_BQ_SUBMIT_ENDPOINT_CREATED)
-async def admin_endpoint_bq_submit(
+async def admin_create_bq_submit_endpoint(
     ctx: SimulatorContext,
     admin_client: sy.DatasiteClient,
-    worker_pool: str | None = None,
+    worker_pool: str,
 ):
-    """Setup on Low Side"""
-
-    path = "bigquery.submit_query"
-
-    @sy.api_endpoint(
-        path=path,
-        description="API endpoint that allows you to submit SQL queries to run on the private data.",
-        worker_pool_name=worker_pool,
-        settings={"worker": worker_pool},
-    )
-    def submit_query(
-        context,
-        func_name: str,
-        query: str,
-    ) -> str:
-        # stdlib
-        import hashlib
-
-        # syft absolute
-        import syft as sy
-
-        hash_object = hashlib.new("sha256")
-        hash_object.update(context.user.email.encode("utf-8"))
-        func_name = func_name + "_" + hash_object.hexdigest()[:6]
-
-        @sy.syft_function(
-            name=func_name,
-            input_policy=sy.MixedInputPolicy(
-                endpoint=sy.Constant(
-                    val=context.admin_client.api.services.bigquery.test_query
-                ),
-                query=sy.Constant(val=query),
-                client=context.admin_client,
-            ),
-            worker_pool_name=context.settings["worker"],
-        )
-        def execute_query(query: str, endpoint):
-            res = endpoint(sql_query=query)
-            return res
-
-        request = context.user_client.code.request_code_execution(execute_query)
-        if isinstance(request, sy.SyftError):
-            return request
-        context.admin_client.requests.set_tags(request, ["autosync"])
-
-        return f"Query submitted {request}. Use `client.code.{func_name}()` to run your query"
-
-    try:
-        ctx.logger.info(f"Admin high: Creating endpoint '{path}'")
-        result = admin_client.custom_api.add(endpoint=submit_query)
-        assert isinstance(result, sy.SyftSuccess), result
-    except sy.SyftException as e:
-        ctx.logger.error(f"Admin high: Failed to add api endpoint '{path}' - {e}")
+    await asyncio.to_thread(bq_submit_endpoint, ctx, admin_client, worker_pool)
 
 
 @sim_activity(trigger=Event.ADMIN_ALL_ENDPOINTS_CREATED)
-async def admin_create_endpoint(ctx: SimulatorContext, admin_client: sy.DatasiteClient):
+async def admin_create_endpoints(
+    ctx: SimulatorContext, admin_client: sy.DatasiteClient
+):
     worker_pool = "biquery-pool"
 
     await asyncio.gather(
-        admin_endpoint_bq_test(ctx, admin_client, worker_pool=worker_pool),
-        admin_endpoint_bq_submit(ctx, admin_client, worker_pool=worker_pool),
-        admin_endpoint_bq_schema(ctx, admin_client, worker_pool=worker_pool),
+        admin_create_bq_test_endpoint(ctx, admin_client, worker_pool),
+        admin_create_bq_submit_endpoint(ctx, admin_client, worker_pool),
+        admin_create_bq_schema_endpoint(ctx, admin_client, worker_pool),
     )
     ctx.logger.info("Admin high: Created all endpoints")
 
@@ -355,7 +264,7 @@ async def admin_high_side(ctx: SimulatorContext, admin_auth):
 
     await asyncio.gather(
         admin_create_bq_pool_high(ctx, admin_client),
-        admin_create_endpoint(ctx, admin_client),
+        admin_create_endpoints(ctx, admin_client),
         admin_triage_requests_high(ctx, admin_client),
     )
 
@@ -419,12 +328,13 @@ async def admin_sync_to_high_flow(
     while not ctx.events.is_set(Event.ADMIN_HIGHSIDE_FLOW_COMPLETED):
         await asyncio.sleep(random.uniform(5, 10))
 
+        ctx.logger.info("Admin low: Started sy.sync low->high")
         result = sy.sync(low_client, high_client)
         if isinstance(result, sy.SyftSuccess):
             ctx.logger.info("Admin low: Nothing to sync low->high")
             continue
 
-        ctx.logger.info(f"Admin low: Syncing low->high {result}")
+        ctx.logger.info(f"Admin low: sy.sync low->high result={result}")
         result._share_all()
         result._sync_all()
 

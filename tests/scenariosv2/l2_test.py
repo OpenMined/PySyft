@@ -17,8 +17,8 @@ from .flows.user_bigquery_api import bq_submit_query
 from .flows.user_bigquery_api import bq_test_query
 from .l0_test import Event
 from .l0_test import admin_create_bq_pool_high
-from .l0_test import admin_create_endpoint
-from .l0_test import admin_signup_users
+from .l0_test import admin_create_endpoints
+from .l0_test import admin_register_users
 from .sim.core import Simulator
 from .sim.core import SimulatorContext
 from .sim.core import sim_activity
@@ -57,9 +57,9 @@ async def admin_flow(
     ctx.logger.info("Admin: logged in")
 
     await asyncio.gather(
-        admin_signup_users(ctx, admin_client, users),
+        admin_register_users(ctx, admin_client, users),
         admin_create_bq_pool_high(ctx, admin_client),
-        admin_create_endpoint(ctx, admin_client),
+        admin_create_endpoints(ctx, admin_client),
         admin_triage_requests(ctx, admin_client),
     )
 
