@@ -19,7 +19,7 @@ from ipywidgets import Layout
 from ipywidgets import VBox
 
 # relative
-from ...client.sync_decision import SyncDirection
+from ...client.sync_decision import SyncDecision, SyncDirection
 from ...types.errors import SyftException
 from ...types.uid import UID
 from ...util.notebook_ui.components.sync import Alert
@@ -425,6 +425,7 @@ class ResolveWidget:
         self,
         obj_diff_batch: ObjectDiffBatch,
         on_sync_callback: Callable | None = None,
+        on_ignore_callback: Callable | None = None,
         build_state: bool = True,
     ):
         self.build_state = build_state
@@ -433,6 +434,7 @@ class ResolveWidget:
             UID, CollapsableObjectDiffWidget | MainObjectDiffWidget
         ] = {}
         self.on_sync_callback = on_sync_callback
+        self.on_ignore_callback = on_ignore_callback
         self.main_widget = self.build()
         self.result_widget = VBox()  # Placeholder for SyftSuccess / SyftException
         self.widget = VBox(
@@ -468,6 +470,21 @@ class ResolveWidget:
 
     def get_mockify_state(self) -> dict[UID, bool]:
         return {uid: widget.mockify for uid, widget in self.id2widget.items()}
+
+    def ignore(self):
+        # self.obj_diff_batch.ignore()
+        self.obj_diff_batch.ignore()
+        if self.on_ignore_callback:
+            self.on_ignore_callback()
+
+    def deny_and_ignore(self, reason:str):
+        self.ignore()
+        batch = self.obj_diff_batch
+        from syft.service.request.request import Request
+        assert batch.root_type == Request, "method can only be excecuted on requests"
+        request = batch.root.low_obj
+        assert request is not None
+        request.deny(reason)
 
     def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess:
         # relative
@@ -743,6 +760,7 @@ class PaginatedResolveWidget:
             ResolveWidget(
                 batch,
                 on_sync_callback=partial(self.on_click_sync, i),
+                on_ignore_callback=partial(self.on_ignore, i),
                 build_state=build_state,
             )
             for i, batch in enumerate(self.batches)
@@ -751,13 +769,6 @@ class PaginatedResolveWidget:
         self.table_uid = secrets.token_hex(4)
 
         # Disable the table pagination to avoid the double pagination buttons
-        self.batch_table = build_tabulator_table(
-            obj=batches,
-            uid=self.table_uid,
-            max_height=500,
-            pagination=False,
-            header_sort=False,
-        )
 
         self.paginated_widget = PaginatedWidget(
             children=[widget.widget for widget in self.resolve_widgets],
@@ -765,13 +776,28 @@ class PaginatedResolveWidget:
         )
 
         self.table_output = widgets.Output()
+        self.draw_table()
+
+        self.widget = self.build()
+
+    def draw_table(self):
+        self.batch_table = build_tabulator_table(
+            obj=self.batches,
+            uid=self.table_uid,
+            max_height=500,
+            pagination=False,
+            header_sort=False,
+        )
+        self.table_output.clear_output()
         with self.table_output:
             display.display(display.HTML(self.batch_table))
             highlight_single_row(
                 self.table_uid, self.paginated_widget.current_index, jump_to_row=True
             )
 
-        self.widget = self.build()
+    def on_ignore(self, index: int) -> None:
+        self.update_table_sync_decision(index)
+        self.draw_table()
 
     def on_click_sync(self, index: int) -> None:
         self.update_table_sync_decision(index)
@@ -811,8 +837,11 @@ class PaginatedResolveWidget:
             widget.click_share_all_private_data()
 
     def _sync_all(self) -> None:
-        for widget in self.resolve_widgets:
-            widget.click_sync()
+        for idx, widget in enumerate(self.resolve_widgets):
+            if widget.obj_diff_batch.decision in [SyncDecision.IGNORE, SyncDecision.SKIP]:
+                print(f"skipping row {idx} (skipped/ignored)")
+            else:
+                widget.click_sync()
 
     def _repr_mimebundle_(self, **kwargs: dict) -> dict[str, str] | None:
         return self.widget._repr_mimebundle_(**kwargs)

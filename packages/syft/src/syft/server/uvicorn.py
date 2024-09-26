@@ -191,6 +191,9 @@ def run_uvicorn(
             value = json.dumps(value)
         os.environ[key_with_prefix] = str(value)
 
+    deployment_type = kwargs.get("deployment_type", DeploymentType.REMOTE)
+    reload = dev_mode and deployment_type != DeploymentType.PYTHON
+
     # The `serve_server` function calls `run_uvicorn` in a separate process using `multiprocessing.Process`.
     # When the child process is created, it inherits the file descriptors from the parent process.
     # If the parent process has a file descriptor open for sys.stdin, the child process will also have a file descriptor
@@ -208,8 +211,8 @@ def run_uvicorn(
         host=host,
         port=port,
         factory=True,
-        reload=dev_mode,
-        reload_dirs=[Path(__file__).parent.parent] if dev_mode else None,
+        reload=reload,
+        reload_dirs=[Path(__file__).parent.parent] if reload else None,
         log_level=log_level,
     )
 
