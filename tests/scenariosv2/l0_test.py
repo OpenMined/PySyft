@@ -53,6 +53,7 @@ class Event(BaseEvent):
     GUEST_USERS_CREATED = auto()
     USER_CAN_QUERY_TEST_ENDPOINT = auto()
     USER_CAN_SUBMIT_QUERY = auto()
+    USER_CHECKED_RESULTS = auto()
 
 
 # ------------------------------------------------------------------------------------------------
@@ -119,6 +120,25 @@ async def user_bq_submit(ctx: SimulatorContext, client: sy.DatasiteClient):
     await asyncio.to_thread(_submit_endpoint)
 
 
+@sim_activity(
+    wait_for=Event.ADMIN_LOW_ALL_RESULTS_AVAILABLE,
+    trigger=Event.USER_CHECKED_RESULTS,
+)
+async def user_checks_results(ctx: SimulatorContext, client: sy.DatasiteClient):
+    def _check_results():
+        for request in client.requests:
+            if request.get_status() == RequestStatus.APPROVED:
+                job = request.code(blocking=False)
+                result = job.wait()
+                assert len(result) == 10000
+            if request.get_status() == RequestStatus.REJECTED:
+                ctx.logger.info(
+                    f"User: Request with function named {request.code.service_func_name} was rejected"
+                )
+
+    await asyncio.to_thread(_check_results)
+
+
 @sim_activity(wait_for=Event.GUEST_USERS_CREATED, trigger=Event.USER_FLOW_COMPLETED)
 async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
     client = sy.login(
@@ -130,6 +150,7 @@ async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
 
     await user_query_test_endpoint(ctx, client)
     await user_bq_submit(ctx, client)
+    await user_checks_results(ctx, client)
 
 
 # ------------------------------------------------------------------------------------------------
@@ -551,6 +572,7 @@ async def test_l0_scenario(request):
             Event.ADMIN_SYNC_COMPLETED,
             # users
             Event.USER_CAN_QUERY_TEST_ENDPOINT,
+            Event.USER_CHECKED_RESULTS,
             Event.USER_FLOW_COMPLETED,
         ],
         timeout=300,
