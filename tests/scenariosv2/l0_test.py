@@ -542,6 +542,8 @@ async def sim_l0_scenario(ctx: SimulatorContext):
     )
 
     ctx.events.trigger(Event.INIT)
+    ctx.logger.info("--- Initializing L0 BigQuery Scenario Test ---")
+
     await asyncio.gather(
         admin_low_side(ctx, admin_auth_low, users),
         admin_high_side(ctx, admin_auth_high),

@@ -145,6 +145,8 @@ async def sim_l2_scenario(ctx: SimulatorContext):
     }
 
     ctx.events.trigger(Event.INIT)
+    ctx.logger.info("--- Initializing L2 BigQuery Scenario Test ---")
+
     await asyncio.gather(
         admin_flow(ctx, admin_auth, users),
         *[user_flow(ctx, server_url, user) for user in users],

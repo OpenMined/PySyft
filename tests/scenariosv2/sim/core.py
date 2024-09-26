@@ -4,12 +4,18 @@ from datetime import datetime
 from enum import Enum
 from functools import wraps
 import logging
+from pathlib import Path
 import random
 import time
 
-EVENTS_LOG = "sim.events.log"
-EXECUTIONS_LOG = "sim.executions.log"
-ACTIVITY_LOG = "sim.activity.log"
+TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+LOGS_DIR = Path(__file__).resolve().parents[1] / "logs" / TIMESTAMP
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+EXECUTIONS_LOG = LOGS_DIR / "sim.executions.log"
+EVENTS_LOG = LOGS_DIR / "sim.events.log"
+ACTIVITY_LOG = LOGS_DIR / "sim.activity.log"
+
 
 logging.Formatter.formatTime = (
     lambda self, record, datefmt=None: datetime.fromtimestamp(record.created).isoformat(
@@ -46,6 +52,7 @@ class EventManager:
         file_handler.setFormatter(EVENT_FORMATTER)
         self.logger.addHandler(file_handler)
         self.logger.setLevel(logging.INFO)
+        print(f"EvenManager initialized. Logs are saved in: {LOGS_DIR}")
 
     async def wait_for(self, event: BaseEvent):
         if event not in self.events:
@@ -111,7 +118,9 @@ class Simulator:
                 context._elogger.error(
                     f"Timed out. Unfired Events = {context.unfired_events(check_events)}"
                 )
-            raise TestFailure(f"simulator timed out after {timeout}s")
+            raise TestFailure(
+                f"simulator timed out after {timeout}s. Please check logs at {LOGS_DIR} for more details."
+            )
 
         if check_events:
             evts = context.unfired_events(check_events)
