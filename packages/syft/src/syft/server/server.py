@@ -406,9 +406,6 @@ class Server(AbstractServer):
                 path=self.get_temp_dir("db"),
             )
 
-        print(deployment_type, file=sys.stderr)
-        print(db_config.filename, db_config.path, file=sys.stderr)
-
         self.db_config = db_config
 
         self.db = self.init_stores(db_config=self.db_config)
