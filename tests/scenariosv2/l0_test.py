@@ -528,7 +528,7 @@ async def sim_l0_scenario(ctx: SimulatorContext):
     ]
 
     server_url_high = "http://localhost:8080"
-    admin_auth_high = dict(  # noqa: C408, F841
+    admin_auth_high = dict(  # noqa: C408
         url=server_url_high,
         email="info@openmined.org",
         password="changethis",
