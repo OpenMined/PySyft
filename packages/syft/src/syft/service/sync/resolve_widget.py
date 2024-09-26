@@ -779,7 +779,7 @@ class PaginatedResolveWidget:
             on_paginate_callback=self.on_paginate,
         )
 
-        self.table_output = widgets.Output()
+        self.table_output = Output()
         self.draw_table()
 
         self.widget = self.build()
