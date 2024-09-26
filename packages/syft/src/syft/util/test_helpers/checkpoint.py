@@ -27,11 +27,23 @@ CHECKPOINT_ROOT = "checkpoints"
 CHECKPOINT_DIR_PREFIX = "chkpt"
 
 
+def get_notebook_name_from_pytest_env() -> str | None:
+    """
+    Returns the notebook file name from the test environment variable 'PYTEST_CURRENT_TEST'.
+    If not available, returns None.
+    """
+    pytest_current_test = os.environ.get("PYTEST_CURRENT_TEST", "")
+    # Split by "::" and return the first part, which is the file path
+    return os.path.basename(pytest_current_test.split("::")[0])
+
+
 def current_nbname() -> Path:
     """Retrieve the current Jupyter notebook name."""
     curr_kernel_file = Path(ipykernel.get_connection_file())
     kernel_file = json.loads(curr_kernel_file.read_text())
     nb_name = kernel_file.get("jupyter_session", "")
+    if not nb_name:
+        nb_name = get_notebook_name_from_pytest_env()
     return Path(nb_name)
 
 
