@@ -420,6 +420,7 @@ class DatasiteClient(SyftClient):
         self,
         path_or_data: str | Path | MigrationData,
         include_worker_pools: bool = False,
+        with_reset_db: bool = False,
     ) -> SyftSuccess:
         if isinstance(path_or_data, MigrationData):
             migration_data = path_or_data
@@ -452,7 +453,10 @@ class DatasiteClient(SyftClient):
         if not include_worker_pools:
             migration_data = migration_data.copy_without_workerpools()
 
-        return self.api.services.migration.reset_and_restore(migration_data)
+        if with_reset_db:
+            return self.api.services.migration.reset_and_restore(migration_data)
+        else:
+            return self.api.services.migration.apply_migration_data(migration_data)
 
     def dump_state(self, path: str | Path) -> None:
         if isinstance(path, str):
