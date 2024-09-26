@@ -485,9 +485,9 @@ class ResolveWidget:
         # relative
         from ..request.request import Request
 
-        assert batch.root_type == Request, "method can only be excecuted on requests"
+        assert batch.root_type == Request, "method can only be excecuted on requests" # nosec: B101
         request = batch.root.low_obj
-        assert request is not None
+        assert request is not None # nosec: B101
         request.deny(reason)
 
     def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess:
