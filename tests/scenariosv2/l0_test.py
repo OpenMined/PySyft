@@ -2,6 +2,7 @@
 import asyncio
 from enum import auto
 import random
+from venv import logger
 
 # third party
 from faker import Faker
@@ -89,7 +90,7 @@ async def user_bq_results(ctx: SimulatorContext, client: sy.DatasiteClient):
 
 
 @sim_activity(wait_for=Event.GUEST_USERS_CREATED, trigger=Event.USER_FLOW_COMPLETED)
-async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
+async def user_low_side_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
     """
     User flow on low-side:
     - User logs in
@@ -151,7 +152,7 @@ async def admin_create_bq_submit_endpoint(
 
 
 @sim_activity(trigger=Event.ADMIN_ALL_ENDPOINTS_CREATED)
-async def admin_create_endpoints(
+async def admin_high_create_endpoints(
     ctx: SimulatorContext, admin_client: sy.DatasiteClient
 ):
     worker_pool = "biquery-pool"
@@ -164,53 +165,60 @@ async def admin_create_endpoints(
     ctx.logger.info("Admin high: Created all endpoints")
 
 
+def all_available(paths: list[str], expected: list[str]):
+    return set(expected).issubset(set(paths))
+
+
 @sim_activity(
-    wait_for=[
-        Event.ADMIN_SYNCED_HIGH_TO_LOW,
-        # endpoints work only after low side worker pool is created
-        Event.ADMIN_LOWSIDE_WORKER_POOL_CREATED,
-    ]
+    # endpoints work only after low side worker pool is created
+    wait_for=Event.ADMIN_LOWSIDE_WORKER_POOL_CREATED
 )
-async def admin_watch_sync(ctx: SimulatorContext, admin_client: sy.DatasiteClient):
+async def admin_low_triage_requests(
+    ctx: SimulatorContext, admin_client: sy.DatasiteClient
+):
+    expected_paths = [
+        "bigquery.test_query",
+        "bigquery.submit_query",
+        "bigquery.schema",
+    ]
+
     while True:
         await asyncio.sleep(random.uniform(5, 10))
 
-        # Check if endpoints are available
-        endpoints = admin_client.custom_api.get_all()
-        if len(endpoints) == NUM_ENDPOINTS:
-            ctx.logger.info(
-                f"Admin low: All {NUM_ENDPOINTS} API endpoints are synced from high."
-            )
-            ctx.logger.info(f"Endpoints: {endpoints}")
-            ctx.events.trigger(Event.ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE)
+        # check if endpoints are available
+        if not ctx.events.is_set(Event.ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE):
+            endpoints = admin_client.custom_api.get_all()
+            paths = [ep.path for ep in endpoints]
+            ctx.logger.debug(f"Admin low: API endpoints - {paths}")
+
+            if all_available(paths, expected_paths):
+                ctx.logger.info("Admin low: All endpoints available")
+                ctx.events.trigger(Event.ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE)
+            else:
+                ctx.logger.info(f"Admin low: Waiting for all endpoints {paths}")
 
         # Check if all requests are approved or denied
         requests = admin_client.requests.get_all()
-        ctx.logger.info(f"Number of requests: {len(requests)}")
-        if len(requests) == NUM_USERS:  # NOTE: currently hard coding this since
-            # each user in `user_flow` submits 1 query request
-            pending_requests = []
-            for req in admin_client.requests:
-                if req.get_status() == RequestStatus.PENDING:
-                    pending_requests.append(req)
-            if len(pending_requests) == 0:
-                ctx.logger.info("Admin low: All requests are approved / denined.")
-                ctx.logger.info(f"Requests: {requests}")
-                ctx.events.trigger(Event.ADMIN_LOW_ALL_RESULTS_AVAILABLE)
-                break
-            else:
-                ctx.logger.info(f"Admin low: Pending requests: {pending_requests}")
+        pending = [req for req in requests if req.status == RequestStatus.PENDING]
+        ctx.logger.info(f"Admin low: Requests={len(requests)} Pending={len(pending)}")
+
+        # If all requests have been triaged, then exit
+        if len(requests) == NUM_USERS and len(pending) == 0:
+            ctx.events.trigger(Event.ADMIN_LOW_ALL_RESULTS_AVAILABLE)
+            break
+
+    ctx.logger.info("Admin low: All requests triaged.")
 
 
 @sim_activity(trigger=Event.ADMIN_HIGHSIDE_WORKER_POOL_CREATED)
-async def admin_create_bq_pool_high(
+async def admin_high_create_bq_pool(
     ctx: SimulatorContext, admin_client: sy.DatasiteClient
 ):
     await asyncio.to_thread(bq_create_pool, ctx, admin_client)
 
 
 @sim_activity(trigger=Event.ADMIN_LOWSIDE_WORKER_POOL_CREATED)
-async def admin_create_bq_pool_low(
+async def admin_low_create_bq_pool(
     ctx: SimulatorContext, admin_client: sy.DatasiteClient
 ):
     await asyncio.to_thread(bq_create_pool, ctx, admin_client)
@@ -223,127 +231,121 @@ async def admin_create_bq_pool_low(
     ],
     trigger=Event.ADMIN_HIGHSIDE_FLOW_COMPLETED,
 )
-async def admin_triage_requests_high(
+async def admin_high_triage_requests(
     ctx: SimulatorContext, admin_client: sy.DatasiteClient
 ):
-    while True:
+    while not ctx.events.is_set(Event.ADMIN_LOW_ALL_RESULTS_AVAILABLE):
         await asyncio.sleep(random.uniform(5, 10))
 
         # check if there are any requests
         # BUG: request that are executed request.code() are always in pending state
-        pending_requests = [
-            req
-            for req in admin_client.requests
-            if req.get_status() == RequestStatus.PENDING
-        ]
-        ctx.logger.info(f"Admin high: Found {len(pending_requests)} pending requests")
-        for request in pending_requests:
-            ctx.logger.info(f"Admin high: Found request {request.__dict__}")
-            if getattr(request, "code", None):
-                if "invalid_func" in request.code.service_func_name:
-                    ctx.logger.info(f"Admin high: Denying request {request}")
-                    request.deny("You gave me an `invalid_func` function")
-                else:
-                    ctx.logger.info(
-                        f"Admin high: Approving request by executing {request}"
-                    )
-                    job = request.code(blocking=False)
-                    result = job.wait()
-                    ctx.logger.info(f"Admin high: Request result {result}")
+        requests = admin_client.requests.get_all()
+        pending = [req for req in requests if req.status == RequestStatus.PENDING]
+        ctx.logger.info(f"Admin high: Requests={len(requests)} Pending={len(pending)}")
 
-        if ctx.events.is_set(Event.ADMIN_LOW_ALL_RESULTS_AVAILABLE):
-            break
+        for request in pending:
+            # ignore non-code requests
+            if not getattr(request, "code", None):
+                continue
 
-    ctx.logger.info("Admin high: Done approving / denying all requests")
+            if "invalid_func" in request.code.service_func_name:
+                ctx.logger.info(f"Admin high: Denying request {request}")
+                request.deny("You gave me an `invalid_func` function")
+            else:
+                ctx.logger.info(f"Admin high: Approving request by executing {request}")
+                job = request.code(blocking=False)
+                result = job.wait()
+                ctx.logger.info(f"Admin high: Request result {result}")
+
+    ctx.logger.info("Admin high: All requests triaged.")
 
 
 @sim_activity(trigger=Event.ADMIN_HIGHSIDE_FLOW_COMPLETED)
-async def admin_high_side(ctx: SimulatorContext, admin_auth):
+async def admin_high_side_flow(ctx: SimulatorContext, admin_auth):
     admin_client = sy.login(**admin_auth)
     ctx.logger.info("Admin high-side: logged in")
 
     await asyncio.gather(
-        admin_create_bq_pool_high(ctx, admin_client),
-        admin_create_endpoints(ctx, admin_client),
-        admin_triage_requests_high(ctx, admin_client),
+        admin_high_create_bq_pool(ctx, admin_client),
+        admin_high_create_endpoints(ctx, admin_client),
+        admin_high_triage_requests(ctx, admin_client),
     )
 
 
 @sim_activity(trigger=Event.ADMIN_LOWSIDE_FLOW_COMPLETED)
-async def admin_low_side(ctx: SimulatorContext, admin_auth, users):
+async def admin_low_side_flow(ctx: SimulatorContext, admin_auth, users):
     admin_client = sy.login(**admin_auth)
     ctx.logger.info("Admin low-side: logged in")
 
     await asyncio.gather(
         admin_register_users(ctx, admin_client, users),
-        admin_create_bq_pool_low(ctx, admin_client),
-        admin_watch_sync(ctx, admin_client),
+        admin_low_create_bq_pool(ctx, admin_client),
+        admin_low_triage_requests(ctx, admin_client),
     )
 
 
 # ------------------------------------------------------------------------------------------------
 
 
-@sim_activity(trigger=Event.ADMIN_SYNC_COMPLETED)
-async def admin_sync_to_low_flow(
-    ctx: SimulatorContext, admin_auth_high: dict, admin_auth_low: dict
+async def admin_sync(
+    ctx: SimulatorContext,
+    from_auth: dict,
+    to_auth: dict,
+    trigger: Event,
+    exit_after: Event,
 ):
-    high_client = sy.login(**admin_auth_high)
-    ctx.logger.info("Admin: logged in to high-side")
+    from_client = sy.login(**from_auth)
+    to_client = sy.login(**to_auth)
 
-    low_client = sy.login(**admin_auth_low)
-    ctx.logger.info("Admin: logged in to low-side")
+    from_ = from_client.metadata.server_side_type
+    to_ = to_client.metadata.server_side_type
 
-    while True:
+    while not ctx.events.is_set(exit_after):
         await asyncio.sleep(random.uniform(5, 10))
 
-        result = sy.sync(high_client, low_client)
+        ctx.logger.info(f"Admin: Sync {from_}->{to_} - Checking")
+        result = sy.sync(from_client, to_client)
         if isinstance(result, sy.SyftSuccess):
-            ctx.logger.info("Admin high: Nothing to sync high->low")
             continue
 
-        ctx.logger.info(f"Admin high: Syncing high->low {result}")
+        ctx.logger.info(f"Admin: Sync {from_}->{to_} - Result={result}")
         result._share_all()
         result._sync_all()
 
-        # trigger an event so that guest users can start querying
-        ctx.events.trigger(Event.ADMIN_SYNCED_HIGH_TO_LOW)
-        ctx.logger.info("Admin high: Synced high->low")
+        ctx.events.trigger(trigger)
+        ctx.logger.info(f"Admin: Sync {from_}->{to_} - Synced")
 
-        if ctx.events.is_set(Event.ADMIN_HIGHSIDE_FLOW_COMPLETED):
-            ctx.logger.info("Admin high: Done syncing high->low")
-            break
+    ctx.logger.info(f"Admin: Sync {from_}->{to_} - Closed")
 
 
 @sim_activity(trigger=Event.ADMIN_SYNC_COMPLETED)
-async def admin_sync_to_high_flow(
+async def admin_sync_high_to_low_flow(
     ctx: SimulatorContext, admin_auth_high: dict, admin_auth_low: dict
 ):
-    high_client = sy.login(**admin_auth_high)
-    ctx.logger.info("Admin low: logged in to high-side")
+    await admin_sync(
+        ctx,
+        # high -> low
+        from_auth=admin_auth_high,
+        to_auth=admin_auth_low,
+        trigger=Event.ADMIN_SYNCED_HIGH_TO_LOW,
+        # todo: see if we have a better exit clause
+        exit_after=Event.ADMIN_HIGHSIDE_FLOW_COMPLETED,
+    )
 
-    low_client = sy.login(**admin_auth_low)
-    ctx.logger.info("Admin low: logged in to low-side")
 
-    while not ctx.events.is_set(Event.ADMIN_HIGHSIDE_FLOW_COMPLETED):
-        await asyncio.sleep(random.uniform(5, 10))
-
-        ctx.logger.info("Admin low: Started sy.sync low->high")
-        result = sy.sync(low_client, high_client)
-        if isinstance(result, sy.SyftSuccess):
-            ctx.logger.info("Admin low: Nothing to sync low->high")
-            continue
-
-        ctx.logger.info(f"Admin low: sy.sync low->high result={result}")
-        result._share_all()
-        result._sync_all()
-
-        ctx.events.trigger(Event.ADMIN_SYNCED_LOW_TO_HIGH)
-        ctx.logger.info("Admin low: Synced low->high")
-
-        if ctx.events.is_set(Event.ADMIN_HIGHSIDE_FLOW_COMPLETED):
-            ctx.logger.info("Admin high: Done syncing high->low")
-            break
+@sim_activity(trigger=Event.ADMIN_SYNC_COMPLETED)
+async def admin_sync_low_to_high_flow(
+    ctx: SimulatorContext, admin_auth_high: dict, admin_auth_low: dict
+):
+    await admin_sync(
+        ctx,
+        # low -> high
+        from_auth=admin_auth_low,
+        to_auth=admin_auth_high,
+        trigger=Event.ADMIN_SYNCED_LOW_TO_HIGH,
+        # todo: see if we have a better exit clause
+        exit_after=Event.ADMIN_LOWSIDE_FLOW_COMPLETED,
+    )
 
 
 # ------------------------------------------------------------------------------------------------
@@ -378,11 +380,11 @@ async def sim_l0_scenario(ctx: SimulatorContext):
     ctx.logger.info("--- Initializing L0 BigQuery Scenario Test ---")
 
     await asyncio.gather(
-        admin_low_side(ctx, admin_auth_low, users),
-        admin_high_side(ctx, admin_auth_high),
-        admin_sync_to_low_flow(ctx, admin_auth_high, admin_auth_low),
-        admin_sync_to_high_flow(ctx, admin_auth_high, admin_auth_low),
-        *[user_flow(ctx, server_url_low, user) for user in users],
+        admin_low_side_flow(ctx, admin_auth_low, users),
+        admin_high_side_flow(ctx, admin_auth_high),
+        admin_sync_high_to_low_flow(ctx, admin_auth_high, admin_auth_low),
+        admin_sync_low_to_high_flow(ctx, admin_auth_high, admin_auth_low),
+        *[user_low_side_flow(ctx, server_url_low, user) for user in users],
     )
 
 
