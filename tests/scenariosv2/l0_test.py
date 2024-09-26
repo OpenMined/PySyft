@@ -181,7 +181,7 @@ async def admin_endpoint_bq_schema(
         settings={
             "calls_per_min": 5,
         },
-        worker_pool=worker_pool,
+        worker_pool_name=worker_pool,
     )
 
     try:
@@ -217,7 +217,7 @@ async def admin_endpoint_bq_test(
         description="This endpoint allows to query Bigquery storage via SQL queries.",
         private_function=private_query_function,
         mock_function=mock_query_function,
-        worker_pool=worker_pool,
+        worker_pool_name=worker_pool,
     )
 
     try:
@@ -241,7 +241,7 @@ async def admin_endpoint_bq_submit(
     @sy.api_endpoint(
         path=path,
         description="API endpoint that allows you to submit SQL queries to run on the private data.",
-        worker_pool=worker_pool,
+        worker_pool_name=worker_pool,
         settings={"worker": worker_pool},
     )
     def submit_query(
