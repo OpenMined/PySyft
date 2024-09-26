@@ -16,6 +16,8 @@ from syft.util.util import get_root_data_path
 from syft.util.util import is_interpreter_jupyter
 
 # relative
+from ...server.env import get_default_root_email
+from ...server.env import get_default_root_password
 from .worker_helpers import build_and_push_image
 
 CHECKPOINT_ROOT = "checkpoints"
@@ -80,10 +82,17 @@ def is_admin(client: SyftClient) -> bool:
 
 def create_checkpoint(
     client: SyftClient,
-    root_email: str = "info@openmined.org",
-    root_pwd: str = "changethis",
+    root_email: str | None = None,
+    root_pwd: str | None = None,
 ) -> None:
     """Save a checkpoint for the database."""
+
+    if root_email is None:
+        root_email = get_default_root_email()
+
+    if root_pwd is None:
+        root_pwd = get_default_root_password()
+
     root_client = (
         client
         if is_admin(client)

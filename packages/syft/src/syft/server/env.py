@@ -1,6 +1,6 @@
 # stdlib
 import json
-import subprocess
+import subprocess  # nosec
 import sys
 
 # relative

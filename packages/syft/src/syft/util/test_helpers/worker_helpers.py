@@ -124,5 +124,5 @@ def build_and_push_image(
             username=reg_username,
             password=reg_password,
         )
-        assert isinstance(push_result, SyftSuccess)
+        assert isinstance(push_result, SyftSuccess)  # nosec: B101
         print(push_result.message)
