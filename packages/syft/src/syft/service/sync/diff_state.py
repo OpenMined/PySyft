@@ -1130,7 +1130,7 @@ class ServerDiff(SyftObject):
     include_ignored: bool = False
 
     def resolve(
-        self, build_state: bool = True, filter_ignored=True
+        self, build_state: bool = True, filter_ignored: bool = True
     ) -> "PaginatedResolveWidget | SyftSuccess":
         if len(self.batches) == 0:
             return SyftSuccess(message="No batches to resolve")

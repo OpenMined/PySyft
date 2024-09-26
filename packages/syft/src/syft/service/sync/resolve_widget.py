@@ -473,13 +473,13 @@ class ResolveWidget:
     def get_mockify_state(self) -> dict[UID, bool]:
         return {uid: widget.mockify for uid, widget in self.id2widget.items()}
 
-    def ignore(self):
+    def ignore(self) -> None:
         # self.obj_diff_batch.ignore()
         self.obj_diff_batch.ignore()
         if self.on_ignore_callback:
             self.on_ignore_callback()
 
-    def deny_and_ignore(self, reason: str):
+    def deny_and_ignore(self, reason: str) -> None:
         self.ignore()
         batch = self.obj_diff_batch
         # relative
@@ -784,7 +784,7 @@ class PaginatedResolveWidget:
 
         self.widget = self.build()
 
-    def draw_table(self):
+    def draw_table(self) -> None:
         self.batch_table = build_tabulator_table(
             obj=self.batches,
             uid=self.table_uid,
