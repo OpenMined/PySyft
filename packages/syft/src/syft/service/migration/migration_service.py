@@ -492,13 +492,13 @@ class MigrationService(AbstractService):
         self._update_store_metadata(context, migration_data.metadata).unwrap()
         return SyftSuccess(message="Migration completed successfully")
 
-    # @service_method(
-    #     path="migration.reset_and_restore",
-    #     name="reset_and_restore",
-    #     roles=ADMIN_ROLE_LEVEL,
-    #     unwrap_on_success=False,
-    # )
-    def reset_and_migrate(
+    @service_method(
+        path="migration.reset_and_restore",
+        name="reset_and_restore",
+        roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
+    def reset_and_restore(
         self,
         context: AuthedServiceContext,
         migration_data: MigrationData,

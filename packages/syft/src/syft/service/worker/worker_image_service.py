@@ -89,6 +89,7 @@ class SyftWorkerImageService(AbstractService):
         tag: str,
         registry_uid: UID | None = None,
         pull_image: bool = True,
+        force_build: bool = False,
     ) -> SyftSuccess:
         registry: SyftImageRegistry | None = None
 
@@ -122,6 +123,7 @@ class SyftWorkerImageService(AbstractService):
             and worker_image.image_identifier
             and worker_image.image_identifier.full_name_with_tag
             == image_identifier.full_name_with_tag
+            and not force_build
         ):
             raise SyftException(
                 public_message=f"Image ID: {image_uid} is already built"
