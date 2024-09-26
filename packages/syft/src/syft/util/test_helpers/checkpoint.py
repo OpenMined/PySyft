@@ -137,7 +137,7 @@ def load_from_checkpoint(
     client: SyftClient,
     prev_nb_filename: str | None = None,
     root_email: str | None = None,
-    root_pwd: str | None = None,
+    root_password: str | None = None,
     registry_username: str | None = None,
     registry_password: str | None = None,
 ) -> None:
@@ -147,12 +147,12 @@ def load_from_checkpoint(
         prev_nb_filename = current_nbname().stem
 
     root_email = "info@openmined.org" if root_email is None else root_email
-    root_pwd = "changethis" if root_pwd is None else root_pwd
+    root_password = "changethis" if root_password is None else root_password
 
     root_client = (
         client
         if is_admin(client)
-        else client.login(email=root_email, password=root_pwd)
+        else client.login(email=root_email, password=root_password)
     )
     latest_checkpoint_dir = last_checkpoint_path_for_nb(
         client.id.to_string(), prev_nb_filename
