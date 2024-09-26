@@ -1,3 +1,4 @@
+# futureserver.py
 # future
 from __future__ import annotations
 
@@ -6,6 +7,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from datetime import MINYEAR
 from datetime import datetime
+from datetime import timezone
 from functools import partial
 import hashlib
 import json
@@ -14,6 +16,7 @@ import os
 from pathlib import Path
 import subprocess  # nosec
 import sys
+import threading
 from time import sleep
 import traceback
 from typing import Any
@@ -458,6 +461,44 @@ class Server(AbstractServer):
             self.run_peer_health_checks(context=context)
 
         ServerRegistry.set_server_for(self.id, self)
+        if background_tasks:
+            email_dispatcher = threading.Thread(
+                target=self.email_notification_dispatcher, daemon=True
+            )
+            email_dispatcher.start()
+
+    def email_notification_dispatcher(self) -> None:
+        lock = threading.Lock()
+        while True:
+            # Use admin context to have access to the notifier obj
+            context = AuthedServiceContext(
+                server=self,
+                credentials=self.verify_key,
+                role=ServiceRole.ADMIN,
+            )
+            # Get notitifer settings
+            notifier_settings = self.services.notifier.settings(
+                context=context
+            ).unwrap()
+            lock.acquire()
+            # Iterate over email_types and its queues
+            # Ex: {'EmailRequest': {VerifyKey: [], VerifyKey: [], ...}}
+            for email_template, email_queue in notifier_settings.email_queue.items():
+                # Get the email frequency of that specific email type
+                email_frequency = notifier_settings.email_frequency[email_template]
+                for verify_key, queue in email_queue.items():
+                    if self.services.notifier.is_time_to_dispatch(
+                        email_frequency, datetime.now(timezone.utc)
+                    ):
+                        notifier_settings.send_batched_notification(
+                            context=context, notification_queue=queue
+                        ).unwrap()
+                        notifier_settings.email_queue[email_template][verify_key] = []
+                        self.services.notifier.stash.update(
+                            credentials=self.verify_key, obj=notifier_settings
+                        ).unwrap()
+            lock.release()
+            sleep(15)
 
     def set_log_level(self, log_level: int | str | None) -> None:
         def determine_log_level(
@@ -719,6 +760,7 @@ class Server(AbstractServer):
         consumer_type: ConsumerType | None = None,
         db_url: str | None = None,
         db_config: DBConfig | None = None,
+        log_level: int | None = None,
     ) -> Server:
         uid = get_named_server_uid(name)
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
@@ -751,6 +793,7 @@ class Server(AbstractServer):
             consumer_type=consumer_type,
             db_url=db_url,
             db_config=db_config,
+            log_level=log_level,
         )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
@@ -1294,21 +1337,21 @@ class Server(AbstractServer):
         path: str,
         log_id: UID,
         *args: Any,
-        worker_pool: str | None = None,
+        worker_pool_name: str | None = None,
         **kwargs: Any,
     ) -> Job:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_server(server=self)
 
-        if worker_pool is None:
-            worker_pool = self.get_default_worker_pool().unwrap()
+        if worker_pool_name is None:
+            worker_pool_name = self.get_default_worker_pool().unwrap()
         else:
-            worker_pool = self.get_worker_pool_by_name(worker_pool).unwrap()
+            worker_pool_name = self.get_worker_pool_by_name(worker_pool_name).unwrap()
 
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
-            worker_pool,
+            worker_pool_name,
             service_type=SyftWorkerPoolService,
             server_uid=self.id,
         )

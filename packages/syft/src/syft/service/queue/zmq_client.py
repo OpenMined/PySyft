@@ -1,5 +1,6 @@
 # stdlib
 from collections import defaultdict
+import logging
 import socketserver
 
 # relative
@@ -20,6 +21,8 @@ from .queue import ConsumerType
 from .queue_stash import QueueStash
 from .zmq_consumer import ZMQConsumer
 from .zmq_producer import ZMQProducer
+
+logger = logging.getLogger(__name__)
 
 
 @serializable()
@@ -77,7 +80,9 @@ class ZMQClient(QueueClient):
             else:
                 port = self.config.queue_port
 
-        print(f"Adding producer for queue: {queue_name} on: {get_queue_address(port)}")
+        logger.info(
+            f"Adding producer for queue: {queue_name} on: {get_queue_address(port)}"
+        )
         producer = ZMQProducer(
             queue_name=queue_name,
             queue_stash=queue_stash,
