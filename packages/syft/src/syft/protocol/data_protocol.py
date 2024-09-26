@@ -21,6 +21,7 @@ from packaging.version import parse
 # syft absolute
 from syft.types.result import Err
 from syft.types.result import Ok
+from syft.util.util import get_dev_mode
 
 # relative
 from .. import __version__
@@ -267,7 +268,7 @@ If the class has changed you will need to define a new class with the changes, \
 with same __canonical_name__ and bump the __version__ number. {cls.model_fields}
 """
 
-                    if False:  # get_dev_mode() or self.raise_exception:
+                    if get_dev_mode() or self.raise_exception:
                         raise Exception(error_msg)
                     else:
                         warnings.warn(error_msg, stacklevel=1, category=UserWarning)
