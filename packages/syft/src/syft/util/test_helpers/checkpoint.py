@@ -173,7 +173,10 @@ def load_from_checkpoint(
     print("Successfully loaded data from checkpoint.")
 
     # Step 1: Build and push the worker images
-    for worker_image in root_client.worker_images:
+    worker_image_list = (
+        [] if root_client.worker_images is None else root_client.worker_images
+    )
+    for worker_image in worker_image_list:
         build_and_push_image(
             root_client,
             worker_image,
@@ -184,8 +187,13 @@ def load_from_checkpoint(
             force_build=True,
         )
 
+    print("Successfully Built worker image data from checkpoint.")
+
     # Step 2: Recreate the worker pools
-    for worker_pool in root_client.worker_pools:
+    worker_pool_list = (
+        [] if root_client.worker_pools is None else root_client.worker_pools
+    )
+    for worker_pool in worker_pool_list:
         previous_worker_cnt = worker_pool.max_count
         purge_res = root_client.worker_pools.purge_worker_pool(pool_id=worker_pool.id)
         print(purge_res)
