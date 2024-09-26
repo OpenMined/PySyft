@@ -50,7 +50,10 @@ def build_and_launch_worker_pool_from_docker_str(
     print(result)
     # assert 'success' in str(result.message)
 
-    if environment == "remote":
+    # scale_to > 1 is valid for scale up
+    # scale_to = 0 is valid for removing all pods
+    # scale_to < 0 should return error from server
+    if environment == "remote" and scale_to != 1:
         result = client.worker_pools.scale(number=scale_to, pool_name=worker_pool_name)
         print(result)
 

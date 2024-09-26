@@ -12,13 +12,11 @@ import syft as sy
 from syft.service.request.request import RequestStatus
 from syft.util.test_helpers.apis import make_schema
 from syft.util.test_helpers.apis import make_test_query
-from syft.util.test_helpers.worker_helpers import (
-    build_and_launch_worker_pool_from_docker_str,
-)
 
 # relative
-from .flows.user_bigquery_api import bq_submit_query
+from .flows.admin_bigquery_pool import bq_create_pool
 from .flows.user_bigquery_api import bq_check_query_results
+from .flows.user_bigquery_api import bq_submit_query
 from .flows.user_bigquery_api import bq_test_query
 from .sim.core import BaseEvent
 from .sim.core import Simulator
@@ -90,6 +88,17 @@ async def user_bq_results(ctx: SimulatorContext, client: sy.DatasiteClient):
 
 @sim_activity(wait_for=Event.GUEST_USERS_CREATED, trigger=Event.USER_FLOW_COMPLETED)
 async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
+    """
+    Replicates user's flow on the low side
+    - User logs in
+    - User invokes the test query endpoint to get mock results - user_bq_test_query
+    - User submits a query to be run on the private data for approval - user_bq_submit_query
+    - User checks if request is approved and retrieves the results - user_bq_results
+
+    The test -> submit -> results are typically done in sequence.
+    test & submit can be done in parallel but results can be checked only after submit is done.
+    """
+
     client = sy.login(
         url=server_url_low,
         email=user["email"],
@@ -97,7 +106,6 @@ async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
     )
     ctx.logger.info(f"User: {client.logged_in_user} - logged in")
 
-    # this must be executed sequentially.
     await user_bq_test_query(ctx, client)
     await user_bq_submit_query(ctx, client)
     await user_bq_results(ctx, client)
@@ -289,53 +297,18 @@ async def admin_watch_sync(ctx: SimulatorContext, admin_client: sy.DatasiteClien
                 ctx.logger.info(f"Admin low: Pending requests: {pending_requests}")
 
 
-# @sim_activity(trigger=Event.ADMIN_WORKER_POOL_CREATED)
-async def admin_create_bq_pool(ctx: SimulatorContext, admin_client: sy.DatasiteClient):
-    worker_pool = "biquery-pool"
-
-    base_image = admin_client.images.get_all()[0]
-
-    external_registry_url = "k3d-registry.localhost:5800"
-    worker_image_tag = str(base_image.image_identifier).replace(
-        "backend", "worker-bigquery"
-    )
-
-    worker_dockerfile = f"""
-    FROM {str(base_image.image_identifier)}
-    RUN uv pip install db-dtypes google-cloud-bigquery
-    """.strip()
-
-    ctx.logger.info(f"Admin: Creating worker pool with tag='{worker_image_tag}'")
-
-    # build_and_launch_worker_pool_from_docker_str is a blocking call
-    # so you just run it in a different thread.
-    await ctx.blocking_call(
-        build_and_launch_worker_pool_from_docker_str,
-        environment="remote",
-        client=admin_client,
-        worker_pool_name=worker_pool,
-        worker_dockerfile=worker_dockerfile,
-        external_registry=external_registry_url,
-        docker_tag=worker_image_tag,
-        custom_pool_pod_annotations=None,
-        custom_pool_pod_labels=None,
-        scale_to=1,
-    )
-    ctx.logger.info(f"Admin: Worker pool created with tag='{worker_image_tag}'")
-
-
 @sim_activity(trigger=Event.ADMIN_HIGHSIDE_WORKER_POOL_CREATED)
 async def admin_create_bq_pool_high(
     ctx: SimulatorContext, admin_client: sy.DatasiteClient
 ):
-    await admin_create_bq_pool(ctx, admin_client)
+    await asyncio.to_thread(bq_create_pool, ctx, admin_client)
 
 
 @sim_activity(trigger=Event.ADMIN_LOWSIDE_WORKER_POOL_CREATED)
 async def admin_create_bq_pool_low(
     ctx: SimulatorContext, admin_client: sy.DatasiteClient
 ):
-    await admin_create_bq_pool(ctx, admin_client)
+    await asyncio.to_thread(bq_create_pool, ctx, admin_client)
 
 
 @sim_activity(
