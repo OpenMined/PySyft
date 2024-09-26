@@ -10,6 +10,7 @@ from ..context import AuthedServiceContext
 
 if TYPE_CHECKING:
     # relative
+    from ..request.request import Request
     from .notifications import Notification
 
 
@@ -662,8 +663,11 @@ class RequestUpdateEmailTemplate(EmailTemplate):
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
+        # relative
+        from ..request.request import RequestStatus
+
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
-        request_obj = notification.linked_obj.resolve_with_context(
+        request_obj: Request = notification.linked_obj.resolve_with_context(
             context=context
         ).unwrap()
         badge_color = "red" if request_obj.status.name == "REJECTED" else "green"
@@ -672,10 +676,25 @@ class RequestUpdateEmailTemplate(EmailTemplate):
         request_name = request_obj.requesting_user_name
         request_email = request_obj.requesting_user_email
         request_time = request_obj.request_time
-        request_status = request_obj.status.name  # fails in l0 check right now
+        request_status = request_obj.status
+        request_status_name = request_status.name  # fails in l0 check right now
         request_changes = ",".join(
             [change.__class__.__name__ for change in request_obj.changes]
         )
+
+        deny_reason_html = ""
+        if request_status == RequestStatus.REJECTED:
+            deny_reason_or_err = request_obj.get_deny_reason(context=context)
+            if deny_reason_or_err.is_err():
+                deny_reason = None
+            deny_reason = deny_reason_or_err.unwrap()
+
+            if not isinstance(deny_reason, str) or not len(deny_reason):
+                deny_reason = (
+                    "No reason provided, please contact the admin for more information."
+                )
+
+            deny_reason_html = f"<p><strong>Deny Reason:</strong> {deny_reason}</p>"
 
         head = """
         <head>
@@ -792,8 +811,10 @@ class RequestUpdateEmailTemplate(EmailTemplate):
                             </p>
                             <p><strong>Date:</strong> {request_time}</p>
                             <div style="display: flex"><p><strong>Status:</strong><div class="badge {badge_color}">
-                                {request_status}
-                            </div></div>
+                                {request_status_name}
+                            </div>
+                            </div>
+                            {deny_reason_html}
                             <p>
                             <strong>Changes:</strong>
                             {request_changes}

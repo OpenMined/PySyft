@@ -3,6 +3,7 @@ from collections.abc import Callable
 import logging
 import os
 from typing import Any
+from typing import TYPE_CHECKING
 from typing import TypeVar
 
 # relative
@@ -131,4 +132,8 @@ def instrument_sqlalchemny() -> None:
         logger.error(f"Failed to load SQLAlchemyInstrumentor. {e}")
 
 
-instrument = setup_instrumenter()
+if TYPE_CHECKING:
+    # To let static type checker know the returntype of instrument decorators
+    instrument = no_instrument
+else:
+    instrument = setup_instrumenter()
