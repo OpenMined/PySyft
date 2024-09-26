@@ -72,19 +72,19 @@ async def admin_flow(
     ],
     trigger=Event.USER_CAN_QUERY_TEST_ENDPOINT,
 )
-async def user_query_test_endpoint(ctx: SimulatorContext, client: sy.DatasiteClient):
+async def user_bq_test_query(ctx: SimulatorContext, client: sy.DatasiteClient):
     """Run query on test endpoint"""
     await asyncio.to_thread(bq_test_query, ctx, client)
 
 
 @sim_activity(
     wait_for=[
-        Event.USER_CAN_QUERY_TEST_ENDPOINT,
+        Event.ADMIN_ALL_ENDPOINTS_CREATED,
         Event.ADMIN_HIGHSIDE_WORKER_POOL_CREATED,
     ],
     trigger=Event.USER_CAN_SUBMIT_QUERY,
 )
-async def user_bq_submit(ctx: SimulatorContext, client: sy.DatasiteClient):
+async def user_bq_submit_query(ctx: SimulatorContext, client: sy.DatasiteClient):
     """Submit query to be run on private data"""
     await asyncio.to_thread(bq_submit_query, ctx, client)
 
@@ -101,8 +101,8 @@ async def user_flow(ctx: SimulatorContext, server_url: str, user: dict):
     )
     ctx.logger.info(f"User: {client.logged_in_user} - logged in")
 
-    await user_query_test_endpoint(ctx, client)
-    await user_bq_submit(ctx, client)
+    await user_bq_test_query(ctx, client)
+    await user_bq_submit_query(ctx, client)
 
 
 # ---------------------------------- test ----------------------------------

@@ -18,7 +18,7 @@ from syft.util.test_helpers.worker_helpers import (
 
 # relative
 from .flows.user_bigquery_api import bq_submit_query
-from .flows.user_bigquery_api import bq_submit_query_results
+from .flows.user_bigquery_api import bq_check_query_results
 from .flows.user_bigquery_api import bq_test_query
 from .sim.core import BaseEvent
 from .sim.core import Simulator
@@ -66,16 +66,16 @@ class Event(BaseEvent):
     wait_for=Event.ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE,
     trigger=Event.USER_CAN_QUERY_TEST_ENDPOINT,
 )
-async def user_query_test_endpoint(ctx: SimulatorContext, client: sy.DatasiteClient):
+async def user_bq_test_query(ctx: SimulatorContext, client: sy.DatasiteClient):
     """Run query on test endpoint"""
     await asyncio.to_thread(bq_test_query, ctx, client)
 
 
 @sim_activity(
-    wait_for=Event.USER_CAN_QUERY_TEST_ENDPOINT,
+    wait_for=Event.ADMIN_LOW_SIDE_ENDPOINTS_AVAILABLE,
     trigger=Event.USER_CAN_SUBMIT_QUERY,
 )
-async def user_bq_submit(ctx: SimulatorContext, client: sy.DatasiteClient):
+async def user_bq_submit_query(ctx: SimulatorContext, client: sy.DatasiteClient):
     """Submit query to be run on private data"""
     await asyncio.to_thread(bq_submit_query, ctx, client)
 
@@ -84,8 +84,8 @@ async def user_bq_submit(ctx: SimulatorContext, client: sy.DatasiteClient):
     wait_for=Event.ADMIN_LOW_ALL_RESULTS_AVAILABLE,
     trigger=Event.USER_CHECKED_RESULTS,
 )
-async def user_checks_results(ctx: SimulatorContext, client: sy.DatasiteClient):
-    await asyncio.to_thread(bq_submit_query_results, ctx, client)
+async def user_bq_results(ctx: SimulatorContext, client: sy.DatasiteClient):
+    await asyncio.to_thread(bq_check_query_results, ctx, client)
 
 
 @sim_activity(wait_for=Event.GUEST_USERS_CREATED, trigger=Event.USER_FLOW_COMPLETED)
@@ -98,9 +98,9 @@ async def user_flow(ctx: SimulatorContext, server_url_low: str, user: dict):
     ctx.logger.info(f"User: {client.logged_in_user} - logged in")
 
     # this must be executed sequentially.
-    await user_query_test_endpoint(ctx, client)
-    await user_bq_submit(ctx, client)
-    await user_checks_results(ctx, client)
+    await user_bq_test_query(ctx, client)
+    await user_bq_submit_query(ctx, client)
+    await user_bq_results(ctx, client)
 
 
 # ------------------------------------------------------------------------------------------------
