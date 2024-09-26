@@ -19,6 +19,21 @@ class StoreClientConfig(BaseModel):
     pass
 
 
+@serializable(
+    attrs=["settings", "store_config", "unique_cks", "searchable_cks"],
+    canonical_name="StorePartition",
+    version=1,
+)
+class StorePartition:
+    """Base StorePartition
+    Parameters:
+        settings: PartitionSettings
+            PySyft specific settings
+        store_config: StoreConfig
+            Backend specific configuration
+    """
+
+
 @serializable()
 class StoreConfig(SyftBaseObject):
     """Base Store configuration
