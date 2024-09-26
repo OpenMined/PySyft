@@ -13,7 +13,6 @@ from syft.server.worker import Worker
 from syft.service.code.user_code import ApprovalDecision
 from syft.service.code.user_code import UserCodeStatus
 from syft.service.job.job_stash import Job
-from syft.service.request.request import Request
 from syft.service.request.request import RequestStatus
 from syft.service.response import SyftSuccess
 from syft.service.sync.resolve_widget import ResolveWidget
