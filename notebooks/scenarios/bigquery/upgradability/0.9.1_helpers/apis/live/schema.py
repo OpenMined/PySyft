@@ -7,7 +7,7 @@ from syft import test_settings
 from syft.rate_limiter import is_within_rate_limit
 
 
-def make_schema(settings: dict, worker_pool: str) -> Callable:
+def make_schema(settings: dict, worker_pool_name: str) -> Callable:
     updated_settings = {
         "calls_per_min": 5,
         "rate_limiter_enabled": True,
@@ -26,7 +26,7 @@ def make_schema(settings: dict, worker_pool: str) -> Callable:
         helper_functions=[
             is_within_rate_limit
         ],  # Adds ratelimit as this is also a method available to data scientists
-        worker_pool=worker_pool,
+        worker_pool_name=worker_pool_name,
     )
     def live_schema(
         context,
