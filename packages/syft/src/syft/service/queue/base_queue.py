@@ -1,14 +1,18 @@
 # stdlib
 from typing import Any
 from typing import ClassVar
+from typing import TYPE_CHECKING
 
 # relative
 from ...serde.serializable import serializable
 from ...service.context import AuthedServiceContext
-from ...store.document_store import NewBaseStash
 from ...types.uid import UID
 from ..response import SyftSuccess
 from ..worker.worker_stash import WorkerStash
+
+if TYPE_CHECKING:
+    # relative
+    from .queue_stash import QueueStash
 
 
 @serializable(canonical_name="QueueClientConfig", version=1)
@@ -105,7 +109,7 @@ class BaseQueueManager:
     def create_producer(
         self,
         queue_name: str,
-        queue_stash: type[NewBaseStash],
+        queue_stash: "QueueStash",
         context: AuthedServiceContext,
         worker_stash: WorkerStash,
     ) -> QueueProducer:

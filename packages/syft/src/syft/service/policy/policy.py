@@ -30,7 +30,6 @@ from ...client.api import ServerIdentity
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import PartitionKey
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
@@ -83,10 +82,6 @@ class OutputPolicyValidEnum(Enum):
 
 
 DEFAULT_USER_POLICY_VERSION = 1
-
-PolicyUserVerifyKeyPartitionKey = PartitionKey(
-    key="user_verify_key", type_=SyftVerifyKey
-)
 
 PyCodeObject = Any
 
