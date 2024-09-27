@@ -1,12 +1,9 @@
 # relative
-from .document_store import StorePartition
-
-
 class KeyValueBackingStore:
     pass
 
 
-class KeyValueStorePartition(StorePartition):
+class KeyValueStorePartition:
     """Key-Value StorePartition
     Parameters:
         `settings`: PartitionSettings

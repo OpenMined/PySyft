@@ -20,7 +20,6 @@ from ...server.credentials import SyftVerifyKey
 from ...service.context import AuthedServiceContext
 from ...service.worker.worker_pool import SyftWorker
 from ...store.db.stash import ObjectStash
-from ...store.document_store import PartitionSettings
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
@@ -736,10 +735,6 @@ class JobInfo(SyftObject):
 
 @serializable(canonical_name="JobStashSQL", version=1)
 class JobStash(ObjectStash[Job]):
-    settings: PartitionSettings = PartitionSettings(
-        name=Job.__canonical_name__, object_type=Job
-    )
-
     @as_result(StashException)
     def set_result(
         self,
