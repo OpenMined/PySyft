@@ -132,8 +132,8 @@ class TestUser:
 
     @client.setter
     def client(self, client):
-        client = client.login(email=self.email, password=self.latest_password)
-        self._client_cache = client
+        this_client = client.login(email=self.email, password=self.latest_password)
+        self._client_cache = this_client
 
     def to_dict(self) -> dict:
         output = {}
