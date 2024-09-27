@@ -989,6 +989,7 @@ jobs:
       - name: Add K3d Registry
         run: |
           sudo python ./scripts/patch_hosts.py --add-k3d-registry
+
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
