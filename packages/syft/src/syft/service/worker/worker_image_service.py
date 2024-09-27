@@ -194,7 +194,7 @@ class SyftWorkerImageService(AbstractService):
         One image one docker file for now
         """
         images = self.stash.get_all(credentials=context.credentials).unwrap()
-        return DictTuple({image.id: image for image in images})
+        return DictTuple({image.id.to_string(): image for image in images})
 
     @service_method(
         path="worker_image.remove",
