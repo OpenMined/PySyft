@@ -15,7 +15,6 @@ from syft.service.notification.notifications import CreateNotification
 from syft.service.notification.notifications import Notification
 from syft.service.notification.notifications import NotificationStatus
 from syft.service.response import SyftSuccess
-from syft.store.document_store import DocumentStore
 from syft.store.document_store_errors import StashException
 from syft.store.linked_obj import LinkedObject
 from syft.types.datetime import DateTime
@@ -129,7 +128,7 @@ def test_get_all_success(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -181,7 +180,7 @@ def test_get_all_error_on_get_all_inbox(
 
 def test_get_sent_success(
     authed_context: AuthedServiceContext,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -236,7 +235,7 @@ def test_get_all_for_status_success(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -306,7 +305,7 @@ def test_get_all_read_success(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -363,7 +362,7 @@ def test_get_all_unread_success(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -419,7 +418,7 @@ def test_mark_as_read_success(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -458,7 +457,7 @@ def test_mark_as_read_error_on_update_notification_status(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -497,7 +496,7 @@ def test_mark_as_unread_success(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -537,7 +536,7 @@ def test_mark_as_unread_error_on_update_notification_status(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -578,7 +577,7 @@ def test_resolve_object_success(
     authed_context: AuthedServiceContext,
     linked_object: LinkedObject,
     notification_service: NotificationService,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     test_notification_service = NotificationService(document_store)
 
@@ -612,7 +611,7 @@ def test_resolve_object_error_on_resolve_link(
     monkeypatch: MonkeyPatch,
     authed_context: AuthedServiceContext,
     linked_object: LinkedObject,
-    document_store: DocumentStore,
+    document_store,
     notification_service: NotificationService,
 ) -> None:
     test_notification_service = NotificationService(document_store)
@@ -651,7 +650,7 @@ def test_clear_success(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -692,7 +691,7 @@ def test_clear_error_on_delete_all_for_verify_key(
     monkeypatch: MonkeyPatch,
     notification_service: NotificationService,
     authed_context: AuthedServiceContext,
-    document_store: DocumentStore,
+    document_store,
 ) -> None:
     random_signing_key = SyftSigningKey.generate()
     random_verify_key = random_signing_key.verify_key
