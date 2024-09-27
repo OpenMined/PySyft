@@ -184,6 +184,7 @@ def sim_activity(
 
                 if _trigger:
                     ctx.events.trigger(_trigger)
+                    ctx.logger.info(f"Triggering event: {_trigger.name}")
 
                 return result
             except Exception as e:

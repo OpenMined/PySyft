@@ -300,19 +300,25 @@ async def admin_sync(
     to_ = to_client.metadata.server_side_type
 
     while not ctx.events.is_set(exit_after):
-        await asyncio.sleep(random.uniform(5, 10))
+        try:
+            await asyncio.sleep(random.uniform(3, 5))
 
-        ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Checking")
-        result = sy.sync(from_client, to_client)
-        if isinstance(result, sy.SyftSuccess):
-            continue
+            ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Checking")
+            result = sy.sync(from_client, to_client)
+            if isinstance(result, sy.SyftSuccess):
+                continue
 
-        ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Result={result}")
-        result._share_all()
-        result._sync_all()
+            ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Result={result}")
+            result._share_all()
+            result._sync_all()
 
-        ctx.events.trigger(trigger)
-        ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Synced")
+            ctx.events.trigger(trigger)
+            ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Synced")
+
+        except Exception as e:
+            ctx.logger.error(f"Admin {from_}: Sync {from_}->{to_} - Error: {str(e)}")
+            ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Waiting a bit..")
+            await asyncio.sleep(random.uniform(2, 4))
 
     ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Closed")
 
