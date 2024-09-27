@@ -379,6 +379,10 @@ class Server(AbstractServer):
             skey = signing_key
         self.signing_key = skey or SyftSigningKey.generate()
 
+        logger.critical(
+            f"Hash of the signing key '{self.signing_key.deterministic_hash()[:5]}...'"
+        )
+
         self.association_request_auto_approval = association_request_auto_approval
 
         consumer_type = (
