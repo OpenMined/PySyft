@@ -262,7 +262,7 @@ async def admin_high_triage_requests(
 @sim_activity(trigger=Event.ADMIN_HIGHSIDE_FLOW_COMPLETED)
 async def admin_high_side_flow(ctx: SimulatorContext, admin_auth):
     admin_client = sy.login(**admin_auth)
-    ctx.logger.info("Admin high-side: logged in")
+    ctx.logger.info("Admin high: logged in")
 
     await asyncio.gather(
         admin_high_create_bq_pool(ctx, admin_client),
@@ -274,7 +274,7 @@ async def admin_high_side_flow(ctx: SimulatorContext, admin_auth):
 @sim_activity(trigger=Event.ADMIN_LOWSIDE_FLOW_COMPLETED)
 async def admin_low_side_flow(ctx: SimulatorContext, admin_auth, users):
     admin_client = sy.login(**admin_auth)
-    ctx.logger.info("Admin low-side: logged in")
+    ctx.logger.info("Admin low: logged in")
 
     await asyncio.gather(
         admin_register_users(ctx, admin_client, users),
@@ -302,19 +302,19 @@ async def admin_sync(
     while not ctx.events.is_set(exit_after):
         await asyncio.sleep(random.uniform(5, 10))
 
-        ctx.logger.info(f"Admin: Sync {from_}->{to_} - Checking")
+        ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Checking")
         result = sy.sync(from_client, to_client)
         if isinstance(result, sy.SyftSuccess):
             continue
 
-        ctx.logger.info(f"Admin: Sync {from_}->{to_} - Result={result}")
+        ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Result={result}")
         result._share_all()
         result._sync_all()
 
         ctx.events.trigger(trigger)
-        ctx.logger.info(f"Admin: Sync {from_}->{to_} - Synced")
+        ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Synced")
 
-    ctx.logger.info(f"Admin: Sync {from_}->{to_} - Closed")
+    ctx.logger.info(f"Admin {from_}: Sync {from_}->{to_} - Closed")
 
 
 @sim_activity(trigger=Event.ADMIN_SYNC_COMPLETED)

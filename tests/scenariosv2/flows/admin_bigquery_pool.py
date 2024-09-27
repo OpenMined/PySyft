@@ -27,7 +27,10 @@ def bq_create_pool(
         f"RUN uv pip install db-dtypes google-cloud-bigquery"
     )
 
-    msg = f"Admin: Worker Pool tag '{worker_image_tag}' on {server_info(admin_client)}"
+    msg = (
+        f"Admin {admin_client.metadata.server_side_type}: "
+        f"Worker Pool tag '{worker_image_tag}' on {server_info(admin_client)}"
+    )
 
     ctx.logger.info(f"{msg} - Creating")
     build_and_launch_worker_pool_from_docker_str(

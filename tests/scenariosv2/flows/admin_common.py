@@ -9,7 +9,7 @@ __all__ = ["register_user"]
 
 
 def register_user(ctx: SimulatorContext, admin_client: sy.DatasiteClient, user: dict):
-    msg = f"Admin: User {user['email']} on {server_info(admin_client)}"
+    msg = f"Admin {admin_client.metadata.server_side_type}: User {user['email']} on {server_info(admin_client)}"
     ctx.logger.info(f"{msg} - Creating")
     _ = admin_client.register(
         name=user["name"],

@@ -120,7 +120,7 @@ def __create_endpoint(
     endpoint: Any,
     path: str,
 ):
-    msg = f"Admin: Endpoint '{path}' on {server_info(admin_client)}"
+    msg = f"Admin {admin_client.metadata.server_side_type}: Endpoint '{path}' on {server_info(admin_client)}"
     ctx.logger.info(f"{msg} - Creating")
 
     # Create the endpoint
