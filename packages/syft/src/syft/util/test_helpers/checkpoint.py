@@ -184,6 +184,8 @@ def load_from_checkpoint(
     print("Successfully loaded data from checkpoint.")
 
     # Step 1: Build and push the worker images
+
+    print("Recreating worker images from checkpoint.")
     worker_image_list = (
         [] if root_client.images.get_all() is None else root_client.images.get_all()
     )
@@ -206,6 +208,7 @@ def load_from_checkpoint(
     print("Successfully Built worker image data from checkpoint.")
 
     # Step 2: Recreate the worker pools
+    print("Recreating worker pools from checkpoint.")
     worker_pool_list = (
         [] if root_client.worker_pools is None else root_client.worker_pools
     )
