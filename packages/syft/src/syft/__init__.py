@@ -77,8 +77,6 @@ from .service.response import SyftSuccess
 from .service.user.roles import Roles as roles
 from .service.user.user_service import UserService
 from .stable_version import LATEST_STABLE_SYFT
-from .store.mongo_document_store import MongoStoreConfig
-from .store.sqlite_document_store import SQLiteStoreConfig
 from .types.errors import SyftException
 from .types.errors import raises
 from .types.result import as_result
@@ -91,6 +89,8 @@ from .util.autoreload import disable_autoreload
 from .util.autoreload import enable_autoreload
 from .util.commit import __commit__
 from .util.patch_ipython import patch_ipython
+from .util.reset_server import make_copy
+from .util.reset_server import restore_copy
 from .util.telemetry import instrument
 from .util.telemetry import instrument_threads
 from .util.util import autocache

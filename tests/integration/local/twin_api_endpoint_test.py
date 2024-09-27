@@ -51,7 +51,7 @@ def get_twin_api_endpoint(worker_pool_name: str) -> TwinAPIEndpoint:
         mock_function=public_func,
         private_function=pvt_func,
         description="Lore ipsulum ...",
-        worker_pool=worker_pool_name,
+        worker_pool_name=worker_pool_name,
     )
 
     return new_endpoint

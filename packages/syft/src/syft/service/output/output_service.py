@@ -10,7 +10,6 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.db import DBManager
 from ...store.db.stash import ObjectStash
-from ...store.document_store import PartitionKey
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -26,11 +25,6 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
-
-CreatedAtPartitionKey = PartitionKey(key="created_at", type_=DateTime)
-UserCodeIdPartitionKey = PartitionKey(key="user_code_id", type_=UID)
-JobIdPartitionKey = PartitionKey(key="job_id", type_=UID)
-OutputPolicyIdPartitionKey = PartitionKey(key="output_policy_id", type_=UID)
 
 
 if TYPE_CHECKING:

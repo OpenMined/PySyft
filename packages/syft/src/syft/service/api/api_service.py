@@ -337,7 +337,7 @@ class APIService(AbstractService):
             method,
             path,
             *args,
-            worker_pool=custom_endpoint.worker_pool,
+            worker_pool_name=custom_endpoint.worker_pool_name,
             log_id=log_id,
             **kwargs,
         )

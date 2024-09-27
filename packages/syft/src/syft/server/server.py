@@ -1,3 +1,4 @@
+# futureserver.py
 # future
 from __future__ import annotations
 
@@ -457,9 +458,11 @@ class Server(AbstractServer):
             self.run_peer_health_checks(context=context)
 
         ServerRegistry.set_server_for(self.id, self)
-        email_dispatcher = threading.Thread(target=self.email_notification_dispatcher)
-        email_dispatcher.daemon = True
-        email_dispatcher.start()
+        if background_tasks:
+            email_dispatcher = threading.Thread(
+                target=self.email_notification_dispatcher, daemon=True
+            )
+            email_dispatcher.start()
 
     def email_notification_dispatcher(self) -> None:
         lock = threading.Lock()
@@ -1331,21 +1334,21 @@ class Server(AbstractServer):
         path: str,
         log_id: UID,
         *args: Any,
-        worker_pool: str | None = None,
+        worker_pool_name: str | None = None,
         **kwargs: Any,
     ) -> Job:
         job_id = UID()
         task_uid = UID()
         worker_settings = WorkerSettings.from_server(server=self)
 
-        if worker_pool is None:
-            worker_pool = self.get_default_worker_pool().unwrap()
+        if worker_pool_name is None:
+            worker_pool_name = self.get_default_worker_pool().unwrap()
         else:
-            worker_pool = self.get_worker_pool_by_name(worker_pool).unwrap()
+            worker_pool_name = self.get_worker_pool_by_name(worker_pool_name).unwrap()
 
         # Create a Worker pool reference object
         worker_pool_ref = LinkedObject.from_obj(
-            worker_pool,
+            worker_pool_name,
             service_type=SyftWorkerPoolService,
             server_uid=self.id,
         )

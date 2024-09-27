@@ -6,6 +6,7 @@ import threading
 from threading import Thread
 import time
 from typing import Any
+from typing import TYPE_CHECKING
 from typing import cast
 
 # third party
@@ -17,7 +18,6 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...server.worker_settings import WorkerSettings
 from ...service.context import AuthedServiceContext
-from ...store.document_store import NewBaseStash
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
@@ -38,6 +38,10 @@ from .base_queue import QueueConsumer
 from .base_queue import QueueProducer
 from .queue_stash import QueueItem
 from .queue_stash import Status
+
+if TYPE_CHECKING:
+    # relative
+    from .queue_stash import QueueStash
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +133,7 @@ class QueueManager(BaseQueueManager):
     def create_producer(
         self,
         queue_name: str,
-        queue_stash: type[NewBaseStash],
+        queue_stash: "QueueStash",
         context: AuthedServiceContext,
         worker_stash: WorkerStash,
     ) -> QueueProducer:
