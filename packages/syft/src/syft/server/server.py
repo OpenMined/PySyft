@@ -353,9 +353,11 @@ class Server(AbstractServer):
             self.run_peer_health_checks(context=context)
 
         ServerRegistry.set_server_for(self.id, self)
-        email_dispatcher = threading.Thread(target=self.email_notification_dispatcher)
-        email_dispatcher.daemon = True
-        email_dispatcher.start()
+        if background_tasks:
+            email_dispatcher = threading.Thread(
+                target=self.email_notification_dispatcher, daemon=True
+            )
+            email_dispatcher.start()
 
     def email_notification_dispatcher(self) -> None:
         lock = threading.Lock()
