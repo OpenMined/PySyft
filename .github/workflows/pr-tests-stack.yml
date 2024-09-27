@@ -1050,8 +1050,7 @@ jobs:
       - name: Install just
         if: steps.changes.outputs.stack == 'true'
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
 
       - name: Run scenario tests
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
