@@ -2,7 +2,6 @@
 import asyncio
 from enum import auto
 import random
-from venv import logger
 
 # third party
 from faker import Faker
@@ -328,7 +327,7 @@ async def admin_sync_high_to_low_flow(
         from_auth=admin_auth_high,
         to_auth=admin_auth_low,
         trigger=Event.ADMIN_SYNCED_HIGH_TO_LOW,
-        # todo: see if we have a better exit clause
+        # TODO: see if we have a better exit clause
         exit_after=Event.ADMIN_HIGHSIDE_FLOW_COMPLETED,
     )
 
@@ -343,7 +342,7 @@ async def admin_sync_low_to_high_flow(
         from_auth=admin_auth_low,
         to_auth=admin_auth_high,
         trigger=Event.ADMIN_SYNCED_LOW_TO_HIGH,
-        # todo: see if we have a better exit clause
+        # TODO: see if we have a better exit clause
         exit_after=Event.ADMIN_LOWSIDE_FLOW_COMPLETED,
     )
 
