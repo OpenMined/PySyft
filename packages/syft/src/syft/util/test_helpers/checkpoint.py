@@ -185,13 +185,18 @@ def load_from_checkpoint(
 
     # Step 1: Build and push the worker images
     worker_image_list = (
-        [] if root_client.worker_images is None else root_client.worker_images
+        [] if root_client.images.get_all() is None else root_client.images.get_all()
     )
     for worker_image in worker_image_list:
+        if worker_image.is_prebuilt:
+            continue
+
+        registry = worker_image.image_identifier.registry
+
         build_and_push_image(
             root_client,
             worker_image,
-            registry_uid=worker_image.image_identifier.registry.id,
+            registry_uid=registry.id if registry else None,
             tag=worker_image.image_identifier.repo_with_tag,
             reg_password=registry_username,
             reg_username=registry_password,

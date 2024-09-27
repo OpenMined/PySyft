@@ -194,18 +194,7 @@ class SyftWorkerImageService(AbstractService):
         One image one docker file for now
         """
         images = self.stash.get_all(credentials=context.credentials).unwrap()
-
-        res = {}
-        # if image is built, index it by full_name_with_tag
-        for im in images:
-            if im.is_built and im.image_identifier is not None:
-                res[im.image_identifier.full_name_with_tag] = im
-        # and then index all images by id
-        # TODO: jupyter repr needs to be updated to show unique values
-        # (even if multiple keys point to same value)
-        res.update({im.id.to_string(): im for im in images if not im.is_built})
-
-        return DictTuple(res)
+        return DictTuple({image.id: image for image in images})
 
     @service_method(
         path="worker_image.remove",

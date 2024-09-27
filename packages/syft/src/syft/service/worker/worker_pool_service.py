@@ -640,9 +640,10 @@ class SyftWorkerPoolService(AbstractService):
 
         if IN_KUBERNETES:
             # Scale the workers to zero
-            self.scale(context=context, number=0, pool_id=uid)
             runner = KubernetesRunner()
-            runner.delete_pool(pool_name=worker_pool.name)
+            if runner.exists(worker_pool.name):
+                self.scale(context=context, number=0, pool_id=uid)
+                runner.delete_pool(pool_name=worker_pool.name)
         else:
             workers = (
                 worker.resolve_with_context(context=context).unwrap()
