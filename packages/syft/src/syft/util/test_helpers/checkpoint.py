@@ -119,8 +119,16 @@ def create_checkpoint(
 def last_checkpoint_path_for_nb(server_uid: str, nb_name: str = None) -> Path | None:
     """Return the directory of the latest checkpoint for the given notebook."""
     nb_name = nb_name if nb_name else current_nbname().stem
+    checkpoint_dir = None
+    if len(nb_name.split("/")) > 1:
+        nb_name, checkpoint_dir = nb_name.split("/")
+
     filename = nb_name.split(".ipynb")[0]
     checkpoint_parent_dir = get_checkpoints_dir(server_uid, filename)
+
+    if checkpoint_dir:
+        return checkpoint_parent_dir / checkpoint_dir
+
     checkpoint_dirs = [
         d
         for d in checkpoint_parent_dir.glob(f"{CHECKPOINT_DIR_PREFIX}_*")
@@ -131,6 +139,7 @@ def last_checkpoint_path_for_nb(server_uid: str, nb_name: str = None) -> Path | 
     ]
 
     if checkpoints_dirs_with_blob_entry:
+        print("Loading from the last checkpoint of the current notebook.")
         return max(checkpoints_dirs_with_blob_entry, key=lambda d: d.stat().st_mtime)
 
     return None
@@ -149,6 +158,7 @@ def load_from_checkpoint(
     root_password: str | None = None,
     registry_username: str | None = None,
     registry_password: str | None = None,
+    checkpoint_name: str | None = None,
 ) -> None:
     """Load the last saved checkpoint for the given notebook state."""
     if prev_nb_filename is None:
