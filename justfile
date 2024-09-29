@@ -119,6 +119,9 @@ reset-high: (reset-syft _ctx_high _ns_default)
 [group('highside')]
 cleanup-high: (yank-ns _ctx_high _ns_default)
 
+[group('highside')]
+wait-high: (wait-pods _ctx_high _ns_default)
+
 # K9s into the Datasite High cluster
 [group('highside')]
 k9s-high:
@@ -146,6 +149,9 @@ reset-low: (reset-syft _ctx_low _ns_default)
 [group('lowside')]
 cleanup-low: (yank-ns _ctx_low _ns_default)
 
+[group('lowside')]
+wait-low: (wait-pods _ctx_low _ns_default)
+
 # K9s into the Datesite Low cluster
 [group('lowside')]
 k9s-low:
@@ -172,6 +178,9 @@ reset-gw: (reset-syft _ctx_gw _ns_default)
 # Remove namespace from the gateway cluster
 [group('gateway')]
 cleanup-gw: (yank-ns _ctx_gw _ns_default)
+
+[group('gateway')]
+wait-gw: (wait-pods _ctx_gw _ns_default)
 
 # K9s into the Gateway cluster
 [group('gateway')]
@@ -522,3 +531,17 @@ yank-ns kube_context namespace:
         kubectl replace --context {{ kube_context }} --raw /api/v1/namespaces/{{ namespace }}/finalize -f -
 
     @echo "Done"
+
+# Wait for all pods to be ready in a namespace
+[group('utils')]
+@wait-pods kube_context namespace:
+    echo "Waiting for all pods to be ready in cluster={{ kube_context }} namespace={{ namespace }}"
+    kubectl wait --for=condition=ready pod --all --timeout=300s --context {{ kube_context }} --namespace {{ namespace }}
+
+    # if the above doesn't wait as we expect the drop the above and use the below
+    # @bash packages/grid/scripts/wait_for.sh service proxy --context {{ kube_context }} --namespace {{ namespace }}
+    # @bash packages/grid/scripts/wait_for.sh service frontend --context {{ kube_context }} --namespace {{ namespace }}
+    # @bash packages/grid/scripts/wait_for.sh service postgres --context {{ kube_context }} --namespace {{ namespace }}
+    # @bash packages/grid/scripts/wait_for.sh service seaweedfs --context {{ kube_context }} --namespace {{ namespace }}
+    # @bash packages/grid/scripts/wait_for.sh service backend --context {{ kube_context }} --namespace {{ namespace }}
+    echo "All pods are ready"
