@@ -20,7 +20,6 @@ from syft.service.request.request_service import RequestService
 from syft.store.db.sqlite import SQLiteDBConfig
 from syft.store.db.sqlite import SQLiteDBManager
 from syft.store.db.stash import ObjectStash
-from syft.store.document_store import PartitionKey
 from syft.store.document_store_errors import NotFoundException
 from syft.store.document_store_errors import StashException
 from syft.store.linked_obj import LinkedObject
@@ -43,11 +42,6 @@ class MockObject(SyftObject):
 
     __attr_searchable__ = ["id", "name", "desc", "importance"]
     __attr_unique__ = ["id", "name"]
-
-
-NamePartitionKey = PartitionKey(key="name", type_=str)
-DescPartitionKey = PartitionKey(key="desc", type_=str)
-ImportancePartitionKey = PartitionKey(key="importance", type_=int)
 
 
 class MockStash(ObjectStash[MockObject]):

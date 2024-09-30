@@ -3,7 +3,6 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...store.db.db import DBManager
 from ...store.db.stash import ObjectStash
-from ...store.document_store import PartitionSettings
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from .sync_state import SyncState
@@ -11,11 +10,6 @@ from .sync_state import SyncState
 
 @serializable(canonical_name="SyncStash", version=1)
 class SyncStash(ObjectStash[SyncState]):
-    settings: PartitionSettings = PartitionSettings(
-        name=SyncState.__canonical_name__,
-        object_type=SyncState,
-    )
-
     def __init__(self, store: DBManager) -> None:
         super().__init__(store)
         self.last_state: SyncState | None = None
