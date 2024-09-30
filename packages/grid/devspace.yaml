@@ -52,8 +52,8 @@ images:
     target: "syft-ui-production"
     context: ./frontend
     tags:
-      - dev-latest
       - dev-${DEVSPACE_TIMESTAMP}
+      - dev-latest
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
     buildKit:
@@ -61,8 +61,8 @@ images:
     dockerfile: ./seaweedfs/seaweedfs.dockerfile
     context: ./seaweedfs
     tags:
-      - dev-latest
       - dev-${DEVSPACE_TIMESTAMP}
+      - dev-latest
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -75,7 +75,8 @@ deployments:
       values:
         global:
           registry: ${CONTAINER_REGISTRY}
-          version: dev-latest
+          version: dev-${DEVSPACE_TIMESTAMP}
+          workerVersion: dev-latest
       # anything that does not need templating should go in helm/examples/dev/base.yaml
       # or profile specific values files
       valuesFiles:
@@ -167,8 +168,8 @@ profiles:
             dockerfile: ./rathole/rathole.dockerfile
             context: ./rathole
             tags:
-              - dev-latest
               - dev-${DEVSPACE_TIMESTAMP}
+              - dev-latest
       # use rathole client-specific chart values
       - op: add
         path: deployments.syft.helm.valuesFiles
@@ -188,8 +189,8 @@ profiles:
             dockerfile: ./rathole/rathole.dockerfile
             context: ./rathole
             tags:
-              - dev-latest
               - dev-${DEVSPACE_TIMESTAMP}
+              - dev-latest
       # enable rathole `devspace dev` config
       - op: add
         path: dev
