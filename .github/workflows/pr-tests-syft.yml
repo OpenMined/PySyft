@@ -273,7 +273,6 @@ jobs:
           tox -e syft.test.scenario
 
   pr-tests-syft-scenario-sync:
-    if: ${{ false }}
     strategy:
       max-parallel: 99
       matrix:
