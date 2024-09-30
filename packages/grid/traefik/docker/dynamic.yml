@@ -27,12 +27,12 @@ http:
         - web
       service: "frontend"
     backend:
-      rule: "PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
+      rule: "PathPrefix(`/api`)"
       entryPoints:
         - web
       service: "backend"
     backend-stream:
-      rule: "PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
+      rule: "PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`)"
       entryPoints:
         - web
       service: "backend-stream"
