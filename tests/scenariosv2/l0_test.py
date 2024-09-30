@@ -30,7 +30,7 @@ from .sim.core import sim_activity
 from .sim.core import sim_entrypoint
 
 fake = Faker()
-NUM_USERS = 3
+NUM_USERS = 10
 NUM_ENDPOINTS = 3  # test_query, submit_query, schema_query
 
 
@@ -370,7 +370,7 @@ async def sim_l0_scenario(ctx: SimulatorContext):
         for _ in range(NUM_USERS)
     ]
 
-    deployment_type = os.environ.get("ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.PYTHON)
+    deployment_type = os.environ.get("ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.REMOTE)
     ctx.logger.info(f"Deployment type: {deployment_type}")
 
     server_url_high = "http://localhost:8080"
