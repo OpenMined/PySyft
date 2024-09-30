@@ -180,54 +180,6 @@ class ObjectStash(Generic[StashT]):
     def unique_fields(self) -> list[str]:
         return getattr(self.object_type, "__attr_unique__", [])
 
-    @as_result(SyftException, StashException, NotFoundException)
-    @with_session
-    def get_by_unique_fields(
-        self,
-        credentials: SyftVerifyKey,
-        obj: StashT,
-        session: Session = None,
-        has_permission: bool = False,
-    ) -> StashT:
-        query = self.query()
-
-        if not has_permission:
-            role = self.get_role(credentials, session=session)
-            query = query.with_permissions(credentials, role)
-
-        unique_fields = self.unique_fields
-
-        filters = []
-        for field_name in unique_fields:
-            field_value = getattr(obj, field_name, None)
-            if not is_json_primitive(field_value):
-                raise StashException(
-                    f"Cannot check uniqueness of non-primitive field {field_name}"
-                )
-            if field_value is None:
-                continue
-            filters.append((field_name, "eq", field_value))
-
-        query = self.query()
-        query = query.filter_or(
-            *filters,
-        )
-
-        results = query.execute(session).all()
-
-        if len(results) == 1:
-            result = results[0]
-        elif len(results) > 1:
-            raise StashException(
-                f"Multiple objects found for unique fields: {unique_fields}"
-            )
-        else:
-            raise NotFoundException(
-                f"No object found for unique fields: {unique_fields}"
-            )
-
-        return result
-
     @with_session
     def is_unique(self, obj: StashT, session: Session = None) -> bool:
         unique_fields = self.unique_fields
