@@ -359,6 +359,38 @@ async def admin_sync_low_to_high_flow(
 # ------------------------------------------------------------------------------------------------
 
 
+def setup_servers(ctx: SimulatorContext, server_url_high, server_url_low):
+    deployment_type = os.environ.get("ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.REMOTE)
+    ctx.logger.info(f"Deployment type: {deployment_type}")
+
+    if deployment_type == DeploymentType.REMOTE:
+        return None, None
+
+    ctx.logger.info(f"Launching python server high side server on {server_url_high}")
+    server_high = launch_server(
+        server_url=server_url_high,
+        server_name="syft-high",
+        server_side_type="high",
+    )
+
+    ctx.logger.info(f"Launching python server low side server on {server_url_low}")
+    server_low = launch_server(
+        server_url=server_url_low,
+        server_name="syft-low",
+        server_side_type="low",
+    )
+
+    return server_high, server_low
+
+
+def shutdown_servers(server_high, server_low):
+    if server_high:
+        server_high.land()
+
+    if server_low:
+        server_low.land()
+
+
 @sim_entrypoint
 async def sim_l0_scenario(ctx: SimulatorContext):
     users = [
@@ -370,17 +402,7 @@ async def sim_l0_scenario(ctx: SimulatorContext):
         for _ in range(NUM_USERS)
     ]
 
-    deployment_type = os.environ.get("ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.REMOTE)
-    ctx.logger.info(f"Deployment type: {deployment_type}")
-
     server_url_high = "http://localhost:8080"
-    if deployment_type == DeploymentType.PYTHON:
-        server_high = launch_server(
-            ctx=ctx,
-            server_url=server_url_high,
-            server_name="syft-high",
-            server_side_type="high",
-        )
     admin_auth_high = dict(  # noqa: C408
         url=server_url_high,
         email="info@openmined.org",
@@ -388,18 +410,13 @@ async def sim_l0_scenario(ctx: SimulatorContext):
     )
 
     server_url_low = "http://localhost:8081"
-    if deployment_type == DeploymentType.PYTHON:
-        server_low = launch_server(
-            ctx=ctx,
-            server_url=server_url_low,
-            server_name="syft-low",
-            server_side_type="low",
-        )
     admin_auth_low = dict(  # noqa: C408
         url=server_url_low,
         email="info@openmined.org",
         password="changethis",
     )
+
+    server_high, server_low = setup_servers(ctx, server_url_high, server_url_low)
 
     ctx.events.trigger(Event.INIT)
     ctx.logger.info("--- Initializing L0 BigQuery Scenario Test ---")
@@ -412,9 +429,7 @@ async def sim_l0_scenario(ctx: SimulatorContext):
         *[user_low_side_flow(ctx, server_url_low, user) for user in users],
     )
 
-    if deployment_type == DeploymentType.PYTHON:
-        server_high.land()
-        server_low.land()
+    shutdown_servers(server_high, server_low)
 
 
 @pytest.mark.asyncio

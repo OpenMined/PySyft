@@ -5,9 +5,6 @@ from urllib.parse import urlparse
 import syft as sy
 from syft.orchestra import ServerHandle
 
-# relative
-from ..sim.core import SimulatorContext
-
 
 def server_info(client: sy.DatasiteClient) -> str:
     url = getattr(client.connection, "url", "python")
@@ -15,12 +12,10 @@ def server_info(client: sy.DatasiteClient) -> str:
 
 
 def launch_server(
-    ctx: SimulatorContext,
     server_url: str,
     server_name: str,
     server_side_type: str | None = "high",
 ) -> ServerHandle | None:
-    ctx.logger.info(f"Launching python server '{server_name}' at {server_url}")
     parsed_url = urlparse(server_url)
     port = parsed_url.port
     return sy.orchestra.launch(
