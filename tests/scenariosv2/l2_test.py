@@ -1,8 +1,6 @@
-# RUN: just reset-high && pytest -s tests/scenariosv2/l2_test.py
-## .logs files will be created in pwd
-
 # stdlib
 import asyncio
+import os
 import random
 
 # third party
@@ -11,6 +9,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.orchestra import DeploymentType
 
 # relative
 from .flows.user_bigquery_api import bq_submit_query
@@ -124,7 +123,11 @@ async def sim_l2_scenario(ctx: SimulatorContext):
     ]
 
     server_url = "http://localhost:8080"
-    launch_server(ctx, server_url, "syft-high")
+    deployment_type = os.environ.get("ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.PYTHON)
+    ctx.logger.info(f"Deployment type: {deployment_type}")
+    if deployment_type == DeploymentType.PYTHON:
+        server = launch_server(ctx, server_url, "syft-high")
+
     admin_auth = {
         "url": server_url,
         "email": "info@openmined.org",
@@ -135,6 +138,9 @@ async def sim_l2_scenario(ctx: SimulatorContext):
         admin_flow(ctx, admin_auth, users),
         *[user_flow(ctx, server_url, user) for user in users],
     )
+
+    if deployment_type == DeploymentType.PYTHON:
+        server.land()
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,7 @@
 # stdlib
 import asyncio
 from enum import auto
+import os
 import random
 
 # third party
@@ -9,6 +10,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.orchestra import DeploymentType
 from syft.service.request.request import RequestStatus
 
 # relative
@@ -368,8 +370,17 @@ async def sim_l0_scenario(ctx: SimulatorContext):
         for _ in range(NUM_USERS)
     ]
 
+    deployment_type = os.environ.get("ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.PYTHON)
+    ctx.logger.info(f"Deployment type: {deployment_type}")
+
     server_url_high = "http://localhost:8080"
-    launch_server(ctx, server_url_high, "syft-high")
+    if deployment_type == DeploymentType.PYTHON:
+        server_high = launch_server(
+            ctx=ctx,
+            server_url=server_url_high,
+            server_name="syft-high",
+            server_side_type="high",
+        )
     admin_auth_high = dict(  # noqa: C408
         url=server_url_high,
         email="info@openmined.org",
@@ -377,7 +388,13 @@ async def sim_l0_scenario(ctx: SimulatorContext):
     )
 
     server_url_low = "http://localhost:8081"
-    launch_server(ctx, server_url_low, "syft-low")
+    if deployment_type == DeploymentType.PYTHON:
+        server_low = launch_server(
+            ctx=ctx,
+            server_url=server_url_low,
+            server_name="syft-low",
+            server_side_type="low",
+        )
     admin_auth_low = dict(  # noqa: C408
         url=server_url_low,
         email="info@openmined.org",
@@ -394,6 +411,10 @@ async def sim_l0_scenario(ctx: SimulatorContext):
         admin_sync_low_to_high_flow(ctx, admin_auth_high, admin_auth_low),
         *[user_low_side_flow(ctx, server_url_low, user) for user in users],
     )
+
+    if deployment_type == DeploymentType.PYTHON:
+        server_high.land()
+        server_low.land()
 
 
 @pytest.mark.asyncio

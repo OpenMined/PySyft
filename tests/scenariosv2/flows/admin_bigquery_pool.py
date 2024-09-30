@@ -1,5 +1,9 @@
+# stdlib
+import os
+
 # syft absolute
 import syft as sy
+from syft.orchestra import DeploymentType
 from syft.util.test_helpers.worker_helpers import (
     build_and_launch_worker_pool_from_docker_str,
 )
@@ -33,8 +37,11 @@ def bq_create_pool(
     )
 
     ctx.logger.info(f"{msg} - Creating")
+
+    deployment_type = os.environ.get("ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.PYTHON)
+
     build_and_launch_worker_pool_from_docker_str(
-        environment="remote",
+        environment=str(deployment_type),
         client=admin_client,
         worker_pool_name=worker_pool,
         worker_dockerfile=worker_dockerfile,
