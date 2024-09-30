@@ -22,4 +22,11 @@ def launch_server(ctx: SimulatorContext, server_url: str, server_name: str):
         ctx.logger.info(f"Launching python server '{server_name}' at {server_url}")
         parsed_url = urlparse(server_url)
         port = parsed_url.port
-        sy.orchestra.launch(name=server_name, reset=True, dev_mode=True, port=port)
+        sy.orchestra.launch(
+            name=server_name,
+            reset=True,
+            dev_mode=True,
+            port=port,
+            create_producer=True,
+            n_consumers=1,
+        )

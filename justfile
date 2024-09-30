@@ -536,6 +536,9 @@ yank-ns kube_context namespace:
 [group('utils')]
 @wait-pods kube_context namespace:
     echo "Waiting for all pods to be ready in cluster={{ kube_context }} namespace={{ namespace }}"
+    # Wait for at least one pod to appear (timeout after 5 minutes)
+    timeout 300 bash -c 'until kubectl get pods --context {{ kube_context }} --namespace {{ namespace }} 2>/dev/null | grep -q ""; do sleep 5; done'
+
     kubectl wait --for=condition=ready pod --all --timeout=300s --context {{ kube_context }} --namespace {{ namespace }}
 
     # if the above doesn't wait as we expect the drop the above and use the below
