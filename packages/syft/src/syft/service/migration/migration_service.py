@@ -22,13 +22,10 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import StoragePermission
 from ..action.action_store import ActionObjectStash
 from ..context import AuthedServiceContext
-from ..notifier.notifier import NotifierSettings
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
-from ..settings.settings import ServerSettings
-from ..user.user import User
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..worker.utils import DEFAULT_WORKER_POOL_NAME
 from .object_migration_state import MigrationData
@@ -266,13 +263,6 @@ class MigrationService(AbstractService):
         ignore_existing: bool = True,
         skip_check_type: bool = False,
     ) -> dict[type[SyftObject], list[SyftObject]]:
-        # These tables are considered as startup tables, if the object is in this table and already exists,
-        # we need to overwrite the existing object with the migrated object.
-        STARTUP_TABLES = [
-            User,
-            ServerSettings,
-            NotifierSettings,
-        ]
         created_objects: dict[type[SyftObject], list[SyftObject]] = {}
 
         for key, objects in migrated_objects.items():
@@ -281,19 +271,6 @@ class MigrationService(AbstractService):
                 stash = self._search_stash_for_klass(
                     context, type(migrated_object)
                 ).unwrap()
-
-                # If the object is in the startup tables, we need to overwrite the existing object
-                if type(migrated_object) in STARTUP_TABLES:
-                    try:
-                        existing_obj = stash.get_by_unique_fields(
-                            credentials=context.credentials,
-                            obj=migrated_object,
-                        ).unwrap()
-                        stash.delete_by_uid(
-                            context.credentials, uid=existing_obj.id
-                        ).unwrap()
-                    except NotFoundException:
-                        pass
 
                 result = stash.set(
                     context.credentials,
