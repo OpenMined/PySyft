@@ -1055,8 +1055,6 @@ jobs:
       - name: Run scenario tests
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
         env:
-          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
-          BUMP_VERSION: "${{ matrix.bump-version }}"
           TOX_PYTHON: python${{ matrix.python-version }}
         shell: bash
         run: |
@@ -1181,7 +1179,6 @@ jobs:
       - name: Run scenario tests
         if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
         env:
-          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
           BUMP_VERSION: "${{ matrix.bump-version }}"
           TOX_PYTHON: python${{ matrix.python-version }}
         shell: bash
