@@ -70,7 +70,7 @@ spec:
             - name: INMEMORY_WORKERS
               value: {{ .Values.server.inMemoryWorkers | quote }}
             - name: DEFAULT_WORKER_POOL_IMAGE
-              value: "{{ .Values.global.registry }}/openmined/syft-backend:{{ .Values.global.version }}"
+              value: "{{ .Values.global.registry }}/openmined/syft-backend:{{ .Values.global.workerVersion }}"
             - name: DEFAULT_WORKER_POOL_COUNT
               value: {{ .Values.server.defaultWorkerPool.count | quote }}
             - name: DEFAULT_WORKER_POOL_POD_LABELS
