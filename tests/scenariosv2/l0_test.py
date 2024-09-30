@@ -20,6 +20,7 @@ from .flows.admin_common import register_user
 from .flows.user_bigquery_api import bq_check_query_results
 from .flows.user_bigquery_api import bq_submit_query
 from .flows.user_bigquery_api import bq_test_query
+from .flows.utils import launch_server
 from .sim.core import BaseEvent
 from .sim.core import Simulator
 from .sim.core import SimulatorContext
@@ -368,6 +369,7 @@ async def sim_l0_scenario(ctx: SimulatorContext):
     ]
 
     server_url_high = "http://localhost:8080"
+    launch_server(ctx, server_url_high, "syft-high")
     admin_auth_high = dict(  # noqa: C408
         url=server_url_high,
         email="info@openmined.org",
@@ -375,6 +377,7 @@ async def sim_l0_scenario(ctx: SimulatorContext):
     )
 
     server_url_low = "http://localhost:8081"
+    launch_server(ctx, server_url_low, "syft-low")
     admin_auth_low = dict(  # noqa: C408
         url=server_url_low,
         email="info@openmined.org",

@@ -15,6 +15,7 @@ import syft as sy
 # relative
 from .flows.user_bigquery_api import bq_submit_query
 from .flows.user_bigquery_api import bq_test_query
+from .flows.utils import launch_server
 from .l0_test import Event
 from .l0_test import admin_high_create_bq_pool
 from .l0_test import admin_high_create_endpoints
@@ -110,6 +111,9 @@ async def user_flow(ctx: SimulatorContext, server_url: str, user: dict):
 
 @sim_entrypoint
 async def sim_l2_scenario(ctx: SimulatorContext):
+    ctx.events.trigger(Event.INIT)
+    ctx.logger.info("--- Initializing L2 BigQuery Scenario Test ---")
+
     users = [
         {
             "name": fake.name(),
@@ -120,15 +124,12 @@ async def sim_l2_scenario(ctx: SimulatorContext):
     ]
 
     server_url = "http://localhost:8080"
-
+    launch_server(ctx, server_url, "syft-high")
     admin_auth = {
         "url": server_url,
         "email": "info@openmined.org",
         "password": "changethis",
     }
-
-    ctx.events.trigger(Event.INIT)
-    ctx.logger.info("--- Initializing L2 BigQuery Scenario Test ---")
 
     await asyncio.gather(
         admin_flow(ctx, admin_auth, users),
