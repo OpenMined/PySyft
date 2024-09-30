@@ -1075,6 +1075,14 @@ jobs:
 
       # todo: collect logs
 
+      - name: Cleanup k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          export PATH=`pwd`:$PATH
+          k3d cluster delete syft-low || true
+          k3d registry delete k3d-registry.localhost || true
+
   pr-tests-simulation-scenario-k8s-sync:
     strategy:
       max-parallel: 99
@@ -1192,3 +1200,12 @@ jobs:
           tox -e stack.test.scenario.k8s.sync
 
       # todo: collect logs
+
+      - name: Cleanup k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          export PATH=`pwd`:$PATH
+          k3d cluster delete syft-low || true
+          k3d cluster delete syft-high || true
+          k3d registry delete k3d-registry.localhost || true
