@@ -123,10 +123,10 @@ async def sim_l2_scenario(ctx: SimulatorContext):
     ]
 
     server_url = "http://localhost:8080"
-    deployment_type = os.environ.get("ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.PYTHON)
+    deployment_type = os.environ.get("ORCHESTRA_DEPLOYMENT_TYPE", DeploymentType.REMOTE)
     ctx.logger.info(f"Deployment type: {deployment_type}")
     if deployment_type == DeploymentType.PYTHON:
-        server = launch_server(ctx, server_url, "syft-high")
+        server = launch_server(server_url, "syft-high")
 
     admin_auth = {
         "url": server_url,
