@@ -1212,7 +1212,23 @@ jobs:
           devspace version
           tox -e stack.test.scenario.k8s.sync
 
-      # todo: collect logs
+      - name: Collect logs
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          mkdir -p ./output-logs
+          if [ -d "tests/scenariosv2/.logs" ]; then
+            cp -R tests/scenariosv2/.logs/* ./output-logs/
+          else
+            echo "Log directory not found"
+          fi
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: steps.changes.outputs.stack == 'true' && failure()
+        with:
+          name: simulation-scenario-k8s-sync-logs-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          path: ./output-logs/
 
       - name: Cleanup k3d
         if: steps.changes.outputs.stack == 'true' && failure()
