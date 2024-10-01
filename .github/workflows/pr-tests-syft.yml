@@ -272,6 +272,24 @@ jobs:
         run: |
           tox -e syft.test.scenario
 
+      - name: Collect logs
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          mkdir -p ./output-logs
+          if [ -d "tests/scenariosv2/.logs" ]; then
+            cp -R tests/scenariosv2/.logs/* ./output-logs/
+          else
+            echo "Log directory not found"
+          fi
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: steps.changes.outputs.stack == 'true' && failure()
+        with:
+          name: simulation-scenario-logs-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          path: ./output-logs/
+
   pr-tests-syft-scenario-sync:
     strategy:
       max-parallel: 99
@@ -355,6 +373,24 @@ jobs:
         shell: bash
         run: |
           tox -e syft.test.scenario.sync
+
+      - name: Collect logs
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          mkdir -p ./output-logs
+          if [ -d "tests/scenariosv2/.logs" ]; then
+            cp -R tests/scenariosv2/.logs/* ./output-logs/
+          else
+            echo "Log directory not found"
+          fi
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: steps.changes.outputs.stack == 'true' && failure()
+        with:
+          name: simulation-scenario-sync-logs-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          path: ./output-logs/
 
   pr-tests-syft-notebook-scenario:
     strategy:
