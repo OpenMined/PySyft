@@ -42,6 +42,7 @@ images:
     target: "backend"
     context: ../
     tags:
+      - dev-latest
       - dev-${DEVSPACE_TIMESTAMP}
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
@@ -52,6 +53,7 @@ images:
     context: ./frontend
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
+      - dev-latest
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
     buildKit:
@@ -60,6 +62,7 @@ images:
     context: ./seaweedfs
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
+      - dev-latest
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -73,6 +76,7 @@ deployments:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
+          workerVersion: dev-latest
       # anything that does not need templating should go in helm/examples/dev/base.yaml
       # or profile specific values files
       valuesFiles:
@@ -165,6 +169,7 @@ profiles:
             context: ./rathole
             tags:
               - dev-${DEVSPACE_TIMESTAMP}
+              - dev-latest
       # use rathole client-specific chart values
       - op: add
         path: deployments.syft.helm.valuesFiles
@@ -185,6 +190,7 @@ profiles:
             context: ./rathole
             tags:
               - dev-${DEVSPACE_TIMESTAMP}
+              - dev-latest
       # enable rathole `devspace dev` config
       - op: add
         path: dev
@@ -256,6 +262,7 @@ profiles:
             dockerfile: ./enclave/attestation/attestation.dockerfile
             context: ./enclave/attestation
             tags:
+              - dev-latest
               - dev-${DEVSPACE_TIMESTAMP}
       - op: add
         path: dev.backend.containers

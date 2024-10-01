@@ -1,5 +1,6 @@
 # stdlib
 from collections import defaultdict
+import logging
 
 # syft absolute
 import syft
@@ -21,6 +22,7 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import StoragePermission
 from ..action.action_store import ActionObjectStash
 from ..context import AuthedServiceContext
+from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -30,6 +32,8 @@ from .object_migration_state import MigrationData
 from .object_migration_state import StoreMetadata
 from .object_migration_state import SyftMigrationStateStash
 from .object_migration_state import SyftObjectMigrationState
+
+logger = logging.getLogger(__name__)
 
 
 @serializable(canonical_name="MigrationService", version=1)
@@ -260,6 +264,7 @@ class MigrationService(AbstractService):
         skip_check_type: bool = False,
     ) -> dict[type[SyftObject], list[SyftObject]]:
         created_objects: dict[type[SyftObject], list[SyftObject]] = {}
+
         for key, objects in migrated_objects.items():
             created_objects[key] = []
             for migrated_object in objects:
@@ -317,7 +322,7 @@ class MigrationService(AbstractService):
             latest_version = SyftObjectRegistry.get_latest_version(canonical_name)
 
             # Migrate data for objects in document store
-            print(
+            logger.info(
                 f"Migrating data for: {canonical_name} table to version {latest_version}"
             )
             for object in objects:
@@ -463,3 +468,28 @@ class MigrationService(AbstractService):
         # apply metadata
         self._update_store_metadata(context, migration_data.metadata).unwrap()
         return SyftSuccess(message="Migration completed successfully")
+
+    @service_method(
+        path="migration.reset_and_restore",
+        name="reset_and_restore",
+        roles=ADMIN_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
+    def reset_and_restore(
+        self,
+        context: AuthedServiceContext,
+        migration_data: MigrationData,
+    ) -> SyftSuccess | SyftError:
+        try:
+            root_verify_key = context.server.verify_key
+            context.server.db.init_tables(reset=True)
+            context.credentials = root_verify_key
+            self.apply_migration_data(context, migration_data)
+        except Exception as e:
+            return SyftError.from_exception(
+                context=context,
+                exc=e,
+                include_traceback=True,
+            )
+
+        return SyftSuccess(message="Database reset successfully.")

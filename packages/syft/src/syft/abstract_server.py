@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 # relative
 from .serde.serializable import serializable
 from .store.db.db import DBConfig
+from .store.db.db import DBManager
 from .types.uid import UID
 
 if TYPE_CHECKING:
@@ -43,6 +44,7 @@ class AbstractServer:
     in_memory_workers: bool
     services: "ServiceRegistry"
     db_config: DBConfig
+    db: DBManager[DBConfig]
 
     def get_service(self, path_or_func: str | Callable) -> "AbstractService":
         raise NotImplementedError
