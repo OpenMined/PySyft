@@ -585,6 +585,32 @@ class SyftWorkerPoolService(AbstractService):
 
         uid = worker_pool.id
 
+        self.purge_workers(context=context, pool_id=pool_id, pool_name=pool_name)
+
+        self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap(
+            public_message=f"Failed to delete WorkerPool: {worker_pool.name} from stash"
+        )
+
+        return SyftSuccess(message=f"Successfully deleted worker pool with id {uid}")
+
+    @service_method(
+        path="worker_pool.purge_workers",
+        name="purge_workers",
+        roles=DATA_OWNER_ROLE_LEVEL,
+        unwrap_on_success=False,
+    )
+    def purge_workers(
+        self,
+        context: AuthedServiceContext,
+        pool_id: UID | None = None,
+        pool_name: str | None = None,
+    ) -> SyftSuccess:
+        worker_pool = self._get_worker_pool(
+            context, pool_id=pool_id, pool_name=pool_name
+        ).unwrap(public_message=f"Failed to get WorkerPool: {pool_id or pool_name}")
+
+        uid = worker_pool.id
+
         # relative
         from ..queue.queue_stash import Status
 
@@ -614,9 +640,10 @@ class SyftWorkerPoolService(AbstractService):
 
         if IN_KUBERNETES:
             # Scale the workers to zero
-            self.scale(context=context, number=0, pool_id=uid)
             runner = KubernetesRunner()
-            runner.delete_pool(pool_name=worker_pool.name)
+            if runner.exists(worker_pool.name):
+                self.scale(context=context, number=0, pool_id=uid)
+                runner.delete_pool(pool_name=worker_pool.name)
         else:
             workers = (
                 worker.resolve_with_context(context=context).unwrap()
@@ -632,11 +659,19 @@ class SyftWorkerPoolService(AbstractService):
                     context=context, uid=id_, force=True
                 )
 
-        self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap(
-            public_message=f"Failed to delete WorkerPool: {worker_pool.name} from stash"
+        worker_pool.max_count = 0
+        worker_pool.worker_list = []
+        self.stash.update(
+            credentials=context.credentials,
+            obj=worker_pool,
+        ).unwrap(
+            public_message=(
+                f"Pool {worker_pool.name} was purged, "
+                f"but failed to update the stash"
+            )
         )
 
-        return SyftSuccess(message=f"Successfully deleted worker pool with id {uid}")
+        return SyftSuccess(message=f"Successfully Purged worker pool with id {uid}")
 
     @as_result(StashException, SyftException)
     def _get_worker_pool(

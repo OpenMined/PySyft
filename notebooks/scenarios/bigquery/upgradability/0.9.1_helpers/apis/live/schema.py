@@ -4,7 +4,9 @@ from collections.abc import Callable
 # syft absolute
 import syft as sy
 from syft import test_settings
-from syft.rate_limiter import is_within_rate_limit
+
+# relative
+from ..rate_limiter import is_within_rate_limit
 
 
 def make_schema(settings: dict, worker_pool_name: str) -> Callable:
