@@ -565,7 +565,9 @@ class ActionService(AbstractService):
 
             if result_blob_id is not None:
                 blob_permissions = [blob_permission(x) for x in output_readers]
-                context.server.services.blob_storage.stash.add_permissions(blob_permissions)
+                context.server.services.blob_storage.stash.add_permissions(
+                    blob_permissions
+                )
 
         return set_result
 
