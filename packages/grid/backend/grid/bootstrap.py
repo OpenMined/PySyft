@@ -121,9 +121,9 @@ def get_credential(
 
     # supplying a different key means something has gone wrong so raise Exception
     if (
-        file_credential != env_credential
-        and file_credential is not None
+        file_credential is not None
         and env_credential is not None
+        and validation_func(file_credential) != validation_func(env_credential)
     ):
         raise Exception(f"{key} from ENV must match {key} in {CREDENTIALS_PATH}")
 

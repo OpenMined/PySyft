@@ -30,7 +30,7 @@ WORKER_CONFIG_TEST_CASES_WITH_N_IMAGES = [
         2,  # total number of images.
         # 2 since we pull a pre-built image (1) as the base image to build a custom image (2)
     ),
-    (None, PrebuiltWorkerConfig(tag=PREBUILT_IMAGE_TAG), 1),
+    (None, PrebuiltWorkerConfig(tag=PREBUILT_IMAGE_TAG), 2),
 ]
 
 WORKER_CONFIG_TEST_CASES = [
