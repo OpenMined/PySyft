@@ -1171,16 +1171,11 @@ class ActionObject(SyncableSyftObject):
 
     def get_sync_dependencies(
         self, context: AuthedServiceContext, **kwargs: dict
-    ) -> list[UID]:  # type: ignore
-        # relative
-        from ..job.job_stash import Job
-
-        job: Job | None = context.server.services.job.get_by_result_id(
-            context, self.id.id
-        )  # type: ignore
-        if job is not None:
+    ) -> list[UID]:
+        try:
+            job = context.server.services.job.get_by_result_id(context, self.id.id)
             return [job.id]
-        else:
+        except SyftException:
             return []
 
     def syft_get_path(self) -> str:
