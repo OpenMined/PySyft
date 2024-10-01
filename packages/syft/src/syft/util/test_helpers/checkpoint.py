@@ -1,7 +1,8 @@
 # stdlib
-import datetime
 import os
 from pathlib import Path
+import tempfile
+import zipfile
 
 # syft absolute
 from syft import SyftError
@@ -17,43 +18,45 @@ from .worker_helpers import build_and_push_image
 
 CHECKPOINT_ROOT = "checkpoints"
 CHECKPOINT_DIR_PREFIX = "chkpt"
+DEFAULT_CHECKPOINT_DIR = get_root_data_path() / CHECKPOINT_ROOT
 
-
-def root_checkpoint_path() -> Path:
-    return get_root_data_path() / CHECKPOINT_ROOT
-
-
-def get_checkpoint_parent_dir(server_uid: str, chkpt_name: str) -> Path:
-    return root_checkpoint_path() / chkpt_name / server_uid
-
-
-def create_checkpoint_dir(server_uid: str, chkpt_name: str) -> Path:
-    """Create a checkpoint directory by chkpt_name and server_uid."""
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    checkpoint_dir = f"{CHECKPOINT_DIR_PREFIX}_{timestamp}"
-    checkpoint_parent_dir = get_checkpoint_parent_dir(
-        server_uid=server_uid, chkpt_name=chkpt_name
-    )
-    checkpoint_full_path = checkpoint_parent_dir / checkpoint_dir
-
-    # Format of Checkpoint Directory:
-    #  <root_syft_dir>/checkpoints/chkpt_name/<server_uid>/chkpt_<timestamp>
-
-    checkpoint_full_path.mkdir(parents=True, exist_ok=True)
-    return checkpoint_full_path
+try:
+    # Ensure the default checkpoint path exists always
+    DEFAULT_CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+except Exception as e:
+    print(f"Error creating default checkpoint directory: {e}")
 
 
 def is_admin(client: SyftClient) -> bool:
     return client._SyftClient__user_role == ServiceRole.ADMIN
 
 
+def is_valid_dir(path: Path | str) -> Path:
+    if isinstance(path, str):
+        path = Path(path)
+    if not path.is_dir():
+        raise SyftException(f"Path {path} is not a directory.")
+    return path
+
+
+def is_valid_file(path: Path | str) -> Path:
+    if isinstance(path, str):
+        path = Path(path)
+    if not path.is_file():
+        raise SyftException(f"Path {path} is not a file.")
+    return path
+
+
 def create_checkpoint(
     name: str,  # Name of the checkpoint
     client: SyftClient,
+    chkpt_dir: Path | str = DEFAULT_CHECKPOINT_DIR,
     root_email: str | None = None,
     root_pwd: str | None = None,
 ) -> None:
     """Save a checkpoint for the database."""
+
+    is_valid_dir(chkpt_dir)
 
     if root_email is None:
         root_email = get_default_root_email()
@@ -71,37 +74,34 @@ def create_checkpoint(
     if isinstance(migration_data, SyftError):
         raise SyftException(message=migration_data.message)
 
-    checkpoint_dir = create_checkpoint_dir(
-        server_uid=client.id.to_string(), chkpt_name=name
-    )
+    checkpoint_path = chkpt_dir / f"{name}.zip"
+
+    # get a temporary directory to save the checkpoint
+    temp_dir = Path(tempfile.mkdtemp())
+    checkpoint_blob = temp_dir / "checkpoint.blob"
+    checkpoint_yaml = temp_dir / "checkpoint.yaml"
     migration_data.save(
-        path=checkpoint_dir / "migration.blob",
-        yaml_path=checkpoint_dir / "migration.yaml",
-    )
-    print(f"Checkpoint saved at: \n {checkpoint_dir}")
-
-
-def last_checkpoint_path_for(server_uid: str, chkpt_name: str) -> Path | None:
-    """Return the directory of the latest checkpoint for the given name."""
-
-    checkpoint_parent_dir = get_checkpoint_parent_dir(
-        server_uid=server_uid, chkpt_name=chkpt_name
+        path=checkpoint_blob,
+        yaml_path=checkpoint_yaml,
     )
 
-    checkpoint_dirs = [
-        d
-        for d in checkpoint_parent_dir.glob(f"{CHECKPOINT_DIR_PREFIX}_*")
-        if d.is_dir()
-    ]
-    checkpoints_dirs_with_blob_entry = [
-        d for d in checkpoint_dirs if any(d.glob("*.blob"))
-    ]
+    # Combine the files into a single zip file to checkpoint_path
+    with zipfile.ZipFile(checkpoint_path, "w") as zipf:
+        zipf.write(checkpoint_blob, "checkpoint.blob")
+        zipf.write(checkpoint_yaml, "checkpoint.yaml")
 
-    if checkpoints_dirs_with_blob_entry:
-        print(f"Loading from the last checkpoint for: {chkpt_name}")
-        return max(checkpoints_dirs_with_blob_entry, key=lambda d: d.stat().st_mtime)
+    print(f"Checkpoint saved at: \n {checkpoint_path}")
 
-    return None
+
+def get_checkpoint_for(
+    path: Path | str | None = None, chkpt_name: str | None = None
+) -> Path | None:
+    # Path takes precedence over name
+    if path:
+        return is_valid_file(path)
+
+    if chkpt_name:
+        return is_valid_file(DEFAULT_CHECKPOINT_DIR / f"{chkpt_name}.zip")
 
 
 def get_registry_credentials() -> tuple[str, str]:
@@ -112,7 +112,8 @@ def get_registry_credentials() -> tuple[str, str]:
 
 def load_from_checkpoint(
     client: SyftClient,
-    name: str,
+    name: str | None = None,
+    path: Path | str | None = None,
     root_email: str | None = None,
     root_password: str | None = None,
     registry_username: str | None = None,
@@ -128,17 +129,26 @@ def load_from_checkpoint(
         if is_admin(client)
         else client.login(email=root_email, password=root_password)
     )
-    latest_checkpoint_dir = last_checkpoint_path_for(
-        server_uid=client.id.to_string(), chkpt_name=name
-    )
+    if name is None and path is None:
+        raise SyftException("Please provide either a checkpoint name or a path.")
 
-    if latest_checkpoint_dir is None:
-        print(f"No last checkpoint found for : {name}")
+    checkpoint_zip_path = get_checkpoint_for(path=path, chkpt_name=name)
+
+    if checkpoint_zip_path is None:
+        print(f"No last checkpoint found for : {name} or {path}")
         return
 
-    print(f"Loading from checkpoint: {latest_checkpoint_dir}")
+    # Unzip the checkpoint zip file
+    with zipfile.ZipFile(checkpoint_zip_path, "r") as zipf:
+        checkpoint_temp_dir = Path(tempfile.mkdtemp())
+        zipf.extract("checkpoint.blob", checkpoint_temp_dir)
+        zipf.extract("checkpoint.yaml", checkpoint_temp_dir)
+
+    checkpoint_blob = checkpoint_temp_dir / "checkpoint.blob"
+
+    print(f"Loading from checkpoint: {checkpoint_zip_path}")
     result = root_client.load_migration_data(
-        path_or_data=latest_checkpoint_dir / "migration.blob",
+        path_or_data=checkpoint_blob,
         include_worker_pools=True,
         with_reset_db=True,
     )
