@@ -98,7 +98,7 @@ def last_checkpoint_path_for(server_uid: str, chkpt_name: str) -> Path | None:
     ]
 
     if checkpoints_dirs_with_blob_entry:
-        print(f"Loading from the last checkpoint for. {chkpt_name}")
+        print(f"Loading from the last checkpoint for: {chkpt_name}")
         return max(checkpoints_dirs_with_blob_entry, key=lambda d: d.stat().st_mtime)
 
     return None
