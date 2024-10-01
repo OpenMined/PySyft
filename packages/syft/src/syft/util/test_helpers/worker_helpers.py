@@ -1,6 +1,12 @@
 # syft absolute
 import syft as sy
 
+# relative
+from ...client.client import SyftClient
+from ...service.response import SyftSuccess
+from ...service.worker.worker_image import SyftWorkerImage
+from ...types.uid import UID
+
 
 def build_and_launch_worker_pool_from_docker_str(
     environment: str,
@@ -84,3 +90,39 @@ def launch_worker_pool_from_docker_tag_and_registry(
         print(result)
 
     return launch_result
+
+
+def prune_worker_pool_and_images(client: SyftClient) -> None:
+    for pool in client.worker_pools.get_all():
+        client.worker_pools.delete(pool.id)
+
+    for image in client.images.get_all():
+        client.images.remove(image.id)
+
+
+def build_and_push_image(
+    client: SyftClient,
+    image: SyftWorkerImage,
+    tag: str,
+    registry_uid: UID | None = None,
+    reg_username: str | None = None,
+    reg_password: str | None = None,
+    force_build: bool = False,
+) -> None:
+    """Build and push the image to the given registry."""
+    if image.is_prebuilt:
+        return
+
+    build_result = client.api.services.worker_image.build(
+        image_uid=image.id, registry_uid=registry_uid, tag=tag, force_build=force_build
+    )
+    print(build_result.message)
+
+    if isinstance(build_result, SyftSuccess):
+        push_result = client.api.services.worker_image.push(
+            image.id,
+            username=reg_username,
+            password=reg_password,
+        )
+        assert isinstance(push_result, SyftSuccess)  # nosec: B101
+        print(push_result.message)
