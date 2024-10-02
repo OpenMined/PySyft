@@ -5,14 +5,13 @@ from typing import TypeVar
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
 from ...types.errors import SyftException
 from ...types.result import Err
 from ...types.result import as_result
-from ...types.syft_metaclass import Empty
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
 from ..action.action_object import ActionObject
@@ -26,7 +25,6 @@ from ..request.request import Request
 from ..request.request import SubmitRequest
 from ..request.request import SyncedUserCodeStatusChange
 from ..request.request import UserCodeStatusChange
-from ..request.request_service import RequestService
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
@@ -61,11 +59,9 @@ class IsExecutionAllowedEnum(str, Enum):
 
 @serializable(canonical_name="UserCodeService", version=1)
 class UserCodeService(AbstractService):
-    store: DocumentStore
     stash: UserCodeStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = UserCodeStash(store=store)
 
     @service_method(
@@ -78,11 +74,12 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> SyftSuccess:
         """Add User Code"""
-        user_code = self._submit(context, code, exists_ok=False)
+        user_code = self._submit(context, code, exists_ok=False).unwrap()
         return SyftSuccess(
             message="User Code Submitted", require_api_update=True, value=user_code
         )
 
+    @as_result(SyftException)
     def _submit(
         self,
         context: AuthedServiceContext,
@@ -108,17 +105,17 @@ class UserCodeService(AbstractService):
                 context.credentials,
                 code_hash=get_code_hash(submit_code.code, context.credentials),
             ).unwrap()
-
-            if not exists_ok:
+            # no exception, code exists
+            if exists_ok:
+                return existing_code
+            else:
                 raise SyftException(
-                    public_message="The code to be submitted already exists"
+                    public_message="UserCode with this code already exists"
                 )
-            return existing_code
         except NotFoundException:
             pass
 
         code = submit_code.to(UserCode, context=context)
-
         result = self._post_user_code_transform_ops(context, code)
 
         if result.is_err():
@@ -129,7 +126,7 @@ class UserCodeService(AbstractService):
             )
 
             if code.status_link is not None:
-                _ = context.server.get_service("usercodestatusservice").remove(
+                _ = context.server.services.user_code_status.remove(
                     root_context, code.status_link.object_uid
                 )
 
@@ -150,14 +147,7 @@ class UserCodeService(AbstractService):
         context: AuthedServiceContext,
         code_update: UserCodeUpdate,
     ) -> SyftSuccess:
-        code = self.stash.get_by_uid(context.credentials, code_update.id).unwrap()
-        # FIX: Check if this works (keep commented):
-        # self.stash.update(context.credentials, code).unwrap()
-
-        if code_update.l0_deny_reason is not Empty:  # type: ignore[comparison-overlap]
-            code.l0_deny_reason = code_update.l0_deny_reason
-
-        updated_code = self.stash.update(context.credentials, code).unwrap()
+        updated_code = self.stash.update(context.credentials, code_update).unwrap()
         return SyftSuccess(message="UserCode updated successfully", value=updated_code)
 
     @service_method(
@@ -204,16 +194,15 @@ class UserCodeService(AbstractService):
             raise SyftException(
                 public_message="outputs can only be distributed to input owners"
             )
-
-        worker_pool_service = context.server.get_service("SyftWorkerPoolService")
-        worker_pool_service._get_worker_pool(
+        context.server.services.syft_worker_pool._get_worker_pool(
             context,
             pool_name=user_code.worker_pool_name,
         )
 
         # Create a code history
-        code_history_service = context.server.get_service("codehistoryservice")
-        code_history_service.submit_version(context=context, code=user_code)
+        context.server.services.code_history.submit_version(
+            context=context, code=user_code
+        )
 
         return user_code
 
@@ -225,11 +214,10 @@ class UserCodeService(AbstractService):
         reason: str | None = "",
     ) -> Request:
         # Cannot make multiple requests for the same code
-        get_by_usercode_id = context.server.get_service_method(
-            RequestService.get_by_usercode_id
-        )
         # FIX: Change requestservice result type
-        existing_requests = get_by_usercode_id(context, user_code.id)
+        existing_requests = context.server.services.request.get_by_usercode_id(
+            context, user_code.id
+        )
 
         if len(existing_requests) > 0:
             raise SyftException(
@@ -266,8 +254,9 @@ class UserCodeService(AbstractService):
         changes = [status_change]
 
         request = SubmitRequest(changes=changes)
-        method = context.server.get_service_method(RequestService.submit)
-        result = method(context=context, request=request, reason=reason)
+        result = context.server.services.request.submit(
+            context=context, request=request, reason=reason
+        )
 
         return result
 
@@ -283,17 +272,11 @@ class UserCodeService(AbstractService):
         - If the code is a SubmitUserCode and the code hash does not exist, submit the code
         """
         if isinstance(code, UserCode):
-            # Get existing UserCode
-            try:
-                return self.stash.get_by_uid(context.credentials, code.id).unwrap()
-            except NotFoundException as exc:
-                raise NotFoundException.from_exception(
-                    exc, public_message=f"UserCode {code.id} not found on this server"
-                )
+            return self.stash.get_by_uid(context.credentials, code.id).unwrap()
         else:  # code: SubmitUserCode
             # Submit new UserCode, or get existing UserCode with the same code hash
             # TODO: Why is this tagged as unreachable?
-            return self._submit(context, code, exists_ok=True)  # type: ignore[unreachable]
+            return self._submit(context, code, exists_ok=True).unwrap()  # type: ignore[unreachable]
 
     @service_method(
         path="code.request_code_execution",
@@ -362,7 +345,7 @@ class UserCodeService(AbstractService):
         output_policy: OutputPolicy | None,
     ) -> IsExecutionAllowedEnum:
         status = code.get_status(context).unwrap()
-        if not status.approved:
+        if not status.get_is_approved(context):
             return IsExecutionAllowedEnum.NOT_APPROVED
         elif self.has_code_permission(code, context) is HasCodePermissionEnum.DENIED:
             # TODO: Check enum above
@@ -383,22 +366,19 @@ class UserCodeService(AbstractService):
     def is_execution_on_owned_args_allowed(self, context: AuthedServiceContext) -> bool:
         if context.role == ServiceRole.ADMIN:
             return True
-        user_service = context.server.get_service("userservice")
-        current_user = user_service.get_current_user(context=context)
+        current_user = context.server.services.user.get_current_user(context=context)
         return current_user.mock_execution_permission
 
     def keep_owned_kwargs(
         self, kwargs: dict[str, Any], context: AuthedServiceContext
     ) -> dict[str, Any]:
         """Return only the kwargs that are owned by the user"""
-        action_service = context.server.get_service("actionservice")
-
         mock_kwargs = {}
         for k, v in kwargs.items():
             if isinstance(v, UID):
                 # Jobs have UID kwargs instead of ActionObject
                 try:
-                    v = action_service.get(context, uid=v)
+                    v = context.server.services.action.get(context, uid=v)
                 except Exception:  # nosec: we are skipping when dont find it
                     pass
             if (
@@ -515,8 +495,13 @@ class UserCodeService(AbstractService):
                 # code is from low side (L0 setup)
                 status = code.get_status(context).unwrap()
 
-                if not status.approved:
-                    raise SyftException(public_message=status.get_status_message())
+                if (
+                    context.server_allows_execution_for_ds
+                    and not status.get_is_approved(context)
+                ):
+                    raise SyftException(
+                        public_message=status.get_status_message_l2(context)
+                    )
 
                 output_policy_is_valid = False
                 try:
@@ -576,14 +561,11 @@ class UserCodeService(AbstractService):
                 "which is currently not supported. Run your function with `blocking=False` to run"
                 " as a job on your worker pool."
             )
-
-        action_service = context.server.get_service("actionservice")
-
-        action_obj = action_service._user_code_execute(
+        action_obj = context.server.services.action._user_code_execute(
             context, code, kwarg2id, result_id
         ).unwrap()
 
-        result = action_service.set_result_to_store(
+        result = context.server.services.action.set_result_to_store(
             action_obj, context, code.get_output_policy(context)
         ).unwrap()
 
@@ -655,7 +637,10 @@ class UserCodeService(AbstractService):
 
         is_admin = context.role == ServiceRole.ADMIN
 
-        if not code.is_status_approved(context) and not is_admin:
+        if (
+            not code.get_status(context).unwrap().get_is_approved(context)
+            and not is_admin
+        ):
             raise SyftException(public_message="This UserCode is not approved")
 
         return code.store_execution_output(
@@ -681,8 +666,7 @@ def resolve_outputs(
         outputs = []
         for output_id in output_ids:
             if context.server is not None:
-                action_service = context.server.get_service("actionservice")
-                output = action_service.get(
+                output = context.server.services.action.get(
                     context, uid=output_id, twin_mode=TwinMode.PRIVATE
                 )
                 outputs.append(output)

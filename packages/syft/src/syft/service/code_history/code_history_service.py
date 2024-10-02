@@ -3,12 +3,11 @@
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...types.uid import UID
 from ..code.user_code import SubmitUserCode
 from ..code.user_code import UserCode
-from ..code.user_code_service import UserCodeService
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -25,11 +24,9 @@ from .code_history_stash import CodeHistoryStash
 
 @serializable(canonical_name="CodeHistoryService", version=1)
 class CodeHistoryService(AbstractService):
-    store: DocumentStore
     stash: CodeHistoryStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = CodeHistoryStash(store=store)
 
     @service_method(
@@ -44,9 +41,10 @@ class CodeHistoryService(AbstractService):
         code: SubmitUserCode | UserCode,
         comment: str | None = None,
     ) -> SyftSuccess:
-        user_code_service = context.server.get_service("usercodeservice")
         if isinstance(code, SubmitUserCode):
-            code = user_code_service._submit(context=context, code=code)
+            code = context.server.services.user_code._submit(
+                context=context, submit_code=code
+            ).unwrap()
 
         try:
             code_history = self.stash.get_by_service_func_name_and_verify_key(
@@ -100,12 +98,8 @@ class CodeHistoryService(AbstractService):
                 credentials=context.credentials, user_verify_key=user_verify_key
             ).unwrap()
 
-        user_code_service: UserCodeService = context.server.get_service(
-            "usercodeservice"
-        )  # type: ignore
-
         def get_code(uid: UID) -> UserCode:
-            return user_code_service.stash.get_by_uid(
+            return context.server.services.user_code.stash.get_by_uid(
                 credentials=context.server.verify_key,
                 uid=uid,
             ).unwrap()
@@ -142,8 +136,7 @@ class CodeHistoryService(AbstractService):
     def get_history_for_user(
         self, context: AuthedServiceContext, email: str
     ) -> CodeHistoriesDict:
-        user_service = context.server.get_service("userservice")
-        user = user_service.stash.get_by_email(
+        user = context.server.services.user.stash.get_by_email(
             credentials=context.credentials, email=email
         ).unwrap()
         return self.fetch_histories_for_user(
@@ -165,8 +158,7 @@ class CodeHistoryService(AbstractService):
         else:
             code_histories = self.stash.get_all(context.credentials).unwrap()
 
-        user_service = context.server.get_service("userservice")
-        users = user_service.stash.get_all(context.credentials).unwrap()
+        users = context.server.services.user.stash.get_all(context.credentials).unwrap()
         user_code_histories = UsersCodeHistoriesDict(server_uid=context.server.id)
 
         verify_key_2_user_email = {}
@@ -193,14 +185,15 @@ class CodeHistoryService(AbstractService):
         user_email: str,
         user_id: UID,
     ) -> list[CodeHistory]:
-        user_service = context.server.get_service("userservice")
-        user_verify_key = user_service.user_verify_key(user_email)
+        user_verify_key = context.server.services.user.user_verify_key(user_email)
 
-        kwargs = {
+        filters = {
             "id": user_id,
             "email": user_email,
             "verify_key": user_verify_key,
             "service_func_name": service_func_name,
         }
 
-        return self.stash.find_all(credentials=context.credentials, **kwargs).unwrap()
+        return self.stash.get_all(
+            credentials=context.credentials, filters=filters
+        ).unwrap()

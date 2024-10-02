@@ -1,0 +1,6 @@
+server:
+  env:
+    - name: SERVER_UID
+      value: 4a471a09f56b4a1d809c0a7614074283
+    - name: SERVER_PRIVATE_KEY
+      value: 3c095c07c94d7f7aec863d61641c71c467cee08cf9a44120a9cb7a493def22cc

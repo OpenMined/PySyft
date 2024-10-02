@@ -40,10 +40,9 @@ from ...util.markdown import markdown_as_class_with_fields
 from ...util.notebook_ui.icons import Icon
 from ...util.util import prompt_warning_message
 from ..action.action_object import ActionObject
-from ..action.action_service import ActionService
-from ..action.action_store import ActionObjectPermission
-from ..action.action_store import ActionPermission
-from ..blob_storage.service import BlobStorageService
+from ..action.action_permissions import ActionObjectPermission
+from ..action.action_permissions import ActionPermission
+from ..code.user_code import ApprovalDecision
 from ..code.user_code import UserCode
 from ..code.user_code import UserCodeStatus
 from ..code.user_code import UserCodeStatusCollection
@@ -68,8 +67,10 @@ class RequestStatus(Enum):
     APPROVED = 2
 
     @classmethod
-    def from_usercode_status(cls, status: UserCodeStatusCollection) -> "RequestStatus":
-        if status.approved:
+    def from_usercode_status(
+        cls, status: UserCodeStatusCollection, context: AuthedServiceContext
+    ) -> "RequestStatus":
+        if status.get_is_approved(context):
             return RequestStatus.APPROVED
         elif status.denied:
             return RequestStatus.REJECTED
@@ -114,11 +115,7 @@ class ActionStoreChange(Change):
 
     @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
-        action_service: ActionService = context.server.get_service(ActionService)  # type: ignore[assignment]
-        blob_storage_service: BlobStorageService = context.server.get_service(
-            BlobStorageService
-        )  # type: ignore[assignment]
-        action_store = action_service.store
+        action_store = context.server.services.action.stash
 
         # can we ever have a lineage ID in the store?
         obj_uid = self.linked_obj.object_uid
@@ -169,7 +166,7 @@ class ActionStoreChange(Change):
                 )
                 action_store.add_permission(requesting_permission_action_obj)
                 (
-                    blob_storage_service.stash.add_permission(
+                    context.server.services.blob_storage.stash.add_permission(
                         requesting_permission_blob_obj
                     )
                     if requesting_permission_blob_obj
@@ -180,11 +177,11 @@ class ActionStoreChange(Change):
                     action_store.remove_permission(requesting_permission_action_obj)
                 if (
                     requesting_permission_blob_obj
-                    and blob_storage_service.stash.has_permission(
+                    and context.server.services.blob_storage.stash.has_permission(
                         requesting_permission_blob_obj
                     )
                 ):
-                    blob_storage_service.stash.remove_permission(
+                    context.server.services.blob_storage.stash.remove_permission(
                         requesting_permission_blob_obj
                     )
         else:
@@ -227,21 +224,23 @@ class CreateCustomImageChange(Change):
 
     @as_result(SyftException)
     def _run(self, context: ChangeContext, apply: bool) -> SyftSuccess:
-        worker_image_service = context.server.get_service("SyftWorkerImageService")
-
         service_context = context.to_service_ctx()
-        worker_image_service.submit(service_context, worker_config=self.config)
+        context.server.services.syft_worker_image.submit(
+            service_context, worker_config=self.config
+        )
 
-        worker_image = worker_image_service.stash.get_by_worker_config(
-            service_context.credentials, config=self.config
-        ).unwrap()
+        worker_image = (
+            context.server.services.syft_worker_image.stash.get_by_worker_config(
+                service_context.credentials, config=self.config
+            ).unwrap()
+        )
         if worker_image is None:
             raise SyftException(public_message="The worker image does not exist.")
 
         build_success_message = "Image was pre-built."
 
         if not worker_image.is_prebuilt:
-            build_result = worker_image_service.build(
+            build_result = context.server.services.syft_worker_image.build(
                 service_context,
                 image_uid=worker_image.id,
                 tag=self.tag,
@@ -252,7 +251,7 @@ class CreateCustomImageChange(Change):
 
         build_success = f"Build result: {build_success_message}"
         if IN_KUBERNETES and not worker_image.is_prebuilt:
-            push_result = worker_image_service.push(
+            push_result = context.server.services.syft_worker_image.push(
                 service_context,
                 image_uid=worker_image.id,
                 username=context.extra_kwargs.get("registry_username", None),
@@ -298,16 +297,15 @@ class CreateCustomWorkerPoolChange(Change):
         """
         if apply:
             # get the worker pool service and try to launch a pool
-            worker_pool_service = context.server.get_service("SyftWorkerPoolService")
             service_context: AuthedServiceContext = context.to_service_ctx()
 
             if self.config is not None:
-                worker_image = worker_pool_service.image_stash.get_by_worker_config(
+                worker_image = context.server.services.syft_worker_pool.image_stash.get_by_worker_config(
                     service_context.credentials, self.config
                 ).unwrap()
                 self.image_uid = worker_image.id
 
-            result = worker_pool_service.launch(
+            result = context.server.services.syft_worker_pool.launch(
                 context=service_context,
                 pool_name=self.pool_name,
                 image_uid=self.image_uid,
@@ -367,6 +365,7 @@ class Request(SyncableSyftObject):
     __attr_searchable__ = [
         "requesting_user_verify_key",
         "approving_user_verify_key",
+        "code_id",
     ]
     __attr_unique__ = ["request_hash"]
     __repr_attrs__ = [
@@ -456,7 +455,28 @@ class Request(SyncableSyftObject):
 
         return desc
 
+    @property
+    def deny_reason(self) -> str | SyftError:
+        code = self.code
+        if isinstance(code, SyftError):
+            return code
+
+        code_status: UserCodeStatusCollection = code.status_link.resolve
+        return code_status.first_denial_reason
+
+    @as_result(SyftException)
+    def get_deny_reason(self, context: AuthedServiceContext) -> str | None:
+        code = self.get_user_code(context).unwrap()
+        if code is None:
+            return None
+
+        code_status = code.get_status(context).unwrap()
+        return code_status.first_denial_reason
+
     def _coll_repr_(self) -> dict[str, str | dict[str, str]]:
+        # relative
+        from ...util.notebook_ui.components.sync import Badge
+
         if self.status == RequestStatus.APPROVED:
             badge_color = "badge-green"
         elif self.status == RequestStatus.PENDING:
@@ -464,7 +484,18 @@ class Request(SyncableSyftObject):
         else:
             badge_color = "badge-red"
 
-        status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
+        status_badge = Badge(
+            value=self.status.name.capitalize(),
+            badge_class=badge_color,
+        ).to_html()
+
+        if self.status == RequestStatus.REJECTED:
+            deny_reason = self.deny_reason
+            if isinstance(deny_reason, str) and len(deny_reason) > 0:
+                status_badge += (
+                    "<br><span style='margin-top: 8px; display: block;'>"
+                    f"<strong>Deny Reason:</strong> {deny_reason}</span>"
+                )
 
         user_data = [
             self.requesting_user_name,
@@ -489,6 +520,15 @@ class Request(SyncableSyftObject):
         )
 
     @property
+    def status_id(self) -> UID:
+        for change in self.changes:
+            if isinstance(change, UserCodeStatusChange):
+                return change.linked_obj.object_uid  # type: ignore
+        raise SyftException(
+            public_message="This type of request does not have code associated with it."
+        )
+
+    @property
     def codes(self) -> Any:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
@@ -497,10 +537,11 @@ class Request(SyncableSyftObject):
             message="This type of request does not have code associated with it."
         )
 
+    @as_result(SyftException)
     def get_user_code(self, context: AuthedServiceContext) -> UserCode | None:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
-                return change.get_user_code(context)
+                return change.get_user_code(context).unwrap()
         return None
 
     @property
@@ -534,9 +575,11 @@ class Request(SyncableSyftObject):
             )
             if is_l0_deployment:
                 code_status = (
-                    self.code.get_status(context) if context else self.code.status
+                    self.code.get_status(context).unwrap()
+                    if context
+                    else self.code.status
                 )
-                return RequestStatus.from_usercode_status(code_status)
+                return RequestStatus.from_usercode_status(code_status, context)
         except Exception:  # nosec
             # this breaks when coming from a user submitting a request
             # which tries to send an email to the admin and ends up here
@@ -617,7 +660,11 @@ class Request(SyncableSyftObject):
                     "This request already has results published to the data scientist. "
                     "They will still be able to access those results."
                 )
-            api.code.update(id=self.code_id, l0_deny_reason=reason)
+            api.code_status.update(
+                id=self.code.status_link.object_uid,
+                decision=ApprovalDecision(status=UserCodeStatus.DENIED, reason=reason),
+            )
+
             return SyftSuccess(message=f"Request denied with reason: {reason}")
 
         return api.services.request.undo(uid=self.id, reason=reason)
@@ -627,7 +674,7 @@ class Request(SyncableSyftObject):
         return bool(self.code) and self.code.is_l0_deployment
 
     def get_is_l0_deployment(self, context: AuthedServiceContext) -> bool:
-        code = self.get_user_code(context)
+        code = self.get_user_code(context).unwrap()
         if code:
             return code.is_l0_deployment
         else:
@@ -701,10 +748,8 @@ class Request(SyncableSyftObject):
 
     def save(self, context: AuthedServiceContext) -> SyftSuccess:
         # relative
-        from .request_service import RequestService
 
-        save_method = context.server.get_service_method(RequestService.save)
-        return save_method(context=context, request=self)
+        return context.server.services.request.save(context=context, request=self)
 
     def _create_action_object_for_deposited_result(
         self,
@@ -1085,9 +1130,7 @@ class Request(SyncableSyftObject):
         pass
 
     def get_sync_dependencies(self, context: AuthedServiceContext) -> list[UID]:
-        dependencies = []
-        dependencies.append(self.code_id)
-        return dependencies
+        return [self.code_id, self.status_id]
 
 
 @serializable()
@@ -1163,8 +1206,7 @@ def add_requesting_user_info(context: TransformContext) -> TransformContext:
     if context.output is not None and context.server is not None:
         try:
             user_key = context.output["requesting_user_verify_key"]
-            user_service = context.server.get_service("UserService")
-            user = user_service.get_by_verify_key(user_key).unwrap()
+            user = context.server.services.user.get_by_verify_key(user_key).unwrap()
             context.output["requesting_user_name"] = user.name
             context.output["requesting_user_email"] = user.email
             context.output["requesting_user_institution"] = (
@@ -1346,6 +1388,7 @@ class UserCodeStatusChange(Change):
             return self.linked_user_code._resolve_cache
         return self.linked_user_code.resolve
 
+    @as_result(SyftException)
     def get_user_code(self, context: AuthedServiceContext) -> UserCode:
         return self.linked_user_code.resolve_with_context(context).unwrap()
 
@@ -1434,7 +1477,9 @@ class UserCodeStatusChange(Change):
     ) -> UserCodeStatusCollection:
         reason: str = context.extra_kwargs.get("reason", "")
         return status.mutate(
-            value=(UserCodeStatus.DENIED if undo else self.value, reason),
+            value=ApprovalDecision(
+                status=UserCodeStatus.DENIED if undo else self.value, reason=reason
+            ),
             server_name=context.server.name,
             server_id=context.server.id,
             verify_key=context.server.signing_key.verify_key,

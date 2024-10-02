@@ -3,41 +3,36 @@ repos:
     rev: v4.6.0
     hooks:
       - id: check-ast
-        exclude: ^(packages/syft/tests/mongomock)
         always_run: true
       - id: trailing-whitespace
         always_run: true
-        exclude: ^(docs/|.+\.md|.bumpversion.cfg|packages/syft/tests/mongomock)
+        exclude: ^(docs/|.+\.md|.bumpversion.cfg)
       - id: check-docstring-first
         always_run: true
-        exclude: ^(packages/syft/tests/mongomock)
       - id: check-json
         always_run: true
-        exclude: ^(packages/grid/frontend/|packages/syft/tests/mongomock|.vscode)
+        exclude: ^(packages/grid/frontend/|.vscode)
       - id: check-added-large-files
         always_run: true
-        exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif)
+        exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif|^notebooks/scenarios/bigquery/upgradability/sync/migration_.*\.blob)
       - id: check-yaml
         always_run: true
-        exclude: ^(packages/grid/k8s/rendered/|packages/grid/helm/|packages/syft/tests/mongomock)
+        exclude: ^(packages/grid/k8s/rendered/|packages/grid/helm/)
       - id: check-merge-conflict
         always_run: true
         args: ["--assume-in-merge"]
       - id: check-executables-have-shebangs
         always_run: true
-        exclude: ^(packages/syft/tests/mongomock)
       - id: debug-statements
         always_run: true
-        exclude: ^(packages/syft/tests/mongomock)
       - id: name-tests-test
         always_run: true
-        exclude: ^(.*/tests/utils/)|^(.*fixtures.py|packages/syft/tests/mongomock)|^(tests/scenarios/bigquery/helpers)
+        exclude: ^(.*/tests/utils/)|^(.*fixtures.py)|^(tests/scenarios/bigquery/helpers)
       - id: requirements-txt-fixer
         always_run: true
-        exclude: "packages/syft/tests/mongomock"
       - id: mixed-line-ending
         args: ["--fix=lf"]
-        exclude: '\.bat|\.csv|\.ps1$|packages/syft/tests/mongomock'
+        exclude: '\.bat|\.csv|\.ps1$'
 
   - repo: https://github.com/MarcoGorelli/absolufy-imports # This repository has been archived by the owner on Aug 15, 2023. It is now read-only.
     rev: v0.3.1
@@ -52,7 +47,8 @@ repos:
               packages/syft/src/syft/proto.*|
               packages/syft/tests/syft/lib/python.*|
               packages/grid.*|
-              packages/syft/src/syft/federated/model_serialization/protos.py
+              packages/syft/src/syft/federated/model_serialization/protos.py|
+              packages/syft/src/syft/util/test_helpers/.*|
           )$
 
   - repo: https://github.com/MarcoGorelli/absolufy-imports
@@ -88,7 +84,6 @@ repos:
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix, --show-fixes]
-        exclude: packages/syft/tests/mongomock
         types_or: [python, pyi, jupyter]
       - id: ruff-format
         types_or: [python, pyi, jupyter]
@@ -167,6 +162,7 @@ repos:
             "--non-interactive",
             "--config-file=tox.ini",
           ]
+        exclude: ^(packages/syft/src/syft/util/test_helpers)
 
   - repo: https://github.com/kynan/nbstripout
     rev: 0.7.1
@@ -178,7 +174,7 @@ repos:
     rev: "v3.0.0-alpha.9-for-vscode"
     hooks:
       - id: prettier
-        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|packages/syft/tests/mongomock|.vscode)
+        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|.vscode)
 
   # - repo: meta
   #   hooks:

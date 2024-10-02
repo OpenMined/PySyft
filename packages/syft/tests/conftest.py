@@ -7,6 +7,7 @@ import shutil
 import sys
 from tempfile import gettempdir
 from unittest import mock
+from uuid import uuid4
 
 # third party
 from faker import Faker
@@ -22,24 +23,8 @@ from syft.protocol.data_protocol import get_data_protocol
 from syft.protocol.data_protocol import protocol_release_dir
 from syft.protocol.data_protocol import stage_protocol_changes
 from syft.server.worker import Worker
+from syft.service.queue.queue_stash import QueueStash
 from syft.service.user import user
-
-# relative
-# our version of mongomock that has a fix for CodecOptions and custom TypeRegistry Support
-from .mongomock.mongo_client import MongoClient
-from .syft.stores.store_fixtures_test import dict_action_store
-from .syft.stores.store_fixtures_test import dict_document_store
-from .syft.stores.store_fixtures_test import dict_queue_stash
-from .syft.stores.store_fixtures_test import dict_store_partition
-from .syft.stores.store_fixtures_test import mongo_action_store
-from .syft.stores.store_fixtures_test import mongo_document_store
-from .syft.stores.store_fixtures_test import mongo_queue_stash
-from .syft.stores.store_fixtures_test import mongo_store_partition
-from .syft.stores.store_fixtures_test import sqlite_action_store
-from .syft.stores.store_fixtures_test import sqlite_document_store
-from .syft.stores.store_fixtures_test import sqlite_queue_stash
-from .syft.stores.store_fixtures_test import sqlite_store_partition
-from .syft.stores.store_fixtures_test import sqlite_workspace
 
 
 def patch_protocol_file(filepath: Path):
@@ -129,7 +114,12 @@ def faker():
 
 @pytest.fixture(scope="function")
 def worker() -> Worker:
-    worker = sy.Worker.named(name=token_hex(8))
+    """
+    NOTE in-memory sqlite is not shared between connections, so:
+    - using 2 workers (high/low) will not share a db
+    - re-using a connection (e.g. for a Job worker) will not share a db
+    """
+    worker = sy.Worker.named(name=token_hex(16), db_url="sqlite://")
     yield worker
     worker.cleanup()
     del worker
@@ -138,7 +128,7 @@ def worker() -> Worker:
 @pytest.fixture(scope="function")
 def second_worker() -> Worker:
     # Used in server syncing tests
-    worker = sy.Worker.named(name=token_hex(8))
+    worker = sy.Worker.named(name=uuid4().hex, db_url="sqlite://")
     yield worker
     worker.cleanup()
     del worker
@@ -147,7 +137,7 @@ def second_worker() -> Worker:
 @pytest.fixture(scope="function")
 def high_worker() -> Worker:
     worker = sy.Worker.named(
-        name=token_hex(8), server_side_type=ServerSideType.HIGH_SIDE
+        name=token_hex(8), server_side_type=ServerSideType.HIGH_SIDE, db_url="sqlite://"
     )
     yield worker
     worker.cleanup()
@@ -157,7 +147,10 @@ def high_worker() -> Worker:
 @pytest.fixture(scope="function")
 def low_worker() -> Worker:
     worker = sy.Worker.named(
-        name=token_hex(8), server_side_type=ServerSideType.LOW_SIDE, dev_mode=True
+        name=token_hex(8),
+        server_side_type=ServerSideType.LOW_SIDE,
+        dev_mode=True,
+        db_url="sqlite://",
     )
     yield worker
     worker.cleanup()
@@ -212,38 +205,12 @@ def ds_verify_key(ds_client: DatasiteClient):
 
 @pytest.fixture
 def document_store(worker):
-    yield worker.document_store
-    worker.document_store.reset()
+    yield worker.db
 
 
 @pytest.fixture
 def action_store(worker):
     yield worker.action_store
-
-
-@pytest.fixture(scope="session")
-def mongo_client(testrun_uid):
-    """
-    A race-free fixture that starts a MongoDB server for an entire pytest session.
-    Cleans up the server when the session ends, or when the last client disconnects.
-    """
-    db_name = f"pytest_mongo_{testrun_uid}"
-
-    # rand conn str
-    conn_str = f"mongodb://localhost:27017/{db_name}"
-
-    # create a client, and test the connection
-    client = MongoClient(conn_str)
-    assert client.server_info().get("ok") == 1.0
-
-    yield client
-
-    # stop_mongo_server(db_name)
-
-
-@pytest.fixture(autouse=True)
-def patched_mongo_client(monkeypatch):
-    monkeypatch.setattr("pymongo.mongo_client.MongoClient", MongoClient)
 
 
 @pytest.fixture(autouse=True)
@@ -307,21 +274,18 @@ def big_dataset() -> Dataset:
     yield dataset
 
 
-__all__ = [
-    "mongo_store_partition",
-    "mongo_document_store",
-    "mongo_queue_stash",
-    "mongo_action_store",
-    "sqlite_store_partition",
-    "sqlite_workspace",
-    "sqlite_document_store",
-    "sqlite_queue_stash",
-    "sqlite_action_store",
-    "dict_store_partition",
-    "dict_action_store",
-    "dict_document_store",
-    "dict_queue_stash",
-]
+@pytest.fixture(
+    scope="function",
+    params=[
+        "tODOsqlite_address",
+        # "TODOpostgres_address", # will be used when we have a postgres CI tests
+    ],
+)
+def queue_stash(request):
+    _ = request.param
+    stash = QueueStash.random()
+    yield stash
+
 
 pytest_plugins = [
     "tests.syft.users.fixtures",

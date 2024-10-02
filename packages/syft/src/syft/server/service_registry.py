@@ -3,15 +3,15 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from dataclasses import field
 import typing
-from typing import Any
 from typing import TYPE_CHECKING
+from typing import TypeVar
 
 # relative
 from ..serde.serializable import serializable
 from ..service.action.action_service import ActionService
-from ..service.action.action_store import ActionStore
 from ..service.api.api_service import APIService
 from ..service.attestation.attestation_service import AttestationService
+from ..service.blob_storage.remote_profile import RemoteProfileService
 from ..service.blob_storage.service import BlobStorageService
 from ..service.code.status_service import UserCodeStatusService
 from ..service.code.user_code_service import UserCodeService
@@ -40,10 +40,15 @@ from ..service.worker.image_registry_service import SyftImageRegistryService
 from ..service.worker.worker_image_service import SyftWorkerImageService
 from ..service.worker.worker_pool_service import SyftWorkerPoolService
 from ..service.worker.worker_service import WorkerService
+from ..store.db.stash import ObjectStash
+from ..types.syft_object import SyftObject
 
 if TYPE_CHECKING:
     # relative
     from .server import Server
+
+
+StashT = TypeVar("StashT", bound=SyftObject)
 
 
 @serializable(canonical_name="ServiceRegistry", version=1)
@@ -79,11 +84,13 @@ class ServiceRegistry:
     sync: SyncService
     output: OutputService
     user_code_status: UserCodeStatusService
+    remote_profile: RemoteProfileService
 
     services: list[AbstractService] = field(default_factory=list, init=False)
     service_path_map: dict[str, AbstractService] = field(
         default_factory=dict, init=False
     )
+    stashes: dict[StashT, ObjectStash[StashT]] = field(default_factory=dict, init=False)
 
     @classmethod
     def for_server(cls, server: "Server") -> "ServiceRegistry":
@@ -94,6 +101,11 @@ class ServiceRegistry:
             service = getattr(self, name)
             self.services.append(service)
             self.service_path_map[service_cls.__name__.lower()] = service
+
+            # TODO ActionService now has same stash, but interface is still different. Fix this.
+            if hasattr(service, "stash") and not issubclass(service_cls, ActionService):
+                stash: ObjectStash = service.stash
+                self.stashes[stash.object_type] = stash
 
     @classmethod
     def get_service_classes(
@@ -109,13 +121,7 @@ class ServiceRegistry:
     def _construct_services(cls, server: "Server") -> dict[str, AbstractService]:
         service_dict = {}
         for field_name, service_cls in cls.get_service_classes().items():
-            svc_kwargs: dict[str, Any] = {}
-            if issubclass(service_cls.store_type, ActionStore):
-                svc_kwargs["store"] = server.action_store
-            else:
-                svc_kwargs["store"] = server.document_store
-
-            service = service_cls(**svc_kwargs)
+            service = service_cls(store=server.db)  # type: ignore
             service_dict[field_name] = service
         return service_dict
 
@@ -133,3 +139,6 @@ class ServiceRegistry:
             return self.service_path_map[service_name.lower()]
         except KeyError:
             raise ValueError(f"Service {path} not found.")
+
+    def __iter__(self) -> typing.Iterator[AbstractService]:
+        return iter(self.services)

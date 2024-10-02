@@ -1,5 +1,6 @@
 # stdlib
 import logging
+import subprocess  # nosec
 import threading
 from threading import Event
 
@@ -28,6 +29,26 @@ from .zmq_common import ZMQ_SOCKET_LOCK
 logger = logging.getLogger(__name__)
 
 
+def last_created_port() -> int:
+    command = (
+        "lsof -i -P -n | grep '*:[0-9]* (LISTEN)' | grep python | awk '{print $9, $1, $2}' | "
+        "sort -k2,2 -k3,3n | tail -n 1 | awk '{print $1}' | cut -d':' -f2"
+    )
+    # 1. Lists open files (including network connections) with lsof -i -P -n
+    # 2. Filters for listening ports with grep '*:[0-9]* (LISTEN)'
+    # 3. Further filters for Python processes with grep python
+    # 4. Sorts based on the 9th field (which is likely the port number) with sort -k9
+    # 5. Takes the last 10 entries with tail -n 10
+    # 6. Prints only the 9th field (port and address) with awk '{print $9}'
+    # 7. Extracts only the port number with cut -d':' -f2
+
+    process = subprocess.Popen(  # nosec
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+    )
+    out, err = process.communicate()
+    return int(out.decode("utf-8").strip())
+
+
 @serializable(attrs=["_subscriber"], canonical_name="ZMQConsumer", version=1)
 class ZMQConsumer(QueueConsumer):
     def __init__(
@@ -53,6 +74,36 @@ class ZMQConsumer(QueueConsumer):
         self.syft_worker_id = syft_worker_id
         self.worker_stash = worker_stash
         self.post_init()
+
+    @classmethod
+    def default(cls, address: str | None = None, **kwargs: dict) -> "ZMQConsumer":
+        # relative
+        from ...types.uid import UID
+        from ..worker.utils import DEFAULT_WORKER_POOL_NAME
+        from .queue import APICallMessageHandler
+
+        if address is None:
+            try:
+                address = f"tcp://localhost:{last_created_port()}"
+            except Exception:
+                raise Exception(
+                    "Could not auto-assign ZMQConsumer address. Please provide one."
+                )
+            print(f"Auto-assigning ZMQConsumer address: {address}. Please verify.")
+        default_kwargs = {
+            "message_handler": APICallMessageHandler,
+            "queue_name": APICallMessageHandler.queue_name,
+            "service_name": DEFAULT_WORKER_POOL_NAME,
+            "syft_worker_id": UID(),
+            "verbose": True,
+            "address": address,
+        }
+
+        for key, value in kwargs.items():
+            if key in default_kwargs:
+                default_kwargs[key] = value
+
+        return cls(**default_kwargs)
 
     def reconnect_to_producer(self) -> None:
         """Connect or reconnect to producer"""
@@ -237,7 +288,7 @@ class ZMQConsumer(QueueConsumer):
                 ConsumerState.IDLE if job_id is None else ConsumerState.CONSUMING
             )
             res = self.worker_stash.update_consumer_state(
-                credentials=self.worker_stash.partition.root_verify_key,
+                credentials=self.worker_stash.root_verify_key,
                 worker_uid=self.syft_worker_id,
                 consumer_state=consumer_state,
             )

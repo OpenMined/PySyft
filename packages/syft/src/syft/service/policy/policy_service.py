@@ -2,7 +2,7 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...types.uid import UID
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
@@ -16,11 +16,9 @@ from .user_policy_stash import UserPolicyStash
 
 @serializable(canonical_name="PolicyService", version=1)
 class PolicyService(AbstractService):
-    store: DocumentStore
     stash: UserPolicyStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = UserPolicyStash(store=store)
 
     @service_method(path="policy.get_all", name="get_all")

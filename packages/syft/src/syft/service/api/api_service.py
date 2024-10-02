@@ -10,13 +10,12 @@ from pydantic import ValidationError
 from ...serde.serializable import serializable
 from ...service.action.action_endpoint import CustomEndpointActionObject
 from ...service.action.action_object import ActionObject
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
-from ..action.action_service import ActionService
 from ..context import AuthedServiceContext
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -38,11 +37,9 @@ from .api_stash import TwinAPIEndpointStash
 
 @serializable(canonical_name="APIService", version=1)
 class APIService(AbstractService):
-    store: DocumentStore
     stash: TwinAPIEndpointStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = TwinAPIEndpointStash(store=store)
 
     @service_method(
@@ -75,15 +72,14 @@ class APIService(AbstractService):
                     public_message="An API endpoint already exists at the given path."
                 )
 
-        result = self.stash.upsert(context.credentials, endpoint=new_endpoint).unwrap()
+        result = self.stash.upsert(context.credentials, obj=new_endpoint).unwrap()
         action_obj = ActionObject.from_obj(
             id=new_endpoint.action_object_id,
             syft_action_data=CustomEndpointActionObject(endpoint_id=result.id),
             syft_server_location=context.server.id,
             syft_client_verify_key=context.credentials,
         )
-        action_service = context.server.get_service("actionservice")
-        action_service.set_result_to_store(
+        context.server.services.action.set_result_to_store(
             context=context,
             result_action_object=action_obj,
             has_result_read_permission=True,
@@ -161,7 +157,7 @@ class APIService(AbstractService):
             endpoint.mock_function.view_access = view_access
 
         # save changes
-        self.stash.upsert(context.credentials, endpoint=endpoint).unwrap()
+        self.stash.upsert(context.credentials, obj=endpoint).unwrap()
         return SyftSuccess(message="Endpoint successfully updated.")
 
     @service_method(
@@ -222,7 +218,7 @@ class APIService(AbstractService):
         if mock and api_endpoint.mock_function:
             api_endpoint.mock_function.state = state
 
-        self.stash.upsert(context.credentials, endpoint=api_endpoint).unwrap()
+        self.stash.upsert(context.credentials, obj=api_endpoint).unwrap()
         return SyftSuccess(message=f"APIEndpoint {api_path} state updated.")
 
     @service_method(
@@ -252,7 +248,7 @@ class APIService(AbstractService):
         if mock and api_endpoint.mock_function:
             api_endpoint.mock_function.settings = settings
 
-        self.stash.upsert(context.credentials, endpoint=api_endpoint).unwrap()
+        self.stash.upsert(context.credentials, obj=api_endpoint).unwrap()
         return SyftSuccess(message=f"APIEndpoint {api_path} settings updated.")
 
     @service_method(
@@ -265,7 +261,7 @@ class APIService(AbstractService):
         context: AuthedServiceContext,
     ) -> list[TwinAPIEndpointView]:
         """Retrieves a list of available API endpoints view available to the user."""
-        admin_key = context.server.get_service("userservice").admin_verify_key()
+        admin_key = context.server.services.user.root_verify_key
         all_api_endpoints = self.stash.get_all(admin_key).unwrap()
 
         api_endpoint_view = [
@@ -341,7 +337,7 @@ class APIService(AbstractService):
             method,
             path,
             *args,
-            worker_pool=custom_endpoint.worker_pool,
+            worker_pool_name=custom_endpoint.worker_pool_name,
             log_id=log_id,
             **kwargs,
         )
@@ -350,7 +346,6 @@ class APIService(AbstractService):
         from ..job.job_stash import JobStatus
 
         # So result is a Job object
-        job_service = context.server.get_service("jobservice")
         job_id = job.id
         # Question: For a small moment, when job status is updated, it doesn't return the job during the .get() as if
         # it's not in the stash. Then afterwards if appears again. Is this a bug?
@@ -363,7 +358,7 @@ class APIService(AbstractService):
             or job.status == JobStatus.PROCESSING
             or job.status == JobStatus.CREATED
         ):
-            job = job_service.get(context, job_id)
+            job = context.server.services.job.get(context, job_id)
             time.sleep(0.1)
             if (time.time() - custom_endpoint.endpoint_timeout) > start:
                 raise SyftException(
@@ -447,9 +442,8 @@ class APIService(AbstractService):
             context, *args, log_id=log_id, **kwargs
         ).unwrap()
         action_obj = ActionObject.from_obj(exec_result)
-        action_service = cast(ActionService, context.server.get_service(ActionService))
         try:
-            return action_service.set_result_to_store(
+            return context.server.services.action.set_result_to_store(
                 context=context,
                 result_action_object=action_obj,
                 has_result_read_permission=True,
@@ -481,9 +475,8 @@ class APIService(AbstractService):
         ).unwrap()
 
         action_obj = ActionObject.from_obj(exec_result)
-        action_service = cast(ActionService, context.server.get_service(ActionService))
         try:
-            return action_service.set_result_to_store(
+            return context.server.services.action.set_result_to_store(
                 context=context,
                 result_action_object=action_obj,
                 has_result_read_permission=True,
@@ -518,10 +511,8 @@ class APIService(AbstractService):
         ).unwrap()
 
         action_obj = ActionObject.from_obj(exec_result)
-
-        action_service = cast(ActionService, context.server.get_service(ActionService))
         try:
-            return action_service.set_result_to_store(
+            return context.server.services.action.set_result_to_store(
                 context=context, result_action_object=action_obj
             ).unwrap()
         except Exception as e:
@@ -594,7 +585,7 @@ class APIService(AbstractService):
     def get_endpoint_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> TwinAPIEndpoint:
-        admin_key = context.server.get_service("userservice").admin_verify_key()
+        admin_key = context.server.services.user.root_verify_key
         return self.stash.get_by_uid(admin_key, uid).unwrap()
 
     @as_result(StashException)

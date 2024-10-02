@@ -15,10 +15,7 @@ from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
 from ...server.credentials import SyftSigningKey
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
-from ...store.document_store import NewBaseStash
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
+from ...store.db.stash import ObjectStash
 from ...store.document_store_errors import NotFoundException
 from ...types.blob_storage import BlobStorageEntry
 from ...types.blob_storage import CreateBlobStorageEntry
@@ -34,7 +31,6 @@ from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.transforms import make_set_default
 from ...types.uid import UID
 from ...util.util import prompt_warning_message
-from ..action.action_permissions import ActionObjectPermission
 from ..response import SyftSuccess
 from ..worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..worker.worker_image import SyftWorkerImage
@@ -67,48 +63,16 @@ class SyftObjectMigrationState(SyftObject):
         return SyftObjectRegistry.get_versions(self.canonical_name)
 
 
-KlassNamePartitionKey = PartitionKey(key="canonical_name", type_=str)
-
-
-@serializable(canonical_name="SyftMigrationStateStash", version=1)
-class SyftMigrationStateStash(NewBaseStash):
-    object_type = SyftObjectMigrationState
-    settings: PartitionSettings = PartitionSettings(
-        name=SyftObjectMigrationState.__canonical_name__,
-        object_type=SyftObjectMigrationState,
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
-    @as_result(SyftException)
-    def set(  # type: ignore [override]
-        self,
-        credentials: SyftVerifyKey,
-        migration_state: SyftObjectMigrationState,
-        add_permissions: list[ActionObjectPermission] | None = None,
-        add_storage_permission: bool = True,
-        ignore_duplicates: bool = False,
-    ) -> SyftObjectMigrationState:
-        obj = self.check_type(migration_state, self.object_type).unwrap()
-        return (
-            super()
-            .set(
-                credentials=credentials,
-                obj=obj,
-                add_permissions=add_permissions,
-                add_storage_permission=add_storage_permission,
-                ignore_duplicates=ignore_duplicates,
-            )
-            .unwrap()
-        )
-
+@serializable(canonical_name="SyftMigrationStateSQLStash", version=1)
+class SyftMigrationStateStash(ObjectStash[SyftObjectMigrationState]):
     @as_result(SyftException, NotFoundException)
     def get_by_name(
         self, canonical_name: str, credentials: SyftVerifyKey
     ) -> SyftObjectMigrationState:
-        qks = KlassNamePartitionKey.with_obj(canonical_name)
-        return self.query_one(credentials=credentials, qks=qks).unwrap()
+        return self.get_one(
+            credentials=credentials,
+            filters={"canonical_name": canonical_name},
+        ).unwrap()
 
 
 @serializable()
@@ -275,6 +239,14 @@ class MigrationData(SyftObject):
             if k.__canonical_name__ == canonical_name:
                 return v
         return []
+
+    def get_metadata_by_canonical_name(self, canonical_name: str) -> StoreMetadata:
+        for k, v in self.metadata.items():
+            if k.__canonical_name__ == canonical_name:
+                return v
+        return StoreMetadata(
+            object_type=SyftObject, permissions={}, storage_permissions={}
+        )
 
     def copy_without_workerpools(self) -> "MigrationData":
         items_to_exclude = [

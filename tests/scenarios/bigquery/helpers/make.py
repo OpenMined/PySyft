@@ -213,7 +213,7 @@ async def create_endpoints_query(events, client, worker_pool_name: str, register
         description="This endpoint allows to query Bigquery storage via SQL queries.",
         private_function=private_query_function,
         mock_function=mock_query_function,
-        worker_pool=worker_pool_name,
+        worker_pool_name=worker_pool_name,
     )
 
     result = client.custom_api.add(endpoint=new_endpoint)
@@ -242,7 +242,7 @@ async def create_endpoints_schema(events, client, worker_pool_name: str, registe
         helper_functions=[
             is_within_rate_limit
         ],  # Adds ratelimit as this is also a method available to data scientists
-        worker_pool=worker_pool_name,
+        worker_pool_name=worker_pool_name,
     )
     def schema_function(
         context,
@@ -333,7 +333,7 @@ async def create_endpoints_submit_query(
     @sy.api_endpoint(
         path="bigquery.submit_query",
         description="API endpoint that allows you to submit SQL queries to run on the private data.",
-        worker_pool=worker_pool_name,
+        worker_pool_name=worker_pool_name,
         settings={"worker": worker_pool_name},
     )
     def submit_query(

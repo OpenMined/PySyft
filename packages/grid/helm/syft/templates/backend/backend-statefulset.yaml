@@ -70,7 +70,7 @@ spec:
             - name: INMEMORY_WORKERS
               value: {{ .Values.server.inMemoryWorkers | quote }}
             - name: DEFAULT_WORKER_POOL_IMAGE
-              value: "{{ .Values.global.registry }}/openmined/syft-backend:{{ .Values.global.version }}"
+              value: "{{ .Values.global.registry }}/openmined/syft-backend:{{ .Values.global.workerVersion }}"
             - name: DEFAULT_WORKER_POOL_COUNT
               value: {{ .Values.server.defaultWorkerPool.count | quote }}
             - name: DEFAULT_WORKER_POOL_POD_LABELS
@@ -99,25 +99,28 @@ spec:
             - name: REVERSE_TUNNEL_ENABLED
               value: "true"
             {{- end }}
-            # MongoDB
-            - name: MONGO_PORT
-              value: {{ .Values.mongo.port | quote }}
-            - name: MONGO_HOST
-              value: "mongo"
-            - name: MONGO_USERNAME
-              value: {{ .Values.mongo.username | quote }}
-            - name: MONGO_PASSWORD
+            # Postgres
+            - name: POSTGRESQL_PORT
+              value: {{ .Values.postgres.port | quote }}
+            - name: POSTGRESQL_HOST
+              value: "postgres"
+            - name: POSTGRESQL_USERNAME
+              value: {{ .Values.postgres.username | quote }}
+            - name: POSTGRESQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.mongo.secretKeyName | required "mongo.secretKeyName is required" }}
+                  name: {{ .Values.postgres.secretKeyName | required "postgres.secretKeyName is required" }}
                   key: rootPassword
+            - name: POSTGRESQL_DBNAME
+              value: {{ .Values.postgres.dbname | quote }}
+            {{- if .Values.server.smtp.enabled }}
             # SMTP
             - name: SMTP_HOST
-              value: {{ .Values.server.smtp.host | quote }}
+              value: {{ .Values.server.smtp.host | required "server.smtp.host is required" | quote }}
             - name: SMTP_PORT
-              value: {{ .Values.server.smtp.port | quote }}
+              value: {{ .Values.server.smtp.port | required "server.smtp.port is required" | quote }}
             - name: SMTP_USERNAME
-              value: {{ .Values.server.smtp.username | quote }}
+              value: {{ .Values.server.smtp.username | required "server.smtp.username is required" | quote }}
             - name: SMTP_PASSWORD
               {{- if .Values.server.smtp.existingSecret }}
               valueFrom:
@@ -125,10 +128,11 @@ spec:
                   name: {{ .Values.server.smtp.existingSecret }}
                   key: smtpPassword
               {{ else }}
-              value: {{ .Values.server.smtp.password | quote }}
+              value: {{ .Values.server.smtp.password | required "server.smtp.password is required" | quote }}
               {{ end }}
             - name: EMAIL_SENDER
-              value: {{ .Values.server.smtp.from | quote}}
+              value: {{ .Values.server.smtp.from | required "server.smtp.from is required" | quote}}
+            {{- end }}
             # SeaweedFS
             {{- if ne .Values.server.type "gateway"}}
             - name: S3_ROOT_USER
@@ -141,9 +145,15 @@ spec:
             {{- end }}
             - name: MIN_SIZE_BLOB_STORAGE_MB
               value: {{ .Values.seaweedfs.minSizeBlobStorageMB | quote }}
+            {{- if .Values.server.tracing.enabled }}
             # Tracing
             - name: TRACING
-              value: {{ .Values.server.tracing | default "False" | quote }}
+              value: {{ .Values.server.tracing.enabled | default "False" | quote }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.server.tracing.otlpEndpoint | required "server.tracing.otlpEndpoint is required" | quote }}
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: {{ .Values.server.tracing.otlpProtocol | default "grpc" | quote }}
+            {{- end }}
             # Enclave attestation
             {{- if .Values.attestation.enabled }}
             - name: ENCLAVE_ATTESTATION_ENABLED

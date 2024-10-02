@@ -1,4 +1,5 @@
 # stdlib
+import logging
 from typing import Any
 
 # third party
@@ -15,6 +16,8 @@ from ..types.result import as_result
 from ..types.syft_object import SYFT_OBJECT_VERSION_1
 from ..types.syft_object import SyftObject
 from ..types.uid import UID
+
+logger = logging.getLogger(__name__)
 
 
 @serializable()
@@ -39,7 +42,12 @@ class LinkedObject(SyftObject):
 
     @property
     def resolve(self) -> SyftObject:
+        return self._resolve()
+
+    def _resolve(self, load_cached: bool = False) -> SyftObject:
         api = None
+        if load_cached and self._resolve_cache is not None:
+            return self._resolve_cache
         try:
             # relative
             api = self.get_api()  # raises
@@ -47,18 +55,32 @@ class LinkedObject(SyftObject):
             self._resolve_cache = resolve
             return resolve
         except Exception as e:
-            print(">>> Failed to resolve object", type(api), e)
+            logger.error(">>> Failed to resolve object", type(api), e)
             raise e
 
+    def resolve_dynamic(
+        self, context: ServerServiceContext | None, load_cached: bool = False
+    ) -> SyftObject:
+        if context is not None:
+            return self.resolve_with_context(context, load_cached).unwrap()
+        else:
+            return self._resolve(load_cached)
+
     @as_result(SyftException)
-    def resolve_with_context(self, context: ServerServiceContext) -> Any:
+    def resolve_with_context(
+        self, context: ServerServiceContext, load_cached: bool = False
+    ) -> Any:
+        if load_cached and self._resolve_cache is not None:
+            return self._resolve_cache
         if context.server is None:
             raise ValueError(f"context {context}'s server is None")
-        return (
+        res = (
             context.server.get_service(self.service_type)
             .resolve_link(context=context, linked_obj=self)
             .unwrap()
         )
+        self._resolve_cache = res
+        return res
 
     def update_with_context(
         self, context: ServerServiceContext | ChangeContext | Any, obj: Any
@@ -73,7 +95,7 @@ class LinkedObject(SyftObject):
             raise SyftException(public_message=f"context {context}'s server is None")
         service = context.server.get_service(self.service_type)
         if hasattr(service, "stash"):
-            result = service.stash.update(credentials, obj)
+            result = service.stash.update(credentials, obj).unwrap()
         else:
             raise SyftException(
                 public_message=f"service {service} does not have a stash"

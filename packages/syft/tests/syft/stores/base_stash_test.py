@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from collections.abc import Container
 import random
+import threading
 from typing import Any
 from typing import TypeVar
 
@@ -12,15 +13,16 @@ from typing_extensions import ParamSpec
 
 # syft absolute
 from syft.serde.serializable import serializable
-from syft.store.dict_document_store import DictDocumentStore
-from syft.store.document_store import NewBaseUIDStoreStash
-from syft.store.document_store import PartitionKey
-from syft.store.document_store import PartitionSettings
-from syft.store.document_store import QueryKey
-from syft.store.document_store import QueryKeys
-from syft.store.document_store import UIDPartitionKey
+from syft.server.credentials import SyftSigningKey
+from syft.server.credentials import SyftVerifyKey
+from syft.service.queue.queue_stash import Status
+from syft.service.request.request_service import RequestService
+from syft.store.db.sqlite import SQLiteDBConfig
+from syft.store.db.sqlite import SQLiteDBManager
+from syft.store.db.stash import ObjectStash
 from syft.store.document_store_errors import NotFoundException
 from syft.store.document_store_errors import StashException
+from syft.store.linked_obj import LinkedObject
 from syft.types.errors import SyftException
 from syft.types.syft_object import SyftObject
 from syft.types.uid import UID
@@ -35,32 +37,19 @@ class MockObject(SyftObject):
     desc: str
     importance: int
     value: int
+    linked_obj: LinkedObject | None = None
+    status: Status = Status.CREATED
 
     __attr_searchable__ = ["id", "name", "desc", "importance"]
     __attr_unique__ = ["id", "name"]
 
 
-NamePartitionKey = PartitionKey(key="name", type_=str)
-DescPartitionKey = PartitionKey(key="desc", type_=str)
-ImportancePartitionKey = PartitionKey(key="importance", type_=int)
-
-
-class MockStash(NewBaseUIDStoreStash):
-    object_type = MockObject
-    settings = PartitionSettings(
-        name=MockObject.__canonical_name__, object_type=MockObject
-    )
+class MockStash(ObjectStash[MockObject]):
+    pass
 
 
 def get_object_values(obj: SyftObject) -> tuple[Any]:
     return tuple(obj.to_dict().values())
-
-
-def add_mock_object(root_verify_key, stash: MockStash, obj: MockObject) -> MockObject:
-    result = stash.set(root_verify_key, obj)
-    assert result.is_ok()
-
-    return result.ok()
 
 
 T = TypeVar("T")
@@ -79,8 +68,17 @@ def create_unique(
 
 
 @pytest.fixture
+def root_verify_key() -> SyftVerifyKey:
+    return SyftSigningKey.generate().verify_key
+
+
+@pytest.fixture
 def base_stash(root_verify_key) -> MockStash:
-    yield MockStash(store=DictDocumentStore(UID(), root_verify_key))
+    config = SQLiteDBConfig()
+    db_manager = SQLiteDBManager(config, UID(), root_verify_key)
+    mock_stash = MockStash(store=db_manager)
+    db_manager.init_tables()
+    yield mock_stash
 
 
 def random_sentence(faker: Faker) -> str:
@@ -119,8 +117,7 @@ def mock_objects(faker: Faker) -> list[MockObject]:
 def test_basestash_set(
     root_verify_key, base_stash: MockStash, mock_object: MockObject
 ) -> None:
-    result = add_mock_object(root_verify_key, base_stash, mock_object)
-
+    result = base_stash.set(root_verify_key, mock_object).unwrap()
     assert result is not None
     assert result == mock_object
 
@@ -132,11 +129,10 @@ def test_basestash_set_duplicate(
         MockObject(**kwargs) for kwargs in multiple_object_kwargs(faker, n=2, same=True)
     )
 
-    result = base_stash.set(root_verify_key, original)
-    assert result.is_ok()
+    base_stash.set(root_verify_key, original).unwrap()
 
-    result = base_stash.set(root_verify_key, duplicate)
-    assert result.is_err()
+    with pytest.raises(StashException):
+        base_stash.set(root_verify_key, duplicate).unwrap()
 
 
 def test_basestash_set_duplicate_unique_key(
@@ -157,28 +153,19 @@ def test_basestash_set_duplicate_unique_key(
 def test_basestash_delete(
     root_verify_key, base_stash: MockStash, mock_object: MockObject
 ) -> None:
-    add_mock_object(root_verify_key, base_stash, mock_object)
-
-    result = base_stash.delete(
-        root_verify_key, UIDPartitionKey.with_obj(mock_object.id)
-    )
-    assert result.is_ok()
-
-    assert len(base_stash.get_all(root_verify_key).ok()) == 0
+    base_stash.set(root_verify_key, mock_object).unwrap()
+    base_stash.delete_by_uid(root_verify_key, mock_object.id).unwrap()
+    assert len(base_stash.get_all(root_verify_key).unwrap()) == 0
 
 
 def test_basestash_cannot_delete_non_existent(
     root_verify_key, base_stash: MockStash, mock_object: MockObject
 ) -> None:
-    add_mock_object(root_verify_key, base_stash, mock_object)
+    result = base_stash.set(root_verify_key, mock_object).unwrap()
 
     random_uid = create_unique(UID, [mock_object.id])
-    for result in [
-        base_stash.delete(root_verify_key, UIDPartitionKey.with_obj(random_uid)),
-        base_stash.delete_by_uid(root_verify_key, random_uid),
-    ]:
-        result = base_stash.delete(root_verify_key, UIDPartitionKey.with_obj(UID()))
-        assert result.is_err()
+    result = base_stash.delete_by_uid(root_verify_key, random_uid)
+    assert result.is_err()
 
     assert (
         len(
@@ -193,7 +180,7 @@ def test_basestash_cannot_delete_non_existent(
 def test_basestash_update(
     root_verify_key, base_stash: MockStash, mock_object: MockObject, faker: Faker
 ) -> None:
-    add_mock_object(root_verify_key, base_stash, mock_object)
+    result = base_stash.set(root_verify_key, mock_object).unwrap()
 
     updated_obj = mock_object.copy()
     updated_obj.name = faker.name()
@@ -205,10 +192,34 @@ def test_basestash_update(
     assert retrieved == updated_obj
 
 
+def test_basestash_upsert(
+    root_verify_key, base_stash: MockStash, mock_object: MockObject, faker: Faker
+) -> None:
+    base_stash.set(root_verify_key, mock_object).unwrap()
+
+    updated_obj = mock_object.copy()
+    updated_obj.name = faker.name()
+
+    retrieved = base_stash.upsert(root_verify_key, updated_obj).unwrap()
+    assert retrieved == updated_obj
+
+    updated_obj.id = UID()
+
+    with pytest.raises(StashException):
+        # fails because the name should be unique
+        base_stash.upsert(root_verify_key, updated_obj).unwrap()
+
+    updated_obj.name = faker.name()
+
+    retrieved = base_stash.upsert(root_verify_key, updated_obj).unwrap()
+    assert retrieved == updated_obj
+    assert len(base_stash.get_all(root_verify_key).unwrap()) == 2
+
+
 def test_basestash_cannot_update_non_existent(
     root_verify_key, base_stash: MockStash, mock_object: MockObject, faker: Faker
 ) -> None:
-    add_mock_object(root_verify_key, base_stash, mock_object)
+    result = base_stash.set(root_verify_key, mock_object).unwrap()
 
     updated_obj = mock_object.copy()
     updated_obj.id = create_unique(UID, [mock_object.id])
@@ -227,10 +238,7 @@ def test_basestash_set_get_all(
 
     stored_objects = base_stash.get_all(
         root_verify_key,
-    )
-    assert stored_objects.is_ok()
-
-    stored_objects = stored_objects.ok()
+    ).unwrap()
     assert len(stored_objects) == len(mock_objects)
 
     stored_objects_values = {get_object_values(obj) for obj in stored_objects}
@@ -241,11 +249,10 @@ def test_basestash_set_get_all(
 def test_basestash_get_by_uid(
     root_verify_key, base_stash: MockStash, mock_object: MockObject
 ) -> None:
-    add_mock_object(root_verify_key, base_stash, mock_object)
+    result = base_stash.set(root_verify_key, mock_object).unwrap()
 
-    result = base_stash.get_by_uid(root_verify_key, mock_object.id)
-    assert result.is_ok()
-    assert result.ok() == mock_object
+    result = base_stash.get_by_uid(root_verify_key, mock_object.id).unwrap()
+    assert result == mock_object
 
     random_uid = create_unique(UID, [mock_object.id])
     bad_uid = base_stash.get_by_uid(root_verify_key, random_uid)
@@ -262,12 +269,9 @@ def test_basestash_get_by_uid(
 def test_basestash_delete_by_uid(
     root_verify_key, base_stash: MockStash, mock_object: MockObject
 ) -> None:
-    add_mock_object(root_verify_key, base_stash, mock_object)
+    result = base_stash.set(root_verify_key, mock_object).unwrap()
 
-    result = base_stash.delete_by_uid(root_verify_key, mock_object.id)
-    assert result.is_ok()
-
-    response = result.ok()
+    response = base_stash.delete_by_uid(root_verify_key, mock_object.id).unwrap()
     assert isinstance(response, UID)
 
     result = base_stash.get_by_uid(root_verify_key, mock_object.id)
@@ -288,43 +292,73 @@ def test_basestash_query_one(
         base_stash.set(root_verify_key, obj)
 
     obj = random.choice(mock_objects)
+    result = base_stash.get_one(
+        root_verify_key,
+        filters={"name": obj.name},
+    ).unwrap()
 
-    for result in (
-        base_stash.query_one_kwargs(root_verify_key, name=obj.name),
-        base_stash.query_one(
-            root_verify_key, QueryKey.from_obj(NamePartitionKey, obj.name)
-        ),
-    ):
-        assert result.is_ok()
-        assert result.ok() == obj
+    assert result == obj
 
     existing_names = {obj.name for obj in mock_objects}
     random_name = create_unique(faker.name, existing_names)
 
-    for result in (
-        base_stash.query_one_kwargs(root_verify_key, name=random_name),
-        base_stash.query_one(
-            root_verify_key, QueryKey.from_obj(NamePartitionKey, random_name)
-        ),
-    ):
-        assert result.is_err()
-        assert isinstance(result.err(), NotFoundException)
+    with pytest.raises(NotFoundException):
+        result = base_stash.get_one(
+            root_verify_key,
+            filters={"name": random_name},
+        ).unwrap()
 
     params = {"name": obj.name, "desc": obj.desc}
-    for result in [
-        base_stash.query_one_kwargs(root_verify_key, **params),
-        base_stash.query_one(root_verify_key, QueryKeys.from_dict(params)),
-    ]:
-        assert result.is_ok()
-        assert result.ok() == obj
+    result = base_stash.get_one(
+        root_verify_key,
+        filters=params,
+    ).unwrap()
+    assert result == obj
 
     params = {"name": random_name, "desc": random_sentence(faker)}
-    for result in [
-        base_stash.query_one_kwargs(root_verify_key, **params),
-        base_stash.query_one(root_verify_key, QueryKeys.from_dict(params)),
-    ]:
-        assert result.is_err()
-        assert isinstance(result.err(), NotFoundException)
+    with pytest.raises(NotFoundException):
+        result = base_stash.get_one(
+            root_verify_key,
+            filters=params,
+        ).unwrap()
+
+
+def test_basestash_query_enum(
+    root_verify_key, base_stash: MockStash, mock_object: MockObject
+) -> None:
+    base_stash.set(root_verify_key, mock_object).unwrap()
+    result = base_stash.get_one(
+        root_verify_key,
+        filters={"status": Status.CREATED},
+    ).unwrap()
+
+    assert result == mock_object
+    with pytest.raises(NotFoundException):
+        result = base_stash.get_one(
+            root_verify_key,
+            filters={"status": Status.PROCESSING},
+        ).unwrap()
+
+
+def test_basestash_query_linked_obj(
+    root_verify_key, base_stash: MockStash, mock_object: MockObject
+) -> None:
+    mock_object.linked_obj = LinkedObject(
+        object_type=MockObject,
+        object_uid=UID(),
+        id=UID(),
+        tags=["tag1", "tag2"],
+        server_uid=UID(),
+        service_type=RequestService,
+    )
+    base_stash.set(root_verify_key, mock_object).unwrap()
+
+    result = base_stash.get_one(
+        root_verify_key,
+        filters={"linked_obj.id": mock_object.linked_obj.id},
+    ).unwrap()
+
+    assert result == mock_object
 
 
 def test_basestash_query_all(
@@ -339,46 +373,30 @@ def test_basestash_query_all(
     for obj in all_objects:
         base_stash.set(root_verify_key, obj)
 
-    for result in [
-        base_stash.query_all_kwargs(root_verify_key, desc=desc),
-        base_stash.query_all(
-            root_verify_key, QueryKey.from_obj(DescPartitionKey, desc)
-        ),
-    ]:
-        assert result.is_ok()
-        objects = result.ok()
-        assert len(objects) == n_same
-        assert all(obj.desc == desc for obj in objects)
-        original_object_values = {get_object_values(obj) for obj in similar_objects}
-        retrived_objects_values = {get_object_values(obj) for obj in objects}
-        assert original_object_values == retrived_objects_values
+    objects = base_stash.get_all(root_verify_key, filters={"desc": desc}).unwrap()
+    assert len(objects) == n_same
+    assert all(obj.desc == desc for obj in objects)
+    original_object_values = {get_object_values(obj) for obj in similar_objects}
+    retrived_objects_values = {get_object_values(obj) for obj in objects}
+    assert original_object_values == retrived_objects_values
 
     random_desc = create_unique(
         random_sentence, [obj.desc for obj in all_objects], faker
     )
-    for result in [
-        base_stash.query_all_kwargs(root_verify_key, desc=random_desc),
-        base_stash.query_all(
-            root_verify_key, QueryKey.from_obj(DescPartitionKey, random_desc)
-        ),
-    ]:
-        assert result.is_ok()
-        objects = result.ok()
-        assert len(objects) == 0
+
+    objects = base_stash.get_all(
+        root_verify_key, filters={"desc": random_desc}
+    ).unwrap()
+    assert len(objects) == 0
 
     obj = random.choice(similar_objects)
 
     params = {"name": obj.name, "desc": obj.desc}
-    for result in [
-        base_stash.query_all_kwargs(root_verify_key, **params),
-        base_stash.query_all(root_verify_key, QueryKeys.from_dict(params)),
-    ]:
-        assert result.is_ok()
-        objects = result.ok()
-        assert len(objects) == sum(
-            1 for obj_ in all_objects if (obj_.name, obj_.desc) == (obj.name, obj.desc)
-        )
-        assert objects[0] == obj
+    objects = base_stash.get_all(root_verify_key, filters=params).unwrap()
+    assert len(objects) == sum(
+        1 for obj_ in all_objects if (obj_.name, obj_.desc) == (obj.name, obj.desc)
+    )
+    assert objects[0] == obj
 
 
 def test_basestash_query_all_kwargs_multiple_params(
@@ -397,66 +415,35 @@ def test_basestash_query_all_kwargs_multiple_params(
         base_stash.set(root_verify_key, obj)
 
     params = {"importance": importance, "desc": desc}
-    for result in [
-        base_stash.query_all_kwargs(root_verify_key, **params),
-        base_stash.query_all(root_verify_key, QueryKeys.from_dict(params)),
-    ]:
-        assert result.is_ok()
-        objects = result.ok()
-        assert len(objects) == n_same
-        assert all(obj.desc == desc for obj in objects)
-        original_object_values = {get_object_values(obj) for obj in similar_objects}
-        retrived_objects_values = {get_object_values(obj) for obj in objects}
-        assert original_object_values == retrived_objects_values
+    objects = base_stash.get_all(root_verify_key, filters=params).unwrap()
+    assert len(objects) == n_same
+    assert all(obj.desc == desc for obj in objects)
+    original_object_values = {get_object_values(obj) for obj in similar_objects}
+    retrived_objects_values = {get_object_values(obj) for obj in objects}
+    assert original_object_values == retrived_objects_values
 
     params = {
         "name": create_unique(faker.name, [obj.name for obj in all_objects]),
         "desc": random_sentence(faker),
     }
-    for result in [
-        base_stash.query_all_kwargs(root_verify_key, **params),
-        base_stash.query_all(root_verify_key, QueryKeys.from_dict(params)),
-    ]:
-        assert result.is_ok()
-        objects = result.ok()
-        assert len(objects) == 0
+    objects = base_stash.get_all(root_verify_key, filters=params).unwrap()
+    assert len(objects) == 0
 
     obj = random.choice(similar_objects)
 
     params = {"id": obj.id, "name": obj.name, "desc": obj.desc}
-    for result in [
-        base_stash.query_all_kwargs(root_verify_key, **params),
-        base_stash.query_all(root_verify_key, QueryKeys.from_dict(params)),
-    ]:
-        assert result.is_ok()
-        objects = result.ok()
-        assert len(objects) == 1
-        assert objects[0] == obj
+    objects = base_stash.get_all(root_verify_key, filters=params).unwrap()
+    assert len(objects) == 1
+    assert objects[0] == obj
 
 
-def test_basestash_cannot_query_non_searchable(
-    root_verify_key, base_stash: MockStash, mock_objects: list[MockObject]
+def test_stash_thread_support(
+    root_verify_key, base_stash: MockStash, mock_object: MockObject
 ) -> None:
-    for obj in mock_objects:
-        base_stash.set(root_verify_key, obj)
+    assert not base_stash._data
+    t = threading.Thread(target=base_stash.set, args=(root_verify_key, mock_object))
+    t.start()
+    t.join(timeout=5)
 
-    obj = random.choice(mock_objects)
-
-    assert base_stash.query_one_kwargs(root_verify_key, value=10).is_err()
-    assert base_stash.query_all_kwargs(root_verify_key, value=10).is_err()
-    assert base_stash.query_one_kwargs(
-        root_verify_key, value=10, name=obj.name
-    ).is_err()
-    assert base_stash.query_all_kwargs(
-        root_verify_key, value=10, name=obj.name
-    ).is_err()
-
-    ValuePartitionKey = PartitionKey(key="value", type_=int)
-    qk = ValuePartitionKey.with_obj(10)
-
-    assert base_stash.query_one(root_verify_key, qk).is_err()
-    assert base_stash.query_all(root_verify_key, qk).is_err()
-    assert base_stash.query_all(root_verify_key, QueryKeys(qks=[qk])).is_err()
-    assert base_stash.query_all(
-        root_verify_key, QueryKeys(qks=[qk, UIDPartitionKey.with_obj(obj.id)])
-    ).is_err()
+    result = base_stash.get_by_uid(root_verify_key, mock_object.id).unwrap()
+    assert result == mock_object

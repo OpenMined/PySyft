@@ -4,7 +4,7 @@ import logging
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.linked_obj import LinkedObject
 from ...types.errors import SyftException
 from ...types.result import as_result
@@ -14,7 +14,6 @@ from ..notification.email_templates import EmailTemplate
 from ..notification.email_templates import RequestEmailTemplate
 from ..notification.email_templates import RequestUpdateEmailTemplate
 from ..notification.notification_service import CreateNotification
-from ..notification.notification_service import NotificationService
 from ..notifier.notifier_enums import NOTIFIERS
 from ..notifier.notifier_service import RateLimitException
 from ..response import SyftSuccess
@@ -22,11 +21,9 @@ from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
-from ..user.user import UserView
 from ..user.user_roles import ADMIN_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
-from ..user.user_service import UserService
 from .request import Change
 from .request import Request
 from .request import RequestInfo
@@ -40,11 +37,9 @@ logger = logging.getLogger(__name__)
 
 @serializable(canonical_name="RequestService", version=1)
 class RequestService(AbstractService):
-    store: DocumentStore
     stash: RequestStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = RequestStash(store=store)
 
     @service_method(path="request.submit", name="submit", roles=GUEST_ROLE_LEVEL)
@@ -62,10 +57,7 @@ class RequestService(AbstractService):
             request,
         ).unwrap()
 
-        admin_verify_key = context.server.get_service_method(
-            UserService.admin_verify_key
-        )
-        root_verify_key = admin_verify_key()
+        root_verify_key = context.server.services.user.root_verify_key
 
         if send_message:
             message_subject = f"Result to request {str(request.id)[:4]}...{str(request.id)[-3:]}\
@@ -158,18 +150,14 @@ class RequestService(AbstractService):
     ) -> list[list[RequestInfo]] | list[RequestInfo]:
         """Get the information of all requests"""
         result = self.stash.get_all(context.credentials).unwrap()
-
-        get_user_by_verify_key = context.server.get_service_method(
-            UserService.get_by_verify_key
-        )
-        get_message = context.server.get_service_method(
-            NotificationService.filter_by_obj
-        )
-
         requests: list[RequestInfo] = []
         for req in result:
-            user = get_user_by_verify_key(req.requesting_user_verify_key).to(UserView)
-            message = get_message(context=context, obj_uid=req.id).unwrap()
+            user = context.server.services.user.get_by_verify_key(
+                req.requesting_user_verify_key
+            ).unwrap()
+            message = context.server.services.notification.filter_by_obj(
+                context=context, obj_uid=req.id
+            ).unwrap()
             requests.append(RequestInfo(user=user, request=req, notification=message))
         if not page_size:
             return requests
@@ -231,18 +219,15 @@ class RequestService(AbstractService):
 
         context.extra_kwargs = kwargs
         result = request.apply(context=context).unwrap()
-
-        filter_by_obj = context.server.get_service_method(
-            NotificationService.filter_by_obj
-        )
-        request_notification = filter_by_obj(context=context, obj_uid=uid).unwrap()
+        request_notification = context.server.services.notification.filter_by_obj(
+            context=context, obj_uid=uid
+        ).unwrap()
 
         if not request.get_status(context) == RequestStatus.PENDING:
             if request_notification is not None:
-                mark_as_read = context.server.get_service_method(
-                    NotificationService.mark_as_read
+                context.server.services.notification.mark_as_read(
+                    context=context, uid=request_notification.id
                 )
-                mark_as_read(context=context, uid=request_notification.id)
 
                 self._send_email_notification(
                     context=context,
@@ -272,9 +257,9 @@ class RequestService(AbstractService):
             notifier_types=[NOTIFIERS.EMAIL],
             email_template=email_template,
         )
-
-        send_notification = context.server.get_service_method(NotificationService.send)
-        send_notification(context=context, notification=notification)
+        context.server.services.notification.send(
+            context=context, notification=notification
+        )
 
     @service_method(path="request.undo", name="undo", unwrap_on_success=False)
     def undo(self, context: AuthedServiceContext, uid: UID, reason: str) -> SyftSuccess:

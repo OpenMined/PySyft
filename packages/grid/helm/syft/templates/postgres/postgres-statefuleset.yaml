@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgres
+  serviceName: postgres-headless
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+        app.kubernetes.io/component: postgres
+        {{- if .Values.postgres.podLabels }}
+        {{- toYaml .Values.postgres.podLabels | nindent 8 }}
+        {{- end }}
+      {{- if .Values.postgres.podAnnotations }}
+      annotations: {{- toYaml .Values.postgres.podAnnotations | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.postgres.nodeSelector }}
+      nodeSelector: {{- .Values.postgres.nodeSelector | toYaml | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: postgres-container
+          image: postgres:16.1
+          imagePullPolicy: Always
+          resources: {{ include "common.resources.set" (dict "resources" .Values.postgres.resources "preset" .Values.postgres.resourcesPreset) | nindent 12 }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.username | required "postgres.username is required" | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgres.secretKeyName | required "postgres.secretKeyName is required" }}
+                  key: rootPassword
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.dbname | required "postgres.dbname is required" | quote }}
+            {{- if .Values.postgres.env }}
+            {{- toYaml .Values.postgres.env | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - mountPath: tmp/data/db
+              name: postgres-data
+              readOnly: false
+              subPath: ''
+          ports:
+            - name: postgres-port
+              containerPort: 5432
+      terminationGracePeriodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+      labels:
+        {{- include "common.volumeLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgres
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.postgres.storageSize | quote }}
+

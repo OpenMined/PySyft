@@ -1,6 +1,8 @@
 # stdlib
 from collections.abc import Callable
 from contextlib import asynccontextmanager
+import json
+import logging
 import multiprocessing
 import multiprocessing.synchronize
 import os
@@ -25,9 +27,10 @@ import uvicorn
 from ..abstract_server import ServerSideType
 from ..client.client import API_PATH
 from ..deployment_type import DeploymentType
+from ..store.db.db import DBConfig
 from ..util.autoreload import enable_autoreload
 from ..util.constants import DEFAULT_TIMEOUT
-from ..util.telemetry import TRACING_ENABLED
+from ..util.telemetry import instrument_fastapi
 from ..util.util import os_name
 from .datasite import Datasite
 from .enclave import Enclave
@@ -46,6 +49,9 @@ if os_name() == "macOS":
 WAIT_TIME_SECONDS = 20
 
 
+logger = logging.getLogger("uvicorn")
+
+
 class AppSettings(BaseSettings):
     name: str
     server_type: ServerType = ServerType.DATASITE
@@ -61,6 +67,8 @@ class AppSettings(BaseSettings):
     n_consumers: int = 0
     association_request_auto_approval: bool = False
     background_tasks: bool = False
+    db_config: DBConfig | None = None
+    db_url: str | None = None
 
     model_config = SettingsConfigDict(env_prefix="SYFT_", env_parse_none_str="None")
 
@@ -91,6 +99,10 @@ def app_factory() -> FastAPI:
     worker_class = worker_classes[settings.server_type]
 
     kwargs = settings.model_dump()
+
+    logger.info(
+        f"Starting server with settings: {kwargs} and worker class: {worker_class}"
+    )
     if settings.dev_mode:
         print(
             f"WARN: private key is based on server name: {settings.name} in dev_mode. "
@@ -114,14 +126,7 @@ def app_factory() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    if TRACING_ENABLED:
-        # third party
-        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-
-        FastAPIInstrumentor().instrument_app(app)
-        print("> Added OTEL FastAPIInstrumentor")
-
+    instrument_fastapi(app)
     return app
 
 
@@ -175,6 +180,8 @@ def run_uvicorn(
     env_prefix = AppSettings.model_config.get("env_prefix", "")
     for key, value in kwargs.items():
         key_with_prefix = f"{env_prefix}{key.upper()}"
+        if isinstance(value, dict):
+            value = json.dumps(value)
         os.environ[key_with_prefix] = str(value)
 
     # The `serve_server` function calls `run_uvicorn` in a separate process using `multiprocessing.Process`.
@@ -220,6 +227,7 @@ def serve_server(
     association_request_auto_approval: bool = False,
     background_tasks: bool = False,
     debug: bool = False,
+    db_url: str | None = None,
 ) -> tuple[Callable, Callable]:
     starting_uvicorn_event = multiprocessing.Event()
 
@@ -249,6 +257,7 @@ def serve_server(
             "debug": debug,
             "starting_uvicorn_event": starting_uvicorn_event,
             "deployment_type": deployment_type,
+            "db_url": db_url,
         },
     )
 

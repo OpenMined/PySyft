@@ -725,7 +725,7 @@ class ObjectDiffBatch(SyftObject):
         if self.decision == SyncDecision.IGNORE:
             decision_str = "IGNORED"
             badge_color = "label-red"
-        if self.decision == SyncDecision.SKIP:
+        elif self.decision == SyncDecision.SKIP:
             decision_str = "SKIPPED"
             badge_color = "label-gray"
         else:
@@ -921,15 +921,15 @@ class ObjectDiffBatch(SyftObject):
         return ""  # Turns off the _repr_markdown_ of SyftObject
 
     def _get_visual_hierarchy(
-        self, server: ObjectDiff, visited: set[UID] | None = None
+        self, node: ObjectDiff, visited: set[UID] | None = None
     ) -> dict[ObjectDiff, dict]:
         visited = visited if visited is not None else set()
-        visited.add(server.object_id)
+        visited.add(node.object_id)
 
         _, child_types_map = self.visual_hierarchy
-        child_types = child_types_map.get(server.obj_type, [])
-        dep_ids = self.dependencies.get(server.object_id, []) + self.dependents.get(
-            server.object_id, []
+        child_types = child_types_map.get(node.obj_type, [])
+        dep_ids = self.dependencies.get(node.object_id, []) + self.dependents.get(
+            node.object_id, []
         )
 
         result = {}
@@ -1130,7 +1130,7 @@ class ServerDiff(SyftObject):
     include_ignored: bool = False
 
     def resolve(
-        self, build_state: bool = True
+        self, build_state: bool = True, filter_ignored: bool = True
     ) -> "PaginatedResolveWidget | SyftSuccess":
         if len(self.batches) == 0:
             return SyftSuccess(message="No batches to resolve")
@@ -1138,7 +1138,12 @@ class ServerDiff(SyftObject):
         # relative
         from .resolve_widget import PaginatedResolveWidget
 
-        return PaginatedResolveWidget(batches=self.batches, build_state=build_state)
+        if filter_ignored:
+            batches = [b for b in self.batches if b.decision != SyncDecision.IGNORE]
+        else:
+            batches = self.batches
+
+        return PaginatedResolveWidget(batches=batches, build_state=build_state)
 
     def __getitem__(self, idx: Any) -> ObjectDiffBatch:
         return self.batches[idx]
@@ -1444,10 +1449,10 @@ It will be available for review again."""
                 root_ids.append(diff.object_id)  # type: ignore
 
         # Dependents are the reverse edges of the dependency graph
-        obj_dependents = {}
+        obj_dependents: dict = {}
         for parent, children in obj_dependencies.items():
             for child in children:
-                obj_dependents[child] = obj_dependencies.get(child, []) + [parent]
+                obj_dependents[child] = obj_dependents.get(child, []) + [parent]
 
         for root_uid in root_ids:
             batch = ObjectDiffBatch.from_dependencies(
@@ -1530,7 +1535,8 @@ It will be available for review again."""
             )
         if include_types is not None:
             include_types_ = {
-                t.__name__ if isinstance(t, type) else t for t in include_types
+                t.__name__.lower() if isinstance(t, type) else t.lower()
+                for t in include_types
             }
             new_filters.append(
                 ServerDiffFilter(FilterProperty.TYPE, include_types_, operator.contains)

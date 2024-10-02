@@ -15,11 +15,8 @@ from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
 from ...server.worker_settings import WorkerSettings
 from ...service.settings.settings import ServerSettings
-from ...store.document_store import DocumentStore
-from ...store.document_store import NewBaseUIDStoreStash
-from ...store.document_store import PartitionKey
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.db.db import DBManager
+from ...store.db.stash import ObjectStash
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.errors import SyftException
@@ -36,12 +33,10 @@ from ...util.util import get_env
 from ...util.util import prompt_warning_message
 from ...util.util import str_to_bool
 from ..context import AuthedServiceContext
-from ..data_subject.data_subject import NamePartitionKey
 from ..metadata.server_metadata import ServerMetadata
 from ..request.request import Request
 from ..request.request import RequestStatus
 from ..request.request import SubmitRequest
-from ..request.request_service import RequestService
 from ..response import SyftInfo
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -62,10 +57,6 @@ from .server_peer import ServerPeerUpdate
 
 logger = logging.getLogger(__name__)
 
-VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
-ServerTypePartitionKey = PartitionKey(key="server_type", type_=ServerType)
-OrderByNamePartitionKey = PartitionKey(key="name", type_=str)
-
 REVERSE_TUNNEL_ENABLED = "REVERSE_TUNNEL_ENABLED"
 
 
@@ -80,39 +71,19 @@ class ServerPeerAssociationStatus(Enum):
     PEER_NOT_FOUND = "PEER_NOT_FOUND"
 
 
-@serializable(canonical_name="NetworkStash", version=1)
-class NetworkStash(NewBaseUIDStoreStash):
-    object_type = ServerPeer
-    settings: PartitionSettings = PartitionSettings(
-        name=ServerPeer.__canonical_name__, object_type=ServerPeer
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
+@serializable(canonical_name="NetworkSQLStash", version=1)
+class NetworkStash(ObjectStash[ServerPeer]):
     @as_result(StashException, NotFoundException)
     def get_by_name(self, credentials: SyftVerifyKey, name: str) -> ServerPeer:
-        qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
         try:
-            return self.query_one(credentials=credentials, qks=qks).unwrap()
-        except NotFoundException as exc:
+            return self.get_one(
+                credentials=credentials,
+                filters={"name": name},
+            ).unwrap()
+        except NotFoundException as e:
             raise NotFoundException.from_exception(
-                exc, public_message=f"ServerPeer with {name} not found"
+                e, public_message=f"ServerPeer with {name} not found"
             )
-
-    @as_result(StashException)
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        peer_update: ServerPeerUpdate,
-        has_permission: bool = False,
-    ) -> ServerPeer:
-        self.check_type(peer_update, ServerPeerUpdate).unwrap()
-        return (
-            super()
-            .update(credentials, peer_update, has_permission=has_permission)
-            .unwrap()
-        )
 
     @as_result(StashException)
     def create_or_update_peer(
@@ -149,28 +120,26 @@ class NetworkStash(NewBaseUIDStoreStash):
     def get_by_verify_key(
         self, credentials: SyftVerifyKey, verify_key: SyftVerifyKey
     ) -> ServerPeer:
-        qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
-        return self.query_one(credentials, qks).unwrap(
-            private_message=f"ServerPeer with {verify_key} not found"
-        )
+        return self.get_one(
+            credentials=credentials,
+            filters={"verify_key": verify_key},
+        ).unwrap()
 
     @as_result(StashException)
     def get_by_server_type(
         self, credentials: SyftVerifyKey, server_type: ServerType
     ) -> list[ServerPeer]:
-        qks = QueryKeys(qks=[ServerTypePartitionKey.with_obj(server_type)])
-        return self.query_all(
-            credentials=credentials, qks=qks, order_by=OrderByNamePartitionKey
+        return self.get_all(
+            credentials=credentials,
+            filters={"server_type": server_type},
         ).unwrap()
 
 
 @serializable(canonical_name="NetworkService", version=1)
 class NetworkService(AbstractService):
-    store: DocumentStore
     stash: NetworkStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = NetworkStash(store=store)
         if reverse_tunnel_enabled():
             self.rtunnel_service = ReverseTunnelService()
@@ -347,16 +316,12 @@ class NetworkService(AbstractService):
             changes=[association_request_change],
             requesting_user_verify_key=context.credentials,
         )
-        request_submit_method = context.server.get_service_method(RequestService.submit)
-        request = request_submit_method(context, submit_request)
+        request = context.server.services.request.submit(context, submit_request)
         if (
             isinstance(request, Request)
             and context.server.settings.association_request_auto_approval
         ):
-            request_apply_method = context.server.get_service_method(
-                RequestService.apply
-            )
-            return request_apply_method(context, uid=request.id)
+            return context.server.services.request.apply(context, uid=request.id)
 
         return request
 
@@ -412,7 +377,8 @@ class NetworkService(AbstractService):
         """Get all Peers"""
         return self.stash.get_all(
             credentials=context.server.verify_key,
-            order_by=OrderByNamePartitionKey,
+            order_by="name",
+            sort_order="asc",
         ).unwrap()
 
     @service_method(
@@ -452,7 +418,7 @@ class NetworkService(AbstractService):
 
         peer = self.stash.update(
             credentials=context.server.verify_key,
-            peer_update=peer_update,
+            obj=peer_update,
         ).unwrap()
 
         self.set_reverse_tunnel_config(context=context, remote_server_peer=peer)
@@ -499,7 +465,6 @@ class NetworkService(AbstractService):
     def delete_peer_by_id(self, context: AuthedServiceContext, uid: UID) -> SyftSuccess:
         """Delete Server Peer"""
         peer_to_delete = self.stash.get_by_uid(context.credentials, uid).unwrap()
-        peer_to_delete = cast(ServerPeer, peer_to_delete)
 
         server_side_type = cast(ServerType, context.server.server_type)
         if server_side_type.value == ServerType.GATEWAY.value:
@@ -519,10 +484,7 @@ class NetworkService(AbstractService):
             context=context, peer_id=uid
         )
         for request in association_requests:
-            request_delete_method = context.server.get_service_method(
-                RequestService.delete_by_uid
-            )
-            request_delete_method(context, request.id)
+            context.server.services.request.delete_by_uid(context, request.id)
         # TODO: Notify the peer (either by email or by other form of notifications)
         # that it has been deleted from the network
         return SyftSuccess(message=f"Server Peer with id {uid} deleted.")
@@ -616,7 +578,7 @@ class NetworkService(AbstractService):
         )
         self.stash.update(
             credentials=context.server.verify_key,
-            peer_update=peer_update,
+            obj=peer_update,
         ).unwrap()
 
         return SyftSuccess(
@@ -744,7 +706,7 @@ class NetworkService(AbstractService):
                 id=remote_server_peer.id, server_routes=remote_server_peer.server_routes
             )
             self.stash.update(
-                credentials=context.server.verify_key, peer_update=peer_update
+                credentials=context.server.verify_key, obj=peer_update
             ).unwrap()
 
         return SyftSuccess(message=return_message)
@@ -860,10 +822,7 @@ class NetworkService(AbstractService):
         """
         Get all the association requests from a peer. The association requests are sorted by request_time.
         """
-        request_get_all_method: Callable = context.server.get_service_method(
-            RequestService.get_all
-        )
-        all_requests: list[Request] = request_get_all_method(context)
+        all_requests: list[Request] = context.server.services.request.get_all(context)
         association_requests: list[Request] = [
             request
             for request in all_requests

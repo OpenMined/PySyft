@@ -14,6 +14,7 @@ import yaml
 
 # relative
 from ..serde.serializable import serializable
+from ..serde.serialize import _serialize
 from ..service.response import SyftSuccess
 from ..types.base import SyftBaseModel
 from ..types.errors import SyftException
@@ -82,6 +83,10 @@ class CustomBuildConfig(SyftBaseModel):
 @serializable(canonical_name="WorkerConfig", version=1)
 class WorkerConfig(SyftBaseModel):
     pass
+
+    def hash(self) -> str:
+        _bytes = _serialize(self, to_bytes=True, for_hashing=True)
+        return sha256(_bytes).digest().hex()
 
 
 @serializable(canonical_name="CustomWorkerConfig", version=1)

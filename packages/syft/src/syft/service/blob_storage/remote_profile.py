@@ -1,10 +1,10 @@
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
-from ...store.document_store import NewBaseUIDStoreStash
-from ...store.document_store import PartitionSettings
+from ...store.db.db import DBManager
+from ...store.db.stash import ObjectStash
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SyftObject
+from ..service import AbstractService
 
 
 @serializable()
@@ -24,12 +24,14 @@ class AzureRemoteProfile(RemoteProfile):
     container_name: str
 
 
-@serializable(canonical_name="RemoteProfileStash", version=1)
-class RemoteProfileStash(NewBaseUIDStoreStash):
-    object_type = RemoteProfile
-    settings: PartitionSettings = PartitionSettings(
-        name=RemoteProfile.__canonical_name__, object_type=RemoteProfile
-    )
+@serializable(canonical_name="RemoteProfileSQLStash", version=1)
+class RemoteProfileStash(ObjectStash[RemoteProfile]):
+    pass
 
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
+
+@serializable(canonical_name="RemoteProfileService", version=1)
+class RemoteProfileService(AbstractService):
+    stash: RemoteProfileStash
+
+    def __init__(self, store: DBManager) -> None:
+        self.stash = RemoteProfileStash(store=store)

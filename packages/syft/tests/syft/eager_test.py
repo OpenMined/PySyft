@@ -174,7 +174,7 @@ def test_setattribute(worker, guest_client):
     obj_pointer.dtype = np.int32
 
     # local object is updated
-    assert obj_pointer.id.id in worker.action_store.data
+    assert obj_pointer.id.id in worker.action_store._data
     assert obj_pointer.id != original_id
 
     res = root_datasite_client.api.services.action.get(obj_pointer.id)
@@ -206,7 +206,7 @@ def test_getattribute(worker, guest_client):
     size_pointer = obj_pointer.size
 
     # check result
-    assert size_pointer.id.id in worker.action_store.data
+    assert size_pointer.id.id in worker.action_store._data
     assert root_datasite_client.api.services.action.get(size_pointer.id) == 6
 
 
@@ -226,7 +226,7 @@ def test_eager_method(worker, guest_client):
 
     flat_pointer = obj_pointer.flatten()
 
-    assert flat_pointer.id.id in worker.action_store.data
+    assert flat_pointer.id.id in worker.action_store._data
     # check result
     assert all(
         root_datasite_client.api.services.action.get(flat_pointer.id)
@@ -250,7 +250,7 @@ def test_eager_dunder_method(worker, guest_client):
 
     first_row_pointer = obj_pointer[0]
 
-    assert first_row_pointer.id.id in worker.action_store.data
+    assert first_row_pointer.id.id in worker.action_store._data
     # check result
     assert all(
         root_datasite_client.api.services.action.get(first_row_pointer.id)

@@ -59,6 +59,11 @@ class AuthedServiceContext(ServerServiceContext):
         """Returns True if this is a low side of a Level 0 deployment"""
         return self.server.server_side_type == ServerSideType.LOW_SIDE
 
+    @property
+    def server_allows_execution_for_ds(self) -> bool:
+        """Returns True if this is a low side of a Level 0 deployment"""
+        return not self.is_l0_lowside
+
     def as_root_context(self) -> Self:
         return AuthedServiceContext(
             credentials=self.server.verify_key,

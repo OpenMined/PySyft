@@ -4,13 +4,18 @@
 
 ### Latest Stable
 
-- `0.9.0` (Stable) - <a href="https://docs.openmined.org/en/latest/index.html">Docs</a>
+- `0.9.1` (Stable) - <a href="https://docs.openmined.org/en/latest/index.html">Docs</a>
 - Install PySyft (Stable): `pip install -U syft`
 
 ### Latest Beta
 
-- `0.9.1` (Beta) - `dev` branch 👈🏽
+- `0.9.2` (Beta) - `dev` branch 👈🏽
 - Install PySyft (Beta): `pip install -U syft --pre`
+
+### Supported versions
+
+- `0.9.0` - <a href="https://github.com/OpenMined/PySyft/tree/0.9.0/notebooks/api/">API</a>
+- Install PySyft (Beta): `pip install -U syft==0.9.0`
 
 **Deprecated**:
 

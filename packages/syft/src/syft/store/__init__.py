@@ -1,3 +1,3 @@
 # relative
-from .mongo_document_store import MongoDict
-from .mongo_document_store import MongoStoreConfig
+from . import mongo_document_store  # noqa: F401
+from . import sqlite_document_store  # noqa: F401

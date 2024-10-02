@@ -24,6 +24,7 @@ from ...types.result import as_result
 from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syft_object import SYFT_OBJECT_VERSION_2
+from ...types.syft_object import SYFT_OBJECT_VERSION_3
 from ...types.syft_object import SyftObject
 from ...types.transforms import drop
 from ...types.transforms import make_set_default
@@ -31,6 +32,7 @@ from ..context import AuthedServiceContext
 from ..notification.notifications import Notification
 from ..response import SyftError
 from ..response import SyftSuccess
+from .notifier_enums import NOTIFICATION_FREQUENCY
 from .notifier_enums import NOTIFIERS
 from .smtp_client import SMTPClient
 
@@ -41,6 +43,12 @@ class BaseNotifier(BaseModel):
     @as_result(SyftException)
     def send(
         self, context: AuthedServiceContext, notification: Notification
+    ) -> SyftSuccess:
+        raise SyftException(public_message="Not implemented")
+
+    @as_result(SyftException)
+    def send_batches(
+        self, context: AuthedServiceContext, notification_queue: list[Notification]
     ) -> SyftSuccess:
         raise SyftException(public_message="Not implemented")
 
@@ -95,6 +103,50 @@ class EmailNotifier(BaseNotifier):
             return False
 
     @as_result(SyftException)
+    def send_batches(
+        self, context: AuthedServiceContext, notification_queue: list[Notification]
+    ) -> SyftSuccess | SyftError:
+        subject = None
+        receiver_email = None
+        sender = None
+
+        notification_sample = notification_queue[0]
+        try:
+            sender = self.sender
+            receiver = context.server.services.user.get_by_verify_key(
+                notification_sample.to_user_verify_key
+            ).unwrap()
+            if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
+                return SyftSuccess(
+                    message="Email notifications are disabled for this user."
+                )  # TODO: Should we return an error here?
+            receiver_email = receiver.email
+            if notification_sample.email_template:
+                subject = notification_sample.email_template.batched_email_title(
+                    notifications=notification_queue, context=context
+                )
+                body = notification_sample.email_template.batched_email_body(
+                    notifications=notification_queue, context=context
+                )
+            else:
+                subject = notification_sample.subject
+                body = notification_sample._repr_html_()
+
+            if isinstance(receiver_email, str):
+                receiver_email = [receiver_email]
+
+            self.smtp_client.send(  # type: ignore
+                sender=sender, receiver=receiver_email, subject=subject, body=body
+            )
+            message = f"> Sent email: {subject} to {receiver_email}"
+            logging.info(message)
+            return SyftSuccess(message="Email sent successfully!")
+        except Exception as e:
+            message = f"> Error sending email: {subject} to {receiver_email} from: {sender}. {e}"
+            logger.error(message)
+            return SyftError(message="Failed to send an email.")
+
+    @as_result(SyftException)
     def send(
         self, context: AuthedServiceContext, notification: Notification
     ) -> SyftSuccess | SyftError:
@@ -103,8 +155,7 @@ class EmailNotifier(BaseNotifier):
         sender = None
         try:
             sender = self.sender
-            user_service = context.server.get_service("userservice")
-            receiver = user_service.get_by_verify_key(
+            receiver = context.server.services.user.get_by_verify_key(
                 notification.to_user_verify_key
             ).unwrap()
             if not receiver.notifications_enabled[NOTIFIERS.EMAIL]:
@@ -136,7 +187,6 @@ class EmailNotifier(BaseNotifier):
             return SyftSuccess(message="Email sent successfully!")
         except Exception as e:
             message = f"> Error sending email: {subject} to {receiver_email} from: {sender}. {e}"
-            print(message)
             logger.error(message)
             return SyftError(message="Failed to send an email.")
             # raise SyftException.from_exception(
@@ -194,7 +244,7 @@ class NotifierSettingsV1(SyftObject):
 
 
 @serializable()
-class NotifierSettings(SyftObject):
+class NotifierSettingsV2(SyftObject):
     __canonical_name__ = "NotifierSettings"
     __version__ = SYFT_OBJECT_VERSION_2
     __repr_attrs__ = [
@@ -227,6 +277,51 @@ class NotifierSettings(SyftObject):
     email_activity: dict[str, dict[SyftVerifyKey, UserNotificationActivity]] = {}
     email_rate_limit: dict[str, int] = {}
 
+
+@serializable()
+class EmailFrequency(SyftObject):
+    __canonical_name__ = "EmailFrequency"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    frequency: NOTIFICATION_FREQUENCY
+    start_time: datetime = datetime.now()
+
+
+@serializable()
+class NotifierSettings(SyftObject):
+    __canonical_name__ = "NotifierSettings"
+    __version__ = SYFT_OBJECT_VERSION_3
+    __repr_attrs__ = [
+        "active",
+        "email_enabled",
+    ]
+    active: bool = False
+    # Flag to identify which notification is enabled
+    # For now, consider only the email notification
+    # In future, Admin, must be able to have a better
+    # control on diff notifications.
+
+    notifiers: dict[NOTIFIERS, type[TBaseNotifier]] = {
+        NOTIFIERS.EMAIL: EmailNotifier,
+    }
+
+    notifiers_status: dict[NOTIFIERS, bool] = {
+        NOTIFIERS.EMAIL: True,
+        NOTIFIERS.SMS: False,
+        NOTIFIERS.SLACK: False,
+        NOTIFIERS.APP: False,
+    }
+
+    email_sender: str | None = ""
+    email_server: str | None = ""
+    email_port: int | None = 587
+    email_username: str | None = ""
+    email_password: str | None = ""
+    email_frequency: dict[str, EmailFrequency] = {}
+    email_queue: dict[str, dict[SyftVerifyKey, list[Notification]]] = {}
+    email_activity: dict[str, dict[SyftVerifyKey, UserNotificationActivity]] = {}
+    email_rate_limit: dict[str, int] = {}
+
     @property
     def email_enabled(self) -> bool:
         return self.notifiers_status[NOTIFIERS.EMAIL]
@@ -256,6 +351,21 @@ class NotifierSettings(SyftObject):
             username=username,
             password=password,
         )
+
+    @as_result(SyftException)
+    def send_batched_notification(
+        self,
+        context: AuthedServiceContext,
+        notification_queue: list[Notification],
+    ) -> None:
+        if len(notification_queue) == 0:
+            return None
+        notifier_objs: list[BaseNotifier] = self.select_notifiers(notification_queue[0])
+        for notifier in notifier_objs:
+            notifier.send_batches(
+                context=context, notification_queue=notification_queue
+            ).unwrap()
+        return None
 
     @as_result(SyftException)
     def send_notifications(
@@ -305,15 +415,29 @@ class NotifierSettings(SyftObject):
         return notifier_objs
 
 
-@migrate(NotifierSettingsV1, NotifierSettings)
-def migrate_server_settings_v1_to_current() -> list[Callable]:
+@migrate(NotifierSettingsV1, NotifierSettingsV2)
+def migrate_server_settings_v1_to_v2() -> list[Callable]:
     return [
         make_set_default("email_activity", {}),
         make_set_default("email_rate_limit", {}),
     ]
 
 
-@migrate(NotifierSettings, NotifierSettingsV1)
+@migrate(NotifierSettingsV2, NotifierSettingsV1)
 def migrate_server_settings_v2_to_v1() -> list[Callable]:
     # Use drop function on "notifications_enabled" attrubute
     return [drop(["email_activity"]), drop(["email_rate_limit"])]
+
+
+@migrate(NotifierSettingsV2, NotifierSettings)
+def migrate_server_settings_v2_to_current() -> list[Callable]:
+    return [
+        make_set_default("email_frequency", {}),
+        make_set_default("email_queue", {}),
+    ]
+
+
+@migrate(NotifierSettings, NotifierSettingsV2)
+def migrate_server_settings_current_to_v2() -> list[Callable]:
+    # Use drop function on "notifications_enabled" attrubute
+    return [drop(["email_frequency"]), drop(["email_queue"])]

@@ -1097,6 +1097,7 @@ def find_base_dir_with_tox_ini(start_path: str = ".") -> str | None:
 def get_all_config_files(base_path: str, current_path: str) -> list[str]:
     config_files = []
     current_path = os.path.abspath(current_path)
+    base_path = os.path.abspath(base_path)
 
     while current_path.startswith(base_path):
         config_file = os.path.join(current_path, "settings.yaml")

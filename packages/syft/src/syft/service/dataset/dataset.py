@@ -7,6 +7,7 @@ import textwrap
 from typing import Any
 
 # third party
+from IPython.display import display
 import markdown
 import pandas as pd
 from pydantic import ConfigDict
@@ -16,7 +17,6 @@ from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
@@ -40,12 +40,10 @@ from ..action.action_data_empty import ActionDataEmpty
 from ..action.action_object import ActionObject
 from ..data_subject.data_subject import DataSubject
 from ..data_subject.data_subject import DataSubjectCreate
-from ..data_subject.data_subject_service import DataSubjectService
 from ..response import SyftError
 from ..response import SyftSuccess
 from ..response import SyftWarning
 
-NamePartitionKey = PartitionKey(key="name", type_=str)
 logger = logging.getLogger(__name__)
 
 
@@ -292,8 +290,8 @@ class Asset(SyftObject):
     def data(self) -> Any:
         try:
             return self._private_data().unwrap()
-        except SyftException as e:
-            print(e)
+        except SyftException:
+            display(SyftError(message="You have no access to the private data"))
             return None
 
 
@@ -534,6 +532,7 @@ class Dataset(SyftObject):
             {self.assets._repr_html_()}
             """
 
+    @property
     def action_ids(self) -> list[UID]:
         return [asset.action_id for asset in self.asset_list if asset.action_id]
 
@@ -765,8 +764,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
             raise ValueError(
                 "f{context}'s server is None, please log in. No trasformation happened"
             )
-        action_service = context.server.get_service("actionservice")
-        action_service._set(
+        context.server.services.action._set(
             context=context.to_server_context(),
             action_object=twin,
         ).unwrap(public_message="Failed to create and store twin")
@@ -795,10 +793,11 @@ def set_data_subjects(context: TransformContext) -> TransformContext:
             public_message="f{context}'s server is None, please log in. No trasformation happened"
         )
     data_subjects = context.output["data_subjects"]
-    get_data_subject = context.server.get_service_method(DataSubjectService.get_by_name)
     resultant_data_subjects = []
     for data_subject in data_subjects:
-        result = get_data_subject(context=context, name=data_subject.name)
+        result = context.server.services.data_subject.get_by_name(
+            context=context, name=data_subject.name
+        )
         resultant_data_subjects.append(result)
     context.output["data_subjects"] = resultant_data_subjects
     return context

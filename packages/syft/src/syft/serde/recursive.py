@@ -25,6 +25,7 @@ SYFT_CLASSES_MISSING_CANONICAL_NAME = []
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde
 
 SPOOLED_FILE_MAX_SIZE_SERDE = 50 * (1024**2)  # 50MB
+DEFAULT_EXCLUDE_ATTRS: set[str] = {"syft_pre_hooks__", "syft_post_hooks__"}
 
 
 def get_types(cls: type, keys: list[str] | None = None) -> list[type] | None:
@@ -192,9 +193,7 @@ def recursive_serde_register(
         attribute_list.update(["value"])
 
     exclude_attrs = [] if exclude_attrs is None else exclude_attrs
-    attribute_list = (
-        attribute_list - set(exclude_attrs) - {"syft_pre_hooks__", "syft_post_hooks__"}
-    )
+    attribute_list = attribute_list - set(exclude_attrs) - DEFAULT_EXCLUDE_ATTRS
 
     if inheritable_attrs and attribute_list and not is_pydantic:
         # only set __syft_serializable__ for non-pydantic classes because

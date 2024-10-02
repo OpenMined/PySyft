@@ -28,6 +28,7 @@ from .server.datasite import Datasite
 from .server.enclave import Enclave
 from .server.gateway import Gateway
 from .server.uvicorn import serve_server
+from .service.queue.queue import ConsumerType
 from .service.response import SyftInfo
 from .types.errors import SyftException
 from .util.util import get_random_available_port
@@ -170,7 +171,6 @@ def deploy_to_python(
     tail: bool,
     dev_mode: bool,
     processes: int,
-    local_db: bool,
     server_side_type: ServerSideType,
     enable_warnings: bool,
     n_consumers: int,
@@ -182,6 +182,8 @@ def deploy_to_python(
     log_level: str | int | None = None,
     debug: bool = False,
     migrate: bool = False,
+    consumer_type: ConsumerType | None = None,
+    db_url: str | None = None,
 ) -> ServerHandle:
     worker_classes = {
         ServerType.DATASITE: Datasite,
@@ -213,6 +215,8 @@ def deploy_to_python(
         "debug": debug,
         "migrate": migrate,
         "deployment_type": deployment_type_enum,
+        "consumer_type": consumer_type,
+        "db_url": db_url,
     }
 
     if port:
@@ -243,7 +247,6 @@ def deploy_to_python(
             server_side_type=server_side_type,
         )
     else:
-        kwargs["local_db"] = local_db
         kwargs["thread_workers"] = thread_workers
         if server_type_enum in worker_classes:
             worker_class = worker_classes[server_type_enum]
@@ -309,7 +312,6 @@ class Orchestra:
         # worker related inputs
         port: int | str | None = None,
         processes: int = 1,  # temporary work around for jax in subprocess
-        local_db: bool = False,
         dev_mode: bool = False,
         reset: bool = False,
         log_level: str | int | None = None,
@@ -325,6 +327,8 @@ class Orchestra:
         debug: bool = False,
         migrate: bool = False,
         from_state_folder: str | Path | None = None,
+        consumer_type: ConsumerType | None = None,
+        db_url: str | None = None,
     ) -> ServerHandle:
         if from_state_folder is not None:
             with open(f"{from_state_folder}/config.json") as f:
@@ -361,7 +365,6 @@ class Orchestra:
                 tail=tail,
                 dev_mode=dev_mode,
                 processes=processes,
-                local_db=local_db,
                 server_side_type=server_side_type_enum,
                 enable_warnings=enable_warnings,
                 log_level=log_level,
@@ -373,11 +376,13 @@ class Orchestra:
                 background_tasks=background_tasks,
                 debug=debug,
                 migrate=migrate,
+                consumer_type=consumer_type,
+                db_url=db_url,
             )
             display(
                 SyftInfo(
                     message=f"You have launched a development server at http://{host}:{server_handle.port}."
-                    + "It is intended only for local use."
+                    + " It is intended only for local use."
                 )
             )
             return server_handle

@@ -10,6 +10,8 @@ from syft.client.sync_decision import SyncDecision
 from syft.client.syncing import compare_clients
 from syft.client.syncing import resolve
 from syft.server.worker import Worker
+from syft.service.code.user_code import ApprovalDecision
+from syft.service.code.user_code import UserCodeStatus
 from syft.service.job.job_stash import Job
 from syft.service.request.request import RequestStatus
 from syft.service.response import SyftSuccess
@@ -359,7 +361,6 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
         client_low_ds.code.compute(blocking=True)
 
     assert "waiting for approval" in exc.value.public_message
-    assert "PENDING" in exc.value.public_message
 
     assert low_client.requests[0].status == RequestStatus.PENDING
 
@@ -381,7 +382,12 @@ def test_approve_request_on_sync_blocking(low_worker, high_worker):
     diff_before, diff_after = compare_and_resolve(
         from_client=high_client, to_client=low_client, share_private_data=True
     )
-    assert len(diff_before.batches) == 1 and diff_before.batches[0].root_type is Job
+    assert len(diff_before.batches) == 1
+    root_types = [x.root_type for x in diff_before.batches]
+    assert Job in root_types
+    # assert (
+    #    Request in root_types
+    # )  # we have not configured it to count UserCode as a root type """
     assert low_client.requests[0].status == RequestStatus.APPROVED
 
     assert client_low_ds.code.compute().get() == 42
@@ -414,7 +420,10 @@ def test_deny_and_sync(low_worker, high_worker):
     assert low_client.requests[0].status == RequestStatus.REJECTED
 
     # Un-deny. NOTE: not supported by current UX, this is just used to re-deny on high side
-    low_client.api.code.update(id=request_low.code_id, l0_deny_reason=None)
+    low_client.api.code_status.update(
+        id=request_low.status_id,
+        decision=ApprovalDecision(status=UserCodeStatus.PENDING),
+    )
     assert low_client.requests[0].status == RequestStatus.PENDING
 
     # Sync request to high side

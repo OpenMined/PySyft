@@ -2,7 +2,6 @@
 import importlib
 import logging
 from typing import Any
-from typing import cast
 
 # third party
 import numpy as np
@@ -10,6 +9,7 @@ import numpy as np
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
@@ -18,7 +18,6 @@ from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.twin_object import TwinObject
 from ...types.uid import UID
-from ..blob_storage.service import BlobStorageService
 from ..code.user_code import UserCode
 from ..code.user_code import execute_byte_code
 from ..context import AuthedServiceContext
@@ -45,8 +44,8 @@ from .action_object import TwinMode
 from .action_permissions import ActionObjectPermission
 from .action_permissions import ActionObjectREAD
 from .action_permissions import ActionPermission
-from .action_store import ActionStore
-from .action_store import KeyValueActionStore
+from .action_permissions import StoragePermission
+from .action_store import ActionObjectStash
 from .action_types import action_type_for_type
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
@@ -57,10 +56,10 @@ logger = logging.getLogger(__name__)
 
 @serializable(canonical_name="ActionService", version=1)
 class ActionService(AbstractService):
-    store_type = ActionStore
+    stash: ActionObjectStash
 
-    def __init__(self, store: KeyValueActionStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
+        self.stash = ActionObjectStash(store)
 
     @service_method(path="action.np_array", name="np_array")
     def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
@@ -180,7 +179,7 @@ class ActionService(AbstractService):
             or has_result_read_permission
         )
 
-        self.store.set(
+        self.stash.set_or_update(
             uid=action_object.id,
             credentials=context.credentials,
             syft_object=action_object,
@@ -194,9 +193,8 @@ class ActionService(AbstractService):
             if action_object.mock_obj.syft_action_saved_to_blob_store:
                 blob_id = action_object.mock_obj.syft_blob_storage_entry_id
                 permission = ActionObjectPermission(blob_id, ActionPermission.ALL_READ)
-                blob_storage_service = context.server.get_service(BlobStorageService)
                 # add_permission is not resultified.
-                blob_storage_service.stash.add_permission(permission)
+                context.server.services.blob_storage.stash.add_permission(permission)
 
             if has_result_read_permission:
                 action_object = action_object.private
@@ -240,7 +238,7 @@ class ActionService(AbstractService):
     ) -> ActionObject:
         """Get an object from the action store"""
         # If user has permission to get the object / object exists
-        result = self.store.get(uid=uid, credentials=context.credentials).unwrap()
+        result = self.stash.get(uid=uid, credentials=context.credentials).unwrap()
 
         # If it's not a leaf
         if result.is_link:
@@ -274,7 +272,7 @@ class ActionService(AbstractService):
         resolve_nested: bool = True,
     ) -> ActionObject | TwinObject:
         """Get an object from the action store"""
-        obj = self.store.get(
+        obj = self.stash.get(
             uid=uid, credentials=context.credentials, has_permission=has_permission
         ).unwrap()
 
@@ -317,7 +315,7 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> ActionObjectPointer:
         """Get a pointer from the action store"""
-        obj = self.store.get_pointer(
+        obj = self.stash.get_pointer(
             uid=uid, credentials=context.credentials, server_uid=context.server.id
         ).unwrap()
 
@@ -331,7 +329,7 @@ class ActionService(AbstractService):
     @service_method(path="action.get_mock", name="get_mock", roles=GUEST_ROLE_LEVEL)
     def get_mock(self, context: AuthedServiceContext, uid: UID) -> SyftObject:
         """Get a pointer from the action store"""
-        return self.store.get_mock(uid=uid).unwrap()
+        return self.stash.get_mock(credentials=context.credentials, uid=uid).unwrap()
 
     @service_method(
         path="action.has_storage_permission",
@@ -339,10 +337,12 @@ class ActionService(AbstractService):
         roles=GUEST_ROLE_LEVEL,
     )
     def has_storage_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
-        return self.store.has_storage_permission(uid)
+        return self.stash.has_storage_permission(
+            StoragePermission(uid=uid, server_uid=context.server.id)
+        )
 
     def has_read_permission(self, context: AuthedServiceContext, uid: UID) -> bool:
-        return self.store.has_permissions(
+        return self.stash.has_permissions(
             [ActionObjectREAD(uid=uid, credentials=context.credentials)]
         )
 
@@ -358,9 +358,6 @@ class ActionService(AbstractService):
         override_execution_permission = (
             context.has_execute_permissions or context.role == ServiceRole.ADMIN
         )
-        if context.server:
-            user_code_service = context.server.get_service("usercodeservice")
-
         input_policy = code_item.get_input_policy(context)
         output_policy = code_item.get_output_policy(context)
 
@@ -427,7 +424,7 @@ class ActionService(AbstractService):
                         update_policy=not override_execution_permission,
                     )
                 code_item.output_policy = output_policy  # type: ignore
-                user_code_service.update_code_state(context, code_item)
+                context.server.services.user_code.update_code_state(context, code_item)
                 if isinstance(exec_result.result, ActionObject):
                     result_action_object = ActionObject.link(
                         result_id=result_id, pointer_id=exec_result.result.id
@@ -454,7 +451,7 @@ class ActionService(AbstractService):
                         update_policy=not override_execution_permission,
                     )
                 code_item.output_policy = output_policy  # type: ignore
-                user_code_service.update_code_state(context, code_item)
+                context.server.services.user_code.update_code_state(context, code_item)
                 result_action_object_private = wrap_result(
                     result_id, private_exec_result.result
                 )
@@ -552,10 +549,6 @@ class ActionService(AbstractService):
             has_result_read_permission=True,
         ).unwrap()
 
-        blob_storage_service: AbstractService = context.server.get_service(
-            BlobStorageService
-        )
-
         def store_permission(
             x: SyftVerifyKey | None = None,
         ) -> ActionObjectPermission:
@@ -568,11 +561,13 @@ class ActionService(AbstractService):
 
         if len(output_readers) > 0:
             store_permissions = [store_permission(x) for x in output_readers]
-            self.store.add_permissions(store_permissions)
+            self.stash.add_permissions(store_permissions)
 
             if result_blob_id is not None:
                 blob_permissions = [blob_permission(x) for x in output_readers]
-                blob_storage_service.stash.add_permissions(blob_permissions)
+                context.server.services.blob_storage.stash.add_permissions(
+                    blob_permissions
+                )
 
         return set_result
 
@@ -816,12 +811,11 @@ class ActionService(AbstractService):
         if action.action_type == ActionType.CREATEOBJECT:
             result_action_object = action.create_object
         elif action.action_type == ActionType.SYFTFUNCTION:
-            usercode_service = context.server.get_service("usercodeservice")
             kwarg_ids = {}
             for k, v in action.kwargs.items():
                 # transform lineage ids into ids
                 kwarg_ids[k] = v.id
-            return usercode_service._call(  # type: ignore[union-attr]
+            return context.server.services.user_code._call(  # type: ignore[union-attr]
                 context, action.user_code_id, action.result_id, **kwarg_ids
             ).unwrap()
         elif action.action_type == ActionType.FUNCTION:
@@ -891,12 +885,12 @@ class ActionService(AbstractService):
             ActionObjectREAD(uid=_id, credentials=context.credentials)
             for _id in action_obj_ids
         ]
-        return self.store.has_permissions(permissions)
+        return self.stash.has_permissions(permissions)
 
     @service_method(path="action.exists", name="exists", roles=GUEST_ROLE_LEVEL)
     def exists(self, context: AuthedServiceContext, obj_id: UID) -> bool:
         """Checks if the given object id exists in the Action Store"""
-        return self.store.exists(obj_id)
+        return self.stash.exists(context.credentials, obj_id)
 
     @service_method(
         path="action.delete",
@@ -907,7 +901,7 @@ class ActionService(AbstractService):
     def delete(
         self, context: AuthedServiceContext, uid: UID, soft_delete: bool = False
     ) -> SyftSuccess:
-        obj = self.store.get(uid=uid, credentials=context.credentials).unwrap()
+        obj = self.stash.get(uid=uid, credentials=context.credentials).unwrap()
 
         return_msg = []
 
@@ -933,25 +927,21 @@ class ActionService(AbstractService):
     ) -> SyftSuccess:
         deleted_blob_ids = []
 
-        blob_store_service = cast(
-            BlobStorageService, context.server.get_service(BlobStorageService)
-        )
-
         if isinstance(obj, ActionObject) and obj.syft_blob_storage_entry_id:
-            blob_store_service.delete(
+            context.server.services.blob_storage.delete(
                 context=context, uid=obj.syft_blob_storage_entry_id
             )
             deleted_blob_ids.append(obj.syft_blob_storage_entry_id)
 
         if isinstance(obj, TwinObject):
             if obj.private.syft_blob_storage_entry_id:
-                blob_store_service.delete(
+                context.server.services.blob_storage.delete(
                     context=context, uid=obj.private.syft_blob_storage_entry_id
                 )
                 deleted_blob_ids.append(obj.private.syft_blob_storage_entry_id)
 
             if obj.mock.syft_blob_storage_entry_id:
-                blob_store_service.delete(
+                context.server.services.blob_storage.delete(
                     context=context, uid=obj.mock.syft_blob_storage_entry_id
                 )
                 deleted_blob_ids.append(obj.mock.syft_blob_storage_entry_id)
@@ -967,7 +957,7 @@ class ActionService(AbstractService):
         soft_delete: bool = False,
     ) -> SyftSuccess:
         if soft_delete:
-            obj = self.store.get(uid=uid, credentials=context.credentials).unwrap()
+            obj = self.stash.get(uid=uid, credentials=context.credentials).unwrap()
 
             if isinstance(obj, TwinObject):
                 self._soft_delete_action_obj(
@@ -979,7 +969,7 @@ class ActionService(AbstractService):
             if isinstance(obj, ActionObject):
                 self._soft_delete_action_obj(context=context, action_obj=obj).unwrap()
         else:
-            self.store.delete(credentials=context.credentials, uid=uid).unwrap()
+            self.stash.delete_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
         return SyftSuccess(message=f"Action object with uid '{uid}' deleted.")
 

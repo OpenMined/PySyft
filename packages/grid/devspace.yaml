@@ -28,7 +28,7 @@ vars:
   DOCKER_IMAGE_RATHOLE: openmined/syft-rathole
   DOCKER_IMAGE_ENCLAVE_ATTESTATION: openmined/syft-enclave-attestation
   CONTAINER_REGISTRY: "docker.io"
-  VERSION: "0.9.1-beta.11"
+  VERSION: "0.9.2-beta.3"
   PLATFORM: $(uname -m | grep -q 'arm64' && echo "arm64" || echo "amd64")
 
 # This is a list of `images` that DevSpace can build for this project
@@ -42,6 +42,7 @@ images:
     target: "backend"
     context: ../
     tags:
+      - dev-latest
       - dev-${DEVSPACE_TIMESTAMP}
   frontend:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}"
@@ -52,6 +53,7 @@ images:
     context: ./frontend
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
+      - dev-latest
   seaweedfs:
     image: "${CONTAINER_REGISTRY}/${DOCKER_IMAGE_SEAWEEDFS}"
     buildKit:
@@ -60,6 +62,7 @@ images:
     context: ./seaweedfs
     tags:
       - dev-${DEVSPACE_TIMESTAMP}
+      - dev-latest
 
 # This is a list of `deployments` that DevSpace can create for this project
 deployments:
@@ -73,18 +76,19 @@ deployments:
         global:
           registry: ${CONTAINER_REGISTRY}
           version: dev-${DEVSPACE_TIMESTAMP}
+          workerVersion: dev-latest
       # anything that does not need templating should go in helm/examples/dev/base.yaml
       # or profile specific values files
       valuesFiles:
         - ./helm/examples/dev/base.yaml
 
 dev:
-  mongo:
+  postgres:
     labelSelector:
       app.kubernetes.io/name: syft
-      app.kubernetes.io/component: mongo
+      app.kubernetes.io/component: postgres
     ports:
-      - port: "27017"
+      - port: "5432"
   seaweedfs:
     labelSelector:
       app.kubernetes.io/name: syft
@@ -94,6 +98,7 @@ dev:
       - port: "8888" # filer
       - port: "8333" # S3
       - port: "4001" # mount azure
+      - port: "5432" # mount postgres
   backend:
     labelSelector:
       app.kubernetes.io/name: syft
@@ -130,7 +135,10 @@ profiles:
       - op: add
         path: deployments.syft.helm.values.server
         value:
-          tracing: true
+          tracing:
+            enabled: true
+            otlpEndpoint: "http://host.k3d.internal:4317"
+            otelProtocol: "grpc"
 
   - name: bigquery-scenario-tests
     description: "Deploy a datasite for bigquery scenario testing"
@@ -161,6 +169,7 @@ profiles:
             context: ./rathole
             tags:
               - dev-${DEVSPACE_TIMESTAMP}
+              - dev-latest
       # use rathole client-specific chart values
       - op: add
         path: deployments.syft.helm.valuesFiles
@@ -181,6 +190,7 @@ profiles:
             context: ./rathole
             tags:
               - dev-${DEVSPACE_TIMESTAMP}
+              - dev-latest
       # enable rathole `devspace dev` config
       - op: add
         path: dev
@@ -202,8 +212,8 @@ profiles:
         path: dev.seaweedfs
       # Port Re-Mapping
       - op: replace
-        path: dev.mongo.ports[0].port
-        value: 27018:27017
+        path: dev.postgres.ports[0].port
+        value: 5433:5432
       - op: replace
         path: dev.backend.ports[0].port
         value: 5679:5678
@@ -252,6 +262,7 @@ profiles:
             dockerfile: ./enclave/attestation/attestation.dockerfile
             context: ./enclave/attestation
             tags:
+              - dev-latest
               - dev-${DEVSPACE_TIMESTAMP}
       - op: add
         path: dev.backend.containers
@@ -265,8 +276,8 @@ profiles:
         value: ./helm/examples/dev/enclave.yaml
       # Port Re-Mapping
       - op: replace
-        path: dev.mongo.ports[0].port
-        value: 27019:27017
+        path: dev.postgres.ports[0].port
+        value: 5434:5432
       - op: replace
         path: dev.backend.ports[0].port
         value: 5680:5678

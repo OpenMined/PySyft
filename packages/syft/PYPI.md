@@ -1,7 +1,7 @@
 <div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://static.pepy.tech/badge/pysyft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies.yml/badge.svg?branch=dev" /></a> <a href="https://join.slack.com/t/openmined/shared_invite/zt-2hxwk07i9-HO7u5C7XOgou4Z62VU78zA/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://docs.openmined.org/en/latest/index.html"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
 <br /><br /></div>
 
-<img alt="Syft Logo" src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/Syft-Logo.svg" width="200px" />
+<img alt="Syft Logo" src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/Syft-Logo.svg" width="200px" />
 
 <h3> Data Science on data you are not allowed to see</h3>
 
@@ -38,7 +38,7 @@ Launch <a href="https://docs.openmined.org/en/latest/deployment/deployment-doc-1
 ```python
 import syft as sy
 
-sy.requires(">=0.9,<0.9.1")
+sy.requires(">=0.9.1,<0.9.2")
 
 server = sy.orchestra.launch(
     name="my-datasite",
@@ -67,7 +67,7 @@ Main way to use a Datasite is via our Syft client, in a Jupyter Notebook. Check 
 ```python
 import syft as sy
 
-sy.requires(">=0.9,<0.9.1")
+sy.requires(">=0.9.1,<0.9.2")
 
 datasite_client = sy.login(
     port=8080,
@@ -135,15 +135,15 @@ For questions about PySyft, reach out via `#support` on <a href="https://slack.o
 
 **Latest Stable**
 
-- `0.9.0` (Stable) - <a href="https://docs.openmined.org/en/latest/index.html">Docs</a>
+- `0.9.1` (Stable) - <a href="https://docs.openmined.org/en/latest/index.html">Docs</a>
 - Install PySyft (Stable): `pip install -U syft`
 
 **Latest Beta**
 
-- `0.9.1` (Beta) - `dev` branch 👈🏽
+- `0.9.2` (Beta) - `dev` branch 👈🏽
 - Install PySyft (Beta): `pip install -U syft --pre`
 
-Find more about previous <a href="https://github.com/OpenMined/PySyft/tree/0.9.1/./releases.md">releases here</a>.
+Find more about previous <a href="https://github.com/OpenMined/PySyft/tree/0.9.2/./releases.md">releases here</a>.
 
 # Community
 
@@ -158,18 +158,18 @@ Supported by the OpenMined Foundation, the OpenMined Community is an online netw
 <th align="center">
 <img width="200" height="1">
 <div align="center">
-<a href="https://courses.openmined.org/courses/our-privacy-opportunity"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/course_privacy.png" alt="" width="100%" align="center" /></a>
+<a href="https://courses.openmined.org/courses/our-privacy-opportunity"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/course_privacy.png" alt="" width="100%" align="center" /></a>
 </th>
 <th align="center">
 <img width="200" height="1">
 <div align="center">
-<a href="https://courses.openmined.org/courses/foundations-of-private-computation"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/course_foundations.png" alt="" width="100%" align="center" /></a>
+<a href="https://courses.openmined.org/courses/foundations-of-private-computation"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/course_foundations.png" alt="" width="100%" align="center" /></a>
 </div>
 </th>
 <th align="center">
 <img width="200" height="1">
 <div align="center">
-<a href="https://courses.openmined.org/courses/introduction-to-remote-data-science"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/course_introduction.png" alt="" width="100%" align="center"></a>
+<a href="https://courses.openmined.org/courses/introduction-to-remote-data-science"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/course_introduction.png" alt="" width="100%" align="center"></a>
 </div>
 </th>
 </tr>
@@ -179,7 +179,7 @@ Supported by the OpenMined Foundation, the OpenMined Community is an online netw
 
 OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please reach out via <a href="https://github.com/OpenMined/PySyft/issues">Github</a> or <a href="https://join.slack.com/t/openmined/shared_invite/zt-2hxwk07i9-HO7u5C7XOgou4Z62VU78zA/">Slack</a>!
 
-<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/contributors_light.jpg" alt="Contributors" width="100%" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/contributors_light.jpg" alt="Contributors" width="100%" />
 
 # About OpenMined
 
@@ -193,44 +193,44 @@ OpenMined is a non-profit foundation creating technology infrastructure that hel
 <table border="0">
 <tr>
 <th align="center">
-<a href="https://sloan.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/logo_sloan.png" /></a>
+<a href="https://sloan.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/logo_sloan.png" /></a>
 </th>
 <th align="center">
-<a href="https://opensource.fb.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/logo_meta.png" /></a>
+<a href="https://opensource.fb.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/logo_meta.png" /></a>
 </th>
 <th align="center">
-<a href="https://pytorch.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/logo_torch.png" /></a>
+<a href="https://pytorch.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/logo_torch.png" /></a>
 </th>
 <th align="center">
 <a href="https://www.dpmc.govt.nz/">
-<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/logo_nz_light.png" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/logo_nz_light.png" />
 </a>
 </th>
 <th align="center">
-<a href="https://twitter.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/logo_twitter.png" /></a>
+<a href="https://twitter.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/logo_twitter.png" /></a>
 </th>
 <th align="center">
-<a href="https://google.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/logo_google.png" /></a>
+<a href="https://google.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/logo_google.png" /></a>
 </th>
 <th align="center">
-<a href="https://microsoft.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/logo_microsoft.png" /></a>
+<a href="https://microsoft.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/logo_microsoft.png" /></a>
 </th>
 <th align="center">
-<a href="https://omidyar.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/logo_on.png" /></a>
+<a href="https://omidyar.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/logo_on.png" /></a>
 </th>
 <th align="center">
-<a href="https://www.udacity.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/logo_udacity.png" /></a>
+<a href="https://www.udacity.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/logo_udacity.png" /></a>
 </th>
 <th align="center">
 <a href="https://www.centerfordigitalhealthinnovation.org/">
 
-<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/logo_cdhi_light.png" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/logo_cdhi_light.png" />
 
 </a>
 </th>
 <th align="center">
 <a href="https://arkhn.org/">
-<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.1/docs/img/logo_arkhn_light.png" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.9.2/docs/img/logo_arkhn_light.png" />
 </a>
 </th>
 </tr>

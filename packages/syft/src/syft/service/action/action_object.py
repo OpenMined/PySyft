@@ -254,8 +254,8 @@ passthrough_attrs = [
     "created_date",  # syft
     "updated_date",  # syft
     "deleted_date",  # syft
-    "to_mongo",  # syft 🟡 TODO 23: Add composeable / inheritable object passthrough attrs
     "__attr_searchable__",  # syft
+    "__attr_unique__",  # syft
     "__canonical_name__",  # syft
     "__version__",  # syft
     "__args__",  # pydantic
@@ -1175,8 +1175,9 @@ class ActionObject(SyncableSyftObject):
         # relative
         from ..job.job_stash import Job
 
-        job_service = context.server.get_service("jobservice")  # type: ignore
-        job: Job | None = job_service.get_by_result_id(context, self.id.id)  # type: ignore
+        job: Job | None = context.server.services.job.get_by_result_id(
+            context, self.id.id
+        )  # type: ignore
         if job is not None:
             return [job.id]
         else:

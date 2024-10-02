@@ -16,7 +16,6 @@ def test_enclave_root_client_exception():
         server_type=sy.ServerType.ENCLAVE,
         dev_mode=True,
         reset=True,
-        local_db=True,
     )
     with pytest.raises(SyftException):
         enclave_server.login(email="info@openmined.org", password="changethis")

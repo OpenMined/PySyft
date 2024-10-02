@@ -10,7 +10,7 @@ from ...custom_worker.config import PrebuiltWorkerConfig
 from ...custom_worker.config import WorkerConfig
 from ...custom_worker.k8s import IN_KUBERNETES
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
@@ -22,7 +22,6 @@ from ..service import service_method
 from ..user.user_roles import DATA_OWNER_ROLE_LEVEL
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .image_registry import SyftImageRegistry
-from .image_registry_service import SyftImageRegistryService
 from .utils import image_build
 from .utils import image_push
 from .worker_image import SyftWorkerImage
@@ -32,11 +31,9 @@ from .worker_image_stash import SyftWorkerImageStash
 
 @serializable(canonical_name="SyftWorkerImageService", version=1)
 class SyftWorkerImageService(AbstractService):
-    store: DocumentStore
     stash: SyftWorkerImageStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = SyftWorkerImageStash(store=store)
 
     @service_method(
@@ -92,6 +89,7 @@ class SyftWorkerImageService(AbstractService):
         tag: str,
         registry_uid: UID | None = None,
         pull_image: bool = True,
+        force_build: bool = False,
     ) -> SyftSuccess:
         registry: SyftImageRegistry | None = None
 
@@ -105,10 +103,9 @@ class SyftWorkerImageService(AbstractService):
         ).unwrap()
         if registry_uid:
             # get registry from image registry service
-            image_registry_service: AbstractService = context.server.get_service(
-                SyftImageRegistryService
+            registry = context.server.services.syft_image_registry.get_by_id(
+                context, registry_uid
             )
-            registry = image_registry_service.get_by_id(context, registry_uid)
 
         try:
             if registry:
@@ -126,6 +123,7 @@ class SyftWorkerImageService(AbstractService):
             and worker_image.image_identifier
             and worker_image.image_identifier.full_name_with_tag
             == image_identifier.full_name_with_tag
+            and not force_build
         ):
             raise SyftException(
                 public_message=f"Image ID: {image_uid} is already built"
@@ -196,18 +194,7 @@ class SyftWorkerImageService(AbstractService):
         One image one docker file for now
         """
         images = self.stash.get_all(credentials=context.credentials).unwrap()
-
-        res = {}
-        # if image is built, index it by full_name_with_tag
-        for im in images:
-            if im.is_built and im.image_identifier is not None:
-                res[im.image_identifier.full_name_with_tag] = im
-        # and then index all images by id
-        # TODO: jupyter repr needs to be updated to show unique values
-        # (even if multiple keys point to same value)
-        res.update({im.id.to_string(): im for im in images if not im.is_built})
-
-        return DictTuple(res)
+        return DictTuple({image.id.to_string(): image for image in images})
 
     @service_method(
         path="worker_image.remove",

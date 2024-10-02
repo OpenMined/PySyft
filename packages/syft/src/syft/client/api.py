@@ -29,8 +29,7 @@ from ..serde.deserialize import _deserialize
 from ..serde.serializable import serializable
 from ..serde.serialize import _serialize
 from ..serde.signature import Signature
-from ..serde.signature import signature_remove_context
-from ..serde.signature import signature_remove_self
+from ..serde.signature import signature_remove
 from ..server.credentials import SyftSigningKey
 from ..server.credentials import SyftVerifyKey
 from ..service.context import AuthedServiceContext
@@ -738,8 +737,15 @@ class APIModule:
             )
 
     def __getitem__(self, key: str | int) -> Any:
+        if hasattr(self, "get_index"):
+            return self.get_index(key)
         if hasattr(self, "get_all"):
             return self.get_all()[key]
+        raise NotImplementedError
+
+    def __iter__(self) -> Any:
+        if hasattr(self, "get_all"):
+            return iter(self.get_all())
         raise NotImplementedError
 
     def _repr_html_(self) -> Any:
@@ -1117,9 +1123,10 @@ class SyftAPI(SyftObject):
             api_module = APIModule(path="", refresh_callback=self.refresh_api_callback)
             for v in endpoints.values():
                 signature = v.signature
+                args_to_remove = ["context"]
                 if not v.has_self:
-                    signature = signature_remove_self(signature)
-                signature = signature_remove_context(signature)
+                    args_to_remove.append("self")
+                signature = signature_remove(signature, args_to_remove)
                 if isinstance(v, APIEndpoint):
                     endpoint_function = generate_remote_function(
                         self,

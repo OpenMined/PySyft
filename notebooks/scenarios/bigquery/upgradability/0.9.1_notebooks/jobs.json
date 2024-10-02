@@ -1,0 +1,180 @@
+{
+  "michael-adams-fake@openmined.org": [
+    {
+      "user_email": "michael-adams-fake@openmined.org",
+      "func_name": "simple_query_e92e5a",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM dataset_2.table_1\n    GROUP BY table_id\n    LIMIT 717808",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "dataset_2",
+        "table": "table_1",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 717808
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_e92e5a",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    },
+    {
+      "user_email": "michael-adams-fake@openmined.org",
+      "func_name": "simple_query_4e10ab",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM dataset_1.table_1\n    GROUP BY table_id\n    LIMIT 512806",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "dataset_1",
+        "table": "table_1",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 512806
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_4e10ab",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    }
+  ],
+  "lisa-clark-fake@openmined.org": [
+    {
+      "user_email": "lisa-clark-fake@openmined.org",
+      "func_name": "simple_query_5374dd",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM dataset_1.table_1\n    GROUP BY table_id\n    LIMIT 55958",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "dataset_1",
+        "table": "table_1",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 55958
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_5374dd",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    },
+    {
+      "user_email": "lisa-clark-fake@openmined.org",
+      "func_name": "wrong_syntax_query_cf08ee",
+      "query": "SELECT * FROM table INCORRECT SYNTAX",
+      "job_type": "wrong_syntax_query",
+      "settings": {},
+      "should_succeed": false,
+      "should_submit": true,
+      "code_path": "wrong_syntax_query_cf08ee",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    }
+  ],
+  "anthony-simpson-fake@openmined.org": [
+    {
+      "user_email": "anthony-simpson-fake@openmined.org",
+      "func_name": "simple_query_e46828",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM dataset_2.table_2\n    GROUP BY table_id\n    LIMIT 346093",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "dataset_2",
+        "table": "table_2",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 346093
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_e46828",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    },
+    {
+      "user_email": "anthony-simpson-fake@openmined.org",
+      "func_name": "job_too_much_text_47c92e",
+      "query": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "job_type": "job_too_much_text",
+      "settings": {},
+      "should_succeed": false,
+      "should_submit": true,
+      "code_path": "job_too_much_text_47c92e",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    }
+  ],
+  "ian-ray-fake@openmined.org": [
+    {
+      "user_email": "ian-ray-fake@openmined.org",
+      "func_name": "simple_query_57f511",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM dataset_1.table_1\n    GROUP BY table_id\n    LIMIT 199607",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "dataset_1",
+        "table": "table_1",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 199607
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_57f511",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    },
+    {
+      "user_email": "ian-ray-fake@openmined.org",
+      "func_name": "job_long_name_6a5b10aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM dataset_2.table_1\n    GROUP BY table_id\n    LIMIT 138346",
+      "job_type": "job_long_name",
+      "settings": {
+        "dataset": "dataset_2",
+        "table": "table_1",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 138346
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "job_long_name_6a5b10aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    }
+  ],
+  "marie-russo-fake@openmined.org": [
+    {
+      "user_email": "marie-russo-fake@openmined.org",
+      "func_name": "simple_query_079c08",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM dataset_1.table_1\n    GROUP BY table_id\n    LIMIT 381248",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "dataset_1",
+        "table": "table_1",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 381248
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_079c08",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    },
+    {
+      "user_email": "marie-russo-fake@openmined.org",
+      "func_name": "job_funcname_xss_d77c1a<script>alert('XSS in funcname')</script>",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM dataset_1.table_1\n    GROUP BY table_id\n    LIMIT 640290",
+      "job_type": "job_funcname_xss",
+      "settings": {
+        "dataset": "dataset_1",
+        "table": "table_1",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 640290
+      },
+      "should_succeed": true,
+      "should_submit": false,
+      "code_path": null,
+      "admin_reviewed": false,
+      "result_as_expected": null
+    }
+  ]
+}

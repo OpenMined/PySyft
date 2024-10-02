@@ -7,7 +7,6 @@ import threading
 from threading import Event
 from time import sleep
 from typing import Any
-from typing import cast
 
 # third party
 import zmq
@@ -115,7 +114,7 @@ class ZMQProducer(QueueProducer):
     @property
     def action_service(self) -> AbstractService:
         if self.auth_context.server is not None:
-            return self.auth_context.server.get_service("ActionService")
+            return self.auth_context.server.services.action
         else:
             raise Exception(f"{self.auth_context} does not have a server.")
 
@@ -160,7 +159,7 @@ class ZMQProducer(QueueProducer):
 
                 # Items to be queued
                 items_to_queue = self.queue_stash.get_by_status(
-                    self.queue_stash.partition.root_verify_key,
+                    self.queue_stash.root_verify_key,
                     status=Status.CREATED,
                 ).unwrap()
 
@@ -168,7 +167,7 @@ class ZMQProducer(QueueProducer):
 
                 # Queue Items that are in the processing state
                 items_processing = self.queue_stash.get_by_status(
-                    self.queue_stash.partition.root_verify_key,
+                    self.queue_stash.root_verify_key,
                     status=Status.PROCESSING,
                 ).unwrap()
 
@@ -265,12 +264,10 @@ class ZMQProducer(QueueProducer):
                 self.delete_worker(worker, syft_worker.to_be_deleted)
 
                 # relative
-                from ...service.worker.worker_service import WorkerService
 
-                worker_service = cast(
-                    WorkerService, self.auth_context.server.get_service(WorkerService)
+                self.auth_context.server.services.worker._delete(
+                    self.auth_context, syft_worker
                 )
-                worker_service._delete(self.auth_context, syft_worker)
 
     def update_consumer_state_for_worker(
         self, syft_worker_id: UID, consumer_state: ConsumerState
@@ -284,14 +281,14 @@ class ZMQProducer(QueueProducer):
         try:
             try:
                 self.worker_stash.get_by_uid(
-                    credentials=self.worker_stash.partition.root_verify_key,
+                    credentials=self.worker_stash.root_verify_key,
                     uid=syft_worker_id,
                 ).unwrap()
             except Exception:
                 return None
 
             self.worker_stash.update_consumer_state(
-                credentials=self.worker_stash.partition.root_verify_key,
+                credentials=self.worker_stash.root_verify_key,
                 worker_uid=syft_worker_id,
                 consumer_state=consumer_state,
             ).unwrap()

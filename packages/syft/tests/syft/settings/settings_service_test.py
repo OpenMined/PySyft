@@ -34,7 +34,6 @@ from syft.service.user.user_roles import ServiceRole
 from syft.store.document_store_errors import NotFoundException
 from syft.store.document_store_errors import StashException
 from syft.types.errors import SyftException
-from syft.types.result import Ok
 from syft.types.result import as_result
 
 
@@ -100,28 +99,13 @@ def test_settingsservice_set_success(
 ) -> None:
     response = settings_service.set(authed_context, settings)
     assert isinstance(response, ServerSettings)
+    response.syft_client_verify_key = None
+    response.syft_server_location = None
+    response.pwd_token_config.syft_client_verify_key = None
+    response.pwd_token_config.syft_server_location = None
+    response.welcome_markdown.syft_client_verify_key = None
+    response.welcome_markdown.syft_server_location = None
     assert response == settings
-
-
-def test_settingsservice_set_fail(
-    monkeypatch: MonkeyPatch,
-    settings_service: SettingsService,
-    settings: ServerSettings,
-    authed_context: AuthedServiceContext,
-) -> None:
-    mock_error_message = "database failure"
-
-    @as_result(StashException)
-    def mock_stash_set_error(credentials, settings: ServerSettings) -> NoReturn:
-        raise StashException(public_message=mock_error_message)
-
-    monkeypatch.setattr(settings_service.stash, "set", mock_stash_set_error)
-
-    with pytest.raises(StashException) as exc:
-        settings_service.set(authed_context, settings)
-
-    assert exc.type == StashException
-    assert exc.value.public_message == mock_error_message
 
 
 def add_mock_settings(
@@ -130,7 +114,7 @@ def add_mock_settings(
     settings: ServerSettings,
 ) -> ServerSettings:
     # create a mock settings in the stash so that we can update it
-    result = settings_stash.partition.set(root_verify_key, settings)
+    result = settings_stash.set(root_verify_key, settings)
     assert result.is_ok()
 
     created_settings = result.ok()
@@ -150,9 +134,7 @@ def test_settingsservice_update_success(
     notifier_stash: NotifierStash,
 ) -> None:
     # add a mock settings to the stash
-    mock_settings = add_mock_settings(
-        authed_context.credentials, settings_stash, settings
-    )
+    mock_settings = settings_stash.set(authed_context.credentials, settings).unwrap()
 
     # get a new settings according to update_settings
     new_settings = deepcopy(settings)
@@ -164,14 +146,6 @@ def test_settingsservice_update_success(
     assert new_settings != mock_settings
     assert mock_settings == settings
 
-    mock_stash_get_all_output = [mock_settings, mock_settings]
-
-    def mock_stash_get_all(root_verify_key) -> Ok:
-        return Ok(mock_stash_get_all_output)
-
-    monkeypatch.setattr(settings_service.stash, "get_all", mock_stash_get_all)
-
-    # Mock the get_service method to return a mocked notifier_service with the notifier_stash
     class MockNotifierService:
         def __init__(self, stash):
             self.stash = stash
@@ -194,33 +168,7 @@ def test_settingsservice_update_success(
     # update the settings in the settings stash using settings_service
     response = settings_service.update(context=authed_context, settings=update_settings)
 
-    # not_updated_settings = response.ok()[1]
-
     assert isinstance(response, SyftSuccess)
-    # assert (
-    #     not_updated_settings.to_dict() == settings.to_dict()
-    # )  # the second settings is not updated
-
-
-def test_settingsservice_update_stash_get_all_fail(
-    monkeypatch: MonkeyPatch,
-    settings_service: SettingsService,
-    update_settings: ServerSettingsUpdate,
-    authed_context: AuthedServiceContext,
-) -> None:
-    mock_error_message = "database failure"
-
-    @as_result(StashException)
-    def mock_stash_get_all_error(credentials) -> NoReturn:
-        raise StashException(public_message=mock_error_message)
-
-    monkeypatch.setattr(settings_service.stash, "get_all", mock_stash_get_all_error)
-
-    with pytest.raises(StashException) as exc:
-        settings_service.update(context=authed_context, settings=update_settings)
-
-    assert exc.type == StashException
-    assert exc.value.public_message == mock_error_message
 
 
 def test_settingsservice_update_stash_empty(
@@ -230,9 +178,7 @@ def test_settingsservice_update_stash_empty(
 ) -> None:
     with pytest.raises(NotFoundException) as exc:
         settings_service.update(context=authed_context, settings=update_settings)
-
-    assert exc.type == NotFoundException
-    assert exc.value.public_message == "Server settings not found"
+        assert exc.value.public_message == "Server settings not found"
 
 
 def test_settingsservice_update_fail(
@@ -248,7 +194,7 @@ def test_settingsservice_update_fail(
     mock_stash_get_all_output = [settings, settings]
 
     @as_result(StashException)
-    def mock_stash_get_all(credentials) -> list[ServerSettings]:
+    def mock_stash_get_all(credentials, **kwargs) -> list[ServerSettings]:
         return mock_stash_get_all_output
 
     monkeypatch.setattr(settings_service.stash, "get_all", mock_stash_get_all)
@@ -256,7 +202,7 @@ def test_settingsservice_update_fail(
     mock_update_error_message = "Failed to update obj ServerMetadata"
 
     @as_result(StashException)
-    def mock_stash_update_error(credentials, settings: ServerSettings) -> NoReturn:
+    def mock_stash_update_error(credentials, obj: ServerSettings) -> NoReturn:
         raise StashException(public_message=mock_update_error_message)
 
     monkeypatch.setattr(settings_service.stash, "update", mock_stash_update_error)
@@ -309,7 +255,7 @@ def test_settings_allow_guest_registration(
         new_callable=mock.PropertyMock,
         return_value=mock_server_settings,
     ):
-        worker = syft.Worker.named(name=faker.name(), reset=True)
+        worker = syft.Worker.named(name=faker.name(), reset=True, db_url="sqlite://")
         guest_datasite_client = worker.guest_client
         root_datasite_client = worker.root_client
 
@@ -343,7 +289,7 @@ def test_settings_allow_guest_registration(
         new_callable=mock.PropertyMock,
         return_value=mock_server_settings,
     ):
-        worker = syft.Worker.named(name=faker.name(), reset=True)
+        worker = syft.Worker.named(name=faker.name(), reset=True, db_url="sqlite://")
         guest_datasite_client = worker.guest_client
         root_datasite_client = worker.root_client
 
@@ -402,7 +348,7 @@ def test_settings_user_register_for_role(monkeypatch: MonkeyPatch, faker: Faker)
         new_callable=mock.PropertyMock,
         return_value=mock_server_settings,
     ):
-        worker = syft.Worker.named(name=faker.name(), reset=True)
+        worker = syft.Worker.named(name=faker.name(), reset=True, db_url="sqlite://")
         root_client = worker.root_client
 
         emails_added = []

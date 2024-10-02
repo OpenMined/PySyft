@@ -2,7 +2,7 @@ apiVersion: v2
 name: syft
 description: Perform numpy-like analysis on data that remains in someone elses server
 type: application
-version: "0.9.1-beta.11"
-appVersion: "0.9.1-beta.11"
+version: "0.9.2-beta.3"
+appVersion: "0.9.2-beta.3"
 home: https://github.com/OpenMined/PySyft/
 icon: https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/title_syft_light.png

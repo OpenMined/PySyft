@@ -1,4 +1,4 @@
-__version__ = "0.9.1-beta.11"
+__version__ = "0.9.2-beta.3"
 
 # stdlib
 from collections.abc import Callable
@@ -89,7 +89,10 @@ from .util.autoreload import disable_autoreload
 from .util.autoreload import enable_autoreload
 from .util.commit import __commit__
 from .util.patch_ipython import patch_ipython
+from .util.reset_server import make_copy
+from .util.reset_server import restore_copy
 from .util.telemetry import instrument
+from .util.telemetry import instrument_threads
 from .util.util import autocache
 from .util.util import get_root_data_path
 from .util.version_compare import make_requires
@@ -102,6 +105,8 @@ SYFT_PATH = pathlib.Path(__file__).parent.resolve()
 
 sys.path.append(str(Path(__file__)))
 
+
+instrument_threads()
 
 patch_ipython()
 

@@ -1,0 +1,52 @@
+[
+  {
+    "name": "Michael Adams",
+    "email": "michael-adams-fake@openmined.org",
+    "password": "qRPt9Ua0_6",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": true,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "Lisa Clark",
+    "email": "lisa-clark-fake@openmined.org",
+    "password": "tC9fZrku_o",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": true,
+    "reset_token": "D9893xYYM1HO"
+  },
+  {
+    "name": "Anthony Simpson",
+    "email": "anthony-simpson-fake@openmined.org",
+    "password": ")@28JBEb4c",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "Ian Ray",
+    "email": "ian-ray-fake@openmined.org",
+    "password": "rA9miV^sX$",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "Marie Russo",
+    "email": "marie-russo-fake@openmined.org",
+    "password": "$4Asq)sSVb",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  }
+]

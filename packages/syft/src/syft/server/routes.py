@@ -49,8 +49,7 @@ def make_routes(worker: Worker) -> APIRouter:
         # relative
         from ..service.network.server_peer import route_to_connection
 
-        network_service = worker.get_service("NetworkService")
-        peer = network_service.stash.get_by_uid(worker.verify_key, peer_uid).unwrap()
+        peer = worker.network.stash.get_by_uid(worker.verify_key, peer_uid).unwrap()
         peer_server_route = peer.pick_highest_priority_route()
         connection = route_to_connection(route=peer_server_route)
         return connection
@@ -168,9 +167,8 @@ def make_routes(worker: Worker) -> APIRouter:
 
     def handle_forgot_password(email: str, server: AbstractServer) -> Response:
         try:
-            method = server.get_service_method(UserService.forgot_password)
             context = UnauthedServiceContext(server=server)
-            result = method(context=context, email=email)
+            result = server.services.user.forgot_password(context=context, email=email)
         except SyftException as e:
             result = SyftError.from_public_exception(e)
 
@@ -186,9 +184,10 @@ def make_routes(worker: Worker) -> APIRouter:
         token: str, new_password: str, server: AbstractServer
     ) -> Response:
         try:
-            method = server.get_service_method(UserService.reset_password)
             context = UnauthedServiceContext(server=server)
-            result = method(context=context, token=token, new_password=new_password)
+            result = server.services.user.reset_password(
+                context=context, token=token, new_password=new_password
+            )
         except SyftException as e:
             result = SyftError.from_public_exception(e)
 
@@ -206,12 +205,11 @@ def make_routes(worker: Worker) -> APIRouter:
         except ValidationError as e:
             return {"Error": e.json()}
 
-        method = server.get_service_method(UserService.exchange_credentials)
         context = UnauthedServiceContext(
             server=server, login_credentials=login_credentials
         )
         try:
-            result = method(context=context).value
+            result = server.services.user.exchange_credentials(context=context).value
             if not isinstance(result, UserPrivateKey):
                 response = SyftError(message=f"Incorrect return type: {type(result)}")
             else:

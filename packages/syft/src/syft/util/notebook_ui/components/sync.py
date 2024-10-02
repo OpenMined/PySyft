@@ -13,6 +13,7 @@ from ....service.request.request import Request
 from ....service.user.user import UserView
 from ....types.datetime import DateTime
 from ....types.datetime import format_timedelta_human_readable
+from ....types.errors import SyftException
 from ....types.syft_object import SYFT_OBJECT_VERSION_1
 from ....types.syft_object import SyftObject
 from ..icons import Icon
@@ -97,12 +98,10 @@ class SyncTableObject(HTMLComponentBase):
             return f"Status: {self.object.status.value}"
         elif isinstance(self.object, Request):
             code = self.object.code
-            statusses = list(code.status.status_dict.values())
-            if len(statusses) != 1:
+            approval_decisions = list(code.status.status_dict.values())
+            if len(approval_decisions) != 1:
                 raise ValueError("Request code should have exactly one status")
-            status_tuple = statusses[0]
-            status, _ = status_tuple
-            return status.value
+            return approval_decisions[0].status.value
         return ""  # type: ignore
 
     def get_updated_by(self) -> str:
@@ -114,7 +113,10 @@ class SyncTableObject(HTMLComponentBase):
 
         user_view: UserView | None = None
         if isinstance(self.object, UserCode):
-            user_view = self.object.user
+            try:
+                user_view = self.object.user
+            except SyftException:
+                pass  # nosec
 
         if isinstance(user_view, UserView):
             return f"Created by {user_view.email}"

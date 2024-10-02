@@ -5,10 +5,8 @@
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
-from ...store.document_store import NewBaseUIDStoreStash
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.db.db import DBManager
+from ...store.db.stash import ObjectStash
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ..context import AuthedServiceContext
@@ -19,55 +17,30 @@ from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from .data_subject import DataSubject
 from .data_subject import DataSubjectCreate
-from .data_subject import NamePartitionKey
-from .data_subject_member_service import DataSubjectMemberService
 
 
-@serializable(canonical_name="DataSubjectStash", version=1)
-class DataSubjectStash(NewBaseUIDStoreStash):
-    object_type = DataSubject
-    settings: PartitionSettings = PartitionSettings(
-        name=DataSubject.__canonical_name__, object_type=DataSubject
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
+@serializable(canonical_name="DataSubjectSQLStash", version=1)
+class DataSubjectStash(ObjectStash[DataSubject]):
     @as_result(StashException)
     def get_by_name(self, credentials: SyftVerifyKey, name: str) -> DataSubject:
-        qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
-        return self.query_one(credentials, qks=qks).unwrap()
-
-    @as_result(StashException)
-    def update(
-        self,
-        credentials: SyftVerifyKey,
-        data_subject: DataSubject,
-        has_permission: bool = False,
-    ) -> DataSubject:
-        res = self.check_type(data_subject, DataSubject).unwrap()
-        # we dont use and_then logic here as it is hard because of the order of the arguments
-        return super().update(credentials=credentials, obj=res).unwrap()
+        return self.get_one(
+            credentials=credentials,
+            filters={"name": name},
+        ).unwrap()
 
 
 @serializable(canonical_name="DataSubjectService", version=1)
 class DataSubjectService(AbstractService):
-    store: DocumentStore
     stash: DataSubjectStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = DataSubjectStash(store=store)
 
     @service_method(path="data_subject.add", name="add_data_subject")
     def add(
         self, context: AuthedServiceContext, data_subject: DataSubjectCreate
     ) -> SyftSuccess:
-        """Register a data subject."""
-
-        member_relationship_add = context.server.get_service_method(
-            DataSubjectMemberService.add
-        )
+        """Register a data subject."""  #
 
         member_relationships: set[tuple[str, str]] = data_subject.member_relationships
         if len(member_relationships) == 0:
@@ -84,7 +57,9 @@ class DataSubjectService(AbstractService):
                         ds.to(DataSubject, context=context),
                         ignore_duplicates=True,
                     ).unwrap()
-                member_relationship_add(context, parent_ds.name, child_ds.name)
+                context.server.services.data_subject_member.add(
+                    context, parent_ds.name, child_ds.name
+                )
 
         return SyftSuccess(
             message=f"{len(member_relationships)+1} Data Subjects Registered",
@@ -100,11 +75,9 @@ class DataSubjectService(AbstractService):
     def get_members(
         self, context: AuthedServiceContext, data_subject_name: str
     ) -> list[DataSubject]:
-        get_relatives = context.server.get_service_method(
-            DataSubjectMemberService.get_relatives
+        relatives = context.server.services.data_subject.get_relatives(
+            context, data_subject_name
         )
-
-        relatives = get_relatives(context, data_subject_name)
 
         members = []
         for relative in relatives:

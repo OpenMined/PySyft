@@ -41,6 +41,13 @@ from syft.service.code.user_code import UserCode
 from syft.service.job.job_stash import Job
 
 
+def test_check_test_helper_module_import():
+    # syft absolute
+    from syft.util.test_helpers.email_helpers import SENDER
+
+    assert SENDER == "noreply@openmined.org"
+
+
 @unsync
 async def get_prebuilt_worker_image(events, client, expected_tag, event_name):
     await events.await_for(event_name=event_name, show=True)

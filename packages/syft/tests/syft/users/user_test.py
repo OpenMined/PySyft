@@ -1,5 +1,6 @@
 # stdlib
 from secrets import token_hex
+import time
 
 # third party
 from faker import Faker
@@ -31,7 +32,7 @@ ADMIN_ROLES = [
 
 
 def get_users(worker):
-    return worker.get_service("UserService").get_all(
+    return worker.services.user.get_all(
         AuthedServiceContext(server=worker, credentials=worker.signing_key.verify_key)
     )
 
@@ -388,6 +389,9 @@ def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> Non
     admin_client = get_mock_client(worker.root_client, ServiceRole.ADMIN)
     assert admin_client.account.role == ServiceRole.ADMIN
 
+    # wait for the user to be created for sorting purposes
+    time.sleep(0.01)
+
     admin_client.register(
         name="Sheldon Cooper",
         email="sheldon@caltech.edu",
@@ -424,6 +428,7 @@ def test_user_view_set_role(worker: Worker, guest_client: DatasiteClient) -> Non
 
     with pytest.raises(SyftException):
         ds_client.account.update(role="guest")
+    with pytest.raises(SyftException):
         ds_client.account.update(role="data_scientist")
 
     # now we set sheldon's role to admin. Only now he can change his role

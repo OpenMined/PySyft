@@ -1,7 +1,7 @@
 global:
   # Affects only backend, frontend, and seaweedfs containers
   registry: docker.io
-  version: 0.9.1-beta.11
+  version: 0.9.2-beta.3
 
   # Force default secret values for development. DO NOT SET THIS TO FALSE IN PRODUCTION
   randomizedSecrets: true
@@ -12,10 +12,12 @@ global:
 
 # =================================================================================
 
-mongo:
-  # MongoDB config
-  port: 27017
-  username: root
+postgres:
+# Postgres config
+  port: 5432
+  username: syft_postgres
+  dbname: syftdb_postgres
+  host: postgres
 
   # Extra environment vars
   env: null
@@ -34,13 +36,12 @@ mongo:
   # PVC storage size
   storageSize: 5Gi
 
-  # Mongo secret name. Override this if you want to use a self-managed secret.
-  secretKeyName: mongo-secret
+  # Postgres secret name. Override this if you want to use a self-managed secret.
+  secretKeyName: postgres-secret
 
   # default/custom secret raw values
   secret:
-    rootPassword: null
-
+      rootPassword: null
 # =================================================================================
 
 frontend:
@@ -173,7 +174,11 @@ server:
   debuggerEnabled: false
   associationRequestAutoApproval: false
   useInternalRegistry: true
-  tracing: false
+  tracing:
+    enabled: false
+    # OpenTelemetry Collector endpoint
+    otlpEndpoint: ""
+    otlpProtocol: grpc
 
   # Default Worker pool settings
   defaultWorkerPool:
@@ -183,13 +188,16 @@ server:
 
   # SMTP Settings
   smtp:
+    enabled: false
+
+    host: null
+    port: null
+    from: null
+    username: null
+    password: null
+
     # Existing secret for SMTP with key 'smtpPassword'
     existingSecret: null
-    host: hostname
-    port: 587
-    from: noreply@openmined.org
-    username: apikey
-    password: password
 
   # Extra environment vars
   env: null

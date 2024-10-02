@@ -2,12 +2,11 @@
 from collections.abc import Callable
 import inspect
 import time
-from typing import cast
 
 # relative
 from ...serde.serializable import serializable
 from ...server.worker_settings import WorkerSettings
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...types.errors import SyftException
 from ...types.uid import UID
 from ..action.action_object import ActionObject
@@ -15,7 +14,6 @@ from ..action.action_permissions import ActionObjectPermission
 from ..action.action_permissions import ActionPermission
 from ..code.user_code import UserCode
 from ..context import AuthedServiceContext
-from ..log.log_service import LogService
 from ..queue.queue_stash import ActionQueueItem
 from ..response import SyftSuccess
 from ..service import AbstractService
@@ -42,11 +40,9 @@ def wait_until(predicate: Callable[[], bool], timeout: int = 10) -> SyftSuccess:
 
 @serializable(canonical_name="JobService", version=1)
 class JobService(AbstractService):
-    store: DocumentStore
     stash: JobStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = JobStash(store=store)
 
     @service_method(
@@ -134,10 +130,8 @@ class JobService(AbstractService):
             context.credentials, queue_item
         ).unwrap()
 
-        context.server.job_stash.set(context.credentials, job).unwrap()
-
-        log_service = context.server.get_service("logservice")
-        log_service.restart(context, job.log_id)
+        self.stash.set(context.credentials, job).unwrap()
+        context.server.services.log.restart(context, job.log_id)
 
         return SyftSuccess(message="Great Success!")
 
@@ -222,7 +216,7 @@ class JobService(AbstractService):
             job.id, ActionPermission.READ, user_code.user_verify_key
         )
         # TODO: make add_permission wrappable
-        return self.stash.add_permission(permission=permission)
+        return self.stash.add_permission(permission=permission).unwrap()
 
     @service_method(
         path="job.add_read_permission_log_for_code_owner",
@@ -232,13 +226,11 @@ class JobService(AbstractService):
     def add_read_permission_log_for_code_owner(
         self, context: AuthedServiceContext, log_id: UID, user_code: UserCode
     ) -> None:
-        log_service = context.server.get_service("logservice")
-        log_service = cast(LogService, log_service)
-        return log_service.stash.add_permission(
+        return context.server.services.log.stash.add_permission(
             ActionObjectPermission(
                 log_id, ActionPermission.READ, user_code.user_verify_key
             )
-        )
+        ).unwrap()
 
     @service_method(
         path="job.create_job_for_user_code_id",
@@ -268,14 +260,13 @@ class JobService(AbstractService):
             user_code_id=user_code_id,
             resolved=is_resolved,
         )
-        user_code_service = context.server.get_service("usercodeservice")
-        user_code = user_code_service.get_by_uid(context=context, uid=user_code_id)
+        user_code = context.server.services.user_code.get_by_uid(
+            context=context, uid=user_code_id
+        )
 
         # The owner of the code should be able to read the job
         self.stash.set(context.credentials, job).unwrap()
-
-        log_service = context.server.get_service("logservice")
-        log_service.add(
+        context.server.services.log.add(
             context,
             job.log_id,
             job.id,

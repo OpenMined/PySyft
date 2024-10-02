@@ -13,7 +13,7 @@ from syft.server.server import Server
 @pytest.mark.parametrize("server_type", ["datasite", "gateway", "enclave"])
 def test_orchestra_python_local(server_type):
     name = token_hex(8)
-    server = sy.orchestra.launch(name=name, server_type=server_type, local_db=False)
+    server = sy.orchestra.launch(name=name, server_type=server_type)
 
     try:
         assert isinstance(server.python_server, Server)
@@ -32,7 +32,6 @@ def test_orchestra_python_server(server_type):
         name=name,
         port="auto",
         server_type=server_type,
-        local_db=False,
     )
 
     try:

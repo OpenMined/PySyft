@@ -605,6 +605,49 @@ class PythonConnection(ServerConnection):
             result = post_process_result(result, unwrap_on_success=True)
         return result
 
+    def forgot_password(
+        self,
+        email: str,
+    ) -> SyftSigningKey | None:
+        credentials = {"email": email}
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="forgot_password",
+                kwargs=credentials,
+            )
+        else:
+            response = self.server.services.user.forgot_password(
+                context=ServerServiceContext(server=self.server), email=email
+            )
+            obj = post_process_result(response, unwrap_on_success=True)
+
+        return obj
+
+    def reset_password(
+        self,
+        token: str,
+        new_password: str,
+    ) -> SyftSigningKey | None:
+        payload = {"token": token, "new_password": new_password}
+        if self.proxy_target_uid:
+            obj = forward_message_to_proxy(
+                self.make_call,
+                proxy_target_uid=self.proxy_target_uid,
+                path="reset_password",
+                kwargs=payload,
+            )
+        else:
+            response = self.server.services.user.reset_password(
+                context=ServerServiceContext(server=self.server),
+                token=token,
+                new_password=new_password,
+            )
+            obj = post_process_result(response, unwrap_on_success=True)
+
+        return obj
+
     def register(self, new_user: UserCreate) -> SyftSigningKey | None:
         if self.proxy_target_uid:
             response = forward_message_to_proxy(
@@ -615,8 +658,9 @@ class PythonConnection(ServerConnection):
             )
         else:
             service_context = ServerServiceContext(server=self.server)
-            method = self.server.get_service_method(UserService.register)
-            response = method(context=service_context, new_user=new_user)
+            response = self.server.services.user.register(
+                context=service_context, new_user=new_user
+            )
             response = post_process_result(response, unwrap_on_success=False)
         return response
 

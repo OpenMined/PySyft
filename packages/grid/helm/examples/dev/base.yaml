@@ -7,7 +7,8 @@ global:
 server:
   rootEmail: info@openmined.org
   associationRequestAutoApproval: true
-  tracing: false
+  tracing:
+    enabled: false
 
   resourcesPreset: null
   resources: null
@@ -20,6 +21,14 @@ server:
   secret:
     defaultRootPassword: changethis
 
+postgres:
+  resourcesPreset: null
+  resources: null
+
+  secret:
+    rootPassword: example
+
+# Deprecated, support will be removed in 0.9.3
 mongo:
   resourcesPreset: null
   resources: null

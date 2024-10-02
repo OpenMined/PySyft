@@ -1,23 +1,24 @@
+# stdlib
+from pathlib import Path
+
 # syft absolute
 from syft.abstract_server import ServerType
 from syft.server.datasite import Datasite
 from syft.server.datasite import Server
 from syft.server.enclave import Enclave
+from syft.server.env import get_default_bucket_name
+from syft.server.env import get_enable_warnings
+from syft.server.env import get_server_name
+from syft.server.env import get_server_side_type
+from syft.server.env import get_server_type
+from syft.server.env import get_server_uid_env
 from syft.server.gateway import Gateway
-from syft.server.server import get_default_bucket_name
-from syft.server.server import get_enable_warnings
-from syft.server.server import get_server_name
-from syft.server.server import get_server_side_type
-from syft.server.server import get_server_type
-from syft.server.server import get_server_uid_env
 from syft.service.queue.zmq_client import ZMQClientConfig
 from syft.service.queue.zmq_client import ZMQQueueConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSClientConfig
 from syft.store.blob_storage.seaweedfs import SeaweedFSConfig
-from syft.store.mongo_client import MongoStoreClientConfig
-from syft.store.mongo_document_store import MongoStoreConfig
-from syft.store.sqlite_document_store import SQLiteStoreClientConfig
-from syft.store.sqlite_document_store import SQLiteStoreConfig
+from syft.store.db.postgres import PostgresDBConfig
+from syft.store.db.sqlite import SQLiteDBConfig
 from syft.types.uid import UID
 
 # server absolute
@@ -36,23 +37,26 @@ def queue_config() -> ZMQQueueConfig:
     return queue_config
 
 
-def mongo_store_config() -> MongoStoreConfig:
-    mongo_client_config = MongoStoreClientConfig(
-        hostname=settings.MONGO_HOST,
-        port=settings.MONGO_PORT,
-        username=settings.MONGO_USERNAME,
-        password=settings.MONGO_PASSWORD,
-    )
+def sql_store_config() -> SQLiteDBConfig:
+    # Check if the directory exists, and create it if it doesn't
+    sqlite_path = Path(settings.SQLITE_PATH)
+    if not sqlite_path.exists():
+        sqlite_path.mkdir(parents=True, exist_ok=True)
 
-    return MongoStoreConfig(client_config=mongo_client_config)
-
-
-def sql_store_config() -> SQLiteStoreConfig:
-    client_config = SQLiteStoreClientConfig(
+    return SQLiteDBConfig(
         filename=f"{UID.from_string(get_server_uid_env())}.sqlite",
         path=settings.SQLITE_PATH,
     )
-    return SQLiteStoreConfig(client_config=client_config)
+
+
+def postgresql_store_config() -> PostgresDBConfig:
+    return PostgresDBConfig(
+        host=settings.POSTGRESQL_HOST,
+        port=settings.POSTGRESQL_PORT,
+        user=settings.POSTGRESQL_USERNAME,
+        password=settings.POSTGRESQL_PASSWORD,
+        database=settings.POSTGRESQL_DBNAME,
+    )
 
 
 def seaweedfs_config() -> SeaweedFSConfig:
@@ -87,20 +91,18 @@ worker_classes = {
 worker_class = worker_classes[server_type]
 
 single_container_mode = settings.SINGLE_CONTAINER_MODE
-store_config = sql_store_config() if single_container_mode else mongo_store_config()
+db_config = sql_store_config() if single_container_mode else postgresql_store_config()
+
 blob_storage_config = None if single_container_mode else seaweedfs_config()
 queue_config = queue_config()
 
 worker: Server = worker_class(
     name=server_name,
     server_side_type=server_side_type,
-    action_store_config=store_config,
-    document_store_config=store_config,
     enable_warnings=enable_warnings,
     blob_storage_config=blob_storage_config,
-    local_db=single_container_mode,
     queue_config=queue_config,
-    migrate=True,
+    migrate=False,
     in_memory_workers=settings.INMEMORY_WORKERS,
     smtp_username=settings.SMTP_USERNAME,
     smtp_password=settings.SMTP_PASSWORD,
@@ -109,4 +111,5 @@ worker: Server = worker_class(
     smtp_host=settings.SMTP_HOST,
     association_request_auto_approval=settings.ASSOCIATION_REQUEST_AUTO_APPROVAL,
     background_tasks=True,
+    db_config=db_config,
 )

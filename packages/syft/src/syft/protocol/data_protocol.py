@@ -21,6 +21,7 @@ from packaging.version import parse
 # syft absolute
 from syft.types.result import Err
 from syft.types.result import Ok
+from syft.util.util import get_dev_mode
 
 # relative
 from .. import __version__
@@ -29,19 +30,14 @@ from ..types.dicttuple import DictTuple
 from ..types.errors import SyftException
 from ..types.syft_object import SyftBaseObject
 from ..types.syft_object_registry import SyftObjectRegistry
-from ..util.util import get_dev_mode
 
 PROTOCOL_STATE_FILENAME = "protocol_version.json"
 PROTOCOL_TYPE = str | int
 
 IGNORE_TYPES = [
     "mock_type",
-    "MockStore",
-    "MockSyftObject",
-    "MockStoreConfig",
     "MockWrapper",
     "base_stash_mock_object_type",
-    "MockKeyValueBackingStore",
     "MockObjectFromSyftBaseObj",
     "MockObjectToSyftBaseObj",
 ]
@@ -81,8 +77,14 @@ def handle_annotation_repr_(annotation: type) -> str:
     """Handle typing representation."""
     origin = typing.get_origin(annotation)
     args = typing.get_args(annotation)
+
+    def get_annotation_repr_for_arg(arg: type) -> str:
+        if hasattr(arg, "__canonical_name__"):
+            return arg.__canonical_name__
+        return getattr(arg, "__name__", str(arg))
+
     if origin and args:
-        args_repr = ", ".join(getattr(arg, "__name__", str(arg)) for arg in args)
+        args_repr = ", ".join(get_annotation_repr_for_arg(arg) for arg in args)
         origin_repr = getattr(origin, "__name__", str(origin))
 
         # Handle typing.Union and types.UnionType
@@ -231,9 +233,7 @@ class DataProtocol:
             cls, version = serde_properties[7], serde_properties[9]
             if issubclass(cls, SyftBaseObject):
                 canonical_name = cls.__canonical_name__
-                if canonical_name in IGNORE_TYPES or canonical_name.startswith(
-                    "MockSyftObject_"
-                ):
+                if canonical_name in IGNORE_TYPES:
                     continue
 
                 hash_str = DataProtocol._calculate_object_hash(cls)

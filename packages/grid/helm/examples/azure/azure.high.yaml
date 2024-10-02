@@ -38,5 +38,5 @@ registry:
 frontend:
   resourcesPreset: medium
 
-mongo:
+postgres:
   resourcesPreset: large

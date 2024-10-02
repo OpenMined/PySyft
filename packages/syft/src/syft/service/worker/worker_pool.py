@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import Callable
 from enum import Enum
 from typing import Any
 from typing import cast
@@ -14,12 +15,16 @@ from ...types.base import SyftBaseModel
 from ...types.datetime import DateTime
 from ...types.errors import SyftException
 from ...types.result import as_result
+from ...types.syft_migration import migrate
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syft_object import short_uid
+from ...types.transforms import TransformContext
 from ...types.uid import UID
 from ..response import SyftError
 from .worker_image import SyftWorkerImage
+from .worker_image import SyftWorkerImageV1
 
 
 @serializable(canonical_name="WorkerStatus", version=1)
@@ -44,9 +49,39 @@ class WorkerHealth(Enum):
 
 
 @serializable()
-class SyftWorker(SyftObject):
+class SyftWorkerV1(SyftObject):
     __canonical_name__ = "SyftWorker"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    __attr_unique__ = ["name"]
+    __attr_searchable__ = ["name", "container_id", "to_be_deleted"]
+    __repr_attrs__ = [
+        "name",
+        "container_id",
+        "image",
+        "status",
+        "healthcheck",
+        "worker_pool_name",
+        "created_at",
+    ]
+
+    id: UID
+    name: str
+    container_id: str | None = None
+    created_at: DateTime = DateTime.now()
+    healthcheck: WorkerHealth | None = None
+    status: WorkerStatus
+    image: SyftWorkerImageV1 | None = None
+    worker_pool_name: str
+    consumer_state: ConsumerState = ConsumerState.DETACHED
+    job_id: UID | None = None
+    to_be_deleted: bool = False
+
+
+@serializable()
+class SyftWorker(SyftObject):
+    __canonical_name__ = "SyftWorker"
+    __version__ = SYFT_OBJECT_VERSION_2
 
     __attr_unique__ = ["name"]
     __attr_searchable__ = ["name", "container_id", "to_be_deleted"]
@@ -283,3 +318,19 @@ def _get_worker_container_status(
         container_status,
         SyftError(message=f"Unknown container status: {container_status}"),
     )
+
+
+def migrate_worker_image_v1_to_v2(context: TransformContext) -> TransformContext:
+    old_image = context["image"]
+    if isinstance(old_image, SyftWorkerImageV1):
+        new_image = old_image.migrate_to(
+            version=SYFT_OBJECT_VERSION_2,
+            context=context.to_server_context(),
+        )
+        context["image"] = new_image
+    return context
+
+
+@migrate(SyftWorkerV1, SyftWorker)
+def migrate_worker_v1_to_v2() -> list[Callable]:
+    return [migrate_worker_image_v1_to_v2]

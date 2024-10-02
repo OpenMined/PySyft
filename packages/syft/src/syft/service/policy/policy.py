@@ -30,7 +30,6 @@ from ...client.api import ServerIdentity
 from ...serde.recursive_primitives import recursive_serde_register_type
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import PartitionKey
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...types.datetime import DateTime
@@ -83,10 +82,6 @@ class OutputPolicyValidEnum(Enum):
 
 
 DEFAULT_USER_POLICY_VERSION = 1
-
-PolicyUserVerifyKeyPartitionKey = PartitionKey(
-    key="user_verify_key", type_=SyftVerifyKey
-)
 
 PyCodeObject = Any
 
@@ -174,7 +169,6 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
     from ..action.action_object import ActionObject
 
     # fetches the all the current api's connected
-    api_list = APIRegistry.get_all_api()
     output_kwargs = {}
     for k, v in kwargs.items():
         uid = v
@@ -190,7 +184,7 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
             raise Exception(f"Input {k} must have a UID not {type(v)}")
 
         _obj_exists = False
-        for api in api_list:
+        for identity, api in APIRegistry.__api_registry__.items():
             try:
                 if api.services.action.exists(uid):
                     server_identity = ServerIdentity.from_api(api)
@@ -205,6 +199,9 @@ def partition_by_server(kwargs: dict[str, Any]) -> dict[ServerIdentity, dict[str
                 # To handle the cases , where there an old api objects in
                 # in APIRegistry
                 continue
+            except Exception as e:
+                print(f"Error in partition_by_server with identity {identity}", e)
+                raise e
 
         if not _obj_exists:
             raise Exception(f"Input data {k}:{uid} does not belong to any Datasite")
@@ -297,7 +294,7 @@ class Constant(PolicyRule):
     def transform_kwarg(self, context: AuthedServiceContext, val: Any) -> Any:
         if isinstance(self.val, UID):
             if issubclass(self.klass, CustomEndpointActionObject):
-                obj = context.server.get_service("actionservice").get(
+                obj = context.server.services.action.get(
                     context.as_root_context(), self.val
                 )
                 return obj.syft_action_data
@@ -335,7 +332,7 @@ class UserOwned(PolicyRule):
     def is_owned(
         self, context: AuthedServiceContext, action_object: ActionObject
     ) -> bool:
-        action_store = context.server.get_service("actionservice").store
+        action_store = context.server.services.action.stash
         return action_store.has_permission(
             ActionObjectPermission(
                 action_object.id, ActionPermission.OWNER, context.credentials
@@ -370,11 +367,10 @@ def retrieve_item_from_db(id: UID, context: AuthedServiceContext) -> ActionObjec
     # relative
     from ...service.action.action_object import TwinMode
 
-    action_service = context.server.get_service("actionservice")
     root_context = AuthedServiceContext(
         server=context.server, credentials=context.server.verify_key
     )
-    return action_service._get(
+    return context.server.services.action._get(
         context=root_context,
         uid=id,
         twin_mode=TwinMode.NONE,
@@ -420,9 +416,8 @@ class InputPolicy(Policy):
             server=context.server, credentials=context.approving_user_credentials
         ).as_root_context()
 
-        action_service = context.server.get_service("actionservice")
         for var_name, uid in inputs.items():
-            action_object_value = action_service.get(
+            action_object_value = context.server.services.action.get(
                 uid=uid, context=root_context
             ).unwrap()
             # resolve syft action data from blob store
@@ -605,7 +600,6 @@ def retrieve_from_db(
         # relative
         pass
 
-    action_service = context.server.get_service("actionservice")
     code_inputs = {}
 
     # When we are retrieving the code from the database, we need to use the server's
@@ -622,7 +616,7 @@ def retrieve_from_db(
         )
 
     for var_name, arg_id in allowed_inputs.items():
-        code_inputs[var_name] = action_service._get(
+        code_inputs[var_name] = context.server.services.action._get(
             context=root_context,
             uid=arg_id,
             twin_mode=TwinMode.NONE,
@@ -643,15 +637,16 @@ def allowed_ids_only(
             public_message=f"Invalid server type for code submission: {context.server.server_type}"
         )
 
-    server_identity = ServerIdentity(
-        server_name=context.server.name,
-        server_id=context.server.id,
-        verify_key=context.server.signing_key.verify_key,
-    )
-    allowed_inputs = allowed_inputs.get(server_identity, {})
+    allowed_inputs_for_server = None
+    for identity, inputs in allowed_inputs.items():
+        if identity.server_id == context.server.id:
+            allowed_inputs_for_server = inputs
+            break
+    if allowed_inputs_for_server is None:
+        allowed_inputs_for_server = {}
 
     filtered_kwargs = {}
-    for key in allowed_inputs.keys():
+    for key in allowed_inputs_for_server.keys():
         if key in kwargs:
             value = kwargs[key]
             uid = value
@@ -659,7 +654,7 @@ def allowed_ids_only(
             if not isinstance(uid, UID):
                 uid = getattr(value, "id", None)
 
-            if uid != allowed_inputs[key]:
+            if uid != allowed_inputs_for_server[key]:
                 raise SyftException(
                     public_message=f"Input with uid: {uid} for `{key}` not in allowed inputs: {allowed_inputs}"
                 )
@@ -785,8 +780,7 @@ class OutputPolicyExecuteCount(OutputPolicy):
             output_history = output_service.get_by_output_policy_id(self.id)
         else:
             # server side
-            output_service = context.server.get_service("outputservice")
-            output_history = output_service.get_by_output_policy_id(
+            output_history = context.server.services.output.get_by_output_policy_id(
                 context, self.id
             )  # raises
 

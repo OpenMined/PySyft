@@ -2,7 +2,7 @@
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...types.errors import SyftException
 from ...types.uid import UID
 from ..context import AuthedServiceContext
@@ -20,11 +20,9 @@ __all__ = ["SyftImageRegistryService"]
 
 @serializable(canonical_name="SyftImageRegistryService", version=1)
 class SyftImageRegistryService(AbstractService):
-    store: DocumentStore
     stash: SyftImageRegistryStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = SyftImageRegistryStash(store=store)
 
     @service_method(
@@ -43,9 +41,10 @@ class SyftImageRegistryService(AbstractService):
         except Exception as e:
             raise SyftException(public_message=f"Failed to create registry. {e}")
 
-        self.stash.set(context.credentials, registry).unwrap()
+        stored_registry = self.stash.set(context.credentials, registry).unwrap()
         return SyftSuccess(
-            message=f"Image Registry ID: {registry.id} created successfully"
+            message=f"Image Registry ID: {registry.id} created successfully",
+            value=stored_registry,
         )
 
     @service_method(

@@ -1,6 +1,5 @@
 # stdlib
 import secrets
-from typing import cast
 
 # relative
 from ...client.client import SyftClient
@@ -41,9 +40,6 @@ class AssociationRequestChange(Change):
             tuple[bytes, ServerPeer]: The result of the association request.
                 Raises on errors.
         """
-        # relative
-        from .network_service import NetworkService
-
         if not apply:
             # TODO: implement undo for AssociationRequestChange
             raise SyftException(
@@ -52,10 +48,6 @@ class AssociationRequestChange(Change):
 
         # Get the network service
         service_ctx = context.to_service_ctx()
-        network_service = cast(
-            NetworkService, service_ctx.server.get_service(NetworkService)
-        )
-        network_stash = network_service.stash
 
         # Check if remote peer to be added is via reverse tunnel
         rtunnel_route = self.remote_peer.get_rtunnel_route()
@@ -66,7 +58,7 @@ class AssociationRequestChange(Change):
 
         # If the remote peer is added via reverse tunnel, we skip ping to peer
         if add_rtunnel_route:
-            network_service.set_reverse_tunnel_config(
+            service_ctx.server.services.network.set_reverse_tunnel_config(
                 context=context,
                 remote_server_peer=self.remote_peer,
             )
@@ -99,7 +91,7 @@ class AssociationRequestChange(Change):
                 raise SyftException(public_message=str(e))
 
         # Adding the remote peer to the network stash
-        network_stash.create_or_update_peer(
+        service_ctx.server.services.network.stash.create_or_update_peer(
             service_ctx.server.verify_key, self.remote_peer
         )
         # this way they can match up who we are with who they think we are

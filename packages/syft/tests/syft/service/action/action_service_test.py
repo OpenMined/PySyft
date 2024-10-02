@@ -16,12 +16,12 @@ def get_auth_ctx(worker):
 
 
 def test_action_service_sanity(worker):
-    service = worker.get_service("actionservice")
+    service = worker.services.action
     root_datasite_client = worker.root_client
 
     obj = ActionObject.from_obj("abc")
     pointer = obj.send(root_datasite_client)
 
-    assert len(service.store.data) == 1
+    assert len(service.stash._data) == 1
     res = pointer.capitalize()
     assert res[0] == "A"

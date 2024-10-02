@@ -1,11 +1,10 @@
 # stdlib
 
 # stdlib
-from typing import cast
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
 from ...store.linked_obj import LinkedObject
@@ -13,8 +12,6 @@ from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.uid import UID
 from ..context import AuthedServiceContext
-from ..network.network_service import NetworkService
-from ..notification.notification_service import NotificationService
 from ..notification.notifications import CreateNotification
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -25,7 +22,6 @@ from ..service import service_method
 from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..user.user_roles import GUEST_ROLE_LEVEL
 from ..user.user_roles import ServiceRole
-from ..user.user_service import UserService
 from .project import Project
 from .project import ProjectEvent
 from .project import ProjectRequest
@@ -36,11 +32,9 @@ from .project_stash import ProjectStash
 
 @serializable(canonical_name="ProjectService", version=1)
 class ProjectService(AbstractService):
-    store: DocumentStore
     stash: ProjectStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = ProjectStash(store=store)
 
     @as_result(SyftException)
@@ -95,8 +89,7 @@ class ProjectService(AbstractService):
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
     def can_create_project(self, context: AuthedServiceContext) -> bool:
-        user_service: UserService = context.server.get_service("userservice")  # type: ignore[assignment]
-        role = user_service.get_role_for_credentials(
+        role = context.server.services.user.get_role_for_credentials(
             credentials=context.credentials
         ).unwrap()
 
@@ -137,16 +130,16 @@ class ProjectService(AbstractService):
         # For followers the leader server route is retrieved from its peer
         if leader_server.verify_key != context.server.verify_key:
             # FIX: networkservice stash to new BaseStash
-            network_service = context.server.get_service("networkservice")
-            network_service = cast(NetworkService, network_service)
             peer_id = context.server.id.short() if context.server.id else ""
-            leader_server_peer = network_service.stash.get_by_verify_key(
-                credentials=context.server.verify_key,
-                verify_key=leader_server.verify_key,
-            ).unwrap(
-                public_message=(
-                    f"Leader Server(id={leader_server.id.short()}) is not a "
-                    f"peer of this Server(id={peer_id})"
+            leader_server_peer = (
+                context.server.services.network.stash.get_by_verify_key(
+                    credentials=context.server.verify_key,
+                    verify_key=leader_server.verify_key,
+                ).unwrap(
+                    public_message=(
+                        f"Leader Server(id={leader_server.id.short()}) is not a "
+                        f"peer of this Server(id={peer_id})"
+                    )
                 )
             )
         else:
@@ -244,11 +237,10 @@ class ProjectService(AbstractService):
         self.check_for_project_request(project, project_event, context)
 
         # Broadcast the event to all the members of the project
-        network_service = context.server.get_service("networkservice")
         for member in project.members:
             if member.verify_key != context.server.verify_key:
                 # Retrieving the ServerPeer Object to communicate with the server
-                peer = network_service.stash.get_by_verify_key(
+                peer = context.server.services.network.stash.get_by_verify_key(
                     credentials=context.server.verify_key,
                     verify_key=member.verify_key,
                 ).unwrap(
@@ -336,9 +328,8 @@ class ProjectService(AbstractService):
     def add_signing_key_to_project(
         self, context: AuthedServiceContext, project: Project
     ) -> Project:
-        user_service = context.server.get_service("userservice")
         try:
-            user = user_service.stash.get_by_verify_key(
+            user = context.server.services.user.stash.get_by_verify_key(
                 credentials=context.credentials, verify_key=context.credentials
             ).unwrap()
         except NotFoundException as exc:
@@ -388,8 +379,9 @@ class ProjectService(AbstractService):
             )
 
             # TODO: Update noteificationservice result
-            method = context.server.get_service_method(NotificationService.send)
-            result = method(context=context, notification=message)
+            result = context.server.services.notification.send(
+                context=context, notification=message
+            )
             if isinstance(result, SyftError):
                 raise SyftException(public_message=result)
 

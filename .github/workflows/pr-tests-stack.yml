@@ -60,9 +60,9 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
         run: |
-          echo "Skipping pr image test"
+          tox -e backend.test.basecpu
         # run: |
-        #   tox -e backend.test.basecpu
+        #   echo "Skipping pr image test"
 
   pr-tests-syft-integration:
     strategy:
@@ -508,7 +508,7 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
-      - name: Run Notebooks Tests
+      - name: Run Notebooks Scenario Tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 60
         env:
@@ -541,8 +541,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p ./k8s-logs
-          kubectl describe all -A --context k3d-test-datasite-1 --namespace syft > ./k8s-logs/test-datasite-1-desc-${{ steps.date.outputs.date }}.txt
-          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-test-datasite-1 --namespace syft > ./k8s-logs/test-datasite-1-logs-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-bigquery-high --namespace syft > ./k8s-logs/bigquery-high-desc-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-bigquery-high --namespace syft > ./k8s-logs/bigquery-high-logs-${{ steps.date.outputs.date }}.txt
           ls -la ./k8s-logs
 
       - name: Upload logs to GitHub
@@ -620,3 +620,339 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           tox -e migration.test
+  pr-tests-scenarios-migrations:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: "clean .git/config"
+        if: matrix.os == 'windows-latest'
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
+      - uses: actions/checkout@v4
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        if: steps.changes.outputs.syft == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pip packages
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2
+          uv --version
+
+      - name: Get uv cache dir
+        id: pip-cache
+        if: steps.changes.outputs.syft == 'true'
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Load github cache
+        uses: actions/cache@v4
+        if: steps.changes.outputs.syft == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
+
+      - name: Run migration tests
+        if: steps.changes.outputs.syft == 'true'
+        run: |
+          tox -e migration.scenarios.test
+
+  pr-tests-migrations-k8s:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+      fail-fast: false
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - name: Permission to home directory
+        run: |
+          sudo chown -R $USER:$USER $HOME
+      - uses: actions/checkout@v4
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Add K3d Registry
+        run: |
+          sudo python ./scripts/patch_hosts.py --add-k3d-registry
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          large-packages: false
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+
+      - name: Install pip dependencies
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2
+          uv --version
+
+      - name: Get uv cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Load github cache
+        uses: actions/cache@v4
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}
+
+      - name: Install kubectl
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # cleanup apt version
+          sudo apt remove kubectl || true
+          # install kubectl 1.27
+          curl -LO https://dl.k8s.io/release/v1.27.2/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo install kubectl /usr/local/bin;
+
+      - name: Install helm
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # install helm
+          curl  -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+
+      - name: Run Migrations Tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 60
+        env:
+          GITHUB_CI: true
+        shell: bash
+        run: |
+          K3D_VERSION=v5.6.3
+          DEVSPACE_VERSION=v6.3.12
+          # install k3d
+          wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
+          mv k3d-linux-amd64 k3d
+          chmod +x k3d
+          export PATH=`pwd`:$PATH
+          k3d version
+          curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
+          chmod +x devspace
+          devspace version
+          tox -e migration.k8s.test
+
+      - name: Get current timestamp
+        id: date
+        if: failure()
+        shell: bash
+        run: echo "date=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Collect logs from k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          mkdir -p ./k8s-logs
+          # kubectl describe all -A --context k3d-syft-migration-source --namespace syft > ./k8s-logs/syft-migration-source-desc-${{ steps.date.outputs.date }}.txt
+          # kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-syft-migration-source --namespace syft > ./k8s-logs/syft-migration-source-logs-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-test-datasite-1 --namespace syft > ./k8s-logs/test-datasite-1-desc-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-test-datasite-1 --namespace syft > ./k8s-logs/test-datasite-1-logs-${{ steps.date.outputs.date }}.txt
+          ls -la ./k8s-logs
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: steps.changes.outputs.stack == 'true' && failure()
+        with:
+          name: k8s-logs-notebook-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          path: ./k8s-logs/
+
+      - name: Cleanup k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          export PATH=`pwd`:$PATH
+          k3d cluster delete syft-migration-source || true
+          k3d cluster delete test-datasite-1 || true
+          k3d registry delete k3d-registry.localhost || true
+
+  pr-tests-notebook-scenario-k8s-sync:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+      fail-fast: false
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - name: Permission to home directory
+        run: |
+          sudo chown -R $USER:$USER $HOME
+      - uses: actions/checkout@v4
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Add K3d Registry
+        run: |
+          sudo python ./scripts/patch_hosts.py --add-k3d-registry
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          large-packages: false
+
+      # free 10GB of space
+      - name: Remove unnecessary files
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker image prune --all --force
+          docker builder prune --all --force
+          docker system prune --all --force
+      - name: Install pip dependencies
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv==0.2.17 tox==4.16.0 tox-uv==1.9.0
+          uv --version
+      - name: Get uv cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
+      - name: Load github cache
+        uses: actions/cache@v4
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}
+      - name: Install kubectl
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # cleanup apt version
+          sudo apt remove kubectl || true
+          # install kubectl 1.27
+          curl -LO https://dl.k8s.io/release/v1.27.2/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo install kubectl /usr/local/bin;
+      - name: Install helm
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # install helm
+          curl  -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+      - name: Run Notebook Scenario Sync Tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 60
+        env:
+          GITHUB_CI: true
+        shell: bash
+        run: |
+          K3D_VERSION=v5.6.3
+          DEVSPACE_VERSION=v6.3.12
+          # install k3d
+          wget https://github.com/k3d-io/k3d/releases/download/${K3D_VERSION}/k3d-linux-amd64
+          mv k3d-linux-amd64 k3d
+          chmod +x k3d
+          export PATH=`pwd`:$PATH
+          k3d version
+          curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
+          chmod +x devspace
+          devspace version
+          tox -e stack.test.notebook.scenario.k8s.sync
+      - name: Get current timestamp
+        id: date
+        if: failure()
+        shell: bash
+        run: echo "date=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Collect logs from k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          mkdir -p ./k8s-logs
+          kubectl describe all -A --context k3d-bigquery-low --namespace syft > ./k8s-logs/bigquery-low-desc-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-bigquery-low --namespace syft > ./k8s-logs/bigquery-low-logs-${{ steps.date.outputs.date }}.txt
+          kubectl describe all -A --context k3d-bigquery-high --namespace syft > ./k8s-logs/bigquery-high-desc-${{ steps.date.outputs.date }}.txt
+          kubectl logs -l app.kubernetes.io/name!=random --prefix=true --context k3d-bigquery-high --namespace syft > ./k8s-logs/bigquery-high-logs-${{ steps.date.outputs.date }}.txt
+          ls -la ./k8s-logs
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: steps.changes.outputs.stack == 'true' && failure()
+        with:
+          name: k8s-logs-notebook-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          path: ./k8s-logs/
+
+      - name: Cleanup k3d
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          export PATH=`pwd`:$PATH
+          k3d cluster delete bigquery-high || true
+          k3d cluster delete bigquery-low || true

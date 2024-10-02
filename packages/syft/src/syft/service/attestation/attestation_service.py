@@ -6,7 +6,7 @@ import requests
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...util.util import str_to_bool
@@ -24,8 +24,8 @@ from .attestation_constants import ATTEST_GPU_ENDPOINT
 class AttestationService(AbstractService):
     """This service is responsible for getting all sorts of attestations for any client."""
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
+        pass
 
     @as_result(SyftException)
     def perform_request(

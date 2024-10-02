@@ -1,7 +1,6 @@
 # stdlib
 from string import Template
 from typing import Any
-from typing import cast
 
 # third party
 from pydantic import ValidationError
@@ -9,10 +8,9 @@ from pydantic import ValidationError
 # relative
 from ...abstract_server import ServerSideType
 from ...serde.serializable import serializable
-from ...store.document_store import DocumentStore
+from ...store.db.db import DBManager
 from ...store.document_store_errors import NotFoundException
 from ...store.document_store_errors import StashException
-from ...store.sqlite_document_store import SQLiteStoreConfig
 from ...types.errors import SyftException
 from ...types.result import as_result
 from ...types.syft_metaclass import Empty
@@ -27,7 +25,7 @@ from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
 from ..notifier.notifier_enums import EMAIL_TYPES
-from ..notifier.notifier_service import NotifierService
+from ..notifier.notifier_enums import NOTIFICATION_FREQUENCY
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -50,11 +48,9 @@ _NOTIFICATIONS_ENABLED_WIHOUT_CREDENTIALS_ERROR = (
 
 @serializable(canonical_name="SettingsService", version=1)
 class SettingsService(AbstractService):
-    store: DocumentStore
     stash: SettingsStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = SettingsStash(store=store)
 
     @service_method(path="settings.get", name="get")
@@ -125,23 +121,23 @@ class SettingsService(AbstractService):
     def _update(
         self, context: AuthedServiceContext, settings: ServerSettingsUpdate
     ) -> ServerSettings:
-        all_settings = self.stash.get_all(context.credentials).unwrap()
+        all_settings = self.stash.get_all(
+            context.credentials, limit=1, sort_order="desc"
+        ).unwrap()
         if len(all_settings) > 0:
             new_settings = all_settings[0].model_copy(
                 update=settings.to_dict(exclude_empty=True)
             )
             ServerSettings.model_validate(new_settings.to_dict())
             update_result = self.stash.update(
-                context.credentials, settings=new_settings
+                context.credentials, obj=new_settings
             ).unwrap()
-
-            notifier_service = cast(
-                NotifierService, context.server.get_service("notifierservice")
-            )
 
             # If notifications_enabled is present in the update, we need to update the notifier settings
             if settings.notifications_enabled is not Empty:  # type: ignore[comparison-overlap]
-                notifier_settings_res = notifier_service.settings(context)
+                notifier_settings_res = context.server.services.notifier.settings(
+                    context
+                )
                 if (
                     not notifier_settings_res.is_ok()
                     or notifier_settings_res.ok() is None
@@ -153,7 +149,7 @@ class SettingsService(AbstractService):
                         )
                     )
 
-                notifier_service._set_notifier(
+                context.server.services.notifier._set_notifier(
                     context, active=settings.notifications_enabled
                 )
 
@@ -177,10 +173,12 @@ class SettingsService(AbstractService):
                 public_message=f"Not a valid server_side_type, please use one of the options from: {side_type_options}"
             )
 
-        current_settings = self.stash.get_all(context.credentials).unwrap()
+        current_settings = self.stash.get_all(
+            context.credentials, limit=1, sort_order="desc"
+        ).unwrap()
         if len(current_settings) > 0:
             new_settings = current_settings[0]
-            new_settings.server_side_type = server_side_type
+            new_settings.server_side_type = ServerSideType(server_side_type)
             updated_settings = self.stash.update(
                 context.credentials, new_settings
             ).unwrap()
@@ -196,6 +194,26 @@ class SettingsService(AbstractService):
             raise NotFoundException(public_message="Server settings not found")
 
     @service_method(
+        path="settings.batch_notifications",
+        name="batch_notifications",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def batch_notifications(
+        self,
+        context: AuthedServiceContext,
+        email_type: EMAIL_TYPES,
+        frequency: NOTIFICATION_FREQUENCY,
+        start_time: str = "",
+    ) -> SyftSuccess:
+        result = context.server.services.notifier.set_email_batch(
+            context=context,
+            email_type=email_type,
+            frequency=frequency,
+            start_time=start_time,
+        ).unwrap()
+        return result
+
+    @service_method(
         path="settings.enable_notifications",
         name="enable_notifications",
         roles=ADMIN_ROLE_LEVEL,
@@ -209,8 +227,7 @@ class SettingsService(AbstractService):
         email_server: str | None = None,
         email_port: str | None = None,
     ) -> SyftSuccess:
-        notifier_service = context.server.get_service("notifierservice")
-        notifier_service.turn_on(
+        context.server.services.notifier.turn_on(
             context=context,
             email_username=email_username,
             email_password=email_password,
@@ -229,8 +246,7 @@ class SettingsService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> SyftSuccess:
-        notifier_service = context.server.get_service("notifierservice")
-        notifier_service.turn_off(context=context).unwrap()
+        context.server.services.notifier.turn_off(context=context).unwrap()
         return SyftSuccess(message="Notifications disabled")
 
     @service_method(
@@ -272,8 +288,9 @@ class SettingsService(AbstractService):
     def set_email_rate_limit(
         self, context: AuthedServiceContext, email_type: EMAIL_TYPES, daily_limit: int
     ) -> SyftSuccess:
-        notifier_service = context.server.get_service("notifierservice")
-        return notifier_service.set_email_rate_limit(context, email_type, daily_limit)
+        return context.server.services.notifier.set_email_rate_limit(
+            context, email_type, daily_limit
+        )
 
     @service_method(
         path="settings.allow_association_request_auto_approval",
@@ -352,8 +369,9 @@ class SettingsService(AbstractService):
         all_settings = self.stash.get_all(
             context.server.signing_key.verify_key
         ).unwrap()
-        user_service = context.server.get_service("userservice")
-        role = user_service.get_role_for_credentials(context.credentials).unwrap()
+        role = context.server.services.user.get_role_for_credentials(
+            context.credentials
+        ).unwrap()
 
         # check if the settings list is empty
         if len(all_settings) == 0:
@@ -417,7 +435,6 @@ class SettingsService(AbstractService):
             "server_side_type": server.server_side_type,
             # "port": server.port,
             "processes": server.processes,
-            "local_db": isinstance(server.document_store_config, SQLiteStoreConfig),
             "dev_mode": server.dev_mode,
             "reset": True,  # we should be able to get all the objects from migration data
             "tail": False,

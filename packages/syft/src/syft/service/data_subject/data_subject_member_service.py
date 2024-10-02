@@ -3,10 +3,8 @@
 # relative
 from ...serde.serializable import serializable
 from ...server.credentials import SyftVerifyKey
-from ...store.document_store import DocumentStore
-from ...store.document_store import NewBaseUIDStoreStash
-from ...store.document_store import PartitionSettings
-from ...store.document_store import QueryKeys
+from ...store.db.db import DBManager
+from ...store.db.stash import ObjectStash
 from ...store.document_store_errors import StashException
 from ...types.result import as_result
 from ..context import AuthedServiceContext
@@ -14,44 +12,35 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import SERVICE_TO_TYPES
 from ..service import TYPE_TO_SERVICE
-from .data_subject_member import ChildPartitionKey
 from .data_subject_member import DataSubjectMemberRelationship
-from .data_subject_member import ParentPartitionKey
 
 
-@serializable(canonical_name="DataSubjectMemberStash", version=1)
-class DataSubjectMemberStash(NewBaseUIDStoreStash):
-    object_type = DataSubjectMemberRelationship
-    settings: PartitionSettings = PartitionSettings(
-        name=DataSubjectMemberRelationship.__canonical_name__,
-        object_type=DataSubjectMemberRelationship,
-    )
-
-    def __init__(self, store: DocumentStore) -> None:
-        super().__init__(store=store)
-
+@serializable(canonical_name="DataSubjectMemberSQLStash", version=1)
+class DataSubjectMemberStash(ObjectStash[DataSubjectMemberRelationship]):
     @as_result(StashException)
     def get_all_for_parent(
         self, credentials: SyftVerifyKey, name: str
     ) -> list[DataSubjectMemberRelationship]:
-        qks = QueryKeys(qks=[ParentPartitionKey.with_obj(name)])
-        return self.query_all(credentials=credentials, qks=qks).unwrap()
+        return self.get_all(
+            credentials=credentials,
+            filters={"parent": name},
+        ).unwrap()
 
     @as_result(StashException)
     def get_all_for_child(
         self, credentials: SyftVerifyKey, name: str
     ) -> list[DataSubjectMemberRelationship]:
-        qks = QueryKeys(qks=[ChildPartitionKey.with_obj(name)])
-        return self.query_all(credentials=credentials, qks=qks).unwrap()
+        return self.get_all(
+            credentials=credentials,
+            filters={"child": name},
+        ).unwrap()
 
 
 @serializable(canonical_name="DataSubjectMemberService", version=1)
 class DataSubjectMemberService(AbstractService):
-    store: DocumentStore
     stash: DataSubjectMemberStash
 
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, store: DBManager) -> None:
         self.stash = DataSubjectMemberStash(store=store)
 
     def add(

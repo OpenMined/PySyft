@@ -10,17 +10,139 @@ from ..context import AuthedServiceContext
 
 if TYPE_CHECKING:
     # relative
+    from ..request.request import Request
     from .notifications import Notification
 
 
 class EmailTemplate:
     @staticmethod
     def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
-        return ""
+        raise NotImplementedError(
+            "Email Template subclasses must implement the email_title method."
+        )
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        return ""
+        raise NotImplementedError(
+            "Email Template subclasses must implement the email_body method."
+        )
+
+    @staticmethod
+    def batched_email_title(
+        notifications: list["Notification"], context: AuthedServiceContext
+    ) -> str:
+        raise NotImplementedError(
+            "Email Template subclasses must implement the batched_email_title method."
+        )
+
+    @staticmethod
+    def batched_email_body(
+        notifications: list["Notification"], context: AuthedServiceContext
+    ) -> str:
+        raise NotImplementedError(
+            "Email Template subclasses must implement the batched_email_body method."
+        )
+
+
+@serializable(canonical_name="FailedJobTemplate", version=1)
+class FailedJobTemplate(EmailTemplate):
+    @staticmethod
+    def email_title(notification: "Notification", context: AuthedServiceContext) -> str:
+        return "Job Failed Notification"
+
+    @staticmethod
+    def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
+        notification.linked_obj = cast(LinkedObject, notification.linked_obj)
+        queueitem_obj = notification.linked_obj.resolve_with_context(
+            context=context
+        ).unwrap()
+
+        worker_pool_obj = queueitem_obj.worker_pool.resolve_with_context(
+            context=context
+        ).unwrap()
+        method = queueitem_obj.method
+        if queueitem_obj.service == "apiservice":
+            method = queueitem_obj.kwargs.pop("path", "")
+            queueitem_obj.kwargs.pop("log_id")
+
+        head = """
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Job Failed Notification</title>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  background-color: #f4f4f4;
+                  margin: 0;
+                  padding: 0;
+                }
+                .container {
+                  width: 100%;
+                  max-width: 600px;
+                  margin: 0 auto;
+                  background-color: #ffffff;
+                  padding: 20px;
+                  border-radius: 8px;
+                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                }
+                h1 {
+                  font-size: 24px;
+                  color: #333333;
+                }
+                p {
+                  font-size: 16px;
+                  color: #666666;
+                  line-height: 1.5;
+                }
+                .card {
+                  background-color: #f9f9f9;
+                  padding: 15px;
+                  border-radius: 8px;
+                  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                  margin-top: 20px;
+                }
+                .card h2 {
+                  font-size: 18px;
+                  color: #333333;
+                  margin-bottom: 10px;
+                }
+                .card p {
+                  font-size: 14px;
+                  color: #555555;
+                  margin: 5px 0;
+                }
+                .footer {
+                  font-size: 12px;
+                  color: #999999;
+                  margin-top: 30px;
+                }
+              </style>
+            </head>
+        """
+        body = f"""
+            <body>
+              <div class="container">
+                <h1>Job Failed Notification</h1>
+                <p>Hello,</p>
+                <p>We regret to inform you that your function job has encountered an
+                unexpected error and could not be completed successfully.</p>
+
+                <div class="card">
+                  <h2>Job Details</h2>
+                  <p><strong>Job ID:</strong> {queueitem_obj.job_id}</p>
+                  <p><strong>Worker Pool:</strong> {worker_pool_obj.name}</p>
+                  <p><strong>Method:</strong> {method}</p>
+                  <p><strong>Service:</strong> {queueitem_obj.service}</p>
+                  <p><strong>Arguments (args):</strong> {queueitem_obj.args}</p>
+                  <p><strong>Keyword Arguments (kwargs):</strong> {queueitem_obj.kwargs}</p>
+                </div>
+
+                <p class="footer">If you need assistance, feel free to reach out to our support team.</p>
+              </div>
+            </body>
+        """
+        return f"""<html>{head} {body}</html>"""
 
 
 @serializable(canonical_name="PasswordResetTemplate", version=1)
@@ -31,8 +153,8 @@ class PasswordResetTemplate(EmailTemplate):
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        user_service = context.server.get_service("userservice")
-        admin_verify_key = user_service.admin_verify_key()
+        user_service = context.server.services.user
+        admin_verify_key = user_service.root_verify_key
         user = user_service.stash.get_by_verify_key(
             credentials=admin_verify_key, verify_key=notification.to_user_verify_key
         ).unwrap()
@@ -49,6 +171,10 @@ class PasswordResetTemplate(EmailTemplate):
         )
         if result.is_err():
             raise Exception("Couldn't update the user password")
+
+        expiry_time = context.server.services.settings.get(
+            context=context
+        ).pwd_token_config.token_exp_min
 
         head = """<head>
             <style>
@@ -103,7 +229,7 @@ class PasswordResetTemplate(EmailTemplate):
                     <code style="color: #FF8C00;background-color: #f0f0f0;font-size: 12px;">
                         syft_client.reset_password(token='{user.reset_token}', new_password=*****)
                     </code>.
-                to reset your password.</p>
+                to reset your password. This token is valid for {expiry_time} seconds only.</p>
                 <p>If you didn't request a password reset, please ignore this email.</p>
             </div>
         </body>"""
@@ -118,8 +244,8 @@ class OnBoardEmailTemplate(EmailTemplate):
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
-        user_service = context.server.get_service("userservice")
-        admin_verify_key = user_service.admin_verify_key()
+        user_service = context.server.services.user
+        admin_verify_key = user_service.root_verify_key
         admin = user_service.get_by_verify_key(admin_verify_key).unwrap()
         admin_name = admin.name
 
@@ -370,6 +496,164 @@ class RequestEmailTemplate(EmailTemplate):
         """
         return f"""<html>{head} {body}</html>"""
 
+    @staticmethod
+    def batched_email_title(
+        notifications: list["Notification"], context: AuthedServiceContext
+    ) -> str:
+        return "Batched Requests Notifications"
+
+    @staticmethod
+    def batched_email_body(
+        notifications: list["Notification"], context: AuthedServiceContext
+    ) -> str:
+        notifications_info = ""
+        for i, notification in enumerate(notifications):
+            if i > 3:
+                break
+            notification.linked_obj = cast(LinkedObject, notification.linked_obj)
+            request_obj = notification.linked_obj.resolve_with_context(
+                context=context
+            ).unwrap()
+
+            request_id = request_obj.id
+            request_name = request_obj.requesting_user_name
+            request_email = request_obj.requesting_user_email
+            request_time = request_obj.request_time
+            request_status = request_obj.status.name  # fails in l0 check right now
+            request_changes = ",".join(
+                [change.__class__.__name__ for change in request_obj.changes]
+            )
+
+            notifications_info += f"""<tr>
+                                <td>{str(request_id)[:4] + "..."}</td>
+                                <td>{request_name}</td>
+                                <td>{request_email}</td>
+                                <td>{request_time}</td>
+                                <td>{request_status}</td>
+                                <td>{request_changes}</td>
+                            </tr>"""
+
+        see_more_info = ""
+        if len(notifications) > 4:
+            see_more_info = f"""<p class="more-requests">{len(notifications) - 4}
+                  more requests made during this time period.
+                  Connect to the server to check all requests.</p>"""
+        head = """
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Batched Requests Notification</title>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  background-color: #f4f4f4;
+                  margin: 0;
+                  padding: 0;
+                  color: #333;
+                }
+                .container {
+                  width: 100%;
+                  max-width: 600px;
+                  margin: 0 auto;
+                  background-color: #ffffff;
+                  padding: 20px;
+                  border-radius: 8px;
+                  box-sizing: border-box; /* Added to include padding in width */
+                  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                }
+                .header {
+                  font-size: 18px;
+                  font-weight: bold;
+                  margin-bottom: 20px;
+                  color: #4CAF50;
+                }
+                .content {
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #555555;
+                }
+                .content p {
+                  margin: 10px 0;
+                }
+                .request-table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin-top: 20px;
+                  table-layout: fixed; /* Added to fix table layout */
+                }
+                .request-table th, .request-table td {
+                  text-align: left;
+                  padding: 12px;
+                  border: 1px solid #ddd;
+                  word-wrap: break-word; /* Added to wrap long content */
+                }
+                .request-table th {
+                  background-color: #f8f8f8;
+                  color: #333;
+                  font-weight: bold;
+                }
+                .request-table tr:nth-child(even) {
+                  background-color: #f9f9f9;
+                }
+                .more-requests {
+                  font-size: 13px;
+                  color: #FF5722;
+                  margin-top: 10px;
+                }
+                .footer {
+                  margin-top: 20px;
+                  font-size: 12px;
+                  color: #777777;
+                }
+                .button {
+                  background-color: #4CAF50;
+                  color: #ffffff;
+                  padding: 10px 20px;
+                  text-decoration: none;
+                  border-radius: 5px;
+                  font-size: 14px;
+                  display: inline-block;
+                  margin-top: 20px;
+                }
+              </style>
+            </head>
+        """
+        body = f"""
+            <body>
+              <div class="container">
+                <div class="header">
+                  Batched Requests Notification
+                </div>
+                <div class="content">
+                  <p>Hello Admin,</p>
+                  <p>This is to inform you that a batch of requests has been processed.
+                  Below are the details of the most recent requests:</p>
+                  <table class="request-table">
+                    <thead>
+                      <tr>
+                        <th>Request ID</th>
+                        <th>User</th>
+                        <th>User Email</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Changes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {notifications_info}
+                      <!-- Only show the first 3 requests -->
+                    </tbody>
+                  </table>
+                  {see_more_info}
+                </div>
+                <div class="footer">
+                  <p>Thank you,</p>
+                </div>
+              </div>
+            </body>
+        """
+        return f"""<html>{head} {body}</html>"""
+
 
 @serializable(canonical_name="RequestUpdateEmailTemplate", version=1)
 class RequestUpdateEmailTemplate(EmailTemplate):
@@ -379,8 +663,11 @@ class RequestUpdateEmailTemplate(EmailTemplate):
 
     @staticmethod
     def email_body(notification: "Notification", context: AuthedServiceContext) -> str:
+        # relative
+        from ..request.request import RequestStatus
+
         notification.linked_obj = cast(LinkedObject, notification.linked_obj)
-        request_obj = notification.linked_obj.resolve_with_context(
+        request_obj: Request = notification.linked_obj.resolve_with_context(
             context=context
         ).unwrap()
         badge_color = "red" if request_obj.status.name == "REJECTED" else "green"
@@ -389,10 +676,26 @@ class RequestUpdateEmailTemplate(EmailTemplate):
         request_name = request_obj.requesting_user_name
         request_email = request_obj.requesting_user_email
         request_time = request_obj.request_time
-        request_status = request_obj.status.name  # fails in l0 check right now
+        request_status = request_obj.status
+        request_status_name = request_status.name  # fails in l0 check right now
         request_changes = ",".join(
             [change.__class__.__name__ for change in request_obj.changes]
         )
+
+        deny_reason_html = ""
+        if request_status == RequestStatus.REJECTED:
+            deny_reason_or_err = request_obj.get_deny_reason(context=context)
+            if deny_reason_or_err.is_err():
+                deny_reason = None
+            else:
+                deny_reason = deny_reason_or_err.unwrap()
+
+            if not isinstance(deny_reason, str) or not len(deny_reason):
+                deny_reason = (
+                    "No reason provided, please contact the admin for more information."
+                )
+
+            deny_reason_html = f"<p><strong>Deny Reason:</strong> {deny_reason}</p>"
 
         head = """
         <head>
@@ -509,8 +812,10 @@ class RequestUpdateEmailTemplate(EmailTemplate):
                             </p>
                             <p><strong>Date:</strong> {request_time}</p>
                             <div style="display: flex"><p><strong>Status:</strong><div class="badge {badge_color}">
-                                {request_status}
-                            </div></div>
+                                {request_status_name}
+                            </div>
+                            </div>
+                            {deny_reason_html}
                             <p>
                             <strong>Changes:</strong>
                             {request_changes}

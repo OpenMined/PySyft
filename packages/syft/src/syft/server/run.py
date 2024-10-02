@@ -53,13 +53,6 @@ def run() -> ServerHandle | None:
         dest="reset",
     )
     parser.add_argument(
-        "--local-db",
-        help="reset",
-        type=str,
-        default="False",
-        dest="local_db",
-    )
-    parser.add_argument(
         "--processes",
         help="processing mode",
         type=int,
@@ -80,7 +73,6 @@ def run() -> ServerHandle | None:
 
     args.dev_mode = str_to_bool(args.dev_mode)
     args.reset = str_to_bool(args.reset)
-    args.local_db = str_to_bool(args.local_db)
     args.tail = str_to_bool(args.tail)
 
     server = Orchestra.launch(
@@ -90,7 +82,6 @@ def run() -> ServerHandle | None:
         port=args.port,
         dev_mode=args.dev_mode,
         reset=args.reset,
-        local_db=args.local_db,
         processes=args.processes,
         tail=args.tail,
     )
