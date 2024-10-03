@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import Callable
 from functools import wraps
 import inspect
+import threading
 from typing import Any
 from typing import ClassVar
 from typing import TypeVar
@@ -15,6 +16,10 @@ from opentelemetry import trace
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Tracer
 from opentelemetry.trace.span import Span
+
+__all__ = ["instrument"]
+
+T = TypeVar("T", bound=Callable | type)
 
 
 class TracingDecoratorOptions:
@@ -37,9 +42,6 @@ class TracingDecoratorOptions:
         if attributes is not None:
             for att in attributes:
                 cls.default_attributes[att] = attributes[att]
-
-
-T = TypeVar("T", bound=Callable | type)
 
 
 def instrument(
@@ -116,10 +118,13 @@ def instrument(
         tracer = existing_tracer or trace.get_tracer(func_or_class.__module__)
 
         def _set_semantic_attributes(span: Span, func: Callable) -> None:
+            thread = threading.current_thread()
             span.set_attribute(SpanAttributes.CODE_NAMESPACE, func.__module__)
             span.set_attribute(SpanAttributes.CODE_FUNCTION, func.__qualname__)
             span.set_attribute(SpanAttributes.CODE_FILEPATH, func.__code__.co_filename)
             span.set_attribute(SpanAttributes.CODE_LINENO, func.__code__.co_firstlineno)
+            span.set_attribute(SpanAttributes.THREAD_ID, thread.ident)
+            span.set_attribute(SpanAttributes.THREAD_NAME, thread.name)
 
         def _set_attributes(
             span: Span, attributes_dict: dict[str, str] | None = None

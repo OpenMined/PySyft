@@ -103,7 +103,7 @@ from .utils import check_for_global_vars
 from .utils import parse_code
 from .utils import submit_subjobs_code
 
-logger = logging.getLogger(name=__name__)
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     # relative
@@ -289,14 +289,17 @@ class UserCodeStatusCollection(SyncableSyftObject):
         from ...service.sync.diff_state import AttrDiff
 
         diff_attrs = []
-        status = list(self.status_dict.values())[0]
-        ext_status = list(ext_obj.status_dict.values())[0]
+        approval_decision = list(self.status_dict.values())[0]
+        ext_approval_decision = list(ext_obj.status_dict.values())[0]
 
-        if status != ext_status:
+        if (
+            approval_decision.status != ext_approval_decision.status
+            or approval_decision.reason != ext_approval_decision.reason
+        ):
             diff_attr = AttrDiff(
                 attr_name="status_dict",
-                low_attr=status,
-                high_attr=ext_status,
+                low_attr=approval_decision,
+                high_attr=ext_approval_decision,
             )
             diff_attrs.append(diff_attr)
         return diff_attrs

@@ -36,7 +36,7 @@ postgres:
   # PVC storage size
   storageSize: 5Gi
 
-  # Mongo secret name. Override this if you want to use a self-managed secret.
+  # Postgres secret name. Override this if you want to use a self-managed secret.
   secretKeyName: postgres-secret
 
   # default/custom secret raw values

@@ -251,6 +251,7 @@ def run_workers_in_threads(
         error = None
         worker_name = f"{pool_name}-{worker_count}"
         worker = SyftWorker(
+            id=UID.with_seed(worker_name),
             name=worker_name,
             status=WorkerStatus.RUNNING,
             worker_pool_name=pool_name,
@@ -353,9 +354,6 @@ def create_kubernetes_pool(
                 "CREATE_PRODUCER": "False",
                 "INMEMORY_WORKERS": "False",
                 "OTEL_SERVICE_NAME": f"{pool_name}",
-                "OTEL_PYTHON_LOG_CORRELATION": os.environ.get(
-                    "OTEL_PYTHON_LOG_CORRELATION"
-                ),
                 "OTEL_EXPORTER_OTLP_ENDPOINT": os.environ.get(
                     "OTEL_EXPORTER_OTLP_ENDPOINT"
                 ),

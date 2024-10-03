@@ -105,7 +105,7 @@ class ObjectStash(Generic[StashT]):
         self.db = store
         self.object_type = self.get_object_type()
         self.table = create_table(self.object_type, self.dialect)
-        self.sessionmaker = self.db.sessionmaker
+        self.sessionmaker: Callable[[], Session] = self.db.sessionmaker
 
     @property
     def dialect(self) -> sa.engine.interfaces.Dialect:

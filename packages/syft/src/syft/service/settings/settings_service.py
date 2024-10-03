@@ -25,6 +25,7 @@ from ...util.schema import GUEST_COMMANDS
 from ..context import AuthedServiceContext
 from ..context import UnauthedServiceContext
 from ..notifier.notifier_enums import EMAIL_TYPES
+from ..notifier.notifier_enums import NOTIFICATION_FREQUENCY
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -191,6 +192,26 @@ class SettingsService(AbstractService):
         else:
             # TODO: Turn this into a function?
             raise NotFoundException(public_message="Server settings not found")
+
+    @service_method(
+        path="settings.batch_notifications",
+        name="batch_notifications",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def batch_notifications(
+        self,
+        context: AuthedServiceContext,
+        email_type: EMAIL_TYPES,
+        frequency: NOTIFICATION_FREQUENCY,
+        start_time: str = "",
+    ) -> SyftSuccess:
+        result = context.server.services.notifier.set_email_batch(
+            context=context,
+            email_type=email_type,
+            frequency=frequency,
+            start_time=start_time,
+        ).unwrap()
+        return result
 
     @service_method(
         path="settings.enable_notifications",

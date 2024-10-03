@@ -2,13 +2,13 @@
 import syft as sy
 
 
-def make_submit_query(settings, worker_pool):
-    updated_settings = {"user_code_worker": worker_pool} | settings
+def make_submit_query(settings, worker_pool_name):
+    updated_settings = {"user_code_worker": worker_pool_name} | settings
 
     @sy.api_endpoint(
         path="bigquery.submit_query",
         description="API endpoint that allows you to submit SQL queries to run on the private data.",
-        worker_pool=worker_pool,
+        worker_pool_name=worker_pool_name,
         settings=updated_settings,
     )
     def submit_query(
@@ -23,10 +23,10 @@ def make_submit_query(settings, worker_pool):
             name=func_name,
             input_policy=sy.MixedInputPolicy(
                 endpoint=sy.Constant(
-                    val=context.admin_client.api.services.bigquery.test_query
+                    val=context.user_client.api.services.bigquery.test_query
                 ),
                 query=sy.Constant(val=query),
-                client=context.admin_client,
+                client=context.user_client,
             ),
             worker_pool_name=context.settings["user_code_worker"],
         )

@@ -455,7 +455,28 @@ class Request(SyncableSyftObject):
 
         return desc
 
+    @property
+    def deny_reason(self) -> str | SyftError:
+        code = self.code
+        if isinstance(code, SyftError):
+            return code
+
+        code_status: UserCodeStatusCollection = code.status_link.resolve
+        return code_status.first_denial_reason
+
+    @as_result(SyftException)
+    def get_deny_reason(self, context: AuthedServiceContext) -> str | None:
+        code = self.get_user_code(context).unwrap()
+        if code is None:
+            return None
+
+        code_status = code.get_status(context).unwrap()
+        return code_status.first_denial_reason
+
     def _coll_repr_(self) -> dict[str, str | dict[str, str]]:
+        # relative
+        from ...util.notebook_ui.components.sync import Badge
+
         if self.status == RequestStatus.APPROVED:
             badge_color = "badge-green"
         elif self.status == RequestStatus.PENDING:
@@ -463,7 +484,18 @@ class Request(SyncableSyftObject):
         else:
             badge_color = "badge-red"
 
-        status_badge = {"value": self.status.name.capitalize(), "type": badge_color}
+        status_badge = Badge(
+            value=self.status.name.capitalize(),
+            badge_class=badge_color,
+        ).to_html()
+
+        if self.status == RequestStatus.REJECTED:
+            deny_reason = self.deny_reason
+            if isinstance(deny_reason, str) and len(deny_reason) > 0:
+                status_badge += (
+                    "<br><span style='margin-top: 8px; display: block;'>"
+                    f"<strong>Deny Reason:</strong> {deny_reason}</span>"
+                )
 
         user_data = [
             self.requesting_user_name,
@@ -505,10 +537,11 @@ class Request(SyncableSyftObject):
             message="This type of request does not have code associated with it."
         )
 
+    @as_result(SyftException)
     def get_user_code(self, context: AuthedServiceContext) -> UserCode | None:
         for change in self.changes:
             if isinstance(change, UserCodeStatusChange):
-                return change.get_user_code(context)
+                return change.get_user_code(context).unwrap()
         return None
 
     @property
@@ -641,7 +674,7 @@ class Request(SyncableSyftObject):
         return bool(self.code) and self.code.is_l0_deployment
 
     def get_is_l0_deployment(self, context: AuthedServiceContext) -> bool:
-        code = self.get_user_code(context)
+        code = self.get_user_code(context).unwrap()
         if code:
             return code.is_l0_deployment
         else:
@@ -1355,6 +1388,7 @@ class UserCodeStatusChange(Change):
             return self.linked_user_code._resolve_cache
         return self.linked_user_code.resolve
 
+    @as_result(SyftException)
     def get_user_code(self, context: AuthedServiceContext) -> UserCode:
         return self.linked_user_code.resolve_with_context(context).unwrap()
 

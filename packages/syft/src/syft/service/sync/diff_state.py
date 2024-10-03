@@ -725,7 +725,7 @@ class ObjectDiffBatch(SyftObject):
         if self.decision == SyncDecision.IGNORE:
             decision_str = "IGNORED"
             badge_color = "label-red"
-        if self.decision == SyncDecision.SKIP:
+        elif self.decision == SyncDecision.SKIP:
             decision_str = "SKIPPED"
             badge_color = "label-gray"
         else:
@@ -1130,7 +1130,7 @@ class ServerDiff(SyftObject):
     include_ignored: bool = False
 
     def resolve(
-        self, build_state: bool = True
+        self, build_state: bool = True, filter_ignored: bool = True
     ) -> "PaginatedResolveWidget | SyftSuccess":
         if len(self.batches) == 0:
             return SyftSuccess(message="No batches to resolve")
@@ -1138,7 +1138,12 @@ class ServerDiff(SyftObject):
         # relative
         from .resolve_widget import PaginatedResolveWidget
 
-        return PaginatedResolveWidget(batches=self.batches, build_state=build_state)
+        if filter_ignored:
+            batches = [b for b in self.batches if b.decision != SyncDecision.IGNORE]
+        else:
+            batches = self.batches
+
+        return PaginatedResolveWidget(batches=batches, build_state=build_state)
 
     def __getitem__(self, idx: Any) -> ObjectDiffBatch:
         return self.batches[idx]
@@ -1530,7 +1535,8 @@ It will be available for review again."""
             )
         if include_types is not None:
             include_types_ = {
-                t.__name__ if isinstance(t, type) else t for t in include_types
+                t.__name__.lower() if isinstance(t, type) else t.lower()
+                for t in include_types
             }
             new_filters.append(
                 ServerDiffFilter(FilterProperty.TYPE, include_types_, operator.contains)

@@ -23,14 +23,18 @@ from ...serde.serializable import serializable
 from ...serde.signature import signature_remove_context
 from ...types.errors import SyftException
 from ...types.result import as_result
+from ...types.syft_migration import migrate
 from ...types.syft_object import PartialSyftObject
 from ...types.syft_object import SYFT_OBJECT_VERSION_1
+from ...types.syft_object import SYFT_OBJECT_VERSION_2
 from ...types.syft_object import SyftObject
 from ...types.syncable_object import SyncableSyftObject
 from ...types.transforms import TransformContext
+from ...types.transforms import drop
 from ...types.transforms import generate_action_object_id
 from ...types.transforms import generate_id
 from ...types.transforms import keep
+from ...types.transforms import make_set_default
 from ...types.transforms import transform
 from ...types.uid import UID
 from ...util.misc_objs import MarkdownDescription
@@ -88,7 +92,7 @@ def register_fn_in_linecache(fname: str, src: str) -> None:
 
 
 @serializable()
-class TwinAPIEndpointView(SyftObject):
+class TwinAPIEndpointViewV1(SyftObject):
     # version
     __canonical_name__ = "CustomAPIView"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -105,10 +109,29 @@ class TwinAPIEndpointView(SyftObject):
     worker_pool: str | None = None
     endpoint_timeout: int = 60
 
+
+@serializable()
+class TwinAPIEndpointView(SyftObject):
+    # version
+    __canonical_name__ = "CustomAPIView"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    path: str
+    action_object_id: UID
+    signature: Signature
+    access: str = "Public"
+    mock_function: str | None = None
+    private_function: str | None = None
+    description: MarkdownDescription | None = None
+    mock_helper_functions: list[str] | None = None
+    private_helper_functions: list[str] | None = None
+    worker_pool_name: str | None = None
+    endpoint_timeout: int = 60
+
     __repr_attrs__ = [
         "path",
         "signature",
-        "worker_pool",
+        "worker_pool_name",
         "endpoint_timeout",
     ]
 
@@ -133,16 +156,16 @@ class TwinAPIEndpointView(SyftObject):
         else:
             private_function_name = NOT_ACCESSIBLE_STRING
 
-        worker_pool = "UNSET (DEFAULT)"
-        if self.worker_pool is not None:
-            worker_pool = self.worker_pool
+        worker_pool_name = "UNSET (DEFAULT)"
+        if self.worker_pool_name is not None:
+            worker_pool_name = self.worker_pool_name
         return {
             "API path": self.path,
             "Signature": self.path + str(self.signature),
             "Access": self.access,
             "Mock Function": mock_function_name,
             "Private Function": private_function_name,
-            "Worker Pool": worker_pool,
+            "Worker Pool": worker_pool_name,
         }
 
 
@@ -357,7 +380,7 @@ class UpdateTwinAPIEndpoint(PartialSyftObject, BaseTwinAPIEndpoint):
 
 
 @serializable()
-class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
+class CreateTwinAPIEndpointV1(BaseTwinAPIEndpoint):
     # version
     __canonical_name__ = "CreateTwinAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -370,6 +393,21 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
     worker_pool: str | None = None
     endpoint_timeout: int = 60
 
+
+@serializable()
+class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
+    # version
+    __canonical_name__ = "CreateTwinAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_2
+
+    path: str
+    private_function: PrivateAPIEndpoint | None = None
+    mock_function: PublicAPIEndpoint
+    signature: Signature
+    description: MarkdownDescription | None = None
+    worker_pool_name: str | None = None
+    endpoint_timeout: int = 60
+
     def __init__(
         self, description: str | MarkdownDescription | None = "", **kwargs: Any
     ) -> None:
@@ -380,7 +418,7 @@ class CreateTwinAPIEndpoint(BaseTwinAPIEndpoint):
 
 
 @serializable()
-class TwinAPIEndpoint(SyncableSyftObject):
+class TwinAPIEndpointV1(SyncableSyftObject):
     # version
     __canonical_name__: str = "TwinAPIEndpoint"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -399,6 +437,39 @@ class TwinAPIEndpoint(SyncableSyftObject):
     description: MarkdownDescription | None = None
     action_object_id: UID
     worker_pool: str | None = None
+    endpoint_timeout: int = 60
+
+    __attr_searchable__ = ["path"]
+    __attr_unique__ = ["path"]
+    __repr_attrs__ = [
+        "path",
+        "description",
+        "private_function",
+        "mock_function",
+        "endpoint_timeout",
+    ]
+
+
+@serializable()
+class TwinAPIEndpoint(SyncableSyftObject):
+    # version
+    __canonical_name__: str = "TwinAPIEndpoint"
+    __version__ = SYFT_OBJECT_VERSION_2
+    __exclude_sync_diff_attrs__ = ["private_function"]
+    __private_sync_attr_mocks__ = {
+        "private_function": None,
+    }
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+
+    path: str
+    private_function: PrivateAPIEndpoint | None = None
+    mock_function: PublicAPIEndpoint
+    signature: Signature
+    description: MarkdownDescription | None = None
+    action_object_id: UID
+    worker_pool_name: str | None = None
     endpoint_timeout: int = 60
 
     __attr_searchable__ = ["path"]
@@ -721,12 +792,60 @@ def endpoint_to_public_endpoint() -> list[Callable]:
     ]
 
 
+@migrate(TwinAPIEndpointV1, TwinAPIEndpoint)
+def migrate_twin_api_endpoint_v1_to_current() -> list[Callable]:
+    return [
+        drop(["worker_pool"]),
+        make_set_default("worker_pool_name", None),
+    ]
+
+
+@migrate(CreateTwinAPIEndpointV1, CreateTwinAPIEndpoint)
+def migrate_create_twin_api_endpoint_v1_to_current() -> list[Callable]:
+    return [
+        drop(["worker_pool"]),
+        make_set_default("worker_pool_name", None),
+    ]
+
+
+@migrate(TwinAPIEndpointViewV1, TwinAPIEndpointView)
+def migrate_twin_api_endpoint_view_v1_to_current() -> list[Callable]:
+    return [
+        drop(["worker_pool"]),
+        make_set_default("worker_pool_name", None),
+    ]
+
+
+@migrate(TwinAPIEndpointView, TwinAPIEndpointViewV1)
+def migrate_twin_api_endpoint_view_current_to_v1() -> list[Callable]:
+    return [
+        drop(["worker_pool_name"]),
+        make_set_default("worker_pool", None),
+    ]
+
+
+@migrate(CreateTwinAPIEndpoint, CreateTwinAPIEndpointV1)
+def migrate_create_twin_api_endpoint_current_to_v1() -> list[Callable]:
+    return [
+        drop(["worker_pool_name"]),
+        make_set_default("worker_pool", None),
+    ]
+
+
+@migrate(TwinAPIEndpoint, TwinAPIEndpointV1)
+def migrate_twin_api_endpoint_current_to_v1() -> list[Callable]:
+    return [
+        drop(["worker_pool_name"]),
+        make_set_default("worker_pool", None),
+    ]
+
+
 def api_endpoint(
     path: str,
     settings: dict[str, str] | None = None,
     helper_functions: list[Callable] | None = None,
     description: MarkdownDescription | None = None,
-    worker_pool: str | None = None,
+    worker_pool_name: str | None = None,
     endpoint_timeout: int = 60,
 ) -> Callable[..., TwinAPIEndpoint | SyftError]:
     def decorator(f: Callable) -> TwinAPIEndpoint | SyftError:
@@ -746,7 +865,7 @@ def api_endpoint(
                 ),
                 signature=inspect.signature(f),
                 description=description,
-                worker_pool=worker_pool,
+                worker_pool_name=worker_pool_name,
                 endpoint_timeout=endpoint_timeout,
             )
         except ValidationError as e:
@@ -789,7 +908,7 @@ def create_new_api_endpoint(
     mock_function: Endpoint,
     private_function: Endpoint | None = None,
     description: MarkdownDescription | None = None,
-    worker_pool: str | None = None,
+    worker_pool_name: str | None = None,
     endpoint_timeout: int = 60,
     hide_mock_definition: bool = False,
     hide_private_definition: bool = True,
@@ -811,7 +930,7 @@ def create_new_api_endpoint(
                 mock_function=mock_function.to(PublicAPIEndpoint),
                 signature=endpoint_signature,
                 description=description,
-                worker_pool=worker_pool,
+                worker_pool_name=worker_pool_name,
                 endpoint_timeout=endpoint_timeout,
             )
 
@@ -819,7 +938,7 @@ def create_new_api_endpoint(
             path=path,
             prublic_code=mock_function.to(PublicAPIEndpoint),
             signature=endpoint_signature,
-            worker_pool=worker_pool,
+            worker_pool_name=worker_pool_name,
             endpoint_timeout=endpoint_timeout,
         )
     except ValidationError as e:

@@ -8,7 +8,6 @@ from ...client.api import ServerIdentity
 from ...serde.serializable import serializable
 from ...store.db.db import DBManager
 from ...store.db.stash import ObjectStash
-from ...store.document_store import NewBaseStash
 from ...store.document_store_errors import NotFoundException
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -108,9 +107,10 @@ class SyncService(AbstractService):
         self.set_obj_ids(context, item)
         return item
 
+    @as_result(ValueError)
     def get_stash_for_item(
         self, context: AuthedServiceContext, item: SyftObject
-    ) -> NewBaseStash:
+    ) -> ObjectStash:
         services = list(context.server.service_path_map.values())  # type: ignore
 
         all_stashes = {}
@@ -119,6 +119,8 @@ class SyncService(AbstractService):
                 all_stashes[_stash.object_type] = _stash
 
         stash = all_stashes.get(type(item), None)
+        if stash is None:
+            raise ValueError(f"Could not find stash for {type(item)}")
         return stash
 
     def add_permissions_for_item(
@@ -148,7 +150,7 @@ class SyncService(AbstractService):
     def set_object(
         self, context: AuthedServiceContext, item: SyncableSyftObject
     ) -> SyftObject:
-        stash = self.get_stash_for_item(context, item)
+        stash = self.get_stash_for_item(context, item).unwrap()
         creds = context.credentials
 
         obj = None

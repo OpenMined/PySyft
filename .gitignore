@@ -86,8 +86,11 @@ packages/grid/helm/examples/dev/migration.yaml
 # dynaconf settings file
 **/settings.yaml
 
-
+# Any temporary material created for scenarios
 notebooks/scenarios/bigquery/*.json
-
+notebooks/scenarios/bigquery/sync/*.json
+notebooks/scenarios/bigquery/sync/*.json.lock
 notebooks/tutorials/version-upgrades/*.yaml
 notebooks/tutorials/version-upgrades/*.blob
+
+notebooks/scenarios/bigquery/sync/emails.json

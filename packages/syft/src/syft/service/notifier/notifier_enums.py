@@ -20,3 +20,12 @@ class NOTIFIERS(Enum):
     SMS = auto()
     SLACK = auto()
     APP = auto()
+
+
+@serializable(canonical_name="NOTIFICATION_FREQUENCY", version=1)
+class NOTIFICATION_FREQUENCY(Enum):
+    INSTANT = auto()
+    SIX_HOURS = auto()
+    TWELVE_HOURS = auto()
+    DAILY = auto()
+    WEEKLY = auto()

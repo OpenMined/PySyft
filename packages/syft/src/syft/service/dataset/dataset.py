@@ -17,7 +17,6 @@ from typing_extensions import Self
 
 # relative
 from ...serde.serializable import serializable
-from ...store.document_store import PartitionKey
 from ...types.datetime import DateTime
 from ...types.dicttuple import DictTuple
 from ...types.errors import SyftException
@@ -45,7 +44,6 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..response import SyftWarning
 
-NamePartitionKey = PartitionKey(key="name", type_=str)
 logger = logging.getLogger(__name__)
 
 

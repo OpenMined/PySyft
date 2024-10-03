@@ -1,5 +1,4 @@
 # stdlib
-import asyncio
 from dataclasses import dataclass
 from dataclasses import field
 import json
@@ -10,6 +9,7 @@ from typing import Any
 # third party
 from aiosmtpd.controller import Controller
 from faker import Faker
+from filelock import FileLock
 
 # relative
 from ...service.user.user_roles import ServiceRole
@@ -40,39 +40,49 @@ class Email:
 
 
 class EmailServer:
-    def __init__(self, filepath="./emails.json"):
+    def __init__(self, filepath="emails.json"):
         self.filepath = filepath
+        lockpath = self.filepath + ".lock"
+        self._lock = FileLock(lock_file=lockpath)
         self._emails: dict[str, list[Email]] = self.load_emails()
 
     def load_emails(self) -> dict[str, list[Email]]:
         try:
-            with open(self.filepath) as f:
+            with (
+                self._lock as _,
+                open(self.filepath) as f,
+            ):
                 data = json.load(f)
                 return {k: [Email(**email) for email in v] for k, v in data.items()}
         except Exception as e:
-            print("Issues reading email file", e)
+            print("Issues reading email file. Using empty email dict.", e)
             return {}
 
     def save_emails(self) -> None:
-        with open(self.filepath, "w") as f:
+        with (
+            self._lock as _,
+            open(self.filepath, "w") as f,
+        ):
             data = {
                 k: [email.to_dict() for email in v] for k, v in self._emails.items()
             }
             f.write(json.dumps(data))
 
     def add_email_for_user(self, user_email: str, email: Email) -> None:
-        if user_email not in self._emails:
-            self._emails[user_email] = []
-        self._emails[user_email].append(email)
-        self.save_emails()
+        with self._lock:
+            if user_email not in self._emails:
+                self._emails[user_email] = []
+            self._emails[user_email].append(email)
+            self.save_emails()
 
     def get_emails_for_user(self, user_email: str) -> list[Email]:
         self._emails: dict[str, list[Email]] = self.load_emails()
         return self._emails.get(user_email, [])
 
     def reset_emails(self) -> None:
-        self._emails = {}
-        self.save_emails()
+        with self._lock:
+            self._emails = {}
+            self.save_emails()
 
 
 SENDER = "noreply@openmined.org"
@@ -122,8 +132,8 @@ class TestUser:
 
     @client.setter
     def client(self, client):
-        client = client.login(email=self.email, password=self.latest_password)
-        self._client_cache = client
+        this_client = client.login(email=self.email, password=self.latest_password)
+        self._client_cache = this_client
 
     def to_dict(self) -> dict:
         output = {}
@@ -218,10 +228,10 @@ def user_exists(root_client, email: str) -> bool:
 
 
 class SMTPTestServer:
-    def __init__(self, email_server):
-        self.port = 9025
+    def __init__(self, email_server, port=9025, ready_timeout=5):
+        self.port = port
         self.hostname = "0.0.0.0"  # nosec: B104
-        self._stop_event = asyncio.Event()
+        self.controller = None
 
         # Simple email handler class
         class SimpleHandler:
@@ -245,39 +255,23 @@ class SMTPTestServer:
         try:
             self.handler = SimpleHandler()
             self.controller = Controller(
-                self.handler, hostname=self.hostname, port=self.port
+                self.handler,
+                hostname=self.hostname,
+                port=self.port,
+                ready_timeout=ready_timeout,
             )
         except Exception as e:
             print(f"> Error initializing SMTPTestServer Controller: {e}")
 
     def start(self):
-        print(f"> Starting SMTPTestServer on: {self.hostname}:{self.port}")
-        asyncio.create_task(self.async_loop())
-
-    async def async_loop(self):
-        try:
-            print(f"> Starting SMTPTestServer on: {self.hostname}:{self.port}")
-            self.controller.start()
-            await (
-                self._stop_event.wait()
-            )  # Wait until the event is set to stop the server
-        except Exception as e:
-            print(f"> Error with SMTPTestServer: {e}")
+        self.controller.start()
 
     def stop(self):
-        try:
-            print("> Stopping SMTPTestServer")
-            loop = asyncio.get_running_loop()
-            if loop.is_running():
-                loop.create_task(self.async_stop())
-            else:
-                asyncio.run(self.async_stop())
-        except Exception as e:
-            print(f"> Error stopping SMTPTestServer: {e}")
-
-    async def async_stop(self):
         self.controller.stop()
-        self._stop_event.set()  # Stop the server by setting the event
+
+    def __del__(self):
+        if self.controller:
+            self.stop()
 
 
 class TimeoutError(Exception):
@@ -314,13 +308,23 @@ class Timeout:
         return result
 
 
-def get_email_server(reset=False):
+def get_email_server(reset=False, port=9025):
     email_server = EmailServer()
     if reset:
         email_server.reset_emails()
-    smtp_server = SMTPTestServer(email_server)
-    smtp_server.start()
-    return email_server, smtp_server
+    for _ in range(5):
+        try:
+            smtp_server = SMTPTestServer(email_server, port=port)
+            smtp_server.start()
+            return email_server, smtp_server
+
+        except TimeoutError:
+            del smtp_server
+            print("SMTP server timed out. Retrying...")
+            continue
+        except Exception as e:
+            print(f"> Error starting SMTP server: {e}")
+    raise Exception("Failed to start SMTP server in 5 attempts.")
 
 
 def create_user(root_client, test_user):
