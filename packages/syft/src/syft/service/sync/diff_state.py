@@ -1553,6 +1553,7 @@ class SyncInstruction(SyftObject):
     diff: ObjectDiff
     decision: SyncDecision | None
     new_permissions_lowside: list[ActionObjectPermission]
+    new_permissions_highside: list[ActionObjectPermission]
     new_storage_permissions_lowside: list[StoragePermission]
     new_storage_permissions_highside: list[StoragePermission]
     unignore: bool = False
@@ -1570,7 +1571,9 @@ class SyncInstruction(SyftObject):
     ) -> Self:
         # read widget state
         new_permissions_low_side = []
-
+        new_permissions_high_side = []
+        import sys 
+        print(sync_direction, diff.object_type, share_private_data, share_to_user, file=sys.stderr)
         # read permissions
         if sync_direction == SyncDirection.HIGH_TO_LOW:
             # To create read permissions for the object
@@ -1593,6 +1596,14 @@ class SyncInstruction(SyftObject):
                             credentials=share_to_user,
                         )
                     ]
+                    new_permissions_high_side = [
+                        ActionObjectPermission(
+                            uid=diff.object_id,
+                            permission=ActionPermission.READ,
+                            credentials=share_to_user,
+                        )
+                    ]
+        print(new_permissions_low_side)
 
         # storage permissions
         new_storage_permissions = []
@@ -1614,6 +1625,7 @@ class SyncInstruction(SyftObject):
             diff=diff,
             decision=decision,
             new_permissions_lowside=new_permissions_low_side,
+            new_permissions_highside=new_permissions_high_side,
             new_storage_permissions_lowside=new_storage_permissions,
             new_storage_permissions_highside=new_storage_permissions,
             mockify=mockify,
@@ -1656,11 +1668,12 @@ class ResolvedSyncState(SyftObject):
         ):
             return
         diff = sync_instruction.diff
+        print(self.alias, diff.status, len(sync_instruction.new_permissions_highside), sync_instruction.diff)
 
         if sync_instruction.unignore:
             self.unignored_batches.add(sync_instruction.batch_diff.root_id)
 
-        if diff.status == "SAME":
+        if diff.status == "SAME" and len(sync_instruction.new_permissions_highside) == 0:
             return
 
         my_obj = diff.low_obj if self.alias == "low" else diff.high_obj
@@ -1688,12 +1701,21 @@ class ResolvedSyncState(SyftObject):
                     if my_obj.id not in [x.id for x in self.delete_objs]:
                         self.delete_objs.append(my_obj)
 
+        if self.alias == "high" \
+            and len(sync_instruction.new_permissions_highside) > 0 \
+            and diff.object_type == "ExecutionOutput":
+            if diff.high_obj:
+                self.create_objs.append(diff.high_obj)
+
         if self.alias == "low":
             self.new_permissions.extend(sync_instruction.new_permissions_lowside)
             self.new_storage_permissions.extend(
                 sync_instruction.new_storage_permissions_lowside
             )
         elif self.alias == "high":
+            if len(sync_instruction.new_permissions_highside) > 0:
+                print("got some new permissions")
+            self.new_permissions.extend(sync_instruction.new_permissions_highside)
             self.new_storage_permissions.extend(
                 sync_instruction.new_storage_permissions_highside
             )

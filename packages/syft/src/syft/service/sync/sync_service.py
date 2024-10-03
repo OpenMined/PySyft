@@ -192,6 +192,9 @@ class SyncService(AbstractService):
         ignored_batches: dict[UID, int],
         unignored_batches: set[UID],
     ) -> SyftSuccess:
+        import sys
+        print(context.server.server_side_type, len(items), items[0].id if len(items) > 0 else None, file=sys.stderr)
+        print(permissions, file=sys.stderr)
         permissions_dict = defaultdict(list)
         for permission in permissions:
             permissions_dict[permission.uid].append(permission)
@@ -203,6 +206,7 @@ class SyncService(AbstractService):
         for item in items:
             new_permissions = permissions_dict[item.id.id]
             new_storage_permissions = storage_permissions_dict[item.id.id]
+            print(item.id, isinstance(item, ActionObject), new_permissions, file=sys.stderr)
             if isinstance(item, ActionObject):
                 self.add_actionobject_read_permissions(context, item, new_permissions)
                 self.add_storage_permissions_for_item(
@@ -211,7 +215,6 @@ class SyncService(AbstractService):
             else:
                 item = self.transform_item(context, item)  # type: ignore[unreachable]
                 self.set_object(context, item).unwrap()
-
                 self.add_permissions_for_item(context, item, new_permissions)
                 self.add_storage_permissions_for_item(
                     context, item, new_storage_permissions

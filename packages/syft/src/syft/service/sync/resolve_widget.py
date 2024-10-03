@@ -478,16 +478,16 @@ class ResolveWidget:
                 public_message="The changes in this widget have already been synced."
             )
 
-        res = handle_sync_batch(
+        res1, res2  = handle_sync_batch(
             obj_diff_batch=self.obj_diff_batch,
             share_private_data=self.get_share_private_data_state(),
             mockify=self.get_mockify_state(),
         )
 
-        self.set_widget_result_state(res)
+        self.set_widget_result_state(res1)
         if self.on_sync_callback:
             self.on_sync_callback()
-        return res
+        return res1, res2
 
     @property
     def batch_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
@@ -808,8 +808,10 @@ class PaginatedResolveWidget:
             widget.click_share_all_private_data()
 
     def _sync_all(self) -> None:
+        results = []
         for widget in self.resolve_widgets:
-            widget.click_sync()
+            results.append(widget.click_sync())
+        return results
 
     def _repr_mimebundle_(self, **kwargs: dict) -> dict[str, str] | None:
         return self.widget._repr_mimebundle_(**kwargs)

@@ -1,5 +1,5 @@
 # stdlib
-from typing import ClassVar
+from typing import ClassVar, List
 
 # third party
 from pydantic import model_validator
@@ -18,7 +18,7 @@ from ...types.syft_object import SYFT_OBJECT_VERSION_1
 from ...types.syncable_object import SyncableSyftObject
 from ...types.uid import UID
 from ..action.action_object import ActionObject
-from ..action.action_permissions import ActionObjectREAD
+from ..action.action_permissions import ActionObjectPermission, ActionObjectREAD
 from ..context import AuthedServiceContext
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -320,6 +320,16 @@ class OutputService(AbstractService):
     )
     def get(self, context: AuthedServiceContext, id: UID) -> ExecutionOutput:
         return self.stash.get_by_uid(context.credentials, id).unwrap()
+    
+    @service_method(
+        path="output.set_permission",
+        name="set_permission",
+        roles=GUEST_ROLE_LEVEL,
+    )
+    def set_permission(self, context: AuthedServiceContext, uid, credentials) -> ExecutionOutput:
+        exec_output = self.get(context, uid)
+        permissions = [ActionObjectREAD(uid=_id.id, credentials=credentials) for _id in exec_output.output_id_list]
+        return context.server.services.action.stash.add_permissions(permissions).unwrap()
 
     @service_method(path="output.get_all", name="get_all", roles=GUEST_ROLE_LEVEL)
     def get_all(self, context: AuthedServiceContext) -> list[ExecutionOutput]:
