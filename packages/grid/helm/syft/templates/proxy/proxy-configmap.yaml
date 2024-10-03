@@ -38,7 +38,7 @@ data:
             - "web"
           service: "frontend"
         backend:
-          rule: "(PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)) && !PathPrefix(`/rtunnel`)"
+          rule: "PathPrefix(`/api`) && !PathPrefix(`/rtunnel`)"
           entryPoints:
             - "web"
           service: "backend"

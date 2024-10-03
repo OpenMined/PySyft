@@ -251,6 +251,7 @@ def run_workers_in_threads(
         error = None
         worker_name = f"{pool_name}-{worker_count}"
         worker = SyftWorker(
+            id=UID.with_seed(worker_name),
             name=worker_name,
             status=WorkerStatus.RUNNING,
             worker_pool_name=pool_name,
