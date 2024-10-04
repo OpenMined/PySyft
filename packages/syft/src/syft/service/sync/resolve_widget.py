@@ -490,9 +490,7 @@ class ResolveWidget:
         assert request is not None  # nosec: B101
         request.deny(reason)
 
-    def click_sync(
-        self, *args: list, **kwargs: dict
-    ) -> tuple[SyftSuccess, SyftSuccess]:
+    def click_sync(self, *args: list, **kwargs: dict) -> SyftSuccess:
         # relative
         from ...client.syncing import handle_sync_batch
 
@@ -501,16 +499,16 @@ class ResolveWidget:
                 public_message="The changes in this widget have already been synced."
             )
 
-        res1, res2 = handle_sync_batch(
+        res = handle_sync_batch(
             obj_diff_batch=self.obj_diff_batch,
             share_private_data=self.get_share_private_data_state(),
             mockify=self.get_mockify_state(),
         )
 
-        self.set_widget_result_state(res1)
+        self.set_widget_result_state(res)
         if self.on_sync_callback:
             self.on_sync_callback()
-        return res1, res2
+        return res
 
     @property
     def batch_diff_widgets(self) -> list[CollapsableObjectDiffWidget]:
@@ -832,7 +830,7 @@ class PaginatedResolveWidget:
     def build(self) -> widgets.VBox:
         return widgets.VBox([self.table_output, self.paginated_widget.build()])
 
-    def click_sync(self, index: int) -> tuple[SyftSuccess, SyftSuccess]:
+    def click_sync(self, index: int) -> SyftSuccess:
         return self.resolve_widgets[index].click_sync()
 
     def click_share_all_private_data(self, index: int) -> None:

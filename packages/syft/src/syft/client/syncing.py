@@ -167,7 +167,7 @@ def handle_sync_batch(
     obj_diff_batch: ObjectDiffBatch,
     share_private_data: dict[UID, bool],
     mockify: dict[UID, bool],
-) -> tuple[SyftSuccess, SyftSuccess]:
+) -> SyftSuccess:
     # Infer SyncDecision
     sync_direction = obj_diff_batch.sync_direction
     if sync_direction is None:
@@ -226,9 +226,8 @@ def handle_sync_batch(
         src_resolved_state.add_sync_instruction(sync_instruction)
     # Apply empty state to source side to signal that we are done syncing
     # We also add permissions for users from the low side to mark L0 request as approved
-    return tgt_client.apply_state(tgt_resolved_state), src_client.apply_state(
-        src_resolved_state
-    )
+    src_client.apply_state(src_resolved_state)
+    return tgt_client.apply_state(tgt_resolved_state)
 
 
 def handle_ignore_batch(
