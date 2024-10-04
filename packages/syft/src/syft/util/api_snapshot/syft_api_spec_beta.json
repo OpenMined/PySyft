@@ -942,17 +942,6 @@
     "warning": "",
     "hash": "7c773afbe686d21208eb3ea19ba3d7e6d048d0123dc78e5714428a63b816cd90"
   },
-  "Migrationservice.migration.get_migration_objects": {
-    "public_path": "migration.get_migration_objects",
-    "RBAC_permission": "ADMIN_ROLE_LEVEL",
-    "signature": {
-      "document_store_object_types": "list[type[syft.types.syft_object.SyftObject]] | None",
-      "get_all": "<class 'bool'>"
-    },
-    "return_type": "<class 'dict'>",
-    "warning": "",
-    "hash": "a090a541d6f2787549593c4bab8cc78d1c34cccbbb62760500f53a30454e8e53"
-  },
   "Migrationservice.migration.migrate_data": {
     "public_path": "migration.migrate_data",
     "RBAC_permission": "ADMIN_ROLE_LEVEL",
@@ -963,35 +952,15 @@
     "warning": "",
     "hash": "919967fd93ea697e4e57f52ed97f5c31bb15073a92f81320646a4aee3f34f508"
   },
-  "Migrationservice.migration.update_migrated_actionobjects": {
-    "public_path": "migration.update_migrated_actionobjects",
+  "Migrationservice.migration.reset_and_restore": {
+    "public_path": "migration.reset_and_restore",
     "RBAC_permission": "ADMIN_ROLE_LEVEL",
     "signature": {
-      "objects": "list[syft.types.syft_object.SyftObject]"
+      "migration_data": "<class 'syft.service.migration.object_migration_state.MigrationData'>"
     },
-    "return_type": "<class 'syft.service.response.SyftSuccess'>",
+    "return_type": "syft.service.response.SyftSuccess | syft.service.response.SyftError",
     "warning": "",
-    "hash": "4ea13dd1ced239c6b0272aca8587aed998bdca43260632cc58a1f11cd2c48ce4"
-  },
-  "Migrationservice.migration.update_migrated_objects": {
-    "public_path": "migration.update_migrated_objects",
-    "RBAC_permission": "ADMIN_ROLE_LEVEL",
-    "signature": {
-      "migrated_objects": "list[syft.types.syft_object.SyftObject]"
-    },
-    "return_type": "None",
-    "warning": "",
-    "hash": "0b144d822436bf93b595c1ebec895fc6f0292b06135f53f74451c5d294ea1b18"
-  },
-  "Migrationservice.migration.update_store_metadata": {
-    "public_path": "migration.update_store_metadata",
-    "RBAC_permission": "ADMIN_ROLE_LEVEL",
-    "signature": {
-      "store_metadata": "dict[type, syft.service.migration.object_migration_state.StoreMetadata]"
-    },
-    "return_type": "None",
-    "warning": "",
-    "hash": "3f7d5ff8c97a4db7b0b60eb83a71f7e2d96678aa86d0375605d92e8fbc6f0588"
+    "hash": "675fb5f3904cb487354ef73e499c70cb01a67b6583541704538359af13de5ca2"
   },
   "Networkservice.network.add_peer": {
     "public_path": "network.add_peer",
@@ -1321,11 +1290,11 @@
     "public_path": "output.get_by_job_id",
     "RBAC_permission": "ADMIN_ROLE_LEVEL",
     "signature": {
-      "user_code_id": "<class 'syft.types.uid.UID'>"
+      "job_id": "<class 'syft.types.uid.UID'>"
     },
     "return_type": "<class 'syft.service.output.output_service.ExecutionOutput'>",
     "warning": "",
-    "hash": "a9f54853fab528f793a17c1e0bcd6150a40a7a21f1441f3c08566f353fa74c97"
+    "hash": "d7bc1d31fd46e20b7c294c07f10a1003389a421e50f6cacc2184e06e8a06c9e4"
   },
   "Outputservice.output.get_by_output_policy_id": {
     "public_path": "output.get_by_output_policy_id",
@@ -1462,16 +1431,6 @@
     "return_type": "list[syft.service.project.project.ProjectEvent]",
     "warning": "",
     "hash": "ed217bbf1aeb9c262985d36397f314f37a2b05c7f32c0f71d76b1b3045d2d3ba"
-  },
-  "Queueservice.queue.get_subjobs": {
-    "public_path": "queue.get_subjobs",
-    "RBAC_permission": "DATA_SCIENTIST_ROLE_LEVEL",
-    "signature": {
-      "uid": "<class 'syft.types.uid.UID'>"
-    },
-    "return_type": "list[syft.service.queue.queue_stash.QueueItem]",
-    "warning": "",
-    "hash": "9852a6c95a7450952a918456308c949770ec44160a22efdc2949396b241dd939"
   },
   "Requestservice.request.add_changes": {
     "public_path": "request.add_changes",
@@ -1638,6 +1597,18 @@
     },
     "hash": "3a8f017c0779b5e56b85b8bf485487fc5ed95ea14bd404c55247fafa69c8c0a1"
   },
+  "Settingsservice.settings.batch_notifications": {
+    "public_path": "settings.batch_notifications",
+    "RBAC_permission": "ADMIN_ROLE_LEVEL",
+    "signature": {
+      "email_type": "<enum 'EMAIL_TYPES'>",
+      "frequency": "<enum 'NOTIFICATION_FREQUENCY'>",
+      "start_time": "<class 'str'>"
+    },
+    "return_type": "<class 'syft.service.response.SyftSuccess'>",
+    "warning": "",
+    "hash": "c74ca80e0efc8fd75de9e80e93fbe636bfc095708c0987224a44c8f8558d1535"
+  },
   "Settingsservice.settings.disable_notifications": {
     "public_path": "settings.disable_notifications",
     "RBAC_permission": "ADMIN_ROLE_LEVEL",
@@ -1802,6 +1773,7 @@
     "public_path": "worker_image.build",
     "RBAC_permission": "DATA_OWNER_ROLE_LEVEL",
     "signature": {
+      "force_build": "<class 'bool'>",
       "image_uid": "<class 'syft.types.uid.UID'>",
       "pull_image": "<class 'bool'>",
       "registry_uid": "syft.types.uid.UID | None",
@@ -1809,7 +1781,7 @@
     },
     "return_type": "<class 'syft.service.response.SyftSuccess'>",
     "warning": "",
-    "hash": "0060fba6131f7a10f90d5e4a4e0e925ae0d2335783b9c45bce1c349aa0761ecd"
+    "hash": "74a4b94b50c84507019dc90db213599e3ecba320b76eac12f40a0c54a2f20ab7"
   },
   "Syftworkerimageservice.worker_image.get_all": {
     "public_path": "worker_image.get_all",
@@ -1973,6 +1945,17 @@
     "warning": "",
     "hash": "451ffdf11b26b7d0041f88d523dd9a668507d2a99f5d2b5a38815c0413b9359d"
   },
+  "Syftworkerpoolservice.worker_pool.purge_workers": {
+    "public_path": "worker_pool.purge_workers",
+    "RBAC_permission": "DATA_OWNER_ROLE_LEVEL",
+    "signature": {
+      "pool_id": "syft.types.uid.UID | None",
+      "pool_name": "str | None"
+    },
+    "return_type": "<class 'syft.service.response.SyftSuccess'>",
+    "warning": "",
+    "hash": "20ed1708fb676dde51cab7a220b5264dc6b864881fd911d5696a4fe860167bfd"
+  },
   "Syftworkerpoolservice.worker_pool.scale": {
     "public_path": "worker_pool.scale",
     "RBAC_permission": "DATA_OWNER_ROLE_LEVEL",
@@ -2009,9 +1992,9 @@
     "signature": {
       "items": "list[syft.types.syncable_object.SyncableSyftObject]"
     },
-    "return_type": "tuple[dict[syft.types.uid.UID, set[str]], dict[syft.types.uid.UID, set[str]]]",
+    "return_type": "tuple[dict[syft.types.uid.UID, set[str]], dict[syft.types.uid.UID, set[syft.types.uid.UID]]]",
     "warning": "",
-    "hash": "be3e013b6033b45e9f544b0037d7c7ffbfcd10fb2169ce9f6b2b6bc4737da565"
+    "hash": "dcd880281d2fa43c3ac75b9ec8644e5ee3a9c0741ed4401f0fa873d63cd7a8b5"
   },
   "Syncservice.sync.sync_items": {
     "public_path": "sync.sync_items",
@@ -2167,6 +2150,17 @@
     "warning": "",
     "hash": "38d79b611e9cd5911635072294b325a9a77a5c66f6c8b3007cea6fd6116d0f2a"
   },
+  "Usercodestatusservice.code_status.update": {
+    "public_path": "code_status.update",
+    "RBAC_permission": "ADMIN_ROLE_LEVEL",
+    "signature": {
+      "decision": "syft.service.code.user_code.ApprovalDecision | syft.types.syft_metaclass.EmptyType",
+      "id": "syft.types.uid.UID | syft.types.syft_metaclass.EmptyType"
+    },
+    "return_type": "<class 'syft.service.response.SyftSuccess'>",
+    "warning": "",
+    "hash": "960b4f65972823d62ef88e83089d616b4176f8c0a5560e27f623791bfcfebc39"
+  },
   "Userservice.user.create": {
     "public_path": "user.create",
     "RBAC_permission": "DATA_OWNER_ROLE_LEVEL",
@@ -2201,12 +2195,14 @@
     "public_path": "user.get_all",
     "RBAC_permission": "DATA_OWNER_ROLE_LEVEL",
     "signature": {
+      "order_by": "str | None",
       "page_index": "int | None",
-      "page_size": "int | None"
+      "page_size": "int | None",
+      "sort_order": "str | None"
     },
     "return_type": "list[syft.service.user.user.UserView]",
     "warning": "",
-    "hash": "4d0ca2f70f31e26957ee90e89f1c89d588556bea13789ab964d5db3e3618a469"
+    "hash": "db30734fa2ba8cde141a7c0058572c7371897a63dcced42f0438dc3e80b1a86e"
   },
   "Userservice.user.get_by_verify_key": {
     "public_path": "user.get_by_verify_key",
@@ -2225,6 +2221,16 @@
     "return_type": "<class 'syft.service.user.user.UserView'>",
     "warning": "",
     "hash": "08424242302088be04173bfd09309243a7e3511838546af15e1322e4cca10ce0"
+  },
+  "Userservice.user.get_index": {
+    "public_path": "user.get_index",
+    "RBAC_permission": "DATA_OWNER_ROLE_LEVEL",
+    "signature": {
+      "index": "<class 'int'>"
+    },
+    "return_type": "<class 'syft.service.user.user.UserView'>",
+    "warning": "",
+    "hash": "43f9af96488f20804b6d6d5e3154499edd97e8ddfb0dbb6e0829f36b3e317e1c"
   },
   "Userservice.user.request_password_reset": {
     "public_path": "user.request_password_reset",
