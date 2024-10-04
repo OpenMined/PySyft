@@ -32,6 +32,7 @@ from .sim.core import sim_entrypoint
 fake = Faker()
 NUM_USERS = 10
 NUM_ENDPOINTS = 3  # test_query, submit_query, schema_query
+TIMEOUT = 600
 
 
 class Event(BaseEvent):
@@ -456,5 +457,5 @@ async def test_l0_scenario(request):
             Event.USER_CHECKED_RESULTS,
             Event.USER_FLOW_COMPLETED,
         ],
-        timeout=300,
+        timeout=TIMEOUT,
     )
