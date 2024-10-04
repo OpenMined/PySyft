@@ -8,7 +8,7 @@ import html
 import logging
 import operator
 import textwrap
-from typing import Any, Dict
+from typing import Any
 from typing import ClassVar
 from typing import Literal
 from typing import TYPE_CHECKING
@@ -1594,20 +1594,22 @@ class SyncInstruction(SyftObject):
                         )
                 else:
                     new_permissions_low_side = {
-                        diff.obj_type:
-                        [ActionObjectPermission(
-                            uid=diff.object_id,
-                            permission=ActionPermission.READ,
-                            credentials=share_to_user,
-                        )]
+                        diff.obj_type: [
+                            ActionObjectPermission(
+                                uid=diff.object_id,
+                                permission=ActionPermission.READ,
+                                credentials=share_to_user,
+                            )
+                        ]
                     }
                     new_permissions_high_side = {
-                        diff.obj_type:
-                        [ActionObjectPermission(
-                            uid=diff.object_id,
-                            permission=ActionPermission.READ,
-                            credentials=share_to_user,
-                        )]
+                        diff.obj_type: [
+                            ActionObjectPermission(
+                                uid=diff.object_id,
+                                permission=ActionPermission.READ,
+                                credentials=share_to_user,
+                            )
+                        ]
                     }
 
         # storage permissions
@@ -1677,7 +1679,10 @@ class ResolvedSyncState(SyftObject):
         if sync_instruction.unignore:
             self.unignored_batches.add(sync_instruction.batch_diff.root_id)
 
-        if diff.status == "SAME" and len(sync_instruction.new_permissions_highside) == 0:
+        if (
+            diff.status == "SAME"
+            and len(sync_instruction.new_permissions_highside) == 0
+        ):
             return
 
         my_obj = diff.low_obj if self.alias == "low" else diff.high_obj
@@ -1708,18 +1713,26 @@ class ResolvedSyncState(SyftObject):
         if self.alias == "low":
             for obj_type in sync_instruction.new_permissions_lowside.keys():
                 if obj_type in self.new_permissions:
-                    self.new_permissions[obj_type].extend(sync_instruction.new_permissions_lowside[obj_type])
+                    self.new_permissions[obj_type].extend(
+                        sync_instruction.new_permissions_lowside[obj_type]
+                    )
                 else:
-                    self.new_permissions[obj_type] = sync_instruction.new_permissions_lowside[obj_type]
+                    self.new_permissions[obj_type] = (
+                        sync_instruction.new_permissions_lowside[obj_type]
+                    )
             self.new_storage_permissions.extend(
                 sync_instruction.new_storage_permissions_lowside
             )
         elif self.alias == "high":
             for obj_type in sync_instruction.new_permissions_highside.keys():
                 if obj_type in self.new_permissions:
-                    self.new_permissions[obj_type].extend(sync_instruction.new_permissions_highside[obj_type])
+                    self.new_permissions[obj_type].extend(
+                        sync_instruction.new_permissions_highside[obj_type]
+                    )
                 else:
-                    self.new_permissions[obj_type] = sync_instruction.new_permissions_highside[obj_type]
+                    self.new_permissions[obj_type] = (
+                        sync_instruction.new_permissions_highside[obj_type]
+                    )
             self.new_storage_permissions.extend(
                 sync_instruction.new_storage_permissions_highside
             )

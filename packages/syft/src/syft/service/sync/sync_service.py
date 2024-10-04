@@ -218,15 +218,16 @@ class SyncService(AbstractService):
                 self.add_storage_permissions_for_item(
                     context, item, new_storage_permissions
                 )
-        
+
         # If we just want to add permissions without having an object
-        # This should happen only for the high side when we sync results but 
+        # This should happen only for the high side when we sync results but
         # we need to add permissions for the DS to properly show the status of the requests
         for obj_type, permission_list in permissions.items():
             if issubclass(obj_type, ActionObject):
                 store = context.server.services.action.stash
             else:
-                store = context.server.get_service(TYPE_TO_SERVICE[obj_type]).stash
+                service = context.server.get_service(TYPE_TO_SERVICE[obj_type])
+                store = service.stash  # type: ignore[assignment]
             for permission in permission_list:
                 if permission.permission == ActionPermission.READ:
                     store.add_permission(permission)
