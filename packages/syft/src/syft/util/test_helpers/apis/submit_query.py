@@ -23,10 +23,10 @@ def make_submit_query(settings, worker_pool_name):
             name=func_name,
             input_policy=sy.MixedInputPolicy(
                 endpoint=sy.Constant(
-                    val=context.admin_client.api.services.bigquery.test_query
+                    val=context.user_client.api.services.bigquery.test_query
                 ),
                 query=sy.Constant(val=query),
-                client=context.admin_client,
+                client=context.user_client,
             ),
             worker_pool_name=context.settings["user_code_worker"],
         )
