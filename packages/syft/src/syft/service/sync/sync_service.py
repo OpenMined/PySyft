@@ -189,17 +189,15 @@ class SyncService(AbstractService):
         self,
         context: AuthedServiceContext,
         items: list[SyncableSyftObject],
-        permissions: list[ActionObjectPermission],
+        permissions: dict[type, list[ActionObjectPermission]],
         storage_permissions: list[StoragePermission],
         ignored_batches: dict[UID, int],
         unignored_batches: set[UID],
     ) -> SyftSuccess:
-        import sys
-        print(context.server.server_side_type, len(items), items[0].id if len(items) > 0 else None, file=sys.stderr)
-        print(permissions, file=sys.stderr)
         permissions_dict = defaultdict(list)
-        for permission in permissions:
-            permissions_dict[permission.uid].append(permission)
+        for permission_list in permissions.values():
+            for permission in permission_list:
+                permissions_dict[permission.uid].append(permission)
 
         storage_permissions_dict = defaultdict(list)
         for storage_permission in storage_permissions:
@@ -208,7 +206,6 @@ class SyncService(AbstractService):
         for item in items:
             new_permissions = permissions_dict[item.id.id]
             new_storage_permissions = storage_permissions_dict[item.id.id]
-            print(item.id, isinstance(item, ActionObject), new_permissions, file=sys.stderr)
             if isinstance(item, ActionObject):
                 self.add_actionobject_read_permissions(context, item, new_permissions)
                 self.add_storage_permissions_for_item(
@@ -221,6 +218,18 @@ class SyncService(AbstractService):
                 self.add_storage_permissions_for_item(
                     context, item, new_storage_permissions
                 )
+        
+        # If we just want to add permissions without having an object
+        # This should happen only for the high side when we sync results but 
+        # we need to add permissions for the DS to properly show the status of the requests
+        for obj_type, permission_list in permissions.items():
+            if issubclass(obj_type, ActionObject):
+                store = context.server.services.action.stash
+            else:
+                store = context.server.get_service(TYPE_TO_SERVICE[obj_type]).stash
+            for permission in permission_list:
+                if permission.permission == ActionPermission.READ:
+                    store.add_permission(permission)
 
         # NOTE include_items=False to avoid snapshotting the database
         # Snapshotting is disabled to avoid mongo size limit and performance issues

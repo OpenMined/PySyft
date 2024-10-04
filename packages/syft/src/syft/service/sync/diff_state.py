@@ -8,7 +8,7 @@ import html
 import logging
 import operator
 import textwrap
-from typing import Any
+from typing import Any, Dict
 from typing import ClassVar
 from typing import Literal
 from typing import TYPE_CHECKING
@@ -1558,8 +1558,8 @@ class SyncInstruction(SyftObject):
 
     diff: ObjectDiff
     decision: SyncDecision | None
-    new_permissions_lowside: list[ActionObjectPermission]
-    new_permissions_highside: list[ActionObjectPermission]
+    new_permissions_lowside: dict[type, list[ActionObjectPermission]]
+    new_permissions_highside: dict[type, list[ActionObjectPermission]]
     new_storage_permissions_lowside: list[StoragePermission]
     new_storage_permissions_highside: list[StoragePermission]
     unignore: bool = False
@@ -1576,10 +1576,8 @@ class SyncInstruction(SyftObject):
         share_to_user: SyftVerifyKey | None,
     ) -> Self:
         # read widget state
-        new_permissions_low_side = []
-        new_permissions_high_side = []
-        import sys 
-        print(sync_direction, diff.object_type, share_private_data, share_to_user, file=sys.stderr)
+        new_permissions_low_side = {}
+        new_permissions_high_side = {}
         # read permissions
         if sync_direction == SyncDirection.HIGH_TO_LOW:
             # To create read permissions for the object
@@ -1595,21 +1593,22 @@ class SyncInstruction(SyftObject):
                             "share_to_user is required to share private data"
                         )
                 else:
-                    new_permissions_low_side = [
-                        ActionObjectPermission(
+                    new_permissions_low_side = {
+                        diff.obj_type:
+                        [ActionObjectPermission(
                             uid=diff.object_id,
                             permission=ActionPermission.READ,
                             credentials=share_to_user,
-                        )
-                    ]
-                    new_permissions_high_side = [
-                        ActionObjectPermission(
+                        )]
+                    }
+                    new_permissions_high_side = {
+                        diff.obj_type:
+                        [ActionObjectPermission(
                             uid=diff.object_id,
                             permission=ActionPermission.READ,
                             credentials=share_to_user,
-                        )
-                    ]
-        print(new_permissions_low_side)
+                        )]
+                    }
 
         # storage permissions
         new_storage_permissions = []
@@ -1646,7 +1645,7 @@ class ResolvedSyncState(SyftObject):
     create_objs: list[SyncableSyftObject] = []
     update_objs: list[SyncableSyftObject] = []
     delete_objs: list[SyftObject] = []
-    new_permissions: list[ActionObjectPermission] = []
+    new_permissions: dict[type, list[ActionObjectPermission]] = {}
     new_storage_permissions: list[StoragePermission] = []
     ignored_batches: dict[UID, int] = {}  # batch root uid -> hash of the batch
     unignored_batches: set[UID] = set()
@@ -1674,7 +1673,6 @@ class ResolvedSyncState(SyftObject):
         ):
             return
         diff = sync_instruction.diff
-        print(self.alias, diff.status, len(sync_instruction.new_permissions_highside), sync_instruction.diff)
 
         if sync_instruction.unignore:
             self.unignored_batches.add(sync_instruction.batch_diff.root_id)
@@ -1707,21 +1705,21 @@ class ResolvedSyncState(SyftObject):
                     if my_obj.id not in [x.id for x in self.delete_objs]:
                         self.delete_objs.append(my_obj)
 
-        if self.alias == "high" \
-            and len(sync_instruction.new_permissions_highside) > 0 \
-            and diff.object_type == "ExecutionOutput":
-            if diff.high_obj:
-                self.create_objs.append(diff.high_obj)
-
         if self.alias == "low":
-            self.new_permissions.extend(sync_instruction.new_permissions_lowside)
+            for obj_type in sync_instruction.new_permissions_lowside.keys():
+                if obj_type in self.new_permissions:
+                    self.new_permissions[obj_type].extend(sync_instruction.new_permissions_lowside[obj_type])
+                else:
+                    self.new_permissions[obj_type] = sync_instruction.new_permissions_lowside[obj_type]
             self.new_storage_permissions.extend(
                 sync_instruction.new_storage_permissions_lowside
             )
         elif self.alias == "high":
-            if len(sync_instruction.new_permissions_highside) > 0:
-                print("got some new permissions")
-            self.new_permissions.extend(sync_instruction.new_permissions_highside)
+            for obj_type in sync_instruction.new_permissions_highside.keys():
+                if obj_type in self.new_permissions:
+                    self.new_permissions[obj_type].extend(sync_instruction.new_permissions_highside[obj_type])
+                else:
+                    self.new_permissions[obj_type] = sync_instruction.new_permissions_highside[obj_type]
             self.new_storage_permissions.extend(
                 sync_instruction.new_storage_permissions_highside
             )
