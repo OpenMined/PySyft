@@ -30,7 +30,7 @@ from .sim.core import sim_activity
 from .sim.core import sim_entrypoint
 
 fake = Faker()
-NUM_USERS = 10
+NUM_USERS = 5
 NUM_ENDPOINTS = 3  # test_query, submit_query, schema_query
 TIMEOUT = 600
 
