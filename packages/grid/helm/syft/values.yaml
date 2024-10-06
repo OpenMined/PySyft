@@ -1,7 +1,7 @@
 global:
   # Affects only backend, frontend, and seaweedfs containers
   registry: docker.io
-  version: 0.9.2-beta.4
+  version: 0.9.2-beta.5
 
   # Force default secret values for development. DO NOT SET THIS TO FALSE IN PRODUCTION
   randomizedSecrets: true
