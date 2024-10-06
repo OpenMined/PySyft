@@ -61,7 +61,9 @@ def bq_check_query_results(ctx: SimulatorContext, client: sy.DatasiteClient):
         msg = f"User: {user} - Request {request.code.service_func_name}"
 
         if status == RequestStatus.APPROVED:
-            job = request.code(blocking=False)
+            func_name = request.code.service_func_name
+            api_func = getattr(client.code, func_name, None)
+            job = api_func(blocking=False)
             result = job.wait()
             assert len(result) == 10000
             ctx.logger.info(f"{msg} - Approved")

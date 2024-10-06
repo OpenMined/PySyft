@@ -256,7 +256,9 @@ async def admin_high_triage_requests(
                 request.deny("You gave me an `invalid_func` function")
             else:
                 ctx.logger.info(f"Admin high: Approving request by executing {request}")
-                job = request.code(blocking=False)
+                func_name = request.code.service_func_name
+                api_func = getattr(admin_client.code, func_name, None)
+                job = api_func(blocking=False)
                 result = job.wait()
                 ctx.logger.info(f"Admin high: Request result {result}")
 
