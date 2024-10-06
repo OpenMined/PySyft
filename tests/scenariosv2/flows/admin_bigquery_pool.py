@@ -49,6 +49,6 @@ def bq_create_pool(
         docker_tag=worker_image_tag,
         custom_pool_pod_annotations=None,
         custom_pool_pod_labels=None,
-        scale_to=1,
+        scale_to=3,
     )
     ctx.logger.info(f"{msg} - Created")

@@ -55,6 +55,7 @@ def bq_test_endpoint(
         private_function=private_query_function,
         mock_function=mock_query_function,
         worker_pool_name=worker_pool,
+        endpoint_timeout=120,
     )
 
     # Call admin_client.custom_api.add
@@ -72,6 +73,7 @@ def bq_submit_endpoint(
         description="API endpoint that allows you to submit SQL queries to run on the private data.",
         worker_pool_name=worker_pool,
         settings={"worker": worker_pool},
+        endpoint_timeout=120,
     )
     def submit_query(
         context,
