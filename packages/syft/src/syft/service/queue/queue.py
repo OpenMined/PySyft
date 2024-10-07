@@ -192,6 +192,10 @@ def handle_message_multiprocessing(
         deployment_type=worker_settings.deployment_type,
     )
 
+    # otherwise it reads it from env, resulting in the wrong credentials
+    worker.id = worker_settings.id
+    worker.signing_key = worker_settings.signing_key
+
     # Set monitor thread for this job.
     monitor_thread = MonitorThread(queue_item, worker, credentials)
     monitor_thread.start()
