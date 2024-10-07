@@ -1602,15 +1602,16 @@ class SyncInstruction(SyftObject):
                             )
                         ]
                     }
-                    new_permissions_high_side = {
-                        diff.obj_type: [
-                            ActionObjectPermission(
-                                uid=diff.object_id,
-                                permission=ActionPermission.READ,
-                                credentials=share_to_user,
-                            )
-                        ]
-                    }
+                    if diff.obj_type in [Job, SyftLog, ActionObject, Request]:
+                        new_permissions_high_side = {
+                            diff.obj_type: [
+                                ActionObjectPermission(
+                                    uid=diff.object_id,
+                                    permission=ActionPermission.READ,
+                                    credentials=share_to_user,
+                                )
+                            ]
+                        }
 
         # storage permissions
         new_storage_permissions = []
