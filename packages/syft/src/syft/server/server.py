@@ -1578,6 +1578,7 @@ class Server(AbstractServer):
                         prompt_warning_message(
                             "There are existing jobs for this user code, returning the latest one"
                         )
+                        print("LOADING FROM CACHE", file=sys.stderr)
                         return SyftSuccess(
                             message="Found multiple existing jobs, got last",
                             value=existing_jobs[-1],

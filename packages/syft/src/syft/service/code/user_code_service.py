@@ -1,5 +1,7 @@
 # stdlib
 from enum import Enum
+import logging
+import sys
 from typing import Any
 from typing import TypeVar
 
@@ -43,6 +45,7 @@ from .user_code import UserCodeUpdate
 from .user_code import get_code_hash
 from .user_code import load_approved_policy_code
 from .user_code_stash import UserCodeStash
+logger = logging.getLogger(__name__)
 
 
 class HasCodePermissionEnum(str, Enum):
@@ -496,6 +499,7 @@ class UserCodeService(AbstractService):
 
         input_policy = code.get_input_policy(context)
         output_policy = code.get_output_policy(context)
+
 
         # Check output policy
         if not override_execution_permission:
