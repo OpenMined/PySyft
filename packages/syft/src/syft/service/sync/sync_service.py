@@ -210,7 +210,9 @@ class SyncService(AbstractService):
             for permission in permission_list:
                 if permission.uid in item_ids:
                     continue
-                if obj_type not in [Job, SyftLog, ActionObject, Request]:
+                if obj_type not in [Job, SyftLog, Request] and not issubclass(
+                    obj_type, ActionObject
+                ):
                     raise SyftException(
                         public_message="Permission for object type not supported!"
                     )

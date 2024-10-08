@@ -1602,7 +1602,9 @@ class SyncInstruction(SyftObject):
                             )
                         ]
                     }
-                    if diff.obj_type in [Job, SyftLog, ActionObject, Request]:
+                    if diff.obj_type in [Job, SyftLog, Request] or issubclass(
+                        diff.obj_type, ActionObject
+                    ):
                         new_permissions_high_side = {
                             diff.obj_type: [
                                 ActionObjectPermission(
