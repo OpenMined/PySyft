@@ -25,6 +25,8 @@ from ..api.api import TwinAPIEndpoint
 from ..code.user_code import UserCodeStatusCollection
 from ..context import AuthedServiceContext
 from ..job.job_stash import Job
+from ..log.log import SyftLog
+from ..request.request import Request
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
@@ -199,6 +201,29 @@ class SyncService(AbstractService):
             for permission in permission_list:
                 permissions_dict[permission.uid].append(permission)
 
+        item_ids = [item.id.id for item in items]
+
+        # If we just want to add permissions without having an object
+        # This should happen only for the high side when we sync results but
+        # we need to add permissions for the DS to properly show the status of the requests
+        for obj_type, permission_list in permissions.items():
+            for permission in permission_list:
+                if permission.uid in item_ids:
+                    continue
+                if obj_type not in [Job, SyftLog, Request] and not issubclass(
+                    obj_type, ActionObject
+                ):
+                    raise SyftException(
+                        public_message="Permission for object type not supported!"
+                    )
+                if issubclass(obj_type, ActionObject):
+                    store = context.server.services.action.stash
+                else:
+                    service = context.server.get_service(TYPE_TO_SERVICE[obj_type])
+                    store = service.stash  # type: ignore[assignment]
+                if permission.permission == ActionPermission.READ:
+                    store.add_permission(permission)
+
         storage_permissions_dict = defaultdict(list)
         for storage_permission in storage_permissions:
             storage_permissions_dict[storage_permission.uid].append(storage_permission)
@@ -218,19 +243,6 @@ class SyncService(AbstractService):
                 self.add_storage_permissions_for_item(
                     context, item, new_storage_permissions
                 )
-
-        # If we just want to add permissions without having an object
-        # This should happen only for the high side when we sync results but
-        # we need to add permissions for the DS to properly show the status of the requests
-        for obj_type, permission_list in permissions.items():
-            if issubclass(obj_type, ActionObject):
-                store = context.server.services.action.stash
-            else:
-                service = context.server.get_service(TYPE_TO_SERVICE[obj_type])
-                store = service.stash  # type: ignore[assignment]
-            for permission in permission_list:
-                if permission.permission == ActionPermission.READ:
-                    store.add_permission(permission)
 
         # NOTE include_items=False to avoid snapshotting the database
         # Snapshotting is disabled to avoid mongo size limit and performance issues
