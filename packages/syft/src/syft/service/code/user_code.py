@@ -39,12 +39,9 @@ from ...abstract_server import ServerSideType
 from ...abstract_server import ServerType
 from ...client.api import APIRegistry
 from ...client.api import ServerIdentity
-from ...client.api import generate_remote_function
 from ...serde.deserialize import _deserialize
 from ...serde.serializable import serializable
 from ...serde.serialize import _serialize
-from ...serde.signature import signature_remove_context
-from ...serde.signature import signature_remove_self
 from ...server.credentials import SyftVerifyKey
 from ...store.linked_obj import LinkedObject
 from ...types.datetime import DateTime
@@ -1113,22 +1110,7 @@ class UserCode(SyncableSyftObject):
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         api = self._get_api()
-
-        signature = self.signature
-        signature = signature_remove_self(signature)
-        signature = signature_remove_context(signature)
-        remote_user_function = generate_remote_function(
-            api=api,
-            server_uid=self.server_uid,
-            signature=self.signature,
-            path="code.call",
-            make_call=api.make_call,
-            pre_kwargs={"uid": self.id},
-            warning=None,
-            communication_protocol=api.communication_protocol,
-            unwrap_on_success=True,  # TODO: look into this
-        )
-        return remote_user_function(*args, **kwargs)
+        return getattr(api.code, self.service_func_name)(*args, **kwargs)
 
 
 class UserCodeUpdate(PartialSyftObject):
