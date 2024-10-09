@@ -220,11 +220,13 @@ def handle_sync_batch(
 
     logger.debug(f"Decision: Syncing {len(sync_instructions)} objects")
 
-    # Apply empty state to source side to signal that we are done syncing
-    src_client.apply_state(src_resolved_state)
     # Apply sync instructions to target side
     for sync_instruction in sync_instructions:
         tgt_resolved_state.add_sync_instruction(sync_instruction)
+        src_resolved_state.add_sync_instruction(sync_instruction)
+    # Apply empty state to source side to signal that we are done syncing
+    # We also add permissions for users from the low side to mark L0 request as approved
+    src_client.apply_state(src_resolved_state)
     return tgt_client.apply_state(tgt_resolved_state)
 
 

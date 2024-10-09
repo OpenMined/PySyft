@@ -10,12 +10,9 @@ from datetime import datetime
 from datetime import timezone
 from functools import partial
 import hashlib
-import json
 import logging
 import os
 from pathlib import Path
-import subprocess  # nosec
-import sys
 import threading
 from time import sleep
 import traceback
@@ -75,10 +72,9 @@ from ..service.service import ServiceConfigRegistry
 from ..service.service import UserServiceConfigRegistry
 from ..service.settings.settings import ServerSettings
 from ..service.settings.settings import ServerSettingsUpdate
-from ..service.user.user import User
-from ..service.user.user import UserCreate
 from ..service.user.user import UserView
 from ..service.user.user_roles import ServiceRole
+from ..service.user.utils import create_root_admin_if_not_exists
 from ..service.worker.utils import DEFAULT_WORKER_IMAGE_TAG
 from ..service.worker.utils import DEFAULT_WORKER_POOL_NAME
 from ..service.worker.utils import create_default_image
@@ -116,10 +112,20 @@ from ..util.util import get_dev_mode
 from ..util.util import get_env
 from ..util.util import get_queue_address
 from ..util.util import random_name
-from ..util.util import str_to_bool
 from ..util.util import thread_ident
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .env import get_default_root_email
+from .env import get_default_root_password
+from .env import get_default_root_username
+from .env import get_default_worker_image
+from .env import get_default_worker_pool_name
+from .env import get_default_worker_pool_pod_annotations
+from .env import get_default_worker_pool_pod_labels
+from .env import get_private_key_env
+from .env import get_server_uid_env
+from .env import get_syft_worker_uid
+from .env import in_kubernetes
 from .service_registry import ServiceRegistry
 from .utils import get_named_server_uid
 from .utils import get_temp_dir_for_server
@@ -135,123 +141,12 @@ SyftT = TypeVar("SyftT", bound=SyftObject)
 CODE_RELOADER: dict[int, Callable] = {}
 
 
-SERVER_PRIVATE_KEY = "SERVER_PRIVATE_KEY"
-SERVER_UID = "SERVER_UID"
-SERVER_TYPE = "SERVER_TYPE"
-SERVER_NAME = "SERVER_NAME"
-SERVER_SIDE_TYPE = "SERVER_SIDE_TYPE"
-
-DEFAULT_ROOT_EMAIL = "DEFAULT_ROOT_EMAIL"
-DEFAULT_ROOT_USERNAME = "DEFAULT_ROOT_USERNAME"
-DEFAULT_ROOT_PASSWORD = "DEFAULT_ROOT_PASSWORD"  # nosec
-
-
-def get_private_key_env() -> str | None:
-    return get_env(SERVER_PRIVATE_KEY)
-
-
-def get_server_type() -> str | None:
-    return get_env(SERVER_TYPE, "datasite")
-
-
-def get_server_name() -> str | None:
-    return get_env(SERVER_NAME, None)
-
-
-def get_server_side_type() -> str | None:
-    return get_env(SERVER_SIDE_TYPE, "high")
-
-
-def get_server_uid_env() -> str | None:
-    return get_env(SERVER_UID)
-
-
-def get_default_root_email() -> str | None:
-    return get_env(DEFAULT_ROOT_EMAIL, "info@openmined.org")
-
-
-def get_default_root_username() -> str | None:
-    return get_env(DEFAULT_ROOT_USERNAME, "Jane Doe")
-
-
-def get_default_root_password() -> str | None:
-    return get_env(DEFAULT_ROOT_PASSWORD, "changethis")  # nosec
-
-
-def get_enable_warnings() -> bool:
-    return str_to_bool(get_env("ENABLE_WARNINGS", "False"))
-
-
-def get_container_host() -> str | None:
-    return get_env("CONTAINER_HOST")
-
-
-def get_default_worker_image() -> str | None:
-    return get_env("DEFAULT_WORKER_POOL_IMAGE")
-
-
-def get_default_worker_pool_name() -> str | None:
-    return get_env("DEFAULT_WORKER_POOL_NAME", DEFAULT_WORKER_POOL_NAME)
-
-
-def get_default_bucket_name() -> str:
-    env = get_env("DEFAULT_BUCKET_NAME")
-    server_id = get_server_uid_env() or "syft-bucket"
-    return env or server_id or "syft-bucket"
-
-
 def get_default_worker_pool_count(server: Server) -> int:
     return int(
         get_env(
             "DEFAULT_WORKER_POOL_COUNT", server.queue_config.client_config.n_consumers
         )
     )
-
-
-def get_default_worker_pool_pod_annotations() -> dict[str, str] | None:
-    annotations = get_env("DEFAULT_WORKER_POOL_POD_ANNOTATIONS", "null")
-    return json.loads(annotations)
-
-
-def get_default_worker_pool_pod_labels() -> dict[str, str] | None:
-    labels = get_env("DEFAULT_WORKER_POOL_POD_LABELS", "null")
-    return json.loads(labels)
-
-
-def in_kubernetes() -> bool:
-    return get_container_host() == "k8s"
-
-
-def get_venv_packages() -> str:
-    try:
-        # subprocess call is safe because it uses a fully qualified path and fixed arguments
-        result = subprocess.run(
-            [sys.executable, "-m", "pip", "list", "--format=freeze"],  # nosec
-            capture_output=True,
-            check=True,
-            text=True,
-        )
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        return f"An error occurred: {e.stderr}"
-
-
-def get_syft_worker() -> bool:
-    return str_to_bool(get_env("SYFT_WORKER", "false"))
-
-
-def get_k8s_pod_name() -> str | None:
-    return get_env("K8S_POD_NAME")
-
-
-def get_syft_worker_uid() -> str | None:
-    is_worker = get_syft_worker()
-    pod_name = get_k8s_pod_name()
-    uid = get_env("SYFT_WORKER_UID")
-    # if uid is empty is a K8S worker, generate a uid from the pod name
-    if (not uid) and is_worker and pod_name:
-        uid = str(UID.with_seed(pod_name))
-    return uid
 
 
 signing_key_env = get_private_key_env()
@@ -1737,59 +1632,6 @@ class Server(AbstractServer):
             return settings_stash.set(
                 credentials=self.signing_key.verify_key, obj=new_settings
             ).unwrap()
-
-
-def create_root_admin_if_not_exists(
-    name: str,
-    email: str,
-    password: str,
-    server: Server,
-) -> User | None:
-    """
-    If no root admin exists:
-    - all exists checks on the user stash will fail, as we cannot get the role for the admin to check if it exists
-    - result: a new admin is always created
-
-    If a root admin exists with a different email:
-    - cause: DEFAULT_USER_EMAIL env variable is set to a different email than the root admin in the db
-    - verify_key_exists will return True
-    - result: no new admin is created, as the server already has a root admin
-    """
-    user_stash = server.services.user.stash
-
-    email_exists = user_stash.email_exists(email=email).unwrap()
-    if email_exists:
-        logger.debug("Admin not created, a user with this email already exists")
-        return None
-
-    verify_key_exists = user_stash.verify_key_exists(server.verify_key).unwrap()
-    if verify_key_exists:
-        logger.debug("Admin not created, this server already has a root admin")
-        return None
-
-    create_user = UserCreate(
-        name=name,
-        email=email,
-        password=password,
-        password_verify=password,
-        role=ServiceRole.ADMIN,
-    )
-
-    # New User Initialization
-    # 🟡 TODO: change later but for now this gives the main user super user automatically
-    user = create_user.to(User)
-    user.signing_key = server.signing_key
-    user.verify_key = server.verify_key
-
-    new_user = user_stash.set(
-        credentials=server.verify_key,
-        obj=user,
-        ignore_duplicates=False,
-    ).unwrap()
-
-    logger.debug(f"Created admin {new_user.email}")
-
-    return new_user
 
 
 class ServerRegistry:

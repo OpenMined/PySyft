@@ -76,6 +76,8 @@ def create_app() -> FastAPI:
         openapi_url=f"{settings.API_V2_STR}/openapi.json",
         lifespan=lifespan,
         middleware=get_middlewares(),
+        docs_url=None,
+        redoc_url=None,
     )
 
     # instrument app
