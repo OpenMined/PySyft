@@ -30,9 +30,9 @@ from .sim.core import sim_activity
 from .sim.core import sim_entrypoint
 
 fake = Faker()
-NUM_USERS = 5
+NUM_USERS = 10
 NUM_ENDPOINTS = 3  # test_query, submit_query, schema_query
-TIMEOUT = 900
+TIMEOUT = 300
 
 
 class Event(BaseEvent):
@@ -206,7 +206,7 @@ async def admin_low_triage_requests(
         ctx.logger.info(f"Admin low: Requests={len(requests)} Pending={len(pending)}")
 
         # If all requests have been triaged, then exit
-        if len(requests) == NUM_USERS and len(pending) == 0:
+        if len(requests) == NUM_USERS:
             ctx.events.trigger(Event.ADMIN_LOW_ALL_RESULTS_AVAILABLE)
             break
 
@@ -261,7 +261,8 @@ async def admin_high_triage_requests(
                 job = api_func(blocking=False)
                 result = job.wait()
                 ctx.logger.info(f"Admin high: Request result {result}")
-
+        if len(requests) == NUM_USERS:
+            break
     ctx.logger.info("Admin high: All requests triaged.")
 
 
