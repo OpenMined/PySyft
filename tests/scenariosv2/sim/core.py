@@ -115,10 +115,12 @@ class Simulator:
                 timeout=timeout,
             )
         except asyncio.TimeoutError:
+            unfired_events = context.unfired_events(check_events)
+            if len(unfired_events) == 0:
+                # simulator timed out and all events fired
+                return results
             if check_events:
-                context._elogger.error(
-                    f"Timed out. Unfired Events = {context.unfired_events(check_events)}"
-                )
+                context._elogger.error(f"Timed out. Unfired Events = {unfired_events}")
             raise TestFailure(
                 f"simulator timed out after {timeout}s. Please check logs at {LOGS_DIR} for more details."
             )
