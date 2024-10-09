@@ -461,6 +461,19 @@ class UserService(AbstractService):
                     public_message=f"You are not allowed to modify '{field_name}'."
                 )
 
+        # important to prevent root admins from shooting themselves in the foot
+        if (
+            user_update.role is not Empty  # type: ignore
+            and user.verify_key == context.server.verify_key
+        ):
+            raise SyftException(public_message="Cannot update root role")
+
+        if (
+            user_update.verify_key is not Empty
+            and user.verify_key == context.server.verify_key
+        ):
+            raise SyftException(public_message="Cannot update root verify key")
+
         if user_update.name is not Empty and user_update.name.strip() == "":  # type: ignore[comparison-overlap]
             raise SyftException(public_message="Name can't be an empty string.")
 
