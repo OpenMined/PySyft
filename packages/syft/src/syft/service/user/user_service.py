@@ -463,7 +463,7 @@ class UserService(AbstractService):
 
         # important to prevent root admins from shooting themselves in the foot
         if (
-            user_update.role is not Empty
+            user_update.role is not Empty  # type: ignore
             and user.verify_key == context.server.verify_key
         ):
             raise SyftException(public_message="Cannot update root role")
