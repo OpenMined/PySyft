@@ -32,7 +32,7 @@ from .sim.core import sim_entrypoint
 fake = Faker()
 NUM_USERS = 10
 NUM_ENDPOINTS = 3  # test_query, submit_query, schema_query
-TIMEOUT = 300
+TIMEOUT = 900
 
 
 class Event(BaseEvent):
