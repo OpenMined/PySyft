@@ -27,7 +27,7 @@ repos:
         always_run: true
       - id: name-tests-test
         always_run: true
-        exclude: ^(.*/tests/utils/)|^(.*fixtures.py)|^(tests/scenarios/bigquery/helpers)
+        exclude: ^(.*/tests/utils/)|^(.*fixtures.py)|^(tests/scenariosv2/(sim|flows))
       - id: requirements-txt-fixer
         always_run: true
       - id: mixed-line-ending
