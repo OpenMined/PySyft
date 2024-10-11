@@ -188,6 +188,210 @@ jobs:
           max_attempts: 3
           command: tox -e syft.test.notebook
 
+  pr-tests-syft-scenario:
+    strategy:
+      max-parallel: 99
+      matrix:
+        # TODO try enabling on other OS
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+        deployment-type: ["python"]
+        bump-version: ["False"]
+        include:
+          - python-version: "3.11"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+          - python-version: "3.10"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+          - python-version: "3.12"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+            bump-version: "True"
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
+      - name: "clean .git/config"
+        if: matrix.os == 'windows-latest'
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
+      - uses: actions/checkout@v4
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pip packages
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2
+          uv --version
+
+      - name: Get uv cache dir
+        id: pip-cache
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Load github cache
+        uses: actions/cache@v4
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
+
+      - name: Run scenario tests
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
+        env:
+          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
+          BUMP_VERSION: "${{ matrix.bump-version }}"
+          TOX_PYTHON: python${{ matrix.python-version }}
+        shell: bash
+        run: |
+          tox -e syft.test.scenario
+
+      - name: Collect logs
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          mkdir -p ./output-logs
+          if [ -d "tests/scenariosv2/.logs" ]; then
+            cp -R tests/scenariosv2/.logs/* ./output-logs/
+          else
+            echo "Log directory not found"
+          fi
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: steps.changes.outputs.stack == 'true' && failure()
+        with:
+          name: simulation-scenario-logs-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          path: ./output-logs/
+
+  pr-tests-syft-scenario-sync:
+    strategy:
+      max-parallel: 99
+      matrix:
+        # TODO try enabling on other OS
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+        deployment-type: ["python"]
+        bump-version: ["False"]
+        include:
+          - python-version: "3.11"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+          - python-version: "3.10"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+          - python-version: "3.12"
+            os: "ubuntu-latest"
+            deployment-type: "python"
+            bump-version: "True"
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      # - name: Permission to home directory
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: |
+      #     sudo chown -R $USER:$USER $HOME
+      - name: "clean .git/config"
+        if: matrix.os == 'windows-latest'
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
+      - uses: actions/checkout@v4
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pip packages
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2
+          uv --version
+
+      - name: Get uv cache dir
+        id: pip-cache
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Load github cache
+        uses: actions/cache@v4
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-uv-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-py${{ matrix.python-version }}-
+
+      - name: Run scenario tests
+        if: steps.changes.outputs.syft == 'true'  || steps.changes.outputs.notebooks_scenario == 'true'
+        env:
+          ORCHESTRA_DEPLOYMENT_TYPE: "${{ matrix.deployment-type }}"
+          BUMP_VERSION: "${{ matrix.bump-version }}"
+          TOX_PYTHON: python${{ matrix.python-version }}
+        shell: bash
+        run: |
+          tox -e syft.test.scenario.sync
+
+      - name: Collect logs
+        if: steps.changes.outputs.stack == 'true' && failure()
+        shell: bash
+        run: |
+          mkdir -p ./output-logs
+          if [ -d "tests/scenariosv2/.logs" ]; then
+            cp -R tests/scenariosv2/.logs/* ./output-logs/
+          else
+            echo "Log directory not found"
+          fi
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: steps.changes.outputs.stack == 'true' && failure()
+        with:
+          name: simulation-scenario-sync-logs-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          path: ./output-logs/
+
   pr-tests-syft-notebook-scenario:
     strategy:
       max-parallel: 99

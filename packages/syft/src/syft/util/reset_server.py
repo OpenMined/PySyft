@@ -24,11 +24,11 @@ def make_copy(server: ServerHandle) -> None:
     original_dir = str(cfg.path.resolve())
     copy_dir = f"{original_dir}{COPY_SUFFIX}"
     copy_tree(original_dir, copy_dir)
-    print(f"moved\n{original_dir}\nto\n{copy_dir}\n")
+    print(f"copied\n{original_dir}\nto\n{copy_dir}\n")
 
 
 def restore_copy(copy_dir: str) -> None:
     copy_dir_path = Path(copy_dir)
     original_dir = make_original_path(copy_dir_path)
     copy_tree(copy_dir_path, original_dir)
-    print(f"moved\n{copy_dir}\nto\n{original_dir}\n")
+    print(f"copied\n{copy_dir}\nto\n{original_dir}\n")
