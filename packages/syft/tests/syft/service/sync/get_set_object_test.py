@@ -1,25 +1,10 @@
 # third party
-import numpy as np
-import pytest
 
 # syft absolute
-import syft
 import syft as sy
 from syft.client.datasite_client import DatasiteClient
-from syft.client.sync_decision import SyncDecision
-from syft.client.syncing import compare_clients
-from syft.client.syncing import resolve
-from syft.server.worker import Worker
 from syft.service.action.action_object import ActionObject
-from syft.service.code.user_code import ApprovalDecision
-from syft.service.code.user_code import UserCodeStatus
 from syft.service.dataset.dataset import Dataset
-from syft.service.job.job_stash import Job
-from syft.service.request.request import RequestStatus
-from syft.service.response import SyftSuccess
-from syft.service.sync.resolve_widget import ResolveWidget
-from syft.service.user.user import User, UserView
-from syft.types.errors import SyftException
 
 
 def get_ds_client(client: DatasiteClient) -> DatasiteClient:
@@ -48,14 +33,14 @@ def test_get_set_object(high_worker):
     )
     root_datasite_client.upload_dataset(dataset)
     dataset = root_datasite_client.datasets[0]
-    
-    other_dataset = high_client.api.services.sync._get_object(uid=dataset.id, object_type=Dataset)
+
+    other_dataset = high_client.api.services.sync._get_object(
+        uid=dataset.id, object_type=Dataset
+    )
     other_dataset.server_uid = dataset.server_uid
     assert dataset == other_dataset
     other_dataset.name = "new_name"
-    updated_dataset = high_client.api.services.sync._update_object(
-        object=other_dataset
-    )
+    updated_dataset = high_client.api.services.sync._update_object(object=other_dataset)
     assert updated_dataset.name == "new_name"
 
     asset = root_datasite_client.datasets[0].assets[0]
@@ -64,7 +49,7 @@ def test_get_set_object(high_worker):
         uid=asset.action_id, object_type=ActionObject
     )
     ao._set_obj_location_(
-            high_worker.id,
-            root_datasite_client.credentials,
-        )
+        high_worker.id,
+        root_datasite_client.credentials,
+    )
     assert source_ao == ao
