@@ -32,6 +32,7 @@ from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .sync_stash import SyncStash
 from .sync_state import SyncState
 
@@ -39,10 +40,14 @@ logger = logging.getLogger(__name__)
 
 
 def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> ObjectStash:
-    if isinstance(item, ActionObject):
+    return get_store_by_type(context=context, obj_type=type(item))
+
+
+def get_store_by_type(context: AuthedServiceContext, obj_type: type) -> ObjectStash:
+    if issubclass(obj_type, ActionObject):
         service = context.server.services.action  # type: ignore
         return service.stash  # type: ignore
-    service = context.server.get_service(TYPE_TO_SERVICE[type(item)])  # type: ignore
+    service = context.server.get_service(TYPE_TO_SERVICE[obj_type])  # type: ignore
     return service.stash
 
 
@@ -450,3 +455,29 @@ class SyncService(AbstractService):
     )
     def _get_state(self, context: AuthedServiceContext) -> SyncState:
         return self.build_current_state(context).unwrap()
+
+    @service_method(
+        path="sync._get_object",
+        name="_get_object",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def _get_object(
+        self, context: AuthedServiceContext, uid: UID, object_type: type
+    ) -> Any:
+        return (
+            get_store_by_type(context, object_type)
+            .get_by_uid(credentials=context.credentials, uid=uid)
+            .unwrap()
+        )
+
+    @service_method(
+        path="sync._update_object",
+        name="_update_object",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def _update_object(self, context: AuthedServiceContext, object: Any) -> Any:
+        return (
+            get_store(context, object)
+            .update(credentials=context.credentials, obj=object)
+            .unwrap()
+        )
