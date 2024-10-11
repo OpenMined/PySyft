@@ -21,6 +21,7 @@ from ...types.syft_object import SyftObject
 from ...types.transforms import TransformContext
 from ...types.uid import UID
 from ..action.action_permissions import ActionObjectPermission
+from ..worker.worker_pool import WorkerPool
 
 __all__ = ["QueueItem"]
 
@@ -77,7 +78,7 @@ class QueueItem(SyftObject):
     job_id: UID | None = None
     worker_settings: WorkerSettings | None = None
     has_execute_permissions: bool = False
-    worker_pool: LinkedObject
+    worker_pool: LinkedObject[WorkerPool]
 
     def __repr__(self) -> str:
         return f"<QueueItem: {self.id}>: {self.status}"

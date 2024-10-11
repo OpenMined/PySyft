@@ -160,8 +160,7 @@ class UserCodeStatusCollectionV1(SyncableSyftObject):
 
     # this is empty in the case of l0
     status_dict: dict[ServerIdentity, tuple[UserCodeStatus, str]] = {}
-
-    user_code_link: LinkedObject
+    user_code_link: LinkedObject[UserCode]
 
 
 @serializable()
@@ -431,7 +430,7 @@ class UserCodeV1(SyncableSyftObject):
     user_unique_func_name: str
     code_hash: str
     signature: inspect.Signature
-    status_link: LinkedObject | None = None
+    status_link: LinkedObject[UserCodeStatusCollection] | None = None
     input_kwargs: list[str]
     submit_time: DateTime | None = None
     # tracks if the code calls datasite.something, variable is set during parsing

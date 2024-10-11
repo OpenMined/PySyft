@@ -108,7 +108,7 @@ class ActionStoreChange(Change):
     __canonical_name__ = "ActionStoreChange"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    linked_obj: LinkedObject
+    linked_obj: LinkedObject[ActionObject]
     apply_permission_type: ActionPermission
 
     __repr_attrs__ = ["linked_obj", "apply_permission_type"]
@@ -1370,8 +1370,8 @@ class UserCodeStatusChange(Change):
     __version__ = SYFT_OBJECT_VERSION_1
 
     value: UserCodeStatus
-    linked_obj: LinkedObject
-    linked_user_code: LinkedObject
+    linked_obj: LinkedObject[UserCodeStatusCollection]
+    linked_user_code: LinkedObject[UserCode]
     nested_solved: bool = False
     match_type: bool = True
     __repr_attrs__ = [
@@ -1523,7 +1523,7 @@ class UserCodeStatusChange(Change):
 class SyncedUserCodeStatusChange(UserCodeStatusChange):
     __canonical_name__ = "SyncedUserCodeStatusChange"
     __version__ = SYFT_OBJECT_VERSION_1
-    linked_obj: LinkedObject | None = None  # type: ignore
+    linked_obj: LinkedObject[UserCodeStatusCollection] | None = None  # type: ignore
 
     @property
     def approved(self) -> bool:
