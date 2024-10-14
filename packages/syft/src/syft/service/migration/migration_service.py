@@ -1,6 +1,7 @@
 # stdlib
 from collections import defaultdict
 import logging
+from typing import Any
 
 # syft absolute
 import syft
@@ -16,6 +17,7 @@ from ...types.result import as_result
 from ...types.syft_object import SyftObject
 from ...types.syft_object_registry import SyftObjectRegistry
 from ...types.twin_object import TwinObject
+from ...types.uid import UID
 from ..action.action_object import Action
 from ..action.action_object import ActionObject
 from ..action.action_permissions import ActionObjectPermission
@@ -26,7 +28,10 @@ from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
+from ..sync.sync_service import get_store
+from ..sync.sync_service import get_store_by_type
 from ..user.user_roles import ADMIN_ROLE_LEVEL
+from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from ..worker.utils import DEFAULT_WORKER_POOL_NAME
 from .object_migration_state import MigrationData
 from .object_migration_state import StoreMetadata
@@ -493,3 +498,29 @@ class MigrationService(AbstractService):
             )
 
         return SyftSuccess(message="Database reset successfully.")
+
+    @service_method(
+        path="migration._get_object",
+        name="_get_object",
+        roles=DATA_SCIENTIST_ROLE_LEVEL,
+    )
+    def _get_object(
+        self, context: AuthedServiceContext, uid: UID, object_type: type
+    ) -> Any:
+        return (
+            get_store_by_type(context, object_type)
+            .get_by_uid(credentials=context.credentials, uid=uid)
+            .unwrap()
+        )
+
+    @service_method(
+        path="migration._update_object",
+        name="_update_object",
+        roles=ADMIN_ROLE_LEVEL,
+    )
+    def _update_object(self, context: AuthedServiceContext, object: Any) -> Any:
+        return (
+            get_store(context, object)
+            .update(credentials=context.credentials, obj=object)
+            .unwrap()
+        )

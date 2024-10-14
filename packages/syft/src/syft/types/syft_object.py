@@ -429,6 +429,17 @@ class SyftObject(SyftObjectVersioned):
     __table_coll_widths__: ClassVar[list[str] | None] = None
     __table_sort_attr__: ClassVar[str | None] = None
 
+    def refresh(self) -> None:
+        try:
+            api = self._get_api()
+            new_object = api.services.migration._get_object(
+                uid=self.id, object_type=type(self)
+            )
+            if type(new_object) == type(self):
+                self.__dict__.update(new_object.__dict__)
+        except Exception as _:
+            return
+
     def __syft_get_funcs__(self) -> list[tuple[str, Signature]]:
         funcs = print_type_cache[type(self)]
         if len(funcs) > 0:
