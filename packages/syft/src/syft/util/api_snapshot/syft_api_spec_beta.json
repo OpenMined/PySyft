@@ -892,6 +892,27 @@
     "warning": "",
     "hash": "14594041323aa75d7d16bfa2b263dd209b8b3fbfbf324197b7bf5f905c5b9847"
   },
+  "Migrationservice.migration._get_object": {
+    "public_path": "migration._get_object",
+    "RBAC_permission": "DATA_SCIENTIST_ROLE_LEVEL",
+    "signature": {
+      "object_type": "<class 'type'>",
+      "uid": "<class 'syft.types.uid.UID'>"
+    },
+    "return_type": "typing.Any",
+    "warning": "",
+    "hash": "370048f733d7c8723d3c9ddea11831a914e75d59ce1335f8c8ee03a51f1e3bb1"
+  },
+  "Migrationservice.migration._update_object": {
+    "public_path": "migration._update_object",
+    "RBAC_permission": "ADMIN_ROLE_LEVEL",
+    "signature": {
+      "object": "typing.Any"
+    },
+    "return_type": "typing.Any",
+    "warning": "",
+    "hash": "dbe06a09ac0f9abb4a022fe08b58008bd9801ca5178e3ec920214657df99be87"
+  },
   "Migrationservice.migration.apply_migration_data": {
     "public_path": "migration.apply_migration_data",
     "RBAC_permission": "ADMIN_ROLE_LEVEL",
@@ -2002,13 +2023,13 @@
     "signature": {
       "ignored_batches": "dict[syft.types.uid.UID, int]",
       "items": "list[syft.types.syncable_object.SyncableSyftObject]",
-      "permissions": "list[syft.service.action.action_permissions.ActionObjectPermission]",
+      "permissions": "dict[type, list[syft.service.action.action_permissions.ActionObjectPermission]]",
       "storage_permissions": "list[syft.service.action.action_permissions.StoragePermission]",
       "unignored_batches": "set[syft.types.uid.UID]"
     },
     "return_type": "<class 'syft.service.response.SyftSuccess'>",
     "warning": "",
-    "hash": "c999d4dd57469ff34a4aa9bcb47809fd67b371e3460320e475a42d3941067d12"
+    "hash": "7561cf4ace912bd7235ad03fc706c85fb13623cbab2af0c40596b5b9c1f01582"
   },
   "Usercodeservice.code.call": {
     "public_path": "code.call",

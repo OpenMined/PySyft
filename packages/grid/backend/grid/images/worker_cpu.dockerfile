@@ -5,7 +5,7 @@
 # NOTE: This dockerfile will be built inside a syft-backend container in PROD
 # Hence COPY will not work the same way in DEV vs. PROD
 
-ARG SYFT_VERSION_TAG="0.9.2-beta.5"
+ARG SYFT_VERSION_TAG="0.9.2-beta.6"
 FROM openmined/syft-backend:${SYFT_VERSION_TAG}
 
 # should match base image python version
