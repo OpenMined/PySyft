@@ -39,10 +39,14 @@ logger = logging.getLogger(__name__)
 
 
 def get_store(context: AuthedServiceContext, item: SyncableSyftObject) -> ObjectStash:
-    if isinstance(item, ActionObject):
+    return get_store_by_type(context=context, obj_type=type(item))
+
+
+def get_store_by_type(context: AuthedServiceContext, obj_type: type) -> ObjectStash:
+    if issubclass(obj_type, ActionObject):
         service = context.server.services.action  # type: ignore
         return service.stash  # type: ignore
-    service = context.server.get_service(TYPE_TO_SERVICE[type(item)])  # type: ignore
+    service = context.server.get_service(TYPE_TO_SERVICE[obj_type])  # type: ignore
     return service.stash
 
 

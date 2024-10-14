@@ -585,6 +585,7 @@ class Request(SyncableSyftObject):
             # which tries to send an email to the admin and ends up here
             pass  # lets keep going
 
+        self.refresh()
         if len(self.history) == 0:
             return RequestStatus.PENDING
 
