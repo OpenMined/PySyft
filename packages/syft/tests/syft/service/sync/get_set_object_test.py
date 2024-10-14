@@ -34,18 +34,20 @@ def test_get_set_object(high_worker):
     root_datasite_client.upload_dataset(dataset)
     dataset = root_datasite_client.datasets[0]
 
-    other_dataset = high_client.api.services.sync._get_object(
+    other_dataset = high_client.api.services.migration._get_object(
         uid=dataset.id, object_type=Dataset
     )
     other_dataset.server_uid = dataset.server_uid
     assert dataset == other_dataset
     other_dataset.name = "new_name"
-    updated_dataset = high_client.api.services.sync._update_object(object=other_dataset)
+    updated_dataset = high_client.api.services.migration._update_object(
+        object=other_dataset
+    )
     assert updated_dataset.name == "new_name"
 
     asset = root_datasite_client.datasets[0].assets[0]
     source_ao = high_client.api.services.action.get(uid=asset.action_id)
-    ao = high_client.api.services.sync._get_object(
+    ao = high_client.api.services.migration._get_object(
         uid=asset.action_id, object_type=ActionObject
     )
     ao._set_obj_location_(

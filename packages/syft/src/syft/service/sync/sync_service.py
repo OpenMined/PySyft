@@ -32,7 +32,6 @@ from ..service import AbstractService
 from ..service import TYPE_TO_SERVICE
 from ..service import service_method
 from ..user.user_roles import ADMIN_ROLE_LEVEL
-from ..user.user_roles import DATA_SCIENTIST_ROLE_LEVEL
 from .sync_stash import SyncStash
 from .sync_state import SyncState
 
@@ -455,29 +454,3 @@ class SyncService(AbstractService):
     )
     def _get_state(self, context: AuthedServiceContext) -> SyncState:
         return self.build_current_state(context).unwrap()
-
-    @service_method(
-        path="sync._get_object",
-        name="_get_object",
-        roles=DATA_SCIENTIST_ROLE_LEVEL,
-    )
-    def _get_object(
-        self, context: AuthedServiceContext, uid: UID, object_type: type
-    ) -> Any:
-        return (
-            get_store_by_type(context, object_type)
-            .get_by_uid(credentials=context.credentials, uid=uid)
-            .unwrap()
-        )
-
-    @service_method(
-        path="sync._update_object",
-        name="_update_object",
-        roles=ADMIN_ROLE_LEVEL,
-    )
-    def _update_object(self, context: AuthedServiceContext, object: Any) -> Any:
-        return (
-            get_store(context, object)
-            .update(credentials=context.credentials, obj=object)
-            .unwrap()
-        )
