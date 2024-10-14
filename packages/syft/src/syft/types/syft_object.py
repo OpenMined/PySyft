@@ -430,9 +430,11 @@ class SyftObject(SyftObjectVersioned):
     __table_sort_attr__: ClassVar[str | None] = None
 
     def refresh(self) -> None:
-        api = self._get_api()
+        try:
+            api = self._get_api()
+        except Exception as _:
+            return
         new_object = api.services.sync._get_object(uid=self.id, object_type=type(self))
-        print(type(self), type(new_object))
         if type(new_object) == type(self):
             self.__dict__.update(new_object.__dict__)
 
