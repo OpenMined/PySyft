@@ -1,0 +1,180 @@
+{
+  "richard-porter-fake@openmined.org": [
+    {
+      "user_email": "richard-porter-fake@openmined.org",
+      "func_name": "simple_query_61dd0e",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM data_10gb.subreddits\n    GROUP BY table_id\n    LIMIT 713078",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "data_10gb",
+        "table": "subreddits",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 713078
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_61dd0e",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    },
+    {
+      "user_email": "richard-porter-fake@openmined.org",
+      "func_name": "simple_query_7e0b14",
+      "query": "SELECT subreddit_id, AVG(score) AS average_score\n    FROM data_10gb.comments\n    GROUP BY subreddit_id\n    LIMIT 770329",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "data_10gb",
+        "table": "comments",
+        "groupby_col": "subreddit_id",
+        "score_col": "score",
+        "limit": 770329
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_7e0b14",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    }
+  ],
+  "christine-peterson-fake@openmined.org": [
+    {
+      "user_email": "christine-peterson-fake@openmined.org",
+      "func_name": "simple_query_6e409e",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM test_1gb.subreddits\n    GROUP BY table_id\n    LIMIT 969621",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "test_1gb",
+        "table": "subreddits",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 969621
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_6e409e",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    },
+    {
+      "user_email": "christine-peterson-fake@openmined.org",
+      "func_name": "wrong_syntax_query_201be7",
+      "query": "SELECT * FROM table INCORRECT SYNTAX",
+      "job_type": "wrong_syntax_query",
+      "settings": {},
+      "should_succeed": false,
+      "should_submit": true,
+      "code_path": "wrong_syntax_query_201be7",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    }
+  ],
+  "jon-wilson-fake@openmined.org": [
+    {
+      "user_email": "jon-wilson-fake@openmined.org",
+      "func_name": "simple_query_cac747",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM data_10gb.subreddits\n    GROUP BY table_id\n    LIMIT 865657",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "data_10gb",
+        "table": "subreddits",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 865657
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_cac747",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    },
+    {
+      "user_email": "jon-wilson-fake@openmined.org",
+      "func_name": "job_too_much_text_7d0b7e",
+      "query": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "job_type": "job_too_much_text",
+      "settings": {},
+      "should_succeed": false,
+      "should_submit": true,
+      "code_path": "job_too_much_text_7d0b7e",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    }
+  ],
+  "tyrone-flores-fake@openmined.org": [
+    {
+      "user_email": "tyrone-flores-fake@openmined.org",
+      "func_name": "simple_query_9ab2f5",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM test_1gb.subreddits\n    GROUP BY table_id\n    LIMIT 897138",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "test_1gb",
+        "table": "subreddits",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 897138
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_9ab2f5",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    },
+    {
+      "user_email": "tyrone-flores-fake@openmined.org",
+      "func_name": "job_long_name_d6277aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "query": "SELECT subreddit_id, AVG(score) AS average_score\n    FROM data_10gb.comments\n    GROUP BY subreddit_id\n    LIMIT 591345",
+      "job_type": "job_long_name",
+      "settings": {
+        "dataset": "data_10gb",
+        "table": "comments",
+        "groupby_col": "subreddit_id",
+        "score_col": "score",
+        "limit": 591345
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "job_long_name_d6277aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    }
+  ],
+  "brian-bradford-fake@openmined.org": [
+    {
+      "user_email": "brian-bradford-fake@openmined.org",
+      "func_name": "simple_query_edeb0b",
+      "query": "SELECT subreddit_id, AVG(score) AS average_score\n    FROM data_10gb.comments\n    GROUP BY subreddit_id\n    LIMIT 133654",
+      "job_type": "simple_query",
+      "settings": {
+        "dataset": "data_10gb",
+        "table": "comments",
+        "groupby_col": "subreddit_id",
+        "score_col": "score",
+        "limit": 133654
+      },
+      "should_succeed": true,
+      "should_submit": true,
+      "code_path": "simple_query_edeb0b",
+      "admin_reviewed": true,
+      "result_as_expected": true
+    },
+    {
+      "user_email": "brian-bradford-fake@openmined.org",
+      "func_name": "job_funcname_xss_338b43<script>alert('XSS in funcname')</script>",
+      "query": "SELECT table_id, AVG(colname) AS average_score\n    FROM test_1gb.subreddits\n    GROUP BY table_id\n    LIMIT 64464",
+      "job_type": "job_funcname_xss",
+      "settings": {
+        "dataset": "test_1gb",
+        "table": "subreddits",
+        "groupby_col": "table_id",
+        "score_col": "colname",
+        "limit": 64464
+      },
+      "should_succeed": true,
+      "should_submit": false,
+      "code_path": null,
+      "admin_reviewed": false,
+      "result_as_expected": null
+    }
+  ]
+}

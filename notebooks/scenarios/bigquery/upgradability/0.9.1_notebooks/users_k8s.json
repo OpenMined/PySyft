@@ -1,0 +1,52 @@
+[
+  {
+    "name": "Richard Porter",
+    "email": "richard-porter-fake@openmined.org",
+    "password": "Fmo4!MxcZ(",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": true,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "Christine Peterson",
+    "email": "christine-peterson-fake@openmined.org",
+    "password": "4J13O(x&!G",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": true,
+    "reset_token": "DgSgUZ2gOpvm"
+  },
+  {
+    "name": "Jon Wilson",
+    "email": "jon-wilson-fake@openmined.org",
+    "password": "h5TEQw#t%4",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "Tyrone Flores",
+    "email": "tyrone-flores-fake@openmined.org",
+    "password": "&#CJFvxb3_",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  },
+  {
+    "name": "Brian Bradford",
+    "email": "brian-bradford-fake@openmined.org",
+    "password": "crZ#4Heh6e",
+    "role": "ServiceRole.DATA_SCIENTIST",
+    "new_password": null,
+    "email_disabled": false,
+    "reset_password": false,
+    "reset_token": null
+  }
+]

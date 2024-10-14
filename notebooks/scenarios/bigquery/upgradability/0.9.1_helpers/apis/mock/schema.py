@@ -9,7 +9,7 @@ from ..rate_limiter import is_within_rate_limit
 from .data import schema_dict
 
 
-def make_schema(settings, worker_pool_name) -> Callable:
+def make_schema(settings, worker_pool) -> Callable:
     updated_settings = {
         "calls_per_min": 5,
         "rate_limiter_enabled": True,
@@ -21,7 +21,7 @@ def make_schema(settings, worker_pool_name) -> Callable:
         description="This endpoint allows for visualising the metadata of tables available in BigQuery.",
         settings=updated_settings,
         helper_functions=[is_within_rate_limit],
-        worker_pool_name=worker_pool_name,
+        worker_pool=worker_pool,
     )
     def mock_schema(
         context,
