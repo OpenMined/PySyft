@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import hashlib
 from typing import Any
 
 # third party
@@ -57,6 +58,9 @@ class SyftSigningKey(SyftBaseModel):
     @classmethod
     def make_signing_key(cls, v: Any) -> Any:
         return SigningKey(bytes.fromhex(v)) if isinstance(v, str) else v
+
+    def deterministic_hash(self) -> str:
+        return hashlib.sha256(self.signing_key._seed).hexdigest()
 
     @property
     def verify_key(self) -> SyftVerifyKey:

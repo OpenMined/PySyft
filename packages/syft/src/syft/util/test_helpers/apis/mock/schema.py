@@ -9,7 +9,11 @@ from ..rate_limiter import is_within_rate_limit
 from .data import schema_dict
 
 
-def make_schema(settings, worker_pool_name) -> Callable:
+def make_schema(
+    settings,
+    worker_pool_name,
+    path="bigquery.schema",
+) -> Callable:
     updated_settings = {
         "calls_per_min": 5,
         "rate_limiter_enabled": True,
@@ -17,7 +21,7 @@ def make_schema(settings, worker_pool_name) -> Callable:
     } | settings
 
     @sy.api_endpoint(
-        path="bigquery.schema",
+        path=path,
         description="This endpoint allows for visualising the metadata of tables available in BigQuery.",
         settings=updated_settings,
         helper_functions=[is_within_rate_limit],
