@@ -500,7 +500,7 @@ class MigrationService(AbstractService):
         return SyftSuccess(message="Database reset successfully.")
 
     @service_method(
-        path="sync._get_object",
+        path="migration._get_object",
         name="_get_object",
         roles=DATA_SCIENTIST_ROLE_LEVEL,
     )
@@ -514,7 +514,7 @@ class MigrationService(AbstractService):
         )
 
     @service_method(
-        path="sync._update_object",
+        path="migration._update_object",
         name="_update_object",
         roles=ADMIN_ROLE_LEVEL,
     )
