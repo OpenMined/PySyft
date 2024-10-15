@@ -45,7 +45,7 @@
     "just-debounce-it": "^3.2.0",
     "ky": "^0.33.3",
     "libsodium": "0.7.14",
-    "libsodium-wrappers": "0.7.14",
+    "libsodium-wrappers": "0.7.15",
     "prismjs": "^1.29.0",
     "semver": "^7.5.4",
     "uuid": "^9.0.0"
