@@ -44,7 +44,7 @@
     "capnp-ts": "^0.7.0",
     "just-debounce-it": "^3.2.0",
     "ky": "^0.33.3",
-    "libsodium": "0.7.14",
+    "libsodium": "0.7.15",
     "libsodium-wrappers": "0.7.14",
     "prismjs": "^1.29.0",
     "semver": "^7.5.4",
