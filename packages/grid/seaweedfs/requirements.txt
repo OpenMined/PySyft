@@ -1,4 +1,4 @@
-fastapi==0.110.0
+fastapi==0.112.2
 pyyaml==6.0.1
 supervisor==4.2.5
-uvicorn==0.27.1
+uvicorn==0.30.6

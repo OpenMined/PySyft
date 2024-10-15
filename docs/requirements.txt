@@ -5,9 +5,9 @@ jinja2>=3.1.4 # not directly required, pinned by Snyk to avoid a vulnerability
 markupsafe==2.0.1
 pydata-sphinx-theme==0.7.2
 pygments>=2.15.0 # not directly required, pinned by Snyk to avoid a vulnerability
-requests>=2.32.2 # not directly required, pinned by Snyk to avoid a vulnerability
-setuptools>=70.0.0 # not directly required, pinned by Snyk to avoid a vulnerability
-sphinx==4.3.0
+requests>=2.32.3 # not directly required, pinned by Snyk to avoid a vulnerability
+setuptools>=74.0.0 # not directly required, pinned by Snyk to avoid a vulnerability
+sphinx==4.5.0
 sphinx-autoapi==1.8.4
 sphinx-code-include==1.1.1
 sphinx-copybutton==0.4.0

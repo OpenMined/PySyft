@@ -1,4 +1,4 @@
-ARG SEAWEEDFS_VERSION="3.64"
+ARG SEAWEEDFS_VERSION="3.71"
 FROM chrislusf/seaweedfs:${SEAWEEDFS_VERSION}_large_disk
 
 WORKDIR /root/swfs

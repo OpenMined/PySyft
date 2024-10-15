@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION="3.12"
-ARG UV_VERSION="0.2.13-r0"
-ARG TORCH_VERSION="2.2.2"
+ARG UV_VERSION="0.3.5-r0"
+ARG TORCH_VERSION="2.4.0"
 
 # wolfi-os pkg definition links
 # https://github.com/wolfi-dev/os/blob/main/python-3.12.yaml

@@ -17,7 +17,7 @@ RUN apk update && apk upgrade && \
 COPY ./syft /tmp/syft
 
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    pip install --user jupyterlab==4.2.2 /tmp/syft
+    pip install --user jupyterlab==4.2.4 /tmp/syft
 
 # ==================== [Final] Setup Syft Client ==================== #
 

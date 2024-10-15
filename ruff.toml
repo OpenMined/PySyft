@@ -20,6 +20,7 @@ select = [
 ignore = [
     "B904",  # check for raise statements in exception handlers that lack a from clause
     "B905",  # zip() without an explicit strict= parameter
+    "E721",
 ]
 
 [lint.per-file-ignores]
