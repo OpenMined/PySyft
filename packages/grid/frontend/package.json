@@ -36,7 +36,7 @@
     "tailwindcss": "3.3.1",
     "typescript": "^4.9.5",
     "typescript-svelte-plugin": "^0.3.34",
-    "vite": "^4.5.3",
+    "vite": "^4.5.5",
     "vitest": "^0.33.0"
   },
   "type": "module",
