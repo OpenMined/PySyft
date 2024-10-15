@@ -259,8 +259,9 @@ def small_dataset() -> Dataset:
 @pytest.fixture
 def big_dataset() -> Dataset:
     num_elements = 20 * 1024 * 1024
-    data_big = np.random.randint(0, 100, size=num_elements)
-    mock_big = np.random.randint(0, 100, size=num_elements)
+    rng = np.random.default_rng()
+    data_big = rng.integers(0, 100, size=num_elements)
+    mock_big = rng.integers(0, 100, size=num_elements)
     dataset = Dataset(
         name="big_dataset",
         asset_list=[

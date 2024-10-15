@@ -160,7 +160,7 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
     elif isinstance(value_attr, dict):
         dict_repr = "{\n"
         for key, elem in value_attr.items():
-            dict_repr += f"{sketchy_tab * new_num_tabs}{key}: {str(elem)}\n"
+            dict_repr += f"{sketchy_tab * new_num_tabs}{key}: {elem!s}\n"
         dict_repr += "}"
         return dict_repr
 
@@ -172,7 +172,7 @@ def recursive_attr_repr(value_attr: list | dict | bytes, num_tabs: int = 0) -> s
     if isinstance(value_attr, UID):
         value_attr = short_uid(value_attr)  # type: ignore
 
-    return f"{sketchy_tab*num_tabs}{str(value_attr)}"
+    return f"{sketchy_tab*num_tabs}{value_attr!s}"
 
 
 class ObjectDiff(SyftObject):  # StateTuple (compare 2 objects)

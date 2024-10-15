@@ -32,8 +32,9 @@ def register_ds(client):
 
 
 def create_dataset(client):
-    mock = np.random.random(5)
-    private = np.random.random(5)
+    rng = np.random.default_rng()
+    mock = rng.random(5)
+    private = rng.random(5)
 
     dataset = sy.Dataset(
         name=sy.util.util.random_name().lower(),

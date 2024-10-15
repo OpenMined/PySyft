@@ -193,7 +193,7 @@ class MigrationData(SyftObject):
         with open(yaml_path, "w") as f:
             yaml.dump(migration_config, f)
 
-        return SyftSuccess(message=f"Migration data saved to {str(path)}.")
+        return SyftSuccess(message=f"Migration data saved to {path!s}.")
 
     def download_blobs(self) -> None:
         for obj in self.blob_storage_objects:

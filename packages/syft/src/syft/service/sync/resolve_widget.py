@@ -266,7 +266,7 @@ class CollapsableObjectDiffWidget:
             </div>
             {copy_id_button.to_html()}
             </div>
-        """  # noqa: E501
+        """
         return second_line_html
 
     def set_and_disable_sync(self) -> None:

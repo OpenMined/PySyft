@@ -30,7 +30,7 @@ header_line_html = (
     </div>
     <div style="height:16px;"></div>
 """
-)  # noqa: E501
+)
 
 attrs_html = """<div style="display: table-row; padding: 0px, 0px, 12px, 0px; gap:8px">
     <div style="margin-top: 6px; margin-bottom: 6px;">

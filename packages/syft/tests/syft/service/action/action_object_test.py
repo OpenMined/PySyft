@@ -1034,7 +1034,8 @@ def test_actionobject_delete(worker):
     root_client = worker.root_client
 
     # small object with no blob store entry
-    data_small = np.random.randint(0, 100, size=3)
+    rng = np.random.default_rng()
+    data_small = rng.integers(0, 100, size=3)
     action_obj = ActionObject.from_obj(data_small)
     action_obj.send(root_client)
     assert action_obj.syft_blob_storage_entry_id is None
@@ -1043,7 +1044,7 @@ def test_actionobject_delete(worker):
 
     # big object with blob store entry
     num_elements = 25 * 1024 * 1024
-    data_big = np.random.randint(0, 100, size=num_elements)  # 4 bytes per int32
+    data_big = rng.integers(0, 100, size=num_elements)  # 4 bytes per int32
     action_obj_2 = ActionObject.from_obj(data_big)
     action_obj_2.send(root_client)
     assert isinstance(action_obj_2.syft_blob_storage_entry_id, UID)

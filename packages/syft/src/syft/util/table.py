@@ -297,8 +297,8 @@ def itable_template_from_df(df: pd.DataFrame, itable_css: str | None = None) -> 
     """
     itable_template = f"""<!-- Start itable_template -->
     {json.dumps({"columns": df.columns.tolist(),
-                    "data": df.values.tolist(),
-                    "itable_css": itable_css})}
+                 "data": df.to_numpy().tolist(),
+                 "itable_css": itable_css})}
     <!-- End itable_template -->"""
     return itable_template
 

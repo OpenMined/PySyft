@@ -34,7 +34,7 @@ class PandasDataFrameObject(ActionObject):
         return getattr(self.syft_action_data, method)
 
     def syft_is_property(self, obj: Any, method: str) -> bool:
-        cols = self.syft_action_data.columns.values.tolist()
+        cols = self.syft_action_data.columns.values.tolist()  # noqa
         if method in cols:
             return True
         return super().syft_is_property(obj, method)
