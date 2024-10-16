@@ -1106,6 +1106,9 @@ class Project(SyftObject):
         )
 
 
+_EMPTY_MEMBER_LIST_ERROR_MESSAGE = "Project needs at least 1 member."
+
+
 @serializable(without=["bootstrap_events", "clients"])
 class ProjectSubmit(SyftObject):
     __canonical_name__ = "ProjectSubmit"
@@ -1232,6 +1235,9 @@ class ProjectSubmit(SyftObject):
         return self.send(return_all_projects=return_all_projects)
 
     def send(self, return_all_projects: bool = False) -> Project | list[Project]:
+        if len(self.clients) == 0:
+            raise SyftException(public_message=_EMPTY_MEMBER_LIST_ERROR_MESSAGE)
+
         # Currently we are assuming that the first member is the leader
         # This would be changed in our future leaderless approach
         leader = self.clients[0]
