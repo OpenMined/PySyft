@@ -68,7 +68,7 @@ jobs:
 
       - name: Docker on MacOS
         if: steps.changes.outputs.frontend == 'true' && matrix.os == 'macos-latest'
-        uses: crazy-max/ghaction-setup-docker@v3.3.0
+        uses: crazy-max/ghaction-setup-docker@v4.0.0
 
       - name: Remove existing containers
         if: steps.changes.outputs.frontend == 'true'
