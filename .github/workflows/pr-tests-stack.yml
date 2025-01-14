@@ -56,13 +56,13 @@ jobs:
           pip install uv==0.4.1 tox==4.18.0 tox-uv==1.11.2
           uv --version
 
-      # - name: Run syft backend base image building test
-      #   if: steps.changes.outputs.stack == 'true'
-      # timeout-minutes: 60
-      # run: |
-      #   tox -e backend.test.basecpu
-      # run: |
-      #   echo "Skipping pr image test"
+      - name: Run syft backend base image building test
+        if: steps.changes.outputs.stack == 'true'
+      timeout-minutes: 60
+      run: |
+        tox -e backend.test.basecpu
+      run: |
+        echo "Skipping pr image test"
 
   pr-tests-syft-integration:
     strategy:
