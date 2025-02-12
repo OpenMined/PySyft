@@ -1,0 +1,7 @@
+{
+  "author": "david.rolle@gmail.com",
+  "execution_datasite": "me@madhavajay.com",
+  "result_datasite": "david.rolle@gmail.com",
+  "write_back_approved_path": "results/2_approved",
+  "write_back_denied_path": "results/3_denied"
+}

@@ -1191,6 +1191,7 @@ def execute_policy_code(user_policy: UserPolicy) -> Any:
             exec(user_policy.byte_code)  # nosec
             policy_class = eval(user_policy.unique_name)  # nosec
 
+        policy_class.model_rebuild()
         register_policy_class(policy_class, user_policy.unique_name)
 
         sys.stdout = stdout_

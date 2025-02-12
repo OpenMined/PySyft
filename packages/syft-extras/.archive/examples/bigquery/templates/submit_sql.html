@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Submit BigQuery SQL</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Submit BigQuery SQL</h1>
+      <form action="/submit-sql" method="POST">
+        <label for="sql">SQL Query:</label><br />
+        <textarea
+          id="sql"
+          name="sql_query"
+          rows="10"
+          cols="50"
+          placeholder="Enter your SQL query here..."
+        ></textarea
+        ><br /><br />
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  </body>
+</html>

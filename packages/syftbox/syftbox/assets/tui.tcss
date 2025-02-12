@@ -1,0 +1,40 @@
+.main {
+    width: 4fr;
+    padding-right: 1;
+}
+
+.info {
+    height: 1fr;
+}
+
+.syftbox-logs {
+    height: 1fr;
+    margin-top: 1;
+    background: $surface;
+}
+
+.status {
+    width: 1fr;
+    height: 100%;
+    background: $surface;
+    margin-right: 1;
+}
+
+.dim {
+    opacity: 0.6;
+}
+
+.sidebar {
+    margin-right: 1;
+    width: 1fr;
+}
+
+.api-logs {
+    width: 4fr;
+    height: 100%;
+    background: $surface;
+}
+
+.padding-top {
+    padding-top: 1;
+}

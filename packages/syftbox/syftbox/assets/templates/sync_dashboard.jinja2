@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sync Dashboard</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        h1 {
+            margin-bottom: 30px;
+            color: #1a1a1a;
+        }
+        .search-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+        }
+        #search {
+            padding: 8px 12px;
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .refresh-button {
+            padding: 8px 16px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .refresh-button:hover {
+            background-color: #f5f5f5;
+        }
+        .refresh-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .refresh-button .spinner {
+            display: none;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #ccc;
+            border-top-color: #666;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .refresh-button.loading .spinner {
+            display: inline-block;
+        }
+        .refresh-button.loading .refresh-icon {
+            display: none;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .table-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            justify-content: center;
+            align-items: center;
+        }
+        .table-overlay.visible {
+            display: flex;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background-color: #fff;
+            font-weight: 600;
+            color: #666;
+        }
+        td {
+            font-size: 14px;
+        }
+        .label {
+            border-radius: 4px;
+            padding: 6px 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            line-height: 1.2;
+            font-family: monospace;
+            text-transform: uppercase;
+            display: inline-block;
+            font-size: 12px;
+        }
+        .label-green {
+            background-color: #d5f1d5;
+            color: #256b24;
+        }
+        .label-red {
+            background-color: #f2d9de;
+            color: #9b2737;
+        }
+        .label-orange {
+            background-color: #fee9cd;
+            color: #b8520a;
+        }
+        .label-gray {
+            background-color: #ecebef;
+            color: #353243;
+        }
+        .label-blue {
+            background-color: #d5e7ff;
+            color: #1a365d;
+        }
+        .label-lightblue {
+            background-color: #e8f3ff;
+            color: #486b9e;
+        }
+        }
+        .error-message {
+            display: none;
+            background-color: #f2d9de;
+            color: #9b2737;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+        .error-message.visible {
+            display: block;
+        }
+
+        .dev-banner {
+            background-color: #ef5350;
+            color: rgba(255, 255, 255, 0.95);
+            padding: 8px 20px;
+            margin: -20px -20px 20px -20px;
+            text-align: center;
+            font-weight: 400;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="dev-banner">
+        This dashboard is for development purposes only, and is not intended for production use.
+    </div>
+    <h1>Sync Dashboard</h1>
+
+    <div id="error-container" class="error-message"></div>
+
+    <div class="search-container">
+        <div class="search-box">
+            <input
+                type="text"
+                id="search"
+                placeholder="Search paths..."
+                oninput="debounceSearch(event)"
+                autocomplete="off"
+            >
+            <button id="refresh-button" class="refresh-button" onclick="refreshData()">
+                <span class="spinner"></span>
+                <span class="refresh-icon">↻</span>
+                Refresh
+            </button>
+        </div>
+        <div>
+            Total results: <span id="result-count">0</span>
+        </div>
+    </div>
+
+    <div style="position: relative;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Path</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Message</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+        <div id="table-overlay" class="table-overlay">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = "{{ base_url }}".replace(/\/$/, '');
+        let isLoading = false;
+        let searchDebounceTimeout = null;
+
+        function getStatusClass(status) {
+            switch(status.toLowerCase()) {
+                case 'synced': return 'label-green';
+                case 'error': return 'label-red';
+                case 'queued': return 'label-orange';
+                case 'ignored': return 'label-gray';
+                default: return 'label-gray';
+            }
+        }
+
+        function getActionClass(action) {
+            if (!action) return '';
+            return action.includes('_REMOTE') ? 'label-blue' : 'label-lightblue';
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleString();
+        }
+
+        function setLoading(loading) {
+            isLoading = loading;
+            const button = document.getElementById('refresh-button');
+            const overlay = document.getElementById('table-overlay');
+
+            button.disabled = loading;
+            button.classList.toggle('loading', loading);
+            overlay.classList.toggle('visible', loading);
+        }
+
+        function showError(message) {
+            const container = document.getElementById('error-container');
+            container.textContent = message;
+            container.classList.add('visible');
+        }
+
+        function hideError() {
+            const container = document.getElementById('error-container');
+            container.classList.remove('visible');
+        }
+
+        function renderTable(items) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = items.map(item => `
+                <tr>
+                    <td>${item.path}</td>
+                    <td>${formatDate(item.timestamp)}</td>
+                    <td><span class="label ${getStatusClass(item.status)}">${item.status}</span></td>
+                    <td>${item.message || ''}</td>
+                    <td>${item.action ? `<span class="label ${getActionClass(item.action)}">${item.action}</span>` : ''}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('result-count').textContent = items.length;
+        }
+
+        function debounceSearch(event) {
+            if (searchDebounceTimeout) {
+                clearTimeout(searchDebounceTimeout);
+            }
+            searchDebounceTimeout = setTimeout(() => {
+                refreshData();
+            }, 300); // 300ms debounce delay
+        }
+
+        async function refreshData() {
+            if (isLoading) return;
+
+            hideError();
+            setLoading(true);
+
+            try {
+                const searchTerm = document.getElementById('search').value;
+                const params = new URLSearchParams({
+                    order_by: "timestamp",
+                    order: "desc"
+                });
+
+                if (searchTerm) {
+                    params.append('path_glob', searchTerm);
+                }
+
+                const response = await fetch(`${BASE_URL}/sync/state?${params}`, {
+                    method: 'GET',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderTable(data);
+                } else {
+                    const error = await response.text();
+                    throw new Error(`Failed to fetch data: ${error}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Failed to load data: ${error.message}`);
+                renderTable([]);  // Clear the table on error
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Initial load
+        refreshData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+[Unit]
+Description=Syftbox Prod Server
+After=network.target
+
+[Service]
+LimitNOFILE=262144
+User=azureuser
+WorkingDirectory=/home/azureuser
+ExecStartPre=uv run syftbox server migrate
+ExecStart=uv run uvicorn syftbox.server.server:app --host 0.0.0.0 --port 8443 --workers=4 --timeout-graceful-shutdown=5 --ssl-keyfile /etc/letsencrypt/live/syftbox.openmined.org/privkey.pem --ssl-certfile /etc/letsencrypt/live/syftbox.openmined.org/fullchain.pem
+Restart=always
+RestartSec=5
+Environment=OTEL_RESOURCE_ATTRIBUTES=service.name=syftbox-prod
+
+[Install]
+WantedBy=multi-user.target

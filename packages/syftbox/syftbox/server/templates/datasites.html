@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Index of {{ current_path.rstrip('/') }}</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+      }
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
+      }
+      a {
+        text-decoration: none;
+        color: blue;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Index of {{ current_path.rstrip('/') }}</h1>
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Last modified</th>
+        <th>Size</th>
+      </tr>
+      <tr>
+        <td><a href="../">📁 Parent Directory</a></td>
+        <td>-</td>
+        <td>-</td>
+      </tr>
+      {% for file in files %}
+      <tr>
+        <td>
+          {% if file.is_dir %}
+          <a href="datasites/{{ file.name }}/">📁 {{ file.name }}/</a>
+          {% else %}
+          <a href="datasites/{{ file.name }}">📄 {{ file.name }}</a>
+          {% endif %}
+        </td>
+        <td>{{ file.mod_time }}</td>
+        <td>
+          {% if not file.is_dir %}{{ file.size }} bytes{% else %}-{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </body>
+</html>

@@ -1,0 +1,126 @@
+name: Tests - PR
+
+on:
+  workflow_dispatch:
+
+  workflow_call:
+
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: syft-${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || github.workflow_ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pre-commit/action@v3.0.1
+
+  unit:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        # runner: [syftbox-sh-linux-x64, scaleway-macOS-arm64]
+        python-version: ["3.12", "3.11", "3.10", "3.9"]
+      fail-fast: false
+
+    # runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.4.25"
+
+      - name: Get uv cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Load github cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: pr-uv-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            pr-uv-${{ runner.os }}-py${{ matrix.python-version }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install tox
+        run: |
+          # explicitly define which python version to use
+          # else we may end up picking system default which is not the same as the actions/setup-python
+          uv tool install tox --with tox-uv --python ${{ matrix.python-version }}
+          uv run tox --version
+
+      - name: Run unit tests
+        env:
+          TOX_PYTHON: python${{ matrix.python-version }}
+        run: |
+          uv run tox -e syft.test.unit
+
+  integration:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        # runner: [syftbox-sh-linux-x64, scaleway-macOS-arm64]
+        python-version: ["3.12", "3.9"]
+      fail-fast: false
+
+    # runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.4.25"
+
+      - name: Get uv cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(uv cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Load github cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: pr-uv-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            pr-uv-${{ runner.os }}-py${{ matrix.python-version }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install tox
+        run: |
+          # explicitly define which python version to use
+          # else we may end up picking system default which is not the same as the actions/setup-python
+          uv tool install tox --with tox-uv --python ${{ matrix.python-version }}
+          uv run tox --version
+
+      - name: Run Integration tests
+        env:
+          TOX_PYTHON: python${{ matrix.python-version }}
+        run: |
+          uv run tox -e syft.test.integration

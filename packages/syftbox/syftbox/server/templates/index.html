@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Syft Cache User Management</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+      }
+      h1,
+      h2 {
+        color: #ffffff;
+      }
+      form {
+        margin-bottom: 20px;
+      }
+      input[type="text"],
+      textarea {
+        width: 100%;
+        padding: 5px;
+        margin-bottom: 10px;
+        background-color: #3d3d3d;
+        border: 1px solid #555;
+        color: #e0e0e0;
+      }
+      button {
+        padding: 5px 10px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      li {
+        margin-bottom: 10px;
+        background-color: #2d2d2d;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      #editForm {
+        background-color: #2d2d2d;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Syft Cache User Management</h1>
+
+    <h2>Add User</h2>
+    <form action="{{ url_for('add_user') }}" method="post">
+      <input type="text" name="username" placeholder="Username" required />
+      <textarea name="public_key" placeholder="Public Key" required></textarea>
+      <button type="submit">Add User</button>
+    </form>
+
+    <h2>Users</h2>
+    <ul id="userList">
+      {% for user in users %}
+      <li>
+        {{ user }}
+        <button onclick="editUser('{{ user }}')">Edit</button>
+        <button onclick="deleteUser('{{ user }}')">Delete</button>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <div id="editForm" style="display: none">
+      <h2>Edit User</h2>
+      <form id="updateUserForm">
+        <input type="hidden" id="editUsername" name="username" />
+        <textarea
+          id="editPublicKey"
+          name="public_key"
+          placeholder="Public Key"
+          required
+        ></textarea>
+        <button type="submit">Update User</button>
+      </form>
+    </div>
+
+    <script>
+      function editUser(username) {
+        fetch(`/users/${username}`)
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("editUsername").value = data.username;
+            document.getElementById("editPublicKey").value = data.public_key;
+            document.getElementById("editForm").style.display = "block";
+          });
+      }
+
+      function deleteUser(username) {
+        if (confirm(`Are you sure you want to delete ${username}?`)) {
+          fetch(`/users/${username}`, { method: "DELETE" }).then(() =>
+            location.reload(),
+          );
+        }
+      }
+
+      document
+        .getElementById("updateUserForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const username = document.getElementById("editUsername").value;
+          const publicKey = document.getElementById("editPublicKey").value;
+
+          fetch(`/users/${username}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `public_key=${encodeURIComponent(publicKey)}`,
+          }).then(() => location.reload());
+        });
+    </script>
+  </body>
+</html>

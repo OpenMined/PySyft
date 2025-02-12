@@ -1,0 +1,14 @@
+[project]
+name = "syft-requests"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["syft-rpc"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+syft-rpc = { workspace = true }

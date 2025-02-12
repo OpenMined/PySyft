@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personal Heart Rate Monitor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- Previous CSS styles remain exactly the same -->
+    <style>
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(to bottom, #000000, #1a1a1a);
+        color: white;
+        min-height: 100vh;
+        padding: 2rem;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .header {
+        margin-bottom: 3rem;
+      }
+
+      .title-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .title-row h1 {
+        font-size: 2.5rem;
+        margin: 0;
+        color: white;
+      }
+
+      .heart-container {
+        position: relative;
+        height: 5rem;
+        width: 5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .heart {
+        font-size: 4rem;
+        position: relative;
+        z-index: 10;
+        transition: transform 0.1s ease-in-out;
+      }
+
+      .glow {
+        position: absolute;
+        width: 4rem;
+        height: 4rem;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(255, 0, 0, 0.2) 0%,
+          rgba(255, 0, 0, 0) 70%
+        );
+        z-index: 0;
+      }
+
+      .particle {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(1px);
+        animation: pulse 2s infinite;
+      }
+
+      .time-container {
+        display: flex;
+        justify-content: center;
+        gap: 3rem;
+        padding: 1.5rem;
+        background: rgba(31, 41, 55, 0.5);
+        backdrop-filter: blur(4px);
+        border-radius: 0.5rem;
+      }
+
+      .time-group {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .time-label {
+        color: #a0a0a0;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .timestamp {
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .last-updated {
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .countdown {
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .refresh-button {
+        background-color: rgba(75, 192, 192, 0.2);
+        border: 1px solid rgb(75, 192, 192);
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 0.4rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.875rem;
+      }
+
+      .refresh-button:hover {
+        background-color: rgba(75, 192, 192, 0.4);
+      }
+
+      .refresh-button:active {
+        transform: scale(0.98);
+      }
+
+      .refresh-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .stat-box {
+        background-color: rgba(31, 41, 55, 0.5);
+        backdrop-filter: blur(4px);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .stat-box .icon {
+        color: #ff0000;
+        font-size: 1.5rem;
+      }
+
+      .stat-box .label {
+        color: #a0a0a0;
+        font-size: 0.875rem;
+      }
+
+      .stat-box .value {
+        color: white;
+        font-size: 1.25rem;
+        font-weight: bold;
+      }
+
+      .graph-container {
+        height: 300px;
+        background-color: rgba(31, 41, 55, 0.5);
+        backdrop-filter: blur(4px);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 2rem;
+      }
+
+      .graph-title {
+        color: #a0a0a0;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+        padding-left: 0.5rem;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.6;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.3;
+          transform: scale(1.2);
+        }
+      }
+
+      canvas {
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      @media (max-width: 768px) {
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .time-container {
+          flex-direction: column;
+          gap: 1rem;
+          align-items: center;
+        }
+
+        .time-group {
+          width: 100%;
+          justify-content: space-between;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Previous HTML structure remains exactly the same -->
+    <div class="container">
+      <div class="header">
+        <div class="title-row">
+          <div class="heart-container">
+            <div id="particles"></div>
+            <div class="heart" id="heart">❤️</div>
+            <div class="glow" id="glow"></div>
+          </div>
+          <h1>Madhava's Live Heart Rate</h1>
+        </div>
+        <div class="time-container">
+          <div class="time-group">
+            <div class="time-label">Current Time:</div>
+            <div class="timestamp" id="timestamp"></div>
+          </div>
+          <div class="time-group">
+            <div class="time-label">Last Reading:</div>
+            <div class="last-updated" id="last-updated"></div>
+          </div>
+          <div class="time-group">
+            <div class="time-label">Next Update:</div>
+            <div class="countdown" id="countdown">60s</div>
+            <button class="refresh-button" id="refresh-button">
+              Refresh Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="icon">📈</div>
+          <div>
+            <div class="label">Current Rate</div>
+            <div class="value" id="current-rate">-- BPM</div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="icon">📊</div>
+          <div>
+            <div class="label">Average Rate</div>
+            <div class="value" id="average-rate">-- BPM</div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="icon">⬇️</div>
+          <div>
+            <div class="label">Minimum Rate</div>
+            <div class="value" id="min-rate">-- BPM</div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="icon">⬆️</div>
+          <div>
+            <div class="label">Maximum Rate</div>
+            <div class="value" id="max-rate">-- BPM</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="graph-title">Last 3 Hours</div>
+        <div class="graph-container">
+          <canvas id="hourlyHeartRateChart"></canvas>
+        </div>
+      </div>
+      <br />
+      <div>
+        <div class="graph-title">Last 48 Hours</div>
+        <div class="graph-container">
+          <canvas id="heartRateChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentHeartRate = 0;
+      let heartRateChart;
+      let heartRateData = [];
+      let heartbeatInterval;
+      let timestampInterval;
+      let hourlyHeartRateChart;
+      let lastUpdated = null;
+      let lastDataTimestamp = null;
+      let countdownInterval;
+      let refreshButton;
+      let isRefreshing = false;
+
+      const defaultOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 750,
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: "white",
+            },
+          },
+          annotation: {
+            animations: {
+              numbers: {
+                duration: 0,
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            grid: {
+              color: "rgba(255, 255, 255, 0.1)",
+            },
+            ticks: {
+              color: "white",
+            },
+          },
+          x: {
+            grid: {
+              color: "rgba(255, 255, 255, 0.1)",
+            },
+            ticks: {
+              color: "white",
+              maxRotation: 45,
+              minRotation: 45,
+            },
+          },
+        },
+      };
+      function interpolateData(data, intervalMinutes = 15) {
+        // Create an array of timestamps at the specified interval for the last 48 hours
+        const now = new Date();
+        const startTime = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+        const intervalMillis = intervalMinutes * 60 * 1000;
+        const interpolatedData = [];
+
+        for (
+          let time = startTime.getTime();
+          time <= now.getTime();
+          time += intervalMillis
+        ) {
+          interpolatedData.push({
+            timestamp: new Date(time),
+            value: null,
+          });
+        }
+
+        // Populate the array with actual data and interpolate missing values
+        for (let i = 0; i < interpolatedData.length; i++) {
+          const currentSlot = interpolatedData[i];
+          const matchingDataPoint = data.find(
+            (d) =>
+              Math.abs(new Date(d.timestamp) - currentSlot.timestamp) <
+              intervalMillis / 2,
+          );
+
+          if (matchingDataPoint) {
+            currentSlot.value = matchingDataPoint.value;
+          } else {
+            // Find the two closest data points for interpolation
+            const previousData = data
+              .filter((d) => new Date(d.timestamp) < currentSlot.timestamp)
+              .pop();
+            const nextData = data.find(
+              (d) => new Date(d.timestamp) > currentSlot.timestamp,
+            );
+
+            if (previousData && nextData) {
+              const previousTime = new Date(previousData.timestamp).getTime();
+              const nextTime = new Date(nextData.timestamp).getTime();
+              const timeFraction =
+                (currentSlot.timestamp.getTime() - previousTime) /
+                (nextTime - previousTime);
+              currentSlot.value =
+                previousData.value +
+                timeFraction * (nextData.value - previousData.value);
+            }
+          }
+        }
+
+        return interpolatedData;
+      }
+
+      function updateCountdown() {
+        const now = new Date();
+        if (!lastUpdated) {
+          document.getElementById("countdown").textContent = "60s";
+          refreshButton.disabled = true;
+          return;
+        }
+
+        const timeSinceLastUpdate = now - lastUpdated;
+        const timeUntilNextUpdate = Math.max(
+          0,
+          60000 - (timeSinceLastUpdate % 60000),
+        );
+        const secondsRemaining = Math.ceil(timeUntilNextUpdate / 1000);
+
+        document.getElementById(
+          "countdown",
+        ).textContent = `${secondsRemaining}s`;
+
+        // Enable refresh button if at least 5 seconds have passed since last update
+        refreshButton.disabled = isRefreshing || timeSinceLastUpdate < 5000;
+      }
+
+      function startCountdown() {
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+        }
+        updateCountdown(); // Initial update
+        countdownInterval = setInterval(updateCountdown, 1000);
+      }
+
+      function createParticles() {
+        const particlesContainer = document.getElementById("particles");
+        particlesContainer.innerHTML = ""; // Clear existing particles
+        for (let i = 0; i < 30; i++) {
+          const particle = document.createElement("div");
+          particle.className = "particle";
+          particle.style.width = `${Math.random() * 4 + 2}px`;
+          particle.style.height = particle.style.width;
+          particle.style.background = `rgba(255, ${Math.random() * 100}, ${
+            Math.random() * 100
+          }, ${Math.random() * 0.3 + 0.1})`;
+          particle.style.left = `${Math.random() * 100}%`;
+          particle.style.top = `${Math.random() * 100}%`;
+          particlesContainer.appendChild(particle);
+        }
+      }
+
+      function getHourlyData(data, hoursToShow = 3) {
+        if (!data.length) return [];
+
+        const now = new Date();
+        const startTime = new Date(
+          now.getTime() - hoursToShow * 60 * 60 * 1000,
+        );
+
+        // Create array of minute slots for the specified hours
+        const totalMinutes = hoursToShow * 60;
+        let hourlySlots = Array.from({ length: totalMinutes }, (_, i) => {
+          let slotTime = new Date(startTime.getTime() + i * 60 * 1000);
+          return {
+            timestamp: slotTime,
+            value: null,
+          };
+        });
+
+        // Fill in actual data points
+        data.forEach((d) => {
+          const timestamp = new Date(d.timestamp);
+          if (timestamp >= startTime && timestamp <= now) {
+            const minuteIndex = Math.floor(
+              (timestamp - startTime) / (60 * 1000),
+            );
+            if (minuteIndex >= 0 && minuteIndex < totalMinutes) {
+              hourlySlots[minuteIndex] = {
+                timestamp: timestamp,
+                value: d.value,
+              };
+            }
+          }
+        });
+
+        return hourlySlots;
+      }
+
+      function updateCharts() {
+        if (!heartRateChart || !hourlyHeartRateChart || !heartRateData.length)
+          return;
+
+        // Filter and interpolate data for the last 48 hours for the full history chart
+        const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+        const filteredData = heartRateData.filter(
+          (d) => new Date(d.timestamp) >= fortyEightHoursAgo,
+        );
+        const interpolatedData = interpolateData(filteredData, 15); // Interpolate every 15 minutes
+
+        // Update full history chart (48 hours)
+        heartRateChart.data.labels = interpolatedData.map((d) =>
+          new Date(d.timestamp).toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        );
+        heartRateChart.data.datasets[0].data = interpolatedData.map(
+          (d) => d.value,
+        );
+        heartRateChart.update("none");
+
+        // Update 3-hour chart with actual timestamps
+        const hourlyData = getHourlyData(heartRateData, 3);
+        hourlyHeartRateChart.data.labels = hourlyData.map((d) => d.timestamp);
+        hourlyHeartRateChart.data.datasets[0].data = hourlyData.map(
+          (d) => d.value,
+        );
+        hourlyHeartRateChart.update("none");
+      }
+
+      function initializeCharts() {
+        // Initialize 48-hour history chart
+        const ctx = document.getElementById("heartRateChart").getContext("2d");
+        heartRateChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "Heart Rate (Last 48 Hours)",
+                data: [],
+                borderColor: "rgb(255, 99, 132)",
+                backgroundColor: "rgba(255, 99, 132, 0.2)",
+                tension: 0.4,
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            ...defaultOptions,
+            scales: {
+              ...defaultOptions.scales,
+              x: {
+                ...defaultOptions.scales.x,
+                ticks: {
+                  color: "white",
+                  maxRotation: 45,
+                  minRotation: 45,
+                  maxTicksLimit: 24, // Show approximately one tick every 2 hours
+                },
+              },
+            },
+          },
+        });
+
+        // Initialize 3-hour chart
+        const hourlyCtx = document
+          .getElementById("hourlyHeartRateChart")
+          .getContext("2d");
+        hourlyHeartRateChart = new Chart(hourlyCtx, {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "Heart Rate (Last 3 Hours)",
+                data: [],
+                borderColor: "rgb(75, 192, 192)",
+                backgroundColor: "rgba(75, 192, 192, 0.2)",
+                tension: 0.4,
+                fill: true,
+                spanGaps: true,
+              },
+            ],
+          },
+          options: {
+            ...defaultOptions,
+            scales: {
+              ...defaultOptions.scales,
+              x: {
+                type: "time",
+                time: {
+                  unit: "minute",
+                  stepSize: 15,
+                  displayFormats: {
+                    minute: "HH:mm",
+                  },
+                },
+                grid: {
+                  color: "rgba(255, 255, 255, 0.1)",
+                },
+                ticks: {
+                  color: "white",
+                  maxRotation: 45,
+                  minRotation: 45,
+                  autoSkip: true,
+                  maxTicksLimit: 13, // Show a tick every 15 minutes
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function updateCurrentTimeLine() {
+        if (!hourlyHeartRateChart) return;
+
+        const now = new Date();
+        const currentMinute = now.getMinutes();
+
+        hourlyHeartRateChart.options.plugins.annotation.annotations.currentTime.xMin =
+          currentMinute;
+        hourlyHeartRateChart.options.plugins.annotation.annotations.currentTime.xMax =
+          currentMinute;
+        hourlyHeartRateChart.update("none");
+      }
+
+      function startLiveTimestamp() {
+        updateTimestamp();
+        updateCurrentTimeLine();
+
+        if (timestampInterval) {
+          clearInterval(timestampInterval);
+        }
+
+        timestampInterval = setInterval(() => {
+          updateTimestamp();
+          updateCurrentTimeLine();
+        }, 1000);
+      }
+
+      function formatRelativeTime(timestamp) {
+        const now = new Date();
+        const diff = now - timestamp;
+
+        // Convert to seconds
+        const seconds = Math.floor(diff / 1000);
+
+        if (seconds < 5) {
+          return "just now";
+        }
+        if (seconds < 60) {
+          return `${seconds} seconds ago`;
+        }
+
+        // Convert to minutes
+        const minutes = Math.floor(seconds / 60);
+        if (minutes === 1) {
+          return "1 minute ago";
+        }
+        if (minutes < 60) {
+          return `${minutes} minutes ago`;
+        }
+
+        // Convert to hours
+        const hours = Math.floor(minutes / 60);
+        if (hours === 1) {
+          return "1 hour ago";
+        }
+        if (hours < 24) {
+          return `${hours} hours ago`;
+        }
+
+        // Convert to days
+        const days = Math.floor(hours / 24);
+        if (days === 1) {
+          return "1 day ago";
+        }
+        return `${days} days ago`;
+      }
+
+      function updateTimestamp() {
+        const brisbaneTime = new Date().toLocaleString("en-AU", {
+          timeZone: "Australia/Brisbane",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        });
+
+        document.getElementById("timestamp").textContent = brisbaneTime;
+
+        // Use lastDataTimestamp for the "Last Reading" display
+        if (lastDataTimestamp) {
+          document.getElementById("last-updated").textContent =
+            formatRelativeTime(lastDataTimestamp);
+        }
+      }
+
+      async function handleManualRefresh() {
+        if (isRefreshing) return;
+
+        isRefreshing = true;
+        refreshButton.disabled = true;
+
+        try {
+          await fetchHeartRateData();
+          // Update only the countdown timer reference point
+          lastUpdated = new Date();
+          updateCountdown(); // Update countdown immediately
+        } finally {
+          isRefreshing = false;
+          updateCountdown(); // This will re-enable the button if enough time has passed
+        }
+      }
+
+      async function fetchHeartRateData() {
+        try {
+          const response = await fetch("/metrics/data/read");
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+          const data = await response.json();
+
+          heartRateData = data;
+
+          // Always update the last data timestamp from the actual data
+          if (data.length > 0) {
+            const lastDataPoint = data[data.length - 1];
+            lastDataTimestamp = new Date(lastDataPoint.timestamp);
+            // Only update lastUpdated from data if this wasn't triggered by manual refresh
+            if (!isRefreshing) {
+              lastUpdated = lastDataTimestamp;
+            }
+          }
+
+          const values = data.map((d) => d.value);
+          const stats = {
+            current: values[values.length - 1] || 0,
+            average: values.reduce((a, b) => a + b, 0) / values.length,
+            min: Math.min(...values),
+            max: Math.max(...values),
+          };
+
+          currentHeartRate = stats.current;
+
+          updateStats(stats);
+          updateCharts();
+          updateHeartbeat();
+          updateCountdown();
+        } catch (error) {
+          console.error("Error fetching heart rate data:", error);
+          updateStats({
+            current: 0,
+            average: 0,
+            min: 0,
+            max: 0,
+          });
+        }
+      }
+
+      function updateStats(stats) {
+        if (!stats) return;
+
+        document.getElementById("current-rate").textContent = `${(
+          stats.current || 0
+        ).toFixed(1)} BPM`;
+        document.getElementById("average-rate").textContent = `${(
+          stats.average || 0
+        ).toFixed(1)} BPM`;
+        document.getElementById("min-rate").textContent = `${(
+          stats.min || 0
+        ).toFixed(1)} BPM`;
+        document.getElementById("max-rate").textContent = `${(
+          stats.max || 0
+        ).toFixed(1)} BPM`;
+      }
+
+      function updateHeartbeat() {
+        if (!currentHeartRate) return;
+
+        // Clear existing interval if any
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval);
+        }
+
+        // Calculate beat duration based on current heart rate
+        const beatDuration = 60000 / currentHeartRate; // Duration for one complete beat
+        const beatSpeed = beatDuration * 0.2; // Make animation take 20% of the beat duration
+
+        heartbeatInterval = setInterval(() => {
+          const heart = document.getElementById("heart");
+          const glow = document.getElementById("glow");
+          const particles = document.getElementById("particles");
+
+          // Pulse heart and glow
+          heart.style.transform = "scale(1.2)";
+          glow.style.transform = "scale(1.4)";
+          glow.style.opacity = "0.8";
+
+          // Add a color pulse to particles
+          particles.style.opacity = "0.8";
+
+          // Reset after the animation
+          setTimeout(() => {
+            heart.style.transform = "scale(1)";
+            glow.style.transform = "scale(1)";
+            glow.style.opacity = "0.4";
+            particles.style.opacity = "0.4";
+          }, beatSpeed);
+        }, beatDuration);
+
+        // Update transition speed based on heart rate
+        const heart = document.getElementById("heart");
+        const glow = document.getElementById("glow");
+        const transitionSpeed = `${beatDuration * 0.2}ms`;
+
+        heart.style.transition = `transform ${transitionSpeed} ease-in-out`;
+        glow.style.transition = `transform ${transitionSpeed} ease-in-out, opacity ${transitionSpeed} ease-in-out`;
+      }
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        refreshButton = document.getElementById("refresh-button");
+        refreshButton.addEventListener("click", handleManualRefresh);
+
+        createParticles();
+        initializeCharts();
+        await fetchHeartRateData();
+        startLiveTimestamp();
+        startCountdown();
+
+        setInterval(fetchHeartRateData, 60000);
+      });
+
+      // Update cleanup
+      window.addEventListener("beforeunload", () => {
+        if (timestampInterval) clearInterval(timestampInterval);
+        if (heartbeatInterval) clearInterval(heartbeatInterval);
+        if (countdownInterval) clearInterval(countdownInterval);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+authlib
+db-dtypes
+fastapi
+google-cloud-bigquery
+httpx
+itsdangerous
+jinja2
+langchain
+langchain-core
+langchain-experimental
+langchain-huggingface
+langchain-ollama
+langchain-openai
+magika
+python-jose
+python-multipart
+uvicorn

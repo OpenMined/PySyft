@@ -1,0 +1,91 @@
+name: Deploy Stage
+
+on:
+  workflow_dispatch:
+    inputs:
+      build:
+        description: Deploy build from
+        type: choice
+        default: local
+        options:
+          - local
+          - pypi
+
+      version:
+        description: SyftBox version to deploy if above is "pypi"
+        type: string
+        default: 0.1.12
+
+      dryrun:
+        description: Dry Run. Will not deploy to server.
+        type: boolean
+        default: false
+
+  push:
+    branches:
+      - main # adjust this to match your main branch name
+    paths:
+      - "syftbox/**" # Python package files
+      - "default_apps/**" # Default Apps
+      - "pyproject.toml" # Project configuration
+      - "uv.lock" # Project lock
+      - "MANIFEST.in" # Wheel manifest
+      - "bumpversion.cfg" # Version
+
+# Prevents concurrent runs of the same workflow
+# while the previous run is still in progress
+concurrency:
+  group: deploy-syftbox-stage
+  cancel-in-progress: false
+
+jobs:
+  deploy-syftbox-stage:
+    # runs-on: ubuntu-latest
+    runs-on: syftbox-sh-linux-x64
+
+    steps:
+      - name: Install Git & SSH
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install git openssh-client -y
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.4.25"
+
+      - name: Checkout SyftBox repo
+        uses: actions/checkout@v4
+
+      - name: Install Just
+        uses: extractions/setup-just@v2
+        with:
+          just-version: "1.36.0"
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SYFTBOX_STAGE_PRIVATE_KEY }}" > ~/.ssh/cert.pem
+          chmod 600 ~/.ssh/cert.pem
+          ssh-keyscan -H "4.227.144.171" >> ~/.ssh/known_hosts
+
+      - name: Deploy SyftBox (Local Wheel Build)
+        # allow local deployment only on workflow_dispatch and non-PR push
+        if: |
+          (github.event_name == 'workflow_dispatch' && inputs.dryrun == false && inputs.build == 'local') ||
+          (github.event_name == 'push' && github.event.pull_request == null)
+        run: |
+          just upload-dev ~/.ssh/cert.pem azureuser@4.227.144.171
+
+      - name: Deploy SyftBox (PyPI ${{ inputs.version }})
+        # allow pypi deployment only on workflow_dispatch
+        if: |
+          (github.event_name == 'workflow_dispatch' && inputs.dryrun == false && inputs.build == 'pypi') || false
+        run: |
+          just upload-pip ${{ inputs.version }} ~/.ssh/cert.pem azureuser@4.227.144.171
+
+      - name: Delete cert.pem
+        if: always()
+        run: |
+          rm -f ~/.ssh/cert.pem

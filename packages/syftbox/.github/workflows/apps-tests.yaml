@@ -1,0 +1,75 @@
+name: Test - Apps Standalone
+
+on:
+  workflow_dispatch:
+
+  workflow_call:
+
+jobs:
+  apps-test:
+    strategy:
+      max-parallel: 99
+      matrix:
+        apps:
+          - ring@main
+          # - tutorial-apps@basic_aggregator
+          # - tutorial-apps@pretrained_model_aggregator
+          # - tutorial-apps@pretrained_model_local
+        python-version: ["3.9"]
+        os: [ubuntu-latest, macos-latest]
+        # runner: [syftbox-sh-linux-x64, scaleway-macOS-arm64]
+      fail-fast: false
+
+    # runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Parse app repository info
+        id: apprepo
+        run: |
+          REPO=$(echo ${{ matrix.apps }} | cut -d'@' -f1)
+          REF=$(echo ${{ matrix.apps }} | cut -d'@' -f2)
+          echo "REPO=$REPO" >> $GITHUB_OUTPUT
+          echo "REF=$REF" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: OpenMined/${{ steps.apprepo.outputs.REPO }}
+          ref: ${{ steps.apprepo.outputs.REF }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.4.25"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Provisioning dummy config
+        run: |
+          CONFIG_PATH="$(pwd)/config.json"
+          SYNC_FOLDER="$(pwd)/sync/"
+          echo '{
+              "config_path": "'"$CONFIG_PATH"'",
+              "sync_folder": "'"$SYNC_FOLDER"'",
+              "port": 8011,
+              "email": "alice@openmined.org",
+              "token": null,
+              "server_url": "http://localhost:5001",
+              "email_token": null,
+              "autorun_plugins": [
+                  "init",
+                  "create_datasite",
+                  "sync",
+                  "apps"
+              ]
+          }' > $CONFIG_PATH
+          cat $CONFIG_PATH
+
+      - name: Run the test
+        run: |
+          chmod +x ./run.sh
+          export SYFTBOX_CLIENT_CONFIG_PATH="$(pwd)/config.json"
+          sh ./run.sh

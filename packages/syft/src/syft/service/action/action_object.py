@@ -247,6 +247,7 @@ passthrough_attrs = [
     "__fields_set__",  # pydantic
     "__repr_str__",  # pydantic
     "__repr_args__",  # pydantic
+    "__pydantic_fields__",  # pydantic
     "__post_init__",  # syft
     "_get_api",  # syft
     "__validate_private_attrs__",  # syft

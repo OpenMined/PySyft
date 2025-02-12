@@ -1,0 +1,16 @@
+[Unit]
+Description=Syftbox Stage Server
+After=network.target
+
+[Service]
+LimitNOFILE=262144
+User=azureuser
+WorkingDirectory=/home/azureuser
+ExecStartPre=uv run syftbox server migrate
+ExecStart=uv run gunicorn syftbox.server.server:app -w 5 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8080 --graceful-timeout 5 --keep-alive 5 --max-requests 500 --max-requests-jitter 50 --forwarded-allow-ips * --worker-tmp-dir /dev/shm --keyfile /etc/letsencrypt/live/syftboxstage.openmined.org/privkey.pem --certfile /etc/letsencrypt/live/syftboxstage.openmined.org/fullchain.pem
+Environment=OTEL_RESOURCE_ATTRIBUTES=service.name=syftbox-stage
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

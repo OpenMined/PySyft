@@ -1,0 +1,16 @@
+name: Tests - Nightlies
+
+on:
+  schedule:
+    - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT
+
+  workflow_dispatch:
+
+jobs:
+  apps:
+    if: github.repository == 'OpenMined/syft' # don't run on forks
+    uses: OpenMined/syft/.github/workflows/apps-tests.yaml@main
+
+  e2e:
+    if: github.repository == 'OpenMined/syft' # don't run on forks
+    uses: OpenMined/syft/.github/workflows/e2e-tests.yaml@main

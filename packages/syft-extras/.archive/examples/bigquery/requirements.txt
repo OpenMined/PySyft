@@ -1,0 +1,13 @@
+authlib
+db-dtypes
+dynaconf
+fastapi
+
+google-cloud-bigquery
+httpx
+itsdangerous
+jinja2
+python-jose
+python-multipart
+sqlparse
+uvicorn

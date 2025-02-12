@@ -1,0 +1,104 @@
+name: SyftBox PyPI Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: Bump bersion by
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+      breaking_changes:
+        description: Use this if minor release and not compatible with previous versions
+        type: boolean
+        default: false
+
+      run_tests:
+        description: Run pre-release tests
+        type: boolean
+        default: true
+
+      dryrun:
+        description: Dry Run. Will not push to PyPI.
+        type: boolean
+        default: false
+
+# Prevents concurrent runs of the same workflow
+# while the previous run is still in progress
+concurrency:
+  group: release-syftbox
+  cancel-in-progress: false
+
+jobs:
+  call-pr-tests:
+    if: ${{ inputs.run_tests == true }}
+    uses: ./.github/workflows/pr-tests.yaml
+
+  deploy-syftbox:
+    needs: [call-pr-tests]
+    if: |
+      always() &&
+      (needs.call-pr-tests.result == 'success' || needs.call-pr-tests.result == 'skipped')
+
+    # runs-on: ubuntu-latest
+    runs-on: syftbox-sh-linux-x64
+
+    steps:
+      - name: Install Git
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install git -y
+
+      - name: Checkout SyftBox repo with github token
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SYFTBOX_BOT_COMMIT_TOKEN }}
+
+      - name: Configure git user
+        run: |
+          git config user.name "${{ secrets.OM_BOT_NAME }}"
+          git config user.email "${{ secrets.OM_BOT_EMAIL }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.4.25"
+
+      - name: Install Just
+        uses: extractions/setup-just@v2
+        with:
+          just-version: "1.36.0"
+
+      - name: Install dependencies
+        run: |
+          uv --version
+          uv tool install twine
+          twine --version
+
+      - name: Bump the Version
+        run: |
+          just bump-version ${{ inputs.bump_type }} ${{ inputs.breaking_changes }}
+
+      - name: Build syftbox
+        run: |
+          just build
+
+      - name: Push to pypi
+        if: ${{ inputs.dryrun == false  && github.event_name != 'pull_request' }}
+        run: |
+          twine upload -u __token__ -p ${{ secrets.OM_SYFTBOX_PYPI_TOKEN }} dist/*
+
+      - name: Push changes to SyftBox repo
+        if: ${{ inputs.dryrun == false  && github.event_name != 'pull_request' }}
+        run: |
+          git push origin --follow-tags

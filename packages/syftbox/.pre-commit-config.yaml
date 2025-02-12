@@ -1,0 +1,74 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-ast
+        always_run: true
+      - id: trailing-whitespace
+        always_run: true
+        exclude: .bumpversion.cfg
+      - id: check-docstring-first
+        always_run: true
+      - id: check-json
+        always_run: true
+      - id: check-added-large-files
+        always_run: true
+        exclude: '.*Pyfhel-3\.4\.2-cp311-cp311-macosx_13_0_arm64\.whl|.*syftbox-0.1.0-py3-none-any\.whl'
+      - id: check-yaml
+        always_run: true
+      - id: check-merge-conflict
+        always_run: true
+        args: ["--assume-in-merge"]
+      - id: check-executables-have-shebangs
+        always_run: true
+      - id: debug-statements
+        always_run: true
+      - id: name-tests-test
+        always_run: true
+        exclude: "tests/.*(e2e|stress|fixtures)"
+      - id: requirements-txt-fixer
+        always_run: true
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: "v0.6.5"
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix, --show-fixes]
+        types_or: [python, pyi, jupyter]
+      - id: ruff-format
+        types_or: [python, pyi, jupyter]
+
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.7.1
+    hooks:
+      - id: nbstripout
+
+  - repo: https://github.com/pre-commit/mirrors-prettier # This repository has been archived by the owner on Apr 11, 2024. It is now read-only.
+    rev: "v3.0.0-alpha.9-for-vscode"
+    hooks:
+      - id: prettier
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        name: "mypy"
+        always_run: true
+        files: ^syftbox
+        args: ["--config-file=tox.ini", "--install-types", "--non-interactive"]
+
+  # Very SLOW!
+  # - repo: https://github.com/renovatebot/pre-commit-hooks
+  #   rev: 39.60.0
+  #   hooks:
+  #     - id: renovate-config-validator
+  #       args: [--strict]
+
+  # - repo: meta
+  #   hooks:
+  #     - id: identity
+  #       always_run: true
+  #       files: "notebooks/api/*"

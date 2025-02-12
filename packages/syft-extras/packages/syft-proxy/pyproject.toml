@@ -1,0 +1,31 @@
+[project]
+name = "syft-proxy"
+version = "0.1.0"
+description = "A local HTTP proxy for executing Syft RPC methods, facilitating seamless communication and computation in distributed machine learning environments."
+requires-python = ">=3.9" # same with SyftBox
+dependencies = [
+    "fastapi>=0.115.8",
+    "uvicorn>=0.34.0",
+    "loguru>=0.7.3",
+    "typing-extensions>=4.12.2",
+    "syft-rpc",
+    "pytest>=8.3.4",
+    "httpx>=0.28.1",
+    "typer>=0.9.0",
+]
+
+[project.scripts]
+syft_proxy = "syft_proxy.cli:app"
+
+[tool.uv.sources]
+syft-rpc = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]

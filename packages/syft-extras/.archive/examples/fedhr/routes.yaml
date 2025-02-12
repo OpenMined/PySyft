@@ -1,0 +1,6 @@
+routes:
+  heart_rate:
+    file: healthkit_importer.py
+    methods:
+      POST: {}
+      GET: {}

@@ -1,0 +1,136 @@
+name: Tests - E2E
+
+on:
+  push:
+    branches:
+      - main # adjust this to match your main branch name
+
+  workflow_dispatch:
+
+  workflow_call:
+
+concurrency:
+  group: e2e-tests
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.9", "3.12"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.4.25"
+
+      - name: Install Just
+        uses: extractions/setup-just@v2
+        with:
+          just-version: "1.36.0"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Pre-test checks
+        run: |
+          uv --version
+          jq --version
+          just --version
+          curl --version
+
+      - name: Run Build & Install
+        run: |
+          just install
+
+      - name: Check installed tools
+        run: |
+          uv tool list
+
+      - name: Run SyftBox Debug
+        run: |
+          syftbox version
+          syftbox debug
+          syftbox client --help
+          syftbox server --help
+
+  e2e-test:
+    strategy:
+      max-parallel: 99
+      matrix:
+        e2e-test: [
+            "basic_aggregator",
+            "model_aggregator",
+            "aggregator_with_local_training",
+            # "fl_model_training",
+          ]
+        python-version: ["3.9", "3.12"]
+        os: [ubuntu-latest, macos-latest]
+        # runner: [syftbox-sh-linux-x64, scaleway-macOS-arm64]
+      fail-fast: false
+
+    # runs-on: ${{ matrix.runner }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /Users/runner/Library/Android/sdk || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/.ghcup || true
+
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.4.25"
+
+      - name: Install Just
+        uses: extractions/setup-just@v2
+        with:
+          just-version: "1.36.0"
+
+      - name: "Setup jq"
+        uses: dcarbone/install-jq-action@v3
+        with:
+          version: "1.7"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Pre-test checks
+        run: |
+          uv --version
+          jq --version
+          just --version
+          curl --version
+
+      - name: Run E2E Test for '${{ matrix.e2e-test }}'
+        run: |
+          just reset
+          just test-e2e ${{ matrix.e2e-test }}
+
+      - name: Cleanup unnecessary files
+        if: ${{ failure() }}
+        run: |
+          find . -type f -name "Icon*" -exec rm -f {} \;
+          find . -type f -name "syftbox.pid" -exec rm -f {} \;
+
+      - name: Upload logs & client/server state
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ matrix.e2e-test }}-${{ runner.os }}-${{ matrix.python-version }}
+          path: .e2e/${{ matrix.e2e-test }}
