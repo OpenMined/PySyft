@@ -15,6 +15,7 @@ global:
 # =================================================================================
 
 postgres:
+  enabled: true
 # Postgres config
   port: 5432
   username: syft_postgres
@@ -52,6 +53,7 @@ frontend:
 
   # Pod Resource Limits
   resourcesPreset: medium
+  postgres:
   resources: null
 
 # =================================================================================
