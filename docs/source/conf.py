@@ -51,7 +51,7 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
-    "sphinx_panels",
+    "sphinx_design",#deleted sphinx panels as it is not supported in sphinx 5 and added sphinx design
 ]
 
 exclude_patterns = [
