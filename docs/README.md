@@ -1,3 +1,12 @@
+
+Welcome to the PySyft documentation! **PySyft** is an open-source library for privacy-preserving machine learning, enabling secure data science workflows. This guide helps you set up the docs locally for development or contribution. 
+
+### Prerequisites
+- Python 3.8 or higher
+- These instructions assume a Unix-like environment (Linux/Mac or WSL on Windows). On    Windows with PowerShell, you may need to install tools like `make` via Chocolatey or adapt commands accordingly.
+
+
+
 # PySyft Documentation
 
 Welcome to the PySyft docs. You can setup the PySyft docs locally via 2 methods currently,
@@ -46,12 +55,13 @@ Welcome to the PySyft docs. You can setup the PySyft docs locally via 2 methods 
 
 3. Voila! Now visit the PySyft/docs/build/html/index.html to view the docs locally.
 
+## Viewing the Docs
+
+After running either setup method, open `docs/build/html/index.html` in your web browser to view the generated documentation locally.
+
 ## Debugging
 
 If you want to start a fresh build, run:
 
 ```sh
 make clean
-```
-
-as this will remove all the pre-exisitng files or directories in the build/ directory.
