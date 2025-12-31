@@ -450,6 +450,17 @@ class UserService(AbstractService):
         # Get user to be updated by its UID
         user = self.stash.get_by_uid(credentials=context.credentials, uid=uid).unwrap()
 
+        # FIX: Prevent Admin from demoting themselves (Issue #9326)
+        if (
+            updates_role
+            and user.verify_key == context.credentials
+            and user.role == ServiceRole.ADMIN
+        ):
+            if user_update.role != ServiceRole.ADMIN:
+                raise SyftException(
+                    public_message="Admins cannot demote their own role!"
+                )
+
         immutable_fields = {"created_date", "updated_date", "deleted_date"}
         updated_fields = user_update.to_dict(
             exclude_none=True, exclude_empty=True
@@ -599,12 +610,12 @@ class UserService(AbstractService):
                 and context.server.server_type == ServerType.ENCLAVE
                 and user.role == ServiceRole.ADMIN
             ):
-                # FIX: Replace with SyftException
+                # FIX: Replacing with SyftException
                 raise SyftException(
                     public_message=UserEnclaveAdminLoginError.public_message
                 )
         else:
-            # FIX: Replace this below
+            # FIX: Replacing this below
             raise SyftException(public_message=CredentialsError.public_message)
 
         return SyftSuccess(message="Login successful.", value=user.to(UserPrivateKey))
