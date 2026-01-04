@@ -555,7 +555,7 @@ class SyftObject(SyftObjectVersioned):
     def to(self, projection: type[T], context: Context | None = None) -> T:
         # relative
 
-        # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
+        # 🟡 TODO 19: Could we do an mro style inheritance conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 
@@ -792,7 +792,7 @@ aggressive_set_attr(tuple, "_repr_html_", build_tabulator_table)
 
 class StorableObjectType:
     def to(self, projection: type, context: Context | None = None) -> Any:
-        # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
+        # 🟡 TODO 19: Could we do an mro style inheritance conversion? Risky?
         # relative
 
         transform = SyftObjectRegistry.get_transform(type(self), projection)

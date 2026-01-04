@@ -212,7 +212,7 @@ class ZMQConsumer(QueueConsumer):
                         logger.error(f"ZMQConsumer invalid recv: {msg}")
                         continue
 
-                    # Message frames recieved by consumer:
+                    # Message frames received by consumer:
                     # [empty, header, command, ...data]
                     (_, _, command, *data) = msg
 

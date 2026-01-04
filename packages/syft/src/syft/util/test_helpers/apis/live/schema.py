@@ -97,12 +97,12 @@ def make_schema(settings: dict, worker_pool_name: str) -> Callable:
             if not hasattr(e, "_errors"):
                 output = f"got exception e: {type(e)} {str(e)}"
                 raise SyftException(
-                    public_message=f"An error occured executing the API call {output}"
+                    public_message=f"An error occurred executing the API call {output}"
                 )
 
             # Should add appropriate error handling for what should be exposed to the data scientists.
             raise SyftException(
-                public_message="An error occured executing the API call, please contact the domain owner."
+                public_message="An error occurred executing the API call, please contact the domain owner."
             )
 
     return live_schema

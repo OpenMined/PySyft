@@ -224,12 +224,12 @@ class DataProtocol:
     def diff_state(self, state: dict) -> tuple[dict, dict]:
         compare_dict: dict = defaultdict(dict)  # what versions are in the latest code
         object_diff: dict = defaultdict(dict)  # diff in latest code with saved json
-        all_serde_propeties = [
+        all_serde_properties = [
             serde_properties
             for version_dict in SyftObjectRegistry.__object_serialization_registry__.values()
             for serde_properties in version_dict.values()
         ]
-        for serde_properties in all_serde_propeties:
+        for serde_properties in all_serde_properties:
             cls, version = serde_properties[7], serde_properties[9]
             if issubclass(cls, SyftBaseObject):
                 canonical_name = cls.__canonical_name__

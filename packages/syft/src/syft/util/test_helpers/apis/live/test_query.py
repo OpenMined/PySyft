@@ -79,7 +79,7 @@ def make_test_query(settings) -> Callable:
             if not hasattr(e, "_errors"):
                 output = f"got exception e: {type(e)} {str(e)}"
                 raise SyftException(
-                    public_message=f"An error occured executing the API call {output}"
+                    public_message=f"An error occurred executing the API call {output}"
                 )
 
             # Treat all errors that we would like to be forwarded to the data scientists
@@ -102,12 +102,12 @@ def make_test_query(settings) -> Callable:
                 "timeout",
             ]:
                 raise SyftException(
-                    public_message="Error occured during the call: "
+                    public_message="Error occurred during the call: "
                     + e._errors[0]["message"]
                 )
             else:
                 raise SyftException(
-                    public_message="An error occured executing the API call, please contact the domain owner."
+                    public_message="An error occurred executing the API call, please contact the domain owner."
                 )
 
     return live_test_query

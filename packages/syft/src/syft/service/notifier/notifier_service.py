@@ -242,7 +242,7 @@ class NotifierService(AbstractService):
         notifier.active = False
         self.stash.update(credentials=context.credentials, obj=notifier).unwrap()
         context.server.services.settings.update(context, notifications_enabled=False)
-        return SyftSuccess(message="Notifications disabled succesfullly")
+        return SyftSuccess(message="Notifications disabled successfully")
 
     @as_result(SyftException)
     def activate(

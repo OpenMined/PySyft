@@ -1286,7 +1286,7 @@ class SubmitUserCode(SyftObject):
         def task() -> None:
             if "blocking" in kwargs and not kwargs["blocking"]:
                 time.sleep(time_alive)
-            print(SyftInfo(message="Landing the ephmeral server..."))
+            print(SyftInfo(message="Landing the ephemeral server..."))
             ep_server.land()
             print(SyftInfo(message="Server Landed!"))
 
