@@ -231,7 +231,7 @@ async def e2e_context(request):
     try:
         ctx = E2EContext(**request.param)
         yield ctx
-    except:
+    except Exception:
         raise
     finally:
         await ctx.cleanup()

@@ -704,7 +704,7 @@ class Request(SyncableSyftObject):
                 change.apply(context=change_context).unwrap()
                 change_status.applied = True
                 self.history.append(change_status)
-            except:
+            except Exception:
                 # add to history and save history to request
                 self.history.append(change_status)
                 self.save(context=context)
