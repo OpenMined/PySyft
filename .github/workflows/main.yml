@@ -1,0 +1,32 @@
+name: InfraScan Audit
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  infrascan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Reports Directory
+        run: |
+          mkdir -p infrascan-reports
+          chmod 777 infrascan-reports
+
+      - name: Run InfraScan
+        uses: soldevelo/infrascan@v1.0.5
+        with:
+          scanner: comprehensive
+          format: html
+          out: infrascan-reports/report.html
+            
+      - name: Upload InfraScan Report
+        uses: actions/upload-artifact@v4
+        if: always() # Upload report even if the scan step fails
+        with:
+          name: infrascan-report
+          path: infrascan-reports/report.html
+          retention-days: 14
