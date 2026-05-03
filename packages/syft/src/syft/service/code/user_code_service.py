@@ -357,8 +357,11 @@ class UserCodeService(AbstractService):
             return IsExecutionAllowedEnum.OUTPUT_POLICY_NONE
 
         try:
-            output_policy.is_valid(context)
+            output_policy_is_valid = output_policy.is_valid(context)
         except Exception:
+            return IsExecutionAllowedEnum.INVALID_OUTPUT_POLICY
+
+        if not output_policy_is_valid:
             return IsExecutionAllowedEnum.INVALID_OUTPUT_POLICY
 
         return IsExecutionAllowedEnum.ALLOWED
