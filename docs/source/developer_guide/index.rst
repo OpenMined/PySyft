@@ -18,7 +18,7 @@ to build exciting new features or improve existing bugs.
 If you are unsure where to start or how your skills fit in, take a look
 at open `Good first issue <https://github.com/OpenMined/PySyft/labels/Good%20first%20issue%20%3Amortar_board%3A>`__ or introduce yourself in the #introductions
 channel on
-`Slack <https://communityinviter.com/apps/openmined/openmined/>`__, and
+`Slack <https://slack.openmined.org/>`__, and
 we will match you to the issue that fits your expertise or skills.
 
    Note: PySyft is a community-driven open-source project. We thrive on
