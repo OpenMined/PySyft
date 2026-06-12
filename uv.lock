@@ -27,6 +27,7 @@ members = [
     "syft-notebook-ui",
     "syft-permissions",
     "syft-perms",
+    "syft-verifuscate",
 ]
 
 [[package]]
@@ -3709,6 +3710,7 @@ test = [
     { name = "pytest-rerunfailures" },
     { name = "pytest-xdist" },
     { name = "syft-enclave" },
+    { name = "syft-verifuscate" },
 ]
 
 [package.metadata]
@@ -3756,6 +3758,7 @@ test = [
     { name = "pytest-rerunfailures", specifier = ">=14.0" },
     { name = "pytest-xdist", specifier = ">=3.0.0" },
     { name = "syft-enclave", editable = "packages/syft-enclave" },
+    { name = "syft-verifuscate", editable = "packages/syft-verifuscate" },
 ]
 
 [[package]]
@@ -3888,6 +3891,11 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "syft-permissions", editable = "packages/syft-permissions" }]
+
+[[package]]
+name = "syft-verifuscate"
+version = "0.1.0"
+source = { editable = "packages/syft-verifuscate" }
 
 [[package]]
 name = "terminado"

@@ -70,6 +70,7 @@ members = ["packages/*"]
 "syft-permissions" = { workspace = true }
 "syft-perms" = { workspace = true }
 "syft-enclave" = { workspace = true }
+"syft-verifuscate" = { workspace = true }
 
 [project.urls]
 Homepage = "https://github.com/OpenMined/syft-client"
@@ -176,5 +177,6 @@ test = [
     "isort>=5.12.0",
     "coverage>=7.0.0",
     "syft-enclave",
+    "syft-verifuscate",
     "pyarrow",  # only used by parquet test fixtures (tests/unit/utils.py)
 ]
