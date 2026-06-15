@@ -1,0 +1,51 @@
+{% extends "base.html" %} {% block title %}Peer Added - {{ do_email }}{%
+endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  Peer Added Successfully
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  You have successfully added a new peer to your SyftBox network!
+</p>
+
+{% set info_items = [ {'label': 'Peer', 'value': do_email}, {'label': 'Status',
+'value': 'Connected', 'badge': 'success'}, {'label': 'Connection', 'value':
+'One-way (you follow them)'} ] %} {% include 'components/info_box.html' %}
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  You can now:
+</p>
+
+<ul
+  style="
+    color: #4a5568;
+    font-size: 16px;
+    line-height: 1.8;
+    margin: 0 0 24px 0;
+    padding-left: 24px;
+  "
+>
+  <li>Browse their available datasets</li>
+  <li>Submit job requests to analyze their data</li>
+  <li>Receive results when jobs are approved and executed</li>
+</ul>
+
+<p
+  style="
+    color: #718096;
+    font-size: 14px;
+    margin-top: 30px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 20px;
+  "
+>
+  <strong>Next Step:</strong> The data owner will be notified of your connection
+  request. Once they add you back, you'll have mutual peering.
+</p>
+{% endblock %}

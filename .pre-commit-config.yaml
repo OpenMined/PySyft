@@ -6,178 +6,43 @@ repos:
         always_run: true
       - id: trailing-whitespace
         always_run: true
-        exclude: ^(docs/|.+\.md|.bumpversion.cfg)
+        exclude: .bumpversion.cfg
       - id: check-docstring-first
         always_run: true
       - id: check-json
         always_run: true
-        exclude: ^(packages/grid/frontend/|.vscode)
-      - id: check-added-large-files
-        always_run: true
-        exclude: ^(packages/grid/backend/wheels/.*|docs/img/header.png|docs/img/terminalizer.gif|^notebooks/scenarios/bigquery/upgradability/sync/migration_.*\.blob)
       - id: check-yaml
         always_run: true
-        exclude: ^(packages/grid/k8s/rendered/|packages/grid/helm/)
       - id: check-merge-conflict
         always_run: true
-        args: ["--assume-in-merge"]
+        args: ['--assume-in-merge']
       - id: check-executables-have-shebangs
         always_run: true
       - id: debug-statements
         always_run: true
-      - id: name-tests-test
-        always_run: true
-        exclude: ^(.*/tests/utils/)|^(.*fixtures.py)|^(tests/scenariosv2/(sim|flows))
-      - id: requirements-txt-fixer
-        always_run: true
       - id: mixed-line-ending
-        args: ["--fix=lf"]
-        exclude: '\.bat|\.csv|\.ps1$'
-
-  - repo: https://github.com/MarcoGorelli/absolufy-imports # This repository has been archived by the owner on Aug 15, 2023. It is now read-only.
-    rev: v0.3.1
-    hooks:
-      - id: absolufy-imports
-        args: ["--never", "--application-directories=packages/syft/src"]
-        always_run: true
-        files: ^packages/syft/src
-        exclude: |
-          (?x)^(
-              packages/syft/examples/.*|
-              packages/syft/src/syft/proto.*|
-              packages/syft/tests/syft/lib/python.*|
-              packages/grid.*|
-              packages/syft/src/syft/federated/model_serialization/protos.py|
-              packages/syft/src/syft/util/test_helpers/.*|
-          )$
-
-  - repo: https://github.com/MarcoGorelli/absolufy-imports
-    rev: v0.3.1
-    hooks:
-      - id: absolufy-imports
-        name: "absolufy-imports: syft-cli"
-        always_run: true
-        files: ^packages/syftcli
-        # This will ignore all syftcli/**/*.py where relative imports are okay
-        # but absolufy only top-level syftcli/<file>.py. where relative imports are not okay for pyinstaller
-        exclude: ^packages/syftcli/syftcli/(.*)/
-        args: ["--application-directories=packages/syftcli/"]
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        name: isort
-        args: [".", "--settings-path .isort.cfg"]
-        always_run: true
-
-  - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.8.5
-    # nbQA has no files attribute
-    # files: "^notebooks/(api|tutorials|admin)"
-    hooks:
-      - id: nbqa-isort
+        args: ['--fix=lf']
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: "v0.4.7"
+    rev: v0.12.9
     hooks:
-      - id: ruff
-        args: [--fix, --exit-non-zero-on-fix, --show-fixes]
-        types_or: [python, pyi, jupyter]
+      - id: ruff-check
+        args: [--fix, --exit-non-zero-on-fix, --show-fixes, --unsafe-fixes]
+        types_or: [python, pyi] # TODO enable for jupyter
+        exclude: ^ci/
       - id: ruff-format
-        types_or: [python, pyi, jupyter]
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
-    hooks:
-      - id: mypy
-        name: "mypy: syft-cli"
-        always_run: true
-        files: ^packages/syftcli
-        args: [
-            "--ignore-missing-imports",
-            "--scripts-are-modules",
-            "--disallow-incomplete-defs",
-            "--no-implicit-optional",
-            "--warn-unused-ignores",
-            "--warn-redundant-casts",
-            "--strict-equality",
-            "--warn-unreachable",
-            # "--disallow-untyped-decorators",
-            "--disallow-untyped-defs",
-            "--disallow-untyped-calls",
-            "--namespace-packages",
-            "--install-types",
-            "--non-interactive",
-            "--config-file=tox.ini",
-          ]
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
-    hooks:
-      - id: mypy
-        name: "mypy: grid"
-        files: ^packages/grid
-        always_run: true
-        args: [
-            "--ignore-missing-imports",
-            "--scripts-are-modules",
-            "--disallow-incomplete-defs",
-            "--no-implicit-optional",
-            "--warn-unused-ignores",
-            "--warn-redundant-casts",
-            "--strict-equality",
-            "--warn-unreachable",
-            # "--disallow-untyped-decorators",
-            "--disallow-untyped-defs",
-            "--disallow-untyped-calls",
-            "--namespace-packages",
-            "--install-types",
-            "--non-interactive",
-            "--config-file=tox.ini",
-          ]
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
-    hooks:
-      - id: mypy
-        name: "mypy: syft"
-        always_run: true
-        files: "^packages/syft/src/syft/"
-        args: [
-            "--follow-imports=skip",
-            "--ignore-missing-imports",
-            "--scripts-are-modules",
-            "--disallow-incomplete-defs",
-            "--no-implicit-optional",
-            # "--warn-unused-ignores",
-            "--warn-redundant-casts",
-            "--strict-equality",
-            "--warn-unreachable",
-            # "--disallow-untyped-decorators",
-            "--disallow-untyped-defs",
-            "--disallow-untyped-calls",
-            "--install-types",
-            "--non-interactive",
-            "--config-file=tox.ini",
-          ]
-        exclude: ^(packages/syft/src/syft/util/test_helpers)
+        types_or: [python, pyi] # TODO enable for jupyter
+        exclude: ^ci/
 
   - repo: https://github.com/kynan/nbstripout
     rev: 0.7.1
     hooks:
       - id: nbstripout
-        files: "^notebooks/(api|tutorials|admin|scenarios)"
+        exclude: ^(ci/|test_outputs/)
 
   - repo: https://github.com/pre-commit/mirrors-prettier # This repository has been archived by the owner on Apr 11, 2024. It is now read-only.
-    rev: "v3.0.0-alpha.9-for-vscode"
+    rev: 'v3.0.0-alpha.9-for-vscode'
     hooks:
       - id: prettier
-        exclude: ^(packages/grid/helm|packages/grid/frontend/pnpm-lock.yaml|.vscode)
-
-  # - repo: meta
-  #   hooks:
-  #     - id: identity
-  #       always_run: true
-  #       files: "notebooks/api/*"
+        exclude: (\.min\.(js|css)$|^ci/|^test_outputs/)

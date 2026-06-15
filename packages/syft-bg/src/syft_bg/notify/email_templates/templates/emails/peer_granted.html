@@ -1,0 +1,51 @@
+{% extends "base.html" %} {% block title %}Peer Request Accepted - {{ do_email
+}}{% endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  Peer Request Accepted
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  Great news! The data owner has accepted your peer request and added you back.
+</p>
+
+{% set info_items = [ {'label': 'Peer', 'value': do_email}, {'label': 'Status',
+'value': 'Mutual Peering', 'badge': 'success'}, {'label': 'Connection', 'value':
+'Bidirectional'} ] %} {% include 'components/info_box.html' %}
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  With mutual peering established, you now have full collaboration capabilities:
+</p>
+
+<ul
+  style="
+    color: #4a5568;
+    font-size: 16px;
+    line-height: 1.8;
+    margin: 0 0 24px 0;
+    padding-left: 24px;
+  "
+>
+  <li>Submit and receive job requests</li>
+  <li>Share datasets bidirectionally</li>
+  <li>Full data collaboration access</li>
+</ul>
+
+<p
+  style="
+    color: #718096;
+    font-size: 14px;
+    margin-top: 30px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 20px;
+  "
+>
+  <strong>Ready to collaborate!</strong> Start by browsing their datasets or
+  submitting your first job request.
+</p>
+{% endblock %}

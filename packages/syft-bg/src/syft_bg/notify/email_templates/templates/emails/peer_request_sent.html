@@ -1,0 +1,51 @@
+{% extends "base.html" %} {% block title %}Peer Request Sent - {{ do_email }}{%
+endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  Peer Request Sent
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  Your peer request has been sent successfully!
+</p>
+
+{% set info_items = [ {'label': 'To', 'value': do_email}, {'label': 'Status',
+'value': 'Pending', 'badge': 'warning'} ] %} {% include
+'components/info_box.html' %}
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  What happens next:
+</p>
+
+<ul
+  style="
+    color: #4a5568;
+    font-size: 16px;
+    line-height: 1.8;
+    margin: 0 0 24px 0;
+    padding-left: 24px;
+  "
+>
+  <li>The data owner will be notified of your request</li>
+  <li>They will review and decide whether to accept</li>
+  <li>You'll receive an email when they accept your request</li>
+</ul>
+
+<p
+  style="
+    color: #718096;
+    font-size: 14px;
+    margin-top: 30px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 20px;
+  "
+>
+  Once accepted, you'll be able to browse their datasets and submit jobs for
+  analysis.
+</p>
+{% endblock %}

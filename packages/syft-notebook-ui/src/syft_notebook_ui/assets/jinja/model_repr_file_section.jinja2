@@ -1,0 +1,14 @@
+<div class="code-section">
+    <details{% if open %} open{% endif %}>
+        <summary{% if error %} class="{{ error_class }}"{% endif %}>{{ title }}</summary>
+        {% if content %}
+        <div class="code-content">
+            <pre>{{ content }}</pre>
+        </div>
+        {% elif error %}
+        <div class="model-content">
+            {{ error }}
+        </div>
+        {% endif %}
+    </details>
+</div>

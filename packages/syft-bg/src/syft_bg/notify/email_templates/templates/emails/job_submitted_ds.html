@@ -1,0 +1,28 @@
+{% extends "base.html" %} {% block title %}Job Submitted - {{ job_name }}{%
+endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  Job Submitted
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  Your job has been submitted and is pending review by the data owner.
+</p>
+
+{% set info_items = [ {'label': 'Job Name', 'value': job_name}, {'label':
+'Submitted To', 'value': do_email}, {'label': 'Status', 'value': 'Submitted',
+'badge': 'info'} ] %} {% include 'components/info_box.html' %}
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  You'll receive follow-up emails when the job is reviewed and executed.
+</p>
+
+<p style="color: #718096; font-size: 14px; margin-top: 30px">
+  This is an automated notification from SyftBox.
+</p>
+{% endblock %}
