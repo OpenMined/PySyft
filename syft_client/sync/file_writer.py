@@ -14,8 +14,13 @@ class FileWriter(BaseModel):
         self.callbacks[on].append(callback)
 
     def write_file(self, path: str, content: str):
+        target_path = self.base_path / path
+        resolved_path = target_path.resolve()
+        resolved_base = self.base_path.resolve()
+        if not str(resolved_path).startswith(str(resolved_base)):
+            raise ValueError(f"Path {path} is outside of base_path {self.base_path}")
         if self.write_files:
-            with open(path, "w") as f:
+            with open(resolved_path, "w") as f:
                 f.write(content)
 
         for callback in self.callbacks.get("write_file", []):
