@@ -175,6 +175,7 @@ test = [
     "mypy>=1.0.0",
     "isort>=5.12.0",
     "coverage>=7.0.0",
-    "syft-enclave",
+    "syft-enclave[inference]",
+    "httpx",  # fastapi TestClient (inference server tests)
     "pyarrow",  # only used by parquet test fixtures (tests/unit/utils.py)
 ]

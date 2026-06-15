@@ -10,6 +10,7 @@ import sys
 from pydantic import ValidationError
 
 from syft_enclaves.client import SyftEnclaveClient
+from syft_enclaves.inference.logs_dataset import ensure_logs_dataset
 from syft_enclaves.runner import EnclaveRunner
 from syft_enclaves.settings import EnclaveSettings
 
@@ -55,12 +56,22 @@ def main() -> None:
     )
     logger.info("SyftEnclaveClient ready")
 
+    post_init = None
+    if settings.model_owner is not None:
+        logger.info(
+            f"Inference mode — model_owner={settings.model_owner} "
+            f"model_dataset={settings.model_dataset} model_size={settings.model_size} "
+            f"logs_dataset={settings.logs_dataset}"
+        )
+        post_init = lambda: ensure_logs_dataset(client, settings.logs_dataset)  # noqa: E731
+
     logger.info("Building EnclaveRunner...")
     runner = EnclaveRunner(
         client=client,
         poll_interval=settings.poll_interval,
         require_tee=settings.require_tee,
         fresh_state=settings.fresh_state,
+        post_init=post_init,
     )
     logger.info("EnclaveRunner ready — calling runner.run()")
     runner.run()

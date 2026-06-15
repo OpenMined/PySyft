@@ -1,0 +1,4 @@
+# Model deps for the inference image only — kept out of syft-enclave's
+# package deps so test environments stay jax-free.
+# `gemma` (DeepMind, JAX) pulls jax, flax, orbax and the tokenizer deps.
+gemma>=3.0.0

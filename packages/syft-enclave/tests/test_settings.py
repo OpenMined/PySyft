@@ -112,3 +112,31 @@ def test_use_encryption_can_be_disabled_via_env(required_env):
     required_env.setenv("SYFT_ENCLAVE_USE_ENCRYPTION", "false")
     settings = EnclaveSettings(_env_file=None)
     assert settings.use_encryption is False
+
+
+def test_inference_disabled_by_default(required_env):
+    settings = EnclaveSettings(_env_file=None)
+    assert settings.model_owner is None
+    assert settings.model_dataset == "gemma3_model"
+    assert settings.model_size == "270m"
+    assert settings.logs_dataset == "inference_logs"
+
+
+def test_inference_settings_from_env(required_env):
+    required_env.setenv("SYFT_ENCLAVE_MODEL_OWNER", "model_owner@openmined.org")
+    required_env.setenv("SYFT_ENCLAVE_MODEL_DATASET", "my_model")
+    required_env.setenv("SYFT_ENCLAVE_MODEL_SIZE", "1b")
+    required_env.setenv("SYFT_ENCLAVE_LOGS_DATASET", "my_logs")
+
+    settings = EnclaveSettings(_env_file=None)
+
+    assert settings.model_owner == "model_owner@openmined.org"
+    assert settings.model_dataset == "my_model"
+    assert settings.model_size == "1b"
+    assert settings.logs_dataset == "my_logs"
+
+
+def test_invalid_model_size_raises(required_env):
+    required_env.setenv("SYFT_ENCLAVE_MODEL_SIZE", "999b")
+    with pytest.raises(ValidationError, match="model_size"):
+        EnclaveSettings(_env_file=None)
