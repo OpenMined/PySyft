@@ -1,0 +1,32 @@
+{% extends "base.html" %} {% block title %}Job Approved - {{ job_name }}{%
+endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  Job Approved
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  Great news! Your job has been reviewed and approved by the data owner.
+</p>
+
+{% set info_items = [ {'label': 'Job Name', 'value': job_name}, {'label':
+'Status', 'value': 'Approved', 'badge': 'success'}, {'label': 'Next Step',
+'value': 'Waiting for execution'} ] %} {% include 'components/info_box.html' %}
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  Your job has been queued for execution. You'll receive another notification
+  when it completes and your results are ready.
+</p>
+
+{% if job_url %} {% set button_text = "View Status" %} {% set button_url =
+job_url %} {% include 'components/button.html' %} {% endif %}
+
+<p style="color: #718096; font-size: 14px; margin-top: 30px">
+  Execution times vary depending on job complexity and queue status.
+</p>
+{% endblock %}

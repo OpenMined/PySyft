@@ -1,0 +1,34 @@
+{% extends "base.html" %} {% block title %}syft-bg heartbeat{% endblock %} {%
+block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  syft-bg is still running
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  This is a heartbeat email from your syft-bg notify service. Receiving it
+  confirms that the service is still up and your Gmail token is still valid.
+</p>
+
+{% set info_items = [ {'label': 'Account', 'value': do_email}, {'label': 'Sent',
+'value': timestamp | datetime if timestamp else 'Just now'}, {'label':
+'Heartbeat interval', 'value': interval_human}, {'label': 'Status', 'value':
+'Healthy', 'badge': 'success'} ] %} {% include 'components/info_box.html' %}
+
+<p
+  style="
+    color: #718096;
+    font-size: 14px;
+    margin-top: 30px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 20px;
+  "
+>
+  If you stop receiving these emails, syft-bg may have been shut down or its
+  Gmail token may have expired. Check the service status with
+  <code>syft-bg status</code>.
+</p>
+{% endblock %}

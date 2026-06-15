@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}SyftBox Notification{% endblock %}</title>
+    <!--[if mso]>
+      <noscript>
+        <xml>
+          <o:OfficeDocumentSettings>
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+          </o:OfficeDocumentSettings>
+        </xml>
+      </noscript>
+    <![endif]-->
+    <style>
+      /* Reset styles */
+      body,
+      table,
+      td,
+      p,
+      a,
+      li,
+      blockquote {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+      table,
+      td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+      img {
+        -ms-interpolation-mode: bicubic;
+        border: 0;
+        height: auto;
+        line-height: 100%;
+        outline: none;
+        text-decoration: none;
+      }
+
+      /* Base styles */
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background-color: #f7fafc;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          'Helvetica Neue', Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        color: #2d3748;
+      }
+
+      /* Container */
+      .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+      }
+
+      /* Header */
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 30px 40px;
+        text-align: center;
+      }
+      .header-logo {
+        color: #ffffff;
+        font-size: 24px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .header-tagline {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 14px;
+        margin-top: 8px;
+      }
+
+      /* Content */
+      .content {
+        padding: 40px;
+      }
+      .content h1 {
+        color: #2d3748;
+        font-size: 24px;
+        font-weight: 600;
+        margin: 0 0 16px 0;
+      }
+      .content p {
+        color: #4a5568;
+        font-size: 16px;
+        line-height: 1.6;
+        margin: 0 0 16px 0;
+      }
+
+      /* Info box */
+      .info-box {
+        background-color: #edf2f7;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 24px 0;
+      }
+      .info-box table {
+        width: 100%;
+      }
+      .info-box td {
+        padding: 8px 0;
+        vertical-align: top;
+      }
+      .info-label {
+        font-weight: 600;
+        color: #2d3748;
+        width: 120px;
+      }
+      .info-value {
+        color: #4a5568;
+      }
+
+      /* Button */
+      .button-container {
+        text-align: center;
+        margin: 32px 0;
+      }
+      .button {
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #ffffff !important;
+        text-decoration: none;
+        padding: 14px 32px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 16px;
+      }
+      .button:hover {
+        opacity: 0.9;
+      }
+
+      /* Footer */
+      .footer {
+        background-color: #f7fafc;
+        padding: 30px 40px;
+        text-align: center;
+        border-top: 1px solid #e2e8f0;
+      }
+      .footer p {
+        color: #718096;
+        font-size: 14px;
+        margin: 0 0 8px 0;
+      }
+      .footer a {
+        color: #667eea;
+        text-decoration: none;
+      }
+      .footer-links {
+        margin-top: 16px;
+      }
+      .footer-links a {
+        color: #718096;
+        text-decoration: none;
+        margin: 0 12px;
+        font-size: 13px;
+      }
+
+      /* Code blocks */
+      .code-header {
+        background-color: #161b22;
+        color: #e6edf3;
+        padding: 8px 16px;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
+          monospace;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 8px 8px 0 0;
+        border-bottom: 1px solid #30363d;
+      }
+      .code-block {
+        background-color: #0d1117;
+        color: #e6edf3;
+        padding: 16px;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
+          monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        border-radius: 0 0 8px 8px;
+        overflow-x: auto;
+        white-space: pre;
+        margin: 0 0 16px 0;
+      }
+
+      /* Status badges */
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .status-success {
+        background-color: #c6f6d5;
+        color: #22543d;
+      }
+      .status-pending {
+        background-color: #feebc8;
+        color: #744210;
+      }
+      .status-info {
+        background-color: #bee3f8;
+        color: #2a4365;
+      }
+      .status-error {
+        background-color: #fed7d7;
+        color: #822727;
+      }
+
+      /* Responsive */
+      @media screen and (max-width: 600px) {
+        .email-container {
+          width: 100% !important;
+        }
+        .content,
+        .header,
+        .footer {
+          padding: 24px !important;
+        }
+        .content h1 {
+          font-size: 20px !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <center style="width: 100%; background-color: #f7fafc; padding: 40px 0">
+      <!--[if mso | IE]>
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" align="center">
+        <tr>
+        <td>
+        <![endif]-->
+      <table
+        role="presentation"
+        cellspacing="0"
+        cellpadding="0"
+        border="0"
+        class="email-container"
+        style="margin: auto"
+      >
+        <!-- Header -->
+        <tr>
+          <td class="header">
+            <a href="https://openmined.org" class="header-logo">SyftBox</a>
+            <p class="header-tagline">Secure Data Collaboration</p>
+          </td>
+        </tr>
+
+        <!-- Content -->
+        <tr>
+          <td class="content">{% block content %}{% endblock %}</td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td class="footer">
+            <p>This is an automated notification from SyftBox.</p>
+            <p>
+              Questions? Visit
+              <a href="https://docs.openmined.org">docs.openmined.org</a>
+            </p>
+            <div class="footer-links">
+              <a href="https://openmined.org">OpenMined</a>
+              <a href="https://github.com/OpenMined/syft-client">GitHub</a>
+              <a href="https://slack.openmined.org">Community</a>
+            </div>
+          </td>
+        </tr>
+      </table>
+      <!--[if mso | IE]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
+    </center>
+  </body>
+</html>

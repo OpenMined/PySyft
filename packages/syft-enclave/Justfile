@@ -1,0 +1,483 @@
+dockerhub_username := "openminedreleasebot"
+image_base := "docker.io/openminedreleasebot/syft-client-enclave"
+image := image_base + ":latest"
+machine_type_default := "n2d-standard-2"
+vm_default := "syft-enclave-vm"
+secret_name_default := "syft-enclave-token"
+sa_name_default := "syft-enclave-service-account"
+
+# Shared shell snippet: loads settings from ~/.syft-enclaves/settings.json.
+# `project_id` and `zone` are written by `just init`.
+load_settings := '''
+    settings="$HOME/.syft-enclaves/settings.json"
+    [ -f "$settings" ] || { echo "Error: $settings not found. Run: just init <project_id>" >&2; exit 1; }
+    project_id=$(jq -r .project_id "$settings")
+    zone=$(jq -r .zone "$settings")
+    project_number=$(jq -r '.project_number // empty' "$settings")
+    secret_resource=$(jq -r '.secret_resource // empty' "$settings")
+    sa_email=$(jq -r '.sa_email // empty' "$settings")
+    data_owners=$(jq -r '.data_owners // empty' "$settings")
+'''
+
+# Ensure we have Docker Hub creds before pushing.
+# If OM_DOCKER_LOGIN + OM_DOCKER_PW are set, do a non-interactive login.
+# Otherwise, if no cached creds, fall back to interactive `docker login`.
+ensure_dockerhub_login := '''
+    if ! grep -q '"https://index.docker.io/v1/"' "$HOME/.docker/config.json" 2>/dev/null; then
+        if [ -n "${OM_DOCKER_LOGIN:-}" ] && [ -n "${OM_DOCKER_PW:-}" ]; then
+            echo "Logging in to Docker Hub as $OM_DOCKER_LOGIN (from env)..."
+            echo "$OM_DOCKER_PW" | docker login -u "$OM_DOCKER_LOGIN" --password-stdin
+        else
+            echo "Not logged in to Docker Hub. Either set OM_DOCKER_LOGIN and OM_DOCKER_PW, or log in interactively now:"
+            docker login
+        fi
+    fi
+'''
+
+# List all available commands
+[private]
+default:
+    @just --list --unsorted
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Settings
+#
+# `init` writes ~/.syft-enclaves/settings.json with project_id and zone. Every other
+# recipe reads both from that file — there is no per-call zone override. To switch
+# zones, re-run `just init <project_id> <zone>`.
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Initialize ~/.syft-enclaves/settings.json and set gcloud's active project
+[group('setup')]
+init project_id token_path="" data_owners="" zone="us-central1-a":
+    #!/bin/bash
+    set -e
+
+    [ -n "{{token_path}}" ] || { echo "Error: token_path is required. Usage: just init <project_id> <token_path> <data_owners> [zone]" >&2; exit 1; }
+    [ -f "{{token_path}}" ] || { echo "Error: token file not found: {{token_path}}" >&2; exit 1; }
+    [ -n "{{data_owners}}" ] || { echo "Error: data_owners is required (comma-separated emails). Usage: just init <project_id> <token_path> <data_owners> [zone]" >&2; exit 1; }
+
+    # gcloud install + version + auth checks (override: SKIP_GCLOUD_CHECK=1)
+    if [ "${SKIP_GCLOUD_CHECK:-0}" != "1" ]; then
+      if ! command -v gcloud >/dev/null 2>&1; then
+        echo "Error: gcloud not found. Install: https://cloud.google.com/sdk/docs/install" >&2
+        echo "Skip this check: SKIP_GCLOUD_CHECK=1 just init {{project_id}}" >&2
+        exit 1
+      fi
+
+      # --confidential-compute-type=SEV needs >= 475.0.0
+      required_gcloud="475.0.0"
+      current_gcloud=$(gcloud --version 2>/dev/null | head -1 | awk '{print $NF}')
+      if [ "$(printf '%s\n%s\n' "$required_gcloud" "$current_gcloud" | sort -V | head -1)" != "$required_gcloud" ]; then
+        echo "Error: gcloud $current_gcloud is too old (need >= $required_gcloud)." >&2
+        echo "Upgrade: gcloud components update" >&2
+        echo "Skip this check: SKIP_GCLOUD_CHECK=1 just init {{project_id}}" >&2
+        exit 1
+      fi
+
+      # check auth (exercises refresh token)
+      active_account=$(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null)
+      if [ -z "$active_account" ]; then
+        echo "No authenticated gcloud account. Running 'gcloud auth login'..."
+        gcloud auth login
+      elif ! gcloud auth print-access-token >/dev/null 2>&1; then
+        echo "gcloud credentials for '$active_account' are stale (refresh token rejected). Running 'gcloud auth login'..."
+        gcloud auth login
+      fi
+    fi
+
+    # verify project id exists (catches passing display name instead of id)
+    if ! gcloud projects describe {{project_id}} >/dev/null 2>&1; then
+      echo "Error: project ID '{{project_id}}' not found or not accessible." >&2
+      matches=$(gcloud projects list --filter="name:{{project_id}} OR projectId:{{project_id}}" --format='table(projectId,name,projectNumber)' 2>/dev/null || true)
+      if [ -n "$matches" ]; then
+        echo "Did you mean one of these?" >&2
+        echo ""
+        echo "$matches" >&2
+      else
+        echo "Run 'gcloud projects list' to see the PROJECT_ID column — pass that, not the display name." >&2
+      fi
+      exit 1
+    fi
+
+    # write settings.json
+    mkdir -p "$HOME/.syft-enclaves"
+    jq -n --arg p "{{project_id}}" --arg z "{{zone}}" --arg do "{{data_owners}}" \
+      '{project_id: $p, zone: $z, data_owners: $do}' > "$HOME/.syft-enclaves/settings.json"
+
+    # set active gcloud project
+    gcloud config set project {{project_id}}
+    echo "wrote $HOME/.syft-enclaves/settings.json"
+    echo "[gcloud account: $(gcloud auth list --filter=status:ACTIVE --format='value(account)')]"
+
+    # enable APIs needed for secret + SA provisioning
+    gcloud services enable secretmanager.googleapis.com iam.googleapis.com \
+      --project="{{project_id}}"
+
+    # provision the secret + SA
+    just provision-secret-sa "{{token_path}}"
+
+# Print the active gcloud account (shown before each VM-touching recipe)
+_whoami:
+    @echo "[gcloud account: $(gcloud auth list --filter=status:ACTIVE --format='value(account)')]"
+
+# Print the active gcloud account
+whoami: _whoami
+
+# Enable APIs, grant attestation IAM role, create firewall rule (idempotent)
+_provision: _whoami
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+
+    # enable required APIs
+    gcloud services enable \
+      compute.googleapis.com \
+      confidentialcomputing.googleapis.com \
+      --project="$project_id"
+
+    # grant attestation role to default compute SA
+    project_number=$(gcloud projects describe "$project_id" --format='get(projectNumber)')
+    gcloud projects add-iam-policy-binding "$project_id" \
+      --member="serviceAccount:${project_number}-compute@developer.gserviceaccount.com" \
+      --role="roles/confidentialcomputing.workloadUser"
+
+    # open tcp/8080 (idempotent)
+    # gcloud compute firewall-rules create allow-enclave-http \
+    #   --project="$project_id" \
+    #   --direction=INGRESS \
+    #   --priority=1000 \
+    #   --network=default \
+    #   --action=ALLOW \
+    #   --rules=tcp:8080 \
+    #   --target-tags=http-server \
+    #   --source-ranges=0.0.0.0/0 || true
+
+
+# Provision Secret Manager + a dedicated service account for the
+# enclave runtime. The SA gets `secretmanager.secretAccessor` on the
+# secret and is attached to the VM at deploy time via `start` /
+# `start-debug`. Idempotent.
+[group('setup')]
+provision-secret-sa token_path secret=secret_name_default sa=sa_name_default: _provision
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    [ -f "{{token_path}}" ] || { echo "Error: token file not found: {{token_path}}" >&2; exit 1; }
+
+    gcloud secrets describe {{secret}} --project="$project_id" >/dev/null 2>&1 || \
+      gcloud secrets create {{secret}} --replication-policy=automatic --project="$project_id"
+
+    gcloud secrets versions add {{secret}} \
+      --data-file="{{token_path}}" --project="$project_id"
+
+    sa_full="{{sa}}@${project_id}.iam.gserviceaccount.com"
+    if ! gcloud iam service-accounts describe "$sa_full" --project="$project_id" >/dev/null 2>&1; then
+      gcloud iam service-accounts create {{sa}} \
+        --display-name="Syft enclave service account" \
+        --project="$project_id"
+      echo "Waiting for SA to propagate..."
+      sleep 10
+    fi
+
+    gcloud secrets add-iam-policy-binding {{secret}} \
+      --role=roles/secretmanager.secretAccessor \
+      --member="serviceAccount:${sa_full}" \
+      --project="$project_id" >/dev/null
+
+    # Project-level roles the CS launcher needs from the attached SA:
+    # - confidentialcomputing.workloadUser → REST verifier client (attestation)
+    # - logging.logWriter → launcher startup + diagnostic logs to Cloud Logging
+    for role in roles/confidentialcomputing.workloadUser roles/logging.logWriter; do
+      gcloud projects add-iam-policy-binding "$project_id" \
+        --member="serviceAccount:${sa_full}" \
+        --role="$role" >/dev/null
+    done
+
+    project_number=$(gcloud projects describe "$project_id" --format='get(projectNumber)')
+    secret_resource="projects/${project_number}/secrets/{{secret}}/versions/latest"
+    jq --arg sn "{{secret}}" --arg sr "$secret_resource" --arg sae "$sa_full" \
+      '.secret_name=$sn | .secret_resource=$sr | .sa_email=$sae' \
+      "$settings" > "${settings}.tmp" && mv "${settings}.tmp" "$settings"
+
+    echo "  Secret: $secret_resource"
+    echo "  SA:     $sa_full"
+    echo "  Grants:"
+    echo "    - roles/secretmanager.secretAccessor  on {{secret}}"
+    echo "    - roles/confidentialcomputing.workloadUser  on project"
+    echo "    - roles/logging.logWriter  on project"
+
+# Deploy a production enclave VM (hardened image, no SSH) that fetches
+# its token via the VM's attached service account + Secret Manager.
+# No WIF — use when org policy blocks WIF provider creation. Requires
+# `just provision-secret-sa <token>` first.
+[group('deploy')]
+start email name=vm_default machine_type=machine_type_default job-timeout="": _provision
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    [ -n "$sa_email" ] || { echo "Error: SA not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
+
+    # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
+    job_timeout_env=""
+    if [ -n "{{job-timeout}}" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job-timeout}}"
+    fi
+
+    gcloud compute instances create {{name}} \
+      --project="$project_id" \
+      --zone="$zone" \
+      --machine-type={{machine_type}} \
+      --confidential-compute-type=SEV \
+      --shielded-secure-boot \
+      --maintenance-policy=MIGRATE \
+      --min-cpu-platform="AMD Milan" \
+      --image-family=confidential-space \
+      --image-project=confidential-space-images \
+      --scopes=cloud-platform \
+      --service-account="$sa_email" \
+      --tags=http-server \
+      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
+
+
+[group('deploy')]
+start-debug email name=vm_default machine_type=machine_type_default job-timeout="" use_encryption="false": _provision
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    [ -n "$sa_email" ] || { echo "Error: SA not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
+
+    # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
+    job_timeout_env=""
+    if [ -n "{{job-timeout}}" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job-timeout}}"
+    fi
+
+    gcloud compute instances create {{name}} \
+      --project="$project_id" \
+      --zone="$zone" \
+      --machine-type={{machine_type}} \
+      --confidential-compute-type=SEV \
+      --shielded-secure-boot \
+      --maintenance-policy=MIGRATE \
+      --min-cpu-platform="AMD Milan" \
+      --image-family=confidential-space-debug \
+      --image-project=confidential-space-images \
+      --scopes=cloud-platform \
+      --service-account="$sa_email" \
+      --tags=http-server \
+      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Always~tee-container-log-redirect=true~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION={{use_encryption}}${job_timeout_env}"
+
+
+# Delete the enclave VM and remove the firewall rule
+[group('teardown')]
+stop name=vm_default: _whoami
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    gcloud compute instances delete {{name}} \
+      --project="$project_id" \
+      --zone="$zone" \
+      --quiet
+    # gcloud compute firewall-rules delete allow-enclave-http \
+    #   --project="$project_id" \
+    #   --quiet
+
+# Delete the enclave's syftbox (Drive files + local state)
+# Usage: just delete-syftbox enclave@example.com
+[group('teardown')]
+delete-syftbox email:
+    #!/bin/bash
+    set -e
+    token="../../credentials/token_enclave.json"
+    [ -f "$token" ] || { echo "Error: $token not found" >&2; exit 1; }
+    echo "Deleting syftbox for {{email}}..."
+    uv run --project ../.. -- python -c "
+    from syft_client.sync.utils.syftbox_utils import delete_syftbox
+    delete_syftbox(token_path='$token', email='{{email}}')
+    "
+
+# Tear down everything provisioned by `provision-secret-sa`:
+# IAM binding → service account → secret + all versions. Mirrors the
+# provision step. DESTRUCTIVE — secret + SA are deleted (Secret Manager
+# has a recovery window but is best treated as one-way). Confirm with
+# CONFIRM_TEARDOWN=yes or answer the interactive [y/N] prompt.
+[group('teardown')]
+teardown-sa secret=secret_name_default sa=sa_name_default: _whoami
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    sa_full="{{sa}}@${project_id}.iam.gserviceaccount.com"
+    echo "About to delete on project $project_id:"
+    echo "  - IAM binding: $sa_full → roles/secretmanager.secretAccessor on {{secret}}"
+    echo "  - Service account: $sa_full"
+    echo "  - Secret: {{secret}} (all versions)"
+    if [ "${CONFIRM_TEARDOWN:-}" != "yes" ]; then
+      printf "Proceed? [y/N] "
+      read -r ans
+      case "$ans" in
+        y|Y|yes|YES) ;;
+        *) echo "Aborted."; exit 1 ;;
+      esac
+    fi
+
+    gcloud secrets remove-iam-policy-binding {{secret}} \
+      --role=roles/secretmanager.secretAccessor \
+      --member="serviceAccount:${sa_full}" \
+      --project="$project_id" >/dev/null 2>&1 || echo "  (binding already gone)"
+
+    gcloud iam service-accounts delete "$sa_full" \
+      --project="$project_id" --quiet 2>/dev/null || echo "  (SA already gone)"
+
+    gcloud secrets delete {{secret}} \
+      --project="$project_id" --quiet 2>/dev/null || echo "  (secret already gone)"
+
+    if [ -f "$settings" ]; then
+      tmp=$(mktemp)
+      jq 'del(.sa_email, .secret_name, .secret_resource)' "$settings" > "$tmp" \
+        && mv "$tmp" "$settings"
+    fi
+    echo "Teardown complete."
+
+# Print the VM's external IP
+[group('inspect')]
+get-ip name=vm_default: _whoami
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    gcloud compute instances describe {{name}} \
+      --project="$project_id" \
+      --zone="$zone" \
+      --format='get(networkInterfaces[0].accessConfigs[0].natIP)'
+
+# Print the VM's current status (RUNNING / TERMINATED / etc.)
+[group('inspect')]
+status name=vm_default: _whoami
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    gcloud compute instances describe {{name}} \
+      --project="$project_id" \
+      --zone="$zone" \
+      --format='get(status)'
+
+# Fetch the TEE attestation report from the running enclave
+[group('inspect')]
+attest name=vm_default: _whoami
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    ip=$(gcloud compute instances describe {{name}} \
+      --project="$project_id" \
+      --zone="$zone" \
+      --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+    curl -sS "http://${ip}:8080/attestation" | python3 -m json.tool
+
+# Tail the last 50 lines of the VM's serial port output
+[group('inspect')]
+logs name=vm_default n="100": _whoami
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    gcloud compute instances get-serial-port-output {{name}} \
+      --project="$project_id" \
+      --zone="$zone" 2>&1 | tail -n {{n}}
+
+# SSH into the VM (only works on debug image)
+[group('inspect')]
+ssh name=vm_default: _whoami
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    gcloud compute ssh {{name}} \
+      --project="$project_id" \
+      --zone="$zone"
+
+
+# Set OM_DOCKER_LOGIN + OM_DOCKER_PW to skip the docker-login prompt.
+# Build a multi-arch image (linux/amd64 + linux/arm64) and push to Docker Hub.
+# `tags` is space-separated, e.g. `just build-push "0.1 latest"`.
+# Build context is the monorepo root (`../..`) so the Dockerfile can install
+# syft-enclave from the workspace; .dockerignore (next to the Dockerfile)
+# keeps the context small.
+[group('docker')]
+build-push tags="latest":
+    #!/bin/bash
+    set -e
+    {{ensure_dockerhub_login}}
+    docker buildx create --name multiarch --use 2>/dev/null || true
+    tag_args=""
+    for t in {{tags}}; do
+        tag_args="$tag_args -t {{image_base}}:$t"
+    done
+    docker buildx build --platform linux/amd64,linux/arm64 \
+      $tag_args \
+      -f docker/Dockerfile \
+      --push \
+      ../..
+
+# Set OM_DOCKER_LOGIN + OM_DOCKER_PW to skip the docker-login prompt.
+# Build a linux/amd64-only image and push to Docker Hub.
+# `tags` is space-separated, e.g. `just build-push-amd "0.1 latest"`.
+# Build context is the monorepo root (`../..`) so the Dockerfile can install
+# syft-enclave from the workspace; .dockerignore (next to the Dockerfile)
+# keeps the context small.
+[group('docker')]
+build-push-amd tags="latest":
+    #!/bin/bash
+    set -e
+    {{ensure_dockerhub_login}}
+    tag_args=""
+    for t in {{tags}}; do
+        tag_args="$tag_args -t {{image_base}}:$t"
+    done
+    docker build --platform linux/amd64 \
+      $tag_args \
+      -f docker/Dockerfile ../..
+    for t in {{tags}}; do
+        docker push {{image_base}}:$t
+    done
+
+
+# Build the enclave image locally (no push) for iterating on Python
+# code before publishing to Docker Hub. Builds for the host architecture
+# (no --platform pin) — fastest local iteration, but note prod is
+# amd64-only (Confidential Spaces requires AMD SEV), so arm64 hosts
+# won't catch amd64-specific issues here; use `build-push` for that.
+[group('dev')]
+local-build tag="dev":
+    docker build \
+      -t {{image_base}}:{{tag}} \
+      -f docker/Dockerfile ../..
+
+# Run the enclave container locally with a token bind-mounted at the
+# path the bootstrap dispatcher expects. Bypasses the TEE socket check
+# (SYFT_ENCLAVE_REQUIRE_TEE=false). DEV ONLY — never with a prod token.
+[group('dev')]
+local-run email data_owners token_path name="syft-enclave-local" tag="dev":
+    #!/bin/bash
+    set -e
+    [ -f "{{token_path}}" ] || { echo "Error: token file not found at {{token_path}}" >&2; exit 1; }
+    [ -n "{{data_owners}}" ] || { echo "Error: data_owners is required (comma-separated emails)." >&2; exit 1; }
+    docker run --rm -it \
+      --name {{name}} \
+      -p 8080:8080 \
+      -e SYFT_ENCLAVE_EMAIL="{{email}}" \
+      -e SYFT_ENCLAVE_DATA_OWNERS="{{data_owners}}" \
+      -e SYFT_ENCLAVE_REQUIRE_TEE=false \
+      -v "$(realpath {{token_path}}):/run/syft-enclave/token.json:ro" \
+      {{image_base}}:{{tag}}
+
+[group('setup')]
+credentials-to-token credentials_path output_path:
+    #!/bin/bash
+    set -e
+    uv run --project ../.. -- python -c "
+    from syft_client import credentials_to_token
+    out = credentials_to_token('{{credentials_path}}', '{{output_path}}')
+    print(f'token written: {out}')
+    "

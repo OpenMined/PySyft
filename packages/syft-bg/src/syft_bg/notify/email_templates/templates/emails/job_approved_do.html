@@ -1,0 +1,25 @@
+{% extends "base.html" %} {% block title %}Job Auto-Approved - {{ job_name }}{%
+endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  Job Auto-Approved
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  A job has been automatically approved and is now running.
+</p>
+
+{% set info_items = [ {'label': 'Job Name', 'value': job_name}, {'label':
+'From', 'value': ds_email}, {'label': 'Status', 'value': 'Approved & Running',
+'badge': 'success'} ] %} {% include 'components/info_box.html' %}
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  This job matched your approval criteria and was automatically approved. You
+  will receive another notification when the job completes.
+</p>
+{% endblock %}

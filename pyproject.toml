@@ -1,0 +1,180 @@
+[build-system]
+requires = ["setuptools>=64.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "syft-client"
+dynamic = ["version"]
+description = "A simple client library for setting up secure communication channels using Google Drive"
+readme = "README.md"
+authors = [
+    {name = "OpenMined", email = "info@openmined.org"}
+]
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+keywords = ["privacy", "federated-learning", "google-drive", "communication"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Communications :: File Sharing"
+]
+dependencies = [
+    "google-api-python-client>=2.95.0",
+    "google-auth[pyjwt]>=2.22.0",
+    "google-auth-oauthlib>=1.0.0",
+    "rich>=13.0.0",
+    "pandas",
+    "pydantic-settings>=2.11.0",
+    "pyyaml>=6.0",
+    "jinja2>=3.1.0",
+    "click>=8.0.0",
+    "portalocker>=2.8.0",
+    "python-daemon>=3.0.0",
+    "syft-bg==0.3.11",
+    "syft-job==0.1.39", # TODO: move to optional-dependencies after adding lazy imports
+    "syft-dataset==0.1.20", # TODO: move to optional-dependencies after adding lazy imports
+    "syft-permissions==0.1.14",
+    "syft-perms==0.1.14",
+    "syft-crypto-python>=0.1.2b2",
+]
+
+[project.optional-dependencies]
+datasets = [
+    "syft-dataset==0.1.20",
+]
+job = [
+    "syft-job==0.1.39",
+]
+all = [
+    "syft-client[datasets,job]",
+]
+
+[tool.uv]
+default-groups = ["dev", "test"]
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+"syft-job" = { workspace = true }
+"syft-notebook-ui" = { workspace = true }
+"syft-dataset" = { workspace = true }
+"syft-bg" = { workspace = true }
+"syft-permissions" = { workspace = true }
+"syft-perms" = { workspace = true }
+"syft-enclave" = { workspace = true }
+
+[project.urls]
+Homepage = "https://github.com/OpenMined/syft-client"
+Repository = "https://github.com/OpenMined/syft-client"
+Documentation = "https://github.com/OpenMined/syft-client#readme"
+"Bug Tracker" = "https://github.com/OpenMined/syft-client/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "syft_client.version.SYFT_CLIENT_VERSION"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["syft_client*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+markers = [
+    "unit: Unit tests (fast, mocked)",
+    "integration: Integration tests (slow, real API)",
+    "cleanup: Tests that require cleanup",
+    "slow: Tests that take a long time to run",
+    "flaky: Tests that may fail intermittently and should be retried"
+]
+addopts = [
+    "--strict-markers",
+    "--strict-config"
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning"
+]
+
+[tool.coverage.run]
+source = ["syft_client"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "setup.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:"
+]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["syft_client"]
+skip_glob = ["**/__pycache__/**"]
+
+[tool.prettier]
+single_quote = true
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = [
+    "E203",  # whitespace before ':'
+    "E501",  # line too long (handled by black)
+    "W503",  # line break before binary operator
+    "W504"   # line break after binary operator
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".venv",
+    ".tox"
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", "build", "dist", ".venv", "venv"]
+skips = ["B101"]  # Skip assert_used (needed in tests)
+
+[tool.bandit.assert_used]
+skips = ["*/test_*.py", "*/tests/*"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.3.0",
+    "jupyter>=1.0.0",
+    "notebook>=6.5.0",
+    "tornado>=6.5.5",
+    "ipython>=8.0.0",
+]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "pytest-rerunfailures>=14.0",
+    "black>=26.3.1",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "isort>=5.12.0",
+    "coverage>=7.0.0",
+    "syft-enclave",
+    "pyarrow",  # only used by parquet test fixtures (tests/unit/utils.py)
+]

@@ -1,0 +1,50 @@
+{# Reusable info box component #} {# Usage: {% include
+'components/info_box.html' %} #} {# Required: info_items - list of dicts with
+'label' and 'value' keys #}
+
+<div
+  class="info-box"
+  style="
+    background-color: #edf2f7;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 24px 0;
+  "
+>
+  <table
+    role="presentation"
+    cellspacing="0"
+    cellpadding="0"
+    border="0"
+    style="width: 100%"
+  >
+    {% for item in info_items %}
+    <tr>
+      <td
+        class="info-label"
+        style="
+          font-weight: 600;
+          color: #2d3748;
+          width: 120px;
+          padding: 8px 0;
+          vertical-align: top;
+        "
+      >
+        {{ item.label }}:
+      </td>
+      <td
+        class="info-value"
+        style="color: #4a5568; padding: 8px 0; vertical-align: top"
+      >
+        {% if item.badge %}
+        <span
+          class="status-badge status-{{ item.badge }}"
+          style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: 500; {% if item.badge == 'success' %}background-color: #c6f6d5; color: #22543d;{% elif item.badge == 'pending' %}background-color: #feebc8; color: #744210;{% elif item.badge == 'error' %}background-color: #fed7d7; color: #822727;{% else %}background-color: #bee3f8; color: #2a4365;{% endif %}"
+          >{{ item.value }}</span
+        >
+        {% else %} {{ item.value }} {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>

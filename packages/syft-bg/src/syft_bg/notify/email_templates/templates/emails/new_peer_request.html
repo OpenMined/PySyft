@@ -1,0 +1,54 @@
+{% extends "base.html" %} {% block title %}New Peer Request from {{ ds_email
+}}{% endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  New Peer Request
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  A data scientist wants to connect with you to collaborate on data projects.
+</p>
+
+{% set info_items = [ {'label': 'From', 'value': ds_email}, {'label': 'Status',
+'value': 'Pending', 'badge': 'pending'}, {'label': 'Action', 'value': 'Review
+request'} ] %} {% include 'components/info_box.html' %}
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  Once connected, this collaborator will be able to:
+</p>
+
+<ul
+  style="
+    color: #4a5568;
+    font-size: 16px;
+    line-height: 1.8;
+    margin: 0 0 24px 0;
+    padding-left: 24px;
+  "
+>
+  <li>View your public datasets</li>
+  <li>Submit job requests for your review</li>
+  <li>Receive results from approved jobs</li>
+</ul>
+
+{% if peer_url %} {% set button_text = "Review Request" %} {% set button_url =
+peer_url %} {% include 'components/button.html' %} {% endif %}
+
+<p
+  style="
+    color: #718096;
+    font-size: 14px;
+    margin-top: 30px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 20px;
+  "
+>
+  <strong>Tip:</strong> You can add them back as a peer to establish mutual
+  peering, enabling bidirectional collaboration.
+</p>
+{% endblock %}

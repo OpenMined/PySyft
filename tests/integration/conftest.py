@@ -1,79 +1,32 @@
-# stdlib
-from secrets import token_hex
+"""
+Pytest fixtures for integration tests.
 
-# third party
-import _pytest
-from faker import Faker
+Fixtures defined here are automatically available to all tests in this directory.
+"""
+
+import os
+
 import pytest
 
-# syft absolute
-import syft as sy
-from syft.abstract_server import ServerSideType
-from syft.server.worker import Worker
+from tests.integration.utils import (
+    token_path_do,
+    token_path_ds,
+    remove_syftboxes_from_drive,
+)
 
 
-def pytest_configure(config: _pytest.config.Config) -> None:
-    config.addinivalue_line("markers", "frontend: frontend integration tests")
-    config.addinivalue_line("markers", "network: network integration tests")
-    config.addinivalue_line(
-        "markers", "container_workload: container workload integration tests"
-    )
-    config.addinivalue_line("markers", "local_server: local server integration tests")
+@pytest.fixture()
+def setup_delete_syftboxes():
+    """Clean up syftboxes from drive before running integration tests."""
+    if os.environ.get("INTEGRATION_TEST_MOCK_MODE", "").lower() == "true":
+        yield
+        return
 
-
-@pytest.fixture
-def gateway_port() -> int:
-    return 9081
-
-
-@pytest.fixture
-def datasite_1_port() -> int:
-    return 9082
-
-
-@pytest.fixture
-def datasite_2_port() -> int:
-    return 9083
-
-
-@pytest.fixture
-def faker():
-    return Faker()
-
-
-@pytest.fixture(scope="function")
-def full_low_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _server = sy.orchestra.launch(
-        server_side_type=ServerSideType.LOW_SIDE,
-        name=token_hex(8),
-        # dev_mode=True,
-        reset=True,
-        n_consumers=n_consumers,
-        create_producer=create_producer,
-        queue_port=None,
-        thread_workers=False,
-    )
-    # startup code here
-    yield _server
-    # # Cleanup code
-    _server.python_server.cleanup()
-    _server.land()
-
-
-@pytest.fixture(scope="function")
-def full_high_worker(n_consumers: int = 3, create_producer: bool = True) -> Worker:
-    _server = sy.orchestra.launch(
-        server_side_type=ServerSideType.HIGH_SIDE,
-        name=token_hex(8),
-        # dev_mode=True,
-        reset=True,
-        n_consumers=n_consumers,
-        create_producer=create_producer,
-        queue_port=None,
-        thread_workers=False,
-    )
-    # startup code here
-    yield _server
-    # Cleanup code
-    _server.python_server.cleanup()
-    _server.land()
+    tokens_exist = token_path_do.exists() and token_path_ds.exists()
+    if not tokens_exist:
+        raise ValueError(
+            """Credentials not found, create them using scripts/create_token.py and store them in /credentials
+            as token_do.json and token_ds.json. Also set the environment variables AI_AUDIT_EMAIL_DO and AI_AUDIT_EMAIL_DS to the email addresses of the DO and DS."""
+        )
+    remove_syftboxes_from_drive()
+    yield

@@ -1,0 +1,73 @@
+name: CD - Syft Dataset
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: Version bump type
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+  workflow_call:
+    inputs:
+      bump_type:
+        type: string
+        required: true
+
+concurrency:
+  group: 'CD - Syft Dataset'
+  cancel-in-progress: false
+
+jobs:
+  deploy-syft-dataset:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        run: |
+          git pull
+          pip install packaging
+          OUTPUT=$(python scripts/bump_version.py syft-dataset ${{ inputs.bump_type }})
+          VERSION=$(echo "$OUTPUT" | sed -n '1p')
+          MODIFIED=$(echo "$OUTPUT" | sed -n '2p')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "MODIFIED=$MODIFIED" >> $GITHUB_ENV
+          echo "Bumped syft-dataset to $VERSION (modified: $MODIFIED)"
+
+      - name: Build package
+        working-directory: packages/syft-datasets
+        run: uv build --out-dir dist
+
+      - name: Publish to PyPI
+        working-directory: packages/syft-datasets
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_UNAME_SYFT_DATASET }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT_DATASET }}
+        run: uvx twine upload --verbose dist/*
+
+      - name: Commit and tag
+        run: |
+          git add ${{ env.MODIFIED }}
+          git commit -m "Release syft-dataset v${{ env.VERSION }}"
+          git tag "syft-dataset/v${{ env.VERSION }}"
+          git push origin --follow-tags

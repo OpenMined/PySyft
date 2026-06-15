@@ -1,0 +1,25 @@
+[project]
+name = "syft-enclave"
+version = "0.1.0"
+description = "TEE attestation server for syft-client"
+authors = [{ name = "OpenMined", email = "info@openmined.org" }]
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+
+dependencies = [
+    "syft-client",
+    "pydantic-settings>=2.11.0",
+    "requests>=2.32.0",
+    "google-auth[pyjwt]>=2.22.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+"syft-client" = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/syft_enclaves"]
+

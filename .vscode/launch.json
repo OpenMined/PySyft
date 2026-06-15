@@ -1,32 +1,24 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python Debugger: Current File",
+      "name": "Python: Current File",
       "type": "debugpy",
       "request": "launch",
       "program": "${file}",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "cwd": "${workspaceFolder}"
     },
     {
-      "name": "Syft Debugger",
+      "name": "Pytest: Current File",
       "type": "debugpy",
-      "request": "attach",
-      "connect": {
-        "host": "localhost",
-        "port": "${input:port}"
-      }
-    }
-  ],
-  "inputs": [
-    {
-      "id": "port",
-      "description": "Port on which the debugger is listening",
-      "type": "promptString",
-      "default": "5678"
+      "request": "launch",
+      "module": "pytest",
+      "args": ["${file}", "-v"],
+      "console": "integratedTerminal",
+      "justMyCode": false,
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

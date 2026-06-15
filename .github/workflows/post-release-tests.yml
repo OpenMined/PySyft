@@ -1,0 +1,64 @@
+name: 'Post-Release Tests'
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_version:
+        description: 'syft-client version to test (e.g. 0.1.106)'
+        type: string
+        required: true
+  workflow_call:
+    inputs:
+      package_version:
+        type: string
+        required: true
+
+jobs:
+  post-release-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Poll PyPI for syft-client==${{ inputs.package_version }}
+        run: |
+          VERSION="${{ inputs.package_version }}"
+          MAX_ATTEMPTS=15
+          SLEEP=10
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/syft-client/${VERSION}/json")
+            if [ "$STATUS" = "200" ]; then
+              echo "syft-client==${VERSION} is available on PyPI"
+              exit 0
+            fi
+            echo "Attempt $i/$MAX_ATTEMPTS: not yet available (HTTP $STATUS), waiting ${SLEEP}s..."
+            sleep $SLEEP
+          done
+          echo "Timed out waiting for syft-client==${VERSION} on PyPI"
+          exit 1
+
+      - name: Wait for PyPI CDN propagation
+        run: sleep 30
+
+      - name: Install syft-client from PyPI
+        run: |
+          uv venv .venv
+          source .venv/bin/activate
+          uv pip install "syft-client==${{ inputs.package_version }}"
+
+      - name: Install test dependencies
+        run: |
+          source .venv/bin/activate
+          uv pip install pytest pytest-xdist pytest-rerunfailures
+
+      - name: Run unit tests
+        run: |
+          source .venv/bin/activate
+          pytest -n auto ./tests/unit

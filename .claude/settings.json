@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(gh:*)",
+      "Bash(just:*)",
+      "Bash(cat:*)",
+      "Bash(la:*)",
+      "Bash(ruff format:*)",
+      "Bash(grep:*)",
+      "Bash(uv run python:*)"
+    ]
+  }
+}
