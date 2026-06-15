@@ -1,0 +1,20 @@
+{
+  "source_sha256": "6ce403505cf035b65be57fdebc310fba6357ba930775adf40355f1948be94528",
+  "policy_id": "ee73d8485185eed3",
+  "verifuscate_version": "0.1.0",
+  "private_ranges": [
+    [
+      22,
+      93
+    ],
+    [
+      99,
+      130
+    ],
+    [
+      151,
+      292
+    ]
+  ],
+  "n_calls_checked": 73
+}
