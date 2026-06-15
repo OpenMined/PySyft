@@ -1,9 +1,0 @@
-version: "3.8"
-services:
-  worker:
-    build:
-      context: ${RELATIVE_PATH}../../
-      dockerfile: ./grid/worker/worker.dockerfile
-      target: "worker"
-      labels:
-        com.docker.compose.container-number: 1

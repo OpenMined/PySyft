@@ -1,0 +1,10 @@
+import os
+
+# Access the specified data file
+DATA_DIR = os.environ["DATA_DIR"]
+
+# This dataset has single file
+file_path = os.path.join(DATA_DIR, "{{ filename }}")
+
+with open(file_path, "r") as f:
+    print(f.readline())

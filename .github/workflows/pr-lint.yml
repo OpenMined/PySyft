@@ -1,0 +1,100 @@
+name: 'PR: Lint & Label'
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: write
+  statuses: write
+
+jobs:
+  validate-title:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        id: lint_title
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            chore
+            refactor
+            test
+            ci
+            perf
+            build
+          requireScope: false
+
+      - uses: marocchino/sticky-pull-request-comment@v2
+        if: always() && (steps.lint_title.outputs.error_message != null)
+        with:
+          header: pr-title-lint-error
+          message: |
+            ### PR title does not follow the required format
+
+            Your title must follow this pattern:
+
+            ```
+            type: short description
+            ```
+
+            **Example titles:**
+            - `feat: add retry logic to job approval`
+            - `fix: handle timeout in notification sender`
+            - `docs: update syft-bg README`
+            - `chore: bump dependencies`
+            - `refactor: split init flow into helpers`
+            - `test: add criteria validation tests`
+            - `ci: add release train workflow`
+
+            **Allowed types:** `feat` · `fix` · `docs` · `chore` · `refactor` · `test` · `ci` · `perf` · `build`
+
+            Just edit your PR title above to fix this. The check will re-run automatically.
+
+            See the [PR guidelines](https://github.com/${{ github.repository }}/blob/main/.github/PULL_REQUEST_TEMPLATE.md#pr-naming-convention) for full details.
+
+      - uses: marocchino/sticky-pull-request-comment@v2
+        if: ${{ steps.lint_title.outputs.error_message == null }}
+        with:
+          header: pr-title-lint-error
+          delete: true
+
+  label:
+    name: Auto-label PR
+    runs-on: ubuntu-latest
+    steps:
+      # Apply type label based on PR title prefix
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.pull_request.title;
+            const typeMap = {
+              feat: 'feature',
+              fix: 'bugfix',
+              docs: 'documentation',
+              chore: 'chore',
+              refactor: 'refactor',
+              test: 'testing',
+              ci: 'ci',
+              perf: 'performance',
+              build: 'build',
+            };
+            const match = title.match(/^(\w+)(\(.+\))?:/);
+            if (match && typeMap[match[1]]) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [typeMap[match[1]]],
+              });
+            }
+
+      # Apply package labels based on changed files
+      - uses: actions/labeler@v5
+        with:
+          configuration-path: .github/labeler.yml

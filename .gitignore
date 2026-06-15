@@ -1,15 +1,91 @@
-# dot files / folders
-.cache/
-.coverage
-.DS_Store
-.eggs/
-.idea/
-.mypy_cache
-.python-version
-.vscode/
-.tox/*
-.creds
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
+credentials/
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py.cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+<<<<<<< HEAD
 # python stuff
 *__pycache__*
 *.pyc
@@ -19,54 +95,104 @@
 *.ipynb_checkpoints*
 **.pytest_cache/
 **/pip-wheel-metadata
+=======
+# pipenv
+Pipfile.lock
+>>>>>>> 13b3d316fd8ac0b0fa55ecf13c2fa42cac2b8590
 
-# logs and database files
-**/*.log
-**/*.sqlite
-**/*.sqlite-journal
+# poetry
+poetry.lock
 
-# docker compose volumes
-docker/data/*
+# pdm
+.pdm.toml
 
-# hagrid temps
-packages/hagrid/syft
-packages/hagrid/grid
+# PEP 582
+__pypackages__/
 
-# vagrant
-.vagrant
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
 
-# venv
-venv
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
 .venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# docs
-docs/build
-docs/source/_build
+# Spyder project settings
+.spyderproject
+.spyproject
 
-# helmcharts
-helm-charts/**/*.tgz
-helm-charts/**/*.lock
-.helm/**
+# Rope project settings
+.ropeproject
 
-# docker cache
-.docker-cache/
-.docker
+# mkdocs documentation
+/site
 
-# notebook data
-notebooks/medical-federated-learning-program/data-owners/MedNIST.pkl
-notebooks/**/*.pkl
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
-# k3d registry
-k3d-registry
+# Pyre type checker
+.pyre/
 
-.envfile
-packages/hagrid/.envfile
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Google Drive credentials
+credentials.json
+client_secret*.json
+token.pickle
+token.json
+*creds.json
+
+# SyftBox related
+~/SyftBox/
+SyftBox/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Claude AI settings
+.claude/*
+!.claude/settings.json
+CLAUDE.md
+
+# CI test outputs
+test_outputs/
+test_suite_output.log
 
 
-# rendered template dir
-packages/grid/rendered
+# Notebooks
+notebooks/e2e/sales_mock.csv
+notebooks/e2e/sales_private.csv
+notebooks/e2e/readme.mdpackages/syft-bg/docs/sync-service.md
+packages/syft-bg/docs/sync-review-notes.md
+notebooks/ai_audit/internal/data/pdfs
+notebooks/ai_audit/internal/data/manifest.csv
+notebooks/ai_audit/internal/data/readme.md
 
-js/node_modules/*
-
-#nohup
-nohup.out
+.agents/
+AGENTS.md

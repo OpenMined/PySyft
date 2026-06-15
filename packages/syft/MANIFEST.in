@@ -1,4 +1,0 @@
-include src/syft/VERSION
-include src/syft/capnp/*
-include src/syft/cache/*
-include src/syft/img/*

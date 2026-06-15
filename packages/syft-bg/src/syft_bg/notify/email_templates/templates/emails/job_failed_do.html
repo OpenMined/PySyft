@@ -1,0 +1,68 @@
+{% extends "base.html" %} {% block title %}Job Failed - {{ job_name }}{%
+endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  Job Failed
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  A job failed during execution.
+</p>
+
+{% set info_items = [ {'label': 'Job Name', 'value': job_name}, {'label':
+'From', 'value': ds_email}, {'label': 'Status', 'value': 'Failed', 'badge':
+'error'} ] %} {% if return_code is not none %} {% set info_items = info_items +
+[{'label': 'Return Code', 'value': return_code}] %} {% endif %} {% if duration
+%} {% set info_items = info_items + [{'label': 'Duration', 'value': duration ~
+'s'}] %} {% endif %} {% include 'components/info_box.html' %} {% if error_output
+%}
+<h2
+  style="
+    color: #2d3748;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 24px 0 12px 0;
+  "
+>
+  Error Output
+</h2>
+<div style="margin-bottom: 16px">
+  <div
+    class="code-header"
+    style="
+      background-color: #161b22;
+      color: #f85149;
+      padding: 8px 16px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
+        monospace;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px 8px 0 0;
+      border-bottom: 1px solid #30363d;
+    "
+  >
+    stderr
+  </div>
+  <pre
+    class="code-block"
+    style="
+      background-color: #0d1117;
+      color: #e6edf3;
+      padding: 16px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
+        monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      border-radius: 0 0 8px 8px;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 0;
+    "
+  >
+{{ error_output }}</pre
+  >
+</div>
+{% endif %} {% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %} {% block title %}Job Completed - {{ job_name }}{%
+endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  Job Completed
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  A job has finished execution. Results are available.
+</p>
+
+{% set info_items = [ {'label': 'Job Name', 'value': job_name}, {'label':
+'From', 'value': ds_email}, {'label': 'Status', 'value': 'Completed', 'badge':
+'success'} ] %} {% if duration %} {% set info_items = info_items + [{'label':
+'Duration', 'value': duration ~ 's'}] %} {% endif %} {% include
+'components/info_box.html' %} {% endblock %}

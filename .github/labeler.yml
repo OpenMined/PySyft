@@ -1,0 +1,39 @@
+pkg:syft-client:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'syft_client/**'
+
+pkg:syft-bg:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/syft-bg/**'
+
+pkg:syft-job:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/syft-job/**'
+
+pkg:syft-dataset:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/syft-datasets/**'
+
+pkg:syft-perms:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/syft-perms/**'
+
+pkg:syft-permissions:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/syft-permissions/**'
+
+pkg:syft-notebook-ui:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/syft-notebook-ui/**'
+
+pkg:syft-enclave:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/syft-enclave/**'

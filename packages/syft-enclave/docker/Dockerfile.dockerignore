@@ -1,0 +1,47 @@
+# Dockerignore for the syft-enclave image.
+#
+# Build context is the monorepo root (packages/syft-enclave/Justfile passes
+# `../..`). BuildKit reads this file (`Dockerfile.dockerignore`) instead of
+# any root-level .dockerignore because it sits next to the Dockerfile.
+# Patterns are still interpreted relative to the build context (repo root).
+#
+# Strategy: deny everything, then re-include only what the Dockerfile copies.
+
+# Deny all.
+*
+
+# Workspace root metadata (uv looks at these for sync + lock).
+!pyproject.toml
+!uv.lock
+!README.md
+
+# syft-client lives at the workspace root.
+!syft_client
+
+# All workspace member packages — uv needs every member's pyproject.toml
+# to consider the workspace valid, even if only syft-enclave's transitive
+# deps actually get installed.
+!packages
+
+# Within everything we re-included above, deny noise.
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.DS_Store
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/.tox
+**/.venv
+**/dist
+**/build
+**/*.egg-info
+**/node_modules
+**/htmlcov
+**/.coverage
+**/coverage.xml
+
+# Tests aren't needed to install the packages.
+tests
+packages/*/tests
+syft_client/tests

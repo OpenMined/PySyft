@@ -1,0 +1,34 @@
+# ============================================================================
+# Required: User-Provided Settings
+# ============================================================================
+
+# Path to your Google OAuth credentials file (download from Google Cloud Console)
+# Get it from: https://console.cloud.google.com/apis/credentials
+credentials_file: 'credentials.json'
+
+# Your SyftBox installation directory
+syftbox_root: '~/SyftBox'
+
+# Data Owner email address
+do_email: 'owner@example.com'
+
+# ============================================================================
+# Optional: Notification Toggles (defaults shown)
+# ============================================================================
+
+# Job Notifications
+notify_on_new_job: true # Email when new job arrives
+notify_on_approved: true # Email when job approved
+notify_on_executed: true # Email when job completes
+
+# Peer Notifications
+notify_on_new_peer: true # Email when new peer added
+notify_on_peer_granted: true # Email when peer request granted
+
+# ============================================================================
+# Auto-Managed by Package (optional overrides)
+# ============================================================================
+
+# These paths are automatically managed - only specify if you need custom locations
+# token_file: "~/.syft-notifications/gmail_token.json"  # Auto-created by setup_oauth()
+# state_file: "~/.syft-notifications/state.json"        # Auto-created by monitors

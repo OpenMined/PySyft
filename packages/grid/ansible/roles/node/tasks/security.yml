@@ -1,8 +1,0 @@
-- name: Install Security Updates
-  package:
-    name: "{{ item }}"
-    state: present
-    autoclean: yes
-    update_cache: yes
-  loop:
-    - policykit-1

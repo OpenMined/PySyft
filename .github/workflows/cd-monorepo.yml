@@ -1,0 +1,173 @@
+name: CD - Monorepo
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: Run pre-release tests
+        type: boolean
+        default: true
+
+      bump_type:
+        description: Version bump type
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+      release_syft_permissions:
+        description: Release syft-permissions
+        type: boolean
+        default: true
+
+      release_syft_perms:
+        description: Release syft-perms
+        type: boolean
+        default: true
+
+      release_syft_job:
+        description: Release syft-job
+        type: boolean
+        default: true
+
+      release_syft_dataset:
+        description: Release syft-dataset
+        type: boolean
+        default: true
+
+      release_syft_bg:
+        description: Release syft-bg
+        type: boolean
+        default: true
+
+concurrency:
+  group: 'CD - Monorepo'
+  cancel-in-progress: false
+
+jobs:
+  call-linting-tests:
+    if: inputs.run_tests == true
+    uses: OpenMined/syft-client/.github/workflows/ci.yml@main
+
+  call-unit-tests:
+    if: inputs.run_tests == true
+    uses: OpenMined/syft-client/.github/workflows/unit-tests.yml@main
+
+  call-integration-tests:
+    if: inputs.run_tests == true
+    uses: OpenMined/syft-client/.github/workflows/integration-tests.yml@main
+    secrets: inherit
+
+  # Release order follows dependency graph:
+  # 1. syft-permissions (no internal deps)
+  # 2. syft-perms (depends on syft-permissions)
+  # 3. syft-job + syft-dataset (depend on syft-perms) — parallel
+  # 4. syft-bg (depends on syft-job)
+  # 5. syft-client (depends on all above)
+
+  release-syft-permissions:
+    needs: [call-linting-tests, call-unit-tests, call-integration-tests]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_permissions == true
+    uses: ./.github/workflows/cd-syft-permissions.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
+
+  release-syft-perms:
+    needs: [release-syft-permissions]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_perms == true
+    uses: ./.github/workflows/cd-syft-perms.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
+
+  release-syft-dataset:
+    needs: [release-syft-perms]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_dataset == true
+    uses: ./.github/workflows/cd-syft-dataset.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
+
+  release-syft-job:
+    needs: [release-syft-dataset]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_job == true
+    uses: ./.github/workflows/cd-syft-job.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
+
+  release-syft-bg:
+    needs: [release-syft-job]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_bg == true
+    uses: ./.github/workflows/cd-syft-bg.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
+
+  deploy-syft-client:
+    needs: [release-syft-bg, release-syft-dataset]
+    if: >-
+      !cancelled() && !failure()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.publish.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install Just
+        uses: extractions/setup-just@v3
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Upload to PyPI
+        id: publish
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT_CLIENT }}
+        run: |
+          git pull
+          just bump-and-publish ${{ inputs.bump_type }}
+          VERSION=$(python3 syft_client/version.py)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # bump and publish already does committing
+      - name: Push changes to syft-client repo
+        run: |
+          git tag "syft-client/v${{ env.VERSION }}"
+          git push origin --follow-tags
+
+  post-release-tests:
+    needs: [deploy-syft-client]
+    if: >-
+      !cancelled() && !failure()
+    uses: ./.github/workflows/post-release-tests.yml
+    with:
+      package_version: ${{ needs.deploy-syft-client.outputs.version }}

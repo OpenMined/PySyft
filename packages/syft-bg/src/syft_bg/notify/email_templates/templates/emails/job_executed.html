@@ -1,0 +1,46 @@
+{% extends "base.html" %} {% block title %}Job Completed - {{ job_name }}{%
+endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  Job Completed
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  Your job has finished executing and your results are now available!
+</p>
+
+{% set info_items = [ {'label': 'Job Name', 'value': job_name}, {'label':
+'Status', 'value': 'Completed', 'badge': 'success'}, {'label': 'Duration',
+'value': duration | duration if duration else 'N/A'}, {'label': 'Results',
+'value': 'Available'} ] %} {% include 'components/info_box.html' %}
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  Your results have been synced to your SyftBox directory. You can access them
+  locally or through the SyftBox interface.
+</p>
+
+{% if results_url %} {% set button_text = "View Results" %} {% set button_url =
+results_url %} {% include 'components/button.html' %} {% endif %}
+
+<p
+  style="
+    color: #718096;
+    font-size: 14px;
+    margin-top: 30px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 20px;
+  "
+>
+  <strong>Note:</strong> Results are stored securely and only accessible to you.
+  Run
+  <code style="background: #edf2f7; padding: 2px 6px; border-radius: 4px"
+    >syft sync</code
+  >
+  if results haven't appeared locally yet.
+</p>
+{% endblock %}

@@ -1,0 +1,52 @@
+<details>
+  <summary class="alert-danger syft-exception-summary">
+    <span>
+      <strong>{{name}}</strong>:
+      <pre class="alert-danger syft-exception-message">{{message | escape}}</pre>
+    </span>
+  </summary>
+  <div id="{{html_id}}" class="syft-exception-dropdown">
+    {% if server_trace %}
+    <div><strong>Server Trace:</strong></div>
+    <pre class="syft-exception-trace">
+      {% if dev_mode %}
+        {{ server_trace | make_links | safe }}
+      {% else %}
+        {{ server_trace | escape }}
+      {% endif %}
+    </pre>
+    <br>
+    <br>
+    {% endif %}
+    <div><strong>Client Trace:</strong></div>
+    <pre class="syft-exception-trace">
+      {% if dev_mode %}
+        {{ traceback_str | make_links | safe }}
+      {% else %}
+        {{ traceback_str | escape }}
+      {% endif %}
+    </pre>
+  </div>
+</details>
+
+<style>
+  .syft-exception-summary {
+    padding: 5px;
+    cursor: pointer;
+  }
+
+  .syft-exception-message {
+    display: inline;
+    font-family: inherit;
+  }
+
+  .syft-exception-dropdown {
+    margin-top: 5px;
+    padding: 10px;
+    border-top: 1px solid #ccc;
+  }
+
+  .syft-exception-trace {
+    display: inline;
+  }
+</style>

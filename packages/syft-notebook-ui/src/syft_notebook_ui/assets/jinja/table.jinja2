@@ -1,0 +1,54 @@
+<script type="application/javascript">
+    {{ tabulator_js | safe }};
+</script>
+
+<script type="application/javascript">
+  // VSCode workaround
+  if (typeof define === 'function' && define.amd && typeof require !== 'undefined') {
+    require(['tabulator-tables'], function(Tabulator) {
+      window.Tabulator = Tabulator;
+    });
+  }
+</script>
+
+<style>
+  {{ tabulator_css | safe }}
+</style>
+
+<div id="table-{{ uid }}-requirements"></div>
+
+<div class='flex gap-10' style='align-items: center; margin-top: 16px;'>
+  <div class='folder-icon'>{{ icon | safe}}</div>
+  <p class='header-3'>{{ name }}</p>
+</div>
+<div style="display: flex; justify-content: space-between; width: 100%; margin-top: 16px; margin-bottom: 16px;">
+  <div class="search-field" style="width: 40%;">
+    <input
+      id="search-{{ uid }}" type="text"
+      placeholder="Search..."
+      class="search-input escape-unfocus"
+    >
+  </div>
+  <div id="total-rows" style="text-align: right;">
+    <h4>Total: <span id="numrows-{{ uid }}">0</span></h4>
+  </div>
+</div>
+<div id="table-{{ uid }}"></div>
+
+<script type="application/javascript">
+  {{ js | safe }}
+
+  table_{{ uid }} = buildTable(
+    {{ columns | safe }},
+    {{ row_header | safe }},
+    {{ data | safe }},
+    "{{ uid }}",
+    pagination={{ pagination }},
+    maxHeight={{ max_height }},
+    headerSort={{ header_sort }},
+  )
+</script>
+
+<style>
+  {{ css | safe }}
+</style>
