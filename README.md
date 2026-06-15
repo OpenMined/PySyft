@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/Syft-Logo-Light.svg">
+  <img alt="Syft Logo" src="docs/img/Syft-Logo.svg" width="200px" />
+</picture>
+
 [![Unit Tests](https://github.com/OpenMined/syft-client/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/OpenMined/syft-client/actions/workflows/unit-tests.yml)
 [![Integration Tests](https://github.com/OpenMined/syft-client/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/OpenMined/syft-client/actions/workflows/integration-tests.yml)
 [![PyPI](https://img.shields.io/pypi/v/syft-client)](https://pypi.org/project/syft-client/)
@@ -114,3 +119,91 @@ just test-integration   # Integration tests (slow, real API)
 ---
 
 Built by [OpenMined](https://openmined.org) — building open-source technology for privacy-preserving data science and AI.
+
+## Support
+
+For questions about PySyft, reach out via `#support` on <a href="https://slack.openmined.org/">Slack</a>.
+
+# Community
+
+Supported by the OpenMined Foundation, the OpenMined Community is an online network of over 17,000 technologists, researchers, and industry professionals keen to _unlock 1000x more data in every scientific field and industry_.
+
+<a href="https://join.slack.com/t/openmined/shared_invite/zt-2hxwk07i9-HO7u5C7XOgou4Z62VU78zA"><img width=150px src="https://img.shields.io/badge/Join_us-%20slack-purple?logo=slack" /></a>
+
+# Contributors
+
+OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please reach out via <a href="https://github.com/OpenMined/PySyft/issues">Github</a> or <a href="https://join.slack.com/t/openmined/shared_invite/zt-2hxwk07i9-HO7u5C7XOgou4Z62VU78zA/">Slack</a>!
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/contributors_dark.jpg">
+  <img src="docs/img/contributors_light.jpg" alt="Contributors" width="100%" />
+</picture>
+
+# About OpenMined
+
+OpenMined is a non-profit foundation creating technology infrastructure that helps researchers get answers from data without needing a copy or direct access. Our community of technologists is building Syft.
+
+<a href="https://donate.stripe.com/fZe03H0aLdAO59e9AA
+"><img width=200px src="https://img.shields.io/badge/Donate_to-OpenMined-yellow?logo=stripe" /></a>
+
+# Supporters
+
+<table border="0">
+<tr>
+<th align="center">
+<a href="https://sloan.org/"><img src="docs/img/logo_sloan.png" /></a>
+</th>
+<th align="center">
+<a href="https://opensource.fb.com/"><img src="docs/img/logo_meta.png" /></a>
+</th>
+<th align="center">
+<a href="https://pytorch.org/"><img src="docs/img/logo_torch.png" /></a>
+</th>
+<th align="center">
+<a href="https://www.dpmc.govt.nz/">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_nz_dark.png">
+  <img src="docs/img/logo_nz_light.png" />
+</picture>
+</a>
+</th>
+<th align="center">
+<a href="https://twitter.com/"><img src="docs/img/logo_twitter.png" /></a>
+</th>
+<th align="center">
+<a href="https://google.com/"><img src="docs/img/logo_google.png" /></a>
+</th>
+<th align="center">
+<a href="https://microsoft.com/"><img src="docs/img/logo_microsoft.png" /></a>
+</th>
+<th align="center">
+<a href="https://omidyar.com/"><img src="docs/img/logo_on.png" /></a>
+</th>
+<th align="center">
+<a href="https://www.udacity.com/"><img src="docs/img/logo_udacity.png" /></a>
+</th>
+<th align="center">
+<a href="https://www.centerfordigitalhealthinnovation.org/">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_cdhi_dark.png">
+  <img src="docs/img/logo_cdhi_light.png" />
+</picture>
+
+</a>
+</th>
+<th align="center">
+<a href="https://arkhn.org/">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_arkhn.png">
+  <img src="docs/img/logo_arkhn_light.png" />
+</picture>
+</a>
+</th>
+</tr>
+</table>
+
+# License
+
+[Apache License 2.0](LICENSE)<br />
+<a href="https://www.flaticon.com/free-icons/person" title="person icons">Person icons created by Freepik - Flaticon</a>
