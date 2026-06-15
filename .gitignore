@@ -13,6 +13,7 @@
 # python stuff
 *__pycache__*
 *.pyc
+*.egg-info/
 *.swp
 *.swo
 *.ipynb_checkpoints*
