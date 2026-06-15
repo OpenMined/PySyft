@@ -1,0 +1,152 @@
+{% extends "base.html" %} {% block title %}New Job Request - {{ job_name }}{%
+endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  New Job Request
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  You have a new job submission in SyftBox that requires your review.
+</p>
+
+{% set info_items = [ {'label': 'Job Name', 'value': job_name}, {'label':
+'From', 'value': submitter}, {'label': 'Submitted', 'value': timestamp |
+datetime if timestamp else 'Just now'}, {'label': 'Status', 'value': 'Pending
+Review', 'badge': 'pending'} ] %} {% include 'components/info_box.html' %}
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  Please review the submitted code before approving this job.
+</p>
+
+{% if job_code %}
+<h2
+  style="
+    color: #2d3748;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 24px 0 12px 0;
+  "
+>
+  Submitted Code
+</h2>
+{% for filename, code in job_code.items() %}
+<div style="margin-bottom: 16px">
+  <div
+    class="code-header"
+    style="
+      background-color: #161b22;
+      color: #e6edf3;
+      padding: 8px 16px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
+        monospace;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px 8px 0 0;
+      border-bottom: 1px solid #30363d;
+    "
+  >
+    {{ filename }}
+  </div>
+  <pre
+    class="code-block"
+    style="
+      background-color: #0d1117;
+      color: #e6edf3;
+      padding: 16px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo,
+        monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      border-radius: 0 0 8px 8px;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 0;
+    "
+  >
+{{ code }}</pre
+  >
+</div>
+{% endfor %} {% endif %} {% if job_url %} {% set button_text = "Review Job" %}
+{% set button_url = job_url %} {% include 'components/button.html' %} {% endif
+%}
+
+<div style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px">
+  <p
+    style="color: #4a5568; font-size: 14px; font-weight: 600; margin: 0 0 8px 0"
+  >
+    If you have email approval switched on, reply to this email with:
+  </p>
+  <table
+    role="presentation"
+    cellspacing="0"
+    cellpadding="0"
+    border="0"
+    style="margin: 8px 0 16px 12px"
+  >
+    <tr>
+      <td style="padding: 4px 0">
+        <code
+          style="
+            background-color: #edf2f7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 13px;
+            color: #2d3748;
+          "
+          >approve</code
+        >
+      </td>
+      <td style="padding: 4px 0 4px 12px; color: #718096; font-size: 13px">
+        &mdash; approve this job
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 4px 0">
+        <code
+          style="
+            background-color: #edf2f7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 13px;
+            color: #2d3748;
+          "
+          >auto-approve</code
+        >
+      </td>
+      <td style="padding: 4px 0 4px 12px; color: #718096; font-size: 13px">
+        &mdash; approve and auto-approve future matching jobs
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 4px 0">
+        <code
+          style="
+            background-color: #edf2f7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 13px;
+            color: #2d3748;
+          "
+          >deny &lt;reason&gt;</code
+        >
+      </td>
+      <td style="padding: 4px 0 4px 12px; color: #718096; font-size: 13px">
+        &mdash; reject this job
+      </td>
+    </tr>
+  </table>
+</div>
+
+<p style="color: #718096; font-size: 14px; margin-top: 16px">
+  <strong>Security Reminder:</strong> Only approve jobs from trusted
+  collaborators. Review the submitted code carefully before execution.
+</p>
+{% endblock %}

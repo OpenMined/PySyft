@@ -1,0 +1,32 @@
+{% extends "base.html" %} {% block title %}Job Rejected - {{ job_name }}{%
+endblock %} {% block content %}
+<h1
+  style="color: #2d3748; font-size: 24px; font-weight: 600; margin: 0 0 16px 0"
+>
+  Job Rejected
+</h1>
+
+<p
+  style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0"
+>
+  A job submission did not match your approval criteria and was not executed.
+</p>
+
+{% set info_items = [ {'label': 'Job Name', 'value': job_name}, {'label':
+'From', 'value': ds_email}, {'label': 'Status', 'value': 'Rejected', 'badge':
+'error'}, {'label': 'Reason', 'value': reason} ] %} {% include
+'components/info_box.html' %}
+
+<p
+  style="
+    color: #718096;
+    font-size: 14px;
+    margin-top: 30px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 20px;
+  "
+>
+  If this was unexpected, review your approval configuration with
+  <code>syft-bg set-script</code> to update the approved scripts for this peer.
+</p>
+{% endblock %}

@@ -1,0 +1,22 @@
+<style>
+{{ css }}
+</style>
+<div class="model-container">
+    <div class="model-header">
+        {{ obj.__class__.__name__ }}{% if obj_name %}: {{ obj_name }}{% endif %}
+    </div>
+    <div class="model-content">
+        <table class="model-table">
+            {% for field in display_fields %}
+            <tr>
+                <td class="field-name">{{ field }}</td>
+                <td class="field-value">{{ field_values[field]|safe }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        {% for path_display in path_displays %}
+        {{ path_display|safe }}
+        {% endfor %}
+    </div>
+</div>

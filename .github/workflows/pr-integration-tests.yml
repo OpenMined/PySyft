@@ -1,0 +1,50 @@
+name: 'PR: Integration Tests'
+
+on:
+  pull_request:
+
+  workflow_call:
+
+concurrency:
+  group: integration-tests
+  cancel-in-progress: false
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install the project
+        run: uv sync --all-extras
+
+      - name: Install just
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+
+      - name: Create credentials directory
+        run: mkdir -p credentials
+
+      - name: Set up DO credentials
+        env:
+          TOKEN_DO_JSON: ${{ secrets.TOKEN_DO_JSON }}
+        run: printf '%s' "$TOKEN_DO_JSON" > credentials/token_do.json
+
+      - name: Set up DS credentials
+        env:
+          TOKEN_DS_JSON: ${{ secrets.TOKEN_DS_JSON }}
+        run: printf '%s' "$TOKEN_DS_JSON" > credentials/token_ds.json
+
+      - name: Run integration tests (without unit coverage)
+        env:
+          AI_AUDIT_EMAIL_DO: ${{ secrets.AI_AUDIT_EMAIL_DO }}
+          AI_AUDIT_EMAIL_DS: ${{ secrets.AI_AUDIT_EMAIL_DS }}
+        run: just test-integration-without-unit-coverage

@@ -1,0 +1,48 @@
+{# Reusable button component #} {# Usage: {% include 'components/button.html'
+with context %} #} {# Required: button_text, button_url #} {# Optional:
+button_style (default: 'primary') #} {% set style = button_style |
+default('primary') %}
+
+<div class="button-container">
+  <!--[if mso]>
+    <v:roundrect
+      xmlns:v="urn:schemas-microsoft-com:vml"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      href="{{ button_url }}"
+      style="height: 48px; v-text-anchor: middle; width: 200px"
+      arcsize="10%"
+      strokecolor="#667eea"
+      fillcolor="#667eea"
+    >
+      <w:anchorlock />
+      <center
+        style="
+          color: #ffffff;
+          font-family: sans-serif;
+          font-size: 16px;
+          font-weight: bold;
+        "
+      >
+        {{ button_text }}
+      </center>
+    </v:roundrect>
+  <![endif]-->
+  <!--[if !mso]><!-->
+  <a
+    href="{{ button_url }}"
+    class="button"
+    style="
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 14px 32px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 16px;
+      display: inline-block;
+    "
+  >
+    {{ button_text }} &rarr;
+  </a>
+  <!--<![endif]-->
+</div>
