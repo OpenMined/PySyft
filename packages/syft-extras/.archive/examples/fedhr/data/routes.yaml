@@ -1,5 +1,0 @@
-routes:
-  read:
-    file: data.py
-    methods:
-      GET: {}
