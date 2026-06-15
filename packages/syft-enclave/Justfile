@@ -2,6 +2,7 @@ dockerhub_username := "openminedreleasebot"
 image_base := "docker.io/openminedreleasebot/syft-client-enclave"
 image := image_base + ":latest"
 machine_type_default := "n2d-standard-2"
+large_machine_type_default := "n2d-highmem-32"
 vm_default := "syft-enclave-vm"
 secret_name_default := "syft-enclave-token"
 sa_name_default := "syft-enclave-service-account"
@@ -241,6 +242,42 @@ start email name=vm_default machine_type=machine_type_default job-timeout="": _p
       --tags=http-server \
       --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
 
+# Same as `start` but on a large machine (n2d-highmem-32) with a 200GB
+# boot disk and a large container /dev/shm. Production hardened image,
+# no SSH. For memory-heavy jobs (e.g. loading large models). Token is
+# fetched via the attached service account + Secret Manager — requires
+# `just provision-secret-sa <token>` first.
+[group('deploy')]
+start-large email name=vm_default machine_type=large_machine_type_default job-timeout="": _provision
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    [ -n "$sa_email" ] || { echo "Error: SA not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
+
+    # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
+    job_timeout_env=""
+    if [ -n "{{job-timeout}}" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job-timeout}}"
+    fi
+
+    gcloud compute instances create {{name}} \
+      --project="$project_id" \
+      --zone="$zone" \
+      --machine-type={{machine_type}} \
+      --confidential-compute-type=SEV \
+      --shielded-secure-boot \
+      --maintenance-policy=MIGRATE \
+      --min-cpu-platform="AMD Milan" \
+      --image-family=confidential-space \
+      --image-project=confidential-space-images \
+      --boot-disk-size=200GB \
+      --scopes=cloud-platform \
+      --service-account="$sa_email" \
+      --tags=http-server \
+      --metadata="^~^tee-image-reference={{image}}~tee-dev-shm-size-kb=125000000~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
+
 
 [group('deploy')]
 start-debug email name=vm_default machine_type=machine_type_default job-timeout="" use_encryption="false": _provision
@@ -271,6 +308,41 @@ start-debug email name=vm_default machine_type=machine_type_default job-timeout=
       --service-account="$sa_email" \
       --tags=http-server \
       --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Always~tee-container-log-redirect=true~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION={{use_encryption}}${job_timeout_env}"
+
+# Same as `start-debug` but on a large machine (n2d-highmem-32) with a
+# 200GB boot disk and a large container /dev/shm. For memory-heavy jobs
+# (e.g. loading large models). Token is fetched via the attached service
+# account + Secret Manager — requires `just provision-secret-sa <token>`.
+[group('deploy')]
+start-debug-large email name=vm_default machine_type=large_machine_type_default job-timeout="" use_encryption="false": _provision
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    [ -n "$sa_email" ] || { echo "Error: SA not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
+
+    # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
+    job_timeout_env=""
+    if [ -n "{{job-timeout}}" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job-timeout}}"
+    fi
+
+    gcloud compute instances create {{name}} \
+      --project="$project_id" \
+      --zone="$zone" \
+      --machine-type={{machine_type}} \
+      --confidential-compute-type=SEV \
+      --shielded-secure-boot \
+      --maintenance-policy=MIGRATE \
+      --min-cpu-platform="AMD Milan" \
+      --image-family=confidential-space-debug \
+      --image-project=confidential-space-images \
+      --boot-disk-size=200GB \
+      --scopes=cloud-platform \
+      --service-account="$sa_email" \
+      --tags=http-server \
+      --metadata="^~^tee-image-reference={{image}}~tee-dev-shm-size-kb=125000000~tee-restart-policy=Always~tee-container-log-redirect=true~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION={{use_encryption}}${job_timeout_env}"
 
 
 # Delete the enclave VM and remove the firewall rule
@@ -396,6 +468,17 @@ ssh name=vm_default: _whoami
     gcloud compute ssh {{name}} \
       --project="$project_id" \
       --zone="$zone"
+
+# SSH into the tee-container inside the VM via ctr exec (only works on debug image)
+[group('inspect')]
+ssh-container name=vm_default: _whoami
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    gcloud compute ssh {{name}} \
+      --project="$project_id" \
+      --zone="$zone" \
+      -- -t 'sudo ctr tasks exec -t --exec-id shell-$$ tee-container /bin/sh'
 
 
 # Set OM_DOCKER_LOGIN + OM_DOCKER_PW to skip the docker-login prompt.
