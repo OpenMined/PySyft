@@ -149,7 +149,7 @@ jobs:
       - name: Upload to PyPI
         id: publish
         env:
-          TWINE_USERNAME: ${{ secrets.PYPI_UNAME_SYFT_CLIENT }}
+          TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT_CLIENT }}
         run: |
           git pull

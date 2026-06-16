@@ -61,7 +61,7 @@ jobs:
       - name: Publish to PyPI
         working-directory: packages/syft-permissions
         env:
-          TWINE_USERNAME: ${{ secrets.PYPI_UNAME_SYFT_PERMISSIONS }}
+          TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT_PERMISSIONS }}
         run: uvx twine upload --verbose dist/*
 
