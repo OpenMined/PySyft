@@ -16,7 +16,7 @@ import io
 import keyword
 import tokenize
 
-from .policy import DEFAULT_KEEP, METADATA_ATTRS
+from .policy import DEFAULT_KEEP
 from .verifier import FileScan, _dotted, _is_dunder, _normalize_ranges
 
 _BLANK = "■"  # ■
@@ -99,8 +99,9 @@ def obfuscate(source: str, private, scan: FileScan) -> str:
             edits.append((srow, scol, erow, ecol, _BLANK))
         elif tok.type == tokenize.COMMENT:
             edits.append(
-                (srow, scol, erow, ecol, "")
-            )  # drop comments (incl. commented-out configs)
+                (srow, scol, erow, ecol, "# THIS COMMENT WAS OBFUSCATED")
+            )  # strip comment text but keep a placeholder (incl. commented-out
+            #    configs) so the artifact stays line-aligned without long blank runs
 
         if tok.type not in (
             tokenize.NL,
@@ -115,7 +116,7 @@ def obfuscate(source: str, private, scan: FileScan) -> str:
 
 # ── build the deterministic rename maps from the AST ─────────────────────────────────────
 def _build_maps(tree: ast.Module, ranges, scan: FileScan):
-    keep_attrs: set[str] = set(METADATA_ATTRS)
+    keep_attrs: set[str] = set()
     mangle_attr_names: set[str] = set()
     value_occurrences: list[tuple[tuple[int, int], str]] = []
     private_classes = _names_of(tree, ast.ClassDef, ranges)

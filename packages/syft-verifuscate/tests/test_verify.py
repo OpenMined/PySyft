@@ -9,8 +9,8 @@ from syft_verifuscate import Policy, verify
 FIXTURES = Path(__file__).parent / "fixtures"
 REPO_ROOT = Path(__file__).parents[3]
 
-ALLOW_FUNCTIONS = "jax.*, flax.linen.*"
-ALLOW_METHODS = "arithmetic, indexing, comparison, metadata"
+ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
+ALLOW_METHODS = ["arithmetic", "indexing", "comparison"]
 
 
 def _policy():
@@ -42,6 +42,8 @@ def test_compliant_fixture_passes():
         ("method-on-value", "a = x.reshape(8, -1)\n"),
         ("method-on-value", "b = '{0.__class__}'.format(payload)\n"),
         ("decorator", "@evil\ndef f():\n    return 1\n"),
+        # @property runs code on a bare attribute access — denied like any non-allowlisted decorator
+        ("decorator", "class B:\n    @property\n    def w(self):\n        return 1\n"),
         ("dunder-attr", "c = obj.__class__\n"),
     ],
 )
@@ -70,7 +72,7 @@ def test_jax_denylist_beats_allow():
 def test_operator_bundle_must_be_enabled():
     source = "r = a + b\n"
     # arithmetic NOT enabled -> the BinOp is rejected
-    policy = Policy.parse(ALLOW_FUNCTIONS, "indexing")
+    policy = Policy.parse(ALLOW_FUNCTIONS, ["indexing"])
     result = verify(source, [[1, 1]], policy)
     assert "bundle-disabled" in {v.code for v in result.violations}
 

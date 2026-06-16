@@ -23,12 +23,10 @@ OPERATOR_BUNDLES: dict[str, tuple[type[ast.AST], ...]] = {
     "comparison": (ast.Compare, ast.BoolOp),
     "indexing": (ast.Subscript, ast.Slice),
 }
-# The metadata bundle is special: it allows a few pure *metadata reads* on a value (ints/dtype,
-# no side effects). Transforms like `.T` are NOT here — they're library-specific and must be wrapped
-# (research approach-B §3.6.2/§3.6.3).
-METADATA_ATTRS: frozenset[str] = frozenset({"shape", "ndim", "dtype", "size"})
-
-ALL_BUNDLES: frozenset[str] = frozenset(OPERATOR_BUNDLES) | {"metadata"}
+# NOTE: there is deliberately no metadata bundle. Reads like `.shape`/`.ndim`/`.dtype` on an opaque
+# value are named attribute accesses we can't pin to a type, so they're rejected like any other
+# attr-on-value and must be routed through a visible wrapper function (research approach-B §3.6.2).
+ALL_BUNDLES: frozenset[str] = frozenset(OPERATOR_BUNDLES)
 
 # ── Dangerous JAX / serialization surface — denylist BEATS the allow (approach-B §3.2/§3.3) ──
 # Host-callback / IO / FFI / serialization escape hatches that can run host code or touch disk.
@@ -84,12 +82,15 @@ BANNED_NAMES: frozenset[str] = frozenset(
     }
 )
 
-# Decorators allowed above a def/class in the hidden region (approach-B §3.4 / §3.5.1 #4).
+# Decorators allowed above a def/class in the hidden region (approach-B §3.1 #4).
+# NOTE: `property` (and any descriptor) is deliberately absent — it runs code on a bare attribute
+# access (`block.w`), the same attribute-access-hook class banned in §3.1 #6, so default-deny
+# rejects it. Pure inference needs only setup/__call__.
 ALLOWED_DECORATORS: frozenset[str] = frozenset(
     {"nn.compact", "jax.jit", "jax.named_scope", "flax.linen.compact"}
 )
 
-# The only dunder/hook methods a model class may *define* (approach-B §3.5.1 #6).
+# The only dunder/hook methods a model class may *define* (approach-B §3.1 #6).
 ALLOWED_DUNDER_DEFS: frozenset[str] = frozenset({"__call__", "setup", "__post_init__"})
 
 # Names always preserved verbatim by the obfuscator and never treated as opaque values.
@@ -107,9 +108,13 @@ class Policy:
     reserved: set[str] = field(default_factory=set)
 
     @classmethod
-    def parse(cls, allow_functions: str = "", allow_methods: str = "") -> "Policy":
-        functions = _split(allow_functions)
-        methods = set(_split(allow_methods))
+    def parse(
+        cls,
+        allow_functions: list[str] | None = None,
+        allow_methods: list[str] | None = None,
+    ) -> "Policy":
+        functions = _clean(allow_functions)
+        methods = set(_clean(allow_methods))
         unknown = methods - ALL_BUNDLES
         if unknown:
             raise ValueError(
@@ -135,8 +140,8 @@ class Policy:
         return hashlib.sha256(blob.encode()).hexdigest()[:16]
 
 
-def _split(spec: str) -> list[str]:
-    return [part.strip() for part in spec.split(",") if part.strip()]
+def _clean(items: list[str] | None) -> list[str]:
+    return [s.strip() for s in (items or []) if s.strip()]
 
 
 def _path_matches(dotted: str, pattern: str) -> bool:

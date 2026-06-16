@@ -8,8 +8,8 @@ import pytest
 from syft_verifuscate import PolicyViolation, run
 
 FIXTURES = Path(__file__).parent / "fixtures"
-ALLOW_FUNCTIONS = "jax.*, flax.linen.*"
-ALLOW_METHODS = "arithmetic, indexing, comparison, metadata"
+ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
+ALLOW_METHODS = ["arithmetic", "indexing", "comparison"]
 
 
 def _private(source: str):

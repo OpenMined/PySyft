@@ -15,7 +15,6 @@ from .policy import (
     ALLOWED_DECORATORS,
     ALLOWED_DUNDER_DEFS,
     BANNED_NAMES,
-    METADATA_ATTRS,
     OPERATOR_BUNDLES,
     Policy,
 )
@@ -325,21 +324,14 @@ class _Checker:
                         f"reference to {self._resolve(dotted)!r} is not allow-listed",
                     )
                 return
-        # Attribute read on an opaque value: allowed only for the metadata bundle (.shape/.ndim/.dtype).
-        if node.attr in METADATA_ATTRS:
-            if not self.policy.bundle_enabled("metadata"):
-                self.add(
-                    node,
-                    "bundle-disabled",
-                    f"attribute read {node.attr!r} needs the 'metadata' bundle",
-                )
-        else:
-            self.add(
-                node,
-                "attr-on-value",
-                f"attribute {node.attr!r} on a value is not a metadata read; "
-                f"route it through a visible wrapper function instead",
-            )
+        # Attribute read on an opaque value (including .shape/.ndim/.dtype): we can't pin the
+        # receiver's type, so it must be routed through a visible wrapper function.
+        self.add(
+            node,
+            "attr-on-value",
+            f"attribute {node.attr!r} on a value is not allowed; "
+            f"route it through a visible wrapper function instead",
+        )
 
     # — operators —
     def _require_bundle(self, node: ast.AST, bundle: str) -> None:

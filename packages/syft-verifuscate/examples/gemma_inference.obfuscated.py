@@ -19,8 +19,8 @@ import sentencepiece as spm
 from flax import linen as nn
 
 
-
-
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
 ░v0 = dict(
     ░v5=■,
     embed_dim=■,
@@ -33,59 +33,59 @@ from flax import linen as nn
     ckpt_subdir="■",
 )
 
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
 
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
 
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
 
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
+# THIS COMMENT WAS OBFUSCATED
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# THIS COMMENT WAS OBFUSCATED
 ░v1 = ■
 ░v2 = ■
 ░v3 = ■
-░v4 = -■  
+░v4 = -■  # THIS COMMENT WAS OBFUSCATED
 
 
 def ░fn1(░v5):
@@ -98,8 +98,8 @@ def ░fn1(░v5):
 
 def ░fn0(░v7, ░v8, ░v9):
     "■"
-    ░v10 = ░v7.shape[-■] // ■
-    ░v11 = (■ / ░v7.shape[-■]) * jnp.arange(░v10, dtype=jnp.float32)
+    ░v10 = shape_of(░v7)[-■] // ■
+    ░v11 = (■ / shape_of(░v7)[-■]) * jnp.arange(░v10, dtype=jnp.float32)
     ░v12 = ░v9**░v11
     ░v13 = ░v8[..., None, None] / ░v12
     ░v14, ░v15 = jnp.sin(░v13), jnp.cos(░v13)
@@ -140,6 +140,11 @@ def _get(module, name):
 def transpose(a):
     """Visible wrapper: matrix transpose (a value transform, not a metadata read)."""
     return a.T
+
+
+def shape_of(x):
+    """Visible wrapper: read an array's shape — an attribute read on a value, not allowed in the hidden region."""
+    return x.shape
 
 
 def append_to(lst, item):
@@ -272,11 +277,11 @@ class Transformer(nn.Module):
         ░v7, ░v51 = self.░a6(░v50)
 
         if ░v29 is None:
-            ░v18 = ░v50.shape[■]
+            ░v18 = shape_of(░v50)[■]
             ░v8 = jnp.arange(░v18)[None, :]
             ░v52 = ░fn2(░v18, ░v19)
         else:
-            ░v53 = ░v29[■][■].shape[■]
+            ░v53 = shape_of(░v29[■][■])[■]
             ░v8 = jnp.array([[░v53]])
             ░v52 = ░fn3(░v53, ░v19)
 

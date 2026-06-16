@@ -26,8 +26,8 @@ class RunResult:
 def run(
     path: str | Path,
     private,
-    allow_functions: str = "",
-    allow_methods: str = "",
+    allow_functions: list[str] | None = None,
+    allow_methods: list[str] | None = None,
     out: str | Path | None = None,
     strict: bool = True,
 ) -> RunResult:
@@ -36,9 +36,9 @@ def run(
     Args:
         path: the inference source file.
         private: list of ``[start, end]`` 1-based inclusive line ranges to hide + verify.
-        allow_functions: comma-separated dotted-path globs callable by name (e.g. ``"jax.*, flax.linen.*"``).
-        allow_methods: comma-separated operator bundles allowed on a value
-            (``arithmetic, indexing, comparison, metadata``).
+        allow_functions: list of dotted-path globs callable by name (e.g. ``["jax.*", "flax.linen.*"]``).
+        allow_methods: list of operator bundles allowed on a value
+            (``["arithmetic", "indexing", "comparison"]``).
         out: where to write the obfuscated file (default ``<stem>.obfuscated.py`` next to the source).
         strict: if True (default), raise ``PolicyViolation`` when verification fails; otherwise return
             a ``RunResult`` with ``ok=False`` and no output written.

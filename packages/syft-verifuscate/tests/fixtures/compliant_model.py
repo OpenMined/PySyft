@@ -1,8 +1,9 @@
 """A tiny verifuscate-compliant Flax-style module (green-path test fixture).
 
 Uses only: allow-listed jax/flax calls by name, self.* calls, operator bundles
-(arithmetic/indexing/comparison/metadata), comprehensions, and bare-name calls — and NO named methods
-on opaque values, no .T, no .append, no dynamic features. So it passes `verify` cleanly.
+(arithmetic/indexing/comparison), comprehensions, and bare-name calls — and NO named methods or
+attribute reads on opaque values (no .shape, no .T, no .append), no dynamic features. So it passes
+`verify` cleanly.
 """
 
 import jax
@@ -36,6 +37,6 @@ class Block(nn.Module):
     def __call__(self, x):
         h = self.norm(x)
         out = x + h
-        if x.shape[-1] > 0:
+        if self.cfg["layers"] > 0:
             out = out * 0.5
         return jnp.sum(out, axis=-1) + out[..., 0]

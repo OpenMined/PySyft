@@ -6,8 +6,8 @@ from pathlib import Path
 from syft_verifuscate import run
 
 FIXTURES = Path(__file__).parent / "fixtures"
-ALLOW_FUNCTIONS = "jax.*, flax.linen.*"
-ALLOW_METHODS = "arithmetic, indexing, comparison, metadata"
+ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
+ALLOW_METHODS = ["arithmetic", "indexing", "comparison"]
 
 
 def _private_from_config(source: str):
