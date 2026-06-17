@@ -1,20 +1,20 @@
-# verifuscate
+# restrict
 
 ## 1. Overview
 
-verifuscate is inspired by **RestrictedPython**: it **default-denies** every dynamic part of Python. It differs in a few ways:
+restrict is inspired by **RestrictedPython**: it **default-denies** every dynamic part of Python. It differs in a few ways:
 
-- **We analyze, we don't run.** verifuscate statically analyzes a source file and **raises if the analyzed part uses any dynamic Python**. Its output is a **report** (the violations, or — on success — an attestation) plus an **obfuscated copy** of the code.
-- **Public / private split.** You mark some lines of the file _private_ and leave the rest _public_. verifuscate analyzes only the **AST of the private part**, and only those private lines are **hidden (obfuscated)** in the emitted artifact; the public lines are copied through and read directly.
+- **We analyze, we don't run.** restrict statically analyzes a source file and **raises if the analyzed part uses any dynamic Python**. Its output is a **report** (the violations, or — on success — an attestation) plus an **obfuscated copy** of the code.
+- **Public / private split.** You mark some lines of the file _private_ and leave the rest _public_. restrict analyzes only the **AST of the private part**, and only those private lines are **hidden (obfuscated)** in the emitted artifact; the public lines are copied through and read directly.
 - **Imports are allowed (and therefore trusted).** Unlike RestrictedPython, the analyzed code may **import libraries** and call into them — which means we **trust those imported classes/functions** (only their allow-listed paths; see §3).
 - **Dynamic Python lives in the public part.** Anything dynamic the author needs (file/tokenizer loading, the generation loop, wrappers around library methods) must be written in the **public** region — where it is read directly — and may be **called by** the private part.
 
 ## 2. Usage
 
 ```python
-import syft_verifuscate as verifuscate
+import syft_restrict as restrict
 
-result = verifuscate.run(
+result = restrict.run(
     "gemma_inference.py",
     obfuscate=[[22, 93], [99, 280]],                              # 1-based ranges: identifiers renamed, constants blanked
     hide=[],                                                      # 1-based ranges: whole line replaced with ■■■■■■■■
@@ -26,7 +26,7 @@ result = verifuscate.run(
 # On a policy violation: raises PolicyViolation naming each offending line (strict=True, the default).
 ```
 
-Use `verifuscate.verify(...)` for the check alone (it returns violations instead of raising), or pass `strict=False` to `run` to get a `RunResult` with `.ok` / `.violations` and no exception.
+Use `restrict.verify(...)` for the check alone (it returns violations instead of raising), or pass `strict=False` to `run` to get a `RunResult` with `.ok` / `.violations` and no exception.
 
 ## 3. The whitelist (for the private region)
 
@@ -191,7 +191,7 @@ Two rules:
        return x.T
    ```
 
-   So the private code writes `transpose(embed_table)`, not `embed_table.T`. The wrapper names are **reserved** — the private region can't rebind them (§3.2.1 #2), so `transpose = evil` is rejected. (Optionally, verifuscate template-checks each wrapper — a type guard plus a single delegated call — so they're machine-checked, not only read.)
+   So the private code writes `transpose(embed_table)`, not `embed_table.T`. The wrapper names are **reserved** — the private region can't rebind them (§3.2.1 #2), so `transpose = evil` is rejected. (Optionally, restrict template-checks each wrapper — a type guard plus a single delegated call — so they're machine-checked, not only read.)
 
 Net effect: **no named method is ever called on an opaque value.** The only thing done _to a value_ is a generic operator; everything library-specific is a named, type-guarded function.
 
@@ -213,10 +213,10 @@ Anything else ⇒ REJECT. Cases (b) keep the rule from being too strict: the mod
 ## 4. Order of operations — verify the private lines BEFORE obfuscating them
 
 ```
-verifuscate.run("file.py", obfuscate=[[84, 280]], hide=[], allow_functions=["jax.*"])
+restrict.run("file.py", obfuscate=[[84, 280]], hide=[], allow_functions=["jax.*"])
    │
    ├─ 1. PARSE the full source  ──► ast.parse(source)
-   │       (verifuscate sees everything; the DO will only get the public part)
+   │       (restrict sees everything; the DO will only get the public part)
    │
    ├─ 2. RESOLVE imports → binding table  (import jax.numpy as jnp ⇒ jnp→jax.numpy)
    │
@@ -234,7 +234,7 @@ verifuscate.run("file.py", obfuscate=[[84, 280]], hide=[], allow_functions=["jax
    │        • no exec/eval/getattr/open/try/with/...    else REJECT
    │        (call-checking is POSITION-INDEPENDENT: defaults,
    │         annotations, class-body stmts are walked too)
-   │   ── if ANY private node fails ⇒ verifuscate ABORTS, emits nothing.
+   │   ── if ANY private node fails ⇒ restrict ABORTS, emits nothing.
    │
    ├─ 4. Only now: MANGLE allowlisted jax calls per allow_functions,
    │        and OBFUSCATE lines 84–280 → ■■■■■■.

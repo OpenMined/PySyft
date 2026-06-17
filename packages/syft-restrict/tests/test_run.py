@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from syft_verifuscate import PolicyViolation, run
+from syft_restrict import PolicyViolation, run
 
 FIXTURES = Path(__file__).parent / "fixtures"
 ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
@@ -33,7 +33,7 @@ def test_run_success_writes_obfuscated_and_certificate(tmp_path):
     assert out.exists() and out.name == "model.obfuscated.py"
     assert result.certificate["source_sha256"]
     assert result.certificate["policy_id"]
-    assert result.certificate["verifuscate_version"]
+    assert result.certificate["restrict_version"]
     assert result.certificate["n_calls_checked"] > 0
 
 

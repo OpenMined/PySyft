@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from syft_verifuscate import Policy, verify
-from syft_verifuscate.verifier import VerifyResult
+from syft_restrict import Policy, verify
+from syft_restrict.verifier import VerifyResult
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 REPO_ROOT = Path(__file__).parents[4]

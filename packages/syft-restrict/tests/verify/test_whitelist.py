@@ -1,6 +1,6 @@
 """Things the hidden region IS allowed to do — these must verify cleanly."""
 
-from syft_verifuscate import verify
+from syft_restrict import verify
 
 from .conftest import FIXTURES, error_codes, make_policy
 

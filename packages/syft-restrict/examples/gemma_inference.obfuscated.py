@@ -89,7 +89,7 @@ from flax import linen as nn
 
 
 def ░fn0(░v1):
-    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
     ■■■■■■■■
 
 
@@ -97,7 +97,7 @@ def ░fn0(░v1):
 
 
 def ░fn1(░v14, ░v15, ░v16):
-    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
     ■■■■■■■■
     ■■■■■■■■
     ■■■■■■■■
@@ -108,7 +108,7 @@ def ░fn1(░v14, ░v15, ░v16):
 
 
 def ░fn2(░v17, ░v7):
-    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
     ■■■■■■■■
     ■■■■■■■■
         ■■■■■■■■
@@ -120,7 +120,7 @@ def ░fn2(░v17, ░v7):
 
 
 def ░fn3(░v18, ░v7):
-    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
     ■■■■■■■■
     ■■■■■■■■
     ■■■■■■■■
@@ -150,18 +150,18 @@ def append_to(lst, item):
 
 class ░Cls0(nn.Module):
     def setup(self):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
 
     def __call__(self, ░v19, ░v14):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
 
 
 class ░Cls1(nn.Module):
     def setup(self):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
 
     def __call__(self, ░v14):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
 
 
@@ -169,14 +169,14 @@ class ░Cls2(nn.Module):
     ░v20: dict
 
     def setup(self):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
 
     def __call__(self, ░v14, ░v15, ░v21, ░v22, ░v23=None):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
 
@@ -209,11 +209,11 @@ class ░Cls2(nn.Module):
 
 class ░Cls3(nn.Module):
     def setup(self):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
 
     def __call__(self, ░v14):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
 
@@ -223,7 +223,7 @@ class ░Cls4(nn.Module):
     ░v22: str = "■"
 
     def setup(self):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
@@ -231,7 +231,7 @@ class ░Cls4(nn.Module):
         ■■■■■■■■
 
     def __call__(self, ░v14, ░v15, ░v21, ░v23=None):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
@@ -245,10 +245,10 @@ class ░Cls5(nn.Module):
     ░v20: dict
 
     def setup(self):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
 
     def __call__(self, ░v24):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
 
 
@@ -256,7 +256,7 @@ class ░Cls6(nn.Module):
     ░v20: dict
 
     def setup(self):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
@@ -265,7 +265,7 @@ class ░Cls6(nn.Module):
         ■■■■■■■■
 
     def __call__(self, ░v25, ░v23=None):
-        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
 

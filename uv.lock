@@ -27,7 +27,7 @@ members = [
     "syft-notebook-ui",
     "syft-permissions",
     "syft-perms",
-    "syft-verifuscate",
+    "syft-restrict",
 ]
 
 [[package]]
@@ -3710,7 +3710,7 @@ test = [
     { name = "pytest-rerunfailures" },
     { name = "pytest-xdist" },
     { name = "syft-enclave" },
-    { name = "syft-verifuscate" },
+    { name = "syft-restrict" },
 ]
 
 [package.metadata]
@@ -3758,7 +3758,7 @@ test = [
     { name = "pytest-rerunfailures", specifier = ">=14.0" },
     { name = "pytest-xdist", specifier = ">=3.0.0" },
     { name = "syft-enclave", editable = "packages/syft-enclave" },
-    { name = "syft-verifuscate", editable = "packages/syft-verifuscate" },
+    { name = "syft-restrict", editable = "packages/syft-restrict" },
 ]
 
 [[package]]
@@ -3893,9 +3893,9 @@ dependencies = [
 requires-dist = [{ name = "syft-permissions", editable = "packages/syft-permissions" }]
 
 [[package]]
-name = "syft-verifuscate"
+name = "syft-restrict"
 version = "0.1.0"
-source = { editable = "packages/syft-verifuscate" }
+source = { editable = "packages/syft-restrict" }
 dependencies = [
     { name = "pydantic" },
 ]

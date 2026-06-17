@@ -1,13 +1,13 @@
-"""Exceptions raised by syft-verifuscate."""
+"""Exceptions raised by syft-restrict."""
 
 from __future__ import annotations
 
 
-class VerifuscateError(Exception):
-    """Base class for all verifuscate errors."""
+class RestrictError(Exception):
+    """Base class for all restrict errors."""
 
 
-class PolicyViolation(VerifuscateError):
+class PolicyViolation(RestrictError):
     """Raised by ``run(..., strict=True)`` when the private region fails verification.
 
     The offending findings are attached as ``.violations`` (a list of ``Violation``).
@@ -19,6 +19,6 @@ class PolicyViolation(VerifuscateError):
             f"  line {v.line}: [{v.code}] {v.message}" for v in self.violations
         )
         super().__init__(
-            f"verifuscate refused: {len(self.violations)} policy violation(s) in the private region:\n"
+            f"restrict refused: {len(self.violations)} policy violation(s) in the private region:\n"
             f"{lines}"
         )

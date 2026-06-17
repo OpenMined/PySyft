@@ -3,7 +3,7 @@
 import shutil
 from pathlib import Path
 
-from syft_verifuscate import run
+from syft_restrict import run
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]

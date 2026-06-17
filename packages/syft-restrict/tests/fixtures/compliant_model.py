@@ -1,4 +1,4 @@
-"""A tiny verifuscate-compliant Flax-style module (green-path test fixture).
+"""A tiny restrict-compliant Flax-style module (green-path test fixture).
 
 Uses only: allow-listed jax/flax calls by name, self.* calls, operator bundles
 (arithmetic/indexing/comparison), comprehensions, and bare-name calls — and NO named methods or

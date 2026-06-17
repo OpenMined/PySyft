@@ -75,7 +75,7 @@ def run(
     certificate = {
         "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
         "policy_id": policy.policy_id(),
-        "verifuscate_version": _version(),
+        "restrict_version": _version(),
         "private_ranges": [list(r) for r in _normalize_ranges(private)],
         "obfuscate_ranges": [list(r) for r in _normalize_ranges(obfuscate_ranges)],
         "hide_ranges": [list(r) for r in _normalize_ranges(hide_ranges)],

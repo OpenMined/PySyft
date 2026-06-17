@@ -6,7 +6,7 @@ stay *visible* (glue) and only the usage below them is marked private.
 
 import pytest
 
-from syft_verifuscate import verify
+from syft_restrict import verify
 
 from .conftest import error_codes, make_policy
 

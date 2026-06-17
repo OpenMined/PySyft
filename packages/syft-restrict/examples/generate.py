@@ -15,7 +15,7 @@ whole lines with a ■■■■■■■■ marker. The verified region is their
 import json
 from pathlib import Path
 
-from syft_verifuscate import run
+from syft_restrict import run
 
 EX = Path(__file__).parent
 

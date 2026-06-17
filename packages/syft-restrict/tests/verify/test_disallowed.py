@@ -2,7 +2,7 @@
 
 import pytest
 
-from syft_verifuscate import verify
+from syft_restrict import verify
 
 from .conftest import error_codes
 

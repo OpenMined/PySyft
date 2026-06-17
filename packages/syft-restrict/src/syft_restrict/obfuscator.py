@@ -23,7 +23,7 @@ _BLANK = "■"  # ■ — replaces a single constant/string token (obfuscate mod
 _HIDE = "■■■■■■■■"  # replaces a whole line's code, indentation kept (hide mode)
 _HIDE_NOTE = (
     "# hidden/obfuscated lines can only execute restricted python, "
-    "see verifuscate docs for more details"
+    "see restrict docs for more details"
 )
 
 # Builtins kept readable (they reveal nothing about the architecture).
