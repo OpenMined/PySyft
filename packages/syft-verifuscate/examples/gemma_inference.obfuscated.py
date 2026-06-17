@@ -19,18 +19,18 @@ import sentencepiece as spm
 from flax import linen as nn
 
 
-# THIS COMMENT WAS OBFUSCATED
-# THIS COMMENT WAS OBFUSCATED
+# ── Model config ─────────────────────────────────────────────────────────────
+# Active model config. Comment/uncomment to switch sizes.
 ░v0 = dict(
+    ░v1=■,
+    ░v2=■,
+    ░v3=■,
+    ░v4=■,
     ░v5=■,
-    embed_dim=■,
-    hidden_dim=■,
-    num_heads=■,
-    num_kv_heads=■,
-    head_dim=■,
-    ░v19=■,
-    kaggle_handle="■",
-    ckpt_subdir="■",
+    ░v6=■,
+    ░v7=■,
+    ░v8="■",
+    ░v9="■",
 )
 
 # THIS COMMENT WAS OBFUSCATED
@@ -82,51 +82,51 @@ from flax import linen as nn
 # THIS COMMENT WAS OBFUSCATED
 
 # THIS COMMENT WAS OBFUSCATED
-░v1 = ■
-░v2 = ■
-░v3 = ■
-░v4 = -■  # THIS COMMENT WAS OBFUSCATED
+░v10 = ■
+░v11 = ■
+░v12 = ■
+░v13 = -■  # THIS COMMENT WAS OBFUSCATED
 
 
-def ░fn1(░v5):
-    ░v6 = ("■",) * ■ + ("■",)
-    return (░v6 * ((░v5 + ■) // ■))[:░v5]
+def ░fn0(░v1):
+    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+    ■■■■■■■■
 
 
 # ── Standalone helpers ────────────────────────────────────────────────────
 
 
-def ░fn0(░v7, ░v8, ░v9):
-    "■"
-    ░v10 = shape_of(░v7)[-■] // ■
-    ░v11 = (■ / shape_of(░v7)[-■]) * jnp.arange(░v10, dtype=jnp.float32)
-    ░v12 = ░v9**░v11
-    ░v13 = ░v8[..., None, None] / ░v12
-    ░v14, ░v15 = jnp.sin(░v13), jnp.cos(░v13)
-    ░v16, ░v17 = ░v7[..., :░v10], ░v7[..., ░v10:]
-    return jnp.concatenate([░v16 * ░v15 - ░v17 * ░v14, ░v17 * ░v15 + ░v16 * ░v14], axis=-■)
+def ░fn1(░v14, ░v15, ░v16):
+    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+    ■■■■■■■■
+    ■■■■■■■■
+    ■■■■■■■■
+    ■■■■■■■■
+    ■■■■■■■■
+    ■■■■■■■■
+    ■■■■■■■■
 
 
-def ░fn2(░v18, ░v19):
-    "■"
-    ░v20 = jnp.tril(jnp.ones((░v18, ░v18), dtype=jnp.bool_))
-    ░v21 = jnp.triu(
-        jnp.ones((░v18, ░v18), dtype=jnp.bool_), ░v32=-(░v19 - ■)
-    )
-    return {
-        "■": (░v20 & ░v21)[None, None],
-        "■": ░v20[None, None],
-    }
+def ░fn2(░v17, ░v7):
+    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+    ■■■■■■■■
+    ■■■■■■■■
+        ■■■■■■■■
+    ■■■■■■■■
+    ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
+    ■■■■■■■■
 
 
-def ░fn3(░v22, ░v19):
-    "■"
-    ░v23 = ░v22 + ■
-    ░v8 = jnp.arange(░v23)
-    return {
-        "■": (░v8 >= ░v22 - ░v19 + ■)[None, None, None, :],
-        "■": jnp.ones((■, ■, ■, ░v23), dtype=jnp.bool_),
-    }
+def ░fn3(░v18, ░v7):
+    ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+    ■■■■■■■■
+    ■■■■■■■■
+    ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
+    ■■■■■■■■
 
 
 # ── Flax modules ───────────────────────────────────────────────────────────
@@ -135,11 +135,6 @@ def ░fn3(░v22, ░v19):
 def _get(module, name):
     """Read a pre-loaded param without shape checking."""
     return module.variable("params", name, lambda: None).value
-
-
-def transpose(a):
-    """Visible wrapper: matrix transpose (a value transform, not a metadata read)."""
-    return a.T
 
 
 def shape_of(x):
@@ -155,146 +150,146 @@ def append_to(lst, item):
 
 class ░Cls0(nn.Module):
     def setup(self):
-        self.░a20 = _get(self, "■")
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
 
-    def __call__(self, ░v24, ░v7):
-        return jnp.einsum(░v24, ░v7, self.░a20)
+    def __call__(self, ░v19, ░v14):
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
 
 
 class ░Cls1(nn.Module):
     def setup(self):
-        self.░a19 = _get(self, "■")
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
 
-    def __call__(self, ░v7):
-        ░v25 = jnp.mean(jnp.square(░v7), axis=-■, keepdims=True)
-        return ░v7 * jax.lax.rsqrt(░v25 + ■) * (■ + self.░a19)
+    def __call__(self, ░v14):
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■
 
 
 class ░Cls2(nn.Module):
-    ░v26: dict
+    ░v20: dict
 
     def setup(self):
-        self.░a18 = ░Cls0()
-        self.░a10 = ░Cls0()
-        self.░a1 = ░Cls1()
-        self.░a0 = ░Cls1()
-        self.░a4 = ░Cls0()
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
 
-    def __call__(self, ░v7, ░v8, ░v27, ░v28, ░v29=None):
-        ░v30 = self.░a18("■", ░v7)
-        ░v31 = self.░a10("■", ░v7)
-        ░v32, ░v33 = ░v31[■], ░v31[■]
+    def __call__(self, ░v14, ░v15, ░v21, ░v22, ░v23=None):
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■
+        ■■■■■■■■
 
-        ░v30 = self.░a1(░v30)
-        ░v32 = self.░a0(░v32)
+        ■■■■■■■■
+        ■■■■■■■■
 
-        ░v34 = ░v2 if ░v28 == "■" else ░v3
-        ░v30 = ░fn0(░v30, ░v8, ░v34)
-        ░v32 = ░fn0(░v32, ░v8, ░v34)
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
 
-        if ░v29 is not None:
-            ░v35, ░v36 = ░v29
-            ░v32 = jnp.concatenate([░v35, ░v32], axis=■)
-            ░v33 = jnp.concatenate([░v36, ░v33], axis=■)
-        ░v37 = (░v32, ░v33)
+        ■■■■■■■■
+            ■■■■■■■■
+            ■■■■■■■■
+            ■■■■■■■■
+        ■■■■■■■■
 
-        ░v30 = ░v30 * (self.░a5["■"] ** -■)
+        ■■■■■■■■
 
-        ░v38 = self.░a5["■"] // self.░a5["■"]
-        ░v39 = jnp.repeat(░v32, ░v38, axis=■)
-        ░v40 = jnp.repeat(░v33, ░v38, axis=■)
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
 
-        ░v41 = jnp.einsum("■", ░v30, ░v39)
-        ░v41 = jnp.where(░v27, ░v41, ░v4)
-        ░v42 = jax.nn.softmax(░v41, axis=-■)
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
 
-        ░v43 = jnp.einsum("■", ░v42, ░v40)
-        return self.░a4("■", ░v43), ░v37
+        ■■■■■■■■
+        ■■■■■■■■
 
 
 class ░Cls3(nn.Module):
     def setup(self):
-        self.░a8 = ░Cls0()
-        self.░a12 = ░Cls0()
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■
 
-    def __call__(self, ░v7):
-        ░v44 = self.░a8("■", ░v7)
-        ░v45 = jax.nn.gelu(░v44[:, :, ■, :]) * ░v44[:, :, ■, :]
-        return self.░a12("■", ░v45)
-
-
-class ░Cls5(nn.Module):
-    ░v26: dict
-    ░v28: str = "■"
-
-    def setup(self):
-        self.░a16 = ░Cls1()
-        self.░a2 = ░Cls2(░v26=self.░a5)
-        self.░a14 = ░Cls1()
-        self.░a17 = ░Cls1()
-        self.░a13 = ░Cls3()
-        self.░a15 = ░Cls1()
-
-    def __call__(self, ░v7, ░v8, ░v27, ░v29=None):
-        ░v45 = self.░a16(░v7)
-        ░v45, ░v37 = self.░a2(░v45, ░v8, ░v27, self.░a3, ░v29)
-        ░v45 = self.░a14(░v45)
-        ░v7 = ░v7 + ░v45
-        ░v45 = self.░a17(░v7)
-        ░v45 = self.░a13(░v45)
-        ░v45 = self.░a15(░v45)
-        return ░v7 + ░v45, ░v37
+    def __call__(self, ░v14):
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■
+        ■■■■■■■■
 
 
 class ░Cls4(nn.Module):
-    ░v26: dict
+    ░v20: dict
+    ░v22: str = "■"
 
     def setup(self):
-        self.░a9 = _get(self, "■")
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
 
-    def __call__(self, ░v46):
-        ░v47 = self.░a9
-        return ░v47[░v46] * jnp.sqrt(float(self.░a5["■"])), ░v47
+    def __call__(self, ░v14, ░v15, ░v21, ░v23=None):
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
 
 
-class Transformer(nn.Module):
-    ░v26: dict
+class ░Cls5(nn.Module):
+    ░v20: dict
 
     def setup(self):
-        ░v5 = self.░a5["■"]
-        ░v48 = ░fn1(░v5)
-        self.░a6 = ░Cls4(░v26=self.░a5)
-        self.░a11 = [
-            ░Cls5(░v26=self.░a5, ░v28=░v48[░v49]) for ░v49 in range(░v5)
-        ]
-        self.░a7 = ░Cls1()
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
 
-    def __call__(self, ░v50, ░v29=None):
-        ░v19 = self.░a5["■"]
-        ░v5 = self.░a5["■"]
-        ░v48 = ░fn1(░v5)
+    def __call__(self, ░v24):
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■
 
-        ░v7, ░v51 = self.░a6(░v50)
 
-        if ░v29 is None:
-            ░v18 = shape_of(░v50)[■]
-            ░v8 = jnp.arange(░v18)[None, :]
-            ░v52 = ░fn2(░v18, ░v19)
-        else:
-            ░v53 = shape_of(░v29[■][■])[■]
-            ░v8 = jnp.array([[░v53]])
-            ░v52 = ░fn3(░v53, ░v19)
+class ░Cls6(nn.Module):
+    ░v20: dict
 
-        ░v37 = []
-        for ░v49 in range(░v5):
-            ░v54 = ░v29[░v49] if ░v29 is not None else None
-            ░v55 = self.░a11[░v49]
-            ░v7, ░v56 = ░v55(░v7, ░v8, ░v52[░v48[░v49]], ░v54)
-            ░v37 = append_to(░v37, ░v56)
+    def setup(self):
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
+            ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
 
-        ░v7 = self.░a7(░v7)
-        ░v41 = ░v7 @ transpose(░v51)
-        return ░v41, ░v37
+    def __call__(self, ░v25, ░v23=None):
+        ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see verifuscate docs for more details
+        ■■■■■■■■
+        ■■■■■■■■
+
+        ■■■■■■■■
+
+        ■■■■■■■■
+            ■■■■■■■■
+            ■■■■■■■■
+            ■■■■■■■■
+        ■■■■■■■■
+            ■■■■■■■■
+            ■■■■■■■■
+            ■■■■■■■■
+
+        ■■■■■■■■
+        ■■■■■■■■
+            ■■■■■■■■
+            ■■■■■■■■
+            ■■■■■■■■
+            ■■■■■■■■
+
+        ■■■■■■■■
+        ■■■■■■■■
+        ■■■■■■■■
 
 
 # ── Weight loading ─────────────────────────────────────────────────────────

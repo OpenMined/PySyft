@@ -9,7 +9,8 @@ calls, operators, and attribute reads pass. It never raises on a policy issue �
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass, field
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from .policy import (
     ALLOWED_DECORATORS,
@@ -93,22 +94,21 @@ _BANNED_NODES: tuple[type[ast.AST], ...] = (
 )
 
 
-@dataclass(frozen=True)
-class Violation:
+class Violation(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     line: int
     code: str
     message: str
 
 
-@dataclass
-class VerifyResult:
+class VerifyResult(BaseModel):
     ok: bool
-    violations: list[Violation] = field(default_factory=list)
+    violations: list[Violation] = Field(default_factory=list)
     n_calls_checked: int = 0
 
 
-@dataclass
-class FileScan:
+class FileScan(BaseModel):
     """Names harvested from the whole file, used to classify calls in the hidden region."""
 
     bindings: dict[str, str]  # alias -> fully-qualified module path (jnp -> jax.numpy)
@@ -167,7 +167,9 @@ class _Checker:
         )  # Attribute nodes already judged as a call func
 
     def add(self, node: ast.AST, code: str, message: str) -> None:
-        self.violations.append(Violation(getattr(node, "lineno", 0), code, message))
+        self.violations.append(
+            Violation(line=getattr(node, "lineno", 0), code=code, message=message)
+        )
 
     def visit(self, node: ast.AST) -> None:
         """Walk the tree; enforce only on nodes inside the private ranges, recurse everywhere."""
@@ -218,6 +220,7 @@ class _Checker:
 
     # — defs / classes —
     def _check_def(self, node: ast.FunctionDef) -> None:
+        # Checks a function def: its decorators, and that it defines no non-allow-listed dunder.
         self._check_decorators(node)
         if _is_dunder(node.name) and node.name not in ALLOWED_DUNDER_DEFS:
             self.add(
@@ -227,6 +230,7 @@ class _Checker:
             )
 
     def _check_class(self, node: ast.ClassDef) -> None:
+        # Checks a class def: its decorators, no class keywords (e.g. metaclass=), and allow-listed bases.
         self._check_decorators(node)
         if node.keywords:
             self.add(
@@ -248,6 +252,7 @@ class _Checker:
                 )
 
     def _check_decorators(self, node) -> None:
+        # Checks that every decorator on a def/class resolves to one on the decorator allow-list.
         for dec in node.decorator_list:
             target = dec.func if isinstance(dec, ast.Call) else dec
             dotted = _dotted(target)
@@ -261,6 +266,7 @@ class _Checker:
 
     # — calls —
     def _check_call(self, node: ast.Call) -> None:
+        # Checks a call: bans dynamic-escape builtins by name and routes attribute-calls for vetting.
         self.n_calls += 1
         func = node.func
         if isinstance(func, ast.Name):
@@ -276,6 +282,7 @@ class _Checker:
         # The value's provenance is checked elsewhere; calling it (its __call__) is allowed.
 
     def _check_call_attribute(self, call: ast.Call, func: ast.Attribute) -> None:
+        # Checks a dotted call: allows self/cls methods, vets library calls, bans methods on opaque values.
         self._call_funcs.add(
             id(func)
         )  # so _check_attribute doesn't re-flag the same node
@@ -302,6 +309,7 @@ class _Checker:
 
     # — attribute reads (not the func of a call) —
     def _check_attribute(self, node: ast.Attribute) -> None:
+        # Checks an attribute read: bans dunders, vets library refs, bans reads on opaque values.
         if id(node) in self._call_funcs:
             return  # already judged as a call's function position by _check_call_attribute
         if _is_dunder(node.attr):
@@ -335,6 +343,7 @@ class _Checker:
 
     # — operators —
     def _require_bundle(self, node: ast.AST, bundle: str) -> None:
+        # Checks that the operator's bundle (arithmetic/comparison/indexing) is enabled by the policy.
         if not self.policy.bundle_enabled(bundle):
             ops = "/".join(t.__name__ for t in OPERATOR_BUNDLES[bundle])
             self.add(
@@ -343,16 +352,19 @@ class _Checker:
 
     # — assignment / reserved names —
     def _check_assign_targets(self, node) -> None:
+        # Checks every target of an assignment for a forbidden rebind of a reserved name.
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
         for t in targets:
             self._check_reserved_target(t)
 
     def _check_reserved_target(self, target: ast.AST) -> None:
+        # Checks each name being bound (Store context) in an assign/for/comprehension target.
         for name_node in _iter_names(target):
             if isinstance(name_node.ctx, ast.Store):
                 self._check_reserved_name(name_node, name_node.id)
 
     def _check_reserved_name(self, node: ast.AST, name: str) -> None:
+        # Checks that a bound name doesn't shadow a reserved module alias or a visible wrapper name.
         if name in self.policy.reserved:
             self.add(
                 node,
@@ -373,6 +385,7 @@ class _Checker:
         return f"{base}.{rest}" if rest else base
 
     def _resolved_allowed(self, dotted: str) -> bool:
+        # Checks a dotted path against the policy allow-list after resolving its import alias.
         return self.policy.function_allowed(self._resolve(dotted))
 
 

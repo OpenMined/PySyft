@@ -7,8 +7,8 @@ license = { text = "Apache-2.0" }
 readme = "README.md"
 requires-python = ">=3.10"
 
-# Pure standard-library tool (ast, tokenize, hashlib, fnmatch) — no runtime dependencies.
-dependencies = []
+# Static analysis on the stdlib (ast, tokenize, hashlib, fnmatch); pydantic models the results.
+dependencies = ["pydantic>=2"]
 
 [build-system]
 requires = ["hatchling"]

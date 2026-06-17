@@ -3896,6 +3896,12 @@ requires-dist = [{ name = "syft-permissions", editable = "packages/syft-permissi
 name = "syft-verifuscate"
 version = "0.1.0"
 source = { editable = "packages/syft-verifuscate" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2" }]
 
 [[package]]
 name = "terminado"

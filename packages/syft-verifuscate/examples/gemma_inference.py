@@ -137,11 +137,6 @@ def _get(module, name):
     return module.variable("params", name, lambda: None).value
 
 
-def transpose(a):
-    """Visible wrapper: matrix transpose (a value transform, not a metadata read)."""
-    return a.T
-
-
 def shape_of(x):
     """Visible wrapper: read an array's shape — an attribute read on a value, not allowed in the hidden region."""
     return x.shape
@@ -293,7 +288,7 @@ class Transformer(nn.Module):
             new_cache = append_to(new_cache, layer_new_cache)
 
         x = self.final_norm(x)
-        logits = x @ transpose(embed_table)
+        logits = x @ jnp.transpose(embed_table)
         return logits, new_cache
 
 

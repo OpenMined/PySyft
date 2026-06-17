@@ -19,7 +19,12 @@ import tokenize
 from .policy import DEFAULT_KEEP
 from .verifier import FileScan, _dotted, _is_dunder, _normalize_ranges
 
-_BLANK = "■"  # ■
+_BLANK = "■"  # ■ — replaces a single constant/string token (obfuscate mode)
+_HIDE = "■■■■■■■■"  # replaces a whole line's code, indentation kept (hide mode)
+_HIDE_NOTE = (
+    "# hidden/obfuscated lines can only execute restricted python, "
+    "see verifuscate docs for more details"
+)
 
 # Builtins kept readable (they reveal nothing about the architecture).
 _KEEP_BUILTINS = frozenset(
@@ -55,8 +60,8 @@ _KEEP_BUILTINS = frozenset(
 )
 
 
-def obfuscate(source: str, private, scan: FileScan) -> str:
-    ranges = _normalize_ranges(private)
+def obfuscate(source: str, obfuscate_ranges, hide_ranges, scan: FileScan) -> str:
+    ranges = _normalize_ranges(obfuscate_ranges)
     tree = ast.parse(source)
     value_map, attr_map = _build_maps(tree, ranges, scan)
 
@@ -111,7 +116,7 @@ def obfuscate(source: str, private, scan: FileScan) -> str:
         ):
             prev_op_dot = tok.type == tokenize.OP and tok.string == "."
 
-    return _apply_edits(source, edits)
+    return _apply_hides(_apply_edits(source, edits), _normalize_ranges(hide_ranges))
 
 
 # ── build the deterministic rename maps from the AST ─────────────────────────────────────
@@ -137,6 +142,14 @@ def _build_maps(tree: ast.Module, ranges, scan: FileScan):
             value_occurrences.append(((node.lineno, node.col_offset), node.id))
         elif isinstance(node, ast.arg):
             value_occurrences.append(((node.lineno, node.col_offset), node.arg))
+        elif isinstance(node, ast.keyword) and node.arg is not None:
+            # keyword-argument / dict(...) keys: rename consistently to ░v… (never readable),
+            # otherwise a key would only be renamed when it happened to collide with a variable name
+            value_occurrences.append(((node.lineno, node.col_offset), node.arg))
+        elif isinstance(node, (ast.ClassDef, ast.FunctionDef)):
+            # the defined name itself, so a class/def signature line is renamed even when the
+            # name is only referenced from hidden (blanked) lines elsewhere
+            value_occurrences.append(((node.lineno, node.col_offset), node.name))
 
     # attr placeholders, in sorted name order for determinism
     attr_map: dict[str, str] = {}
@@ -188,6 +201,29 @@ def _apply_edits(source: str, edits) -> str:
         else:
             merged = lines[srow - 1][:scol] + new + lines[erow - 1][ecol:]
             lines[srow - 1 : erow] = [merged]
+    return "".join(lines)
+
+
+# ── blank whole hidden lines, keeping indentation; leave blank lines untouched ────────────
+def _apply_hides(text: str, hide_ranges) -> str:
+    lines = text.splitlines(keepends=True)
+    in_block = False  # inside a run of consecutive hidden line numbers
+    noted = False  # has the explanatory note been added for the current block yet
+    for i, line in enumerate(lines, 1):
+        if not _row_in_ranges(i, hide_ranges):
+            in_block = noted = False  # a non-hidden line ends the block
+            continue
+        if not in_block:
+            in_block, noted = True, False  # first line of a new hidden block
+        if not line.strip():
+            continue  # blank line inside the block: leave it, don't break the run
+        indent = line[: len(line) - len(line.lstrip())]
+        newline = line[len(line.rstrip("\r\n")) :]  # preserve the trailing EOL (if any)
+        note = (
+            "" if noted else f"  {_HIDE_NOTE}"
+        )  # only the block's first rendered line
+        noted = True
+        lines[i - 1] = f"{indent}{_HIDE}{note}{newline}"
     return "".join(lines)
 
 

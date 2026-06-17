@@ -24,7 +24,7 @@ def test_run_success_writes_obfuscated_and_certificate(tmp_path):
     shutil.copy(FIXTURES / "compliant_model.py", src)
     result = run(
         src,
-        private=_private(src.read_text()),
+        obfuscate=_private(src.read_text()),
         allow_functions=ALLOW_FUNCTIONS,
         allow_methods=ALLOW_METHODS,
     )
@@ -43,7 +43,7 @@ def test_run_strict_raises_and_writes_nothing(tmp_path):
     with pytest.raises(PolicyViolation) as exc:
         run(
             src,
-            private=[[1, 3]],
+            obfuscate=[[1, 3]],
             allow_functions=ALLOW_FUNCTIONS,
             allow_methods=ALLOW_METHODS,
         )
@@ -56,7 +56,7 @@ def test_run_nonstrict_returns_violations(tmp_path):
     src.write_text("CONFIG = dict(dim=8)\nleak = x.reshape(1)\n")
     result = run(
         src,
-        private=[[1, 2]],
+        obfuscate=[[1, 2]],
         allow_functions=ALLOW_FUNCTIONS,
         allow_methods=ALLOW_METHODS,
         strict=False,

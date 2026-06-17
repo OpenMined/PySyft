@@ -5,7 +5,7 @@ from pathlib import Path
 
 from syft_verifuscate import run
 
-FIXTURES = Path(__file__).parent / "fixtures"
+FIXTURES = Path(__file__).parents[1] / "fixtures"
 ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
 ALLOW_METHODS = ["arithmetic", "indexing", "comparison"]
 
@@ -24,7 +24,7 @@ def _obfuscate_fixture(tmp_path: Path):
     private, config_line = _private_from_config(source)
     result = run(
         src_path,
-        private=private,
+        obfuscate=private,
         allow_functions=ALLOW_FUNCTIONS,
         allow_methods=ALLOW_METHODS,
     )
@@ -52,6 +52,40 @@ def test_private_region_is_mangled_and_blanked(tmp_path):
     assert "dim=8" not in private_text  # the architecture dim is hidden
     # public library names stay readable
     assert "jnp" in private_text and "nn.Module" in obf
+
+
+def test_hide_blanks_whole_body_keeping_indentation(tmp_path):
+    """Obfuscate a function's def line but HIDE its body: the body becomes an indented marker."""
+    src_path = tmp_path / "model.py"
+    shutil.copy(FIXTURES / "compliant_model.py", src_path)
+    lines = src_path.read_text().splitlines()
+    def_line = next(
+        i
+        for i, ln in enumerate(lines, 1)
+        if ln.lstrip().startswith("def scale_pattern")
+    )
+    body = [def_line + 1, def_line + 2]  # the two body lines (4-space indented)
+    result = run(
+        src_path,
+        obfuscate=[[def_line, def_line]],
+        hide=[body],
+        allow_functions=ALLOW_FUNCTIONS,
+        allow_methods=ALLOW_METHODS,
+    )
+    obf_lines = Path(result.obfuscated_path).read_text().splitlines()
+    note = "# hidden/obfuscated lines can only execute restricted python"
+    # the signature line survives (not hidden); the body is blanked with indentation kept
+    assert obf_lines[def_line - 1].startswith("def ")
+    # the block's FIRST hidden line carries the note; the rest are the bare marker
+    assert (
+        obf_lines[body[0] - 1].startswith("    ■■■■■■■■  #")
+        and note in obf_lines[body[0] - 1]
+    )
+    for ln_no in range(body[0] + 1, body[1] + 1):
+        assert obf_lines[ln_no - 1] == "    ■■■■■■■■", repr(obf_lines[ln_no - 1])
+    hidden_text = "\n".join(obf_lines[body[0] - 1 : body[1]])
+    assert "base" not in hidden_text  # the real body tokens are gone
+    assert result.certificate["hide_ranges"] == [body]
 
 
 def test_obfuscation_is_deterministic(tmp_path):

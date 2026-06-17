@@ -13,7 +13,8 @@ from __future__ import annotations
 
 import ast
 import fnmatch
-from dataclasses import dataclass, field
+
+from pydantic import BaseModel, Field
 
 # ── Operator bundles: bundle name -> the AST node types it enables on a value ──────────────
 # These are generic, type-agnostic-safe operators (not named-method calls), so the format-string
@@ -99,13 +100,12 @@ DEFAULT_KEEP: frozenset[str] = frozenset(
 )
 
 
-@dataclass
-class Policy:
+class Policy(BaseModel):
     """Parsed allow-lists. ``reserved`` is filled in by the verifier from the file's imports."""
 
-    functions: list[str] = field(default_factory=list)
-    methods: set[str] = field(default_factory=set)
-    reserved: set[str] = field(default_factory=set)
+    functions: list[str] = Field(default_factory=list)
+    methods: set[str] = Field(default_factory=set)
+    reserved: set[str] = Field(default_factory=set)
 
     @classmethod
     def parse(

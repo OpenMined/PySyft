@@ -1,0 +1,45 @@
+"""Shared fixtures/helpers for the static-checker tests (research approach B).
+
+The tests are split by intent:
+- ``test_whitelist.py``     — language constructs the hidden region IS allowed to use.
+- ``test_blacklist.py``     — constructs/calls/attrs that are rejected (default-deny).
+- ``test_whitelisted_lib.py`` — things we *manually* allow: library calls by name and operator bundles.
+"""
+
+from pathlib import Path
+
+import pytest
+
+from syft_verifuscate import Policy, verify
+from syft_verifuscate.verifier import VerifyResult
+
+FIXTURES = Path(__file__).parents[1] / "fixtures"
+REPO_ROOT = Path(__file__).parents[4]
+
+ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
+ALLOW_METHODS = ["arithmetic", "indexing", "comparison"]
+
+
+def make_policy(functions=ALLOW_FUNCTIONS, methods=ALLOW_METHODS):
+    return Policy.parse(list(functions), list(methods))
+
+
+@pytest.fixture
+def policy():
+    return make_policy()
+
+
+@pytest.fixture
+def verify_all(policy):
+    """Verify ``source`` with the whole file marked private, using the standard policy."""
+
+    def _run(source, pol=None):
+        n = len(source.splitlines())
+        return verify(source, [[1, n]], pol or policy)
+
+    return _run
+
+
+def error_codes(result: VerifyResult):
+    """The set of violation codes in a VerifyResult (handy for asserts)."""
+    return {v.code for v in result.violations}
