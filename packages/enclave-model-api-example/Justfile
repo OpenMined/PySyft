@@ -12,6 +12,43 @@ import '../syft-enclave/Justfile'
 inference_image_base := image_base + "-inference"
 inference_image := inference_image_base + ":latest"
 
+# Wipe all SyftBox state (Drive + local) for the enclave + both data owners.
+# Run this FIRST — before starting the enclave + notebook — so every datasite is
+# clean and re-publishes a fresh version file (avoids the peer-version race).
+[group('inference')]
+inference-reset enclave_token do1_token do2_token enclave_email="beach.do.008@gmail.com" do1_email="koenlennartvanderveen@gmail.com" do2_email="koen@openmined.org":
+    uv run python scripts/reset_state.py "{{enclave_email}}={{enclave_token}}" "{{do1_email}}={{do1_token}}" "{{do2_email}}={{do2_token}}"
+
+# Run the enclave runner + inference server locally (NO docker), in the background.
+# Same SYFT_ENCLAVE_* config as the container; mock model by default.
+[group('inference')]
+inference-local-serve token_path enclave_email="beach.do.008@gmail.com" data_owners="koenlennartvanderveen@gmail.com,koen@openmined.org" model_owner="koenlennartvanderveen@gmail.com" model_size="270m" use_mock="true":
+    #!/usr/bin/env bash
+    set -e
+    export SYFT_ENCLAVE_EMAIL="{{enclave_email}}"
+    export SYFT_ENCLAVE_DATA_OWNERS="{{data_owners}}"
+    export SYFT_ENCLAVE_MODEL_OWNER="{{model_owner}}"
+    export SYFT_ENCLAVE_MODEL_SIZE="{{model_size}}"
+    export SYFT_ENCLAVE_USE_MOCK_MODEL="{{use_mock}}"
+    export SYFT_ENCLAVE_REQUIRE_TEE=false
+    export SYFT_ENCLAVE_USE_ENCRYPTION=false
+    export SYFT_ENCLAVE_TOKEN_PATH="$(realpath {{token_path}})"
+    export PRE_SYNC=false
+    mkdir -p /tmp/enclave-local
+    nohup uv run --no-sync python -m enclave_model_api > /tmp/enclave-local/runner.log 2>&1 &
+    echo $! > /tmp/enclave-local/runner.pid
+    nohup uv run --no-sync python scripts/local_server.py > /tmp/enclave-local/server.log 2>&1 &
+    echo $! > /tmp/enclave-local/server.pid
+    echo "started enclave runner + inference server (logs: /tmp/enclave-local/{runner,server}.log)"
+
+# Stop the local enclave runner + inference server started by inference-local-serve.
+[group('inference')]
+inference-local-stop:
+    #!/usr/bin/env bash
+    pkill -f "enclave_model_api" 2>/dev/null && echo "stopped runner" || echo "runner not running"
+    pkill -f "local_server.py" 2>/dev/null && echo "stopped server" || echo "server not running"
+    rm -f /tmp/enclave-local/runner.pid /tmp/enclave-local/server.pid
+
 # Build the base + inference images locally (host arch, no push)
 [group('inference')]
 inference-local-build tag="dev":

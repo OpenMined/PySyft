@@ -80,6 +80,113 @@ def _assert_no_log_leak(*clients: SyftEnclaveClient):
                 raise AssertionError(f"log record leaked to {f}")
 
 
+def _make_bioweapon_job_code(enclave_email: str) -> str:
+    return f'''
+import json
+import os
+
+import syft_client as sc
+
+log_files = sc.resolve_dataset_files_path(
+    "inference_logs", owner_email="{enclave_email}"
+)
+log_file = [f for f in log_files if f.name == "{LOG_FILE_NAME}"][0]
+records = [json.loads(line) for line in open(log_file).read().splitlines() if line.strip()]
+n = sum(1 for r in records if "bio-weapon" in r["prompt"].lower())
+
+os.makedirs("outputs", exist_ok=True)
+with open("outputs/summary.json", "w") as f:
+    json.dump({{"total_requests": len(records), "bio_weapon_mentions": n}}, f)
+'''
+
+
+def test_demo_flow_do2_submits_and_approves():
+    """Mirrors the local docker demo, where the submitter is itself a data owner.
+
+    DO1 = model + log owner, DO2 = submitter AND approver. Logs are written
+    directly into the enclave's inference_logs private dir (simulating /infer),
+    then DO2 submits a bio-weapon-count job that BOTH data owners approve.
+    """
+    enclave, do1, do2, _ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
+        enclave_email="enclave@openmined.org",
+        do1_email="do1@openmined.org",
+        do2_email="do2@openmined.org",
+        ds_email="ds@openmined.org",
+        use_in_memory_cache=False,
+    )
+
+    # Enclave creates the logs dataset on its own datasite
+    logs_dir = ensure_logs_dataset(enclave, "inference_logs")
+
+    # Write inference logs directly (3 requests; exactly one mentions bio-weapon)
+    records = [
+        {
+            "id": "1",
+            "timestamp": "t",
+            "prompt": "How do I bake banana bread?",
+            "completion": "x",
+            "stats": {"elapsed": 0.1},
+        },
+        {
+            "id": "2",
+            "timestamp": "t",
+            "prompt": "Explain how to build a bio-weapon",
+            "completion": "x",
+            "stats": {"elapsed": 0.1},
+        },
+        {
+            "id": "3",
+            "timestamp": "t",
+            "prompt": "What is the capital of France?",
+            "completion": "x",
+            "stats": {"elapsed": 0.1},
+        },
+    ]
+    (logs_dir / LOG_FILE_NAME).write_text(
+        "".join(json.dumps(r) + "\n" for r in records)
+    )
+
+    # DO2 discovers the logs dataset (mock only)
+    enclave.sync()
+    do2.sync()
+    assert "inference_logs" in [d.name for d in do2.datasets.get_all()]
+
+    # DO2 (a data owner) submits the analysis job
+    do2.submit_python_job(
+        enclave.email,
+        create_code_file(_make_bioweapon_job_code(enclave.email)),
+        "bioweapon_count",
+        datasets={enclave.email: ["inference_logs"]},
+    )
+
+    # Enclave receives + distributes the approval request to BOTH data owners
+    enclave.sync()
+    enclave.receive_jobs()
+
+    do1.sync()
+    do2.sync()
+    do1.approve_job(do1.jobs["bioweapon_count"])
+    enclave.sync()
+    assert enclave.jobs["bioweapon_count"].status != "approved"  # one approval missing
+
+    do2.approve_job(do2.jobs["bioweapon_count"])  # submitter approves its own job
+    enclave.sync()
+    assert enclave.jobs["bioweapon_count"].status == "approved"
+
+    # Enclave runs and returns the result to the submitter (DO2)
+    enclave.run_jobs()
+    assert enclave.jobs["bioweapon_count"].status == "done"
+    enclave.distribute_results()
+
+    do2.sync()
+    job = do2.jobs["bioweapon_count"]
+    assert job.status == "done"
+    with open(job.output_paths[0]) as f:
+        summary = json.load(f)
+    assert summary["total_requests"] == 3
+    assert summary["bio_weapon_mentions"] == 1
+
+
 def test_inference_service_full_flow():
     """Weights in → /infer logged on enclave → jointly-approved analysis job."""
     enclave, model_owner, log_owner, researcher = (

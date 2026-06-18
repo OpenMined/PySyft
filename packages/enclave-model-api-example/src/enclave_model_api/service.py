@@ -40,10 +40,14 @@ class InferenceService:
         return weights_ready(self.weights_dir)
 
     def try_load(self) -> bool:
-        """Load the model if the weights have synced. Returns loaded state."""
+        """Load the model once it's ready. Returns loaded state.
+
+        Backends that need real weights (``requires_weights``) only load once the
+        weights have synced; the mock backend loads immediately.
+        """
         if self.loaded:
             return True
-        if not self.weights_present:
+        if getattr(self.backend, "requires_weights", True) and not self.weights_present:
             return False
         logger.info("Loading %s model from %s", self.model_size, self.weights_dir)
         self._loaded = self.backend.load(self.model_size, self.weights_dir)

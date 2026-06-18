@@ -97,6 +97,14 @@ class SyftEnclaveClient:
     def sync(self):
         self._manager.sync()
 
+    def delete_syftbox(
+        self, verbose: bool = True, broadcast_delete_events: bool = True
+    ):
+        """Delete all SyftBox state (Drive files + local caches/folder)."""
+        self._manager.delete_syftbox(
+            verbose=verbose, broadcast_delete_events=broadcast_delete_events
+        )
+
     def create_dataset(self, *args, **kwargs):
         return self._manager.create_dataset(*args, **kwargs)
 

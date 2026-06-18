@@ -27,6 +27,8 @@ MODEL_CLASSES = {
 class GemmaBackend:
     """Implements the inference-backend interface: load() and generate()."""
 
+    requires_weights = True
+
     def load(self, model_size: str, weights_dir: Path | str):
         weights_dir = Path(weights_dir)
         model = MODEL_CLASSES[model_size]()

@@ -39,6 +39,7 @@ def build_router(service: InferenceService) -> APIRouter:
     def model_status() -> dict:
         return {
             "model_size": service.model_size,
+            "mock": not getattr(service.backend, "requires_weights", True),
             "weights_present": service.weights_present,
             "model_loaded": service.loaded,
         }

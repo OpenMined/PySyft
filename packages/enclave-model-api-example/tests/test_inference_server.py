@@ -70,6 +70,7 @@ def test_inference_server_full_lifecycle(tmp_path):
     status = client.get("/model-status").json()
     assert status == {
         "model_size": "270m",
+        "mock": False,
         "weights_present": False,
         "model_loaded": False,
     }

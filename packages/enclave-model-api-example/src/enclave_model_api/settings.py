@@ -24,6 +24,14 @@ class InferenceSettings(BaseSettings):
         frozen=True,
     )
 
+    use_mock_model: bool = Field(
+        default=True,
+        description=(
+            "Serve canned mock responses instead of loading a real model. "
+            "Enabled by default so the demo runs without uploading weights; "
+            "set false to load the real Gemma model from the weights dataset."
+        ),
+    )
     model_owner: str = Field(
         description=(
             "Email of the data owner who uploads the model weights dataset. "
