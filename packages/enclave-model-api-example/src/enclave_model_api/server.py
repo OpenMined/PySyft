@@ -1,14 +1,13 @@
 """Minimal FastAPI surface for the inference service.
 
-Requires the ``syft-enclave[inference]`` extra (fastapi). The docker image
-mounts this router into the attestation app so everything serves on the
-single Confidential Spaces port (8080).
+The docker image mounts this router into the attestation app so everything
+serves on the single Confidential Spaces port (8080).
 """
 
 from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel
 
-from syft_enclaves.inference.service import InferenceService
+from enclave_model_api.service import InferenceService
 
 
 class InferRequest(BaseModel):

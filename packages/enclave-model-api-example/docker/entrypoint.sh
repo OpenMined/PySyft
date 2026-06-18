@@ -25,4 +25,4 @@ uvicorn inference_server:app --host 0.0.0.0 --port "$PORT" &
 
 # Enclave runner (foreground) — configured entirely via SYFT_ENCLAVE_* env vars.
 echo "Starting enclave runner..."
-exec python -m syft_enclaves
+exec python -m enclave_model_api

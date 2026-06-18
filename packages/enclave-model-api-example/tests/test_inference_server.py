@@ -4,14 +4,14 @@ import json
 
 from fastapi.testclient import TestClient
 
-from syft_enclaves.inference.log_writer import (
+from enclave_model_api.log_writer import (
     LOG_FILE_NAME,
     append_log_record,
     build_log_record,
 )
-from syft_enclaves.inference.paths import private_dataset_dir, weights_ready
-from syft_enclaves.inference.server import create_app
-from syft_enclaves.inference.service import InferenceService
+from enclave_model_api.paths import private_dataset_dir, weights_ready
+from enclave_model_api.server import create_app
+from enclave_model_api.service import InferenceService
 
 from inference_stub import STUB_COMPLETION_PREFIX, StubBackend, make_stub_weights
 

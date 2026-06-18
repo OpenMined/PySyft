@@ -3,7 +3,7 @@
 Uses the official DeepMind ``gemma`` package (JAX) so the whole model is
 loaded through its high-level API; no architecture code lives here. Only
 importable where the docker-only model deps are installed (see
-docker/inference/requirements.txt).
+docker/requirements.txt).
 
 Weights-dataset layout (uploaded by the model owner):
     <dataset>/tokenizer.model    SentencePiece tokenizer
@@ -15,7 +15,7 @@ from pathlib import Path
 
 from gemma import gm
 
-from syft_enclaves.inference.paths import find_checkpoint_dir
+from enclave_model_api.paths import find_checkpoint_dir
 
 MODEL_CLASSES = {
     "270m": gm.nn.Gemma3_270M,

@@ -1,6 +1,6 @@
-# Dockerignore for the syft-enclave image.
+# Dockerignore for the enclave-model-api-example image.
 #
-# Build context is the monorepo root (packages/syft-enclave/Justfile passes
+# Build context is the monorepo root (this package's Justfile passes
 # `../..`). BuildKit reads this file (`Dockerfile.dockerignore`) instead of
 # any root-level .dockerignore because it sits next to the Dockerfile.
 # Patterns are still interpreted relative to the build context (repo root).

@@ -7,24 +7,27 @@ Spaces port (8080).
 """
 
 from attestation_server import app
-from syft_enclaves.inference.backend import GemmaBackend
-from syft_enclaves.inference.paths import default_syftbox_folder, private_dataset_dir
-from syft_enclaves.inference.server import build_router
-from syft_enclaves.inference.service import InferenceService
 from syft_enclaves.settings import EnclaveSettings
 
+from enclave_model_api.backend import GemmaBackend
+from enclave_model_api.paths import default_syftbox_folder, private_dataset_dir
+from enclave_model_api.server import build_router
+from enclave_model_api.service import InferenceService
+from enclave_model_api.settings import InferenceSettings
+
 settings = EnclaveSettings()
-if settings.model_owner is None:
-    raise RuntimeError("SYFT_ENCLAVE_MODEL_OWNER is required for the inference image.")
+inference = InferenceSettings()
 
 syftbox_folder = default_syftbox_folder(settings.email)
 service = InferenceService(
     backend=GemmaBackend(),
-    model_size=settings.model_size,
+    model_size=inference.model_size,
     weights_dir=private_dataset_dir(
-        syftbox_folder, settings.model_owner, settings.model_dataset
+        syftbox_folder, inference.model_owner, inference.model_dataset
     ),
-    logs_dir=private_dataset_dir(syftbox_folder, settings.email, settings.logs_dataset),
+    logs_dir=private_dataset_dir(
+        syftbox_folder, settings.email, inference.logs_dataset
+    ),
 )
 service.start_polling()
 app.include_router(build_router(service))

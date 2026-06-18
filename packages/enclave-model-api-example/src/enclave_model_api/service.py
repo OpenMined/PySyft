@@ -10,8 +10,8 @@ import threading
 import time
 from pathlib import Path
 
-from syft_enclaves.inference.log_writer import append_log_record, build_log_record
-from syft_enclaves.inference.paths import weights_ready
+from enclave_model_api.log_writer import append_log_record, build_log_record
+from enclave_model_api.paths import weights_ready
 
 logger = logging.getLogger(__name__)
 

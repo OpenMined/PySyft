@@ -19,6 +19,7 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "enclave-model-api-example",
     "syft-bg",
     "syft-client",
     "syft-dataset",
@@ -783,6 +784,32 @@ sdist = { url = "https://files.pythonhosted.org/packages/f5/22/900cb125c76b7aaa4
 wheels = [
     { url = "https://files.pythonhosted.org/packages/de/15/545e2b6cf2e3be84bc1ed85613edd75b8aea69807a71c26f4ca6a9258e82/email_validator-2.3.0-py3-none-any.whl", hash = "sha256:80f13f623413e6b197ae73bb10bf4eb0908faf509ad8362c5edeb0be7fd450b4", size = 35604, upload-time = "2025-08-26T13:09:05.858Z" },
 ]
+
+[[package]]
+name = "enclave-model-api-example"
+version = "0.1.0"
+source = { editable = "packages/enclave-model-api-example" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "syft-enclave" },
+    { name = "uvicorn" },
+]
+
+[package.optional-dependencies]
+test = [
+    { name = "httpx" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "httpx", marker = "extra == 'test'" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=7.0.0" },
+    { name = "syft-enclave", editable = "packages/syft-enclave" },
+    { name = "uvicorn", specifier = ">=0.34.0" },
+]
+provides-extras = ["test"]
 
 [[package]]
 name = "exceptiongroup"
@@ -3738,8 +3765,8 @@ dev = [
 test = [
     { name = "black" },
     { name = "coverage" },
+    { name = "enclave-model-api-example", extra = ["test"] },
     { name = "flake8" },
-    { name = "httpx" },
     { name = "isort" },
     { name = "mypy" },
     { name = "pyarrow" },
@@ -3747,7 +3774,6 @@ test = [
     { name = "pytest-cov" },
     { name = "pytest-rerunfailures" },
     { name = "pytest-xdist" },
-    { name = "syft-enclave", extra = ["inference"] },
 ]
 
 [package.metadata]
@@ -3786,8 +3812,8 @@ dev = [
 test = [
     { name = "black", specifier = ">=26.3.1" },
     { name = "coverage", specifier = ">=7.0.0" },
+    { name = "enclave-model-api-example", extras = ["test"], editable = "packages/enclave-model-api-example" },
     { name = "flake8", specifier = ">=6.0.0" },
-    { name = "httpx" },
     { name = "isort", specifier = ">=5.12.0" },
     { name = "mypy", specifier = ">=1.0.0" },
     { name = "pyarrow" },
@@ -3795,7 +3821,6 @@ test = [
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "pytest-rerunfailures", specifier = ">=14.0" },
     { name = "pytest-xdist", specifier = ">=3.0.0" },
-    { name = "syft-enclave", extras = ["inference"], editable = "packages/syft-enclave" },
 ]
 
 [[package]]
@@ -3847,22 +3872,13 @@ dependencies = [
     { name = "syft-client" },
 ]
 
-[package.optional-dependencies]
-inference = [
-    { name = "fastapi" },
-    { name = "uvicorn" },
-]
-
 [package.metadata]
 requires-dist = [
-    { name = "fastapi", marker = "extra == 'inference'", specifier = ">=0.115.0" },
     { name = "google-auth", extras = ["pyjwt"], specifier = ">=2.22.0" },
     { name = "pydantic-settings", specifier = ">=2.11.0" },
     { name = "requests", specifier = ">=2.32.0" },
     { name = "syft-client", editable = "." },
-    { name = "uvicorn", marker = "extra == 'inference'", specifier = ">=0.34.0" },
 ]
-provides-extras = ["inference"]
 
 [[package]]
 name = "syft-job"

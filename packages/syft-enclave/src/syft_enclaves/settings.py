@@ -94,27 +94,3 @@ class EnclaveSettings(BaseSettings):
             "Enabled by default; set false to disable."
         ),
     )
-
-    # -- inference service (only used by the inference docker image) ---------
-    model_owner: str | None = Field(
-        default=None,
-        description=(
-            "Email of the data owner who uploads the model weights dataset. "
-            "When unset, all inference features are disabled."
-        ),
-    )
-    model_dataset: str = Field(
-        default="gemma3_model",
-        description="Name of the model-weights dataset shared by model_owner.",
-    )
-    model_size: Literal["270m", "1b", "4b"] = Field(
-        default="270m",
-        description="Gemma 3 model size to load from the weights dataset.",
-    )
-    logs_dataset: str = Field(
-        default="inference_logs",
-        description=(
-            "Name of the dataset on the enclave's own datasite that collects "
-            "inference request logs. Its private data never leaves the enclave."
-        ),
-    )

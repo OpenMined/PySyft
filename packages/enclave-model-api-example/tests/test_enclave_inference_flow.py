@@ -17,11 +17,12 @@ os.environ["PRE_SYNC"] = "false"
 from fastapi.testclient import TestClient
 
 from syft_enclaves import SyftEnclaveClient
-from syft_enclaves.inference.log_writer import LOG_FILE_NAME
-from syft_enclaves.inference.logs_dataset import ensure_logs_dataset
-from syft_enclaves.inference.paths import private_dataset_dir
-from syft_enclaves.inference.server import create_app
-from syft_enclaves.inference.service import InferenceService
+
+from enclave_model_api.log_writer import LOG_FILE_NAME
+from enclave_model_api.logs_dataset import ensure_logs_dataset
+from enclave_model_api.paths import private_dataset_dir
+from enclave_model_api.server import create_app
+from enclave_model_api.service import InferenceService
 
 from inference_stub import StubBackend, make_stub_weights
 

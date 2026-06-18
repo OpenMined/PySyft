@@ -10,7 +10,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from syft_enclaves.inference.log_writer import LOG_FILE_NAME
+from enclave_model_api.log_writer import LOG_FILE_NAME
 
 LOGS_DATASET_SUMMARY = (
     "Inference request logs (prompt, completion, stats) collected by the "

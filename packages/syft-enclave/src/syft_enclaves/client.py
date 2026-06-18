@@ -263,7 +263,7 @@ class SyftEnclaveClient:
         # approval on the enclave's globally-configured data owners. The job is
         # forwarded to the union so every required approver can review it.
         # Jobs may reference datasets hosted on the enclave's own datasite
-        # (e.g. inference logs) — never forward to ourselves.
+        # (e.g. logs it collects) — never forward to ourselves.
         submission_dos = [e for e in config.datasets.keys() if e != self.email]
         approval_dos = self.data_owners
         recipients = list(dict.fromkeys([*submission_dos, *approval_dos]))

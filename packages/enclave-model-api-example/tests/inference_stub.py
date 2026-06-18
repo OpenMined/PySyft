@@ -1,6 +1,6 @@
 """Stub inference backend + weight fixtures shared by the inference tests.
 
-Implements the same interface as syft_enclaves.inference.backend.GemmaBackend
+Implements the same interface as enclave_model_api.backend.GemmaBackend
 (load/generate) without any model deps.
 """
 
