@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 from syft_client.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
+from syft_client.sync.version.peer_manager import CompatAction
 from syft_client.sync.peers.peer import Peer
 from syft_client.sync.peers.peer_list import PeerList
 from syft_datasets.dataset_manager import SyftDatasetManager
@@ -133,9 +134,25 @@ class SyftEnclaveClient:
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
         share_results_with_do: bool = False,
+        force_submission: bool = False,
+        ignore_peer_version: bool = False,
         **kwargs,
     ):
-        """Submit a Python job to an enclave, then push files via sync."""
+        """Submit a Python job to an enclave, then push files via sync.
+
+        Mirrors ``SyftboxManager.submit_python_job``'s version guard: if the
+        enclave's version is unknown/incompatible, raise immediately instead of
+        letting ``push_job_files`` silently skip the peer and drop the job (which
+        otherwise surfaces much later as a stuck, never-distributed job).
+        """
+        if not force_submission:
+            result = self._manager.peer_manager.get_peer_compatibility_status(
+                enclave_email,
+                action=CompatAction.SUBMIT,
+                ignore_peer_version=ignore_peer_version,
+            )
+            result.raise_on_skip(operation="submit job")
+            result.maybe_warn()
         job_dir = self._manager.job_client.submit_python_job(
             enclave_email,
             code_path,
