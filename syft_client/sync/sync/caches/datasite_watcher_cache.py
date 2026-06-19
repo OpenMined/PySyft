@@ -50,6 +50,9 @@ class DataSiteWatcherCache(BaseModel):
     collection_subpath: Path | None = None
     # Cache of dataset collection hashes: path -> content_hash
     dataset_collection_hashes: Dict[Path, str] = {}
+    # Optional pre-write filter: (path_in_syftbox, is_delete) -> allow?
+    # Return True to allow the write, False to deny it.
+    pre_write_filter: Callable[[str, bool], bool] | None = None
 
     @classmethod
     def from_config(cls, config: DataSiteWatcherCacheConfig):
@@ -241,11 +244,19 @@ class DataSiteWatcherCache(BaseModel):
             path_key = Path(event.path_in_syftbox)
 
             if event.is_deleted:
+                if self.pre_write_filter and not self.pre_write_filter(
+                    str(event.path_in_syftbox), True
+                ):
+                    continue
                 # Handle deletion
                 self.file_connection.delete_file(str(event.path_in_syftbox))
                 if path_key in self.file_hashes:
                     del self.file_hashes[path_key]
             else:
+                if self.pre_write_filter and not self.pre_write_filter(
+                    str(event.path_in_syftbox), False
+                ):
+                    continue
                 # Handle create/update
                 self.file_connection.write_file(
                     str(event.path_in_syftbox), event.content
