@@ -24,10 +24,13 @@ from pathlib import Path
 
 os.environ["PRE_SYNC"] = "false"
 import requests
+from syft_client.sync.version.peer_manager import CompatAction
 from syft_enclaves import login_do
 
 CRED = Path(__file__).resolve().parents[3] / "credentials"
-URL = "http://localhost:8080"
+# Target the enclave inference server. Defaults to a local server; set ENCLAVE_URL
+# (e.g. http://<vm-ip>:8080) to run against a deployed Confidential Space enclave.
+URL = os.environ.get("ENCLAVE_URL", "http://localhost:8080")
 ENCLAVE = "beach.do.008@gmail.com"
 DO1 = "koenlennartvanderveen@gmail.com"  # model + log owner
 DO2 = "koen@openmined.org"  # job submitter
@@ -47,6 +50,28 @@ def wait_until_peered(client, peer_email, tries=40):
         client.sync()
         time.sleep(3)
     raise RuntimeError(f"{client.email} never connected to {peer_email}")
+
+
+def wait_until_submittable(client, peer_email, tries=40):
+    """Peer 'accepted' is not enough to submit a job — version compatibility is
+    tracked separately. A freshly-(re)booted enclave wipes and re-publishes its
+    version file, so there is a window where the peer is accepted but its version
+    is still UNKNOWN, and a submit would be *silently* skipped (job never leaves
+    the DS). Wait until the enclave's version has synced and a submit won't skip;
+    fail loudly if it never converges instead of stalling later in approval."""
+    result = None
+    for _ in range(tries):
+        client.sync()
+        result = client._manager.peer_manager.get_peer_compatibility_status(
+            peer_email, action=CompatAction.SUBMIT
+        )
+        if not result.should_skip:
+            return
+        time.sleep(3)
+    raise RuntimeError(
+        f"{client.email}: enclave {peer_email} never became submit-compatible "
+        f"({result.explanation_skip if result else 'no status'}). Aborting early."
+    )
 
 
 def wait_for(predicate, tries=120, every=5):
@@ -103,7 +128,9 @@ json.dump({{"total_requests": len(records), "bio_weapon_mentions": n}}, open("ou
 '''
 job_path = Path(tempfile.mkdtemp()) / "job_main.py"
 job_path.write_text(job_code)
-do2.sync()
+# Peering 'accepted' != version known. Wait until the enclave's version file has
+# synced so the submit actually reaches it (else it is silently skipped).
+wait_until_submittable(do2, ENCLAVE)
 do2.submit_python_job(
     ENCLAVE, str(job_path), JOB, datasets={ENCLAVE: ["inference_logs"]}
 )

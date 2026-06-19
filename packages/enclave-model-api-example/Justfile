@@ -102,6 +102,18 @@ inference-build-push tags="latest":
         docker push {{inference_image_base}}:$t
     done
 
+# Tear down a deployed inference enclave and all its gcloud state: the VM,
+# then the demo-scoped Secret Manager secret + service account (IAM bindings,
+# SA, secret + all versions). Pass the same name/secret/sa you deployed with.
+# DESTRUCTIVE — confirm with CONFIRM_TEARDOWN=yes (already set below) deletes
+# without prompting. Does NOT touch syftbox/Drive state (see `delete-syftbox`).
+[group('inference')]
+inference-destroy name="enclave-inference-demo-vm" secret="syft-enclave-token-inference-demo" sa="syft-enclave-sa-inference-demo":
+    #!/usr/bin/env bash
+    set -e
+    just stop "{{name}}"
+    CONFIRM_TEARDOWN=yes just teardown-sa "{{secret}}" "{{sa}}"
+
 # Deploy a production inference enclave VM (hardened image, no SSH).
 # n2d-standard-4 default for model memory headroom (270m fits; 1b+ needs more).
 [group('inference')]
