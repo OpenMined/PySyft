@@ -14,7 +14,7 @@ Two ways to use this:
 import logging
 import signal
 import time
-from typing import Optional
+from typing import Callable, Optional
 
 from syft_enclaves.client import SyftEnclaveClient
 from syft_enclaves.tee_token import (
@@ -36,11 +36,13 @@ class EnclaveRunner:
         poll_interval: int = 1,
         require_tee: bool = False,
         fresh_state: bool = True,
+        post_init: Optional[Callable[[], None]] = None,
     ) -> None:
         self.client = client
         self.poll_interval = poll_interval
         self.require_tee = require_tee
         self.fresh_state = fresh_state
+        self.post_init = post_init
         self._shutdown_requested = False
 
     # -- public API -------------------------------------------------------
@@ -64,6 +66,11 @@ class EnclaveRunner:
         logger.info("init step 3/3: peering")
         self._on_peering()
         logger.info("init step 3/3: peering complete")
+
+        if self.post_init is not None:
+            logger.info("running post_init hook")
+            self.post_init()
+            logger.info("post_init hook complete")
 
         logger.info("Enclave runner init complete")
 
