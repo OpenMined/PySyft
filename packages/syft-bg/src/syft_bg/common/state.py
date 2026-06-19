@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError
 
 
 class BgState(BaseModel):
@@ -26,11 +26,16 @@ class BgState(BaseModel):
     thread_ids: dict[str, str] = Field(default_factory=dict)
 
 
-class JsonStateManager:
+class JsonStateManager(BaseModel):
     """Manages state persistence with file locking for both notify and approve services."""
 
-    def __init__(self, state_file: Path):
-        self.state_file = Path(state_file).expanduser()
+    state_file: Path
+    _lock_file: Path = PrivateAttr()
+
+    def __init__(self, state_file: Path) -> None:
+        super().__init__(state_file=Path(state_file).expanduser())
+
+    def model_post_init(self, __context: Any) -> None:
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
         self._lock_file = self.state_file.with_suffix(".lock")
 
