@@ -130,8 +130,8 @@ class TestStripQuotedReply:
 
 class TestEmailApproveHandler:
     def _make_handler(self, tmp_path):
-        state = JsonStateManager(tmp_path / "email_approve_state.json")
-        notify_state = JsonStateManager(tmp_path / "notify_state.json")
+        state = JsonStateManager(state_file=tmp_path / "email_approve_state.json")
+        notify_state = JsonStateManager(state_file=tmp_path / "notify_state.json")
         job_client = MagicMock()
         job_runner = MagicMock()
         handler = EmailApproveHandler(
@@ -262,7 +262,7 @@ class TestEmailApproveHandler:
 
 class TestStateReverseLookup:
     def test_get_job_name_by_thread_id(self, tmp_path):
-        state = JsonStateManager(tmp_path / "state.json")
+        state = JsonStateManager(state_file=tmp_path / "state.json")
         state.store_thread_id("job_a", "thread_1")
         state.store_thread_id("job_b", "thread_2")
 

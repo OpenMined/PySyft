@@ -18,12 +18,12 @@ def _write_snapshot(state: JsonStateManager, **kwargs) -> None:
 
 class TestPeerMonitorWithSnapshot:
     def test_reads_peers_from_snapshot(self, temp_dir):
-        sync_state = JsonStateManager(temp_dir / "sync_state.json")
+        sync_state = JsonStateManager(state_file=temp_dir / "sync_state.json")
         _write_snapshot(sync_state, peer_emails=["ds@test.com"])
         handler = MagicMock()
         handler.on_new_peer_request_to_do.return_value = True
         handler.on_peer_request_sent.return_value = True
-        state = JsonStateManager(temp_dir / "state.json")
+        state = JsonStateManager(state_file=temp_dir / "state.json")
 
         monitor = PeerMonitor(
             do_email="do@test.com",
@@ -37,11 +37,11 @@ class TestPeerMonitorWithSnapshot:
         )
 
     def test_reads_approved_peers_from_snapshot(self, temp_dir):
-        sync_state = JsonStateManager(temp_dir / "sync_state.json")
+        sync_state = JsonStateManager(state_file=temp_dir / "sync_state.json")
         _write_snapshot(sync_state, approved_peer_emails=["ds@test.com"])
         handler = MagicMock()
         handler.on_peer_granted.return_value = True
-        state = JsonStateManager(temp_dir / "state.json")
+        state = JsonStateManager(state_file=temp_dir / "state.json")
 
         monitor = PeerMonitor(
             do_email="do@test.com",
@@ -53,9 +53,9 @@ class TestPeerMonitorWithSnapshot:
         handler.on_peer_granted.assert_called_once_with("ds@test.com", "do@test.com")
 
     def test_missing_snapshot_returns_empty_peers(self, temp_dir):
-        sync_state = JsonStateManager(temp_dir / "sync_state.json")
+        sync_state = JsonStateManager(state_file=temp_dir / "sync_state.json")
         handler = MagicMock()
-        state = JsonStateManager(temp_dir / "state.json")
+        state = JsonStateManager(state_file=temp_dir / "state.json")
 
         monitor = PeerMonitor(
             do_email="do@test.com",
@@ -88,7 +88,7 @@ class TestJobMonitorLocalStatusChanges:
         self._setup_job(temp_dir)
         handler = MagicMock()
         handler.on_new_job.return_value = True
-        state = JsonStateManager(temp_dir / "state.json")
+        state = JsonStateManager(state_file=temp_dir / "state.json")
         state.mark_notified("_dummy", "x")  # non-empty state -> not fresh
 
         monitor = JobMonitor(
@@ -121,7 +121,7 @@ class TestJobMonitorLocalStatusChanges:
         handler = MagicMock()
         handler.on_new_job.return_value = True
         handler.on_job_approved.return_value = True
-        state = JsonStateManager(temp_dir / "state.json")
+        state = JsonStateManager(state_file=temp_dir / "state.json")
         state.mark_notified("_dummy", "x")
 
         monitor = JobMonitor(
@@ -140,7 +140,7 @@ class TestJobMonitorLocalStatusChanges:
         handler.on_new_job.return_value = True
         handler.on_job_approved.return_value = True
         handler.on_job_executed.return_value = True
-        state = JsonStateManager(temp_dir / "state.json")
+        state = JsonStateManager(state_file=temp_dir / "state.json")
         state.mark_notified("_dummy", "x")
 
         monitor = JobMonitor(
@@ -156,7 +156,7 @@ class TestJobMonitorLocalStatusChanges:
     def test_skips_old_jobs_on_fresh_state(self, temp_dir):
         self._setup_job(temp_dir)
         handler = MagicMock()
-        state = JsonStateManager(temp_dir / "state.json")  # empty = fresh
+        state = JsonStateManager(state_file=temp_dir / "state.json")  # empty = fresh
 
         monitor = JobMonitor(
             syftbox_root=temp_dir,
@@ -170,7 +170,7 @@ class TestJobMonitorLocalStatusChanges:
 
     def test_no_inbox_dir_doesnt_crash(self, temp_dir):
         handler = MagicMock()
-        state = JsonStateManager(temp_dir / "state.json")
+        state = JsonStateManager(state_file=temp_dir / "state.json")
 
         monitor = JobMonitor(
             syftbox_root=temp_dir,

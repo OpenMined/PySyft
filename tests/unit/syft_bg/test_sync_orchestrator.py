@@ -14,7 +14,7 @@ def _make_orchestrator(temp_dir, **config_overrides):
     syft_client.peer_manager.approved_peers = []
     syft_client.peer_manager.requested_by_peer_peers = []
 
-    state = JsonStateManager(temp_dir / "sync_state.json")
+    state = JsonStateManager(state_file=temp_dir / "sync_state.json")
     defaults = {"interval": 1, "max_retries": 2, "retry_backoff": 0.01}
     defaults.update(config_overrides)
     config = SyncConfig(**defaults)

@@ -73,8 +73,8 @@ class EmailApproveOrchestrator(BaseOrchestrator):
         credentials = GmailAuth().load_credentials(config.gmail_token_path)
 
         watcher = GmailWatcher(credentials)
-        state = JsonStateManager(config.email_approve_state_path)
-        notify_state = JsonStateManager(config.notify_state_path)
+        state = JsonStateManager(state_file=config.email_approve_state_path)
+        notify_state = JsonStateManager(state_file=config.notify_state_path)
 
         handler = EmailApproveHandler(
             job_client=job_client,
