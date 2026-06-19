@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 from syft_client.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
+from syft_client.sync.version.peer_manager import CompatAction
 from syft_client.sync.peers.peer import Peer
 from syft_client.sync.peers.peer_list import PeerList
 from syft_datasets.dataset_manager import SyftDatasetManager
@@ -100,6 +101,14 @@ class SyftEnclaveClient:
     def sync(self):
         self._manager.sync()
 
+    def delete_syftbox(
+        self, verbose: bool = True, broadcast_delete_events: bool = True
+    ):
+        """Delete all SyftBox state (Drive files + local caches/folder)."""
+        self._manager.delete_syftbox(
+            verbose=verbose, broadcast_delete_events=broadcast_delete_events
+        )
+
     def create_dataset(self, *args, **kwargs):
         return self._manager.create_dataset(*args, **kwargs)
 
@@ -128,9 +137,25 @@ class SyftEnclaveClient:
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
         share_results_with_do: bool = False,
+        force_submission: bool = False,
+        ignore_peer_version: bool = False,
         **kwargs,
     ):
-        """Submit a Python job to an enclave, then push files via sync."""
+        """Submit a Python job to an enclave, then push files via sync.
+
+        Mirrors ``SyftboxManager.submit_python_job``'s version guard: if the
+        enclave's version is unknown/incompatible, raise immediately instead of
+        letting ``push_job_files`` silently skip the peer and drop the job (which
+        otherwise surfaces much later as a stuck, never-distributed job).
+        """
+        if not force_submission:
+            result = self._manager.peer_manager.get_peer_compatibility_status(
+                enclave_email,
+                action=CompatAction.SUBMIT,
+                ignore_peer_version=ignore_peer_version,
+            )
+            result.raise_on_skip(operation="submit job")
+            result.maybe_warn()
         job_dir = self._manager.job_client.submit_python_job(
             enclave_email,
             code_path,
@@ -265,7 +290,9 @@ class SyftEnclaveClient:
         # Forward the job to the DOs referenced in the submission, but gate
         # approval on the enclave's globally-configured data owners. The job is
         # forwarded to the union so every required approver can review it.
-        submission_dos = list(config.datasets.keys())
+        # Jobs may reference datasets hosted on the enclave's own datasite
+        # (e.g. logs it collects) — never forward to ourselves.
+        submission_dos = [e for e in config.datasets.keys() if e != self.email]
         approval_dos = self.data_owners
         recipients = list(dict.fromkeys([*submission_dos, *approval_dos]))
         self._forward_job_to_dos(job_dir, recipients)

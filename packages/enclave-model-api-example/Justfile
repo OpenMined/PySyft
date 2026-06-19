@@ -1,0 +1,176 @@
+# Build / run / push / deploy recipes for the enclave-model-api-example image —
+# a separate flavor that pre-packages a Gemma inference pipeline (POST /infer on
+# port 8080) next to the regular enclave runner.
+#
+# Shared vars + provisioning/build helpers (image_base, vm_default, load_settings,
+# ensure_dockerhub_login, _provision, _whoami, local-build, ...) come from the
+# syft-enclave Justfile via this import. Those recipes are cwd-independent (gcloud
+# + $HOME), so importing them is safe. The base enclave image is built by shelling
+# out to syft-enclave's `local-build` with its own working directory.
+import '../syft-enclave/Justfile'
+
+inference_image_base := image_base + "-inference"
+inference_image := inference_image_base + ":latest"
+
+# Wipe all SyftBox state (Drive + local) for the enclave + both data owners.
+# Run this FIRST — before starting the enclave + notebook — so every datasite is
+# clean and re-publishes a fresh version file (avoids the peer-version race).
+[group('inference')]
+inference-reset enclave_token do1_token do2_token enclave_email="beach.do.008@gmail.com" do1_email="koenlennartvanderveen@gmail.com" do2_email="koen@openmined.org":
+    uv run python scripts/reset_state.py "{{enclave_email}}={{enclave_token}}" "{{do1_email}}={{do1_token}}" "{{do2_email}}={{do2_token}}"
+
+# Run the enclave runner + inference server locally (NO docker), in the background.
+# Same SYFT_ENCLAVE_* config as the container; mock model by default.
+[group('inference')]
+inference-local-serve token_path enclave_email="beach.do.008@gmail.com" data_owners="koenlennartvanderveen@gmail.com,koen@openmined.org" model_owner="koenlennartvanderveen@gmail.com" model_size="270m" use_mock="true":
+    #!/usr/bin/env bash
+    set -e
+    export SYFT_ENCLAVE_EMAIL="{{enclave_email}}"
+    export SYFT_ENCLAVE_DATA_OWNERS="{{data_owners}}"
+    export SYFT_ENCLAVE_MODEL_OWNER="{{model_owner}}"
+    export SYFT_ENCLAVE_MODEL_SIZE="{{model_size}}"
+    export SYFT_ENCLAVE_USE_MOCK_MODEL="{{use_mock}}"
+    export SYFT_ENCLAVE_REQUIRE_TEE=false
+    export SYFT_ENCLAVE_USE_ENCRYPTION=false
+    export SYFT_ENCLAVE_TOKEN_PATH="$(realpath {{token_path}})"
+    export PRE_SYNC=false
+    mkdir -p /tmp/enclave-local
+    nohup uv run --no-sync python -m enclave_model_api > /tmp/enclave-local/runner.log 2>&1 &
+    echo $! > /tmp/enclave-local/runner.pid
+    nohup uv run --no-sync python scripts/local_server.py > /tmp/enclave-local/server.log 2>&1 &
+    echo $! > /tmp/enclave-local/server.pid
+    echo "started enclave runner + inference server (logs: /tmp/enclave-local/{runner,server}.log)"
+
+# Stop the local enclave runner + inference server started by inference-local-serve.
+[group('inference')]
+inference-local-stop:
+    #!/usr/bin/env bash
+    pkill -f "enclave_model_api" 2>/dev/null && echo "stopped runner" || echo "runner not running"
+    pkill -f "local_server.py" 2>/dev/null && echo "stopped server" || echo "server not running"
+    rm -f /tmp/enclave-local/runner.pid /tmp/enclave-local/server.pid
+
+# Build the base + inference images locally (host arch, no push)
+[group('inference')]
+inference-local-build tag="dev":
+    just --justfile ../syft-enclave/Justfile --working-directory ../syft-enclave local-build {{tag}}
+    docker build \
+      --build-arg BASE_IMAGE={{image_base}}:{{tag}} \
+      -t {{inference_image_base}}:{{tag}} \
+      -f docker/Dockerfile ../..
+
+# Run the inference container locally (DEV ONLY — never with a prod token).
+# Exposes /infer, /model-status, /attestation on port 8080.
+[group('inference')]
+inference-local-run email data_owners model_owner token_path model_dataset="gemma3_model" model_size="270m" logs_dataset="inference_logs" name="enclave-model-api-local" tag="dev":
+    #!/bin/bash
+    set -e
+    [ -f "{{token_path}}" ] || { echo "Error: token file not found at {{token_path}}" >&2; exit 1; }
+    [ -n "{{data_owners}}" ] || { echo "Error: data_owners is required (comma-separated emails)." >&2; exit 1; }
+    docker run --rm -it \
+      --name {{name}} \
+      -p 8080:8080 \
+      -e SYFT_ENCLAVE_EMAIL="{{email}}" \
+      -e SYFT_ENCLAVE_DATA_OWNERS="{{data_owners}}" \
+      -e SYFT_ENCLAVE_MODEL_OWNER="{{model_owner}}" \
+      -e SYFT_ENCLAVE_MODEL_DATASET="{{model_dataset}}" \
+      -e SYFT_ENCLAVE_MODEL_SIZE="{{model_size}}" \
+      -e SYFT_ENCLAVE_LOGS_DATASET="{{logs_dataset}}" \
+      -e SYFT_ENCLAVE_REQUIRE_TEE=false \
+      -v "$(realpath {{token_path}}):/run/syft-enclave/token.json:ro" \
+      {{inference_image_base}}:{{tag}}
+
+# Set OM_DOCKER_LOGIN + OM_DOCKER_PW to skip the docker-login prompt.
+# Build the base image for linux/amd64, then the inference image on top,
+# and push only the inference image (Confidential Spaces pulls just that).
+[group('inference')]
+inference-build-push tags="latest":
+    #!/bin/bash
+    set -e
+    {{ensure_dockerhub_login}}
+    docker build --platform linux/amd64 \
+      -t {{image_base}}:inference-base \
+      -f ../syft-enclave/docker/Dockerfile ../..
+    tag_args=""
+    for t in {{tags}}; do
+        tag_args="$tag_args -t {{inference_image_base}}:$t"
+    done
+    docker build --platform linux/amd64 \
+      --build-arg BASE_IMAGE={{image_base}}:inference-base \
+      $tag_args \
+      -f docker/Dockerfile ../..
+    for t in {{tags}}; do
+        docker push {{inference_image_base}}:$t
+    done
+
+# Tear down a deployed inference enclave and all its gcloud state: the VM,
+# then the demo-scoped Secret Manager secret + service account (IAM bindings,
+# SA, secret + all versions). Pass the same name/secret/sa you deployed with.
+# DESTRUCTIVE — confirm with CONFIRM_TEARDOWN=yes (already set below) deletes
+# without prompting. Does NOT touch syftbox/Drive state (see `delete-syftbox`).
+[group('inference')]
+inference-destroy name="enclave-inference-demo-vm" secret="syft-enclave-token-inference-demo" sa="syft-enclave-sa-inference-demo":
+    #!/usr/bin/env bash
+    set -e
+    just stop "{{name}}"
+    CONFIRM_TEARDOWN=yes just teardown-sa "{{secret}}" "{{sa}}"
+
+# Deploy a production inference enclave VM (hardened image, no SSH).
+# n2d-standard-4 default for model memory headroom (270m fits; 1b+ needs more).
+[group('inference')]
+inference-start email model_owner name=vm_default machine_type="n2d-standard-4" model_dataset="gemma3_model" model_size="270m" logs_dataset="inference_logs" job-timeout="": _provision
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    [ -n "$sa_email" ] || { echo "Error: SA not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
+
+    job_timeout_env=""
+    if [ -n "{{job-timeout}}" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job-timeout}}"
+    fi
+
+    gcloud compute instances create {{name}} \
+      --project="$project_id" \
+      --zone="$zone" \
+      --machine-type={{machine_type}} \
+      --confidential-compute-type=SEV \
+      --shielded-secure-boot \
+      --maintenance-policy=MIGRATE \
+      --min-cpu-platform="AMD Milan" \
+      --image-family=confidential-space \
+      --image-project=confidential-space-images \
+      --scopes=cloud-platform \
+      --service-account="$sa_email" \
+      --tags=http-server \
+      --metadata="^~^tee-image-reference={{inference_image}}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_MODEL_OWNER={{model_owner}}~tee-env-SYFT_ENCLAVE_MODEL_DATASET={{model_dataset}}~tee-env-SYFT_ENCLAVE_MODEL_SIZE={{model_size}}~tee-env-SYFT_ENCLAVE_LOGS_DATASET={{logs_dataset}}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
+
+# Deploy a debug inference enclave VM (SSH enabled, logs to serial output)
+[group('inference')]
+inference-start-debug email model_owner name=vm_default machine_type="n2d-standard-4" model_dataset="gemma3_model" model_size="270m" logs_dataset="inference_logs" job-timeout="" use_encryption="false": _provision
+    #!/bin/bash
+    set -e
+    {{load_settings}}
+    [ -n "$sa_email" ] || { echo "Error: SA not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
+    [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
+
+    job_timeout_env=""
+    if [ -n "{{job-timeout}}" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job-timeout}}"
+    fi
+
+    gcloud compute instances create {{name}} \
+      --project="$project_id" \
+      --zone="$zone" \
+      --machine-type={{machine_type}} \
+      --confidential-compute-type=SEV \
+      --shielded-secure-boot \
+      --maintenance-policy=MIGRATE \
+      --min-cpu-platform="AMD Milan" \
+      --image-family=confidential-space-debug \
+      --image-project=confidential-space-images \
+      --scopes=cloud-platform \
+      --service-account="$sa_email" \
+      --tags=http-server \
+      --metadata="^~^tee-image-reference={{inference_image}}~tee-restart-policy=Always~tee-container-log-redirect=true~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_MODEL_OWNER={{model_owner}}~tee-env-SYFT_ENCLAVE_MODEL_DATASET={{model_dataset}}~tee-env-SYFT_ENCLAVE_MODEL_SIZE={{model_size}}~tee-env-SYFT_ENCLAVE_LOGS_DATASET={{logs_dataset}}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION={{use_encryption}}${job_timeout_env}"

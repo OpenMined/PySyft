@@ -1,0 +1,32 @@
+[project]
+name = "enclave-model-api-example"
+version = "0.1.0"
+description = "Example LLM inference API packaged on top of a syft-enclave"
+authors = [{ name = "OpenMined", email = "info@openmined.org" }]
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+
+dependencies = [
+    "syft-enclave",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.34.0",
+]
+
+# Model deps (gemma/jax) are intentionally NOT listed here — they are
+# docker-only (see docker/requirements.txt) to keep test envs and the root
+# uv.lock free of jax/flax/orbax.
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "httpx",  # fastapi TestClient (inference server tests)
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+"syft-enclave" = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/enclave_model_api"]
