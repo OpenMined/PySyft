@@ -85,7 +85,6 @@ ipython_config.py
 # pyenv
 .python-version
 
-<<<<<<< HEAD
 # python stuff
 *__pycache__*
 *.pyc
@@ -95,10 +94,9 @@ ipython_config.py
 *.ipynb_checkpoints*
 **.pytest_cache/
 **/pip-wheel-metadata
-=======
+
 # pipenv
 Pipfile.lock
->>>>>>> 13b3d316fd8ac0b0fa55ecf13c2fa42cac2b8590
 
 # poetry
 poetry.lock
