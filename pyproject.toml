@@ -71,6 +71,7 @@ members = ["packages/*"]
 "syft-perms" = { workspace = true }
 "syft-enclave" = { workspace = true }
 "enclave-model-api-example" = { workspace = true }
+"syft-restrict" = { workspace = true }
 
 [project.urls]
 Homepage = "https://github.com/OpenMined/syft-client"
@@ -177,5 +178,7 @@ test = [
     "isort>=5.12.0",
     "coverage>=7.0.0",
     "enclave-model-api-example[test]",  # pulls fastapi/httpx for the inference server tests
+    "syft-enclave",
+    "syft-restrict",
     "pyarrow",  # only used by parquet test fixtures (tests/unit/utils.py)
 ]

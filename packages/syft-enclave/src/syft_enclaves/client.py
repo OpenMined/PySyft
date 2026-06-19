@@ -27,6 +27,9 @@ from syft_enclaves.utils import (
     wire_peers,
     write_versions,
 )
+from syft_enclaves.immutability import (
+    make_private_dataset_immutability_filter,
+)
 
 
 class SyftEnclaveClient:
@@ -405,6 +408,12 @@ class SyftEnclaveClient:
         """
         manager = SyftboxManager.from_config(config)
         manager.job_client = EnclaveJobClient(manager.job_client)
+
+        if manager.datasite_watcher_syncer:
+            manager.datasite_watcher_syncer.datasite_watcher_cache.pre_write_filter = (
+                make_private_dataset_immutability_filter(manager.syftbox_folder)
+            )
+
         return cls(manager, data_owners=data_owners)
 
     @classmethod

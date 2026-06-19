@@ -85,6 +85,16 @@ ipython_config.py
 # pyenv
 .python-version
 
+# python stuff
+*__pycache__*
+*.pyc
+*.egg-info/
+*.swp
+*.swo
+*.ipynb_checkpoints*
+**.pytest_cache/
+**/pip-wheel-metadata
+
 # pipenv
 Pipfile.lock
 
