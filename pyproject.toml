@@ -74,10 +74,10 @@ members = ["packages/*"]
 "syft-restrict" = { workspace = true }
 
 [project.urls]
-Homepage = "https://github.com/OpenMined/syft-client"
-Repository = "https://github.com/OpenMined/syft-client"
-Documentation = "https://github.com/OpenMined/syft-client#readme"
-"Bug Tracker" = "https://github.com/OpenMined/syft-client/issues"
+Homepage = "https://github.com/OpenMined/PySyft"
+Repository = "https://github.com/OpenMined/PySyft"
+Documentation = "https://github.com/OpenMined/PySyft#readme"
+"Bug Tracker" = "https://github.com/OpenMined/PySyft/issues"
 
 [tool.setuptools.dynamic]
 version = {attr = "syft_client.version.SYFT_CLIENT_VERSION"}

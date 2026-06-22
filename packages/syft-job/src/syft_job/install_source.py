@@ -105,7 +105,7 @@ def get_syft_client_install_source() -> str:
     Returns:
         A string suitable for pip/uv install, one of:
         - A local path (e.g., "/Users/test/workspace/syft-client")
-        - A git URL (e.g., "git+https://github.com/OpenMined/syft-client@main")
+        - A git URL (e.g., "git+https://github.com/OpenMined/PySyft@main")
         - The PyPI package name with version (e.g., "syft-client==0.1.94")
     """
     # Check for environment variable override
