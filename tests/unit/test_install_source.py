@@ -120,11 +120,11 @@ class TestGetInstallSource:
             name="syft-client",
             path="/path/to/site-packages/syft_client-0.1.94.dist-info",
             direct_url={
-                "url": "https://github.com/OpenMined/syft-client",
+                "url": "https://github.com/OpenMined/PySyft",
                 "vcs_info": {
                     "vcs": "git",
                     "commit_id": "abc123def456",
-                    "requested_revision": "main",
+                    "requested_revision": "dev",
                 },
             },
         )
@@ -136,7 +136,7 @@ class TestGetInstallSource:
                 create_mock_distributions(mock_dist),
             ):
                 result = get_syft_client_install_source()
-                assert result == "git+https://github.com/OpenMined/syft-client@main"
+                assert result == "git+https://github.com/OpenMined/PySyft@dev"
 
     def test_github_install_with_branch(self):
         """GitHub install with specific branch should include branch in URL."""
@@ -146,7 +146,7 @@ class TestGetInstallSource:
             name="syft-client",
             path="/path/to/site-packages/syft_client-0.1.94.dist-info",
             direct_url={
-                "url": "https://github.com/OpenMined/syft-client.git",
+                "url": "https://github.com/OpenMined/PySyft.git",
                 "vcs_info": {
                     "vcs": "git",
                     "commit_id": "abc123def456",
@@ -164,7 +164,7 @@ class TestGetInstallSource:
                 result = get_syft_client_install_source()
                 assert (
                     result
-                    == "git+https://github.com/OpenMined/syft-client.git@feature/new-stuff"
+                    == "git+https://github.com/OpenMined/PySyft.git@feature/new-stuff"
                 )
 
     def test_github_install_without_branch_uses_commit(self):
@@ -175,7 +175,7 @@ class TestGetInstallSource:
             name="syft-client",
             path="/path/to/site-packages/syft_client-0.1.94.dist-info",
             direct_url={
-                "url": "https://github.com/OpenMined/syft-client",
+                "url": "https://github.com/OpenMined/PySyft",
                 "vcs_info": {
                     "vcs": "git",
                     "commit_id": "abc123def456",
@@ -190,10 +190,7 @@ class TestGetInstallSource:
                 create_mock_distributions(mock_dist),
             ):
                 result = get_syft_client_install_source()
-                assert (
-                    result
-                    == "git+https://github.com/OpenMined/syft-client@abc123def456"
-                )
+                assert result == "git+https://github.com/OpenMined/PySyft@abc123def456"
 
     def test_pypi_install_returns_package_name_with_version(self):
         """PyPI install (no direct_url.json) should return package name with version."""

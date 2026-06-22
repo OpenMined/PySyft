@@ -15,7 +15,7 @@ Thank you for your interest in contributing to syft-client! This document provid
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/OpenMined/syft-client.git
+   git clone https://github.com/OpenMined/PySyft.git
    cd syft-client
    ```
 
@@ -277,8 +277,8 @@ pytest tests/integration/test_sync_manager.py -v -s
 
 ## Getting Help
 
-- **Issues**: Check existing [GitHub issues](https://github.com/OpenMined/syft-client/issues)
-- **Discussions**: Use [GitHub Discussions](https://github.com/OpenMined/syft-client/discussions)
+- **Issues**: Check existing [GitHub issues](https://github.com/OpenMined/PySyft/issues)
+- **Discussions**: Use [GitHub Discussions](https://github.com/OpenMined/PySyft/discussions)
 - **Questions**: Open a new issue with the `question` label
 
 ## Branch Protection Rules
