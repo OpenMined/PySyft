@@ -49,15 +49,15 @@ concurrency:
 jobs:
   call-linting-tests:
     if: inputs.run_tests == true
-    uses: OpenMined/PySyft/.github/workflows/ci.yml@main
+    uses: OpenMined/PySyft/.github/workflows/ci.yml@dev
 
   call-unit-tests:
     if: inputs.run_tests == true
-    uses: OpenMined/PySyft/.github/workflows/unit-tests.yml@main
+    uses: OpenMined/PySyft/.github/workflows/unit-tests.yml@dev
 
   call-integration-tests:
     if: inputs.run_tests == true
-    uses: OpenMined/PySyft/.github/workflows/integration-tests.yml@main
+    uses: OpenMined/PySyft/.github/workflows/integration-tests.yml@dev
     secrets: inherit
 
   # Release order follows dependency graph:

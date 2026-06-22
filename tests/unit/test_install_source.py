@@ -136,7 +136,7 @@ class TestGetInstallSource:
                 create_mock_distributions(mock_dist),
             ):
                 result = get_syft_client_install_source()
-                assert result == "git+https://github.com/OpenMined/PySyft@main"
+                assert result == "git+https://github.com/OpenMined/PySyft@dev"
 
     def test_github_install_with_branch(self):
         """GitHub install with specific branch should include branch in URL."""
