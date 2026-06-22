@@ -124,7 +124,7 @@ class TestGetInstallSource:
                 "vcs_info": {
                     "vcs": "git",
                     "commit_id": "abc123def456",
-                    "requested_revision": "main",
+                    "requested_revision": "dev",
                 },
             },
         )
