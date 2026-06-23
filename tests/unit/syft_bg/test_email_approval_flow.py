@@ -32,7 +32,7 @@ def _make_notify_orchestrator(
 
     Returns (orchestrator, notify_state, mock_sender).
     """
-    notify_state = JsonStateManager(tmp / "notify_state.json")
+    notify_state = JsonStateManager(state_file=tmp / "notify_state.json")
 
     mock_sender = MagicMock()
     mock_sender.notify_new_job.return_value = SendResult(
@@ -74,7 +74,7 @@ def _make_email_approve_orchestrator(
     """
     do_email = do_manager.email
 
-    email_approve_state = JsonStateManager(tmp / "email_approve_state.json")
+    email_approve_state = JsonStateManager(state_file=tmp / "email_approve_state.json")
     email_approve_state.set_data("email_approve_last_history_id", "10000")
 
     handler = EmailApproveHandler(

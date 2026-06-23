@@ -48,7 +48,7 @@ def _make_notify_orchestrator(
     tmp: Path,
 ) -> tuple[NotificationOrchestrator, JsonStateManager, MagicMock]:
     """Create a NotificationOrchestrator with a mocked GmailSender."""
-    notify_state = JsonStateManager(tmp / "notify_state.json")
+    notify_state = JsonStateManager(state_file=tmp / "notify_state.json")
 
     mock_sender = MagicMock()
     mock_sender.notify_new_job.return_value = SendResult(
@@ -89,7 +89,7 @@ def _make_email_approve_orchestrator(
     """Create email approve components with mocked GmailWatcher."""
     do_email = do_manager.email
 
-    email_approve_state = JsonStateManager(tmp / "email_approve_state.json")
+    email_approve_state = JsonStateManager(state_file=tmp / "email_approve_state.json")
     email_approve_state.set_data("email_approve_last_history_id", "10000")
 
     handler = EmailApproveHandler(

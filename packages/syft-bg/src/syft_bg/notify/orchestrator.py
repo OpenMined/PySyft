@@ -62,7 +62,7 @@ class NotificationOrchestrator(BaseOrchestrator):
         credentials = GmailAuth().load_credentials(config.gmail_token_path)
         sender = GmailSender(credentials)
 
-        state_manager = JsonStateManager(config.notify_state_path)
+        state_manager = JsonStateManager(state_file=config.notify_state_path)
 
         job_handler = JobHandler(
             sender,
@@ -79,7 +79,7 @@ class NotificationOrchestrator(BaseOrchestrator):
             state=state_manager,
         )
 
-        sync_state = JsonStateManager(config.sync_state_path)
+        sync_state = JsonStateManager(state_file=config.sync_state_path)
 
         peer_monitor = PeerMonitor(
             do_email=config.do_email,

@@ -30,7 +30,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
         self.interval = config.interval
         self._config_path = config_path
 
-        self._state = JsonStateManager(config.approve_state_path)
+        self._state = JsonStateManager(state_file=config.approve_state_path)
         self._monitors_initialized = False
 
     def setup(self) -> None:

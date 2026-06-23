@@ -63,7 +63,7 @@ class SyncOrchestrator(BaseOrchestrator):
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )
 
-        state = JsonStateManager(config.sync_state_path)
+        state = JsonStateManager(state_file=config.sync_state_path)
 
         return cls(
             client=client,
