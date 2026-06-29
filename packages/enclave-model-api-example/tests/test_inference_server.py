@@ -64,7 +64,7 @@ def test_inference_server_full_lifecycle(tmp_path):
         weights_dir=weights_dir,
         logs_dir=logs_dir,
     )
-    client = TestClient(create_app(service))
+    client = TestClient(create_app(service, use_encryption=True))
 
     # Weights not synced yet
     status = client.get("/model-status").json()
@@ -73,6 +73,7 @@ def test_inference_server_full_lifecycle(tmp_path):
         "mock": False,
         "weights_present": False,
         "model_loaded": False,
+        "use_encryption": True,
     }
     assert client.post("/infer", json={"query": "hi"}).status_code == 503
 

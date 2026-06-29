@@ -20,7 +20,9 @@ class InferResponse(BaseModel):
     stats: dict
 
 
-def build_router(service: InferenceService) -> APIRouter:
+def build_router(
+    service: InferenceService, use_encryption: bool | None = None
+) -> APIRouter:
     router = APIRouter()
 
     @router.post("/infer", response_model=InferResponse)
@@ -42,15 +44,21 @@ def build_router(service: InferenceService) -> APIRouter:
             "mock": not getattr(service.backend, "requires_weights", True),
             "weights_present": service.weights_present,
             "model_loaded": service.loaded,
+            # Whether the enclave encrypts all Drive communication. Data owners
+            # must use the SAME setting or peering/sync silently fails, so the
+            # notebook reads this to match login_do(encryption=...) automatically.
+            "use_encryption": use_encryption,
         }
 
     return router
 
 
-def create_app(service: InferenceService) -> FastAPI:
+def create_app(
+    service: InferenceService, use_encryption: bool | None = None
+) -> FastAPI:
     """Standalone app for tests and local runs (docker combines with attestation)."""
     app = FastAPI(title="Syft Enclave Inference", version="0.1.0")
-    app.include_router(build_router(service))
+    app.include_router(build_router(service, use_encryption=use_encryption))
 
     @app.get("/health")
     def health() -> dict:

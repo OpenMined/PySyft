@@ -21,7 +21,7 @@ def _login(
     has_do_role: bool,
     has_ds_role: bool,
     encryption: bool = False,
-    encryption_keys: dict | None = None,
+    crypto_keys_path: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Shared login for enclave-flow participants.
 
@@ -29,8 +29,9 @@ def _login(
     run the login-time version-mismatch check, then build the enclave client
     for Colab or Jupyter — always wrapping the job_client with EnclaveJobClient.
 
-    When ``encryption`` is set, keys are persisted to ``~/.syftbox/crypto_keys.json``
-    (a stable identity across sessions).
+    When ``encryption`` is set, keys are persisted per-datasite to
+    ``<syftbox_folder>/<email>/private/crypto_keys.json`` (a stable identity
+    across sessions; never synced to Drive).
     """
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
@@ -42,7 +43,7 @@ def _login(
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
             encryption=encryption,
-            encryption_keys=encryption_keys,
+            crypto_keys_path=crypto_keys_path,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         )
     else:
@@ -52,7 +53,7 @@ def _login(
             has_ds_role=has_ds_role,
             token_path=Path(token_path) if token_path is not None else None,
             encryption=encryption,
-            encryption_keys=encryption_keys,
+            crypto_keys_path=crypto_keys_path,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         )
 
@@ -73,7 +74,7 @@ def login_do(
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
     encryption: bool = False,
-    encryption_keys: dict | None = None,
+    crypto_keys_path: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Log in a data owner for an enclave computation.
 
@@ -88,7 +89,7 @@ def login_do(
         has_do_role=True,
         has_ds_role=True,
         encryption=encryption,
-        encryption_keys=encryption_keys,
+        crypto_keys_path=crypto_keys_path,
     )
 
 
@@ -99,7 +100,7 @@ def login_ds(
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
     encryption: bool = False,
-    encryption_keys: dict | None = None,
+    crypto_keys_path: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Log in a data scientist for an enclave computation.
 
@@ -114,5 +115,5 @@ def login_ds(
         has_do_role=False,
         has_ds_role=True,
         encryption=encryption,
-        encryption_keys=encryption_keys,
+        crypto_keys_path=crypto_keys_path,
     )

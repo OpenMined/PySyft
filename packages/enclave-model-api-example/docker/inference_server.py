@@ -40,4 +40,4 @@ service = InferenceService(
     ),
 )
 service.start_polling()
-app.include_router(build_router(service))
+app.include_router(build_router(service, use_encryption=settings.use_encryption))

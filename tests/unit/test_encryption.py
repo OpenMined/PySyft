@@ -115,16 +115,6 @@ def test_save_and_load_keys():
     path.unlink()
 
 
-def test_from_keys_data():
-    alice = PeerStore(email="alice@example.com", use_encryption=True)
-    alice.generate_keys()
-
-    keys_data = {"keys_jwk": alice._private_keys.to_jwks()}
-    loaded = PeerStore.from_keys_data("alice@example.com", keys_data)
-    assert loaded.has_my_keys()
-    assert loaded.get_public_bundle() is not None
-
-
 def test_peer_use_encryption_inherited():
     """Peers added to PeerStore inherit its use_encryption flag."""
     ps = PeerStore(email="alice@example.com", use_encryption=True)
