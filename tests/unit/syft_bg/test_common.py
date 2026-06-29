@@ -48,7 +48,7 @@ class TestJsonStateManager:
     def test_empty_state_file(self, temp_dir):
         """Should handle non-existent state file."""
         state_path = temp_dir / "state.json"
-        state = JsonStateManager(state_path)
+        state = JsonStateManager(state_file=state_path)
 
         assert not state.was_notified("job1", "new_job")
         assert not state.was_approved("job1")
@@ -56,7 +56,7 @@ class TestJsonStateManager:
     def test_mark_and_check_notified(self, temp_dir):
         """Should track notified jobs by event type."""
         state_path = temp_dir / "state.json"
-        state = JsonStateManager(state_path)
+        state = JsonStateManager(state_file=state_path)
 
         assert not state.was_notified("job1", "new_job")
         state.mark_notified("job1", "new_job")
@@ -67,7 +67,7 @@ class TestJsonStateManager:
     def test_mark_and_check_approved(self, temp_dir):
         """Should track approved jobs."""
         state_path = temp_dir / "state.json"
-        state = JsonStateManager(state_path)
+        state = JsonStateManager(state_file=state_path)
 
         assert not state.was_approved("job1")
         state.mark_approved("job1", "user@example.com")
@@ -78,17 +78,17 @@ class TestJsonStateManager:
         state_path = temp_dir / "state.json"
 
         # Write state
-        state1 = JsonStateManager(state_path)
+        state1 = JsonStateManager(state_file=state_path)
         state1.mark_notified("job1", "new_job")
 
         # Read with new instance
-        state2 = JsonStateManager(state_path)
+        state2 = JsonStateManager(state_file=state_path)
         assert state2.was_notified("job1", "new_job")
 
     def test_state_file_is_valid_json(self, temp_dir):
         """State file should be valid JSON."""
         state_path = temp_dir / "state.json"
-        state = JsonStateManager(state_path)
+        state = JsonStateManager(state_file=state_path)
         state.mark_notified("job1", "new_job")
 
         # Should be parseable as JSON
@@ -100,7 +100,7 @@ class TestJsonStateManager:
     def test_get_and_set_data(self, temp_dir):
         """Should support generic get/set operations."""
         state_path = temp_dir / "state.json"
-        state = JsonStateManager(state_path)
+        state = JsonStateManager(state_file=state_path)
 
         assert state.get_data("custom_key") is None
         state.set_data("custom_key", {"foo": "bar"})
@@ -109,7 +109,7 @@ class TestJsonStateManager:
     def test_store_and_get_thread_id(self, temp_dir):
         """Should store a thread_id for a job and retrieve it."""
         state_path = temp_dir / "state.json"
-        state = JsonStateManager(state_path)
+        state = JsonStateManager(state_file=state_path)
 
         state.store_thread_id("job1", "thread-abc-123")
         assert state.get_thread_id("job1") == "thread-abc-123"
@@ -117,6 +117,6 @@ class TestJsonStateManager:
     def test_get_thread_id_nonexistent(self, temp_dir):
         """Should return None for an unknown job's thread_id."""
         state_path = temp_dir / "state.json"
-        state = JsonStateManager(state_path)
+        state = JsonStateManager(state_file=state_path)
 
         assert state.get_thread_id("nonexistent_job") is None

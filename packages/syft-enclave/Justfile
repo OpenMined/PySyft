@@ -2,6 +2,7 @@ dockerhub_username := "openminedreleasebot"
 image_base := "docker.io/openminedreleasebot/syft-client-enclave"
 image := image_base + ":latest"
 machine_type_default := "n2d-standard-2"
+machine_boot_size_default := "200"
 vm_default := "syft-enclave-vm"
 secret_name_default := "syft-enclave-token"
 sa_name_default := "syft-enclave-service-account"
@@ -212,7 +213,7 @@ provision-secret-sa token_path secret=secret_name_default sa=sa_name_default: _p
 # No WIF — use when org policy blocks WIF provider creation. Requires
 # `just provision-secret-sa <token>` first.
 [group('deploy')]
-start email name=vm_default machine_type=machine_type_default job-timeout="": _provision
+start email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job-timeout="": _provision
     #!/bin/bash
     set -e
     {{load_settings}}
@@ -234,6 +235,8 @@ start email name=vm_default machine_type=machine_type_default job-timeout="": _p
       --shielded-secure-boot \
       --maintenance-policy=MIGRATE \
       --min-cpu-platform="AMD Milan" \
+      --boot-disk-size={{machine_boot_size}} \
+      --boot-disk-type=pd-ssd \
       --image-family=confidential-space \
       --image-project=confidential-space-images \
       --scopes=cloud-platform \
@@ -243,7 +246,7 @@ start email name=vm_default machine_type=machine_type_default job-timeout="": _p
 
 
 [group('deploy')]
-start-debug email name=vm_default machine_type=machine_type_default job-timeout="" use_encryption="false": _provision
+start-debug email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job-timeout="" use_encryption="false": _provision
     #!/bin/bash
     set -e
     {{load_settings}}
@@ -265,6 +268,8 @@ start-debug email name=vm_default machine_type=machine_type_default job-timeout=
       --shielded-secure-boot \
       --maintenance-policy=MIGRATE \
       --min-cpu-platform="AMD Milan" \
+      --boot-disk-size={{machine_boot_size}} \
+      --boot-disk-type=pd-ssd \
       --image-family=confidential-space-debug \
       --image-project=confidential-space-images \
       --scopes=cloud-platform \
