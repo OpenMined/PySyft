@@ -116,8 +116,10 @@ inference-destroy name="enclave-inference-demo-vm" secret="syft-enclave-token-in
 
 # Deploy a production inference enclave VM (hardened image, no SSH).
 # n2d-standard-4 default for model memory headroom (270m fits; 1b+ needs more).
+# use_mock="true" (default) serves canned responses; pass use_mock="false" to load
+# the real Gemma model from the gemma3_model weights dataset (model_owner must upload it).
 [group('inference')]
-inference-start email model_owner name=vm_default machine_type="n2d-standard-4" model_dataset="gemma3_model" model_size="270m" logs_dataset="inference_logs" job-timeout="": _provision
+inference-start email model_owner name=vm_default machine_type="n2d-standard-4" model_dataset="gemma3_model" model_size="270m" logs_dataset="inference_logs" job-timeout="" use_mock="true": _provision
     #!/bin/bash
     set -e
     {{load_settings}}
@@ -143,11 +145,11 @@ inference-start email model_owner name=vm_default machine_type="n2d-standard-4" 
       --scopes=cloud-platform \
       --service-account="$sa_email" \
       --tags=http-server \
-      --metadata="^~^tee-image-reference={{inference_image}}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_MODEL_OWNER={{model_owner}}~tee-env-SYFT_ENCLAVE_MODEL_DATASET={{model_dataset}}~tee-env-SYFT_ENCLAVE_MODEL_SIZE={{model_size}}~tee-env-SYFT_ENCLAVE_LOGS_DATASET={{logs_dataset}}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
+      --metadata="^~^tee-image-reference={{inference_image}}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_MODEL_OWNER={{model_owner}}~tee-env-SYFT_ENCLAVE_MODEL_DATASET={{model_dataset}}~tee-env-SYFT_ENCLAVE_MODEL_SIZE={{model_size}}~tee-env-SYFT_ENCLAVE_LOGS_DATASET={{logs_dataset}}~tee-env-SYFT_ENCLAVE_USE_MOCK_MODEL={{use_mock}}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
 
 # Deploy a debug inference enclave VM (SSH enabled, logs to serial output)
 [group('inference')]
-inference-start-debug email model_owner name=vm_default machine_type="n2d-standard-4" model_dataset="gemma3_model" model_size="270m" logs_dataset="inference_logs" job-timeout="" use_encryption="false": _provision
+inference-start-debug email model_owner name=vm_default machine_type="n2d-standard-4" model_dataset="gemma3_model" model_size="270m" logs_dataset="inference_logs" job-timeout="" use_encryption="false" use_mock="true": _provision
     #!/bin/bash
     set -e
     {{load_settings}}
@@ -173,4 +175,4 @@ inference-start-debug email model_owner name=vm_default machine_type="n2d-standa
       --scopes=cloud-platform \
       --service-account="$sa_email" \
       --tags=http-server \
-      --metadata="^~^tee-image-reference={{inference_image}}~tee-restart-policy=Always~tee-container-log-redirect=true~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_MODEL_OWNER={{model_owner}}~tee-env-SYFT_ENCLAVE_MODEL_DATASET={{model_dataset}}~tee-env-SYFT_ENCLAVE_MODEL_SIZE={{model_size}}~tee-env-SYFT_ENCLAVE_LOGS_DATASET={{logs_dataset}}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION={{use_encryption}}${job_timeout_env}"
+      --metadata="^~^tee-image-reference={{inference_image}}~tee-restart-policy=Always~tee-container-log-redirect=true~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_MODEL_OWNER={{model_owner}}~tee-env-SYFT_ENCLAVE_MODEL_DATASET={{model_dataset}}~tee-env-SYFT_ENCLAVE_MODEL_SIZE={{model_size}}~tee-env-SYFT_ENCLAVE_LOGS_DATASET={{logs_dataset}}~tee-env-SYFT_ENCLAVE_USE_MOCK_MODEL={{use_mock}}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION={{use_encryption}}${job_timeout_env}"

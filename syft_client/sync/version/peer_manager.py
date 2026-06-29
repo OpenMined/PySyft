@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
 from syft_client.sync.connections.base_connection import ConnectionConfig
 from syft_client.sync.connections.connection_router import ConnectionRouter
 from syft_client.sync.peers.peer import Peer, PeerState
-from syft_client.sync.peers.peer_store import PeerStore
+from syft_client.sync.peers.peer_store import PeerStore, datasite_crypto_keys_path
 from syft_client.sync.utils.print_utils import (
     print_peer_already_connected,
     print_peer_connection_established,
@@ -96,6 +96,7 @@ class PeerManagerConfig(BaseModel):
     """Configuration for PeerManager."""
 
     syftbox_folder: Path
+    email: str = ""
     connection_configs: List[ConnectionConfig] = []
     force_ignore_peer_version: bool = False
     force_ignore_protocol_version: bool = True
@@ -104,10 +105,23 @@ class PeerManagerConfig(BaseModel):
     has_do_role: bool = False
     has_ds_role: bool = False
     use_encryption: bool = False
-    encryption_keys: dict | None = None
+    # Explicit override for the encryption key file. When None, falls back to
+    # ``default_crypto_keys_path`` (the per-datasite location).
+    crypto_keys_path: Path | None = None
     skip_peer_on_patch_version_diff: Optional[bool] = (
         None  # None: value is determined by the role (resolves to has_do_role)
     )
+
+    @property
+    def default_crypto_keys_path(self) -> Path:
+        """Default per-datasite encryption key file for this participant
+        (``<syftbox_folder>/<email>/private/crypto_keys.json``)."""
+        return datasite_crypto_keys_path(self.syftbox_folder, self.email)
+
+    @property
+    def resolved_crypto_keys_path(self) -> Path:
+        """The explicit ``crypto_keys_path`` override if given, else the default."""
+        return self.crypto_keys_path or self.default_crypto_keys_path
 
     @model_validator(mode="after")
     def _default_skip_peer_on_patch(self) -> "PeerManagerConfig":
@@ -163,14 +177,21 @@ class PeerManager(BaseModel):
 
     @classmethod
     def from_config(cls, config: PeerManagerConfig, email: str = "") -> "PeerManager":
-        """Create a PeerManager from a config."""
+        """Create a PeerManager from a config.
+
+        ``email`` is a fallback for configs built without one; the config's own
+        ``email`` takes precedence so the key path matches the datasite.
+        """
+        resolved_email = config.email or email
         peer_store = PeerStore.create(
-            email=email,
+            email=resolved_email,
             use_encryption=config.use_encryption,
-            encryption_keys=config.encryption_keys,
+            keys_path=config.resolved_crypto_keys_path
+            if config.use_encryption
+            else None,
         )
         connection_router = ConnectionRouter.from_configs(
-            email, config.connection_configs
+            resolved_email, config.connection_configs
         )
         connection_router.peer_store = peer_store
         return cls(

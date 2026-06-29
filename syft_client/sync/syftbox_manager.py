@@ -105,7 +105,7 @@ class SyftboxManagerConfig(BaseModel):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         encryption: bool = False,
-        encryption_keys: dict | None = None,
+        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -153,11 +153,12 @@ class SyftboxManagerConfig(BaseModel):
         )
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
+            email=email,
             connection_configs=connection_configs,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
             use_encryption=encryption,
-            encryption_keys=encryption_keys,
+            crypto_keys_path=crypto_keys_path,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             force_ignore_peer_version=force_ignore_peer_version,
         )
@@ -183,7 +184,7 @@ class SyftboxManagerConfig(BaseModel):
         has_do_role: bool = False,
         token_path: Path | None = None,
         encryption: bool = False,
-        encryption_keys: dict | None = None,
+        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -234,11 +235,12 @@ class SyftboxManagerConfig(BaseModel):
         )
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
+            email=email,
             connection_configs=connection_configs,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
             use_encryption=encryption,
-            encryption_keys=encryption_keys,
+            crypto_keys_path=crypto_keys_path,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             force_ignore_peer_version=force_ignore_peer_version,
         )
@@ -304,6 +306,7 @@ class SyftboxManagerConfig(BaseModel):
         )
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
+            email=email,
             connection_configs=[],  # Empty for in-memory, connections added later
             n_threads=2,  # Use fewer threads for testing
             force_ignore_peer_version=not check_versions,
@@ -379,6 +382,7 @@ class SyftboxManagerConfig(BaseModel):
         )
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
+            email=email,
             connection_configs=connection_configs,
             force_ignore_peer_version=not check_versions,
             has_do_role=has_do_role,
@@ -574,7 +578,7 @@ class SyftboxManager(BaseModel):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         encryption: bool = False,
-        encryption_keys: dict | None = None,
+        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -586,27 +590,12 @@ class SyftboxManager(BaseModel):
                 has_ds_role=has_ds_role,
                 has_do_role=has_do_role,
                 encryption=encryption,
-                encryption_keys=encryption_keys,
+                crypto_keys_path=crypto_keys_path,
                 skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=force_ignore_peer_version,
             )
         )
         return manager
-
-    def _init_encryption(self, encryption_keys: dict | None = None) -> None:
-        """Overwrite this manager's encryption keys from the top level.
-
-        Standard key init happens lower down in ``PeerManager.from_config`` via
-        the config. Call this to swap in a different key bundle (or freshly
-        generated/persisted keys when omitted) after construction, wiring the
-        new store into every connection router.
-        """
-        from syft_client.sync.peers.peer_store import PeerStore
-
-        ps = PeerStore.create(
-            email=self.email, use_encryption=True, encryption_keys=encryption_keys
-        )
-        self._set_peer_store(ps)
 
     @classmethod
     def for_jupyter(
@@ -616,7 +605,7 @@ class SyftboxManager(BaseModel):
         has_do_role: bool = False,
         token_path: Path | None = None,
         encryption: bool = False,
-        encryption_keys: dict | None = None,
+        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -631,7 +620,7 @@ class SyftboxManager(BaseModel):
                 has_do_role=has_do_role,
                 token_path=token_path,
                 encryption=encryption,
-                encryption_keys=encryption_keys,
+                crypto_keys_path=crypto_keys_path,
                 skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=force_ignore_peer_version,
             )
@@ -1617,8 +1606,6 @@ class SyftboxManager(BaseModel):
 
     def _delete_local_dirs(self):
         """Delete local syftbox folder and cache directories."""
-        from syft_client.sync.peers.peer_store import CRYPTO_KEYS_PATH
-
         syftbox_name = self.syftbox_folder.name
         syftbox_parent = self.syftbox_folder.parent
 
@@ -1630,9 +1617,9 @@ class SyftboxManager(BaseModel):
         for d in dirs_to_delete:
             if d.exists():
                 shutil.rmtree(d)
-
-        # Persistent encryption keys, so a fresh state regenerates a new identity.
-        CRYPTO_KEYS_PATH.unlink(missing_ok=True)
+        # Encryption keys live in <syftbox_folder>/<email>/private/crypto_keys.json,
+        # so deleting the syftbox folder above already removes them — a fresh state
+        # regenerates a new identity.
 
     # =========================================================================
     # CHECKPOINT METHODS

@@ -402,9 +402,10 @@ class SyftEnclaveClient:
     ) -> "SyftEnclaveClient":
         """Build a SyftEnclaveClient from a manager config with a wrapped job_client.
 
-        Encryption settings ride along on ``config`` (via
-        ``peer_manager_config.use_encryption`` / ``peer_manager_config.encryption_keys``);
-        ``SyftboxManager.from_config`` resolves the keys, so no extra step is needed.
+        Encryption rides along on ``config`` via
+        ``peer_manager_config.use_encryption``; ``SyftboxManager.from_config``
+        loads/generates this datasite's keys from its per-datasite key file, so no
+        extra step is needed.
         """
         manager = SyftboxManager.from_config(config)
         manager.job_client = EnclaveJobClient(manager.job_client)

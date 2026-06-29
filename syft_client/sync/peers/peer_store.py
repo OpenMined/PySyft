@@ -13,9 +13,17 @@ from pydantic import BaseModel, PrivateAttr
 
 from syft_client.sync.peers.peer import Peer
 
-# Persistent location for this participant's encryption key bundle. Loading from
-# here gives a stable identity across sessions; generated keys are saved here.
-CRYPTO_KEYS_PATH = Path.home() / ".syftbox" / "crypto_keys.json"
+# Encryption key bundles persist inside the participant's own SyftBox datasite
+# folder, under private/ (which is never synced to Drive). This scopes keys per
+# identity by location, so several identities can run on one machine without
+# colliding, and delete_syftbox removes them together with the folder.
+PRIVATE_DIR_NAME = "private"
+CRYPTO_KEYS_FILENAME = "crypto_keys.json"
+
+
+def datasite_crypto_keys_path(syftbox_folder: Path | str, email: str) -> Path:
+    """Per-datasite key file: ``<syftbox_folder>/<email>/private/crypto_keys.json``."""
+    return Path(syftbox_folder) / email / PRIVATE_DIR_NAME / CRYPTO_KEYS_FILENAME
 
 
 class PeerStore(BaseModel):
@@ -249,40 +257,44 @@ class PeerStore(BaseModel):
         return store
 
     @classmethod
-    def from_keys_data(cls, email: str, keys_data: dict) -> "PeerStore":
-        store = cls(email=email, use_encryption=True)
-        store._private_keys = syc.SyftPrivateKeys.from_jwks(keys_data["keys_jwk"])
-        for peer_email, bundle_dict in keys_data.get("peer_bundles", {}).items():
-            peer = Peer(
-                email=peer_email,
-                public_encryption_bundle=bundle_dict,
-                use_encryption=True,
-            )
-            store._peers.append(peer)
-        return store
-
-    @classmethod
     def create(
         cls,
         email: str,
         use_encryption: bool = False,
-        encryption_keys: dict | None = None,
+        keys_path: Path | str | None = None,
     ) -> "PeerStore":
-        """Build a PeerStore, resolving encryption keys when encryption is on.
+        """Build a PeerStore, loading or generating encryption keys when enabled.
 
-        - ``encryption_keys`` given: load that bundle (a stable identity).
-        - else if a key file exists at ``CRYPTO_KEYS_PATH``: load it.
-        - else: generate a fresh key pair and persist it to ``CRYPTO_KEYS_PATH``.
+        - encryption off: return a plain store (no keys).
+        - encryption on: ``keys_path`` is required — the participant's own
+          per-datasite key file (``<syftbox_folder>/<email>/private/crypto_keys.json``,
+          see :func:`datasite_crypto_keys_path`). Load it when present, else
+          generate a fresh key pair and persist it there.
 
-        When encryption is off and no keys are supplied, returns a plain store.
+        Scoping keys to a per-datasite file lets several identities run on one
+        machine (e.g. two data owners in the same notebook) without colliding, and
+        ties key lifetime to the datasite folder.
+
+        Raises:
+            ValueError: if encryption is on but ``keys_path`` is missing, or the
+                existing key file belongs to a different identity.
         """
-        if not use_encryption and not encryption_keys:
-            return cls(email=email, use_encryption=use_encryption)
-        if encryption_keys:
-            return cls.from_keys_data(email, encryption_keys)
-        if CRYPTO_KEYS_PATH.exists():
-            return cls.load_keys(CRYPTO_KEYS_PATH)
-        store = cls(email=email, use_encryption=True)
-        store.generate_keys()
-        store.save_keys(CRYPTO_KEYS_PATH)
-        return store
+        if not use_encryption:
+            return cls(email=email, use_encryption=False)
+        if keys_path is None:
+            raise ValueError("keys_path is required when use_encryption is True")
+        path = Path(keys_path)
+        if path.exists():
+            store = cls.load_keys(path)
+            if store.email != email:
+                raise ValueError(
+                    f"Encryption key file {path} belongs to {store.email!r}, "
+                    f"not {email!r}"
+                )
+            return store
+        else:
+            # write keys to passed path
+            store = cls(email=email, use_encryption=True)
+            store.generate_keys()
+            store.save_keys(path)
+            return store

@@ -37,4 +37,8 @@ service = InferenceService(
     logs_dir=private_dataset_dir(folder, settings.email, inf.logs_dataset),
 )
 service.start_polling()
-uvicorn.run(create_app(service), host="0.0.0.0", port=8080)
+uvicorn.run(
+    create_app(service, use_encryption=settings.use_encryption),
+    host="0.0.0.0",
+    port=8080,
+)
