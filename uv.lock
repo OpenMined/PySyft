@@ -25,6 +25,7 @@ members = [
     "syft-dataset",
     "syft-enclave",
     "syft-job",
+    "syft-migration",
     "syft-notebook-ui",
     "syft-permissions",
     "syft-perms",
@@ -3776,6 +3777,7 @@ test = [
     { name = "pytest-rerunfailures" },
     { name = "pytest-xdist" },
     { name = "syft-enclave" },
+    { name = "syft-migration" },
     { name = "syft-restrict" },
 ]
 
@@ -3825,6 +3827,7 @@ test = [
     { name = "pytest-rerunfailures", specifier = ">=14.0" },
     { name = "pytest-xdist", specifier = ">=3.0.0" },
     { name = "syft-enclave", editable = "packages/syft-enclave" },
+    { name = "syft-migration", editable = "packages/syft-migration" },
     { name = "syft-restrict", editable = "packages/syft-restrict" },
 ]
 
@@ -3906,6 +3909,17 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "syft-perms", editable = "packages/syft-perms" },
 ]
+
+[[package]]
+name = "syft-migration"
+version = "0.1.0"
+source = { editable = "packages/syft-migration" }
+dependencies = [
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pydantic", specifier = ">=2.11.7" }]
 
 [[package]]
 name = "syft-notebook-ui"
