@@ -1,8 +1,8 @@
-# restrict
+# syft-restrict
 
 ## 1. Overview
 
-restrict is inspired by **RestrictedPython**: it **default-denies** every dynamic part of Python. It differs in a few ways:
+`syft-restrict` is inspired by [**RestrictedPython**](https://github.com/zopefoundation/RestrictedPython): it **default-denies** every dynamic part of Python. It differs in a few ways:
 
 - **Syft-restrict analyzes, it doesn't run.** syft-restrict statically analyzes a source file and **raises if the analyzed part uses any dynamic Python**. Its output is a **report** (the violations, or — on success — an attestation) plus an **obfuscated copy** of the code.
 - **syft-restrict is currently tailored for analysis of machine learning inference code** 
