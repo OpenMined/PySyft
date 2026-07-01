@@ -3,7 +3,7 @@
   <img alt="Syft Logo" src="docs/img/Syft-Logo.svg" width="200px" />
 </picture>
 
-# Syft-client (PySyft v2)
+# PySyft v2
 
 [![Unit Tests](https://github.com/OpenMined/pysyft/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/OpenMined/PySyft/actions/workflows/unit-tests.yml)
 [![Integration Tests](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml)
