@@ -4,9 +4,10 @@
 
 restrict is inspired by **RestrictedPython**: it **default-denies** every dynamic part of Python. It differs in a few ways:
 
-- **We analyze, we don't run.** restrict statically analyzes a source file and **raises if the analyzed part uses any dynamic Python**. Its output is a **report** (the violations, or — on success — an attestation) plus an **obfuscated copy** of the code.
-- **Public / private split.** You mark some lines of the file _private_ and leave the rest _public_. restrict analyzes only the **AST of the private part**, and only those private lines are **hidden (obfuscated)** in the emitted artifact; the public lines are copied through and read directly.
-- **Imports are allowed (and therefore trusted).** Unlike RestrictedPython, the analyzed code may **import libraries** and call into them — which means we **trust those imported classes/functions** (only their allow-listed paths; see §3).
+- **Syft-restrict analyzes, it doesn't run.** syft-restrict statically analyzes a source file and **raises if the analyzed part uses any dynamic Python**. Its output is a **report** (the violations, or — on success — an attestation) plus an **obfuscated copy** of the code.
+- **syft-restrict is currently tailored for analysis of machine learning inference code** 
+- **Public / private split.** The user marks some lines of the file _private_ and leaves the rest _public_. restrict analyzes only the **AST of the private part**, and only those private lines are **hidden (obfuscated)** in the emitted artifact; the public lines are copied through and read directly.
+- **Imports are allowed (and therefore trusted).** Unlike RestrictedPython, the analyzed code may **import allowlisted libraries** and call into them — which means the reader of the output **needs to trust those imported classes/functions** (only their allow-listed paths; see §3).
 - **Dynamic Python lives in the public part.** Anything dynamic the author needs (file/tokenizer loading, the generation loop, wrappers around library methods) must be written in the **public** region — where it is read directly — and may be **called by** the private part.
 
 ## 2. Usage
@@ -26,8 +27,8 @@ result = restrict.run(
 # On a policy violation: raises PolicyViolation naming each offending line (strict=True, the default).
 ```
 
-This command transforms **[examples/gemma_inference.py](examples/gemma_inference.py)** to **[examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py)**. If we can assume that syft-restrict was executed on the code file and not changed, for instance because it was executed in a [TEE](https://en.wikipedia.org/wiki/Trusted_execution_environment), this proves:
-1. this is a jax model, where the model architecture is hidden in the report
+This command reads **[examples/gemma_inference.py](examples/gemma_inference.py)** and generates **[examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py)**. If we can assume that syft-restrict was executed on the true inference file and the library was not modified, for instance because it was executed in a [TEE](https://en.wikipedia.org/wiki/Trusted_execution_environment), this proves:
+1. this code is an inference pipelines for a jax model, where the model architecture is hidden in the report
 2. this code does not steal the inputs
 
 Use `restrict.verify(...)` for the check alone (it returns violations instead of raising), or pass `strict=False` to `run` to get a `RunResult` with `.ok` / `.violations` and no exception.
