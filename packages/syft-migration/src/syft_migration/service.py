@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from syft_migration.base import MigratableObject
-from syft_migration.registry import MigrationError, MigrationRegistry
+from syft_migration.registry import MigrationError, MigrationFn, MigrationRegistry
 from syft_migration.schema import PackageProtocolSchema
 
 
@@ -15,7 +15,7 @@ class MigrationService:
 
     def migrate(self, obj: MigratableObject, target_version: str) -> MigratableObject:
         """Migrate ``obj`` to ``target_version`` by applying the registered path."""
-        path = self.registry.migration_path(
+        path: list[MigrationFn] = self.registry.migration_path(
             obj.canonical_name, obj.version, target_version
         )
         result = obj
@@ -27,7 +27,7 @@ class MigrationService:
         self, obj: MigratableObject, schema: PackageProtocolSchema
     ) -> MigratableObject:
         """Migrate ``obj`` to the version pinned by ``schema`` (the on-the-fly downgrade)."""
-        target_version = schema.objects.get(obj.canonical_name)
+        target_version = schema.object_versions.get(obj.canonical_name)
         if target_version is None:
             raise MigrationError(
                 f"Protocol schema {schema.package_name}@{schema.package_version} does "

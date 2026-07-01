@@ -29,17 +29,36 @@ class JobV3(MigratableObject, registry=mock_registry):
     priority: int = 0
 
 
-mock_registry.register_migration("job", "1", "2", lambda obj: JobV2(name=obj.name))
 mock_registry.register_migration(
-    "job", "2", "3", lambda obj: JobV3(name=obj.name, owner=obj.owner)
+    canonical_name="job",
+    from_version="1",
+    to_version="2",
+    fn=lambda obj: JobV2(name=obj.name),
 )
-mock_registry.register_migration("job", "2", "1", lambda obj: JobV1(name=obj.name))
+mock_registry.register_migration(
+    canonical_name="job",
+    from_version="2",
+    to_version="3",
+    fn=lambda obj: JobV3(name=obj.name, owner=obj.owner),
+)
+mock_registry.register_migration(
+    canonical_name="job",
+    from_version="2",
+    to_version="1",
+    fn=lambda obj: JobV1(name=obj.name),
+)
 
 schema_v1 = PackageProtocolSchema.from_objects(
-    "mock-proto", "syft-mock", "1.0.0", [JobV1]
+    protocol_name="mock-proto",
+    package_name="syft-mock",
+    package_version="1.0.0",
+    classes=[JobV1],
 )
 schema_v2 = PackageProtocolSchema.from_objects(
-    "mock-proto", "syft-mock", "1.1.0", [JobV2]
+    protocol_name="mock-proto",
+    package_name="syft-mock",
+    package_version="1.1.0",
+    classes=[JobV2],
 )
-mock_registry.register_protocol_schema(schema_v1, current=False)
-mock_registry.register_protocol_schema(schema_v2, current=True)
+mock_registry.register_protocol_schema(schema=schema_v1, current=False)
+mock_registry.register_protocol_schema(schema=schema_v2, current=True)

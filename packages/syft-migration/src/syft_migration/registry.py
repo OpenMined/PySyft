@@ -15,8 +15,8 @@ class MigrationError(Exception):
     """Raised when an object cannot be registered, located, or migrated."""
 
 
-def _identity(cls: type[MigratableObject]) -> Optional[tuple[str, str]]:
-    """Return (canonical_name, version) for a concrete subclass, else None.
+def _has_identity(cls: type[MigratableObject]) -> bool:
+    """Whether ``cls`` pins both identity fields (i.e. is a concrete version).
 
     The base class and abstract intermediates leave the fields required (no
     default), so they have no identity and are not registered.
@@ -24,49 +24,65 @@ def _identity(cls: type[MigratableObject]) -> Optional[tuple[str, str]]:
     name_field = cls.model_fields.get("canonical_name")
     version_field = cls.model_fields.get("version")
     if name_field is None or version_field is None:
-        return None
-    if name_field.is_required() or version_field.is_required():
-        return None
-    return str(name_field.default), str(version_field.default)
+        return False
+    return not (name_field.is_required() or version_field.is_required())
+
+
+def _identity(cls: type[MigratableObject]) -> tuple[str, str]:
+    """Return (canonical_name, version) for a concrete subclass.
+
+    Raises ``MigrationError`` if ``cls`` does not pin both fields (the base class
+    and abstract intermediates leave them required, so they have no identity).
+    """
+    if not _has_identity(cls):
+        raise MigrationError(
+            f"{cls.__name__} does not pin canonical_name/version and has no identity"
+        )
+    return (
+        str(cls.model_fields["canonical_name"].default),
+        str(cls.model_fields["version"].default),
+    )
 
 
 class MigrationRegistry:
     """All known object versions, migrations, and protocol schemas for ONE package."""
 
     def __init__(self) -> None:
-        self.objects: dict[tuple[str, str], type[MigratableObject]] = {}
+        # canonical_name -> {version: object_class}
+        self.objects: dict[str, dict[str, type[MigratableObject]]] = {}
+        # canonical_name -> {(from_version, to_version): migration_fn}
         self.migrations: dict[str, dict[tuple[str, str], MigrationFn]] = {}
         self.current_protocol_schema: Optional[PackageProtocolSchema] = None
         self.history_protocol_schemas: dict[str, PackageProtocolSchema] = {}
 
     # -- objects -----------------------------------------------------------
-    def register_object(self, cls: type[MigratableObject]) -> None:
-        identity = _identity(cls)
-        if identity is None:
+    def register_object_version(self, cls: type[MigratableObject]) -> None:
+        if not _has_identity(cls):
             return
-        existing = self.objects.get(identity)
+        canonical_name, version = _identity(cls)
+        existing = self.objects.get(canonical_name, {}).get(version)
         if existing is not None and existing is not cls:
             raise MigrationError(
-                f"Object {identity} already registered as {existing.__name__}, "
-                f"cannot re-register as {cls.__name__}"
+                f"Object {(canonical_name, version)} already registered as "
+                f"{existing.__name__}, cannot re-register as {cls.__name__}"
             )
-        self.objects[identity] = cls
+        self.objects.setdefault(canonical_name, {})[version] = cls
 
     def get_class(self, canonical_name: str, version: str) -> type[MigratableObject]:
         try:
-            return self.objects[(canonical_name, version)]
+            return self.objects[canonical_name][version]
         except KeyError:
             raise MigrationError(
                 f"No object registered for {(canonical_name, version)}"
             )
 
     def versions(self, canonical_name: str) -> list[str]:
-        return [v for (name, v) in self.objects if name == canonical_name]
+        return list(self.objects.get(canonical_name, {}))
 
     def latest_version(self, canonical_name: str) -> str:
         schema = self.current_protocol_schema
-        if schema is not None and canonical_name in schema.objects:
-            return schema.objects[canonical_name]
+        if schema is not None and canonical_name in schema.object_versions:
+            return schema.object_versions[canonical_name]
         versions = self.versions(canonical_name)
         if not versions:
             raise MigrationError(f"No versions registered for {canonical_name!r}")
@@ -78,18 +94,27 @@ class MigrationRegistry:
         canonical_name: str,
         from_version: str,
         to_version: str,
-        fn: Optional[MigrationFn] = None,
-    ) -> Callable[[MigrationFn], MigrationFn] | None:
+        fn: MigrationFn,
+    ) -> None:
+        """Register ``fn`` as the migration from ``from_version`` to ``to_version``."""
         edges = self.migrations.setdefault(canonical_name, {})
+        edges[(from_version, to_version)] = fn
 
-        def _add(func: MigrationFn) -> MigrationFn:
-            edges[(from_version, to_version)] = func
-            return func
+    def migration(
+        self, canonical_name: str, from_version: str, to_version: str
+    ) -> Callable[[MigrationFn], MigrationFn]:
+        """Decorator form of :meth:`register_migration` for named functions."""
 
-        if fn is None:
-            return _add
-        _add(fn)
-        return None
+        def decorator(fn: MigrationFn) -> MigrationFn:
+            self.register_migration(
+                canonical_name=canonical_name,
+                from_version=from_version,
+                to_version=to_version,
+                fn=fn,
+            )
+            return fn
+
+        return decorator
 
     def migration_path(
         self, canonical_name: str, from_version: str, to_version: str
@@ -97,8 +122,11 @@ class MigrationRegistry:
         """Return the migration functions to apply, in order, via BFS over edges."""
         if from_version == to_version:
             return []
+        # all migrations for this class
         edges = self.migrations.get(canonical_name, {})
+        # BFS queue of (current_version, path_to_current)
         queue: deque[tuple[str, list[MigrationFn]]] = deque([(from_version, [])])
+        # seen versions
         seen = {from_version}
         while queue:
             current, path = queue.popleft()
@@ -120,11 +148,12 @@ class MigrationRegistry:
     ) -> None:
         """Register a schema, keeping the object registry and schemas in sync.
 
-        Every object the schema ships is registered first (added if absent, raising
-        on a conflicting class), then the schema is stored.
+        Every object the schema pins must already be registered (objects auto-register
+        when their class is defined); registering a schema that references an unknown
+        object/version raises before the schema is stored.
         """
-        for cls in schema.object_classes():
-            self.register_object(cls)
+        for canonical_name, version in schema.object_versions.items():
+            self.get_class(canonical_name=canonical_name, version=version)
         self.history_protocol_schemas[schema.package_version] = schema
         if current:
             self.current_protocol_schema = schema

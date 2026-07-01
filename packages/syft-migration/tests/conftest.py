@@ -11,4 +11,4 @@ def registry() -> MigrationRegistry:
 
 @pytest.fixture
 def service() -> MigrationService:
-    return MigrationService(mock_registry)
+    return MigrationService(registry=mock_registry)

@@ -40,4 +40,4 @@ class MigratableObject(BaseModel):
         registry: MigrationRegistry = getattr(
             cls, "__migration_registry__", default_registry
         )
-        registry.register_object(cls)
+        registry.register_object_version(cls)
