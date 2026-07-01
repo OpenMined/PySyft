@@ -30,6 +30,10 @@ test-unit-job:
     #!/bin/bash
     uv run pytest -v ./packages/syft-job/tests
 
+test-unit-migration:
+    #!/bin/bash
+    uv run pytest -n auto ./packages/syft-migration/tests
+
 
 test-unit-enclave:
     #!/bin/bash
