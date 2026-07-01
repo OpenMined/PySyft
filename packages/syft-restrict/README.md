@@ -26,7 +26,10 @@ result = restrict.run(
 # On a policy violation: raises PolicyViolation naming each offending line (strict=True, the default).
 ```
 
-This results in **[examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py)**
+This command produces **[examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py)**. The goal here is to
+1. hide the model architecture
+2. prove that this code does not steal the inputs
+
 Use `restrict.verify(...)` for the check alone (it returns violations instead of raising), or pass `strict=False` to `run` to get a `RunResult` with `.ok` / `.violations` and no exception.
 
 ## 3. The whitelist (for the private region)
