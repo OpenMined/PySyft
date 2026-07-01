@@ -26,9 +26,9 @@ result = restrict.run(
 # On a policy violation: raises PolicyViolation naming each offending line (strict=True, the default).
 ```
 
-This command produces **[examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py)**. The goal here is to
-1. hide the model architecture
-2. prove that this code does not steal the inputs
+This command transfomers **[examples/gemma_inference.py](examples/gemma_inference.py)** to **[examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py)**. If we can assume that syft-restrict was executed on the code file and not changed, for instance because it was executed in a [TEE](https://en.wikipedia.org/wiki/Trusted_execution_environment), this proves:
+1. this is a jax model, where the model architecture is hidden in the report
+2. this code does not steal the inputs
 
 Use `restrict.verify(...)` for the check alone (it returns violations instead of raising), or pass `strict=False` to `run` to get a `RunResult` with `.ok` / `.violations` and no exception.
 
