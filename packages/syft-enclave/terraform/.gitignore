@@ -1,0 +1,8 @@
+# State contains the enclave token in plaintext — never commit or share it.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+crash.*.log
+*.tfplan
