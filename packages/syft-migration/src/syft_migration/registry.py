@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Callable, Optional
 
 if TYPE_CHECKING:
     from syft_migration.base import MigratableObject
-    from syft_migration.schema import PackageProtocolSchema
+    from syft_migration.schema import PackageProtocolSchema, ProtocolSchema
 
 # A migration transforms one MigratableObject instance into another version.
 MigrationFn = Callable[["MigratableObject"], "MigratableObject"]
@@ -157,6 +157,31 @@ class MigrationRegistry:
         self.history_protocol_schemas[schema.package_version] = schema
         if current:
             self.current_protocol_schema = schema
+
+    def compute_protocol_schemas(self) -> dict[str, ProtocolSchema]:
+        """For each protocol in the registered package schemas, every supported
+        object version (i.e. all versions this registry can load), per canonical name."""
+        # Runtime import: schema.py imports from this module at import time.
+        from syft_migration.schema import ProtocolSchema
+
+        protocols: dict[str, ProtocolSchema] = {}
+        for package_schema in self._all_package_schemas():
+            protocol = protocols.setdefault(
+                package_schema.protocol_name,
+                ProtocolSchema(protocol_name=package_schema.protocol_name),
+            )
+            for canonical_name in package_schema.object_versions:
+                protocol.supported_versions[canonical_name] = sorted(
+                    self.versions(canonical_name)
+                )
+        return protocols
+
+    def _all_package_schemas(self) -> list[PackageProtocolSchema]:
+        schemas = list(self.history_protocol_schemas.values())
+        current = self.current_protocol_schema
+        if current is not None and current not in schemas:
+            schemas.append(current)
+        return schemas
 
     def schema_for_package_version(self, package_version: str) -> PackageProtocolSchema:
         if (

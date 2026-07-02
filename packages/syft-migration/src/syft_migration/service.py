@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 from syft_migration.base import MigratableObject
 from syft_migration.registry import MigrationError, MigrationFn, MigrationRegistry
-from syft_migration.schema import PackageProtocolSchema
+from syft_migration.schema import PackageProtocolSchema, ProtocolSchema
 
 
 class MigrationService:
@@ -41,6 +41,10 @@ class MigrationService:
         """Migrate ``obj`` to the version a peer running ``package_version`` understands."""
         schema = self.registry.schema_for_package_version(package_version)
         return self.migrate_to_schema(obj, schema)
+
+    def export_protocol_schemas(self) -> dict[str, ProtocolSchema]:
+        """Export, per protocol, every object version this package supports."""
+        return self.registry.compute_protocol_schemas()
 
     def load(
         self, data: dict[str, Any], target_version: Optional[str] = None

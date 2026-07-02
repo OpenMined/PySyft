@@ -4,7 +4,9 @@ from syft_migration import (
     MigratableObject,
     MigrationError,
     MigrationRegistry,
+    MigrationService,
     PackageProtocolSchema,
+    ProtocolSchema,
 )
 
 from mocks import JobV1, JobV2, JobV3
@@ -131,6 +133,53 @@ def test_schema_save_load_roundtrip(tmp_path):
     assert loaded.package_name == "syft-mock"
     assert loaded.package_version == "1.1.0"
     assert loaded.object_versions == {"job": "2"}
+
+
+def _multi_object_registry() -> MigrationRegistry:
+    """A registry with two canonical names across two package releases."""
+    reg = MigrationRegistry()
+
+    class DatasetV1(MigratableObject, registry=reg):
+        canonical_name: str = "dataset"
+        version: str = "1"
+
+    class DatasetV2(MigratableObject, registry=reg):
+        canonical_name: str = "dataset"
+        version: str = "2"
+
+    class ModelV1(MigratableObject, registry=reg):
+        canonical_name: str = "model"
+        version: str = "1"
+
+    for package_version, classes, current in [
+        ("1.0.0", [DatasetV1, ModelV1], False),
+        ("1.1.0", [DatasetV2, ModelV1], True),
+    ]:
+        schema = PackageProtocolSchema.from_objects(
+            protocol_name="mock-proto",
+            package_name="syft-mock",
+            package_version=package_version,
+            classes=classes,
+        )
+        reg.register_protocol_schema(schema=schema, current=current)
+    return reg
+
+
+def test_service_exports_protocol_schemas_with_all_supported_versions():
+    service = MigrationService(registry=_multi_object_registry())
+    exported = service.export_protocol_schemas()
+
+    assert set(exported) == {"mock-proto"}
+    protocol = exported["mock-proto"]
+    assert isinstance(protocol, ProtocolSchema)
+    assert protocol.protocol_name == "mock-proto"
+    # All registered versions per canonical name, not just the pinned ones.
+    assert protocol.supported_versions == {"dataset": ["1", "2"], "model": ["1"]}
+
+
+def test_registry_computes_protocol_schemas(registry):
+    protocols = registry.compute_protocol_schemas()
+    assert protocols["mock-proto"].supported_versions == {"job": ["1", "2", "3"]}
 
 
 def test_schema_rejects_two_versions_of_same_object():

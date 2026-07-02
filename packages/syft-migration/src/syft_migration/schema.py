@@ -14,6 +14,19 @@ if TYPE_CHECKING:
 PathLike = str | Path
 
 
+class ProtocolSchema(BaseModel):
+    """Every object version a registry supports for one protocol.
+
+    Unlike :class:`PackageProtocolSchema` (which pins exactly one version per object
+    for one package release), this lists ALL versions the running package can load
+    and migrate, keyed by canonical name.
+    """
+
+    protocol_name: str
+    # canonical_name -> all supported versions
+    supported_versions: dict[str, list[str]] = {}
+
+
 class PackageProtocolSchema(BaseModel):
     """The protocol surface of one release of one package.
 
