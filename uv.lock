@@ -3898,6 +3898,7 @@ dependencies = [
     { name = "psutil" },
     { name = "pydantic" },
     { name = "pyyaml" },
+    { name = "syft-migration" },
     { name = "syft-perms" },
 ]
 
@@ -3907,6 +3908,7 @@ requires-dist = [
     { name = "psutil" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "syft-migration", editable = "packages/syft-migration" },
     { name = "syft-perms", editable = "packages/syft-perms" },
 ]
 
