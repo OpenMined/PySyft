@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from syft_job.config import SyftJobConfig
-from syft_job.models.config import JobSubmissionMetadata
-from syft_job.models.state import JobState, JobStatus
+from syft_job.models import JobState, JobStatus, JobSubmissionMetadata
 
 from syft_bg.common.monitor import Monitor
 from syft_bg.common.state import JsonStateManager

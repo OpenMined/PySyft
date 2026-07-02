@@ -5,13 +5,13 @@ from pathlib import Path
 
 from syft_migration import MigrationService
 
+from syft_job.migrations import job_registry
 from syft_job.models import (
     JobState,
     JobStateV1,
     JobStatus,
     JobSubmissionMetadata,
     JobSubmissionMetadataV1,
-    job_registry,
 )
 
 DO_EMAIL = "do@test.org"

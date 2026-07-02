@@ -14,8 +14,7 @@ from .job_repr import (
     jobs_list_str,
 )
 from .job_stdout import StdoutViewer
-from .models.config import JobSubmissionMetadata
-from .models.state import JobState, JobStatus
+from .models import JobState, JobStatus, JobSubmissionMetadata
 
 if TYPE_CHECKING:
     from .client import JobClient

@@ -8,7 +8,7 @@ from typing import Optional
 import yaml
 from syft_migration import MigratableObject
 
-from .migration import job_registry
+from ...migrations import job_registry
 
 
 class JobStatus(str, Enum):

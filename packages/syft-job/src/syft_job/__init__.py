@@ -4,8 +4,9 @@ from .client import BaseJobClient, JobClient, get_client
 from .config import SyftJobConfig
 from .job import JobInfo, JobsList
 from .job_runner import SyftJobRunner, create_runner
-from .models.config import JobSubmissionMetadata
-from .models.state import JobState, JobStatus
+from .migrations import job_registry
+from .migrations import schema  # noqa: F401  (registers the current protocol schema)
+from .models import JobState, JobStatus, JobSubmissionMetadata
 
 __all__ = [
     # SyftBox job system
@@ -22,4 +23,6 @@ __all__ = [
     "JobSubmissionMetadata",
     "JobState",
     "JobStatus",
+    # Migration registry
+    "job_registry",
 ]

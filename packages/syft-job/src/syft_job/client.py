@@ -12,8 +12,7 @@ from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 from .config import SyftJobConfig
 from .install_source import get_syft_client_install_source
 from .job import JobInfo, JobsList
-from .models.config import JobSubmissionMetadata
-from .models.state import JobState, JobStatus
+from .models import JobState, JobStatus, JobSubmissionMetadata
 
 # Python version used when creating virtual environments for job execution
 RUN_SCRIPT_PYTHON_VERSION = "3.12"

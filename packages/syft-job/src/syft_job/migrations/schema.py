@@ -2,9 +2,9 @@ from importlib.metadata import version
 
 from syft_migration import PackageProtocolSchema
 
-from .job_state_v1 import JobStateV1
-from .job_submission_metadata_v1 import JobSubmissionMetadataV1
-from .migration import job_registry
+from ..models.job_state.v1 import JobStateV1
+from ..models.job_submission_metadata.v1 import JobSubmissionMetadataV1
+from .registry import job_registry
 
 # Pins the object versions that this release of syft-job ships.
 schema = PackageProtocolSchema.from_objects(
