@@ -2,6 +2,7 @@ from pathlib import Path
 import fcntl
 from syft_client.sync.peers.peer_store import PeerStore
 from syft_client.sync.utils.path_filters import is_normal_syncable_path
+from syft_client.sync.callback_mixin import BaseModelCallbackMixin
 import logging
 import shutil
 from contextlib import contextmanager
@@ -403,7 +404,7 @@ class SyftboxManagerConfig(BaseModel):
         )
 
 
-class SyftboxManager(BaseModel):
+class SyftboxManager(BaseModelCallbackMixin):
     # needed for peers
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -1024,6 +1025,8 @@ class SyftboxManager(BaseModel):
             self.job_client.setup_ds_job_folder_as_do(peer_email)
             self._share_any_datasets_with_peer(peer_email)
 
+        self._emit("peer_approved", peer_email)
+
     def _sync_peer_install_sources_to_job_client(self) -> None:
         """Copy each peer's advertised syft-client install source into job_client.
 
@@ -1031,6 +1034,7 @@ class SyftboxManager(BaseModel):
         to a DO, the run.sh references the DO's local install path rather than
         the DS's local detection.
         """
+        self._emit("peers_loaded")
         if not self.job_client:
             return
         for peer in self.peer_manager.peer_store.syncable_peers:
