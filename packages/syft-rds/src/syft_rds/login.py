@@ -15,8 +15,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from syft_client.sync.login import login_do as _hub_login_do
-from syft_client.sync.login import login_ds as _hub_login_ds
+from syft_client.sync.login import login_do as _sync_login_do
+from syft_client.sync.login import login_ds as _sync_login_ds
 
 from syft_rds.client import SyftRDSClient
 
@@ -30,7 +30,7 @@ def login_do(
     skip_peer_on_patch_version_diff: bool | None = None,
 ) -> SyftRDSClient:
     """Log in as a Data Owner and return a composed RDS client."""
-    sync_engine = _hub_login_do(
+    sync_engine = _sync_login_do(
         email=email,
         token_path=token_path,
         sync=sync,
@@ -49,7 +49,7 @@ def login_ds(
     skip_peer_on_patch_version_diff: bool | None = None,
 ) -> SyftRDSClient:
     """Log in as a Data Scientist and return a composed RDS client."""
-    sync_engine = _hub_login_ds(
+    sync_engine = _sync_login_ds(
         email=email,
         token_path=token_path,
         sync=sync,
