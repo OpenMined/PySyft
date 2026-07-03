@@ -27,14 +27,8 @@ class MigrationService:
     def migrate_to_schema(
         self, obj: MigratableObject, schema: PackageProtocolSchema
     ) -> MigratableObject:
-        """Migrate ``obj`` to the version pinned by ``schema`` (the on-the-fly downgrade)."""
-        target_version = schema.object_versions.get(obj.canonical_name)
-        if target_version is None:
-            raise MigrationError(
-                f"Protocol schema {schema.package_name}@{schema.package_version} does "
-                f"not include object {obj.canonical_name!r}"
-            )
-        return self.migrate(obj, target_version)
+        """Migrate ``obj`` to the latest version ``schema`` supports for it."""
+        return self.migrate(obj, schema.current_schema(obj.canonical_name))
 
     def downgrade_for_package_version(
         self, obj: MigratableObject, package_version: str

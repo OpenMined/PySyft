@@ -14,34 +14,39 @@ if TYPE_CHECKING:
 PathLike = str | Path
 
 
-class ProtocolSchema(BaseModel):
-    """Every object version a registry supports for one protocol.
+class BaseVersionsSchema(BaseModel):
+    """Shared shape: all supported versions per object, keyed by canonical name."""
 
-    Unlike :class:`PackageProtocolSchema` (which pins exactly one version per object
-    for one package release), this lists ALL versions the running package can load
-    and migrate, keyed by canonical name.
-    """
+    # canonical_name -> all supported versions
+    supported_versions: dict[str, list[str]] = {}
+
+    def current_schema(self, canonical_name: str) -> str:
+        """The latest version this schema supports for ``canonical_name``."""
+        versions = self.supported_versions.get(canonical_name)
+        if not versions:
+            raise MigrationError(f"Schema does not include object {canonical_name!r}")
+        return max(versions)
+
+
+class ProtocolSchema(BaseVersionsSchema):
+    """Every object version a registry supports for one protocol."""
 
     protocol_name: str
     # The package version that produced this schema.
     version: str
-    # canonical_name -> all supported versions
-    supported_versions: dict[str, list[str]] = {}
 
 
-class PackageProtocolSchema(BaseModel):
+class PackageProtocolSchema(BaseVersionsSchema):
     """The protocol surface of one release of one package.
 
-    Pins exactly one ``version`` per object (``canonical_name``) that the package ships
-    at ``package_version``. ``protocol_name`` is a hardcoded, language-agnostic
-    identifier for the protocol and is intentionally distinct from ``package_name``.
+    Lists every object version that the package at ``package_version`` supports.
+    ``protocol_name`` is a hardcoded, language-agnostic identifier for the protocol
+    and is intentionally distinct from ``package_name``.
     """
 
     protocol_name: str
     package_name: str
     package_version: str
-    # canonical_name -> version
-    object_versions: dict[str, str] = {}
 
     @classmethod
     def from_objects(
@@ -51,20 +56,19 @@ class PackageProtocolSchema(BaseModel):
         package_version: str,
         classes: list[type[MigratableObject]],
     ) -> PackageProtocolSchema:
-        object_versions: dict[str, str] = {}
+        supported_versions: dict[str, list[str]] = {}
         for klass in classes:
             canonical_name, version = _identity(klass)
-            if canonical_name in object_versions:
-                raise MigrationError(
-                    f"Protocol schema may only pin one version per object, but "
-                    f"{canonical_name!r} was given twice"
-                )
-            object_versions[canonical_name] = version
+            versions = supported_versions.setdefault(canonical_name, [])
+            if version not in versions:
+                versions.append(version)
         return cls(
             protocol_name=protocol_name,
             package_name=package_name,
             package_version=package_version,
-            object_versions=object_versions,
+            supported_versions={
+                name: sorted(versions) for name, versions in supported_versions.items()
+            },
         )
 
     def save(self, path: PathLike) -> None:

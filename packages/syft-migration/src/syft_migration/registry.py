@@ -117,27 +117,27 @@ class MigrationRegistry:
     # -- protocol schemas --------------------------------------------------
     @property
     def current_protocol_schema(self) -> PackageProtocolSchema:
-        """The schema of THIS release, computed from the registered objects by
-        pinning the latest version of each canonical name."""
+        """The schema of THIS release, computed from the registered objects."""
         return PackageProtocolSchema(
             protocol_name=self.protocol_name,
             package_name=self.package_name,
             package_version=self.package_version,
-            object_versions={
-                canonical_name: self.latest_version(canonical_name)
-                for canonical_name in self.objects
+            supported_versions={
+                canonical_name: sorted(versions)
+                for canonical_name, versions in self.objects.items()
             },
         )
 
     def register_historic_protocol_schema(self, schema: PackageProtocolSchema) -> None:
         """Register the schema of a PAST release of this package.
 
-        Every object the schema pins must already be registered (objects auto-register
-        when their class is defined); registering a schema that references an unknown
-        object/version raises before the schema is stored.
+        Every object version the schema lists must already be registered (objects
+        auto-register when their class is defined); registering a schema that
+        references an unknown object/version raises before the schema is stored.
         """
-        for canonical_name, version in schema.object_versions.items():
-            self.get_class(canonical_name=canonical_name, version=version)
+        for canonical_name, versions in schema.supported_versions.items():
+            for version in versions:
+                self.get_class(canonical_name=canonical_name, version=version)
         self.history_protocol_schemas[schema.package_version] = schema
 
     def compute_protocol_schema(self) -> ProtocolSchema:

@@ -28,12 +28,13 @@ def test_versioned_objects_registered_and_aliased():
     assert JobSubmissionMetadata is JobSubmissionMetadataV1
     assert JobState is JobStateV1
 
-    # The protocol schema pins both objects to version "1".
+    # The protocol schema lists version "1" as the only one for both objects.
     schema = job_registry.current_protocol_schema
-    assert schema.object_versions == {
-        "job_submission_metadata": "1",
-        "job_state": "1",
+    assert schema.supported_versions == {
+        "job_submission_metadata": ["1"],
+        "job_state": ["1"],
     }
+    assert schema.current_schema(canonical_name="job_state") == "1"
 
 
 def _make_submission() -> JobSubmissionMetadataV1:

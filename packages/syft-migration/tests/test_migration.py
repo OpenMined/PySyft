@@ -19,10 +19,13 @@ def test_subclass_auto_registers(registry):
 
 
 def test_current_protocol_schema_is_computed_and_history_stored(registry):
-    # Current schema is computed from the registered objects: latest of each.
-    assert registry.current_protocol_schema.package_version == "1.1.0"
-    assert registry.current_protocol_schema.object_versions == {"job": "3"}
-    assert registry.history_protocol_schemas["1.0.0"].object_versions == {"job": "1"}
+    # Current schema is computed from the registered objects.
+    current = registry.current_protocol_schema
+    assert current.package_version == "1.1.0"
+    assert current.supported_versions == {"job": ["1", "2", "3"]}
+    assert current.current_schema(canonical_name="job") == "3"
+    historic = registry.history_protocol_schemas["1.0.0"]
+    assert historic.supported_versions == {"job": ["1"]}
     assert registry.latest_version(canonical_name="job") == "3"
 
 
@@ -30,14 +33,14 @@ def test_current_protocol_schema_tracks_newly_defined_objects():
     reg = MigrationRegistry(
         protocol_name="p", package_name="pkg", package_version="1.0.0"
     )
-    assert reg.current_protocol_schema.object_versions == {}
+    assert reg.current_protocol_schema.supported_versions == {}
 
     class WidgetV1(MigratableObject, registry=reg):
         canonical_name: str = "widget"
         version: str = "1"
 
     assert reg.get_class(canonical_name="widget", version="1") is WidgetV1
-    assert reg.current_protocol_schema.object_versions == {"widget": "1"}
+    assert reg.current_protocol_schema.supported_versions == {"widget": ["1"]}
 
 
 def test_concrete_class_without_registry_raises():
@@ -139,7 +142,7 @@ def test_schema_save_load_roundtrip(tmp_path):
     assert loaded.protocol_name == "mock-proto"
     assert loaded.package_name == "syft-mock"
     assert loaded.package_version == "1.1.0"
-    assert loaded.object_versions == {"job": "2"}
+    assert loaded.supported_versions == {"job": ["2"]}
 
 
 def _multi_object_registry() -> MigrationRegistry:
@@ -191,11 +194,23 @@ def test_registry_computes_protocol_schema(registry):
     assert protocol.supported_versions == {"job": ["1", "2", "3"]}
 
 
-def test_schema_rejects_two_versions_of_same_object():
+def test_schema_collects_all_versions_of_same_object():
+    schema = PackageProtocolSchema.from_objects(
+        protocol_name="p",
+        package_name="pkg",
+        package_version="1.0.0",
+        classes=[JobV2, JobV1],
+    )
+    assert schema.supported_versions == {"job": ["1", "2"]}
+    assert schema.current_schema(canonical_name="job") == "2"
+
+
+def test_current_schema_raises_on_unknown_object():
+    schema = PackageProtocolSchema.from_objects(
+        protocol_name="p",
+        package_name="pkg",
+        package_version="1.0.0",
+        classes=[JobV1],
+    )
     with pytest.raises(MigrationError):
-        PackageProtocolSchema.from_objects(
-            protocol_name="p",
-            package_name="pkg",
-            package_version="1.0.0",
-            classes=[JobV1, JobV2],
-        )
+        schema.current_schema(canonical_name="unknown")
