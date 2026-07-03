@@ -194,3 +194,7 @@ notebooks/ai_audit/internal/data/readme.md
 
 .agents/
 AGENTS.md
+
+# Local JupyterLab state (jupyter MCP server runs from repo root)
+.jupyter/
+.jupyter_ystore.db
