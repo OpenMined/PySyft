@@ -164,7 +164,7 @@ class _Checker:
         self.n_calls = 0
         self._call_funcs: set[int] = (
             set()
-        )  # Attribute nodes already judged as a call func
+        )  # Attribute/Name nodes already judged as part of a call's func (avoid double-reporting)
 
     def add(self, node: ast.AST, code: str, message: str) -> None:
         self.violations.append(
@@ -217,6 +217,10 @@ class _Checker:
             self._check_reserved_target(node.target)
         elif isinstance(node, ast.arg):
             self._check_reserved_name(node, node.arg)
+        elif isinstance(node, (ast.List, ast.Dict, ast.Set, ast.Tuple)):
+            self._check_container_literal(node)
+        elif isinstance(node, ast.Name):
+            self._check_name(node)
 
     # — defs / classes —
     def _check_def(self, node: ast.FunctionDef) -> None:
@@ -272,6 +276,7 @@ class _Checker:
         if isinstance(func, ast.Name):
             if func.id in BANNED_NAMES:
                 self.add(node, "banned-call", f"call to {func.id!r} is not allowed")
+                self._call_funcs.add(id(func))  # _check_name would otherwise re-flag this Name
             # Otherwise a bare-name call (local var / hidden or visible def / safe builtin) is allowed;
             # nothing dangerous can reach a local name given the other rules.
             return
@@ -341,6 +346,33 @@ class _Checker:
             f"route it through a visible wrapper function instead",
         )
 
+    # — bare name reads (not the func of a call) —
+    def _check_name(self, node: ast.Name) -> None:
+        # Checks a Load-context reference to a banned builtin: this is what closes aliasing
+        # (`f = open`), and every other position a reference can occupy (container element,
+        # return value, call argument, IfExp/BoolOp branch, ...) — the reference itself is the
+        # violation, so nothing downstream needs to be traced.
+        if not isinstance(node.ctx, ast.Load):
+            return
+        if node.id not in BANNED_NAMES:
+            return
+        if id(node) in self._call_funcs:
+            return  # already reported as banned-call by _check_call
+        self.add(node, "banned-call", f"reference to {node.id!r} is not allowed")
+
+    # — container literals —
+    def _check_container_literal(self, node) -> None:
+        # Checks a list/dict/set/tuple literal: storing a banned-builtin reference in a
+        # persistent, index-addressable container is itself the violation — we don't attempt
+        # to track which slot holds what through later subscript access, so the sound and
+        # simple move is to reject the container at construction time instead.
+        if _contains_banned_reference(node):
+            self.add(
+                node,
+                "banned-construct",
+                "a list/dict/set/tuple literal may not hold a reference to a banned builtin",
+            )
+
     # — operators —
     def _require_bundle(self, node: ast.AST, bundle: str) -> None:
         # Checks that the operator's bundle (arithmetic/comparison/indexing) is enabled by the policy.
@@ -352,10 +384,23 @@ class _Checker:
 
     # — assignment / reserved names —
     def _check_assign_targets(self, node) -> None:
-        # Checks every target of an assignment for a forbidden rebind of a reserved name.
+        # Checks every target of an assignment for a forbidden rebind of a reserved name, and
+        # flags storing a banned-builtin reference into a container slot (d["k"] = open) — the
+        # container name itself is Load context here, so the reserved-name walk above never
+        # looks at it, and the value being stored is otherwise never inspected at all.
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
         for t in targets:
             self._check_reserved_target(t)
+            if (
+                isinstance(t, ast.Subscript)
+                and node.value is not None
+                and _contains_banned_reference(node.value)
+            ):
+                self.add(
+                    t,
+                    "banned-construct",
+                    "storing a reference to a banned builtin into a container slot is not allowed",
+                )
 
     def _check_reserved_target(self, target: ast.AST) -> None:
         # Checks each name being bound (Store context) in an assign/for/comprehension target.
@@ -430,3 +475,11 @@ def _iter_names(node: ast.AST):
     for n in ast.walk(node):
         if isinstance(n, ast.Name):
             yield n
+
+
+def _contains_banned_reference(node: ast.AST) -> bool:
+    """True iff a Load-context reference to a BANNED_NAMES identifier appears anywhere in node."""
+    return any(
+        isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load) and n.id in BANNED_NAMES
+        for n in ast.walk(node)
+    )
