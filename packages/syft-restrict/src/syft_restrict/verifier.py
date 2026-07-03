@@ -165,6 +165,8 @@ class _Checker:
         self._call_funcs: set[int] = (
             set()
         )  # Attribute/Name nodes already judged as part of a call's func (avoid double-reporting)
+        self._class_stack: list[ast.ClassDef] = []  # enclosing class, for self.<name> vetting
+        self._self_attr_cache: dict[int, dict[str, bool]] = {}  # id(ClassDef) -> attr safety
 
     def add(self, node: ast.AST, code: str, message: str) -> None:
         self.violations.append(
@@ -175,8 +177,13 @@ class _Checker:
         """Walk the tree; enforce only on nodes inside the private ranges, recurse everywhere."""
         if _in_ranges(node, self.ranges):
             self._enforce(node)
+        is_class = isinstance(node, ast.ClassDef)
+        if is_class:
+            self._class_stack.append(node)
         for child in ast.iter_child_nodes(node):
             self.visit(child)
+        if is_class:
+            self._class_stack.pop()
 
     # — per-node enforcement (recursion is handled by visit) —
     def _enforce(self, node: ast.AST) -> None:
@@ -283,11 +290,88 @@ class _Checker:
         if isinstance(func, ast.Attribute):
             self._check_call_attribute(node, func)
             return
-        # func is a Call / Subscript / etc.: calling a *value* (e.g. self.layer[i](...), Block(...)(x)).
-        # The value's provenance is checked elsewhere; calling it (its __call__) is allowed.
+        if isinstance(func, ast.Subscript) and _rooted_in_self(func):
+            self._check_self_subscript_call(node, func)
+            return
+        # func is a Call / Subscript(non-self) / etc.: calling a *value* (e.g. Block(...)(x),
+        # d["o"](...)). The value's provenance is checked elsewhere; calling it is allowed.
+
+    def _check_self_subscript_call(self, call: ast.Call, func: ast.Subscript) -> None:
+        # Checks self.<name>[i](...) — the Flax "self.layer[i](x)" idiom: only allowed when
+        # <name> is inherited/vetted-safe the same way a direct self.<name>(...) call is.
+        attr = _self_attr_name(func.value) if isinstance(func.value, ast.Attribute) else None
+        if attr is not None and self._self_attr_is_safe(attr):
+            return
+        message = (
+            f"self.{attr!r}[...] was assigned a value that isn't a list/tuple of allow-listed "
+            f"constructors; calling an element of it is not allowed"
+            if attr is not None
+            else "only self.<name>[...] may be called this way, not a deeper self-rooted chain"
+        )
+        self.add(call, "attr-on-value", message)
+
+    def _self_attr_is_safe(self, attr: str) -> bool:
+        # An attribute the class never assigns is presumed inherited from the class's own
+        # (already vetted, since bases are allow-listed) base class -- e.g. nn.Module's
+        # self.param/self.variable. Only attributes the class itself assigns get vetted
+        # against what was actually stored there.
+        if not self._class_stack:
+            return False
+        cls_node = self._class_stack[-1]
+        table = self._self_attr_cache.get(id(cls_node))
+        if table is None:
+            table = self._build_self_attr_table(cls_node)
+            self._self_attr_cache[id(cls_node)] = table
+        return table.get(attr, True)
+
+    def _build_self_attr_table(self, cls_node: ast.ClassDef) -> dict[str, bool]:
+        # Checks, for every self.<name> assigned anywhere in the class, whether every value
+        # ever stored there is a vetted-safe source; AugAssign always disqualifies (compound-
+        # mutating a submodule reference isn't a real Flax pattern and is inherently suspect).
+        values: dict[str, list[ast.AST]] = {}
+        disqualified: set[str] = set()
+        for node in ast.walk(cls_node):
+            if isinstance(node, ast.Assign):
+                for t in node.targets:
+                    attr = _self_attr_name(t)
+                    if attr is not None:
+                        values.setdefault(attr, []).append(node.value)
+            elif isinstance(node, ast.AnnAssign) and node.value is not None:
+                attr = _self_attr_name(node.target)
+                if attr is not None:
+                    values.setdefault(attr, []).append(node.value)
+            elif isinstance(node, ast.AugAssign):
+                attr = _self_attr_name(node.target)
+                if attr is not None:
+                    disqualified.add(attr)
+        return {
+            attr: attr not in disqualified
+            and all(self._is_safe_self_value(v) for v in vs)
+            for attr, vs in values.items()
+        }
+
+    def _is_safe_self_value(self, value: ast.AST) -> bool:
+        # A value is a vetted "submodule" source if it's a call to an allow-listed library
+        # constructor or a name defined in this file (hidden or visible), or a list/tuple/set/
+        # comprehension of such values (the self.layer[i](x) idiom).
+        if isinstance(value, ast.Call):
+            func = value.func
+            dotted = _dotted(func)
+            if dotted is not None and dotted.split(".")[0] in self.scan.bindings:
+                return self._resolved_allowed(dotted)
+            return isinstance(func, ast.Name) and (
+                func.id in self.scan.hidden_defs or func.id in self.scan.visible_defs
+            )
+        if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
+            return all(self._is_safe_self_value(e) for e in value.elts)
+        if isinstance(value, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
+            return self._is_safe_self_value(value.elt)
+        if isinstance(value, ast.DictComp):
+            return self._is_safe_self_value(value.value)
+        return False
 
     def _check_call_attribute(self, call: ast.Call, func: ast.Attribute) -> None:
-        # Checks a dotted call: allows self/cls methods, vets library calls, bans methods on opaque values.
+        # Checks a dotted call: vets self/cls attribute calls, vets library calls, bans methods on opaque values.
         self._call_funcs.add(
             id(func)
         )  # so _check_attribute doesn't re-flag the same node
@@ -295,7 +379,18 @@ class _Checker:
         if dotted is not None:
             root = dotted.split(".")[0]
             if root in ("self", "cls"):
-                return  # self.method(...) — receiver type is the module class, not opaque
+                attr = _self_attr_name(func)
+                if attr is not None and self._self_attr_is_safe(attr):
+                    return  # self.<name>(...) — <name> is inherited or was assigned a vetted source
+                message = (
+                    f"self.{attr!r} was assigned a value that isn't an allow-listed constructor "
+                    f"or a locally-defined class; calling it is not allowed"
+                    if attr is not None
+                    else f"{dotted!r}: only a single self.<name> attribute may be called, "
+                    f"not a deeper attribute chain"
+                )
+                self.add(call, "attr-on-value", message)
+                return
             if root in self.scan.bindings:
                 if not self._resolved_allowed(dotted):
                     self.add(
@@ -328,6 +423,14 @@ class _Checker:
         if dotted is not None:
             root = dotted.split(".")[0]
             if root in ("self", "cls"):
+                if _self_attr_name(node) is not None:
+                    return  # self.<name> read/store — single level is always fine (Flax setup/param)
+                self.add(
+                    node,
+                    "attr-on-value",
+                    f"{dotted!r}: only a single self.<name> attribute may be accessed, "
+                    f"not a deeper attribute chain",
+                )
                 return
             if root in self.scan.bindings:
                 if not self._resolved_allowed(dotted):
@@ -461,6 +564,25 @@ def _dotted(node: ast.AST) -> str | None:
         parts.append(cur.id)
         return ".".join(reversed(parts))
     return None
+
+
+def _self_attr_name(node: ast.AST) -> str | None:
+    """Returns the attr name for a single-level self.<name>/cls.<name> access, else None."""
+    if (
+        isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id in ("self", "cls")
+    ):
+        return node.attr
+    return None
+
+
+def _rooted_in_self(node: ast.AST) -> bool:
+    """True iff an Attribute/Subscript chain's ultimate base is self/cls."""
+    cur = node
+    while isinstance(cur, (ast.Attribute, ast.Subscript)):
+        cur = cur.value
+    return isinstance(cur, ast.Name) and cur.id in ("self", "cls")
 
 
 def _describe(node: ast.AST) -> str:
