@@ -9,6 +9,7 @@ from .migrations import job_registry
 from .models import JobState, JobStatus, JobSubmissionMetadata
 
 __all__ = [
+    "__version__",
     # SyftBox job system
     "BaseJobClient",
     "JobClient",
