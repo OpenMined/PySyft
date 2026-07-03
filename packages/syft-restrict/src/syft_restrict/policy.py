@@ -80,6 +80,9 @@ BANNED_NAMES: frozenset[str] = frozenset(
         "input",
         "breakpoint",
         "memoryview",
+        "type",
+        "__build_class__",
+        "print",
     }
 )
 
