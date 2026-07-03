@@ -15,7 +15,7 @@ class JobSubmissionMetadataV1(MigratableObject, registry=job_registry):
     """Represents the job submission metadata, stored under
     SyftBox/<datasite_email>/app_data/job/inbox/<ds_email>/<job_name>/config.yaml."""
 
-    canonical_name: str = "job_submission_metadata"
+    canonical_name: str = "JobSubmissionMetadata"
     version: str = "1"
 
     name: str

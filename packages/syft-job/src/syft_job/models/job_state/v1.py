@@ -26,7 +26,7 @@ class JobStatus(str, Enum):
 class JobStateV1(MigratableObject, registry=job_registry):
     """Represents the state of a job, stored as state.yaml in the review/ directory."""
 
-    canonical_name: str = "job_state"
+    canonical_name: str = "JobState"
     version: str = "1"
 
     status: JobStatus = JobStatus.RECEIVED

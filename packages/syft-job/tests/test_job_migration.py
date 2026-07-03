@@ -21,8 +21,8 @@ DS_EMAIL = "ds@test.org"
 
 def test_versioned_objects_registered_and_aliased():
     # Both objects register their single version into the package registry.
-    assert job_registry.versions("job_submission_metadata") == ["1"]
-    assert job_registry.versions("job_state") == ["1"]
+    assert job_registry.versions("JobSubmissionMetadata") == ["1"]
+    assert job_registry.versions("JobState") == ["1"]
 
     # The current-version aliases resolve to the V1 classes.
     assert JobSubmissionMetadata is JobSubmissionMetadataV1
@@ -31,10 +31,10 @@ def test_versioned_objects_registered_and_aliased():
     # The protocol schema lists version "1" as the only one for both objects.
     schema = job_registry.current_protocol_schema
     assert schema.supported_versions == {
-        "job_submission_metadata": ["1"],
-        "job_state": ["1"],
+        "JobSubmissionMetadata": ["1"],
+        "JobState": ["1"],
     }
-    assert schema.current_schema(canonical_name="job_state") == "1"
+    assert schema.current_schema(canonical_name="JobState") == "1"
 
 
 def _make_submission() -> JobSubmissionMetadataV1:
@@ -71,7 +71,7 @@ def test_submission_round_trip_carries_identity(tmp_path: Path):
 
     loaded = JobSubmissionMetadataV1.load(path)
     assert loaded == submission
-    assert loaded.canonical_name == "job_submission_metadata"
+    assert loaded.canonical_name == "JobSubmissionMetadata"
     assert loaded.version == "1"
 
 
@@ -85,7 +85,7 @@ def test_state_round_trip_carries_identity(tmp_path: Path):
 
     loaded = JobStateV1.load(path)
     assert loaded == state
-    assert loaded.canonical_name == "job_state"
+    assert loaded.canonical_name == "JobState"
     assert loaded.version == "1"
 
 
@@ -98,13 +98,13 @@ def _register_state_v2(registry: MigrationRegistry) -> type:
         retries: int = 0  # new in v2
 
     registry.register_migration(
-        canonical_name="job_state",
+        canonical_name="JobState",
         from_version="1",
         to_version="2",
         fn=lambda obj: JobStateV2(**obj.model_dump(exclude={"version"})),
     )
     registry.register_migration(
-        canonical_name="job_state",
+        canonical_name="JobState",
         from_version="2",
         to_version="1",
         fn=lambda obj: JobStateV1(**obj.model_dump(exclude={"version", "retries"})),
@@ -118,13 +118,13 @@ def _register_submission_v2(registry: MigrationRegistry) -> type:
         priority: str = "normal"  # new in v2
 
     registry.register_migration(
-        canonical_name="job_submission_metadata",
+        canonical_name="JobSubmissionMetadata",
         from_version="1",
         to_version="2",
         fn=lambda obj: JobSubmissionMetadataV2(**obj.model_dump(exclude={"version"})),
     )
     registry.register_migration(
-        canonical_name="job_submission_metadata",
+        canonical_name="JobSubmissionMetadata",
         from_version="2",
         to_version="1",
         fn=lambda obj: JobSubmissionMetadataV1(
