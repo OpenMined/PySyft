@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from syft_migration.base import MigratableObject
-from syft_migration.registry import MigrationError, MigrationFn, MigrationRegistry
-from syft_migration.schema import PackageProtocolSchema
+from syft_migration.identity import MigrationError
+from syft_migration.registry import MigrationFn, MigrationRegistry
+from syft_migration.schema import PackageProtocolSchema, ProtocolSchema
 
 
 class MigrationService:
@@ -26,14 +27,8 @@ class MigrationService:
     def migrate_to_schema(
         self, obj: MigratableObject, schema: PackageProtocolSchema
     ) -> MigratableObject:
-        """Migrate ``obj`` to the version pinned by ``schema`` (the on-the-fly downgrade)."""
-        target_version = schema.object_versions.get(obj.canonical_name)
-        if target_version is None:
-            raise MigrationError(
-                f"Protocol schema {schema.package_name}@{schema.package_version} does "
-                f"not include object {obj.canonical_name!r}"
-            )
-        return self.migrate(obj, target_version)
+        """Migrate ``obj`` to the latest version ``schema`` supports for it."""
+        return self.migrate(obj, schema.current_schema(obj.canonical_name))
 
     def downgrade_for_package_version(
         self, obj: MigratableObject, package_version: str
@@ -41,6 +36,10 @@ class MigrationService:
         """Migrate ``obj`` to the version a peer running ``package_version`` understands."""
         schema = self.registry.schema_for_package_version(package_version)
         return self.migrate_to_schema(obj, schema)
+
+    def export_protocol_schema(self) -> ProtocolSchema:
+        """Export every object version this package supports."""
+        return self.registry.compute_protocol_schema()
 
     def load(
         self, data: dict[str, Any], target_version: Optional[str] = None

@@ -8,8 +8,7 @@ from syft_client.sync.peers.peer import Peer
 from syft_client.sync.peers.peer_list import PeerList
 from syft_datasets.dataset_manager import SyftDatasetManager
 from syft_job.job import JobInfo, JobsList
-from syft_job.models.config import JobSubmissionMetadata
-from syft_job.models.state import JobState, JobStatus
+from syft_job.models import JobState, JobStatus, JobSubmissionMetadata
 
 from syft_enclaves.enclave_job_info import (
     EnclaveJobInfo,

@@ -6,7 +6,9 @@ from pathlib import Path
 from typing import Optional
 
 import yaml
-from pydantic import BaseModel
+from syft_migration import MigratableObject
+
+from ...migrations import job_registry
 
 
 class JobStatus(str, Enum):
@@ -21,8 +23,11 @@ class JobStatus(str, Enum):
     FAILED = "failed"  # execution failed
 
 
-class JobState(BaseModel):
+class JobStateV1(MigratableObject, registry=job_registry):
     """Represents the state of a job, stored as state.yaml in the review/ directory."""
+
+    canonical_name: str = "JobState"
+    version: str = "1"
 
     status: JobStatus = JobStatus.RECEIVED
     received_at: Optional[datetime] = None
@@ -50,7 +55,7 @@ class JobState(BaseModel):
             yaml.dump(self.model_dump(mode="json"), f, default_flow_style=False)
 
     @classmethod
-    def load(cls, path: Path) -> JobState:
+    def load(cls, path: Path) -> JobStateV1:
         """Load state from a YAML file."""
         with open(path, "r") as f:
             data = yaml.safe_load(f)

@@ -4,8 +4,12 @@ from syft_migration import (
     PackageProtocolSchema,
 )
 
-# Isolated registry so the mock objects never touch the global default_registry.
-mock_registry = MigrationRegistry()
+# Isolated registry for the mock objects.
+mock_registry = MigrationRegistry(
+    protocol_name="mock-proto",
+    package_name="syft-mock",
+    package_version="1.1.0",
+)
 
 
 class JobV1(MigratableObject, registry=mock_registry):
@@ -48,17 +52,11 @@ mock_registry.register_migration(
     fn=lambda obj: JobV1(name=obj.name),
 )
 
+# The schema of an earlier release; the current one is computed by the registry.
 schema_v1 = PackageProtocolSchema.from_objects(
     protocol_name="mock-proto",
     package_name="syft-mock",
     package_version="1.0.0",
     classes=[JobV1],
 )
-schema_v2 = PackageProtocolSchema.from_objects(
-    protocol_name="mock-proto",
-    package_name="syft-mock",
-    package_version="1.1.0",
-    classes=[JobV2],
-)
-mock_registry.register_protocol_schema(schema=schema_v1, current=False)
-mock_registry.register_protocol_schema(schema=schema_v2, current=True)
+mock_registry.register_historic_protocol_schema(schema=schema_v1)
