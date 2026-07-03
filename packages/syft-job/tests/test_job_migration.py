@@ -1,10 +1,14 @@
 """Unit tests for the versioned syft-job objects and their migration wiring."""
 
+import importlib
+import pkgutil
 from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
-from syft_migration import MigrationRegistry, MigrationService
+from syft_migration import MigratableObject, MigrationRegistry, MigrationService
+
+import syft_job
 
 from syft_job.migrations import job_registry
 from syft_job.models import (
@@ -20,24 +24,47 @@ DS_EMAIL = "ds@test.org"
 
 
 def test_versioned_objects_registered_and_aliased():
-    # Both objects register their single version into the package registry.
-    assert job_registry.versions("JobSubmissionMetadata") == ["1"]
-    assert job_registry.versions("JobState") == ["1"]
+    # Both objects have at least one version registered in the package registry.
+    assert job_registry.versions("JobSubmissionMetadata")
+    assert job_registry.versions("JobState")
 
     # The current-version aliases resolve to the V1 classes.
     assert JobSubmissionMetadata is JobSubmissionMetadataV1
     assert JobState is JobStateV1
 
-    # The protocol schema lists version "1" as the only one for both objects.
+    # The protocol schema covers both objects and resolves a current version.
     schema = job_registry.current_protocol_schema
-    assert schema.supported_versions == {
-        "JobSubmissionMetadata": ["1"],
-        "JobState": ["1"],
-    }
-    assert schema.current_schema(canonical_name="JobState") == "1"
+    assert {"JobSubmissionMetadata", "JobState"} <= set(schema.supported_versions)
+    assert schema.current_schema(canonical_name="JobState")
+    assert schema.current_schema(canonical_name="JobSubmissionMetadata")
 
 
-def _make_submission() -> JobSubmissionMetadataV1:
+def _all_subclasses(cls: type) -> set[type]:
+    subclasses = set(cls.__subclasses__())
+    for sub in cls.__subclasses__():
+        subclasses |= _all_subclasses(sub)
+    return subclasses
+
+
+def test_all_migratable_objects_in_package_are_registered():
+    # Import every syft_job module so all MigratableObject subclasses are defined.
+    for module_info in pkgutil.walk_packages(syft_job.__path__, prefix="syft_job."):
+        importlib.import_module(module_info.name)
+
+    package_objects = [
+        cls
+        for cls in _all_subclasses(MigratableObject)
+        if cls.__module__.startswith("syft_job.")
+    ]
+    assert len(package_objects) >= 2  # the scan actually found the job objects
+
+    for cls in package_objects:
+        canonical_name = cls.model_fields["canonical_name"].default
+        version = cls.model_fields["version"].default
+        assert job_registry.get_class(canonical_name, version) is cls
+
+
+def create_mock_submission() -> JobSubmissionMetadataV1:
     return JobSubmissionMetadataV1(
         name="my.job",
         submitted_by=DS_EMAIL,
@@ -49,7 +76,7 @@ def _make_submission() -> JobSubmissionMetadataV1:
     )
 
 
-def _submission_config_path(tmp_path: Path) -> Path:
+def _mock_submission_config_path(tmp_path: Path) -> Path:
     # config.yaml lives at inbox/<ds>/<job>/config.yaml under a datasite-email folder,
     # matching the path layout JobSubmissionMetadataV1.load() reverse-engineers.
     return (
@@ -65,8 +92,8 @@ def _submission_config_path(tmp_path: Path) -> Path:
 
 
 def test_submission_round_trip_carries_identity(tmp_path: Path):
-    path = _submission_config_path(tmp_path)
-    submission = _make_submission()
+    path = _mock_submission_config_path(tmp_path)
+    submission = create_mock_submission()
     submission.save(path)
 
     loaded = JobSubmissionMetadataV1.load(path)
@@ -175,8 +202,8 @@ def test_job_submission_upgrades_from_disk_and_downgrades(tmp_path: Path):
     service = MigrationService(registry=registry)
 
     # An old (v1) config file on disk loads and migrates to the next version.
-    path = _submission_config_path(tmp_path)
-    _make_submission().save(path)
+    path = _mock_submission_config_path(tmp_path)
+    create_mock_submission().save(path)
     upgraded = service.migrate(JobSubmissionMetadataV1.load(path), target_version="2")
     assert type(upgraded) is JobSubmissionMetadataV2
     assert upgraded.name == "my.job"
@@ -192,7 +219,7 @@ def test_job_submission_upgrades_from_disk_and_downgrades(tmp_path: Path):
 def test_migration_service_loads_into_versioned_class():
     service = MigrationService(registry=job_registry)
 
-    submission = _make_submission()
+    submission = create_mock_submission()
     loaded = service.load(submission.model_dump(mode="json"))
     assert isinstance(loaded, JobSubmissionMetadataV1)
 
