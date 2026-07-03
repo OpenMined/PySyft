@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from syft_migration.base import MigratableObject
@@ -47,12 +47,18 @@ def _identity(cls: type[MigratableObject]) -> tuple[str, str]:
 class MigrationRegistry:
     """All known object versions, migrations, and protocol schemas for ONE package."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self, protocol_name: str, package_name: str, package_version: str
+    ) -> None:
+        self.protocol_name = protocol_name
+        self.package_name = package_name
+        self.package_version = package_version
         # canonical_name -> {version: object_class}
         self.objects: dict[str, dict[str, type[MigratableObject]]] = {}
         # canonical_name -> {(from_version, to_version): migration_fn}
         self.migrations: dict[str, dict[tuple[str, str], MigrationFn]] = {}
-        self.current_protocol_schema: Optional[PackageProtocolSchema] = None
+        # package_version -> schema; usually read from files that are release
+        # artifacts of earlier releases (see PackageProtocolSchema.save/load).
         self.history_protocol_schemas: dict[str, PackageProtocolSchema] = {}
 
     # -- objects -----------------------------------------------------------
@@ -80,9 +86,6 @@ class MigrationRegistry:
         return list(self.objects.get(canonical_name, {}))
 
     def latest_version(self, canonical_name: str) -> str:
-        schema = self.current_protocol_schema
-        if schema is not None and canonical_name in schema.object_versions:
-            return schema.object_versions[canonical_name]
         versions = self.versions(canonical_name)
         if not versions:
             raise MigrationError(f"No versions registered for {canonical_name!r}")
@@ -143,10 +146,25 @@ class MigrationRegistry:
         )
 
     # -- protocol schemas --------------------------------------------------
-    def register_protocol_schema(
-        self, schema: PackageProtocolSchema, *, current: bool = True
-    ) -> None:
-        """Register a schema, keeping the object registry and schemas in sync.
+    @property
+    def current_protocol_schema(self) -> PackageProtocolSchema:
+        """The schema of THIS release, computed from the registered objects by
+        pinning the latest version of each canonical name."""
+        # Runtime import: schema.py imports from this module at import time.
+        from syft_migration.schema import PackageProtocolSchema
+
+        return PackageProtocolSchema(
+            protocol_name=self.protocol_name,
+            package_name=self.package_name,
+            package_version=self.package_version,
+            object_versions={
+                canonical_name: self.latest_version(canonical_name)
+                for canonical_name in self.objects
+            },
+        )
+
+    def register_historic_protocol_schema(self, schema: PackageProtocolSchema) -> None:
+        """Register the schema of a PAST release of this package.
 
         Every object the schema pins must already be registered (objects auto-register
         when their class is defined); registering a schema that references an unknown
@@ -155,22 +173,15 @@ class MigrationRegistry:
         for canonical_name, version in schema.object_versions.items():
             self.get_class(canonical_name=canonical_name, version=version)
         self.history_protocol_schemas[schema.package_version] = schema
-        if current:
-            self.current_protocol_schema = schema
 
     def compute_protocol_schema(self) -> ProtocolSchema:
         """Every object version this registry can load, straight from ``self.objects``."""
         # Runtime import: schema.py imports from this module at import time.
         from syft_migration.schema import ProtocolSchema
 
-        if self.current_protocol_schema is None:
-            raise MigrationError(
-                "Cannot compute a protocol schema before a current protocol schema "
-                "is registered (its protocol_name and package_version are needed)"
-            )
         return ProtocolSchema(
-            protocol_name=self.current_protocol_schema.protocol_name,
-            version=self.current_protocol_schema.package_version,
+            protocol_name=self.protocol_name,
+            version=self.package_version,
             supported_versions={
                 canonical_name: sorted(versions)
                 for canonical_name, versions in self.objects.items()
@@ -178,10 +189,7 @@ class MigrationRegistry:
         )
 
     def schema_for_package_version(self, package_version: str) -> PackageProtocolSchema:
-        if (
-            self.current_protocol_schema is not None
-            and self.current_protocol_schema.package_version == package_version
-        ):
+        if package_version == self.package_version:
             return self.current_protocol_schema
         try:
             return self.history_protocol_schemas[package_version]
@@ -192,4 +200,6 @@ class MigrationRegistry:
 
 
 # Default per-import registry used by MigratableObject.__init_subclass__.
-default_registry = MigrationRegistry()
+default_registry = MigrationRegistry(
+    protocol_name="default", package_name="default", package_version="0.0.0"
+)

@@ -135,7 +135,11 @@ def _register_submission_v2(registry: MigrationRegistry) -> type:
 
 def _next_version_registry() -> tuple[MigrationRegistry, type, type]:
     """A fresh registry holding the current objects plus test-scope V2 versions."""
-    registry = MigrationRegistry()
+    registry = MigrationRegistry(
+        protocol_name="syft-job",
+        package_name="syft-job",
+        package_version="test-next-release",
+    )
     registry.register_object_version(JobStateV1)
     registry.register_object_version(JobSubmissionMetadataV1)
     state_v2 = _register_state_v2(registry)
