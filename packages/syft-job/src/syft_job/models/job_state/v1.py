@@ -48,11 +48,15 @@ class JobStateV1(MigratableObject, registry=job_registry):
     completed_at: Optional[datetime] = None
     return_code: Optional[int] = None
 
+    def disk_dict(self) -> dict:
+        """The on-disk form of the state."""
+        return self.model_dump(mode="json")
+
     def save(self, path: Path) -> None:
         """Write state to a YAML file."""
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w") as f:
-            yaml.dump(self.model_dump(mode="json"), f, default_flow_style=False)
+            yaml.dump(self.disk_dict(), f, default_flow_style=False)
 
     @classmethod
     def load(cls, path: Path) -> JobStateV1:

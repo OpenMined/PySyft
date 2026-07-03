@@ -12,6 +12,7 @@ from .client import JobClient
 from .job import JobInfo
 from . import __version__
 from .config import SyftJobConfig
+from .manager import JobManager, JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
 
 # Default timeout for job execution (10 minutes)
@@ -63,7 +64,8 @@ class SyftJobRunner:
         """
         self.config = config
         self.poll_interval = poll_interval
-        self.known_jobs: Set[str] = set()
+        self.manager = JobManager(config=config)
+        self.known_jobs: Set[JobRef] = set()
 
         # Ensure directory structure exists for the root user
         self._ensure_root_user_directories()
@@ -82,37 +84,27 @@ class SyftJobRunner:
         review_dir.mkdir(parents=True, exist_ok=True)
         print(f"Ensured directories exist: {inbox_dir.parent}")
 
-    def _get_pending_jobs(self) -> List[str]:
-        """Get list of job paths (ds_email/job_name) in pending status."""
-        review_dir = self.config.get_review_dir(self.config.current_user_email)
-
-        if not review_dir.exists():
-            return []
-
+    def _get_jobs_with_status(self, status: JobStatus) -> List[JobRef]:
+        """Get refs of all jobs in review/ (any protocol layout) with ``status``."""
         jobs = []
-        for ds_dir in review_dir.iterdir():
-            if not ds_dir.is_dir():
+        for ref in self.manager.iter_review_refs(self.config.current_user_email):
+            try:
+                state = self.manager.read_state(ref)
+            except Exception:
                 continue
-            for job_dir in ds_dir.iterdir():
-                if not job_dir.is_dir():
-                    continue
-                state_file = job_dir / "state.yaml"
-                if not state_file.exists():
-                    continue
-                try:
-                    state = JobState.load(state_file)
-                    if state.status == JobStatus.PENDING:
-                        jobs.append(f"{ds_dir.name}/{job_dir.name}")
-                except Exception:
-                    continue
+            if state is not None and state.status == status:
+                jobs.append(ref)
         return jobs
 
-    def _print_new_job(self, job_name: str) -> None:
-        """Print information about a new job in the inbox."""
-        inbox_dir = self.config.get_all_submissions_dir(self.config.current_user_email)
-        job_dir = inbox_dir / job_name
+    def _get_pending_jobs(self) -> List[JobRef]:
+        """Get refs of jobs in pending status."""
+        return self._get_jobs_with_status(JobStatus.PENDING)
 
-        print(f"\n NEW JOB DETECTED: {job_name}")
+    def _print_new_job(self, ref: JobRef) -> None:
+        """Print information about a new job in the inbox."""
+        job_dir = self.manager.submission_dir(ref)
+
+        print(f"\n NEW JOB DETECTED: {ref.ds_email}/{ref.job_name}")
         print(f" Location: {job_dir}")
 
         # Check if run.sh exists and show first few lines
@@ -166,17 +158,9 @@ class SyftJobRunner:
             return
 
         # Count jobs before deletion
-        total_jobs = 0
-        inbox_dir = self.config.get_all_submissions_dir(root_email)
-        review_dir = self.config.get_review_dir(root_email)
-
-        for scan_dir in [inbox_dir, review_dir]:
-            if scan_dir.exists():
-                for ds_dir in scan_dir.iterdir():
-                    if ds_dir.is_dir():
-                        for item in ds_dir.iterdir():
-                            if item.is_dir():
-                                total_jobs += 1
+        total_jobs = len(list(self.manager.iter_submission_refs(root_email))) + len(
+            list(self.manager.iter_review_refs(root_email))
+        )
 
         if total_jobs == 0:
             print(" No jobs found to delete")
@@ -218,83 +202,31 @@ class SyftJobRunner:
         current_jobs = set(self._get_pending_jobs())
         new_jobs = current_jobs - self.known_jobs
 
-        for job_name in new_jobs:
-            self._print_new_job(job_name)
+        for ref in new_jobs:
+            self._print_new_job(ref)
 
         # Update known jobs
         self.known_jobs = current_jobs
 
-    def _get_jobs_in_approved(self) -> List[str]:
-        """Get list of job paths (ds_email/job_name) in approved status."""
-        review_dir = self.config.get_review_dir(self.config.current_user_email)
+    def _get_jobs_in_approved(self) -> List[JobRef]:
+        """Get refs of jobs in approved status."""
+        return self._get_jobs_with_status(JobStatus.APPROVED)
 
-        if not review_dir.exists():
-            return []
-
-        jobs = []
-        for ds_dir in review_dir.iterdir():
-            if not ds_dir.is_dir():
-                continue
-            for job_dir in ds_dir.iterdir():
-                if not job_dir.is_dir():
-                    continue
-                state_file = job_dir / "state.yaml"
-                if not state_file.exists():
-                    continue
-                try:
-                    state = JobState.load(state_file)
-                    if state.status == JobStatus.APPROVED:
-                        jobs.append(f"{ds_dir.name}/{job_dir.name}")
-                except Exception:
-                    continue
-        return jobs
-
-    def _resolve_submission_dir(self, job_name: str, user: str | None = None) -> Path:
-        """Resolve the inbox directory for a job."""
-        if user:
-            return self.config.get_job_submission_dir(
-                self.config.current_user_email, user, job_name
-            )
-        inbox_dir = self.config.get_all_submissions_dir(self.config.current_user_email)
-        matches = list(inbox_dir.glob(f"*/{job_name}"))
-        if len(matches) == 1:
-            return matches[0]
-        if len(matches) == 0:
-            raise FileNotFoundError(
-                f"Job '{job_name}' not found in inbox under {inbox_dir}"
-            )
-        raise ValueError(
-            f"Multiple jobs named '{job_name}' found: {matches}. "
-            "Pass user= to disambiguate."
+    def _resolve_ref(self, job_name: str, user: str | None = None) -> JobRef:
+        """Resolve the unique ref for a job by name (any protocol layout)."""
+        return self.manager.find_submission_ref(
+            self.config.current_user_email, job_name, ds_email=user
         )
 
-    def _resolve_review_dir(self, job_name: str, user: str | None = None) -> Path:
-        """Resolve the review directory for a job."""
-        review_dir = self.config.get_review_dir(self.config.current_user_email)
-        if user:
-            return review_dir / user / job_name
-        matches = list(review_dir.glob(f"*/{job_name}"))
-        if len(matches) == 1:
-            return matches[0]
-        if len(matches) == 0:
-            raise FileNotFoundError(
-                f"Job '{job_name}' not found in review under {review_dir}"
-            )
-        raise ValueError(
-            f"Multiple jobs named '{job_name}' found: {matches}. "
-            "Pass user= to disambiguate."
-        )
-
-    def _execute_job_streaming(
-        self, job_name: str, timeout: int, user: str | None = None
-    ) -> int:
+    def _execute_job_streaming(self, ref: JobRef, timeout: int) -> int:
         """Execute job with real-time streaming output.
 
         Reads run.sh from inbox/, writes stdout/stderr to review/.
         """
-        submission_dir = self._resolve_submission_dir(job_name, user)
-        review_dir = self._resolve_review_dir(job_name, user)
+        submission_dir = self.manager.submission_dir(ref)
+        review_dir = self.manager.review_dir(ref)
         run_script = submission_dir / "run.sh"
+        job_name = ref.job_name
 
         # Log prefix for streaming output
         log_prefix = f"[{self.config.current_user_email}][{job_name}]"
@@ -376,16 +308,15 @@ class SyftJobRunner:
 
         return returncode
 
-    def _execute_job_captured(
-        self, job_name: str, timeout: int, user: str | None = None
-    ) -> int:
+    def _execute_job_captured(self, ref: JobRef, timeout: int) -> int:
         """Execute job with captured output (non-streaming).
 
         Reads run.sh from inbox/, writes stdout/stderr to review/.
         """
-        submission_dir = self._resolve_submission_dir(job_name, user)
-        review_dir = self._resolve_review_dir(job_name, user)
+        submission_dir = self.manager.submission_dir(ref)
+        review_dir = self.manager.review_dir(ref)
         run_script = submission_dir / "run.sh"
+        job_name = ref.job_name
 
         # Make run.sh executable
         os.chmod(run_script, 0o755)
@@ -429,10 +360,9 @@ class SyftJobRunner:
 
     def _execute_job(
         self,
-        job_name: str,
+        ref: JobRef,
         stream_output: bool = True,
         timeout: int | None = None,
-        user: str | None = None,
     ) -> bool:
         """
         Execute run.sh for an approved job.
@@ -440,10 +370,9 @@ class SyftJobRunner:
         Reads run.sh from inbox/, writes all output to review/.
 
         Args:
-            job_name: Name of the job to execute.
+            ref: Ref of the job to execute.
             stream_output: If True (default), stream output in real-time.
             timeout: Timeout in seconds. Defaults to 300 (5 minutes).
-            user: DS email who submitted the job. If None, searches.
 
         Returns:
             bool: True if execution was successful, False otherwise
@@ -451,30 +380,30 @@ class SyftJobRunner:
         if timeout is None:
             timeout = get_job_timeout_seconds()
 
-        submission_dir = self._resolve_submission_dir(job_name, user)
-        review_dir = self._resolve_review_dir(job_name, user)
+        job_name = ref.job_name
+        submission_dir = self.manager.submission_dir(ref)
+        review_dir = self.manager.review_dir(ref)
         run_script = submission_dir / "run.sh"
 
         if not run_script.exists():
             print(f" No run.sh found in {job_name}")
             return False
 
-        self._prepare_outputs_dir(job_name, user)
+        self._prepare_outputs_dir(ref)
 
         print(f" Executing job: {job_name}")
         print(f" Inbox: {submission_dir}")
 
         # Update state to RUNNING
-        state_file = review_dir / "state.yaml"
-        state = JobState.load(state_file)
+        state = self.manager.read_state(ref)
         state.status = JobStatus.RUNNING
-        state.save(state_file)
+        self.manager.write_state(ref, state)
 
         try:
             if stream_output:
-                returncode = self._execute_job_streaming(job_name, timeout, user)
+                returncode = self._execute_job_streaming(ref, timeout)
             else:
-                returncode = self._execute_job_captured(job_name, timeout, user)
+                returncode = self._execute_job_captured(ref, timeout)
 
             # Move outputs from inbox/ to review/
             self._move_outputs_to_review(submission_dir, review_dir)
@@ -485,7 +414,7 @@ class SyftJobRunner:
                 f.write(str(returncode))
 
             # Update state to DONE or FAILED
-            self._set_finalized_job_state(state_file, returncode)
+            self._set_finalized_job_state(ref, returncode)
 
             stdout_file = review_dir / "stdout.txt"
             stderr_file = review_dir / "stderr.txt"
@@ -506,19 +435,19 @@ class SyftJobRunner:
 
         except subprocess.TimeoutExpired:
             print(f" Job {job_name} timed out after {timeout // 60} minutes")
-            self._set_finalized_job_state(state_file, -1)
+            self._set_finalized_job_state(ref, -1)
             return False
         except Exception as e:
             print(f" Error executing job {job_name}: {e}")
-            self._set_finalized_job_state(state_file, -1)
+            self._set_finalized_job_state(ref, -1)
             return False
 
-    def _set_finalized_job_state(self, state_file: Path, returncode: int) -> None:
-        state = JobState.load(state_file)
+    def _set_finalized_job_state(self, ref: JobRef, returncode: int) -> None:
+        state = self.manager.read_state(ref)
         state.status = JobStatus.DONE if returncode == 0 else JobStatus.FAILED
         state.completed_at = datetime.now(timezone.utc)
         state.return_code = returncode
-        state.save(state_file)
+        self.manager.write_state(ref, state)
 
     def _move_outputs_to_review(self, submission_dir: Path, review_dir: Path) -> None:
         inbox_outputs = submission_dir / "code" / "outputs"
@@ -536,15 +465,15 @@ class SyftJobRunner:
             # Clean up inbox outputs
             shutil.rmtree(inbox_outputs)
 
-    def _prepare_outputs_dir(self, job_name: str, user: str | None = None) -> None:
+    def _prepare_outputs_dir(self, ref: JobRef) -> None:
         """Clear and recreate outputs dir in both inbox/ (for job cwd) and review/ (for final results)."""
         # Create outputs/ inside code/ dir so job scripts can write there (cwd is code/)
-        submission_dir = self._resolve_submission_dir(job_name, user)
+        submission_dir = self.manager.submission_dir(ref)
         inbox_outputs = submission_dir / "code" / "outputs"
         inbox_outputs.mkdir(parents=True, exist_ok=True)
 
         # Create outputs/ in review dir with owner-only read permissions
-        review_dir = self._resolve_review_dir(job_name, user)
+        review_dir = self.manager.review_dir(ref)
         outputs_dir = review_dir / "outputs"
         if outputs_dir.exists():
             shutil.rmtree(outputs_dir)
@@ -558,39 +487,30 @@ class SyftJobRunner:
         folder = ctx.open(rel_path)
         folder.grant_read_access(self.config.current_user_email)
 
-    def _get_job_submitter(self, job_name: str, user: str | None = None) -> str | None:
+    def _get_job_submitter(self, ref: JobRef) -> str | None:
         """Read submitted_by from job config.yaml in inbox/."""
-        metadata = self._get_job_metadata(job_name, user)
+        metadata = self._get_job_metadata(ref)
         if metadata is None:
             return None
         return metadata.submitted_by
 
-    def _get_job_metadata(
-        self, job_name: str, user: str | None = None
-    ) -> JobSubmissionMetadata:
-        submission_dir = self._resolve_submission_dir(job_name, user)
-        config_file = submission_dir / "config.yaml"
-        if not config_file.exists():
-            return None
+    def _get_job_metadata(self, ref: JobRef) -> JobSubmissionMetadata | None:
         try:
-            return JobSubmissionMetadata.load(config_file)
+            return self.manager.read_submission(ref)
         except Exception:
             return None
 
-    def _get_job_state(self, job_name: str, user: str | None = None) -> JobState:
-        review_dir = self._resolve_review_dir(job_name, user)
-        state_file = review_dir / "state.yaml"
-        if state_file.exists():
-            return JobState.load(state_file)
-        return JobState(status=JobStatus.RECEIVED)
+    def _get_job_state(self, ref: JobRef) -> JobState:
+        state = self.manager.read_state(ref)
+        return state if state is not None else JobState(status=JobStatus.RECEIVED)
 
-    def _get_job_info(self, job_name: str, user: str | None = None):
-        """Create a JobInfo for a job by name."""
-        metadata = self._get_job_metadata(job_name, user)
+    def _get_job_info(self, ref: JobRef) -> JobInfo:
+        """Create a JobInfo for a job ref."""
+        metadata = self._get_job_metadata(ref)
         if metadata is None:
-            raise ValueError(f"Job '{job_name}' not found")
+            raise ValueError(f"Job '{ref.job_name}' not found")
 
-        state = self._get_job_state(job_name, user)
+        state = self._get_job_state(ref)
         client = JobClient(config=self.config)
         return JobInfo(
             job_metadata=metadata,
@@ -598,6 +518,7 @@ class SyftJobRunner:
             datasite_owner_email=self.config.current_user_email,
             current_user_email=self.config.current_user_email,
             client=client,
+            ref=ref,
         )
 
     def process_approved_jobs(
@@ -625,25 +546,18 @@ class SyftJobRunner:
         # Filter out jobs to skip
         if skip_job_names:
             skip_set = set(skip_job_names)
-            approved_jobs = [j for j in approved_jobs if j not in skip_set]
+            approved_jobs = [j for j in approved_jobs if j.job_name not in skip_set]
 
         if not approved_jobs:
             return
 
         print(f" Found {len(approved_jobs)} job(s) in approved status")
 
-        for job_path in approved_jobs:
-            # job_path is "{ds_email}/{job_name}"
-            user, job_name = job_path.split("/", 1)
+        for ref in approved_jobs:
             print(f"\n{'=' * 50}")
-            self._execute_job(
-                job_name, stream_output=stream_output, timeout=timeout, user=user
-            )
-            self.share_job_results(
-                job_name,
-                share_outputs_with_submitter,
-                share_logs_with_submitter,
-                user=user,
+            self._execute_job(ref, stream_output=stream_output, timeout=timeout)
+            self._share_job_results(
+                ref, share_outputs_with_submitter, share_logs_with_submitter
             )
             print(f"{'=' * 50}")
 
@@ -658,12 +572,19 @@ class SyftJobRunner:
         user: str | None = None,
     ) -> None:
         """Share job outputs/logs with submitter if requested."""
+        self._share_job_results(
+            self._resolve_ref(job_name, user), share_outputs, share_logs
+        )
+
+    def _share_job_results(
+        self, ref: JobRef, share_outputs: bool, share_logs: bool
+    ) -> None:
         if not share_outputs and not share_logs:
             return
-        submitter = self._get_job_submitter(job_name, user)
+        submitter = self._get_job_submitter(ref)
         if not submitter:
             return
-        job_info = self._get_job_info(job_name, user)
+        job_info = self._get_job_info(ref)
         if share_outputs:
             job_info.share_outputs([submitter])
         if share_logs:
@@ -684,10 +605,10 @@ class SyftJobRunner:
         # Initialize known jobs with current state
         self.known_jobs = set(self._get_pending_jobs())
         if self.known_jobs:
-            print(
-                f" Found {len(self.known_jobs)} existing pending jobs: "
-                f"{', '.join(self.known_jobs)}"
+            job_names = ", ".join(
+                f"{ref.ds_email}/{ref.job_name}" for ref in self.known_jobs
             )
+            print(f" Found {len(self.known_jobs)} existing pending jobs: {job_names}")
         else:
             print(" No existing pending jobs found")
         print("-" * 50)

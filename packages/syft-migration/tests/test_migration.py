@@ -7,6 +7,7 @@ from syft_migration import (
     MigrationService,
     PackageProtocolSchema,
     ProtocolSchema,
+    ReleaseArtifact,
 )
 
 from mocks import JobV1, JobV2, JobV3
@@ -31,7 +32,10 @@ def test_current_protocol_schema_is_computed_and_history_stored(registry):
 
 def test_current_protocol_schema_tracks_newly_defined_objects():
     reg = MigrationRegistry(
-        protocol_name="p", package_name="pkg", package_version="1.0.0"
+        protocol_name="p",
+        package_name="pkg",
+        package_version="1.0.0",
+        protocol_version="1",
     )
     assert reg.current_protocol_schema.supported_versions == {}
 
@@ -53,10 +57,16 @@ def test_concrete_class_without_registry_raises():
 
 def test_register_historic_schema_raises_on_unregistered_object():
     reg = MigrationRegistry(
-        protocol_name="p", package_name="pkg", package_version="1.0.0"
+        protocol_name="p",
+        package_name="pkg",
+        package_version="1.0.0",
+        protocol_version="1",
     )
     throwaway = MigrationRegistry(
-        protocol_name="p", package_name="pkg", package_version="0.9.0"
+        protocol_name="p",
+        package_name="pkg",
+        package_version="0.9.0",
+        protocol_version="0",
     )
 
     class BetaV1(MigratableObject, registry=throwaway):
@@ -66,6 +76,7 @@ def test_register_historic_schema_raises_on_unregistered_object():
 
     schema = PackageProtocolSchema.from_objects(
         protocol_name="p",
+        protocol_version="0",
         package_name="pkg",
         package_version="0.9.0",
         classes=[BetaV1],
@@ -124,7 +135,10 @@ def test_has_upgradeable_path_to_latest(registry):
 
 def test_has_upgradeable_path_single_version_and_missing_migration():
     reg = MigrationRegistry(
-        protocol_name="p", package_name="pkg", package_version="1.0.0"
+        protocol_name="p",
+        package_name="pkg",
+        package_version="1.0.0",
+        protocol_version="1",
     )
 
     class ThingV1(MigratableObject, registry=reg):
@@ -167,6 +181,7 @@ def test_load_unknown_object_raises(service):
 def test_schema_save_load_roundtrip(tmp_path):
     schema = PackageProtocolSchema.from_objects(
         protocol_name="mock-proto",
+        protocol_version="2",
         package_name="syft-mock",
         package_version="1.1.0",
         classes=[JobV2],
@@ -175,6 +190,7 @@ def test_schema_save_load_roundtrip(tmp_path):
     schema.save(path=path)
     loaded = PackageProtocolSchema.load(path=path)
     assert loaded.protocol_name == "mock-proto"
+    assert loaded.protocol_version == "2"
     assert loaded.package_name == "syft-mock"
     assert loaded.package_version == "1.1.0"
     assert loaded.supported_versions == {"job": ["2"]}
@@ -186,6 +202,7 @@ def _multi_object_registry() -> MigrationRegistry:
         protocol_name="mock-proto",
         package_name="syft-mock",
         package_version="1.1.0",
+        protocol_version="2",
     )
 
     class DatasetV1(MigratableObject, registry=reg):
@@ -202,6 +219,7 @@ def _multi_object_registry() -> MigrationRegistry:
 
     historic = PackageProtocolSchema.from_objects(
         protocol_name="mock-proto",
+        protocol_version="1",
         package_name="syft-mock",
         package_version="1.0.0",
         classes=[DatasetV1, ModelV1],
@@ -216,8 +234,8 @@ def test_service_exports_protocol_schema_with_all_supported_versions():
 
     assert isinstance(protocol, ProtocolSchema)
     assert protocol.protocol_name == "mock-proto"
-    # The version of the package release that produced the export.
-    assert protocol.version == "1.1.0"
+    # The protocol version of the release that produced the export.
+    assert protocol.version == "2"
     # All registered versions per canonical name, not just the pinned ones.
     assert protocol.supported_versions == {"dataset": ["1", "2"], "model": ["1"]}
 
@@ -225,13 +243,14 @@ def test_service_exports_protocol_schema_with_all_supported_versions():
 def test_registry_computes_protocol_schema(registry):
     protocol = registry.compute_protocol_schema()
     assert protocol.protocol_name == "mock-proto"
-    assert protocol.version == "1.1.0"
+    assert protocol.version == "2"
     assert protocol.supported_versions == {"job": ["1", "2", "3"]}
 
 
 def test_schema_collects_all_versions_of_same_object():
     schema = PackageProtocolSchema.from_objects(
         protocol_name="p",
+        protocol_version="1",
         package_name="pkg",
         package_version="1.0.0",
         classes=[JobV2, JobV1],
@@ -243,9 +262,69 @@ def test_schema_collects_all_versions_of_same_object():
 def test_current_schema_raises_on_unknown_object():
     schema = PackageProtocolSchema.from_objects(
         protocol_name="p",
+        protocol_version="1",
         package_name="pkg",
         package_version="1.0.0",
         classes=[JobV1],
     )
     with pytest.raises(MigrationError):
         schema.current_schema(canonical_name="unknown")
+
+
+def test_protocol_schema_save_load_roundtrip(tmp_path):
+    protocol = ProtocolSchema(
+        protocol_name="mock-proto",
+        version="2",
+        supported_versions={"job": ["1", "2"]},
+    )
+    path = tmp_path / "protocol_schema.json"
+    protocol.save(path=path)
+    assert ProtocolSchema.load(path=path) == protocol
+
+
+def test_release_artifact_save_load_roundtrip(tmp_path):
+    artifact = ReleaseArtifact(
+        protocol_schema=ProtocolSchema(
+            protocol_name="mock-proto",
+            version="1",
+            supported_versions={"job": ["1"]},
+        ),
+        package_schema=PackageProtocolSchema.from_objects(
+            protocol_name="mock-proto",
+            protocol_version="1",
+            package_name="syft-mock",
+            package_version="1.0.0",
+            classes=[JobV1],
+        ),
+    )
+    path = tmp_path / "release.json"
+    artifact.save(path=path)
+    assert ReleaseArtifact.load(path=path) == artifact
+
+
+def test_register_historic_release_artifact(registry):
+    artifact = ReleaseArtifact(
+        protocol_schema=ProtocolSchema(
+            protocol_name="mock-proto",
+            version="1",
+            supported_versions={"job": ["1"]},
+        ),
+        package_schema=PackageProtocolSchema.from_objects(
+            protocol_name="mock-proto",
+            protocol_version="1",
+            package_name="syft-mock",
+            package_version="1.0.5",
+            classes=[JobV1],
+        ),
+    )
+    registry.register_historic_release_artifact(artifact=artifact)
+    assert registry.history_protocol_schemas["1.0.5"] is artifact.package_schema
+    assert registry.history_protocol_version_schemas["1"] is artifact.protocol_schema
+
+
+def test_schema_for_protocol_version(registry):
+    # The current protocol version resolves to the computed schema.
+    current = registry.schema_for_protocol_version(protocol_version="2")
+    assert current.supported_versions == {"job": ["1", "2", "3"]}
+    with pytest.raises(MigrationError):
+        registry.schema_for_protocol_version(protocol_version="99")

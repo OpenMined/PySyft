@@ -9,6 +9,7 @@ mock_registry = MigrationRegistry(
     protocol_name="mock-proto",
     package_name="syft-mock",
     package_version="1.1.0",
+    protocol_version="2",
 )
 
 
@@ -55,6 +56,7 @@ mock_registry.register_migration(
 # The schema of an earlier release; the current one is computed by the registry.
 schema_v1 = PackageProtocolSchema.from_objects(
     protocol_name="mock-proto",
+    protocol_version="1",
     package_name="syft-mock",
     package_version="1.0.0",
     classes=[JobV1],

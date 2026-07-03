@@ -5,7 +5,7 @@ from typing import Any, Optional
 from syft_migration.base import MigratableObject
 from syft_migration.identity import MigrationError
 from syft_migration.registry import MigrationFn, MigrationRegistry
-from syft_migration.schema import PackageProtocolSchema, ProtocolSchema
+from syft_migration.schema import BaseVersionsSchema, ProtocolSchema
 
 
 class MigrationService:
@@ -25,7 +25,7 @@ class MigrationService:
         return result
 
     def migrate_to_schema(
-        self, obj: MigratableObject, schema: PackageProtocolSchema
+        self, obj: MigratableObject, schema: BaseVersionsSchema
     ) -> MigratableObject:
         """Migrate ``obj`` to the latest version ``schema`` supports for it."""
         return self.migrate(obj, schema.current_schema(obj.canonical_name))

@@ -14,6 +14,8 @@ from .job_repr import (
     jobs_list_str,
 )
 from .job_stdout import StdoutViewer
+from .manager import JobRef
+from .migrations.registry import JOB_PROTOCOL_VERSION
 from .models import JobState, JobStatus, JobSubmissionMetadata
 
 if TYPE_CHECKING:
@@ -30,25 +32,29 @@ class JobInfo:
         datasite_owner_email: str,
         current_user_email: str,
         client: JobClient,
+        ref: Optional[JobRef] = None,
     ):
         self.job_metadata = job_metadata
         self._state = state
         self.datasite_owner_email = datasite_owner_email
         self.current_user_email = current_user_email
         self._client = client
+        # Direct constructions (no ref) are always current-protocol jobs.
+        self._ref = ref or JobRef(
+            datasite_email=job_metadata.datasite_email,
+            ds_email=job_metadata.submitted_by,
+            job_name=job_metadata.name,
+            protocol_version=JOB_PROTOCOL_VERSION,
+        )
         self.job_headers = dict(job_metadata.headers)
 
     @property
     def job_submission_path(self) -> Path:
-        return self._client.config.get_job_submission_dir(
-            self.job_metadata.datasite_email, self.job_metadata.submitted_by, self.name
-        )
+        return self._client.manager.submission_dir(self._ref)
 
     @property
     def job_review_path(self) -> Path:
-        return self._client.config.get_review_job_dir(
-            self.job_metadata.datasite_email, self.job_metadata.submitted_by, self.name
-        )
+        return self._client.manager.review_dir(self._ref)
 
     # ──────────────────────────────────────────────
     # Properties from config (inbox/)
@@ -219,7 +225,7 @@ class JobInfo:
         self._state.approved_at = datetime.now(timezone.utc)
         self._state.approval_method = approval_method
         self._state.review_reason = reason
-        self._state.save(self.job_review_path / "state.yaml")
+        self._client.manager.write_state(self._ref, self._state)
         print(f"✅ Job '{self.name}' approved successfully!")
         print("   Status    : approved → will run on next process cycle")
         print("\n⏳ Next step: run process_approved_jobs() to execute it.")
@@ -250,7 +256,7 @@ class JobInfo:
         self._state.rejected_by = self.current_user_email
         self._state.rejected_at = datetime.now(timezone.utc)
         self._state.review_reason = reason
-        self._state.save(self.job_review_path / "state.yaml")
+        self._client.manager.write_state(self._ref, self._state)
         print(f"Job '{self.name}' rejected.")
 
     def accept_by_depositing_result(self, path: str) -> Path:
@@ -298,7 +304,7 @@ class JobInfo:
         self._state.approved_at = self._state.approved_at or now
         self._state.completed_at = now
         self._state.return_code = 0
-        self._state.save(self.job_review_path / "state.yaml")
+        self._client.manager.write_state(self._ref, self._state)
 
         print(
             f"Job '{self.name}' completed successfully! Result deposited at: {destination}"
@@ -337,7 +343,7 @@ class JobInfo:
         self._state.status = JobStatus.APPROVED
         self._state.completed_at = None
         self._state.return_code = None
-        self._state.save(self.job_review_path / "state.yaml")
+        self._client.manager.write_state(self._ref, self._state)
 
         if changes_made:
             print(

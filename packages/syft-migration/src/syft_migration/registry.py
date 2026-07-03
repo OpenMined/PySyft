@@ -4,7 +4,11 @@ from collections import deque
 from typing import TYPE_CHECKING, Callable
 
 from syft_migration.identity import MigrationError, _has_identity, _identity
-from syft_migration.schema import PackageProtocolSchema, ProtocolSchema
+from syft_migration.schema import (
+    PackageProtocolSchema,
+    ProtocolSchema,
+    ReleaseArtifact,
+)
 
 if TYPE_CHECKING:
     from syft_migration.base import MigratableObject
@@ -17,18 +21,25 @@ class MigrationRegistry:
     """All known object versions, migrations, and protocol schemas for ONE package."""
 
     def __init__(
-        self, protocol_name: str, package_name: str, package_version: str
+        self,
+        protocol_name: str,
+        package_name: str,
+        package_version: str,
+        protocol_version: str,
     ) -> None:
         self.protocol_name = protocol_name
         self.package_name = package_name
         self.package_version = package_version
+        self.protocol_version = protocol_version
         # canonical_name -> {version: object_class}
         self.objects: dict[str, dict[str, type[MigratableObject]]] = {}
         # canonical_name -> {(from_version, to_version): migration_fn}
         self.migrations: dict[str, dict[tuple[str, str], MigrationFn]] = {}
         # package_version -> schema; usually read from files that are release
-        # artifacts of earlier releases (see PackageProtocolSchema.save/load).
+        # artifacts of earlier releases (see ReleaseArtifact.save/load).
         self.history_protocol_schemas: dict[str, PackageProtocolSchema] = {}
+        # protocol_version -> schema of the release that spoke that protocol
+        self.history_protocol_version_schemas: dict[str, ProtocolSchema] = {}
 
     # -- objects -----------------------------------------------------------
     def register_object_version(self, cls: type[MigratableObject]) -> None:
@@ -135,6 +146,7 @@ class MigrationRegistry:
         """The schema of THIS release, computed from the registered objects."""
         return PackageProtocolSchema(
             protocol_name=self.protocol_name,
+            protocol_version=self.protocol_version,
             package_name=self.package_name,
             package_version=self.package_version,
             supported_versions={
@@ -155,11 +167,21 @@ class MigrationRegistry:
                 self.get_class(canonical_name=canonical_name, version=version)
         self.history_protocol_schemas[schema.package_version] = schema
 
+    def register_historic_release_artifact(self, artifact: ReleaseArtifact) -> None:
+        """Register the release artifact of a PAST release of this package.
+
+        Stores both the package schema (keyed by package version) and the protocol
+        schema (keyed by protocol version).
+        """
+        self.register_historic_protocol_schema(schema=artifact.package_schema)
+        protocol_schema = artifact.protocol_schema
+        self.history_protocol_version_schemas[protocol_schema.version] = protocol_schema
+
     def compute_protocol_schema(self) -> ProtocolSchema:
         """Every object version this registry can load, straight from ``self.objects``."""
         return ProtocolSchema(
             protocol_name=self.protocol_name,
-            version=self.package_version,
+            version=self.protocol_version,
             supported_versions={
                 canonical_name: sorted(versions)
                 for canonical_name, versions in self.objects.items()
@@ -174,4 +196,14 @@ class MigrationRegistry:
         except KeyError:
             raise MigrationError(
                 f"No protocol schema registered for package version {package_version!r}"
+            )
+
+    def schema_for_protocol_version(self, protocol_version: str) -> ProtocolSchema:
+        if protocol_version == self.protocol_version:
+            return self.compute_protocol_schema()
+        try:
+            return self.history_protocol_version_schemas[protocol_version]
+        except KeyError:
+            raise MigrationError(
+                f"No protocol schema registered for protocol version {protocol_version!r}"
             )
