@@ -42,9 +42,9 @@ class MigrationService:
         schema = self.registry.schema_for_package_version(package_version)
         return self.migrate_to_schema(obj, schema)
 
-    def export_protocol_schemas(self) -> dict[str, ProtocolSchema]:
-        """Export, per protocol, every object version this package supports."""
-        return self.registry.compute_protocol_schemas()
+    def export_protocol_schema(self) -> ProtocolSchema:
+        """Export every object version this package supports."""
+        return self.registry.compute_protocol_schema()
 
     def load(
         self, data: dict[str, Any], target_version: Optional[str] = None

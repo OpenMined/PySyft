@@ -23,6 +23,8 @@ class ProtocolSchema(BaseModel):
     """
 
     protocol_name: str
+    # The package version that produced this schema.
+    version: str
     # canonical_name -> all supported versions
     supported_versions: dict[str, list[str]] = {}
 

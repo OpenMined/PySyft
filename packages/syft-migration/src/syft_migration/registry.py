@@ -158,30 +158,24 @@ class MigrationRegistry:
         if current:
             self.current_protocol_schema = schema
 
-    def compute_protocol_schemas(self) -> dict[str, ProtocolSchema]:
-        """For each protocol in the registered package schemas, every supported
-        object version (i.e. all versions this registry can load), per canonical name."""
+    def compute_protocol_schema(self) -> ProtocolSchema:
+        """Every object version this registry can load, straight from ``self.objects``."""
         # Runtime import: schema.py imports from this module at import time.
         from syft_migration.schema import ProtocolSchema
 
-        protocols: dict[str, ProtocolSchema] = {}
-        for package_schema in self._all_package_schemas():
-            protocol = protocols.setdefault(
-                package_schema.protocol_name,
-                ProtocolSchema(protocol_name=package_schema.protocol_name),
+        if self.current_protocol_schema is None:
+            raise MigrationError(
+                "Cannot compute a protocol schema before a current protocol schema "
+                "is registered (its protocol_name and package_version are needed)"
             )
-            for canonical_name in package_schema.object_versions:
-                protocol.supported_versions[canonical_name] = sorted(
-                    self.versions(canonical_name)
-                )
-        return protocols
-
-    def _all_package_schemas(self) -> list[PackageProtocolSchema]:
-        schemas = list(self.history_protocol_schemas.values())
-        current = self.current_protocol_schema
-        if current is not None and current not in schemas:
-            schemas.append(current)
-        return schemas
+        return ProtocolSchema(
+            protocol_name=self.current_protocol_schema.protocol_name,
+            version=self.current_protocol_schema.package_version,
+            supported_versions={
+                canonical_name: sorted(versions)
+                for canonical_name, versions in self.objects.items()
+            },
+        )
 
     def schema_for_package_version(self, package_version: str) -> PackageProtocolSchema:
         if (

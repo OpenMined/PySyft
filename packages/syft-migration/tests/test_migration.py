@@ -165,21 +165,28 @@ def _multi_object_registry() -> MigrationRegistry:
     return reg
 
 
-def test_service_exports_protocol_schemas_with_all_supported_versions():
+def test_service_exports_protocol_schema_with_all_supported_versions():
     service = MigrationService(registry=_multi_object_registry())
-    exported = service.export_protocol_schemas()
+    protocol = service.export_protocol_schema()
 
-    assert set(exported) == {"mock-proto"}
-    protocol = exported["mock-proto"]
     assert isinstance(protocol, ProtocolSchema)
     assert protocol.protocol_name == "mock-proto"
+    # The version of the package release that produced the export.
+    assert protocol.version == "1.1.0"
     # All registered versions per canonical name, not just the pinned ones.
     assert protocol.supported_versions == {"dataset": ["1", "2"], "model": ["1"]}
 
 
-def test_registry_computes_protocol_schemas(registry):
-    protocols = registry.compute_protocol_schemas()
-    assert protocols["mock-proto"].supported_versions == {"job": ["1", "2", "3"]}
+def test_registry_computes_protocol_schema(registry):
+    protocol = registry.compute_protocol_schema()
+    assert protocol.protocol_name == "mock-proto"
+    assert protocol.version == "1.1.0"
+    assert protocol.supported_versions == {"job": ["1", "2", "3"]}
+
+
+def test_compute_protocol_schema_requires_current_schema():
+    with pytest.raises(MigrationError):
+        MigrationRegistry().compute_protocol_schema()
 
 
 def test_schema_rejects_two_versions_of_same_object():
