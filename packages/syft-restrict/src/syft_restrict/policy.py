@@ -83,6 +83,11 @@ BANNED_NAMES: frozenset[str] = frozenset(
         "type",
         "__build_class__",
         "print",
+        "repr",
+        "str",
+        "ascii",
+        "format",
+        "bytes",
     }
 )
 

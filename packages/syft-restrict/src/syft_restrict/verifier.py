@@ -93,6 +93,10 @@ _BANNED_NODES: tuple[type[ast.AST], ...] = (
     ast.YieldFrom,
 )
 
+# FormattedValue.conversion codes for f-string `!r`/`!s`/`!a` (the ord() of the letter); -1 means
+# no conversion flag was given. `{x=}` implicitly uses 114 ('r') when no explicit conversion is set.
+_FSTRING_DUNDER_CONVERSIONS: frozenset[int] = frozenset({ord("r"), ord("s"), ord("a")})
+
 
 class Violation(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -167,6 +171,9 @@ class _Checker:
         )  # Attribute/Name nodes already judged as part of a call's func (avoid double-reporting)
         self._class_stack: list[ast.ClassDef] = []  # enclosing class, for self.<name> vetting
         self._self_attr_cache: dict[int, dict[str, bool]] = {}  # id(ClassDef) -> attr safety
+        self._annotation_nodes: set[int] = (
+            set()
+        )  # every node inside a type-annotation subtree (e.g. `x: str`, `x: dict[str, bytes]`)
 
     def add(self, node: ast.AST, code: str, message: str) -> None:
         self.violations.append(
@@ -180,6 +187,20 @@ class _Checker:
         is_class = isinstance(node, ast.ClassDef)
         if is_class:
             self._class_stack.append(node)
+        # A type annotation (`x: str`, `x: list[str]`, `def f() -> dict[str, bytes]`) is never
+        # invoked as a callable -- its only runtime effect is populating __annotations__ (itself
+        # a dunder, already banned to read back) -- so nothing in it is a BANNED_NAMES reference
+        # or a banned container literal. Mark every node in the whole annotation subtree, not
+        # just its top node: subscripted/generic annotations nest the actual type names one or
+        # more levels down (`list[str]` is `Subscript(value=Name('list'), slice=Name('str'))`,
+        # and a multi-arg subscript like `dict[str, bytes]` puts them inside a Tuple slice).
+        # This does NOT exempt Call/Attribute/Subscript nodes from their own checks -- a call in
+        # a passive position (`x: evil()`) must still be caught, and is, since _check_call never
+        # consults this set.
+        for ann in (getattr(node, "annotation", None), getattr(node, "returns", None)):
+            if ann is not None:
+                for descendant in ast.walk(ann):
+                    self._annotation_nodes.add(id(descendant))
         for child in ast.iter_child_nodes(node):
             self.visit(child)
         if is_class:
@@ -228,6 +249,8 @@ class _Checker:
             self._check_container_literal(node)
         elif isinstance(node, ast.Name):
             self._check_name(node)
+        elif isinstance(node, ast.FormattedValue):
+            self._check_formatted_value(node)
 
     # — defs / classes —
     def _check_def(self, node: ast.FunctionDef) -> None:
@@ -470,21 +493,49 @@ class _Checker:
         # Checks a Load-context reference to a banned builtin: this is what closes aliasing
         # (`f = open`), and every other position a reference can occupy (container element,
         # return value, call argument, IfExp/BoolOp branch, ...) — the reference itself is the
-        # violation, so nothing downstream needs to be traced.
+        # violation, so nothing downstream needs to be traced. Also bans bare dunder names
+        # (e.g. the implicit `__class__` cell every method body has) the same way an
+        # Attribute-shaped dunder access already is — the dunder ban shouldn't depend on
+        # whether the reference happens to have a dot in front of it.
         if not isinstance(node.ctx, ast.Load):
-            return
-        if node.id not in BANNED_NAMES:
             return
         if id(node) in self._call_funcs:
             return  # already reported as banned-call by _check_call
-        self.add(node, "banned-call", f"reference to {node.id!r} is not allowed")
+        if node.id in BANNED_NAMES:
+            if id(node) in self._annotation_nodes:
+                return  # `x: str` / `def f() -> str` — a type annotation, not a call/reference
+            self.add(node, "banned-call", f"reference to {node.id!r} is not allowed")
+        elif _is_dunder(node.id):
+            self.add(
+                node,
+                "dunder-name",
+                f"reference to dunder name {node.id!r} is not allowed",
+            )
+
+    # — f-strings —
+    def _check_formatted_value(self, node: ast.FormattedValue) -> None:
+        # Checks an f-string interpolation's conversion flag: `!r`/`!s`/`!a` (and the `{x=}`
+        # debug specifier, which defaults to the same repr conversion) invoke a dunder method
+        # on the interpolated value with no Call node for _check_call to ever see. Plain
+        # interpolation (`f"{x}"`, conversion == -1) is unaffected and stays allowed.
+        if node.conversion in _FSTRING_DUNDER_CONVERSIONS:
+            self.add(
+                node,
+                "method-on-value",
+                "f-string conversion flags (!r/!s/!a) call a dunder method on a value whose "
+                "type is unknown; route it through a visible wrapper function instead",
+            )
 
     # — container literals —
     def _check_container_literal(self, node) -> None:
         # Checks a list/dict/set/tuple literal: storing a banned-builtin reference in a
         # persistent, index-addressable container is itself the violation — we don't attempt
         # to track which slot holds what through later subscript access, so the sound and
-        # simple move is to reject the container at construction time instead.
+        # simple move is to reject the container at construction time instead. Exempt when this
+        # literal is itself part of a type annotation (e.g. a multi-arg subscript like
+        # `dict[str, bytes]` puts its arguments in a Tuple slice) — never invoked as a container.
+        if id(node) in self._annotation_nodes:
+            return
         if _contains_banned_reference(node):
             self.add(
                 node,

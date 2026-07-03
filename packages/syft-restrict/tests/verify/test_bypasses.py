@@ -3,25 +3,25 @@ from syft_restrict import verify
 
 from .conftest import error_codes
 
-# The following tests fail because the current implementation of the verifier
-# does not detect these cases.
+# Regression tests from the bypass-hunting pass documented in bypasses.md. Each documents a
+# specific escape shape the verifier must reject, and why a narrower fix could miss it.
 
 
 def test_alias(verify_all):
-    # failing: a banned callable can be assigned to a local var and called
+    # Aliasing a banned builtin to a local name must not let it evade the call-site ban.
     src = ["e = eval", "e('1/0')"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_alias_in_container(verify_all):
-    # failing: list or dict literals can store banned callables for later use
+    # A list/dict literal must not be usable to stash a banned callable for later use.
     src = ["con = [eval]", "con[0]('1/0')"]
     assert "banned-construct" in error_codes(verify_all("\n".join(src)))
 
 
 def test_self_stash_and_call(verify_all):
-    # failing: a class can stash a banned callable in an attribute and call it
-    # later, since the self prefix whitelists the attribute access
+    # self.<name> is not a blanket exemption: a callable stashed there in setup and invoked
+    # later in __call__ must still be checked, not waved through just because of the prefix.
     src = [
         "class M(object):",
         "    def setup(self):",
@@ -35,49 +35,46 @@ def test_self_stash_and_call(verify_all):
 
 
 def test_aliased_import_getattr(verify_all):
-    # failing: a banned callable can be imported and called via an alias
+    # Aliasing __import__ and getattr must not enable a dynamic import + invoke chain.
     src = ["i = __import__", "g = getattr", "g(i('os'), 'getcwd')()"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_aliased_getattr_on_builtins(verify_all):
-    # failing: a banned builtin callable can be accessed via getattr on
-    # __builtins__
+    # getattr, even via alias, must not be usable to reach a banned builtin off __builtins__.
     src = ["g = getattr", "ev = g(__builtins__, 'eval')", "ev('1/0')"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_unicode_homoglyphs_should_not_be_allowed(verify_all):
-    # failing (#9): stash the real builtin, call through a homoglyph name
-    # (Cyrillic о р е — renders like "open" in many fonts)
+    # Stashing the real builtin then calling through a visually-identical homoglyph name
+    # (Cyrillic о р е — renders like "open" in many fonts) must not evade the ban (#9).
     src = ["ореn = open", "ореn('/etc/passwd')"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
-def test_print_should_not_allowed(verify_all):
-    # failing: print is listed on disallowed-ast-examples.md, but it's not
-    # banned.
+def test_print_should_not_be_allowed(verify_all):
+    # print is a stdout exfiltration channel (disallowed-ast-examples.md) and must be banned
+    # the same way open/input are.
     src = ["print('hello')"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_class_creation_with_type(verify_all):
-    # failing (#1): dynamic class creation via type() bypasses ClassDef checks
+    # The 3-argument type() form must not bypass ClassDef base/decorator restrictions (#1).
     src = ["M = type('M', (BannedBase,), {})"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_class_creation_with_build_class(verify_all):
-    # failing: a class with a disallowed base class can be created using the
-    # __build_class__ builtin
+    # __build_class__ must not bypass ClassDef restrictions any more than type() may (#2).
     src = ["M = __build_class__(lambda self, x: x, 'M', (BannedBase,), {})"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_bare_name_import_bypass(policy):
-    # failing: `from X import f` in public + a bare `f(...)` call in private
-    # skips both the JAX denylist and the function allowlist that the dotted
-    # equivalent (`os.system(...)`) is subject to
+    # A bare name imported via `from X import f` in public must resolve through the same
+    # allowlist/denylist a dotted call (`os.system(...)`) gets, not just BANNED_NAMES.
     src = [
         "from os import system",
         "",
@@ -88,60 +85,59 @@ def test_bare_name_import_bypass(policy):
     assert "call-not-allowed" in error_codes(result)
 
 
-def test_dunder_proxy_builtin_should_not_be_allowed(verify_all):
-    # failing: repr()/format()/hash()/etc. invoke the same dunder methods
-    # that "named method on a value" already bans via attribute syntax
-    # (x.__repr__()), but as bare-name calls they are never checked at all
-    src = ["def f(x):", "    return repr(x)"]
-    assert "method-on-value" in error_codes(verify_all("\n".join(src)))
+@pytest.mark.parametrize("fname", ["repr", "str", "ascii", "format", "bytes"])
+def test_dunder_proxy_builtin_should_not_be_allowed(fname, verify_all):
+    # repr()/str()/ascii()/format() invoke the same dunder methods "named method on a value"
+    # already bans via attribute syntax (x.__repr__()); calling them bare must be banned too (#10).
+    src = ["def f(x):", f"    return {fname}(x)"]
+    assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_fstring_conversion_flag_should_not_be_allowed(verify_all):
-    # failing: f"{x!r}" invokes x.__repr__() via FormattedValue's conversion
-    # flag, with no Call node at all for any existing check to run against
+    # f"{x!r}" invokes x.__repr__() via FormattedValue's conversion flag, with no Call node —
+    # must be rejected the same as repr(x) (#10).
     src = ["def f(x):", "    return f'{x!r}'"]
     assert "method-on-value" in error_codes(verify_all("\n".join(src)))
 
 
 def test_bare_class_dunder_name_should_not_be_allowed(verify_all):
-    # failing: __class__ is an implicit bare Name in every method body; the
-    # dunder ban only inspects Attribute.attr, never a bare Name.id
+    # __class__ is an implicit bare Name in every method body; the dunder ban must cover bare
+    # Name reads, not just Attribute.attr (#11). Flagged as its own "dunder-name" code, distinct
+    # from "dunder-attr", since this isn't an attribute access.
     src = [
         "class M(object):",
         "    def __call__(self, x):",
         "        c = __class__",
         "        return x",
     ]
-    assert "dunder-attr" in error_codes(verify_all("\n".join(src)))
+    assert "dunder-name" in error_codes(verify_all("\n".join(src)))
 
 
 def test_container_subscript_store_alias(verify_all):
-    # failing: d["k"] = open stores a banned callable via subscript
-    # assignment; the container name is Load context in a subscript store,
-    # so even the existing reserved-name check never inspects this target,
-    # and the RHS is never checked at all
+    # Subscript assignment (d["k"] = open) must not be a way to smuggle a banned reference into
+    # a container slot just because the container name itself is Load, not Store, context.
     src = ["d = {}", "d['k'] = open", "d['k']('/etc/passwd')"]
     assert "banned-construct" in error_codes(verify_all("\n".join(src)))
 
 
 def test_chained_assignment_alias(verify_all):
-    # failing: chained assignment (a = b = open) aliases a banned callable
-    # to a second target that assignment-target checking never revisits
+    # Chained assignment (a = b = open) must alias a banned callable to every target, not just
+    # whichever one a shape-specific check happens to look at.
     src = ["a = b = open", "b('/etc/passwd')"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_tuple_unpack_alias(verify_all):
-    # failing: tuple unpacking aliases a banned callable the same way plain
-    # assignment does, but isn't covered by the same shape-specific checks
+    # Tuple unpacking must alias a banned callable to its target the same way plain assignment
+    # does.
     src = ["a, b = (1, open)", "b('/etc/passwd')"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_return_value_alias_with_no_local_name(verify_all):
-    # failing: a banned reference can be smuggled out via `return` and
-    # invoked immediately (leak()(...)) with no alias variable anywhere
-    # near the call -- the stealthiest variant of the aliasing family
+    # A banned reference smuggled out via `return` and invoked immediately (leak()(...)) must be
+    # caught even with no alias variable anywhere near the dangerous call — the stealthiest
+    # variant of the aliasing family.
     src = [
         "def leak():",
         "    return open",
@@ -153,8 +149,8 @@ def test_return_value_alias_with_no_local_name(verify_all):
 
 
 def test_parameter_passthrough_alias(verify_all):
-    # failing: a banned callable passed positionally into a generic helper
-    # is invoked there with no suspicious name anywhere in the helper body
+    # A banned callable passed positionally into a generic helper must be caught even though no
+    # suspicious name ever appears in the helper's own body.
     src = [
         "def apply(fn, x):",
         "    return fn(x)",
@@ -166,8 +162,8 @@ def test_parameter_passthrough_alias(verify_all):
 
 
 def test_self_nested_attribute_chain(verify_all):
-    # failing: self.<a>.<b>(...) skips call-target policy at any attribute
-    # depth, not just the single-level self.<name>(...) case
+    # Only a single self.<name> level is exempt from call-target policy — self.<a>.<b>(...) must
+    # still be checked like any attribute chain on an opaque value.
     src = [
         "class M(object):",
         "    def setup(self):",
@@ -182,8 +178,8 @@ def test_self_nested_attribute_chain(verify_all):
 
 
 def test_self_augassign_alias(verify_all):
-    # failing: AugAssign to a self attribute is never checked either --
-    # _iter_names finds no Store-context Name inside an Attribute target
+    # AugAssign to a self attribute (self.evil += open) must be tracked the same way a plain
+    # assignment to it is.
     src = [
         "class M(object):",
         "    def setup(self):",
@@ -198,31 +194,34 @@ def test_self_augassign_alias(verify_all):
 
 
 def test_dict_literal_container_alias(verify_all):
-    # failing (#3): inline dict literal dispatch — same gap as list[0]
+    # Inline dict literal dispatch (d = {"o": open}) must be closed the same way list[0]
+    # dispatch is (#3).
     src = ['d = {"o": open}', 'd["o"]("/etc/passwd")']
     assert "banned-construct" in error_codes(verify_all("\n".join(src)))
 
 
 def test_inline_container_subscript_call(verify_all):
-    # failing (#12): no assignment at all — subscript-then-call on a literal
+    # Subscript-then-call on a bare literal, with no assignment step at all, must still be
+    # caught (#12).
     src = ["([eval][0])('1/0')"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_ifexp_branch_alias(verify_all):
-    # failing (#12): banned reference selected via IfExp branch
+    # A banned reference selected via either branch of an IfExp must be tracked (#12).
     src = ["c = True", "fn = open if c else eval", "fn('/etc/passwd')"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_for_loop_container_alias(verify_all):
-    # failing (#12): comprehension/for target binds a banned callable from a container
+    # A for-loop/comprehension target bound from a literal container of banned callables must
+    # be tracked (#12).
     src = ["for fn in [eval]:", "    fn('1/0')"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_function_default_alias(verify_all):
-    # failing (#12): banned callable smuggled via a parameter default
+    # A banned callable smuggled in via a parameter default must be tracked (#12).
     src = [
         "def run(op=open):",
         "    return op('/etc/passwd')",
@@ -233,7 +232,7 @@ def test_function_default_alias(verify_all):
 
 
 def test_bare_name_jax_denylist_bypass(policy):
-    # failing (#6b): denylisted JAX API reachable via bare public import
+    # A denylisted JAX API reached via a bare public import must still be denylisted (#6b).
     src = [
         "from jax.numpy import save",
         "",
@@ -245,7 +244,8 @@ def test_bare_name_jax_denylist_bypass(policy):
 
 
 def test_bare_name_import_alias_bypass(policy):
-    # failing (#6): renamed public import still bypasses policy on bare call
+    # Renaming a public import (`as persist`) must not let the resulting bare call bypass
+    # policy (#6).
     src = [
         "from jax.numpy import save as persist",
         "",
@@ -257,7 +257,8 @@ def test_bare_name_import_alias_bypass(policy):
 
 
 def test_importlib_import_module_bypass(policy):
-    # failing (#7b): dynamic loader via one public import line
+    # A dynamic loader (importlib.import_module) reached via one public import line must still
+    # be denied (#7b).
     src = [
         "from importlib import import_module",
         "",
@@ -269,7 +270,8 @@ def test_importlib_import_module_bypass(policy):
 
 
 def test_aliased_import_getattr_system(verify_all):
-    # failing (#7): full private-region import+invoke chain (no public glue)
+    # A full import+invoke chain built entirely in the private region, with no public glue at
+    # all, must be caught (#7).
     src = [
         "i = __import__",
         "g = getattr",
@@ -279,13 +281,15 @@ def test_aliased_import_getattr_system(verify_all):
 
 
 def test_vars_alias_on_builtins(verify_all):
-    # failing (#5): vars alias reaches banned builtins the same way getattr does
+    # vars, aliased, must not reach banned builtins off __builtins__ any more than getattr
+    # can (#5).
     src = ["v = vars", "ev = v(__builtins__)['eval']", "ev('1/0')"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_self_dynamic_import_chain(verify_all):
-    # failing (#8 + #7): idiomatic Flax setup/__call__ with full dynamic import
+    # The idiomatic Flax setup/__call__ shape must not be a shield for a full dynamic-import
+    # chain (#8 + #7).
     src = [
         "class M(object):",
         "    def setup(self):",
@@ -299,7 +303,8 @@ def test_self_dynamic_import_chain(verify_all):
 
 
 def test_self_layer_subscript_call(verify_all):
-    # failing (#8): Flax-shaped self.layer[i](x) with a tainted layer list
+    # The Flax self.layer[i](x) idiom must still be vetted — a tainted layer list must not slip
+    # through just because it matches a recognized pattern shape (#8).
     src = [
         "class M(object):",
         "    def setup(self):",
@@ -311,7 +316,8 @@ def test_self_layer_subscript_call(verify_all):
 
 
 def test_homoglyph_self_stash_and_call(verify_all):
-    # failing (#9 + #8): homoglyph attribute on self evades BANNED_NAMES at call site
+    # A homoglyph attribute name stashed on self must not evade BANNED_NAMES at the call site
+    # (#9 + #8).
     src = [
         "class M(object):",
         "    def setup(self):",
@@ -323,30 +329,70 @@ def test_homoglyph_self_stash_and_call(verify_all):
 
 
 def test_homoglyph_two_hop_alias(verify_all):
-    # failing (#9): ASCII stash then homoglyph copy — no banned name at call site
+    # An ASCII stash followed by a homoglyph copy — no banned name textually at the call site —
+    # must still be caught (#9).
     src = ["x = open", "ореn = x", "ореn('/etc/passwd')"]
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_dunder_proxy_format_should_not_be_allowed(verify_all):
-    # failing (#10): format() invokes x.__format__() without an Attribute node
+    # format() invokes x.__format__() without an Attribute node; calling it bare must be
+    # banned too (#10).
     src = ["def f(x):", "    return format(x, 'd')"]
-    assert "method-on-value" in error_codes(verify_all("\n".join(src)))
+    assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
-def test_dunder_proxy_hash_should_not_be_allowed(verify_all):
-    # failing (#10): hash() invokes x.__hash__() without an Attribute node
-    src = ["def f(x):", "    return hash(x)"]
-    assert "method-on-value" in error_codes(verify_all("\n".join(src)))
+def test_bytes_buffer_exfiltration_should_not_be_allowed(verify_all):
+    # bytes(x) serializes an array's entire raw memory buffer losslessly in one call (verified:
+    # round-trips exactly via np.frombuffer) — a complete data dump, worse than repr/str since
+    # there's no formatting/truncation, and with no legitimate use on a JAX array in inference
+    # code — must be banned (#10).
+    src = ["def f(x):", "    return bytes(x)"]
+    assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
 def test_fstring_conversion_s_flag_should_not_be_allowed(verify_all):
-    # failing (#10): f"{x!s}" invokes x.__str__() with no Call node
+    # f"{x!s}" invokes x.__str__() with no Call node — must be rejected the same as str(x) (#10).
     src = ["def f(x):", "    return f'{x!s}'"]
     assert "method-on-value" in error_codes(verify_all("\n".join(src)))
 
 
 def test_fstring_debug_specifier_should_not_be_allowed(verify_all):
-    # failing (#10): f"{x=}" invokes repr(x) with no Call node
+    # f"{x=}" implicitly invokes repr(x) with no Call node — must be rejected too (#10).
     src = ["def f(x):", "    return f'{x=}'"]
     assert "method-on-value" in error_codes(verify_all("\n".join(src)))
+
+
+def test_nested_generic_annotation_is_not_flagged(verify_all):
+    # A banned-name identifier nested inside a subscripted/generic annotation (list[str],
+    # dict[str, bytes]) must not be flagged -- the whole annotation subtree is exempt, not
+    # just a bare top-level Name annotation like `x: str`.
+    src = [
+        "def f(x: list[str]) -> dict[str, bytes]:",
+        "    return {}",
+    ]
+    result = verify_all("\n".join(src))
+    assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
+def test_future_annotations_import_does_not_change_annotation_handling(policy):
+    # `from __future__ import annotations` only changes runtime evaluation of annotations, not
+    # how they parse -- ast.parse produces the identical Name/Subscript tree either way, so a
+    # str-annotated function in the private region must still verify cleanly.
+    src = [
+        "from __future__ import annotations",
+        "",
+        "def f(x: str) -> list[bytes]:",
+        "    return []",
+    ]
+    result = verify("\n".join(src), [[3, 4]], policy)
+    assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
+def test_stringized_annotation_is_not_flagged(verify_all):
+    # A quoted forward-reference annotation (`x: "str"`) is a Constant, not a Name -- it was
+    # never reachable by the BANNED_NAMES Name check in the first place, but is worth locking
+    # in as a passing case since it's a common style for forward references.
+    src = ['def f(x: "str") -> "bytes":', "    return x"]
+    result = verify_all("\n".join(src))
+    assert result.ok, [(v.code, v.message) for v in result.violations]
