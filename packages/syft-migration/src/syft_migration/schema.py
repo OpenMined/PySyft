@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from syft_migration.registry import MigrationError, _identity
+from syft_migration.identity import MigrationError, _identity
 
 if TYPE_CHECKING:
     from syft_migration.base import MigratableObject

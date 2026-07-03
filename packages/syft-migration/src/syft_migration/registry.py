@@ -3,45 +3,14 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING, Callable
 
+from syft_migration.identity import MigrationError, _has_identity, _identity
+from syft_migration.schema import PackageProtocolSchema, ProtocolSchema
+
 if TYPE_CHECKING:
     from syft_migration.base import MigratableObject
-    from syft_migration.schema import PackageProtocolSchema, ProtocolSchema
 
 # A migration transforms one MigratableObject instance into another version.
 MigrationFn = Callable[["MigratableObject"], "MigratableObject"]
-
-
-class MigrationError(Exception):
-    """Raised when an object cannot be registered, located, or migrated."""
-
-
-def _has_identity(cls: type[MigratableObject]) -> bool:
-    """Whether ``cls`` pins both identity fields (i.e. is a concrete version).
-
-    The base class and abstract intermediates leave the fields required (no
-    default), so they have no identity and are not registered.
-    """
-    name_field = cls.model_fields.get("canonical_name")
-    version_field = cls.model_fields.get("version")
-    if name_field is None or version_field is None:
-        return False
-    return not (name_field.is_required() or version_field.is_required())
-
-
-def _identity(cls: type[MigratableObject]) -> tuple[str, str]:
-    """Return (canonical_name, version) for a concrete subclass.
-
-    Raises ``MigrationError`` if ``cls`` does not pin both fields (the base class
-    and abstract intermediates leave them required, so they have no identity).
-    """
-    if not _has_identity(cls):
-        raise MigrationError(
-            f"{cls.__name__} does not pin canonical_name/version and has no identity"
-        )
-    return (
-        str(cls.model_fields["canonical_name"].default),
-        str(cls.model_fields["version"].default),
-    )
 
 
 class MigrationRegistry:
@@ -150,9 +119,6 @@ class MigrationRegistry:
     def current_protocol_schema(self) -> PackageProtocolSchema:
         """The schema of THIS release, computed from the registered objects by
         pinning the latest version of each canonical name."""
-        # Runtime import: schema.py imports from this module at import time.
-        from syft_migration.schema import PackageProtocolSchema
-
         return PackageProtocolSchema(
             protocol_name=self.protocol_name,
             package_name=self.package_name,
@@ -176,9 +142,6 @@ class MigrationRegistry:
 
     def compute_protocol_schema(self) -> ProtocolSchema:
         """Every object version this registry can load, straight from ``self.objects``."""
-        # Runtime import: schema.py imports from this module at import time.
-        from syft_migration.schema import ProtocolSchema
-
         return ProtocolSchema(
             protocol_name=self.protocol_name,
             version=self.package_version,
@@ -197,9 +160,3 @@ class MigrationRegistry:
             raise MigrationError(
                 f"No protocol schema registered for package version {package_version!r}"
             )
-
-
-# Default per-import registry used by MigratableObject.__init_subclass__.
-default_registry = MigrationRegistry(
-    protocol_name="default", package_name="default", package_version="0.0.0"
-)

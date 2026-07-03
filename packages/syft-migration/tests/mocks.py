@@ -4,7 +4,7 @@ from syft_migration import (
     PackageProtocolSchema,
 )
 
-# Isolated registry so the mock objects never touch the global default_registry.
+# Isolated registry for the mock objects.
 mock_registry = MigrationRegistry(
     protocol_name="mock-proto",
     package_name="syft-mock",

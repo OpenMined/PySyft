@@ -40,6 +40,14 @@ def test_current_protocol_schema_tracks_newly_defined_objects():
     assert reg.current_protocol_schema.object_versions == {"widget": "1"}
 
 
+def test_concrete_class_without_registry_raises():
+    with pytest.raises(MigrationError):
+
+        class OrphanV1(MigratableObject):
+            canonical_name: str = "orphan"
+            version: str = "1"
+
+
 def test_register_historic_schema_raises_on_unregistered_object():
     reg = MigrationRegistry(
         protocol_name="p", package_name="pkg", package_version="1.0.0"

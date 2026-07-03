@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from syft_migration.base import MigratableObject
-from syft_migration.registry import MigrationError, MigrationFn, MigrationRegistry
+from syft_migration.identity import MigrationError
+from syft_migration.registry import MigrationFn, MigrationRegistry
 from syft_migration.schema import PackageProtocolSchema, ProtocolSchema
 
 

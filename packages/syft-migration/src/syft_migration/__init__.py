@@ -1,5 +1,6 @@
 from syft_migration.base import MigratableObject
-from syft_migration.registry import MigrationError, MigrationRegistry, default_registry
+from syft_migration.identity import MigrationError
+from syft_migration.registry import MigrationRegistry
 from syft_migration.schema import PackageProtocolSchema, ProtocolSchema
 from syft_migration.service import MigrationService
 
@@ -12,6 +13,5 @@ __all__ = [
     "MigrationService",
     "PackageProtocolSchema",
     "ProtocolSchema",
-    "default_registry",
     "__version__",
 ]
