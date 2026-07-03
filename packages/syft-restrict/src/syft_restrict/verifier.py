@@ -284,6 +284,22 @@ class _Checker:
             if func.id in BANNED_NAMES:
                 self.add(node, "banned-call", f"call to {func.id!r} is not allowed")
                 self._call_funcs.add(id(func))  # _check_name would otherwise re-flag this Name
+                return
+            if (
+                func.id in self.scan.bindings
+                and func.id not in self.scan.hidden_defs
+                and func.id not in self.scan.visible_defs
+            ):
+                # A bare name imported via `from X import name [as alias]` in the public region
+                # (recorded in scan.bindings) resolves through the same binding table dotted
+                # paths use — apply the same allowlist + denylist, not just the BANNED_NAMES check.
+                if not self._resolved_allowed(func.id):
+                    self.add(
+                        node,
+                        "call-not-allowed",
+                        f"call to {self._resolve(func.id)!r} is not allow-listed",
+                    )
+                return
             # Otherwise a bare-name call (local var / hidden or visible def / safe builtin) is allowed;
             # nothing dangerous can reach a local name given the other rules.
             return
