@@ -161,7 +161,7 @@ def _register_submission_v2(registry: MigrationRegistry) -> type:
     return JobSubmissionMetadataV2
 
 
-def _next_version_registry() -> tuple[MigrationRegistry, type, type]:
+def _version_registry_with_migrations() -> tuple[MigrationRegistry, type, type]:
     """A fresh registry holding the current objects plus test-scope V2 versions."""
     registry = MigrationRegistry(
         protocol_name="syft-job",
@@ -176,7 +176,7 @@ def _next_version_registry() -> tuple[MigrationRegistry, type, type]:
 
 
 def test_job_state_upgrades_from_disk_and_downgrades(tmp_path: Path):
-    registry, JobStateV2, _ = _next_version_registry()
+    registry, JobStateV2, _ = _version_registry_with_migrations()
     service = MigrationService(registry=registry)
 
     # An old (v1) state file on disk loads and migrates to the next version.
@@ -198,7 +198,7 @@ def test_job_state_upgrades_from_disk_and_downgrades(tmp_path: Path):
 
 
 def test_job_submission_upgrades_from_disk_and_downgrades(tmp_path: Path):
-    registry, _, JobSubmissionMetadataV2 = _next_version_registry()
+    registry, _, JobSubmissionMetadataV2 = _version_registry_with_migrations()
     service = MigrationService(registry=registry)
 
     # An old (v1) config file on disk loads and migrates to the next version.
