@@ -1,4 +1,5 @@
-__version__ = "0.1.25"
+# __version__ comes from the installed distribution metadata (see version.py).
+from .version import __version__
 
 from .client import BaseJobClient, JobClient, get_client
 from .config import SyftJobConfig
