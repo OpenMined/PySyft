@@ -114,6 +114,21 @@ class MigrationRegistry:
             f"No migration path for {canonical_name!r} from {from_version} to {to_version}"
         )
 
+    def has_upgradeable_path_to_latest(
+        self, canonical_name: str, from_version: str
+    ) -> bool:
+        """Whether ``from_version`` can be migrated up to the latest registered
+        version of ``canonical_name`` (trivially true for the latest itself)."""
+        try:
+            self.migration_path(
+                canonical_name=canonical_name,
+                from_version=from_version,
+                to_version=self.latest_version(canonical_name),
+            )
+        except MigrationError:
+            return False
+        return True
+
     # -- protocol schemas --------------------------------------------------
     @property
     def current_protocol_schema(self) -> PackageProtocolSchema:
