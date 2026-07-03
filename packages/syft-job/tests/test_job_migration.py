@@ -91,7 +91,7 @@ def _mock_submission_config_path(tmp_path: Path) -> Path:
     )
 
 
-def test_submission_round_trip_carries_identity(tmp_path: Path):
+def test_submission_serialization(tmp_path: Path):
     path = _mock_submission_config_path(tmp_path)
     submission = create_mock_submission()
     submission.save(path)
@@ -102,7 +102,7 @@ def test_submission_round_trip_carries_identity(tmp_path: Path):
     assert loaded.version == "1"
 
 
-def test_state_round_trip_carries_identity(tmp_path: Path):
+def test_state_serialization(tmp_path: Path):
     state = JobStateV1(
         status=JobStatus.PENDING,
         received_at=datetime(2026, 7, 1, tzinfo=timezone.utc),
