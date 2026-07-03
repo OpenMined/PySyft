@@ -171,6 +171,9 @@ class _Checker:
         )  # Attribute/Name nodes already judged as part of a call's func (avoid double-reporting)
         self._class_stack: list[ast.ClassDef] = []  # enclosing class, for self.<name> vetting
         self._self_attr_cache: dict[int, dict[str, bool]] = {}  # id(ClassDef) -> attr safety
+        self._scope_stack: list[ast.AST] = (
+            []
+        )  # ClassDef/FunctionDef/Lambda in true nesting order, for self/cls parameter vetting
         self._annotation_nodes: set[int] = (
             set()
         )  # every node inside a type-annotation subtree (e.g. `x: str`, `x: dict[str, bytes]`)
@@ -185,6 +188,7 @@ class _Checker:
         if _in_ranges(node, self.ranges):
             self._enforce(node)
         is_class = isinstance(node, ast.ClassDef)
+        is_scope = is_class or isinstance(node, (ast.FunctionDef, ast.Lambda))
         if is_class:
             self._class_stack.append(node)
         # A type annotation (`x: str`, `x: list[str]`, `def f() -> dict[str, bytes]`) is never
@@ -201,8 +205,12 @@ class _Checker:
             if ann is not None:
                 for descendant in ast.walk(ann):
                     self._annotation_nodes.add(id(descendant))
+        if is_scope:
+            self._scope_stack.append(node)
         for child in ast.iter_child_nodes(node):
             self.visit(child)
+        if is_scope:
+            self._scope_stack.pop()
         if is_class:
             self._class_stack.pop()
 
@@ -225,6 +233,8 @@ class _Checker:
 
         if isinstance(node, ast.FunctionDef):
             self._check_def(node)
+        elif isinstance(node, ast.Lambda):
+            self._check_self_cls_params(node.args)
         elif isinstance(node, ast.ClassDef):
             self._check_class(node)
         elif isinstance(node, ast.Call):
@@ -241,8 +251,13 @@ class _Checker:
             self._check_assign_targets(node)
         elif isinstance(node, ast.For):
             self._check_reserved_target(node.target)
-        elif isinstance(node, ast.comprehension):
-            self._check_reserved_target(node.target)
+        elif isinstance(node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+            # ast.comprehension itself carries no lineno/col_offset (verified: it's the one node
+            # type in the grammar with no position info), so gating on ITS range membership would
+            # never fire -- dispatch from the enclosing comprehension expression instead, which
+            # does have a position, and check every one of its generators' targets from here.
+            for generator in node.generators:
+                self._check_reserved_target(generator.target)
         elif isinstance(node, ast.arg):
             self._check_reserved_name(node, node.arg)
         elif isinstance(node, (ast.List, ast.Dict, ast.Set, ast.Tuple)):
@@ -254,7 +269,8 @@ class _Checker:
 
     # — defs / classes —
     def _check_def(self, node: ast.FunctionDef) -> None:
-        # Checks a function def: its decorators, and that it defines no non-allow-listed dunder.
+        # Checks a function def: its decorators, that it defines no non-allow-listed dunder, and
+        # that self/cls only appears where it's genuinely trustworthy (see _check_self_cls_params).
         self._check_decorators(node)
         if _is_dunder(node.name) and node.name not in ALLOWED_DUNDER_DEFS:
             self.add(
@@ -262,6 +278,34 @@ class _Checker:
                 "dunder-def",
                 f"defining magic method {node.name!r} is not allowed",
             )
+        self._check_self_cls_params(node.args)
+
+    def _check_self_cls_params(self, args: ast.arguments) -> None:
+        # self.<name> / cls.<name> is trusted everywhere else in this checker purely by matching
+        # the literal identifier "self"/"cls" -- it never verifies the name is actually bound to
+        # the real instance. That trust is only sound for the genuine first parameter of a method
+        # defined directly in a class body (where Python itself guarantees the binding). Anywhere
+        # else -- a nested function/lambda parameter of the same name, a non-first parameter, a
+        # *args/**kwargs catch-all -- an attacker's own local object would receive the identical
+        # blanket trust, with the self-attribute safety table keyed to the wrong (enclosing) class
+        # instead of whatever object the identifier is actually bound to at runtime.
+        is_direct_method = bool(self._scope_stack) and isinstance(
+            self._scope_stack[-1], ast.ClassDef
+        )
+        first = args.posonlyargs[0] if args.posonlyargs else (args.args[0] if args.args else None)
+        all_params = [*args.posonlyargs, *args.args, *args.kwonlyargs]
+        if args.vararg is not None:
+            all_params.append(args.vararg)
+        if args.kwarg is not None:
+            all_params.append(args.kwarg)
+        for a in all_params:
+            if a.arg in ("self", "cls") and not (is_direct_method and a is first):
+                self.add(
+                    a,
+                    "reserved-name",
+                    f"{a.arg!r} may only be the first parameter of a method defined directly "
+                    f"in a class body; self/cls attribute access is trusted by identifier alone",
+                )
 
     def _check_class(self, node: ast.ClassDef) -> None:
         # Checks a class def: its decorators, no class keywords (e.g. metaclass=), and allow-listed bases.
@@ -574,8 +618,19 @@ class _Checker:
 
     def _check_reserved_target(self, target: ast.AST) -> None:
         # Checks each name being bound (Store context) in an assign/for/comprehension target.
+        # self/cls may never be rebound this way -- see _check_self_cls_params for why the
+        # identifier alone must stay tied to the genuine instance/class parameter.
         for name_node in _iter_names(target):
             if isinstance(name_node.ctx, ast.Store):
+                if name_node.id in ("self", "cls"):
+                    self.add(
+                        name_node,
+                        "reserved-name",
+                        f"{name_node.id!r} may not be rebound; self/cls attribute access is "
+                        f"trusted by identifier alone, not a verified reference to the real "
+                        f"instance",
+                    )
+                    continue
                 self._check_reserved_name(name_node, name_node.id)
 
     def _check_reserved_name(self, node: ast.AST, name: str) -> None:

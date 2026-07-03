@@ -396,3 +396,88 @@ def test_stringized_annotation_is_not_flagged(verify_all):
     src = ['def f(x: "str") -> "bytes":', "    return x"]
     result = verify_all("\n".join(src))
     assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
+# ── self/cls trust is a lexical string match, not a verified binding -- it must not be ──
+# ── forgeable by reassigning "self"/"cls" or reusing them as an unrelated parameter name ──
+
+
+def test_self_reassignment_must_not_grant_trust(verify_all):
+    # Rebinding "self" to an arbitrary object must not let the self.<name> exemption apply to
+    # that object instead of the real instance.
+    src = [
+        "class M(object):",
+        "    def __call__(self, x):",
+        "        self = x",
+        "        return self.anything_at_all()",
+    ]
+    assert "reserved-name" in error_codes(verify_all("\n".join(src)))
+
+
+def test_cls_as_local_variable_must_not_grant_trust(verify_all):
+    # "cls" used as an ordinary local variable name (not a real classmethod parameter, which
+    # can't occur anyway since @classmethod isn't allow-listed) must not grant the self.<name>
+    # exemption to whatever it happens to be assigned.
+    src = [
+        "class M(object):",
+        "    def __call__(self, x):",
+        "        cls = x",
+        "        return cls.anything_at_all()",
+    ]
+    assert "reserved-name" in error_codes(verify_all("\n".join(src)))
+
+
+def test_nested_function_self_parameter_must_not_grant_trust(policy):
+    # The full realistic chain: a hidden nn.Module stashes a non-builtin dangerous import (not
+    # in BANNED_NAMES) via setup(), and a nested helper function's parameter is coincidentally
+    # named "self" -- at runtime this actually calls os.system through the real instance's
+    # attribute, entirely outside the enclosing class M's own self-attribute safety table. Must
+    # be rejected regardless of what "self" is coincidentally named inside the nested function.
+    src = [
+        "from os import system",
+        "from flax import linen as nn",
+        "",
+        "class Wrapper(nn.Module):",
+        "    def setup(self):",
+        "        self.run = system",
+        "",
+        "class M(nn.Module):",
+        "    def __call__(self, x):",
+        "        w = Wrapper()",
+        "        def helper(self):",
+        "            return self.run('id')",
+        "        return helper(w)",
+    ]
+    result = verify("\n".join(src), [[4, 13]], policy)
+    assert "reserved-name" in error_codes(result)
+
+
+def test_self_only_trusted_as_first_param_of_a_direct_method(verify_all):
+    # A parameter literally named "self" is only trustworthy as the genuine first parameter of
+    # a method defined directly in a class body -- not a non-first parameter, and not a
+    # lambda's parameter.
+    src = [
+        "class M(object):",
+        "    def __call__(self, x):",
+        "        def helper(x, self):",
+        "            return self.evil()",
+        "        return helper(1, 2)",
+    ]
+    assert "reserved-name" in error_codes(verify_all("\n".join(src)))
+
+    lambda_src = [
+        "class M(object):",
+        "    def __call__(self, x):",
+        "        f = lambda self: self.evil()",
+        "        return f(x)",
+    ]
+    assert "reserved-name" in error_codes(verify_all("\n".join(lambda_src)))
+
+
+def test_comprehension_target_rebinding_is_checked(verify_all):
+    # ast.comprehension carries no lineno/col_offset (verified directly), so dispatching the
+    # reserved-name check from that node type was dead code -- it never actually ran, for
+    # self/cls rebinding or for the original import-alias-rebinding case. Must be checked from
+    # the enclosing comprehension expression instead.
+    src = ["y = [cls for cls in [1, 2]]"]
+    assert "reserved-name" in error_codes(verify_all("\n".join(src)))
