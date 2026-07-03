@@ -79,10 +79,10 @@ resource "google_compute_instance" "enclave" {
   }
 
   # The launcher fetches the token and attests on first boot — everything it
-  # touches must exist before the VM starts.
+  # touches must exist (and IAM must have propagated) before the VM starts.
   depends_on = [
     google_secret_manager_secret_version.token,
     google_secret_manager_secret_iam_member.accessor,
-    google_project_iam_member.enclave_sa,
+    time_sleep.iam_propagation,
   ]
 }

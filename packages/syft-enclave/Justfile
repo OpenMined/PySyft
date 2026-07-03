@@ -527,11 +527,11 @@ tf-destroy *args:
 
 # Replace the VM without config changes (e.g. after pushing a new :latest image)
 [group('terraform')]
-tf-redeploy dev="false":
+tf-redeploy dev="false" *args="":
     #!/bin/bash
     set -e
     {{tf_preflight}}
-    terraform -chdir={{tf_dir}} apply -var=dev_mode={{dev}} -replace=google_compute_instance.enclave
+    terraform -chdir={{tf_dir}} apply -var=dev_mode={{dev}} -replace=google_compute_instance.enclave {{args}}
 
 # Show terraform outputs (IP, SA email, secret resource, ...)
 [group('terraform')]
@@ -550,15 +550,25 @@ tf-attest:
       --zone="$(terraform -chdir={{tf_dir}} output -raw zone)" \
       --command='curl -sS http://localhost:8080/attestation' | python3 -m json.tool
 
-# Tail serial logs of the terraform-managed VM
+# Tail logs of the terraform-managed VM. Prefers SSH + journalctl (full
+# container logs; dev deployments only) — the serial console caps redirected
+# container output, so chatty containers go quiet there. Falls back to
+# serial output when SSH is unavailable (production image).
 [group('terraform')]
 tf-logs n="100":
     #!/bin/bash
     set -e
-    gcloud compute instances get-serial-port-output \
-      "$(terraform -chdir={{tf_dir}} output -raw vm_name)" \
-      --project="$(terraform -chdir={{tf_dir}} output -raw project_id)" \
-      --zone="$(terraform -chdir={{tf_dir}} output -raw zone)" 2>&1 | tail -n {{n}}
+    vm=$(terraform -chdir={{tf_dir}} output -raw vm_name)
+    project=$(terraform -chdir={{tf_dir}} output -raw project_id)
+    zone=$(terraform -chdir={{tf_dir}} output -raw zone)
+    if logs=$(timeout 60 gcloud compute ssh "$vm" --project="$project" --zone="$zone" \
+        --command="sudo journalctl --no-pager -n 20000 2>/dev/null | grep cs_container_launcher | tail -n {{n}}" 2>/dev/null); then
+      echo "$logs"
+    else
+      echo "(SSH unavailable — falling back to serial output; container logs there are capped)" >&2
+      gcloud compute instances get-serial-port-output "$vm" \
+        --project="$project" --zone="$zone" 2>&1 | tail -n {{n}}
+    fi
 
 # Status of the terraform-managed VM (RUNNING / TERMINATED / ...)
 [group('terraform')]

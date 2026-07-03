@@ -31,12 +31,12 @@ gcloud auth application-default set-quota-project YOUR_PROJECT_ID
 
 Troubleshooting:
 
-| Error                                | Fix                                                                                                                                             |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `could not find default credentials` | Run `gcloud auth application-default login` — `gcloud auth login` alone is not enough.                                                          |
-| `oauth2: "invalid_grant"`            | ADC token expired/revoked — re-run `gcloud auth application-default login`.                                                                     |
-| Quota project warnings               | `gcloud auth application-default set-quota-project YOUR_PROJECT_ID`                                                                             |
-| Attestation fails on first boot      | Check the enclave SA has `roles/confidentialcomputing.workloadUser` (Terraform grants it to the dedicated SA only, not the default compute SA). |
+| Error                                | Fix                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `could not find default credentials` | Run `gcloud auth application-default login` — `gcloud auth login` alone is not enough.                                                                                                                                                                                                                                                                |
+| `oauth2: "invalid_grant"`            | ADC token expired/revoked — re-run `gcloud auth application-default login`.                                                                                                                                                                                                                                                                           |
+| Quota project warnings               | `gcloud auth application-default set-quota-project YOUR_PROJECT_ID`                                                                                                                                                                                                                                                                                   |
+| Attestation fails on first boot      | Check the enclave SA has `roles/confidentialcomputing.workloadUser` (Terraform grants it to the dedicated SA only, not the default compute SA). A fresh apply waits 120s for IAM propagation (`time_sleep.iam_propagation`); if the launcher still 403s and exits (`exit_code=4`, dead VM), reset the VM: `gcloud compute instances reset <vm_name>`. |
 
 ## Configure
 
@@ -80,10 +80,12 @@ Debug image — SSH enabled, container logs redirected to serial output, encrypt
 
 ```bash
 just tf-apply-dev
-just tf-logs        # serial output incl. container logs
+just tf-logs        # full container logs via SSH + journalctl (falls back to serial)
 just tf-ssh         # SSH into the VM
 just tf-attest      # attestation report, fetched via SSH + localhost
 ```
+
+> `tf-logs` prefers SSH + `journalctl` because the serial console caps redirected container output — chatty containers go quiet in serial logs after ~1MB. On production deployments (no SSH) it falls back to serial output, which mainly shows boot/launcher logs.
 
 ### Iterating on the enclave code
 

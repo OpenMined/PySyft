@@ -17,3 +17,17 @@ resource "google_project_iam_member" "enclave_sa" {
   role    = each.value
   member  = "serviceAccount:${google_service_account.enclave.email}"
 }
+
+# IAM grants are eventually consistent; a VM booting right after a fresh
+# apply loses the race (the Confidential Space launcher 403s on
+# confidentialcomputing.locations.list and exits, leaving a dead VM).
+# Give the grants time to propagate before the instance boots.
+resource "time_sleep" "iam_propagation" {
+  create_duration = "120s"
+
+  triggers = {
+    sa = google_service_account.enclave.email
+  }
+
+  depends_on = [google_project_iam_member.enclave_sa]
+}
