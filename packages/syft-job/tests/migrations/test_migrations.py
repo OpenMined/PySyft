@@ -69,7 +69,7 @@ def _version_registry_with_migrations() -> tuple[MigrationRegistry, type, type]:
     return registry, state_v2, submission_v2
 
 
-def test_job_state_upgrades_from_disk_and_downgrades(tmp_path: Path):
+def test_job_state_upgrades_from_disk(tmp_path: Path):
     registry, JobStateV2, _ = _version_registry_with_migrations()
     service = MigrationService(registry=registry)
 
@@ -82,6 +82,11 @@ def test_job_state_upgrades_from_disk_and_downgrades(tmp_path: Path):
     assert upgraded.approved_by == DO_EMAIL
     assert upgraded.retries == 0
 
+
+def test_job_state_downgrades():
+    registry, JobStateV2, _ = _version_registry_with_migrations()
+    service = MigrationService(registry=registry)
+
     # A v2-only object in memory downgrades to the old version.
     downgraded = service.migrate(
         JobStateV2(status=JobStatus.DONE, retries=2), target_version="1"
@@ -91,7 +96,7 @@ def test_job_state_upgrades_from_disk_and_downgrades(tmp_path: Path):
     assert not hasattr(downgraded, "retries")
 
 
-def test_job_submission_upgrades_from_disk_and_downgrades(tmp_path: Path):
+def test_job_submission_upgrades_from_disk(tmp_path: Path):
     registry, _, JobSubmissionMetadataV2 = _version_registry_with_migrations()
     service = MigrationService(registry=registry)
 
@@ -103,8 +108,16 @@ def test_job_submission_upgrades_from_disk_and_downgrades(tmp_path: Path):
     assert upgraded.name == "my.job"
     assert upgraded.priority == "normal"
 
+
+def test_job_submission_downgrades():
+    registry, _, JobSubmissionMetadataV2 = _version_registry_with_migrations()
+    service = MigrationService(registry=registry)
+
     # A v2-only object in memory downgrades to the old version.
-    downgraded = service.migrate(upgraded, target_version="1")
+    v2_only = JobSubmissionMetadataV2(
+        **create_mock_submission().model_dump(exclude={"version"}), priority="high"
+    )
+    downgraded = service.migrate(v2_only, target_version="1")
     assert type(downgraded) is JobSubmissionMetadataV1
     assert downgraded.name == "my.job"
     assert not hasattr(downgraded, "priority")
