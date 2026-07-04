@@ -8,6 +8,7 @@ requires-python = ">=3.10"
 
 dependencies = [
     "syft-client",
+    "syft-rds",
     "pydantic-settings>=2.11.0",
     "requests>=2.32.0",
     "google-auth[pyjwt]>=2.22.0",
@@ -19,6 +20,7 @@ build-backend = "hatchling.build"
 
 [tool.uv.sources]
 "syft-client" = { workspace = true }
+"syft-rds" = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/syft_enclaves"]
