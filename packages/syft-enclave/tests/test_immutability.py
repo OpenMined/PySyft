@@ -122,10 +122,10 @@ def test_enclave_blocks_reshare_of_private_dataset():
 
     # First share + sync — enclave receives private data
     do1.share_private_dataset("testdataset", enclave.email)
-    enclave._manager.sync()
+    enclave._rds.sync()
 
     enclave_private_dir = (
-        enclave._manager.syftbox_folder
+        enclave._rds.syftbox_folder
         / do1.email
         / "private"
         / "syft_datasets"
@@ -137,7 +137,7 @@ def test_enclave_blocks_reshare_of_private_dataset():
 
     # DO modifies private data locally and re-shares
     private_path.write_text("TAMPERED DATA")
-    do1._manager.dataset_manager.delete("testdataset", require_confirmation=False)
+    do1._rds.dataset_manager.delete("testdataset", require_confirmation=False)
     do1.create_dataset(
         name="testdataset",
         mock_path=mock_path,
@@ -148,7 +148,7 @@ def test_enclave_blocks_reshare_of_private_dataset():
         sync=False,
     )
     do1.share_private_dataset("testdataset", enclave.email)
-    enclave._manager.sync()
+    enclave._rds.sync()
 
     # Enclave still has original content — overwrite was blocked
     assert (enclave_private_dir / "private.txt").read_bytes() == original_content
