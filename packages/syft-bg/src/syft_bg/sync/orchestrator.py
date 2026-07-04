@@ -13,7 +13,7 @@ from syft_bg.sync.config import SyncConfig
 from syft_bg.sync.snapshot import PeerVersionInfo, SyncSnapshot
 
 if TYPE_CHECKING:
-    from syft_client.sync.syftbox_manager import SyftboxManager
+    from syft_rds import SyftRDSClient
 
 
 def sync_ready_path() -> Path:
@@ -24,7 +24,7 @@ def sync_ready_path() -> Path:
 class SyncOrchestrator(BaseOrchestrator):
     def __init__(
         self,
-        client: SyftboxManager,
+        client: SyftRDSClient,
         state: JsonStateManager,
         config: SyncConfig,
     ):
@@ -43,25 +43,26 @@ class SyncOrchestrator(BaseOrchestrator):
             raise ValueError("SyncConfig missing 'syftbox_root'")
 
         from syft_client.sync.environments.environment import Environment
-        from syft_client.sync.syftbox_manager import SyftboxManager
         from syft_client.sync.utils.syftbox_utils import check_env
+        from syft_rds import SyftRDSClient, SyftRDSClientConfig
 
         env = check_env()
         if env == Environment.COLAB:
-            client = SyftboxManager.for_colab(
+            rds_config = SyftRDSClientConfig.for_colab(
                 email=config.do_email,
                 has_do_role=True,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )
         else:
-            client = SyftboxManager.for_jupyter(
+            rds_config = SyftRDSClientConfig.for_jupyter(
                 email=config.do_email,
                 has_do_role=True,
                 token_path=config.drive_token_path,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )
+        client = SyftRDSClient.from_config(rds_config)
 
         state = JsonStateManager(state_file=config.sync_state_path)
 
