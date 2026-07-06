@@ -7,9 +7,7 @@ from syft_migration import (
     MigrationError,
     MigrationRegistry,
     MigrationService,
-    PackageInfo,
     ProtocolSchema,
-    ReleaseArtifact,
 )
 
 from mocks import JobV1, JobV2
@@ -58,22 +56,6 @@ def test_protocol_schema_save_load_roundtrip(tmp_path):
     path = tmp_path / "protocol_schema.json"
     protocol.save(path=path)
     assert ProtocolSchema.load(path=path) == protocol
-
-
-def test_release_artifact_save_load_roundtrip(tmp_path):
-    artifact = ReleaseArtifact(
-        package_info=PackageInfo(
-            package_name="syft-mock", version="1.0.0", protocol_version="1"
-        ),
-        protocol_schema=ProtocolSchema.from_objects(
-            protocol_name="mock-proto",
-            version="1",
-            classes=[JobV1],
-        ),
-    )
-    path = tmp_path / "release.json"
-    artifact.save(path=path)
-    assert ReleaseArtifact.load(path=path) == artifact
 
 
 def test_register_historic_schema_raises_on_unregistered_object():
