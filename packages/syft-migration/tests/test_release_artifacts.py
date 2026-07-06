@@ -53,7 +53,7 @@ def test_register_historic_release_artifact():
     assert reg.protocol_version_history["1"] is artifact.protocol_schema
 
 
-def test_current_protocol_schema_is_computed_and_history_stored(registry):
+def test_current_protocol_schema_is_computed_and_old_protocols_stored(registry):
     # Current schema is computed from the registered objects.
     current = registry.compute_protocol_schema()
     assert current.version == "2"
