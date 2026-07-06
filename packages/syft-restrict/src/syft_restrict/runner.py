@@ -8,12 +8,13 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from .astutil import normalize_ranges, scan_file
 from .errors import PolicyViolation
 from .obfuscator import (
     obfuscate as _obfuscate,
 )  # aliased: `obfuscate` is also a run() kwarg
 from .policy import Policy
-from .verifier import Violation, _normalize_ranges, _scan_file, verify
+from .verifier import Violation, verify
 
 __all__ = ["run", "RunResult"]
 
@@ -66,7 +67,7 @@ def run(
             raise PolicyViolation(result.violations)
         return RunResult(ok=False, violations=result.violations)
 
-    scan = _scan_file(ast.parse(source), _normalize_ranges(private))
+    scan = scan_file(ast.parse(source), normalize_ranges(private))
     obfuscated = _obfuscate(source, obfuscate_ranges, hide_ranges, scan)
 
     out_path = Path(out) if out is not None else path.with_suffix(".obfuscated.py")
@@ -76,9 +77,9 @@ def run(
         "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
         "policy_id": policy.policy_id(),
         "restrict_version": _version(),
-        "private_ranges": [list(r) for r in _normalize_ranges(private)],
-        "obfuscate_ranges": [list(r) for r in _normalize_ranges(obfuscate_ranges)],
-        "hide_ranges": [list(r) for r in _normalize_ranges(hide_ranges)],
+        "private_ranges": [list(r) for r in normalize_ranges(private)],
+        "obfuscate_ranges": [list(r) for r in normalize_ranges(obfuscate_ranges)],
+        "hide_ranges": [list(r) for r in normalize_ranges(hide_ranges)],
         "n_calls_checked": result.n_calls_checked,
     }
     return RunResult(

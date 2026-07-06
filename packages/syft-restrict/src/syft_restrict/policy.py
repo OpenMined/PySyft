@@ -1,6 +1,6 @@
-"""Policy: what the hidden region is allowed to call and do.
+"""Policy: what the hidden region is allowed to call and do (see docs/verify.md#the-whitelist).
 
-Two channels, mirroring the two verification mechanisms (see research approach-B §3.6.5):
+Two channels the author configures per file:
 
 - ``functions`` — dotted paths callable BY NAME (resolved exactly against the import bindings),
   e.g. ``jax.*``, ``flax.linen.*``. Checked by glob match, with ``JAX_DENYLIST`` beating the allow.
@@ -13,12 +13,13 @@ from __future__ import annotations
 
 import ast
 import fnmatch
+import hashlib
 
 from pydantic import BaseModel, Field
 
 # ── Operator bundles: bundle name -> the AST node types it enables on a value ──────────────
 # These are generic, type-agnostic-safe operators (not named-method calls), so the format-string
-# escape cannot hide among them (research approach-B §3.6.2).
+# escape (`"{0.__class__}".format(x)`) cannot hide among them (docs/verify.md#operator-bundles-on-a-value).
 OPERATOR_BUNDLES: dict[str, tuple[type[ast.AST], ...]] = {
     "arithmetic": (ast.BinOp, ast.UnaryOp),
     "comparison": (ast.Compare, ast.BoolOp),
@@ -26,10 +27,10 @@ OPERATOR_BUNDLES: dict[str, tuple[type[ast.AST], ...]] = {
 }
 # NOTE: there is deliberately no metadata bundle. Reads like `.shape`/`.ndim`/`.dtype` on an opaque
 # value are named attribute accesses we can't pin to a type, so they're rejected like any other
-# attr-on-value and must be routed through a visible wrapper function (research approach-B §3.6.2).
+# attr-on-value and must be routed through a visible wrapper function (docs/verify.md#operator-bundles-on-a-value).
 ALL_BUNDLES: frozenset[str] = frozenset(OPERATOR_BUNDLES)
 
-# ── Dangerous JAX / serialization surface — denylist BEATS the allow (approach-B §3.2/§3.3) ──
+# ── Dangerous JAX / serialization surface — denylist BEATS the allow (docs/blacklist.md) ──
 # Host-callback / IO / FFI / serialization escape hatches that can run host code or touch disk.
 JAX_DENYLIST: tuple[str, ...] = (
     "jax.experimental.*",
@@ -61,7 +62,7 @@ JAX_DENYLIST: tuple[str, ...] = (
     "orbax.*",
 )
 
-# ── Builtins that are dynamic-escape / IO hatches and may never be called (approach-B §2.2) ──
+# ── Builtins that are dynamic-escape / IO hatches and may never be called (docs/blacklist.md) ──
 BANNED_NAMES: frozenset[str] = frozenset(
     {
         "eval",
@@ -91,15 +92,15 @@ BANNED_NAMES: frozenset[str] = frozenset(
     }
 )
 
-# Decorators allowed above a def/class in the hidden region (approach-B §3.1 #4).
+# Decorators allowed above a def/class in the hidden region (docs/verify.md#allow_functions--paths-callable-by-name).
 # NOTE: `property` (and any descriptor) is deliberately absent — it runs code on a bare attribute
-# access (`block.w`), the same attribute-access-hook class banned in §3.1 #6, so default-deny
+# access (`block.w`), the same attribute-access-hook class banned for dunder defs, so default-deny
 # rejects it. Pure inference needs only setup/__call__.
 ALLOWED_DECORATORS: frozenset[str] = frozenset(
     {"nn.compact", "jax.jit", "jax.named_scope", "flax.linen.compact"}
 )
 
-# The only dunder/hook methods a model class may *define* (approach-B §3.1 #6).
+# The only dunder/hook methods a model class may *define* (docs/verify.md#allow_functions--paths-callable-by-name).
 ALLOWED_DUNDER_DEFS: frozenset[str] = frozenset({"__call__", "setup", "__post_init__"})
 
 # Names always preserved verbatim by the obfuscator and never treated as opaque values.
@@ -142,8 +143,6 @@ class Policy(BaseModel):
 
     def policy_id(self) -> str:
         """A short, stable identifier for the policy (for the certificate)."""
-        import hashlib
-
         blob = "|".join(sorted(self.functions)) + "##" + "|".join(sorted(self.methods))
         return hashlib.sha256(blob.encode()).hexdigest()[:16]
 

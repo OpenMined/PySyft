@@ -3,8 +3,8 @@ from syft_restrict import verify
 
 from .conftest import error_codes
 
-# Regression tests from the bypass-hunting pass documented in bypasses.md. Each documents a
-# specific escape shape the verifier must reject, and why a narrower fix could miss it.
+# Regression tests from the bypass-hunting pass. Each documents a specific
+# escape shape the verifier must reject, and why a narrower fix could miss it.
 
 
 def test_alias(verify_all):
@@ -481,3 +481,26 @@ def test_comprehension_target_rebinding_is_checked(verify_all):
     # the enclosing comprehension expression instead.
     src = ["y = [cls for cls in [1, 2]]"]
     assert "reserved-name" in error_codes(verify_all("\n".join(src)))
+
+
+def test_self_dunder_call_should_not_be_allowed(verify_all):
+    # _check_call_attribute grants self/cls the same "inherited, presumed safe" trust as a plain
+    # self.<name> attribute read, but unlike _check_attribute it never checks is_dunder(attr)
+    # first. self.__getattribute__('__dict__') reaches the *call* path, not the read path, so it
+    # skips the dunder-attr ban entirely and reads back the whole instance __dict__.
+    src = [
+        "class M(object):",
+        "    def __call__(self, x):",
+        "        d = self.__getattribute__('__dict__')",
+        "        return x",
+    ]
+    assert "dunder-attr" in error_codes(verify_all("\n".join(src)))
+
+
+def test_fstring_plain_interpolation_should_not_be_allowed(verify_all):
+    # A plain f"{x}" (conversion -1, no !r/!s/!a and no {x=} debug form) still invokes
+    # type(x).__format__(x, '') on the value -- verified directly that a custom __format__
+    # override fires for a bare f'{x}' -- so it is the same dunder-invocation-with-no-Call-node
+    # escape as f"{x!r}"/f"{x!s}"/f"{x=}", not a safe case as the current code assumes.
+    src = ["def f(x):", "    return f'{x}'"]
+    assert "method-on-value" in error_codes(verify_all("\n".join(src)))
