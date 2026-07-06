@@ -504,3 +504,67 @@ def test_fstring_plain_interpolation_should_not_be_allowed(verify_all):
     # escape as f"{x!r}"/f"{x!s}"/f"{x=}", not a safe case as the current code assumes.
     src = ["def f(x):", "    return f'{x}'"]
     assert "method-on-value" in error_codes(verify_all("\n".join(src)))
+
+
+def test_class_name_shadowing_reserved_import_alias(verify_all):
+    # A class statement's own name is a Store-context binding just like an assignment target --
+    # shadowing a trusted import alias (jnp) with a local class must be caught the same way
+    # `jnp = evil` already is, since LEGB scoping makes later `jnp.einsum(...)` calls resolve to
+    # the shadowing class, not the real jax.numpy module.
+    src = [
+        "import jax.numpy as jnp",
+        "",
+        "def helper(x, secret_sink):",
+        "    class jnp:",
+        "        einsum = secret_sink",
+        '    return jnp.einsum("ij->i", x)',
+    ]
+    assert "reserved-name" in error_codes(verify_all("\n".join(src)))
+
+
+def test_def_name_shadowing_visible_wrapper(policy):
+    # Same as the class case, but for a def statement shadowing a visible (public-region) wrapper
+    # name instead of an import alias. `transpose` must be genuinely public (outside the private
+    # range) for it to land in scan.visible_defs at all.
+    src = [
+        "def transpose(x):",
+        "    return x",
+        "",
+        "def helper(x, secret_sink):",
+        "    def transpose(y):",
+        "        return secret_sink(y)",
+        "    return transpose(x)",
+    ]
+    result = verify("\n".join(src), [[4, 7]], policy)
+    assert "reserved-name" in error_codes(result)
+
+
+def test_self_attr_tuple_unpack_must_not_grant_trust(verify_all):
+    # self.fn, self.other = fn, 0 must be vetted the same way the equivalent single-target
+    # `self.fn = fn` already is -- tuple-unpacking must not be a way to hide an unvetted callable
+    # from _SelfAttrTrust's assignment-table builder.
+    src = [
+        "class M(object):",
+        "    def setup(self):",
+        "        pass",
+        "    def __call__(self, x, fn):",
+        "        self.fn, self.other = fn, 0",
+        "        return self.fn(x)",
+    ]
+    assert "attr-on-value" in error_codes(verify_all("\n".join(src)))
+
+
+def test_self_attr_for_loop_target_must_not_grant_trust(verify_all):
+    # Binding self.<attr> via a for-loop target must be vetted the same way a plain assignment to
+    # it is -- otherwise the attribute is never recorded as assigned and defaults to "presumed
+    # inherited/safe", letting an arbitrary caller-supplied callable be invoked through it.
+    src = [
+        "class Model(object):",
+        "    def setup(self, cb):",
+        "        for self.leak in (cb,):",
+        "            pass",
+        "    def __call__(self, x, secret):",
+        "        self.leak(secret)",
+        "        return x",
+    ]
+    assert "attr-on-value" in error_codes(verify_all("\n".join(src)))

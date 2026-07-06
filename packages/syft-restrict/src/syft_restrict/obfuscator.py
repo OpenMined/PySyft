@@ -35,6 +35,10 @@ _HIDE_NOTE = (
 # Layout-only tokens: never renamed/blanked, and don't count as "last token was an operator dot"
 # for the attribute-vs-value rename decision in obfuscate() below.
 _LAYOUT_TOKENS = (tokenize.NL, tokenize.NEWLINE, tokenize.INDENT, tokenize.DEDENT)
+# PEP 701 (Python 3.12+) tokenizes an f-string's literal text as its own FSTRING_MIDDLE token(s)
+# instead of folding the whole f-string into one STRING token -- detect it by feature rather than
+# a hardcoded version number, since that's what actually determines which token carries the text.
+_FSTRING_MIDDLE = getattr(tokenize, "FSTRING_MIDDLE", None)
 
 # Builtins kept readable (they reveal nothing about the architecture).
 _KEEP_BUILTINS = frozenset(
@@ -109,6 +113,12 @@ def obfuscate(source: str, obfuscate_ranges, hide_ranges, scan: FileScan) -> str
                 edits.append((srow, scol, erow, ecol, new))
         elif tok.type == tokenize.STRING:
             edits.append((srow, scol, erow, ecol, f'"{_BLANK}"'))
+        elif tok.type == _FSTRING_MIDDLE:
+            # The f-string's literal text between `{...}` parts; FSTRING_START/END (the f"/" quote
+            # delimiters) are left as-is, and any interpolated expression's own tokens (NAME, etc.)
+            # still flow through the normal token handling above/below like any other reference.
+            if tok.string:
+                edits.append((srow, scol, erow, ecol, _BLANK))
         elif tok.type == tokenize.NUMBER:
             edits.append((srow, scol, erow, ecol, _BLANK))
         elif tok.type == tokenize.COMMENT:

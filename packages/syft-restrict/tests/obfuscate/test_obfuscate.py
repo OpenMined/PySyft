@@ -1,9 +1,11 @@
 """Tests for the display transform (approach A), exercised through run()."""
 
+import ast
 import shutil
 from pathlib import Path
 
-from syft_restrict import run
+from syft_restrict import obfuscate, run
+from syft_restrict.astutil import scan_file
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
@@ -86,6 +88,18 @@ def test_hide_blanks_whole_body_keeping_indentation(tmp_path):
     hidden_text = "\n".join(obf_lines[body[0] - 1 : body[1]])
     assert "base" not in hidden_text  # the real body tokens are gone
     assert result.certificate["hide_ranges"] == [body]
+
+
+def test_fstring_literal_text_is_blanked():
+    # A private-region f-string with no interpolation (the only shape that passes verify(), since
+    # any {expr} part is banned) must have its literal text blanked, on any Python version --
+    # including 3.12+'s PEP 701 tokenizer, which emits the literal text as its own FSTRING_MIDDLE
+    # token(s) instead of folding the whole f-string into one STRING token.
+    source = 'def f():\n    return f"secret literal text"\n'
+    scan = scan_file(ast.parse(source), [(1, 2)])
+    obf = obfuscate(source, [[1, 2]], [], scan)
+    assert "secret literal text" not in obf
+    assert "■" in obf
 
 
 def test_obfuscation_is_deterministic(tmp_path):

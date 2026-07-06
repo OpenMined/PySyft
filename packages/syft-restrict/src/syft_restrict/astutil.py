@@ -10,8 +10,16 @@ from pydantic import BaseModel
 # ── line ranges ────────────────────────────────────────────────────────────────────────────
 # The caller marks the private region as a list of [start, end] 1-based inclusive line ranges.
 def normalize_ranges(private) -> list[tuple[int, int]]:
-    """Coerce the caller's ``[[lo, hi], ...]`` into a list of ``(int, int)`` tuples."""
-    return [(int(lo), int(hi)) for lo, hi in private]
+    """Coerce the caller's ``[[lo, hi], ...]`` into a list of ``(int, int)`` tuples.
+
+    Raises ``ValueError`` on a malformed range (``hi < lo``) rather than silently matching no
+    lines -- an inverted range must never be mistaken for "nothing to check here".
+    """
+    ranges = [(int(lo), int(hi)) for lo, hi in private]
+    for lo, hi in ranges:
+        if hi < lo:
+            raise ValueError(f"invalid range [{lo}, {hi}]: end must be >= start")
+    return ranges
 
 
 def row_in_ranges(row: int, ranges) -> bool:

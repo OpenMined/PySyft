@@ -301,8 +301,11 @@ class _Checker:
     # ── definitions & classes ────────────────────────────────────────────────────────────────
     def _check_def(self, node: ast.FunctionDef) -> None:
         # Guards against: defining magic/hook methods (__getattr__, __reduce__, …) that Python runs
-        # automatically without an explicit call in the math.
+        # automatically without an explicit call in the math, and shadowing a trusted module alias
+        # or visible wrapper name with a local def (the same forging _check_reserved_name blocks for
+        # a plain assignment target).
         self._check_decorators(node)
+        self._check_reserved_name(node, node.name)
         if is_dunder(node.name) and node.name not in ALLOWED_DUNDER_DEFS:
             self.report(
                 node,
@@ -313,8 +316,10 @@ class _Checker:
 
     def _check_class(self, node: ast.ClassDef) -> None:
         # Guards against: attacker code running at class-creation time via a class keyword (metaclass=)
-        # or a non-allow-listed base class (whose __init_subclass__/metaclass would fire).
+        # or a non-allow-listed base class (whose __init_subclass__/metaclass would fire), and
+        # shadowing a trusted module alias or visible wrapper name with a local class (see _check_def).
         self._check_decorators(node)
+        self._check_reserved_name(node, node.name)
         if node.keywords:
             self.report(
                 node,
@@ -649,6 +654,20 @@ class _Checker:
 
 
 # ── self-attribute trust ────────────────────────────────────────────────────────────────────────
+def _iter_self_attrs_in_target(target: ast.AST):
+    """Yield every self.<attr>/cls.<attr> name found anywhere in a Store-context target tree,
+    including nested inside tuple/list-unpacking (``self.a, self.b = ...``) or a starred target."""
+    attr = self_attr_name(target)
+    if attr is not None:
+        yield attr
+        return
+    if isinstance(target, (ast.Tuple, ast.List)):
+        for elt in target.elts:
+            yield from _iter_self_attrs_in_target(elt)
+    elif isinstance(target, ast.Starred):
+        yield from _iter_self_attrs_in_target(target.value)
+
+
 class _SelfAttrTrust:
     """Answers one question for ``_check_call_attribute``/``_check_self_subscript_call``: is
     ``self.<attr>`` (in the given enclosing class) safe to call or subscript?
@@ -676,7 +695,10 @@ class _SelfAttrTrust:
     def _build_table(self, cls_node: ast.ClassDef) -> dict[str, bool]:
         # For every self.<name> assigned anywhere in the class, record whether EVERY value ever stored
         # there is a vetted-safe source. AugAssign always disqualifies (compound-mutating a submodule
-        # reference isn't a real Flax pattern and is inherently suspect).
+        # reference isn't a real Flax pattern and is inherently suspect) -- and so does a self.<attr>
+        # found nested in a tuple/list-unpack target or bound via a for-loop/comprehension target:
+        # neither is a real Flax pattern either, and unlike a plain `self.x = value` there's no single
+        # value expression to vet, so we can't tell what ends up in the attribute.
         values: dict[str, list[ast.AST]] = {}
         disqualified: set[str] = set()
         for node in ast.walk(cls_node):
@@ -685,6 +707,8 @@ class _SelfAttrTrust:
                     attr = self_attr_name(t)
                     if attr is not None:
                         values.setdefault(attr, []).append(node.value)
+                    elif isinstance(t, (ast.Tuple, ast.List)):
+                        disqualified.update(_iter_self_attrs_in_target(t))
             elif isinstance(node, ast.AnnAssign) and node.value is not None:
                 attr = self_attr_name(node.target)
                 if attr is not None:
@@ -693,10 +717,15 @@ class _SelfAttrTrust:
                 attr = self_attr_name(node.target)
                 if attr is not None:
                     disqualified.add(attr)
-        return {
+            elif isinstance(node, (ast.For, ast.comprehension)):
+                disqualified.update(_iter_self_attrs_in_target(node.target))
+        table = {
             attr: attr not in disqualified and all(self._is_safe_value(v) for v in vs)
             for attr, vs in values.items()
         }
+        for attr in disqualified:
+            table.setdefault(attr, False)
+        return table
 
     def _is_safe_value(self, value: ast.AST) -> bool:
         # A vetted "submodule" source: a call to an allow-listed library constructor or a name defined
