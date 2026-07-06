@@ -6,6 +6,7 @@ machine_boot_size_default := "200"
 vm_default := "syft-enclave-vm"
 secret_name_default := "syft-enclave-token"
 sa_name_default := "syft-enclave-service-account"
+tf_dir := "terraform"
 
 # Shared shell snippet: loads settings from ~/.syft-enclaves/settings.json.
 # `project_id` and `zone` are written by `just init`.
@@ -33,6 +34,12 @@ ensure_dockerhub_login := '''
             docker login
         fi
     fi
+'''
+
+# Preflight for terraform recipes: terraform installed + tfvars present.
+tf_preflight := '''
+    command -v terraform >/dev/null 2>&1 || { echo "Error: terraform not found. Install: https://developer.hashicorp.com/terraform/install" >&2; exit 1; }
+    [ -f terraform/terraform.tfvars ] || { echo "Error: terraform/terraform.tfvars not found. Copy terraform/terraform.tfvars.example and fill it in (see docs/terraform.md)." >&2; exit 1; }
 '''
 
 # List all available commands
@@ -143,17 +150,6 @@ _provision: _whoami
       --member="serviceAccount:${project_number}-compute@developer.gserviceaccount.com" \
       --role="roles/confidentialcomputing.workloadUser"
 
-    # open tcp/8080 (idempotent)
-    # gcloud compute firewall-rules create allow-enclave-http \
-    #   --project="$project_id" \
-    #   --direction=INGRESS \
-    #   --priority=1000 \
-    #   --network=default \
-    #   --action=ALLOW \
-    #   --rules=tcp:8080 \
-    #   --target-tags=http-server \
-    #   --source-ranges=0.0.0.0/0 || true
-
 
 # Provision Secret Manager + a dedicated service account for the
 # enclave runtime. The SA gets `secretmanager.secretAccessor` on the
@@ -241,7 +237,6 @@ start email name=vm_default machine_type=machine_type_default machine_boot_size=
       --image-project=confidential-space-images \
       --scopes=cloud-platform \
       --service-account="$sa_email" \
-      --tags=http-server \
       --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
 
 
@@ -274,11 +269,10 @@ start-debug email name=vm_default machine_type=machine_type_default machine_boot
       --image-project=confidential-space-images \
       --scopes=cloud-platform \
       --service-account="$sa_email" \
-      --tags=http-server \
       --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Always~tee-container-log-redirect=true~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION={{use_encryption}}${job_timeout_env}"
 
 
-# Delete the enclave VM and remove the firewall rule
+# Delete the enclave VM
 [group('teardown')]
 stop name=vm_default: _whoami
     #!/bin/bash
@@ -288,9 +282,6 @@ stop name=vm_default: _whoami
       --project="$project_id" \
       --zone="$zone" \
       --quiet
-    # gcloud compute firewall-rules delete allow-enclave-http \
-    #   --project="$project_id" \
-    #   --quiet
 
 # Delete the enclave's syftbox (Drive files + local state)
 # Usage: just delete-syftbox enclave@example.com
@@ -370,17 +361,18 @@ status name=vm_default: _whoami
       --zone="$zone" \
       --format='get(status)'
 
-# Fetch the TEE attestation report from the running enclave
+# Fetch the TEE attestation report from the running enclave via SSH
+# (debug image only — no inbound port is open on the enclave; production
+# publishes its attestation through the peer flow in SYFT_version.json)
 [group('inspect')]
 attest name=vm_default: _whoami
     #!/bin/bash
     set -e
     {{load_settings}}
-    ip=$(gcloud compute instances describe {{name}} \
+    gcloud compute ssh {{name}} \
       --project="$project_id" \
       --zone="$zone" \
-      --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
-    curl -sS "http://${ip}:8080/attestation" | python3 -m json.tool
+      --command='curl -sS http://localhost:8080/attestation' | python3 -m json.tool
 
 # Tail the last 50 lines of the VM's serial port output
 [group('inspect')]
@@ -486,3 +478,115 @@ credentials-to-token credentials_path output_path:
     out = credentials_to_token('{{credentials_path}}', '{{output_path}}')
     print(f'token written: {out}')
     "
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Terraform
+#
+# Declarative alternative to the gcloud recipes above — see docs/terraform.md.
+# Config lives in terraform/terraform.tfvars (gitignored, copy the .example);
+# these recipes never read ~/.syft-enclaves/settings.json. dev_mode is always
+# forced on the CLI by tf-apply / tf-apply-dev so tfvars can't override it.
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Initialize terraform (providers + local state)
+[group('terraform')]
+tf-init:
+    terraform -chdir={{tf_dir}} init
+
+# Preview the production deployment
+[group('terraform')]
+tf-plan *args:
+    #!/bin/bash
+    set -e
+    {{tf_preflight}}
+    terraform -chdir={{tf_dir}} plan -var=dev_mode=false {{args}}
+
+# Deploy a production enclave (hardened image, no SSH, encryption on)
+[group('terraform')]
+tf-apply *args:
+    #!/bin/bash
+    set -e
+    {{tf_preflight}}
+    terraform -chdir={{tf_dir}} apply -var=dev_mode=false {{args}}
+
+# Deploy a debug enclave (SSH, container logs on serial output, encryption off)
+[group('terraform')]
+tf-apply-dev *args:
+    #!/bin/bash
+    set -e
+    {{tf_preflight}}
+    terraform -chdir={{tf_dir}} apply -var=dev_mode=true {{args}}
+
+# Destroy everything terraform created (VM, secret, SA, IAM; APIs stay enabled)
+[group('terraform')]
+tf-destroy *args:
+    #!/bin/bash
+    set -e
+    {{tf_preflight}}
+    terraform -chdir={{tf_dir}} destroy {{args}}
+
+# Replace the VM without config changes (e.g. after pushing a new :latest image)
+[group('terraform')]
+tf-redeploy dev="false" *args="":
+    #!/bin/bash
+    set -e
+    {{tf_preflight}}
+    terraform -chdir={{tf_dir}} apply -var=dev_mode={{dev}} -replace=google_compute_instance.enclave {{args}}
+
+# Show terraform outputs (IP, SA email, secret resource, ...)
+[group('terraform')]
+tf-output *args:
+    terraform -chdir={{tf_dir}} output {{args}}
+
+# Fetch the attestation report from the terraform-managed VM via SSH
+# (dev deployments only — no inbound port is open on the enclave)
+[group('terraform')]
+tf-attest:
+    #!/bin/bash
+    set -e
+    gcloud compute ssh \
+      "$(terraform -chdir={{tf_dir}} output -raw vm_name)" \
+      --project="$(terraform -chdir={{tf_dir}} output -raw project_id)" \
+      --zone="$(terraform -chdir={{tf_dir}} output -raw zone)" \
+      --command='curl -sS http://localhost:8080/attestation' | python3 -m json.tool
+
+# Tail logs of the terraform-managed VM. Prefers SSH + journalctl (full
+# container logs; dev deployments only) — the serial console caps redirected
+# container output, so chatty containers go quiet there. Falls back to
+# serial output when SSH is unavailable (production image).
+[group('terraform')]
+tf-logs n="100":
+    #!/bin/bash
+    set -e
+    vm=$(terraform -chdir={{tf_dir}} output -raw vm_name)
+    project=$(terraform -chdir={{tf_dir}} output -raw project_id)
+    zone=$(terraform -chdir={{tf_dir}} output -raw zone)
+    if logs=$(timeout 60 gcloud compute ssh "$vm" --project="$project" --zone="$zone" \
+        --command="sudo journalctl --no-pager -n 20000 2>/dev/null | grep cs_container_launcher | tail -n {{n}}" 2>/dev/null); then
+      echo "$logs"
+    else
+      echo "(SSH unavailable — falling back to serial output; container logs there are capped)" >&2
+      gcloud compute instances get-serial-port-output "$vm" \
+        --project="$project" --zone="$zone" 2>&1 | tail -n {{n}}
+    fi
+
+# Status of the terraform-managed VM (RUNNING / TERMINATED / ...)
+[group('terraform')]
+tf-status:
+    #!/bin/bash
+    set -e
+    gcloud compute instances describe \
+      "$(terraform -chdir={{tf_dir}} output -raw vm_name)" \
+      --project="$(terraform -chdir={{tf_dir}} output -raw project_id)" \
+      --zone="$(terraform -chdir={{tf_dir}} output -raw zone)" \
+      --format='get(status)'
+
+# SSH into the terraform-managed VM (dev deployments only)
+[group('terraform')]
+tf-ssh:
+    #!/bin/bash
+    set -e
+    gcloud compute ssh \
+      "$(terraform -chdir={{tf_dir}} output -raw vm_name)" \
+      --project="$(terraform -chdir={{tf_dir}} output -raw project_id)" \
+      --zone="$(terraform -chdir={{tf_dir}} output -raw zone)"
