@@ -3,7 +3,7 @@ from typing import Optional
 
 from syft_job.client import BaseJobClient, JobClient
 from syft_job.job import JobsList
-from syft_job.models.config import JobSubmissionMetadata
+from syft_job.models import JobSubmissionMetadata
 
 
 class EnclaveJobClient(BaseJobClient):

@@ -7,7 +7,7 @@ from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
 from syft_job.job_runner import SyftJobRunner
 from syft_perms import SyftPermContext
-from syft_job.models.state import JobState
+from syft_job.models import JobState
 
 
 DO_EMAIL = "do@test.org"

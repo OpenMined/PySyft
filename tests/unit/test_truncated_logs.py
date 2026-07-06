@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 from syft_job.job_runner import SyftJobRunner
 from syft_job.config import SyftJobConfig
-from syft_job.models.state import JobState, JobStatus
+from syft_job.models import JobState, JobStatus
 
 
 def test_exception_logs_not_truncated():

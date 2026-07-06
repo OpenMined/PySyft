@@ -6,12 +6,17 @@ from pathlib import Path
 from typing import Literal, Optional
 
 import yaml
-from pydantic import BaseModel
+from syft_migration import MigratableObject
+
+from ...migrations import job_registry
 
 
-class JobSubmissionMetadata(BaseModel):
+class JobSubmissionMetadataV1(MigratableObject, registry=job_registry):
     """Represents the job submission metadata, stored under
     SyftBox/<datasite_email>/app_data/job/inbox/<ds_email>/<job_name>/config.yaml."""
+
+    canonical_name: str = "JobSubmissionMetadata"
+    version: str = "1"
 
     name: str
     type: Literal["python", "bash"] = "python"
@@ -44,7 +49,7 @@ class JobSubmissionMetadata(BaseModel):
         return re.match(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$", email) is not None
 
     @classmethod
-    def load(cls, path: Path) -> JobSubmissionMetadata:
+    def load(cls, path: Path) -> JobSubmissionMetadataV1:
         """Load config from a YAML file."""
         submitted_by = path.parent.parent.name
         datasite_email = path.parent.parent.parent.parent.parent.parent.name
