@@ -28,7 +28,7 @@ def test_current_protocol_schema_is_computed_and_history_stored(registry):
     # History is keyed by the protocol version the past release spoke.
     historic_info = registry.package_version_history["1"]
     assert historic_info.version == "1.0.0"
-    historic = registry.schema_for_package_version(package_version="1.0.0")
+    historic = registry.schema_for_protocol_version(protocol_version="1")
     assert historic.supported_versions == {"job": ["1"]}
     assert registry.latest_version(canonical_name="job") == "3"
 
@@ -304,10 +304,6 @@ def test_register_historic_release_artifact(registry):
     # Both histories are keyed by the protocol version the release spoke.
     assert registry.package_version_history["1"] is artifact.package_info
     assert registry.protocol_version_history["1"] is artifact.protocol_schema
-    assert (
-        registry.schema_for_package_version(package_version="1.0.5")
-        is artifact.protocol_schema
-    )
 
 
 def test_schema_for_protocol_version(registry):

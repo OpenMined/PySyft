@@ -181,16 +181,6 @@ class MigrationRegistry:
             },
         )
 
-    def schema_for_package_version(self, package_version: str) -> ProtocolSchema:
-        if package_version == self.package_version:
-            return self.compute_protocol_schema()
-        for info in self.package_version_history.values():
-            if info.version == package_version:
-                return self.protocol_version_history[info.protocol_version]
-        raise MigrationError(
-            f"No protocol schema registered for package version {package_version!r}"
-        )
-
     def schema_for_protocol_version(self, protocol_version: str) -> ProtocolSchema:
         if protocol_version == self.protocol_version:
             return self.compute_protocol_schema()
