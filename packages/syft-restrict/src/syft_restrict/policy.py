@@ -133,7 +133,7 @@ class Policy(BaseModel):
 
     # ── path matching ──────────────────────────────────────────────────────────────────
     def function_allowed(self, dotted: str) -> bool:
-        """True iff a fully-qualified dotted path is allowed (and not denylisted)."""
+        """True if a fully-qualified dotted path is allowed (and not denylisted)."""
         if any(fnmatch.fnmatchcase(dotted, pat) for pat in JAX_DENYLIST):
             return False
         return any(_path_matches(dotted, pat) for pat in self.functions)

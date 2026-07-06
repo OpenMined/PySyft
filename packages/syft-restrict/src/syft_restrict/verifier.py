@@ -720,7 +720,7 @@ class _SelfAttrTrust:
 
 # ── helpers ──────────────────────────────────────────────────────────────────────────────────
 def _contains_banned_reference(node: ast.AST) -> bool:
-    """True iff a Load-context reference to a BANNED_NAMES identifier appears anywhere in node."""
+    """True if a Load-context reference to a BANNED_NAMES identifier appears anywhere in node."""
     return any(
         isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load) and n.id in BANNED_NAMES
         for n in ast.walk(node)

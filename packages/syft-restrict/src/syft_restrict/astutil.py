@@ -1,10 +1,4 @@
-"""Pure AST + line-range helpers shared by the verifier, obfuscator, and runner.
-
-Nothing here holds policy or state — these are small, side-effect-free functions for reading an
-``ast`` tree and asking "is this node inside the private line ranges?". Keeping them in one module
-lets the checker (``verifier.py``) and the display transform (``obfuscator.py``) share one definition
-instead of each reaching into the other.
-"""
+"""Pure AST + line-range helpers shared by the verifier, obfuscator, and runner."""
 
 from __future__ import annotations
 
@@ -21,12 +15,12 @@ def normalize_ranges(private) -> list[tuple[int, int]]:
 
 
 def row_in_ranges(row: int, ranges) -> bool:
-    """True iff a 1-based line number falls inside any range."""
+    """True if a 1-based line number falls inside any range."""
     return any(lo <= row <= hi for lo, hi in ranges)
 
 
 def node_in_ranges(node: ast.AST, ranges) -> bool:
-    """True iff a node has a line number and it falls inside any range.
+    """True if a node has a line number and it falls inside any range.
 
     Some nodes (e.g. ``ast.comprehension``) carry no position; those are never "in range".
     """
@@ -69,7 +63,7 @@ def self_attr_name(node: ast.AST) -> str | None:
 
 
 def rooted_in_self(node: ast.AST) -> bool:
-    """True iff an Attribute/Subscript chain's ultimate base is ``self`` / ``cls``."""
+    """True if an Attribute/Subscript chain's ultimate base is ``self`` / ``cls``."""
     cur = node
     while isinstance(cur, (ast.Attribute, ast.Subscript)):
         cur = cur.value
@@ -92,7 +86,9 @@ def describe(node: ast.AST) -> str:
 class FileScan(BaseModel):
     """Names harvested from the whole file, used to classify calls in the private region."""
 
-    bindings: dict[str, str]  # import alias -> fully-qualified module path (jnp -> jax.numpy)
+    bindings: dict[
+        str, str
+    ]  # import alias -> fully-qualified module path (jnp -> jax.numpy)
     hidden_defs: set[str]  # class/func names defined inside the private region
     visible_defs: set[str]  # function names defined in the visible (public) region
 
@@ -119,4 +115,6 @@ def scan_file(tree: ast.Module, ranges) -> FileScan:
                 hidden_defs.add(node.name)
             elif isinstance(node, ast.FunctionDef):
                 visible_defs.add(node.name)
-    return FileScan(bindings=bindings, hidden_defs=hidden_defs, visible_defs=visible_defs)
+    return FileScan(
+        bindings=bindings, hidden_defs=hidden_defs, visible_defs=visible_defs
+    )
