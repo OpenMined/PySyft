@@ -33,9 +33,9 @@ class MigrationRegistry:
         self.migrations: dict[str, dict[tuple[str, str], MigrationFn]] = {}
         # package_version -> schema; usually read from files that are release
         # artifacts of earlier releases (see ReleaseArtifact.save/load).
-        self.history_protocol_schemas: dict[str, ProtocolSchema] = {}
+        self.package_version_history: dict[str, ProtocolSchema] = {}
         # protocol_version -> schema of the release that spoke that protocol
-        self.history_protocol_version_schemas: dict[str, ProtocolSchema] = {}
+        self.protocol_version_history: dict[str, ProtocolSchema] = {}
 
     # -- objects -----------------------------------------------------------
     def register_object_version(self, cls: type[MigratableObject]) -> None:
@@ -149,7 +149,7 @@ class MigrationRegistry:
         for canonical_name, versions in schema.supported_versions.items():
             for version in versions:
                 self.get_class(canonical_name=canonical_name, version=version)
-        self.history_protocol_schemas[package_version] = schema
+        self.package_version_history[package_version] = schema
 
     def register_historic_release_artifact(self, artifact: ReleaseArtifact) -> None:
         """Register the release artifact of a PAST release of this package.
@@ -162,9 +162,7 @@ class MigrationRegistry:
             schema=artifact.protocol_schema,
         )
         protocol_version = artifact.package_info.protocol_version
-        self.history_protocol_version_schemas[protocol_version] = (
-            artifact.protocol_schema
-        )
+        self.protocol_version_history[protocol_version] = artifact.protocol_schema
 
     def compute_protocol_schema(self) -> ProtocolSchema:
         """Every object version this registry can load, straight from ``self.objects``."""
@@ -181,7 +179,7 @@ class MigrationRegistry:
         if package_version == self.package_version:
             return self.compute_protocol_schema()
         try:
-            return self.history_protocol_schemas[package_version]
+            return self.package_version_history[package_version]
         except KeyError:
             raise MigrationError(
                 f"No protocol schema registered for package version {package_version!r}"
@@ -191,7 +189,7 @@ class MigrationRegistry:
         if protocol_version == self.protocol_version:
             return self.compute_protocol_schema()
         try:
-            return self.history_protocol_version_schemas[protocol_version]
+            return self.protocol_version_history[protocol_version]
         except KeyError:
             raise MigrationError(
                 f"No protocol schema registered for protocol version {protocol_version!r}"

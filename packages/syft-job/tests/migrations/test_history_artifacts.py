@@ -20,7 +20,7 @@ def test_0_1_38_artifact_file_loads():
 
 def test_historic_schemas_registered_on_import():
     # syft_job/__init__ registers every artifact in migrations/history/.
-    assert "0.1.38" in job_registry.history_protocol_schemas
+    assert "0.1.38" in job_registry.package_version_history
     schema = job_registry.schema_for_protocol_version("0")
     assert schema.current_schema("JobState") == "1"
     assert schema.current_schema("JobSubmissionMetadata") == "1"

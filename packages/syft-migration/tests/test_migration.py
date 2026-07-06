@@ -25,7 +25,7 @@ def test_current_protocol_schema_is_computed_and_history_stored(registry):
     assert current.version == "2"
     assert current.supported_versions == {"job": ["1", "2", "3"]}
     assert current.current_schema(canonical_name="job") == "3"
-    historic = registry.history_protocol_schemas["1.0.0"]
+    historic = registry.package_version_history["1.0.0"]
     assert historic.supported_versions == {"job": ["1"]}
     assert registry.latest_version(canonical_name="job") == "3"
 
@@ -299,8 +299,8 @@ def test_register_historic_release_artifact(registry):
     )
     registry.register_historic_release_artifact(artifact=artifact)
     # The artifact's schema is stored under both the package and protocol version.
-    assert registry.history_protocol_schemas["1.0.5"] is artifact.protocol_schema
-    assert registry.history_protocol_version_schemas["1"] is artifact.protocol_schema
+    assert registry.package_version_history["1.0.5"] is artifact.protocol_schema
+    assert registry.protocol_version_history["1"] is artifact.protocol_schema
 
 
 def test_schema_for_protocol_version(registry):
