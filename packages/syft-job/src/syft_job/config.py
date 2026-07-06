@@ -142,4 +142,5 @@ class SyftJobConfig(BaseModel):
             / self.current_user_email
         )
         segment = protocol_dir_name(protocol_version)
+        # this is for backwards compatibility with the old structure
         return base / segment if segment else base

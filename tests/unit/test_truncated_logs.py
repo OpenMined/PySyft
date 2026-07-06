@@ -59,7 +59,7 @@ func_a()
         state.save(review_dir / "state.yaml")
 
         runner = SyftJobRunner(config)
-        ref = runner._resolve_ref(job_name, user=ds_email)
+        ref = runner._find_jobref_from_name(job_name, user=ds_email)
         runner._execute_job(ref, stream_output=True, timeout=30)
 
         stdout_content = (review_dir / "stdout.txt").read_text()

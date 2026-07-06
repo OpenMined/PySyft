@@ -212,7 +212,7 @@ class SyftJobRunner:
         """Get refs of jobs in approved status."""
         return self._get_jobs_with_status(JobStatus.APPROVED)
 
-    def _resolve_ref(self, job_name: str, user: str | None = None) -> JobRef:
+    def _find_jobref_from_name(self, job_name: str, user: str | None = None) -> JobRef:
         """Resolve the unique ref for a job by name (any protocol layout)."""
         return self.manager.find_submission_ref(
             self.config.current_user_email, job_name, ds_email=user
@@ -573,7 +573,7 @@ class SyftJobRunner:
     ) -> None:
         """Share job outputs/logs with submitter if requested."""
         self._share_job_results(
-            self._resolve_ref(job_name, user), share_outputs, share_logs
+            self._find_jobref_from_name(job_name, user), share_outputs, share_logs
         )
 
     def _share_job_results(
