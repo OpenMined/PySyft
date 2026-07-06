@@ -83,7 +83,12 @@ def test_register_historic_schema_raises_on_unregistered_object():
         classes=[BetaV1],
     )
     with pytest.raises(MigrationError):
-        reg.register_historic_protocol_schema(schema=schema)
+        reg.register_historic_protocol_schema(
+            schema=schema, raise_for_unknown_objects=True
+        )
+    # Without the check the schema registers as-is.
+    reg.register_historic_protocol_schema(schema=schema)
+    assert reg.protocol_version_history["0"] is schema
 
 
 def test_register_object_version_idempotent_for_same_class(registry):

@@ -139,25 +139,38 @@ class MigrationRegistry:
         return True
 
     # -- protocol schemas --------------------------------------------------
-    def register_historic_protocol_schema(self, schema: ProtocolSchema) -> None:
-        """Register the schema of a PAST protocol version of this package.
-
-        Every object version the schema lists must already be registered (objects
-        auto-register when their class is defined); registering a schema that
-        references an unknown object/version raises before the schema is stored.
-        """
+    def _raise_for_unknown_objects(self, schema: ProtocolSchema) -> None:
+        """Raise if the schema lists an object version this registry cannot load."""
         for canonical_name, versions in schema.supported_versions.items():
             for version in versions:
                 self.get_class(canonical_name=canonical_name, version=version)
+
+    def register_historic_protocol_schema(
+        self, schema: ProtocolSchema, raise_for_unknown_objects: bool = False
+    ) -> None:
+        """Register the schema of a PAST protocol version of this package.
+
+        With ``raise_for_unknown_objects`` every object version the schema lists
+        must already be registered (objects auto-register when their class is
+        defined); a schema referencing an unknown object/version then raises
+        before the schema is stored.
+        """
+        if raise_for_unknown_objects:
+            self._raise_for_unknown_objects(schema)
         self.protocol_version_history[schema.version] = schema
 
-    def register_historic_release_artifact(self, artifact: ReleaseArtifact) -> None:
+    def register_historic_release_artifact(
+        self, artifact: ReleaseArtifact, raise_for_unknown_objects: bool = False
+    ) -> None:
         """Register the release artifact of a PAST release of this package.
 
         Registers the artifact's protocol schema and remembers which package
         release spoke that protocol version.
         """
-        self.register_historic_protocol_schema(schema=artifact.protocol_schema)
+        self.register_historic_protocol_schema(
+            schema=artifact.protocol_schema,
+            raise_for_unknown_objects=raise_for_unknown_objects,
+        )
         protocol_version = artifact.package_info.protocol_version
         self.package_version_history[protocol_version] = artifact.package_info
 
