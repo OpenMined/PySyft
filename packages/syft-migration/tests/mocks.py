@@ -1,7 +1,9 @@
 from syft_migration import (
     MigratableObject,
     MigrationRegistry,
+    PackageInfo,
     ProtocolSchema,
+    ReleaseArtifact,
 )
 
 # Isolated registry for the mock objects.
@@ -53,12 +55,18 @@ mock_registry.register_migration(
     fn=lambda obj: JobV1(name=obj.name),
 )
 
-# The schema of an earlier release; the current one is computed by the registry.
+# The release artifact of an earlier release; the current schema is computed
+# by the registry.
 schema_v1 = ProtocolSchema.from_objects(
     protocol_name="mock-proto",
     version="1",
     classes=[JobV1],
 )
-mock_registry.register_historic_protocol_schema(
-    package_version="1.0.0", schema=schema_v1
+mock_registry.register_historic_release_artifact(
+    artifact=ReleaseArtifact(
+        package_info=PackageInfo(
+            package_name="syft-mock", version="1.0.0", protocol_version="1"
+        ),
+        protocol_schema=schema_v1,
+    )
 )

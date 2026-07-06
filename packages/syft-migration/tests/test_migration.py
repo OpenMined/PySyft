@@ -83,7 +83,7 @@ def test_register_historic_schema_raises_on_unregistered_object():
         classes=[BetaV1],
     )
     with pytest.raises(MigrationError):
-        reg.register_historic_protocol_schema(package_version="0.9.0", schema=schema)
+        reg.register_historic_protocol_schema(schema=schema)
 
 
 def test_register_object_version_idempotent_for_same_class(registry):
@@ -219,7 +219,7 @@ def _multi_object_registry() -> MigrationRegistry:
         version="1",
         classes=[DatasetV1, ModelV1],
     )
-    reg.register_historic_protocol_schema(package_version="1.0.0", schema=historic)
+    reg.register_historic_protocol_schema(schema=historic)
     return reg
 
 

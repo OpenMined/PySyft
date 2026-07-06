@@ -31,6 +31,7 @@ class MigrationRegistry:
         self.objects: dict[str, dict[str, type[MigratableObject]]] = {}
         # canonical_name -> {(from_version, to_version): migration_fn}
         self.migrations: dict[str, dict[tuple[str, str], MigrationFn]] = {}
+
         # protocol_version -> identity of the past release that spoke that
         # protocol; usually read from files that are release artifacts of
         # earlier releases (see ReleaseArtifact.save/load).
@@ -138,37 +139,27 @@ class MigrationRegistry:
         return True
 
     # -- protocol schemas --------------------------------------------------
-    def register_historic_protocol_schema(
-        self, package_version: str, schema: ProtocolSchema
-    ) -> None:
-        """Register the schema that a PAST release of this package spoke."""
-        self.register_historic_release_artifact(
-            artifact=ReleaseArtifact(
-                package_info=PackageInfo(
-                    package_name=self.package_name,
-                    version=package_version,
-                    protocol_version=schema.version,
-                ),
-                protocol_schema=schema,
-            )
-        )
+    def register_historic_protocol_schema(self, schema: ProtocolSchema) -> None:
+        """Register the schema of a PAST protocol version of this package.
+
+        Every object version the schema lists must already be registered (objects
+        auto-register when their class is defined); registering a schema that
+        references an unknown object/version raises before the schema is stored.
+        """
+        for canonical_name, versions in schema.supported_versions.items():
+            for version in versions:
+                self.get_class(canonical_name=canonical_name, version=version)
+        self.protocol_version_history[schema.version] = schema
 
     def register_historic_release_artifact(self, artifact: ReleaseArtifact) -> None:
         """Register the release artifact of a PAST release of this package.
 
-        Every object version the schema lists must already be registered (objects
-        auto-register when their class is defined); registering a schema that
-        references an unknown object/version raises before anything is stored.
-        Stores the artifact's package info and protocol schema, both keyed by
-        the protocol version that release spoke.
+        Registers the artifact's protocol schema and remembers which package
+        release spoke that protocol version.
         """
-        schema = artifact.protocol_schema
-        for canonical_name, versions in schema.supported_versions.items():
-            for version in versions:
-                self.get_class(canonical_name=canonical_name, version=version)
+        self.register_historic_protocol_schema(schema=artifact.protocol_schema)
         protocol_version = artifact.package_info.protocol_version
         self.package_version_history[protocol_version] = artifact.package_info
-        self.protocol_version_history[protocol_version] = schema
 
     def compute_protocol_schema(self) -> ProtocolSchema:
         """Every object version this registry can load, straight from ``self.objects``."""
