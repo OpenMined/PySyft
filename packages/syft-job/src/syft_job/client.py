@@ -100,7 +100,7 @@ class JobClient(BaseJobClient):
         my_submission_dir = self.config._get_job_submission_dir_for_me(
             target_datasite_owner_email,
             protocol_version=self.manager.protocol_version_for_peer(
-                target_datasite_owner_email
+                target_datasite_owner_email, raise_on_unknown=False
             ),
         )
         my_submission_dir.mkdir(parents=True, exist_ok=True)

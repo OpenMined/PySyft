@@ -5,6 +5,7 @@ from typing import Iterator, Optional
 import yaml
 from syft_migration import (
     MigratableObject,
+    MigrationError,
     MigrationRegistry,
     MigrationService,
     ProtocolSchema,
@@ -48,11 +49,26 @@ class JobManager:
         self.peer_schemas: dict[str, ProtocolSchema] = peer_schemas or {}
 
     # -- peers / protocol ----------------------------------------------------
-    def protocol_version_for_peer(self, peer_email: str) -> str:
-        schema = self.peer_schemas.get(peer_email)
-        return schema.version if schema else JOB_PROTOCOL_VERSION
+    def protocol_version_for_peer(
+        self, peer_email: str, raise_on_unknown: bool = True
+    ) -> str:
+        """The job protocol version ``peer_email`` speaks.
 
-    def _write_schema(self, ref: JobRef, reader_email: str) -> ProtocolSchema:
+        A peer without a known schema raises by default; with
+        ``raise_on_unknown=False`` it is assumed to run the current protocol.
+        """
+        schema = self.peer_schemas.get(peer_email)
+        if schema is not None:
+            return schema.version
+        if raise_on_unknown:
+            raise MigrationError(
+                f"No job protocol schema known for peer {peer_email!r}"
+            )
+        return JOB_PROTOCOL_VERSION
+
+    def _get_write_target_schema(
+        self, ref: JobRef, reader_email: str
+    ) -> ProtocolSchema:
         """The schema to downgrade to before writing for ``reader_email``.
 
         The job's own layout (``ref.protocol_version``) decides the path and
@@ -81,7 +97,11 @@ class JobManager:
             datasite_email=do_email,
             ds_email=self.config.current_user_email,
             job_name=job_name,
-            protocol_version=self.protocol_version_for_peer(do_email),
+            # Until syft-client fills peer_schemas, unknown peers are assumed
+            # to run the current protocol.
+            protocol_version=self.protocol_version_for_peer(
+                do_email, raise_on_unknown=False
+            ),
         )
 
     # -- naming ------------------------------------------------------------------
@@ -189,7 +209,7 @@ class JobManager:
     def _write_downgraded(
         self, path: Path, obj: MigratableObject, ref: JobRef, reader_email: str
     ) -> None:
-        schema = self._write_schema(ref, reader_email=reader_email)
+        schema = self._get_write_target_schema(ref, reader_email=reader_email)
         downgraded = self.service.migrate_to_schema(obj, schema)
         data = downgraded.disk_dict()
         if ref.protocol_version == "0":
