@@ -35,7 +35,7 @@ class MigrationService:
     ) -> MigratableObject:
         """Migrate ``obj`` to the version a peer running ``package_version`` understands."""
         schema = self.registry.schema_for_package_version(package_version)
-        return self.migrate_to_schema(obj, schema.protocol_schema)
+        return self.migrate_to_schema(obj, schema)
 
     def export_protocol_schema(self) -> ProtocolSchema:
         """Export every object version this package supports."""

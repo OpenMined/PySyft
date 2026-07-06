@@ -9,15 +9,12 @@ from syft_job.models import JobStateV1, JobStatus
 
 def test_0_1_38_artifact_file_loads():
     artifact = ReleaseArtifact.load(HISTORY_DIR / "syft-job-0.1.38.json")
+    assert artifact.package_info.package_name == "syft-job"
+    assert artifact.package_info.version == "0.1.38"
     assert artifact.protocol_schema.protocol_name == "syft-job"
     assert artifact.protocol_schema.version == "0"
-    assert artifact.package_schema.package_version == "0.1.38"
-    assert artifact.package_schema.protocol_schema.version == "0"
     expected_versions = {"JobState": ["1"], "JobSubmissionMetadata": ["1"]}
     assert artifact.protocol_schema.supported_versions == expected_versions
-    assert artifact.package_schema.protocol_schema.supported_versions == (
-        expected_versions
-    )
 
 
 def test_historic_schemas_registered_on_import():

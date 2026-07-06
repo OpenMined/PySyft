@@ -2,7 +2,7 @@ from syft_migration.base import MigratableObject
 from syft_migration.identity import MigrationError
 from syft_migration.registry import MigrationRegistry
 from syft_migration.schema import (
-    PackageProtocolSchema,
+    PackageInfo,
     ProtocolSchema,
     ReleaseArtifact,
 )
@@ -15,7 +15,7 @@ __all__ = [
     "MigrationError",
     "MigrationRegistry",
     "MigrationService",
-    "PackageProtocolSchema",
+    "PackageInfo",
     "ProtocolSchema",
     "ReleaseArtifact",
     "__version__",

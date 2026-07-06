@@ -4,11 +4,7 @@ from collections import deque
 from typing import TYPE_CHECKING, Callable
 
 from syft_migration.identity import MigrationError, _has_identity, _identity
-from syft_migration.schema import (
-    PackageProtocolSchema,
-    ProtocolSchema,
-    ReleaseArtifact,
-)
+from syft_migration.schema import ProtocolSchema, ReleaseArtifact
 
 if TYPE_CHECKING:
     from syft_migration.base import MigratableObject
@@ -37,7 +33,7 @@ class MigrationRegistry:
         self.migrations: dict[str, dict[tuple[str, str], MigrationFn]] = {}
         # package_version -> schema; usually read from files that are release
         # artifacts of earlier releases (see ReleaseArtifact.save/load).
-        self.history_protocol_schemas: dict[str, PackageProtocolSchema] = {}
+        self.history_protocol_schemas: dict[str, ProtocolSchema] = {}
         # protocol_version -> schema of the release that spoke that protocol
         self.history_protocol_version_schemas: dict[str, ProtocolSchema] = {}
 
@@ -141,37 +137,30 @@ class MigrationRegistry:
         return True
 
     # -- protocol schemas --------------------------------------------------
-    @property
-    def current_protocol_schema(self) -> PackageProtocolSchema:
-        """The schema of THIS release, computed from the registered objects."""
-        return PackageProtocolSchema(
-            package_name=self.package_name,
-            package_version=self.package_version,
-            protocol_schema=self.compute_protocol_schema(),
-        )
-
-    def register_historic_protocol_schema(self, schema: PackageProtocolSchema) -> None:
-        """Register the schema of a PAST release of this package.
+    def register_historic_protocol_schema(
+        self, package_version: str, schema: ProtocolSchema
+    ) -> None:
+        """Register the schema that a PAST release of this package spoke.
 
         Every object version the schema lists must already be registered (objects
         auto-register when their class is defined); registering a schema that
         references an unknown object/version raises before the schema is stored.
         """
-        for (
-            canonical_name,
-            versions,
-        ) in schema.protocol_schema.supported_versions.items():
+        for canonical_name, versions in schema.supported_versions.items():
             for version in versions:
                 self.get_class(canonical_name=canonical_name, version=version)
-        self.history_protocol_schemas[schema.package_version] = schema
+        self.history_protocol_schemas[package_version] = schema
 
     def register_historic_release_artifact(self, artifact: ReleaseArtifact) -> None:
         """Register the release artifact of a PAST release of this package.
 
-        Stores both the package schema (keyed by package version) and the protocol
-        schema (keyed by protocol version).
+        Stores the artifact's protocol schema keyed by both the package version
+        and the protocol version it spoke.
         """
-        self.register_historic_protocol_schema(schema=artifact.package_schema)
+        self.register_historic_protocol_schema(
+            package_version=artifact.package_info.version,
+            schema=artifact.protocol_schema,
+        )
         protocol_schema = artifact.protocol_schema
         self.history_protocol_version_schemas[protocol_schema.version] = protocol_schema
 
@@ -186,9 +175,9 @@ class MigrationRegistry:
             },
         )
 
-    def schema_for_package_version(self, package_version: str) -> PackageProtocolSchema:
+    def schema_for_package_version(self, package_version: str) -> ProtocolSchema:
         if package_version == self.package_version:
-            return self.current_protocol_schema
+            return self.compute_protocol_schema()
         try:
             return self.history_protocol_schemas[package_version]
         except KeyError:
