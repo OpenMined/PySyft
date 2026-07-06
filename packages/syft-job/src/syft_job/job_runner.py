@@ -487,13 +487,6 @@ class SyftJobRunner:
         folder = ctx.open(rel_path)
         folder.grant_read_access(self.config.current_user_email)
 
-    def _get_job_submitter(self, ref: JobRef) -> str | None:
-        """Read submitted_by from job config.yaml in inbox/."""
-        metadata = self._get_job_metadata(ref)
-        if metadata is None:
-            return None
-        return metadata.submitted_by
-
     def _get_job_metadata(self, ref: JobRef) -> JobSubmissionMetadata | None:
         try:
             return self.manager.read_submission(ref)
@@ -581,14 +574,11 @@ class SyftJobRunner:
     ) -> None:
         if not share_outputs and not share_logs:
             return
-        submitter = self._get_job_submitter(ref)
-        if not submitter:
-            return
         job_info = self._get_job_info(ref)
         if share_outputs:
-            job_info.share_outputs([submitter])
+            job_info.share_outputs([ref.ds_email])
         if share_logs:
-            job_info.share_logs([submitter])
+            job_info.share_logs([ref.ds_email])
 
     def run(self) -> None:
         """Start monitoring the inbox and approved folders for jobs."""
