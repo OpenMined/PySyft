@@ -568,3 +568,81 @@ def test_self_attr_for_loop_target_must_not_grant_trust(verify_all):
         "        return x",
     ]
     assert "attr-on-value" in error_codes(verify_all("\n".join(src)))
+
+
+def test_self_attr_local_alias_must_not_grant_trust(verify_all):
+    # Copying self.<attr> into a local variable before calling it must not defeat _SelfAttrTrust --
+    # reading self.<attr> is unconditionally allowed, and calling a local variable is
+    # unconditionally allowed, so without alias tracking this trivially bypasses the same check
+    # that correctly rejects calling self.fn directly.
+    src = [
+        "class M(object):",
+        "    def setup(self):",
+        "        self.fn = lambda x: x + 1",
+        "    def __call__(self, x):",
+        "        tmp = self.fn",
+        "        return tmp(x)",
+    ]
+    assert "attr-on-value" in error_codes(verify_all("\n".join(src)))
+
+
+def test_self_attr_subscript_local_alias_must_not_grant_trust(verify_all):
+    # Same bypass via the Flax self.layer[i](x) idiom: copy the element to a local first. Uses an
+    # opaque parameter (not a BANNED_NAMES literal like `open`) so the only thing standing between
+    # this and a violation is the self-attr trust check the alias is meant to defeat.
+    src = [
+        "class M(object):",
+        "    def setup(self, cb):",
+        "        self.layer = [cb]",
+        "    def __call__(self, x):",
+        "        tmp = self.layer[0]",
+        "        return tmp(x)",
+    ]
+    assert "attr-on-value" in error_codes(verify_all("\n".join(src)))
+
+
+def test_self_attr_two_hop_local_alias_must_not_grant_trust(verify_all):
+    # A second-hop copy (tmp2 = tmp) must not escape alias tracking either, mirroring the
+    # multi-hop rigor already applied to BANNED_NAMES aliasing (test_homoglyph_two_hop_alias).
+    src = [
+        "class M(object):",
+        "    def setup(self):",
+        "        self.fn = lambda x: x + 1",
+        "    def __call__(self, x):",
+        "        tmp = self.fn",
+        "        tmp2 = tmp",
+        "        return tmp2(x)",
+    ]
+    assert "attr-on-value" in error_codes(verify_all("\n".join(src)))
+
+
+def test_self_attr_reassigned_local_alias_is_not_stuck_tainted(verify_all):
+    # Reassigning a variable that once aliased an unsafe self.<attr> to something else entirely
+    # must clear the taint -- tracking must reflect the CURRENT value, not the first one ever seen.
+    src = [
+        "class M(object):",
+        "    def setup(self):",
+        "        self.fn = lambda x: x + 1",
+        "    def __call__(self, x):",
+        "        tmp = self.fn",
+        "        tmp = x",
+        "        return tmp",
+    ]
+    result = verify_all("\n".join(src))
+    assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
+def test_self_attr_local_alias_of_safe_source_is_still_allowed(verify_all):
+    # A local alias of a self.<attr> that WAS assigned a vetted-safe source (or is presumed
+    # inherited, since the class never assigns it) must still be callable -- alias tracking must
+    # track safety, not blanket-ban aliasing self.<attr> outright (see
+    # test_calling_a_value_is_allowed in test_whitelist.py, which already covers this shape and
+    # must keep passing).
+    src = [
+        "class M(object):",
+        "    def __call__(self, x):",
+        "        layer = self.layers[0]",
+        "        return layer(x)",
+    ]
+    result = verify_all("\n".join(src))
+    assert result.ok, [(v.code, v.message) for v in result.violations]

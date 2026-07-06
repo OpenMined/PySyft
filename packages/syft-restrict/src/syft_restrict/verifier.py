@@ -197,6 +197,11 @@ class _Checker:
         # _mark_annotation_subtrees; exempt from the name/container checks in _check_name and
         # _check_container_literal because annotations are never invoked (see visit).
         self._annotation_nodes: set[int] = set()
+        # One {local_name: self_attr_name} dict per enclosing class/function/lambda scope (mirrors
+        # _scope_stack's push/pop), tracking which local variables currently alias a self.<attr> --
+        # so `tmp = self.fn; tmp(x)` is checked the same way `self.fn(x)` directly is; see
+        # _track_self_attr_alias and its use in _check_call.
+        self._alias_stack: list[dict[str, str]] = []
 
     def report(self, node: ast.AST, code: ViolationCode, message: str) -> None:
         self.violations.append(
@@ -212,6 +217,7 @@ class _Checker:
         is_scope = isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.Lambda))
         if is_scope:
             self._scope_stack.append(node)
+            self._alias_stack.append({})
         self._mark_annotation_subtrees(node)
 
         for child in ast.iter_child_nodes(node):
@@ -219,6 +225,7 @@ class _Checker:
 
         if is_scope:
             self._scope_stack.pop()
+            self._alias_stack.pop()
 
     def _enclosing_class(self) -> ast.ClassDef | None:
         """The nearest enclosing ClassDef, skipping any FunctionDef/Lambda frames above it."""
@@ -407,6 +414,18 @@ class _Checker:
                         "call-not-allowed",
                         f"call to {self._resolve(func.id)!r} is not allow-listed",
                     )
+                return
+            aliased_attr = self._current_aliases().get(func.id)
+            if aliased_attr is not None and not self._self_attr.is_safe(
+                aliased_attr, self._enclosing_class()
+            ):
+                self.report(
+                    node,
+                    "attr-on-value",
+                    f"{func.id!r} was assigned from self.{aliased_attr!r}, which isn't an "
+                    f"allow-listed constructor or a locally-defined class; calling it is not "
+                    f"allowed",
+                )
                 return
             # Otherwise a bare-name call (local var / hidden or visible def / safe builtin) is allowed.
             return
@@ -608,6 +627,49 @@ class _Checker:
                     "banned-construct",
                     "storing a reference to a banned builtin into a container slot is not allowed",
                 )
+        self._track_self_attr_alias(node)
+
+    def _track_self_attr_alias(self, node) -> None:
+        # Detect `tmp = self.<attr>` / `tmp = self.<attr>[i]` / `tmp = <already-tracked alias>` so a
+        # later `tmp(...)` call in _check_call is checked the same way calling self.<attr> directly
+        # would be -- otherwise reading an unsafe self.<attr> into a local variable trivially
+        # defeats _SelfAttrTrust (self.<attr> reads are always allowed; calling a local variable is
+        # always allowed). Any other assignment to a previously-tracked name clears its alias -- it
+        # no longer refers to that self.<attr>. AugAssign always clears (no value to trace here).
+        if not self._alias_stack:
+            return
+        aliases = self._alias_stack[-1]
+        if isinstance(node, ast.Assign):
+            targets, value = node.targets, node.value
+        elif isinstance(node, ast.AnnAssign):
+            targets, value = ([node.target] if node.value is not None else []), node.value
+        else:  # AugAssign
+            targets, value = [node.target], None
+        for t in targets:
+            if not isinstance(t, ast.Name):
+                continue
+            attr = self._self_attr_source(value) if value is not None else None
+            if attr is not None:
+                aliases[t.id] = attr
+            else:
+                aliases.pop(t.id, None)
+
+    def _self_attr_source(self, value: ast.AST) -> str | None:
+        """The self.<attr> a plain expression traces back to: a direct self.<attr> read, a
+        single-level self.<attr>[i] subscript, or a copy of an already-tracked local alias."""
+        attr = self_attr_name(value)
+        if attr is not None:
+            return attr
+        if isinstance(value, ast.Subscript) and isinstance(value.value, ast.Attribute):
+            attr = self_attr_name(value.value)
+            if attr is not None:
+                return attr
+        if isinstance(value, ast.Name):
+            return self._current_aliases().get(value.id)
+        return None
+
+    def _current_aliases(self) -> dict[str, str]:
+        return self._alias_stack[-1] if self._alias_stack else {}
 
     def _check_reserved_target(self, target: ast.AST) -> None:
         # Guards against: rebinding self/cls (which would forge the identifier-based trust — see
