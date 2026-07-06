@@ -197,33 +197,39 @@ separate control.
 
 ## Examples
 
-
 ### Build-and-run code from a string
+
 - AST: `exec`, `eval`, `compile`, `__import__` as call targets
 - Why: arbitrary code / import escape
 
 ### `Exec` / `eval`
+
 - AST: py2 `Exec`; `Call` to `eval`
 - Why: same as above
 
 ### Non-allowlisted imports
+
 - AST: `Import`, `ImportFrom` to any module not in the allowlist
 - Why: imports are how code names things outside itself — the crux of
   [per-file configuration](verify.md#per-file-configuration)
 
 ### Reflection / dunder
+
 - AST: any `Name`/`Attribute`/`arg`/alias starting with `_`
 - Why: the `__class__` → `__globals__` → `__subclasses__` → `__builtins__` ladder
 
 ### `getattr`/`setattr`/`delattr`/`hasattr`/`vars`/`globals`/`locals`/`dir`
+
 - AST: `Call` to these names
 - Why: dynamic attribute access defeats static path allowlisting
 
 ### `getattr`/`setattr` with a computed name
+
 - AST: —
 - Why: even a guarded `getattr` breaks static provability
 
 ### `.format` / any named method on a value
+
 - AST: `Call` whose func is an `Attribute` on a non-allowlisted value, e.g.
   `"{0.__class__.__init__.__globals__}".format(x)`
 - Why: format strings walk attributes at runtime without a visible `Call`; covered by
@@ -231,62 +237,76 @@ separate control.
   bundles are allowed on a value
 
 ### Host I/O
+
 - AST: `open`, real `print`, `input`, `file`
 - Why: filesystem / stdout exfiltration
 
 ### OS / process
+
 - AST: any `os`, `sys`, `subprocess`, `shutil`, `pathlib`, `socket`, `ssl`, `http`, `urllib`,
   `requests`, `ctypes`, `cffi`, `mmap`, `multiprocessing`, `threading`, `asyncio`, `signal` import
   or attr
 - Why: direct exfiltration / native code / escape
 
 ### Pickle / marshal
+
 - AST: `pickle`, `marshal`, `dill`, `shelve`, `joblib`
 - Why: code execution on load + serialization exfiltration
 
 ### Global mutation
+
 - AST: `Global`, `Nonlocal`; assignment to module-level names from inside functions
 - Why: stashing data in module state for later read-out
 
 ### Attribute write to a foreign object
+
 - AST: `Store` on `obj.<name>` where `obj` isn't `self` (e.g. `some_obj.send = data`)
 - Why: only `self.<name>` writes are allowed; writing onto another object is an exfil channel
 
 ### Async
+
 - AST: `AsyncFunctionDef`, `Await`, `AsyncFor`, `AsyncWith`, `Yield`, `YieldFrom`
 - Why: concurrency/escape, not needed for inference
 
 ### Context managers
+
 - AST: `With`
 - Why: `open(...) as f`, `socket(...)` — none needed in pure inference
 
 ### Exceptions reaching the host
+
 - AST: `Try`, `Raise`
 - Why: `except` can swallow a guard or walk traceback frames — default deny
 
 ### Arbitrary decorators
+
 - AST: `decorator_list` entries not in allowlist
 - Why: a decorator is an arbitrary call wrapping the function — must be on the allowlist
 
 ### `@property` / descriptors
+
 - AST: `@property` (and any descriptor) not on the allowlist
 - Why: runs code on bare attribute access (`obj.w`) with no explicit call; pure inference needs
   only `setup`/`__call__`
 
 ### Loop/comprehension over I/O
+
 - AST: `For`/`*Comp` whose iterable is a denied call
 - Why: `[x for x in open(f)]` reintroduces I/O
 
 ### Denied call in a "passive" position
+
 - AST: `Call` to a denied target in a default arg (`def f(x=evil())`), annotation
   (`def g(x: evil())`), or bare class-body statement (`class C: evil()`)
 - Why: these run at def/class creation; the checker walks every node regardless of position
 
 ### `del` of guard names
+
 - AST: `Delete`
 - Why: could un-define a guard
 
 ### Unlisted modern syntax
+
 - AST: walrus `NamedExpr` `(x := …)`; `Match`/`case`; `Assert`; `except*`/`TryStar`; PEP 695 type
   params (`def f[T]`, `type X = …`)
 - Why: not on the allowlist, so default-deny rejects them; listed so reviewers know they were

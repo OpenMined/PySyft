@@ -642,7 +642,10 @@ class _Checker:
         if isinstance(node, ast.Assign):
             targets, value = node.targets, node.value
         elif isinstance(node, ast.AnnAssign):
-            targets, value = ([node.target] if node.value is not None else []), node.value
+            targets, value = (
+                ([node.target] if node.value is not None else []),
+                node.value,
+            )
         else:  # AugAssign
             targets, value = [node.target], None
         for t in targets:

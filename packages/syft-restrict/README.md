@@ -1,7 +1,7 @@
 # syft-restrict
 
 Static analysis for JAX/Flax inference code. You mark the parts of a file that contain the model
-math as *private*; `syft-restrict` checks that those lines only do trusted computation — no sneaky
+math as _private_; `syft-restrict` checks that those lines only do trusted computation — no sneaky
 data exfiltration — and can emit an obfuscated copy that hides the architecture.
 
 The tool never runs your code. It parses the source, walks the private lines, and either reports
@@ -15,7 +15,7 @@ from default-deny and only permit what you explicitly trust. Three differences h
 - Analysis, not execution. You get a report (or certificate) and an obfuscated file, not a sandboxed runtime.
 - Aimed at ML inference (JAX / Flax), not general Python.
 - A public/private split. Imports, I/O, the generation loop, and thin wrappers around library calls
-  live in the *public* region and are read as-is. Only the *private* region is checked and obfuscated;
+  live in the _public_ region and are read as-is. Only the _private_ region is checked and obfuscated;
   the private code may call into the public wrappers.
 
 ## Install
