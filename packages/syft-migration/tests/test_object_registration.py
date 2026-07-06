@@ -26,6 +26,23 @@ def test_register_object_version_idempotent_for_same_class(registry):
     assert registry.get_class(canonical_name="job", version="1") is JobV1
 
 
+def test_current_protocol_schema_tracks_newly_defined_objects():
+    reg = MigrationRegistry(
+        protocol_name="p",
+        package_name="pkg",
+        package_version="1.0.0",
+        protocol_version="1",
+    )
+    assert reg.compute_protocol_schema().supported_versions == {}
+
+    class WidgetV1(MigratableObject, registry=reg):
+        canonical_name: str = "widget"
+        version: str = "1"
+
+    assert reg.get_class(canonical_name="widget", version="1") is WidgetV1
+    assert reg.compute_protocol_schema().supported_versions == {"widget": ["1"]}
+
+
 def test_has_upgradeable_path_to_latest(registry):
     # job has migrations 1 -> 2 -> 3; the latest version is trivially upgradeable.
     assert registry.has_upgradeable_path_to_latest("job", "1")
