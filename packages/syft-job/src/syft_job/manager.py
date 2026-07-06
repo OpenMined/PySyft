@@ -184,13 +184,13 @@ class JobManager:
     def write_submission(self, ref: JobRef, metadata: JobSubmissionMetadata) -> Path:
         """Write config.yaml in the version/format the datasite owner can read."""
         path = self.submission_dir(ref) / "config.yaml"
-        self._write_downgraded(path, metadata, ref, reader_email=ref.datasite_email)
+        self._write_in_target_version(path, metadata, ref, reader_email=ref.datasite_email)
         return path
 
     def write_state(self, ref: JobRef, state: JobState) -> Path:
         """Write state.yaml in the version/format the submitter can read."""
         path = self.review_dir(ref) / "state.yaml"
-        self._write_downgraded(path, state, ref, reader_email=ref.ds_email)
+        self._write_in_target_version(path, state, ref, reader_email=ref.ds_email)
         return path
 
     # -- internals -----------------------------------------------------------------
@@ -206,7 +206,7 @@ class JobManager:
         obj = self.service.load(data)
         return self.service.migrate(obj, self.registry.latest_version(canonical_name))
 
-    def _write_downgraded(
+    def _write_in_target_version(
         self, path: Path, obj: MigratableObject, ref: JobRef, reader_email: str
     ) -> None:
         schema = self._get_write_target_schema(ref, reader_email=reader_email)
