@@ -8,13 +8,15 @@
     }
   },
   "package_schema": {
-    "protocol_name": "syft-job",
-    "protocol_version": "0",
     "package_name": "syft-job",
     "package_version": "0.1.38",
-    "supported_versions": {
-      "JobState": ["1"],
-      "JobSubmissionMetadata": ["1"]
+    "protocol_schema": {
+      "protocol_name": "syft-job",
+      "version": "0",
+      "supported_versions": {
+        "JobState": ["1"],
+        "JobSubmissionMetadata": ["1"]
+      }
     }
   }
 }

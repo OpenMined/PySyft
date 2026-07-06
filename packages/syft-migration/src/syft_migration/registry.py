@@ -145,14 +145,9 @@ class MigrationRegistry:
     def current_protocol_schema(self) -> PackageProtocolSchema:
         """The schema of THIS release, computed from the registered objects."""
         return PackageProtocolSchema(
-            protocol_name=self.protocol_name,
-            protocol_version=self.protocol_version,
             package_name=self.package_name,
             package_version=self.package_version,
-            supported_versions={
-                canonical_name: sorted(versions)
-                for canonical_name, versions in self.objects.items()
-            },
+            protocol_schema=self.compute_protocol_schema(),
         )
 
     def register_historic_protocol_schema(self, schema: PackageProtocolSchema) -> None:
@@ -162,7 +157,10 @@ class MigrationRegistry:
         auto-register when their class is defined); registering a schema that
         references an unknown object/version raises before the schema is stored.
         """
-        for canonical_name, versions in schema.supported_versions.items():
+        for (
+            canonical_name,
+            versions,
+        ) in schema.protocol_schema.supported_versions.items():
             for version in versions:
                 self.get_class(canonical_name=canonical_name, version=version)
         self.history_protocol_schemas[schema.package_version] = schema

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
@@ -13,12 +13,18 @@ if TYPE_CHECKING:
 
 PathLike = str | Path
 
-SchemaT = TypeVar("SchemaT", bound="BaseVersionsSchema")
 
+class ProtocolSchema(BaseModel):
+    """Every object version a registry supports for one protocol.
 
-class BaseVersionsSchema(BaseModel):
-    """Shared shape: all supported versions per object, keyed by canonical name."""
+    ``protocol_name`` is a hardcoded, language-agnostic identifier for the
+    protocol, intentionally distinct from any package name.
+    """
 
+    protocol_name: str
+    # Incrementing protocol version ("0", "1", ...); bumped when the on-disk /
+    # on-the-wire layout of the protocol changes, independent of package versions.
+    version: str
     # canonical_name -> all supported versions
     supported_versions: dict[str, list[str]] = {}
 
@@ -33,31 +39,20 @@ class BaseVersionsSchema(BaseModel):
         Path(path).write_text(self.model_dump_json(indent=2))
 
     @classmethod
-    def load(cls: type[SchemaT], path: PathLike) -> SchemaT:
+    def load(cls, path: PathLike) -> ProtocolSchema:
         return cls.model_validate(json.loads(Path(path).read_text()))
 
 
-class ProtocolSchema(BaseVersionsSchema):
-    """Every object version a registry supports for one protocol."""
-
-    protocol_name: str
-    # Incrementing protocol version ("0", "1", ...); bumped when the on-disk /
-    # on-the-wire layout of the protocol changes, independent of package versions.
-    version: str
-
-
-class PackageProtocolSchema(BaseVersionsSchema):
+class PackageProtocolSchema(BaseModel):
     """The protocol surface of one release of one package.
 
-    Lists every object version that the package at ``package_version`` supports.
-    ``protocol_name`` is a hardcoded, language-agnostic identifier for the protocol
-    and is intentionally distinct from ``package_name``.
+    Nests the :class:`ProtocolSchema` that the package at ``package_version``
+    speaks (including every object version it supports).
     """
 
-    protocol_name: str
-    protocol_version: str
     package_name: str
     package_version: str
+    protocol_schema: ProtocolSchema
 
     @classmethod
     def from_objects(
@@ -75,14 +70,24 @@ class PackageProtocolSchema(BaseVersionsSchema):
             if version not in versions:
                 versions.append(version)
         return cls(
-            protocol_name=protocol_name,
-            protocol_version=protocol_version,
             package_name=package_name,
             package_version=package_version,
-            supported_versions={
-                name: sorted(versions) for name, versions in supported_versions.items()
-            },
+            protocol_schema=ProtocolSchema(
+                protocol_name=protocol_name,
+                version=protocol_version,
+                supported_versions={
+                    name: sorted(versions)
+                    for name, versions in supported_versions.items()
+                },
+            ),
         )
+
+    def save(self, path: PathLike) -> None:
+        Path(path).write_text(self.model_dump_json(indent=2))
+
+    @classmethod
+    def load(cls, path: PathLike) -> PackageProtocolSchema:
+        return cls.model_validate(json.loads(Path(path).read_text()))
 
 
 class ReleaseArtifact(BaseModel):

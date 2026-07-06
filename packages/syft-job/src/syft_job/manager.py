@@ -4,7 +4,6 @@ from typing import Iterator, Optional
 
 import yaml
 from syft_migration import (
-    BaseVersionsSchema,
     MigratableObject,
     MigrationRegistry,
     MigrationService,
@@ -53,7 +52,7 @@ class JobManager:
         schema = self.peer_schemas.get(peer_email)
         return schema.version if schema else JOB_PROTOCOL_VERSION
 
-    def _write_schema(self, ref: JobRef, reader_email: str) -> BaseVersionsSchema:
+    def _write_schema(self, ref: JobRef, reader_email: str) -> ProtocolSchema:
         """The schema to downgrade to before writing for ``reader_email``.
 
         The job's own layout (``ref.protocol_version``) decides the path and
