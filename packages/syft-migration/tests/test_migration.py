@@ -272,7 +272,9 @@ def test_protocol_schema_save_load_roundtrip(tmp_path):
 
 def test_release_artifact_save_load_roundtrip(tmp_path):
     artifact = ReleaseArtifact(
-        package_info=PackageInfo(package_name="syft-mock", version="1.0.0"),
+        package_info=PackageInfo(
+            package_name="syft-mock", version="1.0.0", protocol_version="1"
+        ),
         protocol_schema=ProtocolSchema.from_objects(
             protocol_name="mock-proto",
             version="1",
@@ -286,7 +288,9 @@ def test_release_artifact_save_load_roundtrip(tmp_path):
 
 def test_register_historic_release_artifact(registry):
     artifact = ReleaseArtifact(
-        package_info=PackageInfo(package_name="syft-mock", version="1.0.5"),
+        package_info=PackageInfo(
+            package_name="syft-mock", version="1.0.5", protocol_version="1"
+        ),
         protocol_schema=ProtocolSchema.from_objects(
             protocol_name="mock-proto",
             version="1",

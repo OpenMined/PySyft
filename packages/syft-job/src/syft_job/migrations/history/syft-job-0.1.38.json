@@ -1,7 +1,8 @@
 {
   "package_info": {
     "package_name": "syft-job",
-    "version": "0.1.38"
+    "version": "0.1.38",
+    "protocol_version": "0"
   },
   "protocol_schema": {
     "protocol_name": "syft-job",

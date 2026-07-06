@@ -161,8 +161,10 @@ class MigrationRegistry:
             package_version=artifact.package_info.version,
             schema=artifact.protocol_schema,
         )
-        protocol_schema = artifact.protocol_schema
-        self.history_protocol_version_schemas[protocol_schema.version] = protocol_schema
+        protocol_version = artifact.package_info.protocol_version
+        self.history_protocol_version_schemas[protocol_version] = (
+            artifact.protocol_schema
+        )
 
     def compute_protocol_schema(self) -> ProtocolSchema:
         """Every object version this registry can load, straight from ``self.objects``."""

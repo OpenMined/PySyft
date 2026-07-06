@@ -65,10 +65,11 @@ class ProtocolSchema(BaseModel):
 
 
 class PackageInfo(BaseModel):
-    """Identity of one release of one package."""
+    """Identity of one release of one package and the protocol version it speaks."""
 
     package_name: str
     version: str
+    protocol_version: str
 
 
 class ReleaseArtifact(BaseModel):

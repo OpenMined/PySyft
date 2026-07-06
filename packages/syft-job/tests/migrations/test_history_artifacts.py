@@ -11,6 +11,7 @@ def test_0_1_38_artifact_file_loads():
     artifact = ReleaseArtifact.load(HISTORY_DIR / "syft-job-0.1.38.json")
     assert artifact.package_info.package_name == "syft-job"
     assert artifact.package_info.version == "0.1.38"
+    assert artifact.package_info.protocol_version == "0"
     assert artifact.protocol_schema.protocol_name == "syft-job"
     assert artifact.protocol_schema.version == "0"
     expected_versions = {"JobState": ["1"], "JobSubmissionMetadata": ["1"]}
