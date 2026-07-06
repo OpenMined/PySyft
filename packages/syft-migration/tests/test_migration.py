@@ -25,7 +25,10 @@ def test_current_protocol_schema_is_computed_and_history_stored(registry):
     assert current.version == "2"
     assert current.supported_versions == {"job": ["1", "2", "3"]}
     assert current.current_schema(canonical_name="job") == "3"
-    historic = registry.package_version_history["1.0.0"]
+    # History is keyed by the protocol version the past release spoke.
+    historic_info = registry.package_version_history["1"]
+    assert historic_info.version == "1.0.0"
+    historic = registry.schema_for_package_version(package_version="1.0.0")
     assert historic.supported_versions == {"job": ["1"]}
     assert registry.latest_version(canonical_name="job") == "3"
 
@@ -116,9 +119,9 @@ def test_migrate_missing_path_raises(service):
         service.migrate(obj=JobV3(name="x"), target_version="1")
 
 
-def test_downgrade_for_package_version(service):
-    result = service.downgrade_for_package_version(
-        obj=JobV2(name="x", owner="bob"), package_version="1.0.0"
+def test_downgrade_for_protocol_version(service):
+    result = service.downgrade_for_protocol_version(
+        obj=JobV2(name="x", owner="bob"), protocol_version="1"
     )
     assert isinstance(result, JobV1)
     assert result.name == "x"
@@ -298,9 +301,13 @@ def test_register_historic_release_artifact(registry):
         ),
     )
     registry.register_historic_release_artifact(artifact=artifact)
-    # The artifact's schema is stored under both the package and protocol version.
-    assert registry.package_version_history["1.0.5"] is artifact.protocol_schema
+    # Both histories are keyed by the protocol version the release spoke.
+    assert registry.package_version_history["1"] is artifact.package_info
     assert registry.protocol_version_history["1"] is artifact.protocol_schema
+    assert (
+        registry.schema_for_package_version(package_version="1.0.5")
+        is artifact.protocol_schema
+    )
 
 
 def test_schema_for_protocol_version(registry):

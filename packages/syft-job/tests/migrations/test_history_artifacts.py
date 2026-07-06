@@ -20,15 +20,15 @@ def test_0_1_38_artifact_file_loads():
 
 def test_historic_schemas_registered_on_import():
     # syft_job/__init__ registers every artifact in migrations/history/.
-    assert "0.1.38" in job_registry.package_version_history
+    assert job_registry.package_version_history["0"].version == "0.1.38"
     schema = job_registry.schema_for_protocol_version("0")
     assert schema.current_schema("JobState") == "1"
     assert schema.current_schema("JobSubmissionMetadata") == "1"
 
 
-def test_downgrade_for_last_released_package_version():
+def test_downgrade_for_last_released_protocol_version():
     service = MigrationService(registry=job_registry)
     state = JobStateV1(status=JobStatus.DONE)
-    downgraded = service.downgrade_for_package_version(state, "0.1.38")
+    downgraded = service.downgrade_for_protocol_version(state, "0")
     assert isinstance(downgraded, JobStateV1)
     assert downgraded.status == JobStatus.DONE
