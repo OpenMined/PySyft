@@ -114,6 +114,7 @@ class JobManager:
 
     # -- scanning (all protocol layouts) -------------------------------------------
     def iter_submission_refs(self, datasite_email: str) -> Iterator[JobRef]:
+        """Yield a ref per job under app_data/job/inbox/<ds_email>/[v<n>/]<job_name>/."""
         yield from self._iter_refs(
             self.config.get_all_submissions_dir(datasite_email),
             datasite_email,
@@ -121,6 +122,7 @@ class JobManager:
         )
 
     def iter_review_refs(self, datasite_email: str) -> Iterator[JobRef]:
+        """Yield a ref per job under app_data/job/review/<ds_email>/[v<n>/]<job_name>/."""
         yield from self._iter_refs(
             self.config.get_review_dir(datasite_email),
             datasite_email,
@@ -130,6 +132,7 @@ class JobManager:
     def _iter_refs(
         self, root: Path, datasite_email: str, marker: str
     ) -> Iterator[JobRef]:
+        """Walk <root>/<ds_email>/[v<n>/]<job_name>/, yielding jobs that contain ``marker``."""
         if not root.exists():
             return
         for ds_dir in sorted(p for p in root.iterdir() if p.is_dir()):
@@ -144,6 +147,7 @@ class JobManager:
     def _refs_in_protocol_dir(
         self, protocol_dir: Path, datasite_email: str, ds_email: str, marker: str
     ) -> Iterator[JobRef]:
+        """Yield a ref per <job_name>/ with ``marker`` inside one .../<ds_email>/v<n>/."""
         protocol_version = protocol_dir.name.removeprefix("v")
         for job_dir in sorted(p for p in protocol_dir.iterdir() if p.is_dir()):
             if (job_dir / marker).exists():
@@ -152,7 +156,7 @@ class JobManager:
     def find_submission_ref(
         self, datasite_email: str, job_name: str, ds_email: Optional[str] = None
     ) -> JobRef:
-        """The unique submission ref for ``job_name``; use ``ds_email`` to disambiguate."""
+        """The unique inbox/<ds_email>/[v<n>/]<job_name>/ ref; ``ds_email`` disambiguates."""
         matches = [
             ref
             for ref in self.iter_submission_refs(datasite_email)
@@ -184,7 +188,9 @@ class JobManager:
     def write_submission(self, ref: JobRef, metadata: JobSubmissionMetadata) -> Path:
         """Write config.yaml in the version/format the datasite owner can read."""
         path = self.submission_dir(ref) / "config.yaml"
-        self._write_in_target_version(path, metadata, ref, reader_email=ref.datasite_email)
+        self._write_in_target_version(
+            path, metadata, ref, reader_email=ref.datasite_email
+        )
         return path
 
     def write_state(self, ref: JobRef, state: JobState) -> Path:
