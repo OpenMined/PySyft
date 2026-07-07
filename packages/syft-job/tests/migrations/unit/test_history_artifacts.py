@@ -24,6 +24,24 @@ def test_0_1_38_artifact_file_loads():
     assert artifact.protocol_schema.supported_versions == expected_versions
 
 
+def test_all_released_protocols_load():
+    protocol_paths = sorted(PROTOCOLS_DIR.glob("*.json"))
+    assert protocol_paths  # at least protocol-0.json exists
+
+    for path in protocol_paths:
+        released = ReleasedProtocol.load(path)
+        schema = released.protocol_schema
+        # The filename encodes the protocol version: protocol-<n>.json.
+        assert path.name == f"protocol-{schema.version}.json"
+        assert schema.protocol_name == "syft-job"
+        # Every released protocol freezes the schema of each object's current
+        # version, and lists that version as supported.
+        assert schema.supported_versions
+        assert set(schema.current_object_schemas) == set(schema.supported_versions)
+        for canonical_name in schema.supported_versions:
+            assert schema.current_schema(canonical_name)
+
+
 def test_protocol_0_released_protocol_loads():
     released = ReleasedProtocol.load(PROTOCOLS_DIR / "protocol-0.json")
     schema = released.protocol_schema
