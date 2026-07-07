@@ -37,9 +37,30 @@ def test_protocol_0_released_protocol_loads():
 
 
 def test_released_object_schemas_unchanged():
-    # Released object versions are frozen forever: if this fails, a released
-    # class was edited in place — add a new version plus migrations instead.
-    assert job_registry.find_schema_drift() == []
+    # Released object versions are frozen forever; see the failure message.
+    drift = job_registry.find_schema_drift()
+    assert drift == [], (
+        f"Released object schemas changed: {drift} "
+        "(canonical_name, object_version, protocol_version).\n"
+        "A class that shipped in a released protocol was modified in place. "
+        "Released versions are frozen forever, because peers on old releases "
+        "still read/write them. To fix:\n"
+        "  1. Revert your change to the released class (e.g. JobStateV1).\n"
+        "  2. Create the next version instead: copy the class into "
+        "models/<object>/v<x+1>.py with version='<x+1>' and apply your change "
+        "there (copy changed nested objects like enums into the new file too).\n"
+        "  3. Point the current-version alias in models/<object>/__init__.py "
+        "at the new class.\n"
+        "  4. Register migrations in BOTH directions (v<x> -> v<x+1> and back) "
+        "so old peers stay supported; test_upgrade_paths enforces this.\n"
+        "  5. Add a serialized fixture: tests/migrations/unit/fixtures/"
+        "<CanonicalName>/v<x+1>.yaml.\n"
+        "  6. Bump JOB_PROTOCOL_VERSION in syft_job/migrations/registry.py — a "
+        "new object version is a protocol change.\n"
+        "If NO class was edited and this failure appeared after a pydantic "
+        "upgrade, model_json_schema() output changed cosmetically: review the "
+        "diff carefully and regenerate the files under migrations/history/."
+    )
 
 
 def test_protocol_bumped_when_changed():
