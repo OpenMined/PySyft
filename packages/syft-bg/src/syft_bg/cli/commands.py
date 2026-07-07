@@ -457,21 +457,21 @@ def list_auto_approvals(name: str | None):
 
       syft-bg list-auto-approvals -n my_analysis
     """
-    from syft_bg.common.syft_bg_config import SyftBgConfig
+    from syft_bg.api.api import list_auto_approvals as api_list_auto_approvals
 
-    config = SyftBgConfig.load().approve
+    objects = api_list_auto_approvals()
 
-    if not config.auto_approvals.objects:
+    if not objects:
         click.echo("No auto-approval objects configured.")
         return
 
     if name:
-        if name not in config.auto_approvals.objects:
+        if name not in objects:
             click.echo(f"Auto-approval object '{name}' not found.", err=True)
             raise SystemExit(1)
-        objects_to_show = {name: config.auto_approvals.objects[name]}
+        objects_to_show = {name: objects[name]}
     else:
-        objects_to_show = config.auto_approvals.objects
+        objects_to_show = objects
 
     for obj_name, obj in objects_to_show.items():
         click.echo(f"\n[{obj_name}]")

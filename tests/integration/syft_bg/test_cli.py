@@ -404,13 +404,12 @@ class TestRemovePeerCommand:
 class TestListAutoApprovalsCommand:
     """Tests for the list-auto-approvals command."""
 
-    @patch("syft_bg.common.syft_bg_config.SyftBgConfig.load")
-    def test_list_auto_approvals(self, mock_load):
+    @patch("syft_bg.api.api.list_auto_approvals")
+    def test_list_auto_approvals(self, mock_list):
         """Should list all auto-approval objects and their scripts."""
         from syft_bg.approve.config import AutoApprovalObj, FileEntry
 
-        mock_config = MagicMock()
-        mock_config.approve.auto_approvals.objects = {
+        mock_list.return_value = {
             "analysis_a": AutoApprovalObj(
                 file_contents=[
                     FileEntry(
@@ -432,7 +431,6 @@ class TestListAutoApprovalsCommand:
                 peers=["bob@test.com"],
             ),
         }
-        mock_load.return_value = mock_config
 
         runner = CliRunner()
         result = runner.invoke(list_auto_approvals)
@@ -443,13 +441,12 @@ class TestListAutoApprovalsCommand:
         assert "bob@test.com" in result.output
         assert "train.py" in result.output
 
-    @patch("syft_bg.common.syft_bg_config.SyftBgConfig.load")
-    def test_list_auto_approvals_single_object(self, mock_load):
+    @patch("syft_bg.api.api.list_auto_approvals")
+    def test_list_auto_approvals_single_object(self, mock_list):
         """Should filter to a specific auto-approval object."""
         from syft_bg.approve.config import AutoApprovalObj, FileEntry
 
-        mock_config = MagicMock()
-        mock_config.approve.auto_approvals.objects = {
+        mock_list.return_value = {
             "analysis_a": AutoApprovalObj(
                 file_contents=[
                     FileEntry(
@@ -471,7 +468,6 @@ class TestListAutoApprovalsCommand:
                 peers=["bob@test.com"],
             ),
         }
-        mock_load.return_value = mock_config
 
         runner = CliRunner()
         result = runner.invoke(list_auto_approvals, ["-n", "analysis_a"])
@@ -480,12 +476,10 @@ class TestListAutoApprovalsCommand:
         assert "analysis_a" in result.output
         assert "analysis_b" not in result.output
 
-    @patch("syft_bg.common.syft_bg_config.SyftBgConfig.load")
-    def test_list_auto_approvals_empty(self, mock_load):
+    @patch("syft_bg.api.api.list_auto_approvals")
+    def test_list_auto_approvals_empty(self, mock_list):
         """Should show message when no auto-approval objects configured."""
-        mock_config = MagicMock()
-        mock_config.approve.auto_approvals.objects = {}
-        mock_load.return_value = mock_config
+        mock_list.return_value = {}
 
         runner = CliRunner()
         result = runner.invoke(list_auto_approvals)
