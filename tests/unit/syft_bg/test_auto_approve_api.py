@@ -1,12 +1,14 @@
 """Tests for the list/remove auto-approve Python API and config-reload behavior."""
 
+import fcntl
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 
-from syft_bg.api.api import list_auto_approvals, remove_auto_approve
+from syft_bg.api.api import auto_approve, list_auto_approvals, remove_auto_approve
+from syft_bg.api.utils import copy_and_hash_files
 from syft_bg.approve.config import (
     AutoApprovalObj,
     AutoApprovalsConfig,
@@ -29,6 +31,7 @@ def _patched_paths(tmp: Path):
     )
     with (
         patch("syft_bg.api.api.get_default_paths", return_value=patched),
+        patch("syft_bg.api.utils.get_default_paths", return_value=patched),
         patch("syft_bg.approve.config.get_default_paths", return_value=patched),
         patch("syft_bg.common.syft_bg_config.get_default_paths", return_value=patched),
     ):
@@ -109,6 +112,69 @@ class TestRemoveAutoApprove:
 
             assert result.success is False
             assert not patched.config.exists()
+
+
+class TestAutoApproveLockScope:
+    """auto_approve() must not hold the config lock during file I/O."""
+
+    def test_lock_not_held_during_file_io(self, temp_dir):
+        with _patched_paths(temp_dir) as patched:
+            content_dir = temp_dir / "project"
+            content_dir.mkdir()
+            (content_dir / "script.py").write_text("print('lock test')\n")
+
+            lock_path = patched.config.with_suffix(".lock")
+            observed = {}
+
+            def _check_lock_then_copy(content_files, name):
+                lock_path.parent.mkdir(parents=True, exist_ok=True)
+                lock_path.touch(exist_ok=True)
+                with open(lock_path) as lock_handle:
+                    try:
+                        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        observed["lock_was_free"] = True
+                        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+                    except BlockingIOError:
+                        observed["lock_was_free"] = False
+                return copy_and_hash_files(content_files, name)
+
+            with patch(
+                "syft_bg.api.api.copy_and_hash_files",
+                side_effect=_check_lock_then_copy,
+            ):
+                result = auto_approve(contents=[str(content_dir / "script.py")])
+
+            assert result.success is True
+            assert observed["lock_was_free"] is True
+
+    def test_rare_name_collision_renames_and_does_not_clobber(self, temp_dir):
+        """If another writer claims the candidate name while the (unlocked)
+        file I/O is in flight, auto_approve() must detect the collision
+        under the lock, rename to a free name, and not clobber the racer."""
+        with _patched_paths(temp_dir):
+            content_dir = temp_dir / "project"
+            content_dir.mkdir()
+            (content_dir / "main.py").write_text("print('hi')\n")
+
+            def _race_then_copy(content_files, name):
+                _seed_config(temp_dir, {name: _make_obj("racer@test.com")})
+                return copy_and_hash_files(content_files, name)
+
+            with patch(
+                "syft_bg.api.api.copy_and_hash_files", side_effect=_race_then_copy
+            ):
+                result = auto_approve(contents=[str(content_dir / "main.py")])
+
+            assert result.success is True
+            assert result.name == "main_1"
+
+            objects = list_auto_approvals()
+            assert set(objects.keys()) == {"main", "main_1"}
+            assert objects["main"].peers == ["racer@test.com"]
+
+            entry = objects["main_1"].file_contents[0]
+            assert "main_1" in entry.path
+            assert Path(entry.path).read_text() == "print('hi')\n"
 
 
 class TestHandlerReloadsConfig:

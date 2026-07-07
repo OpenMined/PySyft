@@ -14,8 +14,8 @@ from syft_bg.api.utils import (
     setup_orchestrator,
     validate_auto_approve_job_inputs,
 )
-from syft_bg.approve.config import AutoApprovalObj
-from syft_bg.common.config import get_syftbg_dir, get_default_paths
+from syft_bg.approve.config import AutoApprovalObj, FileEntry
+from syft_bg.common.config import get_default_paths, get_syftbg_dir
 from syft_bg.common.drive import is_colab
 from syft_bg.common.syft_bg_config import SyftBgConfig
 from syft_bg.services import ServiceManager
@@ -342,11 +342,31 @@ def auto_approve(
     if not content_files and not file_paths:
         return AutoApproveResult(success=False, error="No files to process")
 
+    # Pick a candidate name and do the expensive hashing/copying I/O unlocked,
+    # so the config lock in SyftBgConfig.edit() is held for the minimum time possible.
+    candidate_name = generate_unique_name(
+        name, content_files, SyftBgConfig.load().approve
+    )
+    file_entries = copy_and_hash_files(content_files, candidate_name)
+
     with SyftBgConfig.edit() as syft_bg_config:
         config = syft_bg_config.approve
-        name = generate_unique_name(name, content_files, config)
-
-        file_entries = copy_and_hash_files(content_files, name)
+        # Re-check against the now-locked, current config. Usually this is
+        # still candidate_name; if another writer took it in the meantime,
+        # move the already-copied files to match the name we actually use.
+        name = generate_unique_name(candidate_name, content_files, config)
+        if name != candidate_name:
+            old_dir = get_default_paths().auto_approvals_dir / candidate_name
+            new_dir = get_default_paths().auto_approvals_dir / name
+            old_dir.rename(new_dir)
+            file_entries = [
+                FileEntry(
+                    relative_path=e.relative_path,
+                    path=str(new_dir / e.relative_path),
+                    hash=e.hash,
+                )
+                for e in file_entries
+            ]
 
         obj = AutoApprovalObj(
             file_contents=file_entries,
