@@ -5,20 +5,61 @@
     rds_client.datasets
     rds_client.jobs
 
-These wrap the syft-client sync-engine login and return a composed
-``SyftRDSClient``. Note the argument order: ``token_path`` is the 2nd positional
-here (matching the product interface), whereas the underlying sync-engine login
-takes it as a keyword.
+These build a composed ``SyftRDSClientConfig`` (which owns the sync + job +
+dataset sub-configs), construct a self-contained ``SyftRDSClient`` from it
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from syft_client.sync.login import login_do as _sync_login_do
-from syft_client.sync.login import login_ds as _sync_login_ds
+from syft_client.sync.environments.environment import Environment
+from syft_client.sync.login import _init_client_login, _resolve_login_params
+from syft_client.sync.login_utils import handle_potential_version_mismatches_on_login
+from syft_client.sync.utils.syftbox_utils import check_env
 
 from syft_rds.client import SyftRDSClient
+from syft_rds.config import SyftRDSClientConfig
+
+
+def _login(
+    *,
+    email: str | None,
+    token_path: str | Path | None,
+    sync: bool,
+    load_peers: bool,
+    skip_peer_on_patch_version_diff: bool | None,
+    has_do_role: bool,
+    has_ds_role: bool,
+) -> SyftRDSClient:
+    """Shared RDS login.
+
+    Mirrors the pre-split ``syft_client`` login flow: detect the environment,
+    resolve login params
+    """
+    env = check_env()
+    email, token_path = _resolve_login_params(email, token_path)
+    handle_potential_version_mismatches_on_login(email, token_path)
+
+    if env == Environment.COLAB:
+        config = SyftRDSClientConfig.for_colab(
+            email=email,
+            has_do_role=has_do_role,
+            has_ds_role=has_ds_role,
+            skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+        )
+    else:
+        config = SyftRDSClientConfig.for_jupyter(
+            email=email,
+            has_do_role=has_do_role,
+            has_ds_role=has_ds_role,
+            token_path=Path(token_path) if token_path is not None else None,
+            skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+        )
+
+    client = SyftRDSClient.from_config(config)
+    _init_client_login(client.sync_engine, sync=sync, load_peers=load_peers)
+    return client
 
 
 def login_do(
@@ -29,15 +70,16 @@ def login_do(
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
 ) -> SyftRDSClient:
-    """Log in as a Data Owner and return a composed RDS client."""
-    sync_engine = _sync_login_do(
+    """Log in as a Data Owner and return a self-contained RDS client."""
+    return _login(
         email=email,
         token_path=token_path,
         sync=sync,
         load_peers=load_peers,
         skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+        has_do_role=True,
+        has_ds_role=False,
     )
-    return SyftRDSClient(sync_engine)
 
 
 def login_ds(
@@ -48,12 +90,13 @@ def login_ds(
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
 ) -> SyftRDSClient:
-    """Log in as a Data Scientist and return a composed RDS client."""
-    sync_engine = _sync_login_ds(
+    """Log in as a Data Scientist and return a self-contained RDS client."""
+    return _login(
         email=email,
         token_path=token_path,
         sync=sync,
         load_peers=load_peers,
         skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+        has_do_role=False,
+        has_ds_role=True,
     )
-    return SyftRDSClient(sync_engine)

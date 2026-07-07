@@ -616,6 +616,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         use_in_memory_cache: bool = True,
         clear_caches: bool = True,
         check_versions: bool = False,
+        collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
         receiver_config = SyftboxManagerConfig.for_google_drive_testing_connection(
             email=do_email,
@@ -625,6 +626,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             has_ds_role=False,
             has_do_role=True,
             check_versions=check_versions,
+            collection_specs=collection_specs,
         )
 
         receiver_manager = cls.from_config(receiver_config)
@@ -637,6 +639,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             has_ds_role=True,
             has_do_role=False,
             check_versions=check_versions,
+            collection_specs=collection_specs,
         )
         sender_manager = cls.from_config(sender_config)
 
