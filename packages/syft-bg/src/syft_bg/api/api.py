@@ -1,6 +1,7 @@
 """Pythonic API for syft-bg initialization and configuration."""
 
 import shutil
+from collections.abc import Sequence
 from pathlib import Path
 
 from syft_bg.api.results import AutoApproveResult, InstallationResult, StatusResult
@@ -76,6 +77,12 @@ def ensure_running(
     # make sure services are running
     for name, service_config in services.items():
         service = manager.get_service(name)
+
+        if service is None:
+            # This is mainly a sanity check to satisfy type checkers, since we
+            # already checked above that the service exists.
+            raise ValueError(f"Unknown service: {name}")
+
         if service.is_running() and not restart:
             print(
                 f"{name} is already running, skipping. If you want to restart it, set restart=True."
@@ -231,7 +238,7 @@ def uninstall(service: str | None = None) -> list[InstallationResult]:
     return results
 
 
-def logs(service: str, n: int = 50, as_list: bool = False) -> list[str]:
+def logs(service: str, n: int = 50, as_list: bool = False) -> list[str] | None:
     """Get recent log lines for a service.
 
     Args:
@@ -305,7 +312,7 @@ def status() -> StatusResult:
 
 
 def auto_approve(
-    contents: list[str | Path],
+    contents: Sequence[str | Path],
     file_paths: list[str] | None = None,
     peers: list[str] | None = None,
     name: str | None = None,

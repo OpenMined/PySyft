@@ -2,6 +2,7 @@
 
 import hashlib
 import shutil
+from collections.abc import Sequence
 from pathlib import Path
 
 from syft_bg.approve.config import AutoApproveConfig, FileEntry
@@ -223,7 +224,7 @@ def generate_unique_name(
 
 
 def resolve_content_files(
-    contents: list[str | Path], base_dir: Path | None
+    contents: Sequence[str | Path], base_dir: Path | None
 ) -> tuple[list[tuple[str, Path]], str | None]:
     """Resolve content paths to (relative_path, absolute_path) pairs.
 
