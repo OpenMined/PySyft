@@ -47,8 +47,7 @@ returning them is caught at the reference site. (`BANNED_NAMES` in `policy.py`.)
 a bare call. Code `banned-call`: `repr`, `str`, `ascii`, `format`, `bytes`. (`bytes(x)` losslessly
 serializes an array's raw memory; `print` is a stdout exfil channel.)
 
-The same escape via an f-string conversion flag (`f"{x!r}"`, `f"{x!s}"`, `f"{x!a}"`, `f"{x=}"`) has
-no `Call` node and is rejected as `method-on-value`.
+The same escape via **any f-string interpolation** (`f"{x}"`, `f"{x!r}"`, `f"{x!s}"`, `f"{x!a}"`, `f"{x=}"`) has no `Call` node and is rejected as `method-on-value`.
 
 ---
 

@@ -167,9 +167,9 @@ Subtle corners, kept here so code comments can stay short.
   class/function, or a list/tuple/comprehension of those. Compound assignment (`self.x += ...`)
   always disqualifies the attribute.
 
-- **f-string conversion flags call dunders with no `Call` node.** `f"{x!r}"`, `f"{x!s}"`, `f"{x!a}"`,
-  and `f"{x=}"` invoke `__repr__`/`__str__`/`__format__` on the value, but there's no `Call` node
-  for the call checks to see — so they're rejected directly. Plain `f"{x}"` is fine.
+- **f-string interpolation calls dunders with no `Call` node.** Any `{expr}` inside an f-string invokes `type(expr).__format__(expr, spec)` with no `Call` node for the call checks to see — including plain `f"{x}"`, conversion flags (`!r`/`!s`/`!a`), and the `{x=}` debug form — so all interpolation is rejected directly.
+
+  (An f-string with no `{...}` parts is just literal text and is allowed; the obfuscator still blanks that literal text inside the private region.)
 
 - **Aliasing is caught at the reference, not the call.** A banned builtin (`open`, `eval`, …) is
   flagged wherever its name appears — aliased locally (`f = open`), stashed in a container
