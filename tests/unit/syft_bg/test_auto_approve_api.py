@@ -99,6 +99,17 @@ class TestRemoveAutoApprove:
             assert result.success is True
             assert list_auto_approvals() == {}
 
+    def test_unknown_does_not_create_config_file(self, temp_dir):
+        """A no-op failure (nothing to remove) must not write config.yaml
+        into existence — the not-found path must not trigger edit()'s save."""
+        with _patched_paths(temp_dir) as patched:
+            assert not patched.config.exists()
+
+            result = remove_auto_approve("does_not_exist")
+
+            assert result.success is False
+            assert not patched.config.exists()
+
 
 class TestHandlerReloadsConfig:
     """The approve service must pick up YAML changes without a restart."""

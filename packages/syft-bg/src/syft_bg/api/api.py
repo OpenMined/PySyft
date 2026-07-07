@@ -425,6 +425,10 @@ def list_auto_approvals() -> dict[str, AutoApprovalObj]:
     return SyftBgConfig.load().approve.auto_approvals.objects
 
 
+class _AutoApprovalNotFound(Exception):
+    """Raised inside SyftBgConfig.edit() to skip its save()."""
+
+
 def remove_auto_approve(name: str) -> AutoApproveResult:
     """Remove an auto-approval object by name.
 
@@ -438,14 +442,19 @@ def remove_auto_approve(name: str) -> AutoApproveResult:
     Returns:
         AutoApproveResult with success/error status.
     """
-    with SyftBgConfig.edit() as syft_bg_config:
-        config = syft_bg_config.approve
-        if name not in config.auto_approvals.objects:
-            return AutoApproveResult(
-                success=False, error=f"Auto-approval object '{name}' not found"
-            )
+    # `return` inside edit() is normal control flow and wouldn't skip its
+    # save() — raise instead so it's actually skipped.
+    try:
+        with SyftBgConfig.edit() as syft_bg_config:
+            config = syft_bg_config.approve
+            if name not in config.auto_approvals.objects:
+                raise _AutoApprovalNotFound(name)
 
-        del config.auto_approvals.objects[name]
+            del config.auto_approvals.objects[name]
+    except _AutoApprovalNotFound:
+        return AutoApproveResult(
+            success=False, error=f"Auto-approval object '{name}' not found"
+        )
 
     obj_dir = get_default_paths().auto_approvals_dir / name
     if obj_dir.exists():

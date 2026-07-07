@@ -4,6 +4,7 @@ import fcntl
 from pathlib import Path
 
 import pytest
+import yaml
 
 from syft_bg.approve.config import (
     AutoApproveConfig,
@@ -218,6 +219,61 @@ class TestSyftBgConfigEdit:
             with open(lock_path) as lock_handle:
                 with pytest.raises(BlockingIOError):
                     fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+
+class TestSyftBgConfigMergeAndSave:
+    """Regression tests for the review-flagged merge/save correctness bugs."""
+
+    def test_save_preserves_unknown_top_level_keys(self, temp_dir):
+        """save() must not silently drop YAML keys it doesn't model."""
+        config_path = temp_dir / "config.yaml"
+        config_path.write_text("""
+do_email: test@example.com
+some_future_field: keep_me
+approve:
+  interval: 5
+""")
+        with SyftBgConfig.edit(config_path) as config:
+            config.approve.interval = 10
+
+        raw = yaml.safe_load(config_path.read_text())
+        assert raw["some_future_field"] == "keep_me"
+        assert raw["approve"]["interval"] == 10
+
+    def test_merge_does_not_clobber_custom_service_token_path(self, temp_dir):
+        """A per-service drive_token_path override must survive a reload."""
+        config_path = temp_dir / "config.yaml"
+        custom_path = Path("/custom/approve_token.json")
+
+        syft_bg_config = SyftBgConfig()
+        syft_bg_config.set_service_config(
+            "approve", {"drive_token_path": custom_path}
+        )
+        syft_bg_config.save(config_path)
+
+        reloaded = SyftBgConfig.from_path(config_path)
+        assert reloaded.approve.drive_token_path == custom_path
+
+    def test_edit_does_not_bake_common_fields_into_approve(self, temp_dir):
+        """edit() must not permanently write do_email into approve's own
+        fields, so a later top-level change is still inherited on reload."""
+        config_path = temp_dir / "config.yaml"
+        SyftBgConfig(do_email="alice@test.com").save(config_path)
+
+        with SyftBgConfig.edit(config_path) as config:
+            config.approve.auto_approvals.enabled = False
+
+        raw = yaml.safe_load(config_path.read_text())
+        assert raw["approve"]["do_email"] is None
+
+        # Top-level do_email changes later; approve should still inherit it.
+        raw["do_email"] = "bob@test.com"
+        config_path.write_text(
+            yaml.safe_dump(raw, sort_keys=False, default_flow_style=False)
+        )
+
+        reloaded = SyftBgConfig.from_path(config_path)
+        assert reloaded.approve.do_email == "bob@test.com"
 
 
 class TestAutoApprovalsConfig:
