@@ -31,14 +31,16 @@ def init(
     token_path: str | Path | None = None,
     settings: dict[str, dict] | None = None,
 ) -> None:
+    token_kwargs: dict = {}
     if token_path is not None:
-        token_path = Path(token_path)
-        move_token_to_syftbg_dir(token_path)
+        # A single OAuth token is used for both the Gmail and Drive APIs.
+        token_path = move_token_to_syftbg_dir(Path(token_path))
+        token_kwargs = {"drive_token_path": token_path, "gmail_token_path": token_path}
 
     config = SyftBgConfig(
         do_email=do_email,
         syftbox_root=syftbox_root,
-        drive_token_path=token_path,
+        **token_kwargs,
     )
 
     if settings:

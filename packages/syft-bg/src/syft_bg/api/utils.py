@@ -104,6 +104,8 @@ def move_token_to_syftbg_dir(token_path: Path) -> Path:
         else:
             print(f"Warning: Provided token_path ({token_path}) does not exist.")
 
+    return Path(token_path)
+
 
 def credentials_setup_steps(creds_path: Path, colab: bool) -> str:
     """Return step-by-step instructions for setting up credentials.json."""
