@@ -10,6 +10,7 @@ from syft_bg.approve.monitors.job import JobMonitor
 from syft_bg.approve.monitors.peer import PeerMonitor
 from syft_bg.common.orchestrator import BaseOrchestrator
 from syft_bg.common.state import JsonStateManager
+from syft_bg.common.syft_bg_config import SyftBgConfig
 
 if TYPE_CHECKING:
     from syft_client.sync.syftbox_manager import SyftboxManager
@@ -49,7 +50,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
                 "ApprovalOrchestrator should only run on Data Owner (DO) side."
             )
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         config.do_email = client.email
         config.syftbox_root = client.syftbox_folder
         config.interval = interval

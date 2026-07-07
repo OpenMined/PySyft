@@ -7,15 +7,12 @@ from typing import TYPE_CHECKING, Callable, Optional, Protocol
 
 from syft_job.job import JobInfo
 
-from syft_bg.approve.config import (
-    AutoApprovalObj,
-    AutoApprovalsConfig,
-    AutoApproveConfig,
-)
+from syft_bg.approve.config import AutoApprovalObj, AutoApprovalsConfig
 from syft_bg.approve.criteria import (
     AutoApprovalValidationResult,
     _validate_job_against_object,
 )
+from syft_bg.common.syft_bg_config import SyftBgConfig
 
 if TYPE_CHECKING:
     from syft_client.sync.syftbox_manager import SyftboxManager
@@ -49,7 +46,7 @@ class JobApprovalHandler:
     @property
     def config(self) -> AutoApprovalsConfig:
         """Always-fresh auto-approvals config, re-read from disk on every access."""
-        return AutoApproveConfig.load(self._config_path).auto_approvals
+        return SyftBgConfig.load(self._config_path).approve.auto_approvals
 
     def _get_approved_peers(self) -> list[str]:
         """Get list of approved peer emails."""

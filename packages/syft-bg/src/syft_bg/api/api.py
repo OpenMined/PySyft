@@ -14,7 +14,7 @@ from syft_bg.api.utils import (
     setup_orchestrator,
     validate_auto_approve_job_inputs,
 )
-from syft_bg.approve.config import AutoApproveConfig, AutoApprovalObj
+from syft_bg.approve.config import AutoApprovalObj
 from syft_bg.common.config import get_syftbg_dir, get_default_paths
 from syft_bg.common.drive import is_colab
 from syft_bg.common.syft_bg_config import SyftBgConfig
@@ -344,18 +344,18 @@ def auto_approve(
     if not content_files and not file_paths:
         return AutoApproveResult(success=False, error="No files to process")
 
-    config = AutoApproveConfig.load()
-    name = generate_unique_name(name, content_files, config)
+    with SyftBgConfig.edit() as syft_bg_config:
+        config = syft_bg_config.approve
+        name = generate_unique_name(name, content_files, config)
 
-    file_entries = copy_and_hash_files(content_files, name)
+        file_entries = copy_and_hash_files(content_files, name)
 
-    obj = AutoApprovalObj(
-        file_contents=file_entries,
-        file_paths=file_paths,
-        peers=peers,
-    )
-    config.auto_approvals.objects[name] = obj
-    config.save()
+        obj = AutoApprovalObj(
+            file_contents=file_entries,
+            file_paths=file_paths,
+            peers=peers,
+        )
+        config.auto_approvals.objects[name] = obj
 
     return AutoApproveResult(
         success=True,
@@ -421,7 +421,7 @@ def list_auto_approvals() -> dict[str, AutoApprovalObj]:
     Returns:
         Mapping of name → AutoApprovalObj.
     """
-    return AutoApproveConfig.load().auto_approvals.objects
+    return SyftBgConfig.load().approve.auto_approvals.objects
 
 
 def remove_auto_approve(name: str) -> AutoApproveResult:
@@ -437,14 +437,14 @@ def remove_auto_approve(name: str) -> AutoApproveResult:
     Returns:
         AutoApproveResult with success/error status.
     """
-    config = AutoApproveConfig.load()
-    if name not in config.auto_approvals.objects:
-        return AutoApproveResult(
-            success=False, error=f"Auto-approval object '{name}' not found"
-        )
+    with SyftBgConfig.edit() as syft_bg_config:
+        config = syft_bg_config.approve
+        if name not in config.auto_approvals.objects:
+            return AutoApproveResult(
+                success=False, error=f"Auto-approval object '{name}' not found"
+            )
 
-    del config.auto_approvals.objects[name]
-    config.save()
+        del config.auto_approvals.objects[name]
 
     obj_dir = get_default_paths().auto_approvals_dir / name
     if obj_dir.exists():

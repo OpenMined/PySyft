@@ -1,6 +1,9 @@
 """Top-level SyftBg configuration model (mirrors config.yaml)."""
 
+import fcntl
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
 import yaml
 from pydantic import BaseModel, Field, model_validator
@@ -124,3 +127,36 @@ location: {get_default_paths().config} <br>
                 default_flow_style=False,
                 sort_keys=False,
             )
+
+    @classmethod
+    def load(cls, config_path: Path | None = None) -> "SyftBgConfig":
+        """Load config from path, returning defaults if the file doesn't exist."""
+        try:
+            return cls.from_path(config_path)
+        except FileNotFoundError:
+            return cls()
+
+    @classmethod
+    @contextmanager
+    def edit(cls, config_path: Path | None = None) -> Iterator["SyftBgConfig"]:
+        """Load, yield for mutation, and save under an exclusive file lock.
+
+        The lock is held across the whole load-mutate-save cycle so
+        concurrent read-modify-write callers can't clobber each other's
+        changes. Does not save if the block raises.
+        """
+        if config_path is None:
+            config_path = get_default_paths().config
+
+        lock_path = config_path.with_suffix(".lock")
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        lock_path.touch(exist_ok=True)
+
+        with open(lock_path) as lock_handle:
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+            try:
+                config = cls.load(config_path)
+                yield config
+                config.save(config_path)
+            finally:
+                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)

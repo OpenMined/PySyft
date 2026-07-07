@@ -8,8 +8,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from syft_bg.api import auto_approve_job
-from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.common.config import get_default_paths
+from syft_bg.common.syft_bg_config import SyftBgConfig
 from syft_client.job_auto_approval import auto_approve_and_run_jobs
 from syft_client.sync.syftbox_manager import SyftboxManager
 
@@ -28,6 +28,7 @@ def _temp_config_paths():
         with (
             patch("syft_bg.common.config.get_default_paths", return_value=patched),
             patch("syft_bg.approve.config.get_default_paths", return_value=patched),
+            patch("syft_bg.common.syft_bg_config.get_default_paths", return_value=patched),
         ):
             yield patched
 
@@ -145,7 +146,7 @@ def test_auto_approve_job_default_all_content_matched():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         content_names = {e.relative_path for e in obj.file_contents}
         assert content_names == {"main.py", "data.json"}
@@ -167,7 +168,7 @@ def test_auto_approve_job_file_paths_only():
         result = auto_approve_job(job, file_paths=["data.json"])
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         assert [e.relative_path for e in obj.file_contents] == ["main.py"]
         assert obj.file_paths == ["data.json"]
@@ -186,7 +187,7 @@ def test_auto_approve_job_contents_only():
         result = auto_approve_job(job, contents=["main.py"])
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         assert [e.relative_path for e in obj.file_contents] == ["main.py"]
         assert obj.file_paths == []
@@ -205,7 +206,7 @@ def test_auto_approve_job_both_contents_and_file_paths():
         result = auto_approve_job(job, contents=["main.py"], file_paths=["data.json"])
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         assert [e.relative_path for e in obj.file_contents] == ["main.py"]
         assert obj.file_paths == ["data.json"]
@@ -258,7 +259,7 @@ def test_auto_approve_job_nested_directory():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         entries = {e.relative_path: e for e in obj.file_contents}
         assert set(entries.keys()) == {"main.py", "subdir/helper.py", "data.json"}
@@ -285,7 +286,7 @@ def test_auto_approve_job_default_no_special_treatment_for_non_params_json():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         content_names = {e.relative_path for e in obj.file_contents}
         assert content_names == {"main.py", "somefile.json"}
@@ -307,7 +308,7 @@ def test_auto_approve_job_default_params_json_is_name_only():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         content_names = {e.relative_path for e in obj.file_contents}
         assert content_names == {"main.py"}

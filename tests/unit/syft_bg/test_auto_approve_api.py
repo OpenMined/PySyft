@@ -15,6 +15,7 @@ from syft_bg.approve.config import (
 )
 from syft_bg.approve.handlers.job import JobApprovalHandler
 from syft_bg.common.config import get_default_paths
+from syft_bg.common.syft_bg_config import SyftBgConfig
 
 
 @contextmanager
@@ -29,6 +30,7 @@ def _patched_paths(tmp: Path):
     with (
         patch("syft_bg.api.api.get_default_paths", return_value=patched),
         patch("syft_bg.approve.config.get_default_paths", return_value=patched),
+        patch("syft_bg.common.syft_bg_config.get_default_paths", return_value=patched),
     ):
         yield patched
 
@@ -36,9 +38,8 @@ def _patched_paths(tmp: Path):
 def _seed_config(tmp: Path, objects: dict[str, AutoApprovalObj]) -> Path:
     """Write a config YAML with the given auto-approval objects to tmp/config.yaml."""
     config_path = tmp / "config.yaml"
-    AutoApproveConfig(auto_approvals=AutoApprovalsConfig(objects=objects)).save(
-        config_path
-    )
+    approve_config = AutoApproveConfig(auto_approvals=AutoApprovalsConfig(objects=objects))
+    SyftBgConfig(approve=approve_config).save(config_path)
     return config_path
 
 
@@ -135,13 +136,15 @@ class TestHandlerReloadsConfig:
         assert first.match is False
 
         # Add a matching object directly to the YAML on disk (no restart).
-        AutoApproveConfig(
-            auto_approvals=AutoApprovalsConfig(
-                objects={
-                    "r1": self._create_matching_autoapprove_obj_from_dir(
-                        code_dir, "alice@test.com"
-                    )
-                }
+        SyftBgConfig(
+            approve=AutoApproveConfig(
+                auto_approvals=AutoApprovalsConfig(
+                    objects={
+                        "r1": self._create_matching_autoapprove_obj_from_dir(
+                            code_dir, "alice@test.com"
+                        )
+                    }
+                )
             )
         ).save(config_path)
 
@@ -170,9 +173,9 @@ class TestHandlerReloadsConfig:
         assert first.match is True
 
         # Wipe the object from the YAML.
-        AutoApproveConfig(auto_approvals=AutoApprovalsConfig(objects={})).save(
-            config_path
-        )
+        SyftBgConfig(
+            approve=AutoApproveConfig(auto_approvals=AutoApprovalsConfig(objects={}))
+        ).save(config_path)
 
         second = handler.evaluate_auto_approval(job)
         assert second.match is False

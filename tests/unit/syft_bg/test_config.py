@@ -1,6 +1,9 @@
 """Tests for configuration loading."""
 
+import fcntl
 from pathlib import Path
+
+import pytest
 
 from syft_bg.approve.config import (
     AutoApproveConfig,
@@ -9,6 +12,7 @@ from syft_bg.approve.config import (
     PeerApprovalConfig,
     FileEntry,
 )
+from syft_bg.common.syft_bg_config import SyftBgConfig
 from syft_bg.notify.config import NotifyConfig
 
 
@@ -92,7 +96,7 @@ class TestAutoApproveConfig:
         assert config.peers.enabled is False
 
     def test_load_from_file(self, sample_config):
-        config = AutoApproveConfig.load(sample_config)
+        config = SyftBgConfig.from_path(sample_config).approve
         assert config.do_email == "test@example.com"
         assert config.syftbox_root == Path("/tmp/syftbox")
         assert config.interval == 5
@@ -106,19 +110,19 @@ class TestAutoApproveConfig:
         assert "bob@co.com" in obj.peers
 
     def test_load_nonexistent_returns_defaults(self, temp_dir):
-        config = AutoApproveConfig.load(temp_dir / "nonexistent.yaml")
+        config = SyftBgConfig.load(temp_dir / "nonexistent.yaml").approve
         assert config.do_email is None
         assert config.auto_approvals.enabled is True
 
     def test_save_config(self, temp_dir):
         config_path = temp_dir / "config.yaml"
-        config = AutoApproveConfig(
+        approve_config = AutoApproveConfig(
             do_email="save@example.com",
             syftbox_root=Path("/tmp/saved"),
             interval=10,
         )
-        config.auto_approvals.enabled = False
-        config.auto_approvals.objects["test_obj"] = AutoApprovalObj(
+        approve_config.auto_approvals.enabled = False
+        approve_config.auto_approvals.objects["test_obj"] = AutoApprovalObj(
             file_contents=[
                 FileEntry(
                     relative_path="main.py", path="/tmp/main.py", hash="sha256:xyz"
@@ -126,9 +130,9 @@ class TestAutoApproveConfig:
             ],
             peers=["alice@test.com"],
         )
-        config.save(config_path)
+        SyftBgConfig(approve=approve_config).save(config_path)
 
-        loaded = AutoApproveConfig.load(config_path)
+        loaded = SyftBgConfig.from_path(config_path).approve
         assert loaded.do_email == "save@example.com"
         assert loaded.interval == 10
         assert loaded.auto_approvals.enabled is False
@@ -139,8 +143,8 @@ class TestAutoApproveConfig:
 
     def test_save_reload_multi_script_roundtrip(self, temp_dir):
         config_path = temp_dir / "config.yaml"
-        config = AutoApproveConfig(do_email="rt@test.com")
-        config.auto_approvals.objects["multi"] = AutoApprovalObj(
+        approve_config = AutoApproveConfig(do_email="rt@test.com")
+        approve_config.auto_approvals.objects["multi"] = AutoApprovalObj(
             file_contents=[
                 FileEntry(
                     relative_path="main.py", path="/tmp/main.py", hash="sha256:aaa"
@@ -151,9 +155,9 @@ class TestAutoApproveConfig:
             ],
             peers=["ds@test.com"],
         )
-        config.save(config_path)
+        SyftBgConfig(approve=approve_config).save(config_path)
 
-        loaded = AutoApproveConfig.load(config_path)
+        loaded = SyftBgConfig.from_path(config_path).approve
         obj = loaded.auto_approvals.objects["multi"]
         assert len(obj.file_contents) == 2
         assert obj.file_contents[0].relative_path == "main.py"
@@ -168,8 +172,52 @@ approve:
     enabled: true
     objects: {}
 """)
-        config = AutoApproveConfig.load(config_path)
+        config = SyftBgConfig.from_path(config_path).approve
         assert config.auto_approvals.objects == {}
+
+    def test_gmail_token_path_propagates_from_top_level(self, temp_dir):
+        """Regression test: AutoApproveConfig.load() used to never read
+        gmail_token_path from disk at all, always falling back to the
+        default-factory value. Going through SyftBgConfig fixes this."""
+        config_path = temp_dir / "config.yaml"
+        custom_token_path = Path("/tmp/custom_gmail_token.json")
+        SyftBgConfig(gmail_token_path=custom_token_path).save(config_path)
+
+        loaded = SyftBgConfig.from_path(config_path)
+        assert loaded.approve.gmail_token_path == custom_token_path
+
+
+class TestSyftBgConfigEdit:
+    """Tests for SyftBgConfig.edit(), the locked read-modify-write helper."""
+
+    def test_edit_saves_on_clean_exit(self, temp_dir):
+        config_path = temp_dir / "config.yaml"
+        with SyftBgConfig.edit(config_path) as config:
+            config.approve.auto_approvals.enabled = False
+
+        reloaded = SyftBgConfig.from_path(config_path)
+        assert reloaded.approve.auto_approvals.enabled is False
+
+    def test_edit_does_not_save_on_exception(self, temp_dir):
+        config_path = temp_dir / "config.yaml"
+
+        with pytest.raises(ValueError):
+            with SyftBgConfig.edit(config_path) as config:
+                config.approve.auto_approvals.enabled = False
+                raise ValueError("boom")
+
+        assert not config_path.exists()
+
+    def test_edit_holds_exclusive_lock(self, temp_dir):
+        config_path = temp_dir / "config.yaml"
+
+        with SyftBgConfig.edit(config_path) as config:
+            config.approve.auto_approvals.enabled = False
+
+            lock_path = config_path.with_suffix(".lock")
+            with open(lock_path) as lock_handle:
+                with pytest.raises(BlockingIOError):
+                    fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
 
 
 class TestAutoApprovalsConfig:
