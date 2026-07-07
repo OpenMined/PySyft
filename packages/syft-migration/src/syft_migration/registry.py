@@ -123,20 +123,30 @@ class MigrationRegistry:
             f"No migration path for {canonical_name!r} from {from_version} to {to_version}"
         )
 
+    def has_migration_path(
+        self, canonical_name: str, from_version: str, to_version: str
+    ) -> bool:
+        """Whether a chain of migrations leads from ``from_version`` to ``to_version``."""
+        try:
+            self.migration_path(
+                canonical_name=canonical_name,
+                from_version=from_version,
+                to_version=to_version,
+            )
+        except MigrationError:
+            return False
+        return True
+
     def has_upgradeable_path_to_latest(
         self, canonical_name: str, from_version: str
     ) -> bool:
         """Whether ``from_version`` can be migrated up to the latest registered
         version of ``canonical_name`` (trivially true for the latest itself)."""
         try:
-            self.migration_path(
-                canonical_name=canonical_name,
-                from_version=from_version,
-                to_version=self.latest_version(canonical_name),
-            )
+            latest = self.latest_version(canonical_name)
         except MigrationError:
             return False
-        return True
+        return self.has_migration_path(canonical_name, from_version, latest)
 
     # -- protocol schemas --------------------------------------------------
     def _raise_for_unknown_objects(self, schema: ProtocolSchema) -> None:

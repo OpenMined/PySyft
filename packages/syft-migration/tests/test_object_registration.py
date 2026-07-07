@@ -50,6 +50,14 @@ def test_has_upgradeable_path_to_latest(registry):
     assert registry.has_upgradeable_path_to_latest("job", "3")
 
 
+def test_has_migration_path(registry):
+    # job has migrations 1 -> 2 -> 3 and 2 -> 1, but nothing down from 3.
+    assert registry.has_migration_path("job", "1", "3")
+    assert registry.has_migration_path("job", "2", "1")
+    assert not registry.has_migration_path("job", "3", "1")
+    assert registry.has_migration_path("job", "2", "2")  # noop path
+
+
 def test_has_upgradeable_path_single_version_and_missing_migration():
     reg = MigrationRegistry(
         protocol_name="p",
