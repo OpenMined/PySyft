@@ -144,23 +144,17 @@ class GdrivePersonalSyftboxFolder(BaseModel):
         return f"{SYFT_CLIENT_VERSION}#{self.email}"
 
 
-class DatasetCollectionFolder(BaseModel):
-    """Content-hash helper for dataset collection folders."""
+class CollectionFolder(BaseModel):
+    """Content-hash helper for collection folders (domain-agnostic).
+
+    Collections (datasets, private datasets, or any future collection type) are
+    named ``{prefix}_{tag}_{content_hash}`` on the wire; this computes that
+    content hash from the folder's file contents.
+    """
 
     @staticmethod
     def compute_hash(files: dict[str, bytes]) -> str:
-        """Compute a hash from file contents."""
-        from syft_client.sync.file_utils import compute_file_hashes
-
-        return compute_file_hashes(files)
-
-
-class PrivateDatasetCollectionFolder(BaseModel):
-    """Content-hash helper for private dataset collection folders."""
-
-    @staticmethod
-    def compute_hash(files: dict[str, bytes]) -> str:
-        """Compute a hash from file contents."""
+        """Compute a content hash from file contents."""
         from syft_client.sync.file_utils import compute_file_hashes
 
         return compute_file_hashes(files)
@@ -252,7 +246,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     personal_syftbox_event_id_cache: Dict[str, str] = {}
 
     # tag -> dataset collection folder id
-    dataset_collection_folder_id_cache: Dict[str, str] = {}
+    collection_folder_id_cache: Dict[str, str] = {}
 
     # Rolling state caches for single-API-call optimization
     _rolling_state_folder_id: str | None = None
@@ -370,8 +364,8 @@ class GDriveConnection(SyftboxPlatformConnection):
         other.personal_syftbox_event_id_cache = dict(
             self.personal_syftbox_event_id_cache
         )
-        other.dataset_collection_folder_id_cache = dict(
-            self.dataset_collection_folder_id_cache
+        other.collection_folder_id_cache = dict(
+            self.collection_folder_id_cache
         )
 
     @property
@@ -1140,7 +1134,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         self.own_datasite_outbox_cache.clear()
         self.archive_folder_id_cache.clear()
         self.personal_syftbox_event_id_cache.clear()
-        self.dataset_collection_folder_id_cache.clear()
+        self.collection_folder_id_cache.clear()
         self._rolling_state_folder_id = None
         self._rolling_state_file_id = None
         self._encryption_bundles_folder_id = None
@@ -1492,20 +1486,20 @@ class GDriveConnection(SyftboxPlatformConnection):
         cache_key = f"{prefix}_{tag}_{content_hash}"
 
         # Check cache
-        if cache_key in self.dataset_collection_folder_id_cache:
-            return self.dataset_collection_folder_id_cache[cache_key]
+        if cache_key in self.collection_folder_id_cache:
+            return self.collection_folder_id_cache[cache_key]
 
         syftbox_folder_id = self.get_syftbox_folder_id()
 
         # Check if exists
         folder_id = self._find_folder_by_name(folder_name, parent_id=syftbox_folder_id)
         if folder_id:
-            self.dataset_collection_folder_id_cache[cache_key] = folder_id
+            self.collection_folder_id_cache[cache_key] = folder_id
             return folder_id
 
         # Create new folder
         folder_id = self.create_folder(folder_name, syftbox_folder_id)
-        self.dataset_collection_folder_id_cache[cache_key] = folder_id
+        self.collection_folder_id_cache[cache_key] = folder_id
         return folder_id
 
     def owner_tag_collection_as_any(
@@ -1616,7 +1610,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             if c.tag == tag:
                 self.delete_file_by_id(c.folder_id)
                 cache_key = f"{prefix}_{c.tag}_{c.content_hash}"
-                self.dataset_collection_folder_id_cache.pop(cache_key, None)
+                self.collection_folder_id_cache.pop(cache_key, None)
 
     def watcher_list_collections(self, prefix: str) -> list[dict]:
         """List collections shared with DS (not owned by me).
@@ -1695,8 +1689,8 @@ class GDriveConnection(SyftboxPlatformConnection):
     ) -> str:
         """Get folder ID for a collection, with caching."""
         cache_key = f"{prefix}_{tag}_{content_hash}"
-        if cache_key in self.dataset_collection_folder_id_cache:
-            return self.dataset_collection_folder_id_cache[cache_key]
+        if cache_key in self.collection_folder_id_cache:
+            return self.collection_folder_id_cache[cache_key]
 
         folder_name = f"{prefix}_{tag}_{content_hash}"
         syftbox_folder_id = self.get_syftbox_folder_id()
@@ -1707,7 +1701,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 f"Collection folder {tag} with hash {content_hash} not found"
             )
 
-        self.dataset_collection_folder_id_cache[cache_key] = folder_id
+        self.collection_folder_id_cache[cache_key] = folder_id
         return folder_id
 
     def _batch_add_permissions(self, file_id: str, users: list[str]) -> None:

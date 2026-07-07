@@ -468,7 +468,7 @@ class SyftRDSClient:
     def _upload_dataset_to_collection(self, dataset, users: list[str] | str) -> str:
         """Upload dataset files to collection folder. Returns the folder ID."""
         from syft_client.sync.connections.drive.gdrive_transport import (
-            DatasetCollectionFolder,
+            CollectionFolder,
         )
 
         collection_tag = dataset.name
@@ -487,7 +487,7 @@ class SyftRDSClient:
             files[dataset.readme_path.name] = dataset.readme_path.read_bytes()
 
         # Compute content hash
-        content_hash = DatasetCollectionFolder.compute_hash(files)
+        content_hash = CollectionFolder.compute_hash(files)
 
         # Create collection folder with hash in name
         folder_id = self._sync._connection_router.owner_create_collection_folder(
@@ -527,7 +527,7 @@ class SyftRDSClient:
         """Upload private dataset files to a separate owner-only collection folder.
         Returns the folder ID, or None if no files to upload."""
         from syft_client.sync.connections.drive.gdrive_transport import (
-            PrivateDatasetCollectionFolder,
+            CollectionFolder,
         )
 
         collection_tag = dataset.name
@@ -541,7 +541,7 @@ class SyftRDSClient:
         if not files:
             return None
 
-        content_hash = PrivateDatasetCollectionFolder.compute_hash(files)
+        content_hash = CollectionFolder.compute_hash(files)
 
         # Create private collection folder (no sharing)
         folder_id = self._sync._connection_router.owner_create_collection_folder(
@@ -602,7 +602,7 @@ class SyftRDSClient:
             sync: Whether to sync after sharing
         """
         from syft_client.sync.connections.drive.gdrive_transport import (
-            DatasetCollectionFolder,
+            CollectionFolder,
         )
 
         if self._dataset_manager is None:
@@ -627,7 +627,7 @@ class SyftRDSClient:
         if dataset.readme_path and dataset.readme_path.exists():
             files[dataset.readme_path.name] = dataset.readme_path.read_bytes()
 
-        content_hash = DatasetCollectionFolder.compute_hash(files)
+        content_hash = CollectionFolder.compute_hash(files)
 
         # Share collection
         if users == "any":
