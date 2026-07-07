@@ -39,7 +39,9 @@ def _temp_config_paths():
         with (
             patch("syft_bg.common.config.get_default_paths", return_value=patched),
             patch("syft_bg.approve.config.get_default_paths", return_value=patched),
-            patch("syft_bg.common.syft_bg_config.get_default_paths", return_value=patched),
+            patch(
+                "syft_bg.common.syft_bg_config.get_default_paths", return_value=patched
+            ),
         ):
             yield patched
 

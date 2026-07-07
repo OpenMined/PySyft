@@ -246,9 +246,7 @@ approve:
         custom_path = Path("/custom/approve_token.json")
 
         syft_bg_config = SyftBgConfig()
-        syft_bg_config.set_service_config(
-            "approve", {"drive_token_path": custom_path}
-        )
+        syft_bg_config.set_service_config("approve", {"drive_token_path": custom_path})
         syft_bg_config.save(config_path)
 
         reloaded = SyftBgConfig.from_path(config_path)

@@ -41,7 +41,9 @@ def _patched_paths(tmp: Path):
 def _seed_config(tmp: Path, objects: dict[str, AutoApprovalObj]) -> Path:
     """Write a config YAML with the given auto-approval objects to tmp/config.yaml."""
     config_path = tmp / "config.yaml"
-    approve_config = AutoApproveConfig(auto_approvals=AutoApprovalsConfig(objects=objects))
+    approve_config = AutoApproveConfig(
+        auto_approvals=AutoApprovalsConfig(objects=objects)
+    )
     SyftBgConfig(approve=approve_config).save(config_path)
     return config_path
 
