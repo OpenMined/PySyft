@@ -27,6 +27,9 @@ class ProtocolSchema(BaseModel):
     version: str
     # canonical_name -> all supported versions
     supported_versions: dict[str, list[str]] = {}
+    # canonical_name -> JSON schema of the protocol's current (latest) object
+    # version; freezes what released classes look like so drift is detectable.
+    current_object_schemas: dict[str, dict] = {}
 
     @classmethod
     def from_objects(
@@ -36,16 +39,23 @@ class ProtocolSchema(BaseModel):
         classes: list[type[MigratableObject]],
     ) -> ProtocolSchema:
         supported_versions: dict[str, list[str]] = {}
+        latest_classes: dict[str, type[MigratableObject]] = {}
         for klass in classes:
             canonical_name, object_version = _identity(klass)
             versions = supported_versions.setdefault(canonical_name, [])
             if object_version not in versions:
                 versions.append(object_version)
+            if object_version == max(versions):
+                latest_classes[canonical_name] = klass
         return cls(
             protocol_name=protocol_name,
             version=version,
             supported_versions={
                 name: sorted(versions) for name, versions in supported_versions.items()
+            },
+            current_object_schemas={
+                name: klass.model_json_schema()
+                for name, klass in latest_classes.items()
             },
         )
 
@@ -72,11 +82,13 @@ class PackageInfo(BaseModel):
     protocol_version: str
 
 
-class ReleaseArtifact(BaseModel):
-    """What one release emits: the package's identity + the protocol schema it speaks.
+class ReleasedPackageProtocolInfo(BaseModel):
+    """What EVERY package release emits: its identity + the protocol it speaks.
 
-    Saved as a JSON release artifact so future releases can load the schemas of
-    past releases (see MigrationRegistry.register_historic_release_artifact).
+    Emitted also when the protocol did not change (the artifact then repeats the
+    previous protocol version). Saved as a JSON release artifact so future
+    releases can load the schemas of past releases (see
+    MigrationRegistry.register_released_package_protocol_info).
     """
 
     package_info: PackageInfo
@@ -86,5 +98,22 @@ class ReleaseArtifact(BaseModel):
         Path(path).write_text(self.model_dump_json(indent=2))
 
     @classmethod
-    def load(cls, path: PathLike) -> ReleaseArtifact:
+    def load(cls, path: PathLike) -> ReleasedPackageProtocolInfo:
+        return cls.model_validate(json.loads(Path(path).read_text()))
+
+
+class ReleasedProtocol(BaseModel):
+    """The frozen schema of one released protocol version.
+
+    Emitted only by the release that actually CHANGED the protocol (the protocol
+    version must only be bumped when the protocol changed).
+    """
+
+    protocol_schema: ProtocolSchema
+
+    def save(self, path: PathLike) -> None:
+        Path(path).write_text(self.model_dump_json(indent=2))
+
+    @classmethod
+    def load(cls, path: PathLike) -> ReleasedProtocol:
         return cls.model_validate(json.loads(Path(path).read_text()))

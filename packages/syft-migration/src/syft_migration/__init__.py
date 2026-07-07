@@ -4,7 +4,8 @@ from syft_migration.registry import MigrationRegistry
 from syft_migration.schema import (
     PackageInfo,
     ProtocolSchema,
-    ReleaseArtifact,
+    ReleasedPackageProtocolInfo,
+    ReleasedProtocol,
 )
 from syft_migration.service import MigrationService
 
@@ -17,6 +18,7 @@ __all__ = [
     "MigrationService",
     "PackageInfo",
     "ProtocolSchema",
-    "ReleaseArtifact",
+    "ReleasedPackageProtocolInfo",
+    "ReleasedProtocol",
     "__version__",
 ]

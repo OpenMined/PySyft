@@ -1,15 +1,14 @@
 {
-  "package_info": {
-    "package_name": "syft-job",
-    "version": "0.1.38",
-    "protocol_version": "0"
-  },
   "protocol_schema": {
     "protocol_name": "syft-job",
     "version": "0",
     "supported_versions": {
-      "JobState": ["1"],
-      "JobSubmissionMetadata": ["1"]
+      "JobState": [
+        "1"
+      ],
+      "JobSubmissionMetadata": [
+        "1"
+      ]
     },
     "current_object_schemas": {
       "JobState": {
@@ -180,7 +179,10 @@
           },
           "type": {
             "default": "python",
-            "enum": ["python", "bash"],
+            "enum": [
+              "python",
+              "bash"
+            ],
             "title": "Type",
             "type": "string"
           },
@@ -244,7 +246,10 @@
           },
           "job_type": {
             "default": "local",
-            "enum": ["local", "enclave"],
+            "enum": [
+              "local",
+              "enclave"
+            ],
             "title": "Job Type",
             "type": "string"
           },
@@ -273,7 +278,12 @@
             "type": "object"
           }
         },
-        "required": ["name", "submitted_by", "datasite_email", "submitted_at"],
+        "required": [
+          "name",
+          "submitted_by",
+          "datasite_email",
+          "submitted_at"
+        ],
         "title": "JobSubmissionMetadataV1",
         "type": "object"
       }

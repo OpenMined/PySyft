@@ -3,7 +3,7 @@ from syft_migration import (
     MigrationRegistry,
     PackageInfo,
     ProtocolSchema,
-    ReleaseArtifact,
+    ReleasedPackageProtocolInfo,
 )
 
 # Isolated registry for the mock objects.
@@ -62,8 +62,8 @@ schema_v1 = ProtocolSchema.from_objects(
     version="1",
     classes=[MyVersionedObjectV1],
 )
-mock_registry.register_historic_release_artifact(
-    artifact=ReleaseArtifact(
+mock_registry.register_released_package_protocol_info(
+    info=ReleasedPackageProtocolInfo(
         package_info=PackageInfo(
             package_name="syft-mock", version="1.0.0", protocol_version="1"
         ),

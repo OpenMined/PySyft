@@ -4,7 +4,12 @@ from collections import deque
 from typing import TYPE_CHECKING, Callable
 
 from syft_migration.identity import MigrationError, _has_identity, _identity
-from syft_migration.schema import PackageInfo, ProtocolSchema, ReleaseArtifact
+from syft_migration.schema import (
+    PackageInfo,
+    ProtocolSchema,
+    ReleasedPackageProtocolInfo,
+    ReleasedProtocol,
+)
 
 if TYPE_CHECKING:
     from syft_migration.base import MigratableObject
@@ -34,7 +39,7 @@ class MigrationRegistry:
 
         # protocol_version -> identity of the past release that spoke that
         # protocol; usually read from files that are release artifacts of
-        # earlier releases (see ReleaseArtifact.save/load).
+        # earlier releases (see ReleasedPackageProtocolInfo.save/load).
         self.package_version_history: dict[str, PackageInfo] = {}
         # protocol_version -> schema of the release that spoke that protocol
         self.protocol_version_history: dict[str, ProtocolSchema] = {}
@@ -169,20 +174,31 @@ class MigrationRegistry:
             self._raise_for_unknown_objects(schema)
         self.protocol_version_history[schema.version] = schema
 
-    def register_historic_release_artifact(
-        self, artifact: ReleaseArtifact, raise_for_unknown_objects: bool = False
+    def register_released_package_protocol_info(
+        self,
+        info: ReleasedPackageProtocolInfo,
+        raise_for_unknown_objects: bool = False,
     ) -> None:
-        """Register the release artifact of a PAST release of this package.
+        """Register the release info of a PAST release of this package.
 
-        Registers the artifact's protocol schema and remembers which package
+        Registers the release's protocol schema and remembers which package
         release spoke that protocol version.
         """
         self.register_historic_protocol_schema(
-            schema=artifact.protocol_schema,
+            schema=info.protocol_schema,
             raise_for_unknown_objects=raise_for_unknown_objects,
         )
-        protocol_version = artifact.package_info.protocol_version
-        self.package_version_history[protocol_version] = artifact.package_info
+        protocol_version = info.package_info.protocol_version
+        self.package_version_history[protocol_version] = info.package_info
+
+    def register_released_protocol(
+        self, released: ReleasedProtocol, raise_for_unknown_objects: bool = False
+    ) -> None:
+        """Register the frozen schema of a PAST released protocol version."""
+        self.register_historic_protocol_schema(
+            schema=released.protocol_schema,
+            raise_for_unknown_objects=raise_for_unknown_objects,
+        )
 
     def compute_protocol_schema(self) -> ProtocolSchema:
         """Every object version this registry can load, straight from ``self.objects``."""
@@ -193,6 +209,27 @@ class MigrationRegistry:
                 canonical_name: sorted(versions)
                 for canonical_name, versions in self.objects.items()
             },
+            current_object_schemas={
+                canonical_name: self.get_class(
+                    canonical_name, self.latest_version(canonical_name)
+                ).model_json_schema()
+                for canonical_name in self.objects
+            },
+        )
+
+    def compute_released_protocol(self) -> ReleasedProtocol:
+        """The protocol artifact a release emits when the protocol changed."""
+        return ReleasedProtocol(protocol_schema=self.compute_protocol_schema())
+
+    def compute_released_package_protocol_info(self) -> ReleasedPackageProtocolInfo:
+        """The artifact EVERY package release emits."""
+        return ReleasedPackageProtocolInfo(
+            package_info=PackageInfo(
+                package_name=self.package_name,
+                version=self.package_version,
+                protocol_version=self.protocol_version,
+            ),
+            protocol_schema=self.compute_protocol_schema(),
         )
 
     def schema_for_protocol_version(self, protocol_version: str) -> ProtocolSchema:
@@ -204,3 +241,40 @@ class MigrationRegistry:
             raise MigrationError(
                 f"No protocol schema registered for protocol version {protocol_version!r}"
             )
+
+    # -- released schema integrity ------------------------------------------
+    def find_schema_drift(self) -> list[tuple[str, str, str]]:
+        """Check the current registry against ALL released protocols in history.
+
+        A released protocol froze, per canonical name, the JSON schema of its
+        current object version; the class registered for that version must still
+        produce the same schema. Returns the drifted
+        (canonical_name, object_version, protocol_version) tuples; empty = clean.
+        """
+        drifted = []
+        for protocol_version, schema in self.protocol_version_history.items():
+            for canonical_name, frozen in schema.current_object_schemas.items():
+                version = schema.current_schema(canonical_name)
+                try:
+                    current = self.get_class(
+                        canonical_name, version
+                    ).model_json_schema()
+                except MigrationError:
+                    current = None
+                if current != frozen:
+                    drifted.append((canonical_name, version, protocol_version))
+        return drifted
+
+    def protocol_changed_without_bump(self) -> bool:
+        """Whether the protocol changed while its version constant did not.
+
+        A package release must only bump the protocol version when the protocol
+        actually changed — and must bump it when it did. If a released protocol
+        schema exists for THIS registry's protocol version, its supported
+        versions must match the ones computed from the code.
+        """
+        released = self.protocol_version_history.get(self.protocol_version)
+        if released is None:
+            return False
+        current = self.compute_protocol_schema()
+        return released.supported_versions != current.supported_versions
