@@ -191,9 +191,10 @@ def save_gcp_project_id(credentials_path: Path) -> None:
     """Extract project_id from credentials.json and save to config.yaml."""
     try:
         project_id = get_project_id_from_credentials(credentials_path)
-        config = SyftBgConfig.from_path()
-        config.email_approve.gcp_project_id = project_id
-        config.save()
+        if not get_default_paths().config.exists():
+            return
+        with SyftBgConfig.edit() as config:
+            config.email_approve.gcp_project_id = project_id
     except Exception:
         pass
 

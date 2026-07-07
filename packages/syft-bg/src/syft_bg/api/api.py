@@ -56,10 +56,8 @@ def ensure_running(
     restart: bool = False,
     install: bool = False,
 ) -> None:
-    # store new settings
-    try:
-        config = SyftBgConfig.from_path()
-    except FileNotFoundError:
+    config_path = get_default_paths().config
+    if not config_path.exists():
         print("No config file found, run init first")
         return
 
@@ -68,13 +66,12 @@ def ensure_running(
     manager = ServiceManager()
 
     # store new settings
-    for name, service_config in services.items():
-        service = manager.get_service(name)
-        if not service:
-            raise ValueError(f"Unknown service: {name}")
-        config.set_service_config(name, service_config)
-
-    config.save()
+    with SyftBgConfig.edit(config_path) as config:
+        for name, service_config in services.items():
+            service = manager.get_service(name)
+            if not service:
+                raise ValueError(f"Unknown service: {name}")
+            config.set_service_config(name, service_config)
 
     # make sure services are running
     for name, service_config in services.items():
