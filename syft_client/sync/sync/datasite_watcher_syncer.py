@@ -135,12 +135,12 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         )
         return FileChangeEventsMessage.from_compressed_data(raw)
 
-    def download_dataset_file_with_new_connection(
+    def download_collection_file_with_new_connection(
         self, file_id: str, owner_email: str
     ) -> bytes:
-        """Download dataset file using a new connection (thread-safe)."""
+        """Download collection file using a new connection (thread-safe)."""
         connection = self.connection_router.connection_for_parallel_download()
-        data = connection.watcher_download_dataset_file(file_id)
+        data = connection.watcher_download_collection_file(file_id)
         data = self.connection_router.peer_store.decrypt_dataset_if_needed(
             owner_email, data
         )
@@ -159,10 +159,12 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             )
             if event_count:
                 print(f"Pulled {event_count} inbound event(s) from {peer_email}")
-            # Sync datasets with parallel download
-            self.datasite_watcher_cache.sync_down_datasets_parallel(
+            # Sync collections with parallel download
+            self.datasite_watcher_cache.sync_down_collections_parallel(
                 peer_email,
                 self._executor,
                 lambda fid,
-                pe=peer_email: self.download_dataset_file_with_new_connection(fid, pe),
+                pe=peer_email: self.download_collection_file_with_new_connection(
+                    fid, pe
+                ),
             )

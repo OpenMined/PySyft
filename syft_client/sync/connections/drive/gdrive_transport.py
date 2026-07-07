@@ -29,10 +29,6 @@ from syft_client.sync.connections.base_connection import (
     FileCollection,
     SyftboxPlatformConnection,
 )
-from syft_datasets.dataset_manager import (
-    DATASET_COLLECTION_PREFIX,
-    PRIVATE_DATASET_COLLECTION_PREFIX,
-)
 from syft_client.sync.events.file_change_event import (
     FileChangeEventsMessageFileName,
     FileChangeEventsMessage,
@@ -66,6 +62,11 @@ GOOGLE_API_TIMEOUT = 120  # 2 minutes
 SYFTBOX_FOLDER = "SyftBox"
 GOOGLE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 SCOPES = ["https://www.googleapis.com/auth/drive"]
+
+from syft_client.sync.connections.collection_prefixes import (
+    DATASET_COLLECTION_PREFIX,
+    PRIVATE_DATASET_COLLECTION_PREFIX,
+)
 logging.getLogger("google_auth_httplib2").setLevel(logging.ERROR)
 
 
@@ -144,26 +145,7 @@ class GdrivePersonalSyftboxFolder(BaseModel):
 
 
 class DatasetCollectionFolder(BaseModel):
-    """Represents a dataset collection folder with format: {prefix}_{tag}_{hash}"""
-
-    tag: str
-    content_hash: str
-
-    def as_string(self) -> str:
-        return f"{DATASET_COLLECTION_PREFIX}_{self.tag}_{self.content_hash}"
-
-    @classmethod
-    def from_name(cls, name: str) -> "DatasetCollectionFolder":
-        """Parse folder name like 'syft_datasetcollection_mytag_abc123'"""
-        parts = name.split("_")
-        if len(parts) < 3:
-            raise ValueError(f"Invalid dataset collection folder name: {name}")
-        # prefix is parts[0:2] joined = "syft_datasetcollection"
-        # tag is parts[2:-1] joined (in case tag has underscores)
-        # hash is parts[-1]
-        tag = "_".join(parts[2:-1])
-        content_hash = parts[-1]
-        return cls(tag=tag, content_hash=content_hash)
+    """Content-hash helper for dataset collection folders."""
 
     @staticmethod
     def compute_hash(files: dict[str, bytes]) -> str:
@@ -174,23 +156,7 @@ class DatasetCollectionFolder(BaseModel):
 
 
 class PrivateDatasetCollectionFolder(BaseModel):
-    """Represents a private dataset collection folder with format: {prefix}_{tag}_{hash}"""
-
-    tag: str
-    content_hash: str
-
-    def as_string(self) -> str:
-        return f"{PRIVATE_DATASET_COLLECTION_PREFIX}_{self.tag}_{self.content_hash}"
-
-    @classmethod
-    def from_name(cls, name: str) -> "PrivateDatasetCollectionFolder":
-        """Parse folder name like 'syft_privatecollection_mytag_abc123'"""
-        parts = name.split("_")
-        if len(parts) < 3:
-            raise ValueError(f"Invalid private collection folder name: {name}")
-        tag = "_".join(parts[2:-1])
-        content_hash = parts[-1]
-        return cls(tag=tag, content_hash=content_hash)
+    """Content-hash helper for private dataset collection folders."""
 
     @staticmethod
     def compute_hash(files: dict[str, bytes]) -> str:
@@ -1744,32 +1710,6 @@ class GDriveConnection(SyftboxPlatformConnection):
         self.dataset_collection_folder_id_cache[cache_key] = folder_id
         return folder_id
 
-    # =========================================================================
-    # DATASET COLLECTION METHODS (delegate to generic methods above)
-    # =========================================================================
-
-    def owner_create_dataset_collection_folder(
-        self, tag: str, content_hash: str, owner_email: str
-    ) -> str:
-        """Create /SyftBox/{DATASET_COLLECTION_PREFIX}_{tag}_{hash} folder."""
-        return self.owner_create_collection_folder(
-            DATASET_COLLECTION_PREFIX, tag, content_hash, owner_email
-        )
-
-    def owner_tag_dataset_collection_as_any(self, tag: str, content_hash: str) -> None:
-        """Mark dataset collection as shared with 'any' via appProperties."""
-        return self.owner_tag_collection_as_any(
-            DATASET_COLLECTION_PREFIX, tag, content_hash
-        )
-
-    def owner_share_dataset_collection(
-        self, tag: str, content_hash: str, users: list[str]
-    ) -> None:
-        """Share dataset collection folder with specific users via batch API."""
-        return self.owner_share_collection(
-            DATASET_COLLECTION_PREFIX, tag, content_hash, users
-        )
-
     def _batch_add_permissions(self, file_id: str, users: list[str]) -> None:
         """Add reader permissions for multiple users in a single batch request."""
 
@@ -1797,110 +1737,6 @@ class GDriveConnection(SyftboxPlatformConnection):
                     )
                 )
             batch_execute_with_retries(batch)
-
-    def owner_upload_dataset_files(
-        self, tag: str, content_hash: str, files: dict[str, bytes]
-    ) -> None:
-        """Upload dataset files to collection folder."""
-        return self.owner_upload_collection_files(
-            DATASET_COLLECTION_PREFIX, tag, content_hash, files
-        )
-
-    def owner_list_dataset_collections(self) -> list[str]:
-        """List collections created by DO (owned by me)."""
-        return self.owner_list_collections(DATASET_COLLECTION_PREFIX)
-
-    def owner_list_all_dataset_collections_with_permissions(
-        self,
-    ) -> list[FileCollection]:
-        """List all DO's dataset collections with permissions info."""
-        return self.owner_list_all_collections_with_permissions(
-            DATASET_COLLECTION_PREFIX
-        )
-
-    def owner_delete_dataset_collection(self, tag: str) -> None:
-        """Delete all public dataset collection folders matching the given tag."""
-        return self.owner_delete_collection(DATASET_COLLECTION_PREFIX, tag)
-
-    def watcher_list_dataset_collections(self) -> list[dict]:
-        """List collections shared with DS (not owned by me).
-
-        Returns list of dicts with keys: owner_email, tag, content_hash
-        """
-        return self.watcher_list_collections(DATASET_COLLECTION_PREFIX)
-
-    def watcher_download_dataset_collection(
-        self, tag: str, content_hash: str, owner_email: str
-    ) -> dict[str, bytes]:
-        """Download all files from a dataset collection."""
-        return self.watcher_download_collection(
-            DATASET_COLLECTION_PREFIX, tag, content_hash, owner_email
-        )
-
-    def watcher_get_dataset_collection_file_metadatas(
-        self, tag: str, content_hash: str, owner_email: str
-    ) -> List[Dict]:
-        """Get file metadata from a dataset collection without downloading."""
-        return self.watcher_get_collection_file_metadatas(
-            DATASET_COLLECTION_PREFIX, tag, content_hash, owner_email
-        )
-
-    def watcher_download_dataset_file(self, file_id: str) -> bytes:
-        """Download a single file from a dataset collection."""
-        return self.download_file(file_id)
-
-    def _get_dataset_collection_folder_id(self, tag: str, content_hash: str) -> str:
-        """Get folder ID for dataset collection, with caching."""
-        return self._get_collection_folder_id(
-            DATASET_COLLECTION_PREFIX, tag, content_hash
-        )
-
-    # =========================================================================
-    # PRIVATE DATASET COLLECTION METHODS
-    # =========================================================================
-
-    def owner_create_private_dataset_collection_folder(
-        self, tag: str, content_hash: str, owner_email: str
-    ) -> str:
-        """Create /SyftBox/{PRIVATE_DATASET_COLLECTION_PREFIX}_{tag}_{hash} folder.
-
-        No sharing is applied — only the owner can access this folder.
-        """
-        return self.owner_create_collection_folder(
-            PRIVATE_DATASET_COLLECTION_PREFIX, tag, content_hash, owner_email
-        )
-
-    def owner_upload_private_dataset_files(
-        self, tag: str, content_hash: str, files: dict[str, bytes]
-    ) -> None:
-        """Upload files to a private dataset collection folder."""
-        return self.owner_upload_collection_files(
-            PRIVATE_DATASET_COLLECTION_PREFIX, tag, content_hash, files
-        )
-
-    def owner_list_private_dataset_collections(self) -> list[FileCollection]:
-        """List private collections owned by DO."""
-        return self.owner_list_all_collections_with_permissions(
-            PRIVATE_DATASET_COLLECTION_PREFIX
-        )
-
-    def owner_delete_private_dataset_collection(self, tag: str) -> None:
-        """Delete all private dataset collection folders matching the given tag."""
-        return self.owner_delete_collection(PRIVATE_DATASET_COLLECTION_PREFIX, tag)
-
-    def owner_get_private_collection_file_metadatas(
-        self, tag: str, content_hash: str, owner_email: str
-    ) -> List[Dict]:
-        """Get file metadata from a private dataset collection without downloading."""
-        return self.watcher_get_collection_file_metadatas(
-            PRIVATE_DATASET_COLLECTION_PREFIX, tag, content_hash, owner_email
-        )
-
-    def _get_private_collection_folder_id(self, tag: str, content_hash: str) -> str:
-        """Get folder ID for private dataset collection, with caching."""
-        return self._get_collection_folder_id(
-            PRIVATE_DATASET_COLLECTION_PREFIX, tag, content_hash
-        )
 
     def _get_version_file_id(self) -> Optional[str]:
         """Find SYFT_version.json file in /SyftBox folder"""

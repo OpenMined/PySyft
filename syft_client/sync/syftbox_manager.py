@@ -11,9 +11,6 @@ from syft_client.utils import resolve_path
 from concurrent.futures import ThreadPoolExecutor
 import time
 from pydantic import ConfigDict
-from syft_client.sync.connections.collection_prefixes import (
-    DATASET_COLLECTION_PREFIX,
-)
 from syft_client.sync.platforms.base_platform import BasePlatform
 from pydantic import BaseModel, PrivateAttr
 from typing import List, Optional, cast
@@ -65,7 +62,6 @@ logger = logging.getLogger(__name__)
 
 COLAB_DEFAULT_SYFTBOX_FOLDER = Path("/")
 JUPYTER_DEFAULT_SYFTBOX_FOLDER = Path.home() / "SyftBox"
-COLLECTION_SUBPATH = Path("public/syft_datasets")
 
 # ANSI codes for highlighting important warnings in terminals / notebooks.
 _ANSI_RED = "\033[1;91m"
@@ -110,22 +106,25 @@ class SyftboxManagerConfig(BaseModel):
         if not has_ds_role and not has_do_role:
             raise ValueError("At least one of has_ds_role or has_do_role must be True")
 
+        # No collection specs by default: the generic sync engine knows nothing
+        # about datasets. syft-rds registers its dataset spec at initialization
+        # (see syft_rds.config.DATASET_COLLECTION_SPECS).
         if collection_specs is None:
-            collection_specs = [
-                CollectionSyncSpec(
-                    prefix=DATASET_COLLECTION_PREFIX,
-                    local_subpath=COLLECTION_SUBPATH,
-                )
-            ]
+            collection_specs = []
 
         syftbox_folder = get_colab_default_syftbox_folder(email)
         use_in_memory_cache = False
-        collections_folder = syftbox_folder / email / COLLECTION_SUBPATH
+        collections_folder = (
+            syftbox_folder / email / collection_specs[0].local_subpath
+            if collection_specs
+            else None
+        )
         connection_configs = [GdriveConnectionConfig(email=email, token_path=None)]
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
+            collection_specs=collection_specs,
             connection_configs=connection_configs,
             cache_config=DataSiteOwnerEventCacheConfig(
                 email=email,
@@ -187,16 +186,18 @@ class SyftboxManagerConfig(BaseModel):
         if not has_ds_role and not has_do_role:
             raise ValueError("At least one of has_ds_role or has_do_role must be True")
 
+        # No collection specs by default: the generic sync engine knows nothing
+        # about datasets. syft-rds registers its dataset spec at initialization
+        # (see syft_rds.config.DATASET_COLLECTION_SPECS).
         if collection_specs is None:
-            collection_specs = [
-                CollectionSyncSpec(
-                    prefix=DATASET_COLLECTION_PREFIX,
-                    local_subpath=COLLECTION_SUBPATH,
-                )
-            ]
+            collection_specs = []
 
         syftbox_folder = get_jupyter_default_syftbox_folder(email)
-        collections_folder = syftbox_folder / email / COLLECTION_SUBPATH
+        collections_folder = (
+            syftbox_folder / email / collection_specs[0].local_subpath
+            if collection_specs
+            else None
+        )
 
         connection_configs = [
             GdriveConnectionConfig(email=email, token_path=token_path)
@@ -205,6 +206,7 @@ class SyftboxManagerConfig(BaseModel):
             email=email,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
+            collection_specs=collection_specs,
             connection_configs=connection_configs,
             cache_config=DataSiteOwnerEventCacheConfig(
                 email=email,
@@ -260,22 +262,25 @@ class SyftboxManagerConfig(BaseModel):
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
+        # No collection specs by default: the generic sync engine knows nothing
+        # about datasets. syft-rds registers its dataset spec at initialization
+        # (see syft_rds.config.DATASET_COLLECTION_SPECS).
         if collection_specs is None:
-            collection_specs = [
-                CollectionSyncSpec(
-                    prefix=DATASET_COLLECTION_PREFIX,
-                    local_subpath=COLLECTION_SUBPATH,
-                )
-            ]
+            collection_specs = []
 
         syftbox_folder = syftbox_folder or random_syftbox_folder_for_testing()
         email = email or random_email()
-        collections_folder = syftbox_folder / email / COLLECTION_SUBPATH
+        collections_folder = (
+            syftbox_folder / email / collection_specs[0].local_subpath
+            if collection_specs
+            else None
+        )
 
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
+            collection_specs=collection_specs,
             write_files=write_files,
             cache_config=DataSiteOwnerEventCacheConfig(
                 email=email,
@@ -330,17 +335,19 @@ class SyftboxManagerConfig(BaseModel):
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
+        # No collection specs by default: the generic sync engine knows nothing
+        # about datasets. syft-rds registers its dataset spec at initialization
+        # (see syft_rds.config.DATASET_COLLECTION_SPECS).
         if collection_specs is None:
-            collection_specs = [
-                CollectionSyncSpec(
-                    prefix=DATASET_COLLECTION_PREFIX,
-                    local_subpath=COLLECTION_SUBPATH,
-                )
-            ]
+            collection_specs = []
 
         syftbox_folder = syftbox_folder or random_syftbox_folder_for_testing()
         email = email or random_email()
-        collections_folder = Path(syftbox_folder) / email / COLLECTION_SUBPATH
+        collections_folder = (
+            Path(syftbox_folder) / email / collection_specs[0].local_subpath
+            if collection_specs
+            else None
+        )
         connection_configs = [
             GdriveConnectionConfig(email=email, token_path=token_path)
         ]
@@ -348,6 +355,7 @@ class SyftboxManagerConfig(BaseModel):
             email=email,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
+            collection_specs=collection_specs,
             connection_configs=connection_configs,
             cache_config=DataSiteOwnerEventCacheConfig(
                 email=email,
