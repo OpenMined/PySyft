@@ -11,10 +11,11 @@ On **every** release, export the release artifacts:
 uv run python -m syft_job.migrations.export_release_artifact
 ```
 
-This always writes `src/syft_job/migrations/history/syft-job-<version>.json`
+This always writes
+`src/syft_job/migrations/history/package-artifacts/syft-job-<version>.json`
 (the package's identity + the protocol it speaks), and additionally writes
-`protocol-<n>.json` when the release ships a new protocol version. The script
-refuses to run if the job protocol changed without bumping
+`history/protocols/protocol-<n>.json` when the release ships a new protocol
+version. The script refuses to run if the job protocol changed without bumping
 `JOB_PROTOCOL_VERSION` (`src/syft_job/migrations/registry.py`).
 
 Tests check the code against these artifacts: released object versions are

@@ -7,12 +7,14 @@ from syft_migration import (
 )
 
 from syft_job.migrations import job_registry
-from syft_job.migrations.history import HISTORY_DIR
+from syft_job.migrations.history import PACKAGE_ARTIFACTS_DIR, PROTOCOLS_DIR
 from syft_job.models import JobStateV1, JobStatus
 
 
 def test_0_1_38_artifact_file_loads():
-    artifact = ReleasedPackageProtocolInfo.load(HISTORY_DIR / "syft-job-0.1.38.json")
+    artifact = ReleasedPackageProtocolInfo.load(
+        PACKAGE_ARTIFACTS_DIR / "syft-job-0.1.38.json"
+    )
     assert artifact.package_info.package_name == "syft-job"
     assert artifact.package_info.version == "0.1.38"
     assert artifact.package_info.protocol_version == "0"
@@ -23,7 +25,7 @@ def test_0_1_38_artifact_file_loads():
 
 
 def test_protocol_0_released_protocol_loads():
-    released = ReleasedProtocol.load(HISTORY_DIR / "protocol-0.json")
+    released = ReleasedProtocol.load(PROTOCOLS_DIR / "protocol-0.json")
     schema = released.protocol_schema
     assert schema.version == "0"
     assert set(schema.current_object_schemas) == {

@@ -8,7 +8,7 @@ artifact when this release introduces a new protocol version.
 import sys
 
 from ..version import __version__
-from .history import HISTORY_DIR
+from .history import PACKAGE_ARTIFACTS_DIR, PROTOCOLS_DIR
 from .registry import JOB_PROTOCOL_VERSION, job_registry
 
 
@@ -23,11 +23,11 @@ def main() -> None:
             "in syft_job/migrations/registry.py before releasing."
         )
 
-    info_path = HISTORY_DIR / f"syft-job-{__version__}.json"
+    info_path = PACKAGE_ARTIFACTS_DIR / f"syft-job-{__version__}.json"
     job_registry.compute_released_package_protocol_info().save(info_path)
     print(f"Wrote {info_path}")
 
-    protocol_path = HISTORY_DIR / f"protocol-{JOB_PROTOCOL_VERSION}.json"
+    protocol_path = PROTOCOLS_DIR / f"protocol-{JOB_PROTOCOL_VERSION}.json"
     if not protocol_path.exists():
         job_registry.compute_released_protocol().save(protocol_path)
         print(f"Wrote {protocol_path} (new protocol version)")
