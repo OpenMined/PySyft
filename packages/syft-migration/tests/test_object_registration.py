@@ -4,13 +4,19 @@ import pytest
 
 from syft_migration import MigratableObject, MigrationError, MigrationRegistry
 
-from mocks import JobV1, JobV2
+from mocks import MyVersionedObjectV1, MyVersionedObjectV2
 
 
 def test_subclass_auto_registers(registry):
-    assert registry.get_class(canonical_name="job", version="1") is JobV1
-    assert registry.get_class(canonical_name="job", version="2") is JobV2
-    assert set(registry.versions(canonical_name="job")) == {"1", "2", "3"}
+    assert (
+        registry.get_class(canonical_name="MyVersionedObject", version="1")
+        is MyVersionedObjectV1
+    )
+    assert (
+        registry.get_class(canonical_name="MyVersionedObject", version="2")
+        is MyVersionedObjectV2
+    )
+    assert set(registry.versions(canonical_name="MyVersionedObject")) == {"1", "2", "3"}
 
 
 def test_concrete_class_without_registry_raises():
@@ -22,8 +28,13 @@ def test_concrete_class_without_registry_raises():
 
 
 def test_register_object_version_idempotent_for_same_class(registry):
-    registry.register_object_version(cls=JobV1)  # already registered; must not raise
-    assert registry.get_class(canonical_name="job", version="1") is JobV1
+    registry.register_object_version(
+        cls=MyVersionedObjectV1
+    )  # already registered; must not raise
+    assert (
+        registry.get_class(canonical_name="MyVersionedObject", version="1")
+        is MyVersionedObjectV1
+    )
 
 
 def test_current_protocol_schema_tracks_newly_defined_objects():
@@ -44,18 +55,18 @@ def test_current_protocol_schema_tracks_newly_defined_objects():
 
 
 def test_has_upgradeable_path_to_latest(registry):
-    # job has migrations 1 -> 2 -> 3; the latest version is trivially upgradeable.
-    assert registry.has_upgradeable_path_to_latest("job", "1")
-    assert registry.has_upgradeable_path_to_latest("job", "2")
-    assert registry.has_upgradeable_path_to_latest("job", "3")
+    # MyVersionedObject has migrations 1 -> 2 -> 3; latest is trivially upgradeable.
+    assert registry.has_upgradeable_path_to_latest("MyVersionedObject", "1")
+    assert registry.has_upgradeable_path_to_latest("MyVersionedObject", "2")
+    assert registry.has_upgradeable_path_to_latest("MyVersionedObject", "3")
 
 
 def test_has_migration_path(registry):
-    # job has migrations 1 -> 2 -> 3 and 2 -> 1, but nothing down from 3.
-    assert registry.has_migration_path("job", "1", "3")
-    assert registry.has_migration_path("job", "2", "1")
-    assert not registry.has_migration_path("job", "3", "1")
-    assert registry.has_migration_path("job", "2", "2")  # noop path
+    # MyVersionedObject has migrations 1 -> 2 -> 3 and 2 -> 1, but nothing down from 3.
+    assert registry.has_migration_path("MyVersionedObject", "1", "3")
+    assert registry.has_migration_path("MyVersionedObject", "2", "1")
+    assert not registry.has_migration_path("MyVersionedObject", "3", "1")
+    assert registry.has_migration_path("MyVersionedObject", "2", "2")  # noop path
 
 
 def test_has_upgradeable_path_single_version_and_missing_migration():
