@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 
 from syft_bg.common.state import JsonStateManager
 from syft_bg.notify.gmail.sender import GmailSender
-from syft_client.sync.utils.path_filters import is_normal_syncable_path
+from syft_rds import is_normal_syncable_path
 
 if TYPE_CHECKING:
     from syft_job.client import JobClient

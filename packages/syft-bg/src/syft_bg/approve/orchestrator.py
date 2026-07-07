@@ -73,12 +73,14 @@ class ApprovalOrchestrator(BaseOrchestrator):
         # both run cold-start.
         cls._wait_for_sync_ready(label="Approve")
 
-        from syft_client.sync.environments.environment import Environment
-        from syft_client.sync.utils.syftbox_utils import check_env
-        from syft_rds import SyftRDSClient, SyftRDSClientConfig
+        from syft_rds import (
+            Environment,
+            SyftRDSClient,
+            SyftRDSClientConfig,
+            check_env,
+        )
 
-        env = check_env()
-        if env == Environment.COLAB:
+        if check_env() == Environment.COLAB:
             rds_config = SyftRDSClientConfig.for_colab(
                 email=config.do_email,
                 has_do_role=True,
