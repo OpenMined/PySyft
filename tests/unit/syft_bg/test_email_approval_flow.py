@@ -17,7 +17,7 @@ from syft_bg.notify.gmail.sender import SendResult
 from syft_bg.notify.handlers.job import JobHandler
 from syft_bg.notify.monitors.job import JobMonitor
 from syft_bg.notify.orchestrator import NotificationOrchestrator
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft_rds import SyftRDSClient
 
 from tests.unit.utils import create_test_project_folder, create_tmp_dataset_files
 
@@ -25,7 +25,7 @@ FAKE_THREAD_ID = "thread_abc_123"
 
 
 def _make_notify_orchestrator(
-    do_manager: SyftboxManager,
+    do_manager: SyftRDSClient,
     tmp: Path,
 ) -> tuple[NotificationOrchestrator, JsonStateManager, MagicMock]:
     """Create a NotificationOrchestrator with a mocked GmailSender.
@@ -64,7 +64,7 @@ def _make_notify_orchestrator(
 
 
 def _make_email_approve_orchestrator(
-    do_manager: SyftboxManager,
+    do_manager: SyftRDSClient,
     notify_state: JsonStateManager,
     tmp: Path,
 ) -> tuple[EmailApproveOrchestrator, EmailApproveMonitor, JsonStateManager, MagicMock]:
@@ -132,7 +132,7 @@ def test_email_approval_e2e():
     """Full flow: DS submits job -> notify detects it -> email approval -> DS gets results."""
 
     # -- Step 1: Create DO/DS clients --
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_for_testing(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
