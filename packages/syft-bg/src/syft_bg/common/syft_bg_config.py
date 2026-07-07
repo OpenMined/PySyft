@@ -19,14 +19,14 @@ class SyftBgConfig(BaseModel):
     """Top-level syft-bg configuration, matching the config.yaml structure."""
 
     do_email: str | None = None
-    syftbox_root: str | None = None
+    syftbox_root: str | Path | None = None
     credentials_path: Path = Field(
         default_factory=lambda: get_default_paths().credentials
     )
     gmail_token_path: Path = Field(
         default_factory=lambda: get_default_paths().gmail_token
     )
-    drive_token_path: Path = Field(
+    drive_token_path: Path | None = Field(
         default_factory=lambda: get_default_paths().drive_token
     )
     notify: NotifyConfig = Field(default_factory=NotifyConfig)

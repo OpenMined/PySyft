@@ -38,7 +38,6 @@ def init(
     config = SyftBgConfig(
         do_email=do_email,
         syftbox_root=syftbox_root,
-        token_path=token_path,
         drive_token_path=token_path,
     )
 
