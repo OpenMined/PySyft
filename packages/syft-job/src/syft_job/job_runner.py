@@ -508,7 +508,6 @@ class SyftJobRunner:
         return JobInfo(
             job_metadata=metadata,
             state=state,
-            datasite_owner_email=self.config.current_user_email,
             current_user_email=self.config.current_user_email,
             client=client,
             ref=ref,

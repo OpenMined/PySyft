@@ -586,7 +586,6 @@ python {entrypoint_path}
                         JobInfo(
                             job_metadata=config,
                             state=state,
-                            datasite_owner_email=datasite_owner_email,
                             current_user_email=self.current_user_email,
                             client=self,
                             ref=ref,
