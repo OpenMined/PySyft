@@ -365,22 +365,25 @@ def auto_approve(
     # resolves the final name, unlike copying straight into a name-derived
     # directory. The staging dir lives inside auto_approvals_dir so the
     # later rename into place is an atomic same-filesystem move.
+    #
     auto_approvals_dir = get_default_paths().auto_approvals_dir
     auto_approvals_dir.mkdir(parents=True, exist_ok=True)
-    staging_dir = Path(
+    current_dir = Path(
         tempfile.mkdtemp(prefix=".auto_approve_staging_", dir=auto_approvals_dir)
     )
-    file_entries = copy_and_hash_files(content_files, staging_dir.name)
-
+    succeeded = False
     try:
+        file_entries = copy_and_hash_files(content_files, current_dir.name)
+
         with SyftBgConfig.edit() as syft_bg_config:
             config = syft_bg_config.approve
             name = generate_unique_name(name, content_files, config)
             final_dir = auto_approvals_dir / name
             try:
-                staging_dir.rename(final_dir)
+                current_dir.rename(final_dir)
             except OSError as e:
                 raise _AutoApproveDirectoryConflict(str(e)) from e
+            current_dir = final_dir
 
             file_entries = [
                 FileEntry(
@@ -397,12 +400,15 @@ def auto_approve(
                 peers=peers,
             )
             config.auto_approvals.objects[name] = obj
+        succeeded = True
     except _AutoApproveDirectoryConflict as e:
-        shutil.rmtree(staging_dir, ignore_errors=True)
         return AutoApproveResult(
             success=False,
             error=f"Could not finalize auto-approval directory '{name}': {e}",
         )
+    finally:
+        if not succeeded:
+            shutil.rmtree(current_dir, ignore_errors=True)
 
     return AutoApproveResult(
         success=True,

@@ -6,6 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 
 from syft_bg.api.api import auto_approve, list_auto_approvals, remove_auto_approve
 from syft_bg.api.utils import copy_and_hash_files
@@ -202,6 +203,42 @@ class TestAutoApproveLockScope:
                 if p.name.startswith(".auto_approve_staging_")
             ]
             assert leftover_staging == []
+
+    def test_staging_dir_cleaned_up_when_copy_and_hash_fails(self, temp_dir):
+        """A failure during the unlocked copy/hash step (e.g. a bad file
+        read) must not leak the staging directory it already created."""
+        with _patched_paths(temp_dir) as patched:
+            content_dir = temp_dir / "project"
+            content_dir.mkdir()
+            (content_dir / "main.py").write_text("print('hi')\n")
+
+            with patch(
+                "syft_bg.api.api.copy_and_hash_files",
+                side_effect=UnicodeDecodeError("utf-8", b"\xff", 0, 1, "bad byte"),
+            ):
+                with pytest.raises(UnicodeDecodeError):
+                    auto_approve(contents=[str(content_dir / "main.py")])
+
+            assert list(patched.auto_approvals_dir.iterdir()) == []
+
+    def test_final_dir_cleaned_up_when_save_fails_after_rename(self, temp_dir):
+        """A failure after the staging->final rename already succeeded
+        (e.g. config.save() itself fails) must not leave an orphaned,
+        unregistered directory behind — not just the rename-collision case."""
+        with _patched_paths(temp_dir) as patched:
+            content_dir = temp_dir / "project"
+            content_dir.mkdir()
+            (content_dir / "main.py").write_text("print('hi')\n")
+
+            with patch(
+                "syft_bg.common.syft_bg_config.SyftBgConfig.save",
+                side_effect=OSError("disk full"),
+            ):
+                with pytest.raises(OSError):
+                    auto_approve(contents=[str(content_dir / "main.py")])
+
+            assert list(patched.auto_approvals_dir.iterdir()) == []
+            assert not patched.config.exists()
 
 
 class TestHandlerReloadsConfig:
