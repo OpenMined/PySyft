@@ -32,7 +32,7 @@ UNSCANNED = "unscanned.job"
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 RELEASE_FIXTURES = sorted(FIXTURES_DIR.glob("syft_job-*-protocol*_syftbox"))
-PROTOCOLS = sorted(
+RELEASED_PROTOCOL_VERSION_STRINGS = sorted(
     {re.search(r"-protocol(\d+)_syftbox$", f.name).group(1) for f in RELEASE_FIXTURES}
 )
 
@@ -83,7 +83,7 @@ def _expected_state_yaml(job, protocol: str) -> str:
 
 
 @released_syftbox_fixtures
-def test_release_jobs_load_and_upgrade(fixture: Path, tmp_path: Path):
+def test_old_version_jobs_load_and_upgrade(fixture: Path, tmp_path: Path):
     syftbox_w_old_protocol_jobs = _syftbox_w_old_protocol_jobs(fixture, tmp_path)
     do_client_current_protocol = _do_client_current_protocol(
         syftbox_w_old_protocol_jobs
@@ -106,7 +106,8 @@ def test_release_jobs_load_and_upgrade(fixture: Path, tmp_path: Path):
 
 
 @released_syftbox_fixtures
-def test_scan_inbox_writes_state_in_release_layout(fixture: Path, tmp_path: Path):
+def test_scan_inbox_writes_state_in_right_version(fixture: Path, tmp_path: Path):
+    # if DS is lower version we should write the state in the lower version
     protocol = _protocol_of(fixture)
     syftbox_w_old_protocol_jobs = _syftbox_w_old_protocol_jobs(fixture, tmp_path)
 
@@ -125,7 +126,7 @@ def test_scan_inbox_writes_state_in_release_layout(fixture: Path, tmp_path: Path
 
 
 @released_syftbox_fixtures
-def test_approve_writes_back_release_format(fixture: Path, tmp_path: Path):
+def test_approve_writes_back_lower_version_format(fixture: Path, tmp_path: Path):
     protocol = _protocol_of(fixture)
     syftbox_w_old_protocol_jobs = _syftbox_w_old_protocol_jobs(fixture, tmp_path)
     do_client_current_protocol = _do_client_current_protocol(
@@ -146,7 +147,8 @@ def test_approve_writes_back_release_format(fixture: Path, tmp_path: Path):
 
 
 @released_syftbox_fixtures
-def test_mixed_protocol_listing(fixture: Path, tmp_path: Path):
+def test_mixed_protocol_listing_jobs(fixture: Path, tmp_path: Path):
+    # old format + previous format load together
     syftbox_w_old_protocol_jobs = _syftbox_w_old_protocol_jobs(fixture, tmp_path)
     ds_config_current_protocol = SyftJobConfig(
         syftbox_folder=syftbox_w_old_protocol_jobs, current_user_email=DS_EMAIL
@@ -171,14 +173,14 @@ def test_job_reprs_do_not_error(fixture: Path, tmp_path: Path):
         assert render(old_protocol_jobs[0])
 
 
-@pytest.mark.parametrize("protocol", PROTOCOLS)
-def test_submit_to_peer_writes_that_protocol_layout(protocol: str, tmp_path: Path):
+@pytest.mark.parametrize("peer_protocol", RELEASED_PROTOCOL_VERSION_STRINGS)
+def test_submit_to_peer_writes_that_protocol_layout(peer_protocol: str, tmp_path: Path):
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
     ds_config_current_protocol = SyftJobConfig(
         syftbox_folder=syftbox, current_user_email=DS_EMAIL
     )
-    peer_schema = job_registry.schema_for_protocol_version(protocol)
+    peer_schema = job_registry.schema_for_protocol_version(peer_protocol)
     ds_client_current_protocol = JobClient(
         config=ds_config_current_protocol, peer_schemas={DO_EMAIL: peer_schema}
     )
@@ -188,9 +190,14 @@ def test_submit_to_peer_writes_that_protocol_layout(protocol: str, tmp_path: Pat
     )
 
     # Layout and format match the peer's protocol.
-    assert job_dir.parent.name == (protocol_dir_name(protocol) or DS_EMAIL)
     raw = yaml.safe_load((job_dir / "config.yaml").read_text())
-    assert ("canonical_name" in raw) is _has_identity(protocol)
-    assert ("version" in raw) is _has_identity(protocol)
+    if peer_protocol == "0":
+        # Protocol 0: no v<n> segment and no canonical_name/version fields.
+        assert job_dir.parent.name == DS_EMAIL
+        assert "canonical_name" not in raw and "version" not in raw
+    else:
+        # Protocol >= 1: job under a v<n> segment, identity fields written.
+        assert job_dir.parent.name == protocol_dir_name(peer_protocol)
+        assert "canonical_name" in raw and "version" in raw
     # The DS's own (current) client still lists and reads it back.
     assert ds_client_current_protocol.jobs[0].name == "peer.job"
