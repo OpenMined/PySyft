@@ -45,7 +45,7 @@ def test_ds_perms_cover_v1_subfolder(tmp_path: Path):
     assert ctx.open(f"app_data/job/review/{DS_EMAIL}/v1/").has_read_access(DS_EMAIL)
 
 
-def test_protocol_version_for_peer_raises_on_unknown(tmp_path: Path):
+def test_negotiated_protocol_version_for_peer_raises_on_unknown(tmp_path: Path):
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
     ds_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
@@ -54,11 +54,14 @@ def test_protocol_version_for_peer_raises_on_unknown(tmp_path: Path):
         config=ds_config, peer_schemas={DO_EMAIL: protocol0_schema}
     ).manager
 
-    assert manager.protocol_version_for_peer(DO_EMAIL) == "0"
+    # An older peer negotiates down to the version both sides can read.
+    assert manager.negotiated_protocol_version_for_peer(DO_EMAIL) == "0"
     with pytest.raises(MigrationError):
-        manager.protocol_version_for_peer("stranger@test.org")
+        manager.negotiated_protocol_version_for_peer("stranger@test.org")
     # Opting out assumes the current protocol.
     assert (
-        manager.protocol_version_for_peer("stranger@test.org", raise_on_unknown=False)
+        manager.negotiated_protocol_version_for_peer(
+            "stranger@test.org", raise_on_unknown=False
+        )
         == JOB_PROTOCOL_VERSION
     )

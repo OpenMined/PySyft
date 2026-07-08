@@ -48,7 +48,7 @@ class JobSubmissionMetadataV1(MigratableObject, registry=job_registry):
         return re.match(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$", email) is not None
 
     @classmethod
-    def _emails_from_path(cls, path: Path) -> tuple[str, str]:
+    def _ds_and_dsite_owner_emails_from_path(cls, path: Path) -> tuple[str, str]:
         """(submitted_by, datasite_email) from an inbox config.yaml path.
 
         Layout: <datasite_email>/app_data/job/inbox/<ds_email>/[v<n>/]<job>/config.yaml
@@ -61,7 +61,7 @@ class JobSubmissionMetadataV1(MigratableObject, registry=job_registry):
     @classmethod
     def load(cls, path: Path) -> JobSubmissionMetadataV1:
         """Load config from a YAML file."""
-        submitted_by, datasite_email = cls._emails_from_path(path)
+        submitted_by, datasite_email = cls._ds_and_dsite_owner_emails_from_path(path)
         if not cls.is_valid_email(datasite_email):
             raise ValueError(f"Invalid datasite email: {datasite_email}")
         with open(path, "r") as f:

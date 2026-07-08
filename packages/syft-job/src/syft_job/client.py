@@ -99,7 +99,7 @@ class JobClient(BaseJobClient):
         """Ensure inbox directory structure exists for submitting jobs."""
         my_submission_dir = self.config._get_job_submission_dir_for_me(
             target_datasite_owner_email,
-            protocol_version=self.manager.protocol_version_for_peer(
+            protocol_version=self.manager.negotiated_protocol_version_for_peer(
                 target_datasite_owner_email, raise_on_unknown=False
             ),
         )

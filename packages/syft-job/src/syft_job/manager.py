@@ -49,17 +49,19 @@ class JobManager:
         self.peer_schemas: dict[str, ProtocolSchema] = peer_schemas or {}
 
     # -- peers / protocol ----------------------------------------------------
-    def protocol_version_for_peer(
+    def negotiated_protocol_version_for_peer(
         self, peer_email: str, raise_on_unknown: bool = True
     ) -> str:
-        """The job protocol version ``peer_email`` speaks.
+        """The job protocol version to speak with ``peer_email``.
 
-        A peer without a known schema raises by default; with
-        ``raise_on_unknown=False`` it is assumed to run the current protocol.
+        Negotiated as the minimum of our own protocol version and the peer's,
+        so both sides use a version they can read. A peer without a known
+        schema raises by default; with ``raise_on_unknown=False`` it is assumed
+        to run the current protocol.
         """
         schema = self.peer_schemas.get(peer_email)
         if schema is not None:
-            return schema.version
+            return min(JOB_PROTOCOL_VERSION, schema.version, key=int)
         if raise_on_unknown:
             raise MigrationError(
                 f"No job protocol schema known for peer {peer_email!r}"
@@ -99,7 +101,7 @@ class JobManager:
             job_name=job_name,
             # Until syft-client fills peer_schemas, unknown peers are assumed
             # to run the current protocol.
-            protocol_version=self.protocol_version_for_peer(
+            protocol_version=self.negotiated_protocol_version_for_peer(
                 do_email, raise_on_unknown=False
             ),
         )

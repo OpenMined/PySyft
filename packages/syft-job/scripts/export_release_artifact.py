@@ -1,15 +1,15 @@
 """Export the release artifacts for the current syft-job version.
 
-Run on EVERY release (uv run python -m syft_job.migrations.export_release_artifact):
+Run on EVERY release (uv run python scripts/export_release_artifact.py):
 always writes the package release info; additionally writes the protocol
 artifact when this release introduces a new protocol version.
 """
 
 import sys
 
-from ..version import __version__
-from .history import PACKAGE_ARTIFACTS_DIR, PROTOCOLS_DIR
-from .registry import JOB_PROTOCOL_VERSION, job_registry
+from syft_job.migrations.history import PACKAGE_ARTIFACTS_DIR, PROTOCOLS_DIR
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION, job_registry
+from syft_job.version import __version__
 
 
 def main() -> None:
