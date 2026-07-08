@@ -1,6 +1,5 @@
 """Top-level SyftBg configuration model (mirrors config.yaml)."""
 
-import fcntl
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
@@ -10,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.common.config import get_default_paths
+from syft_bg.common.locking import file_lock
 from syft_bg.email_approve.config import EmailApproveConfig
 from syft_bg.notify.config import NotifyConfig
 from syft_bg.sync.config import SyncConfig
@@ -162,14 +162,7 @@ location: {get_default_paths().config} <br>
             config_path = get_default_paths().config
 
         lock_path = config_path.with_suffix(".lock")
-        lock_path.parent.mkdir(parents=True, exist_ok=True)
-        lock_path.touch(exist_ok=True)
-
-        with open(lock_path) as lock_handle:
-            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
-            try:
-                config = cls.load(config_path, merge=False)
-                yield config
-                config.save(config_path)
-            finally:
-                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+        with file_lock(lock_path):
+            config = cls.load(config_path, merge=False)
+            yield config
+            config.save(config_path)

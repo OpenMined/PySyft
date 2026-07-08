@@ -149,23 +149,21 @@ class TestAutoApproveLockScope:
             assert result.success is True
             assert observed["lock_was_free"] is True
 
-    def test_rare_name_collision_renames_and_does_not_clobber(self, temp_dir):
-        """If another writer claims the candidate name while the (unlocked)
-        file I/O is in flight, auto_approve() must detect the collision
-        under the lock, rename to a free name, and not clobber the racer."""
+    def test_name_collision_picks_next_available_name(self, temp_dir):
+        """If the target name is already taken by the time the lock is
+        acquired, auto_approve() must pick the next available name instead
+        of clobbering the existing entry. Naming is now resolved entirely
+        under the lock (after the file I/O lands in a private staging
+        directory), so a plain pre-seeded collision exercises the same
+        code path a genuine race would."""
         with _patched_paths(temp_dir):
             content_dir = temp_dir / "project"
             content_dir.mkdir()
             (content_dir / "main.py").write_text("print('hi')\n")
 
-            def _race_then_copy(content_files, name):
-                _seed_config(temp_dir, {name: _make_obj("racer@test.com")})
-                return copy_and_hash_files(content_files, name)
+            _seed_config(temp_dir, {"main": _make_obj("racer@test.com")})
 
-            with patch(
-                "syft_bg.api.api.copy_and_hash_files", side_effect=_race_then_copy
-            ):
-                result = auto_approve(contents=[str(content_dir / "main.py")])
+            result = auto_approve(contents=[str(content_dir / "main.py")])
 
             assert result.success is True
             assert result.name == "main_1"
@@ -177,6 +175,33 @@ class TestAutoApproveLockScope:
             entry = objects["main_1"].file_contents[0]
             assert "main_1" in entry.path
             assert Path(entry.path).read_text() == "print('hi')\n"
+
+    def test_orphaned_directory_at_target_name_returns_failure(self, temp_dir):
+        """A stale, non-empty directory already occupying the resolved name
+        (e.g. left behind by a prior remove_auto_approve's best-effort
+        rmtree) must produce a clean failure, not an unhandled OSError —
+        and the staging directory must be cleaned up rather than leaked."""
+        with _patched_paths(temp_dir) as patched:
+            content_dir = temp_dir / "project"
+            content_dir.mkdir()
+            (content_dir / "main.py").write_text("print('hi')\n")
+
+            orphan_dir = patched.auto_approvals_dir / "main"
+            orphan_dir.mkdir(parents=True)
+            (orphan_dir / "leftover.txt").write_text("stale")
+
+            result = auto_approve(contents=[str(content_dir / "main.py")])
+
+            assert result.success is False
+            assert "main" in (result.error or "")
+            assert list_auto_approvals() == {}
+
+            leftover_staging = [
+                p
+                for p in patched.auto_approvals_dir.iterdir()
+                if p.name.startswith(".auto_approve_staging_")
+            ]
+            assert leftover_staging == []
 
 
 class TestHandlerReloadsConfig:

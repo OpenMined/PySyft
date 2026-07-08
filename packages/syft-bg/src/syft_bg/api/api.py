@@ -1,6 +1,7 @@
 """Pythonic API for syft-bg initialization and configuration."""
 
 import shutil
+import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -311,6 +312,15 @@ def status() -> StatusResult:
 # ---------------------------------------------------------------------------
 
 
+class _AutoApprovalNotFound(Exception):
+    """Raised inside SyftBgConfig.edit() to skip its save()."""
+
+
+class _AutoApproveDirectoryConflict(Exception):
+    """Raised inside SyftBgConfig.edit() to skip its save() when the staging
+    directory can't be moved into place."""
+
+
 def auto_approve(
     contents: Sequence[str | Path],
     file_paths: list[str] | None = None,
@@ -349,38 +359,50 @@ def auto_approve(
     if not content_files and not file_paths:
         return AutoApproveResult(success=False, error="No files to process")
 
-    # Pick a candidate name and do the expensive hashing/copying I/O unlocked,
-    # so the config lock in SyftBgConfig.edit() is held for the minimum time possible.
-    candidate_name = generate_unique_name(
-        name, content_files, SyftBgConfig.load().approve
+    # Copy/hash into a private staging directory (unique per call) unlocked,
+    # so the config lock in SyftBgConfig.edit() is held for the minimum time
+    # possible. Concurrent callers never share a directory before the lock
+    # resolves the final name, unlike copying straight into a name-derived
+    # directory. The staging dir lives inside auto_approvals_dir so the
+    # later rename into place is an atomic same-filesystem move.
+    auto_approvals_dir = get_default_paths().auto_approvals_dir
+    auto_approvals_dir.mkdir(parents=True, exist_ok=True)
+    staging_dir = Path(
+        tempfile.mkdtemp(prefix=".auto_approve_staging_", dir=auto_approvals_dir)
     )
-    file_entries = copy_and_hash_files(content_files, candidate_name)
+    file_entries = copy_and_hash_files(content_files, staging_dir.name)
 
-    with SyftBgConfig.edit() as syft_bg_config:
-        config = syft_bg_config.approve
-        # Re-check against the now-locked, current config. Usually this is
-        # still candidate_name; if another writer took it in the meantime,
-        # move the already-copied files to match the name we actually use.
-        name = generate_unique_name(candidate_name, content_files, config)
-        if name != candidate_name:
-            old_dir = get_default_paths().auto_approvals_dir / candidate_name
-            new_dir = get_default_paths().auto_approvals_dir / name
-            old_dir.rename(new_dir)
+    try:
+        with SyftBgConfig.edit() as syft_bg_config:
+            config = syft_bg_config.approve
+            name = generate_unique_name(name, content_files, config)
+            final_dir = auto_approvals_dir / name
+            try:
+                staging_dir.rename(final_dir)
+            except OSError as e:
+                raise _AutoApproveDirectoryConflict(str(e)) from e
+
             file_entries = [
                 FileEntry(
-                    relative_path=e.relative_path,
-                    path=str(new_dir / e.relative_path),
-                    hash=e.hash,
+                    relative_path=entry.relative_path,
+                    path=str(final_dir / entry.relative_path),
+                    hash=entry.hash,
                 )
-                for e in file_entries
+                for entry in file_entries
             ]
 
-        obj = AutoApprovalObj(
-            file_contents=file_entries,
-            file_paths=file_paths,
-            peers=peers,
+            obj = AutoApprovalObj(
+                file_contents=file_entries,
+                file_paths=file_paths,
+                peers=peers,
+            )
+            config.auto_approvals.objects[name] = obj
+    except _AutoApproveDirectoryConflict as e:
+        shutil.rmtree(staging_dir, ignore_errors=True)
+        return AutoApproveResult(
+            success=False,
+            error=f"Could not finalize auto-approval directory '{name}': {e}",
         )
-        config.auto_approvals.objects[name] = obj
 
     return AutoApproveResult(
         success=True,
@@ -447,10 +469,6 @@ def list_auto_approvals() -> dict[str, AutoApprovalObj]:
         Mapping of name → AutoApprovalObj.
     """
     return SyftBgConfig.load().approve.auto_approvals.objects
-
-
-class _AutoApprovalNotFound(Exception):
-    """Raised inside SyftBgConfig.edit() to skip its save()."""
 
 
 def remove_auto_approve(name: str) -> AutoApproveResult:
