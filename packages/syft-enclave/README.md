@@ -8,6 +8,7 @@ Enclave support for syft-client, enabling secure computation in Trusted Executio
 - [Security Overview](./docs/security.md)
 - [Enclave Architecture](./docs/enclave_architecture.md)
 - [API](./docs/api.md)
+- [Terraform Deployment](./docs/terraform.md)
 
 ## Prerequisites
 
@@ -17,6 +18,8 @@ Enclave support for syft-client, enabling secure computation in Trusted Executio
 - [`just`](https://github.com/casey/just) and `jq`
 
 All commands are defined in the [`Justfile`](./Justfile). Run them from this directory.
+
+Prefer declarative deploys? The same stack can be managed with Terraform — see [Terraform Deployment](./docs/terraform.md) (`just tf-apply` / `just tf-apply-dev`).
 
 ## One-time setup
 
@@ -40,10 +43,10 @@ Hardened image — no SSH access, TEE enforcement enabled.
 ```bash
 just start EMAIL                          # defaults: syft-enclave-vm, n2d-standard-2
 just start EMAIL my-vm n2d-standard-4     # override name / machine type
-just stop [name]                          # Teardown: Deletes VM and removes firewall rule (default: syft-enclave-vm)
+just stop [name]                          # Teardown: Deletes the VM (default: syft-enclave-vm)
 ```
 
-The first run also provisions APIs, IAM roles, and firewall rules (idempotent).
+The first run also provisions APIs and IAM roles (idempotent). No inbound port is opened on the enclave — attestation is published through the peer flow, and all other traffic is outbound.
 
 ## Debug deployment
 
@@ -52,7 +55,7 @@ Debug image — SSH enabled, container logs redirected to serial output.
 ```bash
 just start-debug EMAIL                          # defaults: syft-enclave-vm, n2d-standard-2
 just start-debug EMAIL my-vm n2d-standard-4     # override name / machine type
-just stop [name]                                # Teardown: Deletes VM and removes firewall rule.
+just stop [name]                                # Teardown: Deletes the VM.
 ```
 
 ## Inspect a running VM
@@ -63,9 +66,10 @@ All inspect commands take an optional `name` (default: `syft-enclave-vm`). Zone 
 # Works on both production and debug
 just status [name]   # RUNNING / TERMINATED / etc.
 just get-ip [name]   # external IP
-just attest [name]   # fetch TEE attestation report
 
 # Debug only
+just attest [name]   # fetch TEE attestation report via SSH (no inbound port is open;
+                     # production publishes attestation through the peer flow instead)
 just ssh    [name]   # SSH into the VM (production image disables SSH)
 just logs   [name]   # last 50 lines of serial output (production only shows boot logs;
                      # debug redirects container logs to serial output)

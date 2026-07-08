@@ -1,0 +1,28 @@
+output "vm_name" {
+  value = google_compute_instance.enclave.name
+}
+
+output "zone" {
+  value = var.zone
+}
+
+output "project_id" {
+  value = var.project_id
+}
+
+output "service_account_email" {
+  value = google_service_account.enclave.email
+}
+
+output "secret_resource" {
+  value = local.secret_resource
+}
+
+output "vm_external_ip" {
+  description = "Outbound-only: no inbound port is open on the enclave."
+  value       = google_compute_instance.enclave.network_interface[0].access_config[0].nat_ip
+}
+
+output "ssh_command" {
+  value = var.dev_mode ? "gcloud compute ssh ${var.vm_name} --project=${var.project_id} --zone=${var.zone}" : "(dev_mode only — the production image has no SSH)"
+}
