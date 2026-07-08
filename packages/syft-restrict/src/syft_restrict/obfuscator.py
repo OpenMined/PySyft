@@ -78,7 +78,7 @@ def _keep_values(scan: FileScan) -> set[str]:
     """Names left readable in the output: import aliases, public wrapper names, safe builtins, keywords."""
     return (
         set(DEFAULT_KEEP)
-        | set(scan.bindings)
+        | set(scan.import_bindings)
         | set(scan.visible_defs)
         | set(_KEEP_BUILTINS)
         | set(keyword.kwlist)
@@ -159,7 +159,7 @@ def _classify_nodes(tree: ast.Module, ranges, scan: FileScan):
             continue
         if isinstance(node, ast.Attribute) and not is_dunder(node.attr):
             root = (dotted(node.value) or "").split(".")[0]
-            if root in scan.bindings:
+            if root in scan.import_bindings:
                 keep_attrs.add(
                     node.attr
                 )  # public library attr (e.g. jnp.einsum) — stays readable

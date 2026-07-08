@@ -94,35 +94,43 @@ def describe(node: ast.AST) -> str:
 class FileScan(BaseModel):
     """Names harvested from the whole file, used to classify calls in the private region."""
 
-    bindings: dict[
+    import_bindings: dict[
         str, str
     ]  # import alias -> fully-qualified module path (jnp -> jax.numpy)
     hidden_defs: set[str]  # class/func names defined inside the private region
     visible_defs: set[str]  # function names defined in the visible (public) region
 
 
-def scan_file(tree: ast.Module, ranges) -> FileScan:
+def scan_file(tree: ast.Module, hidden_ranges) -> FileScan:
     """Collect import bindings and the class/func names defined inside vs. outside the private region.
 
     Imports live in the visible region (they're banned inside the private one), but their bindings are
     what the checker resolves private-region calls against — so we scan the whole file, not just the
     private lines.
     """
-    bindings: dict[str, str] = {}
-    hidden_defs: set[str] = set()
-    visible_defs: set[str] = set()
+    import_bindings: dict[str, str] = {}  # import alias -> fully-qualified module path
+    hidden_defs: set[str] = set()  # class/func names defined inside the private region
+    visible_defs: set[str] = (
+        set()
+    )  # function names defined in the visible (public) region
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                bindings[alias.asname or alias.name.split(".")[0]] = alias.name
+                # `import jax.numpy as jnp` -> bindings["jnp"] = "jax.numpy"; `import os.path` -> bindings["os"] = "os.path"
+                import_bindings[alias.asname or alias.name.split(".")[0]] = alias.name
         elif isinstance(node, ast.ImportFrom) and node.module:
             for alias in node.names:
-                bindings[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+                import_bindings[alias.asname or alias.name] = (
+                    f"{node.module}.{alias.name}"
+                )
         elif isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-            if node_in_ranges(node, ranges):
+            if node_in_ranges(node, hidden_ranges):
+                # `class Net:` / `def _secret():` on a private line -> hidden_defs.add("Net" / "_secret")
                 hidden_defs.add(node.name)
             elif isinstance(node, ast.FunctionDef):
                 visible_defs.add(node.name)
     return FileScan(
-        bindings=bindings, hidden_defs=hidden_defs, visible_defs=visible_defs
+        import_bindings=import_bindings,
+        hidden_defs=hidden_defs,
+        visible_defs=visible_defs,
     )

@@ -151,7 +151,7 @@ def verify(source: str, private, policy: Policy) -> VerifyResult:
     ranges = normalize_ranges(private)
     tree = ast.parse(source)
     scan = scan_file(tree, ranges)
-    policy.reserved = set(scan.bindings)  # trusted module aliases may not be rebound
+    policy.reserved = set(scan.import_bindings)  # trusted module aliases may not be rebound
     checker = _Checker(policy, scan, ranges)
     checker.visit(tree)
     return VerifyResult(
@@ -402,7 +402,7 @@ class _Checker:
                 )  # so _check_name won't re-flag it
                 return
             if (
-                func.id in self.scan.bindings
+                func.id in self.scan.import_bindings
                 and func.id not in self.scan.hidden_defs
                 and func.id not in self.scan.visible_defs
             ):
@@ -474,7 +474,7 @@ class _Checker:
                 )
                 self.report(call, "attr-on-value", message)
                 return
-            if root in self.scan.bindings:
+            if root in self.scan.import_bindings:
                 if not self._resolved_allowed(path):
                     self.report(
                         call,
@@ -534,7 +534,7 @@ class _Checker:
                     f"not a deeper attribute chain",
                 )
                 return
-            if root in self.scan.bindings:
+            if root in self.scan.import_bindings:
                 if not self._resolved_allowed(path):
                     self.report(
                         node,
@@ -710,7 +710,7 @@ class _Checker:
     def _resolve(self, path: str) -> str:
         """Rewrite a dotted path's import alias to its fully-qualified form (`jnp.einsum` -> `jax.numpy.einsum`)."""
         root, _, rest = path.partition(".")
-        base = self.scan.bindings.get(root, root)
+        base = self.scan.import_bindings.get(root, root)
         return f"{base}.{rest}" if rest else base
 
     def _resolved_allowed(self, path: str) -> bool:
@@ -798,7 +798,7 @@ class _SelfAttrTrust:
         if isinstance(value, ast.Call):
             func = value.func
             path = dotted(func)
-            if path is not None and path.split(".")[0] in self._scan.bindings:
+            if path is not None and path.split(".")[0] in self._scan.import_bindings:
                 return self._resolved_allowed(path)
             return isinstance(func, ast.Name) and (
                 func.id in self._scan.hidden_defs or func.id in self._scan.visible_defs
