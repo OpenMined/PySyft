@@ -97,22 +97,20 @@ class FileScan(BaseModel):
     import_bindings: dict[
         str, str
     ]  # import alias -> fully-qualified module path (jnp -> jax.numpy)
-    hidden_defs: set[str]  # class/func names defined inside the private region
-    visible_defs: set[str]  # function names defined in the visible (public) region
+    private_defs: set[str]  # class/func names defined inside the private region
+    public_defs: set[str]  # function names defined in the public region
 
 
-def scan_file(tree: ast.Module, hidden_ranges) -> FileScan:
+def scan_file(tree: ast.Module, private_ranges) -> FileScan:
     """Collect import bindings and the class/func names defined inside vs. outside the private region.
 
-    Imports live in the visible region (they're banned inside the private one), but their bindings are
+    Imports live in the public region (they're banned inside the private one), but their bindings are
     what the checker resolves private-region calls against — so we scan the whole file, not just the
     private lines.
     """
     import_bindings: dict[str, str] = {}  # import alias -> fully-qualified module path
-    hidden_defs: set[str] = set()  # class/func names defined inside the private region
-    visible_defs: set[str] = (
-        set()
-    )  # function names defined in the visible (public) region
+    private_defs: set[str] = set()  # class/func names defined inside the private region
+    public_defs: set[str] = set()  # function names defined in the public region
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -124,13 +122,13 @@ def scan_file(tree: ast.Module, hidden_ranges) -> FileScan:
                     f"{node.module}.{alias.name}"
                 )
         elif isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-            if node_in_ranges(node, hidden_ranges):
-                # `class Net:` / `def _secret():` on a private line -> hidden_defs.add("Net" / "_secret")
-                hidden_defs.add(node.name)
+            if node_in_ranges(node, private_ranges):
+                # `class Net:` / `def _secret():` on a private line -> private_defs.add("Net" / "_secret")
+                private_defs.add(node.name)
             elif isinstance(node, ast.FunctionDef):
-                visible_defs.add(node.name)
+                public_defs.add(node.name)
     return FileScan(
         import_bindings=import_bindings,
-        hidden_defs=hidden_defs,
-        visible_defs=visible_defs,
+        private_defs=private_defs,
+        public_defs=public_defs,
     )

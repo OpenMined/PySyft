@@ -1,4 +1,4 @@
-"""Things the hidden region IS allowed to do — these must verify cleanly."""
+"""Things the private region IS allowed to do — these must verify cleanly."""
 
 from syft_restrict import verify
 
@@ -34,7 +34,7 @@ def test_self_method_calls_allowed(verify_all):
 
 
 def test_bare_name_calls_allowed(verify_all):
-    """Calling a local var / hidden def / safe builtin by bare name is fine."""
+    """Calling a local var / private def / safe builtin by bare name is fine."""
     src = (
         "def helper(n):\n"
         "    rows = list(range(n))\n"
@@ -46,7 +46,7 @@ def test_bare_name_calls_allowed(verify_all):
 
 
 def test_allowed_decorators(policy):
-    """Only the allow-listed decorators may sit above a def/class (imports stay visible)."""
+    """Only the allow-listed decorators may sit above a def/class (imports stay public)."""
     header = "from flax import linen as nn\nimport jax\n"
     body = (
         "class M:\n"
@@ -75,7 +75,7 @@ def test_allowed_dunder_defs(verify_all):
 
 
 def test_class_base_must_be_allow_listed_import(verify_all):
-    """A base class must be an allow-listed import; ``object`` and hidden-region classes are rejected
+    """A base class must be an allow-listed import; ``object`` and private-region classes are rejected
     (their metaclass/__init_subclass__ would run at class-creation time)."""
     ok_src = (
         "from flax import linen as nn\n"

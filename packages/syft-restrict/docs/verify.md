@@ -92,7 +92,7 @@ does. Two rules handle this:
    There's no metadata bundle on purpose. `.shape`, `.ndim`, `.dtype` are named attribute reads on
    a value we can't type-pin, so they're rejected like any other attribute-on-value.
 
-2. Library-specific methods and attribute reads go in visible wrapper functions — `.T`, `reshape`,
+2. Library-specific methods and attribute reads go in public wrapper functions — `.T`, `reshape`,
    `astype`, `x.at[i].set(v)`, a `.shape` read. The author writes the wrapper in the **public**
    region, where the data owner can read it and an `isinstance` guard pins the type the checker
    couldn't:

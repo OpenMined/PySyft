@@ -2,7 +2,7 @@
 
 Run from the package root:  uv run python examples/generate.py
 
-The policy here lists the *exact* lower-level JAX/Flax symbols the hidden region uses,
+The policy here lists the *exact* lower-level JAX/Flax symbols the private region uses,
 rather than broad globs (`jax.*`). Each call leaf (`jax.numpy.einsum`, …) is enforced
 individually; `jax.lax` / `jax.nn` are included only because the calls are written as
 deep attribute paths (`jax.lax.rsqrt`), so the checker also evaluates those module

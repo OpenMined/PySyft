@@ -79,7 +79,7 @@ def _keep_values(scan: FileScan) -> set[str]:
     return (
         set(DEFAULT_KEEP)
         | set(scan.import_bindings)
-        | set(scan.visible_defs)
+        | set(scan.public_defs)
         | set(_KEEP_BUILTINS)
         | set(keyword.kwlist)
         | set(getattr(keyword, "softkwlist", []))

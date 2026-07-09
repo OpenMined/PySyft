@@ -1,4 +1,4 @@
-"""Policy: what the hidden region is allowed to call and do (see docs/verify.md#the-whitelist).
+"""Policy: what the private region is allowed to call and do (see docs/verify.md#the-whitelist).
 
 Two channels the author configures per file:
 
@@ -28,7 +28,7 @@ OPERATOR_BUNDLES: dict[str, tuple[type[ast.AST], ...]] = {
 }
 # NOTE: there is deliberately no metadata bundle. Reads like `.shape`/`.ndim`/`.dtype` on an opaque
 # value are named attribute accesses we can't pin to a type, so they're rejected like any other
-# attr-on-value and must be routed through a visible wrapper function (docs/verify.md#operator-bundles-on-a-value).
+# attr-on-value and must be routed through a public wrapper function (docs/verify.md#operator-bundles-on-a-value).
 ALL_BUNDLES: frozenset[str] = frozenset(OPERATOR_BUNDLES)
 
 # ── Builtins that are dynamic-escape / IO hatches and may never be called (docs/blacklist.md) ──
@@ -61,7 +61,7 @@ BANNED_NAMES: frozenset[str] = frozenset(
     }
 )
 
-# Decorators allowed above a def/class in the hidden region (docs/verify.md#allow_functions--paths-callable-by-name).
+# Decorators allowed above a def/class in the private region (docs/verify.md#allow_functions--paths-callable-by-name).
 # NOTE: `property` (and any descriptor) is deliberately absent — it runs code on a bare attribute
 # access (`block.w`), the same attribute-access-hook class banned for dunder defs, so default-deny
 # rejects it. Pure inference needs only setup/__call__.

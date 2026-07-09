@@ -1,7 +1,7 @@
 """The static checker — verifies that the private region only does trusted math.
 
 ``verify(source, private, policy)`` parses the file, restricts attention to the *private* line ranges
-(the hidden model definition), and walks those nodes **default-deny**: a node is allowed only if a
+(the private model definition), and walks those nodes **default-deny**: a node is allowed only if a
 check below explicitly permits it. It never raises on a policy issue — it returns a ``VerifyResult``
 listing the violations, so callers can inspect them.
 
@@ -259,7 +259,7 @@ class _Checker:
             self.report(
                 node,
                 "banned-construct",
-                f"{type(node).__name__} is not allowed in the hidden region",
+                f"{type(node).__name__} is not allowed in the private region",
             )
             return
         if not isinstance(node, _ALLOWED_NODES):
@@ -293,6 +293,10 @@ class _Checker:
         elif isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
             self._check_assign_targets(node)
         elif isinstance(node, ast.For):
+            # a `for` loop is syntactic sugar for an assignment to the loop
+            # variable on each iteration, but it doesn't use an ast.Assign node,
+            # so we check the target using the same reserved primitive check
+            # thgat assignments use
             self._check_reserved_target(node.target)
         elif isinstance(
             node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
@@ -316,7 +320,7 @@ class _Checker:
     def _check_def(self, node: ast.FunctionDef) -> None:
         """Guards against: defining magic/hook methods (__getattr__, __reduce__, …) that Python runs
         automatically without an explicit call in the math, and shadowing a trusted module alias
-        or visible wrapper name with a local def (the same forging _check_reserved_name blocks for
+        or public wrapper name with a local def (the same forging _check_reserved_name blocks for
         a plain assignment target)."""
         # are the function decorator in the list of allowed decorators?
         self._check_decorators(node)
@@ -360,7 +364,7 @@ class _Checker:
 
     def _base_class_allowed(self, base: ast.AST) -> bool:
         """Only an allow-listed import (resolved through any aliases, e.g. nn.Module) may be a base.
-        object and hidden-region classes are rejected: a base's metaclass / __init_subclass__ runs
+        object and private-region classes are rejected: a base's metaclass / __init_subclass__ runs
         at class-creation time, so we require it to resolve to something the policy vetted."""
         path = dotted_name(base)
         return bool(path) and self._resolved_allowed(path)
@@ -379,7 +383,7 @@ class _Checker:
                 )
 
     def _check_arguments_dont_abuse_self_or_cls(self, args: ast.arguments) -> None:
-        """Normally, we are not allowed to call x.y in hidden code,
+        """Normally, we are not allowed to call x.y in private code,
         but we have an exception for calling self.<name> in a class. However, this is only allowed if
         self is bound to the real instance. This functino protects against forging the self/cls exemption.
         That is only sound for the genuine first parameter of a method
@@ -440,7 +444,7 @@ class _Checker:
                     f"allowed",
                 )
                 return
-            # Otherwise a bare-name call (local var / hidden or visible def / safe builtin) is allowed.
+            # Otherwise a bare-name call (local var / private or public def / safe builtin) is allowed.
             return
         # this checks the part before the call (e.g. for x.y.z() it checks x.y)
         if isinstance(func, ast.Attribute):
@@ -497,12 +501,12 @@ class _Checker:
                         f"call to {self._resolve(path)!r} is not allow-listed",
                     )
                 return
-        # A named method on an opaque value — never allowed; route it through a visible wrapper.
+        # A named method on an opaque value — never allowed; route it through a public wrapper.
         self.report(
             call,
             "method-on-value",
             f"named method {func.attr!r} called on a value whose type is unknown; "
-            f"route it through a visible wrapper function instead",
+            f"route it through a public wrapper function instead",
         )
 
     def _check_self_subscript_call(self, call: ast.Call, func: ast.Subscript) -> None:
@@ -562,7 +566,7 @@ class _Checker:
             node,
             "attr-on-value",
             f"attribute {node.attr!r} on a value is not allowed; "
-            f"route it through a visible wrapper function instead",
+            f"route it through a public wrapper function instead",
         )
 
     # ── bare name reads (not the func of a call) ─────────────────────────────────────────────
@@ -596,7 +600,7 @@ class _Checker:
             node,
             "method-on-value",
             "f-string interpolation calls __format__ on a value whose type is unknown; "
-            "route it through a visible wrapper function instead",
+            "route it through a public wrapper function instead",
         )
 
     # ── container literals ───────────────────────────────────────────────────────────────────
@@ -707,18 +711,18 @@ class _Checker:
 
     def _check_reserved_name(self, node: ast.AST, name: str) -> None:
         """Guards against: rebinding a trusted module alias (`jnp = evil`, which would poison the path
-        resolver) or a visible wrapper name (`transpose = evil`)."""
+        resolver) or a public wrapper name (`transpose = evil`)."""
         if name in self.policy.reserved_names:
             self.report(
                 node,
                 "reserved-name",
                 f"{name!r} is a reserved module alias and may not be rebound",
             )
-        elif name in self.scan.visible_defs:
+        elif name in self.scan.public_defs:
             self.report(
                 node,
                 "reserved-name",
-                f"{name!r} is a visible wrapper name and may not be rebound",
+                f"{name!r} is a public wrapper name and may not be rebound",
             )
 
     # ── path resolution ──────────────────────────────────────────────────────────────────────
@@ -809,14 +813,14 @@ class _SelfAttrTrust:
 
     def _is_safe_value(self, value: ast.AST) -> bool:
         """A vetted "submodule" source: a call to an allow-listed library constructor or a name defined
-        in this file (hidden or visible), or a list/tuple/set/comprehension of such (the layer idiom)."""
+        in this file (private or public), or a list/tuple/set/comprehension of such (the layer idiom)."""
         if isinstance(value, ast.Call):
             func = value.func
             path = dotted_name(func)
             if path is not None and path.split(".")[0] in self._scan.import_bindings:
                 return self._resolved_allowed(path)
             return isinstance(func, ast.Name) and (
-                func.id in self._scan.hidden_defs or func.id in self._scan.visible_defs
+                func.id in self._scan.private_defs or func.id in self._scan.public_defs
             )
         if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
             return all(self._is_safe_value(e) for e in value.elts)

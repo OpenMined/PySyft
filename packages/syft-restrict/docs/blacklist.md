@@ -106,7 +106,7 @@ bound — assignment, `for`/comprehension target, or parameter. Code: `reserved-
 
 - A trusted module alias (`jnp`, `nn`, `lax`, …) — rebinding makes the import table a lie, so every
   "allow-listed path" through that name becomes attacker-controlled.
-- A visible wrapper name — rebinding `transpose = evil` defeats the wrapper's type guard.
+- A public wrapper name — rebinding `transpose = evil` defeats the wrapper's type guard.
 - `self` / `cls` — the exemption is trusted by identifier alone; rebinding it (or reusing it as an
   unrelated parameter) would grant an attacker's object the same trust. See
   [verify.md#edge-cases](verify.md#edge-cases).

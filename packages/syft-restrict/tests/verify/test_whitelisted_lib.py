@@ -1,7 +1,7 @@
 """Things we *manually* allow: library calls resolved by name, and operator bundles.
 
-These need real imports, which are themselves banned inside the hidden region — so the import lines
-stay *visible* (glue) and only the usage below them is marked private.
+These need real imports, which are themselves banned inside the private region — so the import lines
+stay *public* (glue) and only the usage below them is marked private.
 """
 
 import pytest
@@ -12,7 +12,7 @@ from .conftest import error_codes, make_policy
 
 
 def _verify(header: str, body: str, policy):
-    """Keep ``header`` lines visible (imports), mark the ``body`` lines below as private."""
+    """Keep ``header`` lines public (imports), mark the ``body`` lines below as private."""
     head_lines = header.splitlines()
     source = header + body
     lo = len(head_lines) + 1

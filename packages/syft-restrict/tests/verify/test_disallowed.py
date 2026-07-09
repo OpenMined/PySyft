@@ -1,4 +1,4 @@
-"""Things the hidden region is NOT allowed to do — default-deny rejects each one."""
+"""Things the private region is NOT allowed to do — default-deny rejects each one."""
 
 import pytest
 
@@ -115,7 +115,7 @@ def test_walrus_is_not_on_node_allowlist(verify_all):
 
 def test_reserved_module_alias_cannot_be_rebound(policy):
     source = "import jax.numpy as jnp\njnp = make_evil()\n"
-    # only the rebind line is private (the import is visible glue)
+    # only the rebind line is private (the import is public glue)
     result = verify(source, [[2, 2]], policy)
     assert "reserved-name" in error_codes(result)
 

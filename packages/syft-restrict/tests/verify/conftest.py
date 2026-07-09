@@ -1,7 +1,7 @@
 """Shared fixtures/helpers for the static-checker tests (research approach B).
 
 The tests are split by intent:
-- ``test_whitelist.py``     — language constructs the hidden region IS allowed to use.
+- ``test_whitelist.py``     — language constructs the private region IS allowed to use.
 - ``test_blacklist.py``     — constructs/calls/attrs that are rejected (default-deny).
 - ``test_whitelisted_lib.py`` — things we *manually* allow: library calls by name and operator bundles.
 """

@@ -430,7 +430,7 @@ def test_cls_as_local_variable_must_not_grant_trust(verify_all):
 
 
 def test_nested_function_self_parameter_must_not_grant_trust(policy):
-    # The full realistic chain: a hidden nn.Module stashes a non-builtin dangerous import (not
+    # The full realistic chain: a private nn.Module stashes a non-builtin dangerous import (not
     # in BANNED_NAMES) via setup(), and a nested helper function's parameter is coincidentally
     # named "self" -- at runtime this actually calls os.system through the real instance's
     # attribute, entirely outside the enclosing class M's own self-attribute safety table. Must
@@ -524,10 +524,10 @@ def test_class_name_shadowing_reserved_import_alias(verify_all):
     assert "reserved-name" in error_codes(verify_all("\n".join(src)))
 
 
-def test_def_name_shadowing_visible_wrapper(policy):
-    # Same as the class case, but for a def statement shadowing a visible (public-region) wrapper
+def test_def_name_shadowing_public_wrapper(policy):
+    # Same as the class case, but for a def statement shadowing a public-region wrapper
     # name instead of an import alias. `transpose` must be genuinely public (outside the private
-    # range) for it to land in scan.visible_defs at all.
+    # range) for it to land in scan.public_defs at all.
     src = [
         "def transpose(x):",
         "    return x",

@@ -138,12 +138,12 @@ def _get(module, name):
 
 
 def shape_of(x):
-    """Visible wrapper: read an array's shape — an attribute read on a value, not allowed in the hidden region."""
+    """Public wrapper: read an array's shape — an attribute read on a value, not allowed in the private region."""
     return x.shape
 
 
 def append_to(lst, item):
-    """Visible wrapper: append to a Python list (a named method on a value)."""
+    """Public wrapper: append to a Python list (a named method on a value)."""
     lst.append(item)
     return lst
 
