@@ -2,7 +2,7 @@
 
 from syft_restrict import verify
 
-from .conftest import FIXTURES, error_codes, make_policy
+from .conftest import FIXTURES, get_error_codes, make_policy
 
 
 def _ok(result):
@@ -95,7 +95,7 @@ def test_class_base_must_be_allow_listed_import(verify_all):
             "    def __call__(self, x):\n"
             "        return x\n"
         )
-        assert "class-base" in error_codes(verify_all(src))
+        assert "class-base" in get_error_codes(verify_all(src))
 
 
 def test_control_flow_and_comprehensions(verify_all):
@@ -123,7 +123,6 @@ def test_control_flow_and_comprehensions(verify_all):
     assert _ok(verify_all(src))[0]
 
 
-
 def test_calling_a_value_is_allowed(verify_all):
     """Calling the result of a subscript/call (its ``__call__``) is allowed."""
     src = (
@@ -140,7 +139,7 @@ def test_non_reserved_rebind_is_fine(verify_all):
     src = "def f(x):\n    y = x\n    y += 1\n    z: int = y\n    return z\n"
     result = verify_all(src)
     assert _ok(result)[0]
-    assert "reserved-name" not in error_codes(result)
+    assert "reserved-name" not in get_error_codes(result)
 
 
 def test_arithmetic_only_policy_still_passes_pure_math(verify_all):

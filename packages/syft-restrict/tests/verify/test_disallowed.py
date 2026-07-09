@@ -1,10 +1,9 @@
 """Things the private region is NOT allowed to do — default-deny rejects each one."""
 
 import pytest
-
 from syft_restrict import verify
 
-from .conftest import error_codes
+from .conftest import get_error_codes
 
 
 @pytest.mark.parametrize(
@@ -27,7 +26,7 @@ from .conftest import error_codes
 )
 def test_banned_constructs(verify_all, snippet):
     result = verify_all(snippet)
-    assert "banned-construct" in error_codes(result), [
+    assert "banned-construct" in get_error_codes(result), [
         (v.code, v.message) for v in result.violations
     ]
 
@@ -55,7 +54,7 @@ def test_banned_constructs(verify_all, snippet):
 )
 def test_banned_calls(verify_all, name):
     result = verify_all(f"y = {name}(z)\n")
-    assert "banned-call" in error_codes(result), [
+    assert "banned-name" in get_error_codes(result), [
         (v.code, v.message) for v in result.violations
     ]
 
@@ -69,23 +68,23 @@ def test_banned_calls(verify_all, name):
     ],
 )
 def test_named_method_on_value(verify_all, snippet):
-    assert "method-on-value" in error_codes(verify_all(snippet))
+    assert "method-on-value" in get_error_codes(verify_all(snippet))
 
 
 @pytest.mark.parametrize("snippet", ["a = x.shape\n", "b = x.T\n", "c = x.ndim\n"])
 def test_attribute_read_on_value(verify_all, snippet):
-    assert "attr-on-value" in error_codes(verify_all(snippet))
+    assert "attr-on-value" in get_error_codes(verify_all(snippet))
 
 
 @pytest.mark.parametrize("snippet", ["c = obj.__class__\n", "d = obj.__dict__\n"])
 def test_dunder_attribute_read(verify_all, snippet):
-    assert "dunder-attr" in error_codes(verify_all(snippet))
+    assert "dunder-attr" in get_error_codes(verify_all(snippet))
 
 
 @pytest.mark.parametrize("dunder", ["__init__", "__getattr__", "__reduce__"])
 def test_disallowed_dunder_def(verify_all, dunder):
     src = f"class M(object):\n    def {dunder}(self):\n        return None\n"
-    assert "dunder-def" in error_codes(verify_all(src))
+    assert "dunder-def" in get_error_codes(verify_all(src))
 
 
 @pytest.mark.parametrize(
@@ -97,50 +96,50 @@ def test_disallowed_dunder_def(verify_all, dunder):
     ],
 )
 def test_disallowed_decorator(verify_all, snippet):
-    assert "decorator" in error_codes(verify_all(snippet))
+    assert "decorator" in get_error_codes(verify_all(snippet))
 
 
 def test_class_keyword_metaclass(verify_all):
     src = "class M(object, metaclass=Meta):\n    def __call__(self, x):\n        return x\n"
-    assert "class-keyword" in error_codes(verify_all(src))
+    assert "class-keyword" in get_error_codes(verify_all(src))
 
 
 def test_non_allowlisted_base_class(verify_all):
     src = "class M(SomeLib):\n    def __call__(self, x):\n        return x\n"
-    assert "class-base" in error_codes(verify_all(src))
+    assert "class-base" in get_error_codes(verify_all(src))
 
 
 def test_walrus_is_not_on_node_allowlist(verify_all):
     """NamedExpr is neither allowed nor explicitly banned -> node-type rejection."""
-    assert "node-type" in error_codes(verify_all("y = (z := 1)\n"))
+    assert "node-type" in get_error_codes(verify_all("y = (z := 1)\n"))
 
 
 def test_reserved_module_alias_cannot_be_rebound(policy):
     source = "import jax.numpy as jnp\njnp = make_evil()\n"
     # only the rebind line is private (the import is public glue)
     result = verify(source, [[2, 2]], policy)
-    assert "reserved-name" in error_codes(result)
+    assert "reserved-name" in get_error_codes(result)
 
 
 def test_attribute_write_to_foreign_object(verify_all):
     """`some_obj.send = data` — only `self.<name>` writes are allowed; a foreign attribute
     target is an opaque value (exfiltration channel)."""
-    assert "attr-on-value" in error_codes(verify_all("some_obj.send = data\n"))
+    assert "attr-on-value" in get_error_codes(verify_all("some_obj.send = data\n"))
 
 
 def test_comprehension_over_io(verify_all):
     """`[v for v in open(f)]` reintroduces I/O through a denied call in the iterable."""
-    assert "banned-call" in error_codes(verify_all("y = [v for v in open(f)]\n"))
+    assert "banned-name" in get_error_codes(verify_all("y = [v for v in open(f)]\n"))
 
 
 def test_denied_call_in_passive_position(verify_all):
     """Call-checking is position-independent: a denied target in a default arg runs at
     def-creation time and is still caught."""
     src = "def f(a=eval('1')):\n    return a\n"
-    assert "banned-call" in error_codes(verify_all(src))
+    assert "banned-name" in get_error_codes(verify_all(src))
 
 
 def test_match_statement_is_not_on_node_allowlist(verify_all):
     """`match`/`case` is unlisted modern syntax -> default-deny node-type rejection."""
     src = "match x:\n    case 1:\n        y = 1\n"
-    assert "node-type" in error_codes(verify_all(src))
+    assert "node-type" in get_error_codes(verify_all(src))

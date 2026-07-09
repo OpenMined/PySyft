@@ -40,6 +40,6 @@ def verify_all(policy):
     return _run
 
 
-def error_codes(result: VerifyResult):
+def get_error_codes(result: VerifyResult):
     """The set of violation codes in a VerifyResult (handy for asserts)."""
     return {v.code for v in result.violations}

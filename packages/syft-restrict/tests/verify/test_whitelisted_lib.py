@@ -5,10 +5,9 @@ stay *public* (glue) and only the usage below them is marked private.
 """
 
 import pytest
-
 from syft_restrict import verify
 
-from .conftest import error_codes, make_policy
+from .conftest import get_error_codes, make_policy
 
 
 def _verify(header: str, body: str, policy):
@@ -67,7 +66,7 @@ def test_enabled_operator_bundles(verify_all, body):
 )
 def test_disabled_operator_bundle_is_rejected(verify_all, methods, body):
     result = verify_all(body, make_policy(methods=methods))
-    assert "bundle-disabled" in error_codes(result)
+    assert "bundle-disabled" in get_error_codes(result)
 
 
 # ── a user-supplied disallow list beats the allow, even under an otherwise-allowed module ──
@@ -85,7 +84,7 @@ def test_user_disallow_beats_allow(header, body):
         disallow=["jax.experimental.*", "jax.numpy.save", "jax.debug.*"]
     )
     result = _verify(header, body, policy)
-    assert "call-not-allowed" in error_codes(result)
+    assert "call-not-allowed" in get_error_codes(result)
 
 
 # ── with no disallow list, a broad allow (`jax.*`) permits a formerly-denied leaf ─────────
@@ -95,15 +94,15 @@ def test_no_disallow_permits_leaf_under_broad_allow():
     result = _verify(
         "import jax.numpy as jnp\n", "q = jnp.save('f', x)\n", make_policy()
     )
-    assert "call-not-allowed" not in error_codes(result)
+    assert "call-not-allowed" not in get_error_codes(result)
 
 
 # ── a library that simply isn't on the allow-list ─────────────────────────────────────────
 def test_non_allowlisted_library_call(policy):
     result = _verify("import numpy as np\n", "r = np.dot(a, b)\n", policy)
-    assert "call-not-allowed" in error_codes(result)
+    assert "call-not-allowed" in get_error_codes(result)
 
 
 def test_non_allowlisted_library_attribute(policy):
     result = _verify("import numpy as np\n", "r = np.pi\n", policy)
-    assert "attr-not-allowed" in error_codes(result)
+    assert "attr-not-allowed" in get_error_codes(result)

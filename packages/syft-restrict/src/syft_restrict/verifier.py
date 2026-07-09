@@ -21,7 +21,6 @@ from .astutil import (
     describe,
     dotted_name,
     is_dunder,
-    iter_names,
     node_in_ranges,
     normalize_ranges,
     rooted_in_self,
@@ -123,8 +122,8 @@ ViolationCode = Literal[
     "class-keyword",  # _check_class (metaclass= or other class keyword arg)
     "class-base",  # _check_class (non-allow-listed base class)
     "decorator",  # _check_decorators
-    "reserved-name",  # _check_self_cls_params, _check_reserved_target, _check_reserved_name
-    "banned-call",  # _check_call, _check_name
+    "reserved-name",  # _check_name, _check_arguments_dont_abuse_self_or_cls, _check_reserved_name
+    "banned-name",  # _check_name (any Load reference to a BANNED_NAMES entry, called or not)
     "call-not-allowed",  # _check_call, _check_call_attribute
     "call-unresolved",  # _check_call (bare-name/value call not traceable to a safe source)
     "dunder-attr",  # _check_call_attribute, _check_attribute
@@ -175,7 +174,7 @@ def verify(source: str, private, policy: Policy) -> VerifyResult:
 #   library call/attr by name            -> _check_call_attribute, _check_attribute (resolver + allow/disallow)
 #   named method / attr on opaque value  -> _check_call_attribute, _check_attribute
 #   f-strings (any shape)                -> _BANNED_NODES (in _enforce)
-#   forged self/cls trust                -> _check_self_cls_params, _check_reserved_target
+#   forged self/cls trust                -> _check_arguments_dont_abuse_self_or_cls, _check_name
 #   aliasing a banned callable           -> _check_name, _check_container_literal, _check_assign_targets
 #   unresolved call target (default-deny) -> _check_call, _is_safe_local_source
 #   class-creation hooks                 -> _check_class, _check_decorators, _check_def
@@ -291,21 +290,13 @@ class _Checker:
         elif isinstance(node, (ast.Subscript, ast.Slice)):
             self._require_bundle(node, "indexing")
 
-        # --- name binding (assignments, loops, comprehensions, params) ---
+        # --- name binding (assignments, params) ---
         elif isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
-            self._check_assign_targets(node)
-        elif isinstance(node, ast.For):
-            self._check_for_loop_assignment(node)
-        elif isinstance(
-            node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
-        ):
-            self._check_comprehension_target(node)
+            self._track_assignment_targets(node)
         elif isinstance(node, ast.arg):
             self._check_reserved_name(node, node.arg)
 
         # --- literals & names ---
-        elif isinstance(node, (ast.List, ast.Dict, ast.Set, ast.Tuple)):
-            self._check_container_literal(node)
         elif isinstance(node, ast.Name):
             self._check_name(node)
 
@@ -470,7 +461,7 @@ class _Checker:
                 return
 
             # a local aliasing self.<attr> -- vetted the same way self.<attr>(...) would be
-            aliased_attr = self._current_aliases().get(func.id)
+            aliased_attr = self._current_aliases.get(func.id)
             if aliased_attr is not None:
                 if not self._self_attr.is_safe(aliased_attr, self._enclosing_class()):
                     self.report(
@@ -481,14 +472,16 @@ class _Checker:
                         f"allowed",
                     )
                 return
+
             # a def/class here, a safe builtin, or a local traced to one (_is_safe_local_source)
             if (
                 func.id in self.scan.private_defs
                 or func.id in self.scan.public_defs
                 or func.id in SAFE_BUILTIN_CALLS
-                or self._current_safe_locals().get(func.id, False)
+                or self._current_safe_locals.get(func.id, False)
             ):
                 return
+
             self.report(
                 node,
                 "call-unresolved",
@@ -623,7 +616,9 @@ class _Checker:
                 f"access to dunder attribute {node.attr!r} is not allowed",
             )
             return
+
         path = dotted_name(node)
+
         if path is not None:
             root = path.split(".")[0]
             if root in ("self", "cls"):
@@ -646,6 +641,7 @@ class _Checker:
                         f"reference to {self._resolve(path)!r} is not allow-listed",
                     )
                 return
+
         # not self/cls-rooted and not import-rooted: an attribute read on an opaque value
         self.report(
             node,
@@ -658,14 +654,31 @@ class _Checker:
     def _check_name(self, node: ast.Name) -> None:
         """Guards against:
 
+        - rebinding self/cls
+        - rebinding a reserved name
         - loading a banned builtin (`f = open; f(...)`)
-        - loading bare dunder name (`__class__`)
+        - loading a bare dunder name (`__class__`)
         """
-        # only a reference (Load) can leak/dispatch a name; a Store/Del target is bound elsewhere
+        if isinstance(node.ctx, ast.Store):
+            # self/cls itself: always denied, never delegated to _check_reserved_name
+            if node.id in ("self", "cls"):
+                self.report(
+                    node,
+                    "reserved-name",
+                    f"{node.id!r} may not be rebound; self/cls attribute access is "
+                    f"trusted by identifier alone, not a verified reference to the real "
+                    f"instance",
+                )
+                return
+            # any other Store target: is this name reserved by the resolver?
+            self._check_reserved_name(node, node.id)
+            return
+
+        # only a reference (Load) can leak/dispatch a name; a Del target is bound elsewhere
         if not isinstance(node.ctx, ast.Load):
             return
 
-        # ignore if already reported as banned-call by _check_call
+        # ignore if already reported as banned-name by _check_call
         if id(node) in self._checked_call_targets:
             return
 
@@ -674,7 +687,7 @@ class _Checker:
             # `x: str` / `def f() -> str` — a type annotation, not a reference
             if id(node) in self._annotation_nodes:
                 return
-            self.report(node, "banned-call", f"reference to {node.id!r} is not allowed")
+            self.report(node, "banned-name", f"reference to {node.id!r} is not allowed")
 
         # a bare dunder name
         elif is_dunder(node.id):
@@ -682,28 +695,6 @@ class _Checker:
                 node,
                 "dunder-name",
                 f"reference to dunder name {node.id!r} is not allowed",
-            )
-
-    # ── container literals ───────────────────────────────────────────────────────────────────
-    def _check_container_literal(self, node) -> None:
-        """Guards against:
-
-        - stashing a banned-builtin reference in a list/dict/set/tuple for later
-          dispatch (`d = {"o": open}; d["o"](...)`).
-
-        We don't track which slot holds what, so we reject the container at
-        construction time
-        """
-
-        # generic annotations nest type names in a Tuple slice. Ignored.
-        if id(node) in self._annotation_nodes:
-            return
-
-        if _contains_banned_reference(node):
-            self.report(
-                node,
-                "banned-construct",
-                "a list/dict/set/tuple literal may not hold a reference to a banned builtin",
             )
 
     # ── operators ────────────────────────────────────────────────────────────────────────────
@@ -720,32 +711,8 @@ class _Checker:
             )
 
     # ── assignment / reserved names ──────────────────────────────────────────────────────────
-    def _check_assign_targets(self, node) -> None:
-        """Guards against:
-
-        - rebinding a reserved name (an import alias, a public wrapper, a safe builtin, or
-          self/cls) — see _check_reserved_target
-        - stashing a banned-builtin into a container slot (`d["k"] = open`) — here the container
-          name is Load context, so the reserved-name walk skips it and the stored value is
-          otherwise never inspected
-        """
-
-        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-        for t in targets:
-            # is the assigned name itself reserved?
-            self._check_reserved_target(t)
-            # is a banned builtin being stashed into a container slot for later dispatch?
-            if (
-                isinstance(t, ast.Subscript)
-                and node.value is not None
-                and _contains_banned_reference(node.value)
-            ):
-                self.report(
-                    t,
-                    "banned-construct",
-                    "storing a reference to a banned builtin into a container slot is not allowed",
-                )
-        # not a guard: bookkeeping for _check_call's local-safety tracking, not a violation source
+    def _track_assignment_targets(self, node) -> None:
+        """Not a guard itself. Tracks the assignments _check_call depends on."""
         self._track_self_attr_alias(node)
         self._track_safe_local(node)
 
@@ -756,11 +723,14 @@ class _Checker:
         defeats _SelfAttrTrust (self.<attr> reads are always allowed; calling a local variable is
         always allowed). Any other assignment to a previously-tracked name clears its alias -- it
         no longer refers to that self.<attr>. AugAssign always clears (no value to trace here)."""
+
         if not self._alias_stack:
             return
+
         aliases = self._alias_stack[-1]
         if isinstance(node, ast.Assign):
             targets, value = node.targets, node.value
+
         elif isinstance(node, ast.AnnAssign):
             targets, value = (
                 ([node.target] if node.value is not None else []),
@@ -768,6 +738,7 @@ class _Checker:
             )
         else:  # AugAssign
             targets, value = [node.target], None
+
         for t in targets:
             if not isinstance(t, ast.Name):
                 continue
@@ -788,24 +759,24 @@ class _Checker:
             if attr is not None:
                 return attr
         if isinstance(value, ast.Name):
-            return self._current_aliases().get(value.id)
+            return self._current_aliases.get(value.id)
         return None
 
+    @property
     def _current_aliases(self) -> dict[str, str]:
         return self._alias_stack[-1] if self._alias_stack else {}
 
     def _track_safe_local(self, node) -> None:
         """Track whether each assigned local is a provably-safe call target, beyond the self.<attr>
-        aliasing _track_self_attr_alias already covers: an allow-listed constructor call, a def/class
-        defined in this file, a copy of an already-tracked-safe name, or a container/comprehension of
-        such (see _is_safe_local_source) -- so _check_call can allow calling it later instead of
-        denying by default. Any other assignment to a previously-tracked name clears its verdict, the
-        same as _track_self_attr_alias; AugAssign always clears (no single value expression to vet)."""
+        aliasing _track_self_attr_alias already covers"""
+
         if not self._safe_locals_stack:
             return
+
         safe = self._safe_locals_stack[-1]
         if isinstance(node, ast.Assign):
             targets, value = node.targets, node.value
+
         elif isinstance(node, ast.AnnAssign):
             targets, value = (
                 ([node.target] if node.value is not None else []),
@@ -813,6 +784,7 @@ class _Checker:
             )
         else:  # AugAssign
             targets, value = [node.target], None
+
         for t in targets:
             if not isinstance(t, ast.Name):
                 continue
@@ -822,73 +794,32 @@ class _Checker:
                 safe.pop(t.id, None)
 
     def _is_safe_local_source(self, value: ast.AST) -> bool:
-        """Is a local (or a value called directly, e.g. ``Block(...)(x)``) provably safe to call?
-        self.<attr> sources are handled separately by _track_self_attr_alias/_current_aliases
-        (checked first in _check_call); this covers everything else: a call to an allow-listed
-        constructor or a def/class in this file (delegated to _SelfAttrTrust.is_safe_value, the same
-        rule self-attribute assignments are vetted against), a bare-name copy of an already-tracked
-        source or another def/class in this file, or a list/tuple/set/comprehension of such (the
-        layer idiom, e.g. ``blocks = [Block(cfg) for _ in range(n)]``)."""
+        """Is a local provably safe to call?"""
+
         if isinstance(value, ast.Name):
             return (
-                self._current_safe_locals().get(value.id, False)
+                self._current_safe_locals.get(value.id, False)
                 or value.id in self.scan.private_defs
                 or value.id in self.scan.public_defs
             )
+
         if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
             return all(self._is_safe_local_source(e) for e in value.elts)
+
         if isinstance(value, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
             return self._is_safe_local_source(value.elt)
+
         if isinstance(value, ast.DictComp):
             return self._is_safe_local_source(value.value)
+
         if isinstance(value, ast.Call):
             return self._self_attr.is_safe_value(value)
+
         return False
 
+    @property
     def _current_safe_locals(self) -> dict[str, bool]:
         return self._safe_locals_stack[-1] if self._safe_locals_stack else {}
-
-    def _check_for_loop_assignment(self, node: ast.For) -> None:
-        """Guards against:
-
-        - rebinding a reserved name in a for-loop target, e.g. ``for self in [evil]: pass``
-        """
-        # a for-loop target binds like an assignment but isn't an ast.Assign node -- same check
-        self._check_reserved_target(node.target)
-
-    def _check_comprehension_target(
-        self, node: ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp
-    ) -> None:
-        """Guards against:
-
-        - rebinding a reserved name in a comprehension target
-        """
-        # ast.comprehension has no lineno, so dispatch from the enclosing expression instead
-        for generator in node.generators:
-            self._check_reserved_target(generator.target)
-
-    def _check_reserved_target(self, target: ast.AST) -> None:
-        """Guards against:
-
-        - rebinding self/cls, which would forge the identifier-based trust
-          _check_arguments_dont_abuse_self_or_cls and self.<attr> vetting both rely on
-        - shadowing a reserved alias / wrapper name / safe builtin (delegated to
-          _check_reserved_name)
-        """
-        for name_node in iter_names(target):
-            if isinstance(name_node.ctx, ast.Store):
-                # self/cls itself: always denied, never delegated to _check_reserved_name
-                if name_node.id in ("self", "cls"):
-                    self.report(
-                        name_node,
-                        "reserved-name",
-                        f"{name_node.id!r} may not be rebound; self/cls attribute access is "
-                        f"trusted by identifier alone, not a verified reference to the real "
-                        f"instance",
-                    )
-                    continue
-                # any other Store target: is this name reserved by the resolver?
-                self._check_reserved_name(name_node, name_node.id)
 
     def _check_reserved_name(self, node: ast.AST, name: str) -> None:
         """Guards against:
@@ -1022,12 +953,3 @@ class _SelfAttrTrust:
         if isinstance(value, ast.DictComp):
             return self.is_safe_value(value.value)
         return False
-
-
-# ── helpers ──────────────────────────────────────────────────────────────────────────────────
-def _contains_banned_reference(node: ast.AST) -> bool:
-    """True if a Load-context reference to a BANNED_NAMES identifier appears anywhere in node."""
-    return any(
-        isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load) and n.id in BANNED_NAMES
-        for n in ast.walk(node)
-    )

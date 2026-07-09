@@ -78,13 +78,6 @@ def rooted_in_self(node: ast.AST) -> bool:
     return isinstance(cur, ast.Name) and cur.id in ("self", "cls")
 
 
-def iter_names(node: ast.AST):
-    """Yield every ``ast.Name`` anywhere under ``node``."""
-    for n in ast.walk(node):
-        if isinstance(n, ast.Name):
-            yield n
-
-
 def describe(node: ast.AST) -> str:
     """A human-readable label for a node in a violation message."""
     return dotted_name(node) or type(node).__name__

@@ -39,13 +39,13 @@ reviewed.
 These names may never be called or referenced — aliasing them, putting them in a container, or
 returning them is caught at the reference site. (`BANNED_NAMES` in `policy.py`.)
 
-**Dynamic-code / reflection / IO hatches** — code `banned-call`:
+**Dynamic-code / reflection / IO hatches** — code `banned-name`:
 `eval`, `exec`, `compile`, `__import__`, `getattr`, `setattr`, `delattr`, `hasattr`, `vars`,
 `globals`, `locals`, `dir`, `open`, `input`, `breakpoint`, `memoryview`, `type`, `__build_class__`,
 `print`.
 
 **Dunder-proxy builtins** — same escape as calling a dunder on a value (`x.__repr__()`), spelled as
-a bare call. Code `banned-call`: `repr`, `str`, `ascii`, `format`, `bytes`. (`bytes(x)` losslessly
+a bare call. Code `banned-name`: `repr`, `str`, `ascii`, `format`, `bytes`. (`bytes(x)` losslessly
 serializes an array's raw memory; `print` is a stdout exfil channel.)
 
 The same escape via **any f-string interpolation** (`f"{x}"`, `f"{x!r}"`, `f"{x!s}"`, `f"{x!a}"`,
@@ -91,7 +91,7 @@ Only single-level `self.<name>` / `cls.<name>` reads and writes are allowed (see
 `call-unresolved` is [default-deny for the call target itself](verify.md#the-full-call-target-rule):
 a bare-name or chained call (`fn(x)`, `d["k"](x)`) is rejected unless it's provably an allow-listed
 import, a def/class in this file, a safe builtin, or a local/value traced to one of those — not
-merely because nothing else flagged it. This catches the general case a `banned-call` reference
+merely because nothing else flagged it. This catches the general case a `banned-name` reference
 can't: a dangerous callable that reaches a call site through an untraceable parameter or local,
 with no bare reference to a `BANNED_NAMES` entry anywhere in sight.
 
@@ -138,7 +138,7 @@ time (we don't track which slot holds what). Code: `banned-construct`.
 The reference is also caught in every other position: `f = eval` (alias), `a = b = open` (chained),
 `a, b = (1, open)` (unpack), `return open` then `leak()(...)`, `op=open` (default arg),
 `open if c else eval` (IfExp branch), and via a homoglyph copy of a previously-stashed name. All
-report `banned-call` at the reference.
+report `banned-name` at the reference.
 
 ---
 
