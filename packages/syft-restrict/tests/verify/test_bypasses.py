@@ -659,6 +659,18 @@ def test_self_attr_local_alias_of_safe_source_is_still_allowed(verify_all):
 # traced to one of those -- everything else is rejected outright, even with nothing "banned" in sight.
 
 
+def test_public_call_is_allowed(verify_all):
+    src = ["def helper():", "    return 1", "helper()"]
+    result = verify_all("\n".join(src), private=[[1, 2]])
+    assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
+def test_private_call_is_allowed(verify_all):
+    src = ["def helper():", "    return 1", "helper()"]
+    result = verify_all("\n".join(src))
+    assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
 def test_call_through_bare_parameter_is_rejected(verify_all):
     # The exact gap this model closes: a parameter is never traceable to a safe source, so calling
     # it directly must be rejected even though no banned name appears anywhere in this snippet.

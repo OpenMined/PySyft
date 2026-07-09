@@ -9,7 +9,6 @@ The tests are split by intent:
 from pathlib import Path
 
 import pytest
-
 from syft_restrict import Policy, verify
 from syft_restrict.verifier import VerifyResult
 
@@ -33,9 +32,10 @@ def policy():
 def verify_all(policy):
     """Verify ``source`` with the whole file marked private, using the standard policy."""
 
-    def _run(source, pol=None):
-        n = len(source.splitlines())
-        return verify(source, [[1, n]], pol or policy)
+    def _run(source, pol=None, private=None):
+        if private is None:
+            private = [[1, len(source.splitlines())]]
+        return verify(source, private, pol or policy)
 
     return _run
 
