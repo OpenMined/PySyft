@@ -30,28 +30,14 @@ dependencies = [
     "google-auth[pyjwt]>=2.22.0",
     "google-auth-oauthlib>=1.0.0",
     "rich>=13.0.0",
-    "pandas",
     "pydantic-settings>=2.11.0",
-    "pyyaml>=6.0",
-    "jinja2>=3.1.0",
-    "click>=8.0.0",
     "portalocker>=2.8.0",
-    "python-daemon>=3.0.0",
     "syft-permissions==0.1.14",
     "syft-perms==0.1.14",
     "syft-crypto-python>=0.1.2b2",
 ]
 
-[project.optional-dependencies]
-datasets = [
-    "syft-dataset==0.1.20",
-]
-job = [
-    "syft-job==0.1.39",
-]
-all = [
-    "syft-client[datasets,job]",
-]
+
 
 [tool.uv]
 default-groups = ["dev", "test"]
