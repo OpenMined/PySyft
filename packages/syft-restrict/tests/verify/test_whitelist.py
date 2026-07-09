@@ -123,13 +123,6 @@ def test_control_flow_and_comprehensions(verify_all):
     assert _ok(verify_all(src))[0]
 
 
-def test_fstring_over_opaque_value_is_rejected(verify_all):
-    """f-strings (JoinedStr/FormattedValue) are allowed as a node type, but interpolating an
-    opaque value invokes __format__ on it with no Call node -- must be rejected the same as
-    f"{x!r}"/f"{x!s}"/f"{x=}" (see test_bypasses.py)."""
-    src = "def f(x):\n    return f'value={x}'\n"
-    assert "method-on-value" in error_codes(verify_all(src))
-
 
 def test_calling_a_value_is_allowed(verify_all):
     """Calling the result of a subscript/call (its ``__call__``) is allowed."""

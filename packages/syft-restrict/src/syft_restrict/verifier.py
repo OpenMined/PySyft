@@ -82,8 +82,6 @@ _ALLOWED_NODES: tuple[type[ast.AST], ...] = (
     ast.Assign,
     ast.AugAssign,
     ast.AnnAssign,
-    ast.JoinedStr,
-    ast.FormattedValue,
     # operator/cmpop/boolop/unaryop singletons are leaf nodes under the above; always fine.
     ast.operator,
     ast.cmpop,
@@ -92,8 +90,9 @@ _ALLOWED_NODES: tuple[type[ast.AST], ...] = (
     ast.expr_context,
 )
 
-# ── node-type deny-list: statements that reach the host, filesystem, or interpreter (docs/blacklist.md) ──
-# Listed explicitly so their violation names them clearly.
+# node-type deny-list: constructs deliberately, permanently denied (docs/blacklist.md) ──
+# Listed explicitly (rather than just left off the allow-list) so their violation names them
+# clearly, distinct from "node-type" (unreviewed/future syntax).
 _BANNED_NODES: tuple[type[ast.AST], ...] = (
     ast.Import,
     ast.ImportFrom,
@@ -110,10 +109,13 @@ _BANNED_NODES: tuple[type[ast.AST], ...] = (
     ast.Await,
     ast.Yield,
     ast.YieldFrom,
+    # f-strings: even with no interpolation, just use a plain string; with interpolation, every
+    # {expr} invokes type(expr).__format__(expr, spec) with no Call node for _check_call to see.
+    ast.JoinedStr,
+    ast.FormattedValue,
 )
 
-# ── violation-code registry: every code a check can raise, one line each (docs/blacklist.md) ──
-# Grep a method name below to find which check raises which code.
+# violation-code registry: every code a check can raise, one line each (docs/blacklist.md)
 ViolationCode = Literal[
     "banned-construct",  # _enforce, _check_container_literal, _check_assign_targets
     "node-type",  # _enforce (node type outside the always-on allow-list)
@@ -127,7 +129,7 @@ ViolationCode = Literal[
     "call-unresolved",  # _check_call (bare-name/value call not traceable to a safe source)
     "dunder-attr",  # _check_call_attribute, _check_attribute
     "attr-on-value",  # _check_call_attribute, _check_self_subscript_call, _check_attribute
-    "method-on-value",  # _check_call_attribute, _check_formatted_value
+    "method-on-value",  # _check_call_attribute
     "attr-not-allowed",  # _check_attribute
     "dunder-name",  # _check_name
     "bundle-disabled",  # _require_bundle
@@ -172,7 +174,7 @@ def verify(source: str, private, policy: Policy) -> VerifyResult:
 #   unknown / future syntax              -> _ALLOWED_NODES default-deny (in _enforce)
 #   library call/attr by name            -> _check_call_attribute, _check_attribute (resolver + allow/disallow)
 #   named method / attr on opaque value  -> _check_call_attribute, _check_attribute
-#   f-string repr/str/ascii escape       -> _check_formatted_value
+#   f-strings (any shape)                -> _BANNED_NODES (in _enforce)
 #   forged self/cls trust                -> _check_self_cls_params, _check_reserved_target
 #   aliasing a banned callable           -> _check_name, _check_container_literal, _check_assign_targets
 #   unresolved call target (default-deny) -> _check_call, _is_safe_local_source
@@ -301,13 +303,11 @@ class _Checker:
         elif isinstance(node, ast.arg):
             self._check_reserved_name(node, node.arg)
 
-        # --- literals, names, f-strings ---
+        # --- literals & names ---
         elif isinstance(node, (ast.List, ast.Dict, ast.Set, ast.Tuple)):
             self._check_container_literal(node)
         elif isinstance(node, ast.Name):
             self._check_name(node)
-        elif isinstance(node, ast.FormattedValue):
-            self._check_formatted_value(node)
 
     # ── definitions & classes ────────────────────────────────────────────────────────────────
     def _check_def(self, node: ast.FunctionDef) -> None:
@@ -684,34 +684,21 @@ class _Checker:
                 f"reference to dunder name {node.id!r} is not allowed",
             )
 
-    # ── f-strings ────────────────────────────────────────────────────────────────────────────
-    def _check_formatted_value(self, node: ast.FormattedValue) -> None:
-        """Guards against:
-
-        - every f-string interpolation — plain `f"{x}"` included — invoking __format__ (and, via
-          default object.__format__, __str__) on the value with no Call node for _check_call to
-          see; Python calls type(x).__format__(x, spec) for every FormattedValue regardless of
-          conversion flag, so there is no conversion-less case that "stays allowed"
-        """
-        # unconditional: no FormattedValue is ever a provably-safe __format__ call
-        self.report(
-            node,
-            "method-on-value",
-            "f-string interpolation calls __format__ on a value whose type is unknown; "
-            "route it through a public wrapper function instead",
-        )
-
     # ── container literals ───────────────────────────────────────────────────────────────────
     def _check_container_literal(self, node) -> None:
         """Guards against:
 
-        - stashing a banned-builtin reference in a list/dict/set/tuple for later dispatch
-          (`d = {"o": open}; d["o"](...)`) — we don't track which slot holds what, so we reject
-          the container at construction time
+        - stashing a banned-builtin reference in a list/dict/set/tuple for later
+          dispatch (`d = {"o": open}; d["o"](...)`).
+
+        We don't track which slot holds what, so we reject the container at
+        construction time
         """
-        # generic annotations nest type names in a Tuple slice, never invoked -- exempt
+
+        # generic annotations nest type names in a Tuple slice. Ignored.
         if id(node) in self._annotation_nodes:
             return
+
         if _contains_banned_reference(node):
             self.report(
                 node,
@@ -742,6 +729,7 @@ class _Checker:
           name is Load context, so the reserved-name walk skips it and the stored value is
           otherwise never inspected
         """
+
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
         for t in targets:
             # is the assigned name itself reserved?

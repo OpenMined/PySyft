@@ -24,6 +24,7 @@ control flow. (`_BANNED_NODES` in `verifier.py`.) Code: `banned-construct`.
 | `Assert`                                             | Asserts vanish under `python -O`; they must never carry safety guarantees.              |
 | `AsyncFunctionDef`, `AsyncFor`, `AsyncWith`, `Await` | Async machinery is out of scope.                                                        |
 | `Yield`, `YieldFrom`                                 | Generators suspend and resume execution.                                                |
+| `JoinedStr`, `FormattedValue` (f-strings)             | Interpolation invokes `__format__` with no `Call` node to check; a no-interpolation f-string is just a string literal, so it's banned too rather than special-cased as safe. |
 
 ## Unknown / future syntax
 
@@ -47,7 +48,10 @@ returning them is caught at the reference site. (`BANNED_NAMES` in `policy.py`.)
 a bare call. Code `banned-call`: `repr`, `str`, `ascii`, `format`, `bytes`. (`bytes(x)` losslessly
 serializes an array's raw memory; `print` is a stdout exfil channel.)
 
-The same escape via **any f-string interpolation** (`f"{x}"`, `f"{x!r}"`, `f"{x!s}"`, `f"{x!a}"`, `f"{x=}"`) has no `Call` node and is rejected as `method-on-value`.
+The same escape via **any f-string interpolation** (`f"{x}"`, `f"{x!r}"`, `f"{x!s}"`, `f"{x!a}"`,
+`f"{x=}"`) has no `Call` node — but rather than detect interpolation specifically, f-strings are
+banned outright as a node type (`JoinedStr`/`FormattedValue`, code `banned-construct`, see above),
+including a plain f-string with no interpolation at all.
 
 ---
 

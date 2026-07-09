@@ -17,9 +17,9 @@ rejected. New Python syntax stays blocked until someone reviews it.
 ## The whitelist
 
 Private inference code needs to wire up JAX operations: Flax modules with `setup`/`__call__`, JAX
-function calls, arithmetic, shape/dtype plumbing (lists, dicts, tuples, slices, f-strings for
-einsum strings), and control flow that doesn't depend on secret data. It should not be able to touch
-the host, filesystem, network, interpreter internals, or build code from strings.
+function calls, arithmetic, shape/dtype plumbing (lists, dicts, tuples, slices), and control flow
+that doesn't depend on secret data. It should not be able to touch the host, filesystem, network,
+interpreter internals, or build code from strings.
 
 A node passes only if it's on the always-on allow-list or enabled by per-file configuration. Everything
 else fails.
@@ -31,8 +31,10 @@ definitions (`FunctionDef`, `ClassDef`, `arguments`, `arg`, `Return`, `Lambda`);
 `Load`/`Store`/`Del`); constants; assignment (`Assign`, `AugAssign`, `AnnAssign`); containers
 (`List`, `Tuple`, `Dict`, `Set`); comprehensions; calls (`Call`, `keyword`, `Starred`); attribute
 access (only `self.<name>`, see below); control flow (`If`, `For`, `While`, `Break`, `Continue`,
-`Pass`, `IfExp`); and f-strings (`JoinedStr`, `FormattedValue`). The exact set is `_ALLOWED_NODES`
-in `verifier.py`.
+`Pass`, `IfExp`). The exact set is `_ALLOWED_NODES` in `verifier.py`.
+
+f-strings (`JoinedStr`, `FormattedValue`) are banned outright, with or without interpolation — see
+`docs/blacklist.md` and [edge cases](#edge-cases) below.
 
 Extra constraints on top of "the node type is allowed":
 
@@ -181,9 +183,12 @@ Subtle corners, kept here so code comments can stay short.
   class/function, or a list/tuple/comprehension of those. Compound assignment (`self.x += ...`)
   always disqualifies the attribute.
 
-- **f-string interpolation calls dunders with no `Call` node.** Any `{expr}` inside an f-string invokes `type(expr).__format__(expr, spec)` with no `Call` node for the call checks to see — including plain `f"{x}"`, conversion flags (`!r`/`!s`/`!a`), and the `{x=}` debug form — so all interpolation is rejected directly.
-
-  (An f-string with no `{...}` parts is just literal text and is allowed; the obfuscator still blanks that literal text inside the private region.)
+- **f-strings are banned outright, not just interpolation.** Any `{expr}` inside an f-string
+  invokes `type(expr).__format__(expr, spec)` with no `Call` node for the call checks to see —
+  including plain `f"{x}"`, conversion flags (`!r`/`!s`/`!a`), and the `{x=}` debug form. Rather
+  than special-case "no interpolation" as a safe exception, `JoinedStr`/`FormattedValue` are
+  denied unconditionally: a no-interpolation f-string is just a string literal, so drop the
+  `f`-prefix instead.
 
 - **Aliasing is caught at the reference, not the call.** A banned builtin (`open`, `eval`, …) is
   flagged wherever its name appears — aliased locally (`f = open`), stashed in a container

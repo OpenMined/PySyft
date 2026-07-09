@@ -93,13 +93,6 @@ def test_dunder_proxy_builtin_should_not_be_allowed(fname, verify_all):
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
-def test_fstring_conversion_flag_should_not_be_allowed(verify_all):
-    # f"{x!r}" invokes x.__repr__() via FormattedValue's conversion flag, with no Call node —
-    # must be rejected the same as repr(x) (#10).
-    src = ["def f(x):", "    return f'{x!r}'"]
-    assert "method-on-value" in error_codes(verify_all("\n".join(src)))
-
-
 def test_bare_class_dunder_name_should_not_be_allowed(verify_all):
     # __class__ is an implicit bare Name in every method body; the dunder ban must cover bare
     # Name reads, not just Attribute.attr (#11). Flagged as its own "dunder-name" code, distinct
@@ -353,18 +346,6 @@ def test_bytes_buffer_exfiltration_should_not_be_allowed(verify_all):
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
-def test_fstring_conversion_s_flag_should_not_be_allowed(verify_all):
-    # f"{x!s}" invokes x.__str__() with no Call node — must be rejected the same as str(x) (#10).
-    src = ["def f(x):", "    return f'{x!s}'"]
-    assert "method-on-value" in error_codes(verify_all("\n".join(src)))
-
-
-def test_fstring_debug_specifier_should_not_be_allowed(verify_all):
-    # f"{x=}" implicitly invokes repr(x) with no Call node — must be rejected too (#10).
-    src = ["def f(x):", "    return f'{x=}'"]
-    assert "method-on-value" in error_codes(verify_all("\n".join(src)))
-
-
 def test_nested_generic_annotation_is_not_flagged(verify_all):
     # A banned-name identifier nested inside a subscripted/generic annotation (list[str],
     # dict[str, bytes]) must not be flagged -- the whole annotation subtree is exempt, not
@@ -497,15 +478,6 @@ def test_self_dunder_call_should_not_be_allowed(verify_all):
         "        return x",
     ]
     assert "dunder-attr" in error_codes(verify_all("\n".join(src)))
-
-
-def test_fstring_plain_interpolation_should_not_be_allowed(verify_all):
-    # A plain f"{x}" (conversion -1, no !r/!s/!a and no {x=} debug form) still invokes
-    # type(x).__format__(x, '') on the value -- verified directly that a custom __format__
-    # override fires for a bare f'{x}' -- so it is the same dunder-invocation-with-no-Call-node
-    # escape as f"{x!r}"/f"{x!s}"/f"{x=}", not a safe case as the current code assumes.
-    src = ["def f(x):", "    return f'{x}'"]
-    assert "method-on-value" in error_codes(verify_all("\n".join(src)))
 
 
 def test_class_name_shadowing_reserved_import_alias(verify_all):

@@ -21,6 +21,8 @@ from .conftest import error_codes
         "assert x\n",
         "async def f():\n    return 1\n",
         "def f():\n    yield 1\n",
+        "y = f'no interpolation'\n",  # banned outright, even with no {expr} -- drop the f-prefix
+        "y = f'value={x}'\n",
     ],
 )
 def test_banned_constructs(verify_all, snippet):

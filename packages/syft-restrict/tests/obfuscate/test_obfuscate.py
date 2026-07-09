@@ -91,10 +91,8 @@ def test_hide_blanks_whole_body_keeping_indentation(tmp_path):
 
 
 def test_fstring_literal_text_is_blanked():
-    # A private-region f-string with no interpolation (the only shape that passes verify(), since
-    # any {expr} part is banned) must have its literal text blanked, on any Python version --
-    # including 3.12+'s PEP 701 tokenizer, which emits the literal text as its own FSTRING_MIDDLE
-    # token(s) instead of folding the whole f-string into one STRING token.
+    # obfuscate() alone must still blank f-string text, even though verify()
+    # bans f-strings now.
     source = 'def f():\n    return f"secret literal text"\n'
     scan = scan_file(ast.parse(source), [(1, 2)])
     obf = obfuscate(source, [[1, 2]], [], scan)
