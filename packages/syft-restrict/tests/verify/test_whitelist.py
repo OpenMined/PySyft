@@ -9,6 +9,13 @@ def _ok(result):
     return result.ok, [f"L{v.line} {v.code}: {v.message}" for v in result.violations]
 
 
+def test_safe_aliased_builtin_calls(verify_all):
+    """Aliased safe builtins are allowed."""
+    src = "g = len; g([1, 2, 3])"
+    err = verify_all(src)
+    assert _ok(err)[0], err
+
+
 def test_compliant_fixture_passes(policy):
     """The green-path fixture (model definition) passes with no violations."""
     source = (FIXTURES / "compliant_model.py").read_text()

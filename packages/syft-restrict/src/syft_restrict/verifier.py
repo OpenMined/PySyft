@@ -200,8 +200,10 @@ class _Checker:
         self._annotation_nodes: set[int] = set()
 
         # per-scope locals provably safe to call -- see _track_safe_local /
-        # _is_safe_local_source
-        self._safe_locals_stack: list[dict[str, bool]] = []
+        # _is_safe_local_source. Starts with one frame already present: Module itself never
+        # pushes a scope in visit() (only ClassDef/FunctionDef/Lambda do), so top-level code
+        # needs its own standing frame instead of the tracking silently no-oping outside a def.
+        self._safe_locals_stack: list[dict[str, bool]] = [{}]
 
     def report(self, node: ast.AST, code: ViolationCode, message: str) -> None:
         self.violations.append(
@@ -737,6 +739,7 @@ class _Checker:
                 self._current_safe_locals.get(value.id, False)
                 or value.id in self.scan.private_defs
                 or value.id in self.scan.public_defs
+                or value.id in SAFE_BUILTIN_CALLS
             )
         if isinstance(value, ast.Call):
             return self._self_attr.is_safe_value(value)
