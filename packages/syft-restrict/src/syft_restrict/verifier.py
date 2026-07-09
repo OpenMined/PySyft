@@ -716,6 +716,16 @@ class _Checker:
         self._track_self_attr_alias(node)
         self._track_safe_local(node)
 
+    @staticmethod
+    def _assignment_targets_and_value(node) -> tuple[list[ast.expr], ast.expr | None]:
+        """Normalize Assign/AnnAssign/AugAssign into a uniform (targets, value) pair, shared by
+        _track_self_attr_alias and _track_safe_local."""
+        if isinstance(node, ast.Assign):
+            return node.targets, node.value
+        if isinstance(node, ast.AnnAssign):
+            return ([node.target] if node.value is not None else []), node.value
+        return [node.target], None  # AugAssign
+
     def _track_self_attr_alias(self, node) -> None:
         """Detect `tmp = self.<attr>` / `tmp = self.<attr>[i]` / `tmp = <already-tracked alias>` so a
         later `tmp(...)` call in _check_call is checked the same way calling self.<attr> directly
@@ -728,16 +738,7 @@ class _Checker:
             return
 
         aliases = self._alias_stack[-1]
-        if isinstance(node, ast.Assign):
-            targets, value = node.targets, node.value
-
-        elif isinstance(node, ast.AnnAssign):
-            targets, value = (
-                ([node.target] if node.value is not None else []),
-                node.value,
-            )
-        else:  # AugAssign
-            targets, value = [node.target], None
+        targets, value = self._assignment_targets_and_value(node)
 
         for t in targets:
             if not isinstance(t, ast.Name):
@@ -774,16 +775,7 @@ class _Checker:
             return
 
         safe = self._safe_locals_stack[-1]
-        if isinstance(node, ast.Assign):
-            targets, value = node.targets, node.value
-
-        elif isinstance(node, ast.AnnAssign):
-            targets, value = (
-                ([node.target] if node.value is not None else []),
-                node.value,
-            )
-        else:  # AugAssign
-            targets, value = [node.target], None
+        targets, value = self._assignment_targets_and_value(node)
 
         for t in targets:
             if not isinstance(t, ast.Name):
@@ -796,25 +788,17 @@ class _Checker:
     def _is_safe_local_source(self, value: ast.AST) -> bool:
         """Is a local provably safe to call?"""
 
+        return _all_leaves_safe(value, self._is_safe_local_leaf)
+
+    def _is_safe_local_leaf(self, value: ast.AST) -> bool:
         if isinstance(value, ast.Name):
             return (
                 self._current_safe_locals.get(value.id, False)
                 or value.id in self.scan.private_defs
                 or value.id in self.scan.public_defs
             )
-
-        if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
-            return all(self._is_safe_local_source(e) for e in value.elts)
-
-        if isinstance(value, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
-            return self._is_safe_local_source(value.elt)
-
-        if isinstance(value, ast.DictComp):
-            return self._is_safe_local_source(value.value)
-
         if isinstance(value, ast.Call):
             return self._self_attr.is_safe_value(value)
-
         return False
 
     @property
@@ -874,6 +858,20 @@ def _iter_self_attrs_in_target(target: ast.AST):
             yield from _iter_self_attrs_in_target(elt)
     elif isinstance(target, ast.Starred):
         yield from _iter_self_attrs_in_target(target.value)
+
+
+def _all_leaves_safe(value: ast.AST, is_safe_leaf) -> bool:
+    """Recurse through list/tuple/set literals and list/set/dict comprehensions/generator
+    expressions down to their leaf elements (the layer idiom, e.g. ``[Block(cfg) for _ in
+    range(n)]``), checking each leaf with ``is_safe_leaf``. Shared by
+    ``_SelfAttrTrust.is_safe_value`` and ``_Checker._is_safe_local_source``."""
+    if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
+        return all(_all_leaves_safe(e, is_safe_leaf) for e in value.elts)
+    if isinstance(value, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
+        return _all_leaves_safe(value.elt, is_safe_leaf)
+    if isinstance(value, ast.DictComp):
+        return _all_leaves_safe(value.value, is_safe_leaf)
+    return is_safe_leaf(value)
 
 
 class _SelfAttrTrust:
@@ -938,18 +936,15 @@ class _SelfAttrTrust:
     def is_safe_value(self, value: ast.AST) -> bool:
         """A vetted "submodule" source: a call to an allow-listed library constructor or a name defined
         in this file (private or public), or a list/tuple/set/comprehension of such (the layer idiom)."""
-        if isinstance(value, ast.Call):
-            func = value.func
-            path = dotted_name(func)
-            if path is not None and path.split(".")[0] in self._scan.import_bindings:
-                return self._resolved_allowed(path)
-            return isinstance(func, ast.Name) and (
-                func.id in self._scan.private_defs or func.id in self._scan.public_defs
-            )
-        if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
-            return all(self.is_safe_value(e) for e in value.elts)
-        if isinstance(value, (ast.ListComp, ast.SetComp, ast.GeneratorExp)):
-            return self.is_safe_value(value.elt)
-        if isinstance(value, ast.DictComp):
-            return self.is_safe_value(value.value)
-        return False
+        return _all_leaves_safe(value, self._is_safe_call)
+
+    def _is_safe_call(self, value: ast.AST) -> bool:
+        if not isinstance(value, ast.Call):
+            return False
+        func = value.func
+        path = dotted_name(func)
+        if path is not None and path.split(".")[0] in self._scan.import_bindings:
+            return self._resolved_allowed(path)
+        return isinstance(func, ast.Name) and (
+            func.id in self._scan.private_defs or func.id in self._scan.public_defs
+        )

@@ -214,6 +214,12 @@ separate control.
    allow-lists, and keep the policy versioned and reviewed against each pinned JAX release.
 4. **Bugs or supply-chain compromise in trusted libraries.** The checker only constrains caller
    code; a malicious jax/flax build defeats it. Attest exact library versions and hashes.
+5. **Public code is trusted, not verified.** `_enforce` only walks the private line ranges — a
+   banned name like `eval`/`open` is perfectly legal inside a public wrapper, and the private
+   region can then call that wrapper by name exactly like any other public function (the same
+   trust a `shape_of`/`append_to`-style wrapper relies on). `verify().ok` means the private region
+   can't reach these on its own, not that the file as a whole is free of them — the public glue
+   still needs an actual human read, the same reason imports are required to live there.
 
 ## Examples
 
