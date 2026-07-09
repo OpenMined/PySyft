@@ -199,10 +199,8 @@ class _Checker:
         # nodes inside a type annotation (never invoked), exempt from name/container checks
         self._annotation_nodes: set[int] = set()
 
-        # per-scope {local: self_attr} aliases, so `tmp = self.fn; tmp(x)` is checked like `self.fn(x)`
-        self._alias_stack: list[dict[str, str]] = []
-
-        # per-scope locals provably safe to call, beyond self.<attr> aliases -- see _track_safe_local
+        # per-scope locals provably safe to call -- see _track_safe_local /
+        # _is_safe_local_source
         self._safe_locals_stack: list[dict[str, bool]] = []
 
     def report(self, node: ast.AST, code: ViolationCode, message: str) -> None:
@@ -219,7 +217,6 @@ class _Checker:
         is_scope = isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.Lambda))
         if is_scope:
             self._scope_stack.append(node)
-            self._alias_stack.append({})
             self._safe_locals_stack.append({})
         self._mark_annotation_subtrees(node)
 
@@ -228,7 +225,6 @@ class _Checker:
 
         if is_scope:
             self._scope_stack.pop()
-            self._alias_stack.pop()
             self._safe_locals_stack.pop()
 
     def _enclosing_class(self) -> ast.ClassDef | None:
@@ -292,7 +288,7 @@ class _Checker:
 
         # --- name binding (assignments, params) ---
         elif isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
-            self._track_assignment_targets(node)
+            self._track_safe_local(node)
         elif isinstance(node, ast.arg):
             self._check_reserved_name(node, node.arg)
 
@@ -460,20 +456,7 @@ class _Checker:
                     )
                 return
 
-            # a local aliasing self.<attr> -- vetted the same way self.<attr>(...) would be
-            aliased_attr = self._current_aliases.get(func.id)
-            if aliased_attr is not None:
-                if not self._self_attr.is_safe(aliased_attr, self._enclosing_class()):
-                    self.report(
-                        node,
-                        "attr-on-value",
-                        f"{func.id!r} was assigned from self.{aliased_attr!r}, which isn't an "
-                        f"allow-listed constructor or a locally-defined class; calling it is not "
-                        f"allowed",
-                    )
-                return
-
-            # a def/class here, a safe builtin, or a local traced to one (_is_safe_local_source)
+            # a def/class here, a safe builtin, or a local traced to one
             if (
                 func.id in self.scan.private_defs
                 or func.id in self.scan.public_defs
@@ -711,65 +694,19 @@ class _Checker:
             )
 
     # ── assignment / reserved names ──────────────────────────────────────────────────────────
-    def _track_assignment_targets(self, node) -> None:
-        """Not a guard itself. Tracks the assignments _check_call depends on."""
-        self._track_self_attr_alias(node)
-        self._track_safe_local(node)
-
     @staticmethod
     def _assignment_targets_and_value(node) -> tuple[list[ast.expr], ast.expr | None]:
-        """Normalize Assign/AnnAssign/AugAssign into a uniform (targets, value) pair, shared by
-        _track_self_attr_alias and _track_safe_local."""
+        """Normalize Assign/AnnAssign/AugAssign into a uniform (targets, value) pair."""
         if isinstance(node, ast.Assign):
             return node.targets, node.value
         if isinstance(node, ast.AnnAssign):
             return ([node.target] if node.value is not None else []), node.value
         return [node.target], None  # AugAssign
 
-    def _track_self_attr_alias(self, node) -> None:
-        """Detect `tmp = self.<attr>` / `tmp = self.<attr>[i]` / `tmp = <already-tracked alias>` so a
-        later `tmp(...)` call in _check_call is checked the same way calling self.<attr> directly
-        would be -- otherwise reading an unsafe self.<attr> into a local variable trivially
-        defeats _SelfAttrTrust (self.<attr> reads are always allowed; calling a local variable is
-        always allowed). Any other assignment to a previously-tracked name clears its alias -- it
-        no longer refers to that self.<attr>. AugAssign always clears (no value to trace here)."""
-
-        if not self._alias_stack:
-            return
-
-        aliases = self._alias_stack[-1]
-        targets, value = self._assignment_targets_and_value(node)
-
-        for t in targets:
-            if not isinstance(t, ast.Name):
-                continue
-            attr = self._self_attr_source(value) if value is not None else None
-            if attr is not None:
-                aliases[t.id] = attr
-            else:
-                aliases.pop(t.id, None)
-
-    def _self_attr_source(self, value: ast.AST) -> str | None:
-        """The self.<attr> a plain expression traces back to: a direct self.<attr> read, a
-        single-level self.<attr>[i] subscript, or a copy of an already-tracked local alias."""
-        attr = self_attr_name(value)
-        if attr is not None:
-            return attr
-        if isinstance(value, ast.Subscript) and isinstance(value.value, ast.Attribute):
-            attr = self_attr_name(value.value)
-            if attr is not None:
-                return attr
-        if isinstance(value, ast.Name):
-            return self._current_aliases.get(value.id)
-        return None
-
-    @property
-    def _current_aliases(self) -> dict[str, str]:
-        return self._alias_stack[-1] if self._alias_stack else {}
-
     def _track_safe_local(self, node) -> None:
-        """Track whether each assigned local is a provably-safe call target, beyond the self.<attr>
-        aliasing _track_self_attr_alias already covers"""
+        """Track whether each assigned local is a provably-safe call target. Any other assignment
+        to a previously-tracked name clears its verdict -- it no longer traces to that source.
+        AugAssign always clears (no single value expression to vet)."""
 
         if not self._safe_locals_stack:
             return
@@ -787,7 +724,11 @@ class _Checker:
 
     def _is_safe_local_source(self, value: ast.AST) -> bool:
         """Is a local provably safe to call?"""
-
+        attr = self_attr_name(value)
+        if attr is None and isinstance(value, ast.Subscript):
+            attr = self_attr_name(value.value)
+        if attr is not None:
+            return self._self_attr.is_safe(attr, self._enclosing_class())
         return _all_leaves_safe(value, self._is_safe_local_leaf)
 
     def _is_safe_local_leaf(self, value: ast.AST) -> bool:

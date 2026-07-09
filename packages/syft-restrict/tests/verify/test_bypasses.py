@@ -663,7 +663,7 @@ def test_self_attr_local_alias_must_not_grant_trust(verify_all):
     ]
     err = get_error_codes(verify_all("\n".join(src)))
     assert err
-    assert "attr-on-value" in err
+    assert "call-unresolved" in err
 
 
 def test_self_attr_subscript_local_alias_must_not_grant_trust(verify_all):
@@ -680,7 +680,7 @@ def test_self_attr_subscript_local_alias_must_not_grant_trust(verify_all):
     ]
     err = get_error_codes(verify_all("\n".join(src)))
     assert err
-    assert "attr-on-value" in err
+    assert "call-unresolved" in err
 
 
 def test_self_attr_two_hop_local_alias_must_not_grant_trust(verify_all):
@@ -697,7 +697,7 @@ def test_self_attr_two_hop_local_alias_must_not_grant_trust(verify_all):
     ]
     err = get_error_codes(verify_all("\n".join(src)))
     assert err
-    assert "attr-on-value" in err
+    assert "call-unresolved" in err
 
 
 def test_self_attr_reassigned_local_alias_is_not_stuck_tainted(verify_all):
