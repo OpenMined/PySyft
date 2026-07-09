@@ -607,11 +607,6 @@ def test_self_attr_reassigned_local_alias_is_not_stuck_tainted(verify_all):
 
 
 def test_self_attr_local_alias_of_safe_source_is_still_allowed(verify_all):
-    # A local alias of a self.<attr> that WAS assigned a vetted-safe source (or is presumed
-    # inherited, since the class never assigns it) must still be callable -- alias tracking must
-    # track safety, not blanket-ban aliasing self.<attr> outright (see
-    # test_calling_a_value_is_allowed in test_whitelist.py, which already covers this shape and
-    # must keep passing).
     src = [
         "class M:",
         "    def __call__(self, x):",
@@ -622,13 +617,39 @@ def test_self_attr_local_alias_of_safe_source_is_still_allowed(verify_all):
     assert result.ok, [(v.code, v.message) for v in result.violations]
 
 
-# ── call-target default-deny: a bare-name/value call must be *provably* safe, not merely  ──
-# ── un-flagged (docs/verify.md#the-full-call-target-rule) ──────────────────────────────────
-# Previously ANY bare-name call was allowed unless the callee's origin happened to be a hardcoded
-# BANNED_NAMES reference (see test_parameter_passthrough_alias above, which only catches the `open`
-# argument -- not the `fn(x)` call itself). These tests lock in the stricter model: a call target
-# must resolve to an allow-listed import, a def/class in this file, a safe builtin, or a local/value
-# traced to one of those -- everything else is rejected outright, even with nothing "banned" in sight.
+def test_self_attr_assigned_allowlisted_import_call_is_callable(policy):
+    src = [
+        "from flax import linen as nn",
+        "",
+        "class M(nn.Module):",
+        "    def setup(self):",
+        "        self.dense = nn.Dense(8)",
+        "    def __call__(self, x):",
+        "        return self.dense(x)",
+    ]
+    result = verify("\n".join(src), [[3, 7]], policy)
+    assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
+def test_self_attr_list_of_constructors_element_alias_is_callable(verify_all):
+    # The  Gemma Transformer.__call__ example.
+    src = [
+        "class Block:",
+        "    def __call__(self, x):",
+        "        return x",
+        "",
+        "class M:",
+        "    def setup(self):",
+        "        self.layer = [Block() for _ in range(3)]",
+        "    def __call__(self, x):",
+        "        block = self.layer[0]",
+        "        return block(x)",
+    ]
+    result = verify_all("\n".join(src))
+    assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
+# ── call-target default-deny: a bare-name/value call must be *provably* safe
 
 
 def test_public_call_is_allowed(verify_all):
