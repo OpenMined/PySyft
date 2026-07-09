@@ -24,7 +24,7 @@ def test_compliant_fixture_passes(policy):
 def test_self_method_calls_allowed(verify_all):
     """``self.method(...)`` / ``cls.method(...)`` — receiver is the module class, not opaque."""
     src = (
-        "class M(object):\n"
+        "class M:\n"
         "    def setup(self):\n"
         "        self.w = self.param('w')\n"
         "    def __call__(self, x):\n"
@@ -49,7 +49,7 @@ def test_allowed_decorators(policy):
     """Only the allow-listed decorators may sit above a def/class (imports stay visible)."""
     header = "from flax import linen as nn\nimport jax\n"
     body = (
-        "class M(object):\n"
+        "class M:\n"
         "    @nn.compact\n"
         "    @jax.jit\n"
         "    def __call__(self, x):\n"
@@ -63,7 +63,7 @@ def test_allowed_decorators(policy):
 def test_allowed_dunder_defs(verify_all):
     """``__call__``, ``setup`` and ``__post_init__`` are the only definable hooks."""
     src = (
-        "class M(object):\n"
+        "class M:\n"
         "    def setup(self):\n"
         "        return None\n"
         "    def __post_init__(self):\n"
@@ -74,17 +74,28 @@ def test_allowed_dunder_defs(verify_all):
     assert _ok(verify_all(src))[0]
 
 
-def test_class_bases_object_and_hidden_def(verify_all):
-    """A class may subclass ``object`` or another class defined in the hidden region."""
-    src = (
-        "class Base(object):\n"
-        "    def __call__(self, x):\n"
-        "        return x\n"
-        "class Child(Base):\n"
+def test_class_base_must_be_allow_listed_import(verify_all):
+    """A base class must be an allow-listed import; ``object`` and hidden-region classes are rejected
+    (their metaclass/__init_subclass__ would run at class-creation time)."""
+    ok_src = (
+        "from flax import linen as nn\n"
+        "class M(nn.Module):\n"
         "    def __call__(self, x):\n"
         "        return x\n"
     )
-    assert _ok(verify_all(src))[0]
+    result = verify(ok_src, [[2, len(ok_src.splitlines())]], make_policy())
+    assert _ok(result)[0]
+
+    for base in ("object", "Base"):
+        src = (
+            "class Base:\n"
+            "    def __call__(self, x):\n"
+            "        return x\n"
+            f"class Child({base}):\n"
+            "    def __call__(self, x):\n"
+            "        return x\n"
+        )
+        assert "class-base" in error_codes(verify_all(src))
 
 
 def test_control_flow_and_comprehensions(verify_all):
@@ -118,7 +129,7 @@ def test_fstring_over_opaque_value_is_rejected(verify_all):
 def test_calling_a_value_is_allowed(verify_all):
     """Calling the result of a subscript/call (its ``__call__``) is allowed."""
     src = (
-        "class M(object):\n"
+        "class M:\n"
         "    def __call__(self, x):\n"
         "        layer = self.layers[0]\n"
         "        return self.layers[0](x) + layer(x)\n"

@@ -32,6 +32,7 @@ def run(
     hide=None,
     allow_functions: list[str] | None = None,
     allow_methods: list[str] | None = None,
+    disallow_functions: list[str] | None = None,
     out: str | Path | None = None,
     strict: bool = True,
 ) -> RunResult:
@@ -49,13 +50,16 @@ def run(
         allow_functions: list of dotted-path globs callable by name (e.g. ``["jax.*", "flax.linen.*"]``).
         allow_methods: list of operator bundles allowed on a value
             (``["arithmetic", "indexing", "comparison"]``).
+        disallow_functions: optional list of dotted-path globs that BEAT the allow (e.g.
+            ``["jax.numpy.save", "jax.experimental.*"]``). A hard floor for authors who allow a
+            broad glob; empty by default, in which case only ``allow_functions`` applies.
         out: where to write the obfuscated file (default ``<stem>.obfuscated.py`` next to the source).
         strict: if True (default), raise ``PolicyViolation`` when verification fails; otherwise return
             a ``RunResult`` with ``ok=False`` and no output written.
     """
     path = Path(path)
     source = path.read_text()
-    policy = Policy.parse(allow_functions, allow_methods)
+    policy = Policy.parse(allow_functions, allow_methods, disallow_functions)
 
     obfuscate_ranges = obfuscate or []
     hide_ranges = hide or []

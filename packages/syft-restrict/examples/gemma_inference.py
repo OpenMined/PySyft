@@ -317,7 +317,7 @@ def load_params(weights_dir, cfg):
 # ── Setup (convenience entry point) ───────────────────────────────────────
 
 
-def setup(weights_dir):
+def setup_model(weights_dir):
     """Configure model, load weights and tokenizer.
 
     Returns (model, tokenizer, params).

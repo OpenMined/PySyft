@@ -3,7 +3,8 @@
 Two channels the author configures per file:
 
 - ``functions`` — dotted paths callable BY NAME (resolved exactly against the import bindings),
-  e.g. ``jax.*``, ``flax.linen.*``. Checked by glob match, with ``JAX_DENYLIST`` beating the allow.
+  e.g. ``jax.*``, ``flax.linen.*``. Checked by glob match. An optional per-policy *disallow* list
+  (``disallow_functions``) beats the allow, giving the author a hard floor over broad globs.
 - ``methods``  — operator *bundles* allowed ON A VALUE, e.g. ``arithmetic``, ``indexing``. These are
   language-level operators (``__add__``, ``__getitem__``, …), never named library methods. No named
   method may be called on an opaque value at all.
@@ -29,38 +30,6 @@ OPERATOR_BUNDLES: dict[str, tuple[type[ast.AST], ...]] = {
 # value are named attribute accesses we can't pin to a type, so they're rejected like any other
 # attr-on-value and must be routed through a visible wrapper function (docs/verify.md#operator-bundles-on-a-value).
 ALL_BUNDLES: frozenset[str] = frozenset(OPERATOR_BUNDLES)
-
-# ── Dangerous JAX / serialization surface — denylist BEATS the allow (docs/blacklist.md) ──
-# Host-callback / IO / FFI / serialization escape hatches that can run host code or touch disk.
-JAX_DENYLIST: tuple[str, ...] = (
-    "jax.experimental.*",
-    "jax.debug.*",
-    "jax.pure_callback",
-    "*.io_callback",
-    "*.host_callback",
-    "*.host_callback.*",
-    "jax.profiler.*",
-    "jax.monitoring.*",
-    "jax.distributed.*",
-    "jax.dlpack.*",
-    "jax.ffi",
-    "jax.ffi.*",
-    "jax.extend.*",
-    # array <-> file on disk, even though jax.numpy.* is otherwise allowed
-    "jax.numpy.save",
-    "jax.numpy.savez",
-    "jax.numpy.savez_compressed",
-    "jax.numpy.load",
-    "jax.numpy.tofile",
-    "jax.numpy.fromfile",
-    "jax.numpy.memmap",
-    "jax.numpy.savetxt",
-    "jax.numpy.loadtxt",
-    "jax.numpy.genfromtxt",
-    "flax.serialization.*",
-    "flax.training.checkpoints.*",
-    "orbax.*",
-)
 
 # ── Builtins that are dynamic-escape / IO hatches and may never be called (docs/blacklist.md) ──
 BANNED_NAMES: frozenset[str] = frozenset(
@@ -112,38 +81,62 @@ DEFAULT_KEEP: frozenset[str] = frozenset(
 class Policy(BaseModel):
     """Parsed allow-lists. ``reserved`` is filled in by the verifier from the file's imports."""
 
-    functions: list[str] = Field(default_factory=list)
-    methods: set[str] = Field(default_factory=set)
-    reserved: set[str] = Field(default_factory=set)
+    # allowed functions passed by the user, example: ["jax.*", "flax.linen.*"]
+    allowed_functions: list[str] = Field(default_factory=list)
+
+    # allowed methods passed by the user, example: ["arithmetic", "indexing", "comparison"]
+    allowed_methods: set[str] = Field(default_factory=set)
+
+    # optional disallow globs supplied by the user; these beat the allow, example: ["jax.numpy.save"]
+    disallowed_functions: list[str] = Field(default_factory=list)
+
+    # reserved names, currently the import bindings, example:?
+    reserved_names: set[str] = Field(default_factory=set)
 
     @classmethod
     def parse(
         cls,
         allow_functions: list[str] | None = None,
         allow_methods: list[str] | None = None,
+        disallow_functions: list[str] | None = None,
     ) -> "Policy":
-        functions = _clean(allow_functions)
-        methods = set(_clean(allow_methods))
-        unknown = methods - ALL_BUNDLES
+        allowed_functions = _clean(allow_functions)
+        allowed_methods = set(_clean(allow_methods))
+        disallowed_functions = _clean(disallow_functions)
+        unknown = allowed_methods - ALL_BUNDLES
         if unknown:
             raise ValueError(
                 f"unknown method bundle(s): {sorted(unknown)}; allowed: {sorted(ALL_BUNDLES)}"
             )
-        return cls(functions=functions, methods=methods)
+        return cls(
+            allowed_functions=allowed_functions,
+            allowed_methods=allowed_methods,
+            disallowed_functions=disallowed_functions,
+        )
 
     # ── path matching ──────────────────────────────────────────────────────────────────
     def function_allowed(self, dotted: str) -> bool:
-        """True if a fully-qualified dotted path is allowed (and not denylisted)."""
-        if any(fnmatch.fnmatchcase(dotted, pat) for pat in JAX_DENYLIST):
+        """True if a fully-qualified dotted path is allowed (and not disallowed).
+
+        An optional user-supplied ``disallowed_functions`` glob beats the allow, so an author can
+        keep a hard floor over a broad allow like ``jax.*``. Empty (the default) => pure allow-list.
+        """
+        if any(fnmatch.fnmatchcase(dotted, pat) for pat in self.disallowed_functions):
             return False
-        return any(_path_matches(dotted, pat) for pat in self.functions)
+        return any(_path_matches(dotted, pat) for pat in self.allowed_functions)
 
     def bundle_enabled(self, name: str) -> bool:
-        return name in self.methods
+        return name in self.allowed_methods
 
     def policy_id(self) -> str:
         """A short, stable identifier for the policy (for the certificate)."""
-        blob = "|".join(sorted(self.functions)) + "##" + "|".join(sorted(self.methods))
+        blob = (
+            "|".join(sorted(self.allowed_functions))
+            + "##"
+            + "|".join(sorted(self.allowed_methods))
+            + "##"
+            + "|".join(sorted(self.disallowed_functions))
+        )
         return hashlib.sha256(blob.encode()).hexdigest()[:16]
 
 

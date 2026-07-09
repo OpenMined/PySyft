@@ -1,7 +1,7 @@
 import pytest
 from syft_restrict import verify
 
-from .conftest import error_codes
+from .conftest import error_codes, make_policy
 
 # Regression tests from the bypass-hunting pass. Each documents a specific
 # escape shape the verifier must reject, and why a narrower fix could miss it.
@@ -231,8 +231,9 @@ def test_function_default_alias(verify_all):
     assert "banned-call" in error_codes(verify_all("\n".join(src)))
 
 
-def test_bare_name_jax_denylist_bypass(policy):
-    # A denylisted JAX API reached via a bare public import must still be denylisted (#6b).
+def test_bare_name_disallowed_leaf_bypass():
+    # A disallowed API reached via a bare public import must still be rejected (#6b).
+    policy = make_policy(disallow=["jax.numpy.save"])
     src = [
         "from jax.numpy import save",
         "",
@@ -243,9 +244,10 @@ def test_bare_name_jax_denylist_bypass(policy):
     assert "call-not-allowed" in error_codes(result)
 
 
-def test_bare_name_import_alias_bypass(policy):
-    # Renaming a public import (`as persist`) must not let the resulting bare call bypass
-    # policy (#6).
+def test_bare_name_import_alias_bypass():
+    # Renaming a public import (`as persist`) must not let the resulting bare call bypass a
+    # disallow entry that names the underlying leaf (#6).
+    policy = make_policy(disallow=["jax.numpy.save"])
     src = [
         "from jax.numpy import save as persist",
         "",
@@ -620,7 +622,7 @@ def test_self_attr_reassigned_local_alias_is_not_stuck_tainted(verify_all):
     # Reassigning a variable that once aliased an unsafe self.<attr> to something else entirely
     # must clear the taint -- tracking must reflect the CURRENT value, not the first one ever seen.
     src = [
-        "class M(object):",
+        "class M:",
         "    def setup(self):",
         "        self.fn = lambda x: x + 1",
         "    def __call__(self, x):",
@@ -639,7 +641,7 @@ def test_self_attr_local_alias_of_safe_source_is_still_allowed(verify_all):
     # test_calling_a_value_is_allowed in test_whitelist.py, which already covers this shape and
     # must keep passing).
     src = [
-        "class M(object):",
+        "class M:",
         "    def __call__(self, x):",
         "        layer = self.layers[0]",
         "        return layer(x)",

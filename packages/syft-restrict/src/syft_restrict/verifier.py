@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .astutil import (
     FileScan,
     describe,
-    dotted,
+    dotted_name,
     is_dunder,
     iter_names,
     node_in_ranges,
@@ -151,7 +151,9 @@ def verify(source: str, private, policy: Policy) -> VerifyResult:
     ranges = normalize_ranges(private)
     tree = ast.parse(source)
     scan = scan_file(tree, ranges)
-    policy.reserved = set(scan.import_bindings)  # trusted module aliases may not be rebound
+    policy.reserved_names = set(
+        scan.import_bindings
+    )  # trusted module aliases may not be rebound
     checker = _Checker(policy, scan, ranges)
     checker.visit(tree)
     return VerifyResult(
@@ -169,7 +171,7 @@ def verify(source: str, private, policy: Policy) -> VerifyResult:
 #   dynamic-code / reflection builtins   -> _check_call, _check_name
 #   IO / host-escape statements          -> _BANNED_NODES (in _enforce)
 #   unknown / future syntax              -> _ALLOWED_NODES default-deny (in _enforce)
-#   library call/attr by name            -> _check_call_attribute, _check_attribute (resolver + denylist)
+#   library call/attr by name            -> _check_call_attribute, _check_attribute (resolver + allow/disallow)
 #   named method / attr on opaque value  -> _check_call_attribute, _check_attribute
 #   f-string repr/str/ascii escape       -> _check_formatted_value
 #   forged self/cls trust                -> _check_self_cls_params, _check_reserved_target
@@ -183,20 +185,25 @@ class _Checker:
         self.ranges = ranges
         self.violations: list[Violation] = []
         self.n_calls = 0
+
         # Attribute/Name nodes already judged as a call's func by _check_call_attribute/_check_call,
         # so _check_attribute/_check_name don't re-flag the same node a second time.
         self._checked_call_targets: set[int] = set()
+
         # Enclosing classes/functions/lambdas, in true nesting order; pushed/popped by visit(). Read by
         # _check_self_cls_params (is the "self"/"cls" param a direct method's first param?) and by
         # _enclosing_class() (the nearest ClassDef, for self.<name> vetting).
         self._scope_stack: list[ast.AST] = []
+
         # Answers "is self.<attr> safe to call/subscript?" for _check_call_attribute and
         # _check_self_subscript_call; see _SelfAttrTrust below.
         self._self_attr = _SelfAttrTrust(scan, self._resolved_allowed)
-        # Every node inside a type-annotation subtree (`x: str`, `x: dict[str, bytes]`), populated by
+
+        #  We store every node inside a type-annotation subtree (`x: str`, `x: dict[str, bytes]`), populated by
         # _mark_annotation_subtrees; exempt from the name/container checks in _check_name and
         # _check_container_literal because annotations are never invoked (see visit).
         self._annotation_nodes: set[int] = set()
+
         # One {local_name: self_attr_name} dict per enclosing class/function/lambda scope (mirrors
         # _scope_stack's push/pop), tracking which local variables currently alias a self.<attr> --
         # so `tmp = self.fn; tmp(x)` is checked the same way `self.fn(x)` directly is; see
@@ -235,12 +242,12 @@ class _Checker:
         return None
 
     def _mark_annotation_subtrees(self, node: ast.AST) -> None:
-        # A type annotation (`x: str`, `x: list[str]`, `def f() -> dict[str, bytes]`) is never invoked,
-        # so it can hold a name that is banned in a real reference (see docs/verify.md#edge-cases). Mark
-        # the WHOLE subtree, not just its top node: generics nest the type names one or more levels down
-        # (`list[str]` is `Subscript(Name('list'), Name('str'))`). Call/Attribute nodes inside still run
-        # their own checks — a call in a passive position (`x: evil()`) is caught, since no check reads
-        # this set to skip itself; only the name/container checks consult it.
+        """A type annotation (`x: str`, `x: list[str]`, `def f() -> dict[str, bytes]`) is never invoked,
+        so it can hold a name that is banned in a real reference (see docs/verify.md#edge-cases). Mark
+        the WHOLE subtree, not just its top node: generics nest the type names one or more levels down
+        (`list[str]` is `Subscript(Name('list'), Name('str'))`). Call/Attribute nodes inside still run
+        their own checks — a call in a passive position (`x: evil()`) is caught, since no check reads
+        this set to skip itself; only the name/container checks consult it."""
         for ann in (getattr(node, "annotation", None), getattr(node, "returns", None)):
             if ann is not None:
                 for descendant in ast.walk(ann):
@@ -267,7 +274,7 @@ class _Checker:
         if isinstance(node, ast.FunctionDef):
             self._check_def(node)
         elif isinstance(node, ast.Lambda):
-            self._check_self_cls_params(node.args)
+            self._check_arguments_dont_abuse_self_or_cls(node.args)
         elif isinstance(node, ast.ClassDef):
             self._check_class(node)
         # --- calls & attribute access ---
@@ -307,50 +314,62 @@ class _Checker:
 
     # ── definitions & classes ────────────────────────────────────────────────────────────────
     def _check_def(self, node: ast.FunctionDef) -> None:
-        # Guards against: defining magic/hook methods (__getattr__, __reduce__, …) that Python runs
-        # automatically without an explicit call in the math, and shadowing a trusted module alias
-        # or visible wrapper name with a local def (the same forging _check_reserved_name blocks for
-        # a plain assignment target).
+        """Guards against: defining magic/hook methods (__getattr__, __reduce__, …) that Python runs
+        automatically without an explicit call in the math, and shadowing a trusted module alias
+        or visible wrapper name with a local def (the same forging _check_reserved_name blocks for
+        a plain assignment target)."""
+        # are the function decorator in the list of allowed decorators?
         self._check_decorators(node)
+
+        # is the function name not a reserved name (shadowing an import)
         self._check_reserved_name(node, node.name)
+
+        # not a dunder unless allowed_dunder
         if is_dunder(node.name) and node.name not in ALLOWED_DUNDER_DEFS:
             self.report(
                 node,
                 "dunder-def",
                 f"defining magic method {node.name!r} is not allowed",
             )
-        self._check_self_cls_params(node.args)
+        # if the function has cls or self only allow if it is the first argument for a method
+        self._check_arguments_dont_abuse_self_or_cls(node.args)
 
     def _check_class(self, node: ast.ClassDef) -> None:
-        # Guards against: attacker code running at class-creation time via a class keyword (metaclass=)
-        # or a non-allow-listed base class (whose __init_subclass__/metaclass would fire), and
-        # shadowing a trusted module alias or visible wrapper name with a local class (see _check_def).
+        # check only allowed decorators
         self._check_decorators(node)
+
+        # is the class name not a reserved name (shadowing an import)
         self._check_reserved_name(node, node.name)
+
+        # does not use keywords (like metaclass=)
         if node.keywords:
             self.report(
                 node,
                 "class-keyword",
                 "class keyword arguments (e.g. metaclass=) are not allowed",
             )
+
+        # if it uses base classes, are they allow-listed? (they would be called in the __init_subclass__ method)
         for base in node.bases:
-            path = dotted(base)
-            ok = (path and self._resolved_allowed(path)) or (
-                isinstance(base, ast.Name)
-                and base.id in (self.scan.hidden_defs | {"object"})
-            )
-            if not ok:
+            if not self._base_class_allowed(base):
                 self.report(
                     base,
                     "class-base",
                     f"base class {describe(base)!r} is not allow-listed",
                 )
 
+    def _base_class_allowed(self, base: ast.AST) -> bool:
+        """Only an allow-listed import (resolved through any aliases, e.g. nn.Module) may be a base.
+        object and hidden-region classes are rejected: a base's metaclass / __init_subclass__ runs
+        at class-creation time, so we require it to resolve to something the policy vetted."""
+        path = dotted_name(base)
+        return bool(path) and self._resolved_allowed(path)
+
     def _check_decorators(self, node) -> None:
-        # Guards against: a decorator running attacker code the instant the def/class is reached.
+        """Guards against: a decorator running attacker code the instant the def/class is reached."""
         for dec in node.decorator_list:
             target = dec.func if isinstance(dec, ast.Call) else dec
-            path = dotted(target)
+            path = dotted_name(target)
             resolved = self._resolve(path) if path else None
             if not (resolved in ALLOWED_DECORATORS or path in ALLOWED_DECORATORS):
                 self.report(
@@ -359,13 +378,14 @@ class _Checker:
                     f"decorator {describe(target)!r} is not allow-listed",
                 )
 
-    def _check_self_cls_params(self, args: ast.arguments) -> None:
-        # Guards against: forging the self/cls exemption. self.<name> is trusted everywhere in this
-        # checker purely by matching the literal identifier "self"/"cls" -- it never verifies the name
-        # is bound to the real instance. That is only sound for the genuine first parameter of a method
-        # defined directly in a class body (where Python guarantees the binding). Anywhere else -- a
-        # non-first param, a nested function/lambda param, a *args/**kwargs of the same name -- an
-        # attacker's own object would receive the identical blanket trust. See docs/verify.md#edge-cases.
+    def _check_arguments_dont_abuse_self_or_cls(self, args: ast.arguments) -> None:
+        """Normally, we are not allowed to call x.y in hidden code,
+        but we have an exception for calling self.<name> in a class. However, this is only allowed if
+        self is bound to the real instance. This functino protects against forging the self/cls exemption.
+        That is only sound for the genuine first parameter of a method
+        defined directly in a class body (where Python guarantees the binding). Anywhere else -- a
+        non-first param, a nested function/lambda param, a *args/**kwargs of the same name -- an
+        attacker's own object would receive the identical blanket trust. See docs/verify.md#edge-cases."""
         is_direct_method = bool(self._scope_stack) and isinstance(
             self._scope_stack[-1], ast.ClassDef
         )
@@ -390,22 +410,15 @@ class _Checker:
 
     # ── calls ────────────────────────────────────────────────────────────────────────────────
     def _check_call(self, node: ast.Call) -> None:
-        # Guards against: calling a dynamic-code/IO builtin (eval, open, …) or a non-allow-listed public
-        # import, whether named directly or aliased. Attribute-position calls route to a stricter check.
+        """Guards against: calling a dynamic-code/IO builtin (eval, open, …) or a non-allow-listed public
+        import, whether named directly or aliased. Attribute-position calls route to a stricter check."""
+
         self.n_calls += 1
         func = node.func
         if isinstance(func, ast.Name):
-            if func.id in BANNED_NAMES:
-                self.report(node, "banned-call", f"call to {func.id!r} is not allowed")
-                self._checked_call_targets.add(
-                    id(func)
-                )  # so _check_name won't re-flag it
-                return
-            if (
-                func.id in self.scan.import_bindings
-                and func.id not in self.scan.hidden_defs
-                and func.id not in self.scan.visible_defs
-            ):
+            # Banned builtins (eval, open, …) are not special-cased here: the func node is a Load Name,
+            # so _check_name is the single backstop that flags it (and every aliasing position too).
+            if func.id in self.scan.import_bindings:
                 # A bare name imported via `from X import name [as alias]` in the public region resolves
                 # through the same binding table dotted paths use — apply the same allow+deny list.
                 if not self._resolved_allowed(func.id):
@@ -429,9 +442,11 @@ class _Checker:
                 return
             # Otherwise a bare-name call (local var / hidden or visible def / safe builtin) is allowed.
             return
+        # this checks the part before the call (e.g. for x.y.z() it checks x.y)
         if isinstance(func, ast.Attribute):
             self._check_call_attribute(node, func)
             return
+        # this checks the part before the call (e.g. for x[i].z() it checks x[i])
         if isinstance(func, ast.Subscript) and rooted_in_self(func):
             self._check_self_subscript_call(node, func)
             return
@@ -444,12 +459,12 @@ class _Checker:
     # messages for the call/subscript-call/read shape. Don't unify them into one shared function:
     # keep them hand-in-sync instead, since a merge risks changing which code fires for an edge case.
     def _check_call_attribute(self, call: ast.Call, func: ast.Attribute) -> None:
-        # Guards against: calling a non-allow-listed library path, and calling a named method on an
-        # opaque value (x.reshape(...)) whose type — and thus what the call does — we can't pin.
+        """Guards against: calling a non-allow-listed library path, and calling a named method on an
+        opaque value (x.reshape(...)) whose type — and thus what the call does — we can't pin."""
         self._checked_call_targets.add(
             id(func)
         )  # so _check_attribute won't re-flag this node
-        path = dotted(func)
+        path = dotted_name(func)
         if path is not None:
             root = path.split(".")[0]
             if root in ("self", "cls"):
@@ -491,8 +506,8 @@ class _Checker:
         )
 
     def _check_self_subscript_call(self, call: ast.Call, func: ast.Subscript) -> None:
-        # Guards against: the Flax self.layer[i](x) idiom smuggling a tainted callable — only allowed
-        # when <name> is inherited or was assigned a vetted-safe source (see _SelfAttrTrust).
+        """Guards against: the Flax self.layer[i](x) idiom smuggling a tainted callable — only allowed
+        when <name> is inherited or was assigned a vetted-safe source (see _SelfAttrTrust)."""
         attr = (
             self_attr_name(func.value)
             if isinstance(func.value, ast.Attribute)
@@ -510,8 +525,8 @@ class _Checker:
 
     # ── attribute reads (not the func of a call) ─────────────────────────────────────────────
     def _check_attribute(self, node: ast.Attribute) -> None:
-        # Guards against: reflection/dunder reads (x.__class__), non-allow-listed library paths, and any
-        # attribute read on an opaque value (x.shape) whose receiver type we can't pin.
+        """Guards against: reflection/dunder reads (x.__class__), non-allow-listed library paths, and any
+        attribute read on an opaque value (x.shape) whose receiver type we can't pin."""
         if id(node) in self._checked_call_targets:
             return  # already judged as a call's function position by _check_call_attribute
         if is_dunder(node.attr):
@@ -521,7 +536,7 @@ class _Checker:
                 f"access to dunder attribute {node.attr!r} is not allowed",
             )
             return
-        path = dotted(node)
+        path = dotted_name(node)
         if path is not None:
             root = path.split(".")[0]
             if root in ("self", "cls"):
@@ -552,10 +567,10 @@ class _Checker:
 
     # ── bare name reads (not the func of a call) ─────────────────────────────────────────────
     def _check_name(self, node: ast.Name) -> None:
-        # Guards against: aliasing a banned builtin (`f = open; f(...)`) — the reference itself is the
-        # violation, so every position it can occupy (container, return, arg, IfExp branch) is covered
-        # without tracing downstream. Also bans bare dunder names (`__class__`), the same reflection
-        # surface as an Attribute dunder, regardless of whether a dot precedes it.
+        """Guards against: aliasing a banned builtin (`f = open; f(...)`) — the reference itself is the
+        violation, so every position it can occupy (container, return, arg, IfExp branch) is covered
+        without tracing downstream. Also bans bare dunder names (`__class__`), the same reflection
+        surface as an Attribute dunder, regardless of whether a dot precedes it."""
         if not isinstance(node.ctx, ast.Load):
             return
         if id(node) in self._checked_call_targets:
@@ -573,10 +588,10 @@ class _Checker:
 
     # ── f-strings ────────────────────────────────────────────────────────────────────────────
     def _check_formatted_value(self, node: ast.FormattedValue) -> None:
-        # Guards against: every f-string interpolation — plain `f"{x}"` included — invoking
-        # __format__ (and, via default object.__format__, __str__) on the value with no Call node
-        # for _check_call to see. Python calls type(x).__format__(x, spec) for every FormattedValue
-        # regardless of conversion flag, so there is no conversion-less case that "stays allowed".
+        """Guards against: every f-string interpolation — plain `f"{x}"` included — invoking
+        __format__ (and, via default object.__format__, __str__) on the value with no Call node
+        for _check_call to see. Python calls type(x).__format__(x, spec) for every FormattedValue
+        regardless of conversion flag, so there is no conversion-less case that "stays allowed"."""
         self.report(
             node,
             "method-on-value",
@@ -586,10 +601,10 @@ class _Checker:
 
     # ── container literals ───────────────────────────────────────────────────────────────────
     def _check_container_literal(self, node) -> None:
-        # Guards against: stashing a banned-builtin reference in a list/dict/set/tuple for later
-        # dispatch (`d = {"o": open}; d["o"](...)`). We don't track which slot holds what, so we reject
-        # the container at construction time. Exempt inside an annotation (`dict[str, bytes]` nests its
-        # args in a Tuple slice) — never invoked as a container.
+        """Guards against: stashing a banned-builtin reference in a list/dict/set/tuple for later
+        dispatch (`d = {"o": open}; d["o"](...)`). We don't track which slot holds what, so we reject
+        the container at construction time. Exempt inside an annotation (`dict[str, bytes]` nests its
+        args in a Tuple slice) — never invoked as a container."""
         if id(node) in self._annotation_nodes:
             return
         if _contains_banned_reference(node):
@@ -601,8 +616,8 @@ class _Checker:
 
     # ── operators ────────────────────────────────────────────────────────────────────────────
     def _require_bundle(self, node: ast.AST, bundle: str) -> None:
-        # Guards against: using an operator bundle (arithmetic/comparison/indexing) the policy didn't
-        # enable for this file.
+        """Guards against: using an operator bundle (arithmetic/comparison/indexing) the policy didn't
+        enable for this file."""
         if not self.policy.bundle_enabled(bundle):
             ops = "/".join(t.__name__ for t in OPERATOR_BUNDLES[bundle])
             self.report(
@@ -611,9 +626,9 @@ class _Checker:
 
     # ── assignment / reserved names ──────────────────────────────────────────────────────────
     def _check_assign_targets(self, node) -> None:
-        # Guards against: rebinding a reserved name, and stashing a banned-builtin into a container slot
-        # (`d["k"] = open`) — here the container name is Load context, so the reserved-name walk skips
-        # it and the stored value is otherwise never inspected.
+        """Guards against: rebinding a reserved name, and stashing a banned-builtin into a container slot
+        (`d["k"] = open`) — here the container name is Load context, so the reserved-name walk skips
+        it and the stored value is otherwise never inspected."""
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
         for t in targets:
             self._check_reserved_target(t)
@@ -630,12 +645,12 @@ class _Checker:
         self._track_self_attr_alias(node)
 
     def _track_self_attr_alias(self, node) -> None:
-        # Detect `tmp = self.<attr>` / `tmp = self.<attr>[i]` / `tmp = <already-tracked alias>` so a
-        # later `tmp(...)` call in _check_call is checked the same way calling self.<attr> directly
-        # would be -- otherwise reading an unsafe self.<attr> into a local variable trivially
-        # defeats _SelfAttrTrust (self.<attr> reads are always allowed; calling a local variable is
-        # always allowed). Any other assignment to a previously-tracked name clears its alias -- it
-        # no longer refers to that self.<attr>. AugAssign always clears (no value to trace here).
+        """Detect `tmp = self.<attr>` / `tmp = self.<attr>[i]` / `tmp = <already-tracked alias>` so a
+        later `tmp(...)` call in _check_call is checked the same way calling self.<attr> directly
+        would be -- otherwise reading an unsafe self.<attr> into a local variable trivially
+        defeats _SelfAttrTrust (self.<attr> reads are always allowed; calling a local variable is
+        always allowed). Any other assignment to a previously-tracked name clears its alias -- it
+        no longer refers to that self.<attr>. AugAssign always clears (no value to trace here)."""
         if not self._alias_stack:
             return
         aliases = self._alias_stack[-1]
@@ -675,8 +690,8 @@ class _Checker:
         return self._alias_stack[-1] if self._alias_stack else {}
 
     def _check_reserved_target(self, target: ast.AST) -> None:
-        # Guards against: rebinding self/cls (which would forge the identifier-based trust — see
-        # _check_self_cls_params) or shadowing a reserved alias / wrapper name (below).
+        """Guards against: rebinding self/cls (which would forge the identifier-based trust — see
+        _check_self_cls_params) or shadowing a reserved alias / wrapper name (below)."""
         for name_node in iter_names(target):
             if isinstance(name_node.ctx, ast.Store):
                 if name_node.id in ("self", "cls"):
@@ -691,9 +706,9 @@ class _Checker:
                 self._check_reserved_name(name_node, name_node.id)
 
     def _check_reserved_name(self, node: ast.AST, name: str) -> None:
-        # Guards against: rebinding a trusted module alias (`jnp = evil`, which would poison the path
-        # resolver) or a visible wrapper name (`transpose = evil`).
-        if name in self.policy.reserved:
+        """Guards against: rebinding a trusted module alias (`jnp = evil`, which would poison the path
+        resolver) or a visible wrapper name (`transpose = evil`)."""
+        if name in self.policy.reserved_names:
             self.report(
                 node,
                 "reserved-name",
@@ -714,7 +729,7 @@ class _Checker:
         return f"{base}.{rest}" if rest else base
 
     def _resolved_allowed(self, path: str) -> bool:
-        """Resolve an import alias, then apply the policy allow-list (denylist beats allow)."""
+        """Resolve an import alias, then apply the policy allow-list (disallow beats allow)."""
         return self.policy.function_allowed(self._resolve(path))
 
 
@@ -758,12 +773,12 @@ class _SelfAttrTrust:
         return table.get(attr, True)
 
     def _build_table(self, cls_node: ast.ClassDef) -> dict[str, bool]:
-        # For every self.<name> assigned anywhere in the class, record whether EVERY value ever stored
-        # there is a vetted-safe source. AugAssign always disqualifies (compound-mutating a submodule
-        # reference isn't a real Flax pattern and is inherently suspect) -- and so does a self.<attr>
-        # found nested in a tuple/list-unpack target or bound via a for-loop/comprehension target:
-        # neither is a real Flax pattern either, and unlike a plain `self.x = value` there's no single
-        # value expression to vet, so we can't tell what ends up in the attribute.
+        """For every self.<name> assigned anywhere in the class, record whether EVERY value ever stored
+        there is a vetted-safe source. AugAssign always disqualifies (compound-mutating a submodule
+        reference isn't a real Flax pattern and is inherently suspect) -- and so does a self.<attr>
+        found nested in a tuple/list-unpack target or bound via a for-loop/comprehension target:
+        neither is a real Flax pattern either, and unlike a plain `self.x = value` there's no single
+        value expression to vet, so we can't tell what ends up in the attribute."""
         values: dict[str, list[ast.AST]] = {}
         disqualified: set[str] = set()
         for node in ast.walk(cls_node):
@@ -793,11 +808,11 @@ class _SelfAttrTrust:
         return table
 
     def _is_safe_value(self, value: ast.AST) -> bool:
-        # A vetted "submodule" source: a call to an allow-listed library constructor or a name defined
-        # in this file (hidden or visible), or a list/tuple/set/comprehension of such (the layer idiom).
+        """A vetted "submodule" source: a call to an allow-listed library constructor or a name defined
+        in this file (hidden or visible), or a list/tuple/set/comprehension of such (the layer idiom)."""
         if isinstance(value, ast.Call):
             func = value.func
-            path = dotted(func)
+            path = dotted_name(func)
             if path is not None and path.split(".")[0] in self._scan.import_bindings:
                 return self._resolved_allowed(path)
             return isinstance(func, ast.Name) and (

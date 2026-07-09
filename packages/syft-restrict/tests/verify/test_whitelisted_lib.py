@@ -70,7 +70,7 @@ def test_disabled_operator_bundle_is_rejected(verify_all, methods, body):
     assert "bundle-disabled" in error_codes(result)
 
 
-# ── denylist beats the allow, even under an otherwise-allowed module ──────────────────────
+# ── a user-supplied disallow list beats the allow, even under an otherwise-allowed module ──
 @pytest.mark.parametrize(
     "header, body",
     [
@@ -79,9 +79,23 @@ def test_disabled_operator_bundle_is_rejected(verify_all, methods, body):
         ("import jax\n", "q = jax.debug.print('x', x)\n"),
     ],
 )
-def test_denylist_beats_allow(policy, header, body):
+def test_user_disallow_beats_allow(header, body):
+    # Under a broad `jax.*` allow, an explicit disallow still rejects the dangerous leaves.
+    policy = make_policy(
+        disallow=["jax.experimental.*", "jax.numpy.save", "jax.debug.*"]
+    )
     result = _verify(header, body, policy)
     assert "call-not-allowed" in error_codes(result)
+
+
+# ── with no disallow list, a broad allow (`jax.*`) permits a formerly-denied leaf ─────────
+def test_no_disallow_permits_leaf_under_broad_allow():
+    # Intentional behavior change: safety comes from a *specific* allow-list or an explicit
+    # disallow list; a bare `jax.*` allow with no disallow now permits `jax.numpy.save`.
+    result = _verify(
+        "import jax.numpy as jnp\n", "q = jnp.save('f', x)\n", make_policy()
+    )
+    assert "call-not-allowed" not in error_codes(result)
 
 
 # ── a library that simply isn't on the allow-list ─────────────────────────────────────────

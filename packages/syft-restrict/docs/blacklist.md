@@ -51,17 +51,19 @@ The same escape via **any f-string interpolation** (`f"{x}"`, `f"{x!r}"`, `f"{x!
 
 ---
 
-## The JAX / serialization denylist
+## The optional user disallow list
 
-Host callbacks, IO, FFI, and serialization paths that can run host code or touch disk. The denylist
-beats the allowlist — rejected even under an otherwise-allowed module like `jax.numpy.*`.
-(`JAX_DENYLIST` in `policy.py`.) Hitting one by dotted path or bare public import reports
-`call-not-allowed`.
+There is no built-in denylist. Safety comes from passing a _specific_ `allow_functions` list (exact
+leaf paths rather than broad globs). For authors who do use a broad glob (`jax.*`) and still want a
+hard floor, `run(..., disallow_functions=[...])` takes glob patterns that **beat the allowlist** —
+rejected even under an otherwise-allowed module. (`disallowed_functions` on `Policy` in `policy.py`.)
+Hitting one by dotted path, bare public import, or import alias reports `call-not-allowed`.
 
-Covers: `jax.experimental.*`, `jax.debug.*`, `jax.pure_callback`, `*.io_callback`, `*.host_callback*`,
-`jax.profiler.*`, `jax.monitoring.*`, `jax.distributed.*`, `jax.dlpack.*`, `jax.ffi*`, `jax.extend.*`;
-array↔disk functions `jax.numpy.{save,savez,savez_compressed,load,tofile,fromfile,memmap,savetxt,
-loadtxt,genfromtxt}`; and `flax.serialization.*`, `flax.training.checkpoints.*`, `orbax.*`.
+Typical patterns to disallow when allowing a broad JAX/Flax surface: host-callback / IO / FFI /
+serialization paths that can run host code or touch disk — e.g. `jax.experimental.*`, `jax.debug.*`,
+`jax.pure_callback`, `*.io_callback`, `*.host_callback*`, `jax.dlpack.*`, `jax.ffi*`, the
+array↔disk `jax.numpy.{save,savez,load,tofile,fromfile,memmap,savetxt,loadtxt,genfromtxt}` family,
+and `flax.serialization.*`, `flax.training.checkpoints.*`, `orbax.*`.
 
 ---
 

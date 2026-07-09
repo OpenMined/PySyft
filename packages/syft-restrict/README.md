@@ -45,6 +45,10 @@ result = restrict.run(
 raising. Pass `strict=False` to `run` if you want a `RunResult` with `.ok` / `.violations` and no
 files written.
 
+Prefer _specific_ `allow_functions` (exact leaf paths) over broad globs. If you do allow a broad
+glob and want a hard floor, pass `disallow_functions=[...]` — glob patterns that beat the allowlist
+(e.g. `["jax.numpy.save", "jax.experimental.*"]`). It is empty by default.
+
 See [examples/gemma_inference.py](examples/gemma_inference.py) for a full example and
 [examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py) for what gets
 generated (`python examples/generate.py` to regenerate).

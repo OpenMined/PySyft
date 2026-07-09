@@ -51,19 +51,20 @@ Two knobs the author sets per file. Anything not enabled here is rejected like a
 
 #### `allow_functions` — paths callable by name
 
-Dotted paths are resolved against the file's import bindings. The denylist wins over the allowlist.
+Dotted paths are resolved against the file's import bindings. An optional per-policy disallow list
+(`disallow_functions`) wins over the allowlist, so an author can keep a hard floor over a broad allow.
 
 ```python
 import jax.numpy as jnp        # binding recorded: jnp -> jax.numpy
-jnp.einsum("...", x)           # resolves to jax.numpy.einsum -> allow-listed  ✓
-jnp.save(x)                    # resolves to jax.numpy.save   -> deny-listed   ✗
+jnp.einsum("...", x)           # resolves to jax.numpy.einsum -> allow-listed        ✓
+jnp.save(x)                    # resolves to jax.numpy.save   -> in disallow_functions ✗
 ```
 
 We don't allow-list whole modules. We allow-list `(module, attribute-path)` pairs, which works
 because dynamic attribute access is banned. Rules that enforce this rule:
 
 1. Resolve every call/attribute to a dotted path; it must match an allow pattern and not match a
-   deny pattern.
+   `disallow_functions` pattern (the disallow, if supplied, wins).
 2. Trusted module aliases (`jnp`, `nn`, …) can't be rebound — that would lie to the binding table.
    Reserved aliases can't be reassigned, used as parameters, or used as loop/comprehension targets.
 3. Allow-listed callables must be called inline. An allow-listed path may appear only as the function
@@ -128,9 +129,9 @@ Verification runs before obfuscation:
 run("file.py", obfuscate=[[84, 280]], allow_functions=["jax.*"])
   1. PARSE the full source (restrict sees everything; the data owner gets only the public part)
   2. RESOLVE imports -> binding table  (import jax.numpy as jnp  =>  jnp -> jax.numpy)
-  3. WALK the private lines default-deny: node type allowed? call target allowed? resolved path not
-     deny-listed? reserved alias not rebound? decorators/bases/dunder-defs allowed? no banned
-     construct/name?   -- if ANY private node fails, restrict aborts and emits nothing.
+  3. WALK the private lines default-deny: node type allowed? call target allowed? resolved path
+     allowed and not in disallow_functions? reserved alias not rebound? decorators/bases/dunder-defs
+     allowed? no banned construct/name?   -- if ANY private node fails, restrict aborts and emits nothing.
   4. Only now: OBFUSCATE the private lines (rename identifiers, blank constants).
   5. EMIT the artifact (public glue + obfuscated math) plus a certificate.
 ```
@@ -190,8 +191,9 @@ separate control.
 2. **Timing and cache side channels.** Execution time and memory access patterns leak regardless of
    which ops ran. Handle at the enclave level.
 3. **New dangerous symbols under an already-allowed prefix.** Default-deny blocks unknown new paths,
-   but a bad addition inside `jax.numpy.*` is a gap until the denylist is updated. Keep the policy
-   versioned and reviewed against each pinned JAX release.
+   but a bad addition inside a broad allow like `jax.numpy.*` is a gap until you either narrow the
+   allow-list to specific leaves or add the symbol to `disallow_functions`. Prefer specific
+   allow-lists, and keep the policy versioned and reviewed against each pinned JAX release.
 4. **Bugs or supply-chain compromise in trusted libraries.** The checker only constrains caller
    code; a malicious jax/flax build defeats it. Attest exact library versions and hashes.
 

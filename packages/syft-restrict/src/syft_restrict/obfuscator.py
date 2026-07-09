@@ -18,7 +18,7 @@ import tokenize
 
 from .astutil import (
     FileScan,
-    dotted,
+    dotted_name,
     is_dunder,
     node_in_ranges,
     normalize_ranges,
@@ -158,7 +158,7 @@ def _classify_nodes(tree: ast.Module, ranges, scan: FileScan):
         if not node_in_ranges(node, ranges):
             continue
         if isinstance(node, ast.Attribute) and not is_dunder(node.attr):
-            root = (dotted(node.value) or "").split(".")[0]
+            root = (dotted_name(node.value) or "").split(".")[0]
             if root in scan.import_bindings:
                 keep_attrs.add(
                     node.attr

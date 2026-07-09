@@ -20,8 +20,8 @@ ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
 ALLOW_METHODS = ["arithmetic", "indexing", "comparison"]
 
 
-def make_policy(functions=ALLOW_FUNCTIONS, methods=ALLOW_METHODS):
-    return Policy.parse(list(functions), list(methods))
+def make_policy(functions=ALLOW_FUNCTIONS, methods=ALLOW_METHODS, disallow=None):
+    return Policy.parse(list(functions), list(methods), list(disallow or []))
 
 
 @pytest.fixture

@@ -37,7 +37,7 @@ def node_in_ranges(node: ast.AST, ranges) -> bool:
 
 
 # ── reading names and dotted paths off the tree ──────────────────────────────────────────────
-def dotted(node: ast.AST) -> str | None:
+def dotted_name(node: ast.AST) -> str | None:
     """The dotted path for a pure Name/Attribute chain (``jnp.numpy.einsum``), else None.
 
     Returns None the moment the chain hits anything dynamic (a call, a subscript), because such a
@@ -87,7 +87,7 @@ def iter_names(node: ast.AST):
 
 def describe(node: ast.AST) -> str:
     """A human-readable label for a node in a violation message."""
-    return dotted(node) or type(node).__name__
+    return dotted_name(node) or type(node).__name__
 
 
 # ── whole-file scan ──────────────────────────────────────────────────────────────────────────
