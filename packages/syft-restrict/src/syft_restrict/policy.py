@@ -61,6 +61,37 @@ BANNED_NAMES: frozenset[str] = frozenset(
     }
 )
 
+# Builtins safe to call directly by bare name: pure, deterministic, no reflection/IO/dynamic-code
+# surface. A bare-name call is default-deny (docs/verify.md#the-full-call-target-rule) -- everything
+# NOT on this list must instead resolve to an import binding, a def/class defined in this file, or a
+# local traced to one of those (see verifier._check_call / _is_safe_local_source).
+SAFE_BUILTIN_CALLS: frozenset[str] = frozenset(
+    {
+        "int",
+        "float",
+        "bool",
+        "len",
+        "range",
+        "enumerate",
+        "zip",
+        "min",
+        "max",
+        "sum",
+        "abs",
+        "round",
+        "all",
+        "any",
+        "tuple",
+        "list",
+        "dict",
+        "set",
+        "sorted",
+        "reversed",
+        "isinstance",
+        "super",
+    }
+)
+
 # Decorators allowed above a def/class in the private region (docs/verify.md#allow_functions--paths-callable-by-name).
 # NOTE: `property` (and any descriptor) is deliberately absent — it runs code on a bare attribute
 # access (`block.w`), the same attribute-access-hook class banned for dunder defs, so default-deny

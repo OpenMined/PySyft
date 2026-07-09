@@ -110,12 +110,25 @@ does. Two rules handle this:
 
 #### The full call-target rule
 
+Default-deny applies to the call target itself, not just its origin: a call is allowed only if the
+callee is *provably* one of the following — anything else (a parameter, an untraced local, an
+unresolvable bare name) is rejected outright as `call-unresolved`, even when nothing "banned"
+appears anywhere in sight. A caller must route an opaque callable through `self.<attr>` or a public
+wrapper rather than pass it around as a plain value that happens not to trip another check.
+
 A call target is allowed if it's one of:
 
 - (a) an external allow-listed dotted path called inline;
 - (b) a name defined and checked in the private region (e.g. the model's own `Attention(...)`);
 - (c) a wrapper function from the public region;
-- (d) for an operation on a value, a generic operator method from an enabled bundle.
+- (d) a small, fixed set of safe builtins (`list`, `range`, `len`, `sum`, `isinstance`, …) — pure,
+  deterministic, no reflection/IO surface. Like a trusted import alias or wrapper name, these can't
+  be rebound either.
+- (e) a local variable — or a value produced directly by a call, e.g. `Block(cfg)(x)` — traced back
+  to (a)-(d): a `self.<attr>` vetted by the self-attribute trust table, or a plain local bound to an
+  allow-listed constructor call, a def/class in this file, or a copy of another such source (the
+  "layer" idiom: `block = self.layer[i]` / `block = Attention(cfg)`, then `block(x)`);
+- (f) for an operation on a value, a generic operator method from an enabled bundle.
 
 No library-specific named method on a value is ever allowed.
 

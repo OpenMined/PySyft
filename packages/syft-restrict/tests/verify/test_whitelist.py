@@ -99,10 +99,15 @@ def test_class_base_must_be_allow_listed_import(verify_all):
 
 
 def test_control_flow_and_comprehensions(verify_all):
-    """if/for/while/ternary, comprehensions and a lambda are all on the node allow-list."""
+    """if/for/while/ternary, comprehensions and a lambda are all on the node allow-list.
+
+    Uses ``abs`` (a safe builtin) rather than an arbitrary bare name for the comprehension's call,
+    and never calls ``h`` -- an unresolvable/lambda-bound bare-name call is a separate, deliberate
+    rejection covered by test_bypasses.py, not what this test is checking.
+    """
     src = (
         "def f(xs):\n"
-        "    acc = [g(v) for v in xs if v]\n"
+        "    acc = [abs(v) for v in xs if v]\n"
         "    pairs = {k: k for k in xs}\n"
         "    seen = {v for v in xs}\n"
         "    h = (lambda z: z)\n"
@@ -113,7 +118,7 @@ def test_control_flow_and_comprehensions(verify_all):
         "            break\n"
         "    while out:\n"
         "        out = 0\n"
-        "    return out if xs else h(acc)\n"
+        "    return out if xs else acc\n"
     )
     assert _ok(verify_all(src))[0]
 

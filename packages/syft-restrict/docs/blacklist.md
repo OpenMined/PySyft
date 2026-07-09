@@ -79,9 +79,17 @@ and `flax.serialization.*`, `flax.training.checkpoints.*`, `orbax.*`.
 | Non-`self` attribute write               | `obj.send = data`                       | `attr-on-value`    |
 | Self chain deeper than one level         | `self.sub.evil(...)`, `self.a.b`        | `attr-on-value`    |
 | Non-allow-listed attribute off a library | `np.pi` (numpy not allow-listed)        | `attr-not-allowed` |
+| Call target not provably safe            | `fn(x)` where `fn` is a parameter       | `call-unresolved`  |
 
 Only single-level `self.<name>` / `cls.<name>` reads and writes are allowed (see the
 [self-attribute safety table](verify.md#edge-cases) in verify.md).
+
+`call-unresolved` is [default-deny for the call target itself](verify.md#the-full-call-target-rule):
+a bare-name or chained call (`fn(x)`, `d["k"](x)`) is rejected unless it's provably an allow-listed
+import, a def/class in this file, a safe builtin, or a local/value traced to one of those — not
+merely because nothing else flagged it. This catches the general case a `banned-call` reference
+can't: a dangerous callable that reaches a call site through an untraceable parameter or local,
+with no bare reference to a `BANNED_NAMES` entry anywhere in sight.
 
 ---
 
@@ -107,6 +115,8 @@ bound — assignment, `for`/comprehension target, or parameter. Code: `reserved-
 - A trusted module alias (`jnp`, `nn`, `lax`, …) — rebinding makes the import table a lie, so every
   "allow-listed path" through that name becomes attacker-controlled.
 - A public wrapper name — rebinding `transpose = evil` defeats the wrapper's type guard.
+- A safe builtin (`list`, `range`, `len`, …) — rebinding `list = evil` would silently redirect every
+  call site that appears to route through it, the same as a trusted import alias.
 - `self` / `cls` — the exemption is trusted by identifier alone; rebinding it (or reusing it as an
   unrelated parameter) would grant an attacker's object the same trust. See
   [verify.md#edge-cases](verify.md#edge-cases).

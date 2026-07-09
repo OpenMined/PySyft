@@ -648,3 +648,78 @@ def test_self_attr_local_alias_of_safe_source_is_still_allowed(verify_all):
     ]
     result = verify_all("\n".join(src))
     assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
+# ── call-target default-deny: a bare-name/value call must be *provably* safe, not merely  ──
+# ── un-flagged (docs/verify.md#the-full-call-target-rule) ──────────────────────────────────
+# Previously ANY bare-name call was allowed unless the callee's origin happened to be a hardcoded
+# BANNED_NAMES reference (see test_parameter_passthrough_alias above, which only catches the `open`
+# argument -- not the `fn(x)` call itself). These tests lock in the stricter model: a call target
+# must resolve to an allow-listed import, a def/class in this file, a safe builtin, or a local/value
+# traced to one of those -- everything else is rejected outright, even with nothing "banned" in sight.
+
+
+def test_call_through_bare_parameter_is_rejected(verify_all):
+    # The exact gap this model closes: a parameter is never traceable to a safe source, so calling
+    # it directly must be rejected even though no banned name appears anywhere in this snippet.
+    src = ["def apply(fn, x):", "    return fn(x)"]
+    assert "call-unresolved" in error_codes(verify_all("\n".join(src)))
+
+
+def test_call_through_unresolvable_name_is_rejected(verify_all):
+    # A bare name that isn't an import, a def/class in this file, a safe builtin, or a tracked-safe
+    # local has no provable provenance at all -- reject it, don't wave it through by default.
+    src = ["def f(x):", "    return g(x)"]
+    assert "call-unresolved" in error_codes(verify_all("\n".join(src)))
+
+
+def test_local_bound_to_private_constructor_is_still_callable(verify_all):
+    # The "layer" idiom must keep working for a PLAIN local, not just a self.<attr> alias: a
+    # variable bound to a call to a class/def defined in this file is provably safe.
+    src = [
+        "class Attn:",
+        "    def __call__(self, x):",
+        "        return x",
+        "",
+        "def helper(x):",
+        "    block = Attn()",
+        "    return block(x)",
+    ]
+    result = verify_all("\n".join(src))
+    assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
+def test_safe_builtin_call_is_allowed(verify_all):
+    src = ["def helper(n):", "    return list(range(n))"]
+    result = verify_all("\n".join(src))
+    assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
+def test_safe_builtin_name_cannot_be_rebound(verify_all):
+    # _check_call trusts a bare call to `list`/`range`/etc. by identifier alone (like a trusted
+    # import alias or public wrapper) -- shadowing one would silently redirect every call site that
+    # appears to route through it.
+    src = ["def helper():", "    list = None", "    return list"]
+    assert "reserved-name" in error_codes(verify_all("\n".join(src)))
+
+
+def test_chained_call_through_private_constructor_is_allowed(verify_all):
+    # Block()(x): the callee is itself a Call to a class/def defined in this file -- unambiguous by
+    # construction, no local-variable indirection needed.
+    src = [
+        "class Block:",
+        "    def __call__(self, x):",
+        "        return x",
+        "",
+        "def helper(x):",
+        "    return Block()(x)",
+    ]
+    result = verify_all("\n".join(src))
+    assert result.ok, [(v.code, v.message) for v in result.violations]
+
+
+def test_chained_call_through_unresolved_value_is_rejected(verify_all):
+    # d['k'](x): the callee is a subscript on an arbitrary parameter -- not self-rooted, not traced
+    # to any safe source. Must be rejected, not waved through as "calling a value".
+    src = ["def helper(d, x):", "    return d['k'](x)"]
+    assert "call-unresolved" in error_codes(verify_all("\n".join(src)))
