@@ -79,17 +79,13 @@ def ensure_running(
     for name, service_config in services.items():
         service = manager.get_service(name)
 
-        if service is None:
-            # This is mainly a sanity check to satisfy type checkers, since we
-            # already checked above that the service exists.
-            raise ValueError(f"Unknown service: {name}")
-
-        if service.is_running() and not restart:
+        # service was already confirmed to exist above, so ignore type checker here
+        if service.is_running() and not restart:  # ty:ignore[unresolved-attribute]
             print(
                 f"{name} is already running, skipping. If you want to restart it, set restart=True."
             )
             continue
-        elif service.is_running() and restart:
+        elif service.is_running() and restart:  # ty:ignore[unresolved-attribute]
             manager.restart_service(name)
         else:
             manager.start_service(name)
