@@ -14,17 +14,17 @@ Each entry lists the error `code` reported by the checker.
 Rejected immediately — they reach the host, filesystem, or interpreter, or reintroduce dynamic
 control flow. (`_BANNED_NODES` in `verifier.py`.) Code: `banned-construct`.
 
-| Node                                                 | Why                                                                                     |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `Import`, `ImportFrom`                               | Imports belong in the public region; inside private code they'd name arbitrary modules. |
-| `With`                                               | Context managers run `__enter__`/`__exit__` code.                                       |
-| `Try`, `Raise`                                       | Exception control flow isn't needed for pure inference math.                            |
-| `Global`, `Nonlocal`                                 | Rebinding outer-scope names breaks the local-only name rules.                           |
-| `Delete`                                             | `del` can remove names the checker relies on.                                           |
-| `Assert`                                             | Asserts vanish under `python -O`; they must never carry safety guarantees.              |
-| `AsyncFunctionDef`, `AsyncFor`, `AsyncWith`, `Await` | Async machinery is out of scope.                                                        |
-| `Yield`, `YieldFrom`                                 | Generators suspend and resume execution.                                                |
-| `JoinedStr`, `FormattedValue` (f-strings)             | Interpolation invokes `__format__` with no `Call` node to check; a no-interpolation f-string is just a string literal, so it's banned too rather than special-cased as safe. |
+| Node                                                 | Why                                                                                                                                                                          |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Import`, `ImportFrom`                               | Imports belong in the public region; inside private code they'd name arbitrary modules.                                                                                      |
+| `With`                                               | Context managers run `__enter__`/`__exit__` code.                                                                                                                            |
+| `Try`, `Raise`                                       | Exception control flow isn't needed for pure inference math.                                                                                                                 |
+| `Global`, `Nonlocal`                                 | Rebinding outer-scope names breaks the local-only name rules.                                                                                                                |
+| `Delete`                                             | `del` can remove names the checker relies on.                                                                                                                                |
+| `Assert`                                             | Asserts vanish under `python -O`; they must never carry safety guarantees.                                                                                                   |
+| `AsyncFunctionDef`, `AsyncFor`, `AsyncWith`, `Await` | Async machinery is out of scope.                                                                                                                                             |
+| `Yield`, `YieldFrom`                                 | Generators suspend and resume execution.                                                                                                                                     |
+| `JoinedStr`, `FormattedValue` (f-strings)            | Interpolation invokes `__format__` with no `Call` node to check; a no-interpolation f-string is just a string literal, so it's banned too rather than special-cased as safe. |
 
 ## Unknown / future syntax
 

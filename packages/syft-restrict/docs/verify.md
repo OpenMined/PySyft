@@ -113,7 +113,7 @@ does. Two rules handle this:
 #### The full call-target rule
 
 Default-deny applies to the call target itself, not just its origin: a call is allowed only if the
-callee is *provably* one of the following — anything else (a parameter, an untraced local, an
+callee is _provably_ one of the following — anything else (a parameter, an untraced local, an
 unresolvable bare name) is rejected outright as `call-unresolved`, even when nothing "banned"
 appears anywhere in sight. A caller must route an opaque callable through `self.<attr>` or a public
 wrapper rather than pass it around as a plain value that happens not to trip another check.
@@ -198,7 +198,7 @@ Subtle corners, kept here so code comments can stay short.
 - **Local-safety tracking is per-scope, not full LEGB.** `_track_safe_local`/`_current_safe_locals`
   only look at the innermost active frame — they don't walk outward through enclosing function
   scopes the way Python's real closures do. So a plain local variable aliased in an outer scope
-  (`g = len` at module level, or in an enclosing function) and referenced *unshadowed* inside a
+  (`g = len` at module level, or in an enclosing function) and referenced _unshadowed_ inside a
   nested function won't be recognized as safe there, and is rejected as `call-unresolved` even
   though the real code would run fine. This only affects plain-variable aliases (of a safe
   builtin, a self-attribute, etc.) — calling your own `def`/`class` by name works from any nesting

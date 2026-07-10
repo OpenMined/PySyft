@@ -8,12 +8,8 @@ The tests are split by intent:
 - ``test_ranges.py``          — private-range argument handling, not code policy.
 """
 
-import inspect
-from pathlib import Path
-
 import pytest
 from syft_restrict import verify
-from syft_restrict.verifier import VerifyResult
 
 from verify.helpers import (
     make_policy,

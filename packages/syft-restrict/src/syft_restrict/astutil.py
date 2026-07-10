@@ -92,7 +92,9 @@ class FileScan(BaseModel):
     ]  # import alias -> fully-qualified module path (jnp -> jax.numpy)
     private_defs: set[str]  # class/func names defined inside the private region
     public_defs: set[str]  # class/func names defined in the public region (non-methods)
-    private_def_ids: set[int]  # id() of the first (canonical) node behind each private_defs name
+    private_def_ids: set[
+        int
+    ]  # id() of the first (canonical) node behind each private_defs name
     method_ids: set[int]  # id() of direct FunctionDef children of any ClassDef body
 
 
@@ -106,7 +108,9 @@ def scan_file(tree: ast.Module, private_ranges) -> FileScan:
     import_bindings: dict[str, str] = {}  # import alias -> fully-qualified module path
     private_defs: set[str] = set()  # class/func names defined inside the private region
     public_defs: set[str] = set()  # class/func names defined in the public region
-    private_def_ids: set[int] = set()  # id() of the first node claiming each private_defs name
+    private_def_ids: set[int] = (
+        set()
+    )  # id() of the first node claiming each private_defs name
     # Methods (direct FunctionDef children of a class body) are called via `self.<name>`, never
     # by bare name, so they're excluded here -- otherwise unrelated classes sharing a hook name
     # (`setup`, `__call__`) would look like one shadowing the other.
