@@ -301,7 +301,7 @@ def test_non_reserved_rebind_is_fine(verify_all):
 
 def test_arithmetic_only_policy_still_passes_pure_math(verify_all):
     """A bundle the code doesn't use being disabled doesn't cause spurious failures."""
-    pol = make_policy(methods=["arithmetic"])
+    pol = make_policy(operators=["arithmetic"])
     src = """
     def f(a, b):
         return a + b - (-a)

@@ -7,7 +7,7 @@ FIXTURES = Path(__file__).parents[1] / "fixtures"
 REPO_ROOT = Path(__file__).parents[4]
 
 ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
-ALLOW_METHODS = ["arithmetic", "indexing", "comparison"]
+ALLOW_OPERATORS = ["arithmetic", "indexing", "comparison"]
 
 
 def normalize_source(source: str | list[str]) -> str:
@@ -20,8 +20,8 @@ def normalize_source(source: str | list[str]) -> str:
     return source
 
 
-def make_policy(functions=ALLOW_FUNCTIONS, methods=ALLOW_METHODS, disallow=None):
-    return Policy.parse(list(functions), list(methods), list(disallow or []))
+def make_policy(functions=ALLOW_FUNCTIONS, operators=ALLOW_OPERATORS, disallow=None):
+    return Policy.parse(list(functions), list(operators), list(disallow or []))
 
 
 def get_error_codes(result: VerifyResult):

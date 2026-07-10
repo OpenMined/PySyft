@@ -31,7 +31,7 @@ def run(
     obfuscate=None,
     hide=None,
     allow_functions: list[str] | None = None,
-    allow_methods: list[str] | None = None,
+    allow_operators: list[str] | None = None,
     disallow_functions: list[str] | None = None,
     out: str | Path | None = None,
     strict: bool = True,
@@ -48,7 +48,7 @@ def run(
         hide: ``[start, end]`` 1-based inclusive line ranges to *hide* (whole line replaced with a
             ``■■■■■■■■`` marker, indentation kept).
         allow_functions: list of dotted-path globs callable by name (e.g. ``["jax.*", "flax.linen.*"]``).
-        allow_methods: list of operator bundles allowed on a value
+        allow_operators: list of operator bundles allowed on a value
             (``["arithmetic", "indexing", "comparison"]``).
         disallow_functions: optional list of dotted-path globs that BEAT the allow (e.g.
             ``["jax.numpy.save", "jax.experimental.*"]``). A hard floor for authors who allow a
@@ -59,7 +59,7 @@ def run(
     """
     path = Path(path)
     source = path.read_text()
-    policy = Policy.parse(allow_functions, allow_methods, disallow_functions)
+    policy = Policy.parse(allow_functions, allow_operators, disallow_functions)
 
     obfuscate_ranges = obfuscate or []
     hide_ranges = hide or []

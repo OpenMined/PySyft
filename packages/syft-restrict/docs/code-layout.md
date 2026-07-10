@@ -1,11 +1,23 @@
 # Code layout
 
-Brief map of `src/syft_restrict/`:
+Map of `src/syft_restrict/`:
 
-- `astutil.py` — AST and line-range helpers with no policy logic. Shared by the verifier, obfuscator, and runner.
-- `policy.py` — allow-listed function paths, the optional user disallow list, operator bundles, and the `Policy` model.
-- `verifier.py` — the static checker. Walks private lines default-deny and collects violations. This is the core.
-- `obfuscator.py` — turns verified private lines into a readable-but-secret artifact (renamed identifiers, blanked constants).
-- `runner.py` — verify → obfuscate → certificate. `run()` lives here.
-- `errors.py` — `RestrictError` and `PolicyViolation`.
-- `__init__.py` — public re-exports.
+| Module | Role |
+| --- | --- |
+| `astutil.py` | Line ranges, import scan, small syntax helpers. No policy. |
+| `policy.py` | Allow lists, safe/banned builtins, decorator/hook lists, `Policy`. |
+| `verifier.py` | Static checker: walks private lines default-deny, reports violations. |
+| `obfuscator.py` | After a clean verify: rename private identifiers, blank constants. |
+| `runner.py` | `run()` — verify → obfuscate → certificate. |
+| `errors.py` | `RestrictError`, `PolicyViolation`. |
+| `__init__.py` | Public exports. |
+
+Tests under `tests/verify/`:
+
+| File | Role |
+| --- | --- |
+| `test_whitelist.py` | Green path (aligns with [verify.md](verify.md)) |
+| `test_whitelisted_lib.py` | Library paths + operator bundles |
+| `test_disallowed.py` | Default-deny catalog (aligns with [blacklist.md](blacklist.md)) |
+| `test_bypasses.py` | Multi-step escape regressions |
+| `test_ranges.py` | Invalid private ranges |

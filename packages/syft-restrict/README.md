@@ -1,28 +1,29 @@
 # syft-restrict
 
-Static analysis for JAX/Flax inference code. You mark the parts of a file that contain the model
-math as _private_; `syft-restrict` checks that those lines only do trusted computation — no sneaky
-data exfiltration — and can emit an obfuscated copy that hides the architecture.
+A **static analyzer** for Python source files that **default-denies** dynamic
+Python constructs. 
 
-The tool never runs your code. It parses the source, walks the private lines, and either reports
-violations or hands back an attestation plus the obfuscated artifact. Run that inside a
-[trusted enclave](https://en.wikipedia.org/wiki/Trusted_execution_environment) and a clean result
-is evidence that the file is a genuine inference pipeline, not a data-stealing wrapper.
+## Overview
 
-The idea comes from [RestrictedPython](https://github.com/zopefoundation/RestrictedPython): start
-from default-deny and only permit what you explicitly trust. Three differences here:
+`syft-restrict` is inspired by
+[**RestrictedPython**](https://github.com/zopefoundation/RestrictedPython), but
+differs in a few ways:
 
-- Analysis, not execution. You get a report (or certificate) and an obfuscated file, not a sandboxed runtime.
-- Aimed at ML inference (JAX / Flax), not general Python.
-- A public/private split. Imports, I/O, the generation loop, and thin wrappers around library calls
-  live in the _public_ region and are read as-is. Only the _private_ region is checked and obfuscated;
-  the private code may call into the public wrappers.
-
-## Install
-
-```bash
-pip install syft-restrict     # or: uv add syft-restrict
-```
+- **Syft-restrict analyzes, it doesn't run.** syft-restrict statically analyzes
+  a source file and **fails if the analyzed part uses any dynamic Python**. Its
+  output is a **report** (the violations, or — on success — an attestation) plus
+  an **obfuscated copy** of the code.
+- **Public / private split.** The user marks some lines of the file _private_
+  and leaves the rest _public_. restrict analyzes only the **private regions**,
+  and only those are **obfuscated** in the emitted artifact; the public lines
+  are copied through and read directly.  
+- The public code may **import allowlisted libraries** and call into them.
+  Imports are not allowed in private code, and any library call must be
+  **explicitly allow-listed**.
+- **Dynamic Python lives in the public part.** Anything dynamic the author needs
+  (file/tokenizer loading, the generation loop, wrappers around library methods)
+  must be written in the **public** region -- where it is reviewed directly --and
+  may be **called by** the private part.
 
 ## Usage
 
@@ -31,41 +32,30 @@ import syft_restrict as restrict
 
 result = restrict.run(
     "gemma_inference.py",
-    obfuscate=[[22, 93], [99, 280]],                        # 1-based ranges: identifiers renamed, constants blanked
-    hide=[],                                                # 1-based ranges: whole line replaced with ■■■■■■■■
-    allow_functions=["jax.*", "flax.linen.*"],              # paths callable BY NAME (resolved against imports)
-    allow_methods=["arithmetic", "indexing", "comparison"], # operator bundles allowed ON A VALUE
+    obfuscate=[[22, 93], [99, 280]],  # 1-based ranges: identifiers renamed, constants blanked
+    hide=[],                          # 1-based ranges: whole line replaced with ■■■■■■■■
+    allow_functions=["jax.*", "flax.linen.*"],  # functions callable BY NAME (path-resolved)
+    allow_operators=["arithmetic", "indexing", "comparison"],  # operators allowed ON A VALUE
 )
-# Verified region = obfuscate ∪ hide (both are private code; both are checked).
 # On success: writes gemma_inference.obfuscated.py and returns result.certificate.
-# On a violation: raises PolicyViolation naming each offending line (strict=True, the default).
+# On a policy violation: raises PolicyViolation naming each offending line.
 ```
 
-`restrict.verify(...)` runs the check without writing output — it returns violations instead of
-raising. Pass `strict=False` to `run` if you want a `RunResult` with `.ok` / `.violations` and no
-files written.
+This command reads
+**[examples/gemma_inference.py](examples/gemma_inference.py)** and generates
+**[examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py)**.
 
-Prefer _specific_ `allow_functions` (exact leaf paths) over broad globs. If you do allow a broad
-glob and want a hard floor, pass `disallow_functions=[...]` — glob patterns that beat the allowlist
-(e.g. `["jax.numpy.save", "jax.experimental.*"]`). It is empty by default.
+If syft-restrict was succesfully executed on the true inference file and the
+library was not modified, this proves the code does not exfiltrate the inputs, and
+the obfuscated file can be safely shared with a third party.
 
-See [examples/gemma_inference.py](examples/gemma_inference.py) for a full example and
-[examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py) for what gets
-generated (`python examples/generate.py` to regenerate).
+Use `restrict.verify(...)` for the check alone (it returns violations instead of
+raising), or pass `strict=False` to `run` to get a `RunResult` with `.ok` /
+`.violations` and no exception.
 
-## How it works
-
-`restrict.run()` verifies first, then obfuscates:
-
-1. Parse the whole file and build an import binding table (`import jax.numpy as jnp` → `jnp` maps to `jax.numpy`).
-2. Walk the private lines with default-deny. Each AST node must match an explicit rule: allowed node
-   type, allow-listed call target, local name, enabled operator bundle, or a `self.<name>` access.
-   Anything else is a violation.
-3. If the walk is clean, obfuscate the private lines and write the artifact plus certificate. Otherwise nothing is written.
 
 ## Documentation
 
-- [docs/verify.md](docs/verify.md) — how the checker decides what's allowed, what order things run in, edge cases, and known limits.
-- [docs/blacklist.md](docs/blacklist.md) — everything that gets rejected, with violation codes.
-- [docs/disallowed-ast-examples.md](docs/disallowed-ast-examples.md) — example snippets that fail and why.
-- [docs/code-layout.md](docs/code-layout.md) — what each source module does.
+- [docs/verify.md](docs/verify.md) — how verification works and what private code may do (allow side).
+- [docs/blacklist.md](docs/blacklist.md) — default-deny catalog and violation codes (deny side).
+- [docs/code-layout.md](docs/code-layout.md) — source modules and test layout.

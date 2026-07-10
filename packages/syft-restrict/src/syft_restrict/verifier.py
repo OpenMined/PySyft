@@ -131,7 +131,7 @@ ViolationCode = Literal[
     "method-on-value",  # _check_call_attribute
     "attr-not-allowed",  # _check_attribute
     "dunder-name",  # _check_name
-    "bundle-disabled",  # _require_bundle
+    "operator-disabled",  # _require_bundle
 ]
 
 
@@ -743,7 +743,9 @@ class _Checker:
         if not self.policy.bundle_enabled(bundle):
             ops = "/".join(t.__name__ for t in OPERATOR_BUNDLES[bundle])
             self.report(
-                node, "bundle-disabled", f"{ops} needs the {bundle!r} method bundle"
+                node,
+                "operator-disabled",
+                f"{ops} needs the {bundle!r} operator group in allow_operators",
             )
 
     # ── assignment / reserved names ──────────────────────────────────────────────────────────

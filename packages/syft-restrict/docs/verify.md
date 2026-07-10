@@ -1,350 +1,305 @@
 # How verification works
 
-`syft-restrict` statically analyzes the **private** lines of a source file. The goal is to show
-those lines only perform trusted math: no file or network access, no dynamic Python, no reaching
-into interpreter internals. The code is never executed. You get a violation list (empty on success)
-and, from `run()`, an obfuscated copy plus a certificate.
+`syft-restrict` checks the **private** lines of a Python file. Those lines must only do trusted
+inference math: no host I/O, no dynamic code, no reaching into interpreter internals.
 
-This page covers what's allowed, the order checks run in, a few non-obvious corners, and what the
-checker cannot catch. For a flat rejection list see [blacklist.md](blacklist.md).
+The tool **never runs** your code. It reads the source, checks the private region, and returns a
+list of violations (empty on success).
 
-Like [RestrictedPython](https://github.com/zopefoundation/RestrictedPython), the model is
-default-deny: if a node type, call, attribute, or name isn't explicitly permitted below, it's
-rejected. New Python syntax stays blocked until someone reviews it.
+> [!NOTE]
+> This page is the **allow side**: how checking works and what private code may do.
+>
+> For everything that is default-denied, see [blacklist.md](blacklist.md).
+
+Tests mirror this split:
+
+| Doc                          | Test module                                                 | Role                   |
+| ---------------------------- | ----------------------------------------------------------- | ---------------------- |
+| This page                    | `tests/verify/test_whitelist.py`, `test_whitelisted_lib.py` | Green path             |
+| [blacklist.md](blacklist.md) | `tests/verify/test_disallowed.py`                           | Default-deny catalog   |
+| Edge / attack shapes         | `tests/verify/test_bypasses.py`                             | Multi-step regressions |
 
 ---
 
-## The whitelist
+## Public vs private
 
-Private inference code needs to wire up JAX operations: Flax modules with `setup`/`__call__`, JAX
-function calls, arithmetic, shape/dtype plumbing (lists, dicts, tuples, slices), and control flow
-that doesn't depend on secret data. It should not be able to touch the host, filesystem, network,
-interpreter internals, or build code from strings.
+Every file has two regions:
 
-A node passes only if it's on the always-on allow-list or enabled by per-file configuration. Everything
-else fails.
+| Region      | Typical contents                                        | Checked?          |
+| ----------- | ------------------------------------------------------- | ----------------- |
+| **Public**  | Imports, data loading, wrappers the data owner can read | No (human review) |
+| **Private** | Hidden model math (`setup` / `__call__`, layers)        | Yes               |
 
-### Always-on allow-list
-
-These structural node types are always OK in the private region: module structure (`Module`, `Expr`);
-definitions (`FunctionDef`, `ClassDef`, `arguments`, `arg`, `Return`, `Lambda`); names (`Name` with
-`Load`/`Store`/`Del`); constants; assignment (`Assign`, `AugAssign`, `AnnAssign`); containers
-(`List`, `Tuple`, `Dict`, `Set`); comprehensions; calls (`Call`, `keyword`, `Starred`); attribute
-access (only `self.<name>`, see below); control flow (`If`, `For`, `While`, `Break`, `Continue`,
-`Pass`, `IfExp`). The exact set is `_ALLOWED_NODES` in `verifier.py`.
-
-f-strings (`JoinedStr`, `FormattedValue`) are banned outright, with or without interpolation — see
-`docs/blacklist.md` and [edge cases](#edge-cases) below.
-
-Extra constraints on top of "the node type is allowed":
-
-- Class bases must be allow-listed module attrs (e.g. `nn.Module`), `object`, or another class
-  defined in the private region. Decorators must be on the allow-list (`@nn.compact`, `@jax.jit`, …).
-  Class keyword arguments like `metaclass=` are rejected. Magic/hook methods are limited to
-  `setup`, `__call__`, and `__post_init__`.
-- Attribute access on a value is not on this list. Only single-level `self.<name>` / `cls.<name>`
-  reads and writes are allowed — the receiver is the class being defined, not some opaque value.
-  Everything else (`x.shape`, any dunder read) is rejected and should go through a wrapper (see
-  [Operator bundles on a value](#operator-bundles-on-a-value)).
-
-### Per-file configuration
-
-Two knobs the author sets per file. Anything not enabled here is rejected like any other disallowed node.
-
-#### `allow_functions` — paths callable by name
-
-Dotted paths are resolved against the file's import bindings. An optional per-policy disallow list
-(`disallow_functions`) wins over the allowlist, so an author can keep a hard floor over a broad allow.
+You mark private code with 1-based line ranges (the union of `obfuscate` and `hide` in `run()`).
 
 ```python
-import jax.numpy as jnp        # binding recorded: jnp -> jax.numpy
-jnp.einsum("...", x)           # resolves to jax.numpy.einsum -> allow-listed        ✓
-jnp.save(x)                    # resolves to jax.numpy.save   -> in disallow_functions ✗
+# public — data owner reads this
+import jax.numpy as jnp
+from flax import linen as nn
+
+def transpose(x):
+    if not isinstance(x, jax.Array):
+        raise TypeError
+    return x.T
+
+# private — checked + obfuscated
+class Net(nn.Module):
+    def setup(self):
+        self.dense = nn.Dense(8)
+
+    def __call__(self, x):
+        return self.dense(transpose(x))
 ```
 
-We don't allow-list whole modules. We allow-list `(module, attribute-path)` pairs, which works
-because dynamic attribute access is banned. Rules that enforce this rule:
-
-1. Resolve every call/attribute to a dotted path; it must match an allow pattern and not match a
-   `disallow_functions` pattern (the disallow, if supplied, wins).
-2. Trusted module aliases (`jnp`, `nn`, …) can't be rebound — that would lie to the binding table.
-   Reserved aliases can't be reassigned, used as parameters, or used as loop/comprehension targets.
-3. Allow-listed callables must be called inline. An allow-listed path may appear only as the function
-   of a `Call` — never stored, returned, or passed as an argument. That closes the "stash it in a
-   variable, call later" escape.
-4. Decorators must be on the allow-list (they run at def/class creation time).
-5. Base classes must be allow-listed (class creation runs `__init_subclass__`/metaclass code).
-6. Only `setup`, `__call__`, and `__post_init__` may be defined as magic/hook methods.
-
-#### Operator bundles on a value
-
-For `value.method(...)` we don't know the receiver's type, so we can't tell what a named method
-does. Two rules handle this:
-
-1. On an opaque value, only generic language-level operator methods are allowed — never a
-   library-specific named method. These dunder operators are safe on any type and can't hide a
-   `.format`-style escape. They're grouped into toggleable bundles:
-
-   | Bundle (`allow_methods`) | Covers                              | Example                          |
-   | ------------------------ | ----------------------------------- | -------------------------------- |
-   | `arithmetic`             | `+ - * / // % ** @`, unary, bitwise | `var + 1e-6`, `x @ transpose(w)` |
-   | `comparison`             | `== != < <= > >=`, `and`/`or`/`not` | `attn_type == "local"`           |
-   | `indexing`               | subscript + slice                   | `x[..., :half]`, `cache[i]`      |
-
-   There's no metadata bundle on purpose. `.shape`, `.ndim`, `.dtype` are named attribute reads on
-   a value we can't type-pin, so they're rejected like any other attribute-on-value.
-
-2. Library-specific methods and attribute reads go in public wrapper functions — `.T`, `reshape`,
-   `astype`, `x.at[i].set(v)`, a `.shape` read. The author writes the wrapper in the **public**
-   region, where the data owner can read it and an `isinstance` guard pins the type the checker
-   couldn't:
-
-   ```python
-   # public region — the data owner reads this
-   def transpose(x):
-       if not isinstance(x, jax.Array):   # explicit raise, NOT assert (asserts vanish under -O)
-           raise TypeError
-       return x.T
-   ```
-
-   Private code calls `transpose(w)`, not `w.T`. Wrapper names are reserved and can't be rebound in
-   the private region.
-
-#### The full call-target rule
-
-Default-deny applies to the call target itself, not just its origin: a call is allowed only if the
-callee is _provably_ one of the following — anything else (a parameter, an untraced local, an
-unresolvable bare name) is rejected outright as `call-unresolved`, even when nothing "banned"
-appears anywhere in sight. A caller must route an opaque callable through `self.<attr>` or a public
-wrapper rather than pass it around as a plain value that happens not to trip another check.
-
-A call target is allowed if it's one of:
-
-- (a) an external allow-listed dotted path called inline;
-- (b) a name defined and checked in the private region (e.g. the model's own `Attention(...)`);
-- (c) a wrapper function from the public region;
-- (d) a small, fixed set of safe builtins (`list`, `range`, `len`, `sum`, `isinstance`, …) — pure,
-  deterministic, no reflection/IO surface. Like a trusted import alias or wrapper name, these can't
-  be rebound either.
-- (e) a local variable — or a value produced directly by a call, e.g. `Block(cfg)(x)` — traced back
-  to (a)-(d): a `self.<attr>` vetted by the self-attribute trust table, or a plain local bound to an
-  allow-listed constructor call, a def/class in this file, or a copy of another such source (the
-  "layer" idiom: `block = self.layer[i]` / `block = Attention(cfg)`, then `block(x)`);
-- (f) for an operation on a value, a generic operator method from an enabled bundle.
-
-No library-specific named method on a value is ever allowed.
+> [!WARNING]
+> Private code may **call** public wrappers by name. Public code is trusted, not verified.
+>
+> A clean `verify()` means the private region cannot escape on its own, not that
+> the whole file is safe to execute.
 
 ---
 
-## Order of operations
+## What the checker does
 
-Verification runs before obfuscation:
+The checker walks the AST of the private region and verifies each construct against the allow list.
 
-```
-run("file.py", obfuscate=[[84, 280]], allow_functions=["jax.*"])
-  1. PARSE the full source (restrict sees everything; the data owner gets only the public part)
-  2. RESOLVE imports -> binding table  (import jax.numpy as jnp  =>  jnp -> jax.numpy)
-  3. WALK the private lines default-deny: node type allowed? call target allowed? resolved path
-     allowed and not in disallow_functions? reserved alias not rebound? decorators/bases/dunder-defs
-     allowed? no banned construct/name?   -- if ANY private node fails, restrict aborts and emits nothing.
-  4. Only now: OBFUSCATE the private lines (rename identifiers, blank constants).
-  5. EMIT the artifact (public glue + obfuscated math) plus a certificate.
-```
+1. **Parse** the whole file.
+2. **Record imports** from the public region (`import jax.numpy as jnp` → `jnp` means `jax.numpy`).
+3. **Walk every private construct.** For each piece of syntax, either an
+   explicitly rule allows it or it fails.
+4. **Collect violations** with a line number and a short code (e.g. `banned-name`).
 
-Inside a trusted enclave ([TEE](https://en.wikipedia.org/wiki/Trusted_execution_environment)), a
-passing run is evidence that this is a JAX inference pipeline with a hidden architecture that
-doesn't steal its inputs.
+The default-deny semantics means that if nothing explicitly allows a construct,
+it is rejected. New Python syntax stays blocked until someone reviews it.
 
 ---
 
-## Edge cases
+## Always allowed syntax
 
-Subtle corners, kept here so code comments can stay short.
+These shapes are fine in private code **when** nested pieces also obey the rules:
 
-- **Annotation subtrees skip name/container checks.** Type annotations (`x: str`, `def f() -> list[bytes]`)
-  aren't executed, so a name inside one isn't treated as a banned reference. The checker marks the
-  whole annotation subtree, not just the top node, because generics nest type names several levels
-  deep (`list[str]` is `Subscript(Name('list'), Name('str'))`). A `Call`/`Attribute` inside an
-  annotation still gets checked — `x: evil()` is caught.
+| Category          | Examples                                                   |
+| ----------------- | ---------------------------------------------------------- |
+| Definitions       | `def`, `class`, `lambda`, `return`                         |
+| Names & constants | variables, numbers, strings (not f-strings)                |
+| Assignment        | `=`, `+=`, annotated assigns                               |
+| Containers        | `list`, `tuple`, `dict`, `set`, comprehensions             |
+| Calls             | `f(...)` when the callee is allowed (below)                |
+| Control flow      | `if`, `for`, `while`, `break`, `continue`, `pass`, ternary |
+| Operators         | only if the matching **bundle** is enabled (below)         |
 
-- **Comprehension targets are checked from the enclosing expression.** `ast.comprehension` has no
-  line number, so a range check on that node never fires. The reserved-name check for
-  `[cls for cls in ...]` runs from the enclosing `ListComp`/`SetComp`/`DictComp`/`GeneratorExp`.
-
-- **`self`/`cls` trust is a lexical string match, not a verified binding.** `self.<name>` is
-  trusted by matching the literal identifier — the checker never proves the name is bound to the
-  real instance. That's sound only for the genuine first parameter of a method defined directly in a
-  class body. So `self`/`cls` can't be rebound, used as a non-first parameter, or used as a
-  nested-function/lambda parameter.
-
-- **Self-attribute safety table.** `self.<name>(...)` and `self.layer[i](x)` are allowed only when
-  `<name>` is inherited from the (already-vetted, allow-listed) base class or was assigned from a
-  vetted-safe source everywhere in the class — an allow-listed constructor, a locally-defined
-  class/function, or a list/tuple/comprehension of those. Compound assignment (`self.x += ...`)
-  always disqualifies the attribute.
-
-- **f-strings are banned outright, not just interpolation.** Any `{expr}` inside an f-string
-  invokes `type(expr).__format__(expr, spec)` with no `Call` node for the call checks to see —
-  including plain `f"{x}"`, conversion flags (`!r`/`!s`/`!a`), and the `{x=}` debug form. Rather
-  than special-case "no interpolation" as a safe exception, `JoinedStr`/`FormattedValue` are
-  denied unconditionally: a no-interpolation f-string is just a string literal, so drop the
-  `f`-prefix instead.
-
-- **Aliasing is caught at the reference, not the call.** A banned builtin (`open`, `eval`, …) is
-  flagged wherever its name appears — aliased locally (`f = open`), stashed in a container
-  (`{"o": open}`), returned, passed as an argument, or picked in an `IfExp` branch. Storing a
-  banned reference in a container literal or subscript slot is rejected at construction time.
-
-- **Local-safety tracking is per-scope, not full LEGB.** `_track_safe_local`/`_current_safe_locals`
-  only look at the innermost active frame — they don't walk outward through enclosing function
-  scopes the way Python's real closures do. So a plain local variable aliased in an outer scope
-  (`g = len` at module level, or in an enclosing function) and referenced _unshadowed_ inside a
-  nested function won't be recognized as safe there, and is rejected as `call-unresolved` even
-  though the real code would run fine. This only affects plain-variable aliases (of a safe
-  builtin, a self-attribute, etc.) — calling your own `def`/`class` by name works from any nesting
-  level already, since that's resolved via a whole-file scan (`private_defs`/`public_defs`), not
-  scope-based tracking. Reassign the alias in the scope that needs it, or route it through a
-  public wrapper, instead.
+> [!NOTE]
+> **Not** always allowed: imports, `with`, `try`/`raise`, `async`, generators, `assert`, `del`,
+> f-strings, walrus `:=`, `match`/`case`. Those are listed under [blacklist.md](blacklist.md).
 
 ---
 
-## What verification does not stop
+## Per-file knobs
 
-The whitelist above closes the obvious vectors: no file/socket/host-callback/dynamic-code node can
-pass. What's left are problems a static AST checker structurally can't solve — each needs a
-separate control.
+### `allow_functions` — library paths callable by name
 
-1. **The output is a leak channel.** Inference has to return logits or tokens; a malicious model can
-   encode private data in them. Mitigate with output rate limits, quantization, DP noise, or a
-   reviewed output schema.
-2. **Timing and cache side channels.** Execution time and memory access patterns leak regardless of
-   which ops ran. Handle at the enclave level.
-3. **New dangerous symbols under an already-allowed prefix.** Default-deny blocks unknown new paths,
-   but a bad addition inside a broad allow like `jax.numpy.*` is a gap until you either narrow the
-   allow-list to specific leaves or add the symbol to `disallow_functions`. Prefer specific
-   allow-lists, and keep the policy versioned and reviewed against each pinned JAX release.
-4. **Bugs or supply-chain compromise in trusted libraries.** The checker only constrains caller
-   code; a malicious jax/flax build defeats it. Attest exact library versions and hashes.
-5. **Public code is trusted, not verified.** `_enforce` only walks the private line ranges — a
-   banned name like `eval`/`open` is perfectly legal inside a public wrapper, and the private
-   region can then call that wrapper by name exactly like any other public function (the same
-   trust a `shape_of`/`append_to`-style wrapper relies on). `verify().ok` means the private region
-   can't reach these on its own, not that the file as a whole is free of them — the public glue
-   still needs an actual human read, the same reason imports are required to live there.
+Dotted paths are resolved through the import table. An optional
+`disallow_functions` list has priority over the allow list (hard floor over a
+broad glob).
 
-## Examples
+```python
+import jax.numpy as jnp
 
-### Build-and-run code from a string
+jnp.einsum("ij->i", x)   # → jax.numpy.einsum  — must match allow_functions
+jnp.save(path, x)        # → jax.numpy.save    — fails if in disallow_functions
+```
 
-- AST: `exec`, `eval`, `compile`, `__import__` as call targets
-- Why: arbitrary code / import escape
+| Rule                         | Meaning                                                 |
+| ---------------------------- | ------------------------------------------------------- |
+| Use paths, not whole modules | `jax.numpy.einsum` is named; `x.method()` is not a path |
+| Call libraries **inline**    | `jnp.sin(x)` yes; `f = jnp.sin; f(x)` no                |
+| Do not rebind import aliases | `jnp = evil` is rejected                                |
+| Prefer specific allows       | `jax.numpy.einsum` over bare `jax.*`                    |
 
-### `Exec` / `eval`
+### `allow_operators` — operator bundles on a value
 
-- AST: py2 `Exec`; `Call` to `eval`
-- Why: same as above
+Named methods on an unknown value (`x.reshape(...)`, `x.T`) are never allowed: the checker cannot
+prove what they do. Instead you enable **language operators** as bundles:
 
-### Non-allowlisted imports
+| Bundle       | Operators                           | Example         |
+| ------------ | ----------------------------------- | --------------- |
+| `arithmetic` | `+ - * / // % ** @`, unary          | `x + 1e-6`      |
+| `comparison` | `== != < <= > >=`, `and`/`or`/`not` | `t == "local"`  |
+| `indexing`   | `[]` and slices                     | `x[..., :half]` |
 
-- AST: `Import`, `ImportFrom` to any module not in the allowlist
-- Why: imports are how code names things outside itself — the crux of
-  [per-file configuration](verify.md#per-file-configuration)
+Anything else should go through a **public wrapper**:
 
-### Reflection / dunder
+```python
+# public wrapper — data owner can review this
+def shape_of(x):
+    if not isinstance(x, jax.Array):
+        raise TypeError
+    return x.shape
 
-- AST: any `Name`/`Attribute`/`arg`/alias starting with `_`
-- Why: the `__class__` → `__globals__` → `__subclasses__` → `__builtins__` ladder
+# private
+h = shape_of(x)   # allowed if shape_of is a public def
+```
 
-### `getattr`/`setattr`/`delattr`/`hasattr`/`vars`/`globals`/`locals`/`dir`
+Disabled groups report `operator-disabled`.
 
-- AST: `Call` to these names
-- Why: dynamic attribute access defeats static path allowlisting
+---
 
-### `getattr`/`setattr` with a computed name
+## What you may call
 
-- AST: —
-- Why: even a guarded `getattr` breaks static provability
+A call is allowed only if the checker can **prove** the callee. Otherwise it reports
+`call-unresolved` (even when nothing looks “banned”).
 
-### `.format` / any named method on a value
+| Allowed callee                                             | Example                              |
+| ---------------------------------------------------------- | ------------------------------------ |
+| Allow-listed import path, called inline                    | `jnp.sin(x)`, `nn.Dense(8)`          |
+| Function or class defined in this file (private or public) | `Attention(cfg)`, `transpose(w)`     |
+| Safe builtin (fixed list below)                            | `len(xs)`, `list(range(n))`          |
+| Local traced to a safe source                              | `block = Attn(); block(x)`           |
+| Vetted `self.<name>` / `self.<name>[i]`                    | `self.dense(x)`, `self.layers[i](x)` |
 
-- AST: `Call` whose func is an `Attribute` on a non-allowlisted value, e.g.
-  `"{0.__class__.__init__.__globals__}".format(x)`
-- Why: format strings walk attributes at runtime without a visible `Call`; covered by
-  [operator bundles on a value](verify.md#operator-bundles-on-a-value) — only generic operator
-  bundles are allowed on a value
+| Not allowed              | Example             | Why                    |
+| ------------------------ | ------------------- | ---------------------- |
+| Named method on a value  | `x.reshape(8, -1)`  | Type unknown           |
+| Stashed library function | `f = jnp.sin; f(x)` | Must call paths inline |
+| Opaque subscript call    | `d["k"](x)`         | Callee not identified  |
 
-### Host I/O
+### Safe builtins
 
-- AST: `open`, real `print`, `input`, `file`
-- Why: filesystem / stdout exfiltration
+These may be called by bare name. They may **not** be reassigned.
 
-### OS / process
+- `int`
+- `float`
+- `bool`
+- `len`
+- `range`
+- `enumerate`
+- `zip`
+- `min`
+- `max`
+- `sum`
+- `abs`
+- `round`
+- `all`
+- `any`
+- `tuple`
+- `list`
+- `dict`
+- `set`
+- `sorted`
+- `reversed`
+- `isinstance`
+- `super`
 
-- AST: any `os`, `sys`, `subprocess`, `shutil`, `pathlib`, `socket`, `ssl`, `http`, `urllib`,
-  `requests`, `ctypes`, `cffi`, `mmap`, `multiprocessing`, `threading`, `asyncio`, `signal` import
-  or attr
-- Why: direct exfiltration / native code / escape
+### Names you may not reassign
 
-### Pickle / marshal
+Because call sites trust some names by spelling alone:
 
-- AST: `pickle`, `marshal`, `dill`, `shelve`, `joblib`
-- Why: code execution on load + serialization exfiltration
+| Name kind            | Example                                      |
+| -------------------- | -------------------------------------------- |
+| Import aliases       | `jnp`, `nn`                                  |
+| Public wrappers      | `transpose`                                  |
+| Private defs/classes | `Attention`, `helper`                        |
+| Safe builtins        | `list`, `range`                              |
+| `self` / `cls`       | only as the real first parameter of a method |
 
-### Global mutation
+Rebind is rejected even in **public** glue if the name is a private def, otherwise a public
+`helper = evil` between private chunks could be used to evade the checker.
 
-- AST: `Global`, `Nonlocal`; assignment to module-level names from inside functions
-- Why: stashing data in module state for later read-out
+---
 
-### Attribute write to a foreign object
+## `self` and Flax-style modules
 
-- AST: `Store` on `obj.<name>` where `obj` isn't `self` (e.g. `some_obj.send = data`)
-- Why: only `self.<name>` writes are allowed; writing onto another object is an exfil channel
+Private models usually look like:
 
-### Async
+```python
+class Net(nn.Module):              # base must be allow-listed (e.g. flax.linen.Module)
+    def setup(self):                 # often public (data owner can read wiring)
+        self.dense = nn.Dense(8)     # allow-listed constructor → safe to call later
+        self.layers = [Block() for _ in range(3)]
 
-- AST: `AsyncFunctionDef`, `Await`, `AsyncFor`, `AsyncWith`, `Yield`, `YieldFrom`
-- Why: concurrency/escape, not needed for inference
+    def __call__(self, x):           # often private
+        x = self.dense(x)
+        block = self.layers[0]
+        return block(x)
+```
 
-### Context managers
+| Rule                                              | Meaning                                                               |
+| ------------------------------------------------- | --------------------------------------------------------------------- |
+| Only first method param may be named `self`/`cls` | Nested `def helper(self):` is rejected                                |
+| Do not rebind `self`/`cls`                        | `self = x` is rejected                                                |
+| Single-level only                                 | `self.dense` yes; `self.sub.evil` no                                  |
+| Call only if every assignment was a vetted source | allow-listed constructor, file-local class/def, or list/comp of those |
+| Inherited attrs (never assigned)                  | Treated as safe (e.g. `self.param` on `nn.Module`)                    |
+| `self.x += ...`                                   | Always unsafe for later calls                                         |
 
-- AST: `With`
-- Why: `open(...) as f`, `socket(...)` — none needed in pure inference
+> [!TIP]
+> Put dangerous or opaque wiring in **public** `setup` if the data owner should read it; keep
+> private `__call__` as pure math.
+> 
+> The checker still uses public `setup` assignments when deciding
+> whether `self.<name>(...)` is safe.
 
-### Exceptions reaching the host
+### Classes and hooks
 
-- AST: `Try`, `Raise`
-- Why: `except` can swallow a guard or walk traceback frames — default deny
+| Allowed                                                                      | Not allowed                                           |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Bases that resolve to an allow-listed path (e.g. `nn.Module`)                | `object`, random private bases, non-allow-listed libs |
+| Decorators: `nn.compact`, `jax.jit`, `jax.named_scope`, `flax.linen.compact` | `@property`, `@staticmethod`, arbitrary functions       |
+| Defining `setup`, `__call__`, `__post_init__`                                | `__getattr__`, `__reduce__`, other magic methods      |
+| —                                                                            | `metaclass=` / other class keywords                   |
 
-### Arbitrary decorators
+---
 
-- AST: `decorator_list` entries not in allowlist
-- Why: a decorator is an arbitrary call wrapping the function — must be on the allowlist
+## Whitelist examples
 
-### `@property` / descriptors
+```python
+# control flow + safe builtins
+def f(xs):
+    acc = [abs(v) for v in xs if v]
+    for v in xs:
+        if v:
+            break
+    return acc
+```
 
-- AST: `@property` (and any descriptor) not on the allowlist
-- Why: runs code on bare attribute access (`obj.w`) with no explicit call; pure inference needs
-  only `setup`/`__call__`
+```python
+# public wrapper + private call
+def transpose(x):
+    return x  # data owner reviews this
 
-### Loop/comprehension over I/O
+def private_math(w):
+    return transpose(w)
+```
 
-- AST: `For`/`*Comp` whose iterable is a denied call
-- Why: `[x for x in open(f)]` reintroduces I/O
+```python
+# library path (imports public, use private)
+import jax.numpy as jnp
+# private:
+r = jnp.einsum("ij,jk->ik", a, b)
+```
 
-### Denied call in a "passive" position
+```python
+# annotations may mention banned type names; they are not executed
+def f(x: list[str]) -> dict[str, bytes]:
+    return {}
+```
 
-- AST: `Call` to a denied target in a default arg (`def f(x=evil())`), annotation
-  (`def g(x: evil())`), or bare class-body statement (`class C: evil()`)
-- Why: these run at def/class creation; the checker walks every node regardless of position
+---
 
-### `del` of guard names
+## Limits of static checking
 
-- AST: `Delete`
-- Why: could un-define a guard
+Even a clean verify does **not** stop:
 
-### Unlisted modern syntax
+1. **Encoding secrets in model outputs** (logits/tokens)
+2. **Timing / cache side channels** — enclave-level concern.
+3. **New dangerous APIs under a broad allow** (`jax.*`) — prefer tight allows + `disallow_functions`.
+4. **Compromised JAX/Flax builds** — attest library versions separately.
+5. **Malicious public wrappers** — still depend on human review of the public region.
 
-- AST: walrus `NamedExpr` `(x := …)`; `Match`/`case`; `Assert`; `except*`/`TryStar`; PEP 695 type
-  params (`def f[T]`, `type X = …`)
-- Why: not on the allowlist, so default-deny rejects them; listed so reviewers know they were
-  considered (asserts also vanish under `python -O`)
+---
+
+## See also
+
+- [blacklist.md](blacklist.md) — default-deny catalog and violation codes
+- [code-layout.md](code-layout.md) — source modules
+- `tests/verify/` — executable examples of allow vs deny

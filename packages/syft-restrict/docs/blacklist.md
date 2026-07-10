@@ -1,149 +1,261 @@
 # What is not allowed
 
-Everything the checker rejects in the private region. For the reasoning behind the rules see [verify.md](verify.md). For example snippets see [disallowed-ast-examples.md](disallowed-ast-examples.md).
+This document lists everything the checker rejects in the **private** region.
 
-The model is default-deny: the tables below name what's rejected explicitly (for clear violation
-messages), but anything missing from the whitelist in [verify.md](verify.md) is rejected too.
+- The model is **default-deny**. Tables below name common rejections with clear
+codes.
+- Anything not listed as allowed in [verify.md](verify.md) is also
+rejected.
+- Each entry includes the **violation code** returned by `verify()`.
 
-Each entry lists the error `code` reported by the checker.
 
 ---
 
-## Banned statement / expression node types
+## Index of violation codes
 
-Rejected immediately — they reach the host, filesystem, or interpreter, or reintroduce dynamic
-control flow. (`_BANNED_NODES` in `verifier.py`.) Code: `banned-construct`.
+| Code               | Meaning                                                                  |
+| ------------------ | ------------------------------------------------------------------------ |
+| `node-type`        | Syntax not on the allow list (walrus, `match`, …)                        |
+| `banned-name`      | Reference or call to a banned builtin (`open`, `eval`, …)                |
+| `banned-construct` | Forbidden statement/expression form (import, `with`, f-string, …)        |
+| `call-not-allowed` | Library path not allow-listed (or hit by `disallow_functions`)           |
+| `call-unresolved`  | Call target not provably safe                                            |
+| `method-on-value`  | Named method on an unknown value (`x.reshape`)                           |
+| `attr-on-value`    | Attribute read/write on an unknown value, or bad `self` chain            |
+| `attr-not-allowed` | Library attribute path not allow-listed                                  |
+| `dunder-attr`      | Dunder attribute (`.__class__`, …)                                       |
+| `dunder-name`      | Bare dunder name (`__class__`)                                           |
+| `dunder-def`       | Defining a forbidden magic method                                        |
+| `decorator`        | Decorator not on the allow list                                          |
+| `class-keyword`    | e.g. `metaclass=`                                                        |
+| `class-base`       | Base class not allow-listed                                              |
+| `reserved-name`    | Rebinding a trusted name (`jnp`, public wrapper, private def, `self`, …) |
+| `operator-disabled` | Operator used without enabling its group in `allow_operators`             |
 
-| Node                                                 | Why                                                                                                                                                                          |
-| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Import`, `ImportFrom`                               | Imports belong in the public region; inside private code they'd name arbitrary modules.                                                                                      |
-| `With`                                               | Context managers run `__enter__`/`__exit__` code.                                                                                                                            |
-| `Try`, `Raise`                                       | Exception control flow isn't needed for pure inference math.                                                                                                                 |
-| `Global`, `Nonlocal`                                 | Rebinding outer-scope names breaks the local-only name rules.                                                                                                                |
-| `Delete`                                             | `del` can remove names the checker relies on.                                                                                                                                |
-| `Assert`                                             | Asserts vanish under `python -O`; they must never carry safety guarantees.                                                                                                   |
-| `AsyncFunctionDef`, `AsyncFor`, `AsyncWith`, `Await` | Async machinery is out of scope.                                                                                                                                             |
-| `Yield`, `YieldFrom`                                 | Generators suspend and resume execution.                                                                                                                                     |
-| `JoinedStr`, `FormattedValue` (f-strings)            | Interpolation invokes `__format__` with no `Call` node to check; a no-interpolation f-string is just a string literal, so it's banned too rather than special-cased as safe. |
+---
 
-## Unknown / future syntax
+## Forbidden constructs
 
-Any node type not on the allow-list in [verify.md](verify.md#always-on-allow-list) is rejected —
-walrus (`NamedExpr`), `match`/`case`, etc. Code: `node-type`. New Python syntax stays denied until
-reviewed.
+These constructs are banned outright in private code.
+
+Code: **`banned-construct`**.
+
+| Construct             | Example                            | Why                                                    |
+| --------------------- | ---------------------------------- | ------------------------------------------------------ |
+| Import                | `import os`, `from os import path` | Imports belong in public code                          |
+| `with`                | `with open(f) as g: ...`           | Runs enter/exit hooks; often I/O                       |
+| `try` / `raise`       | `try: ... finally: ...`            | Exception tricks / host surfaces                       |
+| `global` / `nonlocal` | `global x`                         | Escape local naming rules                              |
+| `del`                 | `del x`                            | Can remove names the policy relies on                  |
+| `assert`              | `assert cond`                      | Disappears under `python -O`                           |
+| Async                 | `async def`, `await`, …            | Out of scope for pure inference                        |
+| Generators            | `yield`, `yield from`              | Suspended execution                                    |
+| F-strings             | `f"hi"`, `f"{x}"`                  | Interpolation runs formatting with no normal call site |
+
+```python
+# rejected
+import os
+y = f"value={x}"
+with ctx() as g:
+    pass
+```
+
+### Unknown / future syntax
+
+Any syntax not on the allow list is rejected.
+
+Code: **`node-type`**.
+
+| Example                | Notes            |
+| ---------------------- | ---------------- |
+| `y = (z := 1)`         | Walrus           |
+| `match x: case 1: ...` | Pattern matching |
+
+New Python syntax stays blocked until reviewed and explicitly allowed.
 
 ---
 
 ## Banned builtins
 
-These names may never be called or referenced — aliasing them, putting them in a container, or
-returning them is caught at the reference site. (`BANNED_NAMES` in `policy.py`.)
+These names may never be **used** (i.e, loaded) in private code, even if they are
+**not called**.
 
-**Dynamic-code / reflection / IO hatches** — code `banned-name`:
-`eval`, `exec`, `compile`, `__import__`, `getattr`, `setattr`, `delattr`, `hasattr`, `vars`,
-`globals`, `locals`, `dir`, `open`, `input`, `breakpoint`, `memoryview`, `type`, `__build_class__`,
-`print`.
+Code: **`banned-name`**.
 
-**Dunder-proxy builtins** — same escape as calling a dunder on a value (`x.__repr__()`), spelled as
-a bare call. Code `banned-name`: `repr`, `str`, `ascii`, `format`, `bytes`. (`bytes(x)` losslessly
-serializes an array's raw memory; `print` is a stdout exfil channel.)
+### Dynamic code / reflection / I/O
 
-The same escape via **any f-string interpolation** (`f"{x}"`, `f"{x!r}"`, `f"{x!s}"`, `f"{x!a}"`,
-`f"{x=}"`) has no `Call` node — but rather than detect interpolation specifically, f-strings are
-banned outright as a node type (`JoinedStr`/`FormattedValue`, code `banned-construct`, see above),
-including a plain f-string with no interpolation at all.
+- `eval`
+- `exec`
+- `compile`
+- `__import__`
+- `getattr`
+- `setattr`
+- `delattr`
+- `hasattr`
+- `vars`
+- `globals`
+- `locals`
+- `dir`
+- `open`
+- `input`
+- `breakpoint`
+- `memoryview`
+- `type`
+- `__build_class__`
+- `print`
 
----
+### Formatting / buffer builtins
 
-## The optional user disallow list
+Same idea as calling dunders on a value (`x.__repr__()`), spelled as a bare call:
 
-There is no built-in denylist. Safety comes from passing a _specific_ `allow_functions` list (exact
-leaf paths rather than broad globs). For authors who do use a broad glob (`jax.*`) and still want a
-hard floor, `run(..., disallow_functions=[...])` takes glob patterns that **beat the allowlist** —
-rejected even under an otherwise-allowed module. (`disallowed_functions` on `Policy` in `policy.py`.)
-Hitting one by dotted path, bare public import, or import alias reports `call-not-allowed`.
+- `repr`
+- `str`
+- `ascii`
+- `format`
+- `bytes`
 
-Typical patterns to disallow when allowing a broad JAX/Flax surface: host-callback / IO / FFI /
-serialization paths that can run host code or touch disk — e.g. `jax.experimental.*`, `jax.debug.*`,
-`jax.pure_callback`, `*.io_callback`, `*.host_callback*`, `jax.dlpack.*`, `jax.ffi*`, the
-array↔disk `jax.numpy.{save,savez,load,tofile,fromfile,memmap,savetxt,loadtxt,genfromtxt}` family,
-and `flax.serialization.*`, `flax.training.checkpoints.*`, `orbax.*`.
+> [!WARNING]
+> `bytes(x)` can dump raw buffer contents. `print` is a stdout channel. F-strings are banned
+> separately as constructs (above), including with no `{...}` at all.
 
----
-
-## Calls, attributes, and names
-
-| What                                     | Example                                 | Code               |
-| ---------------------------------------- | --------------------------------------- | ------------------ |
-| Non-allow-listed library path            | `np.dot(a, b)` (numpy not allow-listed) | `call-not-allowed` |
-| Named method on an opaque value          | `x.reshape(8, -1)`, `items.append(1)`   | `method-on-value`  |
-| Attribute read on an opaque value        | `x.shape`, `x.T`, `x.ndim`              | `attr-on-value`    |
-| Dunder attribute read on any object      | `obj.__class__`, `obj.__dict__`         | `dunder-attr`      |
-| Bare dunder name reference               | `c = __class__`                         | `dunder-name`      |
-| Non-`self` attribute write               | `obj.send = data`                       | `attr-on-value`    |
-| Self chain deeper than one level         | `self.sub.evil(...)`, `self.a.b`        | `attr-on-value`    |
-| Non-allow-listed attribute off a library | `np.pi` (numpy not allow-listed)        | `attr-not-allowed` |
-| Call target not provably safe            | `fn(x)` where `fn` is a parameter       | `call-unresolved`  |
-
-Only single-level `self.<name>` / `cls.<name>` reads and writes are allowed (see the
-[self-attribute safety table](verify.md#edge-cases) in verify.md).
-
-`call-unresolved` is [default-deny for the call target itself](verify.md#the-full-call-target-rule):
-a bare-name or chained call (`fn(x)`, `d["k"](x)`) is rejected unless it's provably an allow-listed
-import, a def/class in this file, a safe builtin, or a local/value traced to one of those — not
-merely because nothing else flagged it. This catches the general case a `banned-name` reference
-can't: a dangerous callable that reaches a call site through an untraceable parameter or local,
-with no bare reference to a `BANNED_NAMES` entry anywhere in sight.
+```python
+# all rejected (banned-name)
+f = open
+d = {"o": open}
+def run(op=open): ...
+open("/etc/passwd")          # call reports banned-name once
+y = [v for v in open(path)]  # passive positions still checked
+```
 
 ---
 
-## Classes, decorators, and definitions
+## Calls and attributes
 
-| What                                                            | Example                             | Code            |
-| --------------------------------------------------------------- | ----------------------------------- | --------------- |
-| Non-allow-listed decorator (incl. `@property`)                  | `@evil`, `@property`                | `decorator`     |
-| Class keyword argument                                          | `class M(object, metaclass=Meta)`   | `class-keyword` |
-| Non-allow-listed base class                                     | `class M(SomeLib)`                  | `class-base`    |
-| Magic/hook method other than `setup`/`__call__`/`__post_init__` | `def __getattr__`, `def __reduce__` | `dunder-def`    |
+| What                                         | Example                                    | Code               |
+| -------------------------------------------- | ------------------------------------------ | ------------------ |
+| Library path not allowed                     | `np.dot(a, b)`                             | `call-not-allowed` |
+| Disallow list hits an otherwise-allowed path | `jnp.save(...)` under `disallow_functions` | `call-not-allowed` |
+| Call target not proven safe                  | `fn(x)` where `fn` is a parameter          | `call-unresolved`  |
+| Named method on a value                      | `x.reshape(8, -1)`, `items.append(1)`      | `method-on-value`  |
+| Attribute on a value                         | `x.shape`, `x.T`, `obj.send = data`        | `attr-on-value`    |
+| Deep `self` chain                            | `self.a.b`, `self.sub.evil(...)`           | `attr-on-value`    |
+| Unsafe `self.<name>(...)`                    | stashed `open` on `self` in `setup`        | `attr-on-value`    |
+| Dunder attribute                             | `obj.__class__`, `self.__dict__`           | `dunder-attr`      |
+| Bare dunder name                             | `c = __class__`                            | `dunder-name`      |
+| Library attr not allowed                     | `np.pi` when numpy is not allowed          | `attr-not-allowed` |
 
-`@property` is rejected because it runs code on bare attribute access (`block.w`) — same hook
-class as a dunder def.
+```python
+# rejected
+a = x.reshape(8, -1)     # method-on-value
+b = x.shape              # attr-on-value
+c = obj.__class__        # dunder-attr
 
----
+def apply(fn, x):
+    return fn(x)         # call-unresolved
 
-## Reserved-name rebinding
+```
 
-Rebinding a name the resolver trusts would poison verification. Rejected wherever the name is
-bound — assignment, `for`/comprehension target, or parameter. Code: `reserved-name`.
+> [!IMPORTANT]
+> **`call-unresolved` is default-deny for callees.** It catches dangerous callables that never
+> mention a banned builtin by name (parameters, opaque locals, `d["k"](x)`).
 
-- A trusted module alias (`jnp`, `nn`, `lax`, …) — rebinding makes the import table a lie, so every
-  "allow-listed path" through that name becomes attacker-controlled.
-- A public wrapper name — rebinding `transpose = evil` defeats the wrapper's type guard.
-- A safe builtin (`list`, `range`, `len`, …) — rebinding `list = evil` would silently redirect every
-  call site that appears to route through it, the same as a trusted import alias.
-- `self` / `cls` — the exemption is trusted by identifier alone; rebinding it (or reusing it as an
-  unrelated parameter) would grant an attacker's object the same trust. See
-  [verify.md#edge-cases](verify.md#edge-cases).
-
----
-
-## Container / aliasing tricks
-
-Storing a banned-builtin reference where it could be dispatched later is rejected at construction
-time (we don't track which slot holds what). Code: `banned-construct`.
-
-- Banned reference inside a `list`/`dict`/`set`/`tuple` literal — `con = [eval]`, `d = {"o": open}`.
-- Storing a banned reference into a subscript slot — `d["k"] = open`.
-
-The reference is also caught in every other position: `f = eval` (alias), `a = b = open` (chained),
-`a, b = (1, open)` (unpack), `return open` then `leak()(...)`, `op=open` (default arg),
-`open if c else eval` (IfExp branch), and via a homoglyph copy of a previously-stashed name. All
-report `banned-name` at the reference.
+Only single-level `self.<name>` / `cls.<name>` is special-cased. Rules for when `self.x(...)` is
+safe are in [verify.md](verify.md#self-and-flax-style-modules).
 
 ---
 
-## Operator bundles not enabled
+## Classes, decorators, definitions
 
-If the policy's `allow_methods` doesn't enable a bundle, using its operators reports
-`bundle-disabled`: `arithmetic` (`BinOp`/`UnaryOp`), `comparison` (`Compare`/`BoolOp`), `indexing`
-(`Subscript`/`Slice`).
+| What                       | Example                               | Code            |
+| -------------------------- | ------------------------------------- | --------------- |
+| Non-allow-listed decorator | `@evil`, `@property`, `@staticmethod` | `decorator`     |
+| Class keywords             | `class M(nn.Module, metaclass=Meta)`  | `class-keyword` |
+| Bad base class             | `class M(SomeLib)`, `class M(object)` | `class-base`    |
+| Forbidden magic method     | `def __getattr__`, `def __reduce__`   | `dunder-def`    |
+
+Allowed hooks only: `setup`, `__call__`, `__post_init__`.  
+Allowed decorators only: `nn.compact`, `jax.jit`, `jax.named_scope`, `flax.linen.compact`.
+
+```python
+# rejected
+class M(object):    # class-base
+    @property       # decorator
+    def w(self):
+        return 1
+
+    def __getattr__(self, name):    # dunder-def
+        return None
+```
+
+---
+
+## Reserved names
+
+Rebinding a name the checker trusts reports **`reserved-name`**.
+
+| Reserved             | Example rebind                                | Why                                    |
+| -------------------- | --------------------------------------------- | -------------------------------------- |
+| Import aliases       | `jnp = make_evil()`                           | Would lie about resolved library paths |
+| Public wrappers      | nested `def transpose` shadowing a public one | Defeats the reviewed wrapper           |
+| Private defs/classes | `helper = evil` after `def helper`            | Bare calls trust the def by name       |
+| Safe builtins        | `list = None`                                 | Bare calls trust `list(...)` by name   |
+| `self` / `cls`       | `self = x`, nested `def f(self):`             | `self.*` is trusted by spelling        |
+
+Applies to assignment, `for` / comprehension targets, parameters, and nested defs.  
+Private def names are also protected against rebind in **public** glue between private ranges.
+
+```python
+# rejected
+import jax.numpy as jnp
+jnp = 1     # reserved-name
+
+def helper(x):
+    return x
+def f(evil):
+    helper = evil      # reserved-name
+    return helper(1)
+```
+
+---
+
+## Operator bundles
+
+If a group of operators is not in `allow_operators`, using any of its operators
+reports **`operator-disabled`**.
+
+| Bundle       | If missing, these fail |
+| ------------ | ---------------------- |
+| `arithmetic` | `a + b`, `-a`, …       |
+| `comparison` | `a < b`, `a and b`, …  |
+| `indexing`   | `x[0]`, `x[1:3]`, …    |
+
+---
+
+## Optional `disallow_functions`
+
+There is no built-in library denylist. Everything not explicitly allow-listed is
+rejected. Safety comes from **`allow_functions`**.
+
+When you use a broad allow (`jax.*`), pass `disallow_functions=[...]` for a hard floor. Hits report
+**`call-not-allowed`**.
+
+Useful patterns under broad JAX/Flax allows:
+
+- Host / debug / experimental: `jax.experimental.*`, `jax.debug.*`, `jax.pure_callback`, `*.io_callback`, `*.host_callback*`
+- FFI / interop: `jax.dlpack.*`, `jax.ffi*`
+- Array ↔ disk: `jax.numpy.save`, `load`, `tofile`, `fromfile`, `memmap`, …
+- Checkpointing: `flax.serialization.*`, `flax.training.checkpoints.*`, `orbax.*`
+
+```python
+# public import, private use — still resolved and checked
+from jax.numpy import save as persist
+persist(x, "out.npz")   # call-not-allowed if disallow includes jax.numpy.save
+```
+
+---
+
+## See also
+
+- [verify.md](verify.md) — how checking works and what is allowed
+- `tests/verify/test_disallowed.py` — disallowed tests
+- `tests/verify/test_bypasses.py` — multi-step attack regressions

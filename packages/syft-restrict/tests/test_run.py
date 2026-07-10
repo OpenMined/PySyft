@@ -9,7 +9,7 @@ from syft_restrict import PolicyViolation, run
 
 FIXTURES = Path(__file__).parent / "fixtures"
 ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
-ALLOW_METHODS = ["arithmetic", "indexing", "comparison"]
+ALLOW_OPERATORS = ["arithmetic", "indexing", "comparison"]
 
 
 def _private(source: str):
@@ -26,7 +26,7 @@ def test_run_success_writes_obfuscated_and_certificate(tmp_path):
         src,
         obfuscate=_private(src.read_text()),
         allow_functions=ALLOW_FUNCTIONS,
-        allow_methods=ALLOW_METHODS,
+        allow_operators=ALLOW_OPERATORS,
     )
     assert result.ok
     out = Path(result.obfuscated_path)
@@ -45,7 +45,7 @@ def test_run_strict_raises_and_writes_nothing(tmp_path):
             src,
             obfuscate=[[1, 3]],
             allow_functions=ALLOW_FUNCTIONS,
-            allow_methods=ALLOW_METHODS,
+            allow_operators=ALLOW_OPERATORS,
         )
     assert exc.value.violations
     assert not (tmp_path / "bad.obfuscated.py").exists()
@@ -58,7 +58,7 @@ def test_run_nonstrict_returns_violations(tmp_path):
         src,
         obfuscate=[[1, 2]],
         allow_functions=ALLOW_FUNCTIONS,
-        allow_methods=ALLOW_METHODS,
+        allow_operators=ALLOW_OPERATORS,
         strict=False,
     )
     assert not result.ok

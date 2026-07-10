@@ -88,7 +88,7 @@ result = run(
         "jax.lax",
         "jax.nn",
     ],
-    allow_methods=["arithmetic", "indexing", "comparison"],
+    allow_operators=["arithmetic", "indexing", "comparison"],
 )
 
 cert_path = EX / "gemma_inference.certificate.json"

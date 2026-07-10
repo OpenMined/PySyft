@@ -68,20 +68,20 @@ def test_enabled_operator_bundles(verify_all, src):
     assert result.ok, [(v.code, v.message) for v in result.violations]
 
 
-# ── operator bundles: disabled => bundle-disabled ────────────────────────────
+# ── operator bundles: disabled => operator-disabled ──────────────────────────
 
 
 @pytest.mark.parametrize(
-    "methods, src",
+    "operators, src",
     [
         (["indexing", "comparison"], "r = a + b"),  # arithmetic off
         (["arithmetic", "indexing"], "r = a < b"),  # comparison off
         (["arithmetic", "comparison"], "r = x[0]"),  # indexing off
     ],
 )
-def test_disabled_operator_bundle_is_rejected(verify_all, methods, src):
-    result = verify_all(src, make_policy(methods=methods))
-    assert "bundle-disabled" in get_error_codes(result)
+def test_disabled_operator_bundle_is_rejected(verify_all, operators, src):
+    result = verify_all(src, make_policy(operators=operators))
+    assert "operator-disabled" in get_error_codes(result)
 
 
 # ── user-supplied disallow beats the allow ───────────────────────────────────

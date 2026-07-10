@@ -9,7 +9,7 @@ from syft_restrict.astutil import scan_file
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
-ALLOW_METHODS = ["arithmetic", "indexing", "comparison"]
+ALLOW_OPERATORS = ["arithmetic", "indexing", "comparison"]
 
 
 def _private_from_config(source: str):
@@ -28,7 +28,7 @@ def _obfuscate_fixture(tmp_path: Path):
         src_path,
         obfuscate=private,
         allow_functions=ALLOW_FUNCTIONS,
-        allow_methods=ALLOW_METHODS,
+        allow_operators=ALLOW_OPERATORS,
     )
     obf = Path(result.obfuscated_path).read_text()
     return source, obf, config_line
@@ -72,7 +72,7 @@ def test_hide_blanks_whole_body_keeping_indentation(tmp_path):
         obfuscate=[[def_line, def_line]],
         hide=[body],
         allow_functions=ALLOW_FUNCTIONS,
-        allow_methods=ALLOW_METHODS,
+        allow_operators=ALLOW_OPERATORS,
     )
     obf_lines = Path(result.obfuscated_path).read_text().splitlines()
     note = "# hidden/obfuscated lines can only execute restricted python"

@@ -1,13 +1,11 @@
-"""Policy: what the private region is allowed to call and do (see docs/verify.md#the-whitelist).
+"""Policy: what the private region is allowed to call and do (see docs/verify.md).
 
 Two channels the author configures per file:
 
-- ``functions`` — dotted paths callable BY NAME (resolved exactly against the import bindings),
-  e.g. ``jax.*``, ``flax.linen.*``. Checked by glob match. An optional per-policy *disallow* list
-  (``disallow_functions``) beats the allow, giving the author a hard floor over broad globs.
-- ``methods``  — operator *bundles* allowed ON A VALUE, e.g. ``arithmetic``, ``indexing``. These are
-  language-level operators (``__add__``, ``__getitem__``, …), never named library methods. No named
-  method may be called on an opaque value at all.
+- ``functions`` — dotted paths callable BY NAME (resolved against import bindings),
+  e.g. ``jax.*``, ``flax.linen.*``. An optional *disallow* list beats the allow.
+- ``operators`` — operator *bundles* allowed ON A VALUE, e.g. ``arithmetic``, ``indexing``.
+  These are language operators (``+``, ``[]``, …), never named library methods on a value.
 """
 
 from __future__ import annotations
@@ -119,8 +117,8 @@ class Policy(BaseModel):
     # allowed functions passed by the user, example: ["jax.*", "flax.linen.*"]
     allowed_functions: list[str] = Field(default_factory=list)
 
-    # allowed methods passed by the user, example: ["arithmetic", "indexing", "comparison"]
-    allowed_methods: set[str] = Field(default_factory=set)
+    # operator bundles passed by the user, example: ["arithmetic", "indexing", "comparison"]
+    allowed_operators: set[str] = Field(default_factory=set)
 
     # optional disallow globs supplied by the user; these beat the allow, example: ["jax.numpy.save"]
     disallowed_functions: list[str] = Field(default_factory=list)
@@ -132,20 +130,20 @@ class Policy(BaseModel):
     def parse(
         cls,
         allow_functions: list[str] | None = None,
-        allow_methods: list[str] | None = None,
+        allow_operators: list[str] | None = None,
         disallow_functions: list[str] | None = None,
     ) -> "Policy":
         allowed_functions = _clean(allow_functions)
-        allowed_methods = set(_clean(allow_methods))
+        allowed_operators = set(_clean(allow_operators))
         disallowed_functions = _clean(disallow_functions)
-        unknown = allowed_methods - ALL_BUNDLES
+        unknown = allowed_operators - ALL_BUNDLES
         if unknown:
             raise ValueError(
-                f"unknown method bundle(s): {sorted(unknown)}; allowed: {sorted(ALL_BUNDLES)}"
+                f"unknown operator bundle(s): {sorted(unknown)}; allowed: {sorted(ALL_BUNDLES)}"
             )
         return cls(
             allowed_functions=allowed_functions,
-            allowed_methods=allowed_methods,
+            allowed_operators=allowed_operators,
             disallowed_functions=disallowed_functions,
         )
 
@@ -161,14 +159,14 @@ class Policy(BaseModel):
         return any(_path_matches(dotted, pat) for pat in self.allowed_functions)
 
     def bundle_enabled(self, name: str) -> bool:
-        return name in self.allowed_methods
+        return name in self.allowed_operators
 
     def policy_id(self) -> str:
         """A short, stable identifier for the policy (for the certificate)."""
         blob = (
             "|".join(sorted(self.allowed_functions))
             + "##"
-            + "|".join(sorted(self.allowed_methods))
+            + "|".join(sorted(self.allowed_operators))
             + "##"
             + "|".join(sorted(self.disallowed_functions))
         )
