@@ -110,7 +110,11 @@ DEFAULT_KEEP: frozenset[str] = frozenset(
 
 
 class Policy(BaseModel):
-    """Parsed allow-lists. ``reserved`` is filled in by the verifier from the file's imports."""
+    """Parsed allow-lists.
+
+    ``reserved_names`` is filled by ``verify()`` from the file's import bindings (on a copy of
+    the policy — the caller's instance is not mutated).
+    """
 
     # allowed functions passed by the user, example: ["jax.*", "flax.linen.*"]
     allowed_functions: list[str] = Field(default_factory=list)
@@ -121,7 +125,7 @@ class Policy(BaseModel):
     # optional disallow globs supplied by the user; these beat the allow, example: ["jax.numpy.save"]
     disallowed_functions: list[str] = Field(default_factory=list)
 
-    # reserved names, currently the import bindings, example:?
+    # import aliases reserved against rebinding (set per-file by verify), e.g. {"jnp", "nn"}
     reserved_names: set[str] = Field(default_factory=set)
 
     @classmethod

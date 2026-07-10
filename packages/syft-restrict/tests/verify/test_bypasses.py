@@ -502,3 +502,67 @@ def test_def_name_shadowing_public_wrapper(verify_all):
         return transpose(x)
     """
     _assert_error_code(verify_all, src, "reserved-name", private=[[4, 7]])
+
+
+# ── private_defs trusted by identifier: must not be rebindable ───────────────
+
+
+def test_private_def_assign_rebind_must_not_grant_call(verify_all):
+    # Bare calls trust private_defs by name alone. Rebinding helper = evil then
+    # helper(x) must fail at the rebind.
+    src = """
+    def helper(x):
+        return x
+    def f(x, evil):
+        helper = evil
+        return helper(x)
+    """
+    _assert_error_code(verify_all, src, "reserved-name")
+
+
+def test_private_def_for_rebind_must_not_grant_call(verify_all):
+    src = """
+    def helper(x):
+        return x
+    def f(items):
+        for helper in items:
+            helper(1)
+    """
+    _assert_error_code(verify_all, src, "reserved-name")
+
+
+def test_private_def_comprehension_rebind_must_not_grant_call(verify_all):
+    src = """
+    def helper(x):
+        return x
+    def f(items):
+        return [helper for helper in items]
+    """
+    _assert_error_code(verify_all, src, "reserved-name")
+
+
+def test_private_def_nested_def_shadow_must_not_grant_call(verify_all):
+    src = """
+    def helper(x):
+        return x
+    def f(x):
+        def helper(y):
+            return y
+        return helper(x)
+    """
+    _assert_error_code(verify_all, src, "reserved-name")
+
+
+def test_private_def_public_region_rebind_must_not_grant_call(verify_all):
+    # Multi-range hole: private def, public rebind, private call. Public glue
+    # must not be allowed to shadow a private def name that call sites still trust.
+    src = """
+    def helper(x):
+        return x
+
+    helper = evil
+
+    def run(x):
+        return helper(x)
+    """
+    _assert_error_code(verify_all, src, "reserved-name", private=[[1, 2], [7, 8]])

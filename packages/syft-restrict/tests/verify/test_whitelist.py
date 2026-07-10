@@ -63,8 +63,36 @@ def test_public_call_is_allowed(verify_all):
         return 1
     helper()
     """
-    result = verify_all(src, private=[[1, 2]])
+    # def is public (lines 1–2); call is private (line 3)
+    result = verify_all(src, private=[[3, 3]])
     assert _ok(result)[0]
+
+
+def test_public_class_constructor_is_allowed(verify_all):
+    """A public-region class may be constructed by bare name from the private region."""
+    src = """
+    class Block:
+        def __call__(self, x):
+            return x
+    def run(x):
+        b = Block()
+        return b(x)
+    """
+    # class Block is public (lines 1–3); run is private (lines 4–6)
+    result = verify_all(src, private=[[4, 6]])
+    assert _ok(result)[0]
+
+
+def test_verify_does_not_mutate_caller_policy(policy):
+    """verify() must not write reserved_names onto the caller's Policy instance."""
+    assert policy.reserved_names == set()
+    src = normalize_source("""
+    import jax.numpy as jnp
+    def f():
+        return 1
+    """)
+    verify(src, [[3, 4]], policy)
+    assert policy.reserved_names == set()
 
 
 def test_private_call_is_allowed(verify_all):

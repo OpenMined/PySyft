@@ -119,6 +119,13 @@ def test_banned_names(verify_all, name):
     ]
 
 
+def test_banned_call_reports_banned_name_once(verify_all):
+    """A bare call to a banned builtin must not also emit call-unresolved."""
+    result = verify_all("open('/etc/passwd')")
+    codes = get_error_codes(result)
+    assert codes == {"banned-name"}, codes
+
+
 def test_comprehension_over_io(verify_all):
     """``[v for v in open(f)]`` reintroduces I/O through a denied call in the iterable."""
     assert "banned-name" in get_error_codes(verify_all("y = [v for v in open(f)]"))

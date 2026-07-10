@@ -91,7 +91,9 @@ class FileScan(BaseModel):
         str, str
     ]  # import alias -> fully-qualified module path (jnp -> jax.numpy)
     private_defs: set[str]  # class/func names defined inside the private region
-    public_defs: set[str]  # function names defined in the public region
+    public_defs: set[str]  # class/func names defined in the public region (non-methods)
+    private_def_ids: set[int]  # id() of the first (canonical) node behind each private_defs name
+    method_ids: set[int]  # id() of direct FunctionDef children of any ClassDef body
 
 
 def scan_file(tree: ast.Module, private_ranges) -> FileScan:
@@ -103,7 +105,18 @@ def scan_file(tree: ast.Module, private_ranges) -> FileScan:
     """
     import_bindings: dict[str, str] = {}  # import alias -> fully-qualified module path
     private_defs: set[str] = set()  # class/func names defined inside the private region
-    public_defs: set[str] = set()  # function names defined in the public region
+    public_defs: set[str] = set()  # class/func names defined in the public region
+    private_def_ids: set[int] = set()  # id() of the first node claiming each private_defs name
+    # Methods (direct FunctionDef children of a class body) are called via `self.<name>`, never
+    # by bare name, so they're excluded here -- otherwise unrelated classes sharing a hook name
+    # (`setup`, `__call__`) would look like one shadowing the other.
+    method_ids = {
+        id(child)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ClassDef)
+        for child in node.body
+        if isinstance(child, ast.FunctionDef)
+    }
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -114,14 +127,23 @@ def scan_file(tree: ast.Module, private_ranges) -> FileScan:
                 import_bindings[alias.asname or alias.name] = (
                     f"{node.module}.{alias.name}"
                 )
+        elif isinstance(node, ast.FunctionDef) and id(node) in method_ids:
+            continue
         elif isinstance(node, (ast.FunctionDef, ast.ClassDef)):
             if node_in_ranges(node, private_ranges):
                 # `class Net:` / `def _secret():` on a private line -> private_defs.add("Net" / "_secret")
+                # ast.walk is breadth-first, so the first node to claim a name is always the
+                # shallowest (outermost) one -- any later def/class reusing the name is a shadow.
+                if node.name not in private_defs:
+                    private_def_ids.add(id(node))
                 private_defs.add(node.name)
-            elif isinstance(node, ast.FunctionDef):
+            else:
+                # public FunctionDef *or* ClassDef — both may be called by bare name from private
                 public_defs.add(node.name)
     return FileScan(
         import_bindings=import_bindings,
         private_defs=private_defs,
         public_defs=public_defs,
+        private_def_ids=private_def_ids,
+        method_ids=method_ids,
     )

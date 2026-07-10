@@ -116,14 +116,14 @@ _BANNED_NODES: tuple[type[ast.AST], ...] = (
 
 # violation-code registry: every code a check can raise, one line each (docs/blacklist.md)
 ViolationCode = Literal[
-    "banned-construct",  # _enforce, _check_container_literal, _check_assign_targets
+    "banned-construct",  # _enforce (a node type on the permanent deny-list, docs/blacklist.md)
     "node-type",  # _enforce (node type outside the always-on allow-list)
     "dunder-def",  # _check_def (defining a magic/hook method)
     "class-keyword",  # _check_class (metaclass= or other class keyword arg)
     "class-base",  # _check_class (non-allow-listed base class)
     "decorator",  # _check_decorators
     "reserved-name",  # _check_name, _check_arguments_dont_abuse_self_or_cls, _check_reserved_name
-    "banned-name",  # _check_name (any Load reference to a BANNED_NAMES entry, called or not)
+    "banned-name",  # _check_call (banned bare call) / _check_name (any other Load reference)
     "call-not-allowed",  # _check_call, _check_call_attribute
     "call-unresolved",  # _check_call (bare-name/value call not traceable to a safe source)
     "dunder-attr",  # _check_call_attribute, _check_attribute
@@ -153,9 +153,8 @@ def verify(source: str, private, policy: Policy) -> VerifyResult:
     ranges = normalize_ranges(private)
     tree = ast.parse(source)
     scan = scan_file(tree, ranges)
-    policy.reserved_names = set(
-        scan.import_bindings
-    )  # trusted module aliases may not be rebound
+    # Copy policy so caller's reserved_names is never mutated across files.
+    policy = policy.model_copy(update={"reserved_names": set(scan.import_bindings)})
     checker = _Checker(policy, scan, ranges)
     checker.visit(tree)
     return VerifyResult(
@@ -175,7 +174,7 @@ def verify(source: str, private, policy: Policy) -> VerifyResult:
 #   named method / attr on opaque value  -> _check_call_attribute, _check_attribute
 #   f-strings (any shape)                -> _BANNED_NODES (in _enforce)
 #   forged self/cls trust                -> _check_arguments_dont_abuse_self_or_cls, _check_name
-#   aliasing a banned callable           -> _check_name, _check_container_literal, _check_assign_targets
+#   aliasing a banned callable           -> _check_name (any Load reference, regardless of position)
 #   unresolved call target (default-deny) -> _check_call, _is_safe_local_source
 #   class-creation hooks                 -> _check_class, _check_decorators, _check_def
 # ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -199,10 +198,9 @@ class _Checker:
         # nodes inside a type annotation (never invoked), exempt from name/container checks
         self._annotation_nodes: set[int] = set()
 
-        # per-scope locals provably safe to call -- see _track_safe_local /
-        # _is_safe_local_source. Starts with one frame already present: Module itself never
-        # pushes a scope in visit() (only ClassDef/FunctionDef/Lambda do), so top-level code
-        # needs its own standing frame instead of the tracking silently no-oping outside a def.
+        # per-scope locals provably safe to call. see _track_safe_local /
+        # _is_safe_local_source. Starts with one frame already present because Module itself never
+        # pushes a scope in visit() (only ClassDef/FunctionDef/Lambda do)
         self._safe_locals_stack: list[dict[str, bool]] = [{}]
 
     def report(self, node: ast.AST, code: ViolationCode, message: str) -> None:
@@ -215,19 +213,61 @@ class _Checker:
         """Walk the whole tree; enforce only on nodes inside the private ranges, recurse everywhere."""
         if node_in_ranges(node, self.ranges):
             self._enforce(node)
+        else:
+            # private-defined names are reserved everywhere, including in public
+            # region. Bare calls trust private_defs by identifier alone, so a
+            # public-region rebind (helper = evil between private chunks) would
+            # otherwise reopen the call-target hole.
+            self._check_private_def_shadow_anywhere(node)
 
+        # push/pop scope stack for ClassDef/FunctionDef/Lambda, so
+        # _enclosing_class() works
         is_scope = isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.Lambda))
         if is_scope:
             self._scope_stack.append(node)
             self._safe_locals_stack.append({})
         self._mark_annotation_subtrees(node)
 
+        # recurse to children, which may be outside the private ranges
         for child in ast.iter_child_nodes(node):
             self.visit(child)
 
+        # pop scope stack after children, so _enclosing_class() sees the right frame
         if is_scope:
             self._scope_stack.pop()
             self._safe_locals_stack.pop()
+
+    def _check_private_def_shadow_anywhere(self, node: ast.AST) -> None:
+        """Reject rebinding a private-region class/def name even on public lines."""
+
+        # only check rebinding (Store) and definitions (FunctionDef/ClassDef).
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+            if (
+                node.id in self.scan.private_defs
+                and id(node) not in self.scan.private_def_ids
+            ):
+                self.report(
+                    node,
+                    "reserved-name",
+                    f"{node.id!r} is a private-region class/def and may not be rebound",
+                )
+            return
+
+        # methods are not bare-call targets; shared names like `setup`` are fine
+        if isinstance(node, ast.FunctionDef) and id(node) in self.scan.method_ids:
+            return
+
+        # only check rebinding (Store) and definitions (FunctionDef/ClassDef). A
+        if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+            if (
+                node.name in self.scan.private_defs
+                and id(node) not in self.scan.private_def_ids
+            ):
+                self.report(
+                    node,
+                    "reserved-name",
+                    f"{node.name!r} is a private-region class/def and may not be rebound",
+                )
 
     def _enclosing_class(self) -> ast.ClassDef | None:
         """The nearest enclosing ClassDef, skipping any FunctionDef/Lambda frames above it."""
@@ -237,14 +277,13 @@ class _Checker:
         return None
 
     def _mark_annotation_subtrees(self, node: ast.AST) -> None:
-        """A type annotation (`x: str`, `x: list[str]`, `def f() -> dict[str, bytes]`) is never invoked,
-        so it can hold a name that is banned in a real reference (see docs/verify.md#edge-cases). Mark
-        the WHOLE subtree, not just its top node: generics nest the type names one or more levels down
-        (`list[str]` is `Subscript(Name('list'), Name('str'))`). Call/Attribute nodes inside still run
-        their own checks — a call in a passive position (`x: evil()`) is caught, since no check reads
-        this set to skip itself; only the name/container checks consult it."""
+        # a type annotation (`x: str`, `x: list[str]`, `def f() -> dict[str,
+        # bytes]`) is never invoked, so it can hold a name that is banned in a
+        # real reference.
         for ann in (getattr(node, "annotation", None), getattr(node, "returns", None)):
             if ann is not None:
+                # Mark the WHOLE subtree, not just its top node: generics nest the
+                # type names one or more levels down
                 for descendant in ast.walk(ann):
                     self._annotation_nodes.add(id(descendant))
 
@@ -374,9 +413,12 @@ class _Checker:
 
         """
         for dec in node.decorator_list:
+            # resolve the decorator to a dotted name
             target = dec.func if isinstance(dec, ast.Call) else dec
             path = dotted_name(target)
             resolved = self._resolve(path) if path else None
+
+            # then check if it's allow-listed
             if not (resolved in ALLOWED_DECORATORS or path in ALLOWED_DECORATORS):
                 self.report(
                     dec,
@@ -443,11 +485,17 @@ class _Checker:
 
         Attribute-position calls route to a stricter check."""
 
+        # count total calls for the final result
         self.n_calls += 1
         func = node.func
 
+        # if it's a bare name, check it against the allow-list and the private defs
         if isinstance(func, ast.Name):
-            # banned builtins (eval, open, ...) are caught by _check_name
+            # banned builtins: report once here and mark so _check_name does not double-count
+            if func.id in BANNED_NAMES:
+                self.report(node, "banned-name", f"call to {func.id!r} is not allowed")
+                self._checked_call_targets.add(id(func))
+                return
             if func.id in self.scan.import_bindings:
                 # resolves through the same import-binding table as a dotted call
                 if not self._resolved_allowed(func.id):
@@ -476,17 +524,18 @@ class _Checker:
             )
             return
 
-        # given x.y.z(), this checks x.y
+        # given x.y.z(...), this checks the Attribute call target x.y
         if isinstance(func, ast.Attribute):
             self._check_call_attribute(node, func)
             return
 
-        # given x[i].z(), this checks x[i])
+        # given self.x[i](...), this checks the self-rooted subscript call
         if isinstance(func, ast.Subscript) and rooted_in_self(func):
             self._check_self_subscript_call(node, func)
             return
 
-        # the call is trusted only if it's a provably-safe source
+        # if we get here, the call is not banned by name or attribute, but must
+        # still resolve to a safe source
         if not self._is_safe_local_source(func):
             self.report(
                 node,
@@ -508,9 +557,11 @@ class _Checker:
         - calling a named method on an opaque value (x.reshape(...)) whose type — and thus what
           the call does — we can't pin
         """
-        self._checked_call_targets.add(
-            id(func)
-        )  # so _check_attribute won't re-flag this node
+        # add it to the checked set so _check_attribute doesn't double-count it
+        self._checked_call_targets.add(id(func))
+
+        # resolve the dotted path to a string, if possible. If not, it's a named
+        # method on an opaque value (x.reshape(...)) whose type we can't pin, so deny it.
         path = dotted_name(func)
         if path is not None:
             root = path.split(".")[0]
@@ -641,8 +692,8 @@ class _Checker:
 
         - rebinding self/cls
         - rebinding a reserved name
-        - loading a banned builtin (`f = open; f(...)`)
-        - loading a bare dunder name (`__class__`)
+        - loading a banned builtin (`open`, `eval`, `exec`, ...)
+        - loading a bare dunder name (`__class__`, `__dict__`, ...)
         """
         if isinstance(node.ctx, ast.Store):
             # self/cls itself: always denied, never delegated to _check_reserved_name
@@ -663,7 +714,7 @@ class _Checker:
         if not isinstance(node.ctx, ast.Load):
             return
 
-        # ignore if already reported as banned-name by _check_call
+        # skip if already reported as the func of a banned call by _check_call
         if id(node) in self._checked_call_targets:
             return
 
@@ -706,16 +757,27 @@ class _Checker:
         return [node.target], None  # AugAssign
 
     def _track_safe_local(self, node) -> None:
-        """Track whether each assigned local is a provably-safe call target. Any other assignment
-        to a previously-tracked name clears its verdict -- it no longer traces to that source.
-        AugAssign always clears (no single value expression to vet)."""
+        """Track whether each assigned local is a provably-safe call target.
 
+        Any other assignment to a previously-tracked name clears its verdict --
+        it no longer traces to that source."""
+
+        # Module itself never pushes a scope in visit(), so we added a frame at
+        # init and never pop it. The stack should never be empty.
         if not self._safe_locals_stack:
-            return
+            raise RuntimeError(
+                "safe_locals_stack is empty; visit() should have pushed a frame"
+            )
 
+        # Track the verdict in the top frame of the stack, which is the current
+        # scope.
         safe = self._safe_locals_stack[-1]
         targets, value = self._assignment_targets_and_value(node)
 
+        # check each target in the assignment. If it's a Name, track whether
+        # it's provably safe to call. If it's not a Name (e.g., a tuple
+        # unpacking), skip it. If the value is None (AnnAssign without a value),
+        # clear the verdict.
         for t in targets:
             if not isinstance(t, ast.Name):
                 continue
@@ -753,9 +815,12 @@ class _Checker:
         """Guards against:
 
         - rebinding a trusted module alias (`jnp = evil`), which would poison the path resolver
+        - rebinding a private-region class/def (`Attn = evil`), which would silently redirect
+          every bare call that appears to route through the vetted original -- private_defs is
+          a scope-blind, name-only whole-file scan, so nothing else notices the shadow
         - rebinding a public wrapper name (`transpose = evil`), defeating its type guard
         - rebinding a safe builtin (`list = evil`) — _check_call trusts a bare call to any of
-          these three by identifier alone, so shadowing one would silently redirect every call
+          these four by identifier alone, so shadowing one would silently redirect every call
           site that appears to route through it
         """
         if name in self.policy.reserved_names:
@@ -763,6 +828,14 @@ class _Checker:
                 node,
                 "reserved-name",
                 f"{name!r} is a reserved module alias and may not be rebound",
+            )
+        elif (
+            name in self.scan.private_defs and id(node) not in self.scan.private_def_ids
+        ):
+            self.report(
+                node,
+                "reserved-name",
+                f"{name!r} is a private-region class/def and may not be rebound",
             )
         elif name in self.scan.public_defs:
             self.report(
@@ -779,13 +852,15 @@ class _Checker:
 
     # ── path resolution ──────────────────────────────────────────────────────────────────────
     def _resolve(self, path: str) -> str:
-        """Rewrite a dotted path's import alias to its fully-qualified form (`jnp.einsum` -> `jax.numpy.einsum`)."""
+        """Rewrite a dotted path's import alias to its fully-qualified form
+        (`jnp.einsum` -> `jax.numpy.einsum`)."""
         root, _, rest = path.partition(".")
         base = self.scan.import_bindings.get(root, root)
         return f"{base}.{rest}" if rest else base
 
     def _resolved_allowed(self, path: str) -> bool:
-        """Resolve an import alias, then apply the policy allow-list (disallow beats allow)."""
+        """Resolve an import alias, then apply the policy allow-list (disallow
+        beats allow)."""
         return self.policy.function_allowed(self._resolve(path))
 
 
@@ -819,13 +894,17 @@ def _all_leaves_safe(value: ast.AST, is_safe_leaf) -> bool:
 
 
 class _SelfAttrTrust:
-    """Answers one question for ``_check_call_attribute``/``_check_self_subscript_call``: is
-    ``self.<attr>`` (in the given enclosing class) safe to call or subscript?
+    """Used by ``_check_call_attribute``/``_check_self_subscript_call`` to
+    determine if ``self.<attr>`` (in the given enclosing class) safe to call or
+    subscript.
 
-    An attribute the class never assigns is presumed inherited from its (already vetted, since
-    bases are allow-listed) base class -- e.g. nn.Module's ``self.param``/``self.variable``. Only
-    attributes the class itself assigns are vetted against what was actually stored there. Results
-    are memoized per class for the lifetime of one ``_Checker`` (one ``verify()`` call).
+    An attribute the class never assigns is presumed inherited from its (already
+    vetted, since bases are allow-listed) base class,  nn.Module's
+    ``self.param``/``self.variable``.
+
+    Only attributes the class itself assigns are vetted against what was
+    actually stored there. Results are memoized per class for the lifetime of
+    one ``_Checker`` (one ``verify()`` call).
     """
 
     def __init__(self, scan: FileScan, resolved_allowed) -> None:
@@ -834,24 +913,40 @@ class _SelfAttrTrust:
         self._cache: dict[int, dict[str, bool]] = {}  # id(ClassDef) -> {attr: is-safe}
 
     def is_safe(self, attr: str, cls_node: ast.ClassDef | None) -> bool:
+        # if the class is None, we're not in a class body, so self.<attr> is not
+        # allowed
         if cls_node is None:
             return False
+
+        # check the memoized table for this class; if not present, build it
         table = self._cache.get(id(cls_node))
         if table is None:
             table = self._build_table(cls_node)
             self._cache[id(cls_node)] = table
+
+        # return True if the attribute is safe, False if not, and True if the
+        # attribute was never assigned in this class (inherited from a vetted
+        # base)
         return table.get(attr, True)
 
     def _build_table(self, cls_node: ast.ClassDef) -> dict[str, bool]:
-        """For every self.<name> assigned anywhere in the class, record whether EVERY value ever stored
-        there is a vetted-safe source. AugAssign always disqualifies (compound-mutating a submodule
-        reference isn't a real Flax pattern and is inherently suspect) -- and so does a self.<attr>
-        found nested in a tuple/list-unpack target or bound via a for-loop/comprehension target:
-        neither is a real Flax pattern either, and unlike a plain `self.x = value` there's no single
-        value expression to vet, so we can't tell what ends up in the attribute."""
+        """For every self.<name> assigned anywhere in the class, record whether
+        EVERY value ever stored there is a vetted-safe source.
+        """
+
+        # AugAssign always disqualifies (compound-mutating a submodule reference
+        # isn't a real pattern and is inherently suspect)
+        #
+        # So does a self.<attr> found nested in a tuple/list-unpack target or
+        # bound via a for-loop/comprehension target: neither is a real pattern
+        # either, and unlike a plain `self.x = value` there's no single value
+        # expression to vet, so we can't tell what ends up in the attribute.
+
         values: dict[str, list[ast.AST]] = {}
         disqualified: set[str] = set()
+
         for node in ast.walk(cls_node):
+            # if the node is an assignment, record the value(s) assigned to self.<attr>
             if isinstance(node, ast.Assign):
                 for t in node.targets:
                     attr = self_attr_name(t)
@@ -859,22 +954,32 @@ class _SelfAttrTrust:
                         values.setdefault(attr, []).append(node.value)
                     elif isinstance(t, (ast.Tuple, ast.List)):
                         disqualified.update(_iter_self_attrs_in_target(t))
+
+            # if the node is an annotated assignment with a value, record the
+            # value assigned to self.<attr>
             elif isinstance(node, ast.AnnAssign) and node.value is not None:
                 attr = self_attr_name(node.target)
                 if attr is not None:
                     values.setdefault(attr, []).append(node.value)
+            # if the node is an AugAssign, disqualify the attribute
             elif isinstance(node, ast.AugAssign):
                 attr = self_attr_name(node.target)
                 if attr is not None:
                     disqualified.add(attr)
+            # if the node is a for-loop or comprehension, disqualify any
+            # self.<attr> in the target
             elif isinstance(node, (ast.For, ast.comprehension)):
                 disqualified.update(_iter_self_attrs_in_target(node.target))
         table = {
             attr: attr not in disqualified and all(self.is_safe_value(v) for v in vs)
             for attr, vs in values.items()
         }
+
+        # any self.<attr> that was disqualified but never assigned a value is
+        # still disqualified
         for attr in disqualified:
             table.setdefault(attr, False)
+
         return table
 
     def is_safe_value(self, value: ast.AST) -> bool:
