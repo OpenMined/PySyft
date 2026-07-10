@@ -195,6 +195,17 @@ Subtle corners, kept here so code comments can stay short.
   (`{"o": open}`), returned, passed as an argument, or picked in an `IfExp` branch. Storing a
   banned reference in a container literal or subscript slot is rejected at construction time.
 
+- **Local-safety tracking is per-scope, not full LEGB.** `_track_safe_local`/`_current_safe_locals`
+  only look at the innermost active frame — they don't walk outward through enclosing function
+  scopes the way Python's real closures do. So a plain local variable aliased in an outer scope
+  (`g = len` at module level, or in an enclosing function) and referenced *unshadowed* inside a
+  nested function won't be recognized as safe there, and is rejected as `call-unresolved` even
+  though the real code would run fine. This only affects plain-variable aliases (of a safe
+  builtin, a self-attribute, etc.) — calling your own `def`/`class` by name works from any nesting
+  level already, since that's resolved via a whole-file scan (`private_defs`/`public_defs`), not
+  scope-based tracking. Reassign the alias in the scope that needs it, or route it through a
+  public wrapper, instead.
+
 ---
 
 ## What verification does not stop
