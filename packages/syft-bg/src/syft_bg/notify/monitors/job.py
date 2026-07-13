@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from syft_job.config import SyftJobConfig
-from syft_job.manager import JobManager, JobRef
+from syft_job.manager import JobRef, JobStorage
 from syft_job.models import JobState, JobStatus, JobSubmissionMetadata
 
 from syft_bg.common.monitor import Monitor
@@ -30,7 +30,7 @@ class JobMonitor(Monitor):
         self.job_config = SyftJobConfig.from_syftbox_folder(
             str(self.syftbox_root), do_email
         )
-        self.job_manager = JobManager(config=self.job_config)
+        self.job_manager = JobStorage(config=self.job_config)
 
     def _check_all_entities(self):
         self.process_local_status_changes()
@@ -83,7 +83,7 @@ class JobMonitor(Monitor):
             metadata = self._load_job_metadata(ref)
             if not metadata:
                 continue
-            self.state.mark_notified(metadata.name, "new")
+            self.state.mark_notified(ref.job_name, "new")
             review_state = self._load_review_state(ref)
             if review_state:
                 if review_state.status in (

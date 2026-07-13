@@ -16,6 +16,10 @@ from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata
 
 
+class JobStateNotFoundError(FileNotFoundError):
+    """Raised when a job's state.yaml does not exist yet."""
+
+
 @dataclass(frozen=True)
 class JobRef:
     """One job on disk: who owns it, who submitted it, and its protocol layout."""
@@ -26,7 +30,7 @@ class JobRef:
     protocol_version: str  # "0" (no path segment) or "1"+ (v<n> segment)
 
 
-class JobManager:
+class JobStorage:
     """All JobState/JobSubmissionMetadata filesystem IO and path resolution.
 
     Reads upgrade objects to the latest registered version in memory; writes
@@ -176,19 +180,26 @@ class JobManager:
     # -- model IO ---------------------------------------------------------------
     def read_submission(self, ref: JobRef) -> JobSubmissionMetadata:
         """Load a submission's config.yaml, upgraded to the latest version."""
-        extra = {"submitted_by": ref.ds_email, "datasite_email": ref.datasite_email}
+        extra = {
+            "submitted_by": ref.ds_email,
+            "datasite_email": ref.datasite_email,
+            "name": ref.job_name,
+        }
         path = self.submission_dir(ref) / "config.yaml"
         return self._load_upgraded(path, "JobSubmissionMetadata", extra)
 
-    def read_state(self, ref: JobRef) -> Optional[JobState]:
-        """Load a job's state.yaml, upgraded to the latest version; None if absent."""
+    def read_state(self, ref: JobRef) -> JobState:
+        """Load a job's state.yaml, upgraded to the latest version.
+
+        Raises JobStateNotFoundError if the state.yaml does not exist.
+        """
         path = self.review_dir(ref) / "state.yaml"
         if not path.exists():
-            return None
+            raise JobStateNotFoundError(f"Job state not found for {ref.job_name}")
         return self._load_upgraded(path, "JobState", {})
 
     def write_submission(self, ref: JobRef, metadata: JobSubmissionMetadata) -> Path:
-        """Write config.yaml in the version/format the datasite owner can read."""
+        """Write config.yaml in the version/format the peer can read."""
         path = self.submission_dir(ref) / "config.yaml"
         self._write_in_target_version(
             path, metadata, ref, reader_email=ref.datasite_email
@@ -196,7 +207,7 @@ class JobManager:
         return path
 
     def write_state(self, ref: JobRef, state: JobState) -> Path:
-        """Write state.yaml in the version/format the submitter can read."""
+        """Write state.yaml in the version/format the peer can read."""
         path = self.review_dir(ref) / "state.yaml"
         self._write_in_target_version(path, state, ref, reader_email=ref.ds_email)
         return path

@@ -13,8 +13,7 @@ from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 from .config import SyftJobConfig
 from .install_source import get_syft_client_install_source
 from .job import JobInfo, JobsList
-from .manager import JobManager, JobRef
-from .migrations.registry import JOB_PROTOCOL_VERSION
+from .manager import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
 
 # Python version used when creating virtual environments for job execution
@@ -76,7 +75,7 @@ class JobClient(BaseJobClient):
         ] = {}  # do_email -> syft-client install source (local path, git URL, or "syft-client==X.Y.Z") advertised by that DO in their VersionInfo
         # All model reads/writes and path resolution go through the manager;
         # peer_schemas (peer email -> job ProtocolSchema) is filled by syft-client.
-        self.manager = JobManager(config=config, peer_schemas=peer_schemas)
+        self.manager = JobStorage(config=config, peer_schemas=peer_schemas)
 
         # Validate that user_email exists in SyftBox root
         self._validate_user_email()
@@ -162,7 +161,7 @@ class JobClient(BaseJobClient):
 
             random_id = str(uuid4())[0:8]
             job_name = f"Job - {random_id}"
-        JobManager.validate_job_name(job_name)
+        JobStorage.validate_job_name(job_name)
 
         # Ensure user directory exists (create if it doesn't)
         user_dir = self.config.get_user_dir(user)
@@ -403,7 +402,7 @@ python {entrypoint_path}
 
             random_id = str(uuid4())[0:8]
             job_name = f"Job - {random_id}"
-        JobManager.validate_job_name(job_name)
+        JobStorage.validate_job_name(job_name)
 
         # Validate code path and entrypoint
         code_path_resolved, is_folder_submission, entrypoint = (
@@ -507,7 +506,7 @@ python {entrypoint_path}
         self,
         ds_email: str,
         job_name: str,
-        protocol_version: str = JOB_PROTOCOL_VERSION,
+        protocol_version: str,
     ) -> JobState:
         """Validate an incoming job and create initial state in review/.
 
@@ -579,9 +578,10 @@ python {entrypoint_path}
             for ref in self.manager.iter_submission_refs(datasite_owner_email):
                 try:
                     config = self.manager.read_submission(ref)
-                    state = self.manager.read_state(ref) or JobState(
-                        status=JobStatus.RECEIVED
-                    )
+                    try:
+                        state = self.manager.read_state(ref)
+                    except FileNotFoundError:
+                        state = JobState(status=JobStatus.RECEIVED)
                     jobs.append(
                         JobInfo(
                             job_metadata=config,
@@ -591,7 +591,10 @@ python {entrypoint_path}
                             ref=ref,
                         )
                     )
-                except Exception:
+                except Exception as e:
+                    print(
+                        f"Error listing job {ref.job_name} from {ref.datasite_email}: {e}"
+                    )
                     continue
 
         return jobs

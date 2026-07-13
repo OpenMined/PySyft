@@ -12,7 +12,7 @@ from .client import JobClient
 from .job import JobInfo
 from . import __version__
 from .config import SyftJobConfig
-from .manager import JobManager, JobRef
+from .manager import JobRef, JobStorage, JobStateNotFoundError
 from .models import JobState, JobStatus, JobSubmissionMetadata
 
 # Default timeout for job execution (10 minutes)
@@ -64,7 +64,7 @@ class SyftJobRunner:
         """
         self.config = config
         self.poll_interval = poll_interval
-        self.manager = JobManager(config=config)
+        self.manager = JobStorage(config=config)
         self.known_jobs: Set[JobRef] = set()
 
         # Ensure directory structure exists for the root user
@@ -90,7 +90,7 @@ class SyftJobRunner:
         for ref in self.manager.iter_review_refs(self.config.current_user_email):
             try:
                 state = self.manager.read_state(ref)
-            except Exception:
+            except JobStateNotFoundError:
                 continue
             if state is not None and state.status == status:
                 jobs.append(ref)
@@ -158,9 +158,7 @@ class SyftJobRunner:
             return
 
         # Count jobs before deletion
-        total_jobs = len(list(self.manager.iter_submission_refs(root_email))) + len(
-            list(self.manager.iter_review_refs(root_email))
-        )
+        total_jobs = len(list(self.manager._iter_submission_refs(root_email)))
 
         if total_jobs == 0:
             print(" No jobs found to delete")
@@ -494,8 +492,10 @@ class SyftJobRunner:
             return None
 
     def _get_job_state(self, ref: JobRef) -> JobState:
-        state = self.manager.read_state(ref)
-        return state if state is not None else JobState(status=JobStatus.RECEIVED)
+        try:
+            return self.manager.read_state(ref)
+        except JobStateNotFoundError:
+            return JobState(status=JobStatus.RECEIVED)
 
     def _get_job_info(self, ref: JobRef) -> JobInfo:
         """Create a JobInfo for a job ref."""
