@@ -34,7 +34,6 @@ differs in a few ways:
   must be written in the **public** region — where it can be reviewed directly — and
   may be **called by** the private part.
 
-
 ## Usage
 
 ```python
@@ -59,7 +58,6 @@ If syft-restrict was successfully executed on the true original file, the obfusc
 
 Pass `strict=False` to `run` to get a `RunResult` with `.ok` / `.violations`
 instead of an exception.
-
 
 ## Documentation
 

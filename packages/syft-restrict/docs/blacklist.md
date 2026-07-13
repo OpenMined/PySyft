@@ -3,34 +3,33 @@
 This document lists everything the checker rejects in the **private** region.
 
 - The model is **default-deny**. Tables below name common rejections with clear
-codes.
+  codes.
 - Anything not listed as allowed in [verify.md](verify.md) is also
-rejected.
+  rejected.
 - Each entry includes the **violation code** returned by `verify()`.
-
 
 ---
 
 ## Index of violation codes
 
-| Code               | Meaning                                                                  |
-| ------------------ | ------------------------------------------------------------------------ |
-| `node-type`        | Syntax not on the allow list (walrus, `match`, …)                        |
-| `banned-name`      | Reference or call to a banned builtin (`open`, `eval`, …)                |
-| `banned-construct` | Forbidden statement/expression form (import, `with`, f-string, …)        |
-| `call-not-allowed` | Library path not allow-listed (or hit by `disallow_functions`)           |
-| `call-unresolved`  | Call target not provably safe                                            |
-| `method-on-value`  | Named method on an unknown value (`x.reshape`)                           |
-| `attr-on-value`    | Attribute read/write on an unknown value, or bad `self` chain            |
-| `attr-not-allowed` | Library attribute path not allow-listed                                  |
-| `dunder-attr`      | Dunder attribute (`.__class__`, …)                                       |
-| `dunder-name`      | Bare dunder name (`__class__`)                                           |
-| `dunder-def`       | Defining a forbidden magic method                                        |
-| `decorator`        | Decorator not on the allow list                                          |
-| `class-keyword`    | e.g. `metaclass=`                                                        |
-| `class-base`       | Base class not allow-listed                                              |
-| `reserved-name`    | Rebinding a trusted name (`jnp`, public wrapper, private def, `self`, …) |
-| `operator-disabled` | Operator used without enabling its group in `allow_operators`             |
+| Code                | Meaning                                                                  |
+| ------------------- | ------------------------------------------------------------------------ |
+| `node-type`         | Syntax not on the allow list (walrus, `match`, …)                        |
+| `banned-name`       | Reference or call to a banned builtin (`open`, `eval`, …)                |
+| `banned-construct`  | Forbidden statement/expression form (import, `with`, f-string, …)        |
+| `call-not-allowed`  | Library path not allow-listed (or hit by `disallow_functions`)           |
+| `call-unresolved`   | Call target not provably safe                                            |
+| `method-on-value`   | Named method on an unknown value (`x.reshape`)                           |
+| `attr-on-value`     | Attribute read/write on an unknown value, or bad `self` chain            |
+| `attr-not-allowed`  | Library attribute path not allow-listed                                  |
+| `dunder-attr`       | Dunder attribute (`.__class__`, …)                                       |
+| `dunder-name`       | Bare dunder name (`__class__`)                                           |
+| `dunder-def`        | Defining a forbidden magic method                                        |
+| `decorator`         | Decorator not on the allow list                                          |
+| `class-keyword`     | e.g. `metaclass=`                                                        |
+| `class-base`        | Base class not allow-listed                                              |
+| `reserved-name`     | Rebinding a trusted name (`jnp`, public wrapper, private def, `self`, …) |
+| `operator-disabled` | Operator used without enabling its group in `allow_operators`            |
 
 ---
 
@@ -114,8 +113,7 @@ Same idea as calling dunders on a value (`x.__repr__()`), spelled as a bare call
 - `format`
 - `bytes`
 
-> [!WARNING]
-> `bytes(x)` can dump raw buffer contents. `print` is a stdout channel. F-strings are banned
+> [!WARNING] > `bytes(x)` can dump raw buffer contents. `print` is a stdout channel. F-strings are banned
 > separately as constructs (above), including with no `{...}` at all.
 
 ```python
@@ -155,8 +153,7 @@ def apply(fn, x):
 
 ```
 
-> [!IMPORTANT]
-> **`call-unresolved` is default-deny for callees.** It catches dangerous callables that never
+> [!IMPORTANT] > **`call-unresolved` is default-deny for callees.** It catches dangerous callables that never
 > mention a banned builtin by name (parameters, opaque locals, `d["k"](x)`).
 
 Only single-level `self.<name>` / `cls.<name>` is special-cased. Rules for when `self.x(...)` is
@@ -173,7 +170,7 @@ safe are in [verify.md](verify.md#self-and-flax-style-modules).
 | Bad base class             | `class M(SomeLib)`, `class M(object)` | `class-base`    |
 | Forbidden magic method     | `def __getattr__`, `def __reduce__`   | `dunder-def`    |
 
-Allowed hooks only: `setup`, `__call__`, `__post_init__`.  
+Allowed hooks only: `setup`, `__call__`, `__post_init__`.
 Allowed decorators only: `nn.compact`, `jax.jit`, `jax.named_scope`, `flax.linen.compact`.
 
 ```python
@@ -201,7 +198,7 @@ Rebinding a name the checker trusts reports **`reserved-name`**.
 | Safe builtins        | `list = None`                                 | Bare calls trust `list(...)` by name   |
 | `self` / `cls`       | `self = x`, nested `def f(self):`             | `self.*` is trusted by spelling        |
 
-Applies to assignment, `for` / comprehension targets, parameters, and nested defs.  
+Applies to assignment, `for` / comprehension targets, parameters, and nested defs.
 Private def names are also protected against rebind in **public** glue between private ranges.
 
 ```python

@@ -88,8 +88,7 @@ These shapes are fine in private code **when** nested pieces also obey the rules
 | Control flow      | `if`, `for`, `while`, `break`, `continue`, `pass`, ternary |
 | Operators         | only if the matching **bundle** is enabled (below)         |
 
-> [!NOTE]
-> **Not** always allowed: imports, `with`, `try`/`raise`, `async`, generators, `assert`, `del`,
+> [!NOTE] > **Not** always allowed: imports, `with`, `try`/`raise`, `async`, generators, `assert`, `del`,
 > f-strings, walrus `:=`, `match`/`case`. Those are listed under [blacklist.md](blacklist.md).
 
 ---
@@ -235,7 +234,7 @@ class Net(nn.Module):              # base must be allow-listed (e.g. flax.linen.
 > [!TIP]
 > Put dangerous or opaque wiring in **public** `setup` if the data owner should read it; keep
 > private `__call__` as pure math.
-> 
+>
 > The checker still uses public `setup` assignments when deciding
 > whether `self.<name>(...)` is safe.
 
@@ -244,7 +243,7 @@ class Net(nn.Module):              # base must be allow-listed (e.g. flax.linen.
 | Allowed                                                                      | Not allowed                                           |
 | ---------------------------------------------------------------------------- | ----------------------------------------------------- |
 | Bases that resolve to an allow-listed path (e.g. `nn.Module`)                | `object`, random private bases, non-allow-listed libs |
-| Decorators: `nn.compact`, `jax.jit`, `jax.named_scope`, `flax.linen.compact` | `@property`, `@staticmethod`, arbitrary functions       |
+| Decorators: `nn.compact`, `jax.jit`, `jax.named_scope`, `flax.linen.compact` | `@property`, `@staticmethod`, arbitrary functions     |
 | Defining `setup`, `__call__`, `__post_init__`                                | `__getattr__`, `__reduce__`, other magic methods      |
 | —                                                                            | `metaclass=` / other class keywords                   |
 
