@@ -14,7 +14,7 @@ from .job_repr import (
     jobs_list_str,
 )
 from .job_stdout import StdoutViewer
-from .manager import JobRef
+from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
 
 if TYPE_CHECKING:

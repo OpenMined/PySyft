@@ -12,7 +12,7 @@ from .client import JobClient
 from .job import JobInfo
 from . import __version__
 from .config import SyftJobConfig
-from .manager import JobRef, JobStorage, JobStateNotFoundError
+from .job_storage import JobRef, JobStorage, JobStateNotFoundError
 from .models import JobState, JobStatus, JobSubmissionMetadata
 
 # Default timeout for job execution (10 minutes)

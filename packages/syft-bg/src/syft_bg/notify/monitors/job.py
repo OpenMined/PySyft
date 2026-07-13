@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from syft_job.config import SyftJobConfig
-from syft_job.manager import JobRef, JobStorage
+from syft_job.job_storage import JobRef, JobStorage
 from syft_job.models import JobState, JobStatus, JobSubmissionMetadata
 
 from syft_bg.common.monitor import Monitor

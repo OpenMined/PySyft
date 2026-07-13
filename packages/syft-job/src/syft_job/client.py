@@ -13,7 +13,7 @@ from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 from .config import SyftJobConfig
 from .install_source import get_syft_client_install_source
 from .job import JobInfo, JobsList
-from .manager import JobRef, JobStorage
+from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
 
 # Python version used when creating virtual environments for job execution
