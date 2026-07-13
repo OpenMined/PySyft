@@ -30,7 +30,9 @@ Every file has two regions:
 | **Public**  | Imports, data loading, wrappers the data owner can read | No (human review) |
 | **Private** | Hidden model math (`setup` / `__call__`, layers)        | Yes               |
 
-You mark private code with 1-based line ranges (the union of `obfuscate` and `hide` in `run()`).
+You mark private code either with `# syft-restrict: ...` comments in the source, or with explicit
+1-based line ranges passed as `obfuscate`/`hide` to `run()` (the private region is their union
+either way).
 
 ```python
 # public — data owner reads this
@@ -42,14 +44,56 @@ def transpose(x):
         raise TypeError
     return x.T
 
-# private — checked + obfuscated
+# syft-restrict: obfuscate-start
 class Net(nn.Module):
     def setup(self):
         self.dense = nn.Dense(8)
 
     def __call__(self, x):
         return self.dense(transpose(x))
+# syft-restrict: obfuscate-end
 ```
+
+### Marker syntax
+
+| Form                     | Example                                             | Marks                        |
+| ------------------------ | --------------------------------------------------- | ---------------------------- |
+| `obfuscate-start`/`-end` | `# syft-restrict: obfuscate-start` / `-end`         | a block, identifiers renamed |
+| `hide-start`/`-end`      | `# syft-restrict: hide-start` / `-end`              | a block, whole lines blanked |
+| Single-line `obfuscate`  | `MODEL_ID = "gemma-2b"  # syft-restrict: obfuscate` | that one line only           |
+| Single-line `hide`       | `SALT = 1  # syft-restrict: hide`                   | that one line only           |
+
+The marker comment lines themselves are excluded from the resolved range. They pass through to
+the obfuscated output untouched, so a reader can still see where the private region was even
+though its contents were renamed or blanked.
+
+A `hide` block (or single-line `hide` marker) may nest inside an open `obfuscate` block — hide is
+strictly stronger, so carving a stricter sub-region out of a looser one is safe:
+
+```python
+# syft-restrict: obfuscate-start
+class Net(nn.Module):
+    def setup(self):
+    # syft-restrict: hide-start
+        self.dense = nn.Dense(8)
+    # syft-restrict: hide-end
+# syft-restrict: obfuscate-end
+```
+
+The reverse isn't allowed (`obfuscate` can't nest inside `hide`), and neither kind nests inside
+itself. Any of these raise `MarkerError`:
+
+| Situation                                                       | Result                                                           |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `start` with no matching `end` (or vice versa)                  | `MarkerError`, names the line                                    |
+| `hide-end`/`obfuscate-end` closing the wrong kind               | `MarkerError` (mismatched kind)                                  |
+| `obfuscate` nested inside `hide`                                | `MarkerError`                                                    |
+| `obfuscate` nested inside `obfuscate` (or `hide` inside `hide`) | `MarkerError`                                                    |
+| A block with nothing between its start/end                      | `MarkerError` (empty block)                                      |
+| No `# syft-restrict: ...` marker anywhere in the file           | `MarkerError`, unless `obfuscate=`/`hide=` are passed explicitly |
+
+`run()` scans for these markers automatically whenever `obfuscate` and `hide` are both omitted;
+passing either explicitly (even `[]`) skips marker scanning entirely and uses your ranges as-is.
 
 > [!WARNING]
 > Private code may **call** public wrappers by name. Public code is trusted, not verified.
@@ -59,9 +103,9 @@ class Net(nn.Module):
 
 ---
 
-## What the checker does
+## What the verifier does
 
-The checker walks the AST of the private region and verifies each construct against the allow list.
+The verifier walks the AST of the private region and verifies each construct against the allow list.
 
 1. **Parse** the whole file.
 2. **Record imports** from the public region (`import jax.numpy as jnp` → `jnp` means `jax.numpy`).
@@ -120,8 +164,9 @@ jnp.save(path, x)        # → jax.numpy.save    — fails if in disallow_functi
 
 ### `allow_operators` — operator bundles on a value
 
-Named methods on an unknown value (`x.reshape(...)`, `x.T`) are never allowed: the checker cannot
-prove what they do. Instead you enable **language operators** as bundles:
+Named methods on an unknown value (`x.reshape(...)`, `x.T`) are never allowed:
+the verifier cannot prove what they do. Instead you enable **language
+operators** as bundles:
 
 | Bundle       | Operators                           | Example         |
 | ------------ | ----------------------------------- | --------------- |
@@ -148,7 +193,7 @@ Disabled groups report `operator-disabled`.
 
 ## What you may call
 
-A call is allowed only if the checker can **prove** the callee. Otherwise it reports
+A call is allowed only if the verifier can **prove** the callee. Otherwise it reports
 `call-unresolved` (even when nothing looks “banned”).
 
 | Allowed callee                                             | Example                              |
@@ -205,7 +250,7 @@ Because call sites trust some names by spelling alone:
 | `self` / `cls`       | only as the real first parameter of a method |
 
 Rebind is rejected even in **public** glue if the name is a private def, otherwise a public
-`helper = evil` between private chunks could be used to evade the checker.
+`helper = evil` between private chunks could be used to evade the verifier.
 
 ---
 
@@ -238,7 +283,7 @@ class Net(nn.Module):              # base must be allow-listed (e.g. flax.linen.
 > Put dangerous or opaque wiring in **public** `setup` if the data owner should read it; keep
 > private `__call__` as pure math.
 >
-> The checker still uses public `setup` assignments when deciding
+> The verifier still uses public `setup` assignments when deciding
 > whether `self.<name>(...)` is safe.
 
 ### Classes and hooks

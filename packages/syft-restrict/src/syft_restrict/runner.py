@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from .astutil import normalize_ranges, scan_file
 from .errors import PolicyViolation
+from .markers import parse_markers
 from .obfuscator import (
     obfuscate as _obfuscate,
 )  # aliased: `obfuscate` is also a run() kwarg
@@ -44,7 +45,9 @@ def run(
     Args:
         path: the inference source file.
         obfuscate: ``[start, end]`` 1-based inclusive line ranges to *obfuscate* (identifiers renamed,
-            constants blanked, structure preserved).
+            constants blanked, structure preserved). When both ``obfuscate`` and ``hide`` are omitted,
+            ranges are instead resolved from ``# syft-restrict: ...`` comment markers in the source
+            (see ``markers.parse_markers``).
         hide: ``[start, end]`` 1-based inclusive line ranges to *hide* (whole line replaced with a
             ``■■■■■■■■`` marker, indentation kept).
         allow_functions: list of dotted-path globs callable by name (e.g. ``["jax.*", "flax.linen.*"]``).
@@ -61,8 +64,11 @@ def run(
     source = path.read_text()
     policy = Policy.parse(allow_functions, allow_operators, disallow_functions)
 
-    obfuscate_ranges = obfuscate or []
-    hide_ranges = hide or []
+    if obfuscate is None and hide is None:
+        obfuscate_ranges, hide_ranges = parse_markers(source)
+    else:
+        obfuscate_ranges = obfuscate or []
+        hide_ranges = hide or []
     private = [*obfuscate_ranges, *hide_ranges]  # union = the verified region
 
     result = verify(source, private, policy)

@@ -9,7 +9,8 @@ from __future__ import annotations
 
 __version__ = "0.1.0"
 
-from .errors import PolicyViolation, RestrictError
+from .errors import MarkerError, PolicyViolation, RestrictError
+from .markers import parse_markers
 from .obfuscator import obfuscate
 from .policy import Policy
 from .runner import RunResult, run
@@ -19,11 +20,13 @@ __all__ = [
     "run",
     "verify",
     "obfuscate",
+    "parse_markers",
     "Policy",
     "RunResult",
     "VerifyResult",
     "Violation",
     "PolicyViolation",
+    "MarkerError",
     "RestrictError",
     "__version__",
 ]
