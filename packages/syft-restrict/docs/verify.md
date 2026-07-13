@@ -88,8 +88,11 @@ These shapes are fine in private code **when** nested pieces also obey the rules
 | Control flow      | `if`, `for`, `while`, `break`, `continue`, `pass`, ternary |
 | Operators         | only if the matching **bundle** is enabled (below)         |
 
-> [!NOTE] > **Not** always allowed: imports, `with`, `try`/`raise`, `async`, generators, `assert`, `del`,
-> f-strings, walrus `:=`, `match`/`case`. Those are listed under [blacklist.md](blacklist.md).
+> [!NOTE]
+>
+> **Never** allowed: imports, `with`, `try`/`raise`, `async`, generators,
+> `assert`, `del`, f-strings, walrus `:=`, `match`/`case`. Those are listed
+> under [blacklist.md](blacklist.md).
 
 ---
 
