@@ -14,18 +14,18 @@ constructs in a **private** region, typically the model logic that must be kept 
 
 Given that split, `syft-restrict` executes the following two steps:
 
-- **The verifier** statically walks the private region and analyses it against a default-deny
+- **The verifier** statically walks the private region and analyzes it against a default-deny
   policy. Every construct must be explicitly allowed, or verification fails
   and reports each offending line.
-- **The obfuscator** runs after a clean verify. It creates an obfuscated copy rewriting the private
-  region -- renaming identifiers, blanking constants, replacing lines with `■■■■■■■■` -- so the logic can't be read
+- **The obfuscator** runs after a clean verify. It creates an obfuscated copy by rewriting the private
+  region — renaming identifiers, blanking constants, replacing lines with `■■■■■■■■` — so the logic can't be read
   back out, while the public region is copied through untouched.
 
 The **verifier** is inspired by
 [**RestrictedPython**](https://github.com/zopefoundation/RestrictedPython), but
 differs in a few ways:
 
-- **It analyzes, it doesn't run.** It never executes the source. Only the static checks decide pass/fail.
+- **It analyzes — it doesn't run.** It never executes the source. Only the static checks decide pass/fail.
 - The public code may **import allowlisted libraries** and call into them.
   Imports are not allowed in private code, and any library call must be
   **explicitly allow-listed**.
@@ -55,7 +55,7 @@ This command reads
 **[examples/gemma_inference.py](examples/gemma_inference.py)** and generates
 **[examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py)**.
 
-If syft-restrict was succesfully executed on the true original file, the obfuscated file can be safely shared without exposing the private section.
+If syft-restrict was successfully executed on the true original file, the obfuscated file can be safely shared without exposing the private section.
 
 Pass `strict=False` to `run` to get a `RunResult` with `.ok` / `.violations`
 instead of an exception.
