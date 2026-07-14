@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from syft_job.config import SyftJobConfig
+from syft_job.job_storage import JobRef, JobStorage
 from syft_job.models import JobState, JobStatus, JobSubmissionMetadata
 
 from syft_bg.common.monitor import Monitor
@@ -29,28 +30,20 @@ class JobMonitor(Monitor):
         self.job_config = SyftJobConfig.from_syftbox_folder(
             str(self.syftbox_root), do_email
         )
+        self.job_manager = JobStorage(config=self.job_config)
 
     def _check_all_entities(self):
         self.process_local_status_changes()
 
     def process_local_status_changes(self):
-        inbox_dir = self.job_config.get_all_submissions_dir(self.do_email)
-        if not inbox_dir.exists():
-            return
+        for ref in self.job_manager.iter_submission_refs(self.do_email):
+            try:
+                self._maybe_process_job(ref)
+            except Exception as e:
+                print(f"[JobMonitor] Error checking job {ref.job_name}: {e}")
 
-        for ds_dir in inbox_dir.iterdir():
-            if not ds_dir.is_dir():
-                continue
-            for job_path in ds_dir.iterdir():
-                if not job_path.is_dir():
-                    continue
-                try:
-                    self._maybe_process_job(job_path)
-                except Exception as e:
-                    print(f"[JobMonitor] Error checking job {job_path.name}: {e}")
-
-    def _maybe_process_job(self, job_path: Path):
-        metadata = self._load_job_metadata(job_path)
+    def _maybe_process_job(self, ref: JobRef):
+        metadata = self._load_job_metadata(ref)
         if not metadata:
             return
 
@@ -62,7 +55,7 @@ class JobMonitor(Monitor):
             if success:
                 print(f"[JobMonitor] Sent new job notification: {job_name}")
 
-        review_state = self._load_review_state(ds_email, job_name)
+        review_state = self._load_review_state(ref)
 
         if review_state and review_state.status in (
             JobStatus.APPROVED,
@@ -85,61 +78,40 @@ class JobMonitor(Monitor):
 
     def seed_existing_jobs(self):
         """On fresh state, mark all existing jobs so we don't re-notify old jobs."""
-        inbox_dir = self.job_config.get_all_submissions_dir(self.do_email)
-        if not inbox_dir.exists():
-            return
-
         count = 0
-        for ds_dir in inbox_dir.iterdir():
-            if not ds_dir.is_dir():
+        for ref in self.job_manager.iter_submission_refs(self.do_email):
+            metadata = self._load_job_metadata(ref)
+            if not metadata:
                 continue
-            for job_path in ds_dir.iterdir():
-                if not job_path.is_dir():
-                    continue
-                metadata = self._load_job_metadata(job_path)
-                if not metadata:
-                    continue
-                self.state.mark_notified(metadata.name, "new")
-                review_state = self._load_review_state(
-                    metadata.submitted_by, metadata.name
-                )
-                if review_state:
-                    if review_state.status in (
-                        JobStatus.APPROVED,
-                        JobStatus.RUNNING,
-                        JobStatus.DONE,
-                        JobStatus.FAILED,
-                    ):
-                        self.state.mark_notified(metadata.name, "approved")
-                    if review_state.status == JobStatus.DONE:
-                        self.state.mark_notified(metadata.name, "executed")
-                    if review_state.status == JobStatus.FAILED:
-                        self.state.mark_notified(metadata.name, "failed")
-                count += 1
+            self.state.mark_notified(ref.job_name, "new")
+            review_state = self._load_review_state(ref)
+            if review_state:
+                if review_state.status in (
+                    JobStatus.APPROVED,
+                    JobStatus.RUNNING,
+                    JobStatus.DONE,
+                    JobStatus.FAILED,
+                ):
+                    self.state.mark_notified(metadata.name, "approved")
+                if review_state.status == JobStatus.DONE:
+                    self.state.mark_notified(metadata.name, "executed")
+                if review_state.status == JobStatus.FAILED:
+                    self.state.mark_notified(metadata.name, "failed")
+            count += 1
 
         if count:
             print(f"[JobMonitor] Seeded {count} existing jobs on fresh state")
 
-    def _load_review_state(self, ds_email: str, job_name: str) -> Optional[JobState]:
+    def _load_review_state(self, ref: JobRef) -> Optional[JobState]:
         """Load state.yaml from the job's review directory."""
-        review_dir = self.job_config.get_review_job_dir(
-            self.do_email, ds_email, job_name
-        )
-        state_file = review_dir / "state.yaml"
-        if not state_file.exists():
-            return None
         try:
-            return JobState.load(state_file)
+            return self.job_manager.read_state(ref)
         except Exception:
             return None
 
-    def _load_job_metadata(self, job_path: Path) -> Optional[JobSubmissionMetadata]:
-        config_file = job_path / "config.yaml"
-        if not config_file.exists():
-            return None
-
+    def _load_job_metadata(self, ref: JobRef) -> Optional[JobSubmissionMetadata]:
         try:
-            return JobSubmissionMetadata.load(config_file)
+            return self.job_manager.read_submission(ref)
         except Exception as e:
-            print(f"[JobMonitor] Error reading job config {config_file}: {e}")
+            print(f"[JobMonitor] Error reading job config for {ref.job_name}: {e}")
             return None

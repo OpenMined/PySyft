@@ -61,6 +61,7 @@ def _version_registry_with_migrations() -> tuple[MigrationRegistry, type, type]:
         protocol_name="syft-job",
         package_name="syft-job",
         package_version="test-next-release",
+        protocol_version="test-next",
     )
     registry.register_object_version(JobStateV1)
     registry.register_object_version(JobSubmissionMetadataV1)

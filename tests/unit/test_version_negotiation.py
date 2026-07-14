@@ -313,6 +313,7 @@ class TestForceSubmission:
             / "job"
             / "inbox"
             / ds_manager.email
+            / "v1"
             / "test.force.job"
         )
         assert job_dir.exists()

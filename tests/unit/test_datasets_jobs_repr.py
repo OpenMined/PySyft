@@ -141,6 +141,7 @@ def _make_job_info(name: str, status: str = "pending") -> JobInfo:
 
     from syft_job.client import JobClient
     from syft_job.config import SyftJobConfig
+    from syft_job.manager import JobRef
     from syft_job.models import JobState, JobStatus, JobSubmissionMetadata
 
     config = SyftJobConfig(
@@ -155,12 +156,19 @@ def _make_job_info(name: str, status: str = "pending") -> JobInfo:
         submitted_at=datetime.now(timezone.utc),
     )
     state = JobState(status=JobStatus(status))
+    # Identity (owner, submitter, name) comes from the path-derived ref.
+    ref = JobRef(
+        datasite_email="test@test.com",
+        ds_email="ds@test.com",
+        job_name=name,
+        protocol_version="1",
+    )
     return JobInfo(
         job_metadata=submission_config,
         state=state,
-        datasite_owner_email="test@test.com",
         client=client,
         current_user_email="test@test.com",
+        ref=ref,
     )
 
 
