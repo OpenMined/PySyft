@@ -1523,6 +1523,34 @@ class GDriveConnection(SyftboxPlatformConnection):
         folder_id = self._get_collection_folder_id(prefix, tag, content_hash)
         self._batch_add_permissions(folder_id, users)
 
+    def _batch_add_permissions(self, file_id: str, users: list[str]) -> None:
+        """Add reader permissions for multiple users in a single batch request."""
+
+        def callback(request_id, response, exception):
+            if exception:
+                # Ignore "already shared" errors
+                if "alreadyShared" not in str(exception):
+                    raise exception
+
+        BATCH_SIZE = 100
+        for i in range(0, len(users), BATCH_SIZE):
+            chunk = users[i : i + BATCH_SIZE]
+            batch = self.drive_service.new_batch_http_request(callback=callback)
+            for user_email in chunk:
+                permission = {
+                    "type": "user",
+                    "role": "reader",
+                    "emailAddress": user_email,
+                }
+                batch.add(
+                    self.drive_service.permissions().create(
+                        fileId=file_id,
+                        body=permission,
+                        sendNotificationEmail=True,
+                    )
+                )
+            batch_execute_with_retries(batch)
+
     def owner_upload_collection_files(
         self, prefix: str, tag: str, content_hash: str, files: dict[str, bytes]
     ) -> None:
@@ -1703,34 +1731,6 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         self.collection_folder_id_cache[cache_key] = folder_id
         return folder_id
-
-    def _batch_add_permissions(self, file_id: str, users: list[str]) -> None:
-        """Add reader permissions for multiple users in a single batch request."""
-
-        def callback(request_id, response, exception):
-            if exception:
-                # Ignore "already shared" errors
-                if "alreadyShared" not in str(exception):
-                    raise exception
-
-        BATCH_SIZE = 100
-        for i in range(0, len(users), BATCH_SIZE):
-            chunk = users[i : i + BATCH_SIZE]
-            batch = self.drive_service.new_batch_http_request(callback=callback)
-            for user_email in chunk:
-                permission = {
-                    "type": "user",
-                    "role": "reader",
-                    "emailAddress": user_email,
-                }
-                batch.add(
-                    self.drive_service.permissions().create(
-                        fileId=file_id,
-                        body=permission,
-                        sendNotificationEmail=True,
-                    )
-                )
-            batch_execute_with_retries(batch)
 
     def _get_version_file_id(self) -> Optional[str]:
         """Find SYFT_version.json file in /SyftBox folder"""
