@@ -158,7 +158,9 @@ class SyftJobRunner:
             return
 
         # Count jobs before deletion
-        total_jobs = len(list(self.manager._iter_submission_refs(root_email)))
+        total_jobs = len(list(self.manager.iter_submission_refs(root_email))) + len(
+            list(self.manager.iter_review_refs(root_email))
+        )
 
         if total_jobs == 0:
             print(" No jobs found to delete")
