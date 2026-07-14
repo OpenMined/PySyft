@@ -57,7 +57,7 @@ class PeerList:
             try:
                 return next(peer for peer in self._peers if peer.email == index)
             except StopIteration:
-                raise ValueError(f"Peer with email {index} not found")
+                raise ValueError(f"Peer with email {index} not found") from None
         else:
             raise TypeError(f"Invalid index type: {type(index)}")
 
