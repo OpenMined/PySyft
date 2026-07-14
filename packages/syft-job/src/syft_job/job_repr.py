@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from html import escape
 from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
@@ -1168,24 +1169,29 @@ def jobs_list_repr_html(jobs: List["JobInfo"], has_do_role: bool = False) -> str
             if incoming
             else f"submitted to: {job.datasite_owner_email}"
         )
+        safe_name = escape(job.name)
+        safe_target = escape(target)
+        safe_status = escape(status_display(job.status))
+        safe_status_class = escape(job.status, quote=True)
         html += f"""
                         <tr class="{row_class} syftjob-row">
                             <td class="syftjob-td">
                                 <span class="syftjob-index">[{index}]</span>
                             </td>
                             <td class="syftjob-td syftjob-job-name">
-                                {direction} {job.name}
+                                {direction} {safe_name}
                             </td>
                             <td class="syftjob-td">
-                                <span class="syftjob-status-{job.status}">
-                                    {status_display(job.status)}
+                                <span class="syftjob-status-{safe_status_class}">
+                                    {safe_status}
                                 </span>
                             </td>
                             <td class="syftjob-td syftjob-submitted">
-                                {target}
+                                {safe_target}
                             </td>
                         </tr>
                 """
+
     html += """
                     </tbody>
                 </table>

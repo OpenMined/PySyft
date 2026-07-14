@@ -198,7 +198,7 @@ def test_jobs_list_getitem_str_not_found():
 def test_jobs_list_getitem_invalid_type():
     jobs = JobsList([_make_job_info("job-a")])
     with pytest.raises(TypeError):
-        jobs[3.14]  # ty:ignore[invalid-argument-type]
+        jobs[3.14]  # type: ignore[arg-type]
 
 
 # --- JobsList summary rendering (__str__ / _repr_html_ / __repr__) ---
