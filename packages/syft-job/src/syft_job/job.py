@@ -426,9 +426,8 @@ class JobInfo:
 class JobsList:
     """A list-like container for JobInfo objects with nice display."""
 
-    def __init__(self, jobs: List[JobInfo], root_email: str, has_do_role: bool = False):
+    def __init__(self, jobs: List[JobInfo], has_do_role: bool = False):
         self._jobs = jobs
-        self._root_email = root_email
         self._has_do_role = has_do_role
 
     def __getitem__(self, index: int | str) -> JobInfo:
@@ -449,10 +448,10 @@ class JobsList:
         return iter(self._jobs)
 
     def __str__(self) -> str:
-        return jobs_list_str(self._jobs, self._root_email, self._has_do_role)
+        return jobs_list_str(self._jobs, has_do_role=self._has_do_role)
 
     def __repr__(self) -> str:
         return f"JobsList({len(self._jobs)} jobs)"
 
     def _repr_html_(self) -> str:
-        return jobs_list_repr_html(self._jobs, self._root_email, self._has_do_role)
+        return jobs_list_repr_html(self._jobs, has_do_role=self._has_do_role)

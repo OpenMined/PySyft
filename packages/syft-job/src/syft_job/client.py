@@ -662,7 +662,6 @@ python {entrypoint_path}
         sorted_jobs = sorted(current_jobs, key=job_sort_key)
         return JobsList(
             sorted_jobs,
-            self.target_datasite_owner_email,
             has_do_role=self.has_do_role,
         )
 

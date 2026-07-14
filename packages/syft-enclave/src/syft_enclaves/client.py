@@ -128,7 +128,7 @@ class SyftEnclaveClient:
             else j
             for j in jobs_list
         ]
-        return JobsList(wrapped, jobs_list._root_email)
+        return JobsList(wrapped, has_do_role=jobs_list._has_do_role)
 
     def submit_python_job(
         self,
