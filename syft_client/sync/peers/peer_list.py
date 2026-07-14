@@ -98,7 +98,7 @@ class PeerList:
 
     def _repr_html_(self) -> str | None:
         """Used by Jupyter to display the summary; falls back to text elsewhere."""
-        if "SYFT_NO_REPR_HTML" in os.environ:
+        if os.environ.get("SYFT_NO_REPR_HTML", "").lower() in {"1", "true", "yes"}:
             return None
         return f"<pre>{html.escape(self._summary_text())}</pre>"
 
