@@ -1,9 +1,9 @@
 """Tests for SyftDatasetManager and JobsList repr and indexing."""
 
 import pytest
-
 from syft_client.sync.syftbox_manager import SyftboxManager
 from syft_job.job import JobInfo, JobsList
+
 from tests.unit.utils import create_tmp_dataset_files
 
 
@@ -141,7 +141,7 @@ def _make_job_info(name: str, status: str = "pending") -> JobInfo:
 
     from syft_job.client import JobClient
     from syft_job.config import SyftJobConfig
-    from syft_job.manager import JobRef
+    from syft_job.job_ref import JobRef
     from syft_job.models import JobState, JobStatus, JobSubmissionMetadata
 
     config = SyftJobConfig(
