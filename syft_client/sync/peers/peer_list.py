@@ -1,5 +1,6 @@
 import html
 import os
+from collections.abc import Iterator
 
 from syft_client.sync.peers.peer import Peer, PeerState
 
@@ -14,46 +15,50 @@ _STATE_DISPLAY = {
     PeerState.REJECTED: ("❌", "rejected"),
 }
 
+# Display order: accepted first, then outgoing requests, then incoming requests.
+_STATE_ORDER = {
+    PeerState.ACCEPTED: 0,
+    PeerState.REQUESTED_BY_ME: 1,
+    PeerState.REQUESTED_BY_PEER: 2,
+}
 
-class PeerList(list):
+
+def _peer_sort_key(peer: Peer) -> int:
+    return _STATE_ORDER.get(peer.state, 3)
+
+
+class PeerList:
+    """A list-like container for Peer objects with a friendly summary display."""
+
     def __init__(self, peers: list[Peer]):
         """
-        PeerList is a list specifically for Peer objects.
-        Validates that all items are Peer objects and that they are sorted correctly.
+        Validates that all items are Peer objects, then sorts them for display:
+        accepted first, then requested_by_me, then requested_by_peer.
         """
-        super().__init__(peers)
-        # Validate all items are Peer objects
-        for item in self:
+        for item in peers:
             if not isinstance(item, Peer):
                 raise TypeError(
                     f"All items in PeerList must be Peer objects, but got {type(item)}"
                 )
-        # Validate sorting (approved before pending)
-        self._validate_sorting()
+        # ensure consistent ordering for display
+        self._peers: list[Peer] = sorted(peers, key=_peer_sort_key)
 
-    def _validate_sorting(self):
-        """Ensure peers are sorted: accepted, then requested_by_me, then requested_by_peer"""
-        order = {
-            PeerState.ACCEPTED: 0,
-            PeerState.REQUESTED_BY_ME: 1,
-            PeerState.REQUESTED_BY_PEER: 2,
-        }
-        sorted_peers = sorted(self, key=lambda p: order.get(p.state, 3))
-        if list(self) != sorted_peers:
-            raise ValueError(
-                "PeerList must be sorted: accepted first, then requested_by_me, then requested_by_peer"
-            )
+    def __len__(self) -> int:
+        return len(self._peers)
 
-    def __getitem__(self, index: str | int) -> Peer:  # ty:ignore[invalid-method-override]
+    def __iter__(self) -> Iterator[Peer]:
+        return iter(self._peers)
+
+    def __getitem__(self, index: str | int) -> Peer:
         if isinstance(index, int):
-            return super().__getitem__(index)
+            return self._peers[index]
         elif isinstance(index, str):
             try:
-                return next(peer for peer in self if peer.email == index)
+                return next(peer for peer in self._peers if peer.email == index)
             except StopIteration:
                 raise ValueError(f"Peer with email {index} not found")
         else:
-            raise ValueError(f"Invalid index type: {type(index)}")
+            raise TypeError(f"Invalid index type: {type(index)}")
 
     def _summary_text(self) -> str:
         """Clean, human-friendly summary of the peers and what to do next."""

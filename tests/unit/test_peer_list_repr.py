@@ -1,5 +1,6 @@
 """Tests for PeerList's human-friendly summary rendering (__str__/_repr_html_/__repr__)."""
 
+import pytest
 from syft_client.sync.peers.peer import Peer, PeerState
 from syft_client.sync.peers.peer_list import PeerList
 
@@ -83,3 +84,64 @@ def test_repr_html_returns_none_when_disabled(monkeypatch):
 
 def test_repr_preserves_technical_string():
     assert repr(_mixed_peer_list()).startswith("PeerList(")
+
+
+def test_peer_list_len_and_iter():
+    pl = _mixed_peer_list()
+    assert len(pl) == 3
+    assert [p.email for p in pl] == [
+        "do@org.com",
+        "other@org.com",
+        "incoming@org.com",
+    ]
+
+
+def test_peer_list_getitem_int():
+    assert _mixed_peer_list()[0].email == "do@org.com"
+
+
+def test_peer_list_getitem_str():
+    assert _mixed_peer_list()["other@org.com"].state == PeerState.REQUESTED_BY_ME
+
+
+def test_peer_list_getitem_str_not_found():
+    with pytest.raises(ValueError, match="not found"):
+        _mixed_peer_list()["nobody@org.com"]
+
+
+def test_peer_list_getitem_invalid_type():
+    with pytest.raises(TypeError, match="Invalid index type"):
+        _mixed_peer_list()[3.14]  # type: ignore[index]
+
+
+def test_peer_list_rejects_non_peer_items():
+    with pytest.raises(TypeError):
+        PeerList(["not-a-peer"])  # type: ignore[list-item]
+
+
+def test_peer_list_sorts_unsorted_input():
+    # Construction sorts by state (accepted → requested_by_me → requested_by_peer)
+    # rather than requiring the caller to pre-sort.
+    pl = PeerList(
+        [
+            Peer(email="incoming@org.com", state=PeerState.REQUESTED_BY_PEER),
+            Peer(email="connected@org.com", state=PeerState.ACCEPTED),
+            Peer(email="outgoing@org.com", state=PeerState.REQUESTED_BY_ME),
+        ]
+    )
+    assert [p.state for p in pl] == [
+        PeerState.ACCEPTED,
+        PeerState.REQUESTED_BY_ME,
+        PeerState.REQUESTED_BY_PEER,
+    ]
+
+
+def test_peer_list_sort_is_stable_within_a_state():
+    # Peers sharing a state keep their input order (stable sort).
+    pl = PeerList(
+        [
+            Peer(email="second@org.com", state=PeerState.ACCEPTED),
+            Peer(email="first@org.com", state=PeerState.ACCEPTED),
+        ]
+    )
+    assert [p.email for p in pl] == ["second@org.com", "first@org.com"]
