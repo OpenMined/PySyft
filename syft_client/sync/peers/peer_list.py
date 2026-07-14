@@ -30,11 +30,12 @@ def _peer_sort_key(peer: Peer) -> int:
 class PeerList:
     """A list-like container for Peer objects with a friendly summary display."""
 
-    def __init__(self, peers: list[Peer]):
+    def __init__(self, peers: list[Peer] | None = None) -> None:
         """
         Validates that all items are Peer objects, then sorts them for display:
         accepted first, then requested_by_me, then requested_by_peer.
         """
+        peers = peers or []
         for item in peers:
             if not isinstance(item, Peer):
                 raise TypeError(
