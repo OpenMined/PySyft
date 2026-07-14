@@ -35,7 +35,7 @@ class PeerList:
         Validates that all items are Peer objects, then sorts them for display:
         accepted first, then requested_by_me, then requested_by_peer.
         """
-        peers = peers or []
+        peers = list(peers) if peers else []
         for item in peers:
             if not isinstance(item, Peer):
                 raise TypeError(
