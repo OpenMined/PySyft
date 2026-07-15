@@ -1,0 +1,8 @@
+rules:
+- access:
+    admin: []
+    read:
+    - ds@test.org
+    write: []
+  pattern: '**'
+terminal: false

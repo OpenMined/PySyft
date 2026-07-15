@@ -1,0 +1,15 @@
+canonical_name: Dataset
+version: '1'
+uid: fddcb47f-1d56-46d7-bf54-99be3ccc1e24
+created_at: '2026-07-15T12:54:04.399452Z'
+updated_at: '2026-07-15T12:54:04.399619Z'
+name: demo
+summary: demo dataset
+tags:
+- demo
+location: null
+mock_url: syft://do@test.org/public/syft_datasets/v1/demo
+private_url: syft://do@test.org/private/syft_datasets/v1/demo
+readme_url: syft://do@test.org/public/syft_datasets/v1/demo/readme.md
+mock_files_urls:
+- syft://do@test.org/public/syft_datasets/v1/demo/mock.csv
