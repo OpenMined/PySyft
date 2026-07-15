@@ -581,3 +581,35 @@ def test_declared_field_callable_must_not_grant_trust(verify_all):
             return self.fn(x)
     """
     _assert_error_code(verify_all, src, "attr-on-value")
+
+
+def test_duplicate_method_name_in_same_class_must_be_flagged(verify_all):
+    # Python silently keeps only the last definition and discards the rest -- a reviewer (and
+    # _SelfAttrTrust, which reasons about the whole class regardless of the public/private split)
+    # could be looking at a method body that never actually runs.
+    src = """
+    class M:
+        def __call__(self, x):
+            return x
+
+        def __call__(self, x):
+            return x + 1
+    """
+    _assert_error_code(verify_all, src, "duplicate-method")
+
+
+def test_duplicate_method_name_split_across_public_and_private_must_be_flagged(verify_all):
+    # The class statement and one of the two `setup` methods are public; the check must not be
+    # gated on the class itself being in the private range, since methods routinely straddle both.
+    src = """
+    class M:
+        def setup(self):
+            pass
+
+        def setup(self):
+            self.h = object()
+
+        def __call__(self, x):
+            return x
+    """
+    _assert_error_code(verify_all, src, "duplicate-method", private=[[8, 9]])

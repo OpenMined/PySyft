@@ -132,6 +132,7 @@ ViolationCode = Literal[
     "attr-not-allowed",  # _check_attribute
     "dunder-name",  # _check_name
     "operator-disabled",  # _require_bundle
+    "duplicate-method",  # _forbid_duplicate_methods
 ]
 
 
@@ -220,6 +221,12 @@ class _Checker:
             # otherwise reopen the call-target hole.
             self._forbid_private_def_shadow_anywhere(node)
 
+        if isinstance(node, ast.ClassDef):
+            # self.<attr> trust reasoning (_SelfAttrTrust) looks at the whole class regardless
+            # of the public/private split, so a duplicate method name must be caught the same
+            # way, regardless of whether the class statement or either definition is private.
+            self._forbid_duplicate_methods(node)
+
         # push/pop scope stack for ClassDef/FunctionDef/Lambda, so
         # _enclosing_class() works
         is_scope = isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.Lambda))
@@ -266,6 +273,24 @@ class _Checker:
                     "reserved-name",
                     f"{node.name!r} is a private-region class/def and may not be rebound",
                 )
+
+    def _forbid_duplicate_methods(self, node: ast.ClassDef) -> None:
+        """Reject defining the same method name twice directly in one class body.
+
+        Python silently keeps only the last definition and discards the rest -- a reviewer (and
+        _SelfAttrTrust) could be looking at a method body that never actually runs.
+        """
+        seen: set[str] = set()
+        for child in node.body:
+            if isinstance(child, ast.FunctionDef):
+                if child.name in seen:
+                    self.report(
+                        child,
+                        "duplicate-method",
+                        f"{child.name!r} is already defined earlier in this class; Python keeps "
+                        "only the last definition and silently discards the rest",
+                    )
+                seen.add(child.name)
 
     def _enclosing_class(self) -> ast.ClassDef | None:
         """The nearest enclosing ClassDef, skipping any FunctionDef/Lambda frames above it."""
