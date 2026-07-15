@@ -566,3 +566,18 @@ def test_private_def_public_region_rebind_must_not_grant_call(verify_all):
         return helper(x)
     """
     _assert_error_code(verify_all, src, "reserved-name", private=[[1, 2], [7, 8]])
+
+
+def test_declared_field_callable_must_not_grant_trust(verify_all):
+    # A class-level dataclass-style field (`fn: object`, never assigned via self.fn = ... inside
+    # the class) is populated by whatever constructs the instance -- unlike a self.<attr> = value
+    # assignment, there's no expression here for the verifier to vet, so it must not default to
+    # "safe" the way a genuinely inherited base-class attribute would.
+    src = """
+    class M:
+        fn: object
+
+        def __call__(self, x):
+            return self.fn(x)
+    """
+    _assert_error_code(verify_all, src, "attr-on-value")

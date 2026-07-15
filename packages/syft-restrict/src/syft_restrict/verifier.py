@@ -941,9 +941,19 @@ class _SelfAttrTrust:
         # bound via a for-loop/comprehension target: neither is a real pattern
         # either, and unlike a plain `self.x = value` there's no single value
         # expression to vet, so we can't tell what ends up in the attribute.
+        #
+        # So does a class-level dataclass-style field (`name: Type` / `name: Type = default`,
+        # directly in the class body, not `self.name`): its runtime value comes from whatever
+        # constructs the instance, never from anything textually inside the class, so there's no
+        # expression here to vet at all -- unlike a genuinely inherited base-class attribute
+        # (e.g. nn.Module's self.param), which has no class-level annotation of its own.
 
         values: dict[str, list[ast.AST]] = {}
-        disqualified: set[str] = set()
+        disqualified: set[str] = {
+            node.target.id
+            for node in cls_node.body
+            if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
+        }
 
         for node in ast.walk(cls_node):
             # if the node is an assignment, record the value(s) assigned to self.<attr>
