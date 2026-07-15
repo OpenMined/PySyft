@@ -48,8 +48,7 @@ def attention(x):
 MODEL_ID = "gemma-2b"  # syft-restrict: hide
 ```
 
-See [docs/verify.md](docs/verify.md#public-vs-private) for the full marker syntax (single-line
-markers, nesting rules, and error cases).
+*See [docs/verify.md](docs/verify.md#public-vs-private) for the full marker syntax (single-line markers, nesting rules, and error cases).*
 
 Then run:
 

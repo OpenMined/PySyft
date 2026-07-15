@@ -25,10 +25,10 @@ Tests mirror this split:
 
 Every file has two regions:
 
-| Region      | Typical contents                                        | Checked?          |
-| ----------- | ------------------------------------------------------- | ----------------- |
-| **Public**  | Imports, data loading, wrappers the data owner can read | No (human review) |
-| **Private** | Hidden model math (`setup` / `__call__`, layers)        | Yes               |
+| Region      | Typical contents                                        | Checked by syft-restrict |
+| ----------- | ------------------------------------------------------- | ------------------------ |
+| **Public**  | Imports, data loading, wrappers the data owner can read | No (human review)        |
+| **Private** | Hidden model math (`setup` / `__call__`, layers)        | Yes                      |
 
 You mark private code either with `# syft-restrict: ...` comments in the source, or with explicit
 1-based line ranges passed as `obfuscate`/`hide` to `run()` (the private region is their union
@@ -120,7 +120,11 @@ it is rejected. New Python syntax stays blocked until someone reviews it.
 
 ## Always allowed syntax
 
-These shapes are fine in private code **when** nested pieces also obey the rules:
+These constructs are fine in private code **when** nested pieces also obey the
+rules. An allowed outer construct does not grant permission to its inner pieces.
+
+For example, `if` is allowed, but the condition and body must also obey the
+rules. The verifier checks each piece independently.
 
 | Category          | Examples                                                   |
 | ----------------- | ---------------------------------------------------------- |
@@ -140,7 +144,7 @@ These shapes are fine in private code **when** nested pieces also obey the rules
 
 ---
 
-## Per-file knobs
+## Per-file policy configuration
 
 ### `allow_functions` — library paths callable by name
 
@@ -252,6 +256,9 @@ Because call sites trust some names by spelling alone:
 Rebind is rejected even in **public** glue if the name is a private def, otherwise a public
 `helper = evil` between private chunks could be used to evade the verifier.
 
+Ordinary locals may be reassigned freely, but the verifier tracks their source
+and rejects any call to a local that can't be resolved to a safe origin.
+
 ---
 
 ## `self` and Flax-style modules
@@ -288,12 +295,12 @@ class Net(nn.Module):              # base must be allow-listed (e.g. flax.linen.
 
 ### Classes and hooks
 
-| Allowed                                                                      | Not allowed                                           |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------- |
-| Bases that resolve to an allow-listed path (e.g. `nn.Module`)                | `object`, random private bases, non-allow-listed libs |
-| Decorators: `nn.compact`, `jax.jit`, `jax.named_scope`, `flax.linen.compact` | `@property`, `@staticmethod`, arbitrary functions     |
-| Defining `setup`, `__call__`, `__post_init__`                                | `__getattr__`, `__reduce__`, other magic methods      |
-| —                                                                            | `metaclass=` / other class keywords                   |
+| Allowed                                                       | Not allowed                                           |
+| ------------------------------------------------------------- | ----------------------------------------------------- |
+| Bases that resolve to an allow-listed path (e.g. `nn.Module`) | `object`, random private bases, non-allow-listed libs |
+|                                                               | `@property`, `@staticmethod`, arbitrary functions     |
+| Defining `setup`, `__call__`, `__post_init__`                 | `__getattr__`, `__reduce__`, other magic methods      |
+| —                                                             | `metaclass=` / other class keywords                   |
 
 ---
 
@@ -319,9 +326,9 @@ def private_math(w):
 ```
 
 ```python
-# library path (imports public, use private)
+# library path (imports public)
 import jax.numpy as jnp
-# private:
+# private (allowlisted path):
 r = jnp.einsum("ij,jk->ik", a, b)
 ```
 
