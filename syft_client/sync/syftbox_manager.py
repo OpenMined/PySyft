@@ -919,13 +919,13 @@ class SyftboxManager(BaseModelCallbackMixin):
         self.peer_manager.approve_peer_request(
             email_or_peer, verbose=verbose, peer_must_exist=peer_must_exist
         )
-        self._emit_peers_loaded()
         self._post_approve_peer_do(email_or_peer)
 
     def _post_approve_peer_do(self, email_or_peer: str | Peer):
         peer_email = (
             email_or_peer if isinstance(email_or_peer, str) else email_or_peer.email
         )
+        self._emit_peers_loaded()
         self._emit("peer_approved", peer_email)
 
     def _emit_peers_loaded(self) -> None:
