@@ -120,11 +120,15 @@ it is rejected. New Python syntax stays blocked until someone reviews it.
 
 ## Always allowed syntax
 
-These constructs are fine in private code **when** nested pieces also obey the
-rules. An allowed outer construct does not grant permission to its inner pieces.
+These constructs are accepted in private code **when** nested pieces also obey
+the rules. An allowed outer construct does not grant permission to its inner
+pieces. For example, `if` is allowed, but the condition and body must also obey
+the rules. The verifier checks each piece independently.
 
-For example, `if` is allowed, but the condition and body must also obey the
-rules. The verifier checks each piece independently.
+Assignments are allowed, but the target and the value are still checked:
+reassigning a reserved name (`self`, an import alias, a public wrapper) or
+assigning to an attribute on an opaque value (`obj.x = ...`) is rejected, and
+the value is checked like any other expression.
 
 | Category          | Examples                                                   |
 | ----------------- | ---------------------------------------------------------- |

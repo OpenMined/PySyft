@@ -77,7 +77,9 @@ class _MarkerParser:
     """
 
     def __init__(self) -> None:
-        self.stack: list[tuple[str, int]] = []  # open blocks, innermost last: (kind, start_line)
+        self.stack: list[
+            tuple[str, int]
+        ] = []  # open blocks, innermost last: (kind, start_line)
         self._lines: dict[str, list[int]] = {"obfuscate": [], "hide": []}
 
     def feed(self, source: str) -> None:
@@ -99,8 +101,12 @@ class _MarkerParser:
     def resolve(self) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
         """Finalize the scan: raise on a still-open block or a total absence of markers."""
         if self.stack:
-            okind, ostart = self.stack[-1]  # innermost unterminated block, reported first
-            raise MarkerError(f"line {ostart}: '{okind}-start' has no matching '{okind}-end'")
+            okind, ostart = self.stack[
+                -1
+            ]  # innermost unterminated block, reported first
+            raise MarkerError(
+                f"line {ostart}: '{okind}-start' has no matching '{okind}-end'"
+            )
         if not self._lines["obfuscate"] and not self._lines["hide"]:
             raise MarkerError(
                 "no syft-restrict markers found in source; add `# syft-restrict: obfuscate-start` "
@@ -110,9 +116,13 @@ class _MarkerParser:
         return _compact(self._lines["obfuscate"]), _compact(self._lines["hide"])
 
     def _can_nest(self, kind: str) -> bool:
-        return len(self.stack) == 1 and self.stack[0][0] == "obfuscate" and kind == "hide"
+        return (
+            len(self.stack) == 1 and self.stack[0][0] == "obfuscate" and kind == "hide"
+        )
 
-    def _nest_violation(self, kind: str, line: int, *, single_line: bool) -> MarkerError:
+    def _nest_violation(
+        self, kind: str, line: int, *, single_line: bool
+    ) -> MarkerError:
         okind, ostart = self.stack[-1]
         reason = (
             "hide blocks cannot contain nested markers"
@@ -132,7 +142,9 @@ class _MarkerParser:
 
     def _pop(self, kind: str, line: int) -> None:
         if not self.stack:
-            raise MarkerError(f"line {line}: '{kind}-end' has no matching '{kind}-start'")
+            raise MarkerError(
+                f"line {line}: '{kind}-end' has no matching '{kind}-start'"
+            )
         okind, ostart = self.stack[-1]
         if okind != kind:
             hint = "; close the innermost block first" if len(self.stack) > 1 else ""

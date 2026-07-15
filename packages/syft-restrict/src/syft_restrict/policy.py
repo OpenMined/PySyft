@@ -96,7 +96,7 @@ ALLOWED_DUNDER_DEFS: frozenset[str] = frozenset({"__call__", "setup"})
 
 # Names always preserved verbatim by the obfuscator and never treated as opaque values.
 DEFAULT_KEEP: frozenset[str] = frozenset(
-    {"self", "cls", "nn", "Module", "setup", "__call__", "__post_init__"}
+    {"self", "cls", "nn", "Module", "setup", "__call__"}
 )
 
 

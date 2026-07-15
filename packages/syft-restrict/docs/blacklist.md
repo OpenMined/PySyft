@@ -38,17 +38,17 @@ These constructs are banned outright in private code.
 
 Code: **`banned-construct`**.
 
-| Construct             | Example                            | Why                                                    |
-| --------------------- | ---------------------------------- | ------------------------------------------------------ |
-| Import                | `import os`, `from os import path` | Imports belong in public code                          |
-| `with`                | `with open(f) as g: ...`           | Runs enter/exit hooks; often I/O                       |
-| `try` / `raise`       | `try: ... finally: ...`            | Exception tricks / host surfaces                       |
-| `global` / `nonlocal` | `global x`                         | Escape local naming rules                              |
-| `del`                 | `del x`                            | Can remove names the policy relies on                  |
-| `assert`              | `assert cond`                      | Disappears under `python -O`                           |
-| Async                 | `async def`, `await`, …            | Out of scope for pure inference                        |
-| Generators            | `yield`, `yield from`              | Suspended execution                                    |
-| F-strings             | `f"hi"`, `f"{x}"`                  | Interpolation runs formatting with no normal call site |
+| Construct             | Example                             | Why                                                    |
+| --------------------- | ----------------------------------- | ------------------------------------------------------ |
+| Import                | `import os`, `from os import path`  | Imports belong in public code                          |
+| `with`                | `with open(f) as g: ...`            | Runs enter/exit hooks; often I/O                       |
+| `try` / `raise`       | `try: ... finally: ...`             | Exception tricks / host surfaces                       |
+| `global` / `nonlocal` | `global x`                          | Escape local naming rules                              |
+| `del`                 | `del x`                             | Can remove names the policy relies on                  |
+| `assert`              | `assert cond`                       | Disappears under `python -O`                           |
+| Async                 | `async def`, `await`, …             | Out of scope for pure inference                        |
+| Generators            | `yield`, `yield from`               | Suspended execution                                    |
+| F-strings             | `f"hi"`, `f"{x}"`                   | Interpolation runs formatting with no normal call site |
 | Decorators            | `@property`, `@nn.compact`, `@evil` | Run code when the def/class is reached                 |
 
 ```python

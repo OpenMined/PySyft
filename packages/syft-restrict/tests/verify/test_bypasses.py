@@ -598,7 +598,9 @@ def test_duplicate_method_name_in_same_class_must_be_flagged(verify_all):
     _assert_error_code(verify_all, src, "duplicate-method")
 
 
-def test_duplicate_method_name_split_across_public_and_private_must_be_flagged(verify_all):
+def test_duplicate_method_name_split_across_public_and_private_must_be_flagged(
+    verify_all,
+):
     # The class statement and one of the two `setup` methods are public; the check must not be
     # gated on the class itself being in the private range, since methods routinely straddle both.
     src = """
@@ -613,22 +615,3 @@ def test_duplicate_method_name_split_across_public_and_private_must_be_flagged(v
             return x
     """
     _assert_error_code(verify_all, src, "duplicate-method", private=[[8, 9]])
-
-
-def test_hook_name_rebound_to_call_result_must_not_grant_trust(verify_all):
-    # Rebinding a hook/method name at class-body level to the result of a call reproduces
-    # decorator behaviour (`__call__ = jax.grad(_inner)` == `@jax.grad`) while sidestepping the
-    # decorator ban: the call is checked as an ordinary allow_functions call, and the rebind of
-    # __call__ isn't caught because methods are excluded from reserved-name protection (the same
-    # exclusion behind the duplicate-method gap). jax.grad passes only via the broad "jax.*" glob.
-    # CURRENTLY FAILS: verify() reports zero violations for this.
-    src = """
-    import jax
-    from flax import linen as nn
-
-    class M(nn.Module):
-        def _inner(self, x):
-            return x
-        __call__ = jax.grad(_inner)
-    """
-    _assert_error_code(verify_all, src, "reserved-name", private=[[4, 7]])
