@@ -107,8 +107,7 @@ class SyftboxManagerConfig(BaseModel):
             raise ValueError("At least one of has_ds_role or has_do_role must be True")
 
         # No collection specs by default: the generic sync engine knows nothing
-        # about datasets. syft-rds registers its dataset spec at initialization
-        # (see syft_rds.config.DATASET_COLLECTION_SPECS).
+        # about custom collections (eg: datasets or jobs).
         if collection_specs is None:
             collection_specs = []
 

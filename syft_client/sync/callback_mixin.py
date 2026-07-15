@@ -1,5 +1,8 @@
+import logging
 from pydantic import BaseModel
 from typing import Dict, List, Callable
+
+logger = logging.getLogger(__name__)
 
 
 class BaseModelCallbackMixin(BaseModel):
@@ -15,9 +18,18 @@ class BaseModelCallbackMixin(BaseModel):
         self.add_callback(event, callback)
 
     def _emit(self, event: str, *args, **kwargs) -> None:
-        """Fire every callback registered for `event`.
+        """Fire every callback registered for `event`, ISOLATED from each other
+        and from the emitting core.
 
         No-op when nothing is registered, so emitting is always safe.
         """
         for callback in self.callbacks.get(event, []):
-            callback(*args, **kwargs)
+            try:
+                callback(*args, **kwargs)
+            except Exception as e:
+                logger.exception(
+                    "callback for event %r failed (%r) exception: %r",
+                    event,
+                    callback,
+                    e,
+                )
