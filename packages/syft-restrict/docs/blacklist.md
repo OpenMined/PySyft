@@ -25,7 +25,6 @@ This document lists everything the checker rejects in the **private** region.
 | `dunder-attr`       | Dunder attribute (`.__class__`, …)                                       |
 | `dunder-name`       | Bare dunder name (`__class__`)                                           |
 | `dunder-def`        | Defining a forbidden magic method                                        |
-| `decorator`         | Decorator not on the allow list                                          |
 | `class-keyword`     | e.g. `metaclass=`                                                        |
 | `class-base`        | Base class not allow-listed                                              |
 | `reserved-name`     | Rebinding a trusted name (`jnp`, public wrapper, private def, `self`, …) |
@@ -50,6 +49,7 @@ Code: **`banned-construct`**.
 | Async                 | `async def`, `await`, …            | Out of scope for pure inference                        |
 | Generators            | `yield`, `yield from`              | Suspended execution                                    |
 | F-strings             | `f"hi"`, `f"{x}"`                  | Interpolation runs formatting with no normal call site |
+| Decorators            | `@property`, `@nn.compact`, `@evil` | Run code when the def/class is reached                 |
 
 ```python
 # rejected
@@ -57,6 +57,9 @@ import os
 y = f"value={x}"
 with ctx() as g:
     pass
+
+@nn.compact
+def __call__(self, x): ...
 ```
 
 ### Unknown / future syntax
@@ -161,25 +164,20 @@ safe are in [verify.md](verify.md#self-and-flax-style-modules).
 
 ---
 
-## Classes, decorators, definitions
+## Classes and definitions
 
-| What                       | Example                               | Code            |
-| -------------------------- | ------------------------------------- | --------------- |
-| Non-allow-listed decorator | `@evil`, `@property`, `@staticmethod` | `decorator`     |
-| Class keywords             | `class M(nn.Module, metaclass=Meta)`  | `class-keyword` |
-| Bad base class             | `class M(SomeLib)`, `class M(object)` | `class-base`    |
-| Forbidden magic method     | `def __getattr__`, `def __reduce__`   | `dunder-def`    |
+| What                   | Example                               | Code            |
+| ---------------------- | ------------------------------------- | --------------- |
+| Class keywords         | `class M(nn.Module, metaclass=Meta)`  | `class-keyword` |
+| Bad base class         | `class M(SomeLib)`, `class M(object)` | `class-base`    |
+| Forbidden magic method | `def __getattr__`, `def __reduce__`   | `dunder-def`    |
 
-Allowed hooks only: `setup`, `__call__`, `__post_init__`.
-Allowed decorators only: `nn.compact`, `jax.jit`, `jax.named_scope`, `flax.linen.compact`.
+Allowed hooks only: `setup`, `__call__`, `__post_init__`. (Decorators are banned outright as a
+[forbidden construct](#forbidden-constructs).)
 
 ```python
 # rejected
 class M(object):    # class-base
-    @property       # decorator
-    def w(self):
-        return 1
-
     def __getattr__(self, name):    # dunder-def
         return None
 ```

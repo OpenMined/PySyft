@@ -139,7 +139,7 @@ rules. The verifier checks each piece independently.
 > [!NOTE]
 >
 > **Never** allowed: imports, `with`, `try`/`raise`, `async`, generators,
-> `assert`, `del`, f-strings, walrus `:=`, `match`/`case`. Those are listed
+> `assert`, `del`, f-strings, walrus `:=`, `match`/`case`, decorators. Those are listed
 > under [blacklist.md](blacklist.md).
 
 ---
@@ -298,7 +298,7 @@ class Net(nn.Module):              # base must be allow-listed (e.g. flax.linen.
 | Allowed                                                       | Not allowed                                           |
 | ------------------------------------------------------------- | ----------------------------------------------------- |
 | Bases that resolve to an allow-listed path (e.g. `nn.Module`) | `object`, random private bases, non-allow-listed libs |
-|                                                               | `@property`, `@staticmethod`, arbitrary functions     |
+| —                                                             | Any decorator: `@property`, `@staticmethod`, `@nn.compact`, arbitrary functions |
 | Defining `setup`, `__call__`, `__post_init__`                 | `__getattr__`, `__reduce__`, other magic methods      |
 | —                                                             | `metaclass=` / other class keywords                   |
 

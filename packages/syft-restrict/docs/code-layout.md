@@ -5,7 +5,7 @@ Map of `src/syft_restrict/`:
 | Module          | Role                                                                  |
 | --------------- | --------------------------------------------------------------------- |
 | `astutil.py`    | Line ranges, import scan, small syntax helpers. No policy.            |
-| `policy.py`     | Allow lists, safe/banned builtins, decorator/hook lists, `Policy`.    |
+| `policy.py`     | Allow lists, safe/banned builtins, hook list, `Policy`.               |
 | `verifier.py`   | Static checker: walks private lines default-deny, reports violations. |
 | `obfuscator.py` | After a clean verify: rename private identifiers, blank constants.    |
 | `runner.py`     | `run()` — verify → obfuscate → certificate.                           |

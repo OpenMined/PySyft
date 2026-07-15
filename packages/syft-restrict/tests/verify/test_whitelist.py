@@ -216,22 +216,6 @@ def test_self_attr_reassigned_local_alias_is_not_stuck_tainted(verify_all):
 # ── decorators / dunder defs / bases ─────────────────────────────────────────
 
 
-def test_allowed_decorators(policy):
-    """Only the allow-listed decorators may sit above a def/class (imports stay public)."""
-    src = normalize_source("""
-    from flax import linen as nn
-    import jax
-
-    class M:
-        @nn.compact
-        @jax.jit
-        def __call__(self, x):
-            return x
-    """)
-    result = verify(src, [[4, len(src.splitlines())]], policy)
-    assert _ok(result)[0]
-
-
 def test_allowed_dunder_defs(verify_all):
     """``__call__``, ``setup`` and ``__post_init__`` are the only definable hooks."""
     src = """

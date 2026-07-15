@@ -218,7 +218,24 @@ def test_disallowed_dunder_def(verify_all, dunder):
     ],
 )
 def test_disallowed_decorator(verify_all, snippet):
-    assert "decorator" in get_error_codes(verify_all(snippet))
+    assert "banned-construct" in get_error_codes(verify_all(snippet))
+
+
+@pytest.mark.parametrize("decorator", ["nn.compact", "jax.jit"])
+def test_disallowed_decorator_even_when_otherwise_allowed(verify_all, decorator):
+    # Decorators are banned outright, regardless of what they resolve to -- even a decorator that
+    # would otherwise be a perfectly allow-listed call (nn.compact, jax.jit) is still rejected.
+    src = f"""
+    import jax
+    from flax import linen as nn
+
+    class B(nn.Module):
+        @{decorator}
+        def w(self):
+            return 1
+    """
+    result = verify_all(src, private=[[4, len(normalize_source(src).splitlines())]])
+    assert "banned-construct" in get_error_codes(result)
 
 
 def test_class_keyword_metaclass(verify_all):

@@ -90,13 +90,6 @@ SAFE_BUILTIN_CALLS: frozenset[str] = frozenset(
     }
 )
 
-# Decorators allowed above a def/class in the private region (docs/verify.md#allow_functions--paths-callable-by-name).
-# NOTE: `property` (and any descriptor) is deliberately absent — it runs code on a bare attribute
-# access (`block.w`), the same attribute-access-hook class banned for dunder defs, so default-deny
-# rejects it. Pure inference needs only setup/__call__.
-ALLOWED_DECORATORS: frozenset[str] = frozenset(
-    {"nn.compact", "jax.jit", "jax.named_scope", "flax.linen.compact"}
-)
 
 # The only dunder/hook methods a model class may *define* (docs/verify.md#allow_functions--paths-callable-by-name).
 ALLOWED_DUNDER_DEFS: frozenset[str] = frozenset({"__call__", "setup", "__post_init__"})

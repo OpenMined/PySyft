@@ -28,7 +28,6 @@ from .astutil import (
     self_attr_name,
 )
 from .policy import (
-    ALLOWED_DECORATORS,
     ALLOWED_DUNDER_DEFS,
     BANNED_NAMES,
     OPERATOR_BUNDLES,
@@ -116,12 +115,11 @@ _BANNED_NODES: tuple[type[ast.AST], ...] = (
 
 # violation-code registry: every code a check can raise, one line each (docs/blacklist.md)
 ViolationCode = Literal[
-    "banned-construct",  # _enforce (a node type on the permanent deny-list, docs/blacklist.md)
+    "banned-construct",  # _enforce (node type on the permanent deny-list)
     "node-type",  # _enforce (node type outside the always-on allow-list)
     "dunder-def",  # _check_def (defining a magic/hook method)
     "class-keyword",  # _check_class (metaclass= or other class keyword arg)
     "class-base",  # _check_class (non-allow-listed base class)
-    "decorator",  # _check_decorators
     "reserved-name",  # _check_name, _check_arguments_dont_abuse_self_or_cls, _check_reserved_name
     "banned-name",  # _check_call (banned bare call) / _check_name (any other Load reference)
     "call-not-allowed",  # _check_call, _check_call_attribute
@@ -364,6 +362,7 @@ class _Checker:
     def _check_def(self, node: ast.FunctionDef) -> None:
         """Guards against:
 
+        - a decorator running attacker code when the def is reached
         - defining magic/hook methods (__getattr__, __reduce__, …) that Python
           runs automatically without an explicit call
         - shadowing a trusted module alias or public wrapper name with a local
@@ -371,7 +370,7 @@ class _Checker:
 
         """
 
-        # are the function decorators in the list of allowed decorators?
+        # decorators are not allowed in the private region
         self._check_decorators(node)
 
         # is the function name not a reserved name?
@@ -398,10 +397,10 @@ class _Checker:
         """Guards against:
 
         - banned base classes
-        - a class decorator running attacker code when the class is reached
+        - a decorator running attacker code when the class is reached
         - shadowing a trusted module alias with a local class name.
         """
-        # check only allowed decorators
+        # decorators are not allowed in the private region
         self._check_decorators(node)
 
         # is the class name not a reserved name?
@@ -430,24 +429,14 @@ class _Checker:
         return bool(path) and self._resolved_allowed(path)
 
     def _check_decorators(self, node) -> None:
-        """Guards against:
-
-        - a decorator running attacker code when a def/class is reached.
-
-        """
+        """Reject every decorator on a def/class: a decorator runs code the moment the def/class
+        is reached, so it is banned outright in the private region."""
         for dec in node.decorator_list:
-            # resolve the decorator to a dotted name
-            target = dec.func if isinstance(dec, ast.Call) else dec
-            path = dotted_name(target)
-            resolved = self._resolve(path) if path else None
-
-            # then check if it's allow-listed
-            if not (resolved in ALLOWED_DECORATORS or path in ALLOWED_DECORATORS):
-                self.report(
-                    dec,
-                    "decorator",
-                    f"decorator {describe(target)!r} is not allow-listed",
-                )
+            self.report(
+                dec,
+                "banned-construct",
+                "decorators are not allowed in the private region",
+            )
 
     def _check_arguments_dont_abuse_self_or_cls(self, args: ast.arguments) -> None:
         """Guards against:
