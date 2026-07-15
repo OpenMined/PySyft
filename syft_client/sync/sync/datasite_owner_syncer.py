@@ -20,7 +20,7 @@ from syft_client.sync.sync.caches.datasite_owner_cache import (
 )
 from syft_client.sync.connections.connection_router import ConnectionRouter
 from syft_client.sync.sync.caches.datasite_owner_cache import DataSiteOwnerEventCache
-from syft_client.sync.sync.caches.datasite_watcher_cache import CollectionSyncSpec
+from syft_client.sync.sync.collection_spec import CollectionSyncSpec
 from syft_client.sync.callback_mixin import BaseModelCallbackMixin
 from syft_client.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft_client.sync.utils.path_filters import is_normal_syncable_path

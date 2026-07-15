@@ -14,8 +14,8 @@ from pydantic import ConfigDict
 from syft_client.sync.platforms.base_platform import BasePlatform
 from pydantic import BaseModel, PrivateAttr
 from typing import List, Optional, cast
+from syft_client.sync.sync.collection_spec import CollectionSyncSpec
 from syft_client.sync.sync.caches.datasite_watcher_cache import (
-    CollectionSyncSpec,
     DataSiteWatcherCacheConfig,
 )
 from syft_client.sync.sync.caches.datasite_owner_cache import (

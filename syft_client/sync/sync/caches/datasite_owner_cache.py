@@ -90,9 +90,6 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
                 raise ValueError("syftbox_folder is required for non-in-memory cache")
             if config.email is None:
                 raise ValueError("email is required for non-in-memory cache")
-            # collections_folder may be None: it is set only when a collection
-            # spec (e.g. the dataset spec registered by syft-rds) is present.
-            # With no collection specs there are simply no collections to manage.
             syftbox_folder_name = Path(config.syftbox_folder).name
             my_datasite_folder = config.syftbox_folder / config.email
             syftbox_parent = Path(config.syftbox_folder).parent
@@ -171,8 +168,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
         """Return the collections folder path relative to the datasite root.
 
         Returns None when no collections folder is configured (no collection
-        specs registered); callers pass this to is_normal_syncable_path, which
-        treats a None collections_path as "no collection dir to exclude".
+        specs registered);
         """
         if self.collections_folder is None:
             return None
