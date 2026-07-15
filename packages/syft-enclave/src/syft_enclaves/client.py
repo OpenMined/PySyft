@@ -56,7 +56,7 @@ class SyftEnclaveClient:
 
     @property
     def peers(self) -> PeerList:
-        return self._rds.sync_engine.peers
+        return self._rds.peers
 
     def add_peer(self, peer_email: str, force: bool = False, verbose: bool = True):
         self._rds.add_peer(peer_email, force=force, verbose=verbose)
@@ -75,7 +75,7 @@ class SyftEnclaveClient:
         )
 
     def reject_peer_request(self, email_or_peer: str | Peer):
-        self._rds.sync_engine.reject_peer_request(email_or_peer)
+        self._rds.reject_peer_request(email_or_peer)
 
     def attest_peer(self, peer_email: str):
         """Verify an enclave peer's attestation by re-reading SYFT_version.json
@@ -106,7 +106,7 @@ class SyftEnclaveClient:
         self, verbose: bool = True, broadcast_delete_events: bool = True
     ):
         """Delete all SyftBox state (Drive files + local caches/folder)."""
-        self._rds.sync_engine.delete_syftbox(
+        self._rds.delete_syftbox(
             verbose=verbose, broadcast_delete_events=broadcast_delete_events
         )
 
