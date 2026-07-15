@@ -92,7 +92,7 @@ SAFE_BUILTIN_CALLS: frozenset[str] = frozenset(
 
 
 # The only dunder/hook methods a model class may *define* (docs/verify.md#allow_functions--paths-callable-by-name).
-ALLOWED_DUNDER_DEFS: frozenset[str] = frozenset({"__call__", "setup", "__post_init__"})
+ALLOWED_DUNDER_DEFS: frozenset[str] = frozenset({"__call__", "setup"})
 
 # Names always preserved verbatim by the obfuscator and never treated as opaque values.
 DEFAULT_KEEP: frozenset[str] = frozenset(

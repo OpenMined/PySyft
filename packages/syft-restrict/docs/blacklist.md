@@ -172,8 +172,9 @@ safe are in [verify.md](verify.md#self-and-flax-style-modules).
 | Bad base class         | `class M(SomeLib)`, `class M(object)` | `class-base`    |
 | Forbidden magic method | `def __getattr__`, `def __reduce__`   | `dunder-def`    |
 
-Allowed hooks only: `setup`, `__call__`, `__post_init__`. (Decorators are banned outright as a
-[forbidden construct](#forbidden-constructs).)
+Allowed hooks only: `setup`, `__call__`.
+
+Decorators are banned outright as a [forbidden construct](#forbidden-constructs).
 
 ```python
 # rejected

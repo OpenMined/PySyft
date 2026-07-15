@@ -217,12 +217,10 @@ def test_self_attr_reassigned_local_alias_is_not_stuck_tainted(verify_all):
 
 
 def test_allowed_dunder_defs(verify_all):
-    """``__call__``, ``setup`` and ``__post_init__`` are the only definable hooks."""
+    """``__call__`` and ``setup`` are the only definable hooks."""
     src = """
     class M:
         def setup(self):
-            return None
-        def __post_init__(self):
             return None
         def __call__(self, x):
             return x
