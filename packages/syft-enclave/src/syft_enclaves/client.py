@@ -412,12 +412,6 @@ class SyftEnclaveClient:
     ) -> "SyftEnclaveClient":
         """Build a SyftEnclaveClient from an RDS config with a wrapped job_client.
 
-        The enclave client composes a ``SyftRDSClient`` (the RDS product client),
-        which OWNS the job + dataset surface and holds the generic sync engine at
-        ``rds.sync_engine``. We wrap the RDS-owned job_client with
-        ``EnclaveJobClient`` (settable on the RDS client) and install the private
-        dataset immutability filter on the nested sync engine's watcher cache.
-
         Encryption rides along on ``config.sync`` via
         ``peer_manager_config.use_encryption``; ``SyftboxManager.from_config``
         (invoked inside ``SyftRDSClient.from_config``) loads/generates this
