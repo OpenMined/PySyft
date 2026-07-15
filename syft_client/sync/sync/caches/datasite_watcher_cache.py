@@ -72,9 +72,7 @@ class DataSiteWatcherCache(BaseModel):
         else:
             if config.syftbox_folder is None:
                 raise ValueError("syftbox_folder is required for non-in-memory cache")
-            # collection_specs may be empty: a bare sync engine knows about no
-            # collections. syft-rds registers the dataset spec at initialization.
-
+        
             syftbox_folder_name = Path(config.syftbox_folder).name
             syftbox_parent = Path(config.syftbox_folder).parent
             events_folder = syftbox_parent / f"{syftbox_folder_name}-event-messages"

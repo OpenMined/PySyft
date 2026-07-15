@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from uuid import uuid4
+from functools import partial
 
 from pydantic import ConfigDict, Field, BaseModel, PrivateAttr
 from concurrent.futures import ThreadPoolExecutor
@@ -55,7 +56,7 @@ class DatasiteOwnerSyncerConfig(BaseModel):
     # Full path to collections folder - must be provided explicitly
     collections_folder: Path | None = None
     # Collection sync specs (public prefix + local subpath). Empty for a bare
-    # sync engine; syft-rds registers the dataset spec at initialization.
+    # sync engine; the domain layer (e.g. syft-rds) supplies the concrete specs.
     collection_specs: List[CollectionSyncSpec] = []
     cache_config: DataSiteOwnerEventCacheConfig = Field(
         default_factory=DataSiteOwnerEventCacheConfig
@@ -395,8 +396,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if not collections:
             return
 
-        from functools import partial
-
         # Fetch file metadatas for all collections in parallel
         all_file_metadatas = list(
             self._executor.map(
@@ -429,9 +428,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             local_dir.mkdir(parents=True, exist_ok=True)
             (local_dir / metadata["file_name"]).write_bytes(content)
 
-        # Update cached hashes ONLY for mirror specs. Immutable specs may share a tag
-        # with a mirror spec (e.g. a dataset's public + private both keyed by name),
-        # so writing their hash here would clobber the mirror spec's cache entry.
+        # Update cached hashes ONLY for mutable specs
         if not spec.immutable:
             for collection in collections:
                 self.event_cache.set_collection_hash(
@@ -439,8 +436,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 )
 
         # Notify the domain layer (e.g. syft-rds) that these collections were restored,
-        # so it can run any collection-specific post-processing without the sync core
-        # needing to know what a "dataset" or "private_metadata.yaml" is.
+        # so it can run any collection-specific post-processing 
         for collection in collections:
             self._emit(
                 "collection_restored",
