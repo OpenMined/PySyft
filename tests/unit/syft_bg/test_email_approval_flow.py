@@ -132,7 +132,7 @@ def test_email_approval_e2e():
     """Full flow: DS submits job -> notify detects it -> email approval -> DS gets results."""
 
     # -- Step 1: Create DO/DS clients --
-    ds_manager, do_manager = SyftRDSClient.pair_for_testing(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )

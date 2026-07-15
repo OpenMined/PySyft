@@ -172,7 +172,9 @@ class CollectionFolder(BaseModel):
         marker = f"{prefix}_"
         if not name.startswith(marker):
             raise ValueError(f"Invalid collection folder name: {name}")
-        tag, _, content_hash = name[len(prefix) + 1 :].rpartition("_")
+        tag, separator, content_hash = name[len(prefix) + 1 :].rpartition("_")
+        if not separator or not tag or not content_hash:
+            raise ValueError(f"Invalid collection folder name: {name}")
         return cls(prefix=prefix, tag=tag, content_hash=content_hash)
 
     @staticmethod

@@ -334,6 +334,11 @@ class SyftRDSClient:
         ignore_peer_version: bool = False,
     ) -> None:
         """Process approved jobs (DO only). Auto-syncs after unless PRE_SYNC=false."""
+        if not self.has_do_role:
+            raise ValueError("Only dataset owners can process approved jobs")
+        if self._job_runner is None:
+            raise ValueError("Job runner is not configured for this client")
+
         skip_job_names = []
 
         if not force_execution:

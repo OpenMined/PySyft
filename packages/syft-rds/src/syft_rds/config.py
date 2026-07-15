@@ -23,7 +23,7 @@ from syft_client.sync.syftbox_manager import (
     get_jupyter_default_syftbox_folder,
     get_colab_default_syftbox_folder,
 )
-from syft_client.sync.sync.caches.datasite_watcher_cache import CollectionSyncSpec
+from syft_client.sync.sync.collection_spec import CollectionSyncSpec
 from syft_job import SyftJobConfig
 from syft_datasets.config import SyftBoxConfig
 from syft_datasets.dataset_manager import (

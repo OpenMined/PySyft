@@ -146,7 +146,7 @@ with open("outputs/result.json", "w") as f:
 def test_email_auto_approve_creates_object_and_approves_future_jobs():
     """Full flow: auto-approve reply creates approval object, second job is auto-approved."""
 
-    ds_manager, do_manager = SyftRDSClient.pair_for_testing(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
