@@ -9,6 +9,8 @@ from pathlib import Path
 
 from syft_client.sync.syftbox_manager import get_jupyter_default_syftbox_folder
 from syft_datasets.config import SyftBoxConfig
+from syft_datasets.dataset_ref import DatasetNotFoundError, DatasetRef
+from syft_datasets.dataset_storage import DatasetStorage
 
 
 def default_syftbox_folder(email: str) -> Path:
@@ -16,12 +18,30 @@ def default_syftbox_folder(email: str) -> Path:
     return get_jupyter_default_syftbox_folder(email)
 
 
+def resolve_private_dataset_dir(storage: DatasetStorage, owner: str, name: str) -> Path:
+    """Private dir at the dataset's actual on-disk protocol layout.
+
+    A dataset may live at protocol 0 (flat) or under a ``v<n>`` segment; the
+    written layout depends on what the audience can read, not the current
+    default. Datasets not yet on disk (e.g. weights still syncing) fall back to
+    the widest-compatible protocol — where a peer running any current release
+    writes them for us.
+    """
+    try:
+        ref = storage.find_dataset_ref(owner, name)
+    except DatasetNotFoundError:
+        (widest,) = storage.target_protocol_versions_for_peers(None)
+        ref = DatasetRef(owner=owner, name=name, protocol_version=widest)
+    return storage.private_dataset_dir(ref)
+
+
 def private_dataset_dir(
     syftbox_folder: Path | str, datasite: str, dataset_name: str
 ) -> Path:
     """Private dir of *dataset_name* on *datasite* inside *syftbox_folder*."""
     config = SyftBoxConfig(syftbox_folder=Path(syftbox_folder), email=datasite)
-    return config.private_dir_for_my_dataset(dataset_name)
+    storage = DatasetStorage(config=config)
+    return resolve_private_dataset_dir(storage, datasite, dataset_name)
 
 
 def find_checkpoint_dir(weights_dir: Path | str) -> Path | None:
