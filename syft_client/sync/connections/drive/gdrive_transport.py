@@ -145,12 +145,35 @@ class GdrivePersonalSyftboxFolder(BaseModel):
 
 
 class CollectionFolder(BaseModel):
-    """Content-hash helper for collection folders (domain-agnostic).
+    """Naming value object for collection folders (domain-agnostic).
 
     Collections (datasets, private datasets, or any future collection type) are
-    named ``{prefix}_{tag}_{content_hash}`` on the wire; this computes that
+    named ``{prefix}_{tag}_{content_hash}`` on the wire. This is the single
+    source of truth for building and parsing that name; it also computes the
     content hash from the folder's file contents.
     """
+
+    prefix: str
+    tag: str
+    content_hash: str
+
+    @property
+    def folder_name(self) -> str:
+        """The on-wire folder name. Doubles as the cache key (same string)."""
+        return f"{self.prefix}_{self.tag}_{self.content_hash}"
+
+    @classmethod
+    def from_name(cls, prefix: str, name: str) -> "CollectionFolder":
+        """Parse '{prefix}_{tag}_{hash}' into a CollectionFolder.
+
+        Raises ValueError if the name does not carry the prefix, so callers can
+        skip non-matching folders.
+        """
+        marker = f"{prefix}_"
+        if not name.startswith(marker):
+            raise ValueError(f"Invalid collection folder name: {name}")
+        tag, _, content_hash = name[len(prefix) + 1 :].rpartition("_")
+        return cls(prefix=prefix, tag=tag, content_hash=content_hash)
 
     @staticmethod
     def compute_hash(files: dict[str, bytes]) -> str:
@@ -1456,50 +1479,34 @@ class GDriveConnection(SyftboxPlatformConnection):
     # =========================================================================
     # GENERIC COLLECTION METHODS (parameterized on `prefix`)
     #
-    # These hold the real logic. The dataset-named / private-named public
-    # methods below delegate here, passing the appropriate prefix constant.
-    # Folder names are built inline as f"{prefix}_{tag}_{content_hash}" and
-    # parsed by stripping the known prefix: this yields identical (tag,
-    # content_hash) to the folder-name model classes' from_name() for the real
-    # prefixes (which contain no trailing separator), so on-wire behavior is
-    # byte-identical.
+    # Folder names are built and parsed via CollectionFolder, the single source
+    # of truth for the f"{prefix}_{tag}_{content_hash}" scheme. On-wire behavior
+    # is byte-identical to the previous inline construction.
     # =========================================================================
-
-    def _parse_collection_folder_name(self, prefix: str, name: str) -> tuple[str, str]:
-        """Parse '{prefix}_{tag}_{hash}' into (tag, content_hash).
-
-        Raises ValueError if the name does not carry the prefix, mirroring the
-        skip behavior of the folder-name model classes' from_name().
-        """
-        marker = f"{prefix}_"
-        if not name.startswith(marker):
-            raise ValueError(f"Invalid collection folder name: {name}")
-        rest = name[len(prefix) + 1 :]
-        tag, _, content_hash = rest.rpartition("_")
-        return tag, content_hash
 
     def owner_create_collection_folder(
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> str:
         """Create /SyftBox/{prefix}_{tag}_{hash} folder."""
-        folder_name = f"{prefix}_{tag}_{content_hash}"
-        cache_key = f"{prefix}_{tag}_{content_hash}"
+        folder_name = CollectionFolder(
+            prefix=prefix, tag=tag, content_hash=content_hash
+        ).folder_name
 
         # Check cache
-        if cache_key in self.collection_folder_id_cache:
-            return self.collection_folder_id_cache[cache_key]
+        if folder_name in self.collection_folder_id_cache:
+            return self.collection_folder_id_cache[folder_name]
 
         syftbox_folder_id = self.get_syftbox_folder_id()
 
         # Check if exists
         folder_id = self._find_folder_by_name(folder_name, parent_id=syftbox_folder_id)
         if folder_id:
-            self.collection_folder_id_cache[cache_key] = folder_id
+            self.collection_folder_id_cache[folder_name] = folder_id
             return folder_id
 
         # Create new folder
         folder_id = self.create_folder(folder_name, syftbox_folder_id)
-        self.collection_folder_id_cache[cache_key] = folder_id
+        self.collection_folder_id_cache[folder_name] = folder_id
         return folder_id
 
     def owner_tag_collection_as_any(
@@ -1583,10 +1590,8 @@ class GDriveConnection(SyftboxPlatformConnection):
         result = []
         for folder in folders:
             try:
-                tag, _content_hash = self._parse_collection_folder_name(
-                    prefix, folder["name"]
-                )
-                result.append(tag)
+                cf = CollectionFolder.from_name(prefix, folder["name"])
+                result.append(cf.tag)
             except ValueError:
                 continue
         return result
@@ -1611,9 +1616,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         for folder in results.get("files", []):
             folder_id = folder["id"]
             try:
-                tag, content_hash = self._parse_collection_folder_name(
-                    prefix, folder["name"]
-                )
+                cf = CollectionFolder.from_name(prefix, folder["name"])
                 has_anyone = (
                     folder.get("appProperties", {}).get("syft_shared_with_any")
                     == "true"
@@ -1621,8 +1624,8 @@ class GDriveConnection(SyftboxPlatformConnection):
                 collections.append(
                     FileCollection(
                         folder_id=folder_id,
-                        tag=tag,
-                        content_hash=content_hash,
+                        tag=cf.tag,
+                        content_hash=cf.content_hash,
                         has_any_permission=has_anyone,
                     )
                 )
@@ -1637,8 +1640,10 @@ class GDriveConnection(SyftboxPlatformConnection):
         for c in collections:
             if c.tag == tag:
                 self.delete_file_by_id(c.folder_id)
-                cache_key = f"{prefix}_{c.tag}_{c.content_hash}"
-                self.collection_folder_id_cache.pop(cache_key, None)
+                folder_name = CollectionFolder(
+                    prefix=prefix, tag=c.tag, content_hash=c.content_hash
+                ).folder_name
+                self.collection_folder_id_cache.pop(folder_name, None)
 
     def watcher_list_collections(self, prefix: str) -> list[dict]:
         """List collections shared with DS (not owned by me).
@@ -1657,17 +1662,15 @@ class GDriveConnection(SyftboxPlatformConnection):
         result = []
         for folder in folders:
             try:
-                tag, content_hash = self._parse_collection_folder_name(
-                    prefix, folder["name"]
-                )
+                cf = CollectionFolder.from_name(prefix, folder["name"])
                 owner_email = folder.get("owners", [{}])[0].get(
                     "emailAddress", "unknown"
                 )
                 result.append(
                     {
                         "owner_email": owner_email,
-                        "tag": tag,
-                        "content_hash": content_hash,
+                        "tag": cf.tag,
+                        "content_hash": cf.content_hash,
                     }
                 )
             except ValueError:
@@ -1679,7 +1682,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> dict[str, bytes]:
         """Download all files from a collection."""
-        folder_name = f"{prefix}_{tag}_{content_hash}"
+        folder_name = CollectionFolder(
+            prefix=prefix, tag=tag, content_hash=content_hash
+        ).folder_name
         # Try to find folder by name (could be owned by someone else)
         folder_id = self._find_folder_by_name(folder_name, owner_email=owner_email)
 
@@ -1699,7 +1704,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> List[Dict]:
         """Get file metadata from a collection without downloading."""
-        folder_name = f"{prefix}_{tag}_{content_hash}"
+        folder_name = CollectionFolder(
+            prefix=prefix, tag=tag, content_hash=content_hash
+        ).folder_name
         folder_id = self._find_folder_by_name(folder_name, owner_email=owner_email)
 
         if not folder_id:
@@ -1716,11 +1723,12 @@ class GDriveConnection(SyftboxPlatformConnection):
         self, prefix: str, tag: str, content_hash: str
     ) -> str:
         """Get folder ID for a collection, with caching."""
-        cache_key = f"{prefix}_{tag}_{content_hash}"
-        if cache_key in self.collection_folder_id_cache:
-            return self.collection_folder_id_cache[cache_key]
+        folder_name = CollectionFolder(
+            prefix=prefix, tag=tag, content_hash=content_hash
+        ).folder_name
+        if folder_name in self.collection_folder_id_cache:
+            return self.collection_folder_id_cache[folder_name]
 
-        folder_name = f"{prefix}_{tag}_{content_hash}"
         syftbox_folder_id = self.get_syftbox_folder_id()
         folder_id = self._find_folder_by_name(folder_name, parent_id=syftbox_folder_id)
 
@@ -1729,7 +1737,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 f"Collection folder {tag} with hash {content_hash} not found"
             )
 
-        self.collection_folder_id_cache[cache_key] = folder_id
+        self.collection_folder_id_cache[folder_name] = folder_id
         return folder_id
 
     def _get_version_file_id(self) -> Optional[str]:
