@@ -218,7 +218,7 @@ class _Checker:
             # region. Bare calls trust private_defs by identifier alone, so a
             # public-region rebind (helper = evil between private chunks) would
             # otherwise reopen the call-target hole.
-            self._check_private_def_shadow_anywhere(node)
+            self._forbid_private_def_shadow_anywhere(node)
 
         # push/pop scope stack for ClassDef/FunctionDef/Lambda, so
         # _enclosing_class() works
@@ -237,15 +237,14 @@ class _Checker:
             self._scope_stack.pop()
             self._safe_locals_stack.pop()
 
-    def _check_private_def_shadow_anywhere(self, node: ast.AST) -> None:
+    def _forbid_private_def_shadow_anywhere(self, node: ast.AST) -> None:
         """Reject rebinding a private-region class/def name even on public lines."""
 
         # only check rebinding (Store) and definitions (FunctionDef/ClassDef).
         if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
-            if (
-                node.id in self.scan.private_defs
-                and id(node) not in self.scan.private_def_ids
-            ):
+            name_reserved = node.id in self.scan.private_defs
+            name_rebound = name_reserved and id(node) not in self.scan.private_def_ids
+            if name_rebound:
                 self.report(
                     node,
                     "reserved-name",
@@ -253,16 +252,15 @@ class _Checker:
                 )
             return
 
-        # methods are not bare-call targets; shared names like `setup`` are fine
+        # methods are not bare-call targets and therefore not shadowed; shared names like `setup`` are fine
         if isinstance(node, ast.FunctionDef) and id(node) in self.scan.method_ids:
             return
 
         # only check rebinding (Store) and definitions (FunctionDef/ClassDef). A
         if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-            if (
-                node.name in self.scan.private_defs
-                and id(node) not in self.scan.private_def_ids
-            ):
+            name_reserved = node.name in self.scan.private_defs
+            name_rebound = name_reserved and id(node) not in self.scan.private_def_ids
+            if name_rebound:
                 self.report(
                     node,
                     "reserved-name",
