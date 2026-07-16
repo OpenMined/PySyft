@@ -1,6 +1,6 @@
 {
-  "source_sha256": "11452760f1bd895b55214caa7a07e314174e75c4664af02bd177d18f4b008101",
-  "policy_id": "a73438a4b78b4438",
+  "source_sha256": "3b462b5a6490b9dba8a93cf1a06da37601b002ab3a6f7497c01ee6698a671a18",
+  "policy_id": "b4a557058704eed6",
   "restrict_version": "0.1.0",
   "private_ranges": [
     [24, 88],
