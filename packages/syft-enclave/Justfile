@@ -7,6 +7,7 @@ vm_default := "syft-enclave-vm"
 secret_name_default := "syft-enclave-token"
 sa_name_default := "syft-enclave-service-account"
 tf_dir := "terraform"
+job_timeout_seconds := "1800" # 30 minutes
 
 # Shared shell snippet: loads settings from ~/.syft-enclaves/settings.json.
 # `project_id` and `zone` are written by `just init`.
@@ -209,7 +210,7 @@ provision-secret-sa token_path secret=secret_name_default sa=sa_name_default: _p
 # No WIF — use when org policy blocks WIF provider creation. Requires
 # `just provision-secret-sa <token>` first.
 [group('deploy')]
-start email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job-timeout="": _provision
+start email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds: _provision
     #!/bin/bash
     set -e
     {{load_settings}}
@@ -219,8 +220,8 @@ start email name=vm_default machine_type=machine_type_default machine_boot_size=
 
     # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
     job_timeout_env=""
-    if [ -n "{{job-timeout}}" ]; then
-      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job-timeout}}"
+    if [ -n "$job_timeout_seconds" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS=$job_timeout_seconds"
     fi
 
     gcloud compute instances create {{name}} \
@@ -241,7 +242,7 @@ start email name=vm_default machine_type=machine_type_default machine_boot_size=
 
 
 [group('deploy')]
-start-debug email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job-timeout="" use_encryption="false": _provision
+start-debug email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds use_encryption="false": _provision
     #!/bin/bash
     set -e
     {{load_settings}}
@@ -251,8 +252,8 @@ start-debug email name=vm_default machine_type=machine_type_default machine_boot
 
     # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
     job_timeout_env=""
-    if [ -n "{{job-timeout}}" ]; then
-      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job-timeout}}"
+    if [ -n "$job_timeout_seconds" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS=$job_timeout_seconds"
     fi
 
     gcloud compute instances create {{name}} \
