@@ -220,8 +220,8 @@ start email name=vm_default machine_type=machine_type_default machine_boot_size=
 
     # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
     job_timeout_env=""
-    if [ -n "$job_timeout_seconds" ]; then
-      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS=$job_timeout_seconds"
+    if [ -n "{{job_timeout_seconds}}" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job_timeout_seconds}}"
     fi
 
     gcloud compute instances create {{name}} \
@@ -252,8 +252,8 @@ start-debug email name=vm_default machine_type=machine_type_default machine_boot
 
     # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
     job_timeout_env=""
-    if [ -n "$job_timeout_seconds" ]; then
-      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS=$job_timeout_seconds"
+    if [ -n "{{job_timeout_seconds}}" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job_timeout_seconds}}"
     fi
 
     gcloud compute instances create {{name}} \
