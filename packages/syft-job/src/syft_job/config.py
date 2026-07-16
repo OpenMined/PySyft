@@ -1,6 +1,23 @@
+import re
 from pathlib import Path
+from typing import Optional
 
 from pydantic import BaseModel, Field
+
+from .migrations.registry import JOB_PROTOCOL_VERSION
+
+# Job dirs under inbox/<ds_email>/ and review/<ds_email>/ live inside a
+# protocol-version segment ("v1", "v2", ...); protocol 0 (<= 0.1.38) had none.
+PROTOCOL_DIR_RE = re.compile(r"^v\d+$")
+
+
+def is_protocol_dir_name(name: str) -> bool:
+    return PROTOCOL_DIR_RE.match(name) is not None
+
+
+def protocol_dir_name(protocol_version: str) -> Optional[str]:
+    """The path segment for a protocol version; None for protocol 0."""
+    return None if protocol_version == "0" else f"v{protocol_version}"
 
 
 class SyftJobConfig(BaseModel):
@@ -81,28 +98,49 @@ class SyftJobConfig(BaseModel):
         return self.get_job_dir(datasite_email) / "review"
 
     def get_job_submission_dir(
-        self, datasite_email: str, ds_email: str, job_name: str
+        self,
+        datasite_email: str,
+        ds_email: str,
+        job_name: str,
+        protocol_version: str = JOB_PROTOCOL_VERSION,
     ) -> Path:
         """
         Get the inbox path for a specific job.
 
-        Path: SyftBox/<datasite_email>/app_data/job/inbox/<ds_email>/<job_name>/
+        Path: SyftBox/<datasite_email>/app_data/job/inbox/<ds_email>/v<n>/<job_name>/
+        (no v<n> segment for protocol 0)
         """
-        return self.get_all_submissions_dir(datasite_email) / ds_email / job_name
+        base = self.get_all_submissions_dir(datasite_email) / ds_email
+        segment = protocol_dir_name(protocol_version)
+        return base / segment / job_name if segment else base / job_name
 
     def get_review_job_dir(
-        self, datasite_email: str, ds_email: str, job_name: str
+        self,
+        datasite_email: str,
+        ds_email: str,
+        job_name: str,
+        protocol_version: str = JOB_PROTOCOL_VERSION,
     ) -> Path:
         """
         Get the review path for a specific job.
 
-        Path: SyftBox/<datasite_email>/app_data/job/review/<ds_email>/<job_name>/
+        Path: SyftBox/<datasite_email>/app_data/job/review/<ds_email>/v<n>/<job_name>/
+        (no v<n> segment for protocol 0)
         """
-        return self.get_review_dir(datasite_email) / ds_email / job_name
+        base = self.get_review_dir(datasite_email) / ds_email
+        segment = protocol_dir_name(protocol_version)
+        return base / segment / job_name if segment else base / job_name
 
-    def _get_job_submission_dir_for_me(self, target_datasite_owner_email: str) -> Path:
+    def _get_job_submission_dir_for_me(
+        self,
+        target_datasite_owner_email: str,
+        protocol_version: str = JOB_PROTOCOL_VERSION,
+    ) -> Path:
         """Get my inbox directory on the target datasite owner's job folder."""
-        return (
+        base = (
             self.get_all_submissions_dir(target_datasite_owner_email)
             / self.current_user_email
         )
+        segment = protocol_dir_name(protocol_version)
+        # this is for backwards compatibility with the old structure
+        return base / segment if segment else base

@@ -21,6 +21,10 @@ class EnclaveJobClient(BaseJobClient):
         return self._job_client.config
 
     @property
+    def manager(self):
+        return self._job_client.manager
+
+    @property
     def current_user_email(self):
         return self._job_client.current_user_email
 

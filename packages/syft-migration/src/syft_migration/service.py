@@ -5,7 +5,7 @@ from typing import Any, Optional
 from syft_migration.base import MigratableObject
 from syft_migration.identity import MigrationError
 from syft_migration.registry import MigrationFn, MigrationRegistry
-from syft_migration.schema import PackageProtocolSchema, ProtocolSchema
+from syft_migration.schema import ProtocolSchema
 
 
 class MigrationService:
@@ -25,16 +25,16 @@ class MigrationService:
         return result
 
     def migrate_to_schema(
-        self, obj: MigratableObject, schema: PackageProtocolSchema
+        self, obj: MigratableObject, schema: ProtocolSchema
     ) -> MigratableObject:
         """Migrate ``obj`` to the latest version ``schema`` supports for it."""
         return self.migrate(obj, schema.current_schema(obj.canonical_name))
 
-    def downgrade_for_package_version(
-        self, obj: MigratableObject, package_version: str
+    def downgrade_for_protocol_version(
+        self, obj: MigratableObject, protocol_version: str
     ) -> MigratableObject:
-        """Migrate ``obj`` to the version a peer running ``package_version`` understands."""
-        schema = self.registry.schema_for_package_version(package_version)
+        """Migrate ``obj`` to the version a peer speaking ``protocol_version`` understands."""
+        schema = self.registry.schema_for_protocol_version(protocol_version)
         return self.migrate_to_schema(obj, schema)
 
     def export_protocol_schema(self) -> ProtocolSchema:
