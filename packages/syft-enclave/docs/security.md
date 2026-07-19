@@ -132,8 +132,8 @@ to take the repo's word for it. To confirm independently:
    The top-level `Digest:` line is the value the attestation token reports.
 
 2. **Compare it** against `EXPECTED_IMAGE_DIGEST` in
-   [`attestation.py`](../src/syft_enclaves/attestation.py) *at the release tag
-   of the `syft-client` version you installed* — not at an arbitrary branch.
+   [`attestation.py`](../src/syft_enclaves/attestation.py) _at the release tag
+   of the `syft-client` version you installed_ — not at an arbitrary branch.
 
 3. **Optionally rebuild from source.** The image is built from the
    [`docker/Dockerfile`](../docker/Dockerfile) in this repo; a reproducible
