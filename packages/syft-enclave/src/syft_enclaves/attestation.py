@@ -25,7 +25,17 @@ CONFIDENTIAL_COMPUTING_CERTS_URL = (
 # this client. Tracks releases automatically — no manual bump needed when
 # syft-client's version changes.
 EXPECTED_SYFT_VERSION = SYFT_CLIENT_VERSION
-EXPECTED_IMAGE_DIGEST = ""  # TODO: set after  enclave image is published
+# Digest of the released enclave image
+# (docker.io/openminedreleasebot/syft-client-enclave). Must be re-pinned on
+# every image release — fetch the current value with:
+#   docker buildx imagetools inspect \
+#       docker.io/openminedreleasebot/syft-client-enclave:latest
+# See docs/security.md ("Verifying the enclave image digest") for how data
+# owners independently confirm this value. The verifier fails closed: an
+# empty digest here rejects every attestation token.
+EXPECTED_IMAGE_DIGEST = (
+    "sha256:23a06dd0e2173e734eea9f0492ea019babfa6240e00702a6e76aee30a2cb1ec8"
+)
 
 
 class AttestationError(Exception):
@@ -182,7 +192,10 @@ def verify_attestation_token(token: str, verbose: bool = True) -> AttestationRes
             f"version mismatch (enclave={actual_version_nonce!r}, expected={expected_version_nonce!r})",
         )
 
-    # 5. Image digest
+    # 5. Image digest — fail closed. An unset expected digest or a missing
+    # claim is a hard failure, not a skip: without this check the verifier
+    # accepts ANY image running in a genuine Confidential Space, not the
+    # audited enclave image.
     if verbose:
         print("  ⏳ Image digest ...")
     container = claims.get("submods", {}).get("container", {})
@@ -191,10 +204,15 @@ def verify_attestation_token(token: str, verbose: bool = True) -> AttestationRes
         result.add(
             "image_digest",
             "Image digest",
-            None,
-            f"digest {image_digest[:20]}... (expected digest not configured, skipped)"
-            if image_digest
-            else "no digest in token (expected digest not configured, skipped)",
+            False,
+            "expected image digest not configured — refusing to trust unpinned image",
+        )
+    elif not image_digest:
+        result.add(
+            "image_digest",
+            "Image digest",
+            False,
+            "no image digest in token — cannot verify enclave is running the released image",
         )
     elif image_digest == EXPECTED_IMAGE_DIGEST:
         result.add(
@@ -208,7 +226,7 @@ def verify_attestation_token(token: str, verbose: bool = True) -> AttestationRes
             "image_digest",
             "Image digest",
             False,
-            f"digest mismatch (got {image_digest or 'none'}, expected {EXPECTED_IMAGE_DIGEST[:20]}...)",
+            f"digest mismatch (got {image_digest}, expected {EXPECTED_IMAGE_DIGEST[:20]}...)",
         )
 
     # Finalize — print full checklist, then raise once if anything failed

@@ -102,3 +102,52 @@ forge an accepted message.
 
 This is what lets Steps 1–5 of the [Enclave Flow](./flow.md) happen without
 anyone trusting Google Drive, the network, or each other.
+
+## 6. Verifying the enclave image digest
+
+Attestation proves the hardware is genuine, but that alone is not enough: a
+genuine Confidential Space VM could be running **any** container. The verifier
+therefore also pins the exact container image. The attestation JWT carries the
+sha256 digest of the running image (`submods.container.image_digest`), and the
+client compares it against `EXPECTED_IMAGE_DIGEST` in
+`syft_enclaves/attestation.py`. The check **fails closed**: verification is
+rejected if the pinned digest is empty, if the token carries no digest, or if
+the two don't match. This means whoever operates the deployment (or controls
+its CI or service account) cannot swap in a tampered image — attestation would
+fail even though the hardware is real.
+
+### Confirming the digest independently
+
+The pinned value in the source is the anchor, but a data owner should not have
+to take the repo's word for it. To confirm independently:
+
+1. **Fetch the published image's digest straight from Docker Hub** (no pull
+   needed):
+
+   ```bash
+   docker buildx imagetools inspect \
+       docker.io/openminedreleasebot/syft-client-enclave:latest
+   ```
+
+   The top-level `Digest:` line is the value the attestation token reports.
+
+2. **Compare it** against `EXPECTED_IMAGE_DIGEST` in
+   [`attestation.py`](../src/syft_enclaves/attestation.py) *at the release tag
+   of the `syft-client` version you installed* — not at an arbitrary branch.
+
+3. **Optionally rebuild from source.** The image is built from the
+   [`docker/Dockerfile`](../docker/Dockerfile) in this repo; a reproducible
+   local build lets you confirm the published image corresponds to the audited
+   source rather than trusting the registry.
+
+Known gap: releases do not yet ship a signed manifest binding
+`syft-client version → image digest`, so step 2 currently trusts the git tag.
+A signed release manifest (e.g. sigstore/cosign) is the planned hardening.
+
+### Maintainer note: re-pinning on release
+
+Every push of a new enclave image changes the digest, so
+`EXPECTED_IMAGE_DIGEST` must be updated in the same release that publishes the
+image — otherwise clients on the new version will (correctly) reject the old
+enclave, and vice versa. Fetch the new value with the `imagetools inspect`
+command above.
