@@ -59,11 +59,21 @@ result = restrict.run(
     "gemma_inference_marked.py",
     allow_functions=["jax.*", "flax.linen.*"],  # functions callable BY NAME (path-resolved)
     allow_operators=["arithmetic", "indexing", "comparison"],  # operators allowed ON A VALUE
+    disallow_functions=[  # hard floor: JAX's host-callback / disk-IO surface, even under jax.*
+        "jax.numpy.save", "jax.numpy.savez", "jax.debug.*", "jax.experimental.*",
+        "jax.pure_callback", "*.io_callback", "*.host_callback*", "jax.dlpack.*", "jax.ffi*",
+    ],
 )
 # On success: writes gemma_inference_marked.obfuscated.py and returns result.certificate.
 # On a policy violation: raises PolicyViolation naming each offending line.
 # If the file has no `# syft-restrict: ...` markers: raises MarkerError.
 ```
+
+> [!IMPORTANT]
+> A broad allow like `jax.*` pulls in JAX's own host-callback and disk-IO functions
+> (`jax.numpy.save`, `jax.debug.callback`, `jax.experimental.io_callback`, …), which the private
+> region could then call to exfiltrate data. Always pair a broad allow with a `disallow_functions`
+> floor (above), or list specific leaves instead. See [docs/blacklist.md](docs/blacklist.md#optional-disallow_functions).
 
 The private region is designated **only** by `# syft-restrict: ...` comment markers in the
 source; `run()` resolves them and refuses a file that carries none. This is how
