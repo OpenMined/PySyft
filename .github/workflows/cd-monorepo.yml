@@ -17,6 +17,11 @@ on:
           - minor
           - major
 
+      release_syft_restrict:
+        description: Release syft-restrict
+        type: boolean
+        default: true
+
       release_syft_permissions:
         description: Release syft-permissions
         type: boolean
@@ -61,14 +66,26 @@ jobs:
     secrets: inherit
 
   # Release order follows dependency graph:
-  # 1. syft-permissions (no internal deps)
-  # 2. syft-perms (depends on syft-permissions)
-  # 3. syft-job + syft-dataset (depend on syft-perms) — parallel
-  # 4. syft-bg (depends on syft-job)
-  # 5. syft-client (depends on all above)
+  # 1. syft-restrict (no internal deps)
+  # 2. syft-permissions (no internal deps)
+  # 3. syft-perms (depends on syft-permissions)
+  # 4. syft-job + syft-dataset (depend on syft-perms) — parallel
+  # 5. syft-bg (depends on syft-job)
+  # 6. syft-client (depends on all above)
+  #
+
+  release-syft-restrict:
+    needs: [call-linting-tests, call-unit-tests, call-integration-tests]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_restrict == true
+    uses: ./.github/workflows/cd-syft-restrict.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
 
   release-syft-permissions:
-    needs: [call-linting-tests, call-unit-tests, call-integration-tests]
+    needs: [release-syft-restrict]
     if: >-
       !cancelled() && !failure() &&
       inputs.release_syft_permissions == true
