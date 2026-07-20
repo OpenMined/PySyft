@@ -1,0 +1,12 @@
+approval_method: null
+approved_at: null
+approved_by: null
+canonical_name: JobState
+completed_at: null
+received_at: '2026-07-08T12:16:08.990127Z'
+rejected_at: null
+rejected_by: null
+return_code: null
+review_reason: null
+status: pending
+version: '1'

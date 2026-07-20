@@ -8,12 +8,14 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from .astutil import normalize_ranges, scan_file
 from .errors import PolicyViolation
+from .markers import parse_markers
 from .obfuscator import (
     obfuscate as _obfuscate,
 )  # aliased: `obfuscate` is also a run() kwarg
 from .policy import Policy
-from .verifier import Violation, _normalize_ranges, _scan_file, verify
+from .verifier import Violation, verify
 
 __all__ = ["run", "RunResult"]
 
@@ -30,7 +32,8 @@ def run(
     obfuscate=None,
     hide=None,
     allow_functions: list[str] | None = None,
-    allow_methods: list[str] | None = None,
+    allow_operators: list[str] | None = None,
+    disallow_functions: list[str] | None = None,
     out: str | Path | None = None,
     strict: bool = True,
 ) -> RunResult:
@@ -42,22 +45,30 @@ def run(
     Args:
         path: the inference source file.
         obfuscate: ``[start, end]`` 1-based inclusive line ranges to *obfuscate* (identifiers renamed,
-            constants blanked, structure preserved).
+            constants blanked, structure preserved). When both ``obfuscate`` and ``hide`` are omitted,
+            ranges are instead resolved from ``# syft-restrict: ...`` comment markers in the source
+            (see ``markers.parse_markers``).
         hide: ``[start, end]`` 1-based inclusive line ranges to *hide* (whole line replaced with a
             ``■■■■■■■■`` marker, indentation kept).
         allow_functions: list of dotted-path globs callable by name (e.g. ``["jax.*", "flax.linen.*"]``).
-        allow_methods: list of operator bundles allowed on a value
+        allow_operators: list of operator bundles allowed on a value
             (``["arithmetic", "indexing", "comparison"]``).
+        disallow_functions: optional list of dotted-path globs that BEAT the allow (e.g.
+            ``["jax.numpy.save", "jax.experimental.*"]``). A hard floor for authors who allow a
+            broad glob; empty by default, in which case only ``allow_functions`` applies.
         out: where to write the obfuscated file (default ``<stem>.obfuscated.py`` next to the source).
         strict: if True (default), raise ``PolicyViolation`` when verification fails; otherwise return
             a ``RunResult`` with ``ok=False`` and no output written.
     """
     path = Path(path)
     source = path.read_text()
-    policy = Policy.parse(allow_functions, allow_methods)
+    policy = Policy.parse(allow_functions, allow_operators, disallow_functions)
 
-    obfuscate_ranges = obfuscate or []
-    hide_ranges = hide or []
+    if obfuscate is None and hide is None:
+        obfuscate_ranges, hide_ranges = parse_markers(source)
+    else:
+        obfuscate_ranges = obfuscate or []
+        hide_ranges = hide or []
     private = [*obfuscate_ranges, *hide_ranges]  # union = the verified region
 
     result = verify(source, private, policy)
@@ -66,7 +77,7 @@ def run(
             raise PolicyViolation(result.violations)
         return RunResult(ok=False, violations=result.violations)
 
-    scan = _scan_file(ast.parse(source), _normalize_ranges(private))
+    scan = scan_file(ast.parse(source), normalize_ranges(private))
     obfuscated = _obfuscate(source, obfuscate_ranges, hide_ranges, scan)
 
     out_path = Path(out) if out is not None else path.with_suffix(".obfuscated.py")
@@ -76,9 +87,9 @@ def run(
         "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
         "policy_id": policy.policy_id(),
         "restrict_version": _version(),
-        "private_ranges": [list(r) for r in _normalize_ranges(private)],
-        "obfuscate_ranges": [list(r) for r in _normalize_ranges(obfuscate_ranges)],
-        "hide_ranges": [list(r) for r in _normalize_ranges(hide_ranges)],
+        "private_ranges": [list(r) for r in normalize_ranges(private)],
+        "obfuscate_ranges": [list(r) for r in normalize_ranges(obfuscate_ranges)],
+        "hide_ranges": [list(r) for r in normalize_ranges(hide_ranges)],
         "n_calls_checked": result.n_calls_checked,
     }
     return RunResult(

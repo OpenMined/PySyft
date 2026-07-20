@@ -1,0 +1,13 @@
+code_path: /tmp/main.py
+datasets: null
+dependencies:
+  - pandas
+entrypoint: main.py
+files:
+  - main.py
+headers: {}
+is_folder_submission: false
+job_type: local
+name: scanned.job
+submitted_at: '2026-06-01T12:00:00+00:00'
+type: python

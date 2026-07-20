@@ -1,24 +1,24 @@
-"""Policy: what the hidden region is allowed to call and do.
+"""Policy: what the private region is allowed to call and do (see docs/verify.md).
 
-Two channels, mirroring the two verification mechanisms (see research approach-B §3.6.5):
+Two channels the author configures per file:
 
-- ``functions`` — dotted paths callable BY NAME (resolved exactly against the import bindings),
-  e.g. ``jax.*``, ``flax.linen.*``. Checked by glob match, with ``JAX_DENYLIST`` beating the allow.
-- ``methods``  — operator *bundles* allowed ON A VALUE, e.g. ``arithmetic``, ``indexing``. These are
-  language-level operators (``__add__``, ``__getitem__``, …), never named library methods. No named
-  method may be called on an opaque value at all.
+- ``functions`` — dotted paths callable BY NAME (resolved against import bindings),
+  e.g. ``jax.*``, ``flax.linen.*``. An optional *disallow* list beats the allow.
+- ``operators`` — operator *bundles* allowed ON A VALUE, e.g. ``arithmetic``, ``indexing``.
+  These are language operators (``+``, ``[]``, …), never named library methods on a value.
 """
 
 from __future__ import annotations
 
 import ast
 import fnmatch
+import hashlib
 
 from pydantic import BaseModel, Field
 
 # ── Operator bundles: bundle name -> the AST node types it enables on a value ──────────────
 # These are generic, type-agnostic-safe operators (not named-method calls), so the format-string
-# escape cannot hide among them (research approach-B §3.6.2).
+# escape (`"{0.__class__}".format(x)`) cannot hide among them (docs/verify.md#operator-bundles-on-a-value).
 OPERATOR_BUNDLES: dict[str, tuple[type[ast.AST], ...]] = {
     "arithmetic": (ast.BinOp, ast.UnaryOp),
     "comparison": (ast.Compare, ast.BoolOp),
@@ -26,42 +26,10 @@ OPERATOR_BUNDLES: dict[str, tuple[type[ast.AST], ...]] = {
 }
 # NOTE: there is deliberately no metadata bundle. Reads like `.shape`/`.ndim`/`.dtype` on an opaque
 # value are named attribute accesses we can't pin to a type, so they're rejected like any other
-# attr-on-value and must be routed through a visible wrapper function (research approach-B §3.6.2).
+# attr-on-value and must be routed through a public wrapper function (docs/verify.md#operator-bundles-on-a-value).
 ALL_BUNDLES: frozenset[str] = frozenset(OPERATOR_BUNDLES)
 
-# ── Dangerous JAX / serialization surface — denylist BEATS the allow (approach-B §3.2/§3.3) ──
-# Host-callback / IO / FFI / serialization escape hatches that can run host code or touch disk.
-JAX_DENYLIST: tuple[str, ...] = (
-    "jax.experimental.*",
-    "jax.debug.*",
-    "jax.pure_callback",
-    "*.io_callback",
-    "*.host_callback",
-    "*.host_callback.*",
-    "jax.profiler.*",
-    "jax.monitoring.*",
-    "jax.distributed.*",
-    "jax.dlpack.*",
-    "jax.ffi",
-    "jax.ffi.*",
-    "jax.extend.*",
-    # array <-> file on disk, even though jax.numpy.* is otherwise allowed
-    "jax.numpy.save",
-    "jax.numpy.savez",
-    "jax.numpy.savez_compressed",
-    "jax.numpy.load",
-    "jax.numpy.tofile",
-    "jax.numpy.fromfile",
-    "jax.numpy.memmap",
-    "jax.numpy.savetxt",
-    "jax.numpy.loadtxt",
-    "jax.numpy.genfromtxt",
-    "flax.serialization.*",
-    "flax.training.checkpoints.*",
-    "orbax.*",
-)
-
-# ── Builtins that are dynamic-escape / IO hatches and may never be called (approach-B §2.2) ──
+# ── Builtins that are dynamic-escape / IO hatches and may never be called (docs/blacklist.md) ──
 BANNED_NAMES: frozenset[str] = frozenset(
     {
         "eval",
@@ -80,63 +48,121 @@ BANNED_NAMES: frozenset[str] = frozenset(
         "input",
         "breakpoint",
         "memoryview",
+        "type",
+        "__build_class__",
+        "print",
+        "repr",
+        "str",
+        "ascii",
+        "format",
+        "bytes",
     }
 )
 
-# Decorators allowed above a def/class in the hidden region (approach-B §3.1 #4).
-# NOTE: `property` (and any descriptor) is deliberately absent — it runs code on a bare attribute
-# access (`block.w`), the same attribute-access-hook class banned in §3.1 #6, so default-deny
-# rejects it. Pure inference needs only setup/__call__.
-ALLOWED_DECORATORS: frozenset[str] = frozenset(
-    {"nn.compact", "jax.jit", "jax.named_scope", "flax.linen.compact"}
+# Builtins safe to call directly by bare name: pure, deterministic, no reflection/IO/dynamic-code
+# surface. A bare-name call is default-deny (docs/verify.md#the-full-call-target-rule) -- everything
+# NOT on this list must instead resolve to an import binding, a def/class defined in this file, or a
+# local traced to one of those (see verifier._check_call / _is_safe_local_source).
+SAFE_BUILTIN_CALLS: frozenset[str] = frozenset(
+    {
+        "int",
+        "float",
+        "bool",
+        "len",
+        "range",
+        "enumerate",
+        "zip",
+        "min",
+        "max",
+        "sum",
+        "abs",
+        "round",
+        "all",
+        "any",
+        "tuple",
+        "list",
+        "dict",
+        "set",
+        "sorted",
+        "reversed",
+        "isinstance",
+        "super",
+    }
 )
 
-# The only dunder/hook methods a model class may *define* (approach-B §3.1 #6).
-ALLOWED_DUNDER_DEFS: frozenset[str] = frozenset({"__call__", "setup", "__post_init__"})
+
+# The only dunder/hook methods a model class may *define* (docs/verify.md#allow_functions--paths-callable-by-name).
+ALLOWED_DUNDER_DEFS: frozenset[str] = frozenset({"__call__", "setup"})
 
 # Names always preserved verbatim by the obfuscator and never treated as opaque values.
 DEFAULT_KEEP: frozenset[str] = frozenset(
-    {"self", "cls", "nn", "Module", "setup", "__call__", "__post_init__"}
+    {"self", "cls", "nn", "Module", "setup", "__call__"}
 )
 
 
 class Policy(BaseModel):
-    """Parsed allow-lists. ``reserved`` is filled in by the verifier from the file's imports."""
+    """Parsed allow-lists.
 
-    functions: list[str] = Field(default_factory=list)
-    methods: set[str] = Field(default_factory=set)
-    reserved: set[str] = Field(default_factory=set)
+    ``reserved_names`` is filled by ``verify()`` from the file's import bindings (on a copy of
+    the policy — the caller's instance is not mutated).
+    """
+
+    # allowed functions passed by the user, example: ["jax.*", "flax.linen.*"]
+    allowed_functions: list[str] = Field(default_factory=list)
+
+    # operator bundles passed by the user, example: ["arithmetic", "indexing", "comparison"]
+    allowed_operators: set[str] = Field(default_factory=set)
+
+    # optional disallow globs supplied by the user; these beat the allow, example: ["jax.numpy.save"]
+    disallowed_functions: list[str] = Field(default_factory=list)
+
+    # import aliases reserved against rebinding (set per-file by verify), e.g. {"jnp", "nn"}
+    reserved_names: set[str] = Field(default_factory=set)
 
     @classmethod
     def parse(
         cls,
         allow_functions: list[str] | None = None,
-        allow_methods: list[str] | None = None,
+        allow_operators: list[str] | None = None,
+        disallow_functions: list[str] | None = None,
     ) -> "Policy":
-        functions = _clean(allow_functions)
-        methods = set(_clean(allow_methods))
-        unknown = methods - ALL_BUNDLES
+        allowed_functions = _clean(allow_functions)
+        allowed_operators = set(_clean(allow_operators))
+        disallowed_functions = _clean(disallow_functions)
+        unknown = allowed_operators - ALL_BUNDLES
         if unknown:
             raise ValueError(
-                f"unknown method bundle(s): {sorted(unknown)}; allowed: {sorted(ALL_BUNDLES)}"
+                f"unknown operator bundle(s): {sorted(unknown)}; allowed: {sorted(ALL_BUNDLES)}"
             )
-        return cls(functions=functions, methods=methods)
+        return cls(
+            allowed_functions=allowed_functions,
+            allowed_operators=allowed_operators,
+            disallowed_functions=disallowed_functions,
+        )
 
     # ── path matching ──────────────────────────────────────────────────────────────────
     def function_allowed(self, dotted: str) -> bool:
-        """True iff a fully-qualified dotted path is allowed (and not denylisted)."""
-        if any(fnmatch.fnmatchcase(dotted, pat) for pat in JAX_DENYLIST):
+        """True if a fully-qualified dotted path is allowed (and not disallowed).
+
+        An optional user-supplied ``disallowed_functions`` glob beats the allow, so an author can
+        keep a hard floor over a broad allow like ``jax.*``. Empty (the default) => pure allow-list.
+        """
+        if any(fnmatch.fnmatchcase(dotted, pat) for pat in self.disallowed_functions):
             return False
-        return any(_path_matches(dotted, pat) for pat in self.functions)
+        return any(_path_matches(dotted, pat) for pat in self.allowed_functions)
 
     def bundle_enabled(self, name: str) -> bool:
-        return name in self.methods
+        return name in self.allowed_operators
 
     def policy_id(self) -> str:
         """A short, stable identifier for the policy (for the certificate)."""
-        import hashlib
-
-        blob = "|".join(sorted(self.functions)) + "##" + "|".join(sorted(self.methods))
+        blob = (
+            "|".join(sorted(self.allowed_functions))
+            + "##"
+            + "|".join(sorted(self.allowed_operators))
+            + "##"
+            + "|".join(sorted(self.disallowed_functions))
+        )
         return hashlib.sha256(blob.encode()).hexdigest()[:16]
 
 

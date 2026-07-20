@@ -8,6 +8,7 @@ from typing import Literal, Optional
 import yaml
 from syft_migration import MigratableObject
 
+from ...config import is_protocol_dir_name
 from ...migrations import job_registry
 
 
@@ -32,27 +33,35 @@ class JobSubmissionMetadataV1(MigratableObject, registry=job_registry):
     datasets: Optional[dict[str, list[str]]] = None  # do_email -> [dataset_name]
     headers: dict = {}  # extensible metadata (e.g. job_type, datasets)
 
+    def disk_dict(self) -> dict:
+        """The on-disk form: emails are derived from the path, not stored."""
+        return self.model_dump(mode="json", exclude={"datasite_email", "submitted_by"})
+
     def save(self, path: Path) -> None:
         """Write config to a YAML file."""
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w") as f:
-            yaml.dump(
-                self.model_dump(
-                    mode="json", exclude={"datasite_email", "submitted_by"}
-                ),
-                f,
-                default_flow_style=False,
-            )
+            yaml.dump(self.disk_dict(), f, default_flow_style=False)
 
     @staticmethod
     def is_valid_email(email):
         return re.match(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$", email) is not None
 
     @classmethod
+    def _ds_and_dsite_owner_emails_from_path(cls, path: Path) -> tuple[str, str]:
+        """(submitted_by, datasite_email) from an inbox config.yaml path.
+
+        Layout: <datasite_email>/app_data/job/inbox/<ds_email>/[v<n>/]<job>/config.yaml
+        """
+        ds_dir = path.parent.parent
+        if is_protocol_dir_name(ds_dir.name):
+            ds_dir = ds_dir.parent
+        return ds_dir.name, ds_dir.parents[3].name
+
+    @classmethod
     def load(cls, path: Path) -> JobSubmissionMetadataV1:
         """Load config from a YAML file."""
-        submitted_by = path.parent.parent.name
-        datasite_email = path.parent.parent.parent.parent.parent.parent.name
+        submitted_by, datasite_email = cls._ds_and_dsite_owner_emails_from_path(path)
         if not cls.is_valid_email(datasite_email):
             raise ValueError(f"Invalid datasite email: {datasite_email}")
         with open(path, "r") as f:

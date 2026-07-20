@@ -1,0 +1,277 @@
+{
+  "protocol_schema": {
+    "protocol_name": "syft-job",
+    "version": "0",
+    "supported_versions": {
+      "JobState": ["1"],
+      "JobSubmissionMetadata": ["1"]
+    },
+    "current_object_schemas": {
+      "JobState": {
+        "$defs": {
+          "JobStatus": {
+            "description": "Status of a job in the system.",
+            "enum": [
+              "received",
+              "pending",
+              "approved",
+              "rejected",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "JobStatus",
+            "type": "string"
+          }
+        },
+        "description": "Represents the state of a job, stored as state.yaml in the review/ directory.",
+        "properties": {
+          "canonical_name": {
+            "default": "JobState",
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "version": {
+            "default": "1",
+            "title": "Version",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/$defs/JobStatus",
+            "default": "received"
+          },
+          "received_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Received At"
+          },
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Approved By"
+          },
+          "approved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Approved At"
+          },
+          "approval_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Approval Method"
+          },
+          "rejected_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rejected By"
+          },
+          "rejected_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rejected At"
+          },
+          "review_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Review Reason"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Completed At"
+          },
+          "return_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Return Code"
+          }
+        },
+        "title": "JobStateV1",
+        "type": "object"
+      },
+      "JobSubmissionMetadata": {
+        "description": "Represents the job submission metadata, stored under\nSyftBox/<datasite_email>/app_data/job/inbox/<ds_email>/<job_name>/config.yaml.",
+        "properties": {
+          "canonical_name": {
+            "default": "JobSubmissionMetadata",
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "version": {
+            "default": "1",
+            "title": "Version",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "default": "python",
+            "enum": ["python", "bash"],
+            "title": "Type",
+            "type": "string"
+          },
+          "submitted_by": {
+            "title": "Submitted By",
+            "type": "string"
+          },
+          "datasite_email": {
+            "title": "Datasite Email",
+            "type": "string"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "entrypoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Entrypoint"
+          },
+          "dependencies": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "files": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "is_folder_submission": {
+            "default": false,
+            "title": "Is Folder Submission",
+            "type": "boolean"
+          },
+          "code_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Code Path"
+          },
+          "job_type": {
+            "default": "local",
+            "enum": ["local", "enclave"],
+            "title": "Job Type",
+            "type": "string"
+          },
+          "datasets": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Datasets"
+          },
+          "headers": {
+            "additionalProperties": true,
+            "default": {},
+            "title": "Headers",
+            "type": "object"
+          }
+        },
+        "required": ["name", "submitted_by", "datasite_email", "submitted_at"],
+        "title": "JobSubmissionMetadataV1",
+        "type": "object"
+      }
+    }
+  }
+}

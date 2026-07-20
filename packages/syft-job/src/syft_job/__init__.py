@@ -6,7 +6,12 @@ from .config import SyftJobConfig
 from .job import JobInfo, JobsList
 from .job_runner import SyftJobRunner, create_runner
 from .migrations import job_registry
+from .migrations.history import register_historic_schemas
 from .models import JobState, JobStatus, JobSubmissionMetadata
+
+# Historic schemas list object versions that must already be registered, which
+# happens when the models above are imported.
+register_historic_schemas()
 
 __all__ = [
     "__version__",

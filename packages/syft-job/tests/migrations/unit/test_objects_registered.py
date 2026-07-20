@@ -25,7 +25,7 @@ def test_versioned_objects_registered_and_aliased():
     assert JobState is JobStateV1
 
     # The protocol schema covers both objects and resolves a current version.
-    schema = job_registry.current_protocol_schema
+    schema = job_registry.compute_protocol_schema()
     assert {"JobSubmissionMetadata", "JobState"} <= set(schema.supported_versions)
     assert schema.current_schema(canonical_name="JobState")
     assert schema.current_schema(canonical_name="JobSubmissionMetadata")
