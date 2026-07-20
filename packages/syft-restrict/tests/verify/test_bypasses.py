@@ -615,3 +615,44 @@ def test_duplicate_method_name_split_across_public_and_private_must_be_flagged(
             return x
     """
     _assert_error_code(verify_all, src, "duplicate-method", private=[[8, 9]])
+
+
+# ── safe-local verdict must be cleared on every rebind form, not just plain assign ───────────
+
+
+def test_tuple_unpack_rebind_clears_safe_local_verdict(verify_all):
+    # `b = self.dense` marks b safe; `b, _ = fn, b` rebinds b to an opaque param (tuple-unpack
+    # targets bind in the current scope, so the rebind leaks). The unpack must clear b's safe
+    # verdict, so the later b(x) is call-unresolved rather than trusting the stale verdict.
+    src = """
+    class Block:
+        def __call__(self, x):
+            return x
+    class M:
+        def setup(self):
+            self.dense = Block()
+        def steal(self, x, fn):
+            b = self.dense
+            b, _ = fn, b
+            return b(x)
+    """
+    _assert_error_code(verify_all, src, "call-unresolved")
+
+
+def test_for_loop_target_rebind_clears_safe_local_verdict(verify_all):
+    # `for b in [fn]:` rebinds b to an opaque element (for-loop vars leak to the enclosing scope).
+    # The for-target must clear b's safe verdict, so b(x) is call-unresolved.
+    src = """
+    class Block:
+        def __call__(self, x):
+            return x
+    class M:
+        def setup(self):
+            self.dense = Block()
+        def steal(self, x, fn):
+            b = self.dense
+            for b in [fn]:
+                return b(x)
+            return x
+    """
+    _assert_error_code(verify_all, src, "call-unresolved")

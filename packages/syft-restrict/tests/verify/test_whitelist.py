@@ -213,6 +213,25 @@ def test_self_attr_reassigned_local_alias_is_not_stuck_tainted(verify_all):
     assert _ok(verify_all(src))[0]
 
 
+def test_comprehension_target_does_not_taint_outer_local(verify_all):
+    """A comprehension has its own scope (py3): ``[b for b in ...]`` does NOT rebind the outer
+    ``b``, so a safe local stays safe and remains callable afterward. Guards against clearing
+    the verdict for comprehension targets, which would be an over-denial."""
+    src = """
+    class Block:
+        def __call__(self, x):
+            return x
+    class M:
+        def setup(self):
+            self.dense = Block()
+        def run(self, x):
+            b = self.dense
+            [b for b in [x]]
+            return b(x)
+    """
+    assert _ok(verify_all(src))[0]
+
+
 # ── decorators / dunder defs / bases ─────────────────────────────────────────
 
 

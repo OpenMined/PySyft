@@ -360,6 +360,10 @@ class _Checker:
         # --- name binding (assignments, params) ---
         elif isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
             self._track_safe_local(node)
+        elif isinstance(node, ast.For):
+            # the loop variable leaks to the enclosing scope and is rebound each iteration to an
+            # unvettable element of the iterable, so clear any safe verdict it may carry.
+            self._clear_safe_locals(node.target)
         elif isinstance(node, ast.arg):
             self._check_reserved_name(node, node.arg)
 
@@ -803,17 +807,30 @@ class _Checker:
         safe = self._safe_locals_stack[-1]
         targets, value = self._assignment_targets_and_value(node)
 
-        # check each target in the assignment. If it's a Name, track whether
-        # it's provably safe to call. If it's not a Name (e.g., a tuple
-        # unpacking), skip it. If the value is None (AnnAssign without a value),
-        # clear the verdict.
+        # A plain `x = <value>` target gets the RHS's verdict. Any other target shape -- a
+        # tuple/list/starred unpack (`b, _ = ...`) -- has no single value to attribute to each
+        # name, so it CLEARS every name it binds. Clearing (not skipping) matters when the name was
+        # already tracked safe: `b = self.dense; b, _ = fn, b` must drop b's stale safe verdict,
+        # since the unpack rebinds b in this scope at runtime.
         for t in targets:
-            if not isinstance(t, ast.Name):
-                continue
-            if value is not None and self._is_safe_local_source(value):
-                safe[t.id] = True
+            if isinstance(t, ast.Name):
+                if value is not None and self._is_safe_local_source(value):
+                    safe[t.id] = True
+                else:
+                    safe.pop(t.id, None)
             else:
-                safe.pop(t.id, None)
+                self._clear_safe_locals(t)
+
+    def _clear_safe_locals(self, target: ast.AST) -> None:
+        """Drop the safe-call verdict for every local name bound by ``target``.
+
+        Used for binding forms that rebind a name in the current scope without a single vettable
+        value: tuple/list/starred unpack targets and ``for``-loop targets. A comprehension target
+        is deliberately NOT cleared here -- in Python 3 it has its own scope and does not leak to
+        the enclosing one, so the outer name's verdict still holds."""
+        safe = self._safe_locals_stack[-1]
+        for name in _iter_bound_local_names(target):
+            safe.pop(name, None)
 
     def _is_safe_local_source(self, value: ast.AST) -> bool:
         """Is a local provably safe to call?"""
@@ -891,6 +908,19 @@ class _Checker:
         """Resolve an import alias, then apply the policy allow-list (disallow
         beats allow)."""
         return self.policy.function_allowed(self._resolve(path))
+
+
+def _iter_bound_local_names(target: ast.AST):
+    """Yield every plain local Name id bound by a Store-context target, recursing into
+    tuple/list-unpack and starred targets (``a, *rest = ...``). Attribute/subscript targets bind
+    no local name and are skipped."""
+    if isinstance(target, ast.Name):
+        yield target.id
+    elif isinstance(target, (ast.Tuple, ast.List)):
+        for elt in target.elts:
+            yield from _iter_bound_local_names(elt)
+    elif isinstance(target, ast.Starred):
+        yield from _iter_bound_local_names(target.value)
 
 
 # ── self-attribute trust ────────────────────────────────────────────────────────────────────────
