@@ -30,6 +30,7 @@ Every file has two regions:
 | **Public**  | Imports, data loading, wrappers the data owner can read | No (human review)        |
 | **Private** | Hidden model math (`setup` / `__call__`, layers)        | Yes                      |
 
+
 You mark private code either with `# syft-restrict: ...` comments in the source, or with explicit
 1-based line ranges passed as `obfuscate`/`hide` to `run()` (the private region is their union
 either way).
@@ -99,6 +100,21 @@ itself. Any of these raise `MarkerError`:
 >
 > A clean `verify()` means the private region cannot escape on its own, not that
 > the whole file is safe to execute.
+
+### Imports
+
+Imports happen in the public region but govern what the private region may
+reach:
+
+- **Public imports are unchecked.** Any module may be imported in public code;
+  syft-restrict never restricts or inspects the import itself.
+- **Private imports are banned outright** — an `import` inside the private
+  region is rejected as `banned-construct`.
+- **The private region's *use* of an import is what's gated.** A private call
+  like `jnp.einsum(...)` resolves through the public import table and must match
+  `allow_functions` (see below); otherwise it fails. So the control point is the
+  private-side call, not the public import.
+
 
 ---
 
