@@ -22,6 +22,7 @@ from .astutil import (
     dotted_name,
     is_dunder,
     node_in_ranges,
+    node_overlaps_ranges,
     normalize_ranges,
     rooted_in_self,
     scan_file,
@@ -111,6 +112,26 @@ _BANNED_NODES: tuple[type[ast.AST], ...] = (
     # {expr} invokes type(expr).__format__(expr, spec) with no Call node for _check_call to see.
     ast.JoinedStr,
     ast.FormattedValue,
+)
+
+# Compound statements own an indented suite, so a public header + private body is normal marker
+# usage (mark the body private, leave the `def`/`for`/`if` line public) -- NOT a boundary straddle.
+# Their bodies are separate statements the walk enforces on their own; only *simple* statements and
+# expressions that themselves span the boundary count as straddling. Excluded from straddle-enforce.
+_COMPOUND_NODES: tuple[type[ast.AST], ...] = (
+    ast.Module,
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+    ast.ClassDef,
+    ast.For,
+    ast.AsyncFor,
+    ast.While,
+    ast.If,
+    ast.With,
+    ast.AsyncWith,
+    ast.Try,
+    ast.TryStar,
+    ast.Match,
 )
 
 # violation-code registry: every code a check can raise, one line each (docs/blacklist.md)
@@ -220,6 +241,14 @@ class _Checker:
     def visit(self, node: ast.AST) -> None:
         """Walk the whole tree; enforce only on nodes inside the private ranges, recurse everywhere."""
         if node_in_ranges(node, self.ranges):
+            self._enforce(node)
+        elif not isinstance(node, _COMPOUND_NODES) and node_overlaps_ranges(
+            node, self.ranges
+        ):
+            # A multi-line statement/expression whose start line is public but whose span reaches
+            # into a private range. Default-deny: resolve the ambiguity by treating the whole node
+            # as private and verifying it. Compound statements are exempt -- a public header over a
+            # private body is normal marker usage, and their body statements are enforced by the walk.
             self._enforce(node)
         else:
             # private-defined names are reserved everywhere, including in public
@@ -966,7 +995,9 @@ class _SelfAttrTrust:
     one ``_Checker`` (one ``verify()`` call).
     """
 
-    def __init__(self, scan: FileScan, resolved_allowed, allow_base_class: bool = True) -> None:
+    def __init__(
+        self, scan: FileScan, resolved_allowed, allow_base_class: bool = True
+    ) -> None:
         self._scan = scan
         self._resolved_allowed = resolved_allowed
         # the verdict for a self.<attr> never assigned in the class body: True presumes it is

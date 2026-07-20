@@ -340,3 +340,14 @@ def test_stringized_annotation_is_not_flagged(verify_all):
         return x
     """
     assert _ok(verify_all(src))[0]
+
+
+def test_fully_private_multiline_call_is_allowed(verify_all):
+    """A multi-line call entirely within the private region verifies normally."""
+    src = """
+    def f(xs):
+        return sum(
+            xs
+        )
+    """
+    assert _ok(verify_all(src))[0]

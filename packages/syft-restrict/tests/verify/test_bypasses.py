@@ -656,3 +656,25 @@ def test_for_loop_target_rebind_clears_safe_local_verdict(verify_all):
             return x
     """
     _assert_error_code(verify_all, src, "call-unresolved")
+
+
+# ── multi-line statement straddling the public->private boundary ─────────────
+
+
+def test_boundary_straddle_is_verified_as_private(verify_all):
+    # `jnp.save(` starts on a PUBLIC line but its args are in the private range. Range membership
+    # is start-line based, so the call was historically skipped. Default-deny: a node whose span
+    # overlaps the private region is verified as private. Under a tight policy (no jnp.save) the
+    # straddling call must be caught.
+    src = """
+    import jax.numpy as jnp
+    def f(arr):
+        r = jnp.save(
+            "x.npy",
+            arr)
+        return r
+    """
+    result = verify_all(
+        src, pol=make_policy(functions=["jax.numpy.einsum"]), private=[[4, 5]]
+    )
+    assert "call-not-allowed" in get_error_codes(result)

@@ -36,6 +36,20 @@ def node_in_ranges(node: ast.AST, ranges) -> bool:
     return line is not None and row_in_ranges(line, ranges)
 
 
+def node_overlaps_ranges(node: ast.AST, ranges) -> bool:
+    """True if a node's line SPAN intersects any range.
+
+    Unlike ``node_in_ranges`` (which tests only the start line), this also catches a multi-line
+    node that begins outside the ranges but extends into one -- a statement straddling the
+    public/private boundary. Nodes with no position never overlap.
+    """
+    start = getattr(node, "lineno", None)
+    if start is None:
+        return False
+    end = getattr(node, "end_lineno", None) or start
+    return any(start <= hi and lo <= end for lo, hi in ranges)
+
+
 # ── reading names and dotted paths off the tree ──────────────────────────────────────────────
 def dotted_name(node: ast.AST) -> str | None:
     """The dotted path for a pure Name/Attribute chain (``jnp.numpy.einsum``), else None.
