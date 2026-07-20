@@ -34,6 +34,10 @@ test-unit-migration:
     #!/bin/bash
     uv run pytest -n auto ./packages/syft-migration/tests
 
+test-unit-restrict:
+    #!/bin/bash
+    uv run pytest -n auto ./packages/syft-restrict/tests
+
 
 test-unit-enclave:
     #!/bin/bash

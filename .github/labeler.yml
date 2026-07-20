@@ -37,3 +37,8 @@ pkg:syft-enclave:
   - changed-files:
       - any-glob-to-any-file:
           - 'packages/syft-enclave/**'
+
+pkg:syft-restrict:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/syft-restrict/**'
