@@ -191,8 +191,13 @@ class _Checker:
         # enclosing class/def/lambda stack, for _enclosing_class() and self/cls-position checks
         self._scope_stack: list[ast.AST] = []
 
-        # answers "is self.<attr> safe to call?" -- see _SelfAttrTrust below
-        self._self_attr = _SelfAttrTrust(scan, self._resolved_allowed)
+        # answers "is self.<attr> safe to call?" -- see _SelfAttrTrust below. allow_base_class_attributes
+        # controls whether a never-assigned attr is presumed inherited-safe or rejected.
+        self._self_attr = _SelfAttrTrust(
+            scan,
+            self._resolved_allowed,
+            allow_base_class=policy.allow_base_class_attributes,
+        )
 
         # nodes inside a type annotation (never invoked), exempt from name/container checks
         self._annotation_nodes: set[int] = set()
@@ -201,6 +206,10 @@ class _Checker:
         # _is_safe_local_source. Starts with one frame already present because Module itself never
         # pushes a scope in visit() (only ClassDef/FunctionDef/Lambda do)
         self._safe_locals_stack: list[dict[str, bool]] = [{}]
+
+        # when False, _track_safe_local records nothing, so a local aliased to a safe callable is
+        # never itself trusted as a bare-name call target -- the callee must be called directly.
+        self._allow_local_assignments = policy.allow_local_assignments
 
     def report(self, node: ast.AST, code: ViolationCode, message: str) -> None:
         self.violations.append(
@@ -776,6 +785,12 @@ class _Checker:
         Any other assignment to a previously-tracked name clears its verdict --
         it no longer traces to that source."""
 
+        # Local-alias tracking disabled: never record any local as safe, so a bare-name call to a
+        # local (block = self.layers[0]; block(x)) falls through to call-unresolved. Callables must
+        # be called directly (self.layers[0](x)) instead.
+        if not self._allow_local_assignments:
+            return
+
         # Module itself never pushes a scope in visit(), so we added a frame at
         # init and never pop it. The stack should never be empty.
         if not self._safe_locals_stack:
@@ -921,9 +936,12 @@ class _SelfAttrTrust:
     one ``_Checker`` (one ``verify()`` call).
     """
 
-    def __init__(self, scan: FileScan, resolved_allowed) -> None:
+    def __init__(self, scan: FileScan, resolved_allowed, allow_base_class: bool = True) -> None:
         self._scan = scan
         self._resolved_allowed = resolved_allowed
+        # the verdict for a self.<attr> never assigned in the class body: True presumes it is
+        # inherited from the (already-vetted) base class; False rejects it (docs/verify.md).
+        self._allow_base_class = allow_base_class
         self._cache: dict[int, dict[str, bool]] = {}  # id(ClassDef) -> {attr: is-safe}
 
     def is_safe(self, attr: str, cls_node: ast.ClassDef | None) -> bool:
@@ -938,10 +956,9 @@ class _SelfAttrTrust:
             table = self._build_table(cls_node)
             self._cache[id(cls_node)] = table
 
-        # return True if the attribute is safe, False if not, and True if the
-        # attribute was never assigned in this class (inherited from a vetted
-        # base)
-        return table.get(attr, True)
+        # a safe/unsafe verdict for an attr the class assigns; for one it never assigns, fall back
+        # to _allow_base_class (presumed inherited from a vetted base, unless the caller disabled it)
+        return table.get(attr, self._allow_base_class)
 
     def _build_table(self, cls_node: ast.ClassDef) -> dict[str, bool]:
         """For every self.<name> assigned anywhere in the class, record whether

@@ -1,7 +1,6 @@
-"""Comment-based markup, an alternative to hand-counted line ranges.
+"""Comment-based markup — the way a source file designates its private/hidden regions.
 
-Instead of passing ``obfuscate``/``hide`` as ``[start, end]`` line numbers to ``run()``, a source
-file may mark its own private/hidden regions with comments::
+A source file marks its own private/hidden regions with comments::
 
     # syft-restrict: obfuscate-start
     def attention(x):
@@ -15,9 +14,8 @@ strictly stronger transform (whole line blanked) than obfuscate (structure prese
 renamed), so carving out a stricter sub-region is safe. The reverse is not: obfuscate cannot nest
 inside hide, and neither kind may nest inside itself.
 
-``parse_markers(source)`` resolves these into the same ``(obfuscate_ranges, hide_ranges)`` shape
-``run()`` already accepts. ``run()`` uses this automatically when both ``obfuscate`` and ``hide``
-are omitted.
+``parse_markers(source)`` resolves these into ``(obfuscate_ranges, hide_ranges)``. ``run()`` calls
+it to locate the private region; a file with no markers raises ``MarkerError``.
 """
 
 from __future__ import annotations
@@ -110,8 +108,7 @@ class _MarkerParser:
         if not self._lines["obfuscate"] and not self._lines["hide"]:
             raise MarkerError(
                 "no syft-restrict markers found in source; add `# syft-restrict: obfuscate-start` "
-                "/ `# syft-restrict: obfuscate-end` (or `hide`) around the private code, or pass "
-                "obfuscate=/hide= explicitly to run()"
+                "/ `# syft-restrict: obfuscate-end` (or `hide`) around the private code"
             )
         return _compact(self._lines["obfuscate"]), _compact(self._lines["hide"])
 

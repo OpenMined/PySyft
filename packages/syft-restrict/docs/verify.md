@@ -90,10 +90,9 @@ itself. Any of these raise `MarkerError`:
 | `obfuscate` nested inside `hide`                                | `MarkerError`                                                    |
 | `obfuscate` nested inside `obfuscate` (or `hide` inside `hide`) | `MarkerError`                                                    |
 | A block with nothing between its start/end                      | `MarkerError` (empty block)                                      |
-| No `# syft-restrict: ...` marker anywhere in the file           | `MarkerError`, unless `obfuscate=`/`hide=` are passed explicitly |
+| No `# syft-restrict: ...` marker anywhere in the file           | `MarkerError` (the private region is designated by markers) |
 
-`run()` scans for these markers automatically whenever `obfuscate` and `hide` are both omitted;
-passing either explicitly (even `[]`) skips marker scanning entirely and uses your ranges as-is.
+`run()` resolves the private region from these markers; a file with none raises `MarkerError`.
 
 > [!WARNING]
 > Private code may **call** public wrappers by name. Public code is trusted, not verified.

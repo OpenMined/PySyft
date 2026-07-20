@@ -56,36 +56,31 @@ Then run:
 import syft_restrict as restrict
 
 result = restrict.run(
-    "gemma_inference.py",
+    "gemma_inference_marked.py",
     allow_functions=["jax.*", "flax.linen.*"],  # functions callable BY NAME (path-resolved)
     allow_operators=["arithmetic", "indexing", "comparison"],  # operators allowed ON A VALUE
 )
-# On success: writes gemma_inference.obfuscated.py and returns result.certificate.
+# On success: writes gemma_inference_marked.obfuscated.py and returns result.certificate.
 # On a policy violation: raises PolicyViolation naming each offending line.
-# If the file has no markers and obfuscate=/hide= are both omitted: raises MarkerError.
+# If the file has no `# syft-restrict: ...` markers: raises MarkerError.
 ```
 
-`obfuscate=`/`hide=` still work as an explicit escape hatch — pass either one (even an
-empty list) and marker scanning is skipped entirely in favor of your own 1-based line
-ranges:
+The private region is designated **only** by `# syft-restrict: ...` comment markers in the
+source; `run()` resolves them and refuses a file that carries none. This is how
+**[examples/gemma_inference_marked.py](examples/gemma_inference_marked.py)** generates its
+obfuscated copy — see [examples/generate_marked.py](examples/generate_marked.py).
+
+Two optional strictness flags, both defaulting to the permissive behavior:
 
 ```python
 result = restrict.run(
-    "gemma_inference.py",
-    obfuscate=[[22, 93], [99, 280]],  # 1-based ranges: identifiers renamed, constants blanked
-    hide=[],                          # 1-based ranges: whole line replaced with ■■■■■■■■
+    "gemma_inference_marked.py",
     allow_functions=["jax.*", "flax.linen.*"],
     allow_operators=["arithmetic", "indexing", "comparison"],
+    allow_local_assignments=True,   # False: a local aliased to a callable can't be called by name
+    allow_base_class_attributes=True,  # False: a never-assigned self.<attr> is not presumed inherited
 )
 ```
-
-This is how **[examples/gemma_inference.py](examples/gemma_inference.py)** generates
-**[examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py)** —
-see [examples/generate.py](examples/generate.py).
-
-The same model marked up with comment blocks instead of numeric ranges lives in
-**[examples/gemma_inference_marked.py](examples/gemma_inference_marked.py)** /
-[examples/generate_marked.py](examples/generate_marked.py).
 
 If syft-restrict was successfully executed on the true original file, the obfuscated file can be safely shared without exposing the private section.
 

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from syft_restrict import MarkerError, PolicyViolation, run
+from syft_restrict.runner import _run
 from verify.helpers import normalize_source
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -22,7 +23,7 @@ def _private(source: str):
 def test_run_success_writes_obfuscated_and_certificate(tmp_path):
     src = tmp_path / "model.py"
     shutil.copy(FIXTURES / "compliant_model.py", src)
-    result = run(
+    result = _run(
         src,
         obfuscate=_private(src.read_text()),
         allow_functions=ALLOW_FUNCTIONS,
@@ -41,7 +42,7 @@ def test_run_strict_raises_and_writes_nothing(tmp_path):
     src = tmp_path / "bad.py"
     src.write_text("CONFIG = dict(dim=8)\nimport os\nleak = os.getcwd()\n")
     with pytest.raises(PolicyViolation) as exc:
-        run(
+        _run(
             src,
             obfuscate=[[1, 3]],
             allow_functions=ALLOW_FUNCTIONS,
@@ -54,7 +55,7 @@ def test_run_strict_raises_and_writes_nothing(tmp_path):
 def test_run_nonstrict_returns_violations(tmp_path):
     src = tmp_path / "bad.py"
     src.write_text("CONFIG = dict(dim=8)\nleak = x.reshape(1)\n")
-    result = run(
+    result = _run(
         src,
         obfuscate=[[1, 2]],
         allow_functions=ALLOW_FUNCTIONS,
@@ -91,7 +92,9 @@ def test_run_auto_detects_markers_when_ranges_omitted(tmp_path):
     )  # the private region's own identifiers were renamed
 
 
-def test_run_without_markers_or_ranges_raises_marker_error(tmp_path):
+def test_run_without_markers_raises_marker_error(tmp_path):
+    # run() is markers-only: a file with no `# syft-restrict:` markers has no private region to
+    # resolve, so parse_markers() raises rather than silently verifying nothing.
     src = tmp_path / "unmarked.py"
     src.write_text(
         normalize_source("""
@@ -104,20 +107,20 @@ def test_run_without_markers_or_ranges_raises_marker_error(tmp_path):
         run(src, allow_functions=ALLOW_FUNCTIONS, allow_operators=ALLOW_OPERATORS)
 
 
-def test_run_explicit_ranges_bypass_marker_scanning(tmp_path):
-    # A stray unmatched marker would make parse_markers() raise -- explicit obfuscate= must skip
-    # marker scanning entirely rather than validating markers it isn't going to use.
+def test__run_uses_explicit_ranges_and_ignores_markers(tmp_path):
+    # _run() takes ranges directly and never scans markers, so a stray/unmatched marker in the
+    # source (which would make run()'s parse_markers raise) is simply ignored.
     src = tmp_path / "model.py"
     src.write_text(
         normalize_source("""
     # syft-restrict: obfuscate-start
     CONFIG = dict(dim=8)
-    leak = os.getcwd()  # unmatched block, no obfuscate-end
+    x = CONFIG  # unmatched block, no obfuscate-end
     """)
     )
-    result = run(
+    result = _run(
         src,
-        obfuscate=[[1, 2]],
+        obfuscate=[[1, 3]],
         allow_functions=ALLOW_FUNCTIONS,
         allow_operators=ALLOW_OPERATORS,
     )

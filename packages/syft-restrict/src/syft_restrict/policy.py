@@ -116,6 +116,14 @@ class Policy(BaseModel):
     # optional disallow globs supplied by the user; these beat the allow, example: ["jax.numpy.save"]
     disallowed_functions: list[str] = Field(default_factory=list)
 
+    # when False, a local assigned a safe callable is no longer trusted as a bare-name call target
+    # (disables _track_safe_local); the callee must instead be called directly (docs/verify.md).
+    allow_local_assignments: bool = True
+
+    # when False, a `self.<attr>` never assigned in the class body is NOT presumed inherited-safe;
+    # only attributes the class assigns a vetted source may be called (docs/verify.md).
+    allow_base_class_attributes: bool = True
+
     # import aliases reserved against rebinding (set per-file by verify), e.g. {"jnp", "nn"}
     reserved_names: set[str] = Field(default_factory=set)
 
@@ -125,6 +133,8 @@ class Policy(BaseModel):
         allow_functions: list[str] | None = None,
         allow_operators: list[str] | None = None,
         disallow_functions: list[str] | None = None,
+        allow_local_assignments: bool = True,
+        allow_base_class_attributes: bool = True,
     ) -> "Policy":
         allowed_functions = _clean(allow_functions)
         allowed_operators = set(_clean(allow_operators))
@@ -138,6 +148,8 @@ class Policy(BaseModel):
             allowed_functions=allowed_functions,
             allowed_operators=allowed_operators,
             disallowed_functions=disallowed_functions,
+            allow_local_assignments=allow_local_assignments,
+            allow_base_class_attributes=allow_base_class_attributes,
         )
 
     # ── path matching ──────────────────────────────────────────────────────────────────
@@ -162,6 +174,8 @@ class Policy(BaseModel):
             + "|".join(sorted(self.allowed_operators))
             + "##"
             + "|".join(sorted(self.disallowed_functions))
+            + "##"
+            + f"local={int(self.allow_local_assignments)}|baseattr={int(self.allow_base_class_attributes)}"
         )
         return hashlib.sha256(blob.encode()).hexdigest()[:16]
 

@@ -15,11 +15,11 @@ whole lines with a ■■■■■■■■ marker. The verified region is their
 import json
 from pathlib import Path
 
-from syft_restrict import run
+from syft_restrict.runner import _run  # explicit numeric ranges -> internal entry point
 
 EX = Path(__file__).parent
 
-result = run(
+result = _run(
     path=EX / "gemma_inference.py",
     obfuscate=[
         [24, 88],  # CONFIG dict (+ commented size variants) + shared constants
