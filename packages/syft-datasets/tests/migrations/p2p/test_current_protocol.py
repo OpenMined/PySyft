@@ -17,7 +17,7 @@ DS0 = "old@test.org"
 DS1 = "new@test.org"
 
 
-def _src(tmp_path: Path) -> tuple[Path, Path, Path]:
+def _create_dataset_files(tmp_path: Path) -> tuple[Path, Path, Path]:
     src = tmp_path / "src"
     src.mkdir()
     mock = src / "mock.csv"
@@ -29,7 +29,7 @@ def _src(tmp_path: Path) -> tuple[Path, Path, Path]:
     return mock, private, readme
 
 
-def _manager(tmp_path: Path, peer_schemas=None) -> SyftDatasetManager:
+def _dataset_manager(tmp_path: Path, peer_schemas=None) -> SyftDatasetManager:
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
     mgr = SyftDatasetManager(syftbox_folder_path=syftbox, email=DO_EMAIL)
@@ -39,8 +39,8 @@ def _manager(tmp_path: Path, peer_schemas=None) -> SyftDatasetManager:
 
 
 def test_default_create_writes_protocol_0(tmp_path: Path):
-    mgr = _manager(tmp_path)
-    mock, private, readme = _src(tmp_path)
+    mgr = _dataset_manager(tmp_path)
+    mock, private, readme = _create_dataset_files(tmp_path)
 
     dataset = mgr.create(
         name="demo", mock_path=mock, private_path=private, readme_path=readme
@@ -59,8 +59,8 @@ def test_default_create_writes_protocol_0(tmp_path: Path):
 
 def test_create_for_protocol1_peer_writes_v1(tmp_path: Path):
     schema1 = dataset_registry.schema_for_protocol_version("1")
-    mgr = _manager(tmp_path, peer_schemas={DS1: schema1})
-    mock, private, readme = _src(tmp_path)
+    mgr = _dataset_manager(tmp_path, peer_schemas={DS1: schema1})
+    mock, private, readme = _create_dataset_files(tmp_path)
 
     dataset = mgr.create(
         name="demo",
@@ -86,8 +86,8 @@ def test_create_for_protocol1_peer_writes_v1(tmp_path: Path):
 def test_multi_version_write_for_mixed_audience(tmp_path: Path):
     schema0 = dataset_registry.schema_for_protocol_version("0")
     schema1 = dataset_registry.schema_for_protocol_version("1")
-    mgr = _manager(tmp_path, peer_schemas={DS0: schema0, DS1: schema1})
-    mock, private, readme = _src(tmp_path)
+    mgr = _dataset_manager(tmp_path, peer_schemas={DS0: schema0, DS1: schema1})
+    mock, private, readme = _create_dataset_files(tmp_path)
 
     mgr.create(
         name="demo",
