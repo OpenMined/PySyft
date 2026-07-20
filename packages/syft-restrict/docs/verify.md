@@ -302,7 +302,7 @@ class Net(nn.Module):              # base must be allow-listed (e.g. flax.linen.
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Bases that resolve to an allow-listed path (e.g. `nn.Module`) | `object`, random private bases, non-allow-listed libs                           |
 | —                                                             | Any decorator: `@property`, `@staticmethod`, `@nn.compact`, arbitrary functions |
-| Defining `setup`, `__call__`                                  | `__getattr__`, `__reduce__`, `__post_init__`, other magic methods               |
+| Defining `setup`, `__call__`, `__post_init__`                 | `__getattr__`, `__reduce__`, other magic methods      |
 | —                                                             | `metaclass=` / other class keywords                                             |
 
 ---
