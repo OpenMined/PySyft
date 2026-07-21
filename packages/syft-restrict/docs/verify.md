@@ -115,6 +115,8 @@ reach:
   `allow_functions` (see below); otherwise it fails. So the control point is the
   private-side call, not the public import.
 
+Star imports (`from jax import *`) are disallowed everywhere, because they make
+it impossible to review the imported names.
 
 ---
 

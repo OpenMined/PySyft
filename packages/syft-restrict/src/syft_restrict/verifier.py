@@ -152,6 +152,7 @@ ViolationCode = Literal[
     "dunder-name",  # _check_name
     "operator-disabled",  # _require_bundle
     "duplicate-method",  # _forbid_duplicate_methods
+    "star-import",  # visit (`from ... import *` anywhere in the file)
 ]
 
 
@@ -240,6 +241,18 @@ class _Checker:
     # ── tree walk ───────────────────────────────────────────────────────────────────────────
     def visit(self, node: ast.AST) -> None:
         """Walk the whole tree; enforce only on nodes inside the private ranges, recurse everywhere."""
+        # `from ... import *` is banned everywhere, public region included: it silently pollutes the
+        # namespace and can shadow a name the private region trusts by spelling alone (a safe
+        # builtin, an import alias, a wrapper), and it can't be human-reviewed the way an explicit
+        # import can. Reported here, not via the private-region deny-list, so it fires in public too.
+        if isinstance(node, ast.ImportFrom) and any(a.name == "*" for a in node.names):
+            self.report(
+                node,
+                "star-import",
+                "'from ... import *' is not allowed anywhere in the file; import names explicitly",
+            )
+            return
+
         if node_in_ranges(node, self.ranges):
             self._enforce(node)
         elif not isinstance(node, _COMPOUND_NODES) and node_overlaps_ranges(
