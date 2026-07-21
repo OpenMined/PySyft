@@ -1,0 +1,39 @@
+{
+  "_about": "Risk rules for jax 0.11.x. 'unsafe' = disk/network/host-callback; 'safe' = vetted pure-compute, whose note flags any residual output-channel risk to review in combination (kept deliberately vague). Cross-library rules in _common/default are merged in on top of these. This is advisory, not a proof.",
+  "safe": {
+    "jax.lax": "Module reference, present so deep-path calls (jax.lax.rsqrt) resolve. Does NOT permit calling other jax.lax members (exact-path match, not a glob).",
+    "jax.lax.rsqrt": "Reciprocal square root. Pure; some residual output-channel risk — review in combination.",
+    "jax.nn": "Module reference, present so deep-path calls (jax.nn.softmax / gelu) resolve. Does NOT permit calling other jax.nn members.",
+    "jax.nn.gelu": "GELU activation. Pure; residual output-channel risk only.",
+    "jax.nn.softmax": "Softmax activation. Pure, required for attention; residual output-channel risk — review in combination.",
+    "jax.numpy.arange": "Integer range generator. Pure; produces constants, no secret enters.",
+    "jax.numpy.array": "Materializes input into an array. Pure; low residual risk — review in context.",
+    "jax.numpy.bool_": "Cast to boolean. Pure; residual output-channel risk only.",
+    "jax.numpy.concatenate": "Joins arrays along an axis. Pure; residual output-shaping risk — review in combination.",
+    "jax.numpy.cos": "Element-wise cosine. Pure; residual output-channel risk only.",
+    "jax.numpy.einsum": "Einstein-summation contraction. Pure math, required for attention and projections; very expressive, so it carries the most residual output-channel risk — bound output entropy at the enclave and review in combination.",
+    "jax.numpy.float32": "Cast to float32. Pure; residual output-channel risk only.",
+    "jax.numpy.mean": "Reduction to a mean. Pure; residual risk via the returned value only.",
+    "jax.numpy.ones": "Constant-ones tensor. Pure; scaffolding only.",
+    "jax.numpy.repeat": "Repeats elements. Pure; residual output-shaping risk — review in combination.",
+    "jax.numpy.sin": "Element-wise sine. Pure; residual output-channel risk only.",
+    "jax.numpy.sqrt": "Element-wise square root. Pure; some residual output-channel risk — review in combination.",
+    "jax.numpy.square": "Element-wise square. Pure; no channel of its own (a statistic amplifier, e.g. in RMSNorm).",
+    "jax.numpy.transpose": "Reorders axes. Pure; residual output-shaping risk only.",
+    "jax.numpy.tril": "Lower-triangular mask. Pure; builds attention masks (compositional, low bandwidth).",
+    "jax.numpy.triu": "Upper-triangular mask. Pure; as tril.",
+    "jax.numpy.where": "Element-wise conditional select. Pure; residual output-channel risk — review in combination."
+  },
+  "unsafe": {
+    "jax.debug.*": "Debug host callbacks / stdout (jax.debug.print, jax.debug.callback) — runs host Python and writes to the process stdout.",
+    "jax.distributed.*": "Multi-host coordination — opens outbound network connections to a coordinator address.",
+    "jax.dlpack.*": "Hands raw device buffers to other frameworks (interop escape hatch).",
+    "jax.experimental.*": "Experimental surface — includes io_callback, export, and array_serialization (writes arrays to disk and gs:// cloud storage).",
+    "jax.ffi*": "Foreign-function interface into native code.",
+    "jax.monitoring.*": "Telemetry / metrics reporting hooks.",
+    "jax.numpy.load*": "Reads array(s) from disk (load / loadtxt).",
+    "jax.numpy.save*": "Serializes array(s) to disk (save / savez / savez_compressed / savetxt).",
+    "jax.profiler.*": "Profiler — writes trace / memory-profile files to disk (logdir accepts gs://), and start_server opens a network listener.",
+    "jax.pure_callback": "Runs an arbitrary host Python callback during execution."
+  }
+}

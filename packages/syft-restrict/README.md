@@ -76,10 +76,12 @@ result = restrict.run(
 
 > [!IMPORTANT]
 > List the **specific** paths your model calls, as above — this is the default-deny posture the
-> tool is built for: everything not named is denied. Avoid broad globs like `jax.*`: they pull in
-> JAX's own host-callback and disk-IO functions (`jax.numpy.save`, `jax.debug.callback`,
-> `jax.experimental.io_callback`, …) that the private region could call to exfiltrate data. If you
-> must use a broad glob, pair it with a `disallow_functions` floor — see
+> tool is built for: everything not named is denied, so no `disallow_functions` is needed. **Avoid
+> broad globs like `jax.*`/`flax.*`**: a glob silently pulls in the library's host-callback, disk-IO,
+> and network surface (`jax.numpy.save`, `jax.debug.callback`, `jax.profiler.start_server`,
+> `jax.distributed.initialize`, …) that the private region could use to exfiltrate data. A glob can
+> be paired with a `disallow_functions` floor, but that is a **leaky backstop** — it only blocks
+> what you remembered to list — not a substitute for a tight allow. See
 > [docs/blacklist.md](docs/blacklist.md#optional-disallow_functions).
 
 The private region is designated **only** by `# syft-restrict: ...` comment markers in the
