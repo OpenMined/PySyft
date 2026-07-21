@@ -58,7 +58,7 @@ def test_migrate_dataset_v0_to_v1_preserves_identity(tmp_path: Path):
     # Identity is preserved across the migration (datasets are immutable).
     assert migrated.uid == old.uid
     assert migrated.created_at == old.created_at
-    assert migrated._protocol_version == "1"
+    assert migrated._ref.protocol_version == "1"
 
     # v1 dataset.yaml carries the identity fields (unlike flat protocol 0).
     raw = yaml.safe_load((public_root / "v1" / "demo" / "dataset.yaml").read_text())
@@ -76,7 +76,7 @@ def test_migrate_dataset_v0_to_v1_preserves_identity(tmp_path: Path):
     # get_all() dedupes the two on-disk copies, preferring the newest (v1).
     all_datasets = mgr.get_all()
     assert len(all_datasets) == 1
-    assert all_datasets[0]._protocol_version == "1"
+    assert all_datasets[0]._ref.protocol_version == "1"
 
 
 def test_default_create_writes_protocol_0(tmp_path: Path):
@@ -121,7 +121,7 @@ def test_create_for_protocol1_peer_writes_v1(tmp_path: Path):
     assert DS1 in perm.read_text()
 
     got = mgr.get("demo")
-    assert got.name == "demo" and got._protocol_version == "1"
+    assert got.name == "demo" and got._ref.protocol_version == "1"
 
 
 def test_multi_version_write_for_mixed_audience(tmp_path: Path):
@@ -146,8 +146,8 @@ def test_multi_version_write_for_mixed_audience(tmp_path: Path):
     # get_all() dedupes the two on-disk copies to one, preferring the newest.
     all_datasets = mgr.get_all()
     assert len(all_datasets) == 1
-    assert all_datasets[0]._protocol_version == "1"
-    assert mgr.get("demo")._protocol_version == "1"
+    assert all_datasets[0]._ref.protocol_version == "1"
+    assert mgr.get("demo")._ref.protocol_version == "1"
 
 
 def test_delete_removes_all_protocol_versions(tmp_path: Path):

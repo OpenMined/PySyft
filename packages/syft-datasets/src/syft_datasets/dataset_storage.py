@@ -285,7 +285,7 @@ class DatasetStorage:
             mock_files_urls=[self._url_for(f) for f in mock_file_paths],
         )
         dataset._syftbox_config = self.config
-        dataset._protocol_version = ref.protocol_version
+        dataset._ref = ref
 
         self._copy_private_data(ref, source.private, exclude_names)
 
@@ -451,7 +451,7 @@ class DatasetStorage:
         # Name comes from the path (the dataset dir), never a spoofable file.
         dataset.name = ref.name
         dataset._syftbox_config = self.config
-        dataset._protocol_version = ref.protocol_version
+        dataset._ref = ref
         return dataset
 
     def read_private_config(self, ref: DatasetRef) -> PrivateDatasetConfig:

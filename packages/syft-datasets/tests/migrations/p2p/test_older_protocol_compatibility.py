@@ -67,7 +67,7 @@ def test_old_datasets_load_and_upgrade(released_syftbox_path: Path, tmp_path: Pa
     # Loads into the latest registered version in memory.
     assert dataset.version == dataset_registry.latest_version("Dataset")
     assert dataset.owner == DO_EMAIL
-    assert dataset._protocol_version == _protocol_of(released_syftbox_path)
+    assert dataset._ref.protocol_version == _protocol_of(released_syftbox_path)
     # Private config also loads/upgrades to latest.
     ref = mgr.storage.find_dataset_ref(DO_EMAIL, DATASET)
     private_config = mgr.storage.read_private_config(ref)

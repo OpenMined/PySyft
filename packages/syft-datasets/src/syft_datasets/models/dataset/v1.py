@@ -7,7 +7,7 @@ from typing import ClassVar
 from uuid import UUID, uuid4
 
 import yaml
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 from syft_migration import MigratableObject
 from syft_notebook_ui.formatter_mixin import (
     ANSIPydanticFormatter,
@@ -22,7 +22,6 @@ from ...config import (
 )
 from ...dataset_ref import DatasetRef
 from ...migrations import dataset_registry
-from ...migrations.registry import DATASET_PROTOCOL_VERSION
 from ...url import SyftBoxURL
 from ..private_dataset_config.v1 import PrivateDatasetConfigV1
 
@@ -56,10 +55,11 @@ class DatasetV1(MigratableObject, PydanticFormatterMixin, registry=dataset_regis
     # URLs to uploaded files (excluding metadata files)
     mock_files_urls: list[SyftBoxURL] = Field(default_factory=list)
 
-    # Runtime-only: set by DatasetStorage / the manager, never serialized. The
-    # on-disk protocol layout the dataset lives in (governs the v<n> segment).
+    # Runtime-only: set by DatasetStorage when the dataset is read/created, never
+    # serialized. _ref carries the dataset's identity (owner, name) and its
+    # on-disk protocol layout; it has no default and must be set before use.
     _syftbox_config: SyftBoxConfig | None = None
-    _protocol_version: str = DATASET_PROTOCOL_VERSION
+    _ref: DatasetRef = PrivateAttr()
 
     def disk_dict(self) -> dict:
         """The on-disk form of the dataset metadata."""
@@ -67,7 +67,7 @@ class DatasetV1(MigratableObject, PydanticFormatterMixin, registry=dataset_regis
 
     @property
     def owner(self) -> str:
-        return self.mock_url.host
+        return self._ref.owner
 
     @property
     def syftbox_config(self) -> SyftBoxConfig:
@@ -116,21 +116,18 @@ class DatasetV1(MigratableObject, PydanticFormatterMixin, registry=dataset_regis
 
     @property
     def private_dir(self) -> Path:
-        """The private data dir for this dataset, under the dataset's protocol layout.
+        """The private data dir for this dataset, under its on-disk protocol layout.
 
-        Derived from the path (owner + name + protocol) rather than the stored
-        URL so it stays correct across on-disk layouts. Delegates to the codec's
+        Derived from the ref (owner + name + protocol) rather than the stored URL
+        so it stays correct across on-disk layouts. Delegates to the codec's
         DatasetConfig so layout lives in exactly one place.
         """
         from ...protocolcodecs import dataset_config_for_protocol
 
-        ref = DatasetRef(
-            owner=self.owner, name=self.name, protocol_version=self._protocol_version
-        )
         layout = dataset_config_for_protocol(
-            self._protocol_version, self.syftbox_config
+            self._ref.protocol_version, self.syftbox_config
         )
-        return layout.private_dataset_dir(ref)
+        return layout.private_dataset_dir(self._ref)
 
     @property
     def _private_metadata_dir(self) -> Path:

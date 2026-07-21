@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 from typing_extensions import Self
 
@@ -33,15 +32,6 @@ class SyftDatasetManager:
     @classmethod
     def from_config(cls, config: SyftBoxConfig) -> Self:
         return cls(syftbox_folder_path=config.syftbox_folder, email=config.email)
-
-    def _validate_dataset_name(self, dataset_name: str) -> None:
-        # Returns True if the dataset is a valid path name on unix or windows.
-        if not re.match(r"^[\w-]+$", dataset_name):
-            raise ValueError(
-                f"Invalid dataset name '{dataset_name}'. Only alphanumeric characters, underscores, and hyphens are allowed."
-            )
-        # Reject names that collide with a protocol-version directory (v1, v2, ...).
-        self.storage.validate_dataset_name(dataset_name)
 
     def create(
         self,
