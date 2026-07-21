@@ -138,8 +138,17 @@ def scan_file(tree: ast.Module, private_ranges) -> FileScan:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                # `import jax.numpy as jnp` -> bindings["jnp"] = "jax.numpy"; `import os.path` -> bindings["os"] = "os.path"
-                import_bindings[alias.asname or alias.name.split(".")[0]] = alias.name
+                # Bind the name Python actually binds at runtime:
+                #   `import jax.numpy as jnp` binds `jnp` -> the jax.numpy module
+                #   `import jax.numpy`        binds `jax` -> the jax PACKAGE (not jax.numpy!) --
+                #      you reach save through `jax.numpy.save`, so the root resolves to itself.
+                # Binding the root to the full dotted path would mis-resolve `jax.numpy.save` to
+                # `jax.numpy.numpy.save` and let it slip a disallow floor (see tests/verify).
+                if alias.asname:
+                    import_bindings[alias.asname] = alias.name
+                else:
+                    root = alias.name.split(".")[0]
+                    import_bindings[root] = root
         elif isinstance(node, ast.ImportFrom) and node.module:
             for alias in node.names:
                 import_bindings[alias.asname or alias.name] = (

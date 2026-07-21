@@ -678,3 +678,36 @@ def test_boundary_straddle_is_verified_as_private(verify_all):
         src, pol=make_policy(functions=["jax.numpy.einsum"]), private=[[4, 5]]
     )
     assert "call-not-allowed" in get_error_codes(result)
+
+
+# ── multi-segment `import a.b` must not poison path resolution / defeat the floor ────────────
+
+
+def test_multisegment_import_does_not_bypass_disallow_floor(verify_all):
+    # `import jax.numpy` binds the NAME `jax` (to the jax package) at runtime -- not `jax.numpy`.
+    # A resolver that binds jax -> "jax.numpy" mis-resolves `jax.numpy.save` to
+    # "jax.numpy.numpy.save", so a disallow floor listing jax.numpy.save misses it while runtime
+    # still calls the real function.
+    src = """
+    import jax.numpy
+    def f(x):
+        return jax.numpy.save("/tmp/leak.npy", x)
+    """
+    codes = get_error_codes(
+        verify_all(src, pol=make_policy(disallow=["jax.numpy.save"]), private=[[2, 3]])
+    )
+    assert "call-not-allowed" in codes
+
+
+def test_multi_import_last_wins_does_not_bypass_floor(verify_all):
+    # `import jax` then `import jax.tree_util` must not clobber the `jax` binding to jax.tree_util.
+    src = """
+    import jax
+    import jax.tree_util
+    def f(x):
+        return jax.pure_callback(x, x, x)
+    """
+    codes = get_error_codes(
+        verify_all(src, pol=make_policy(disallow=["jax.pure_callback"]), private=[[3, 4]])
+    )
+    assert "call-not-allowed" in codes
