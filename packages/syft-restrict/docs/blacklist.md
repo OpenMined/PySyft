@@ -153,7 +153,7 @@ y = [v for v in open(path)]  # passive positions still checked
 | Attribute on a value                         | `x.shape`, `x.T`, `obj.send = data`        | `attr-on-value`    |
 | Deep `self` chain                            | `self.a.b`, `self.sub.evil(...)`           | `attr-on-value`    |
 | Unsafe `self.<name>(...)`                    | stashed `open` on `self` in `setup`        | `attr-on-value`    |
-| Dunder attribute                             | `obj.__class__`, `self.__dict__`           | `dunder-attr`      |
+| Dunder attribute                             | `obj.__class__`, `jnp.fn.__wrapped__(x)`   | `dunder-attr`      |
 | Bare dunder name                             | `c = __class__`                            | `dunder-name`      |
 | Library attr not allowed                     | `np.pi` when numpy is not allowed          | `attr-not-allowed` |
 
@@ -173,6 +173,11 @@ def apply(fn, x):
 
 Only single-level `self.<name>` / `cls.<name>` is special-cased. Rules for when `self.x(...)` is
 safe are in [verify.md](verify.md#self-and-flax-style-modules).
+
+> [!IMPORTANT] > **Dunders are denied in call position too, not just when read.** A dunder segment on an
+> allow-listed path — `jnp.einsum.__wrapped__(x)`, `jnp.fn.__globals__[...]` — reaches the
+> function-object introspection surface (`__wrapped__`, `__globals__`, `__defaults__`,
+> `__closure__`, …) and is rejected as `dunder-attr` **regardless of the allow-list**.
 
 ---
 

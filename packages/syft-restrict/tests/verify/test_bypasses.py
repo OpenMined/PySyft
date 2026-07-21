@@ -680,6 +680,36 @@ def test_boundary_straddle_is_verified_as_private(verify_all):
     assert "call-not-allowed" in get_error_codes(result)
 
 
+# ── dunder segment in call position on an allow-listed path ──────────────────────────────────
+
+
+def test_dunder_in_call_position_on_allowed_path(verify_all):
+    # A dunder in DIRECT call position on an allow-listed dotted path must be rejected as
+    # dunder-attr, not gated only by the allow-list. Under a broad `jax.*` glob,
+    # `jnp.einsum.__wrapped__` resolves to a `jax.*` path and would otherwise pass, handing
+    # back the function-object introspection surface (`__wrapped__`, and by the same shape
+    # `__globals__`/`__defaults__` if reachable this way). Read position was already caught;
+    # call position must match.
+    src = """
+    import jax.numpy as jnp
+    def f(x):
+        return jnp.einsum.__wrapped__(x)
+    """
+    codes = get_error_codes(verify_all(src, private=[[2, 3]]))
+    assert "dunder-attr" in codes
+
+
+def test_dunder_call_and_read_positions_are_consistent(verify_all):
+    # The read-then-call form of the same access is caught; the direct-call form must be too.
+    read_then_call = """
+    import jax.numpy as jnp
+    def f(x):
+        g = jnp.einsum.__wrapped__
+        return g(x)
+    """
+    assert "dunder-attr" in get_error_codes(verify_all(read_then_call, private=[[2, 4]]))
+
+
 # ── multi-segment `import a.b` must not poison path resolution / defeat the floor ────────────
 
 

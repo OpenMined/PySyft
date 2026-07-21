@@ -670,6 +670,16 @@ class _Checker:
                 return
             # a non-self dotted path: must resolve to an allow-listed import
             if root in self.scan.import_bindings:
+                # a dunder in call position (allowed.__wrapped__(x)) reaches the function-object
+                # introspection surface; deny it outright, mirroring the read-position check in
+                # _check_attribute rather than letting a broad glob (jax.*) admit it by path.
+                if is_dunder(func.attr):
+                    self.report(
+                        call,
+                        "dunder-attr",
+                        f"access to dunder attribute {func.attr!r} is not allowed",
+                    )
+                    return
                 if not self._resolved_allowed(path):
                     self.report(
                         call,
