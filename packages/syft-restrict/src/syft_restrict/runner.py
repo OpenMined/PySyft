@@ -60,7 +60,10 @@ def run(
             a ``RunResult`` with ``ok=False`` and no output written.
     """
     path = Path(path)
-    obfuscate_ranges, hide_ranges = parse_markers(path.read_text())
+    # Read the source exactly once and hand it to _run, so marker resolution, verification, and
+    # obfuscation all operate on identical bytes (no second read that could race / TOCTOU).
+    source = path.read_text()
+    obfuscate_ranges, hide_ranges = parse_markers(source)
     return _run(
         path,
         obfuscate=obfuscate_ranges,
@@ -72,6 +75,7 @@ def run(
         allow_base_class_attributes=allow_base_class_attributes,
         out=out,
         strict=strict,
+        source=source,
     )
 
 
@@ -86,6 +90,7 @@ def _run(
     allow_base_class_attributes: bool = True,
     out: str | Path | None = None,
     strict: bool = True,
+    source: str | None = None,
 ) -> RunResult:
     """Verify and obfuscate using explicit 1-based line ranges (no marker scanning).
 
@@ -97,9 +102,12 @@ def _run(
             constants blanked, structure preserved).
         hide: ``[start, end]`` 1-based inclusive line ranges to *hide* (whole line replaced with a
             ``■■■■■■■■`` marker, indentation kept). The verified region is the union of the two.
+        source: the already-read file contents. When ``run()`` calls this, it passes the exact bytes
+            it resolved markers against so nothing is read twice; otherwise the file is read here.
     """
     path = Path(path)
-    source = path.read_text()
+    if source is None:
+        source = path.read_text()
     policy = Policy.parse(
         allow_functions,
         allow_operators,

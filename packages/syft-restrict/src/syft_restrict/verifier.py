@@ -118,20 +118,26 @@ _BANNED_NODES: tuple[type[ast.AST], ...] = (
 # usage (mark the body private, leave the `def`/`for`/`if` line public) -- NOT a boundary straddle.
 # Their bodies are separate statements the walk enforces on their own; only *simple* statements and
 # expressions that themselves span the boundary count as straddling. Excluded from straddle-enforce.
-_COMPOUND_NODES: tuple[type[ast.AST], ...] = (
-    ast.Module,
-    ast.FunctionDef,
-    ast.AsyncFunctionDef,
-    ast.ClassDef,
-    ast.For,
-    ast.AsyncFor,
-    ast.While,
-    ast.If,
-    ast.With,
-    ast.AsyncWith,
-    ast.Try,
-    ast.TryStar,
-    ast.Match,
+# `ast.TryStar` (3.11+) and `ast.Match` (3.10+) are resolved via getattr and filtered out when
+# absent, so the module still imports on the >=3.10 floor.
+_COMPOUND_NODES: tuple[type[ast.AST], ...] = tuple(
+    t
+    for t in (
+        ast.Module,
+        ast.FunctionDef,
+        ast.AsyncFunctionDef,
+        ast.ClassDef,
+        ast.For,
+        ast.AsyncFor,
+        ast.While,
+        ast.If,
+        ast.With,
+        ast.AsyncWith,
+        ast.Try,
+        getattr(ast, "TryStar", None),
+        getattr(ast, "Match", None),
+    )
+    if t is not None
 )
 
 # violation-code registry: every code a check can raise, one line each (docs/blacklist.md)
@@ -276,6 +282,13 @@ class _Checker:
             # way, regardless of whether the class statement or either definition is private.
             self._forbid_duplicate_methods(node)
 
+        if isinstance(node, (ast.For, ast.AsyncFor)) and node_overlaps_ranges(
+            node, self.ranges
+        ):
+            # A for-loop rebinds its target in the ENCLOSING scope, to an unvettable element of the
+            # iterable, so any safe-call verdict the target carries must be cleared.
+            self._clear_safe_locals(node.target)
+
         # push/pop scope stack for ClassDef/FunctionDef/Lambda, so
         # _enclosing_class() works
         is_scope = isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.Lambda))
@@ -400,12 +413,10 @@ class _Checker:
             self._require_bundle(node, "indexing")
 
         # --- name binding (assignments, params) ---
+        # NOTE: for/async-for target clearing is handled in visit() (gated on range OVERLAP), so it
+        # also fires for a public loop header over a private body -- not here.
         elif isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
             self._track_safe_local(node)
-        elif isinstance(node, ast.For):
-            # the loop variable leaks to the enclosing scope and is rebound each iteration to an
-            # unvettable element of the iterable, so clear any safe verdict it may carry.
-            self._clear_safe_locals(node.target)
         elif isinstance(node, ast.arg):
             self._check_reserved_name(node, node.arg)
 

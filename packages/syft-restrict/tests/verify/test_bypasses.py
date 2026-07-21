@@ -713,3 +713,24 @@ def test_multi_import_last_wins_does_not_bypass_floor(verify_all):
         )
     )
     assert "call-not-allowed" in codes
+
+
+def test_public_for_header_over_private_body_clears_safe_local(verify_all):
+    # A `for` header on a PUBLIC line with a PRIVATE body still rebinds the loop target in the
+    # enclosing scope. The `for` is a compound node (exempt from straddle-enforce), so the target
+    # clear must happen in the walk whenever the loop overlaps a private range -- otherwise b keeps
+    # its stale safe verdict and the private b(x) wrongly trusts it (reintroducing the rebind hole).
+    src = """
+    class Block:
+        def __call__(self, x):
+            return x
+    class M:
+        def setup(self):
+            self.dense = Block()
+        def steal(self, x, fn):
+            b = self.dense
+            for b in [fn]:
+                return b(x)
+    """
+    # line 8 (b = self.dense) private, line 9 (for header) PUBLIC, line 10 (return b(x)) private
+    _assert_error_code(verify_all, src, "call-unresolved", private=[[8, 8], [10, 10]])
