@@ -43,6 +43,7 @@ class SyftDatasetManager:
         location: str | None = None,
         tags: list[str] | None = None,
         users: list[str] | str | None = None,
+        protocol_versions: list[str] | None = None,
         # copy_private_data: bool = True, # TODO
     ) -> Dataset:
         """Create a dataset, writing it in each protocol version its audience can read.
@@ -57,6 +58,8 @@ class SyftDatasetManager:
             tags (list[str] | None, optional): Optional tags for the dataset.
             users (list[str] | str | None, optional): Users to share dataset with. Can be
                 a list of emails, SHARE_WITH_ANY, or None (default, share with no one).
+            protocol_versions (list[str] | None, optional): Write exactly these
+                protocol versions instead of inferring them from ``users``.
 
         Returns:
             Dataset: The created Dataset object (the newest protocol version written).
@@ -73,6 +76,7 @@ class SyftDatasetManager:
             location=location,
             tags=tags,
             peer_emails=self._peer_emails(users),
+            protocol_versions=protocol_versions,
         )
         for dataset in created.values():
             self._set_new_dataset_permissions(dataset=dataset, users=users)

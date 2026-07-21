@@ -38,6 +38,26 @@ def _dataset_manager(tmp_path: Path, peer_schemas=None) -> SyftDatasetManager:
     return mgr
 
 
+def test_create_with_explicit_protocol_versions_skips_inference(tmp_path: Path):
+    # No peers => inference would write only protocol 0; explicit versions override.
+    mgr = _dataset_manager(tmp_path)
+    mock, private, readme = _create_dataset_files(tmp_path)
+
+    mgr.create(
+        name="demo",
+        mock_path=mock,
+        private_path=private,
+        readme_path=readme,
+        protocol_versions=["1"],
+    )
+
+    public_root = mgr.syftbox_config.datasite_public_root(DO_EMAIL) / "syft_datasets"
+    # Exactly the requested version is written: v1 layout, not the flat default.
+    assert (public_root / "v1" / "demo" / "dataset.yaml").exists()
+    assert not (public_root / "demo").exists()
+    assert mgr.get("demo")._ref.protocol_version == "1"
+
+
 def test_migrate_dataset_v0_to_v1_preserves_identity(tmp_path: Path):
     # No peers => created in the widest-compatible (flat, protocol 0) layout.
     mgr = _dataset_manager(tmp_path)

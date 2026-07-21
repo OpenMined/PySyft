@@ -35,7 +35,9 @@ FIXTURES_DIR = (
 )
 
 
-def _seed_syftbox(syftbox: Path, src_dir: Path, protocol_version: str) -> None:
+def create_syftbox_with_datasets_created_by_manager(
+    syftbox: Path, src_dir: Path, protocol_version: str
+) -> None:
     """One dataset written in the given protocol layout (mock + private + readme)."""
     mgr = SyftDatasetManager(syftbox_folder_path=syftbox, email=DO_EMAIL)
     # Force the target protocol by advertising a peer at that version.
@@ -70,10 +72,6 @@ def _normalize(target: Path) -> None:
     """
     import yaml
 
-    for path in target.rglob("*"):
-        if path.is_file():
-            path.chmod(0o644)
-
     for config in target.rglob("private_metadata.yaml"):
         data = yaml.safe_load(config.read_text()) or {}
         if data.get("data_dir"):
@@ -88,7 +86,9 @@ def _build_fixture(target: Path, protocol_version: str) -> None:
         syftbox.mkdir()
         src_dir = tmp_path / "src"
         src_dir.mkdir()
-        _seed_syftbox(syftbox, src_dir, protocol_version)
+        create_syftbox_with_datasets_created_by_manager(
+            syftbox, src_dir, protocol_version
+        )
         shutil.copytree(syftbox, target)
         _normalize(target)
 

@@ -184,18 +184,26 @@ class DatasetStorage:
         location: Optional[str] = None,
         tags: Optional[list[str]] = None,
         peer_emails: Optional[list[str]] = None,
+        protocol_versions: Optional[list[str]] = None,
     ) -> dict[str, Dataset]:
         """Write a new dataset in every protocol version its audience can read.
 
         Copies the source files into each version's on-disk layout and writes the
-        metadata/private config. Returns {protocol_version: written Dataset}. With
-        no/unknown peers, writes only the widest-compatible protocol.
+        metadata/private config. Returns {protocol_version: written Dataset}.
+
+        By default the versions are inferred from ``peer_emails`` (no/unknown peers
+        => the widest-compatible protocol). Pass ``protocol_versions`` to write
+        exactly those versions instead, skipping inference.
         """
         self.validate_dataset_name(name)
         if source.mock.is_dir() and (source.mock / METADATA_FILENAME).exists():
             raise ValueError(
                 f"Mock data at {source.mock} contains reserved file "
                 f"{METADATA_FILENAME}. Please rename it and try again."
+            )
+        if protocol_versions is None:
+            protocol_versions = list(
+                self.target_protocol_versions_for_peers(peer_emails)
             )
         now = _utcnow()
         fields = _DatasetFields(
@@ -208,9 +216,7 @@ class DatasetStorage:
             tags=tags or [],
         )
         created: dict[str, Dataset] = {}
-        for protocol_version in sorted(
-            self.target_protocol_versions_for_peers(peer_emails), key=int
-        ):
+        for protocol_version in sorted(protocol_versions, key=int):
             ref = self.new_dataset_ref(name, protocol_version)
             created[protocol_version] = self._materialize_version(ref, fields, source)
         return created
