@@ -708,6 +708,8 @@ def test_multi_import_last_wins_does_not_bypass_floor(verify_all):
         return jax.pure_callback(x, x, x)
     """
     codes = get_error_codes(
-        verify_all(src, pol=make_policy(disallow=["jax.pure_callback"]), private=[[3, 4]])
+        verify_all(
+            src, pol=make_policy(disallow=["jax.pure_callback"]), private=[[3, 4]]
+        )
     )
     assert "call-not-allowed" in codes

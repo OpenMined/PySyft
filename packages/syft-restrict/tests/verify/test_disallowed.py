@@ -185,9 +185,7 @@ def test_bare_class_dunder_name_is_denied(verify_all):
 # ── defs / classes / decorators ──────────────────────────────────────────────
 
 
-@pytest.mark.parametrize(
-    "dunder", ["__init__", "__getattr__", "__reduce__"]
-)
+@pytest.mark.parametrize("dunder", ["__init__", "__getattr__", "__reduce__"])
 def test_disallowed_dunder_def(verify_all, dunder):
     src = f"""
     class M:

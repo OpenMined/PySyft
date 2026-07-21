@@ -38,7 +38,9 @@ def test_direct_self_subscript_call_still_allowed_when_local_assignments_disable
         def __call__(self, x):
             return self.layers[0](x)
     """
-    assert not get_error_codes(verify_all(src, pol=make_policy(allow_local_assignments=False)))
+    assert not get_error_codes(
+        verify_all(src, pol=make_policy(allow_local_assignments=False))
+    )
 
 
 # ── allow_base_class_attributes ─────────────────────────────────────────────────
@@ -55,7 +57,9 @@ def test_unknown_self_attr_call_allowed_by_default(verify_all):
     assert not get_error_codes(verify_all(_UNKNOWN_ATTR))
 
 
-def test_unknown_self_attr_call_rejected_when_base_class_attributes_disabled(verify_all):
+def test_unknown_self_attr_call_rejected_when_base_class_attributes_disabled(
+    verify_all,
+):
     # With the base-class assumption off, a never-assigned self.<attr> is not callable.
     codes = get_error_codes(
         verify_all(_UNKNOWN_ATTR, pol=make_policy(allow_base_class_attributes=False))
@@ -63,7 +67,9 @@ def test_unknown_self_attr_call_rejected_when_base_class_attributes_disabled(ver
     assert "attr-on-value" in codes
 
 
-def test_assigned_self_attr_still_callable_when_base_class_attributes_disabled(verify_all):
+def test_assigned_self_attr_still_callable_when_base_class_attributes_disabled(
+    verify_all,
+):
     # The flag rejects only *unknown* attrs; one the class assigns a vetted source stays callable.
     src = """
     class Block:
@@ -75,4 +81,6 @@ def test_assigned_self_attr_still_callable_when_base_class_attributes_disabled(v
         def __call__(self, x):
             return self.blk(x)
     """
-    assert not get_error_codes(verify_all(src, pol=make_policy(allow_base_class_attributes=False)))
+    assert not get_error_codes(
+        verify_all(src, pol=make_policy(allow_base_class_attributes=False))
+    )

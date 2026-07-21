@@ -30,7 +30,6 @@ Every file has two regions:
 | **Public**  | Imports, data loading, wrappers the data owner can read | No (human review)        |
 | **Private** | Hidden model math (`setup` / `__call__`, layers)        | Yes                      |
 
-
 You mark private code either with `# syft-restrict: ...` comments in the source, or with explicit
 1-based line ranges passed as `obfuscate`/`hide` to `run()` (the private region is their union
 either way).
@@ -84,13 +83,13 @@ class Net(nn.Module):
 The reverse isn't allowed (`obfuscate` can't nest inside `hide`), and neither kind nests inside
 itself. Any of these raise `MarkerError`:
 
-| Situation                                                       | Result                                                           |
-| --------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `start` with no matching `end` (or vice versa)                  | `MarkerError`, names the line                                    |
-| `hide-end`/`obfuscate-end` closing the wrong kind               | `MarkerError` (mismatched kind)                                  |
-| `obfuscate` nested inside `hide`                                | `MarkerError`                                                    |
-| `obfuscate` nested inside `obfuscate` (or `hide` inside `hide`) | `MarkerError`                                                    |
-| A block with nothing between its start/end                      | `MarkerError` (empty block)                                      |
+| Situation                                                       | Result                                                      |
+| --------------------------------------------------------------- | ----------------------------------------------------------- |
+| `start` with no matching `end` (or vice versa)                  | `MarkerError`, names the line                               |
+| `hide-end`/`obfuscate-end` closing the wrong kind               | `MarkerError` (mismatched kind)                             |
+| `obfuscate` nested inside `hide`                                | `MarkerError`                                               |
+| `obfuscate` nested inside `obfuscate` (or `hide` inside `hide`) | `MarkerError`                                               |
+| A block with nothing between its start/end                      | `MarkerError` (empty block)                                 |
 | No `# syft-restrict: ...` marker anywhere in the file           | `MarkerError` (the private region is designated by markers) |
 
 `run()` resolves the private region from these markers; a file with none raises `MarkerError`.
@@ -110,7 +109,7 @@ reach:
   syft-restrict never restricts or inspects the import itself.
 - **Private imports are banned outright** — an `import` inside the private
   region is rejected as `banned-construct`.
-- **The private region's *use* of an import is what's gated.** A private call
+- **The private region's _use_ of an import is what's gated.** A private call
   like `jnp.einsum(...)` resolves through the public import table and must match
   `allow_functions` (see below); otherwise it fails. So the control point is the
   private-side call, not the public import.
@@ -320,7 +319,7 @@ class Net(nn.Module):              # base must be allow-listed (e.g. flax.linen.
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Bases that resolve to an allow-listed path (e.g. `nn.Module`) | `object`, random private bases, non-allow-listed libs                           |
 | —                                                             | Any decorator: `@property`, `@staticmethod`, `@nn.compact`, arbitrary functions |
-| Defining `setup`, `__call__`, `__post_init__`                 | `__getattr__`, `__reduce__`, other magic methods      |
+| Defining `setup`, `__call__`, `__post_init__`                 | `__getattr__`, `__reduce__`, other magic methods                                |
 | —                                                             | `metaclass=` / other class keywords                                             |
 
 ---
