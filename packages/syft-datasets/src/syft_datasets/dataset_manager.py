@@ -1,7 +1,4 @@
-import re
-import shutil
 from pathlib import Path
-from uuid import UUID, uuid4
 from typing_extensions import Self
 
 import yaml
@@ -10,13 +7,12 @@ from .types import PathLike, to_path
 from syft_notebook_ui.types import TableList
 from typing_extensions import Literal
 
-from syft_datasets.dataset import Dataset, PrivateDatasetConfig
-from syft_datasets.file_utils import copy_dir_contents, copy_paths, is_empty_dir
+from syft_datasets.models import Dataset
+from syft_datasets.dataset_ref import DatasetRef
+from syft_datasets.dataset_storage import DatasetSourceFiles, DatasetStorage
 
-from .url import SyftBoxURL
-from .config import SyftBoxConfig
+from .config import PRIVATE_METADATA_FILENAME, SyftBoxConfig
 from .permissions import set_mock_dataset_permissions, set_private_dataset_permissions
-from .config import METADATA_FILENAME
 
 DATASET_COLLECTION_PREFIX = "syft_datasetcollection"
 PRIVATE_DATASET_COLLECTION_PREFIX = "syft_privatecollection"
@@ -28,131 +24,14 @@ class SyftDatasetManager:
         self.syftbox_config = SyftBoxConfig(
             syftbox_folder=to_path(syftbox_folder_path), email=email
         )
+        # peer_schemas (peer email -> dataset ProtocolSchema) will be filled in by
+        # syft-client later; until then every peer resolves to the widest-
+        # compatible protocol, so datasets are written in that layout.
+        self.storage = DatasetStorage(config=self.syftbox_config)
 
     @classmethod
     def from_config(cls, config: SyftBoxConfig) -> Self:
         return cls(syftbox_folder_path=config.syftbox_folder, email=config.email)
-
-    def _validate_dataset_name(self, dataset_name: str) -> None:
-        # Returns True if the dataset is a valid path name on unix or windows.
-        if not re.match(r"^[\w-]+$", dataset_name):
-            raise ValueError(
-                f"Invalid dataset name '{dataset_name}'. Only alphanumeric characters, underscores, and hyphens are allowed."
-            )
-
-    def _prepare_mock_data(self, dataset_name: str, src_path: Path) -> list[Path]:
-        target_mock_dir = self.syftbox_config.get_my_mock_dataset_dir(
-            dataset_name=dataset_name
-        )
-        # Validate src data
-        if not src_path.exists():
-            raise FileNotFoundError(f"Could not find mock data at {src_path}")
-
-        if (src_path / METADATA_FILENAME).exists():
-            raise ValueError(
-                f"Mock data at {src_path} contains reserved file {METADATA_FILENAME}. Please rename it and try again."
-            )
-
-        # Validate dir we're making on Syftbox
-        if target_mock_dir.exists() and not is_empty_dir(target_mock_dir):
-            raise FileExistsError(
-                f"Mock dir {target_mock_dir} already exists and is not empty."
-            )
-        target_mock_dir.mkdir(parents=True, exist_ok=True)
-
-        copied_files = []
-        if src_path.is_dir():
-            copied_files = copy_dir_contents(
-                src=src_path,
-                dst=target_mock_dir,
-                exists_ok=True,
-            )
-        elif src_path.is_file():
-            copied_files = copy_paths(
-                files=[src_path],
-                dst=target_mock_dir,
-                exists_ok=True,
-            )
-        else:
-            raise ValueError(
-                f"Mock data path {src_path} must be an existing file or directory."
-            )
-
-        return copied_files
-
-    def _prepare_private_data(
-        self,
-        dataset_name: str,
-        src_path: Path,
-    ) -> list[Path]:
-        private_dir = self.syftbox_config.private_dir_for_my_dataset(
-            dataset_name=dataset_name
-        )
-        private_dir.mkdir(parents=True, exist_ok=True)
-
-        copied_files = []
-        if src_path.is_dir():
-            # TODO: Implementing without copying private data to `SyftBox/private``
-            copied_files = copy_dir_contents(
-                src=src_path,
-                dst=private_dir,
-                exists_ok=True,
-            )
-        elif src_path.is_file():
-            copied_files = copy_paths(
-                files=[src_path],
-                dst=private_dir,
-                exists_ok=True,
-            )
-        else:
-            raise ValueError(
-                f"Private data path {src_path} must be an existing file or directory."
-            )
-
-        return copied_files
-
-    def _prepare_private_config(
-        self,
-        dataset_name: str,
-        dataset_uid: UUID,
-    ) -> None:
-        """
-        The private dataset config is used to store private metadata separately from the public dataset metadata.
-        """
-        private_metadata_path: Path = (
-            self.syftbox_config.private_metadata_filename_for_my_dataset(
-                dataset_name=dataset_name
-            )
-        )
-        if private_metadata_path.exists():
-            raise FileExistsError(
-                f"Private metadata file {private_metadata_path} already exists."
-            )
-
-        private_config = PrivateDatasetConfig(
-            uid=dataset_uid,
-            data_dir=private_metadata_path.parent,
-        )
-
-        private_metadata_path.parent.mkdir(parents=True, exist_ok=True)
-        private_config.save(filepath=private_metadata_path)
-
-    def _prepare_readme(self, dataset_name: str, src_file: Path | None) -> list[Path]:
-        target_mock_dir = self.syftbox_config.get_my_mock_dataset_dir(
-            dataset_name=dataset_name
-        )
-        copied_files = []
-        if src_file is not None:
-            if not src_file.is_file():
-                raise FileNotFoundError(f"Could not find README at {src_file}")
-            if not src_file.suffix.lower() == ".md":
-                raise ValueError("readme file must be a markdown (.md) file.")
-            copied_files = copy_paths(
-                files=[src_file],
-                dst=target_mock_dir,
-                exists_ok=True,
-            )
-        return copied_files
 
     def create(
         self,
@@ -164,109 +43,72 @@ class SyftDatasetManager:
         location: str | None = None,
         tags: list[str] | None = None,
         users: list[str] | str | None = None,
+        protocol_versions: list[str] | None = None,
         # copy_private_data: bool = True, # TODO
     ) -> Dataset:
-        """_summary_
+        """Create a dataset, writing it in each protocol version its audience can read.
 
         Args:
-            name (str): Unique of the dataset to create.
-            mock_path (PathLike): Path to the existing mock data. This can be a file or a directory.
-            private_path (PathLike): Path to the existing private data. This can be a file or a directory.
+            name (str): Unique name of the dataset to create.
+            mock_path (PathLike): Path to the existing mock data (file or directory).
+            private_path (PathLike): Path to the existing private data (file or directory).
             summary (str | None, optional): Short summary of the dataset. Defaults to None.
-            readme_path (Path | None, optional): Markdown README in the public dataset. Defaults to None.
-            location (str | None, optional): Location identifier for the dataset, e.g. 'high-side-1234'.
-                Only required for datasets that are hosted on a remote location and require manual syncing.
-                Defaults to None.
-            tags (list[str] | None, optional): Optional tags for the dataset. Defaults to None.
-            users (list[str] | str | None, optional): Users to share dataset with. Can be list of emails, SHARE_WITH_ANY, or None (default, share with no one).
+            readme_path (Path | None, optional): Markdown README in the public dataset.
+            location (str | None, optional): Location identifier for the dataset.
+            tags (list[str] | None, optional): Optional tags for the dataset.
+            users (list[str] | str | None, optional): Users to share dataset with. Can be
+                a list of emails, SHARE_WITH_ANY, or None (default, share with no one).
+            protocol_versions (list[str] | None, optional): Write exactly these
+                protocol versions instead of inferring them from ``users``.
 
         Returns:
-            Dataset: The created Dataset object.
+            Dataset: The created Dataset object (the newest protocol version written).
         """
-        mock_path: Path = to_path(mock_path)
-        private_path: Path = to_path(private_path)
-        readme_path: Path | None = to_path(readme_path) if readme_path else None
-        tags = tags or []
-
-        mock_url = self.syftbox_config.get_mock_url_for_my_dataset(dataset_name=name)
-        readme_url = (
-            self.syftbox_config.get_readme_url_for_my_dataset(
-                dataset_name=name, readme_name=readme_path.name
-            )
-            if readme_path
-            else None
+        source = DatasetSourceFiles(
+            mock=to_path(mock_path),
+            private=to_path(private_path),
+            readme=to_path(readme_path) if readme_path else None,
         )
-
-        # Generate private_url for the dataset Private URLs use a simple path format
-        private_url = self.syftbox_config.get_private_url_for_my_dataset(
-            dataset_name=name
-        )
-
-        # Prepare mock data and collect file paths
-        all_mock_file_paths = self._prepare_mock_data(
-            dataset_name=name,
-            src_path=mock_path,
-        )
-
-        # Mock files exclude dataset.yaml and readme.md
-        # Convert absolute paths to SyftBoxURLs
-
-        # Prepare readme and collect file paths
-        readme_files = self._prepare_readme(
-            dataset_name=name,
-            src_file=readme_path,
-        )
-
-        public_metadata_path = (
-            self.syftbox_config.public_metadata_filename_for_my_dataset(
-                dataset_name=name
-            )
-        )
-
-        mock_file_paths = [
-            f
-            for f in all_mock_file_paths
-            if f != public_metadata_path and f not in readme_files
-        ]
-
-        mock_files_urls = [
-            SyftBoxURL.from_path(
-                path=file_path,
-                syftbox_folder=self.syftbox_config.syftbox_folder,
-            )
-            for file_path in mock_file_paths
-        ]
-
-        self._prepare_private_data(
-            dataset_name=name,
-            src_path=private_path,
-        )
-
-        # TODO enable adding private data without copying to SyftBox
-        # e.g. private_data_dir = dataset._private_metadata_dir if copy_private_data else private_path
-        dataset_uid = uuid4()
-        self._prepare_private_config(dataset_uid=dataset_uid, dataset_name=name)
-
-        dataset = Dataset(
-            uid=dataset_uid,
+        created = self.storage.create_dataset(
             name=name,
-            mock_url=mock_url,
-            private_url=private_url,
-            readme_url=readme_url,
+            source=source,
             summary=summary,
             location=location,
             tags=tags,
-            mock_files_urls=mock_files_urls,
-            _syftbox_config=self.syftbox_config,
+            peer_emails=self._peer_emails(users),
+            protocol_versions=protocol_versions,
         )
-        # needs to set since its a private attr
-        dataset._syftbox_config = self.syftbox_config
+        for dataset in created.values():
+            self._set_new_dataset_permissions(dataset=dataset, users=users)
+        # Return the newest protocol version written (richest layout).
+        return created[max(created, key=int)]
 
-        # Save dataset metadata
-        dataset.save(filepath=public_metadata_path)
-        # Set permissions on mock and private directories
-        self._set_new_dataset_permissions(dataset=dataset, users=users)
-        return dataset
+    def migrate(
+        self,
+        name: str,
+        to_version: str,
+        users: list[str] | str | None = None,
+    ) -> Dataset:
+        """Rewrite an owned dataset into another protocol layout, re-applying permissions.
+
+        Storage copies the files + writes metadata for the new layout; the manager
+        re-applies read permissions. The audience (``users``) must be supplied by
+        the caller as it is on create — granted readers are not recoverable from
+        disk via the permissions API.
+        """
+        ref = self.storage.find_dataset_ref(self.syftbox_config.email, name)
+        migrated = self.storage.migrate_dataset(ref, to_version)
+        self._set_new_dataset_permissions(dataset=migrated, users=users)
+        return migrated
+
+    @staticmethod
+    def _peer_emails(users: list[str] | str | None) -> list[str] | None:
+        """Audience emails for protocol negotiation; None means no/any peers."""
+        if users is None or users == SHARE_WITH_ANY:
+            return None
+        if isinstance(users, str):
+            return [users]
+        return list(users)
 
     def _set_new_dataset_permissions(
         self, dataset: Dataset, users: list[str] | str | None
@@ -289,24 +131,11 @@ class SyftDatasetManager:
             dataset.private_dir,
         )
 
-    def _load_dataset_from_dir(self, dataset_dir: Path) -> Dataset:
-        metadata_path = dataset_dir / METADATA_FILENAME
-        if not metadata_path.exists():
-            raise FileNotFoundError(f"Dataset metadata not found at {metadata_path}")
-
-        return Dataset.load(
-            filepath=metadata_path,
-            syftbox_config=self.syftbox_config,
-        )
-
     def get(self, name: str, datasite: str | None = None) -> Dataset:
         datasite = datasite or self.syftbox_config.email
-        mock_dir = self.syftbox_config.get_mock_dataset_dir(
-            dataset_name=name,
-            datasite=datasite,
-        )
-
-        if not mock_dir.exists():
+        try:
+            ref = self.storage.find_dataset_ref(datasite, name)
+        except FileNotFoundError:
             available = self.get_all()
             if available:
                 listing = "\n".join(
@@ -323,7 +152,7 @@ class SyftDatasetManager:
                 f"   Available datasets:\n"
                 f"{listing}"
             )
-        return self._load_dataset_from_dir(mock_dir)
+        return self.storage.read_dataset(ref)
 
     def __getitem__(self, key: str | int) -> Dataset:
         if isinstance(key, int):
@@ -345,6 +174,13 @@ class SyftDatasetManager:
 
         return dataset_manager_repr_html(self.get_all())
 
+    def _all_syftbox_datasites(self) -> list[str]:
+        syftbox_folder = self.syftbox_config.syftbox_folder
+        # All directories with "@" in the name are peer/owner email directories
+        return [
+            d.name for d in syftbox_folder.iterdir() if d.is_dir() and "@" in d.name
+        ]
+
     def get_all(
         self,
         datasite: str | None = None,
@@ -353,30 +189,22 @@ class SyftDatasetManager:
         order_by: str | None = None,
         sort_order: Literal["asc", "desc"] = "asc",
     ) -> list[Dataset]:
+        # storage.iter_dataset_refs already yields one ref per dataset in its
+        # preferred protocol layout, so there is nothing to dedupe here.
+        datasites = (
+            [datasite] if datasite is not None else self._all_syftbox_datasites()
+        )
+
         all_datasets = []
-
-        if datasite:
-            datasites_to_check = [datasite]
-        else:
-            syftbox_folder = self.syftbox_config.syftbox_folder
-            # All directories with "@" in the name are peer/owner email directories
-            datasites_to_check = [
-                d.name for d in syftbox_folder.iterdir() if d.is_dir() and "@" in d.name
-            ]
-
-        for datasite in datasites_to_check:
-            public_datasets_dir = self.syftbox_config.public_datasets_dir_for_datasite(
-                datasite
-            )
-            if not public_datasets_dir.exists():
-                continue
-            for dataset_dir in public_datasets_dir.iterdir():
-                if dataset_dir.is_dir():
-                    try:
-                        dataset = self._load_dataset_from_dir(dataset_dir)
-                        all_datasets.append(dataset)
-                    except Exception:
-                        continue
+        for datasite in datasites:
+            for ref in self.storage.iter_dataset_refs(datasite):
+                try:
+                    all_datasets.append(self.storage.read_dataset(ref))
+                except Exception:
+                    print(
+                        f"Error reading dataset {ref.name} from {ref.owner}, skipping",
+                    )
+                    continue
 
         if order_by is not None:
             all_datasets.sort(
@@ -438,31 +266,33 @@ class SyftDatasetManager:
                 print("Dataset deletion cancelled.")
                 return
 
-        # Delete the dataset directories
-        if dataset.mock_dir.exists():
-            shutil.rmtree(dataset.mock_dir)
-        if dataset._private_metadata_dir.exists():
-            shutil.rmtree(dataset._private_metadata_dir)
+        # Remove every on-disk copy (all protocol versions) via the storage layer.
+        self.storage.delete_dataset(datasite, name)
 
     def get_private_dataset_files(self, name: str) -> dict[Path, bytes]:
         """Get private dataset files as {path_in_datasite: content}.
 
-        Returns paths relative to the datasite (e.g. private/syft_datasets/{name}/{file}).
-        For private_metadata.yaml, clears data_dir before including it.
+        Returns paths relative to the datasite (e.g.
+        private/syft_datasets/[v<n>/]{name}/{file}). For private_metadata.yaml,
+        clears data_dir before including it.
         """
-        dataset = self.get(name=name, datasite=self.syftbox_config.email)
-        private_dir = dataset.private_dir
+        datasite = self.syftbox_config.email
+        ref = self.storage.find_dataset_ref(datasite, name)
+        private_dir = self.storage.private_dataset_dir(ref)
         if not private_dir.exists():
             raise ValueError(f"Private data directory not found: {private_dir}")
+
+        datasite_root = self.syftbox_config.syftbox_folder / datasite
+        private_rel_root = private_dir.relative_to(datasite_root)
 
         files = {}
         for f in private_dir.rglob("*"):
             if not f.is_file():
                 continue
             rel = f.relative_to(private_dir)
-            path_in_datasite = Path(f"private/syft_datasets/{name}") / rel
-            if f.name == "private_metadata.yaml" and rel == Path(f.name):
-                files[path_in_datasite] = self._private_config_without_data_dir(f)
+            path_in_datasite = private_rel_root / rel
+            if f.name == PRIVATE_METADATA_FILENAME and rel == Path(f.name):
+                files[path_in_datasite] = self._private_config_without_data_dir(ref)
             else:
                 files[path_in_datasite] = f.read_bytes()
 
@@ -470,10 +300,12 @@ class SyftDatasetManager:
             raise ValueError(f"No private files found for dataset '{name}'")
         return files
 
-    def _private_config_without_data_dir(self, config_path: Path) -> bytes:
-        """Load private_metadata.yaml and return it with data_dir cleared."""
-        config = PrivateDatasetConfig.load(filepath=config_path)
+    def _private_config_without_data_dir(self, ref: DatasetRef) -> bytes:
+        """Serialize the dataset's private_metadata.yaml with data_dir cleared.
+
+        Written in the dataset's on-disk protocol format so peers can read it.
+        """
+        config = self.storage.read_private_config(ref)
         config.data_dir = Path("")
-        return yaml.safe_dump(
-            config.model_dump(mode="json"), indent=2, sort_keys=False
-        ).encode()
+        data = config.disk_dict()
+        return yaml.safe_dump(data, indent=2, sort_keys=False).encode()

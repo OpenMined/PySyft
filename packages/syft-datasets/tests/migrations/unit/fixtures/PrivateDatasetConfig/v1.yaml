@@ -1,0 +1,4 @@
+canonical_name: PrivateDatasetConfig
+version: '1'
+uid: 00000000-0000-0000-0000-000000000001
+data_dir: .
