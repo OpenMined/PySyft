@@ -29,7 +29,7 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 RELEASE_FIXTURES = sorted(FIXTURES_DIR.glob("syft_dataset-*-protocol*_syftbox"))
 
 released_syftbox_fixtures = pytest.mark.parametrize(
-    "fixture", RELEASE_FIXTURES, ids=lambda f: f.name
+    "released_syftbox_path", RELEASE_FIXTURES, ids=lambda f: f.name
 )
 
 
@@ -37,7 +37,7 @@ def _protocol_of(fixture: Path) -> str:
     return re.search(r"-protocol(\d+)_syftbox$", fixture.name).group(1)
 
 
-def _has_identity(protocol: str) -> bool:
+def _has_identity_in_path(protocol: str) -> bool:
     """canonical_name/version are written only from protocol 1 onwards."""
     return protocol != "0"
 
@@ -48,18 +48,18 @@ def _syftbox_w_old_datasets(fixture: Path, tmp_path: Path) -> Path:
     return syftbox
 
 
-def _manager(syftbox: Path) -> SyftDatasetManager:
+def _dataset_manager(syftbox: Path) -> SyftDatasetManager:
     return SyftDatasetManager(syftbox_folder_path=syftbox, email=DO_EMAIL)
 
 
-def _storage(syftbox: Path) -> DatasetStorage:
+def _dataset_storage(syftbox: Path) -> DatasetStorage:
     return DatasetStorage(config=SyftBoxConfig(syftbox_folder=syftbox, email=DO_EMAIL))
 
 
 @released_syftbox_fixtures
-def test_old_datasets_load_and_upgrade(fixture: Path, tmp_path: Path):
-    syftbox = _syftbox_w_old_datasets(fixture, tmp_path)
-    mgr = _manager(syftbox)
+def test_old_datasets_load_and_upgrade(released_syftbox_path: Path, tmp_path: Path):
+    syftbox = _syftbox_w_old_datasets(released_syftbox_path, tmp_path)
+    mgr = _dataset_manager(syftbox)
 
     datasets = mgr.get_all()
     assert {d.name for d in datasets} == {DATASET}
@@ -67,7 +67,7 @@ def test_old_datasets_load_and_upgrade(fixture: Path, tmp_path: Path):
     # Loads into the latest registered version in memory.
     assert dataset.version == dataset_registry.latest_version("Dataset")
     assert dataset.owner == DO_EMAIL
-    assert dataset._protocol_version == _protocol_of(fixture)
+    assert dataset._protocol_version == _protocol_of(released_syftbox_path)
     # Private config also loads/upgrades to latest.
     ref = mgr.storage.find_dataset_ref(DO_EMAIL, DATASET)
     private_config = mgr.storage.read_private_config(ref)
@@ -77,10 +77,10 @@ def test_old_datasets_load_and_upgrade(fixture: Path, tmp_path: Path):
 
 
 @released_syftbox_fixtures
-def test_write_back_is_byte_exact(fixture: Path, tmp_path: Path):
-    protocol = _protocol_of(fixture)
-    syftbox = _syftbox_w_old_datasets(fixture, tmp_path)
-    storage = _storage(syftbox)
+def test_write_back_is_byte_exact(released_syftbox_path: Path, tmp_path: Path):
+    protocol = _protocol_of(released_syftbox_path)
+    syftbox = _syftbox_w_old_datasets(released_syftbox_path, tmp_path)
+    storage = _dataset_storage(syftbox)
 
     ref = storage.find_dataset_ref(DO_EMAIL, DATASET)
     metadata_path = storage.metadata_path(ref)
@@ -88,17 +88,17 @@ def test_write_back_is_byte_exact(fixture: Path, tmp_path: Path):
 
     # Read (upgrade in memory) then write back in that release's layout/format.
     dataset = storage.read_dataset(ref)
-    storage.write_dataset(ref, dataset)
+    storage.write_dataset_metadata(ref, dataset)
 
     assert metadata_path.read_text() == original_bytes
     raw = metadata_path.read_text()
-    assert ("canonical_name" in raw) is _has_identity(protocol)
+    assert ("canonical_name" in raw) is _has_identity_in_path(protocol)
 
 
 @released_syftbox_fixtures
-def test_mixed_protocol_listing(fixture: Path, tmp_path: Path):
-    syftbox = _syftbox_w_old_datasets(fixture, tmp_path)
-    mgr = _manager(syftbox)
+def test_mixed_protocol_listing(released_syftbox_path: Path, tmp_path: Path):
+    syftbox = _syftbox_w_old_datasets(released_syftbox_path, tmp_path)
+    mgr = _dataset_manager(syftbox)
 
     # A newly created dataset (default protocol) coexists with the old one.
     src = tmp_path / "src"
@@ -113,9 +113,9 @@ def test_mixed_protocol_listing(fixture: Path, tmp_path: Path):
 
 
 @released_syftbox_fixtures
-def test_dataset_reprs_do_not_error(fixture: Path, tmp_path: Path):
-    syftbox = _syftbox_w_old_datasets(fixture, tmp_path)
-    datasets = _manager(syftbox).get_all()
+def test_dataset_reprs_do_not_error(released_syftbox_path: Path, tmp_path: Path):
+    syftbox = _syftbox_w_old_datasets(released_syftbox_path, tmp_path)
+    datasets = _dataset_manager(syftbox).get_all()
 
     for render in (repr, str, lambda o: o._repr_html_()):
         assert render(datasets)

@@ -19,6 +19,7 @@ from syft_datasets.migrations import dataset_registry
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
 from syft_datasets.models import Dataset
 from syft_datasets.protocolcodecs import ProtocolCodec
+from syft_datasets.url import SyftBoxURL
 
 DO_EMAIL = "do@test.org"
 
@@ -31,11 +32,11 @@ def _storage(tmp_path: Path) -> DatasetStorage:
 
 
 def _mock_dataset(storage: DatasetStorage, ref: DatasetRef) -> Dataset:
-    cfg = storage.config
+    folder = storage.config.syftbox_folder
     return Dataset(
         name=ref.name,
-        mock_url=cfg.get_mock_url_for_my_dataset(ref.name, ref.protocol_version),
-        private_url=cfg.get_private_url_for_my_dataset(ref.name, ref.protocol_version),
+        mock_url=SyftBoxURL.from_path(storage.public_dataset_dir(ref), folder),
+        private_url=SyftBoxURL.from_path(storage.private_dataset_dir(ref), folder),
     )
 
 
@@ -101,8 +102,8 @@ def test_v0_writes_flat_no_identity_v1_nests_with_identity(tmp_path: Path):
 
     ref0 = DatasetRef(DO_EMAIL, "flat", "0")
     ref1 = DatasetRef(DO_EMAIL, "nested", "1")
-    p0 = storage.write_dataset(ref0, _mock_dataset(storage, ref0))
-    p1 = storage.write_dataset(ref1, _mock_dataset(storage, ref1))
+    p0 = storage.write_dataset_metadata(ref0, _mock_dataset(storage, ref0))
+    p1 = storage.write_dataset_metadata(ref1, _mock_dataset(storage, ref1))
 
     # protocol 0: public/syft_datasets/<name>/dataset.yaml (no v<n>), identity stripped
     assert p0.parent.parent.name == "syft_datasets"
@@ -127,17 +128,35 @@ def test_scan_partitions_by_layout(tmp_path: Path):
 
     ref0 = DatasetRef(DO_EMAIL, "flat", "0")
     ref1 = DatasetRef(DO_EMAIL, "nested", "1")
-    storage.write_dataset(ref0, _mock_dataset(storage, ref0))
-    storage.write_dataset(ref1, _mock_dataset(storage, ref1))
+    storage.write_dataset_metadata(ref0, _mock_dataset(storage, ref0))
+    storage.write_dataset_metadata(ref1, _mock_dataset(storage, ref1))
 
     v0_refs = list(v0_codec.iter_dataset_refs(DO_EMAIL))
     v1_refs = list(v1_codec.iter_dataset_refs(DO_EMAIL))
     assert [(r.name, r.protocol_version) for r in v0_refs] == [("flat", "0")]
     assert [(r.name, r.protocol_version) for r in v1_refs] == [("nested", "1")]
 
-    all_refs = list(storage.iter_dataset_refs(DO_EMAIL))
+    all_refs = list(storage.iter_dataset_refs_all_protocols(DO_EMAIL))
     assert {(r.name, r.protocol_version) for r in all_refs} == {
         ("flat", "0"),
         ("nested", "1"),
     }
     assert len(all_refs) == 2
+
+
+def test_iter_dataset_refs_prefers_newest_protocol(tmp_path: Path):
+    storage = _storage(tmp_path)
+
+    # Same dataset written in two protocol layouts (as for a mixed audience).
+    ref0 = DatasetRef(DO_EMAIL, "demo", "0")
+    ref1 = DatasetRef(DO_EMAIL, "demo", "1")
+    storage.write_dataset_metadata(ref0, _mock_dataset(storage, ref0))
+    storage.write_dataset_metadata(ref1, _mock_dataset(storage, ref1))
+
+    # all-protocols sees both copies; the public iterator collapses to the newest.
+    all_refs = list(storage.iter_dataset_refs_all_protocols(DO_EMAIL))
+    assert {r.protocol_version for r in all_refs} == {"0", "1"}
+
+    preferred = list(storage.iter_dataset_refs(DO_EMAIL))
+    assert [(r.name, r.protocol_version) for r in preferred] == [("demo", "1")]
+    assert storage.find_dataset_ref(DO_EMAIL, "demo").protocol_version == "1"

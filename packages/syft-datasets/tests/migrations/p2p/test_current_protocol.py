@@ -38,6 +38,47 @@ def _dataset_manager(tmp_path: Path, peer_schemas=None) -> SyftDatasetManager:
     return mgr
 
 
+def test_migrate_dataset_v0_to_v1_preserves_identity(tmp_path: Path):
+    # No peers => created in the widest-compatible (flat, protocol 0) layout.
+    mgr = _dataset_manager(tmp_path)
+    mock, private, readme = _create_dataset_files(tmp_path)
+    mgr.create(name="demo", mock_path=mock, private_path=private, readme_path=readme)
+
+    ref0 = mgr.storage.find_dataset_ref(DO_EMAIL, "demo")
+    assert ref0.protocol_version == "0"
+    old = mgr.storage.read_dataset(ref0)
+
+    migrated = mgr.storage.migrate_dataset(ref0, "1")
+
+    public_root = mgr.syftbox_config.datasite_public_root(DO_EMAIL) / "syft_datasets"
+    # Source (v0) copy is left intact; the v1 layout is created alongside it.
+    assert (public_root / "demo" / "dataset.yaml").exists()
+    assert (public_root / "v1" / "demo" / "dataset.yaml").exists()
+
+    # Identity is preserved across the migration (datasets are immutable).
+    assert migrated.uid == old.uid
+    assert migrated.created_at == old.created_at
+    assert migrated._protocol_version == "1"
+
+    # v1 dataset.yaml carries the identity fields (unlike flat protocol 0).
+    raw = yaml.safe_load((public_root / "v1" / "demo" / "dataset.yaml").read_text())
+    assert raw["canonical_name"] == "Dataset" and raw["version"] == "1"
+
+    # Payload copied; metadata/permission/readme files excluded from mock_files.
+    mock_names = sorted(p.name for p in migrated.mock_files)
+    assert mock_names == ["mock.csv"]
+
+    # Private data + a fresh private config land in the v1 layout.
+    target_ref = mgr.storage.new_dataset_ref("demo", "1")
+    assert mgr.storage.private_dataset_dir(target_ref).joinpath("private.csv").exists()
+    assert mgr.storage.read_private_config(target_ref).uid == old.uid
+
+    # get_all() dedupes the two on-disk copies, preferring the newest (v1).
+    all_datasets = mgr.get_all()
+    assert len(all_datasets) == 1
+    assert all_datasets[0]._protocol_version == "1"
+
+
 def test_default_create_writes_protocol_0(tmp_path: Path):
     mgr = _dataset_manager(tmp_path)
     mock, private, readme = _create_dataset_files(tmp_path)
@@ -97,7 +138,7 @@ def test_multi_version_write_for_mixed_audience(tmp_path: Path):
         users=[DS0, DS1],
     )
 
-    root = mgr.syftbox_config.public_datasets_root_for_datasite(DO_EMAIL)
+    root = mgr.syftbox_config.datasite_public_root(DO_EMAIL) / "syft_datasets"
     # Both layouts written: flat (protocol 0) and v1 (protocol 1).
     assert (root / "demo" / "dataset.yaml").exists()
     assert (root / "v1" / "demo" / "dataset.yaml").exists()
@@ -107,3 +148,35 @@ def test_multi_version_write_for_mixed_audience(tmp_path: Path):
     assert len(all_datasets) == 1
     assert all_datasets[0]._protocol_version == "1"
     assert mgr.get("demo")._protocol_version == "1"
+
+
+def test_delete_removes_all_protocol_versions(tmp_path: Path):
+    schema0 = dataset_registry.schema_for_protocol_version("0")
+    schema1 = dataset_registry.schema_for_protocol_version("1")
+    mgr = _dataset_manager(tmp_path, peer_schemas={DS0: schema0, DS1: schema1})
+    mock, private, readme = _create_dataset_files(tmp_path)
+
+    mgr.create(
+        name="demo",
+        mock_path=mock,
+        private_path=private,
+        readme_path=readme,
+        users=[DS0, DS1],
+    )
+
+    public_root = mgr.syftbox_config.datasite_public_root(DO_EMAIL) / "syft_datasets"
+    private_root = mgr.syftbox_config.datasite_private_root(DO_EMAIL) / "syft_datasets"
+    # Both layouts exist on disk before deletion.
+    assert (public_root / "demo").exists()
+    assert (public_root / "v1" / "demo").exists()
+    assert (private_root / "demo").exists()
+    assert (private_root / "v1" / "demo").exists()
+
+    mgr.delete(name="demo", require_confirmation=False)
+
+    # Every protocol version is gone, public and private.
+    assert not (public_root / "demo").exists()
+    assert not (public_root / "v1" / "demo").exists()
+    assert not (private_root / "demo").exists()
+    assert not (private_root / "v1" / "demo").exists()
+    assert mgr.get_all() == []

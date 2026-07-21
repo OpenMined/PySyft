@@ -4,37 +4,68 @@ from typing import Iterator
 import yaml
 from syft_migration import MigratableObject
 
-from ..config import is_protocol_dir_name
+from ..config import (
+    METADATA_FILENAME,
+    PRIVATE_METADATA_FILENAME,
+    SYFT_DATASETS_FOLDER_NAME,
+    SyftBoxConfig,
+    is_protocol_dir_name,
+)
 from ..dataset_ref import DatasetRef
 from .base import ProtocolCodec
 
 
-class ProtocolCodecV0(ProtocolCodec):
-    """Pre-versioning layout (<= 0.1.20): datasets flat under syft_datasets/, no identity fields."""
+class DatasetConfigV0:
+    """Pre-versioning layout (<= 0.1.20): datasets flat under syft_datasets/, no segment."""
 
     version = "0"
     protocol_versions = ["0"]
+    datasets_folder_name = SYFT_DATASETS_FOLDER_NAME
+    metadata_filename = METADATA_FILENAME
+    private_metadata_filename = PRIVATE_METADATA_FILENAME
+
+    def __init__(self, syftbox_config: SyftBoxConfig) -> None:
+        self.syftbox_config = syftbox_config
+
+    def public_all_datasets_folder(self, datasite: str) -> Path:
+        return (
+            self.syftbox_config.datasite_public_root(datasite)
+            / self.datasets_folder_name
+        )
+
+    def private_all_datasets_folder(self, owner: str) -> Path:
+        return (
+            self.syftbox_config.datasite_private_root(owner) / self.datasets_folder_name
+        )
 
     def public_dataset_dir(self, ref: DatasetRef) -> Path:
-        return self.config.get_mock_dataset_dir(
-            ref.name, ref.owner, ref.protocol_version
-        )
+        return self.public_all_datasets_folder(ref.owner) / ref.name
 
     def private_dataset_dir(self, ref: DatasetRef) -> Path:
-        return self.config.get_private_dataset_dir(
-            ref.owner, ref.name, ref.protocol_version
-        )
+        return self.private_all_datasets_folder(ref.owner) / ref.name
+
+    def metadata_path(self, ref: DatasetRef) -> Path:
+        return self.public_dataset_dir(ref) / self.metadata_filename
+
+    def private_metadata_path(self, ref: DatasetRef) -> Path:
+        return self.private_dataset_dir(ref) / self.private_metadata_filename
 
     def iter_dataset_refs(self, datasite_email: str) -> Iterator[DatasetRef]:
-        root = self.config.public_datasets_root_for_datasite(datasite_email)
-        if not root.exists():
+        root = self.public_all_datasets_folder(datasite_email)
+        if not root.is_dir():
             return
         for entry in sorted(p for p in root.iterdir() if p.is_dir()):
-            # v<n>/ segments belong to a versioned codec, not the flat layout.
+            # v<n>/ segments belong to a versioned layout, not the flat one.
             if is_protocol_dir_name(entry.name):
                 continue
-            if (entry / self.metadata_marker).exists():
+            if (entry / self.metadata_filename).exists():
                 yield DatasetRef(datasite_email, entry.name, "0")
+
+
+class ProtocolCodecV0(ProtocolCodec):
+    """Reads/writes the flat layout, stripping the identity fields off disk."""
+
+    dataset_config_cls = DatasetConfigV0
 
     def read(self, path: Path, canonical_name: str) -> dict:
         data = yaml.safe_load(path.read_text()) or {}

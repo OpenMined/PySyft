@@ -11,17 +11,23 @@ from syft_datasets.migrations.history import PACKAGE_ARTIFACTS_DIR, PROTOCOLS_DI
 from syft_datasets.models import DatasetV1
 
 
-def test_0_1_20_artifact_file_loads():
-    artifact = ReleasedPackageProtocolInfo.load(
-        PACKAGE_ARTIFACTS_DIR / "syft-dataset-0.1.20.json"
-    )
-    assert artifact.package_info.package_name == "syft-dataset"
-    assert artifact.package_info.version == "0.1.20"
-    assert artifact.package_info.protocol_version == "0"
-    assert artifact.protocol_schema.protocol_name == "syft-dataset"
-    assert artifact.protocol_schema.version == "0"
-    expected_versions = {"Dataset": ["1"], "PrivateDatasetConfig": ["1"]}
-    assert artifact.protocol_schema.supported_versions == expected_versions
+def test_all_released_package_artifacts_load():
+    artifact_paths = sorted(PACKAGE_ARTIFACTS_DIR.glob("*.json"))
+    assert artifact_paths  # at least syft-dataset-0.1.20.json exists
+
+    for path in artifact_paths:
+        artifact = ReleasedPackageProtocolInfo.load(path)
+        info = artifact.package_info
+        # The filename encodes the package version: syft-dataset-<version>.json.
+        assert path.name == f"{info.package_name}-{info.version}.json"
+        assert info.package_name == "syft-dataset"
+        schema = artifact.protocol_schema
+        assert schema.protocol_name == "syft-dataset"
+        assert schema.version == info.protocol_version
+        assert schema.supported_versions
+        assert set(schema.current_object_schemas) == set(schema.supported_versions)
+        for canonical_name in schema.supported_versions:
+            assert schema.current_schema(canonical_name)
 
 
 def test_all_released_protocols_load():
@@ -38,15 +44,6 @@ def test_all_released_protocols_load():
         assert set(schema.current_object_schemas) == set(schema.supported_versions)
         for canonical_name in schema.supported_versions:
             assert schema.current_schema(canonical_name)
-
-
-def test_protocol_0_released_protocol_loads():
-    released = ReleasedProtocol.load(PROTOCOLS_DIR / "protocol-0.json")
-    schema = released.protocol_schema
-    assert schema.version == "0"
-    assert set(schema.current_object_schemas) == {"Dataset", "PrivateDatasetConfig"}
-    assert schema.current_schema("Dataset") == "1"
-    assert schema.current_schema("PrivateDatasetConfig") == "1"
 
 
 def test_released_object_schemas_unchanged():

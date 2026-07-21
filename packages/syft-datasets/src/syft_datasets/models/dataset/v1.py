@@ -18,10 +18,9 @@ from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from ...config import (
     PRIVATE_METADATA_FILENAME,
-    SYFT_DATASETS_FOLDER_NAME,
     SyftBoxConfig,
-    protocol_dir_name,
 )
+from ...dataset_ref import DatasetRef
 from ...migrations import dataset_registry
 from ...migrations.registry import DATASET_PROTOCOL_VERSION
 from ...url import SyftBoxURL
@@ -120,16 +119,18 @@ class DatasetV1(MigratableObject, PydanticFormatterMixin, registry=dataset_regis
         """The private data dir for this dataset, under the dataset's protocol layout.
 
         Derived from the path (owner + name + protocol) rather than the stored
-        URL so it stays correct across on-disk layouts.
+        URL so it stays correct across on-disk layouts. Delegates to the codec's
+        DatasetConfig so layout lives in exactly one place.
         """
-        segment = protocol_dir_name(self._protocol_version)
-        root = (
-            self.syftbox_config.syftbox_folder
-            / self.owner
-            / "private"
-            / SYFT_DATASETS_FOLDER_NAME
+        from ...protocolcodecs import dataset_config_for_protocol
+
+        ref = DatasetRef(
+            owner=self.owner, name=self.name, protocol_version=self._protocol_version
         )
-        return (root / segment / self.name) if segment else (root / self.name)
+        layout = dataset_config_for_protocol(
+            self._protocol_version, self.syftbox_config
+        )
+        return layout.private_dataset_dir(ref)
 
     @property
     def _private_metadata_dir(self) -> Path:

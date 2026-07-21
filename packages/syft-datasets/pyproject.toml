@@ -1,6 +1,6 @@
 [project]
 name = "syft-dataset"
-version = "0.1.21"
+version = "0.1.20"
 description = "Syft Datasets"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }
