@@ -707,7 +707,9 @@ def test_dunder_call_and_read_positions_are_consistent(verify_all):
         g = jnp.einsum.__wrapped__
         return g(x)
     """
-    assert "dunder-attr" in get_error_codes(verify_all(read_then_call, private=[[2, 4]]))
+    assert "dunder-attr" in get_error_codes(
+        verify_all(read_then_call, private=[[2, 4]])
+    )
 
 
 # ── multi-segment `import a.b` must not poison path resolution / defeat the floor ────────────
