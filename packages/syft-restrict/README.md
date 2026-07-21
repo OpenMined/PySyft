@@ -57,17 +57,17 @@ import syft_restrict as restrict
 
 result = restrict.run(
     "gemma_inference.py",
-    allow_functions=["jax.*", "flax.linen.*"],  # functions callable BY NAME (path-resolved)
-    allow_operators=["arithmetic", "indexing", "comparison"],  # operators allowed ON A VALUE
-    disallow_functions=[
-        # host / debug / experimental callbacks
-        "jax.debug.*", "jax.experimental.*", "jax.pure_callback",
-        "*.io_callback", "*.host_callback*", "jax.dlpack.*", "jax.ffi*",
-        # array <-> disk (save/savez/savez_compressed/savetxt, load/loadtxt, tofile/fromfile/memmap)
-        "jax.numpy.save*", "jax.numpy.load*", "*.tofile", "*.fromfile", "*.memmap",
-        # checkpointing / serialization
-        "flax.serialization.*", "flax.training.checkpoints.*", "orbax.*",
+    # default-deny: allow ONLY the exact paths this model calls, nothing else in jax/flax
+    allow_functions=[
+        "jax.numpy.einsum", "jax.numpy.mean", "jax.numpy.square", "jax.numpy.arange",
+        "jax.numpy.sin", "jax.numpy.cos", "jax.numpy.concatenate", "jax.numpy.tril",
+        "jax.numpy.triu", "jax.numpy.ones", "jax.numpy.where", "jax.numpy.repeat",
+        "jax.numpy.sqrt", "jax.numpy.transpose", "jax.numpy.array", "jax.numpy.float32",
+        "jax.numpy.bool_", "jax.lax.rsqrt", "jax.nn.softmax", "jax.nn.gelu",
+        "flax.linen.Module",
+        "jax.lax", "jax.nn",  # module refs the deep-path calls (jax.lax.rsqrt, jax.nn.softmax) resolve through
     ],
+    allow_operators=["arithmetic", "indexing", "comparison"],  # operators allowed ON A VALUE
 )
 # On success: writes gemma_inference.obfuscated.py and returns result.certificate.
 # On a policy violation: raises PolicyViolation naming each offending line.
@@ -75,10 +75,12 @@ result = restrict.run(
 ```
 
 > [!IMPORTANT]
-> A broad allow like `jax.*` pulls in JAX's own host-callback and disk-IO functions
-> (`jax.numpy.save`, `jax.debug.callback`, `jax.experimental.io_callback`, …), which the private
-> region could then call to exfiltrate data. Always pair a broad allow with a `disallow_functions`
-> floor (above), or list specific leaves instead. See [docs/blacklist.md](docs/blacklist.md#optional-disallow_functions).
+> List the **specific** paths your model calls, as above — this is the default-deny posture the
+> tool is built for: everything not named is denied. Avoid broad globs like `jax.*`: they pull in
+> JAX's own host-callback and disk-IO functions (`jax.numpy.save`, `jax.debug.callback`,
+> `jax.experimental.io_callback`, …) that the private region could call to exfiltrate data. If you
+> must use a broad glob, pair it with a `disallow_functions` floor — see
+> [docs/blacklist.md](docs/blacklist.md#optional-disallow_functions).
 
 The private region is designated **only** by `# syft-restrict: ...` comment markers in the
 source; `run()` resolves them and refuses a file that carries none. This is how
@@ -90,7 +92,7 @@ Two optional strictness flags, both defaulting to the permissive behavior:
 ```python
 result = restrict.run(
     "gemma_inference.py",
-    allow_functions=["jax.*", "flax.linen.*"],
+    allow_functions=[...],  # as above
     allow_operators=["arithmetic", "indexing", "comparison"],
     allow_local_assignments=True,   # False: a local aliased to a callable can't be called by name
     allow_base_class_attributes=True,  # False: a never-assigned self.<attr> is not presumed inherited
