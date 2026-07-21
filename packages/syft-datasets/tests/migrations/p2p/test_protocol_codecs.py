@@ -11,6 +11,7 @@ import inspect
 import pkgutil
 from pathlib import Path
 
+import pytest
 import yaml
 from syft_datasets import protocolcodecs
 from syft_datasets.config import SyftBoxConfig
@@ -19,6 +20,7 @@ from syft_datasets.migrations import dataset_registry
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
 from syft_datasets.models import Dataset
 from syft_datasets.protocolcodecs import ProtocolCodec
+from syft_datasets.protocolcodecs.v1 import DatasetConfigV1
 from syft_datasets.url import SyftBoxURL
 
 DO_EMAIL = "do@test.org"
@@ -160,3 +162,34 @@ def test_iter_dataset_refs_prefers_newest_protocol(tmp_path: Path):
     preferred = list(storage.iter_dataset_refs(DO_EMAIL))
     assert [(r.name, r.protocol_version) for r in preferred] == [("demo", "1")]
     assert storage.find_dataset_ref(DO_EMAIL, "demo").protocol_version == "1"
+
+
+# -- behavior 3: one codec serves many protocol versions, segment from the ref --
+def test_v1_codec_serves_multiple_protocols_with_derived_segment(tmp_path: Path):
+    syftbox = tmp_path / "SyftBox"
+    syftbox.mkdir()
+    config = SyftBoxConfig(syftbox_folder=syftbox, email=DO_EMAIL)
+    cfg = DatasetConfigV1(config)
+    # Simulate a protocol bump that did not change the layout: the same codec now
+    # serves protocol 2 as well, purely by extending its supported versions.
+    cfg.protocol_versions = ["1", "2"]
+
+    # The v<n> segment is derived from each ref's protocol version, not hardcoded.
+    assert cfg.public_dataset_dir(DatasetRef(DO_EMAIL, "a", "1")).parent.name == "v1"
+    assert cfg.public_dataset_dir(DatasetRef(DO_EMAIL, "b", "2")).parent.name == "v2"
+
+    # A ref with no versioned segment (e.g. protocol 0) must not resolve here.
+    with pytest.raises(ValueError):
+        cfg.public_dataset_dir(DatasetRef(DO_EMAIL, "x", "0"))
+
+    # Lay a dataset down in each segment; iteration finds both, tagged correctly.
+    for name, version in (("a", "1"), ("b", "2")):
+        dataset_dir = cfg.public_dataset_dir(DatasetRef(DO_EMAIL, name, version))
+        dataset_dir.mkdir(parents=True)
+        (dataset_dir / cfg.metadata_filename).write_text("{}")
+
+    found = {
+        (r.name, r.protocol_version)
+        for r in cfg.iter_dataset_refs_all_supported_protocols(DO_EMAIL)
+    }
+    assert found == {("a", "1"), ("b", "2")}
