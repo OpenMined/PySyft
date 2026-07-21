@@ -209,8 +209,9 @@ provision-secret-sa token_path secret=secret_name_default sa=sa_name_default: _p
 # its token via the VM's attached service account + Secret Manager.
 # No WIF — use when org policy blocks WIF provider creation. Requires
 # `just provision-secret-sa <token>` first.
+# Pass logs=true to debug a failing deployment.
 [group('deploy')]
-start email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds: _provision
+start email name=vm_default logs="false" machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds: _provision
     #!/bin/bash
     set -e
     {{load_settings}}
@@ -238,7 +239,7 @@ start email name=vm_default machine_type=machine_type_default machine_boot_size=
       --image-project=confidential-space-images \
       --scopes=cloud-platform \
       --service-account="$sa_email" \
-      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
+      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Never~tee-container-log-redirect={{logs}}~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
 
 
 [group('deploy')]
