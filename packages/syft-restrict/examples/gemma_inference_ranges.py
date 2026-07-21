@@ -21,7 +21,6 @@ from flax import linen as nn
 
 # ── Model config ─────────────────────────────────────────────────────────────
 # Active model config. Comment/uncomment to switch sizes.
-# syft-restrict: obfuscate-start
 CONFIG = dict(
     num_layers=18,
     embed_dim=640,
@@ -87,26 +86,17 @@ VOCAB_SIZE = 262144
 LOCAL_ROPE_BASE = 10_000
 GLOBAL_ROPE_BASE = 1_000_000
 K_MASK = -2.3819763e38  # Google's masking constant (≈ float32 -inf)
-# syft-restrict: obfuscate-end
 
 
-# syft-restrict: obfuscate-start
 def _attn_types(num_layers):
-    # syft-restrict: hide-start
     pattern = ("local",) * 5 + ("global",)
     return (pattern * ((num_layers + 5) // 6))[:num_layers]
-    # syft-restrict: hide-end
-
-
-# syft-restrict: obfuscate-end
 
 
 # ── Standalone helpers ────────────────────────────────────────────────────
 
 
-# syft-restrict: obfuscate-start
 def apply_rope(x, positions, base_freq):
-    # syft-restrict: hide-start
     """Rotary position embeddings (split-half rotation)."""
     half = shape_of(x)[-1] // 2
     freq_exp = (2.0 / shape_of(x)[-1]) * jnp.arange(half, dtype=jnp.float32)
@@ -115,15 +105,9 @@ def apply_rope(x, positions, base_freq):
     sin, cos = jnp.sin(angles), jnp.cos(angles)
     x1, x2 = x[..., :half], x[..., half:]
     return jnp.concatenate([x1 * cos - x2 * sin, x2 * cos + x1 * sin], axis=-1)
-    # syft-restrict: hide-end
 
 
-# syft-restrict: obfuscate-end
-
-
-# syft-restrict: obfuscate-start
 def make_masks(seq_len, sliding_window):
-    # syft-restrict: hide-start
     """Causal masks — local layers also clip to a sliding window."""
     causal = jnp.tril(jnp.ones((seq_len, seq_len), dtype=jnp.bool_))
     window = jnp.triu(
@@ -133,15 +117,9 @@ def make_masks(seq_len, sliding_window):
         "local": (causal & window)[None, None],
         "global": causal[None, None],
     }
-    # syft-restrict: hide-end
 
 
-# syft-restrict: obfuscate-end
-
-
-# syft-restrict: obfuscate-start
 def make_decode_masks(pos, sliding_window):
-    # syft-restrict: hide-start
     """Masks for single-token decode."""
     total_len = pos + 1
     positions = jnp.arange(total_len)
@@ -149,10 +127,6 @@ def make_decode_masks(pos, sliding_window):
         "local": (positions >= pos - sliding_window + 1)[None, None, None, :],
         "global": jnp.ones((1, 1, 1, total_len), dtype=jnp.bool_),
     }
-    # syft-restrict: hide-end
-
-
-# syft-restrict: obfuscate-end
 
 
 # ── Flax modules ───────────────────────────────────────────────────────────
@@ -174,59 +148,34 @@ def append_to(lst, item):
     return lst
 
 
-# syft-restrict: obfuscate-start
 class Einsum(nn.Module):
     def setup(self):
-        # syft-restrict: hide-start
         self.w = _get(self, "w")
 
-    # syft-restrict: hide-end
-
     def __call__(self, equation, x):
-        # syft-restrict: hide-start
         return jnp.einsum(equation, x, self.w)
 
-    # syft-restrict: hide-end
 
-
-# syft-restrict: obfuscate-end
-
-
-# syft-restrict: obfuscate-start
 class RMSNorm(nn.Module):
     def setup(self):
-        # syft-restrict: hide-start
         self.scale = _get(self, "scale")
 
-    # syft-restrict: hide-end
-
     def __call__(self, x):
-        # syft-restrict: hide-start
         var = jnp.mean(jnp.square(x), axis=-1, keepdims=True)
         return x * jax.lax.rsqrt(var + 1e-6) * (1 + self.scale)
 
-    # syft-restrict: hide-end
 
-
-# syft-restrict: obfuscate-end
-
-
-# syft-restrict: obfuscate-start
 class Attention(nn.Module):
     cfg: dict
 
     def setup(self):
-        # syft-restrict: hide-start
         self.q_einsum = Einsum()
         self.kv_einsum = Einsum()
         self._query_norm = RMSNorm()
         self._key_norm = RMSNorm()
         self.attn_vec_einsum = Einsum()
 
-    # syft-restrict: hide-end
-
     def __call__(self, x, positions, mask, attn_type, cache=None):
-        # syft-restrict: hide-start
         q = self.q_einsum("bsd,ndh->bsnh", x)
         kv = self.kv_einsum("bsd,ckdh->cbskh", x)
         k, v = kv[0], kv[1]
@@ -257,40 +206,23 @@ class Attention(nn.Module):
         out = jnp.einsum("bnst,btnh->bsnh", weights, v_exp)
         return self.attn_vec_einsum("bsnh,nhd->bsd", out), new_cache
 
-    # syft-restrict: hide-end
 
-
-# syft-restrict: obfuscate-end
-
-
-# syft-restrict: obfuscate-start
 class FeedForward(nn.Module):
     def setup(self):
-        # syft-restrict: hide-start
         self.gating_einsum = Einsum()
         self.linear = Einsum()
 
-    # syft-restrict: hide-end
-
     def __call__(self, x):
-        # syft-restrict: hide-start
         gate = self.gating_einsum("bsf,nhf->bsnh", x)
         h = jax.nn.gelu(gate[:, :, 0, :]) * gate[:, :, 1, :]
         return self.linear("bsh,hf->bsf", h)
 
-    # syft-restrict: hide-end
 
-
-# syft-restrict: obfuscate-end
-
-
-# syft-restrict: obfuscate-start
 class Block(nn.Module):
     cfg: dict
     attn_type: str = "local"
 
     def setup(self):
-        # syft-restrict: hide-start
         self.pre_attention_norm = RMSNorm()
         self.attn = Attention(cfg=self.cfg)
         self.post_attention_norm = RMSNorm()
@@ -298,10 +230,7 @@ class Block(nn.Module):
         self.mlp = FeedForward()
         self.post_ffw_norm = RMSNorm()
 
-    # syft-restrict: hide-end
-
     def __call__(self, x, positions, mask, cache=None):
-        # syft-restrict: hide-start
         h = self.pre_attention_norm(x)
         h, new_cache = self.attn(h, positions, mask, self.attn_type, cache)
         h = self.post_attention_norm(h)
@@ -311,39 +240,22 @@ class Block(nn.Module):
         h = self.post_ffw_norm(h)
         return x + h, new_cache
 
-    # syft-restrict: hide-end
 
-
-# syft-restrict: obfuscate-end
-
-
-# syft-restrict: obfuscate-start
 class Embedder(nn.Module):
     cfg: dict
 
     def setup(self):
-        # syft-restrict: hide-start
         self.input_embedding = _get(self, "input_embedding")
 
-    # syft-restrict: hide-end
-
     def __call__(self, token_ids):
-        # syft-restrict: hide-start
         table = self.input_embedding
         return table[token_ids] * jnp.sqrt(float(self.cfg["embed_dim"])), table
 
-    # syft-restrict: hide-end
 
-
-# syft-restrict: obfuscate-end
-
-
-# syft-restrict: obfuscate-start
 class Transformer(nn.Module):
     cfg: dict
 
     def setup(self):
-        # syft-restrict: hide-start
         num_layers = self.cfg["num_layers"]
         attn_types = _attn_types(num_layers)
         self.embedder = Embedder(cfg=self.cfg)
@@ -352,10 +264,7 @@ class Transformer(nn.Module):
         ]
         self.final_norm = RMSNorm()
 
-    # syft-restrict: hide-end
-
     def __call__(self, tokens, cache=None):
-        # syft-restrict: hide-start
         sliding_window = self.cfg["sliding_window"]
         num_layers = self.cfg["num_layers"]
         attn_types = _attn_types(num_layers)
@@ -381,11 +290,6 @@ class Transformer(nn.Module):
         x = self.final_norm(x)
         logits = x @ jnp.transpose(embed_table)
         return logits, new_cache
-
-    # syft-restrict: hide-end
-
-
-# syft-restrict: obfuscate-end
 
 
 # ── Weight loading ─────────────────────────────────────────────────────────

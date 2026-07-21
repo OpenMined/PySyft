@@ -56,15 +56,20 @@ Then run:
 import syft_restrict as restrict
 
 result = restrict.run(
-    "gemma_inference_marked.py",
+    "gemma_inference.py",
     allow_functions=["jax.*", "flax.linen.*"],  # functions callable BY NAME (path-resolved)
     allow_operators=["arithmetic", "indexing", "comparison"],  # operators allowed ON A VALUE
-    disallow_functions=[  # hard floor: JAX's host-callback / disk-IO surface, even under jax.*
-        "jax.numpy.save", "jax.numpy.savez", "jax.debug.*", "jax.experimental.*",
-        "jax.pure_callback", "*.io_callback", "*.host_callback*", "jax.dlpack.*", "jax.ffi*",
+    disallow_functions=[
+        # host / debug / experimental callbacks
+        "jax.debug.*", "jax.experimental.*", "jax.pure_callback",
+        "*.io_callback", "*.host_callback*", "jax.dlpack.*", "jax.ffi*",
+        # array <-> disk (save/savez/savez_compressed/savetxt, load/loadtxt, tofile/fromfile/memmap)
+        "jax.numpy.save*", "jax.numpy.load*", "*.tofile", "*.fromfile", "*.memmap",
+        # checkpointing / serialization
+        "flax.serialization.*", "flax.training.checkpoints.*", "orbax.*",
     ],
 )
-# On success: writes gemma_inference_marked.obfuscated.py and returns result.certificate.
+# On success: writes gemma_inference.obfuscated.py and returns result.certificate.
 # On a policy violation: raises PolicyViolation naming each offending line.
 # If the file has no `# syft-restrict: ...` markers: raises MarkerError.
 ```
@@ -77,14 +82,14 @@ result = restrict.run(
 
 The private region is designated **only** by `# syft-restrict: ...` comment markers in the
 source; `run()` resolves them and refuses a file that carries none. This is how
-**[examples/gemma_inference_marked.py](examples/gemma_inference_marked.py)** generates its
-obfuscated copy — see [examples/generate_marked.py](examples/generate_marked.py).
+**[examples/gemma_inference.py](examples/gemma_inference.py)** generates its
+obfuscated copy — see [examples/generate.py](examples/generate.py).
 
 Two optional strictness flags, both defaulting to the permissive behavior:
 
 ```python
 result = restrict.run(
-    "gemma_inference_marked.py",
+    "gemma_inference.py",
     allow_functions=["jax.*", "flax.linen.*"],
     allow_operators=["arithmetic", "indexing", "comparison"],
     allow_local_assignments=True,   # False: a local aliased to a callable can't be called by name
