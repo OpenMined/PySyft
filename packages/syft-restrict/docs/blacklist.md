@@ -116,8 +116,20 @@ Same idea as calling dunders on a value (`x.__repr__()`), spelled as a bare call
 - `format`
 - `bytes`
 
-> [!WARNING] > `bytes(x)` can dump raw buffer contents. `print` is a stdout channel. F-strings are banned
-> separately as constructs (above), including with no `{...}` at all.
+### Interpreter / site builtins
+
+Injected by the `site` module. `copyright`/`credits`/`license` write to stdout (same channel as
+`print`); `exit`/`quit` shut the interpreter down (`SystemExit`); `help` is an interactive/IO surface.
+
+- `copyright`
+- `credits`
+- `license`
+- `exit`
+- `quit`
+- `help`
+
+> [!WARNING] > `bytes(x)` can dump raw buffer contents. `print`, `copyright`, `credits`, and `license` are stdout
+> channels. F-strings are banned separately as constructs (above), including with no `{...}` at all.
 
 ```python
 # all rejected (banned-name)

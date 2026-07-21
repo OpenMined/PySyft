@@ -110,6 +110,14 @@ def test_match_statement_is_not_on_node_allowlist(verify_all):
         "ascii",
         "format",
         "bytes",
+        # site-injected builtins: stdout channels (copyright/credits/license),
+        # interpreter shutdown (exit/quit), interactive help (help)
+        "copyright",
+        "credits",
+        "license",
+        "exit",
+        "quit",
+        "help",
     ],
 )
 def test_banned_names(verify_all, name):

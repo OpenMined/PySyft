@@ -56,6 +56,13 @@ BANNED_NAMES: frozenset[str] = frozenset(
         "ascii",
         "format",
         "bytes",
+        # site-injected builtins: stdout channels, interpreter shutdown, interactive help
+        "copyright",
+        "credits",
+        "license",
+        "exit",
+        "quit",
+        "help",
     }
 )
 
