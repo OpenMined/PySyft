@@ -1,27 +1,20 @@
-"""Shared fixtures/helpers for the static-checker tests (research approach B).
+"""Shared fixtures/helpers for the static-checker tests.
 
 The tests are split by intent:
-- ``test_whitelist.py``     — language constructs the hidden region IS allowed to use.
-- ``test_blacklist.py``     — constructs/calls/attrs that are rejected (default-deny).
-- ``test_whitelisted_lib.py`` — things we *manually* allow: library calls by name and operator bundles.
+- ``test_whitelist.py``       — green path: constructs the private region IS allowed to use.
+- ``test_disallowed.py``      — default-deny catalog: straightforward rejections.
+- ``test_bypasses.py``        — multi-step / subtle escape regressions.
+- ``test_whitelisted_lib.py`` — library calls by name and operator bundles (manual allow).
+- ``test_ranges.py``          — private-range argument handling, not code policy.
 """
 
-from pathlib import Path
-
 import pytest
+from syft_restrict import verify
 
-from syft_restrict import Policy, verify
-from syft_restrict.verifier import VerifyResult
-
-FIXTURES = Path(__file__).parents[1] / "fixtures"
-REPO_ROOT = Path(__file__).parents[4]
-
-ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
-ALLOW_METHODS = ["arithmetic", "indexing", "comparison"]
-
-
-def make_policy(functions=ALLOW_FUNCTIONS, methods=ALLOW_METHODS):
-    return Policy.parse(list(functions), list(methods))
+from verify.helpers import (
+    make_policy,
+    normalize_source,
+)
 
 
 @pytest.fixture
@@ -33,13 +26,10 @@ def policy():
 def verify_all(policy):
     """Verify ``source`` with the whole file marked private, using the standard policy."""
 
-    def _run(source, pol=None):
-        n = len(source.splitlines())
-        return verify(source, [[1, n]], pol or policy)
+    def _run(source: str | list[str], pol=None, private=None):
+        source = normalize_source(source)
+        if private is None:
+            private = [[1, len(source.splitlines())]]
+        return verify(source, private, pol or policy)
 
     return _run
-
-
-def error_codes(result: VerifyResult):
-    """The set of violation codes in a VerifyResult (handy for asserts)."""
-    return {v.code for v in result.violations}

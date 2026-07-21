@@ -7,6 +7,7 @@ vm_default := "syft-enclave-vm"
 secret_name_default := "syft-enclave-token"
 sa_name_default := "syft-enclave-service-account"
 tf_dir := "terraform"
+job_timeout_seconds := "1800" # 30 minutes
 
 # Shared shell snippet: loads settings from ~/.syft-enclaves/settings.json.
 # `project_id` and `zone` are written by `just init`.
@@ -208,8 +209,9 @@ provision-secret-sa token_path secret=secret_name_default sa=sa_name_default: _p
 # its token via the VM's attached service account + Secret Manager.
 # No WIF — use when org policy blocks WIF provider creation. Requires
 # `just provision-secret-sa <token>` first.
+# Pass logs=true to debug a failing deployment.
 [group('deploy')]
-start email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job-timeout="": _provision
+start email name=vm_default logs="false" machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds: _provision
     #!/bin/bash
     set -e
     {{load_settings}}
@@ -219,8 +221,8 @@ start email name=vm_default machine_type=machine_type_default machine_boot_size=
 
     # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
     job_timeout_env=""
-    if [ -n "{{job-timeout}}" ]; then
-      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job-timeout}}"
+    if [ -n "{{job_timeout_seconds}}" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job_timeout_seconds}}"
     fi
 
     gcloud compute instances create {{name}} \
@@ -237,11 +239,11 @@ start email name=vm_default machine_type=machine_type_default machine_boot_size=
       --image-project=confidential-space-images \
       --scopes=cloud-platform \
       --service-account="$sa_email" \
-      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
+      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Never~tee-container-log-redirect={{logs}}~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
 
 
 [group('deploy')]
-start-debug email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job-timeout="" use_encryption="false": _provision
+start-debug email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds use_encryption="false": _provision
     #!/bin/bash
     set -e
     {{load_settings}}
@@ -251,8 +253,8 @@ start-debug email name=vm_default machine_type=machine_type_default machine_boot
 
     # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
     job_timeout_env=""
-    if [ -n "{{job-timeout}}" ]; then
-      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job-timeout}}"
+    if [ -n "{{job_timeout_seconds}}" ]; then
+      job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job_timeout_seconds}}"
     fi
 
     gcloud compute instances create {{name}} \
@@ -283,18 +285,19 @@ stop name=vm_default: _whoami
       --zone="$zone" \
       --quiet
 
-# Delete the enclave's syftbox (Drive files + local state)
-# Usage: just delete-syftbox enclave@example.com
+# Delete a syftbox (Drive files + local state). Defaults to the enclave
+# account/token, but any email + token_path can be passed (e.g. to wipe a
+# data owner or data scientist syftbox before redeploying).
+# Usage: just delete-syftbox [email] [token_path]
 [group('teardown')]
-delete-syftbox email:
+delete-syftbox email token_path="../../credentials/token_enclave.json":
     #!/bin/bash
     set -e
-    token="../../credentials/token_enclave.json"
-    [ -f "$token" ] || { echo "Error: $token not found" >&2; exit 1; }
-    echo "Deleting syftbox for {{email}}..."
+    [ -f "{{token_path}}" ] || { echo "Error: token file not found: {{token_path}}" >&2; exit 1; }
+    echo "Deleting syftbox for {{email}} (token: {{token_path}})..."
     uv run --project ../.. -- python -c "
     from syft_client.sync.utils.syftbox_utils import delete_syftbox
-    delete_syftbox(token_path='$token', email='{{email}}')
+    delete_syftbox(token_path='{{token_path}}', email='{{email}}')
     "
 
 # Tear down everything provisioned by `provision-secret-sa`:

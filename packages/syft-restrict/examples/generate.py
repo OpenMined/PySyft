@@ -2,7 +2,7 @@
 
 Run from the package root:  uv run python examples/generate.py
 
-The policy here lists the *exact* lower-level JAX/Flax symbols the hidden region uses,
+The policy here lists the *exact* lower-level JAX/Flax symbols the private region uses,
 rather than broad globs (`jax.*`). Each call leaf (`jax.numpy.einsum`, …) is enforced
 individually; `jax.lax` / `jax.nn` are included only because the calls are written as
 deep attribute paths (`jax.lax.rsqrt`), so the checker also evaluates those module
@@ -88,7 +88,7 @@ result = run(
         "jax.lax",
         "jax.nn",
     ],
-    allow_methods=["arithmetic", "indexing", "comparison"],
+    allow_operators=["arithmetic", "indexing", "comparison"],
 )
 
 cert_path = EX / "gemma_inference.certificate.json"

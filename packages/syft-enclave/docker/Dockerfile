@@ -42,6 +42,9 @@ SYFT_BOOTSTRAP_WIF_SECRET,\
 SYFT_BOOTSTRAP_SA_SECRET,\
 SYFT_ENCLAVE_TOKEN_CONTENT"
 
+
+LABEL "tee.launch_policy.log_redirect"="always"
+
 # Confidential Spaces expects port 8080
 # Note: runs as root because the TEE attestation socket
 # at /run/container_launcher/teeserver.sock is root-owned.
