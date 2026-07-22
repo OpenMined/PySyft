@@ -1,7 +1,7 @@
 {
-  "_about": "Risk rules for flax 0.12.x. 'unsafe' = disk/network/host-callback; 'safe' = vetted surface, whose note flags any residual risk to review in combination (kept deliberately vague). Cross-library rules in _common/default are merged in on top of these. This is advisory, not a proof.",
-  "safe": {
-    "flax.linen.Module": "Flax module base class — required to define a model; not a channel itself. Residual module-state risk (not host I/O) is widened by allow_base_class_attributes=True; keep that flag False to require explicit assignment."
+  "_about": "Risk rules for flax 0.12.x. 'unsafe' = disk/network/host-callback; 'dual_use' = useful surface that is mostly safe but can be abused in combination (the category itself is the caution, so notes stay terse and vague); 'safe' = genuinely inert. Cross-library rules in _common/default are merged in on top of these. This is advisory, not a proof.",
+  "dual_use": {
+    "flax.linen.Module": "Flax module base class; required to define a model. Keep allow_base_class_attributes=False to require explicit assignment."
   },
   "unsafe": {
     "flax.serialization.*": "Serializes model state to bytes / disk.",

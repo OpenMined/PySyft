@@ -11,10 +11,13 @@ rules — kept out of the code so assessments can be revised per release; see ``
 
 - ``"unsafe"`` — matches a catalog entry for known disk/network/host-callback surface, OR is a glob
   (``jax.*``) that grants a whole namespace. Remove it or tighten the allow.
-- ``"safe"`` — matches a curated entry for a vetted pure-compute path. The explanation also flags any
-  *residual output-channel risk to review in combination*, kept deliberately vague (not a how-to).
-- ``"review"`` — neither unsafe nor in the safe catalog. The audit makes **no** guess about it: it is
-  reported as uncatalogued and deferred to human review. Unknowns are never assumed safe.
+- ``"dual_use"`` — a useful, mostly-safe op that can still be abused in combination (e.g. ``einsum``,
+  ``softmax``, ``where``). Allowed, but flagged: the *category itself* carries the "handle with care"
+  signal, so entry notes stay terse and vague — never an abuse how-to.
+- ``"safe"`` — matches a curated entry for a genuinely inert path (constants, masks, module refs) with
+  no residual output channel of its own.
+- ``"review"`` — none of the above. The audit makes **no** guess about it: it is reported as
+  uncatalogued and deferred to human review. Unknowns are never assumed safe.
 
 Limits (state them plainly to whoever reads a report):
 
@@ -22,7 +25,7 @@ Limits (state them plainly to whoever reads a report):
   does not know is deferred to a human; the tool does not try to guess whether it does I/O.
 - The catalog is curated per library version; the report records the versions it saw.
 
-Anything not matched as unsafe or safe defaults to ``"review"``, never silently to ``"safe"``.
+Anything not matched as unsafe, dual_use, or safe defaults to ``"review"``, never silently to safe.
 """
 
 from __future__ import annotations
@@ -44,7 +47,11 @@ _CATALOG_DIR = Path(__file__).with_name("catalog")
 _COMMON_LIB = "_common"
 _COMMON_VERSION = "default"
 
-Verdict = Literal["safe", "unsafe", "review"]
+# Catalog buckets, in the order they are matched (first hit wins): the strictest verdict a path
+# qualifies for is assigned, so unsafe beats dual_use beats safe.
+_BUCKETS: tuple[str, ...] = ("unsafe", "dual_use", "safe")
+
+Verdict = Literal["safe", "dual_use", "unsafe", "review"]
 
 
 class PathAudit(BaseModel):
@@ -57,33 +64,47 @@ class AuditReport(BaseModel):
     entries: list[PathAudit] = Field(default_factory=list)
     versions: dict[str, str] = Field(default_factory=dict)  # top-level package -> version seen
 
+    def _by_verdict(self, verdict: Verdict) -> list[PathAudit]:
+        return [e for e in self.entries if e.verdict == verdict]
+
     @property
     def unsafe(self) -> list[PathAudit]:
-        return [e for e in self.entries if e.verdict == "unsafe"]
+        return self._by_verdict("unsafe")
+
+    @property
+    def dual_use(self) -> list[PathAudit]:
+        return self._by_verdict("dual_use")
 
     @property
     def review(self) -> list[PathAudit]:
-        return [e for e in self.entries if e.verdict == "review"]
+        return self._by_verdict("review")
 
     @property
     def safe(self) -> list[PathAudit]:
-        return [e for e in self.entries if e.verdict == "safe"]
+        return self._by_verdict("safe")
 
     @property
     def ok(self) -> bool:
-        """True if nothing is unsafe. ``review`` entries do not fail it -- they need a human."""
+        """True if nothing is unsafe. ``dual_use`` and ``review`` entries do not fail it -- they are
+        allowed-but-flagged and need a human's eye, not a hard block."""
         return not self.unsafe
 
     def format(self) -> str:
         vers = ", ".join(f"{k} {v}" for k, v in sorted(self.versions.items())) or "no versions detected"
         lines = [f"allow-list audit ({vers})"]
-        for label, group in (("UNSAFE", self.unsafe), ("REVIEW", self.review), ("SAFE", self.safe)):
+        groups = (
+            ("UNSAFE", self.unsafe),
+            ("DUAL-USE", self.dual_use),
+            ("REVIEW", self.review),
+            ("SAFE", self.safe),
+        )
+        for label, group in groups:
             if not group:
                 continue
             lines.append(f"  {label} ({len(group)}):")
             for e in group:
                 lines.append(f"    - {e.path}{' — ' + e.reason if e.reason else ''}")
-        lines.append(f"  => ok={self.ok} (unsafe entries fail; review entries need a human)")
+        lines.append(f"  => ok={self.ok} (unsafe entries fail; dual-use and review entries need a human)")
         return "\n".join(lines)
 
     def __str__(self) -> str:
@@ -111,13 +132,11 @@ def _classify(path: str, versions: dict[str, str]) -> PathAudit:
             "list exact leaves instead",
         )
     library = path.split(".", 1)[0]
-    unsafe_rules, safe_rules = _rules_for(library, versions.get(library, ""))
-    for pattern, reason in unsafe_rules.items():
-        if fnmatch.fnmatchcase(path, pattern):
-            return PathAudit(path=path, verdict="unsafe", reason=reason)
-    for pattern, reason in safe_rules.items():
-        if fnmatch.fnmatchcase(path, pattern):
-            return PathAudit(path=path, verdict="safe", reason=reason)
+    rules = _rules_for(library, versions.get(library, ""))
+    for verdict in _BUCKETS:  # unsafe -> dual_use -> safe: strictest match wins
+        for pattern, reason in rules[verdict].items():
+            if fnmatch.fnmatchcase(path, pattern):
+                return PathAudit(path=path, verdict=verdict, reason=reason)
     return PathAudit(
         path=path,
         verdict="review",
@@ -125,17 +144,17 @@ def _classify(path: str, versions: dict[str, str]) -> PathAudit:
     )
 
 
-def _rules_for(library: str, version: str) -> tuple[dict[str, str], dict[str, str]]:
-    """Merge the library-agnostic ``_common`` rules with the version-matched library rules."""
-    unsafe: dict[str, str] = {}
-    safe: dict[str, str] = {}
+def _rules_for(library: str, version: str) -> dict[str, dict[str, str]]:
+    """Merge the library-agnostic ``_common`` rules with the version-matched library rules, per
+    bucket (``unsafe`` / ``dual_use`` / ``safe``)."""
+    merged: dict[str, dict[str, str]] = {bucket: {} for bucket in _BUCKETS}
     common = _load_ruleset(_COMMON_LIB, _COMMON_VERSION)
     version_dir = _match_version_dir(library, version)
     lib_rules = _load_ruleset(library, version_dir) if version_dir is not None else {}
     for ruleset in (common, lib_rules):
-        unsafe.update(ruleset.get("unsafe", {}))
-        safe.update(ruleset.get("safe", {}))
-    return unsafe, safe
+        for bucket in _BUCKETS:
+            merged[bucket].update(ruleset.get(bucket, {}))
+    return merged
 
 
 @lru_cache(maxsize=None)

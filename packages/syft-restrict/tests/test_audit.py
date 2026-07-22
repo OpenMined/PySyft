@@ -29,16 +29,25 @@ def test_glob_allow_is_flagged_unsafe():
     assert "glob" in _entry(report, "jax.*").reason
 
 
-def test_vetted_pure_compute_paths_are_safe_with_explanations():
-    paths = ["jax.numpy.einsum", "jax.nn.softmax", "flax.linen.Module", "jax.lax"]
+def test_genuinely_inert_paths_are_safe():
+    # constants, masks, and module refs have no residual channel of their own.
+    paths = ["jax.numpy.arange", "jax.numpy.ones", "jax.numpy.tril", "jax.lax"]
     report = audit_allow_functions(paths)
     assert all(_entry(report, p).verdict == "safe" for p in paths)
-    assert all(_entry(report, p).reason for p in paths)  # safe entries also explained
-    # the explanation must convey residual risk to review, not just "it's fine" -- but stay vague
-    # (no abuse how-to): flag the risk with words like "residual" / "review", never a recipe.
-    einsum_reason = _entry(report, "jax.numpy.einsum").reason
-    assert "residual" in einsum_reason and "review" in einsum_reason
+    assert all(_entry(report, p).reason for p in paths)  # safe entries still explained
     assert report.ok  # only-safe list passes
+
+
+def test_dual_use_paths_are_flagged_between_safe_and_unsafe():
+    # useful ops that are mostly safe but abusable in combination land in dual_use, not safe.
+    paths = ["jax.numpy.einsum", "jax.nn.softmax", "jax.numpy.where", "flax.linen.Module"]
+    report = audit_allow_functions(paths)
+    assert all(_entry(report, p).verdict == "dual_use" for p in paths)
+    assert all(_entry(report, p).reason for p in paths)  # dual_use entries carry a terse note
+    # the category carries the caution, so the note stays vague -- no abuse how-to / recipe wording.
+    einsum_reason = _entry(report, "jax.numpy.einsum").reason
+    assert "encode" not in einsum_reason and "secret" not in einsum_reason
+    assert report.ok  # dual_use does not fail the report (allowed-but-flagged)
 
 
 def test_uncatalogued_path_is_deferred_to_review_without_assumptions():
@@ -67,11 +76,11 @@ def test_orbax_is_flagged_unsafe_without_a_version_dir():
 
 def test_report_format_has_sections_and_ok_flag():
     report = audit_allow_functions(
-        ["jax.numpy.einsum", "jax.profiler.start_server"]
+        ["jax.profiler.start_server", "jax.numpy.einsum", "jax.numpy.ones"]
     )
     text = report.format()
-    assert "UNSAFE" in text and "SAFE" in text
-    assert "ok=False" in text
+    assert "UNSAFE" in text and "DUAL-USE" in text and "SAFE" in text
+    assert "ok=False" in text  # the unsafe profiler entry fails the report
 
 
 def test_best_version_key_matches_on_dot_boundaries_only():

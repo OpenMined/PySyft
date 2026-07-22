@@ -32,12 +32,17 @@ Each `catalog.json` is:
 ```json
 {
   "_about": "free-text note",
-  "unsafe": { "<dotted-path glob>": "why it is unsafe" },
-  "safe":   { "<dotted-path glob>": "why it is safe, plus a vague flag of any residual risk" }
+  "unsafe":   { "<dotted-path glob>": "why it is unsafe" },
+  "dual_use": { "<dotted-path glob>": "what the op is (terse; the category carries the caution)" },
+  "safe":     { "<dotted-path glob>": "why it is genuinely inert" }
 }
 ```
 
-`unsafe` = known disk/network/host-callback surface. `safe` = vetted pure-compute; its note also
-flags any *residual output-channel risk to review in combination* — kept deliberately vague, not a
-how-to (don't spell out abuse mechanics). Anything matched by neither defaults to `review` — never
-silently to `safe`.
+- `unsafe` = known disk/network/host-callback surface.
+- `dual_use` = a useful op that is mostly safe but can be **abused in combination** (`einsum`,
+  `softmax`, `where`, …). Allowed but flagged. The *category* is the caution, so keep each note a
+  terse description of what the op is — do **not** spell out abuse mechanics (no how-to).
+- `safe` = genuinely inert (constants, masks, module refs) with no residual channel of its own.
+
+A path is matched strictest-first (`unsafe` → `dual_use` → `safe`). Anything matched by none defaults
+to `review` — never silently to `safe`.
