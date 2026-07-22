@@ -4,15 +4,22 @@ from unittest.mock import patch
 
 import pytest
 
+from syft_client.version import SYFT_CLIENT_VERSION
+
 from syft_enclaves.attestation import (
-    EXPECTED_SYFT_VERSION,
+    AppraisalPolicy,
     AttestationError,
     AttestationResult,
     verify_attestation_token,
 )
 
 FAKE_IMAGE_DIGEST = "sha256:abc123"
-EXPECTED_VERSION_NONCE = f"syft-client-{EXPECTED_SYFT_VERSION}"
+EXPECTED_VERSION_NONCE = f"syft-client-{SYFT_CLIENT_VERSION}"
+
+# The image digest is not shipped as a constant — it's supplied per-call via an
+# AppraisalPolicy. A policy pinning the fake token's digest is used by the
+# tests that need the image-digest check to pass.
+DEFAULT_TEST_POLICY = AppraisalPolicy(expected_image_digest=FAKE_IMAGE_DIGEST)
 
 
 def _valid_claims(**overrides):
@@ -36,17 +43,13 @@ def _valid_claims(**overrides):
 def mock_verify():
     """Patch google id_token.verify_token to return valid claims.
 
-    Also pins EXPECTED_IMAGE_DIGEST to the fake digest in the claims so
-    tests exercising other checks aren't tripped by the (fail-closed)
-    image_digest check. Tests targeting image_digest override the patch.
+    Tests use ``_verify`` (or pass ``DEFAULT_TEST_POLICY``) so the fake token's
+    digest matches the policy and the image_digest check passes. Tests
+    targeting image_digest pass their own policy.
     """
     with (
         patch("syft_enclaves.attestation.id_token.verify_token") as mock_vt,
         patch("syft_enclaves.attestation.google_requests.Request"),
-        patch(
-            "syft_enclaves.attestation.EXPECTED_IMAGE_DIGEST",
-            FAKE_IMAGE_DIGEST,
-        ),
     ):
         mock_vt.return_value = _valid_claims()
         yield mock_vt
@@ -54,7 +57,9 @@ def mock_verify():
 
 class TestVerifyAttestationToken:
     def test_all_checks_pass(self, mock_verify):
-        result = verify_attestation_token("fake-token", verbose=False)
+        result = verify_attestation_token(
+            "fake-token", policy=DEFAULT_TEST_POLICY, verbose=False
+        )
         assert result.all_passed()
         assert len(result.checks) == 5
         assert all(c.passed for c in result.checks)
@@ -89,7 +94,7 @@ class TestVerifyAttestationToken:
 
     def test_version_unprefixed_rejected(self, mock_verify):
         """A bare version (pre-fix sender) must be rejected, not accepted."""
-        mock_verify.return_value = _valid_claims(eat_nonce=[EXPECTED_SYFT_VERSION])
+        mock_verify.return_value = _valid_claims(eat_nonce=[SYFT_CLIENT_VERSION])
         with pytest.raises(AttestationError, match="version_match"):
             verify_attestation_token("fake-token", verbose=False)
 
@@ -109,54 +114,38 @@ class TestVerifyAttestationToken:
         assert version_check.passed is True
 
     def test_image_digest_mismatch(self, mock_verify):
-        with patch(
-            "syft_enclaves.attestation.EXPECTED_IMAGE_DIGEST",
-            "sha256:expected",
-        ):
-            mock_verify.return_value = _valid_claims()
-            with pytest.raises(AttestationError, match="image_digest"):
-                verify_attestation_token("fake-token", verbose=False)
+        policy = AppraisalPolicy(expected_image_digest="sha256:expected")
+        with pytest.raises(AttestationError, match="image_digest"):
+            verify_attestation_token("fake-token", policy=policy, verbose=False)
 
-    def test_image_digest_fails_closed_when_not_configured(self, mock_verify):
-        """Empty EXPECTED_IMAGE_DIGEST must REJECT, not skip — an unpinned
-        verifier would accept any image running in a genuine Confidential
-        Space, defeating the point of attestation."""
-        with patch("syft_enclaves.attestation.EXPECTED_IMAGE_DIGEST", ""):
-            with pytest.raises(AttestationError, match="image_digest") as exc_info:
-                verify_attestation_token("fake-token", verbose=False)
-        image_check = next(
-            c for c in exc_info.value.result.checks if c.name == "image_digest"
+    def test_image_digest_skipped_when_not_supplied(self, mock_verify):
+        """No expected digest supplied → the image-digest check is skipped
+        (passed=None), not failed. The default policy pins no image."""
+        result = verify_attestation_token(
+            "fake-token", policy=AppraisalPolicy(), verbose=False
         )
-        assert image_check.passed is False
-        assert "not configured" in image_check.detail
+        image_check = next(c for c in result.checks if c.name == "image_digest")
+        assert image_check.passed is None
+        assert "no expected image digest supplied" in image_check.detail
 
-    def test_image_digest_fails_closed_when_missing_from_token(self, mock_verify):
-        """A token with no image_digest claim must be rejected — the verifier
-        can't confirm which image is running, so it must not trust it."""
+    def test_image_digest_fails_when_supplied_but_missing_from_token(self, mock_verify):
+        """A pinned policy plus a token with no image_digest claim must be
+        rejected — the verifier can't confirm which image is running."""
         claims = _valid_claims()
         del claims["submods"]["container"]["image_digest"]
         mock_verify.return_value = claims
         with pytest.raises(AttestationError, match="image_digest"):
-            verify_attestation_token("fake-token", verbose=False)
-
-    def test_pinned_digest_is_set(self):
-        """The shipped constant must be a real pinned sha256 digest — an empty
-        or malformed value silently disables image verification for every
-        client. Guards against the digest being blanked in a future edit."""
-        from syft_enclaves.attestation import EXPECTED_IMAGE_DIGEST
-
-        assert EXPECTED_IMAGE_DIGEST.startswith("sha256:")
-        assert len(EXPECTED_IMAGE_DIGEST) == len("sha256:") + 64
+            verify_attestation_token(
+                "fake-token", policy=DEFAULT_TEST_POLICY, verbose=False
+            )
 
     def test_image_digest_matches(self, mock_verify):
-        with patch(
-            "syft_enclaves.attestation.EXPECTED_IMAGE_DIGEST",
-            FAKE_IMAGE_DIGEST,
-        ):
-            result = verify_attestation_token("fake-token", verbose=False)
-            image_check = next(c for c in result.checks if c.name == "image_digest")
-            assert image_check.passed
-            assert "matches" in image_check.detail
+        result = verify_attestation_token(
+            "fake-token", policy=DEFAULT_TEST_POLICY, verbose=False
+        )
+        image_check = next(c for c in result.checks if c.name == "image_digest")
+        assert image_check.passed
+        assert "matches" in image_check.detail
 
     def test_error_carries_result(self, mock_verify):
         mock_verify.return_value = _valid_claims(secboot=False)
