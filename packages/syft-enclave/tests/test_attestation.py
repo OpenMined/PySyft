@@ -7,6 +7,7 @@ import pytest
 from syft_client.version import SYFT_CLIENT_VERSION
 
 from syft_enclaves.attestation import (
+    JWT_EXPIRY_GRACE_SECONDS,
     AppraisalPolicy,
     AttestationError,
     AttestationResult,
@@ -68,6 +69,14 @@ class TestVerifyAttestationToken:
         mock_verify.side_effect = ValueError("bad signature")
         with pytest.raises(AttestationError, match="JWT signature"):
             verify_attestation_token("fake-token", verbose=False)
+
+    def test_jwt_expiry_grace_passed_through(self, mock_verify):
+        """The enclave doesn't yet refresh its token, so the verifier accepts an
+        expired token for a grace window (~1 month) via clock_skew_in_seconds."""
+        verify_attestation_token("fake-token", verbose=False)
+        _, kwargs = mock_verify.call_args
+        assert kwargs["clock_skew_in_seconds"] == JWT_EXPIRY_GRACE_SECONDS
+        assert JWT_EXPIRY_GRACE_SECONDS == 30 * 24 * 60 * 60
 
     def test_secure_boot_disabled(self, mock_verify):
         mock_verify.return_value = _valid_claims(secboot=False)

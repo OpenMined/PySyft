@@ -23,6 +23,15 @@ CONFIDENTIAL_COMPUTING_CERTS_URL = (
     "signer@confidentialspace-sign.iam.gserviceaccount.com"
 )
 
+# Google mints Confidential Space attestation tokens with a short lifetime
+# (~30 minutes), but the enclave only writes its token to SYFT_version.json once
+# at boot and does not yet refresh it. So after ~30 minutes every peer would
+# reject the enclave.
+#
+# TODO: remove this once the enclave periodically refreshes its attestation
+# token in SYFT_version.json — then the real (short) expiry can be honoured.
+JWT_EXPIRY_GRACE_SECONDS = 30 * 24 * 60 * 60  # ~1 month
+
 
 class AppraisalPolicy(BaseModel):
     """Reference values the verifier appraises attestation evidence against.
@@ -121,7 +130,10 @@ def verify_attestation_token(
     if verbose:
         print("🔒 Verifying enclave attestation...")
 
-    # 1. JWT signature + expiry — fail-fast (no claims → no point continuing)
+    # 1. JWT signature + expiry — fail-fast (no claims → no point continuing).
+    # clock_skew_in_seconds widens the accepted expiry window (token valid until
+    # exp + grace) as a stopgap for the enclave not yet refreshing its token —
+    # see JWT_EXPIRY_GRACE_SECONDS.
     if verbose:
         print("  ⏳ JWT signature ...")
     try:
@@ -131,6 +143,7 @@ def verify_attestation_token(
             request,
             audience=ATTESTATION_AUDIENCE,
             certs_url=CONFIDENTIAL_COMPUTING_CERTS_URL,
+            clock_skew_in_seconds=JWT_EXPIRY_GRACE_SECONDS,
         )
         result.add(
             "jwt_signature",
