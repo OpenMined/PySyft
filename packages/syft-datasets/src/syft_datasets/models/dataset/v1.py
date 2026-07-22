@@ -1,82 +1,44 @@
+from __future__ import annotations
+
 from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
 from typing import ClassVar
-from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
-from typing_extensions import Self
 from uuid import UUID, uuid4
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import Field, PrivateAttr
+from syft_migration import MigratableObject
 from syft_notebook_ui.formatter_mixin import (
     ANSIPydanticFormatter,
     PydanticFormatter,
     PydanticFormatterMixin,
 )
+from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
-from .types import PathLike, to_path
-from .url import SyftBoxURL
-from .config import SyftBoxConfig
+from ...config import (
+    PRIVATE_METADATA_FILENAME,
+    SyftBoxConfig,
+)
+from ...dataset_ref import DatasetRef
+from ...migrations import dataset_registry
+from ...url import SyftBoxURL
+from ..private_dataset_config.v1 import PrivateDatasetConfigV1
 
 
-def _utcnow():
+def _utcnow() -> datetime:
     return datetime.now(tz=timezone.utc)
 
 
-class DatasetBase(BaseModel):
+class DatasetV1(MigratableObject, PydanticFormatterMixin, registry=dataset_registry):
+    """Public dataset metadata, stored as dataset.yaml under
+    SyftBox/<datasite>/public/syft_datasets/[v<n>/]<name>/."""
+
     __display_formatter__: ClassVar[PydanticFormatter] = ANSIPydanticFormatter()
-    _syftbox_config: SyftBoxConfig | None = None
+    __table_extra_fields__: ClassVar[list[str]] = ["name", "owner"]
 
-    def save(self, filepath: PathLike) -> None:
-        filepath = to_path(filepath)
-        if not filepath.suffix == ".yaml":
-            raise ValueError("Model must be saved as a .yaml file.")
-
-        if not filepath.parent.exists():
-            filepath.parent.mkdir(parents=True, exist_ok=True)
-
-        data = self.model_dump(mode="json")
-        yaml_dump = yaml.safe_dump(data, indent=2, sort_keys=False)
-        filepath.write_text(yaml_dump)
-
-    @classmethod
-    def load(
-        cls, filepath: PathLike, syftbox_config: SyftBoxConfig | None = None
-    ) -> Self:
-        filepath = to_path(filepath)
-        if not filepath.exists():
-            raise FileNotFoundError(f"Config file not found: {filepath}")
-
-        data = yaml.safe_load(filepath.read_text())
-        res = cls.model_validate(data)
-        res._syftbox_config = syftbox_config
-        return res
-
-    def __str__(self) -> str:
-        return self.__display_formatter__.format_str(self)
-
-    def __repr__(self) -> str:
-        return self.__display_formatter__.format_repr(self)
-
-    def _repr_html_(self) -> str:
-        return self.__display_formatter__.format_html(self)
-
-    def _repr_markdown_(self) -> str:
-        return self.__display_formatter__.format_markdown(self)
-
-
-class PrivateDatasetConfig(DatasetBase, PydanticFormatterMixin):
-    """Used to store private dataset metadata, outside of the sync folder."""
-
-    uid: UUID  # id for this dataset
-    data_dir: Path
-
-
-class Dataset(DatasetBase, PydanticFormatterMixin):
-    __table_extra_fields__ = [
-        "name",
-        "owner",
-    ]
+    canonical_name: str = "Dataset"
+    version: str = "1"
 
     uid: UUID = Field(default_factory=uuid4)
     created_at: datetime = Field(default_factory=_utcnow)
@@ -93,9 +55,19 @@ class Dataset(DatasetBase, PydanticFormatterMixin):
     # URLs to uploaded files (excluding metadata files)
     mock_files_urls: list[SyftBoxURL] = Field(default_factory=list)
 
+    # Runtime-only: set by DatasetStorage when the dataset is read/created, never
+    # serialized. _ref carries the dataset's identity (owner, name) and its
+    # on-disk protocol layout; it has no default and must be set before use.
+    _syftbox_config: SyftBoxConfig | None = None
+    _ref: DatasetRef = PrivateAttr()
+
+    def disk_dict(self) -> dict:
+        """The on-disk form of the dataset metadata."""
+        return self.model_dump(mode="json")
+
     @property
     def owner(self) -> str:
-        return self.mock_url.host
+        return self._ref.owner
 
     @property
     def syftbox_config(self) -> SyftBoxConfig:
@@ -104,9 +76,7 @@ class Dataset(DatasetBase, PydanticFormatterMixin):
         return self._syftbox_config
 
     def _url_to_path(self, url: SyftBoxURL) -> Path:
-        return url.to_local_path(
-            syftbox_folder=self.syftbox_config.syftbox_folder,
-        )
+        return url.to_local_path(syftbox_folder=self.syftbox_config.syftbox_folder)
 
     @property
     def readme_path(self) -> Path | None:
@@ -130,32 +100,34 @@ class Dataset(DatasetBase, PydanticFormatterMixin):
             raise ValueError(
                 "Cannot access private config for a dataset owned by another user."
             )
-        return self._private_metadata_dir / "private_metadata.yaml"
+        return self._private_metadata_dir / PRIVATE_METADATA_FILENAME
 
     @cached_property
-    def private_config(self) -> PrivateDatasetConfig:
+    def private_config(self) -> PrivateDatasetConfigV1:
         config_path = self.private_config_path
         if not config_path.exists():
             raise FileNotFoundError(
                 f"Private dataset config not found at {config_path}"
             )
-
-        return PrivateDatasetConfig.load(
-            filepath=config_path, syftbox_config=self._syftbox_config
-        )
+        data = yaml.safe_load(config_path.read_text()) or {}
+        data.setdefault("canonical_name", "PrivateDatasetConfig")
+        data.setdefault("version", "1")
+        return PrivateDatasetConfigV1(**data)
 
     @property
     def private_dir(self) -> Path:
-        if self._syftbox_config is None:
-            raise ValueError("SyftBox config is not set.")
-        private_dir = (
-            self.syftbox_config.syftbox_folder
-            / self.owner
-            / "private"
-            / "syft_datasets"
-            / self.name
+        """The private data dir for this dataset, under its on-disk protocol layout.
+
+        Derived from the ref (owner + name + protocol) rather than the stored URL
+        so it stays correct across on-disk layouts. Delegates to the codec's
+        DatasetConfig so layout lives in exactly one place.
+        """
+        from ...protocolcodecs import dataset_config_for_protocol
+
+        layout = dataset_config_for_protocol(
+            self._ref.protocol_version, self.syftbox_config
         )
-        return private_dir
+        return layout.private_dataset_dir(self._ref)
 
     @property
     def _private_metadata_dir(self) -> Path:
@@ -167,16 +139,15 @@ class Dataset(DatasetBase, PydanticFormatterMixin):
 
     @property
     def mock_files(self) -> list[Path]:
-        """
-        Get absolute paths to all mock files uploaded during dataset.create.
+        """Absolute paths to all mock files uploaded during dataset.create.
+
         Excludes dataset.yaml and readme.md files.
         """
         return [self._url_to_path(url) for url in self.mock_files_urls]
 
     @property
     def private_files(self) -> list[Path]:
-        """
-        Get absolute paths to all private files.
+        """Absolute paths to all private files.
 
         For owners: returns paths from dataset.create (private_files_paths).
         For non-owners (e.g. enclave): returns files from shared_private_dir.
@@ -185,14 +156,12 @@ class Dataset(DatasetBase, PydanticFormatterMixin):
             f
             for f in self.private_dir.iterdir()
             if f.is_file()
-            and f.name not in (PERMISSION_FILE_NAME, "private_metadata.yaml")
+            and f.name not in (PERMISSION_FILE_NAME, PRIVATE_METADATA_FILENAME)
         ]
 
     @property
     def files(self) -> list[Path]:
-        """
-        Get absolute paths to all files (both mock and private) uploaded during dataset.create.
-        """
+        """Absolute paths to all files (both mock and private)."""
         return self.mock_files + self.private_files
 
     def _generate_description_html(self) -> str:
