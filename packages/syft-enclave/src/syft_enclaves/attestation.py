@@ -9,9 +9,11 @@ the claims inside it to ensure the enclave is trustworthy.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
+from pydantic import BaseModel
 
 from syft_client.version import SYFT_CLIENT_VERSION
 
@@ -21,11 +23,34 @@ CONFIDENTIAL_COMPUTING_CERTS_URL = (
     "signer@confidentialspace-sign.iam.gserviceaccount.com"
 )
 
-# The verifier expects the enclave to run the same syft-client version as
-# this client. Tracks releases automatically — no manual bump needed when
-# syft-client's version changes.
-EXPECTED_SYFT_VERSION = SYFT_CLIENT_VERSION
-EXPECTED_IMAGE_DIGEST = ""  # TODO: set after  enclave image is published
+# Google mints Confidential Space attestation tokens with a short lifetime
+# (~30 minutes), but the enclave only writes its token to SYFT_version.json once
+# at boot and does not yet refresh it. So after ~30 minutes every peer would
+# reject the enclave.
+#
+# TODO: remove this once the enclave periodically refreshes its attestation
+# token in SYFT_version.json — then the real (short) expiry can be honoured.
+JWT_EXPIRY_GRACE_SECONDS = 30 * 24 * 60 * 60  # ~1 month
+
+
+class AppraisalPolicy(BaseModel):
+    """Reference values the verifier appraises attestation evidence against.
+
+    In RATS terms this is the *appraisal policy*: the
+    set of trusted reference values the enclave's evidence is compared to.
+
+    The image digest is intentionally not shipped as a constant — the data
+    owner supplies the digest they independently confirmed. Left unset
+    (``None``), the image-digest check is skipped and the image is not pinned.
+    """
+
+    model_config = {"frozen": True}
+
+    # None → image-digest check skipped (no image pinned). Set a "sha256:..."
+    # digest to pin, and require, a specific enclave image.
+    expected_image_digest: Optional[str] = None
+    # By default, the enclave must run the same version of syft-client as the verifier.
+    expected_syft_version: Optional[str] = SYFT_CLIENT_VERSION
 
 
 class AttestationError(Exception):
@@ -70,7 +95,11 @@ class AttestationResult:
             print(f"{icon} {check.label:<20s} — {check.detail}")
 
 
-def verify_attestation_token(token: str, verbose: bool = True) -> AttestationResult:
+def verify_attestation_token(
+    token: str,
+    policy: AppraisalPolicy | None = None,
+    verbose: bool = True,
+) -> AttestationResult:
     """Verify an attestation JWT and return the result checklist.
 
     Runs every check before raising — so a failure in one (e.g. ``dbgstat``)
@@ -83,13 +112,28 @@ def verify_attestation_token(token: str, verbose: bool = True) -> AttestationRes
     to inspect.
 
     ``passed=None`` ("skipped") does not count as a failure.
+
+    Args:
+        token: the attestation JWT to verify.
+        policy: reference values to appraise the evidence against. Defaults to
+            the shipped ``AppraisalPolicy()`` (module-level pinned digest and
+            version). Pass a custom policy to appraise against your own
+            independently-verified image digest.
+        verbose: print the check progress and final checklist.
     """
+    policy = policy or AppraisalPolicy()
+    expected_image_digest = policy.expected_image_digest
+    expected_syft_version = policy.expected_syft_version
+
     result = AttestationResult()
 
     if verbose:
         print("🔒 Verifying enclave attestation...")
 
-    # 1. JWT signature + expiry — fail-fast (no claims → no point continuing)
+    # 1. JWT signature + expiry — fail-fast (no claims → no point continuing).
+    # clock_skew_in_seconds widens the accepted expiry window (token valid until
+    # exp + grace) as a stopgap for the enclave not yet refreshing its token —
+    # see JWT_EXPIRY_GRACE_SECONDS.
     if verbose:
         print("  ⏳ JWT signature ...")
     try:
@@ -99,6 +143,7 @@ def verify_attestation_token(token: str, verbose: bool = True) -> AttestationRes
             request,
             audience=ATTESTATION_AUDIENCE,
             certs_url=CONFIDENTIAL_COMPUTING_CERTS_URL,
+            clock_skew_in_seconds=JWT_EXPIRY_GRACE_SECONDS,
         )
         result.add(
             "jwt_signature",
@@ -159,7 +204,7 @@ def verify_attestation_token(token: str, verbose: bool = True) -> AttestationRes
         eat_nonce = [eat_nonce]
     actual_version_nonce = eat_nonce[0] if eat_nonce else None
     # Must match the format produced by syft_enclaves.tee_token.build_eat_nonce.
-    expected_version_nonce = f"syft-client-{EXPECTED_SYFT_VERSION}"
+    expected_version_nonce = f"syft-client-{expected_syft_version}"
     if not actual_version_nonce:
         result.add(
             "version_match",
@@ -172,7 +217,7 @@ def verify_attestation_token(token: str, verbose: bool = True) -> AttestationRes
             "version_match",
             "Version match",
             True,
-            f"enclave runs expected syft-client {EXPECTED_SYFT_VERSION}",
+            f"enclave runs expected syft-client {expected_syft_version}",
         )
     else:
         result.add(
@@ -182,21 +227,29 @@ def verify_attestation_token(token: str, verbose: bool = True) -> AttestationRes
             f"version mismatch (enclave={actual_version_nonce!r}, expected={expected_version_nonce!r})",
         )
 
-    # 5. Image digest
+    # 5. Image digest. The expected digest is supplied by the data owner via the
+    # AppraisalPolicy . When none is supplied the check is
+    # SKIPPED (passed=None), not failed.
     if verbose:
         print("  ⏳ Image digest ...")
     container = claims.get("submods", {}).get("container", {})
     image_digest = container.get("image_digest")
-    if not EXPECTED_IMAGE_DIGEST:
+    if not expected_image_digest:
         result.add(
             "image_digest",
             "Image digest",
             None,
-            f"digest {image_digest[:20]}... (expected digest not configured, skipped)"
-            if image_digest
-            else "no digest in token (expected digest not configured, skipped)",
+            "no expected image digest supplied — pass one via AppraisalPolicy "
+            "(attest_peer(..., expected_image_digest=...)) to pin the image (skipped)",
         )
-    elif image_digest == EXPECTED_IMAGE_DIGEST:
+    elif not image_digest:
+        result.add(
+            "image_digest",
+            "Image digest",
+            False,
+            "no image digest in token — cannot verify enclave is running the released image",
+        )
+    elif image_digest == expected_image_digest:
         result.add(
             "image_digest",
             "Image digest",
@@ -208,7 +261,7 @@ def verify_attestation_token(token: str, verbose: bool = True) -> AttestationRes
             "image_digest",
             "Image digest",
             False,
-            f"digest mismatch (got {image_digest or 'none'}, expected {EXPECTED_IMAGE_DIGEST[:20]}...)",
+            f"digest mismatch (got {image_digest}, expected {expected_image_digest})",
         )
 
     # Finalize — print full checklist, then raise once if anything failed
