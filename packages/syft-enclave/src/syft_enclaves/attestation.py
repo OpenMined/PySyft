@@ -261,7 +261,7 @@ def verify_attestation_token(
             "image_digest",
             "Image digest",
             False,
-            f"digest mismatch (got {image_digest}, expected {expected_image_digest[:20]}...)",
+            f"digest mismatch (got {image_digest}, expected {expected_image_digest})",
         )
 
     # Finalize — print full checklist, then raise once if anything failed
