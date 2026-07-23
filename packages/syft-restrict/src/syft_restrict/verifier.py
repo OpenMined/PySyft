@@ -257,6 +257,8 @@ class _Checker:
                 "star-import",
                 "'from ... import *' is not allowed anywhere in the file; import names explicitly",
             )
+            # Safe to return early: ImportFrom is never a scope node and has no verifiable
+            # children, so we skip the scope-stack / child-walk bookkeeping below.
             return
 
         if node_in_ranges(node, self.ranges):
