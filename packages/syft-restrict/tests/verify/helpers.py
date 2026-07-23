@@ -20,8 +20,20 @@ def normalize_source(source: str | list[str]) -> str:
     return source
 
 
-def make_policy(functions=ALLOW_FUNCTIONS, operators=ALLOW_OPERATORS, disallow=None):
-    return Policy.parse(list(functions), list(operators), list(disallow or []))
+def make_policy(
+    functions=ALLOW_FUNCTIONS,
+    operators=ALLOW_OPERATORS,
+    disallow=None,
+    allow_local_assignments=True,
+    allow_base_class_attributes=True,
+):
+    return Policy.parse(
+        list(functions),
+        list(operators),
+        list(disallow or []),
+        allow_local_assignments=allow_local_assignments,
+        allow_base_class_attributes=allow_base_class_attributes,
+    )
 
 
 def get_error_codes(result: VerifyResult):
