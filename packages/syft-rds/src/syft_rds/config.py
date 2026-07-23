@@ -16,12 +16,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from syft_client.sync.syftbox_manager import (
     SyftboxManagerConfig,
-    get_jupyter_default_syftbox_folder,
-    get_colab_default_syftbox_folder,
 )
 from syft_client.sync.sync.collection_spec import CollectionSyncSpec
 from syft_job import SyftJobConfig
@@ -54,29 +52,58 @@ class SyftRDSClientConfig(BaseModel):
     job: SyftJobConfig
     dataset: SyftBoxConfig
 
+    @model_validator(mode="after")
+    def _assert_sub_configs_aligned(self) -> "SyftRDSClientConfig":
+        """Enforce the invariant the ``_compose`` docstring promises: all three
+        sub-configs are derived from the SAME primitives, so their paths line up.
+
+        Guards against a hand-built config (or a future factory) drifting the
+        email / folder / role across the sync engine, job client, and dataset
+        manager, which would silently point them at mismatched datasite paths.
+        """
+        emails = {
+            "sync": self.sync.email,
+            "job": self.job.current_user_email,
+            "dataset": self.dataset.email,
+        }
+        if len(set(emails.values())) > 1:
+            raise ValueError(f"sub-config emails must all match, got {emails}")
+
+        folders = {
+            "sync": self.sync.syftbox_folder,
+            "job": self.job.syftbox_folder,
+            "dataset": self.dataset.syftbox_folder,
+        }
+        if len(set(folders.values())) > 1:
+            raise ValueError(
+                f"sub-config syftbox_folders must all match, got {folders}"
+            )
+
+        if self.sync.has_do_role != self.job.has_do_role:
+            raise ValueError(
+                "sync.has_do_role and job.has_do_role must match, got "
+                f"{self.sync.has_do_role} vs {self.job.has_do_role}"
+            )
+        return self
+
     # ------------------------------------------------------------------ #
     # private helper: build all three sub-configs from shared primitives
     # ------------------------------------------------------------------ #
     @staticmethod
-    def _compose(
-        *,
-        email: str,
-        folder: Path,
-        has_do_role: bool,
-        sync: SyftboxManagerConfig,
-    ) -> "SyftRDSClientConfig":
-        """Build the composed config from ONE set of primitives.
+    def _compose(sync: SyftboxManagerConfig) -> "SyftRDSClientConfig":
+        """Build the composed config using ``sync`` as the single source of truth.
 
-        ``sync`` is built by the caller (it differs per environment); ``job``
-        and ``dataset`` are derived here from the SAME email/folder/role so all
-        paths line up with the sync engine.
+        ``sync`` is built by the caller (it differs per environment); ``job`` and
+        ``dataset`` are derived here from the sync engine's OWN email/folder/role
+        rather than from separately-passed primitives, so the sub-configs cannot
+        drift apart. The ``_assert_sub_configs_aligned`` validator enforces this.
         """
         job = SyftJobConfig(
-            syftbox_folder=folder,
-            current_user_email=email,
-            has_do_role=has_do_role,
+            syftbox_folder=sync.syftbox_folder,
+            current_user_email=sync.email,
+            has_do_role=sync.has_do_role,
         )
-        dataset = SyftBoxConfig(syftbox_folder=folder, email=email)
+        dataset = SyftBoxConfig(syftbox_folder=sync.syftbox_folder, email=sync.email)
         return SyftRDSClientConfig(sync=sync, job=job, dataset=dataset)
 
     @classmethod
@@ -88,7 +115,6 @@ class SyftRDSClientConfig(BaseModel):
         token_path=None,
         **kw,
     ) -> "SyftRDSClientConfig":
-        folder = get_jupyter_default_syftbox_folder(email)
         sync = SyftboxManagerConfig.for_jupyter(
             email=email,
             has_do_role=has_do_role,
@@ -97,9 +123,7 @@ class SyftRDSClientConfig(BaseModel):
             collection_specs=DATASET_COLLECTION_SPECS,
             **kw,
         )
-        return cls._compose(
-            email=email, folder=folder, has_do_role=has_do_role, sync=sync
-        )
+        return cls._compose(sync)
 
     @classmethod
     def for_colab(
@@ -109,7 +133,6 @@ class SyftRDSClientConfig(BaseModel):
         has_ds_role=False,
         **kw,
     ) -> "SyftRDSClientConfig":
-        folder = get_colab_default_syftbox_folder(email)
         sync = SyftboxManagerConfig.for_colab(
             email=email,
             has_do_role=has_do_role,
@@ -117,9 +140,7 @@ class SyftRDSClientConfig(BaseModel):
             collection_specs=DATASET_COLLECTION_SPECS,
             **kw,
         )
-        return cls._compose(
-            email=email, folder=folder, has_do_role=has_do_role, sync=sync
-        )
+        return cls._compose(sync)
 
     @classmethod
     def _base_config_for_testing(
@@ -144,13 +165,9 @@ class SyftRDSClientConfig(BaseModel):
             collection_specs=DATASET_COLLECTION_SPECS,
             **kw,
         )
-        # _base_config_for_testing may have generated a random email/folder.
-        return cls._compose(
-            email=sync.email,
-            folder=sync.syftbox_folder,
-            has_do_role=sync.has_do_role,
-            sync=sync,
-        )
+        # _base_config_for_testing may have generated a random email/folder;
+        # _compose reads them back off the resolved sync config.
+        return cls._compose(sync)
 
     @classmethod
     def for_google_drive_testing_connection(
@@ -179,9 +196,4 @@ class SyftRDSClientConfig(BaseModel):
             collection_specs=DATASET_COLLECTION_SPECS,
             **kw,
         )
-        return cls._compose(
-            email=sync.email,
-            folder=sync.syftbox_folder,
-            has_do_role=sync.has_do_role,
-            sync=sync,
-        )
+        return cls._compose(sync)
