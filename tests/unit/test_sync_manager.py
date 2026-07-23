@@ -16,7 +16,7 @@ from syft_client.sync.syftbox_manager import SyftboxManager
 from syft_client.sync.sync.caches.datasite_owner_cache import (
     ProposedEventFileOutdatedException,
 )
-from syft_datasets.dataset import Dataset
+from syft_datasets import Dataset
 from tests.unit.utils import (
     create_tmp_dataset_files,
     create_tmp_dataset_files_with_parquet,

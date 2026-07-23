@@ -12,7 +12,7 @@ from typing import Any, Optional, Union
 
 from typing_extensions import TYPE_CHECKING
 
-from syft_datasets.dataset import Dataset
+from syft_datasets import Dataset
 from syft_datasets.dataset_manager import SyftDatasetManager
 
 if TYPE_CHECKING:

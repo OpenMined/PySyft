@@ -16,6 +16,10 @@ from syft_enclaves.enclave_job_info import (
     PartyApprovalStatus,
     enclave_approval_file_name,
 )
+from syft_enclaves.attestation import (
+    AppraisalPolicy,
+    verify_attestation_token,
+)
 from syft_perms.syftperm_context import SyftPermContext
 
 from syft_enclaves.enclave_job_client import EnclaveJobClient
@@ -74,11 +78,30 @@ class SyftEnclaveClient:
     def reject_peer_request(self, email_or_peer: str | Peer):
         self._manager.reject_peer_request(email_or_peer)
 
-    def attest_peer(self, peer_email: str):
+    def attest_peer(
+        self,
+        peer_email: str,
+        expected_image_digest: str | None = None,
+        policy: "AppraisalPolicy | None" = None,
+    ):
         """Verify an enclave peer's attestation by re-reading SYFT_version.json
         from Drive. Returns None (with an info print) when no token is available;
-        raises AttestationError only when verification of an existing token fails."""
-        from syft_enclaves.attestation import verify_attestation_token
+        raises AttestationError only when verification of an existing token fails.
+
+        Args:
+            peer_email: the enclave peer to attest.
+            expected_image_digest: a "sha256:..." container image digest you
+                trust — . When set, the attestation
+                is appraised against it.
+            policy: a full ``AppraisalPolicy`` for finer control (image digest
+                *and* syft-client version). Mutually exclusive with
+                ``expected_image_digest``.
+        """
+
+        if expected_image_digest is not None and policy is not None:
+            raise ValueError("Pass either expected_image_digest or policy, not both.")
+        if expected_image_digest is not None:
+            policy = AppraisalPolicy(expected_image_digest=expected_image_digest)
 
         version_info = (
             self._manager.peer_manager.connection_router.read_peer_version_file(
@@ -96,7 +119,7 @@ class SyftEnclaveClient:
                 "(not running in a Confidential Space); skipping attestation."
             )
             return None
-        return verify_attestation_token(version_info.attestation_token)
+        return verify_attestation_token(version_info.attestation_token, policy=policy)
 
     def sync(self):
         self._manager.sync()

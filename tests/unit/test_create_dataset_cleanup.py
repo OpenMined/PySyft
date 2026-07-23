@@ -69,10 +69,12 @@ class TestCreateDatasetCleanup:
         """If private upload fails, both GDrive mock folder and local dataset are cleaned up."""
         do_manager = self._make_do_manager()
 
-        # Compute expected local paths before the test so we can verify deletion
-        syftbox_config = do_manager.dataset_manager.syftbox_config
-        mock_dir = syftbox_config.get_my_mock_dataset_dir("testdataset")
-        private_metadata_dir = syftbox_config.private_dir_for_my_dataset("testdataset")
+        # Compute expected local paths before the test so we can verify deletion.
+        # A dataset with no peers is written at the widest-compatible protocol.
+        storage = do_manager.dataset_manager.storage
+        ref = storage.new_dataset_ref("testdataset", storage._widest_protocol_version)
+        mock_dir = storage.public_dataset_dir(ref)
+        private_metadata_dir = storage.private_dataset_dir(ref)
 
         with patch.object(
             do_manager,
