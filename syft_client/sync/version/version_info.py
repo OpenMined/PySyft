@@ -4,13 +4,14 @@ VersionInfo model for representing version information.
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
 from pydantic import Field
-from syft_migration import MigratableObject
+from syft_migration import MigratableObject, MigrationService
 
 from syft_client.migrations import client_registry
 from syft_client.version import (
@@ -36,6 +37,9 @@ def _parse_semver(version_str: str) -> tuple[int, int, int]:
     if len(parts) < 3:
         raise ValueError(f"Invalid semver: {version_str!r} (expected 'X.Y.Z')")
     return (int(parts[0]), int(parts[1]), int(parts[2]))
+
+
+_migration_service = MigrationService(registry=client_registry)
 
 
 class VersionInfoV1(MigratableObject, registry=client_registry):
@@ -137,8 +141,18 @@ class VersionInfoV1(MigratableObject, registry=client_registry):
 
     @classmethod
     def from_json(cls, json_str: str) -> "VersionInfo":
-        """Deserialize from JSON string."""
-        return cls.model_validate_json(json_str)
+        """Deserialize from JSON string, upgraded to the latest version.
+
+        Files written by protocol-0 clients (<= 0.1.117) predate the identity
+        fields; they are all version 1.
+        """
+        data = json.loads(json_str)
+        data.setdefault("canonical_name", "VersionInfo")
+        data.setdefault("version", "1")
+        obj = _migration_service.load(data)
+        return _migration_service.migrate(
+            obj, client_registry.latest_version("VersionInfo")
+        )
 
 
 # Current-version alias: callers always work with the latest VersionInfo.
