@@ -15,11 +15,11 @@ def test_registry_identity():
     assert client_registry.protocol_version == SYFT_CLIENT_PROTOCOL_VERSION
 
 
-def test_registry_computes_empty_protocol_schema():
-    # No versioned objects are registered yet (they arrive in later waves);
-    # the registry must still compute a well-formed schema.
+def test_registry_computes_protocol_schema():
     schema = client_registry.compute_protocol_schema()
     assert schema.protocol_name == PROTOCOL_NAME
     assert schema.version == SYFT_CLIENT_PROTOCOL_VERSION
-    assert schema.supported_versions == {}
-    assert schema.current_object_schemas == {}
+    # Every registered object resolves a current version and a frozen schema.
+    for canonical_name in schema.supported_versions:
+        assert schema.current_schema(canonical_name=canonical_name)
+        assert canonical_name in schema.current_object_schemas

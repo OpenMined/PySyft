@@ -9,8 +9,10 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+from syft_migration import MigratableObject
 
+from syft_client.migrations import client_registry
 from syft_client.version import (
     MIN_SUPPORTED_PROTOCOL_VERSION,
     MIN_SUPPORTED_SYFT_CLIENT_VERSION,
@@ -36,8 +38,17 @@ def _parse_semver(version_str: str) -> tuple[int, int, int]:
     return (int(parts[0]), int(parts[1]), int(parts[2]))
 
 
-class VersionInfo(BaseModel):
-    """Model representing version information for a syft client."""
+class VersionInfoV1(MigratableObject, registry=client_registry):
+    """Model representing version information for a syft client.
+
+    Stored as SYFT_version.json in the peer-visible SyftBox folder. This file
+    is the bootstrap channel for protocol negotiation (peers read it to learn
+    what we speak), so its schema may only ever change additively: every
+    supported client version must be able to parse every newer version file.
+    """
+
+    canonical_name: str = "VersionInfo"
+    version: str = "1"
 
     syft_client_version: str
     min_supported_syft_client_version: str
@@ -128,3 +139,7 @@ class VersionInfo(BaseModel):
     def from_json(cls, json_str: str) -> "VersionInfo":
         """Deserialize from JSON string."""
         return cls.model_validate_json(json_str)
+
+
+# Current-version alias: callers always work with the latest VersionInfo.
+VersionInfo = VersionInfoV1
