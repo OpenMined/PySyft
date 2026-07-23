@@ -174,6 +174,16 @@ def test_catalog_dir_supplies_the_rules(tmp_path):
     assert einsum.reason == "custom rule"
 
 
+def test_malformed_catalog_degrades_to_review(tmp_path):
+    # A broken catalog.json must not crash the advisory audit; its paths fall to review.
+    version_dir = ".".join(jax.__version__.split(".")[:2])
+    ext = tmp_path / "jax" / version_dir
+    ext.mkdir(parents=True)
+    (ext / "catalog.json").write_text("{ not valid json ")
+    report = audit_allow_functions(["jax.numpy.einsum"], catalog_dir=tmp_path)
+    assert _entry(report, "jax.numpy.einsum").verdict == "review"
+
+
 def test_lint_accepts_a_path_and_fixes(tmp_path):
     cat = tmp_path / "mylib" / "1.0"
     cat.mkdir(parents=True)

@@ -31,6 +31,7 @@ def test_run_success_writes_obfuscated_and_certificate(tmp_path):
         allow_operators=ALLOW_OPERATORS,
     )
     assert result.ok
+    assert result.obfuscated_path is not None and result.certificate is not None
     out = Path(result.obfuscated_path)
     assert out.exists() and out.name == "model.obfuscated.py"
     assert result.certificate["source_sha256"]
@@ -72,6 +73,24 @@ def test_run_audit_attached_on_verification_failure(tmp_path):
     assert any(e.path == "jax.numpy.einsum" for e in result.audit.safe)
 
 
+def test_run_survives_a_broken_catalog_dir(tmp_path):
+    # The advisory audit must never fail the run: a malformed catalog degrades, it does not raise.
+    src = tmp_path / "model.py"
+    shutil.copy(FIXTURES / "compliant_model.py", src)
+    bad = tmp_path / "cat" / "jax" / "0.11"
+    bad.mkdir(parents=True)
+    (bad / "catalog.json").write_text("{ broken json")
+    result = _run(
+        src,
+        obfuscate=_private(src.read_text()),
+        allow_functions=ALLOW_FUNCTIONS,
+        allow_operators=ALLOW_OPERATORS,
+        catalog_dir=tmp_path / "cat",
+    )
+    assert result.ok  # a clean verify still passes despite the broken catalog
+    assert result.audit is not None
+
+
 def test_run_strict_raises_and_writes_nothing(tmp_path):
     src = tmp_path / "bad.py"
     src.write_text("CONFIG = dict(dim=8)\nimport os\nleak = os.getcwd()\n")
@@ -111,6 +130,7 @@ def test_run_auto_detects_markers_when_ranges_omitted(tmp_path):
         allow_operators=ALLOW_OPERATORS,
     )
     assert result.ok
+    assert result.obfuscated_path is not None and result.certificate is not None
     out = Path(result.obfuscated_path)
     assert out.exists()
     # marked_model.py: line 9 is "# syft-restrict: obfuscate-start", line 40 is "...-end" -- the

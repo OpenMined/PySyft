@@ -9,9 +9,10 @@ catalog ships with the package. See docs/audit.md for the verdicts, catalog layo
 from __future__ import annotations
 
 import fnmatch
-import importlib
+import importlib.metadata
+import importlib.util
 import json
-from functools import lru_cache
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Literal
 
@@ -25,11 +26,11 @@ __all__ = ["audit_allow_functions", "AuditReport", "PathAudit"]
 _COMMON_LIB = "_common"
 _COMMON_VERSION = "default"
 
+Verdict = Literal["safe", "dual_use", "unsafe", "review"]
+
 # Catalog buckets, in the order they are matched (first hit wins): the strictest verdict a path
 # qualifies for is assigned, so unsafe beats dual_use beats safe.
-_BUCKETS: tuple[str, ...] = ("unsafe", "dual_use", "safe")
-
-Verdict = Literal["safe", "dual_use", "unsafe", "review"]
+_BUCKETS: tuple[Verdict, ...] = ("unsafe", "dual_use", "safe")
 
 
 class PathAudit(BaseModel):
@@ -110,19 +111,12 @@ def audit_allow_functions(
     """
     paths = [p for p in (s.strip() for s in (allow_functions or [])) if p]
     versions = _detect_versions(paths)
-    roots = _roots(catalog_dir)
-    entries = [_classify(p, versions, roots) for p in paths]
+    root = Path(catalog_dir) if catalog_dir is not None else None
+    entries = [_classify(p, versions, root) for p in paths]
     return AuditReport(entries=entries, versions=versions)
 
 
-def _roots(catalog_dir: str | Path | None) -> tuple[Path, ...]:
-    """The catalog roots to consult (empty when no ``catalog_dir`` is given)."""
-    return (Path(catalog_dir),) if catalog_dir is not None else ()
-
-
-def _classify(
-    path: str, versions: dict[str, str], roots: tuple[Path, ...]
-) -> PathAudit:
+def _classify(path: str, versions: dict[str, str], root: Path | None) -> PathAudit:
     if "*" in path or "?" in path:
         return PathAudit(
             path=path,
@@ -131,7 +125,7 @@ def _classify(
             "list exact leaves instead",
         )
     library = path.split(".", 1)[0]
-    rules = _rules_for(library, versions.get(library, ""), roots)
+    rules = _rules_for(library, versions.get(library, ""), root)
     for verdict in _BUCKETS:  # unsafe -> dual_use -> safe: strictest match wins
         for pattern, reason in rules[verdict].items():
             if fnmatch.fnmatchcase(path, pattern):
@@ -144,33 +138,33 @@ def _classify(
 
 
 def _rules_for(
-    library: str, version: str, roots: tuple[Path, ...]
+    library: str, version: str, root: Path | None
 ) -> dict[str, dict[str, str]]:
-    """Merge the library-agnostic ``_common`` rules with the version-matched library rules, per
-    bucket (``unsafe`` / ``dual_use`` / ``safe``). Roots are overlaid lowest-precedence first, so an
-    earlier root wins on a key conflict. With no ``catalog_dir`` there are no roots and no rules."""
+    """Merge the library-agnostic ``_common`` rules with the version-matched library rules from the
+    catalog ``root``, per bucket (``unsafe`` / ``dual_use`` / ``safe``). No ``root`` -> no rules."""
     merged: dict[str, dict[str, str]] = {bucket: {} for bucket in _BUCKETS}
-    for root in reversed(
-        roots
-    ):  # earlier (higher-precedence) roots applied last -> they win
-        common = _load_ruleset(root, _COMMON_LIB, _COMMON_VERSION)
-        version_dir = _match_version_dir(root, library, version)
-        lib_rules = (
-            _load_ruleset(root, library, version_dir) if version_dir is not None else {}
-        )
-        for ruleset in (common, lib_rules):
-            for bucket in _BUCKETS:
-                merged[bucket].update(ruleset.get(bucket, {}))
+    if root is None:
+        return merged
+    common = _load_ruleset(root, _COMMON_LIB, _COMMON_VERSION)
+    version_dir = _match_version_dir(root, library, version)
+    lib_rules = (
+        _load_ruleset(root, library, version_dir) if version_dir is not None else {}
+    )
+    for ruleset in (common, lib_rules):
+        for bucket in _BUCKETS:
+            merged[bucket].update(ruleset.get(bucket, {}))
     return merged
 
 
-@lru_cache(maxsize=None)
 def _load_ruleset(root: Path, library: str, version_dir: str) -> dict:
-    """Read ``<root>/<library>/<version_dir>/catalog.json``; empty dict if the file is absent."""
+    """Read ``<root>/<library>/<version_dir>/catalog.json``; empty dict if it is absent, unreadable,
+    or malformed. A broken catalog file yields no rules (its paths fall to ``review``) rather than
+    crashing the advisory audit."""
     path = root / library / version_dir / "catalog.json"
-    if not path.is_file():
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
         return {}
-    return json.loads(path.read_text())
 
 
 def _match_version_dir(root: Path, library: str, version: str) -> str | None:
@@ -199,15 +193,36 @@ def _best_version_key(keys: list[str], version: str) -> str | None:
 
 
 def _detect_versions(paths) -> dict[str, str]:
+    """Resolve the installed version of each top-level package named in ``paths`` **without importing
+    it** (no import side effects): locate it with ``find_spec`` and read distribution metadata."""
+    dist_map = (
+        importlib.metadata.packages_distributions()
+    )  # import name -> [distribution names]
     versions: dict[str, str] = {}
     for path in paths:
         root = path.split(".", 1)[0].lstrip("*")
         if not root or root in versions:
             continue
         try:
-            mod = importlib.import_module(root)
-        except ImportError:
-            versions[root] = "not installed"
-        else:
-            versions[root] = getattr(mod, "__version__", "unknown")
+            spec = importlib.util.find_spec(root)
+        except (ImportError, ValueError):
+            spec = None
+        versions[root] = (
+            _dist_version(root, dist_map) if spec is not None else "not installed"
+        )
     return versions
+
+
+def _dist_version(root: str, dist_map: Mapping[str, list[str]]) -> str:
+    """Version of the distribution providing top-level import ``root``, or ``"unknown"`` if it has no
+    resolvable distribution metadata (e.g. a namespace package or a local module)."""
+    candidates = [
+        *dist_map.get(root, []),
+        root,
+    ]  # metadata name may differ from the import name
+    for dist in candidates:
+        try:
+            return importlib.metadata.version(dist)
+        except importlib.metadata.PackageNotFoundError:
+            continue
+    return "unknown"
