@@ -2,6 +2,7 @@ from typing import Any, List, Literal
 from pathlib import Path
 from uuid import UUID, uuid4
 import base64
+import json
 from pydantic import (
     BaseModel,
     Field,
@@ -9,6 +10,9 @@ from pydantic import (
     field_serializer,
     computed_field,
 )
+from syft_migration import MigratableObject
+
+from syft_client.migrations import client_registry, load_as_latest
 from syft_client.sync.messages.proposed_filechange import ProposedFileChange
 from syft_client.sync.utils.syftbox_utils import create_event_timestamp
 from syft_client.sync.utils.syftbox_utils import compress_data
@@ -53,7 +57,7 @@ class FileChangeEventsMessageFileName(BaseModel):
             raise ValueError(f"Invalid filename: {filename}") from e
 
 
-class FileChangeEvent(BaseModel):
+class FileChangeEventV1(BaseModel):
     id: UUID
     path_in_datasite: Path
     datasite_email: str
@@ -130,13 +134,19 @@ class FileChangeEvent(BaseModel):
         return hash(self.id)
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, FileChangeEvent):
+        if not isinstance(other, FileChangeEventV1):
             return False
         return self.id == other.id
 
 
-class FileChangeEventsMessage(BaseModel):
-    events: List[FileChangeEvent]
+class FileChangeEventsMessageV1(MigratableObject, registry=client_registry):
+    """The events wire envelope (DO -> watchers). The envelope is the migratable
+    unit; its items are pinned to the exact version class, never a floating alias."""
+
+    canonical_name: str = "FileChangeEventsMessage"
+    version: str = "1"
+
+    events: List[FileChangeEventV1]
     message_filepath: FileChangeEventsMessageFileName = Field(
         default_factory=lambda: FileChangeEventsMessageFileName()
     )
@@ -149,6 +159,16 @@ class FileChangeEventsMessage(BaseModel):
         return compress_data(self.model_dump_json().encode("utf-8"))
 
     @classmethod
-    def from_compressed_data(cls, data: bytes) -> "FileChangeEvent":
+    def from_compressed_data(cls, data: bytes) -> "FileChangeEventsMessage":
+        """Decompress and load, upgraded to the latest version.
+
+        Blobs written by protocol-0 clients (<= 0.1.117) predate the identity
+        fields; they are all version 1.
+        """
         uncompressed_data = uncompress_data(data)
-        return cls.model_validate_json(uncompressed_data)
+        return load_as_latest(json.loads(uncompressed_data), "FileChangeEventsMessage")
+
+
+# Current-version aliases: callers always work with the latest versions.
+FileChangeEvent = FileChangeEventV1
+FileChangeEventsMessage = FileChangeEventsMessageV1
