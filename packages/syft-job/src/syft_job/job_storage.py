@@ -37,9 +37,15 @@ class JobStorage:
         self.config = config
         self.registry = registry
         self.service = MigrationService(registry=registry)
-        # peer email -> job ProtocolSchema; filled in by syft-client later.
-        # Peers without an entry are assumed to run the current protocol.
-        self.peer_schemas: dict[str, ProtocolSchema] = peer_schemas or {}
+        # peer email -> job ProtocolSchema; syft-client passes PeerManager's
+        # live map here (updated in place as peer version files load). Peers
+        # without an entry are assumed to run the current protocol.
+        # `is not None`, not `or`: syft-client passes a live (initially empty)
+        # dict it mutates as peer version files load; `or {}` would drop the
+        # shared reference and freeze negotiation at construction-time state.
+        self.peer_schemas: dict[str, ProtocolSchema] = (
+            peer_schemas if peer_schemas is not None else {}
+        )
         self.codecs = [cls(config) for cls in CODECS]
 
     @property
@@ -106,8 +112,8 @@ class JobStorage:
             datasite_email=do_email,
             ds_email=self.config.current_user_email,
             job_name=job_name,
-            # Until syft-client fills peer_schemas, unknown peers are assumed
-            # to run the current protocol.
+            # Peers without a known schema are assumed to run the current
+            # protocol.
             protocol_version=self.negotiated_protocol_version_for_peer(
                 do_email, raise_on_unknown=False
             ),
