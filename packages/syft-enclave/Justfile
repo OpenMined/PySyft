@@ -7,7 +7,7 @@ vm_default := "syft-enclave-vm"
 secret_name_default := "syft-enclave-token"
 sa_name_default := "syft-enclave-service-account"
 tf_dir := "terraform"
-job_timeout_seconds := "1800" # 30 minutes
+job_timeout_seconds := "2592000" # 30 days
 
 # Shared shell snippet: loads settings from ~/.syft-enclaves/settings.json.
 # `project_id` and `zone` are written by `just init`.
@@ -133,7 +133,7 @@ _whoami:
 # Print the active gcloud account
 whoami: _whoami
 
-# Enable APIs, grant attestation IAM role, create firewall rule (idempotent)
+# Enable the required GCP APIs (idempotent).
 _provision: _whoami
     #!/bin/bash
     set -e
@@ -144,12 +144,6 @@ _provision: _whoami
       compute.googleapis.com \
       confidentialcomputing.googleapis.com \
       --project="$project_id"
-
-    # grant attestation role to default compute SA
-    project_number=$(gcloud projects describe "$project_id" --format='get(projectNumber)')
-    gcloud projects add-iam-policy-binding "$project_id" \
-      --member="serviceAccount:${project_number}-compute@developer.gserviceaccount.com" \
-      --role="roles/confidentialcomputing.workloadUser"
 
 
 # Provision Secret Manager + a dedicated service account for the
@@ -209,9 +203,8 @@ provision-secret-sa token_path secret=secret_name_default sa=sa_name_default: _p
 # its token via the VM's attached service account + Secret Manager.
 # No WIF — use when org policy blocks WIF provider creation. Requires
 # `just provision-secret-sa <token>` first.
-# Pass logs=true to debug a failing deployment.
 [group('deploy')]
-start email name=vm_default logs="false" machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds: _provision
+start email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds: _provision
     #!/bin/bash
     set -e
     {{load_settings}}
@@ -219,7 +212,7 @@ start email name=vm_default logs="false" machine_type=machine_type_default machi
     [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
     [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
 
-    # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
+    # Job timeout: defaults to 30 days (job_timeout_seconds); pass an empty value to fall back to the container default (600s).
     job_timeout_env=""
     if [ -n "{{job_timeout_seconds}}" ]; then
       job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job_timeout_seconds}}"
@@ -239,7 +232,7 @@ start email name=vm_default logs="false" machine_type=machine_type_default machi
       --image-project=confidential-space-images \
       --scopes=cloud-platform \
       --service-account="$sa_email" \
-      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Never~tee-container-log-redirect={{logs}}~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
+      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
 
 
 [group('deploy')]
@@ -251,7 +244,7 @@ start-debug email name=vm_default machine_type=machine_type_default machine_boot
     [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
     [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
 
-    # Optional job-timeout override; when unset the container uses syft-job's built-in default (600s).
+    # Job timeout: defaults to 30 days (job_timeout_seconds); pass an empty value to fall back to the container default (600s).
     job_timeout_env=""
     if [ -n "{{job_timeout_seconds}}" ]; then
       job_timeout_env="~tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS={{job_timeout_seconds}}"
