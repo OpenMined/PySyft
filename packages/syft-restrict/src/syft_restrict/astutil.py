@@ -138,6 +138,9 @@ def scan_file(tree: ast.Module, private_ranges) -> FileScan:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
+                # The alias (key) is the name the private code writes; the value is the
+                # fully-qualified path the policy matches against. _Checker._resolve() swaps a
+                # call's root name for this value and keeps the rest of the chain verbatim.
                 # Bind the name Python actually binds at runtime:
                 #   `import jax.numpy as jnp` binds `jnp` -> the jax.numpy module
                 #   `import jax.numpy`        binds `jax` -> the jax PACKAGE (not jax.numpy!) --
