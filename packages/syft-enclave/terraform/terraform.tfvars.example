@@ -13,5 +13,5 @@ token_file    = "/absolute/path/to/token_enclave.json"
 # machine_type        = "n2d-standard-2"
 # boot_disk_size_gb   = 200
 # container_image     = "docker.io/openminedreleasebot/syft-client-enclave:latest"
-# use_encryption      = true          # default: true in prod, false in dev mode
-# job_timeout_seconds = 600
+# use_encryption      = false         # dev-mode override only (default false); production always encrypts
+# job_timeout_seconds = 2592000   # 30 days (default); set to null to use the container default (600s)
