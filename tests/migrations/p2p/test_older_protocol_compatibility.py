@@ -53,9 +53,7 @@ def test_fixtures_exist():
 @released_fixtures
 def test_version_file_reads_and_round_trips(fixture: Path):
     raw = _single(fixture, "SYFT_version.json").read_text()
-    assert ("canonical_name" in json.loads(raw)) == _has_identity(
-        _protocol_of(fixture)
-    )
+    assert ("canonical_name" in json.loads(raw)) == _has_identity(_protocol_of(fixture))
 
     info = VersionInfo.from_json(raw)
     assert info.version == client_registry.latest_version("VersionInfo")

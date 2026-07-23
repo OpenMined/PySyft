@@ -4,7 +4,11 @@ import json
 from pathlib import Path
 
 from syft_client.migrations import client_registry
-from syft_client.sync.version.version_info import VersionInfo, VersionInfoV1
+from syft_client.sync.version.version_info import (
+    VersionInfo,
+    VersionInfoV1,
+    VersionInfoV2,
+)
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "version_info"
 LEGACY_FILE = FIXTURES_DIR / "SYFT_version-0.1.117.json"
@@ -12,7 +16,7 @@ LEGACY_FILE = FIXTURES_DIR / "SYFT_version-0.1.117.json"
 
 def test_version_info_registered_and_aliased():
     assert client_registry.versions("VersionInfo")
-    assert VersionInfo is VersionInfoV1
+    assert VersionInfo is VersionInfoV2
 
     schema = client_registry.compute_protocol_schema()
     assert "VersionInfo" in schema.supported_versions
@@ -22,7 +26,7 @@ def test_version_info_registered_and_aliased():
 def test_current_serializes_identity_fields():
     data = json.loads(VersionInfo.current().to_json())
     assert data["canonical_name"] == "VersionInfo"
-    assert data["version"] == "1"
+    assert data["version"] == "2"
 
 
 def test_json_round_trip():
@@ -37,7 +41,8 @@ def test_legacy_protocol0_file_loads_as_latest():
     assert "canonical_name" not in json.loads(legacy_json)
 
     info = VersionInfo.from_json(legacy_json)
-    assert isinstance(info, VersionInfoV1)
+    # type() not isinstance(): V2 subclasses V1, so isinstance is vacuous.
+    assert type(info) is VersionInfoV2
     assert info.version == client_registry.latest_version("VersionInfo")
     assert info.syft_client_version == "0.1.117"
     assert info.syft_client_install_source == "pip"
@@ -51,4 +56,7 @@ def test_legacy_reader_tolerates_identity_fields():
     # the payload minus identity fields is exactly the legacy shape.
     data.pop("canonical_name")
     data.pop("version")
+    data.pop("protocol_schemas")
+    # Additive-only invariant: current output minus the added fields is
+    # exactly the legacy shape a 0.1.117 reader expects.
     assert set(data) == set(json.loads(LEGACY_FILE.read_text()))

@@ -100,9 +100,7 @@ def test_unknown_object_version_in_artifact_raises():
     )
     empty.register_object_version(client_registry.get_class("VersionInfo", "1"))
     with pytest.raises(MigrationError):
-        empty.register_historic_protocol_schema(
-            schema, raise_for_unknown_objects=True
-        )
+        empty.register_historic_protocol_schema(schema, raise_for_unknown_objects=True)
 
 
 def test_artifact_files_exist():
