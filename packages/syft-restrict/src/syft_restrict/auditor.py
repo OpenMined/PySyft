@@ -1,31 +1,9 @@
-"""Advisory audit of an ``allow_functions`` list: classify each allowed dotted path by risk.
+"""Advisory audit of an ``allow_functions`` list: classify each dotted path as ``unsafe`` /
+``dual_use`` / ``safe`` / ``review`` against a catalog passed via ``catalog_dir``.
 
-This is **defense-in-depth, not a soundness proof.** The verifier's default-deny already decides what
-the private region may call; this tool helps an author or reviewer see — *before* running — whether
-their allow-list grants any known disk/network/host-callback capability, or any path a human should
-eyeball. It generalizes across models: feed it whatever ``allow_functions`` a given model needs.
-
-Each allowed entry is classified against a **curated catalog** (the ``catalog/`` directory, laid out
-as ``catalog/<library>/<version>/catalog.json`` plus ``catalog/_common/default`` for library-agnostic
-rules — kept out of the code so assessments can be revised per release; see ``catalog/README.md``):
-
-- ``"unsafe"`` — matches a catalog entry for known disk/network/host-callback surface, OR is a glob
-  (``jax.*``) that grants a whole namespace. Remove it or tighten the allow.
-- ``"safe"`` — pure computation: ordinary math (``einsum``, ``matmul``, activations, reductions,
-  comparisons, reshapes), constants, RNG, and initializers.
-- ``"dual_use"`` — a path flagged for a specific capability beyond pure computation; each entry
-  states its own concrete reason (e.g. crossing the host/device boundary, or widening what the
-  verifier accepts as valid attribute access).
-- ``"review"`` — none of the above. The audit makes **no** guess about it: it is reported as
-  uncatalogued and deferred to human review. Unknowns are never assumed safe.
-
-Limits (state them plainly to whoever reads a report):
-
-- Classification is **only** catalog matching — no source inspection, no inference. A path the catalog
-  does not know is deferred to a human; the tool does not try to guess whether it does I/O.
-- The catalog is curated per library version; the report records the versions it saw.
-
-Anything not matched as unsafe, dual_use, or safe defaults to ``"review"``, never silently to safe.
+Advisory, not a proof — the verifier's default-deny is what gates calls. Classification is catalog
+matching only (no source inspection); an uncatalogued path is ``review``, never assumed safe. No
+catalog ships with the package. See docs/audit.md for the verdicts, catalog layout, and workflow.
 """
 
 from __future__ import annotations
@@ -41,9 +19,9 @@ from pydantic import BaseModel, Field
 
 __all__ = ["audit_allow_functions", "AuditReport", "PathAudit"]
 
-# Catalog laid out as catalog/<library>/<version>/catalog.json, plus catalog/_common/default for
-# library-agnostic rules. See catalog/README.md for the scheme.
-_CATALOG_DIR = Path(__file__).with_name("catalog")
+# A catalog root is a directory laid out as <library>/<version>/catalog.json, plus _common/default
+# for library-agnostic rules. None ships with the package; callers pass one via ``catalog_dir``.
+# See docs/audit.md for the scheme and examples/catalog for a worked example.
 _COMMON_LIB = "_common"
 _COMMON_VERSION = "default"
 
@@ -62,7 +40,9 @@ class PathAudit(BaseModel):
 
 class AuditReport(BaseModel):
     entries: list[PathAudit] = Field(default_factory=list)
-    versions: dict[str, str] = Field(default_factory=dict)  # top-level package -> version seen
+    versions: dict[str, str] = Field(
+        default_factory=dict
+    )  # top-level package -> version seen
 
     def _by_verdict(self, verdict: Verdict) -> list[PathAudit]:
         return [e for e in self.entries if e.verdict == verdict]
@@ -90,7 +70,10 @@ class AuditReport(BaseModel):
         return not self.unsafe
 
     def format(self) -> str:
-        vers = ", ".join(f"{k} {v}" for k, v in sorted(self.versions.items())) or "no versions detected"
+        vers = (
+            ", ".join(f"{k} {v}" for k, v in sorted(self.versions.items()))
+            or "no versions detected"
+        )
         lines = [f"allow-list audit ({vers})"]
         groups = (
             ("UNSAFE", self.unsafe),
@@ -104,26 +87,42 @@ class AuditReport(BaseModel):
             lines.append(f"  {label} ({len(group)}):")
             for e in group:
                 lines.append(f"    - {e.path}{' — ' + e.reason if e.reason else ''}")
-        lines.append(f"  => ok={self.ok} (unsafe entries fail; dual-use and review entries need a human)")
+        lines.append(
+            f"  => ok={self.ok} (unsafe entries fail; dual-use and review entries need a human)"
+        )
         return "\n".join(lines)
 
     def __str__(self) -> str:
         return self.format()
 
 
-def audit_allow_functions(allow_functions: list[str] | None) -> AuditReport:
+def audit_allow_functions(
+    allow_functions: list[str] | None, *, catalog_dir: str | Path | None = None
+) -> AuditReport:
     """Classify each entry of an ``allow_functions`` list; see the module docstring for semantics.
 
     Classification is catalog matching only: a path the catalog does not know is reported as
     ``"review"`` and deferred to a human. Unknowns are never assumed safe.
+
+    ``catalog_dir`` is the external catalog root (``<library>/<version>/catalog.json`` layout). No
+    catalog ships with the package, so without ``catalog_dir`` there are no rules and every path is
+    reported as ``"review"``. A worked example lives in ``examples/catalog``.
     """
     paths = [p for p in (s.strip() for s in (allow_functions or [])) if p]
     versions = _detect_versions(paths)
-    entries = [_classify(p, versions) for p in paths]
+    roots = _roots(catalog_dir)
+    entries = [_classify(p, versions, roots) for p in paths]
     return AuditReport(entries=entries, versions=versions)
 
 
-def _classify(path: str, versions: dict[str, str]) -> PathAudit:
+def _roots(catalog_dir: str | Path | None) -> tuple[Path, ...]:
+    """The catalog roots to consult (empty when no ``catalog_dir`` is given)."""
+    return (Path(catalog_dir),) if catalog_dir is not None else ()
+
+
+def _classify(
+    path: str, versions: dict[str, str], roots: tuple[Path, ...]
+) -> PathAudit:
     if "*" in path or "?" in path:
         return PathAudit(
             path=path,
@@ -132,7 +131,7 @@ def _classify(path: str, versions: dict[str, str]) -> PathAudit:
             "list exact leaves instead",
         )
     library = path.split(".", 1)[0]
-    rules = _rules_for(library, versions.get(library, ""))
+    rules = _rules_for(library, versions.get(library, ""), roots)
     for verdict in _BUCKETS:  # unsafe -> dual_use -> safe: strictest match wins
         for pattern, reason in rules[verdict].items():
             if fnmatch.fnmatchcase(path, pattern):
@@ -144,35 +143,43 @@ def _classify(path: str, versions: dict[str, str]) -> PathAudit:
     )
 
 
-def _rules_for(library: str, version: str) -> dict[str, dict[str, str]]:
+def _rules_for(
+    library: str, version: str, roots: tuple[Path, ...]
+) -> dict[str, dict[str, str]]:
     """Merge the library-agnostic ``_common`` rules with the version-matched library rules, per
-    bucket (``unsafe`` / ``dual_use`` / ``safe``)."""
+    bucket (``unsafe`` / ``dual_use`` / ``safe``). Roots are overlaid lowest-precedence first, so an
+    earlier root wins on a key conflict. With no ``catalog_dir`` there are no roots and no rules."""
     merged: dict[str, dict[str, str]] = {bucket: {} for bucket in _BUCKETS}
-    common = _load_ruleset(_COMMON_LIB, _COMMON_VERSION)
-    version_dir = _match_version_dir(library, version)
-    lib_rules = _load_ruleset(library, version_dir) if version_dir is not None else {}
-    for ruleset in (common, lib_rules):
-        for bucket in _BUCKETS:
-            merged[bucket].update(ruleset.get(bucket, {}))
+    for root in reversed(
+        roots
+    ):  # earlier (higher-precedence) roots applied last -> they win
+        common = _load_ruleset(root, _COMMON_LIB, _COMMON_VERSION)
+        version_dir = _match_version_dir(root, library, version)
+        lib_rules = (
+            _load_ruleset(root, library, version_dir) if version_dir is not None else {}
+        )
+        for ruleset in (common, lib_rules):
+            for bucket in _BUCKETS:
+                merged[bucket].update(ruleset.get(bucket, {}))
     return merged
 
 
 @lru_cache(maxsize=None)
-def _load_ruleset(library: str, version_dir: str) -> dict:
-    """Read ``catalog/<library>/<version_dir>/catalog.json``; empty dict if the file is absent."""
-    path = _CATALOG_DIR / library / version_dir / "catalog.json"
+def _load_ruleset(root: Path, library: str, version_dir: str) -> dict:
+    """Read ``<root>/<library>/<version_dir>/catalog.json``; empty dict if the file is absent."""
+    path = root / library / version_dir / "catalog.json"
     if not path.is_file():
         return {}
     return json.loads(path.read_text())
 
 
-def _match_version_dir(library: str, version: str) -> str | None:
-    """Longest version-dir under ``catalog/<library>/`` matching ``version`` on a dot boundary.
+def _match_version_dir(root: Path, library: str, version: str) -> str | None:
+    """Longest version-dir under ``<root>/<library>/`` matching ``version`` on a dot boundary.
 
     Returns ``None`` when no directory matches — there is no version-agnostic fallback, so an
     uncovered version simply contributes no library rules.
     """
-    lib_dir = _CATALOG_DIR / library
+    lib_dir = root / library
     if not lib_dir.is_dir():
         return None
     keys = [child.name for child in lib_dir.iterdir() if child.is_dir()]

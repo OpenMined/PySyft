@@ -1,11 +1,30 @@
-"""Tests for the advisory allow-list audit (syft_restrict.audit)."""
+"""Tests for the advisory allow-list audit (syft_restrict.auditor)."""
+
+import json
+from pathlib import Path
+
+import jax
 
 from syft_restrict import AuditReport, audit_allow_functions
-from syft_restrict.audit import _best_version_key
+from syft_restrict.auditor import _best_version_key
+from syft_restrict.catalog_lint import main as lint_main
+
+# The example catalog is not bundled in the package; tests point the audit at it explicitly.
+EXAMPLE_CATALOG = Path(__file__).resolve().parent.parent / "examples" / "catalog"
 
 
 def _entry(report: AuditReport, path: str):
     return next(e for e in report.entries if e.path == path)
+
+
+def test_without_catalog_dir_everything_is_review():
+    # No catalog ships with the package. With no catalog_dir there are no rules, so every non-glob
+    # path is deferred to review (never silently safe).
+    report = audit_allow_functions(
+        ["jax.numpy.einsum", "jax.numpy.save", "flax.linen.Module"]
+    )
+    assert all(e.verdict == "review" for e in report.entries)
+    assert report.ok  # review does not fail the report
 
 
 def test_known_unsafe_paths_are_flagged():
@@ -16,13 +35,16 @@ def test_known_unsafe_paths_are_flagged():
         "jax.experimental.io_callback",  # host callback
         "flax.training.checkpoints.save_checkpoint",  # disk
     ]
-    report = audit_allow_functions(paths)
+    report = audit_allow_functions(paths, catalog_dir=EXAMPLE_CATALOG)
     assert all(_entry(report, p).verdict == "unsafe" for p in paths)
-    assert all(_entry(report, p).reason for p in paths)  # every entry carries an explanation
+    assert all(
+        _entry(report, p).reason for p in paths
+    )  # every entry carries an explanation
     assert not report.ok  # unsafe entries fail the report
 
 
 def test_glob_allow_is_flagged_unsafe():
+    # Globs are flagged by the classifier itself, so this holds with or without a catalog.
     report = audit_allow_functions(["jax.*", "flax.linen.*"])
     assert _entry(report, "jax.*").verdict == "unsafe"
     assert _entry(report, "flax.linen.*").verdict == "unsafe"
@@ -32,10 +54,16 @@ def test_glob_allow_is_flagged_unsafe():
 def test_pure_computation_is_safe():
     # Pure math is safe, including the most expressive ops (einsum, matmul, softmax).
     paths = [
-        "jax.numpy.einsum", "jax.numpy.matmul", "jax.nn.softmax", "jax.numpy.where",
-        "jax.numpy.sort", "jax.random.categorical", "flax.linen.Dense", "flax.linen.relu",
+        "jax.numpy.einsum",
+        "jax.numpy.matmul",
+        "jax.nn.softmax",
+        "jax.numpy.where",
+        "jax.numpy.sort",
+        "jax.random.categorical",
+        "flax.linen.Dense",
+        "flax.linen.relu",
     ]
-    report = audit_allow_functions(paths)
+    report = audit_allow_functions(paths, catalog_dir=EXAMPLE_CATALOG)
     assert all(_entry(report, p).verdict == "safe" for p in paths)
     assert all(_entry(report, p).reason for p in paths)
     assert report.ok
@@ -45,33 +73,41 @@ def test_dual_use_is_narrow():
     # dual_use is reserved for a specific capability beyond pure computation: the host/device
     # boundary crossers, and flax's attribute-access knob.
     paths = ["jax.device_get", "jax.device_put", "flax.linen.Module"]
-    report = audit_allow_functions(paths)
+    report = audit_allow_functions(paths, catalog_dir=EXAMPLE_CATALOG)
     assert all(_entry(report, p).verdict == "dual_use" for p in paths)
-    assert all(_entry(report, p).reason for p in paths)  # each carries its own concrete reason
+    assert all(
+        _entry(report, p).reason for p in paths
+    )  # each carries its own concrete reason
     assert report.ok  # dual_use does not fail the report (allowed-but-flagged)
 
 
 def test_uncatalogued_path_is_deferred_to_review_without_assumptions():
-    # An unknown path is neither safe nor unsafe: the audit makes no guess, it defers to a human.
-    # This holds regardless of whether the path is importable — no source inspection happens.
-    report = audit_allow_functions(["totally.made.up.symbol", "shutil.copyfile"])
+    # Even with a catalog present, an unknown path is neither safe nor unsafe: the audit makes no
+    # guess and defers to a human, regardless of whether the path is importable.
+    report = audit_allow_functions(
+        ["totally.made.up.symbol", "shutil.copyfile"], catalog_dir=EXAMPLE_CATALOG
+    )
     for path in ("totally.made.up.symbol", "shutil.copyfile"):
         e = _entry(report, path)
         assert e.verdict == "review"
-        assert "catalog" in e.reason  # reported as uncatalogued, deferred to human review
+        assert (
+            "catalog" in e.reason
+        )  # reported as uncatalogued, deferred to human review
     assert report.ok  # review entries do not fail the report; they need a human
 
 
 def test_cross_library_pattern_matches_any_library():
     # `*.io_callback` lives in the library-agnostic _common catalog
-    report = audit_allow_functions(["somelib.io_callback"])
+    report = audit_allow_functions(["somelib.io_callback"], catalog_dir=EXAMPLE_CATALOG)
     assert _entry(report, "somelib.io_callback").verdict == "unsafe"
 
 
 def test_orbax_is_flagged_unsafe_without_a_version_dir():
     # orbax has no version-keyable import root, so its blanket rule lives in _common and must fire
     # regardless of whether any orbax version is detected.
-    report = audit_allow_functions(["orbax.checkpoint.save"])
+    report = audit_allow_functions(
+        ["orbax.checkpoint.save"], catalog_dir=EXAMPLE_CATALOG
+    )
     assert _entry(report, "orbax.checkpoint.save").verdict == "unsafe"
 
 
@@ -89,7 +125,7 @@ def test_flax_linen_common_surface_is_catalogued():
         "flax.linen.Module": "dual_use",  # attribute-access knob
         "flax.io.read_file": "unsafe",  # flax.io.* glob -> disk IO
     }
-    report = audit_allow_functions(list(expected))
+    report = audit_allow_functions(list(expected), catalog_dir=EXAMPLE_CATALOG)
     got = {e.path: e.verdict for e in report.entries}
     assert got == expected
     assert all(_entry(report, p).reason for p in expected)  # every entry carries a note
@@ -114,15 +150,47 @@ def test_jax_common_surface_is_catalogued():
         "jax.numpy.save": "unsafe",  # disk IO (jax.numpy.save* rule)
         "jax.debug.print": "unsafe",  # host callback
     }
-    report = audit_allow_functions(list(expected))
+    report = audit_allow_functions(list(expected), catalog_dir=EXAMPLE_CATALOG)
     got = {e.path: e.verdict for e in report.entries}
     assert got == expected
     assert all(_entry(report, p).reason for p in expected)
 
 
+def test_catalog_dir_supplies_the_rules(tmp_path):
+    # Without a catalog_dir a path is 'review'; a catalog_dir is what provides its rules.
+    assert (
+        _entry(audit_allow_functions(["jax.numpy.einsum"]), "jax.numpy.einsum").verdict
+        == "review"
+    )
+    version_dir = ".".join(jax.__version__.split(".")[:2])  # e.g. "0.11"
+    ext = tmp_path / "jax" / version_dir
+    ext.mkdir(parents=True)
+    (ext / "catalog.json").write_text(
+        json.dumps({"unsafe": {"jax.numpy.einsum": "custom rule"}})
+    )
+    report = audit_allow_functions(["jax.numpy.einsum"], catalog_dir=tmp_path)
+    einsum = _entry(report, "jax.numpy.einsum")
+    assert einsum.verdict == "unsafe"
+    assert einsum.reason == "custom rule"
+
+
+def test_lint_accepts_a_path_and_fixes(tmp_path):
+    cat = tmp_path / "mylib" / "1.0"
+    cat.mkdir(parents=True)
+    f = cat / "catalog.json"
+    f.write_text(
+        '{\n  "safe": {"b": "two", "a": "one"}\n}\n'
+    )  # unsorted, not canonical
+    assert lint_main([str(tmp_path)]) == 1  # check mode flags it
+    assert lint_main([str(tmp_path), "--fix"]) == 0  # --fix rewrites it
+    assert lint_main([str(tmp_path)]) == 0  # now canonical
+    assert list(json.loads(f.read_text())["safe"]) == ["a", "b"]  # keys sorted
+
+
 def test_report_format_has_sections_and_ok_flag():
     report = audit_allow_functions(
-        ["jax.profiler.start_server", "jax.device_get", "jax.numpy.einsum"]
+        ["jax.profiler.start_server", "jax.device_get", "jax.numpy.einsum"],
+        catalog_dir=EXAMPLE_CATALOG,
     )
     text = report.format()
     assert "UNSAFE" in text and "DUAL-USE" in text and "SAFE" in text
@@ -136,6 +204,10 @@ def test_best_version_key_matches_on_dot_boundaries_only():
     keys = ["0.1", "0.11"]
     assert _best_version_key(keys, "0.1.7") == "0.1"
     assert _best_version_key(keys, "0.11.0") == "0.11"  # not "0.1"
-    assert _best_version_key(keys, "0.19.2") is None  # no baseline; uncovered -> no rules
+    assert (
+        _best_version_key(keys, "0.19.2") is None
+    )  # no baseline; uncovered -> no rules
     assert _best_version_key(keys, "0.2.0") is None
-    assert _best_version_key(keys, "") is None  # unknown/undetected version matches nothing
+    assert (
+        _best_version_key(keys, "") is None
+    )  # unknown/undetected version matches nothing
