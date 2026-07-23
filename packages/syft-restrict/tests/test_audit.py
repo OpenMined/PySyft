@@ -29,24 +29,25 @@ def test_glob_allow_is_flagged_unsafe():
     assert "glob" in _entry(report, "jax.*").reason
 
 
-def test_genuinely_inert_paths_are_safe():
-    # constants, masks, and module refs have no residual channel of their own.
-    paths = ["jax.numpy.arange", "jax.numpy.ones", "jax.numpy.tril", "jax.lax"]
+def test_pure_computation_is_safe():
+    # Pure math is safe, including the most expressive ops (einsum, matmul, softmax).
+    paths = [
+        "jax.numpy.einsum", "jax.numpy.matmul", "jax.nn.softmax", "jax.numpy.where",
+        "jax.numpy.sort", "jax.random.categorical", "flax.linen.Dense", "flax.linen.relu",
+    ]
     report = audit_allow_functions(paths)
     assert all(_entry(report, p).verdict == "safe" for p in paths)
-    assert all(_entry(report, p).reason for p in paths)  # safe entries still explained
-    assert report.ok  # only-safe list passes
+    assert all(_entry(report, p).reason for p in paths)
+    assert report.ok
 
 
-def test_dual_use_paths_are_flagged_between_safe_and_unsafe():
-    # useful ops that are mostly safe but abusable in combination land in dual_use, not safe.
-    paths = ["jax.numpy.einsum", "jax.nn.softmax", "jax.numpy.where", "flax.linen.Module"]
+def test_dual_use_is_narrow():
+    # dual_use is reserved for a specific capability beyond pure computation: the host/device
+    # boundary crossers, and flax's attribute-access knob.
+    paths = ["jax.device_get", "jax.device_put", "flax.linen.Module"]
     report = audit_allow_functions(paths)
     assert all(_entry(report, p).verdict == "dual_use" for p in paths)
-    assert all(_entry(report, p).reason for p in paths)  # dual_use entries carry a terse note
-    # the category carries the caution, so the note stays vague -- no abuse how-to / recipe wording.
-    einsum_reason = _entry(report, "jax.numpy.einsum").reason
-    assert "encode" not in einsum_reason and "secret" not in einsum_reason
+    assert all(_entry(report, p).reason for p in paths)  # each carries its own concrete reason
     assert report.ok  # dual_use does not fail the report (allowed-but-flagged)
 
 
@@ -74,9 +75,54 @@ def test_orbax_is_flagged_unsafe_without_a_version_dir():
     assert _entry(report, "orbax.checkpoint.save").verdict == "unsafe"
 
 
+def test_flax_linen_common_surface_is_catalogued():
+    # Spot-check the flax.linen coverage: pure compute is safe, only Module is dual_use, io is unsafe.
+    expected = {
+        "flax.linen.Dense": "safe",  # pure computation
+        "flax.linen.MultiHeadDotProductAttention": "safe",
+        "flax.linen.relu": "safe",  # activations are pure math -> safe
+        "flax.linen.softmax": "safe",
+        "flax.linen.scan": "safe",  # lifted transform over pure compute
+        "flax.linen.make_causal_mask": "safe",  # structural mask helper
+        "flax.linen.compact": "safe",  # decorator / machinery
+        "flax.linen.initializers.lecun_normal": "safe",  # init, no data channel
+        "flax.linen.Module": "dual_use",  # attribute-access knob
+        "flax.io.read_file": "unsafe",  # flax.io.* glob -> disk IO
+    }
+    report = audit_allow_functions(list(expected))
+    got = {e.path: e.verdict for e in report.entries}
+    assert got == expected
+    assert all(_entry(report, p).reason for p in expected)  # every entry carries a note
+
+
+def test_jax_common_surface_is_catalogued():
+    # Spot-check the jax coverage: pure compute (transforms, math, samplers) is safe; only the
+    # host/device boundary crossers are dual_use; IO/callbacks are unsafe.
+    expected = {
+        "jax.jit": "safe",  # transform over pure compute
+        "jax.grad": "safe",
+        "jax.numpy.matmul": "safe",  # pure compute
+        "jax.numpy.sum": "safe",  # reduction
+        "jax.nn.relu": "safe",  # activation
+        "jax.numpy.linalg.svd": "safe",
+        "jax.random.categorical": "safe",  # pure compute on logits
+        "jax.numpy.zeros": "safe",  # constant creation
+        "jax.random.split": "safe",  # key management
+        "jax.nn.initializers.he_normal": "safe",  # init
+        "jax.device_get": "dual_use",  # host/device boundary crossing
+        "jax.device_put": "dual_use",
+        "jax.numpy.save": "unsafe",  # disk IO (jax.numpy.save* rule)
+        "jax.debug.print": "unsafe",  # host callback
+    }
+    report = audit_allow_functions(list(expected))
+    got = {e.path: e.verdict for e in report.entries}
+    assert got == expected
+    assert all(_entry(report, p).reason for p in expected)
+
+
 def test_report_format_has_sections_and_ok_flag():
     report = audit_allow_functions(
-        ["jax.profiler.start_server", "jax.numpy.einsum", "jax.numpy.ones"]
+        ["jax.profiler.start_server", "jax.device_get", "jax.numpy.einsum"]
     )
     text = report.format()
     assert "UNSAFE" in text and "DUAL-USE" in text and "SAFE" in text

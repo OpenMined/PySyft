@@ -271,7 +271,7 @@ disallow_functions=[
     # multi-host / distributed — outbound network connections
     "jax.distributed.*", "jax.monitoring.*", "jax.experimental.multihost_utils.*",
     # FFI / interop
-    "jax.dlpack.*", "jax.ffi*",
+    "jax.dlpack.*", "jax.ffi.*",
     # array <-> disk (save/savez/savez_compressed/savetxt, load/loadtxt, tofile/fromfile/memmap)
     "jax.numpy.save*", "jax.numpy.load*", "*.tofile", "*.fromfile", "*.memmap",
     # checkpointing / serialization (write to disk, incl. gs://)

@@ -11,11 +11,11 @@ rules — kept out of the code so assessments can be revised per release; see ``
 
 - ``"unsafe"`` — matches a catalog entry for known disk/network/host-callback surface, OR is a glob
   (``jax.*``) that grants a whole namespace. Remove it or tighten the allow.
-- ``"dual_use"`` — a useful, mostly-safe op that can still be abused in combination (e.g. ``einsum``,
-  ``softmax``, ``where``). Allowed, but flagged: the *category itself* carries the "handle with care"
-  signal, so entry notes stay terse and vague — never an abuse how-to.
-- ``"safe"`` — matches a curated entry for a genuinely inert path (constants, masks, module refs) with
-  no residual output channel of its own.
+- ``"safe"`` — pure computation: ordinary math (``einsum``, ``matmul``, activations, reductions,
+  comparisons, reshapes), constants, RNG, and initializers.
+- ``"dual_use"`` — a path flagged for a specific capability beyond pure computation; each entry
+  states its own concrete reason (e.g. crossing the host/device boundary, or widening what the
+  verifier accepts as valid attribute access).
 - ``"review"`` — none of the above. The audit makes **no** guess about it: it is reported as
   uncatalogued and deferred to human review. Unknowns are never assumed safe.
 

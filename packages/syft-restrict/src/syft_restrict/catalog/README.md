@@ -20,8 +20,7 @@ catalog/
   `0.19`. **There is no version-agnostic fallback per library:** if no version dir matches the
   installed version, that library contributes no rules and its paths fall to `review`. Add a version
   dir to cover a release.
-- `_common/default/catalog.json` is always merged in (its `default` segment is a fixed name, not a
-  version). It holds truly cross-library patterns (`*.io_callback`, `*.tofile`, …) and blanket rules
+- `_common/default/catalog.json` is always merged in. It holds truly cross-library patterns (`*.io_callback`, `*.tofile`, …) and blanket rules
   for libraries whose import root cannot be version-keyed (e.g. `orbax`: the `orbax` import root is a
   namespace package with no `__version__`; the distribution is `orbax-checkpoint`).
 
@@ -33,16 +32,21 @@ Each `catalog.json` is:
 {
   "_about": "free-text note",
   "unsafe":   { "<dotted-path glob>": "why it is unsafe" },
-  "dual_use": { "<dotted-path glob>": "what the op is (terse; the category carries the caution)" },
-  "safe":     { "<dotted-path glob>": "why it is genuinely inert" }
+  "dual_use": { "<dotted-path glob>": "the concrete reason it is flagged" },
+  "safe":     { "<dotted-path glob>": "what the op is (terse)" }
 }
 ```
 
 - `unsafe` = known disk/network/host-callback surface.
-- `dual_use` = a useful op that is mostly safe but can be **abused in combination** (`einsum`,
-  `softmax`, `where`, …). Allowed but flagged. The *category* is the caution, so keep each note a
-  terse description of what the op is — do **not** spell out abuse mechanics (no how-to).
-- `safe` = genuinely inert (constants, masks, module refs) with no residual channel of its own.
+- `safe` = pure computation: ordinary math (`einsum`, `matmul`, activations, reductions, reshapes),
+  constants, RNG, and initializers.
+- `dual_use` = a path flagged for a specific capability beyond pure computation. Each entry must
+  state its own concrete reason (e.g. crossing the host/device boundary).
 
 A path is matched strictest-first (`unsafe` → `dual_use` → `safe`). Anything matched by none defaults
 to `review` — never silently to `safe`.
+
+> [!Note]
+>
+> `safe` means "no disk/network/host-callback capability", not "no information
+> flow". The catalog lists capabilities, not guarantees.
