@@ -35,6 +35,11 @@ from syft_client.sync.utils.syftbox_utils import (  # noqa: F401, E402
     delete_syftbox,
     delete_local_syftbox,
 )
+from syft_client.migrations.history import register_historic_schemas  # noqa: E402
+
+# Historic schemas list object versions that must already be registered, which
+# happens when the model modules are imported (transitively via sync.login).
+register_historic_schemas()
 
 SYFT_CLIENT_DIR = Path(__file__).parent.parent
 CREDENTIALS_DIR = SYFT_CLIENT_DIR / "credentials"
