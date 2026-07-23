@@ -11,9 +11,9 @@ from enum import Enum
 from typing import Optional
 
 from pydantic import Field
-from syft_migration import MigratableObject, MigrationService
+from syft_migration import MigratableObject
 
-from syft_client.migrations import client_registry
+from syft_client.migrations import client_registry, load_as_latest
 from syft_client.version import (
     MIN_SUPPORTED_PROTOCOL_VERSION,
     MIN_SUPPORTED_SYFT_CLIENT_VERSION,
@@ -37,9 +37,6 @@ def _parse_semver(version_str: str) -> tuple[int, int, int]:
     if len(parts) < 3:
         raise ValueError(f"Invalid semver: {version_str!r} (expected 'X.Y.Z')")
     return (int(parts[0]), int(parts[1]), int(parts[2]))
-
-
-_migration_service = MigrationService(registry=client_registry)
 
 
 class VersionInfoV1(MigratableObject, registry=client_registry):
@@ -146,13 +143,7 @@ class VersionInfoV1(MigratableObject, registry=client_registry):
         Files written by protocol-0 clients (<= 0.1.117) predate the identity
         fields; they are all version 1.
         """
-        data = json.loads(json_str)
-        data.setdefault("canonical_name", "VersionInfo")
-        data.setdefault("version", "1")
-        obj = _migration_service.load(data)
-        return _migration_service.migrate(
-            obj, client_registry.latest_version("VersionInfo")
-        )
+        return load_as_latest(json.loads(json_str), "VersionInfo")
 
 
 # Current-version alias: callers always work with the latest VersionInfo.

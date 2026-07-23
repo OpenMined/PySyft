@@ -1,4 +1,4 @@
-from syft_migration import MigrationRegistry
+from syft_migration import MigrationRegistry, MigrationService
 
 from syft_client.version import SYFT_CLIENT_VERSION
 
@@ -22,3 +22,17 @@ client_registry = MigrationRegistry(
     package_version=SYFT_CLIENT_VERSION,
     protocol_version=SYFT_CLIENT_PROTOCOL_VERSION,
 )
+
+# Shared service for loading/migrating syft-client objects.
+client_migration_service = MigrationService(registry=client_registry)
+
+
+def load_as_latest(data: dict, canonical_name: str) -> object:
+    """Load ``data`` (defaulting identity fields for protocol-0 files, which
+    predate them and are all version 1) and migrate to the latest version."""
+    data.setdefault("canonical_name", canonical_name)
+    data.setdefault("version", "1")
+    obj = client_migration_service.load(data)
+    return client_migration_service.migrate(
+        obj, client_registry.latest_version(canonical_name)
+    )
