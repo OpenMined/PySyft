@@ -21,7 +21,6 @@ from flax import linen as nn
 
 # ── Model config ─────────────────────────────────────────────────────────────
 # Active model config. Comment/uncomment to switch sizes.
-# syft-restrict: obfuscate-start
 ░v0 = dict(
     ░v1=■,
     ░v2=■,
@@ -87,24 +86,17 @@ from flax import linen as nn
 ░v11 = ■
 ░v12 = ■
 ░v13 = -■  # THIS COMMENT WAS OBFUSCATED
-# syft-restrict: obfuscate-end
 
 
-# syft-restrict: obfuscate-start
 def ░fn0(░v1):
-    # syft-restrict: hide-start
     ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
     ■■■■■■■■
-    # syft-restrict: hide-end
-# syft-restrict: obfuscate-end
 
 
 # ── Standalone helpers ────────────────────────────────────────────────────
 
 
-# syft-restrict: obfuscate-start
 def ░fn1(░v14, ░v15, ░v16):
-    # syft-restrict: hide-start
     ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
     ■■■■■■■■
     ■■■■■■■■
@@ -113,13 +105,9 @@ def ░fn1(░v14, ░v15, ░v16):
     ■■■■■■■■
     ■■■■■■■■
     ■■■■■■■■
-    # syft-restrict: hide-end
-# syft-restrict: obfuscate-end
 
 
-# syft-restrict: obfuscate-start
 def ░fn2(░v17, ░v7):
-    # syft-restrict: hide-start
     ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
     ■■■■■■■■
     ■■■■■■■■
@@ -129,13 +117,9 @@ def ░fn2(░v17, ░v7):
         ■■■■■■■■
         ■■■■■■■■
     ■■■■■■■■
-    # syft-restrict: hide-end
-# syft-restrict: obfuscate-end
 
 
-# syft-restrict: obfuscate-start
 def ░fn3(░v18, ░v7):
-    # syft-restrict: hide-start
     ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
     ■■■■■■■■
     ■■■■■■■■
@@ -143,8 +127,6 @@ def ░fn3(░v18, ░v7):
         ■■■■■■■■
         ■■■■■■■■
     ■■■■■■■■
-    # syft-restrict: hide-end
-# syft-restrict: obfuscate-end
 
 
 # ── Flax modules ───────────────────────────────────────────────────────────
@@ -166,50 +148,34 @@ def append_to(lst, item):
     return lst
 
 
-# syft-restrict: obfuscate-start
 class ░Cls0(nn.Module):
     def setup(self):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
-    # syft-restrict: hide-end
 
     def __call__(self, ░v19, ░v14):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
-    # syft-restrict: hide-end
-# syft-restrict: obfuscate-end
 
 
-# syft-restrict: obfuscate-start
 class ░Cls1(nn.Module):
     def setup(self):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
-    # syft-restrict: hide-end
 
     def __call__(self, ░v14):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
-    # syft-restrict: hide-end
-# syft-restrict: obfuscate-end
 
 
-# syft-restrict: obfuscate-start
 class ░Cls2(nn.Module):
     ░v20: dict
 
     def setup(self):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
-    # syft-restrict: hide-end
 
     def __call__(self, ░v14, ░v15, ░v21, ░v22, ░v23=None):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
@@ -239,44 +205,32 @@ class ░Cls2(nn.Module):
 
         ■■■■■■■■
         ■■■■■■■■
-    # syft-restrict: hide-end
-# syft-restrict: obfuscate-end
 
 
-# syft-restrict: obfuscate-start
 class ░Cls3(nn.Module):
     def setup(self):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
-    # syft-restrict: hide-end
 
     def __call__(self, ░v14):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
-    # syft-restrict: hide-end
-# syft-restrict: obfuscate-end
 
 
-# syft-restrict: obfuscate-start
 class ░Cls4(nn.Module):
     ░v20: dict
     ░v22: str = "■"
 
     def setup(self):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
-    # syft-restrict: hide-end
 
     def __call__(self, ░v14, ░v15, ░v21, ░v23=None):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
@@ -285,33 +239,23 @@ class ░Cls4(nn.Module):
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
-    # syft-restrict: hide-end
-# syft-restrict: obfuscate-end
 
 
-# syft-restrict: obfuscate-start
 class ░Cls5(nn.Module):
     ░v20: dict
 
     def setup(self):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
-    # syft-restrict: hide-end
 
     def __call__(self, ░v24):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
-    # syft-restrict: hide-end
-# syft-restrict: obfuscate-end
 
 
-# syft-restrict: obfuscate-start
 class ░Cls6(nn.Module):
     ░v20: dict
 
     def setup(self):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
@@ -319,10 +263,8 @@ class ░Cls6(nn.Module):
             ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
-    # syft-restrict: hide-end
 
     def __call__(self, ░v25, ░v23=None):
-    # syft-restrict: hide-start
         ■■■■■■■■  # hidden/obfuscated lines can only execute restricted python, see restrict docs for more details
         ■■■■■■■■
         ■■■■■■■■
@@ -348,8 +290,6 @@ class ░Cls6(nn.Module):
         ■■■■■■■■
         ■■■■■■■■
         ■■■■■■■■
-    # syft-restrict: hide-end
-# syft-restrict: obfuscate-end
 
 
 # ── Weight loading ─────────────────────────────────────────────────────────

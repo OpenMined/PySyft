@@ -22,6 +22,7 @@ from .astutil import (
     dotted_name,
     is_dunder,
     node_in_ranges,
+    node_overlaps_ranges,
     normalize_ranges,
     rooted_in_self,
     scan_file,
@@ -113,6 +114,32 @@ _BANNED_NODES: tuple[type[ast.AST], ...] = (
     ast.FormattedValue,
 )
 
+# Compound statements own an indented suite, so a public header + private body is normal marker
+# usage (mark the body private, leave the `def`/`for`/`if` line public) -- NOT a boundary straddle.
+# Their bodies are separate statements the walk enforces on their own; only *simple* statements and
+# expressions that themselves span the boundary count as straddling. Excluded from straddle-enforce.
+# `ast.TryStar` (3.11+) and `ast.Match` (3.10+) are resolved via getattr and filtered out when
+# absent, so the module still imports on the >=3.10 floor.
+_COMPOUND_NODES: tuple[type[ast.AST], ...] = tuple(
+    t
+    for t in (
+        ast.Module,
+        ast.FunctionDef,
+        ast.AsyncFunctionDef,
+        ast.ClassDef,
+        ast.For,
+        ast.AsyncFor,
+        ast.While,
+        ast.If,
+        ast.With,
+        ast.AsyncWith,
+        ast.Try,
+        getattr(ast, "TryStar", None),
+        getattr(ast, "Match", None),
+    )
+    if t is not None
+)
+
 # violation-code registry: every code a check can raise, one line each (docs/blacklist.md)
 ViolationCode = Literal[
     "banned-construct",  # _enforce (node type on the permanent deny-list)
@@ -131,6 +158,7 @@ ViolationCode = Literal[
     "dunder-name",  # _check_name
     "operator-disabled",  # _require_bundle
     "duplicate-method",  # _forbid_duplicate_methods
+    "star-import",  # visit (`from ... import *` anywhere in the file)
 ]
 
 
@@ -191,8 +219,13 @@ class _Checker:
         # enclosing class/def/lambda stack, for _enclosing_class() and self/cls-position checks
         self._scope_stack: list[ast.AST] = []
 
-        # answers "is self.<attr> safe to call?" -- see _SelfAttrTrust below
-        self._self_attr = _SelfAttrTrust(scan, self._resolved_allowed)
+        # answers "is self.<attr> safe to call?" -- see _SelfAttrTrust below. allow_base_class_attributes
+        # controls whether a never-assigned attr is presumed inherited-safe or rejected.
+        self._self_attr = _SelfAttrTrust(
+            scan,
+            self._resolved_allowed,
+            allow_base_class=policy.allow_base_class_attributes,
+        )
 
         # nodes inside a type annotation (never invoked), exempt from name/container checks
         self._annotation_nodes: set[int] = set()
@@ -202,6 +235,10 @@ class _Checker:
         # pushes a scope in visit() (only ClassDef/FunctionDef/Lambda do)
         self._safe_locals_stack: list[dict[str, bool]] = [{}]
 
+        # when False, _track_safe_local records nothing, so a local aliased to a safe callable is
+        # never itself trusted as a bare-name call target -- the callee must be called directly.
+        self._allow_local_assignments = policy.allow_local_assignments
+
     def report(self, node: ast.AST, code: ViolationCode, message: str) -> None:
         self.violations.append(
             Violation(line=getattr(node, "lineno", 0), code=code, message=message)
@@ -210,7 +247,29 @@ class _Checker:
     # ── tree walk ───────────────────────────────────────────────────────────────────────────
     def visit(self, node: ast.AST) -> None:
         """Walk the whole tree; enforce only on nodes inside the private ranges, recurse everywhere."""
+        # `from ... import *` is banned everywhere, public region included: it silently pollutes the
+        # namespace and can shadow a name the private region trusts by spelling alone (a safe
+        # builtin, an import alias, a wrapper), and it can't be human-reviewed the way an explicit
+        # import can. Reported here, not via the private-region deny-list, so it fires in public too.
+        if isinstance(node, ast.ImportFrom) and any(a.name == "*" for a in node.names):
+            self.report(
+                node,
+                "star-import",
+                "'from ... import *' is not allowed anywhere in the file; import names explicitly",
+            )
+            # Safe to return early: ImportFrom is never a scope node and has no verifiable
+            # children, so we skip the scope-stack / child-walk bookkeeping below.
+            return
+
         if node_in_ranges(node, self.ranges):
+            self._enforce(node)
+        elif not isinstance(node, _COMPOUND_NODES) and node_overlaps_ranges(
+            node, self.ranges
+        ):
+            # A multi-line statement/expression whose start line is public but whose span reaches
+            # into a private range. Default-deny: resolve the ambiguity by treating the whole node
+            # as private and verifying it. Compound statements are exempt -- a public header over a
+            # private body is normal marker usage, and their body statements are enforced by the walk.
             self._enforce(node)
         else:
             # private-defined names are reserved everywhere, including in public
@@ -224,6 +283,13 @@ class _Checker:
             # of the public/private split, so a duplicate method name must be caught the same
             # way, regardless of whether the class statement or either definition is private.
             self._forbid_duplicate_methods(node)
+
+        if isinstance(node, (ast.For, ast.AsyncFor)) and node_overlaps_ranges(
+            node, self.ranges
+        ):
+            # A for-loop rebinds its target in the ENCLOSING scope, to an unvettable element of the
+            # iterable, so any safe-call verdict the target carries must be cleared.
+            self._clear_safe_locals(node.target)
 
         # push/pop scope stack for ClassDef/FunctionDef/Lambda, so
         # _enclosing_class() works
@@ -349,6 +415,8 @@ class _Checker:
             self._require_bundle(node, "indexing")
 
         # --- name binding (assignments, params) ---
+        # NOTE: for/async-for target clearing is handled in visit() (gated on range OVERLAP), so it
+        # also fires for a public loop header over a private body -- not here.
         elif isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
             self._track_safe_local(node)
         elif isinstance(node, ast.arg):
@@ -604,6 +672,16 @@ class _Checker:
                 return
             # a non-self dotted path: must resolve to an allow-listed import
             if root in self.scan.import_bindings:
+                # a dunder in call position (allowed.__wrapped__(x)) reaches the function-object
+                # introspection surface; deny it outright, mirroring the read-position check in
+                # _check_attribute rather than letting a broad glob (jax.*) admit it by path.
+                if is_dunder(func.attr):
+                    self.report(
+                        call,
+                        "dunder-attr",
+                        f"access to dunder attribute {func.attr!r} is not allowed",
+                    )
+                    return
                 if not self._resolved_allowed(path):
                     self.report(
                         call,
@@ -776,6 +854,12 @@ class _Checker:
         Any other assignment to a previously-tracked name clears its verdict --
         it no longer traces to that source."""
 
+        # Local-alias tracking disabled: never record any local as safe, so a bare-name call to a
+        # local (block = self.layers[0]; block(x)) falls through to call-unresolved. Callables must
+        # be called directly (self.layers[0](x)) instead.
+        if not self._allow_local_assignments:
+            return
+
         # Module itself never pushes a scope in visit(), so we added a frame at
         # init and never pop it. The stack should never be empty.
         if not self._safe_locals_stack:
@@ -788,17 +872,30 @@ class _Checker:
         safe = self._safe_locals_stack[-1]
         targets, value = self._assignment_targets_and_value(node)
 
-        # check each target in the assignment. If it's a Name, track whether
-        # it's provably safe to call. If it's not a Name (e.g., a tuple
-        # unpacking), skip it. If the value is None (AnnAssign without a value),
-        # clear the verdict.
+        # A plain `x = <value>` target gets the RHS's verdict. Any other target shape -- a
+        # tuple/list/starred unpack (`b, _ = ...`) -- has no single value to attribute to each
+        # name, so it CLEARS every name it binds. Clearing (not skipping) matters when the name was
+        # already tracked safe: `b = self.dense; b, _ = fn, b` must drop b's stale safe verdict,
+        # since the unpack rebinds b in this scope at runtime.
         for t in targets:
-            if not isinstance(t, ast.Name):
-                continue
-            if value is not None and self._is_safe_local_source(value):
-                safe[t.id] = True
+            if isinstance(t, ast.Name):
+                if value is not None and self._is_safe_local_source(value):
+                    safe[t.id] = True
+                else:
+                    safe.pop(t.id, None)
             else:
-                safe.pop(t.id, None)
+                self._clear_safe_locals(t)
+
+    def _clear_safe_locals(self, target: ast.AST) -> None:
+        """Drop the safe-call verdict for every local name bound by ``target``.
+
+        Used for binding forms that rebind a name in the current scope without a single vettable
+        value: tuple/list/starred unpack targets and ``for``-loop targets. A comprehension target
+        is deliberately NOT cleared here -- in Python 3 it has its own scope and does not leak to
+        the enclosing one, so the outer name's verdict still holds."""
+        safe = self._safe_locals_stack[-1]
+        for name in _iter_bound_local_names(target):
+            safe.pop(name, None)
 
     def _is_safe_local_source(self, value: ast.AST) -> bool:
         """Is a local provably safe to call?"""
@@ -878,6 +975,19 @@ class _Checker:
         return self.policy.function_allowed(self._resolve(path))
 
 
+def _iter_bound_local_names(target: ast.AST):
+    """Yield every plain local Name id bound by a Store-context target, recursing into
+    tuple/list-unpack and starred targets (``a, *rest = ...``). Attribute/subscript targets bind
+    no local name and are skipped."""
+    if isinstance(target, ast.Name):
+        yield target.id
+    elif isinstance(target, (ast.Tuple, ast.List)):
+        for elt in target.elts:
+            yield from _iter_bound_local_names(elt)
+    elif isinstance(target, ast.Starred):
+        yield from _iter_bound_local_names(target.value)
+
+
 # ── self-attribute trust ────────────────────────────────────────────────────────────────────────
 def _iter_self_attrs_in_target(target: ast.AST):
     """Yield every self.<attr>/cls.<attr> name found anywhere in a Store-context target tree,
@@ -921,9 +1031,14 @@ class _SelfAttrTrust:
     one ``_Checker`` (one ``verify()`` call).
     """
 
-    def __init__(self, scan: FileScan, resolved_allowed) -> None:
+    def __init__(
+        self, scan: FileScan, resolved_allowed, allow_base_class: bool = True
+    ) -> None:
         self._scan = scan
         self._resolved_allowed = resolved_allowed
+        # the verdict for a self.<attr> never assigned in the class body: True presumes it is
+        # inherited from the (already-vetted) base class; False rejects it (docs/verify.md).
+        self._allow_base_class = allow_base_class
         self._cache: dict[int, dict[str, bool]] = {}  # id(ClassDef) -> {attr: is-safe}
 
     def is_safe(self, attr: str, cls_node: ast.ClassDef | None) -> bool:
@@ -938,10 +1053,9 @@ class _SelfAttrTrust:
             table = self._build_table(cls_node)
             self._cache[id(cls_node)] = table
 
-        # return True if the attribute is safe, False if not, and True if the
-        # attribute was never assigned in this class (inherited from a vetted
-        # base)
-        return table.get(attr, True)
+        # a safe/unsafe verdict for an attr the class assigns; for one it never assigns, fall back
+        # to _allow_base_class (presumed inherited from a vetted base, unless the caller disabled it)
+        return table.get(attr, self._allow_base_class)
 
     def _build_table(self, cls_node: ast.ClassDef) -> dict[str, bool]:
         """For every self.<name> assigned anywhere in the class, record whether
