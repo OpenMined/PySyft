@@ -963,8 +963,20 @@ class _Checker:
 
     # ── path resolution ──────────────────────────────────────────────────────────────────────
     def _resolve(self, path: str) -> str:
-        """Rewrite a dotted path's import alias to its fully-qualified form
-        (`jnp.einsum` -> `jax.numpy.einsum`)."""
+        """Rewrite a call's dotted path to the fully-qualified form the policy matches against.
+
+        Two pieces of state meet here. The call's own dotted text is what the private code *writes*
+        (`jnp.einsum`, `jax.numpy.save`). ``import_bindings`` (built in ``scan_file``) maps each
+        imported *name* -> the fully-qualified path it stands for. We split the call into its root
+        name + the rest of the chain, swap the root for its binding, and keep the rest verbatim:
+
+            `import jax.numpy as jnp`  binds jnp -> "jax.numpy"; `jnp.einsum`     -> `jax.numpy.einsum`
+            `import jax.numpy`         binds jax -> "jax";       `jax.numpy.save` -> `jax.numpy.save`
+
+        Only the alias form rewrites the name to a longer path; a plain `import a.b` binds the root
+        to itself because the call already spells the full path, so we just pass `rest` through. The
+        returned path is what allow_functions/disallow_functions are then checked against.
+        """
         root, _, rest = path.partition(".")
         base = self.scan.import_bindings.get(root, root)
         return f"{base}.{rest}" if rest else base
