@@ -1,7 +1,9 @@
 from pathlib import Path
+
 from typing_extensions import Self
 
 import yaml
+from syft_migration import ProtocolSchema
 
 from .types import PathLike, to_path
 from syft_notebook_ui.types import TableList
@@ -20,18 +22,34 @@ SHARE_WITH_ANY = "any"
 
 
 class SyftDatasetManager:
-    def __init__(self, syftbox_folder_path: PathLike, email: str):
+    def __init__(
+        self,
+        syftbox_folder_path: PathLike,
+        email: str,
+        peer_schemas: dict[str, ProtocolSchema] | None = None,
+    ):
         self.syftbox_config = SyftBoxConfig(
             syftbox_folder=to_path(syftbox_folder_path), email=email
         )
-        # peer_schemas (peer email -> dataset ProtocolSchema) will be filled in by
-        # syft-client later; until then every peer resolves to the widest-
-        # compatible protocol, so datasets are written in that layout.
-        self.storage = DatasetStorage(config=self.syftbox_config)
+        # peer_schemas (peer email -> dataset ProtocolSchema): syft-client
+        # passes PeerManager's live map here (updated in place as peer version
+        # files load). Peers without an entry resolve to the widest-compatible
+        # protocol, so datasets stay readable by unknown-version peers.
+        self.storage = DatasetStorage(
+            config=self.syftbox_config, peer_schemas=peer_schemas
+        )
 
     @classmethod
-    def from_config(cls, config: SyftBoxConfig) -> Self:
-        return cls(syftbox_folder_path=config.syftbox_folder, email=config.email)
+    def from_config(
+        cls,
+        config: SyftBoxConfig,
+        peer_schemas: dict[str, ProtocolSchema] | None = None,
+    ) -> Self:
+        return cls(
+            syftbox_folder_path=config.syftbox_folder,
+            email=config.email,
+            peer_schemas=peer_schemas,
+        )
 
     def create(
         self,

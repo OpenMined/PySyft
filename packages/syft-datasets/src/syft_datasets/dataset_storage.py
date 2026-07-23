@@ -98,10 +98,15 @@ class DatasetStorage:
         self.config = config
         self.registry = registry
         self.service = MigrationService(registry=registry)
-        # peer email -> dataset ProtocolSchema; filled in by syft-client later.
-        # Peers without an entry cannot be assumed to read the current layout, so
+        # peer email -> dataset ProtocolSchema; syft-client passes PeerManager's
+        # live map here (updated in place as peer version files load). Peers
+        # without an entry cannot be assumed to read the current layout, so
         # they resolve to the widest-compatible (oldest) protocol.
-        self.peer_schemas: dict[str, ProtocolSchema] = peer_schemas or {}
+        # `is not None`, not `or`: the live dict starts empty and `or {}` would
+        # drop the shared reference, freezing negotiation at construction time.
+        self.peer_schemas: dict[str, ProtocolSchema] = (
+            peer_schemas if peer_schemas is not None else {}
+        )
         self.codecs = [cls(config) for cls in CODECS]
 
     @property

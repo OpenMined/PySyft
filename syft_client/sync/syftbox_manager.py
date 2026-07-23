@@ -511,11 +511,15 @@ class SyftboxManager(BaseModel):
         datasite_watcher_syncer = None
         job_runner = None
 
-        dataset_manager = SyftDatasetManager.from_config(config.dataset_manager_config)
-        # Created before the job client so its live peer-schema map (filled as
-        # peer version files load) can drive job protocol negotiation.
+        # Created before the job and dataset clients so its live peer-schema
+        # maps (filled as peer version files load) can drive their protocol
+        # negotiation.
         peer_manager = PeerManager.from_config(
             config.peer_manager_config, email=config.email
+        )
+        dataset_manager = SyftDatasetManager.from_config(
+            config.dataset_manager_config,
+            peer_schemas=peer_manager.live_peer_schemas("syft-dataset"),
         )
         job_client = JobClient.from_config(
             config.job_client_config,
