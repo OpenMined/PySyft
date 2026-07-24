@@ -1,5 +1,4 @@
-"""The Remote Data Science client.
-"""
+"""The Remote Data Science client."""
 
 from __future__ import annotations
 
@@ -7,6 +6,8 @@ import logging
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+import yaml
 
 from syft_client.sync.syftbox_manager import SyftboxManager
 from syft_datasets.dataset_manager import (
@@ -48,7 +49,6 @@ class SyftRDSClient:
 
     @classmethod
     def from_config(cls, config: "SyftRDSClientConfig") -> "SyftRDSClient":
-
         sync_engine = SyftboxManager.from_config(config.sync)
         job_client = JobClient.from_config(config.job)
         job_runner = (
@@ -73,9 +73,7 @@ class SyftRDSClient:
                 has_do_role=mgr.has_do_role,
             )
             job_client = JobClient.from_config(job_cfg)
-            job_runner = (
-                SyftJobRunner.from_config(job_cfg) if mgr.has_do_role else None
-            )
+            job_runner = SyftJobRunner.from_config(job_cfg) if mgr.has_do_role else None
             dataset_manager = SyftDatasetManager.from_config(
                 SyftBoxConfig(syftbox_folder=mgr.syftbox_folder, email=mgr.email)
             )
@@ -91,8 +89,7 @@ class SyftRDSClient:
 
     @classmethod
     def pair_with_mock_drive_service_connection(cls, **kwargs):
-        """(ds, do) pair of self-contained RDS clients sharing one mock Drive.
-        """
+        """(ds, do) pair of self-contained RDS clients sharing one mock Drive."""
         ds_mgr, do_mgr = SyftboxManager.pair_with_mock_drive_service_connection(
             collection_specs=DATASET_COLLECTION_SPECS, **kwargs
         )
@@ -100,13 +97,12 @@ class SyftRDSClient:
 
     @classmethod
     def _pair_with_google_drive_testing_connection(cls, **kwargs):
-        """(ds, do) pair of self-contained RDS clients sharing a REAL Google Drive.
-        """
+        """(ds, do) pair of self-contained RDS clients sharing a REAL Google Drive."""
         ds_mgr, do_mgr = SyftboxManager._pair_with_google_drive_testing_connection(
             collection_specs=DATASET_COLLECTION_SPECS, **kwargs
         )
         return cls._build_rds_pair_from_managers(ds_mgr, do_mgr)
-    
+
     @property
     def sync_engine(self) -> SyftboxManager:
         return self._sync
@@ -191,9 +187,7 @@ class SyftRDSClient:
             self._job_client.setup_ds_job_folder_as_do(peer_email)
             self._share_any_datasets_with_peer(peer_email)
 
-    def _on_collection_restored(
-        self, prefix: str, tag: str, local_dir: Any
-    ) -> None:
+    def _on_collection_restored(self, prefix: str, tag: str, local_dir: Any) -> None:
         """A collection was restored from the backend by the owner-syncer.
 
         For the PRIVATE dataset collection, rewrite ``private_metadata.yaml``'s
@@ -201,17 +195,17 @@ class SyftRDSClient:
         can locate the real data after a restore onto a new machine/path. This is
         dataset domain knowledge, so it lives here (rds) rather than the sync core.
         """
-        from syft_datasets.dataset_manager import PRIVATE_DATASET_COLLECTION_PREFIX
-
         if prefix != PRIVATE_DATASET_COLLECTION_PREFIX:
             return
-
-        import yaml
 
         metadata_path = Path(local_dir) / "private_metadata.yaml"
         if not metadata_path.exists():
             return
         data = yaml.safe_load(metadata_path.read_text())
+        if not data:
+            # Missing or empty file: nothing to rewrite (and guards against
+            # yaml.safe_load returning None on an empty file).
+            return
         expected_dir = str(local_dir)
         if data.get("data_dir") != expected_dir:
             data["data_dir"] = expected_dir
@@ -220,7 +214,7 @@ class SyftRDSClient:
     def _on_peers_loaded(self, *args: Any, **kwargs: Any) -> None:
         """Peers were (re)loaded: copy each peer's advertised install source
         into our owned job client so submitted run.sh references the DO's path."""
-        for peer in self._sync.peer_manager.peer_store.syncable_peers:
+        for peer in self._sync.peer_manager.syncable_peers:
             if peer.version:
                 self._job_client.peer_install_sources[peer.email] = (
                     peer.version.syft_client_install_source
@@ -233,7 +227,10 @@ class SyftRDSClient:
         so explicit user sharing is added. Reads the cache populated during
         ``pull_initial_state()`` in the nested DatasiteOwnerSyncer.
         """
-        for tag, content_hash in self._sync.datasite_owner_syncer._any_shared_collections:
+        for (
+            tag,
+            content_hash,
+        ) in self._sync.datasite_owner_syncer._any_shared_collections:
             try:
                 self._sync._connection_router.owner_share_collection(
                     DATASET_COLLECTION_PREFIX, tag, content_hash, [peer_email]
@@ -323,9 +320,14 @@ class SyftRDSClient:
         print("   Check progress with: client.jobs")
 
     @property
+    def _pre_sync_enabled(self) -> bool:
+        """Whether accessors auto-sync (disabled by setting ``PRE_SYNC=false``)."""
+        return os.environ.get("PRE_SYNC", "true").lower() == "true"
+
+    @property
     def jobs(self) -> Any:
         """List of jobs. Auto-syncs first unless PRE_SYNC=false."""
-        if os.environ.get("PRE_SYNC", "true").lower() == "true":
+        if self._pre_sync_enabled:
             self._sync.sync()
         return self._job_client.jobs
 
@@ -368,7 +370,7 @@ class SyftRDSClient:
             share_logs_with_submitter=share_logs_with_submitter,
         )
 
-        if os.environ.get("PRE_SYNC", "true").lower() == "true":
+        if self._pre_sync_enabled:
             self._sync.sync()
 
     # ------------------------------------------------------------------ #
@@ -475,15 +477,31 @@ class SyftRDSClient:
                     dataset_name,
                 )
 
-    def _upload_dataset_to_collection(self, dataset, users: list[str] | str) -> str:
-        """Upload dataset files to collection folder. Returns the folder ID."""
+    def _create_and_upload_collection(
+        self, prefix: str, tag: str, files: dict[str, bytes]
+    ) -> tuple[str, str]:
+        """Create a hash-named collection folder and upload its files.
+
+        Returns ``(folder_id, content_hash)``.
+        """
         from syft_client.sync.connections.drive.gdrive_transport import (
             CollectionFolder,
         )
 
-        collection_tag = dataset.name
+        content_hash = CollectionFolder.compute_hash(files)
+        folder_id = self._sync._connection_router.owner_create_collection_folder(
+            prefix,
+            tag=tag,
+            content_hash=content_hash,
+            owner_email=self.email,
+        )
+        self._sync._connection_router.owner_upload_collection_files(
+            prefix, tag, content_hash, files
+        )
+        return folder_id, content_hash
 
-        # Prepare files to upload
+    def _collect_mock_files(self, dataset) -> dict[str, bytes]:
+        """Read a dataset's mock files, metadata and readme into a name->bytes map."""
         files = {}
         for mock_file in dataset.mock_files:
             if mock_file.exists():
@@ -495,51 +513,44 @@ class SyftRDSClient:
 
         if dataset.readme_path and dataset.readme_path.exists():
             files[dataset.readme_path.name] = dataset.readme_path.read_bytes()
+        return files
 
-        # Compute content hash
-        content_hash = CollectionFolder.compute_hash(files)
-
-        # Create collection folder with hash in name
-        folder_id = self._sync._connection_router.owner_create_collection_folder(
-            DATASET_COLLECTION_PREFIX,
-            tag=collection_tag,
-            content_hash=content_hash,
-            owner_email=self.email,
-        )
-
-        # Upload files
-        self._sync._connection_router.owner_upload_collection_files(
-            DATASET_COLLECTION_PREFIX, collection_tag, content_hash, files
-        )
-
-        # Share with users
+    def _share_dataset_collection(
+        self, tag: str, content_hash: str, users: list[str] | str
+    ) -> None:
+        """Share a dataset collection with ``users``, or tag it ``"any"`` and
+        share with all already-approved peers."""
         if users == "any":
             self._sync._connection_router.owner_tag_collection_as_any(
-                DATASET_COLLECTION_PREFIX, collection_tag, content_hash
+                DATASET_COLLECTION_PREFIX, tag, content_hash
             )
             self._sync.datasite_owner_syncer._any_shared_collections.append(
-                (collection_tag, content_hash)
+                (tag, content_hash)
             )
-            # Share with all already-approved peers
             peer_emails = [p.email for p in self._sync.peer_manager.approved_peers]
             if peer_emails:
                 self._sync._connection_router.owner_share_collection(
-                    DATASET_COLLECTION_PREFIX, collection_tag, content_hash, peer_emails
+                    DATASET_COLLECTION_PREFIX, tag, content_hash, peer_emails
                 )
         else:
+            if isinstance(users, str):
+                users = [users]
             self._sync._connection_router.owner_share_collection(
-                DATASET_COLLECTION_PREFIX, collection_tag, content_hash, users
+                DATASET_COLLECTION_PREFIX, tag, content_hash, users
             )
 
+    def _upload_dataset_to_collection(self, dataset, users: list[str] | str) -> str:
+        """Upload dataset files to collection folder. Returns the folder ID."""
+        files = self._collect_mock_files(dataset)
+        folder_id, content_hash = self._create_and_upload_collection(
+            DATASET_COLLECTION_PREFIX, dataset.name, files
+        )
+        self._share_dataset_collection(dataset.name, content_hash, users)
         return folder_id
 
     def _upload_private_dataset_to_collection(self, dataset) -> str | None:
         """Upload private dataset files to a separate owner-only collection folder.
         Returns the folder ID, or None if no files to upload."""
-        from syft_client.sync.connections.drive.gdrive_transport import (
-            CollectionFolder,
-        )
-
         collection_tag = dataset.name
 
         # Collect all files in private dir (data, metadata, permissions)
@@ -551,21 +562,10 @@ class SyftRDSClient:
         if not files:
             return None
 
-        content_hash = CollectionFolder.compute_hash(files)
-
-        # Create private collection folder (no sharing)
-        folder_id = self._sync._connection_router.owner_create_collection_folder(
-            PRIVATE_DATASET_COLLECTION_PREFIX,
-            tag=collection_tag,
-            content_hash=content_hash,
-            owner_email=self.email,
+        # Private collection: no sharing step.
+        folder_id, _ = self._create_and_upload_collection(
+            PRIVATE_DATASET_COLLECTION_PREFIX, collection_tag, files
         )
-
-        # Upload files
-        self._sync._connection_router.owner_upload_collection_files(
-            PRIVATE_DATASET_COLLECTION_PREFIX, collection_tag, content_hash, files
-        )
-
         return folder_id
 
     def delete_dataset(
@@ -626,38 +626,10 @@ class SyftRDSClient:
         if dataset is None:
             raise ValueError(f"Dataset {tag} not found")
 
-        # Compute current content hash from local files
-        files = {}
-        for mock_file in dataset.mock_files:
-            if mock_file.exists():
-                files[mock_file.name] = mock_file.read_bytes()
-        metadata_path = dataset.mock_dir / "dataset.yaml"
-        if metadata_path.exists():
-            files["dataset.yaml"] = metadata_path.read_bytes()
-        if dataset.readme_path and dataset.readme_path.exists():
-            files[dataset.readme_path.name] = dataset.readme_path.read_bytes()
-
+        # Compute current content hash from local files, then share.
+        files = self._collect_mock_files(dataset)
         content_hash = CollectionFolder.compute_hash(files)
-
-        # Share collection
-        if users == "any":
-            self._sync._connection_router.owner_tag_collection_as_any(
-                DATASET_COLLECTION_PREFIX, tag, content_hash
-            )
-            self._sync.datasite_owner_syncer._any_shared_collections.append(
-                (tag, content_hash)
-            )
-            peer_emails = [p.email for p in self._sync.peer_manager.approved_peers]
-            if peer_emails:
-                self._sync._connection_router.owner_share_collection(
-                    DATASET_COLLECTION_PREFIX, tag, content_hash, peer_emails
-                )
-        else:
-            if isinstance(users, str):
-                users = [users]
-            self._sync._connection_router.owner_share_collection(
-                DATASET_COLLECTION_PREFIX, tag, content_hash, users
-            )
+        self._share_dataset_collection(tag, content_hash, users)
 
         if sync:
             self.sync()
@@ -686,7 +658,7 @@ class SyftRDSClient:
         if self._dataset_manager is None:
             raise ValueError("Dataset manager is not set")
 
-        if os.environ.get("PRE_SYNC", "true").lower() == "true":
+        if self._pre_sync_enabled:
             self._sync.sync()
 
         return self._dataset_manager

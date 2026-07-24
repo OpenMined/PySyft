@@ -76,6 +76,22 @@ def get_colab_default_syftbox_folder(email: str):
     return Path("/content") / f"SyftBox_{email}"
 
 
+def default_collections_folder(
+    syftbox_folder: Path | str,
+    email: str,
+    collection_specs: list["CollectionSyncSpec"],
+) -> Path | None:
+    """Local folder holding a datasite's collections.
+
+    Derived from the first (public) collection spec by convention; returns
+    ``None`` when no specs are configured (the generic engine has no
+    collections of its own).
+    """
+    if not collection_specs:
+        return None
+    return Path(syftbox_folder) / email / collection_specs[0].local_subpath
+
+
 class SyftboxManagerConfig(BaseModel):
     email: str
     syftbox_folder: Path
@@ -113,10 +129,8 @@ class SyftboxManagerConfig(BaseModel):
 
         syftbox_folder = get_colab_default_syftbox_folder(email)
         use_in_memory_cache = False
-        collections_folder = (
-            syftbox_folder / email / collection_specs[0].local_subpath
-            if collection_specs
-            else None
+        collections_folder = default_collections_folder(
+            syftbox_folder, email, collection_specs
         )
         connection_configs = [GdriveConnectionConfig(email=email, token_path=None)]
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
@@ -192,10 +206,8 @@ class SyftboxManagerConfig(BaseModel):
             collection_specs = []
 
         syftbox_folder = get_jupyter_default_syftbox_folder(email)
-        collections_folder = (
-            syftbox_folder / email / collection_specs[0].local_subpath
-            if collection_specs
-            else None
+        collections_folder = default_collections_folder(
+            syftbox_folder, email, collection_specs
         )
 
         connection_configs = [
@@ -269,10 +281,8 @@ class SyftboxManagerConfig(BaseModel):
 
         syftbox_folder = syftbox_folder or random_syftbox_folder_for_testing()
         email = email or random_email()
-        collections_folder = (
-            syftbox_folder / email / collection_specs[0].local_subpath
-            if collection_specs
-            else None
+        collections_folder = default_collections_folder(
+            syftbox_folder, email, collection_specs
         )
 
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
@@ -342,10 +352,8 @@ class SyftboxManagerConfig(BaseModel):
 
         syftbox_folder = syftbox_folder or random_syftbox_folder_for_testing()
         email = email or random_email()
-        collections_folder = (
-            Path(syftbox_folder) / email / collection_specs[0].local_subpath
-            if collection_specs
-            else None
+        collections_folder = default_collections_folder(
+            syftbox_folder, email, collection_specs
         )
         connection_configs = [
             GdriveConnectionConfig(email=email, token_path=token_path)
