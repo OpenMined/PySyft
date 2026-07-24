@@ -350,13 +350,27 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             )
             self._download_collections_parallel(collections_to_download, spec)
 
+    @property
+    def any_shared_collections(self) -> List[tuple]:
+        """Collections shared with "any" as (tag, content_hash) pairs.
+
+        Read-only view: mutate via ``register_any_shared_collection``.
+        """
+        return list(self._any_shared_collections)
+
+    def register_any_shared_collection(self, tag: str, content_hash: str) -> None:
+        """Record a collection as shared-with-"any" (deduplicated)."""
+        entry = (tag, content_hash)
+        if entry not in self._any_shared_collections:
+            self._any_shared_collections.append(entry)
+
     def _update_any_shared_collections_cache(self, collections: list[FileCollection]):
-        """Populate _any_shared_collections cache from collections with 'any' permission."""
+        """Populate the any-shared cache from collections with 'any' permission."""
         for collection in collections:
             if collection.has_any_permission:
-                entry = (collection.tag, collection.content_hash)
-                if entry not in self._any_shared_collections:
-                    self._any_shared_collections.append(entry)
+                self.register_any_shared_collection(
+                    collection.tag, collection.content_hash
+                )
 
     def _filter_collections_needing_download(
         self, collections: list[FileCollection], spec: CollectionSyncSpec
@@ -436,7 +450,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 )
 
         # Notify the domain layer (e.g. syft-rds) that these collections were restored,
-        # so it can run any collection-specific post-processing 
+        # so it can run any collection-specific post-processing
         for collection in collections:
             self._emit(
                 "collection_restored",

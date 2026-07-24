@@ -230,7 +230,7 @@ class SyftRDSClient:
         for (
             tag,
             content_hash,
-        ) in self._sync.datasite_owner_syncer._any_shared_collections:
+        ) in self._sync.datasite_owner_syncer.any_shared_collections:
             try:
                 self._sync._connection_router.owner_share_collection(
                     DATASET_COLLECTION_PREFIX, tag, content_hash, [peer_email]
@@ -524,8 +524,8 @@ class SyftRDSClient:
             self._sync._connection_router.owner_tag_collection_as_any(
                 DATASET_COLLECTION_PREFIX, tag, content_hash
             )
-            self._sync.datasite_owner_syncer._any_shared_collections.append(
-                (tag, content_hash)
+            self._sync.datasite_owner_syncer.register_any_shared_collection(
+                tag, content_hash
             )
             peer_emails = [p.email for p in self._sync.peer_manager.approved_peers]
             if peer_emails:
