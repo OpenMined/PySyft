@@ -249,7 +249,6 @@ class SyftRDSClient(BaseModel):
         user: str,
         script: str,
         job_name: str = "",
-        sync=True,
         force_submission: bool = False,
         ignore_peer_version: bool = False,
     ):
@@ -272,7 +271,6 @@ class SyftRDSClient(BaseModel):
         job_name: str | None = "",
         dependencies: list[str] | None = None,
         entrypoint: str | None = None,
-        sync=True,
         force_submission: bool = False,
         ignore_peer_version: bool = False,
     ):
