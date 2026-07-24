@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import yaml
+from pydantic import BaseModel, ConfigDict
 
 from syft_client.sync.syftbox_manager import SyftboxManager
 from syft_datasets.dataset_manager import (
@@ -29,27 +30,27 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SyftRDSClient:
-    def __init__(
-        self,
-        sync_engine: SyftboxManager,
-        job_client: JobClient,
-        job_runner: SyftJobRunner | None,
-        dataset_manager: SyftDatasetManager,
-    ) -> None:
-        # The nested generic sync engine (composition).
-        self._sync: SyftboxManager = sync_engine
-        # RDS-owned domain managers.
-        self._job_client: JobClient = job_client
-        self._job_runner: SyftJobRunner | None = job_runner
-        self._dataset_manager: SyftDatasetManager = dataset_manager
+class SyftRDSClient(BaseModel):
+    # Holds live service objects (sync engine + RDS-owned managers), not
+    # serializable data, so arbitrary types are allowed.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    # The nested generic sync engine (composition).
+    sync_engine: SyftboxManager
+    # RDS-owned domain managers, exposed so consumers (e.g. syft-enclave, which
+    # wraps the job client) can read/replace them.
+    job_client: JobClient
+    job_runner: SyftJobRunner | None = None
+    dataset_manager: SyftDatasetManager
+
+    def model_post_init(self, __context: Any) -> None:
         # React to sync-engine peer lifecycle events with RDS-owned logic.
-        self._sync.on("peer_approved", self._on_peer_approved)
-        self._sync.on("peers_loaded", self._on_peers_loaded)
+        self.sync_engine.on("peer_approved", self._on_peer_approved)
+        self.sync_engine.on("peers_loaded", self._on_peers_loaded)
         # React to collection restores so RDS can run dataset-specific post-processing
         # (the private dataset's data_dir fixup) without the sync core knowing datasets.
-        if self._sync.datasite_owner_syncer is not None:
-            self._sync.datasite_owner_syncer.on(
+        if self.sync_engine.datasite_owner_syncer is not None:
+            self.sync_engine.datasite_owner_syncer.on(
                 "collection_restored", self._on_collection_restored
             )
 
@@ -61,7 +62,12 @@ class SyftRDSClient:
             SyftJobRunner.from_config(config.job) if config.sync.has_do_role else None
         )
         dataset_manager = SyftDatasetManager.from_config(config.dataset)
-        return cls(sync_engine, job_client, job_runner, dataset_manager)
+        return cls(
+            sync_engine=sync_engine,
+            job_client=job_client,
+            job_runner=job_runner,
+            dataset_manager=dataset_manager,
+        )
 
     @classmethod
     def _build_rds_pair_from_managers(
@@ -85,7 +91,12 @@ class SyftRDSClient:
             dataset_manager = SyftDatasetManager.from_config(
                 SyftBoxConfig(syftbox_folder=mgr.syftbox_folder, email=mgr.email)
             )
-            return cls(mgr, job_client, job_runner, dataset_manager)
+            return cls(
+                sync_engine=mgr,
+                job_client=job_client,
+                job_runner=job_runner,
+                dataset_manager=dataset_manager,
+            )
 
         ds_rds = _build(ds_mgr)
         do_rds = _build(do_mgr)
@@ -115,54 +126,28 @@ class SyftRDSClient:
         )
         return cls._build_rds_pair_from_managers(ds_mgr, do_mgr)
 
-    @property
-    def sync_engine(self) -> SyftboxManager:
-        return self._sync
-
-    # RDS-owned domain managers, exposed so consumers (e.g. syft-enclave, which
-    # wraps the job client) can read/replace them.
-    @property
-    def job_client(self) -> Any:
-        return self._job_client
-
-    @job_client.setter
-    def job_client(self, value: Any) -> None:
-        self._job_client = value
-
-    @property
-    def job_runner(self) -> Any:
-        return self._job_runner
-
-    @job_runner.setter
-    def job_runner(self, value: Any) -> None:
-        self._job_runner = value
-
-    @property
-    def dataset_manager(self) -> Any:
-        return self._dataset_manager
-
     # ------------------------------------------------------------------ #
     # delegated identity + sync surface (owned by the generic core)
     # ------------------------------------------------------------------ #
     @property
     def email(self) -> str:
-        return self._sync.email
+        return self.sync_engine.email
 
     @property
     def syftbox_folder(self) -> Path:
-        return self._sync.syftbox_folder
+        return self.sync_engine.syftbox_folder
 
     @property
     def has_do_role(self) -> bool:
-        return self._sync.has_do_role
+        return self.sync_engine.has_do_role
 
     @property
     def has_ds_role(self) -> bool:
-        return self._sync.has_ds_role
+        return self.sync_engine.has_ds_role
 
     @property
     def peer_manager(self) -> Any:
-        return self._sync.peer_manager
+        return self.sync_engine.peer_manager
 
     @property
     def peers(self) -> Any:
@@ -170,25 +155,25 @@ class SyftRDSClient:
 
         Auto-syncs first when ``PRE_SYNC`` is enabled (the engine's behavior).
         """
-        return self._sync.peers
+        return self.sync_engine.peers
 
     def sync(self, *args: Any, **kwargs: Any) -> Any:
-        return self._sync.sync(*args, **kwargs)
+        return self.sync_engine.sync(*args, **kwargs)
 
     def add_peer(self, *args: Any, **kwargs: Any) -> Any:
-        return self._sync.add_peer(*args, **kwargs)
+        return self.sync_engine.add_peer(*args, **kwargs)
 
     def approve_peer_request(self, *args: Any, **kwargs: Any) -> Any:
-        return self._sync.approve_peer_request(*args, **kwargs)
+        return self.sync_engine.approve_peer_request(*args, **kwargs)
 
     def reject_peer_request(self, *args: Any, **kwargs: Any) -> Any:
-        return self._sync.reject_peer_request(*args, **kwargs)
+        return self.sync_engine.reject_peer_request(*args, **kwargs)
 
     def load_peers(self, *args: Any, **kwargs: Any) -> Any:
-        return self._sync.load_peers(*args, **kwargs)
+        return self.sync_engine.load_peers(*args, **kwargs)
 
     def delete_syftbox(self, *args: Any, **kwargs: Any) -> Any:
-        return self._sync.delete_syftbox(*args, **kwargs)
+        return self.sync_engine.delete_syftbox(*args, **kwargs)
 
     # ------------------------------------------------------------------ #
     # peer lifecycle callbacks (RDS-owned reactions to sync events)
@@ -196,7 +181,7 @@ class SyftRDSClient:
     def _on_peer_approved(self, peer_email: str) -> None:
         """A peer was approved: set up their DS job folder and share datasets."""
         if self.has_do_role:
-            self._job_client.setup_ds_job_folder_as_do(peer_email)
+            self.job_client.setup_ds_job_folder_as_do(peer_email)
             self._share_any_datasets_with_peer(peer_email)
 
     def _on_collection_restored(self, prefix: str, tag: str, local_dir: Any) -> None:
@@ -226,9 +211,9 @@ class SyftRDSClient:
     def _on_peers_loaded(self, *args: Any, **kwargs: Any) -> None:
         """Peers were (re)loaded: copy each peer's advertised install source
         into our owned job client so submitted run.sh references the DO's path."""
-        for peer in self._sync.peer_manager.syncable_peers:
+        for peer in self.sync_engine.peer_manager.syncable_peers:
             if peer.version:
-                self._job_client.peer_install_sources[peer.email] = (
+                self.job_client.peer_install_sources[peer.email] = (
                     peer.version.syft_client_install_source
                 )
 
@@ -242,9 +227,9 @@ class SyftRDSClient:
         for (
             tag,
             content_hash,
-        ) in self._sync.datasite_owner_syncer.any_shared_collections:
+        ) in self.sync_engine.datasite_owner_syncer.any_shared_collections:
             try:
-                self._sync._connection_router.owner_share_collection(
+                self.sync_engine._connection_router.owner_share_collection(
                     DATASET_COLLECTION_PREFIX, tag, content_hash, [peer_email]
                 )
             except Exception:
@@ -270,15 +255,15 @@ class SyftRDSClient:
     ):
         # Check version compatibility before submission (uses cached versions)
         if not force_submission:
-            result = self._sync.peer_manager.get_peer_compatibility_status(
+            result = self.sync_engine.peer_manager.get_peer_compatibility_status(
                 user,
                 action=CompatAction.SUBMIT,
                 ignore_peer_version=ignore_peer_version,
             )
             result.raise_on_skip(operation="submit job")
             result.maybe_warn()
-        job_dir = self._job_client.submit_bash_job(user, script, job_name=job_name)
-        self._sync.push_job_files(job_dir)
+        job_dir = self.job_client.submit_bash_job(user, script, job_name=job_name)
+        self.sync_engine.push_job_files(job_dir)
 
     def submit_python_job(
         self,
@@ -291,7 +276,7 @@ class SyftRDSClient:
         force_submission: bool = False,
         ignore_peer_version: bool = False,
     ):
-        peer_emails = {p.email for p in self._sync.peer_manager.syncable_peers}
+        peer_emails = {p.email for p in self.sync_engine.peer_manager.syncable_peers}
         if user not in peer_emails:
             print(f"⚠️  {user} is not in your peer list.")
             print(f"   Add them first with: client.add_peer('{user}')")
@@ -310,21 +295,21 @@ class SyftRDSClient:
 
         # Check version compatibility before submission (uses cached versions)
         if not force_submission:
-            result = self._sync.peer_manager.get_peer_compatibility_status(
+            result = self.sync_engine.peer_manager.get_peer_compatibility_status(
                 user,
                 action=CompatAction.SUBMIT,
                 ignore_peer_version=ignore_peer_version,
             )
             result.raise_on_skip(operation="submit job")
             result.maybe_warn()
-        job_dir = self._job_client.submit_python_job(
+        job_dir = self.job_client.submit_python_job(
             user,
             code_path,
             job_name=job_name,
             dependencies=dependencies,
             entrypoint=entrypoint,
         )
-        self._sync.push_job_files(job_dir)
+        self.sync_engine.push_job_files(job_dir)
 
         print("\n✅ Job submitted successfully!")
         print("   Status : inbox (waiting for DO to review)")
@@ -340,8 +325,8 @@ class SyftRDSClient:
     def jobs(self) -> Any:
         """List of jobs. Auto-syncs first unless PRE_SYNC=false."""
         if self._pre_sync_enabled:
-            self._sync.sync()
-        return self._job_client.jobs
+            self.sync_engine.sync()
+        return self.job_client.jobs
 
     def process_approved_jobs(
         self,
@@ -355,17 +340,17 @@ class SyftRDSClient:
         """Process approved jobs (DO only). Auto-syncs after unless PRE_SYNC=false."""
         if not self.has_do_role:
             raise ValueError("Only dataset owners can process approved jobs")
-        if self._job_runner is None:
+        if self.job_runner is None:
             raise ValueError("Job runner is not configured for this client")
 
         skip_job_names = []
 
         if not force_execution:
             approved_jobs = [
-                job for job in self._job_client.jobs if job.status == "approved"
+                job for job in self.job_client.jobs if job.status == "approved"
             ]
             for job in approved_jobs:
-                result = self._sync.peer_manager.get_peer_compatibility_status(
+                result = self.sync_engine.peer_manager.get_peer_compatibility_status(
                     job.submitted_by,
                     action=CompatAction.EXECUTE,
                     ignore_peer_version=ignore_peer_version,
@@ -374,7 +359,7 @@ class SyftRDSClient:
                 if result.should_skip:
                     skip_job_names.append(job.name)
 
-        self._job_runner.process_approved_jobs(
+        self.job_runner.process_approved_jobs(
             stream_output=stream_output,
             timeout=timeout,
             skip_job_names=skip_job_names if skip_job_names else None,
@@ -383,7 +368,7 @@ class SyftRDSClient:
         )
 
         if self._pre_sync_enabled:
-            self._sync.sync()
+            self.sync_engine.sync()
 
     # ------------------------------------------------------------------ #
     # dataset product surface (RDS-owned)
@@ -401,7 +386,7 @@ class SyftRDSClient:
         upload_private: bool = False,
         sync=True,
     ):
-        if self._dataset_manager is None:
+        if self.dataset_manager is None:
             raise ValueError("Dataset manager is not set")
 
         # Only DO can create datasets
@@ -419,7 +404,7 @@ class SyftRDSClient:
 
         try:
             # Create dataset locally
-            dataset = self._dataset_manager.create(
+            dataset = self.dataset_manager.create(
                 name=name,
                 mock_path=mock_path,
                 private_path=private_path,
@@ -464,7 +449,7 @@ class SyftRDSClient:
         """Best-effort cleanup after a failed create_dataset, in reverse order."""
         if private_folder_id is not None:
             try:
-                self._sync._connection_router.delete_file_by_id(private_folder_id)
+                self.sync_engine._connection_router.delete_file_by_id(private_folder_id)
             except Exception:
                 logger.warning(
                     "Cleanup: failed to delete private GDrive folder %s",
@@ -473,7 +458,7 @@ class SyftRDSClient:
 
         if mock_folder_id is not None:
             try:
-                self._sync._connection_router.delete_file_by_id(mock_folder_id)
+                self.sync_engine._connection_router.delete_file_by_id(mock_folder_id)
             except Exception:
                 logger.warning(
                     "Cleanup: failed to delete mock GDrive folder %s",
@@ -482,7 +467,7 @@ class SyftRDSClient:
 
         if created_local and dataset_name is not None:
             try:
-                self._dataset_manager.delete(dataset_name, require_confirmation=False)
+                self.dataset_manager.delete(dataset_name, require_confirmation=False)
             except Exception:
                 logger.warning(
                     "Cleanup: failed to delete local dataset '%s'",
@@ -501,13 +486,13 @@ class SyftRDSClient:
         )
 
         content_hash = CollectionFolder.compute_hash(files)
-        folder_id = self._sync._connection_router.owner_create_collection_folder(
+        folder_id = self.sync_engine._connection_router.owner_create_collection_folder(
             prefix,
             tag=tag,
             content_hash=content_hash,
             owner_email=self.email,
         )
-        self._sync._connection_router.owner_upload_collection_files(
+        self.sync_engine._connection_router.owner_upload_collection_files(
             prefix, tag, content_hash, files
         )
         return folder_id, content_hash
@@ -533,21 +518,23 @@ class SyftRDSClient:
         """Share a dataset collection with ``users``, or tag it ``"any"`` and
         share with all already-approved peers."""
         if users == "any":
-            self._sync._connection_router.owner_tag_collection_as_any(
+            self.sync_engine._connection_router.owner_tag_collection_as_any(
                 DATASET_COLLECTION_PREFIX, tag, content_hash
             )
-            self._sync.datasite_owner_syncer.register_any_shared_collection(
+            self.sync_engine.datasite_owner_syncer.register_any_shared_collection(
                 tag, content_hash
             )
-            peer_emails = [p.email for p in self._sync.peer_manager.approved_peers]
+            peer_emails = [
+                p.email for p in self.sync_engine.peer_manager.approved_peers
+            ]
             if peer_emails:
-                self._sync._connection_router.owner_share_collection(
+                self.sync_engine._connection_router.owner_share_collection(
                     DATASET_COLLECTION_PREFIX, tag, content_hash, peer_emails
                 )
         else:
             if isinstance(users, str):
                 users = [users]
-            self._sync._connection_router.owner_share_collection(
+            self.sync_engine._connection_router.owner_share_collection(
                 DATASET_COLLECTION_PREFIX, tag, content_hash, users
             )
 
@@ -587,9 +574,9 @@ class SyftRDSClient:
         require_confirmation: bool = True,
         sync=True,
     ):
-        if self._dataset_manager is None:
+        if self.dataset_manager is None:
             raise ValueError("Dataset manager is not set")
-        self._dataset_manager.delete(
+        self.dataset_manager.delete(
             name=name,
             datasite=datasite,
             require_confirmation=require_confirmation,
@@ -597,13 +584,13 @@ class SyftRDSClient:
         # Delete collection folders from Google Drive so DS peers
         # pick up the deletion on their next sync.
         try:
-            self._sync._connection_router.owner_delete_collection(
+            self.sync_engine._connection_router.owner_delete_collection(
                 DATASET_COLLECTION_PREFIX, name
             )
         except Exception:
             logger.warning("Failed to delete dataset collection '%s' from Drive", name)
         try:
-            self._sync._connection_router.owner_delete_collection(
+            self.sync_engine._connection_router.owner_delete_collection(
                 PRIVATE_DATASET_COLLECTION_PREFIX, name
             )
         except Exception:
@@ -627,14 +614,14 @@ class SyftRDSClient:
             CollectionFolder,
         )
 
-        if self._dataset_manager is None:
+        if self.dataset_manager is None:
             raise ValueError("Dataset manager is not set")
 
         if not self.has_do_role:
             raise ValueError("Only dataset owners can share datasets")
 
         # Verify dataset exists
-        dataset = self._dataset_manager.get(name=tag, datasite=self.email)
+        dataset = self.dataset_manager.get(name=tag, datasite=self.email)
         if dataset is None:
             raise ValueError(f"Dataset {tag} not found")
 
@@ -651,29 +638,27 @@ class SyftRDSClient:
         if not self.has_do_role:
             raise ValueError("Only data owners can share private datasets")
 
-        with self._sync._sync_file_lock():
-            files = self._dataset_manager.get_private_dataset_files(tag)
-            events_message = (
-                self._sync.datasite_owner_syncer.event_cache.create_events_for_files(
-                    files
-                )
+        with self.sync_engine._sync_file_lock():
+            files = self.dataset_manager.get_private_dataset_files(tag)
+            events_message = self.sync_engine.datasite_owner_syncer.event_cache.create_events_for_files(
+                files
             )
-            self._sync.datasite_owner_syncer.queue_event_for_syftbox(
+            self.sync_engine.datasite_owner_syncer.queue_event_for_syftbox(
                 recipients=[enclave_email],
                 file_change_events_message=events_message,
             )
-            self._sync.datasite_owner_syncer.process_syftbox_events_queue()
+            self.sync_engine.datasite_owner_syncer.process_syftbox_events_queue()
 
     @property
     def datasets(self) -> Any:
         """The dataset manager. Auto-syncs first unless PRE_SYNC=false."""
-        if self._dataset_manager is None:
+        if self.dataset_manager is None:
             raise ValueError("Dataset manager is not set")
 
         if self._pre_sync_enabled:
-            self._sync.sync()
+            self.sync_engine.sync()
 
-        return self._dataset_manager
+        return self.dataset_manager
 
     def _resolve_dataset_owners_for_name(self, dataset_name: str) -> list:
         """Resolve which datasite(s) own a dataset of the given name.
@@ -683,9 +668,9 @@ class SyftRDSClient:
         """
         return [
             dataset.owner
-            for dataset in self._dataset_manager.get_all()
+            for dataset in self.dataset_manager.get_all()
             if dataset.name == dataset_name
         ]
 
     def __repr__(self) -> str:
-        return f"SyftRDSClient(email={self._sync.email!r})"
+        return f"SyftRDSClient(email={self.sync_engine.email!r})"
