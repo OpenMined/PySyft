@@ -38,11 +38,11 @@ class SyftRDSClient:
         dataset_manager: SyftDatasetManager,
     ) -> None:
         # The nested generic sync engine (composition).
-        self._sync = sync_engine
+        self._sync: SyftboxManager = sync_engine
         # RDS-owned domain managers.
-        self._job_client = job_client
-        self._job_runner = job_runner
-        self._dataset_manager = dataset_manager
+        self._job_client: JobClient = job_client
+        self._job_runner: SyftJobRunner | None = job_runner
+        self._dataset_manager: SyftDatasetManager = dataset_manager
         # React to sync-engine peer lifecycle events with RDS-owned logic.
         self._sync.on("peer_approved", self._on_peer_approved)
         self._sync.on("peers_loaded", self._on_peers_loaded)
