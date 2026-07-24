@@ -30,7 +30,13 @@ logger = logging.getLogger(__name__)
 
 
 class SyftRDSClient:
-    def __init__(self, sync_engine, job_client, job_runner, dataset_manager):
+    def __init__(
+        self,
+        sync_engine: SyftboxManager,
+        job_client: JobClient,
+        job_runner: SyftJobRunner | None,
+        dataset_manager: SyftDatasetManager,
+    ) -> None:
         # The nested generic sync engine (composition).
         self._sync = sync_engine
         # RDS-owned domain managers.
@@ -58,7 +64,9 @@ class SyftRDSClient:
         return cls(sync_engine, job_client, job_runner, dataset_manager)
 
     @classmethod
-    def _build_rds_pair_from_managers(cls, ds_mgr, do_mgr):
+    def _build_rds_pair_from_managers(
+        cls, ds_mgr: SyftboxManager, do_mgr: SyftboxManager
+    ) -> tuple["SyftRDSClient", "SyftRDSClient"]:
         """Wrap a paired ``(ds, do)`` ``SyftboxManager`` tuple into RDS clients.
 
         Peers were already approved/loaded during pairing (before our callbacks
@@ -66,7 +74,7 @@ class SyftRDSClient:
         ``JobClient`` has the DS job folders + install sources.
         """
 
-        def _build(mgr) -> "SyftRDSClient":
+        def _build(mgr: SyftboxManager) -> "SyftRDSClient":
             job_cfg = SyftJobConfig(
                 syftbox_folder=Path(mgr.syftbox_folder),
                 current_user_email=mgr.email,
@@ -88,7 +96,9 @@ class SyftRDSClient:
         return ds_rds, do_rds
 
     @classmethod
-    def pair_with_mock_drive_service_connection(cls, **kwargs):
+    def pair_with_mock_drive_service_connection(
+        cls, **kwargs: Any
+    ) -> tuple["SyftRDSClient", "SyftRDSClient"]:
         """(ds, do) pair of self-contained RDS clients sharing one mock Drive."""
         ds_mgr, do_mgr = SyftboxManager.pair_with_mock_drive_service_connection(
             collection_specs=DATASET_COLLECTION_SPECS, **kwargs
@@ -96,7 +106,9 @@ class SyftRDSClient:
         return cls._build_rds_pair_from_managers(ds_mgr, do_mgr)
 
     @classmethod
-    def _pair_with_google_drive_testing_connection(cls, **kwargs):
+    def _pair_with_google_drive_testing_connection(
+        cls, **kwargs: Any
+    ) -> tuple["SyftRDSClient", "SyftRDSClient"]:
         """(ds, do) pair of self-contained RDS clients sharing a REAL Google Drive."""
         ds_mgr, do_mgr = SyftboxManager._pair_with_google_drive_testing_connection(
             collection_specs=DATASET_COLLECTION_SPECS, **kwargs
