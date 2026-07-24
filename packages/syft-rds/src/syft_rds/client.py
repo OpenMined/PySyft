@@ -239,8 +239,13 @@ class SyftRDSClient:
                     DATASET_COLLECTION_PREFIX, tag, content_hash, [peer_email]
                 )
             except Exception:
-                # Ignore errors (e.g., already shared)
-                pass
+                # One collection failing (missing folder, quota, network) must
+                # not stop us sharing the rest with this peer. "alreadyShared"
+                # is already handled in _batch_add_permissions, so anything
+                # reaching here is a real failure worth a traceback.
+                logger.exception(
+                    "Failed to share collection %r with %s", tag, peer_email
+                )
 
     # ------------------------------------------------------------------ #
     # job product surface (RDS-owned)
