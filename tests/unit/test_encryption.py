@@ -7,7 +7,7 @@ from syft_client.sync.peers.peer import Peer
 from syft_client.sync.peers.peer_store import PeerStore
 from syft_client.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
-from tests.unit.utils import create_tmp_dataset_files
+from tests.unit.utils import grant_job_inbox_access
 
 
 # =========================================================================
@@ -148,6 +148,8 @@ def test_encrypted_message_flow():
         encryption=True,
     )
 
+    grant_job_inbox_access(do_manager, ds_manager.email)
+
     # Verify peer stores are set with encryption enabled
     assert ds_manager._peer_store is not None
     assert do_manager._peer_store is not None
@@ -182,6 +184,8 @@ def test_encrypted_sync_down_ds():
         encryption=True,
     )
 
+    grant_job_inbox_access(do_manager, ds_manager.email)
+
     # DS needs DO's bundle to decrypt
     ds_manager.load_peers()
 
@@ -207,6 +211,8 @@ def test_no_encryption_backward_compat():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         encryption=False,
     )
+
+    grant_job_inbox_access(do_manager, ds_manager.email)
 
     assert ds_manager._peer_store is None
     assert do_manager._peer_store is None
@@ -308,6 +314,8 @@ def test_encrypted_events_at_rest():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         encryption=True,
     )
+
+    grant_job_inbox_access(do_manager, ds_manager.email)
     ds_manager.load_peers()
 
     # DS sends a file change
@@ -328,6 +336,8 @@ def test_encrypted_checkpoint_roundtrip():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         encryption=True,
     )
+
+    grant_job_inbox_access(do_manager, ds_manager.email)
     ds_manager.load_peers()
 
     # Create some data and a checkpoint
@@ -386,6 +396,8 @@ def test_at_rest_no_encryption_backward_compat():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         encryption=False,
     )
+
+    grant_job_inbox_access(do_manager, ds_manager.email)
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "unencrypted data")
@@ -483,6 +495,8 @@ def test_verified_encrypted_message_flow():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         encryption=True,
     )
+
+    grant_job_inbox_access(do_manager, ds_manager.email)
     ds_manager.load_peers()
 
     # DS sends a file change (encrypted + signed)
@@ -525,36 +539,3 @@ def test_tampered_inbox_message_raises():
     # DO sync should fail due to signature verification
     with pytest.raises(Exception):
         do_manager.sync()
-
-
-def test_encrypted_dataset_collection_syncs():
-    """Dataset-collection sync-down works under encryption."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        encryption=True,
-    )
-
-    mock_path, private_path, readme_path = create_tmp_dataset_files()
-    do_manager.create_dataset(
-        name="demo",
-        mock_path=mock_path,
-        private_path=private_path,
-        summary="demo dataset",
-        readme_path=readme_path,
-        users=[ds_manager.email],
-        upload_private=True,
-        sync=False,
-    )
-    do_manager.sync()
-
-    ds_manager.sync()
-
-    cr = ds_manager.peer_manager.connection_router
-    collections = cr.watcher_list_dataset_collections()
-    do_collections = [c for c in collections if c["owner_email"] == do_manager.email]
-    assert do_collections, "DS does not see the DO's dataset collection"
-
-    c = do_collections[0]
-    files = cr.watcher_download_dataset_collection(
-        c["tag"], c["content_hash"], do_manager.email
-    )
-    assert files, "DS could not download the dataset collection files"

@@ -126,6 +126,20 @@ class SyftRDSClient(BaseModel):
         )
         return cls._build_rds_pair_from_managers(ds_mgr, do_mgr)
 
+    def __dir__(self) -> list[str]:
+        """Public API only, without pydantic's machinery."""
+        names = set(type(self).model_fields)
+        for klass in type(self).__mro__:
+            if klass is BaseModel:
+                break
+            names.update(
+                name
+                for name, value in vars(klass).items()
+                if not name.startswith(("_", "model_"))
+                and not isinstance(value, (classmethod, staticmethod))
+            )
+        return sorted(names)
+
     # ------------------------------------------------------------------ #
     # delegated identity + sync surface (owned by the generic core)
     # ------------------------------------------------------------------ #

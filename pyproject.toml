@@ -35,6 +35,7 @@ dependencies = [
     "syft-permissions==0.1.14",
     "syft-perms==0.1.14",
     "syft-crypto-python>=0.1.2b2",
+    "syft-dataset==0.1.20",
 ]
 
 
@@ -162,6 +163,7 @@ test = [
     "isort>=5.12.0",
     "coverage>=7.0.0",
     "enclave-model-api-example[test]",  # pulls fastapi/httpx for the inference server tests
+    "syft-bg",  # tests/unit/syft_bg/ lives under this package's testpaths and imports syft_bg
     "syft-enclave",
     "syft-restrict",
     "syft-migration",
