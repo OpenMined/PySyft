@@ -109,6 +109,10 @@ exclude_lines = [
     "if TYPE_CHECKING:"
 ]
 
+[tool.ruff]
+# Obfuscator output is deliberately not valid Python; keep it out of lint/format.
+extend-exclude = ["*.obfuscated.py"]
+
 [tool.isort]
 profile = "black"
 multi_line_output = 3
