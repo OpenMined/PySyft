@@ -836,8 +836,47 @@ class SyftboxManager(BaseModelCallbackMixin):
                 relative_file_path, process_now=last_file
             )
 
+    # --- collection operations (used by the product layer) ---
+
+    def create_collection_folder(self, prefix: str, tag: str, content_hash: str) -> str:
+        """Create the owner-side folder for a collection. Delegates to ConnectionRouter."""
+        return self._connection_router.owner_create_collection_folder(
+            prefix, tag=tag, content_hash=content_hash, owner_email=self.email
+        )
+
+    def upload_collection_files(
+        self,
+        prefix: str,
+        tag: str,
+        content_hash: str,
+        files: dict[str, bytes],
+        recipient_email: str | None = None,
+    ) -> None:
+        """Upload a collection's files. Delegates to ConnectionRouter."""
+        self._connection_router.owner_upload_collection_files(
+            prefix, tag, content_hash, files, recipient_email=recipient_email
+        )
+
+    def share_collection(
+        self, prefix: str, tag: str, content_hash: str, users: list[str]
+    ) -> None:
+        """Share a collection with specific users. Delegates to ConnectionRouter."""
+        self._connection_router.owner_share_collection(prefix, tag, content_hash, users)
+
+    def tag_collection_as_any(self, prefix: str, tag: str, content_hash: str) -> None:
+        """Mark a collection as shared with "any". Delegates to ConnectionRouter."""
+        self._connection_router.owner_tag_collection_as_any(prefix, tag, content_hash)
+
+    def delete_collection(self, prefix: str, tag: str) -> None:
+        """Delete a collection. Delegates to ConnectionRouter."""
+        self._connection_router.owner_delete_collection(prefix, tag)
+
+    def delete_file_by_id(self, file_id: str) -> None:
+        """Delete a backend file/folder by id. Delegates to ConnectionRouter."""
+        self._connection_router.delete_file_by_id(file_id)
+
     @contextmanager
-    def _sync_file_lock(self):
+    def sync_file_lock(self):
         lock_path = self.syftbox_folder / ".sync.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         lock_path.touch(exist_ok=True)
@@ -879,7 +918,7 @@ class SyftboxManager(BaseModelCallbackMixin):
                           from background daemons (e.g. syft-bg) where a
                           separate process may have updated the file.
         """
-        with self._sync_file_lock():
+        with self.sync_file_lock():
             self.load_peers(force_download=force_download_peer_state)
             if self.has_do_role:
                 peer_emails = [peer.email for peer in self.peer_manager.approved_peers]
@@ -1137,7 +1176,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         """
         if not self.has_do_role:
             raise ValueError("Checkpoints can only be created by Data Owners")
-        with self._sync_file_lock():
+        with self.sync_file_lock():
             return self.datasite_owner_syncer.create_checkpoint()
 
     def compact_outboxes_if_needed(
@@ -1154,7 +1193,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         """
         if not self.has_do_role:
             return {}
-        with self._sync_file_lock():
+        with self.sync_file_lock():
             return {
                 peer.email: self.datasite_owner_syncer.compact_outbox_if_needed(
                     peer.email, min_messages=min_messages

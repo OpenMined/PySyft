@@ -243,7 +243,7 @@ class SyftRDSClient(BaseModel):
             content_hash,
         ) in self.sync_engine.datasite_owner_syncer.any_shared_collections:
             try:
-                self.sync_engine._connection_router.owner_share_collection(
+                self.sync_engine.share_collection(
                     DATASET_COLLECTION_PREFIX, tag, content_hash, [peer_email]
                 )
             except Exception:
@@ -461,7 +461,7 @@ class SyftRDSClient(BaseModel):
         """Best-effort cleanup after a failed create_dataset, in reverse order."""
         if private_folder_id is not None:
             try:
-                self.sync_engine._connection_router.delete_file_by_id(private_folder_id)
+                self.sync_engine.delete_file_by_id(private_folder_id)
             except Exception:
                 logger.warning(
                     "Cleanup: failed to delete private GDrive folder %s",
@@ -470,7 +470,7 @@ class SyftRDSClient(BaseModel):
 
         if mock_folder_id is not None:
             try:
-                self.sync_engine._connection_router.delete_file_by_id(mock_folder_id)
+                self.sync_engine.delete_file_by_id(mock_folder_id)
             except Exception:
                 logger.warning(
                     "Cleanup: failed to delete mock GDrive folder %s",
@@ -498,15 +498,10 @@ class SyftRDSClient(BaseModel):
         )
 
         content_hash = CollectionFolder.compute_hash(files)
-        folder_id = self.sync_engine._connection_router.owner_create_collection_folder(
-            prefix,
-            tag=tag,
-            content_hash=content_hash,
-            owner_email=self.email,
+        folder_id = self.sync_engine.create_collection_folder(
+            prefix, tag=tag, content_hash=content_hash
         )
-        self.sync_engine._connection_router.owner_upload_collection_files(
-            prefix, tag, content_hash, files
-        )
+        self.sync_engine.upload_collection_files(prefix, tag, content_hash, files)
         return folder_id, content_hash
 
     def _collect_mock_files(self, dataset) -> dict[str, bytes]:
@@ -530,7 +525,7 @@ class SyftRDSClient(BaseModel):
         """Share a dataset collection with ``users``, or tag it ``"any"`` and
         share with all already-approved peers."""
         if users == "any":
-            self.sync_engine._connection_router.owner_tag_collection_as_any(
+            self.sync_engine.tag_collection_as_any(
                 DATASET_COLLECTION_PREFIX, tag, content_hash
             )
             self.sync_engine.datasite_owner_syncer.register_any_shared_collection(
@@ -540,13 +535,13 @@ class SyftRDSClient(BaseModel):
                 p.email for p in self.sync_engine.peer_manager.approved_peers
             ]
             if peer_emails:
-                self.sync_engine._connection_router.owner_share_collection(
+                self.sync_engine.share_collection(
                     DATASET_COLLECTION_PREFIX, tag, content_hash, peer_emails
                 )
         else:
             if isinstance(users, str):
                 users = [users]
-            self.sync_engine._connection_router.owner_share_collection(
+            self.sync_engine.share_collection(
                 DATASET_COLLECTION_PREFIX, tag, content_hash, users
             )
 
@@ -596,15 +591,11 @@ class SyftRDSClient(BaseModel):
         # Delete collection folders from Google Drive so DS peers
         # pick up the deletion on their next sync.
         try:
-            self.sync_engine._connection_router.owner_delete_collection(
-                DATASET_COLLECTION_PREFIX, name
-            )
+            self.sync_engine.delete_collection(DATASET_COLLECTION_PREFIX, name)
         except Exception:
             logger.warning("Failed to delete dataset collection '%s' from Drive", name)
         try:
-            self.sync_engine._connection_router.owner_delete_collection(
-                PRIVATE_DATASET_COLLECTION_PREFIX, name
-            )
+            self.sync_engine.delete_collection(PRIVATE_DATASET_COLLECTION_PREFIX, name)
         except Exception:
             logger.warning(
                 "Failed to delete private dataset collection '%s' from Drive",
@@ -650,7 +641,7 @@ class SyftRDSClient(BaseModel):
         if not self.has_do_role:
             raise ValueError("Only data owners can share private datasets")
 
-        with self.sync_engine._sync_file_lock():
+        with self.sync_engine.sync_file_lock():
             files = self.dataset_manager.get_private_dataset_files(tag)
             events_message = self.sync_engine.datasite_owner_syncer.event_cache.create_events_for_files(
                 files
