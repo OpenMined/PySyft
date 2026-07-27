@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 import syft_client as sc
+import syft_rds as rds
 from syft_client.sync.syftbox_manager import SyftboxManager
 
 
@@ -94,9 +95,10 @@ def test_login_ds_with_sync_and_load_peers():
     assert client is not None
     assert isinstance(client, SyftboxManager)
     assert client.email == EMAIL_DS
-    # Verify client has expected attributes
-    assert hasattr(client, "datasets")
-    assert hasattr(client, "job_client")
+    # syft-client's login returns the domain-free sync engine
+    assert hasattr(client, "peers")
+    assert not hasattr(client, "datasets")
+    assert not hasattr(client, "job_client")
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
@@ -113,9 +115,45 @@ def test_login_do_with_sync_and_load_peers():
     assert client is not None
     assert isinstance(client, SyftboxManager)
     assert client.email == EMAIL_DO
-    # Verify client has expected attributes
+    # syft-client's login returns the domain-free sync engine
+    assert hasattr(client, "peers")
+    assert not hasattr(client, "datasets")
+    assert not hasattr(client, "job_client")
+
+
+@pytest.mark.flaky(reruns=3, reruns_delay=2)
+@pytest.mark.usefixtures("check_credentials")
+def test_rds_login_ds_returns_product_client():
+    """syft_rds.login_ds returns an RDS client carrying the dataset/job surface."""
+    client = rds.login_ds(
+        email=EMAIL_DS,
+        token_path=token_path_ds,
+        sync=True,
+        load_peers=True,
+    )
+
+    assert isinstance(client, rds.SyftRDSClient)
+    assert client.email == EMAIL_DS
     assert hasattr(client, "datasets")
     assert hasattr(client, "job_client")
+
+
+@pytest.mark.flaky(reruns=3, reruns_delay=2)
+@pytest.mark.usefixtures("check_credentials")
+def test_rds_login_do_returns_product_client():
+    """syft_rds.login_do returns an RDS client carrying the dataset/job surface."""
+    client = rds.login_do(
+        email=EMAIL_DO,
+        token_path=token_path_do,
+        sync=True,
+        load_peers=True,
+    )
+
+    assert isinstance(client, rds.SyftRDSClient)
+    assert client.email == EMAIL_DO
+    assert hasattr(client, "datasets")
+    assert hasattr(client, "job_client")
+    assert client.job_runner is not None
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
