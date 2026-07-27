@@ -167,3 +167,15 @@ def test_encrypted_dataset_collection_syncs():
         DATASET_COLLECTION_PREFIX, c["tag"], c["content_hash"], do.email
     )
     assert files, "DS could not download the dataset collection files"
+
+
+def test_collection_prefixes_match_syft_datasets():
+    """The sync core mirrors the prefixes rather than importing the domain."""
+    from syft_client.sync.connections import collection_prefixes as core
+    from syft_datasets import dataset_manager as domain
+
+    assert core.DATASET_COLLECTION_PREFIX == domain.DATASET_COLLECTION_PREFIX
+    assert (
+        core.PRIVATE_DATASET_COLLECTION_PREFIX
+        == domain.PRIVATE_DATASET_COLLECTION_PREFIX
+    )

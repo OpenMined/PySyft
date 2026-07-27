@@ -29,8 +29,8 @@ from syft_datasets.dataset_manager import (
     PRIVATE_DATASET_COLLECTION_PREFIX,
 )
 
-# The RDS layer OWNS the dataset collection values: both the on-wire prefixes and
-# the local subpaths live here, never in the domain-free syft-client sync core.
+# The RDS layer owns the local subpaths; the on-wire prefixes come from
+# syft_datasets (imported above), mirrored in syft_client for login-time cleanup.
 COLLECTION_SUBPATH = Path("public/syft_datasets")
 PRIVATE_COLLECTION_SUBPATH = Path("private/syft_datasets")
 
