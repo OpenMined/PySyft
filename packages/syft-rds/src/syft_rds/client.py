@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import yaml
 from pydantic import BaseModel, ConfigDict
@@ -20,12 +20,7 @@ from syft_client.sync.version.peer_manager import CompatAction
 from syft_job.client import JobClient
 from syft_job.job_runner import SyftJobRunner
 from syft_datasets.dataset_manager import SyftDatasetManager
-from syft_job import SyftJobConfig
-from syft_datasets.config import SyftBoxConfig
-from syft_rds.config import DATASET_COLLECTION_SPECS
-
-if TYPE_CHECKING:
-    from syft_rds.config import SyftRDSClientConfig
+from syft_rds.config import DATASET_COLLECTION_SPECS, SyftRDSClientConfig
 
 logger = logging.getLogger(__name__)
 
@@ -81,21 +76,17 @@ class SyftRDSClient(BaseModel):
         """
 
         def _build(mgr: SyftboxManager) -> "SyftRDSClient":
-            job_cfg = SyftJobConfig(
-                syftbox_folder=Path(mgr.syftbox_folder),
-                current_user_email=mgr.email,
-                has_do_role=mgr.has_do_role,
-            )
-            job_client = JobClient.from_config(job_cfg)
-            job_runner = SyftJobRunner.from_config(job_cfg) if mgr.has_do_role else None
-            dataset_manager = SyftDatasetManager.from_config(
-                SyftBoxConfig(syftbox_folder=mgr.syftbox_folder, email=mgr.email)
-            )
+            assert mgr.config is not None, "paired managers are built from a config"
+            # Compose via the config so the sub-configs are derived (and
+            # alignment-checked) exactly as they are on the from_config path.
+            config = SyftRDSClientConfig._compose(mgr.config)
             return cls(
                 sync_engine=mgr,
-                job_client=job_client,
-                job_runner=job_runner,
-                dataset_manager=dataset_manager,
+                job_client=JobClient.from_config(config.job),
+                job_runner=(
+                    SyftJobRunner.from_config(config.job) if mgr.has_do_role else None
+                ),
+                dataset_manager=SyftDatasetManager.from_config(config.dataset),
             )
 
         ds_rds = _build(ds_mgr)
