@@ -7,6 +7,7 @@ import jax
 
 from syft_restrict import AuditReport, audit_allow_functions
 from syft_restrict.auditor import _best_version_key
+from syft_restrict.catalog_lint import _canonical
 from syft_restrict.catalog_lint import main as lint_main
 
 # The example catalog is not bundled in the package; tests point the audit at it explicitly.
@@ -195,6 +196,44 @@ def test_lint_accepts_a_path_and_fixes(tmp_path):
     assert lint_main([str(tmp_path), "--fix"]) == 0  # --fix rewrites it
     assert lint_main([str(tmp_path)]) == 0  # now canonical
     assert list(json.loads(f.read_text())["safe"]) == ["a", "b"]  # keys sorted
+
+
+def test_lint_reports_entries_a_stricter_bucket_already_matches(tmp_path, capsys):
+    # A safe entry swallowed by an unsafe glob audits as unsafe, so the safe claim never applies.
+    cat = tmp_path / "mylib" / "1.0"
+    cat.mkdir(parents=True)
+    (cat / "catalog.json").write_text(
+        _canonical(
+            {
+                "unsafe": {"mylib.*.test": "test runner", "mylib.io.save": "writes"},
+                "safe": {"mylib.fft.test": "pure", "mylib.io.save": "pure"},
+            }
+        )
+    )
+    assert lint_main([str(tmp_path)]) == 1
+    err = capsys.readouterr().err
+    assert "'mylib.fft.test' in 'safe' is already matched by 'mylib.*.test'" in err
+    assert "'mylib.io.save' in 'safe' is already matched by 'mylib.io.save'" in err
+
+
+def test_lint_fix_does_not_silence_an_overlap(tmp_path):
+    # --fix rewrites formatting; choosing a bucket is a human call, so the overlap must survive it.
+    cat = tmp_path / "mylib" / "1.0"
+    cat.mkdir(parents=True)
+    (cat / "catalog.json").write_text(
+        '{"unsafe": {"mylib.b": "x", "mylib.a": "y"}, "safe": {"mylib.a": "z"}}'
+    )
+    assert lint_main([str(tmp_path), "--fix"]) == 1
+    assert lint_main([str(tmp_path)]) == 1  # formatting fixed, overlap still reported
+
+
+def test_lint_accepts_disjoint_buckets(tmp_path):
+    cat = tmp_path / "mylib" / "1.0"
+    cat.mkdir(parents=True)
+    (cat / "catalog.json").write_text(
+        _canonical({"unsafe": {"mylib.io.*": "writes"}, "safe": {"mylib.add": "pure"}})
+    )
+    assert lint_main([str(tmp_path)]) == 0
 
 
 def test_report_format_has_sections_and_ok_flag():
