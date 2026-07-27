@@ -1,62 +1,61 @@
-from pathlib import Path
 import fcntl
-from syft_client.sync.peers.peer_store import PeerStore
-from syft_client.sync.utils.path_filters import is_normal_syncable_path
-from syft_client.sync.callback_mixin import BaseModelCallbackMixin
 import logging
+import os
 import shutil
-from contextlib import contextmanager
-from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
-from syft_client.utils import resolve_path
-from concurrent.futures import ThreadPoolExecutor
 import time
-from pydantic import ConfigDict
-from syft_client.sync.platforms.base_platform import BasePlatform
-from pydantic import BaseModel, PrivateAttr
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from pathlib import Path
 from typing import List, Optional, cast
-from syft_client.sync.sync.collection_spec import CollectionSyncSpec
-from syft_client.sync.sync.caches.datasite_watcher_cache import (
-    DataSiteWatcherCacheConfig,
-)
-from syft_client.sync.sync.caches.datasite_owner_cache import (
-    DataSiteOwnerEventCacheConfig,
-)
-from syft_client.sync.peers.peer_list import PeerList
-from syft_client.sync.peers.peer import Peer
+
+from pydantic import BaseModel, ConfigDict, PrivateAttr
+
+from syft_client.sync.callback_mixin import BaseModelCallbackMixin
 from syft_client.sync.connections.base_connection import (
     SyftboxPlatformConnection,
 )
+from syft_client.sync.connections.connection_router import ConnectionRouter
+from syft_client.sync.connections.drive import mock_drive_service
+from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft_client.sync.connections.drive.grdrive_config import GdriveConnectionConfig
 from syft_client.sync.events.file_change_event import (
     FileChangeEvent,
     FileChangeEventsMessage,
 )
-from syft_client.sync.utils.syftbox_utils import (
-    random_email,
-    random_syftbox_folder_for_testing,
-)
 from syft_client.sync.file_writer import FileWriter
-
 from syft_client.sync.job_file_change_handler import JobFileChangeHandler
-from syft_client.sync.connections.connection_router import ConnectionRouter
-
-from syft_client.sync.connections.drive.grdrive_config import GdriveConnectionConfig
-from syft_client.sync.connections.drive import mock_drive_service
+from syft_client.sync.peers.peer import Peer
+from syft_client.sync.peers.peer_list import PeerList
+from syft_client.sync.peers.peer_store import PeerStore
+from syft_client.sync.platforms.base_platform import BasePlatform
+from syft_client.sync.sync.caches.datasite_owner_cache import (
+    DataSiteOwnerEventCacheConfig,
+)
+from syft_client.sync.sync.caches.datasite_watcher_cache import (
+    DataSiteWatcherCacheConfig,
+)
+from syft_client.sync.sync.collection_spec import CollectionSyncSpec
 from syft_client.sync.sync.datasite_owner_syncer import (
+    MIN_MESSAGES_COMPACT,
     DatasiteOwnerSyncer,
     DatasiteOwnerSyncerConfig,
-    MIN_MESSAGES_COMPACT,
 )
 from syft_client.sync.sync.datasite_watcher_syncer import (
     DatasiteWatcherSyncer,
     DatasiteWatcherSyncerConfig,
+)
+from syft_client.sync.utils.path_filters import is_normal_syncable_path
+from syft_client.sync.utils.syftbox_utils import (
+    random_email,
+    random_syftbox_folder_for_testing,
 )
 from syft_client.sync.version.peer_manager import (
     PeerManager,
     PeerManagerConfig,
 )
 from syft_client.sync.version.version_info import VersionInfo
+from syft_client.utils import resolve_path
 from syft_client.version import VERSION_FILE_NAME
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -87,9 +86,12 @@ def default_collections_folder(
     ``None`` when no specs are configured (the generic engine has no
     collections of its own).
     """
-    if not collection_specs:
+
+    # get the first shareable spec
+    spec = next((s for s in collection_specs if not s.owner_only), None)
+    if spec is None:
         return None
-    return Path(syftbox_folder) / email / collection_specs[0].local_subpath
+    return Path(syftbox_folder) / email / spec.local_subpath
 
 
 class SyftboxManagerConfig(BaseModel):
@@ -1043,6 +1045,7 @@ class SyftboxManager(BaseModelCallbackMixin):
     ):
         """Broadcast is_deleted=True events for all tracked files to each peer's outbox."""
         from uuid import uuid4
+
         from syft_client.sync.utils.syftbox_utils import create_event_timestamp
 
         timestamp = create_event_timestamp()

@@ -685,3 +685,18 @@ def test_permission_change_triggers_resend():
     assert any("data.txt" in p for p in paths_for_b_after), (
         "Peer B should receive data.txt after permission change"
     )
+
+
+def test_default_collections_folder_picks_shareable_spec_regardless_of_order():
+    """The collections folder is chosen by owner_only, not by position."""
+    from syft_client.sync.syftbox_manager import default_collections_folder
+
+    shareable = CollectionSyncSpec.public("syft_pub", Path("public/pub"))
+    owner_only = CollectionSyncSpec.private("syft_priv", Path("private/priv"))
+    expected = Path("/sb/me@t.com/public/pub")
+
+    for specs in ([shareable, owner_only], [owner_only, shareable]):
+        assert default_collections_folder("/sb", "me@t.com", specs) == expected
+
+    assert default_collections_folder("/sb", "me@t.com", [owner_only]) is None
+    assert default_collections_folder("/sb", "me@t.com", []) is None
