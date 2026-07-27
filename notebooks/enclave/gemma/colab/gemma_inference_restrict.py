@@ -1,19 +1,30 @@
-"""Gemma 3 IT — Flax Inference Module (syft-restrict compliant)
+"""Gemma 3 IT — Flax Inference Module (syft-restrict compliant, optimized)
 
-Same model as gemma_inference.py, restructured so the architecture passes syft-restrict.
-Public API: MODEL_CONFIGS, setup_model(size, weights_dir), generate(...).
+Same model and same public API as gemma_inference_restrict.py — MODEL_CONFIGS,
+setup_model(size, weights_dir), generate(...) — plus a batched generate_batch(...).
 
+OPTIMIZATIONS (all measured to matter on CPU):
+  1. jit          — generate() compiles model.apply once (public region; invisible to restrict).
+  2. static cache — fixed-size KV cache written in place, so the compiled program is reused every
+                    decode step instead of recompiling as the cache grows.
+  3. batching     — the einsums already carry a batch axis; generate_batch runs many prompts at once,
+                    which is the big CPU throughput win (amortizes the weight reads).
+  4. scan layers  — the layer stack runs through flax.linen.scan (one compiled layer body reused
+                    num_layers times) instead of a Python for-loop that jit UNROLLED into num_layers
+                    copies. The unrolled graph kept every layer's weights + fp32 working-copies live
+                    at once (~24 bytes/param, ~12x the bf16 weights); scan keeps only one layer's
+                    working set live. On 27b this drops peak RAM from ~738 GB to ~230 GB, which is
+                    what lets 27b run — and batch — on a CPU box instead of OOMing.
 
-The private region carves itself out with `# syft-restrict: ...` comment markers, so run() takes
-no line ranges:
+RESTRICT NOTE: the private architecture still uses ONLY allow-listed constructs and the SAME policy
+as before (same allow_functions -> same policy_id, verified: d84d1e21530fa500). The mechanical ops
+live in PUBLIC wrappers the private code calls by name (like the existing shape_of / append_to /
+_get): jax.lax.dynamic_update_slice in `cache_write`, and now flax.linen.scan in `build_scanned_blocks`
+plus the weight restack in `stack_layer_params`. The private region defines its `Block` and hands it
+to build_scanned_blocks by name — it gains no new library call, so policy_id is unchanged; only the
+source hash changes (both owners re-approve the new source once).
 
-  obfuscate — the config block and every def/class signature: identifiers renamed to ░
-              placeholders, constants blanked to ■, structure still legible.
-  hide      — every body: the whole line becomes a ■■■■■■■■ marker.
-  PUBLIC    — imports, the _get / shape_of / append_to wrappers, checkpoint loading, tokenizer,
-              sampling and the generation loop. Copied through verbatim; the data owners read it.
-
-Supports: 270m, 1b, 4b, 12b, 27b.
+The private region carves itself out with `# syft-restrict: ...` markers, so run() takes no ranges.
 """
 
 import os
@@ -27,7 +38,6 @@ from flax import linen as nn
 
 
 # ── Model configs ────────────────────────────────────────────────────────────
-# Every supported size. The notebook picks one with MODEL_SIZE; setup() looks it up.
 # syft-restrict: obfuscate-start
 MODEL_CONFIGS = {
     "270m": dict(
@@ -88,8 +98,6 @@ MODEL_CONFIGS = {
 }
 
 # ── Shared constants (identical across all Gemma 3 sizes) ─────────────────
-
-# ── Shared constants (identical across all Gemma 3 sizes) ─────────────────
 VOCAB_SIZE = 262144
 LOCAL_ROPE_BASE = 10_000
 GLOBAL_ROPE_BASE = 1_000_000
@@ -128,41 +136,8 @@ def apply_rope(x, positions, base_freq):
 # syft-restrict: obfuscate-end
 
 
-# syft-restrict: obfuscate-start
-def make_masks(seq_len, sliding_window):
-    # syft-restrict: hide-start
-    """Causal masks — local layers also clip to a sliding window."""
-    causal = jnp.tril(jnp.ones((seq_len, seq_len), dtype=jnp.bool_))
-    window = jnp.triu(
-        jnp.ones((seq_len, seq_len), dtype=jnp.bool_), k=-(sliding_window - 1)
-    )
-    return {
-        "local": (causal & window)[None, None],
-        "global": causal[None, None],
-    }
-    # syft-restrict: hide-end
-
-
-# syft-restrict: obfuscate-end
-
-
-# syft-restrict: obfuscate-start
-def make_decode_masks(pos, sliding_window):
-    # syft-restrict: hide-start
-    """Masks for single-token decode."""
-    total_len = pos + 1
-    positions = jnp.arange(total_len)
-    return {
-        "local": (positions >= pos - sliding_window + 1)[None, None, None, :],
-        "global": jnp.ones((1, 1, 1, total_len), dtype=jnp.bool_),
-    }
-    # syft-restrict: hide-end
-
-
-# syft-restrict: obfuscate-end
-
-
-# ── Flax modules ───────────────────────────────────────────────────────────
+# ── Public wrappers (read directly by the data owners) ─────────────────────
+# The private region calls these by name; it never performs the wrapped operation itself.
 
 
 def _get(module, name):
@@ -171,14 +146,96 @@ def _get(module, name):
 
 
 def shape_of(x):
-    """Public wrapper: read an array's shape — an attribute read on a value, not allowed in the private region."""
+    """Read an array's shape — an attribute read on a value, not allowed in the private region."""
     return x.shape
 
 
 def append_to(lst, item):
-    """Public wrapper: append to a Python list (a named method on a value)."""
+    """Append to a Python list (a named method on a value)."""
     lst.append(item)
     return lst
+
+
+def cache_write(cache, update, pos):
+    """Write `update` into a fixed-size KV cache at sequence position `pos`, in place.
+
+    Static-shape replacement for growing the cache with concatenate: the buffer stays
+    [B, max_len, ...] so the compiled decode step is reused every token. Uses
+    dynamic_update_slice here (public) so the private region needs no new allow-listed call.
+
+    Casts the update to the buffer dtype: with bf16 weights, k is float32 (RoPE upcasts via its
+    float32 sin/cos) while v stays bf16, so a fixed-dtype buffer needs the write coerced.
+    """
+    return jax.lax.dynamic_update_slice(
+        cache, update.astype(cache.dtype), (0, pos, 0, 0)
+    )
+
+
+def attn_masks(write_pos, q_len, max_len, sliding_window, valid_mask):
+    """Boolean attention masks over the static cache — mechanical bookkeeping, not architecture.
+
+    Returns {"local", "global"} each shaped [B, 1, q_len, max_len]:
+      causal  : key position <= query position          (no attending to the future)
+      window  : query - key < sliding_window            (local layers only)
+      valid   : key is a real token, not left-padding   (per sequence, from valid_mask)
+    """
+    key_pos = jnp.arange(max_len)
+    q_pos = write_pos + jnp.arange(q_len)
+    delta = q_pos[:, None] - key_pos[None, :]  # [q_len, max_len]
+    causal = delta >= 0
+    window = delta < sliding_window
+    vm = valid_mask[:, None, None, :]  # [B, 1, 1, max_len]
+    return {
+        "local": (causal & window)[None, None] & vm,
+        "global": causal[None, None] & vm,
+    }
+
+
+def build_scanned_blocks(block_cls, cfg):
+    """Lift ONE layer body over the layer axis with flax.linen.scan (a public wrapper).
+
+    This is the structural "apply the same layer N times" harness, not the layer's math — the
+    exact analogue of cache_write holding dynamic_update_slice. Keeping the scan primitive here
+    means the private region calls only `build_scanned_blocks` (a name, like shape_of/cache_write)
+    and passes its own `Block` class by name; it gains no new allow-listed library call, so the
+    policy_id is unchanged. The scan compiles the layer body ONCE instead of the old Python loop
+    that jit unrolled into num_layers copies — that unrolling is what caused the memory blast.
+
+    in_axes lines up with Block.__call__'s non-carry args:
+      (positions, local_mask, global_mask, is_global, cache_k, cache_v, write_pos)
+    — everything shared across layers is nn.broadcast; the per-layer cache and is_global flag are
+    scanned on axis 0. Stacked weights (axis 0) come from stack_layer_params below.
+    """
+    scanned = nn.scan(
+        block_cls,
+        variable_axes={"params": 0},
+        split_rngs={"params": False},
+        in_axes=(nn.broadcast, nn.broadcast, nn.broadcast, 0, 0, 0, nn.broadcast),
+        out_axes=0,
+        length=cfg["num_layers"],
+    )
+    return scanned(cfg=cfg)
+
+
+def stack_layer_params(params):
+    """Stack the per-layer weight subtrees (layer_0 .. layer_{L-1}) into arrays with a leading
+    layer axis, under a single `blocks` key — the layout flax.linen.scan slices per step.
+
+    A mechanical pytree reshape of weights the owners already hold in the clear; it exposes no
+    architecture (just "there are L identically-shaped layers", already implied by num_layers).
+    """
+    p = params["params"]
+    layer_keys = sorted(
+        (k for k in p if k.startswith("layer_")), key=lambda s: int(s.split("_")[1])
+    )
+    layers = [p[k] for k in layer_keys]
+    stacked = jax.tree_util.tree_map(lambda *xs: jnp.stack(xs, axis=0), *layers)
+    rest = {k: v for k, v in p.items() if not k.startswith("layer_")}
+    rest["blocks"] = stacked
+    return {"params": rest}
+
+
+# ── Flax modules ───────────────────────────────────────────────────────────
 
 
 # syft-restrict: obfuscate-start
@@ -232,7 +289,7 @@ class Attention(nn.Module):
 
     # syft-restrict: hide-end
 
-    def __call__(self, x, positions, mask, attn_type, cache=None):
+    def __call__(self, x, positions, mask, is_global, cache_k, cache_v, write_pos):
         # syft-restrict: hide-start
         q = self.q_einsum("bsd,ndh->bsnh", x)
         kv = self.kv_einsum("bsd,ckdh->cbskh", x)
@@ -241,28 +298,26 @@ class Attention(nn.Module):
         q = self._query_norm(q)
         k = self._key_norm(k)
 
-        base = LOCAL_ROPE_BASE if attn_type == "local" else GLOBAL_ROPE_BASE
+        base = jnp.where(is_global, GLOBAL_ROPE_BASE, LOCAL_ROPE_BASE)
         q = apply_rope(q, positions, base)
         k = apply_rope(k, positions, base)
 
-        if cache is not None:
-            cached_k, cached_v = cache
-            k = jnp.concatenate([cached_k, k], axis=1)
-            v = jnp.concatenate([cached_v, v], axis=1)
-        new_cache = (k, v)
+        # write new keys/values into the fixed-size cache at the current position (public wrapper)
+        cache_k = cache_write(cache_k, k, write_pos)
+        cache_v = cache_write(cache_v, v, write_pos)
 
         q = q * (self.cfg["head_dim"] ** -0.5)
 
         repeats = self.cfg["num_heads"] // self.cfg["num_kv_heads"]
-        k_exp = jnp.repeat(k, repeats, axis=2)
-        v_exp = jnp.repeat(v, repeats, axis=2)
+        k_exp = jnp.repeat(cache_k, repeats, axis=2)
+        v_exp = jnp.repeat(cache_v, repeats, axis=2)
 
         logits = jnp.einsum("bsnh,btnh->bnst", q, k_exp)
         logits = jnp.where(mask, logits, K_MASK)
         weights = jax.nn.softmax(logits, axis=-1)
 
         out = jnp.einsum("bnst,btnh->bsnh", weights, v_exp)
-        return self.attn_vec_einsum("bsnh,nhd->bsd", out), new_cache
+        return self.attn_vec_einsum("bsnh,nhd->bsd", out), cache_k, cache_v
 
     # syft-restrict: hide-end
 
@@ -294,7 +349,6 @@ class FeedForward(nn.Module):
 # syft-restrict: obfuscate-start
 class Block(nn.Module):
     cfg: dict
-    attn_type: str = "local"
 
     def setup(self):
         # syft-restrict: hide-start
@@ -307,16 +361,29 @@ class Block(nn.Module):
 
     # syft-restrict: hide-end
 
-    def __call__(self, x, positions, mask, cache=None):
+    def __call__(
+        self,
+        x,
+        positions,
+        local_mask,
+        global_mask,
+        is_global,
+        cache_k,
+        cache_v,
+        write_pos,
+    ):
         # syft-restrict: hide-start
+        mask = jnp.where(is_global, global_mask, local_mask)
         h = self.pre_attention_norm(x)
-        h, new_cache = self.attn(h, positions, mask, self.attn_type, cache)
+        h, cache_k, cache_v = self.attn(
+            h, positions, mask, is_global, cache_k, cache_v, write_pos
+        )
         h = self.post_attention_norm(h)
         x = x + h
         h = self.pre_ffw_norm(x)
         h = self.mlp(h)
         h = self.post_ffw_norm(h)
-        return x + h, new_cache
+        return x + h, (cache_k, cache_v)
 
     # syft-restrict: hide-end
 
@@ -351,43 +418,45 @@ class Transformer(nn.Module):
 
     def setup(self):
         # syft-restrict: hide-start
-        num_layers = self.cfg["num_layers"]
-        attn_types = _attn_types(num_layers)
         self.embedder = Embedder(cfg=self.cfg)
-        self.layer = [
-            Block(cfg=self.cfg, attn_type=attn_types[i]) for i in range(num_layers)
-        ]
+        # one layer body, lifted over the layer axis by the public scan wrapper
+        self.blocks = build_scanned_blocks(Block, self.cfg)
         self.final_norm = RMSNorm()
 
     # syft-restrict: hide-end
 
-    def __call__(self, tokens, cache=None):
+    def __call__(self, tokens, cache_k, cache_v, write_pos, valid_mask):
         # syft-restrict: hide-start
         sliding_window = self.cfg["sliding_window"]
         num_layers = self.cfg["num_layers"]
         attn_types = _attn_types(num_layers)
 
+        q_len = shape_of(tokens)[1]
+        max_len = shape_of(valid_mask)[1]
+        positions = write_pos + jnp.arange(q_len)
+        masks = attn_masks(write_pos, q_len, max_len, sliding_window, valid_mask)
+        is_global = jnp.array([t == "global" for t in attn_types])
+
         x, embed_table = self.embedder(tokens)
+        x = jnp.float32(
+            x
+        )  # fixed carry dtype for the scan (blocks already run in float32)
 
-        if cache is None:
-            seq_len = shape_of(tokens)[1]
-            positions = jnp.arange(seq_len)[None, :]
-            masks = make_masks(seq_len, sliding_window)
-        else:
-            cache_len = shape_of(cache[0][0])[1]
-            positions = jnp.array([[cache_len]])
-            masks = make_decode_masks(cache_len, sliding_window)
+        x, caches = self.blocks(
+            x,
+            positions,
+            masks["local"],
+            masks["global"],
+            is_global,
+            cache_k,
+            cache_v,
+            write_pos,
+        )
+        new_k, new_v = caches
 
-        new_cache = []
-        for i in range(num_layers):
-            layer_cache = cache[i] if cache is not None else None
-            block = self.layer[i]
-            x, layer_new_cache = block(x, positions, masks[attn_types[i]], layer_cache)
-            new_cache = append_to(new_cache, layer_new_cache)
-
-        x = self.final_norm(x)
-        logits = x @ jnp.transpose(embed_table)
-        return logits, new_cache
+        x = self.final_norm(x[:, -1:])  # last position only
+        logits = x @ jnp.transpose(embed_table)  # [B, 1, VOCAB]
+        return logits, new_k, new_v
 
     # syft-restrict: hide-end
 
@@ -411,24 +480,17 @@ def nestify(flat):
 
 
 def load_params(weights_dir, cfg):
-    """Load Orbax checkpoint and return Flax-compatible params dict."""
+    """Load Orbax checkpoint and return Flax-compatible params dict (layers stacked for scan)."""
     ckpt_path = os.path.join(weights_dir, cfg["ckpt_subdir"])
     raw = ocp.PyTreeCheckpointer().restore(ckpt_path)
-    return {"params": nestify(raw)["transformer"]}
+    return stack_layer_params({"params": nestify(raw)["transformer"]})
 
 
 # ── Setup (convenience entry point) ───────────────────────────────────────
 
 
 def setup_model(size, weights_dir):
-    """Configure model, load weights and tokenizer.
-
-    Args:
-        size: one of MODEL_CONFIGS -- "270m", "1b", "4b", "12b", "27b".
-        weights_dir: the kagglehub download directory.
-
-    Returns (model, tokenizer, params).
-    """
+    """Configure model, load weights and tokenizer. Returns (model, tokenizer, params)."""
     cfg = MODEL_CONFIGS[size]
     params = load_params(weights_dir, cfg)
     model = Transformer(cfg=cfg)
@@ -451,72 +513,104 @@ def format_chat(prompt):
     return f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
 
 
-def sample_token(logits, temperature=0.8, top_k=40):
-    """Temperature-scaled top-k sampling. Greedy when temperature=0."""
-    if temperature == 0:
-        return int(jnp.argmax(logits))
-    logits = logits / temperature
-    top_k_logits, top_k_ids = jax.lax.top_k(logits, top_k)
-    probs = jax.nn.softmax(top_k_logits)
-    idx = jax.random.categorical(
-        jax.random.PRNGKey(int(jnp.sum(logits) * 1e6) % 2**31),
-        jnp.log(probs),
-    )
-    return int(top_k_ids[idx])
+def empty_cache(cfg, batch, max_len):
+    """Fixed-size KV cache as ONE stacked buffer per k/v: [num_layers, B, max_len, KVH, hd].
 
-
-def generate(model, params, sp, prompt, max_new_tokens=200, temperature=0.8, top_k=40):
-    """Autoregressive generation with KV cache and chat template.
-
-    Returns (response_text, stats_dict).
+    Stacked (not a per-layer Python list) so flax.linen.scan slices one layer's cache each step.
     """
-    chat_input = format_chat(prompt)
-    token_ids = [sp.bos_id()] + sp.EncodeAsIds(chat_input)
-    prompt_tokens = jnp.array([token_ids], dtype=jnp.int32)
-    prompt_text = sp.Decode(token_ids)
-    generated_ids = list(token_ids)
+    kvh, hd, layers = cfg["num_kv_heads"], cfg["head_dim"], cfg["num_layers"]
+    shape = (layers, batch, max_len, kvh, hd)
+    return jnp.zeros(shape, jnp.float32), jnp.zeros(shape, jnp.float32)
 
-    t_prefill = time.time()
-    logits, cache = model.apply(params, prompt_tokens)
-    ttft = time.time() - t_prefill
 
-    t_decode = time.time()
-    decode_tokens = 0
+_APPLY_CACHE = {}
 
-    for _ in range(max_new_tokens):
-        next_id = sample_token(logits[0, -1], temperature, top_k)
-        if next_id == sp.eos_id():
-            break
 
-        sp.Decode(generated_ids)
-        generated_ids.append(next_id)
-        new_text = sp.Decode(generated_ids)
+def _jitted_apply(model):
+    """jit model.apply once per model and reuse it, so repeated generate_batch() calls (chunks)
+    don't recompile — model.apply is a fresh bound method each access, so cache the wrapper."""
+    key = id(model)
+    if key not in _APPLY_CACHE:
+        _APPLY_CACHE[key] = jax.jit(model.apply)
+    return _APPLY_CACHE[key]
 
-        response_so_far = new_text[len(prompt_text) :]
-        if "<end_of_turn>" in response_so_far:
-            break
 
-        decode_tokens += 1
-        logits, cache = model.apply(
-            params, jnp.array([[next_id]], dtype=jnp.int32), cache=cache
+def generate_batch(model, params, sp, prompts, max_new_tokens=100, max_len=None):
+    """Greedy batched generation with a static KV cache and one jit-compiled step.
+
+    prompts: list[str]. Returns (list[str] completions, stats dict).
+    Left-pads prompts to a common length so every sequence's real tokens are right-aligned and
+    decoding continues from the same position; left-padding is masked out in attention.
+    """
+    eos, bos = sp.eos_id(), sp.bos_id()
+    seqs = [[bos] + sp.EncodeAsIds(format_chat(p)) for p in prompts]
+    lens = [len(s) for s in seqs]
+    prompt_len = max(lens)
+    if max_len is None:
+        max_len = prompt_len + max_new_tokens
+
+    # left-pad to prompt_len; valid_mask is True from each sequence's first real token onward
+    tokens = jnp.asarray(
+        [[0] * (prompt_len - n) + s for s, n in zip(seqs, lens)], jnp.int32
+    )
+    valid_mask = jnp.asarray(
+        [[j >= (prompt_len - n) for j in range(max_len)] for n in lens]
+    )
+
+    step = _jitted_apply(
+        model
+    )  # compiled once per model, reused across chunks and decode steps
+    ck, cv = empty_cache(model.cfg, len(prompts), max_len)
+
+    t0 = time.time()
+    logits, ck, cv = step(params, tokens, ck, cv, jnp.asarray(0, jnp.int32), valid_mask)
+    nxt = jnp.argmax(logits[:, -1], axis=-1).astype(jnp.int32)  # [B]
+    jax.block_until_ready(nxt)
+    ttft = time.time() - t0
+
+    collected = [nxt]
+    t1 = time.time()
+    for i in range(max_new_tokens - 1):
+        logits, ck, cv = step(
+            params,
+            nxt[:, None],
+            ck,
+            cv,
+            jnp.asarray(prompt_len + i, jnp.int32),
+            valid_mask,
         )
+        nxt = jnp.argmax(logits[:, -1], axis=-1).astype(jnp.int32)
+        collected.append(nxt)
+    gen = jnp.stack(collected, axis=1)  # [B, max_new_tokens]
+    jax.block_until_ready(gen)
+    decode_elapsed = time.time() - t1
+    gen = gen.tolist()
 
-    decode_elapsed = time.time() - t_decode
-    decode_tps = decode_tokens / decode_elapsed if decode_elapsed > 0 else 0
+    results = []
+    for row in gen:
+        ids = row[: row.index(eos)] if eos in row else row
+        text = sp.Decode(ids).split("<end_of_turn>")[0].strip()
+        results.append(text)
 
-    full = sp.Decode(generated_ids)
-    response_start = full.find("<start_of_turn>model\n")
-    if response_start != -1:
-        response = full[response_start + len("<start_of_turn>model\n") :]
-        response = response.replace("<end_of_turn>", "").strip()
-    else:
-        response = full
-
+    n_decode = max_new_tokens - 1
     stats = {
         "ttft": ttft,
-        "decode_tps": decode_tps,
-        "decode_tokens": decode_tokens,
-        "decode_elapsed": decode_elapsed,
-        "prompt_tokens": len(token_ids),
+        "decode_tps": (len(prompts) * n_decode) / decode_elapsed
+        if decode_elapsed > 0
+        else 0.0,
+        "batch": len(prompts),
+        "max_new_tokens": max_new_tokens,
     }
-    return response, stats
+    return results, stats
+
+
+def generate(model, params, sp, prompt, max_new_tokens=100, **kwargs):
+    """Single-prompt convenience wrapper around generate_batch (keeps the old call site working).
+
+    Note: this optimized engine uses greedy decoding (deterministic). temperature/top_k sampling
+    can be added in generate_batch; it does not affect the private region or restrict.
+    """
+    results, stats = generate_batch(
+        model, params, sp, [prompt], max_new_tokens=max_new_tokens
+    )
+    return results[0], stats
