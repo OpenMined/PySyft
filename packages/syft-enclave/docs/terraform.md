@@ -53,6 +53,7 @@ Do **not** set `dev_mode` in tfvars — pass it on the command line (`-var=dev_m
 
 Hardened image — no SSH, TEE enforcement, encryption on, container restart policy `Never`.
 From syft-enclave dir, run
+
 ```bash
 terraform -chdir=terraform init                       # once: download providers, set up local state
 terraform -chdir=terraform apply -var=dev_mode=false  # provision APIs, SA, IAM, secret, and the VM

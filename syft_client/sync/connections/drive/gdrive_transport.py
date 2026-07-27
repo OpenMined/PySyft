@@ -1,60 +1,64 @@
 """Google Drive Files transport layer implementation"""
 
-import logging
 import io
 import json
-from pathlib import Path
+import logging
 import pickle
-from syft_client.sync.utils.syftbox_utils import check_env
-from syft_client.version import SYFT_CLIENT_VERSION
-from typing import Any, Dict, List, Optional, Tuple
-from typing import TYPE_CHECKING
-from pydantic import BaseModel
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+from google.oauth2.credentials import Credentials as GoogleCredentials
 from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload, build_http
-from google.oauth2.credentials import Credentials as GoogleCredentials
+from pydantic import BaseModel
 
-from syft_client.sync.connections.drive.gdrive_utils import (
-    gather_all_file_and_folder_ids_recursive,
+from syft_client.sync.checkpoints.checkpoint import (
+    CHECKPOINT_FILENAME_PREFIX,
+    INCREMENTAL_CHECKPOINT_PREFIX,
+    Checkpoint,
+    IncrementalCheckpoint,
 )
-from syft_client.sync.connections.drive.gdrive_retry import (
-    execute_with_retries,
-    next_chunk_with_retries,
-    batch_execute_with_retries,
+from syft_client.sync.checkpoints.rolling_state import (
+    ROLLING_STATE_FILENAME_PREFIX,
+    RollingState,
 )
-from syft_client.sync.version.version_info import _parse_semver
-
 from syft_client.sync.connections.base_connection import (
     FileCollection,
     SyftboxPlatformConnection,
 )
-from syft_client.sync.events.file_change_event import (
-    FileChangeEventsMessageFileName,
-    FileChangeEventsMessage,
+from syft_client.sync.connections.drive.gdrive_retry import (
+    batch_execute_with_retries,
+    execute_with_retries,
+    next_chunk_with_retries,
 )
-from syft_client.sync.messages.proposed_filechange import (
-    MessageFileName,
-    FileNameParseError,
-    ProposedFileChangesMessage,
+from syft_client.sync.connections.drive.gdrive_utils import (
+    gather_all_file_and_folder_ids_recursive,
 )
 from syft_client.sync.environments.environment import Environment
-from syft_client.sync.checkpoints.checkpoint import (
-    Checkpoint,
-    IncrementalCheckpoint,
-    CHECKPOINT_FILENAME_PREFIX,
-    INCREMENTAL_CHECKPOINT_PREFIX,
+from syft_client.sync.events.file_change_event import (
+    FileChangeEventsMessage,
+    FileChangeEventsMessageFileName,
 )
-from syft_client.sync.checkpoints.rolling_state import (
-    RollingState,
-    ROLLING_STATE_FILENAME_PREFIX,
+from syft_client.sync.messages.proposed_filechange import (
+    FileNameParseError,
+    MessageFileName,
+    ProposedFileChangesMessage,
 )
+from syft_client.sync.utils.syftbox_utils import check_env
+from syft_client.sync.version.version_info import _parse_semver
+from syft_client.version import SYFT_CLIENT_VERSION
 
 if TYPE_CHECKING:
     from syft_client.sync.connections.drive.grdrive_config import (
         GdriveConnectionConfig,
     )
     from syft_client.sync.version.version_info import VersionInfo
+
+from syft_client.sync.connections.collection_prefixes import (
+    DATASET_COLLECTION_PREFIX,
+    PRIVATE_DATASET_COLLECTION_PREFIX,
+)
 
 # Timeout for Google API requests (in seconds)
 GOOGLE_API_TIMEOUT = 120  # 2 minutes
@@ -63,10 +67,7 @@ SYFTBOX_FOLDER = "SyftBox"
 GOOGLE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 
-from syft_client.sync.connections.collection_prefixes import (
-    DATASET_COLLECTION_PREFIX,
-    PRIVATE_DATASET_COLLECTION_PREFIX,
-)
+
 logging.getLogger("google_auth_httplib2").setLevel(logging.ERROR)
 
 
@@ -81,8 +82,8 @@ def build_drive_service(
     http = build_http()
     http.timeout = timeout
     if environment == Environment.COLAB:
-        from google.colab import auth as colab_auth
         import google.auth
+        from google.colab import auth as colab_auth
 
         colab_auth.authenticate_user()
         creds, _ = google.auth.default()
@@ -389,9 +390,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         other.personal_syftbox_event_id_cache = dict(
             self.personal_syftbox_event_id_cache
         )
-        other.collection_folder_id_cache = dict(
-            self.collection_folder_id_cache
-        )
+        other.collection_folder_id_cache = dict(self.collection_folder_id_cache)
 
     @property
     def environment(self) -> Environment:

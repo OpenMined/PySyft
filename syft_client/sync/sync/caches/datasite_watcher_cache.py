@@ -72,7 +72,7 @@ class DataSiteWatcherCache(BaseModel):
         else:
             if config.syftbox_folder is None:
                 raise ValueError("syftbox_folder is required for non-in-memory cache")
-        
+
             syftbox_folder_name = Path(config.syftbox_folder).name
             syftbox_parent = Path(config.syftbox_folder).parent
             events_folder = syftbox_parent / f"{syftbox_folder_name}-event-messages"
@@ -354,9 +354,7 @@ class DataSiteWatcherCache(BaseModel):
 
                 # Write files to local cache (path relative to syftbox_folder)
                 for file_name, content in files.items():
-                    rel_path = (
-                        f"{owner_email}/{spec.local_subpath}/{tag}/{file_name}"
-                    )
+                    rel_path = f"{owner_email}/{spec.local_subpath}/{tag}/{file_name}"
                     self.file_connection.write_file(rel_path, content)
 
                 # Update hash cache
@@ -442,6 +440,4 @@ class DataSiteWatcherCache(BaseModel):
                     collection["owner_email"], collection["tag"], spec.local_subpath
                 )
                 if collection_path is not None:
-                    self.collection_hashes[collection_path] = collection[
-                        "content_hash"
-                    ]
+                    self.collection_hashes[collection_path] = collection["content_hash"]
