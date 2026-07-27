@@ -9,7 +9,7 @@ import pytest
 
 from syft_client.sync.connections.drive import mock_drive_service
 from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
-from syft_datasets.dataset import Dataset
+from syft_datasets import Dataset
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 from syft_rds import SyftRDSClient
 from syft_rds.config import COLLECTION_SUBPATH, SyftRDSClientConfig

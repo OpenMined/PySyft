@@ -304,6 +304,84 @@ def test_enclave_full_job_flow(encryption):
     assert len(do2_job.output_paths) > 0
 
 
+def test__only_one_of_two_data_owners_sees_job_result_when_submitting():
+    """Two data owners jointly own the enclave, so every job needs approval from
+    both. When one of them submits a job (acting as the data scientist), both must
+    still approve — but only the submitting data owner receives the result. The
+    other owner approves yet never sees the output.
+
+    Mirrors ``notebooks/enclave/gemma/1. enclave_gemma_inmem_restrict_v2.ipynb``,
+    where a data owner both submits and gets the result while the co-owner only
+    gets it when named in ``datasets`` with ``share_results_with_do=True``.
+    """
+    enclave, do1, do2, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    # Both do1 and do2 jointly own the enclave — every job needs both approvals.
+    assert set(enclave.data_owners) == {do1.email, do2.email}
+
+    # do1 owns a dataset; do2 has none in this submission.
+    mock1, private1 = create_tmp_dataset_files("do1")
+    do1.create_dataset(
+        name="dataset1",
+        mock_path=mock1,
+        private_path=private1,
+        summary="Dataset 1",
+        users=[enclave.email],
+        upload_private=True,
+        sync=False,
+    )
+    do1.share_private_dataset("dataset1", enclave.email)
+    do1.sync()
+
+    # do1 submits a self-contained job that immediately returns a result. It does
+    # not share results with DOs, so only the submitter (do1) is a recipient.
+    code_path = create_tmp_code_file(SIMPLE_JOB_CODE)
+    do1.submit_python_job(
+        enclave.email,
+        code_path,
+        "test_job",
+        datasets={do1.email: ["dataset1"]},
+        share_results_with_do=False,
+    )
+
+    # Enclave receives and distributes to both data owners for approval.
+    enclave.sync()
+    enclave.receive_jobs()
+    do1.sync()
+    do2.sync()
+
+    # do1 approves — still gated on do2.
+    do1.approve_job(do1.jobs["test_job"])
+    enclave.sync()
+    assert enclave.jobs["test_job"].status == "pending"
+
+    # do2 approves — gate satisfied.
+    do2.approve_job(do2.jobs["test_job"])
+    enclave.sync()
+    assert enclave.jobs["test_job"].status == "approved"
+
+    # Enclave runs the job and distributes results.
+    enclave.run_jobs()
+    enclave.distribute_results()
+    assert enclave.jobs["test_job"].status == "done"
+
+    do1.sync()
+    do2.sync()
+
+    # do1 (the submitter) sees the result.
+    do1_job = do1.jobs["test_job"]
+    assert do1_job.status == "done"
+    assert len(do1_job.output_paths) > 0
+    with open(do1_job.output_paths[0], "r") as f:
+        result = json.loads(f.read())
+    assert result["status"] == "ok"
+
+    # do2 approved the job but never received the result.
+    do2_job = do2.jobs["test_job"]
+    assert len(do2_job.output_paths) == 0
+
+
 def test_approval_gated_on_configured_data_owners():
     """A configured data owner must approve even when the submission doesn't
     reference its dataset — the gate is the enclave's configured data_owners,

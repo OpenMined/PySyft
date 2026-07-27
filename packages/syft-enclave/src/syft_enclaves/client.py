@@ -8,13 +8,17 @@ from syft_client.sync.peers.peer import Peer
 from syft_client.sync.peers.peer_list import PeerList
 from syft_datasets.dataset_manager import SyftDatasetManager
 from syft_job.job import JobInfo, JobsList
-from syft_job.models.config import JobSubmissionMetadata
-from syft_job.models.state import JobState, JobStatus
+from syft_job.job_storage import JobRef
+from syft_job.models import JobState, JobStatus
 
 from syft_enclaves.enclave_job_info import (
     EnclaveJobInfo,
     PartyApprovalStatus,
     enclave_approval_file_name,
+)
+from syft_enclaves.attestation import (
+    AppraisalPolicy,
+    verify_attestation_token,
 )
 from syft_perms.syftperm_context import SyftPermContext
 
@@ -77,11 +81,30 @@ class SyftEnclaveClient:
     def reject_peer_request(self, email_or_peer: str | Peer):
         self._rds.reject_peer_request(email_or_peer)
 
-    def attest_peer(self, peer_email: str):
+    def attest_peer(
+        self,
+        peer_email: str,
+        expected_image_digest: str | None = None,
+        policy: "AppraisalPolicy | None" = None,
+    ):
         """Verify an enclave peer's attestation by re-reading SYFT_version.json
         from Drive. Returns None (with an info print) when no token is available;
-        raises AttestationError only when verification of an existing token fails."""
-        from syft_enclaves.attestation import verify_attestation_token
+        raises AttestationError only when verification of an existing token fails.
+
+        Args:
+            peer_email: the enclave peer to attest.
+            expected_image_digest: a "sha256:..." container image digest you
+                trust — . When set, the attestation
+                is appraised against it.
+            policy: a full ``AppraisalPolicy`` for finer control (image digest
+                *and* syft-client version). Mutually exclusive with
+                ``expected_image_digest``.
+        """
+
+        if expected_image_digest is not None and policy is not None:
+            raise ValueError("Pass either expected_image_digest or policy, not both.")
+        if expected_image_digest is not None:
+            policy = AppraisalPolicy(expected_image_digest=expected_image_digest)
 
         version_info = self._rds.peer_manager.connection_router.read_peer_version_file(
             peer_email
@@ -97,7 +120,7 @@ class SyftEnclaveClient:
                 "(not running in a Confidential Space); skipping attestation."
             )
             return None
-        return verify_attestation_token(version_info.attestation_token)
+        return verify_attestation_token(version_info.attestation_token, policy=policy)
 
     def sync(self):
         self._rds.sync()
@@ -256,31 +279,19 @@ class SyftEnclaveClient:
         4. Sets permissions and marks as distributed
         """
         self._rds.job_client.scan_inbox()
-        inbox_dir = self._rds.job_client.config.get_all_submissions_dir(self._rds.email)
-        if not inbox_dir.exists():
-            return
+        job_manager = self._rds.job_client.manager
+        for ref in job_manager.iter_submission_refs(self._rds.email):
+            self._try_distribute_job(ref)
 
-        for ds_dir in inbox_dir.iterdir():
-            if not ds_dir.is_dir():
-                continue
-            for job_dir in ds_dir.iterdir():
-                if not job_dir.is_dir():
-                    continue
-                self._try_distribute_job(ds_dir.name, job_dir)
-
-    def _try_distribute_job(self, ds_email: str, job_dir: Path):
+    def _try_distribute_job(self, ref: JobRef):
         """Distribute a single enclave job to relevant DOs if not yet distributed."""
-        config_path = job_dir / "config.yaml"
-        if not config_path.exists():
-            return
-
-        config = JobSubmissionMetadata.load(config_path)
+        job_manager = self._rds.job_client.manager
+        job_dir = job_manager.submission_dir(ref)
+        config = job_manager.read_submission(ref)
         if config.job_type != "enclave" or not config.datasets:
             return
 
-        review_dir = self._rds.job_client.config.get_review_job_dir(
-            self._rds.email, ds_email, job_dir.name
-        )
+        review_dir = job_manager.review_dir(ref)
         distributed_marker = review_dir / "distributed"
         if distributed_marker.exists():
             return
@@ -295,7 +306,7 @@ class SyftEnclaveClient:
         recipients = list(dict.fromkeys([*submission_dos, *approval_dos]))
         self._forward_job_to_dos(job_dir, recipients)
         self._save_enclave_job_state(review_dir, approval_dos, config.datasets)
-        self._set_job_permissions(job_dir, recipients, approval_dos)
+        self._set_job_permissions(ref, recipients, approval_dos)
         self._forward_approval_files_to_dos(review_dir, approval_dos)
 
         distributed_marker.parent.mkdir(parents=True, exist_ok=True)
@@ -366,22 +377,17 @@ class SyftEnclaveClient:
 
     def _set_job_permissions(
         self,
-        job_dir: Path,
+        ref: JobRef,
         read_dos: list[str],
         approval_dos: list[str],
     ):
         """Grant inbox read to everyone who needs to see the job (referenced +
         approving DOs), and approval-file write to the approving DOs."""
+        job_manager = self._rds.job_client.manager
         datasite = self._rds.syftbox_folder / self._rds.email
         ctx = SyftPermContext(datasite=datasite)
-        inbox_rel = job_dir.relative_to(datasite)
-
-        ds_email = job_dir.parent.name
-        job_name = job_dir.name
-        review_dir = self._rds.job_client.config.get_review_job_dir(
-            self._rds.email, ds_email, job_name
-        )
-        review_rel = review_dir.relative_to(datasite)
+        inbox_rel = job_manager.submission_dir(ref).relative_to(datasite)
+        review_rel = job_manager.review_dir(ref).relative_to(datasite)
 
         for do_email in dict.fromkeys([*read_dos, *approval_dos]):
             ctx.open(inbox_rel).grant_read_access(do_email)

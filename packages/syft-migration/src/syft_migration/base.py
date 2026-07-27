@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import BaseModel
 
-from syft_migration.registry import MigrationRegistry, default_registry
+from syft_migration.identity import MigrationError, _has_identity
+
+if TYPE_CHECKING:
+    from syft_migration.registry import MigrationRegistry
 
 
 class MigratableObject(BaseModel):
@@ -12,14 +15,14 @@ class MigratableObject(BaseModel):
 
     Subclasses pin their identity by overriding the field defaults, e.g.::
 
-        class JobV2(MigratableObject):
+        class JobV2(MigratableObject, registry=my_registry):
             canonical_name: str = "job"
             version: str = "2"
 
     ``canonical_name`` is the stable logical name shared across all versions of the
     object; ``version`` is the schema version. Concrete subclasses auto-register into
     a :class:`MigrationRegistry` on definition. Pass ``registry=`` as a class keyword
-    argument to register into a non-default registry (handy for test isolation).
+    argument; subclasses of a registered class inherit its registry.
     """
 
     canonical_name: str
@@ -37,7 +40,14 @@ class MigratableObject(BaseModel):
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs: object) -> None:
         super().__pydantic_init_subclass__(**kwargs)
-        registry: MigrationRegistry = getattr(
-            cls, "__migration_registry__", default_registry
+        registry: Optional[MigrationRegistry] = getattr(
+            cls, "__migration_registry__", None
         )
+        if registry is None:
+            if _has_identity(cls):
+                raise MigrationError(
+                    f"{cls.__name__} pins canonical_name/version but has no registry; "
+                    "pass registry=... as a class keyword argument"
+                )
+            return
         registry.register_object_version(cls)

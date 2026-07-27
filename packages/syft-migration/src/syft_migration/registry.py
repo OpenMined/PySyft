@@ -1,59 +1,48 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable
+
+from syft_migration.identity import MigrationError, _has_identity, _identity
+from syft_migration.schema import (
+    PackageInfo,
+    ProtocolSchema,
+    ReleasedPackageProtocolInfo,
+    ReleasedProtocol,
+)
 
 if TYPE_CHECKING:
     from syft_migration.base import MigratableObject
-    from syft_migration.schema import PackageProtocolSchema
 
 # A migration transforms one MigratableObject instance into another version.
 MigrationFn = Callable[["MigratableObject"], "MigratableObject"]
 
 
-class MigrationError(Exception):
-    """Raised when an object cannot be registered, located, or migrated."""
-
-
-def _has_identity(cls: type[MigratableObject]) -> bool:
-    """Whether ``cls`` pins both identity fields (i.e. is a concrete version).
-
-    The base class and abstract intermediates leave the fields required (no
-    default), so they have no identity and are not registered.
-    """
-    name_field = cls.model_fields.get("canonical_name")
-    version_field = cls.model_fields.get("version")
-    if name_field is None or version_field is None:
-        return False
-    return not (name_field.is_required() or version_field.is_required())
-
-
-def _identity(cls: type[MigratableObject]) -> tuple[str, str]:
-    """Return (canonical_name, version) for a concrete subclass.
-
-    Raises ``MigrationError`` if ``cls`` does not pin both fields (the base class
-    and abstract intermediates leave them required, so they have no identity).
-    """
-    if not _has_identity(cls):
-        raise MigrationError(
-            f"{cls.__name__} does not pin canonical_name/version and has no identity"
-        )
-    return (
-        str(cls.model_fields["canonical_name"].default),
-        str(cls.model_fields["version"].default),
-    )
-
-
 class MigrationRegistry:
     """All known object versions, migrations, and protocol schemas for ONE package."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        protocol_name: str,
+        package_name: str,
+        package_version: str,
+        protocol_version: str,
+    ) -> None:
+        self.protocol_name = protocol_name
+        self.package_name = package_name
+        self.package_version = package_version
+        self.protocol_version = protocol_version
         # canonical_name -> {version: object_class}
         self.objects: dict[str, dict[str, type[MigratableObject]]] = {}
         # canonical_name -> {(from_version, to_version): migration_fn}
         self.migrations: dict[str, dict[tuple[str, str], MigrationFn]] = {}
-        self.current_protocol_schema: Optional[PackageProtocolSchema] = None
-        self.history_protocol_schemas: dict[str, PackageProtocolSchema] = {}
+
+        # protocol_version -> identity of the past release that spoke that
+        # protocol; usually read from files that are release artifacts of
+        # earlier releases (see ReleasedPackageProtocolInfo.save/load).
+        self.package_version_history: dict[str, PackageInfo] = {}
+        # protocol_version -> schema of the release that spoke that protocol
+        self.protocol_version_history: dict[str, ProtocolSchema] = {}
 
     # -- objects -----------------------------------------------------------
     def register_object_version(self, cls: type[MigratableObject]) -> None:
@@ -80,9 +69,6 @@ class MigrationRegistry:
         return list(self.objects.get(canonical_name, {}))
 
     def latest_version(self, canonical_name: str) -> str:
-        schema = self.current_protocol_schema
-        if schema is not None and canonical_name in schema.object_versions:
-            return schema.object_versions[canonical_name]
         versions = self.versions(canonical_name)
         if not versions:
             raise MigrationError(f"No versions registered for {canonical_name!r}")
@@ -142,35 +128,153 @@ class MigrationRegistry:
             f"No migration path for {canonical_name!r} from {from_version} to {to_version}"
         )
 
-    # -- protocol schemas --------------------------------------------------
-    def register_protocol_schema(
-        self, schema: PackageProtocolSchema, *, current: bool = True
-    ) -> None:
-        """Register a schema, keeping the object registry and schemas in sync.
-
-        Every object the schema pins must already be registered (objects auto-register
-        when their class is defined); registering a schema that references an unknown
-        object/version raises before the schema is stored.
-        """
-        for canonical_name, version in schema.object_versions.items():
-            self.get_class(canonical_name=canonical_name, version=version)
-        self.history_protocol_schemas[schema.package_version] = schema
-        if current:
-            self.current_protocol_schema = schema
-
-    def schema_for_package_version(self, package_version: str) -> PackageProtocolSchema:
-        if (
-            self.current_protocol_schema is not None
-            and self.current_protocol_schema.package_version == package_version
-        ):
-            return self.current_protocol_schema
+    def has_migration_path(
+        self, canonical_name: str, from_version: str, to_version: str
+    ) -> bool:
+        """Whether a chain of migrations leads from ``from_version`` to ``to_version``."""
         try:
-            return self.history_protocol_schemas[package_version]
+            self.migration_path(
+                canonical_name=canonical_name,
+                from_version=from_version,
+                to_version=to_version,
+            )
+        except MigrationError:
+            return False
+        return True
+
+    def has_upgradeable_path_to_latest(
+        self, canonical_name: str, from_version: str
+    ) -> bool:
+        """Whether ``from_version`` can be migrated up to the latest registered
+        version of ``canonical_name`` (trivially true for the latest itself)."""
+        try:
+            latest = self.latest_version(canonical_name)
+        except MigrationError:
+            return False
+        return self.has_migration_path(canonical_name, from_version, latest)
+
+    # -- protocol schemas --------------------------------------------------
+    def _raise_for_unknown_objects(self, schema: ProtocolSchema) -> None:
+        """Raise if the schema lists an object version this registry cannot load."""
+        for canonical_name, versions in schema.supported_versions.items():
+            for version in versions:
+                self.get_class(canonical_name=canonical_name, version=version)
+
+    def register_historic_protocol_schema(
+        self, schema: ProtocolSchema, raise_for_unknown_objects: bool = False
+    ) -> None:
+        """Register the schema of a PAST protocol version of this package.
+
+        With ``raise_for_unknown_objects`` every object version the schema lists
+        must already be registered (objects auto-register when their class is
+        defined); a schema referencing an unknown object/version then raises
+        before the schema is stored.
+        """
+        if raise_for_unknown_objects:
+            self._raise_for_unknown_objects(schema)
+        self.protocol_version_history[schema.version] = schema
+
+    def register_released_package_protocol_info(
+        self,
+        info: ReleasedPackageProtocolInfo,
+        raise_for_unknown_objects: bool = False,
+    ) -> None:
+        """Register the release info of a PAST release of this package.
+
+        Registers the release's protocol schema and remembers which package
+        release spoke that protocol version.
+        """
+        self.register_historic_protocol_schema(
+            schema=info.protocol_schema,
+            raise_for_unknown_objects=raise_for_unknown_objects,
+        )
+        protocol_version = info.package_info.protocol_version
+        self.package_version_history[protocol_version] = info.package_info
+
+    def register_released_protocol(
+        self, released: ReleasedProtocol, raise_for_unknown_objects: bool = False
+    ) -> None:
+        """Register the frozen schema of a PAST released protocol version."""
+        self.register_historic_protocol_schema(
+            schema=released.protocol_schema,
+            raise_for_unknown_objects=raise_for_unknown_objects,
+        )
+
+    def compute_protocol_schema(self) -> ProtocolSchema:
+        """Every object version this registry can load, straight from ``self.objects``."""
+        return ProtocolSchema(
+            protocol_name=self.protocol_name,
+            version=self.protocol_version,
+            supported_versions={
+                canonical_name: sorted(versions)
+                for canonical_name, versions in self.objects.items()
+            },
+            current_object_schemas={
+                canonical_name: self.get_class(
+                    canonical_name, self.latest_version(canonical_name)
+                ).model_json_schema()
+                for canonical_name in self.objects
+            },
+        )
+
+    def compute_released_protocol(self) -> ReleasedProtocol:
+        """The protocol artifact a release emits when the protocol changed."""
+        return ReleasedProtocol(protocol_schema=self.compute_protocol_schema())
+
+    def compute_released_package_protocol_info(self) -> ReleasedPackageProtocolInfo:
+        """The artifact EVERY package release emits."""
+        return ReleasedPackageProtocolInfo(
+            package_info=PackageInfo(
+                package_name=self.package_name,
+                version=self.package_version,
+                protocol_version=self.protocol_version,
+            ),
+            protocol_schema=self.compute_protocol_schema(),
+        )
+
+    def schema_for_protocol_version(self, protocol_version: str) -> ProtocolSchema:
+        if protocol_version == self.protocol_version:
+            return self.compute_protocol_schema()
+        try:
+            return self.protocol_version_history[protocol_version]
         except KeyError:
             raise MigrationError(
-                f"No protocol schema registered for package version {package_version!r}"
+                f"No protocol schema registered for protocol version {protocol_version!r}"
             )
 
+    # -- released schema integrity ------------------------------------------
+    def find_schema_drift(self) -> list[tuple[str, str, str]]:
+        """Check the current registry against ALL released protocols in history.
 
-# Default per-import registry used by MigratableObject.__init_subclass__.
-default_registry = MigrationRegistry()
+        A released protocol froze, per canonical name, the JSON schema of its
+        current object version; the class registered for that version must still
+        produce the same schema. Returns the drifted
+        (canonical_name, object_version, protocol_version) tuples; empty = clean.
+        """
+        drifted = []
+        for protocol_version, schema in self.protocol_version_history.items():
+            for canonical_name, frozen in schema.current_object_schemas.items():
+                version = schema.current_schema(canonical_name)
+                try:
+                    current = self.get_class(
+                        canonical_name, version
+                    ).model_json_schema()
+                except MigrationError:
+                    current = None
+                if current != frozen:
+                    drifted.append((canonical_name, version, protocol_version))
+        return drifted
+
+    def protocol_changed_without_bump(self) -> bool:
+        """Whether the protocol changed while its version constant did not.
+
+        A package release must only bump the protocol version when the protocol
+        actually changed — and must bump it when it did. If a released protocol
+        schema exists for THIS registry's protocol version, its supported
+        versions must match the ones computed from the code.
+        """
+        released = self.protocol_version_history.get(self.protocol_version)
+        if released is None:
+            return False
+        current = self.compute_protocol_schema()
+        return released.supported_versions != current.supported_versions

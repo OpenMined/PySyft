@@ -7,7 +7,7 @@ from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
 from syft_job.job_runner import SyftJobRunner
 from syft_perms import SyftPermContext
-from syft_job.models.state import JobState
+from syft_job.models import JobState
 
 
 DO_EMAIL = "do@test.org"
@@ -50,8 +50,8 @@ def test_full_job_lifecycle(tmp_path: Path):
     assert (job_dir / "config.yaml").exists()
     assert (job_dir / "code" / "main.py").exists()
 
-    # Job dir should be under inbox/<ds_email>/<job_name>
-    expected_parent = ds_config.get_all_submissions_dir(DO_EMAIL) / DS_EMAIL
+    # Job dir should be under inbox/<ds_email>/v1/<job_name>
+    expected_parent = ds_config.get_all_submissions_dir(DO_EMAIL) / DS_EMAIL / "v1"
     assert job_dir.parent == expected_parent
 
     # --- DO lists jobs (auto-scans inbox) and sees it as pending ---
@@ -99,16 +99,16 @@ def test_full_job_lifecycle(tmp_path: Path):
     # --- Before sharing, DS should NOT have read access ---
     ctx = SyftPermContext(datasite=syftbox / DO_EMAIL)
     assert not ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/test.job/outputs/"
+        f"app_data/job/review/{DS_EMAIL}/v1/test.job/outputs/"
     ).has_read_access(DS_EMAIL)
     assert not ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/test.job/stdout.txt"
+        f"app_data/job/review/{DS_EMAIL}/v1/test.job/stdout.txt"
     ).has_read_access(DS_EMAIL)
     assert not ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/test.job/stderr.txt"
+        f"app_data/job/review/{DS_EMAIL}/v1/test.job/stderr.txt"
     ).has_read_access(DS_EMAIL)
     assert not ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/test.job/returncode.txt"
+        f"app_data/job/review/{DS_EMAIL}/v1/test.job/returncode.txt"
     ).has_read_access(DS_EMAIL)
 
     # --- Share outputs and logs with DS ---
@@ -118,17 +118,17 @@ def test_full_job_lifecycle(tmp_path: Path):
     # --- Verify DS has read access via SyftPermContext ---
     ctx = SyftPermContext(datasite=syftbox / DO_EMAIL)
 
-    outputs_folder = ctx.open(f"app_data/job/review/{DS_EMAIL}/test.job/outputs/")
+    outputs_folder = ctx.open(f"app_data/job/review/{DS_EMAIL}/v1/test.job/outputs/")
     assert outputs_folder.has_read_access(DS_EMAIL)
 
-    stdout_file = ctx.open(f"app_data/job/review/{DS_EMAIL}/test.job/stdout.txt")
+    stdout_file = ctx.open(f"app_data/job/review/{DS_EMAIL}/v1/test.job/stdout.txt")
     assert stdout_file.has_read_access(DS_EMAIL)
 
-    stderr_file = ctx.open(f"app_data/job/review/{DS_EMAIL}/test.job/stderr.txt")
+    stderr_file = ctx.open(f"app_data/job/review/{DS_EMAIL}/v1/test.job/stderr.txt")
     assert stderr_file.has_read_access(DS_EMAIL)
 
     returncode_file = ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/test.job/returncode.txt"
+        f"app_data/job/review/{DS_EMAIL}/v1/test.job/returncode.txt"
     )
     assert returncode_file.has_read_access(DS_EMAIL)
 

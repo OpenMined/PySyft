@@ -3,7 +3,7 @@ from typing import Optional
 
 from syft_job.client import BaseJobClient, JobClient
 from syft_job.job import JobsList
-from syft_job.models.config import JobSubmissionMetadata
+from syft_job.models import JobSubmissionMetadata
 
 
 class EnclaveJobClient(BaseJobClient):
@@ -19,6 +19,10 @@ class EnclaveJobClient(BaseJobClient):
     @property
     def config(self):
         return self._job_client.config
+
+    @property
+    def manager(self):
+        return self._job_client.manager
 
     @property
     def current_user_email(self):

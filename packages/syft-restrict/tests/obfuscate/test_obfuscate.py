@@ -1,13 +1,16 @@
 """Tests for the display transform (approach A), exercised through run()."""
 
+import ast
 import shutil
 from pathlib import Path
 
-from syft_restrict import run
+from syft_restrict import obfuscate
+from syft_restrict.astutil import scan_file
+from syft_restrict.runner import _run
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
-ALLOW_METHODS = ["arithmetic", "indexing", "comparison"]
+ALLOW_OPERATORS = ["arithmetic", "indexing", "comparison"]
 
 
 def _private_from_config(source: str):
@@ -22,11 +25,11 @@ def _obfuscate_fixture(tmp_path: Path):
     shutil.copy(FIXTURES / "compliant_model.py", src_path)
     source = src_path.read_text()
     private, config_line = _private_from_config(source)
-    result = run(
+    result = _run(
         src_path,
         obfuscate=private,
         allow_functions=ALLOW_FUNCTIONS,
-        allow_methods=ALLOW_METHODS,
+        allow_operators=ALLOW_OPERATORS,
     )
     obf = Path(result.obfuscated_path).read_text()
     return source, obf, config_line
@@ -65,12 +68,12 @@ def test_hide_blanks_whole_body_keeping_indentation(tmp_path):
         if ln.lstrip().startswith("def scale_pattern")
     )
     body = [def_line + 1, def_line + 2]  # the two body lines (4-space indented)
-    result = run(
+    result = _run(
         src_path,
         obfuscate=[[def_line, def_line]],
         hide=[body],
         allow_functions=ALLOW_FUNCTIONS,
-        allow_methods=ALLOW_METHODS,
+        allow_operators=ALLOW_OPERATORS,
     )
     obf_lines = Path(result.obfuscated_path).read_text().splitlines()
     note = "# hidden/obfuscated lines can only execute restricted python"
@@ -86,6 +89,16 @@ def test_hide_blanks_whole_body_keeping_indentation(tmp_path):
     hidden_text = "\n".join(obf_lines[body[0] - 1 : body[1]])
     assert "base" not in hidden_text  # the real body tokens are gone
     assert result.certificate["hide_ranges"] == [body]
+
+
+def test_fstring_literal_text_is_blanked():
+    # obfuscate() alone must still blank f-string text, even though verify()
+    # bans f-strings now.
+    source = 'def f():\n    return f"secret literal text"\n'
+    scan = scan_file(ast.parse(source), [(1, 2)])
+    obf = obfuscate(source, [[1, 2]], [], scan)
+    assert "secret literal text" not in obf
+    assert "■" in obf
 
 
 def test_obfuscation_is_deterministic(tmp_path):

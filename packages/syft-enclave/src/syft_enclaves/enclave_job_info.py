@@ -7,7 +7,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 from syft_job.job import JobInfo
-from syft_job.models.state import JobStatus
+from syft_job.models import JobStatus
 
 
 class PartyApprovalStatus(BaseModel):

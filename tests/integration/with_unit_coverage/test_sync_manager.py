@@ -13,7 +13,7 @@ Unit test equivalents:
 - test_file_deletion_do_to_ds -> test_file_deletion_do_to_ds
 """
 
-from syft_datasets.dataset import Dataset
+from syft_datasets import Dataset
 import os
 from pathlib import Path
 import time

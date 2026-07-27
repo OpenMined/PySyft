@@ -6,14 +6,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from syft_migration import ProtocolSchema
 from syft_perms.syftperm_context import SyftPermContext
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from .config import SyftJobConfig
 from .install_source import get_syft_client_install_source
 from .job import JobInfo, JobsList
-from .models.config import JobSubmissionMetadata
-from .models.state import JobState, JobStatus
+from .job_storage import JobRef, JobStorage
+from .models import JobState, JobStatus, JobSubmissionMetadata
 
 # Python version used when creating virtual environments for job execution
 RUN_SCRIPT_PYTHON_VERSION = "3.12"
@@ -55,7 +56,10 @@ class JobClient(BaseJobClient):
     """Client for submitting jobs to SyftBox."""
 
     def __init__(
-        self, config: SyftJobConfig, target_datasite_owner_email: Optional[str] = None
+        self,
+        config: SyftJobConfig,
+        target_datasite_owner_email: Optional[str] = None,
+        peer_schemas: Optional[dict[str, ProtocolSchema]] = None,
     ):
         """Initialize JobClient with configuration and optional user email for job views."""
         self.config = config
@@ -69,6 +73,9 @@ class JobClient(BaseJobClient):
         self.peer_install_sources: dict[
             str, str
         ] = {}  # do_email -> syft-client install source (local path, git URL, or "syft-client==X.Y.Z") advertised by that DO in their VersionInfo
+        # All model reads/writes and path resolution go through the manager;
+        # peer_schemas (peer email -> job ProtocolSchema) is filled by syft-client.
+        self.manager = JobStorage(config=config, peer_schemas=peer_schemas)
 
         # Validate that user_email exists in SyftBox root
         self._validate_user_email()
@@ -90,7 +97,10 @@ class JobClient(BaseJobClient):
     ) -> None:
         """Ensure inbox directory structure exists for submitting jobs."""
         my_submission_dir = self.config._get_job_submission_dir_for_me(
-            target_datasite_owner_email
+            target_datasite_owner_email,
+            protocol_version=self.manager.negotiated_protocol_version_for_peer(
+                target_datasite_owner_email, raise_on_unknown=False
+            ),
         )
         my_submission_dir.mkdir(parents=True, exist_ok=True)
 
@@ -151,6 +161,7 @@ class JobClient(BaseJobClient):
 
             random_id = str(uuid4())[0:8]
             job_name = f"Job - {random_id}"
+        JobStorage.validate_job_name(job_name)
 
         # Ensure user directory exists (create if it doesn't)
         user_dir = self.config.get_user_dir(user)
@@ -161,10 +172,9 @@ class JobClient(BaseJobClient):
         # Ensure inbox directory structure exists
         self._ensure_my_submission_directory_exists(submitting_to_email)
 
-        # Create job directory under inbox/<ds_email>/<job_name>/
-        job_dir = self.config.get_job_submission_dir(
-            submitting_to_email, self.config.current_user_email, job_name
-        )
+        # Create job directory under inbox/<ds_email>/[v<n>/]<job_name>/
+        ref = self.manager.new_submission_ref(submitting_to_email, job_name)
+        job_dir = self.manager.submission_dir(ref)
 
         if job_dir.exists():
             raise FileExistsError(
@@ -173,7 +183,7 @@ class JobClient(BaseJobClient):
 
         self._write_bash_script(job_dir, script)
 
-        # Write config.yaml using model
+        # Write config.yaml in the version the datasite owner understands
         config = JobSubmissionMetadata(
             name=job_name,
             type="bash",
@@ -182,7 +192,7 @@ class JobClient(BaseJobClient):
             submitted_at=datetime.now(timezone.utc),
             files=["script.sh"],
         )
-        config.save(job_dir / "config.yaml")
+        self.manager.write_submission(ref, config)
 
         return job_dir
 
@@ -392,6 +402,7 @@ python {entrypoint_path}
 
             random_id = str(uuid4())[0:8]
             job_name = f"Job - {random_id}"
+        JobStorage.validate_job_name(job_name)
 
         # Validate code path and entrypoint
         code_path_resolved, is_folder_submission, entrypoint = (
@@ -407,10 +418,9 @@ python {entrypoint_path}
         # Ensure inbox directory structure exists
         self._ensure_my_submission_directory_exists(submitting_to_email)
 
-        # Create job directory under inbox/<ds_email>/<job_name>/
-        job_dir = self.config.get_job_submission_dir(
-            submitting_to_email, self.config.current_user_email, job_name
-        )
+        # Create job directory under inbox/<ds_email>/[v<n>/]<job_name>/
+        ref = self.manager.new_submission_ref(submitting_to_email, job_name)
+        job_dir = self.manager.submission_dir(ref)
 
         if job_dir.exists():
             raise FileExistsError(f"Job '{job_name}' already exists for user '{user}'")
@@ -452,7 +462,7 @@ python {entrypoint_path}
         # Compute all_dependencies for config
         all_dependencies = [install_source] + dependencies
 
-        # Write config.yaml using model
+        # Write config.yaml in the version the datasite owner understands
         config = JobSubmissionMetadata(
             name=job_name,
             type="python",
@@ -465,7 +475,7 @@ python {entrypoint_path}
             is_folder_submission=is_folder_submission,
             code_path=str(code_path_resolved),
         )
-        config.save(job_dir / "config.yaml")
+        self.manager.write_submission(ref, config)
 
         return job_dir
 
@@ -492,24 +502,27 @@ python {entrypoint_path}
             return False, "'config.yaml' must be a file"
         return True, ""
 
-    def receive_job(self, ds_email: str, job_name: str) -> JobState:
+    def receive_job(
+        self,
+        ds_email: str,
+        job_name: str,
+        protocol_version: str,
+    ) -> JobState:
         """Validate an incoming job and create initial state in review/.
 
-        Called by scan_inbox() when a new job is detected.
+        Called by scan_inbox() when a new job is detected. The state is written
+        in the layout/version of the protocol the job was submitted with.
 
         Args:
             ds_email: Email of the data scientist who submitted the job.
             job_name: Name of the job.
+            protocol_version: Protocol layout the job was submitted with.
 
         Returns:
             The created JobState.
         """
-        submission_path = self.config.get_job_submission_dir(
-            self.current_user_email, ds_email, job_name
-        )
-        review_path = self.config.get_review_job_dir(
-            self.current_user_email, ds_email, job_name
-        )
+        ref = JobRef(self.current_user_email, ds_email, job_name, protocol_version)
+        submission_path = self.manager.submission_dir(ref)
 
         now = datetime.now(timezone.utc)
         valid, reason = self.validate_submission(submission_path)
@@ -525,47 +538,31 @@ python {entrypoint_path}
         else:
             state = JobState(status=JobStatus.PENDING, received_at=now)
 
-        review_path.mkdir(parents=True, exist_ok=True)
-        state.save(review_path / "state.yaml")
+        self.manager.write_state(ref, state)
         return state
 
     def scan_inbox(self) -> None:
         """Scan inbox/ for new unprocessed jobs and receive them.
 
-        For each job in inbox/ that doesn't have a corresponding state.yaml
-        in review/, validates the submission and creates the initial state.
+        For each job in inbox/ (any protocol layout) that doesn't have a
+        corresponding state.yaml in review/, validates the submission and
+        creates the initial state.
         """
-        inbox_dir = self.config.get_all_submissions_dir(self.current_user_email)
-        if not inbox_dir.exists():
-            return
-
-        for ds_dir in inbox_dir.iterdir():
-            if not ds_dir.is_dir():
+        for ref in self.manager.iter_submission_refs(self.current_user_email):
+            if (self.manager.review_dir(ref) / "state.yaml").exists():
                 continue
-            for job_dir in ds_dir.iterdir():
-                if not job_dir.is_dir():
-                    continue
-                if not (job_dir / "config.yaml").exists():
-                    continue
-
-                # Already processed?
-                review_state = (
-                    self.config.get_review_job_dir(
-                        self.current_user_email, ds_dir.name, job_dir.name
-                    )
-                    / "state.yaml"
-                )
-                if review_state.exists():
-                    continue
-
-                self.receive_job(ds_dir.name, job_dir.name)
+            self.receive_job(ref.ds_email, ref.job_name, ref.protocol_version)
 
     # ──────────────────────────────────────────────
     # Listing
     # ──────────────────────────────────────────────
 
     def _get_all_jobs(self) -> List[JobInfo]:
-        """Get all jobs by scanning inbox/ and correlating with review/."""
+        """Get all jobs by scanning inbox/ and correlating with review/.
+
+        Jobs from any protocol layout are upgraded in memory to the current
+        object versions.
+        """
         jobs: list[JobInfo] = []
         syftbox_root = self.config.syftbox_folder
 
@@ -578,48 +575,27 @@ python {entrypoint_path}
                 continue
 
             datasite_owner_email = datasite_owner_dir.name
-            inbox_dir = self.config.get_all_submissions_dir(datasite_owner_email)
-
-            if not inbox_dir.exists():
-                continue
-
-            # Scan DS subdirectories, then job directories within each
-            for ds_dir in inbox_dir.iterdir():
-                if not ds_dir.is_dir():
-                    continue
-
-                for job_dir in ds_dir.iterdir():
-                    if not job_dir.is_dir():
-                        continue
-
-                    config_file = job_dir / "config.yaml"
-                    if not config_file.exists():
-                        continue
-
+            for ref in self.manager.iter_submission_refs(datasite_owner_email):
+                try:
+                    config = self.manager.read_submission(ref)
                     try:
-                        config = JobSubmissionMetadata.load(config_file)
-
-                        # Look up state from review/
-                        review_path = self.config.get_review_job_dir(
-                            datasite_owner_email, ds_dir.name, job_dir.name
+                        state = self.manager.read_state(ref)
+                    except FileNotFoundError:
+                        state = JobState(status=JobStatus.RECEIVED)
+                    jobs.append(
+                        JobInfo(
+                            job_metadata=config,
+                            state=state,
+                            current_user_email=self.current_user_email,
+                            client=self,
+                            ref=ref,
                         )
-                        state_file = review_path / "state.yaml"
-                        if state_file.exists():
-                            state = JobState.load(state_file)
-                        else:
-                            state = JobState(status=JobStatus.RECEIVED)
-
-                        jobs.append(
-                            JobInfo(
-                                job_metadata=config,
-                                state=state,
-                                datasite_owner_email=datasite_owner_email,
-                                current_user_email=self.current_user_email,
-                                client=self,
-                            )
-                        )
-                    except Exception:
-                        continue
+                    )
+                except Exception as e:
+                    print(
+                        f"Error listing job {ref.job_name} from {ref.datasite_email}: {e}"
+                    )
+                    continue
 
         return jobs
 

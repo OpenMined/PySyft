@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 from syft_job.job_runner import SyftJobRunner
 from syft_job.config import SyftJobConfig
-from syft_job.models.state import JobState, JobStatus
+from syft_job.models import JobState, JobStatus
 
 
 def test_exception_logs_not_truncated():
@@ -59,7 +59,8 @@ func_a()
         state.save(review_dir / "state.yaml")
 
         runner = SyftJobRunner(config)
-        runner._execute_job(job_name, stream_output=True, timeout=30, user=ds_email)
+        ref = runner._find_jobref_from_name(job_name, user=ds_email)
+        runner._execute_job(ref, stream_output=True, timeout=30)
 
         stdout_content = (review_dir / "stdout.txt").read_text()
         stderr_content = (review_dir / "stderr.txt").read_text()

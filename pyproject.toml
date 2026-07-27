@@ -151,6 +151,9 @@ dev = [
     "notebook>=6.5.0",
     "tornado>=6.5.5",
     "ipython>=8.0.0",
+    # needed by the jupyter MCP server (stateful cell execution from Claude Code)
+    "jupyter-collaboration>=4.0.0",
+    "jupyter-mcp-tools>=0.1.4",
 ]
 test = [
     "pytest>=7.0.0",

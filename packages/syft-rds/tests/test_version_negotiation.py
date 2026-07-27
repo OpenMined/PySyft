@@ -80,6 +80,7 @@ class TestForceSubmission:
             / "job"
             / "inbox"
             / ds.email
+            / "v1"
             / "test.force.job"
         )
         assert job_dir.exists()

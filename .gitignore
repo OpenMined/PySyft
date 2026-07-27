@@ -184,6 +184,7 @@ test_suite_output.log
 
 
 # Notebooks
+*ailuminate_prompts.csv
 notebooks/e2e/sales_mock.csv
 notebooks/e2e/sales_private.csv
 notebooks/e2e/readme.mdpackages/syft-bg/docs/sync-service.md
@@ -194,3 +195,7 @@ notebooks/ai_audit/internal/data/readme.md
 
 .agents/
 AGENTS.md
+
+# Local JupyterLab state (jupyter MCP server runs from repo root)
+.jupyter/
+.jupyter_ystore.db
