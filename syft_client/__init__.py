@@ -37,8 +37,12 @@ from syft_client.sync.utils.syftbox_utils import (  # noqa: F401, E402
 )
 from syft_client.migrations.history import register_historic_schemas  # noqa: E402
 
-# Historic schemas list object versions that must already be registered, which
-# happens when the model modules are imported (transitively via sync.login).
+# Import the versioned model modules explicitly so registration is intentional,
+# not a side-effect of whatever login happened to pull in first.
+import syft_client.sync.version.version_info  # noqa: F401, E402
+import syft_client.sync.messages.proposed_filechange  # noqa: F401, E402
+import syft_client.sync.events.file_change_event  # noqa: F401, E402
+
 register_historic_schemas()
 
 SYFT_CLIENT_DIR = Path(__file__).parent.parent
