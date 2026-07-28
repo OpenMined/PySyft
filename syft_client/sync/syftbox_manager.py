@@ -1,59 +1,58 @@
-from pathlib import Path
 import fcntl
-from syft_client.sync.peers.peer_store import PeerStore
-from syft_client.sync.utils.path_filters import is_normal_syncable_path
 import logging
+import os
 import shutil
-from contextlib import contextmanager
-from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
-from syft_client.utils import resolve_path
-from concurrent.futures import ThreadPoolExecutor
 import time
-from pydantic import ConfigDict
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from pathlib import Path
+from typing import List, Optional, cast
+
+from pydantic import BaseModel, ConfigDict, PrivateAttr
+from syft_datasets.config import SyftBoxConfig
+from syft_datasets.dataset_manager import SyftDatasetManager
+from syft_job import SyftJobConfig
 from syft_job.client import BaseJobClient, JobClient
 from syft_job.job import JobsList
 from syft_job.job_runner import SyftJobRunner
-from syft_job import SyftJobConfig
-from syft_datasets.config import SyftBoxConfig
-from syft_datasets.dataset_manager import SyftDatasetManager
-from syft_client.sync.platforms.base_platform import BasePlatform
-from pydantic import BaseModel, PrivateAttr
-from typing import List, Optional, cast
-from syft_client.sync.sync.caches.datasite_watcher_cache import (
-    DataSiteWatcherCacheConfig,
-)
-from syft_client.sync.sync.caches.datasite_owner_cache import (
-    DataSiteOwnerEventCacheConfig,
-)
-from syft_client.sync.peers.peer_list import PeerList
-from syft_client.sync.peers.peer import Peer
+
 from syft_client.sync.connections.base_connection import (
     SyftboxPlatformConnection,
 )
+from syft_client.sync.connections.connection_router import ConnectionRouter
+from syft_client.sync.connections.drive import mock_drive_service
+from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft_client.sync.connections.drive.grdrive_config import GdriveConnectionConfig
 from syft_client.sync.events.file_change_event import (
     FileChangeEvent,
     FileChangeEventsMessage,
 )
-from syft_client.sync.utils.pre_submit_scan import run_pre_submit_check
-from syft_client.sync.utils.syftbox_utils import (
-    random_email,
-    random_syftbox_folder_for_testing,
-)
 from syft_client.sync.file_writer import FileWriter
-
 from syft_client.sync.job_file_change_handler import JobFileChangeHandler
-from syft_client.sync.connections.connection_router import ConnectionRouter
-
-from syft_client.sync.connections.drive.grdrive_config import GdriveConnectionConfig
-from syft_client.sync.connections.drive import mock_drive_service
+from syft_client.sync.peers.peer import Peer
+from syft_client.sync.peers.peer_list import PeerList
+from syft_client.sync.peers.peer_store import PeerStore
+from syft_client.sync.platforms.base_platform import BasePlatform
+from syft_client.sync.sync.caches.datasite_owner_cache import (
+    DataSiteOwnerEventCacheConfig,
+)
+from syft_client.sync.sync.caches.datasite_watcher_cache import (
+    DataSiteWatcherCacheConfig,
+)
 from syft_client.sync.sync.datasite_owner_syncer import (
+    MIN_MESSAGES_COMPACT,
     DatasiteOwnerSyncer,
     DatasiteOwnerSyncerConfig,
-    MIN_MESSAGES_COMPACT,
 )
 from syft_client.sync.sync.datasite_watcher_syncer import (
     DatasiteWatcherSyncer,
     DatasiteWatcherSyncerConfig,
+)
+from syft_client.sync.utils.path_filters import is_normal_syncable_path
+from syft_client.sync.utils.pre_submit_scan import run_pre_submit_check
+from syft_client.sync.utils.syftbox_utils import (
+    random_email,
+    random_syftbox_folder_for_testing,
 )
 from syft_client.sync.version.peer_manager import (
     CompatAction,
@@ -61,8 +60,8 @@ from syft_client.sync.version.peer_manager import (
     PeerManagerConfig,
 )
 from syft_client.sync.version.version_info import VersionInfo
+from syft_client.utils import resolve_path
 from syft_client.version import VERSION_FILE_NAME
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -511,16 +510,19 @@ class SyftboxManager(BaseModel):
         datasite_watcher_syncer = None
         job_runner = None
 
-        # Created before the job and dataset clients so its live peer-schema
-        # maps (filled as peer version files load) can drive their protocol
-        # negotiation.
+        # Create the PeerManager first, because the job client needs its live
+        # peer-schema map. The map changes when this client reads a version file
+        # from a peer. The job client uses the map to select a job protocol
+        # version.
         peer_manager = PeerManager.from_config(
             config.peer_manager_config, email=config.email
         )
-        dataset_manager = SyftDatasetManager.from_config(
-            config.dataset_manager_config,
-            peer_schemas=peer_manager.live_peer_schemas("syft-dataset"),
-        )
+        # Do not give the dataset manager a peer-schema map. Datasets go to a
+        # peer through the dataset-collection transport. This transport writes
+        # all the files of a dataset into COLLECTION_SUBPATH/<name>. It cannot
+        # write a v<n> directory. If the manager selects a newer layout, it
+        # writes metadata that points to a directory that the peer does not get.
+        dataset_manager = SyftDatasetManager.from_config(config.dataset_manager_config)
         job_client = JobClient.from_config(
             config.job_client_config,
             peer_schemas=peer_manager.live_peer_schemas("syft-job"),
@@ -1518,6 +1520,7 @@ class SyftboxManager(BaseModel):
     ):
         """Broadcast is_deleted=True events for all tracked files to each peer's outbox."""
         from uuid import uuid4
+
         from syft_client.sync.utils.syftbox_utils import create_event_timestamp
 
         timestamp = create_event_timestamp()

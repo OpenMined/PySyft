@@ -2078,3 +2078,48 @@ def test_dataset_delete_propagates_to_ds():
     # DS syncs again — should pick up the deletion
     ds_manager.sync()
     assert len(ds_manager.datasets.get_all()) == 0
+
+
+def test_dataset_delivery_layout_matches_published_metadata():
+    """Check that the metadata of a dataset points to the files that the peer gets.
+
+    Datasets go to a peer only through the dataset-collection transport. This
+    transport writes all the files of a dataset into COLLECTION_SUBPATH/<name>.
+    If the owner writes a dataset in a newer v<n> layout, the metadata points to
+    a directory that the peer does not get. The peer then finds no files.
+    """
+    from syft_client.sync.syftbox_manager import COLLECTION_SUBPATH
+
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False
+    )
+    mock_dset_path, private_dset_path, readme_path = create_tmp_dataset_files()
+
+    do_manager.create_dataset(
+        name="layout dataset",
+        mock_path=mock_dset_path,
+        private_path=private_dset_path,
+        readme_path=readme_path,
+        users=[ds_manager.email],
+    )
+
+    # The DO knows the dataset protocol version of the DS. The DO must still
+    # write the layout of the transport. This makes sure the test does not pass
+    # only because the peer is unknown.
+    assert ds_manager.email in do_manager.peer_manager.live_peer_schemas("syft-dataset")
+
+    ds_manager.sync()
+
+    dataset = ds_manager.datasets.get("layout dataset", datasite=do_manager.email)
+    assert (
+        dataset.mock_dir
+        == ds_manager.syftbox_folder
+        / do_manager.email
+        / COLLECTION_SUBPATH
+        / "layout dataset"
+    )
+    assert dataset.mock_files
+    for path in dataset.mock_files:
+        assert path.exists(), (
+            f"the metadata points to a file the peer does not get: {path}"
+        )
