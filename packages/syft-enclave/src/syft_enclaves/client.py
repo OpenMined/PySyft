@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+import os
 
 from syft_client.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
 from syft_client.sync.version.peer_manager import CompatAction
@@ -262,6 +263,9 @@ class SyftEnclaveClient:
 
     def approve_job(self, job: JobInfo) -> None:
         """Approve an enclave job and push the approval state file to the enclave."""
+        if os.environ.get("PRE_SYNC", "true").lower() == "true":
+            self._manager.sync()
+
         job.approve()
         file_name = enclave_approval_file_name(self.email)
         approval_file = job.job_review_path / file_name
