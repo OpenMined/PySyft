@@ -269,6 +269,10 @@ class SyftEnclaveClient:
         job.approve()
         file_name = enclave_approval_file_name(self.email)
         approval_file = job.job_review_path / file_name
+        if not approval_file.exists():
+            print(
+                "🟠 Approval file does not exist yet. Kindly wait until enclave sends it."
+            )
         relative_path = approval_file.relative_to(self._manager.syftbox_folder)
         self._manager.datasite_watcher_syncer.on_file_change(
             relative_path, process_now=True
