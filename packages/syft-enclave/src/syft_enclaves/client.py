@@ -144,7 +144,7 @@ class SyftEnclaveClient:
 
     @property
     def jobs(self) -> JobsList:
-        jobs_list = self._manager.job_client.jobs
+        jobs_list = self._manager.jobs
         wrapped = [
             EnclaveJobInfo.from_job_info(j)
             if j.job_headers.get("job_type") == "enclave"
