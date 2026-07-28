@@ -6,7 +6,6 @@ from pathlib import Path
 from syft_client.migrations import client_registry
 from syft_client.sync.version.version_info import (
     VersionInfo,
-    VersionInfoV1,
     VersionInfoV2,
 )
 

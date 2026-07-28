@@ -8,15 +8,9 @@
     "protocol_name": "syft-client",
     "version": "0",
     "supported_versions": {
-      "VersionInfo": [
-        "1"
-      ],
-      "ProposedFileChangesMessage": [
-        "1"
-      ],
-      "FileChangeEventsMessage": [
-        "1"
-      ]
+      "VersionInfo": ["1"],
+      "ProposedFileChangesMessage": ["1"],
+      "FileChangeEventsMessage": ["1"]
     },
     "current_object_schemas": {
       "VersionInfo": {
@@ -169,10 +163,7 @@
                 "type": "boolean"
               }
             },
-            "required": [
-              "path_in_datasite",
-              "datasite_email"
-            ],
+            "required": ["path_in_datasite", "datasite_email"],
             "title": "ProposedFileChangeV1",
             "type": "object"
           }
@@ -221,10 +212,7 @@
             "title": "Platform Id"
           }
         },
-        "required": [
-          "sender_email",
-          "proposed_file_changes"
-        ],
+        "required": ["sender_email", "proposed_file_changes"],
         "title": "ProposedFileChangesMessageV1",
         "type": "object"
       },
@@ -354,9 +342,7 @@
             "$ref": "#/$defs/FileChangeEventsMessageFileName"
           }
         },
-        "required": [
-          "events"
-        ],
+        "required": ["events"],
         "title": "FileChangeEventsMessageV1",
         "type": "object"
       }

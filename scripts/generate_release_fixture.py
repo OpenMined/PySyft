@@ -38,7 +38,9 @@ from syft_client.version import SYFT_CLIENT_VERSION
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
 
-FIXTURES_DIR = Path(__file__).resolve().parents[1] / "tests" / "migrations" / "p2p" / "fixtures"
+FIXTURES_DIR = (
+    Path(__file__).resolve().parents[1] / "tests" / "migrations" / "p2p" / "fixtures"
+)
 
 
 def build_version_info() -> VersionInfo:
