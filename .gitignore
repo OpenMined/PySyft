@@ -184,7 +184,11 @@ test_suite_output.log
 
 
 # Notebooks
+# Files notebooks download at runtime — ignored everywhere, since a notebook may be run
+# from any directory. Canonical checked-in copies are re-included by the ! rules below.
 *ailuminate_prompts.csv
+*safety_prompts*.csv
+!notebooks/enclave/gemma/data/safety_prompts*.csv
 notebooks/e2e/sales_mock.csv
 notebooks/e2e/sales_private.csv
 notebooks/e2e/readme.mdpackages/syft-bg/docs/sync-service.md
