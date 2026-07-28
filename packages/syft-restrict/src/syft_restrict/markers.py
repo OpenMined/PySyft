@@ -1,7 +1,6 @@
-"""Comment-based markup, an alternative to hand-counted line ranges.
+"""Comment-based markup — the way a source file designates its private/hidden regions.
 
-Instead of passing ``obfuscate``/``hide`` as ``[start, end]`` line numbers to ``run()``, a source
-file may mark its own private/hidden regions with comments::
+A source file marks its own private/hidden regions with comments::
 
     # syft-restrict: obfuscate-start
     def attention(x):
@@ -15,9 +14,8 @@ strictly stronger transform (whole line blanked) than obfuscate (structure prese
 renamed), so carving out a stricter sub-region is safe. The reverse is not: obfuscate cannot nest
 inside hide, and neither kind may nest inside itself.
 
-``parse_markers(source)`` resolves these into the same ``(obfuscate_ranges, hide_ranges)`` shape
-``run()`` already accepts. ``run()`` uses this automatically when both ``obfuscate`` and ``hide``
-are omitted.
+``parse_markers(source)`` resolves these into ``(obfuscate_ranges, hide_ranges)``. ``run()`` calls
+it to locate the private region; a file with no markers raises ``MarkerError``.
 """
 
 from __future__ import annotations
@@ -35,20 +33,54 @@ __all__ = ["parse_markers"]
 _MARKER_RE = re.compile(r"^#\s*syft-restrict:\s*(obfuscate|hide)(?:-(start|end))?\s*$")
 
 
+# Token types that are not code: comments and layout. A line carrying only these (plus a marker
+# comment) is a bare marker line; anything else means code shares the line.
+_TRIVIA_TOKENS = frozenset(
+    {
+        tokenize.COMMENT,
+        tokenize.NL,
+        tokenize.NEWLINE,
+        tokenize.INDENT,
+        tokenize.DEDENT,
+        tokenize.ENCODING,
+        tokenize.ENDMARKER,
+    }
+)
+
+
 def _scan_markers(source: str) -> dict[int, tuple[str, str | None]]:
     """Map each line number carrying a ``# syft-restrict: ...`` comment to its ``(kind, boundary)``.
 
     ``boundary`` is ``"start"``, ``"end"``, or ``None`` for a single-line marker. Only real
     comment tokens count, so a marker-shaped string inside a string literal is never mistaken
     for a directive.
+
+    A block ``-start``/``-end`` marker must be on a line by itself: code before it would sit on a
+    boundary line (excluded from every range) and silently escape verification. Such a marker
+    raises ``MarkerError`` -- use the single-line ``# syft-restrict: obfuscate``/``hide`` form to
+    mark one line of code. (Code tokens precede the trailing comment in token order, so by the time
+    a marker comment is seen its line is already known to carry code.)
     """
     markers: dict[int, tuple[str, str | None]] = {}
+    code_lines: set[int] = set()
     for tok in tokenize.generate_tokens(io.StringIO(source).readline):
+        if tok.type not in _TRIVIA_TOKENS:
+            code_lines.add(tok.start[0])
+            continue
         if tok.type != tokenize.COMMENT:
             continue
         match = _MARKER_RE.match(tok.string.strip())
-        if match:
-            markers[tok.start[0]] = (match.group(1), match.group(2))
+        if not match:
+            continue
+        kind, boundary = match.group(1), match.group(2)
+        line = tok.start[0]
+        if boundary is not None and line in code_lines:
+            raise MarkerError(
+                f"line {line}: '{kind}-{boundary}' block marker must be on a line by itself; "
+                f"move the code to its own line, or use a single-line '# syft-restrict: {kind}' "
+                "marker to mark just this line"
+            )
+        markers[line] = (kind, boundary)
     return markers
 
 
@@ -110,8 +142,7 @@ class _MarkerParser:
         if not self._lines["obfuscate"] and not self._lines["hide"]:
             raise MarkerError(
                 "no syft-restrict markers found in source; add `# syft-restrict: obfuscate-start` "
-                "/ `# syft-restrict: obfuscate-end` (or `hide`) around the private code, or pass "
-                "obfuscate=/hide= explicitly to run()"
+                "/ `# syft-restrict: obfuscate-end` (or `hide`) around the private code"
             )
         return _compact(self._lines["obfuscate"]), _compact(self._lines["hide"])
 

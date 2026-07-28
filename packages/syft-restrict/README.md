@@ -57,35 +57,47 @@ import syft_restrict as restrict
 
 result = restrict.run(
     "gemma_inference.py",
-    allow_functions=["jax.*", "flax.linen.*"],  # functions callable BY NAME (path-resolved)
+    # default-deny: allow ONLY the exact paths this model calls, nothing else in jax/flax
+    allow_functions=[
+        "jax.numpy.einsum", "jax.numpy.mean", "jax.numpy.square", "jax.numpy.arange",
+        "jax.numpy.sin", "jax.numpy.cos", "jax.numpy.concatenate", "jax.numpy.tril",
+        "jax.numpy.triu", "jax.numpy.ones", "jax.numpy.where", "jax.numpy.repeat",
+        "jax.numpy.sqrt", "jax.numpy.transpose", "jax.numpy.array", "jax.numpy.float32",
+        "jax.numpy.bool_", "jax.lax.rsqrt", "jax.nn.softmax", "jax.nn.gelu",
+        "flax.linen.Module",
+        "jax.lax", "jax.nn",  # module refs the deep-path calls (jax.lax.rsqrt, jax.nn.softmax) resolve through
+    ],
     allow_operators=["arithmetic", "indexing", "comparison"],  # operators allowed ON A VALUE
 )
 # On success: writes gemma_inference.obfuscated.py and returns result.certificate.
 # On a policy violation: raises PolicyViolation naming each offending line.
-# If the file has no markers and obfuscate=/hide= are both omitted: raises MarkerError.
+# If the file has no `# syft-restrict: ...` markers: raises MarkerError.
 ```
 
-`obfuscate=`/`hide=` still work as an explicit escape hatch — pass either one (even an
-empty list) and marker scanning is skipped entirely in favor of your own 1-based line
-ranges:
+> [!IMPORTANT]
+> List the **specific** paths your model calls, as above — this is the default-deny posture the
+> tool is built for: everything not named is denied. Avoid broad globs like `jax.*`: they pull in
+> JAX's own host-callback and disk-IO functions (`jax.numpy.save`, `jax.debug.callback`,
+> `jax.experimental.io_callback`, …) that the private region could call to exfiltrate data. If you
+> must use a broad glob, pair it with a `disallow_functions` floor — see
+> [docs/blacklist.md](docs/blacklist.md#optional-disallow_functions).
+
+The private region is designated **only** by `# syft-restrict: ...` comment markers in the
+source; `run()` resolves them and refuses a file that carries none. This is how
+**[examples/gemma_inference.py](examples/gemma_inference.py)** generates its
+obfuscated copy — see [examples/generate.py](examples/generate.py).
+
+Two optional strictness flags, both defaulting to the permissive behavior:
 
 ```python
 result = restrict.run(
     "gemma_inference.py",
-    obfuscate=[[22, 93], [99, 280]],  # 1-based ranges: identifiers renamed, constants blanked
-    hide=[],                          # 1-based ranges: whole line replaced with ■■■■■■■■
-    allow_functions=["jax.*", "flax.linen.*"],
+    allow_functions=[...],  # as above
     allow_operators=["arithmetic", "indexing", "comparison"],
+    allow_local_assignments=True,   # False: a local aliased to a callable can't be called by name
+    allow_base_class_attributes=True,  # False: a never-assigned self.<attr> is not presumed inherited
 )
 ```
-
-This is how **[examples/gemma_inference.py](examples/gemma_inference.py)** generates
-**[examples/gemma_inference.obfuscated.py](examples/gemma_inference.obfuscated.py)** —
-see [examples/generate.py](examples/generate.py).
-
-The same model marked up with comment blocks instead of numeric ranges lives in
-**[examples/gemma_inference_marked.py](examples/gemma_inference_marked.py)** /
-[examples/generate_marked.py](examples/generate_marked.py).
 
 If syft-restrict was successfully executed on the true original file, the obfuscated file can be safely shared without exposing the private section.
 

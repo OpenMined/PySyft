@@ -77,12 +77,12 @@ variable "use_encryption" {
   type        = bool
   default     = null
   nullable    = true
-  description = "Override SYFT_ENCLAVE_USE_ENCRYPTION. Default: true in production, false in dev mode."
+  description = "Override SYFT_ENCLAVE_USE_ENCRYPTION in dev mode only (default false there). Ignored in production, which always encrypts"
 }
 
 variable "job_timeout_seconds" {
   type        = number
-  default     = null
+  default     = 2592000 # 30 days
   nullable    = true
-  description = "Optional SYFT_DEFAULT_JOB_TIMEOUT_SECONDS; unset means the container default (600s)."
+  description = "SYFT_DEFAULT_JOB_TIMEOUT_SECONDS. Default: 2592000 (30 days). Set to null to omit the env var and fall back to the container default (600s)."
 }

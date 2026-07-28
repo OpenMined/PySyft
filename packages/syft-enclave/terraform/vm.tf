@@ -4,7 +4,10 @@ data "google_compute_image" "confidential_space" {
 }
 
 locals {
-  use_encryption = coalesce(var.use_encryption, !var.dev_mode)
+  # Production always encrypts
+  # Dev mode defaults to off but honors the use_encryption override
+  # Prod ignores the override.
+  use_encryption = var.dev_mode ? coalesce(var.use_encryption, false) : true
 
   tee_metadata = merge(
     {

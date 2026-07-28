@@ -213,14 +213,35 @@ def test_self_attr_reassigned_local_alias_is_not_stuck_tainted(verify_all):
     assert _ok(verify_all(src))[0]
 
 
+def test_comprehension_target_does_not_taint_outer_local(verify_all):
+    """A comprehension has its own scope (py3): ``[b for b in ...]`` does NOT rebind the outer
+    ``b``, so a safe local stays safe and remains callable afterward. Guards against clearing
+    the verdict for comprehension targets, which would be an over-denial."""
+    src = """
+    class Block:
+        def __call__(self, x):
+            return x
+    class M:
+        def setup(self):
+            self.dense = Block()
+        def run(self, x):
+            b = self.dense
+            [b for b in [x]]
+            return b(x)
+    """
+    assert _ok(verify_all(src))[0]
+
+
 # ── decorators / dunder defs / bases ─────────────────────────────────────────
 
 
 def test_allowed_dunder_defs(verify_all):
-    """``__call__`` and ``setup`` are the only definable hooks."""
+    """``__call__``, ``setup`` and ``__post_init__`` are the only definable hooks."""
     src = """
     class M:
         def setup(self):
+            return None
+        def __post_init__(self):
             return None
         def __call__(self, x):
             return x
@@ -317,5 +338,16 @@ def test_stringized_annotation_is_not_flagged(verify_all):
     src = """
     def f(x: "str") -> "bytes":
         return x
+    """
+    assert _ok(verify_all(src))[0]
+
+
+def test_fully_private_multiline_call_is_allowed(verify_all):
+    """A multi-line call entirely within the private region verifies normally."""
+    src = """
+    def f(xs):
+        return sum(
+            xs
+        )
     """
     assert _ok(verify_all(src))[0]

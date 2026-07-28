@@ -83,23 +83,39 @@ class Net(nn.Module):
 The reverse isn't allowed (`obfuscate` can't nest inside `hide`), and neither kind nests inside
 itself. Any of these raise `MarkerError`:
 
-| Situation                                                       | Result                                                           |
-| --------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `start` with no matching `end` (or vice versa)                  | `MarkerError`, names the line                                    |
-| `hide-end`/`obfuscate-end` closing the wrong kind               | `MarkerError` (mismatched kind)                                  |
-| `obfuscate` nested inside `hide`                                | `MarkerError`                                                    |
-| `obfuscate` nested inside `obfuscate` (or `hide` inside `hide`) | `MarkerError`                                                    |
-| A block with nothing between its start/end                      | `MarkerError` (empty block)                                      |
-| No `# syft-restrict: ...` marker anywhere in the file           | `MarkerError`, unless `obfuscate=`/`hide=` are passed explicitly |
+| Situation                                                       | Result                                                      |
+| --------------------------------------------------------------- | ----------------------------------------------------------- |
+| `start` with no matching `end` (or vice versa)                  | `MarkerError`, names the line                               |
+| `hide-end`/`obfuscate-end` closing the wrong kind               | `MarkerError` (mismatched kind)                             |
+| `obfuscate` nested inside `hide`                                | `MarkerError`                                               |
+| `obfuscate` nested inside `obfuscate` (or `hide` inside `hide`) | `MarkerError`                                               |
+| A block with nothing between its start/end                      | `MarkerError` (empty block)                                 |
+| No `# syft-restrict: ...` marker anywhere in the file           | `MarkerError` (the private region is designated by markers) |
 
-`run()` scans for these markers automatically whenever `obfuscate` and `hide` are both omitted;
-passing either explicitly (even `[]`) skips marker scanning entirely and uses your ranges as-is.
+`run()` resolves the private region from these markers; a file with none raises `MarkerError`.
 
 > [!WARNING]
 > Private code may **call** public wrappers by name. Public code is trusted, not verified.
 >
 > A clean `verify()` means the private region cannot escape on its own, not that
 > the whole file is safe to execute.
+
+### Imports
+
+Imports happen in the public region but govern what the private region may
+reach:
+
+- **Public imports are unchecked.** Any module may be imported in public code;
+  syft-restrict never restricts or inspects the import itself.
+- **Private imports are banned outright** — an `import` inside the private
+  region is rejected as `banned-construct`.
+- **The private region's _use_ of an import is what's gated.** A private call
+  like `jnp.einsum(...)` resolves through the public import table and must match
+  `allow_functions` (see below); otherwise it fails. So the control point is the
+  private-side call, not the public import.
+
+Star imports (`from jax import *`) are disallowed everywhere, because they make
+it impossible to review the imported names.
 
 ---
 
@@ -303,7 +319,7 @@ class Net(nn.Module):              # base must be allow-listed (e.g. flax.linen.
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Bases that resolve to an allow-listed path (e.g. `nn.Module`) | `object`, random private bases, non-allow-listed libs                           |
 | —                                                             | Any decorator: `@property`, `@staticmethod`, `@nn.compact`, arbitrary functions |
-| Defining `setup`, `__call__`                                  | `__getattr__`, `__reduce__`, `__post_init__`, other magic methods               |
+| Defining `setup`, `__call__`, `__post_init__`                 | `__getattr__`, `__reduce__`, other magic methods                                |
 | —                                                             | `metaclass=` / other class keywords                                             |
 
 ---
