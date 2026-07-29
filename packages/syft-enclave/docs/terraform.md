@@ -35,13 +35,13 @@ cp terraform/terraform.tfvars.example terraform/terraform.tfvars
 
 Then fill in:
 
-| Variable        | Meaning                                                                 |
-| --------------- | ----------------------------------------------------------------------- |
-| `project_id`    | GCP project ID (the ID, not the display name — `gcloud projects list`). |
-| `zone`          | Zone for the VM (default `us-central1-a`).                              |
-| `enclave_email` | The enclave datasite's email (`SYFT_ENCLAVE_EMAIL`).                    |
-| `data_owners`   | List of data-owner emails; **all** must approve every job.              |
-| `token_file`    | Absolute path to the enclave's Google Drive token JSON.                 |
+| Variable        | Meaning                                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------------------ |
+| `project_id`    | GCP project ID (the ID, not the display name — `gcloud projects list`).                                      |
+| `zone`          | Zone for the VM (default `us-central1-a`).                                                                   |
+| `enclave_email` | The enclave datasite's email (`SYFT_ENCLAVE_EMAIL`).                                                         |
+| `data_owners`   | List of data-owner emails; **all** must approve every job.                                                   |
+| `token_file`    | Absolute path to the enclave's Google Drive token JSON (see [auth.md](../../../docs/auth.md) to create one). |
 
 Optional overrides (commented in the example file): `vm_name`, `machine_type`, `boot_disk_size_gb`, `container_image`, `use_encryption`, `job_timeout_seconds`.
 
@@ -52,6 +52,7 @@ Do **not** set `dev_mode` in tfvars — pass it on the command line (`-var=dev_m
 ## Quickstart: production
 
 Hardened image — no SSH, TEE enforcement, encryption on, container restart policy `Never`.
+From syft-enclave dir, run
 
 ```bash
 terraform -chdir=terraform init                       # once: download providers, set up local state
