@@ -23,6 +23,10 @@ class RuleSet(BaseModel):
 
     def save(self, filepath: Path | None = None) -> None:
         target = filepath or Path(self.path) / PERMISSION_FILE_NAME
+        target = target.resolve()
+        base = Path(self.path).resolve()
+        if not str(target).startswith(str(base)):
+            raise ValueError(f"Path {target} is outside of base path {base}")
         data = self.model_dump(mode="json")
         with open(target, "w") as f:
             yaml.safe_dump(data, f, default_flow_style=False)
