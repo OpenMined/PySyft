@@ -134,7 +134,13 @@ def test_dataset_repr_html_mentions_mock_files():
 # --- JobsList tests ---
 
 
-def _make_job_info(name: str, status: str = "pending") -> JobInfo:
+def _make_job_info(
+    name: str,
+    status: str = "pending",
+    datasite_owner_email: str = "do@test.com",
+    submitted_by: str = "ds@test.com",
+    current_user_email: str = "do@test.com",
+) -> JobInfo:
     """Create a minimal JobInfo for testing."""
     from datetime import datetime, timezone
     from pathlib import Path
@@ -145,21 +151,21 @@ def _make_job_info(name: str, status: str = "pending") -> JobInfo:
     from syft_job.models import JobState, JobStatus, JobSubmissionMetadata
 
     config = SyftJobConfig(
-        syftbox_folder=Path("/tmp/fake"), current_user_email="test@test.com"
+        syftbox_folder=Path("/tmp/fake"), current_user_email=current_user_email
     )
     client = JobClient(config=config)
     submission_config = JobSubmissionMetadata(
         name=name,
         type="python",
-        submitted_by="ds@test.com",
-        datasite_email="ds@test.com",
+        submitted_by=submitted_by,
+        datasite_email=datasite_owner_email,
         submitted_at=datetime.now(timezone.utc),
     )
     state = JobState(status=JobStatus(status))
     # Identity (owner, submitter, name) comes from the path-derived ref.
     ref = JobRef(
-        datasite_email="test@test.com",
-        ds_email="ds@test.com",
+        datasite_email=datasite_owner_email,
+        ds_email=submitted_by,
         job_name=name,
         protocol_version="1",
     )
@@ -167,41 +173,111 @@ def _make_job_info(name: str, status: str = "pending") -> JobInfo:
         job_metadata=submission_config,
         state=state,
         client=client,
-        current_user_email="test@test.com",
+        current_user_email=current_user_email,
         ref=ref,
     )
 
 
 def test_jobs_list_getitem_int():
-    jobs = JobsList(
-        [_make_job_info("job-a"), _make_job_info("job-b")],
-        root_email="test@test.com",
-    )
+    jobs = JobsList([_make_job_info("job-a"), _make_job_info("job-b")])
     assert jobs[0].name == "job-a"
     assert jobs[1].name == "job-b"
 
 
 def test_jobs_list_getitem_str():
-    jobs = JobsList(
-        [_make_job_info("job-a"), _make_job_info("job-b")],
-        root_email="test@test.com",
-    )
+    jobs = JobsList([_make_job_info("job-a"), _make_job_info("job-b")])
     assert jobs["job-b"].name == "job-b"
 
 
 def test_jobs_list_getitem_str_not_found():
-    jobs = JobsList(
-        [_make_job_info("job-a")],
-        root_email="test@test.com",
-    )
+    jobs = JobsList([_make_job_info("job-a")])
     with pytest.raises(ValueError, match="not found"):
         jobs["nonexistent"]
 
 
 def test_jobs_list_getitem_invalid_type():
-    jobs = JobsList(
-        [_make_job_info("job-a")],
-        root_email="test@test.com",
-    )
+    jobs = JobsList([_make_job_info("job-a")])
     with pytest.raises(TypeError):
-        jobs[3.14]
+        jobs[3.14]  # type: ignore[arg-type]
+
+
+# --- JobsList summary rendering (__str__ / _repr_html_ / __repr__) ---
+
+
+def _ds_jobs(*statuses: str) -> JobsList:
+    """Outgoing jobs submitted by us (ds@test.com) to do@org.com, one per status."""
+    jobs = [
+        _make_job_info(
+            f"Job {i}",
+            status=status,
+            datasite_owner_email="do@org.com",
+            submitted_by="ds@test.com",
+            current_user_email="ds@test.com",
+        )
+        for i, status in enumerate(statuses)
+    ]
+    return JobsList(jobs)
+
+
+def test_jobs_list_summary_header_and_rows():
+    text = str(_ds_jobs("pending", "done", "running"))
+    assert text.startswith("📋 Your jobs (3):")
+    assert "Job 0" in text and "Job 1" in text and "Job 2" in text
+    assert "⏳ inbox" in text
+    assert "✅ done" in text
+    assert "🔄 running" in text
+    assert "📤" in text
+    assert "submitted to: do@org.com" in text
+
+
+def test_jobs_list_summary_done_tip_uses_first_done_index():
+    text = str(_ds_jobs("pending", "done", "done"))
+    assert "💡 Job 1 is done" in text
+    assert "for path in client.jobs[1].output_paths:" in text
+    assert "print(open(path).read())" in text
+    assert "waiting for the data owner" not in text
+
+
+def test_jobs_list_summary_all_inbox_tip():
+    text = str(_ds_jobs("received", "pending"))
+    assert "waiting for the data owner" in text
+    assert "client.sync()" in text
+    assert "is done" not in text
+
+
+def test_jobs_list_summary_no_tip_when_mixed_without_done():
+    text = str(_ds_jobs("pending", "running"))
+    assert "is done" not in text
+    assert "waiting for the data owner" not in text
+
+
+def test_jobs_list_summary_empty():
+    assert str(JobsList([])) == "📭 No jobs found.\n"
+
+
+def test_jobs_list_summary_incoming_do_view():
+    # We are the DO; job came from someone else.
+    job = _make_job_info(
+        "incoming-job",
+        status="pending",
+        datasite_owner_email="do@test.com",
+        submitted_by="alice@ds.com",
+        current_user_email="do@test.com",
+    )
+    text = str(JobsList([job]))
+    assert "📥" in text
+    assert "from: alice@ds.com" in text
+    assert "submitted to:" not in text
+
+
+def test_jobs_list_repr_html_summary():
+    html = _ds_jobs("pending", "done")._repr_html_()
+    assert "syftjob-overview" in html
+    assert "Your jobs (2)" in html
+    assert "⏳ inbox" in html
+    assert "✅ done" in html
+    assert "client.jobs[1].output_paths" in html
+
+
+def test_jobs_list_repr_preserves_technical_string():
+    assert repr(_ds_jobs("pending", "done", "running")) == "JobsList(3 jobs)"

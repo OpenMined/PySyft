@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from html import escape
 from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
@@ -731,108 +732,63 @@ def job_info_repr_html(job: "JobInfo") -> str:
         """
 
 
-def jobs_list_str(
-    jobs: List["JobInfo"], root_email: str, has_do_role: bool = False
-) -> str:
-    """Format jobs list as separate tables grouped by user."""
+def jobs_list_str(jobs: List["JobInfo"], has_do_role: bool = False) -> str:
+    """Format jobs list as a clean one-line-per-job summary."""
     if not jobs:
         return "📭 No jobs found.\n"
 
-    jobs_by_user: dict[str, list["JobInfo"]] = {}
-    for job in jobs:
-        if job.datasite_owner_email not in jobs_by_user:
-            jobs_by_user[job.datasite_owner_email] = []
-        jobs_by_user[job.datasite_owner_email].append(job)
-
     status_emojis = {
-        "received": "📨",
-        "pending": "📥",
-        "approved": "✅",
+        "received": "⏳",
+        "pending": "⏳",
+        "approved": "🔄",
         "rejected": "❌",
         "running": "🔄",
-        "done": "🎉",
+        "done": "✅",
         "failed": "💥",
     }
 
-    lines = []
-    lines.append("📊 Jobs Overview")
-    lines.append("=" * 50)
+    def status_display(status: str) -> str:
+        label = "inbox" if status in ("received", "pending") else status
+        return f"{status_emojis.get(status, '❓')} {label}"
 
-    total_jobs = 0
-    global_status_counts: dict[str, int] = {}
+    lines = [f"📋 Your jobs ({len(jobs)}):", ""]
+    name_pad = max(len(job.name) for job in jobs)
+    status_pad = max(len(status_display(job.status)) for job in jobs)
+    done_index = None
+    all_inbox = True
 
-    def user_sort_key(item):
-        user_email, _user_jobs = item
-        if user_email == root_email:
-            return (0, user_email)
-        return (1, user_email)
-
-    sorted_users = sorted(jobs_by_user.items(), key=user_sort_key)
-
-    job_index = 0
-
-    for user_email, user_jobs in sorted_users:
-        if not user_jobs:
-            continue
-
-        total_jobs += len(user_jobs)
-
-        lines.append("")
-        lines.append(f"👤 {user_email}")
-        lines.append("-" * 60)
-
-        name_width = max(len(job.name) for job in user_jobs) + 2
-        status_width = max(len(job.status) for job in user_jobs) + 2
-        submitted_width = max(len(job.submitted_by) for job in user_jobs) + 2
-
-        name_width = max(name_width, 15)
-        status_width = max(status_width, 12)
-        submitted_width = max(submitted_width, 15)
-
-        approval_width = 10
-
-        header = f"{'Index':<6} {'Job Name':<{name_width}} {'Submitted By':<{submitted_width}} {'Status':<{status_width}} {'Approval':<{approval_width}}"
-        lines.append(header)
-        lines.append("-" * len(header))
-
-        sorted_jobs = user_jobs
-
-        for job in sorted_jobs:
-            emoji = status_emojis.get(job.status, "❓")
-            status_display = f"{emoji} {job.status}"
-            approval_display = job.approval_method or "—"
-            line = f"[{job_index:<4}] {job.name:<{name_width}} {job.submitted_by:<{submitted_width}} {status_display:<{status_width}} {approval_display:<{approval_width}}"
-            lines.append(line)
-            job_index += 1
-
-            global_status_counts[job.status] = (
-                global_status_counts.get(job.status, 0) + 1
-            )
-
-        user_status_counts: dict[str, int] = {}
-        for job in user_jobs:
-            user_status_counts[job.status] = user_status_counts.get(job.status, 0) + 1
-
-        summary_parts = []
-        for status, count in user_status_counts.items():
-            emoji = status_emojis.get(status, "❓")
-            summary_parts.append(f"{emoji} {count} {status}")
-
-        lines.append(
-            f"📋 {user_email}: {len(user_jobs)} jobs - " + " | ".join(summary_parts)
+    for index, job in enumerate(jobs):
+        st = status_display(job.status)
+        # Datasite owner is current user → incoming (DO view); else we submitted it.
+        incoming = job.datasite_owner_email == job.current_user_email
+        direction = "📥" if incoming else "📤"
+        target = (
+            f"from: {job.submitted_by}"
+            if incoming
+            else f"submitted to: {job.datasite_owner_email}"
         )
+        lines.append(
+            f"  Job {index}  |  {direction} {job.name.ljust(name_pad)}  |  "
+            f"{st.ljust(status_pad)}  |  {target}"
+        )
+        if job.status == "done" and done_index is None:
+            done_index = index
+        if incoming or job.status not in ("received", "pending"):
+            all_inbox = False
 
-    lines.append("")
-    lines.append("=" * 50)
-    lines.append(f"📈 Total: {total_jobs} jobs across {len(jobs_by_user)} users")
-
-    global_summary_parts = []
-    for status, count in global_status_counts.items():
-        emoji = status_emojis.get(status, "❓")
-        global_summary_parts.append(f"{emoji} {count} {status}")
-
-    if global_summary_parts:
-        lines.append("📋 Global: " + " | ".join(global_summary_parts))
+    if done_index is not None:
+        lines += [
+            "",
+            f"💡 Job {done_index} is done — read results with:",
+            f"   for path in client.jobs[{done_index}].output_paths:",
+            "       print(open(path).read())",
+        ]
+    elif all_inbox:
+        lines += [
+            "",
+            "⏳ Your jobs are waiting for the data owner to review them —",
+            "   re-sync and check again with client.sync().",
+        ]
 
     if has_do_role:
         lines.append("")
@@ -843,9 +799,7 @@ def jobs_list_str(
     return "\n".join(lines)
 
 
-def jobs_list_repr_html(
-    jobs: List["JobInfo"], root_email: str, has_do_role: bool = False
-) -> str:
+def jobs_list_repr_html(jobs: List["JobInfo"], has_do_role: bool = False) -> str:
     """HTML representation for Jupyter notebooks with enhanced visual appeal."""
     if not jobs:
         return """
@@ -919,54 +873,29 @@ def jobs_list_repr_html(
             </div>
             """
 
-    jobs_by_user: dict[str, list["JobInfo"]] = {}
-    for job in jobs:
-        if job.datasite_owner_email not in jobs_by_user:
-            jobs_by_user[job.datasite_owner_email] = []
-        jobs_by_user[job.datasite_owner_email].append(job)
-
-    status_styles = {
-        "received": {
-            "emoji": "📨",
-            "light": {"color": "#888888", "bg": "#f0f0f0"},
-            "dark": {"color": "#aaaaaa", "bg": "#444444"},
-        },
-        "pending": {
-            "emoji": "📥",
-            "light": {"color": "#6976ae", "bg": "#e8f2ff"},
-            "dark": {"color": "#96d195", "bg": "#52a8c5"},
-        },
-        "approved": {
-            "emoji": "✅",
-            "light": {"color": "#53bea9", "bg": "#e6f9f4"},
-            "dark": {"color": "#53bea9", "bg": "#2a5d52"},
-        },
-        "rejected": {
-            "emoji": "❌",
-            "light": {"color": "#cc3333", "bg": "#ffe8e8"},
-            "dark": {"color": "#ff6666", "bg": "#5a2222"},
-        },
-        "running": {
-            "emoji": "🔄",
-            "light": {"color": "#cc8800", "bg": "#fff3e0"},
-            "dark": {"color": "#ffcc66", "bg": "#5a4422"},
-        },
-        "done": {
-            "emoji": "🎉",
-            "light": {"color": "#937098", "bg": "#f3e5f5"},
-            "dark": {"color": "#f2d98c", "bg": "#cc677b"},
-        },
-        "failed": {
-            "emoji": "💥",
-            "light": {"color": "#cc3333", "bg": "#ffe8e8"},
-            "dark": {"color": "#ff6666", "bg": "#5a2222"},
-        },
+    status_emojis = {
+        "received": "⏳",
+        "pending": "⏳",
+        "approved": "🔄",
+        "rejected": "❌",
+        "running": "🔄",
+        "done": "✅",
+        "failed": "💥",
     }
 
+    def status_display(status: str) -> str:
+        label = "inbox" if status in ("received", "pending") else status
+        return f"{status_emojis.get(status, '❓')} {label}"
+
     total_jobs = len(jobs)
-    global_status_counts: dict[str, int] = {}
-    for job in jobs:
-        global_status_counts[job.status] = global_status_counts.get(job.status, 0) + 1
+    done_index = None
+    all_inbox = True
+    for index, job in enumerate(jobs):
+        incoming = job.datasite_owner_email == job.current_user_email
+        if job.status == "done" and done_index is None:
+            done_index = index
+        if incoming or job.status not in ("received", "pending"):
+            all_inbox = False
 
     html = f"""
         <style>
@@ -1216,110 +1145,83 @@ def jobs_list_repr_html(
 
         <div class="syftjob-overview">
             <div class="syftjob-global-header">
-                <h3>📊 Jobs Overview</h3>
-                <p>Total: {total_jobs} jobs across {len(jobs_by_user)} users</p>
+                <h3>📋 Your jobs ({total_jobs})</h3>
             </div>
-        """
-
-    def user_sort_key(item):
-        user_email, _user_jobs = item
-        if user_email == root_email:
-            return (0, user_email)
-        return (1, user_email)
-
-    sorted_users = sorted(jobs_by_user.items(), key=user_sort_key)
-
-    job_index = 0
-    for user_email, user_jobs in sorted_users:
-        if not user_jobs:
-            continue
-
-        sorted_user_jobs = user_jobs
-
-        user_status_counts: dict[str, int] = {}
-        for job in user_jobs:
-            user_status_counts[job.status] = user_status_counts.get(job.status, 0) + 1
-
-        user_summary_parts = []
-        for status, count in user_status_counts.items():
-            emoji = status_styles.get(status, {}).get("emoji", "❓")
-            user_summary_parts.append(f"{emoji} {count} {status}")
-
-        html += f"""
             <div class="syftjob-user-section">
-                <div class="syftjob-user-header">
-                    <h4>👤 {user_email}</h4>
-                    <div class="syftjob-user-summary">{len(user_jobs)} jobs - {" | ".join(user_summary_parts)}</div>
-                </div>
                 <table class="syftjob-table">
                     <thead class="syftjob-thead">
                         <tr>
                             <th class="syftjob-th">Index</th>
                             <th class="syftjob-th">Job Name</th>
-                            <th class="syftjob-th">Submitted By</th>
                             <th class="syftjob-th">Status</th>
-                            <th class="syftjob-th">Approval</th>
+                            <th class="syftjob-th">Target</th>
                         </tr>
                     </thead>
                     <tbody>
-            """
+        """
 
-        for i, job in enumerate(sorted_user_jobs):
-            style_info = status_styles.get(job.status, {"emoji": "❓"})
-            row_class = "syftjob-row-even" if i % 2 == 0 else "syftjob-row-odd"
-
-            approval_display = job.approval_method or "—"
-            html += f"""
+    for index, job in enumerate(jobs):
+        row_class = "syftjob-row-even" if index % 2 == 0 else "syftjob-row-odd"
+        incoming = job.datasite_owner_email == job.current_user_email
+        direction = "📥" if incoming else "📤"
+        target = (
+            f"from: {job.submitted_by}"
+            if incoming
+            else f"submitted to: {job.datasite_owner_email}"
+        )
+        safe_name = escape(job.name)
+        safe_target = escape(target)
+        safe_status = escape(status_display(job.status))
+        safe_status_class = escape(job.status, quote=True)
+        html += f"""
                         <tr class="{row_class} syftjob-row">
                             <td class="syftjob-td">
-                                <span class="syftjob-index">[{job_index}]</span>
+                                <span class="syftjob-index">[{index}]</span>
                             </td>
                             <td class="syftjob-td syftjob-job-name">
-                                {job.name}
-                            </td>
-                            <td class="syftjob-td syftjob-submitted">
-                                {job.submitted_by}
+                                {direction} {safe_name}
                             </td>
                             <td class="syftjob-td">
-                                <span class="syftjob-status-{job.status}">
-                                    {style_info["emoji"]} {job.status.upper()}
+                                <span class="syftjob-status-{safe_status_class}">
+                                    {safe_status}
                                 </span>
                             </td>
-                            <td class="syftjob-td">
-                                {approval_display}
+                            <td class="syftjob-td syftjob-submitted">
+                                {safe_target}
                             </td>
                         </tr>
                 """
-            job_index += 1
 
-        html += """
+    html += """
                     </tbody>
                 </table>
             </div>
-            """
-
-    html += """
             <div class="syftjob-global-footer">
-                <div class="syftjob-global-summary">
         """
 
-    for status, count in global_status_counts.items():
-        style_info = status_styles.get(status, {"emoji": "❓"})
+    if done_index is not None:
         html += f"""
-                    <span class="syftjob-summary-item">
-                        {style_info["emoji"]} {count} {status}
-                    </span>
-            """
-
-    html += """
+                <div class="syftjob-hint">
+                    💡 Job {done_index} is done — read results with:<br/>
+                    <code class="syftjob-code">for path in client.jobs[{done_index}].output_paths:</code><br/>
+                    <code class="syftjob-code">    print(open(path).read())</code>
                 </div>
         """
+    elif all_inbox:
+        html += """
+                <div class="syftjob-hint">
+                    ⏳ Your jobs are waiting for the data owner to review them —<br/>
+                    re-sync and check again with <code class="syftjob-code">client.sync()</code>.
+                </div>
+        """
+
     if has_do_role:
         html += """
                 <div class="syftjob-hint">
                     💡 Use <code class="syftjob-code">jobs[0].approve()</code> to approve jobs or <code class="syftjob-code">jobs[0].accept_by_depositing_result('file_or_folder')</code> to complete jobs
                 </div>
         """
+
     html += """
             </div>
         </div>
