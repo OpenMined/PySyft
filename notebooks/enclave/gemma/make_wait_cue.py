@@ -5,26 +5,32 @@ reading "Wait for the other data owner connected to the enclave <action>".
 The bubble text is auto-fitted, so cues with different action wording still
 render at exactly the same size.
 
-To reword a cue, edit CUES below and re-run. This rewrites the SVGs next to this
-file and re-inlines them into the notebooks in ../colab as base64 PNGs (Colab's
-markdown renderer does not reliably render data-URI SVG). Re-running with no
-edits is a no-op.
+To reword a cue, edit CUES below and re-run:
 
     uv run --with pillow --with matplotlib python make_wait_cue.py
+
+The cues live only inside the notebooks, as inlined base64 PNGs — Colab cannot
+read files from the repo, and its markdown renderer does not reliably render
+data-URI SVG. So this script renders through a temp dir and rewrites the img
+tags in ./colab in place; nothing else is checked in. Re-running with no wording
+change is a no-op. Pass --save-svg DIR to keep the SVGs to look at.
 
 Needs rsvg-convert and ImageMagick on PATH.
 """
 
+import argparse
 import base64
 import pathlib
 import re
+import shutil
 import subprocess
+import tempfile
 
 import matplotlib
 from PIL import ImageFont
 
 HERE = pathlib.Path(__file__).parent
-NB_DIR = HERE.parent / "colab"
+NB_DIR = HERE / "colab"
 FONT = (
     pathlib.Path(matplotlib.__file__).parent / "mpl-data/fonts/ttf/DejaVuSans-Bold.ttf"
 )
@@ -192,15 +198,18 @@ def to_inline_png(svg_path):
     return encoded
 
 
-def build_cues():
-    """Write every SVG and return {slug: (base64 png, alt text)}."""
+def build_cues(save_svg_to=None):
+    """Render every cue and return {slug: (base64 png, alt text)}."""
     built = {}
-    for slug, action in CUES.items():
-        svg, alt = render_svg(action)
-        path = HERE / f"wait_{slug}.svg"
-        path.write_text(svg)
-        built[slug] = (to_inline_png(path), alt)
-        print(f"{path.name}: {alt}")
+    with tempfile.TemporaryDirectory() as tmp:
+        for slug, action in CUES.items():
+            svg, alt = render_svg(action)
+            path = pathlib.Path(tmp) / f"wait_{slug}.svg"
+            path.write_text(svg)
+            built[slug] = (to_inline_png(path), alt)
+            if save_svg_to is not None:
+                shutil.copy(path, save_svg_to / path.name)
+            print(f"{path.name}: {alt}")
     return built
 
 
@@ -225,5 +234,19 @@ def inline_into_notebooks(built):
         print(f"{name}: inlined {len(slugs)} cue(s)")
 
 
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--save-svg",
+        metavar="DIR",
+        type=pathlib.Path,
+        help="also write the SVGs here, to look at them (not checked in)",
+    )
+    args = parser.parse_args()
+    if args.save_svg is not None:
+        args.save_svg.mkdir(parents=True, exist_ok=True)
+    inline_into_notebooks(build_cues(args.save_svg))
+
+
 if __name__ == "__main__":
-    inline_into_notebooks(build_cues())
+    main()
