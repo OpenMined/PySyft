@@ -20,7 +20,7 @@ from syft_bg.notify.gmail.sender import SendResult
 from syft_bg.notify.handlers.job import JobHandler
 from syft_bg.notify.monitors.job import JobMonitor
 from syft_bg.notify.orchestrator import NotificationOrchestrator
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft_rds import SyftRDSClient
 
 FAKE_THREAD_ID = "thread_auto_approve_123"
 
@@ -44,7 +44,7 @@ def _temp_config_paths():
 
 
 def _make_notify_orchestrator(
-    do_manager: SyftboxManager,
+    do_manager: SyftRDSClient,
     tmp: Path,
 ) -> tuple[NotificationOrchestrator, JsonStateManager, MagicMock]:
     """Create a NotificationOrchestrator with a mocked GmailSender."""
@@ -81,7 +81,7 @@ def _make_notify_orchestrator(
 
 
 def _make_email_approve_orchestrator(
-    do_manager: SyftboxManager,
+    do_manager: SyftRDSClient,
     notify_state: JsonStateManager,
     tmp: Path,
     reply_text: str = "auto-approve",
@@ -146,7 +146,7 @@ with open("outputs/result.json", "w") as f:
 def test_email_auto_approve_creates_object_and_approves_future_jobs():
     """Full flow: auto-approve reply creates approval object, second job is auto-approved."""
 
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )

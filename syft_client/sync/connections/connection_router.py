@@ -258,71 +258,70 @@ class ConnectionRouter(BaseModel):
         return connection.read_peer_encryption_bundle(peer_email)
 
     # =========================================================================
-    # DATASET METHODS (with encryption)
+    # GENERIC PREFIX-PARAMETERIZED COLLECTION METHODS (with encryption)
     # =========================================================================
 
-    def owner_create_dataset_collection_folder(
-        self, tag: str, content_hash: str, owner_email: str
+    def owner_create_collection_folder(
+        self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> str:
         connection = self.connection_for_send_message()
-        return connection.owner_create_dataset_collection_folder(
-            tag, content_hash, owner_email
+        return connection.owner_create_collection_folder(
+            prefix, tag, content_hash, owner_email
         )
 
-    def owner_tag_dataset_collection_as_any(self, tag: str, content_hash: str) -> None:
-        connection = self.connection_for_send_message()
-        connection.owner_tag_dataset_collection_as_any(tag, content_hash)
-
-    def owner_share_dataset_collection(
-        self, tag: str, content_hash: str, users: list[str]
+    def owner_tag_collection_as_any(
+        self, prefix: str, tag: str, content_hash: str
     ) -> None:
         connection = self.connection_for_send_message()
-        connection.owner_share_dataset_collection(tag, content_hash, users)
+        connection.owner_tag_collection_as_any(prefix, tag, content_hash)
 
-    def owner_upload_dataset_files(
+    def owner_share_collection(
+        self, prefix: str, tag: str, content_hash: str, users: list[str]
+    ) -> None:
+        connection = self.connection_for_send_message()
+        connection.owner_share_collection(prefix, tag, content_hash, users)
+
+    def owner_upload_collection_files(
         self,
+        prefix: str,
         tag: str,
         content_hash: str,
         files: dict[str, bytes],
         recipient_email: str | None = None,
     ) -> None:
-        """Upload dataset files, encrypting each file if encryption is enabled."""
+        """Upload collection files, encrypting each file if encryption is enabled."""
         if recipient_email and self.peer_store:
             files = {
                 name: self.peer_store.encrypt_if_needed(recipient_email, data)
                 for name, data in files.items()
             }
         connection = self.connection_for_send_message()
-        connection.owner_upload_dataset_files(tag, content_hash, files)
+        connection.owner_upload_collection_files(prefix, tag, content_hash, files)
 
-    def owner_list_dataset_collections(self) -> list[str]:
+    def owner_list_collections(self, prefix: str) -> list[str]:
         connection = self.connection_for_send_message()
-        return connection.owner_list_dataset_collections()
+        return connection.owner_list_collections(prefix)
 
-    def owner_list_all_dataset_collections_with_permissions(
-        self,
+    def owner_list_all_collections_with_permissions(
+        self, prefix: str
     ) -> list[FileCollection]:
         connection = self.connection_for_send_message()
-        return connection.owner_list_all_dataset_collections_with_permissions()
+        return connection.owner_list_all_collections_with_permissions(prefix)
 
-    def owner_delete_dataset_collection(self, tag: str) -> None:
+    def owner_delete_collection(self, prefix: str, tag: str) -> None:
         connection = self.connection_for_send_message()
-        connection.owner_delete_dataset_collection(tag)
+        connection.owner_delete_collection(prefix, tag)
 
-    def owner_delete_private_dataset_collection(self, tag: str) -> None:
-        connection = self.connection_for_send_message()
-        connection.owner_delete_private_dataset_collection(tag)
-
-    def watcher_list_dataset_collections(self) -> list[dict]:
+    def watcher_list_collections(self, prefix: str) -> list[dict]:
         connection = self.connection_for_receive_message()
-        return connection.watcher_list_dataset_collections()
+        return connection.watcher_list_collections(prefix)
 
-    def watcher_download_dataset_collection(
-        self, tag: str, content_hash: str, owner_email: str
+    def watcher_download_collection(
+        self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> dict[str, bytes]:
         connection = self.connection_for_datasite_watcher()
-        files = connection.watcher_download_dataset_collection(
-            tag, content_hash, owner_email
+        files = connection.watcher_download_collection(
+            prefix, tag, content_hash, owner_email
         )
         if self.peer_store and owner_email:
             files = {
@@ -330,32 +329,6 @@ class ConnectionRouter(BaseModel):
                 for name, data in files.items()
             }
         return files
-
-    def owner_create_private_dataset_collection_folder(
-        self, tag: str, content_hash: str, owner_email: str
-    ) -> str:
-        connection = self.connection_for_send_message()
-        return connection.owner_create_private_dataset_collection_folder(
-            tag, content_hash, owner_email
-        )
-
-    def owner_upload_private_dataset_files(
-        self, tag: str, content_hash: str, files: dict[str, bytes]
-    ) -> None:
-        connection = self.connection_for_send_message()
-        connection.owner_upload_private_dataset_files(tag, content_hash, files)
-
-    def owner_list_private_dataset_collections(self) -> list[FileCollection]:
-        connection = self.connection_for_send_message()
-        return connection.owner_list_private_dataset_collections()
-
-    def owner_get_private_collection_file_metadatas(
-        self, tag: str, content_hash: str, owner_email: str
-    ) -> List[dict]:
-        connection = self.connection_for_datasite_watcher()
-        return connection.owner_get_private_collection_file_metadatas(
-            tag, content_hash, owner_email
-        )
 
     def connection_for_version_read(
         self, create_new: bool = False
@@ -387,17 +360,17 @@ class ConnectionRouter(BaseModel):
         connection = self.connection_for_own_syftbox()
         connection.share_version_file_with_peer(peer_email)
 
-    def watcher_get_dataset_collection_file_metadatas(
-        self, tag: str, content_hash: str, owner_email: str
+    def watcher_get_collection_file_metadatas(
+        self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> List[dict]:
         connection = self.connection_for_datasite_watcher()
-        return connection.watcher_get_dataset_collection_file_metadatas(
-            tag, content_hash, owner_email
+        return connection.watcher_get_collection_file_metadatas(
+            prefix, tag, content_hash, owner_email
         )
 
-    def watcher_download_dataset_file(self, file_id: str, owner_email: str) -> bytes:
+    def watcher_download_collection_file(self, file_id: str, owner_email: str) -> bytes:
         connection = self.connection_for_datasite_watcher()
-        data = connection.watcher_download_dataset_file(file_id)
+        data = connection.watcher_download_collection_file(file_id)
         data = self.peer_store.decrypt_dataset_if_needed(owner_email, data)
         return data
 

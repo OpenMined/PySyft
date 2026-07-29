@@ -1,15 +1,15 @@
 """Tests for SyftDatasetManager and JobsList repr and indexing."""
 
 import pytest
-from syft_client.sync.syftbox_manager import SyftboxManager
-from syft_job.job import JobInfo, JobsList
 
-from tests.unit.utils import create_tmp_dataset_files
+from syft_rds import SyftRDSClient
+from syft_job.job import JobInfo, JobsList
+from dataset_test_utils import create_tmp_dataset_files
 
 
 def _create_manager_with_dataset():
     """Create a pair of managers and a dataset, return (ds_manager, do_manager, dataset)."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -76,7 +76,7 @@ def test_dataset_manager_repr_html():
 
 
 def test_dataset_manager_repr_html_with_tags():
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -92,7 +92,7 @@ def test_dataset_manager_repr_html_with_tags():
 
 
 def test_dataset_manager_repr_html_empty():
-    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    _, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -116,7 +116,7 @@ def test_dataset_manager_get_missing_lists_available():
 
 
 def test_dataset_manager_get_missing_no_datasets():
-    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    _, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )

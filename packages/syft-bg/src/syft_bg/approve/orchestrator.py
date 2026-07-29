@@ -12,7 +12,7 @@ from syft_bg.common.orchestrator import BaseOrchestrator
 from syft_bg.common.state import JsonStateManager
 
 if TYPE_CHECKING:
-    from syft_client.sync.syftbox_manager import SyftboxManager
+    from syft_rds import SyftRDSClient
 
 
 class ApprovalOrchestrator(BaseOrchestrator):
@@ -20,7 +20,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
 
     def __init__(
         self,
-        client: SyftboxManager,
+        client: SyftRDSClient,
         config: AutoApproveConfig,
         config_path: Optional[Path] = None,
     ):
@@ -40,10 +40,10 @@ class ApprovalOrchestrator(BaseOrchestrator):
     @classmethod
     def from_client(
         cls,
-        client: SyftboxManager,
+        client: SyftRDSClient,
         interval: int = 5,
     ) -> ApprovalOrchestrator:
-        """Create orchestrator from a SyftboxManager client."""
+        """Create orchestrator from a SyftRDSClient."""
         if not client.has_do_role:
             raise ValueError(
                 "ApprovalOrchestrator should only run on Data Owner (DO) side."
@@ -67,31 +67,35 @@ class ApprovalOrchestrator(BaseOrchestrator):
         if not config.syftbox_root:
             raise ValueError("Config missing 'syftbox_root' field")
 
-        # Wait for sync to seed the cache before building SyftboxManager —
-        # SyftboxManager.from_config triggers _load_file_hashes_from_disk,
-        # which races sync's identical replay if both run cold-start.
+        # Wait for sync to seed the cache before building the RDS client —
+        # its nested SyftboxManager.from_config triggers
+        # _load_file_hashes_from_disk, which races sync's identical replay if
+        # both run cold-start.
         cls._wait_for_sync_ready(label="Approve")
 
-        from syft_client.sync.environments.environment import Environment
-        from syft_client.sync.syftbox_manager import SyftboxManager
-        from syft_client.sync.utils.syftbox_utils import check_env
+        from syft_rds import (
+            Environment,
+            SyftRDSClient,
+            SyftRDSClientConfig,
+            check_env,
+        )
 
-        env = check_env()
-        if env == Environment.COLAB:
-            client = SyftboxManager.for_colab(
+        if check_env() == Environment.COLAB:
+            rds_config = SyftRDSClientConfig.for_colab(
                 email=config.do_email,
                 has_do_role=True,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )
         else:
-            client = SyftboxManager.for_jupyter(
+            rds_config = SyftRDSClientConfig.for_jupyter(
                 email=config.do_email,
                 has_do_role=True,
                 token_path=config.drive_token_path,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )
+        client = SyftRDSClient.from_config(rds_config)
 
         return cls(client=client, config=config)
 

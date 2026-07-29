@@ -1,74 +1,66 @@
-from pathlib import Path
 import fcntl
-from syft_client.sync.peers.peer_store import PeerStore
-from syft_client.sync.utils.path_filters import is_normal_syncable_path
 import logging
+import os
 import shutil
-from contextlib import contextmanager
-from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
-from syft_client.utils import resolve_path
-from concurrent.futures import ThreadPoolExecutor
 import time
-from pydantic import ConfigDict
-from syft_job.client import BaseJobClient, JobClient
-from syft_job.job import JobsList
-from syft_job.job_runner import SyftJobRunner
-from syft_job import SyftJobConfig
-from syft_datasets.config import SyftBoxConfig
-from syft_datasets.dataset_manager import SyftDatasetManager
-from syft_client.sync.platforms.base_platform import BasePlatform
-from pydantic import BaseModel, PrivateAttr
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from pathlib import Path
 from typing import List, Optional, cast
-from syft_client.sync.sync.caches.datasite_watcher_cache import (
-    DataSiteWatcherCacheConfig,
-)
-from syft_client.sync.sync.caches.datasite_owner_cache import (
-    DataSiteOwnerEventCacheConfig,
-)
-from syft_client.sync.peers.peer_list import PeerList
-from syft_client.sync.peers.peer import Peer
+
+from pydantic import BaseModel, ConfigDict, PrivateAttr
+
+from syft_client.sync.callback_mixin import BaseModelCallbackMixin
 from syft_client.sync.connections.base_connection import (
     SyftboxPlatformConnection,
 )
+from syft_client.sync.connections.connection_router import ConnectionRouter
+from syft_client.sync.connections.drive import mock_drive_service
+from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft_client.sync.connections.drive.grdrive_config import GdriveConnectionConfig
 from syft_client.sync.events.file_change_event import (
     FileChangeEvent,
     FileChangeEventsMessage,
 )
-from syft_client.sync.utils.pre_submit_scan import run_pre_submit_check
-from syft_client.sync.utils.syftbox_utils import (
-    random_email,
-    random_syftbox_folder_for_testing,
-)
 from syft_client.sync.file_writer import FileWriter
-
 from syft_client.sync.job_file_change_handler import JobFileChangeHandler
-from syft_client.sync.connections.connection_router import ConnectionRouter
-
-from syft_client.sync.connections.drive.grdrive_config import GdriveConnectionConfig
-from syft_client.sync.connections.drive import mock_drive_service
+from syft_client.sync.peers.peer import Peer
+from syft_client.sync.peers.peer_list import PeerList
+from syft_client.sync.peers.peer_store import PeerStore
+from syft_client.sync.platforms.base_platform import BasePlatform
+from syft_client.sync.sync.caches.datasite_owner_cache import (
+    DataSiteOwnerEventCacheConfig,
+)
+from syft_client.sync.sync.caches.datasite_watcher_cache import (
+    DataSiteWatcherCacheConfig,
+)
+from syft_client.sync.sync.collection_spec import CollectionSyncSpec
 from syft_client.sync.sync.datasite_owner_syncer import (
+    MIN_MESSAGES_COMPACT,
     DatasiteOwnerSyncer,
     DatasiteOwnerSyncerConfig,
-    MIN_MESSAGES_COMPACT,
 )
 from syft_client.sync.sync.datasite_watcher_syncer import (
     DatasiteWatcherSyncer,
     DatasiteWatcherSyncerConfig,
 )
+from syft_client.sync.utils.path_filters import is_normal_syncable_path
+from syft_client.sync.utils.syftbox_utils import (
+    random_email,
+    random_syftbox_folder_for_testing,
+)
 from syft_client.sync.version.peer_manager import (
-    CompatAction,
     PeerManager,
     PeerManagerConfig,
 )
 from syft_client.sync.version.version_info import VersionInfo
+from syft_client.utils import resolve_path
 from syft_client.version import VERSION_FILE_NAME
-import os
 
 logger = logging.getLogger(__name__)
 
 COLAB_DEFAULT_SYFTBOX_FOLDER = Path("/")
 JUPYTER_DEFAULT_SYFTBOX_FOLDER = Path.home() / "SyftBox"
-COLLECTION_SUBPATH = Path("public/syft_datasets")
 
 # ANSI codes for highlighting important warnings in terminals / notebooks.
 _ANSI_RED = "\033[1;91m"
@@ -83,6 +75,25 @@ def get_colab_default_syftbox_folder(email: str):
     return Path("/content") / f"SyftBox_{email}"
 
 
+def default_collections_folder(
+    syftbox_folder: Path | str,
+    email: str,
+    collection_specs: list["CollectionSyncSpec"],
+) -> Path | None:
+    """Local folder holding a datasite's collections.
+
+    Derived from the first (public) collection spec by convention; returns
+    ``None`` when no specs are configured (the generic engine has no
+    collections of its own).
+    """
+
+    # get the first shareable spec
+    spec = next((s for s in collection_specs if not s.owner_only), None)
+    if spec is None:
+        return None
+    return Path(syftbox_folder) / email / spec.local_subpath
+
+
 class SyftboxManagerConfig(BaseModel):
     email: str
     syftbox_folder: Path
@@ -95,8 +106,6 @@ class SyftboxManagerConfig(BaseModel):
     peer_manager_config: PeerManagerConfig
 
     datasite_watcher_syncer_config: DatasiteWatcherSyncerConfig
-    dataset_manager_config: SyftBoxConfig
-    job_client_config: SyftJobConfig
 
     @classmethod
     def for_colab(
@@ -110,18 +119,27 @@ class SyftboxManagerConfig(BaseModel):
             bool
         ] = None,  # None: value is determined by the role
         force_ignore_peer_version: bool = False,
+        collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
         if not has_ds_role and not has_do_role:
             raise ValueError("At least one of has_ds_role or has_do_role must be True")
 
+        # No collection specs by default: the generic sync engine knows nothing
+        # about custom collections (eg: datasets or jobs).
+        if collection_specs is None:
+            collection_specs = []
+
         syftbox_folder = get_colab_default_syftbox_folder(email)
         use_in_memory_cache = False
-        collections_folder = syftbox_folder / email / COLLECTION_SUBPATH
+        collections_folder = default_collections_folder(
+            syftbox_folder, email, collection_specs
+        )
         connection_configs = [GdriveConnectionConfig(email=email, token_path=None)]
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
+            collection_specs=collection_specs,
             connection_configs=connection_configs,
             cache_config=DataSiteOwnerEventCacheConfig(
                 email=email,
@@ -138,18 +156,9 @@ class SyftboxManagerConfig(BaseModel):
                 email=email,
                 use_in_memory_cache=use_in_memory_cache,
                 syftbox_folder=syftbox_folder,
-                collection_subpath=COLLECTION_SUBPATH,
+                collection_specs=collection_specs,
                 connection_configs=connection_configs,
             ),
-        )
-        job_client_config = SyftJobConfig(
-            syftbox_folder=syftbox_folder,
-            current_user_email=email,
-            has_do_role=has_do_role,
-        )
-        dataset_manager_config = SyftBoxConfig(
-            syftbox_folder=syftbox_folder,
-            email=email,
         )
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
@@ -171,8 +180,6 @@ class SyftboxManagerConfig(BaseModel):
             use_in_memory_cache=False,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
             datasite_watcher_syncer_config=datasite_watcher_syncer_config,
-            dataset_manager_config=dataset_manager_config,
-            job_client_config=job_client_config,
             peer_manager_config=peer_manager_config,
         )
 
@@ -189,12 +196,21 @@ class SyftboxManagerConfig(BaseModel):
             bool
         ] = None,  # None: value is determined by the role
         force_ignore_peer_version: bool = False,
+        collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
         if not has_ds_role and not has_do_role:
             raise ValueError("At least one of has_ds_role or has_do_role must be True")
 
+        # No collection specs by default: the generic sync engine knows nothing
+        # about datasets. syft-rds registers its dataset spec at initialization
+        # (see syft_rds.config.DATASET_COLLECTION_SPECS).
+        if collection_specs is None:
+            collection_specs = []
+
         syftbox_folder = get_jupyter_default_syftbox_folder(email)
-        collections_folder = syftbox_folder / email / COLLECTION_SUBPATH
+        collections_folder = default_collections_folder(
+            syftbox_folder, email, collection_specs
+        )
 
         connection_configs = [
             GdriveConnectionConfig(email=email, token_path=token_path)
@@ -203,6 +219,7 @@ class SyftboxManagerConfig(BaseModel):
             email=email,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
+            collection_specs=collection_specs,
             connection_configs=connection_configs,
             cache_config=DataSiteOwnerEventCacheConfig(
                 email=email,
@@ -220,18 +237,9 @@ class SyftboxManagerConfig(BaseModel):
                 email=email,
                 use_in_memory_cache=False,
                 syftbox_folder=syftbox_folder,
-                collection_subpath=COLLECTION_SUBPATH,
+                collection_specs=collection_specs,
                 connection_configs=connection_configs,
             ),
-        )
-        dataset_manager_config = SyftBoxConfig(
-            syftbox_folder=syftbox_folder,
-            email=email,
-        )
-        job_client_config = SyftJobConfig(
-            syftbox_folder=syftbox_folder,
-            current_user_email=email,
-            has_do_role=has_do_role,
         )
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
@@ -252,8 +260,6 @@ class SyftboxManagerConfig(BaseModel):
             use_in_memory_cache=False,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
             datasite_watcher_syncer_config=datasite_watcher_syncer_config,
-            dataset_manager_config=dataset_manager_config,
-            job_client_config=job_client_config,
             peer_manager_config=peer_manager_config,
         )
 
@@ -267,15 +273,25 @@ class SyftboxManagerConfig(BaseModel):
         has_do_role: bool = False,
         use_in_memory_cache: bool = True,
         check_versions: bool = False,
+        collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
+        # No collection specs by default: the generic sync engine knows nothing
+        # about datasets. syft-rds registers its dataset spec at initialization
+        # (see syft_rds.config.DATASET_COLLECTION_SPECS).
+        if collection_specs is None:
+            collection_specs = []
+
         syftbox_folder = syftbox_folder or random_syftbox_folder_for_testing()
         email = email or random_email()
-        collections_folder = syftbox_folder / email / COLLECTION_SUBPATH
+        collections_folder = default_collections_folder(
+            syftbox_folder, email, collection_specs
+        )
 
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
+            collection_specs=collection_specs,
             write_files=write_files,
             cache_config=DataSiteOwnerEventCacheConfig(
                 email=email,
@@ -291,19 +307,10 @@ class SyftboxManagerConfig(BaseModel):
                 email=email,
                 use_in_memory_cache=use_in_memory_cache,
                 syftbox_folder=syftbox_folder,
-                collection_subpath=COLLECTION_SUBPATH,
+                collection_specs=collection_specs,
             ),
         )
 
-        dataset_manager_config = SyftBoxConfig(
-            syftbox_folder=syftbox_folder,
-            email=email,
-        )
-        job_client_config = SyftJobConfig(
-            syftbox_folder=Path(syftbox_folder),
-            current_user_email=email,
-            has_do_role=has_do_role,
-        )
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
             email=email,
@@ -323,8 +330,6 @@ class SyftboxManagerConfig(BaseModel):
             use_in_memory_cache=use_in_memory_cache,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
             datasite_watcher_syncer_config=datasite_watcher_syncer_config,
-            dataset_manager_config=dataset_manager_config,
-            job_client_config=job_client_config,
             peer_manager_config=peer_manager_config,
         )
 
@@ -339,10 +344,19 @@ class SyftboxManagerConfig(BaseModel):
         has_do_role: bool = False,
         use_in_memory_cache: bool = True,
         check_versions: bool = False,
+        collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
+        # No collection specs by default: the generic sync engine knows nothing
+        # about datasets. syft-rds registers its dataset spec at initialization
+        # (see syft_rds.config.DATASET_COLLECTION_SPECS).
+        if collection_specs is None:
+            collection_specs = []
+
         syftbox_folder = syftbox_folder or random_syftbox_folder_for_testing()
         email = email or random_email()
-        collections_folder = Path(syftbox_folder) / email / COLLECTION_SUBPATH
+        collections_folder = default_collections_folder(
+            syftbox_folder, email, collection_specs
+        )
         connection_configs = [
             GdriveConnectionConfig(email=email, token_path=token_path)
         ]
@@ -350,6 +364,7 @@ class SyftboxManagerConfig(BaseModel):
             email=email,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
+            collection_specs=collection_specs,
             connection_configs=connection_configs,
             cache_config=DataSiteOwnerEventCacheConfig(
                 email=email,
@@ -366,20 +381,11 @@ class SyftboxManagerConfig(BaseModel):
                 email=email,
                 use_in_memory_cache=use_in_memory_cache,
                 syftbox_folder=syftbox_folder,
-                collection_subpath=COLLECTION_SUBPATH,
+                collection_specs=collection_specs,
                 connection_configs=connection_configs,
             ),
         )
 
-        dataset_manager_config = SyftBoxConfig(
-            syftbox_folder=syftbox_folder,
-            email=email,
-        )
-        job_client_config = SyftJobConfig(
-            syftbox_folder=syftbox_folder,
-            current_user_email=email,
-            has_do_role=has_do_role,
-        )
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
             email=email,
@@ -397,13 +403,11 @@ class SyftboxManagerConfig(BaseModel):
             has_ds_role=has_ds_role,
             has_do_role=has_do_role,
             use_in_memory_cache=False,
-            dataset_manager_config=dataset_manager_config,
-            job_client_config=job_client_config,
             peer_manager_config=peer_manager_config,
         )
 
 
-class SyftboxManager(BaseModel):
+class SyftboxManager(BaseModelCallbackMixin):
     # needed for peers
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -415,9 +419,6 @@ class SyftboxManager(BaseModel):
 
     datasite_owner_syncer: DatasiteOwnerSyncer | None = None
     job_file_change_handler: JobFileChangeHandler | None = None
-    dataset_manager: SyftDatasetManager | None = None
-    job_client: BaseJobClient | None = None
-    job_runner: SyftJobRunner | None = None
     peer_manager: PeerManager | None = None
     has_do_role: bool = False
     has_ds_role: bool = False
@@ -435,22 +436,13 @@ class SyftboxManager(BaseModel):
         "config",
         "has_do_role",
         "has_ds_role",
-        "dataset_manager",
         "peer_manager",
         "peers",
-        "jobs",
-        "datasets",
         "add_peer",
         "load_peers",
         "approve_peer_request",
         "reject_peer_request",
         "sync",
-        "create_dataset",
-        "delete_dataset",
-        "share_dataset",
-        "submit_bash_job",
-        "submit_python_job",
-        "process_approved_jobs",
         "create_checkpoint",
         "should_create_checkpoint",
         "try_create_checkpoint",
@@ -509,10 +501,6 @@ class SyftboxManager(BaseModel):
         datasite_owner_syncer = None
         job_file_change_handler = None
         datasite_watcher_syncer = None
-        job_runner = None
-
-        dataset_manager = SyftDatasetManager.from_config(config.dataset_manager_config)
-        job_client = JobClient.from_config(config.job_client_config)
 
         if config.has_do_role:
             datasite_owner_syncer = DatasiteOwnerSyncer.from_config(
@@ -520,7 +508,6 @@ class SyftboxManager(BaseModel):
             )
 
             job_file_change_handler = JobFileChangeHandler()
-            job_runner = SyftJobRunner.from_config(config.job_client_config)
 
         if config.has_ds_role:
             datasite_watcher_syncer = DatasiteWatcherSyncer.from_config(
@@ -538,9 +525,6 @@ class SyftboxManager(BaseModel):
             datasite_owner_syncer=datasite_owner_syncer,
             job_file_change_handler=job_file_change_handler,
             datasite_watcher_syncer=datasite_watcher_syncer,
-            dataset_manager=dataset_manager,
-            job_client=job_client,
-            job_runner=job_runner,
             peer_manager=peer_manager,
             has_do_role=config.has_do_role,
             has_ds_role=config.has_ds_role,
@@ -641,6 +625,7 @@ class SyftboxManager(BaseModel):
         use_in_memory_cache: bool = True,
         clear_caches: bool = True,
         check_versions: bool = False,
+        collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
         receiver_config = SyftboxManagerConfig.for_google_drive_testing_connection(
             email=do_email,
@@ -650,6 +635,7 @@ class SyftboxManager(BaseModel):
             has_ds_role=False,
             has_do_role=True,
             check_versions=check_versions,
+            collection_specs=collection_specs,
         )
 
         receiver_manager = cls.from_config(receiver_config)
@@ -662,6 +648,7 @@ class SyftboxManager(BaseModel):
             has_ds_role=True,
             has_do_role=False,
             check_versions=check_versions,
+            collection_specs=collection_specs,
         )
         sender_manager = cls.from_config(sender_config)
 
@@ -722,6 +709,7 @@ class SyftboxManager(BaseModel):
         use_in_memory_cache: bool = True,
         check_versions: bool = False,
         encryption: bool = False,
+        collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
         """Create a pair of managers using mock Google Drive services for testing.
 
@@ -750,6 +738,7 @@ class SyftboxManager(BaseModel):
             has_do_role=True,
             use_in_memory_cache=use_in_memory_cache,
             check_versions=check_versions,
+            collection_specs=collection_specs,
         )
 
         ds_config = SyftboxManagerConfig._base_config_for_testing(
@@ -759,6 +748,7 @@ class SyftboxManager(BaseModel):
             has_do_role=False,
             use_in_memory_cache=use_in_memory_cache,
             check_versions=check_versions,
+            collection_specs=collection_specs,
         )
 
         # Create managers from configs
@@ -822,83 +812,11 @@ class SyftboxManager(BaseModel):
     ):
         """Add a peer. Delegates to PeerManager."""
         self.peer_manager.add_peer(peer_email, force=force, verbose=verbose)
-        self._sync_peer_install_sources_to_job_client()
+        self._emit_peers_loaded()
         if self.has_do_role:
             self._post_approve_peer_do(peer_email)
         if sync:
             self.sync()
-
-    def submit_bash_job(
-        self,
-        user: str,
-        script: str,
-        job_name: str = "",
-        sync=True,
-        force_submission: bool = False,
-        ignore_peer_version: bool = False,
-    ):
-        # Check version compatibility before submission (uses cached versions)
-        if not force_submission:
-            result = self.peer_manager.get_peer_compatibility_status(
-                user,
-                action=CompatAction.SUBMIT,
-                ignore_peer_version=ignore_peer_version,
-            )
-            result.raise_on_skip(operation="submit job")
-            result.maybe_warn()
-        job_dir = self.job_client.submit_bash_job(user, script, job_name=job_name)
-        self.push_job_files(job_dir)
-
-    def submit_python_job(
-        self,
-        user: str,
-        code_path: str,
-        job_name: str | None = "",
-        dependencies: list[str] | None = None,
-        entrypoint: str | None = None,
-        sync=True,
-        force_submission: bool = False,
-        ignore_peer_version: bool = False,
-    ):
-        peer_emails = {p.email for p in self.peer_manager.syncable_peers}
-        if user not in peer_emails:
-            print(f"⚠️  {user} is not in your peer list.")
-            print(f"   Add them first with: client.add_peer('{user}')")
-            return
-
-        if not force_submission:
-            if not run_pre_submit_check(Path(code_path)):
-                print("Submission aborted.")
-                return
-
-        print(f"📤 Submitting '{code_path}' to {user}...")
-        if job_name:
-            print(f"   Job name     : {job_name}")
-        if dependencies:
-            print(f"   Dependencies : {', '.join(dependencies)}")
-
-        # Check version compatibility before submission (uses cached versions)
-        if not force_submission:
-            result = self.peer_manager.get_peer_compatibility_status(
-                user,
-                action=CompatAction.SUBMIT,
-                ignore_peer_version=ignore_peer_version,
-            )
-            result.raise_on_skip(operation="submit job")
-            result.maybe_warn()
-        job_dir = self.job_client.submit_python_job(
-            user,
-            code_path,
-            job_name=job_name,
-            dependencies=dependencies,
-            entrypoint=entrypoint,
-        )
-        self.push_job_files(job_dir)
-
-        print("\n✅ Job submitted successfully!")
-        print("   Status : inbox (waiting for DO to review)")
-        print(f"\n⏳ Next step: wait for {user} to approve and run it.")
-        print("   Check progress with: client.jobs")
 
     def push_job_files(self, job_dir: Path):
         file_paths = [Path(p) for p in job_dir.rglob("*") if p.is_file()]
@@ -920,8 +838,47 @@ class SyftboxManager(BaseModel):
                 relative_file_path, process_now=last_file
             )
 
+    # --- collection operations (used by the product layer) ---
+
+    def create_collection_folder(self, prefix: str, tag: str, content_hash: str) -> str:
+        """Create the owner-side folder for a collection. Delegates to ConnectionRouter."""
+        return self._connection_router.owner_create_collection_folder(
+            prefix, tag=tag, content_hash=content_hash, owner_email=self.email
+        )
+
+    def upload_collection_files(
+        self,
+        prefix: str,
+        tag: str,
+        content_hash: str,
+        files: dict[str, bytes],
+        recipient_email: str | None = None,
+    ) -> None:
+        """Upload a collection's files. Delegates to ConnectionRouter."""
+        self._connection_router.owner_upload_collection_files(
+            prefix, tag, content_hash, files, recipient_email=recipient_email
+        )
+
+    def share_collection(
+        self, prefix: str, tag: str, content_hash: str, users: list[str]
+    ) -> None:
+        """Share a collection with specific users. Delegates to ConnectionRouter."""
+        self._connection_router.owner_share_collection(prefix, tag, content_hash, users)
+
+    def tag_collection_as_any(self, prefix: str, tag: str, content_hash: str) -> None:
+        """Mark a collection as shared with "any". Delegates to ConnectionRouter."""
+        self._connection_router.owner_tag_collection_as_any(prefix, tag, content_hash)
+
+    def delete_collection(self, prefix: str, tag: str) -> None:
+        """Delete a collection. Delegates to ConnectionRouter."""
+        self._connection_router.owner_delete_collection(prefix, tag)
+
+    def delete_file_by_id(self, file_id: str) -> None:
+        """Delete a backend file/folder by id. Delegates to ConnectionRouter."""
+        self._connection_router.delete_file_by_id(file_id)
+
     @contextmanager
-    def _sync_file_lock(self):
+    def sync_file_lock(self):
         lock_path = self.syftbox_folder / ".sync.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         lock_path.touch(exist_ok=True)
@@ -963,7 +920,7 @@ class SyftboxManager(BaseModel):
                           from background daemons (e.g. syft-bg) where a
                           separate process may have updated the file.
         """
-        with self._sync_file_lock():
+        with self.sync_file_lock():
             self.load_peers(force_download=force_download_peer_state)
             if self.has_do_role:
                 peer_emails = [peer.email for peer in self.peer_manager.approved_peers]
@@ -995,7 +952,7 @@ class SyftboxManager(BaseModel):
                 instead of using the cached copy.
         """
         cast(PeerManager, self.peer_manager).load_peers(force_download=force_download)
-        self._sync_peer_install_sources_to_job_client()
+        self._emit_peers_loaded()
 
     def _check_peer_request_exists(self, email: str) -> bool:
         """Check if a peer request exists. Delegates to PeerManager."""
@@ -1011,132 +968,21 @@ class SyftboxManager(BaseModel):
         self.peer_manager.approve_peer_request(
             email_or_peer, verbose=verbose, peer_must_exist=peer_must_exist
         )
-        self._sync_peer_install_sources_to_job_client()
         self._post_approve_peer_do(email_or_peer)
 
     def _post_approve_peer_do(self, email_or_peer: str | Peer):
-        """Shared post-approval logic: job folder setup and dataset sharing."""
         peer_email = (
             email_or_peer if isinstance(email_or_peer, str) else email_or_peer.email
         )
+        self._emit_peers_loaded()
+        self._emit("peer_approved", peer_email)
 
-        if self.has_do_role:
-            self.job_client.setup_ds_job_folder_as_do(peer_email)
-            self._share_any_datasets_with_peer(peer_email)
-
-    def _sync_peer_install_sources_to_job_client(self) -> None:
-        """Copy each peer's advertised syft-client install source into job_client.
-
-        Called after peer version exchanges so that, when the DS submits a job
-        to a DO, the run.sh references the DO's local install path rather than
-        the DS's local detection.
-        """
-        if not self.job_client:
-            return
-        for peer in self.peer_manager.peer_store.syncable_peers:
-            source = peer.version.syft_client_install_source if peer.version else None
-            if source:
-                self.job_client.peer_install_sources[peer.email] = source
-
-    def _ensure_local_peer_permissions(self) -> None:
-        """Recreate local permission files for all approved peers.
-
-        After an upgrade that deletes local state, permission files
-        (syft.pub.yaml) are lost. This restores them so that incoming
-        proposals from approved peers are not silently rejected.
-        """
-        if not self.has_do_role:
-            return
-        for peer in self.peer_manager.approved_peers:
-            self.job_client.setup_ds_job_folder_as_do(peer.email)
-
-    def _share_any_datasets_with_peer(self, peer_email: str):
-        """Share all datasets that have 'any' permission with a specific peer.
-
-        This is needed because Google Drive "anyone with link" files are not
-        discoverable via search. By adding explicit user sharing, the peer
-        can discover these datasets.
-
-        Uses cache populated during pull_initial_state() in DatasiteOwnerSyncer.
-        """
-        for tag, content_hash in self.datasite_owner_syncer._any_shared_datasets:
-            try:
-                self._connection_router.owner_share_dataset_collection(
-                    tag, content_hash, [peer_email]
-                )
-            except Exception:
-                # Ignore errors (e.g., already shared)
-                pass
+    def _emit_peers_loaded(self) -> None:
+        self._emit("peers_loaded")
 
     def reject_peer_request(self, email_or_peer: str | Peer):
         """Reject a pending peer request. Delegates to PeerManager."""
         self.peer_manager.reject_peer_request(email_or_peer)
-
-    @property
-    def jobs(self) -> JobsList:
-        """
-        Get the list of jobs. Automatically calls sync() before returning jobs
-        if PRE_SYNC environment variable is set to "true" (case-insensitive).
-
-        PRE_SYNC defaults to "true", so auto-sync is enabled by default.
-        To disable auto-sync, set: PRE_SYNC=false
-        """
-        if os.environ.get("PRE_SYNC", "true").lower() == "true":
-            self.sync()
-        return self.job_client.jobs
-
-    def process_approved_jobs(
-        self,
-        stream_output: bool = True,
-        timeout: int | None = None,
-        force_execution: bool = False,
-        share_outputs_with_submitter: bool = False,
-        share_logs_with_submitter: bool = False,
-        ignore_peer_version: bool = False,
-    ) -> None:
-        """
-        Process approved jobs. Automatically calls sync() after processing
-
-        Args:
-            stream_output: If True (default), stream output in real-time.
-                        If False, capture output at end.
-            timeout: Timeout in seconds per job. Defaults to 300 (5 minutes).
-                    Can also be set via SYFT_DEFAULT_JOB_TIMEOUT_SECONDS env var.
-            force_execution: If True, process all approved jobs regardless of
-                           version compatibility. If False (default), skip jobs
-                           from peers with incompatible or unknown versions.
-            share_outputs_with_submitter: If True, grant read access on outputs to submitter.
-            share_logs_with_submitter: If True, grant read access on logs to submitter.
-
-        PRE_SYNC defaults to "true", so auto-sync is enabled by default.
-        To disable auto-sync, set: PRE_SYNC=false
-        """
-        skip_job_names = []
-
-        if not force_execution:
-            approved_jobs = [
-                job for job in self.job_client.jobs if job.status == "approved"
-            ]
-            for job in approved_jobs:
-                result = self.peer_manager.get_peer_compatibility_status(
-                    job.submitted_by,
-                    action=CompatAction.EXECUTE,
-                    ignore_peer_version=ignore_peer_version,
-                )
-                result.maybe_warn()
-                if result.should_skip:
-                    skip_job_names.append(job.name)
-
-        self.job_runner.process_approved_jobs(
-            stream_output=stream_output,
-            timeout=timeout,
-            skip_job_names=skip_job_names if skip_job_names else None,
-            share_outputs_with_submitter=share_outputs_with_submitter,
-            share_logs_with_submitter=share_logs_with_submitter,
-        )
-
-        if os.environ.get("PRE_SYNC", "true").lower() == "true":
-            self.sync()
 
     def _add_connection(self, connection: SyftboxPlatformConnection):
         if not (
@@ -1165,317 +1011,6 @@ class SyftboxManager(BaseModel):
 
     def _get_all_accepted_events_do(self) -> List[FileChangeEvent]:
         return self.datasite_owner_syncer.connection_router.owner_get_all_accepted_events_messages()
-
-    def create_dataset(
-        self,
-        name: str,
-        mock_path: str | Path,
-        private_path: str | Path,
-        summary: str | None = None,
-        readme_path: Path | None = None,
-        location: str | None = None,
-        tags: list[str] | None = None,
-        users: list[str] | str | None = None,
-        upload_private: bool = False,
-        sync=True,
-    ):
-        if self.dataset_manager is None:
-            raise ValueError("Dataset manager is not set")
-
-        # Only DO can create datasets
-        if not self.has_do_role:
-            raise ValueError("Only dataset owners can create datasets")
-
-        # Convert None to empty list
-        if users is None:
-            users = []
-
-        dataset_name = None
-        created_local = False
-        mock_folder_id = None
-        private_folder_id = None
-
-        try:
-            # Create dataset locally
-            dataset = self.dataset_manager.create(
-                name=name,
-                mock_path=mock_path,
-                private_path=private_path,
-                summary=summary,
-                readme_path=readme_path,
-                location=location,
-                tags=tags,
-                users=users,
-            )
-            created_local = True
-            dataset_name = dataset.name
-
-            # Upload mock data to collection folder
-            mock_folder_id = self._upload_dataset_to_collection(dataset, users)
-
-            # Upload private data to a separate owner-only collection
-            if upload_private:
-                private_folder_id = self._upload_private_dataset_to_collection(dataset)
-
-            if sync:
-                self.sync()
-
-            return dataset
-
-        except Exception:
-            logger.error(
-                "Failed to create dataset%s, cleaning up",
-                f" '{dataset_name}'" if dataset_name else "",
-            )
-            self._cleanup_failed_dataset_creation(
-                dataset_name, created_local, mock_folder_id, private_folder_id
-            )
-            raise
-
-    def _cleanup_failed_dataset_creation(
-        self,
-        dataset_name: str | None,
-        created_local: bool,
-        mock_folder_id: str | None,
-        private_folder_id: str | None,
-    ) -> None:
-        """Best-effort cleanup after a failed create_dataset, in reverse order."""
-        if private_folder_id is not None:
-            try:
-                self._connection_router.delete_file_by_id(private_folder_id)
-            except Exception:
-                logger.warning(
-                    "Cleanup: failed to delete private GDrive folder %s",
-                    private_folder_id,
-                )
-
-        if mock_folder_id is not None:
-            try:
-                self._connection_router.delete_file_by_id(mock_folder_id)
-            except Exception:
-                logger.warning(
-                    "Cleanup: failed to delete mock GDrive folder %s",
-                    mock_folder_id,
-                )
-
-        if created_local and dataset_name is not None:
-            try:
-                self.dataset_manager.delete(dataset_name, require_confirmation=False)
-            except Exception:
-                logger.warning(
-                    "Cleanup: failed to delete local dataset '%s'",
-                    dataset_name,
-                )
-
-    def _upload_dataset_to_collection(self, dataset, users: list[str] | str) -> str:
-        """Upload dataset files to collection folder. Returns the folder ID."""
-        from syft_client.sync.connections.drive.gdrive_transport import (
-            DatasetCollectionFolder,
-        )
-
-        collection_tag = dataset.name
-
-        # Prepare files to upload
-        files = {}
-        for mock_file in dataset.mock_files:
-            if mock_file.exists():
-                files[mock_file.name] = mock_file.read_bytes()
-
-        metadata_path = dataset.mock_dir / "dataset.yaml"
-        if metadata_path.exists():
-            files["dataset.yaml"] = metadata_path.read_bytes()
-
-        if dataset.readme_path and dataset.readme_path.exists():
-            files[dataset.readme_path.name] = dataset.readme_path.read_bytes()
-
-        # Compute content hash
-        content_hash = DatasetCollectionFolder.compute_hash(files)
-
-        # Create collection folder with hash in name
-        folder_id = self._connection_router.owner_create_dataset_collection_folder(
-            tag=collection_tag, content_hash=content_hash, owner_email=self.email
-        )
-
-        # Upload files
-        self._connection_router.owner_upload_dataset_files(
-            collection_tag, content_hash, files
-        )
-
-        # Share with users
-        if users == "any":
-            self._connection_router.owner_tag_dataset_collection_as_any(
-                collection_tag, content_hash
-            )
-            self.datasite_owner_syncer._any_shared_datasets.append(
-                (collection_tag, content_hash)
-            )
-            # Share with all already-approved peers
-            peer_emails = [p.email for p in self.peer_manager.approved_peers]
-            if peer_emails:
-                self._connection_router.owner_share_dataset_collection(
-                    collection_tag, content_hash, peer_emails
-                )
-        else:
-            self._connection_router.owner_share_dataset_collection(
-                collection_tag, content_hash, users
-            )
-
-        return folder_id
-
-    def _upload_private_dataset_to_collection(self, dataset) -> str | None:
-        """Upload private dataset files to a separate owner-only collection folder.
-        Returns the folder ID, or None if no files to upload."""
-        from syft_client.sync.connections.drive.gdrive_transport import (
-            PrivateDatasetCollectionFolder,
-        )
-
-        collection_tag = dataset.name
-
-        # Collect all files in private dir (data, metadata, permissions)
-        files = {}
-        for f in dataset.private_dir.iterdir():
-            if f.is_file():
-                files[f.name] = f.read_bytes()
-
-        if not files:
-            return None
-
-        content_hash = PrivateDatasetCollectionFolder.compute_hash(files)
-
-        # Create private collection folder (no sharing)
-        folder_id = (
-            self._connection_router.owner_create_private_dataset_collection_folder(
-                tag=collection_tag, content_hash=content_hash, owner_email=self.email
-            )
-        )
-
-        # Upload files
-        self._connection_router.owner_upload_private_dataset_files(
-            collection_tag, content_hash, files
-        )
-
-        return folder_id
-
-    def delete_dataset(
-        self,
-        name: str,
-        datasite: str | None = None,
-        require_confirmation: bool = True,
-        sync=True,
-    ):
-        if self.dataset_manager is None:
-            raise ValueError("Dataset manager is not set")
-        self.dataset_manager.delete(
-            name=name,
-            datasite=datasite,
-            require_confirmation=require_confirmation,
-        )
-        # Delete collection folders from Google Drive so DS peers
-        # pick up the deletion on their next sync.
-        try:
-            self._connection_router.owner_delete_dataset_collection(name)
-        except Exception:
-            logger.warning("Failed to delete dataset collection '%s' from Drive", name)
-        try:
-            self._connection_router.owner_delete_private_dataset_collection(name)
-        except Exception:
-            logger.warning(
-                "Failed to delete private dataset collection '%s' from Drive",
-                name,
-            )
-        if sync:
-            self.sync()
-
-    def share_dataset(self, tag: str, users: list[str] | str, sync=True):
-        """
-        Share an existing dataset with additional users.
-
-        Args:
-            tag: Dataset name
-            users: List of email addresses or "any"
-            sync: Whether to sync after sharing
-        """
-        from syft_client.sync.connections.drive.gdrive_transport import (
-            DatasetCollectionFolder,
-        )
-
-        if self.dataset_manager is None:
-            raise ValueError("Dataset manager is not set")
-
-        if not self.has_do_role:
-            raise ValueError("Only dataset owners can share datasets")
-
-        # Verify dataset exists
-        dataset = self.dataset_manager.get(name=tag, datasite=self.email)
-        if dataset is None:
-            raise ValueError(f"Dataset {tag} not found")
-
-        # Compute current content hash from local files
-        files = {}
-        for mock_file in dataset.mock_files:
-            if mock_file.exists():
-                files[mock_file.name] = mock_file.read_bytes()
-        metadata_path = dataset.mock_dir / "dataset.yaml"
-        if metadata_path.exists():
-            files["dataset.yaml"] = metadata_path.read_bytes()
-        if dataset.readme_path and dataset.readme_path.exists():
-            files[dataset.readme_path.name] = dataset.readme_path.read_bytes()
-
-        content_hash = DatasetCollectionFolder.compute_hash(files)
-
-        # Share collection
-        if users == "any":
-            self._connection_router.owner_tag_dataset_collection_as_any(
-                tag, content_hash
-            )
-            self.datasite_owner_syncer._any_shared_datasets.append((tag, content_hash))
-            peer_emails = [p.email for p in self.peer_manager.approved_peers]
-            if peer_emails:
-                self._connection_router.owner_share_dataset_collection(
-                    tag, content_hash, peer_emails
-                )
-        else:
-            if isinstance(users, str):
-                users = [users]
-            self._connection_router.owner_share_dataset_collection(
-                tag, content_hash, users
-            )
-
-        if sync:
-            self.sync()
-
-    def share_private_dataset(self, tag: str, enclave_email: str):
-        """Share private dataset files with an enclave via outbox events."""
-        if not self.has_do_role:
-            raise ValueError("Only data owners can share private datasets")
-
-        with self._sync_file_lock():
-            files = self.dataset_manager.get_private_dataset_files(tag)
-            events_message = (
-                self.datasite_owner_syncer.event_cache.create_events_for_files(files)
-            )
-            self.datasite_owner_syncer.queue_event_for_syftbox(
-                recipients=[enclave_email],
-                file_change_events_message=events_message,
-            )
-            self.datasite_owner_syncer.process_syftbox_events_queue()
-
-    @property
-    def datasets(self) -> SyftDatasetManager:
-        """
-        Get the dataset manager. Automatically calls sync() before returning datasets
-        if PRE_SYNC environment variable is set to "true" (case-insensitive).
-
-        PRE_SYNC defaults to "true", so auto-sync is enabled by default.
-        To disable auto-sync, set: PRE_SYNC=false
-        """
-        if self.dataset_manager is None:
-            raise ValueError("Dataset manager is not set")
-
-        if os.environ.get("PRE_SYNC", "true").lower() == "true":
-            self.sync()
-
-        return self.dataset_manager
 
     @property
     def _connection_router(self) -> ConnectionRouter:
@@ -1510,6 +1045,7 @@ class SyftboxManager(BaseModel):
     ):
         """Broadcast is_deleted=True events for all tracked files to each peer's outbox."""
         from uuid import uuid4
+
         from syft_client.sync.utils.syftbox_utils import create_event_timestamp
 
         timestamp = create_event_timestamp()
@@ -1643,7 +1179,7 @@ class SyftboxManager(BaseModel):
         """
         if not self.has_do_role:
             raise ValueError("Checkpoints can only be created by Data Owners")
-        with self._sync_file_lock():
+        with self.sync_file_lock():
             return self.datasite_owner_syncer.create_checkpoint()
 
     def compact_outboxes_if_needed(
@@ -1660,7 +1196,7 @@ class SyftboxManager(BaseModel):
         """
         if not self.has_do_role:
             return {}
-        with self._sync_file_lock():
+        with self.sync_file_lock():
             return {
                 peer.email: self.datasite_owner_syncer.compact_outbox_if_needed(
                     peer.email, min_messages=min_messages
@@ -1707,13 +1243,6 @@ class SyftboxManager(BaseModel):
     def _resolve_path(self, path: str | Path) -> Path:
         return resolve_path(path, syftbox_folder=self.syftbox_folder)
 
-    def _resolve_dataset_owners_for_name(self, dataset_name: str) -> str | None:
-        matches = []
-        for dataset in self.dataset_manager.get_all():
-            if dataset.name == dataset_name:
-                matches.append(dataset.owner)
-        return matches
-
     def _copy(self):
         from copy import deepcopy
 
@@ -1730,19 +1259,3 @@ class SyftboxManager(BaseModel):
             new_do_connection = GDriveConnection.from_service(self.email, drive_service)
             new_manager._add_connection(new_do_connection)
         return new_manager
-
-    # def resolve_dataset_path(
-    #     self, dataset_name: str, owner_email: str | None = None
-    # ) -> Path:
-    #     if owner_email is None:
-    #         owner_emails = self._resolve_dataset_owners_for_name(dataset_name)
-    #         if len(owner_emails) == 1:
-    #             owner_email = owner_emails[0]
-    #         else:
-    #             raise ValueError(
-    #                 f"Dataset {dataset_name} has 0 or multiple owners: {owner_emails}, please specify the owner_email"
-    #             )
-
-    #     return resolve_dataset_path(
-    #         dataset_name, syftbox_folder=self.syftbox_folder, owner_email=owner_email
-    #     )

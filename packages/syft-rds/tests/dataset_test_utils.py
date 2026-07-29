@@ -1,63 +1,11 @@
-from syft_client.sync.events.file_change_event import FileChangeEventsMessage
-from syft_client.sync.events.file_change_event import FileChangeEvent
-from syft_client.sync.events.file_change_event import FileChangeEventsMessageFileName
-from pathlib import Path
-import uuid
+"""Shared helpers for the syft-rds product tests.
+
+Uniquely named (not ``utils.py``) to avoid a pytest module-name collision with
+``tests/unit/utils.py`` when the full monorepo suite is collected together.
+"""
+
 import random
-from typing import List
-import time
-from syft_client.sync.messages.proposed_filechange import ProposedFileChangesMessage
-from syft_client.sync.messages.proposed_filechange import ProposedFileChange
-from syft_client.sync.utils.syftbox_utils import get_event_hash_from_content
-
-
-def get_mock_event(path: str = "email@email.com/test.job") -> FileChangeEvent:
-    email = path.split("/")[0]
-    file_path = path.split("/")[-1]
-    content = "Hello, world!"
-    new_hash = get_event_hash_from_content(content)
-    return FileChangeEvent(
-        datasite_email=email,
-        id=uuid.uuid4(),
-        path_in_datasite=file_path,
-        submitted_timestamp=time.time(),
-        timestamp=time.time(),
-        content=content,
-        new_hash=new_hash,
-        event_filepath=FileChangeEventsMessageFileName(
-            id=uuid.uuid4(),
-            file_path_in_datasite=file_path,
-            timestamp=time.time(),
-        ),
-    )
-
-
-def get_mock_events_messages(n_events: int = 2) -> List[FileChangeEventsMessage]:
-    return [
-        FileChangeEventsMessage(events=[get_mock_event(f"email@email.com/test{i}.job")])
-        for i in range(n_events)
-    ]
-
-
-def mock_message(path: str = "email@email.com/test.job") -> ProposedFileChangesMessage:
-    email = path.split("/")[0]
-    return ProposedFileChangesMessage(
-        sender_email=email,
-        proposed_file_changes=[
-            ProposedFileChange(
-                old_hash=None,
-                path_in_datasite=path,
-                content="Hello, world!",
-                datasite_email=email,
-            ),
-        ],
-    )
-
-
-def get_mock_proposed_events_messages(
-    n_events: int = 2, email: str = "email@email.com"
-) -> List[ProposedFileChangesMessage]:
-    return [mock_message(f"{email}/test{i}.job") for i in range(n_events)]
+from pathlib import Path
 
 
 def create_tmp_dataset_files():
@@ -194,16 +142,3 @@ with open("outputs/result.json", "w") as f:
 """)
 
     return project_dir
-
-
-# Domain-free collection used by engine-level tests, in place of the RDS
-# dataset specs (syft-client must not depend on the product layer).
-TEST_COLLECTION_PREFIX = "syft_testcollection"
-TEST_COLLECTION_SUBPATH = Path("public/test_collections")
-
-
-def grant_job_inbox_access(do_manager, ds_email: str) -> None:
-    """Grant DS write access to the DO's job inbox."""
-    do_manager.datasite_owner_syncer.perm_context.open(
-        f"app_data/job/inbox/{ds_email}/"
-    ).grant_write_access(ds_email)

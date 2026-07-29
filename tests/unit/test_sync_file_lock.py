@@ -4,8 +4,8 @@ Verifies that two SyftboxManagers in different OS processes cannot run
 sync() concurrently. If the file lock is disabled or broken, this test fails.
 
 Failure modes caught:
-1. sync() stops calling _sync_file_lock() → no log entries → fails on count
-2. _sync_file_lock() is broken (no flock call) → intervals overlap → fails
+1. sync() stops calling sync_file_lock() → no log entries → fails on count
+2. sync_file_lock() is broken (no flock call) → intervals overlap → fails
 3. Cross-process serialization is broken → intervals overlap → fails
 """
 
@@ -29,7 +29,7 @@ def _subprocess_sync_with_instrumented_lock(
     """Run inside a child process.
 
     Creates its own SyftboxManager pointing at the shared syftbox_folder,
-    patches _sync_file_lock to record interval timings, then calls sync()
+    patches sync_file_lock to record interval timings, then calls sync()
     multiple times. The intervals are written to the shared log file.
     """
     log_path = Path(log_path_str)
@@ -39,7 +39,7 @@ def _subprocess_sync_with_instrumented_lock(
         use_in_memory_cache=True,
     )
 
-    original_lock = SyftboxManager._sync_file_lock
+    original_lock = SyftboxManager.sync_file_lock
 
     @contextmanager
     def instrumented_lock(self):
@@ -53,7 +53,7 @@ def _subprocess_sync_with_instrumented_lock(
                 with open(log_path, "a") as f:
                     f.write(f"{label},{start},{end}\n")
 
-    with patch.object(SyftboxManager, "_sync_file_lock", instrumented_lock):
+    with patch.object(SyftboxManager, "sync_file_lock", instrumented_lock):
         for _ in range(iterations):
             try:
                 manager.sync(auto_checkpoint=False)
@@ -105,13 +105,13 @@ def test_sync_prevents_concurrent_sync_across_processes():
             intervals.append((label, float(start_s), float(end_s)))
 
         # Assertion 1: the lock was actually entered.
-        # If sync() doesn't call _sync_file_lock(), the instrumentation never
+        # If sync() doesn't call sync_file_lock(), the instrumentation never
         # fires and we get 0 intervals.
         expected_total = ITERATIONS * 2
         assert len(intervals) == expected_total, (
             f"Expected {expected_total} lock acquisitions "
             f"(ITERATIONS={ITERATIONS} × 2 processes), got {len(intervals)}. "
-            f"This means sync() is not calling _sync_file_lock()."
+            f"This means sync() is not calling sync_file_lock()."
         )
 
         # Assertion 2: no two intervals overlap.

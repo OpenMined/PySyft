@@ -14,6 +14,7 @@ from syft_client.sync.sync.caches.cache_file_writer_connection import (
     CacheFileConnection,
     InMemoryCacheFileConnection,
 )
+from syft_client.sync.sync.collection_spec import CollectionSyncSpec
 
 SECONDS_BEFORE_SYNCING_DOWN = 0
 
@@ -24,8 +25,8 @@ class DataSiteWatcherCacheConfig(BaseModel):
     syftbox_folder: Path | None = None
     events_base_path: Path | None = None
     connection_configs: List[ConnectionConfig] = []
-    # Subpath from owner_email to collections folder (e.g., "public/syft_datasets")
-    collection_subpath: Path | None = None
+    # Collections to sync down (prefix + local subpath per collection type)
+    collection_specs: list[CollectionSyncSpec] = []
 
 
 class DataSiteWatcherCache(BaseModel):
@@ -46,10 +47,10 @@ class DataSiteWatcherCache(BaseModel):
     last_event_timestamp_per_peer: Dict[str, float] = {}
     # Base syftbox folder
     syftbox_folder: Path | None = None
-    # Subpath from owner_email to collections folder (e.g., "public/syft_datasets")
-    collection_subpath: Path | None = None
-    # Cache of dataset collection hashes: path -> content_hash
-    dataset_collection_hashes: Dict[Path, str] = {}
+    # Collections to sync down (prefix + local subpath per collection type)
+    collection_specs: list[CollectionSyncSpec] = []
+    # Cache of collection hashes: path -> content_hash
+    collection_hashes: Dict[Path, str] = {}
     # Optional pre-write filter: (path_in_syftbox, is_delete) -> allow?
     # Return True to allow the write, False to deny it.
     pre_write_filter: Callable[[str, bool], bool] | None = None
@@ -65,16 +66,12 @@ class DataSiteWatcherCache(BaseModel):
                     connection_configs=config.connection_configs,
                 ),
                 syftbox_folder=config.syftbox_folder,
-                collection_subpath=config.collection_subpath,
+                collection_specs=config.collection_specs,
             )
             return res
         else:
             if config.syftbox_folder is None:
                 raise ValueError("syftbox_folder is required for non-in-memory cache")
-            if config.collection_subpath is None:
-                raise ValueError(
-                    "collection_subpath is required for non-in-memory cache"
-                )
 
             syftbox_folder_name = Path(config.syftbox_folder).name
             syftbox_parent = Path(config.syftbox_folder).parent
@@ -90,15 +87,15 @@ class DataSiteWatcherCache(BaseModel):
                     connection_configs=config.connection_configs,
                 ),
                 syftbox_folder=config.syftbox_folder,
-                collection_subpath=config.collection_subpath,
+                collection_specs=config.collection_specs,
             )
             cache._load_cached_state()
             return cache
 
     def _load_cached_state(self):
-        """Load cached state from disk: file hashes, timestamps, and dataset hashes."""
+        """Load cached state from disk: file hashes, timestamps, and collection hashes."""
         self._load_file_hashes_from_events()
-        self._load_dataset_hashes_from_disk()
+        self._load_collection_hashes_from_disk()
 
     def _load_file_hashes_from_events(self):
         """Load file hashes and timestamps from cached events."""
@@ -130,42 +127,47 @@ class DataSiteWatcherCache(BaseModel):
                 else:
                     self.file_hashes[path_key] = event.new_hash
 
-    def _load_dataset_hashes_from_disk(self):
-        """Scan local dataset directories and compute hashes to populate dataset_collection_hashes."""
-        for collection_path in self._get_local_dataset_folders():
-            content_hash = self._compute_local_dataset_hash(collection_path)
+    def _load_collection_hashes_from_disk(self):
+        """Scan local collection directories and compute hashes to populate collection_hashes."""
+        for collection_path in self._get_local_collection_folders():
+            content_hash = self._compute_local_collection_hash(collection_path)
             if content_hash:
-                self.dataset_collection_hashes[collection_path] = content_hash
+                self.collection_hashes[collection_path] = content_hash
 
     def get_collection_owner_email(self, collection_path: Path) -> str:
         """Extract the owner email from a collection path."""
         return collection_path.relative_to(self.syftbox_folder).parts[0]
 
-    def get_collection_path(self, owner_email: str, tag: str) -> Path | None:
-        """Get the full path to a collection for a given owner and tag."""
-        if self.syftbox_folder is None or self.collection_subpath is None:
+    def get_collection_path(
+        self, owner_email: str, tag: str, local_subpath: Path
+    ) -> Path | None:
+        """Get the full path to a collection for a given owner, tag and subpath."""
+        if self.syftbox_folder is None:
             return None
-        return self.syftbox_folder / owner_email / self.collection_subpath / tag
+        return self.syftbox_folder / owner_email / local_subpath / tag
 
-    def _get_local_dataset_folders(self):
-        """Yield paths to all local dataset folders."""
+    def _get_local_collection_folders(self):
+        """Yield paths to all local collection folders across all specs."""
         if self.syftbox_folder is None or not self.syftbox_folder.exists():
             return
-        if self.collection_subpath is None:
-            return
 
-        for email_dir in self.syftbox_folder.iterdir():
-            if not email_dir.is_dir() or "@" not in email_dir.name:
+        for spec in self.collection_specs:
+            if spec.owner_only:
+                # Owner-only collections (e.g. private data) are never pulled from
+                # peers, so the peer-facing watcher does not track them locally.
                 continue
-            datasets_dir = email_dir / self.collection_subpath
-            if not datasets_dir.exists():
-                continue
-            for tag_dir in datasets_dir.iterdir():
-                if tag_dir.is_dir():
-                    yield tag_dir
+            for email_dir in self.syftbox_folder.iterdir():
+                if not email_dir.is_dir() or "@" not in email_dir.name:
+                    continue
+                collections_dir = email_dir / spec.local_subpath
+                if not collections_dir.exists():
+                    continue
+                for tag_dir in collections_dir.iterdir():
+                    if tag_dir.is_dir():
+                        yield tag_dir
 
-    def _compute_local_dataset_hash(self, collection_path: Path) -> str | None:
-        """Compute content hash from local dataset files on disk."""
+    def _compute_local_collection_hash(self, collection_path: Path) -> str | None:
+        """Compute content hash from local collection files on disk."""
         from syft_client.sync.file_utils import compute_directory_hash
 
         return compute_directory_hash(collection_path)
@@ -178,7 +180,7 @@ class DataSiteWatcherCache(BaseModel):
         self.peers = []
         self.current_check_point = None
         self.last_event_timestamp_per_peer = {}
-        self.dataset_collection_hashes = {}
+        self.collection_hashes = {}
 
     @property
     def last_event_timestamp(self) -> float | None:
@@ -280,19 +282,28 @@ class DataSiteWatcherCache(BaseModel):
             self.sync_down_if_needed(peer)
         return self.file_hashes.get(path, None)
 
-    def _cleanup_stale_dataset_collections(
-        self, peer_email: str, remote_collections: list[dict]
+    def _cleanup_stale_collections(
+        self, peer_email: str, remote_collections: list[dict], local_subpath: Path
     ):
-        """Remove locally cached dataset collections that no longer exist remotely."""
+        """Remove locally cached collections that no longer exist remotely.
+
+        Only considers collections under the given local_subpath so that
+        collections from other specs are not treated as stale.
+        """
         remote_tags = {c["tag"] for c in remote_collections}
 
-        for local_collection_path in list(self.dataset_collection_hashes.keys()):
+        for local_collection_path in list(self.collection_hashes.keys()):
             owner_email = self.get_collection_owner_email(local_collection_path)
             if owner_email != peer_email:
                 continue
+            # Only consider collections that live under this spec's subpath.
+            if self.syftbox_folder is not None:
+                expected_parent = self.syftbox_folder / owner_email / local_subpath
+                if local_collection_path.parent != expected_parent:
+                    continue
             if local_collection_path.name in remote_tags:
                 continue
-            del self.dataset_collection_hashes[local_collection_path]
+            del self.collection_hashes[local_collection_path]
             if self.syftbox_folder is not None:
                 try:
                     rel_path = local_collection_path.relative_to(self.syftbox_folder)
@@ -300,112 +311,133 @@ class DataSiteWatcherCache(BaseModel):
                 except ValueError:
                     pass
 
-    def sync_down_datasets(self, peer_email: str):
+    def sync_down_collections(self, peer_email: str):
         """
-        Sync dataset collections from peer.
+        Sync collections from peer across all configured specs.
         Separate from message sync. Uses hash to skip unchanged collections.
         """
-        # Get list of collections shared with us (now returns list of dicts)
-        collections = self.connection_router.watcher_list_dataset_collections()
-
-        # Filter by peer
-        peer_collections = [c for c in collections if c["owner_email"] == peer_email]
-
-        self._cleanup_stale_dataset_collections(peer_email, peer_collections)
-
-        for collection in peer_collections:
-            owner_email = collection["owner_email"]
-            tag = collection["tag"]
-            content_hash = collection["content_hash"]
-
-            # Check if hash changed - skip download if unchanged
-            collection_path = self.get_collection_path(owner_email, tag)
-            if collection_path is None:
+        for spec in self.collection_specs:
+            if spec.owner_only:
+                # Never pull owner-only collections (e.g. private data) from a peer.
                 continue
-            cached_hash = self.dataset_collection_hashes.get(collection_path)
-            if cached_hash == content_hash:
-                continue
+            # Get list of collections shared with us (returns list of dicts)
+            collections = self.connection_router.watcher_list_collections(spec.prefix)
 
-            # Download collection files
-            files = self.connection_router.watcher_download_dataset_collection(
-                tag, content_hash, owner_email
+            # Filter by peer
+            peer_collections = [
+                c for c in collections if c["owner_email"] == peer_email
+            ]
+
+            self._cleanup_stale_collections(
+                peer_email, peer_collections, spec.local_subpath
             )
 
-            # Write files to local cache (path relative to syftbox_folder)
-            for file_name, content in files.items():
-                rel_path = f"{owner_email}/{self.collection_subpath}/{tag}/{file_name}"
-                self.file_connection.write_file(rel_path, content)
+            for collection in peer_collections:
+                owner_email = collection["owner_email"]
+                tag = collection["tag"]
+                content_hash = collection["content_hash"]
 
-            # Update hash cache
-            self.dataset_collection_hashes[collection_path] = content_hash
+                # Check if hash changed - skip download if unchanged
+                collection_path = self.get_collection_path(
+                    owner_email, tag, spec.local_subpath
+                )
+                if collection_path is None:
+                    continue
+                cached_hash = self.collection_hashes.get(collection_path)
+                if cached_hash == content_hash:
+                    continue
 
-    def sync_down_datasets_parallel(
+                # Download collection files
+                files = self.connection_router.watcher_download_collection(
+                    spec.prefix, tag, content_hash, owner_email
+                )
+
+                # Write files to local cache (path relative to syftbox_folder)
+                for file_name, content in files.items():
+                    rel_path = f"{owner_email}/{spec.local_subpath}/{tag}/{file_name}"
+                    self.file_connection.write_file(rel_path, content)
+
+                # Update hash cache
+                self.collection_hashes[collection_path] = content_hash
+
+    def sync_down_collections_parallel(
         self,
         peer_email: str,
         executor: ThreadPoolExecutor,
         download_fn: Callable[[str], bytes],
     ):
         """
-        Sync dataset collections from peer with parallel file downloads.
-        Downloads all files from all collections in a single parallel batch.
+        Sync collections from peer with parallel file downloads, across all specs.
+        For each spec, downloads all files from all collections in a single
+        parallel batch.
         """
-        collections = self.connection_router.watcher_list_dataset_collections()
-        peer_collections = [c for c in collections if c["owner_email"] == peer_email]
-
-        self._cleanup_stale_dataset_collections(peer_email, peer_collections)
-
-        # Gather all files to download across all collections
-        all_downloads = []  # List of (collection_info, file_metadata)
-        collections_to_update = []
-
-        for collection in peer_collections:
-            owner_email = collection["owner_email"]
-            tag = collection["tag"]
-            content_hash = collection["content_hash"]
-
-            # Check if hash changed - skip download if unchanged
-            collection_path = self.get_collection_path(owner_email, tag)
-            if collection_path is None:
+        for spec in self.collection_specs:
+            if spec.owner_only:
+                # Never pull owner-only collections (e.g. private data) from a peer.
                 continue
-            cached_hash = self.dataset_collection_hashes.get(collection_path)
-            if cached_hash == content_hash:
-                continue
+            collections = self.connection_router.watcher_list_collections(spec.prefix)
+            peer_collections = [
+                c for c in collections if c["owner_email"] == peer_email
+            ]
 
-            # Get file metadata (no download yet)
-            file_metadatas = (
-                self.connection_router.watcher_get_dataset_collection_file_metadatas(
-                    tag, content_hash, owner_email
+            self._cleanup_stale_collections(
+                peer_email, peer_collections, spec.local_subpath
+            )
+
+            # Gather all files to download across all collections for this spec
+            all_downloads = []  # List of (collection_info, file_metadata)
+            collections_to_update = []
+
+            for collection in peer_collections:
+                owner_email = collection["owner_email"]
+                tag = collection["tag"]
+                content_hash = collection["content_hash"]
+
+                # Check if hash changed - skip download if unchanged
+                collection_path = self.get_collection_path(
+                    owner_email, tag, spec.local_subpath
                 )
-            )
+                if collection_path is None:
+                    continue
+                cached_hash = self.collection_hashes.get(collection_path)
+                if cached_hash == content_hash:
+                    continue
 
-            if not file_metadatas:
+                # Get file metadata (no download yet)
+                file_metadatas = (
+                    self.connection_router.watcher_get_collection_file_metadatas(
+                        spec.prefix, tag, content_hash, owner_email
+                    )
+                )
+
+                if not file_metadatas:
+                    continue
+
+                collections_to_update.append(collection)
+                for metadata in file_metadatas:
+                    all_downloads.append((collection, metadata))
+
+            if not all_downloads:
                 continue
 
-            collections_to_update.append(collection)
-            for metadata in file_metadatas:
-                all_downloads.append((collection, metadata))
+            # Download all files from all collections in parallel
+            file_ids = [metadata["file_id"] for _, metadata in all_downloads]
+            downloaded_contents = list(executor.map(download_fn, file_ids))
 
-        if not all_downloads:
-            return
+            # Write files to local cache (path relative to syftbox_folder)
+            for (collection, metadata), content in zip(
+                all_downloads, downloaded_contents
+            ):
+                owner_email = collection["owner_email"]
+                tag = collection["tag"]
+                file_name = metadata["file_name"]
+                rel_path = f"{owner_email}/{spec.local_subpath}/{tag}/{file_name}"
+                self.file_connection.write_file(rel_path, content)
 
-        # Download all files from all collections in parallel
-        file_ids = [metadata["file_id"] for _, metadata in all_downloads]
-        downloaded_contents = list(executor.map(download_fn, file_ids))
-
-        # Write files to local cache (path relative to syftbox_folder)
-        for (collection, metadata), content in zip(all_downloads, downloaded_contents):
-            owner_email = collection["owner_email"]
-            tag = collection["tag"]
-            file_name = metadata["file_name"]
-            rel_path = f"{owner_email}/{self.collection_subpath}/{tag}/{file_name}"
-            self.file_connection.write_file(rel_path, content)
-
-        # Update hash cache for all collections
-        for collection in collections_to_update:
-            collection_path = self.get_collection_path(
-                collection["owner_email"], collection["tag"]
-            )
-            if collection_path is not None:
-                self.dataset_collection_hashes[collection_path] = collection[
-                    "content_hash"
-                ]
+            # Update hash cache for all collections in this spec
+            for collection in collections_to_update:
+                collection_path = self.get_collection_path(
+                    collection["owner_email"], collection["tag"], spec.local_subpath
+                )
+                if collection_path is not None:
+                    self.collection_hashes[collection_path] = collection["content_hash"]

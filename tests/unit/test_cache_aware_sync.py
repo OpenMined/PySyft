@@ -7,7 +7,13 @@ events they don't already have locally, avoiding redundant re-downloads on resta
 from pathlib import Path
 
 from syft_client.sync.syftbox_manager import SyftboxManager
-from tests.unit.utils import get_mock_events_messages
+from syft_client.sync.sync.collection_spec import CollectionSyncSpec
+
+from tests.unit.utils import (
+    TEST_COLLECTION_PREFIX,
+    TEST_COLLECTION_SUBPATH,
+    get_mock_events_messages,
+)
 
 
 def test_do_incremental_sync_downloads_only_new_events():
@@ -173,9 +179,7 @@ def test_do_cache_handles_deletions_correctly():
         DataSiteOwnerEventCacheConfig,
     )
 
-    from syft_client.sync.syftbox_manager import COLLECTION_SUBPATH
-
-    collections_folder = syftbox_folder / do_manager.email / COLLECTION_SUBPATH
+    collections_folder = syftbox_folder / do_manager.email / TEST_COLLECTION_SUBPATH
     config = DataSiteOwnerEventCacheConfig(
         use_in_memory_cache=False,
         syftbox_folder=syftbox_folder,
@@ -233,13 +237,13 @@ def test_ds_cache_handles_deletions_correctly():
         DataSiteWatcherCacheConfig,
     )
 
-    from syft_client.sync.syftbox_manager import COLLECTION_SUBPATH
-
     config = DataSiteWatcherCacheConfig(
         email=do_manager.email,
         use_in_memory_cache=False,
         syftbox_folder=syftbox_folder,
-        collection_subpath=COLLECTION_SUBPATH,
+        collection_specs=[
+            CollectionSyncSpec.public(TEST_COLLECTION_PREFIX, TEST_COLLECTION_SUBPATH)
+        ],
         connection_configs=[],
     )
     new_cache = DataSiteWatcherCache.from_config(config)

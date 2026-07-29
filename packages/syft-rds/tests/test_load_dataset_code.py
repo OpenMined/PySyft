@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 import syft_client as sc
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft_rds import SyftRDSClient
 
 
 def _create_tmp_code_folder() -> Path:
@@ -49,7 +49,7 @@ def _create_local_dataset(do_manager, name: str) -> None:
 
 
 def test_load_dataset_code_top_level_and_nested():
-    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    _, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
     )
     _create_local_dataset(do_manager, "my_code_dataset")
@@ -68,7 +68,7 @@ def test_load_dataset_code_top_level_and_nested():
 
 
 def test_load_dataset_code_explicit_module_name():
-    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    _, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
     )
     _create_local_dataset(do_manager, "my_code_dataset")
@@ -82,7 +82,7 @@ def test_load_dataset_code_explicit_module_name():
 
 
 def test_load_dataset_code_invalid_path_raises():
-    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    _, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
     )
     with pytest.raises(ValueError, match="Invalid path"):
@@ -90,7 +90,7 @@ def test_load_dataset_code_invalid_path_raises():
 
 
 def test_load_dataset_code_missing_file_raises():
-    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    _, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
     )
     _create_local_dataset(do_manager, "my_code_dataset")
