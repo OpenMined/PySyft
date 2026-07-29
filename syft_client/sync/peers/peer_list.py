@@ -1,57 +1,108 @@
+import html
+import os
+from collections.abc import Iterator
+
 from syft_client.sync.peers.peer import Peer, PeerState
-from syft_client.sync.reprs.peer_repr import get_peer_list_table
+
+# Emoji + friendly label shown per peer state in the summary view.
+_STATE_DISPLAY = {
+    PeerState.ACCEPTED: ("✅", "connected"),
+    PeerState.REQUESTED_BY_ME: ("⏳", "requested_by_us (waiting for approval)"),
+    PeerState.REQUESTED_BY_PEER: (
+        "📩",
+        "requested_by_peer (waiting for your approval)",
+    ),
+    PeerState.REJECTED: ("❌", "rejected"),
+}
+
+# Display order: accepted first, then outgoing requests, then incoming requests.
+_STATE_ORDER = {
+    PeerState.ACCEPTED: 0,
+    PeerState.REQUESTED_BY_ME: 1,
+    PeerState.REQUESTED_BY_PEER: 2,
+}
 
 
-class PeerList(list):
-    def __init__(self, *args: Peer, **kwargs):
+def _peer_sort_key(peer: Peer) -> int:
+    return _STATE_ORDER.get(peer.state, 3)
+
+
+class PeerList:
+    """A list-like container for Peer objects with a friendly summary display."""
+
+    def __init__(self, peers: list[Peer] | None = None) -> None:
         """
-        PeerList is a list specifically for Peer objects.
-        Validates that all items are Peer objects and that they are sorted correctly.
+        Validates that all items are Peer objects, then sorts them for display:
+        accepted first, then requested_by_me, then requested_by_peer.
         """
-        super().__init__(*args, **kwargs)
-        # Validate all items are Peer objects
-        for item in self:
+        peers = list(peers) if peers else []
+        for item in peers:
             if not isinstance(item, Peer):
                 raise TypeError(
                     f"All items in PeerList must be Peer objects, but got {type(item)}"
                 )
-        # Validate sorting (approved before pending)
-        self._validate_sorting()
+        # ensure consistent ordering for display
+        self._peers: list[Peer] = sorted(peers, key=_peer_sort_key)
 
-    def _validate_sorting(self):
-        """Ensure peers are sorted: accepted, then requested_by_me, then requested_by_peer"""
-        order = {
-            PeerState.ACCEPTED: 0,
-            PeerState.REQUESTED_BY_ME: 1,
-            PeerState.REQUESTED_BY_PEER: 2,
-        }
-        last_order = -1
-        for peer in self:
-            peer_order = order.get(peer.state, 3)
-            if peer_order < last_order:
-                raise ValueError(
-                    "PeerList must be sorted: accepted first, then requested_by_me, then requested_by_peer"
-                )
-            last_order = peer_order
+    def __len__(self) -> int:
+        return len(self._peers)
+
+    def __iter__(self) -> Iterator[Peer]:
+        return iter(self._peers)
 
     def __getitem__(self, index: str | int) -> Peer:
         if isinstance(index, int):
-            return super().__getitem__(index)
+            return self._peers[index]
         elif isinstance(index, str):
-            key = index
-            for peer in self:
-                if peer.email == key:
-                    return peer
-            raise ValueError(f"Peer with email {index} not found")
+            try:
+                return next(peer for peer in self._peers if peer.email == index)
+            except StopIteration:
+                raise ValueError(f"Peer with email {index} not found") from None
         else:
-            raise ValueError(f"Invalid index type: {type(index)}")
+            raise TypeError(f"Invalid index type: {type(index)}")
 
-    def _repr_html_(self) -> str:
-        """Used by Jupyter to display Rich HTML."""
-        peers = [p for p in self]
-        return get_peer_list_table(peers)
+    def _summary_text(self) -> str:
+        """Clean, human-friendly summary of the peers and what to do next."""
+        if not self:
+            return "👥 You have no peers yet."
+
+        lines = [f"👥 Your peers ({len(self)}):", ""]
+        pad = max(len(peer.email) for peer in self)
+        connected = []
+        has_pending = False
+        for peer in self:
+            emoji, label = _STATE_DISPLAY.get(peer.state, ("❓", str(peer.state.value)))
+            lines.append(f"  {emoji} {peer.email.ljust(pad)}  — {label}")
+            if peer.state == PeerState.ACCEPTED:
+                connected.append(peer)
+            elif peer.state in (PeerState.REQUESTED_BY_ME, PeerState.REQUESTED_BY_PEER):
+                has_pending = True
+
+        if connected:
+            lines += [
+                "",
+                "💡 Tip: Once connected, you can access their datasets with:",
+                f'   client.datasets.get("dataset_name", datasite="{connected[0].email}")',
+            ]
+        if has_pending:
+            lines += [
+                "",
+                "⏳ You have pending requests waiting for approval — "
+                "follow up with the peer or check back later.",
+            ]
+        return "\n".join(lines)
+
+    def __str__(self) -> str:
+        """Clean summary shown by print() and outside notebooks."""
+        return self._summary_text()
+
+    def _repr_html_(self) -> str | None:
+        """Used by Jupyter to display the summary; falls back to text elsewhere."""
+        if os.environ.get("SYFT_NO_REPR_HTML", "").lower() in {"1", "true", "yes"}:
+            return None
+        return f"<pre>{html.escape(self._summary_text())}</pre>"
 
     def __repr__(self):
-        """Fallback for normal REPL"""
+        """Technical repr for debugging / normal REPL."""
         peers = [p for p in self]
         return f"PeerList({peers!r})"
