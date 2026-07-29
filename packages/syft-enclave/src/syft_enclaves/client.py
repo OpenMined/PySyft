@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+import os
 
 from syft_rds import SyftRDSClient, SyftRDSClientConfig
 from syft_client.sync.version.peer_manager import CompatAction
@@ -145,7 +146,7 @@ class SyftEnclaveClient:
 
     @property
     def jobs(self) -> JobsList:
-        jobs_list = self._rds.job_client.jobs
+        jobs_list = self._rds.jobs
         wrapped = [
             EnclaveJobInfo.from_job_info(j)
             if j.job_headers.get("job_type") == "enclave"
@@ -262,9 +263,16 @@ class SyftEnclaveClient:
 
     def approve_job(self, job: JobInfo) -> None:
         """Approve an enclave job and push the approval state file to the enclave."""
+        if os.environ.get("PRE_SYNC", "true").lower() == "true":
+            self._rds.sync()
+
         job.approve()
         file_name = enclave_approval_file_name(self.email)
         approval_file = job.job_review_path / file_name
+        if not approval_file.exists():
+            print(
+                "🟠 Approval file does not exist yet. Kindly wait until enclave sends it."
+            )
         relative_path = approval_file.relative_to(self._rds.syftbox_folder)
         self._rds.sync_engine.datasite_watcher_syncer.on_file_change(
             relative_path, process_now=True
