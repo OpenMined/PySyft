@@ -1,6 +1,7 @@
 dockerhub_username := "openminedreleasebot"
 image_base := "docker.io/openminedreleasebot/syft-client-enclave"
-image := image_base + ":latest"
+image_tag := "latest"
+image_digest := "" #image digest when set, always take precedence over image_tag
 machine_type_default := "n2d-standard-2"
 machine_boot_size_default := "200"
 vm_default := "syft-enclave-vm"
@@ -204,13 +205,25 @@ provision-secret-sa token_path secret=secret_name_default sa=sa_name_default: _p
 # No WIF — use when org policy blocks WIF provider creation. Requires
 # `just provision-secret-sa <token>` first.
 [group('deploy')]
-start email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds: _provision
+start email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds image_tag=image_tag image_digest=image_digest: _provision
     #!/bin/bash
     set -e
     {{load_settings}}
     [ -n "$sa_email" ] || { echo "Error: SA not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
     [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
     [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
+
+    # image_digest (when set) always wins over image_tag
+    if [ -n "{{image_digest}}" ]; then
+      case "{{image_digest}}" in
+        sha256:*) ;;
+        *) echo "Error: image_digest must be of the form sha256:<64-hex>" >&2; exit 1 ;;
+      esac
+      image_ref="{{image_base}}@{{image_digest}}"
+    else
+      image_ref="{{image_base}}:{{image_tag}}"
+    fi
+    echo "Using image: $image_ref"
 
     # Job timeout: defaults to 30 days (job_timeout_seconds); pass an empty value to fall back to the container default (600s).
     job_timeout_env=""
@@ -232,17 +245,29 @@ start email name=vm_default machine_type=machine_type_default machine_boot_size=
       --image-project=confidential-space-images \
       --scopes=cloud-platform \
       --service-account="$sa_email" \
-      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
+      --metadata="^~^tee-image-reference=${image_ref}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
 
 
 [group('deploy')]
-start-debug email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds use_encryption="false": _provision
+start-debug email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds use_encryption="false" image_tag=image_tag image_digest=image_digest: _provision
     #!/bin/bash
     set -e
     {{load_settings}}
     [ -n "$sa_email" ] || { echo "Error: SA not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
     [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
     [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
+
+    # image_digest (when set) always wins over image_tag
+    if [ -n "{{image_digest}}" ]; then
+      case "{{image_digest}}" in
+        sha256:*) ;;
+        *) echo "Error: image_digest must be of the form sha256:<64-hex>" >&2; exit 1 ;;
+      esac
+      image_ref="{{image_base}}@{{image_digest}}"
+    else
+      image_ref="{{image_base}}:{{image_tag}}"
+    fi
+    echo "Using image: $image_ref"
 
     # Job timeout: defaults to 30 days (job_timeout_seconds); pass an empty value to fall back to the container default (600s).
     job_timeout_env=""
@@ -264,7 +289,7 @@ start-debug email name=vm_default machine_type=machine_type_default machine_boot
       --image-project=confidential-space-images \
       --scopes=cloud-platform \
       --service-account="$sa_email" \
-      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Always~tee-container-log-redirect=true~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION={{use_encryption}}${job_timeout_env}"
+      --metadata="^~^tee-image-reference=${image_ref}~tee-restart-policy=Always~tee-container-log-redirect=true~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION={{use_encryption}}${job_timeout_env}"
 
 
 # Delete the enclave VM

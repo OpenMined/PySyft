@@ -51,10 +51,26 @@ variable "boot_disk_size_gb" {
   default = 200
 }
 
-variable "container_image" {
+variable "image_repo" {
   type        = string
-  default     = "docker.io/openminedreleasebot/syft-client-enclave:latest"
-  description = "Enclave container image reference (tee-image-reference)."
+  default     = "docker.io/openminedreleasebot/syft-client-enclave"
+  description = "Enclave container image repo, without tag or digest."
+}
+
+variable "image_tag" {
+  type        = string
+  default     = "latest"
+  description = "Image tag to deploy. Ignored when image_digest is set."
+}
+
+variable "image_digest" {
+  type        = string
+  default     = ""
+  description = "Image digest (sha256:<64-hex>). When set, takes precedence over image_tag — pins the exact image for reproducible/attestable deploys."
+  validation {
+    condition     = var.image_digest == "" || can(regex("^sha256:[0-9a-f]{64}$", var.image_digest))
+    error_message = "image_digest must be empty or of the form sha256:<64 hex chars>."
+  }
 }
 
 variable "secret_name" {
