@@ -9,9 +9,12 @@ locals {
   # Prod ignores the override.
   use_encryption = var.dev_mode ? coalesce(var.use_encryption, false) : true
 
+  # image_digest (when set) always wins over image_tag
+  container_image = var.image_digest != "" ? "${var.image_repo}@${var.image_digest}" : "${var.image_repo}:${var.image_tag}"
+
   tee_metadata = merge(
     {
-      "tee-image-reference"                 = var.container_image
+      "tee-image-reference"                 = local.container_image
       "tee-restart-policy"                  = var.dev_mode ? "Always" : "Never"
       "tee-env-SYFT_ENCLAVE_EMAIL"          = var.enclave_email
       "tee-env-SYFT_ENCLAVE_DATA_OWNERS"    = join(",", var.data_owners)

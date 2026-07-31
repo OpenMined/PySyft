@@ -43,7 +43,7 @@ Then fill in:
 | `data_owners`   | List of data-owner emails; **all** must approve every job.                                                   |
 | `token_file`    | Absolute path to the enclave's Google Drive token JSON (see [auth.md](../../../docs/auth.md) to create one). |
 
-Optional overrides (commented in the example file): `vm_name`, `machine_type`, `boot_disk_size_gb`, `container_image`, `use_encryption`, `job_timeout_seconds`.
+Optional overrides (commented in the example file): `vm_name`, `machine_type`, `boot_disk_size_gb`, `image_repo`, `image_tag`, `image_digest`, `use_encryption`, `job_timeout_seconds`. The deployed image is `image_repo:image_tag` (default `:latest`); when `image_digest` is set it takes precedence and the image is pinned as `image_repo@sha256:...`.
 
 Do **not** set `dev_mode` in tfvars — pass it on the command line (`-var=dev_mode=false` for production, `just tf-apply-dev` for dev), which takes precedence, so a stray tfvars value can never produce the wrong deployment type.
 
@@ -102,7 +102,9 @@ just tf-attest      # attestation report, fetched via SSH + localhost
   ```bash
   just build-push "mytag"                 # or build-push-amd
   # in terraform/terraform.tfvars:
-  #   container_image = "docker.io/openminedreleasebot/syft-client-enclave:mytag"
+  #   image_tag = "mytag"
+  # or pin an exact image (takes precedence over image_tag):
+  #   image_digest = "sha256:<64-hex>"
   just tf-apply-dev
   ```
 
