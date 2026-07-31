@@ -38,6 +38,10 @@ test-unit-migration:
     #!/bin/bash
     uv run pytest -n auto ./packages/syft-migration/tests
 
+test-client-migrations:
+    #!/bin/bash
+    uv run pytest -n auto ./tests/migrations
+
 
 test-unit-enclave:
     #!/bin/bash

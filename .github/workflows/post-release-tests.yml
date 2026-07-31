@@ -62,3 +62,8 @@ jobs:
         run: |
           source .venv/bin/activate
           pytest -n auto ./tests/unit
+
+      - name: Run client migration tests
+        run: |
+          source .venv/bin/activate
+          pytest -n auto ./tests/migrations
