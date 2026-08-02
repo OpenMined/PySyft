@@ -22,6 +22,9 @@ def _configure_logging(log_level: str) -> None:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    # googleapiclient INFO-logs a "file_cache is only supported with
+    # oauth2client<4.0.0" line on every service build
+    logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.WARNING)
 
 
 def _load_settings() -> EnclaveSettings:
