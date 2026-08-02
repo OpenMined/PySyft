@@ -23,6 +23,17 @@ output "container_image" {
   value       = local.container_image
 }
 
+output "hardware_config" {
+  description = "Resolved hardware profile."
+  value = {
+    hardware           = var.hardware
+    machine_type       = local.machine_type
+    confidential_type  = local.hw.confidential_type
+    provisioning_model = local.is_gpu ? "FLEX_START" : "STANDARD"
+    max_run_duration   = local.is_gpu ? "${var.max_run_duration_seconds}s" : null
+  }
+}
+
 output "vm_external_ip" {
   description = "Outbound-only: no inbound port is open on the enclave."
   value       = google_compute_instance.enclave.network_interface[0].access_config[0].nat_ip
