@@ -41,9 +41,31 @@ variable "vm_name" {
   default = "syft-enclave-vm"
 }
 
+variable "hardware" {
+  type        = string
+  default     = "cpu"
+  description = "Hardware profile. \"cpu\": n2d-standard-2, AMD SEV, on-demand. \"gpu\": a3-highgpu-1g (1x H100, Intel TDX), flex-start provisioning — queues for capacity, runs max_run_duration_seconds, then the VM and disk are auto-deleted. Set in tfvars only (not -var) so it persists across plan/apply/redeploy."
+  validation {
+    condition     = contains(["cpu", "gpu"], var.hardware)
+    error_message = "hardware must be \"cpu\" or \"gpu\"."
+  }
+}
+
 variable "machine_type" {
-  type    = string
-  default = "n2d-standard-2"
+  type        = string
+  default     = null
+  nullable    = true
+  description = "Override the machine type; null follows the hardware profile (n2d-standard-2 / a3-highgpu-1g)."
+}
+
+variable "max_run_duration_seconds" {
+  type        = number
+  default     = 172800 # 2 days
+  description = "gpu only: flex-start VM lifetime in seconds (600..604800); the VM and disk are deleted when it elapses."
+  validation {
+    condition     = var.max_run_duration_seconds >= 600 && var.max_run_duration_seconds <= 604800
+    error_message = "max_run_duration_seconds must be between 600 (10m) and 604800 (7d)."
+  }
 }
 
 variable "boot_disk_size_gb" {
