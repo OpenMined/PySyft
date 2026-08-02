@@ -99,7 +99,7 @@ Deletes the VM, secret, service account, and IAM bindings. The enabled APIs are 
 
 ### Quickstart: dev mode
 
-Debug image — SSH enabled, container logs redirected to serial output, encryption off (override with `use_encryption = true` in tfvars), restart policy `Always`.
+Debug image — SSH enabled, container logs redirected to serial output, encryption off (override with `use_encryption = true` in tfvars), restart policy `Never` (a crashed container stays down for post-mortem; `gcloud compute instances reset` to relaunch).
 
 > Clients must match the enclave's encryption setting: against a debug enclave, data owners log in with `login_do(encryption=False)`.
 

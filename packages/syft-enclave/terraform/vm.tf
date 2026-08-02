@@ -26,8 +26,8 @@ locals {
 
   tee_metadata = merge(
     {
-      "tee-image-reference"                 = local.container_image
-      "tee-restart-policy"                  = var.dev_mode ? "Always" : "Never"
+      "tee-image-reference" = local.container_image
+      "tee-restart-policy"                  = "Never"
       "tee-env-SYFT_ENCLAVE_EMAIL"          = var.enclave_email
       "tee-env-SYFT_ENCLAVE_DATA_OWNERS"    = join(",", var.data_owners)
       "tee-env-SYFT_ENCLAVE_REQUIRE_TEE"    = "true"
