@@ -41,9 +41,10 @@ curl http://EXTERNAL_IP:8080/attestation | python3 -m json.tool
 
 The response includes:
 
-- `attestation.hardware.hwmodel` - TEE hardware type (`GCP_AMD_SEV`)
+- `attestation.hardware.hwmodel` - TEE hardware type (`GCP_AMD_SEV`; `GCP_INTEL_TDX` on gpu deployments)
 - `attestation.hardware.secboot` - Secure boot status
 - `attestation.hardware.dbgstat` - Debug status (`enabled` for debug image, `disabled-since-boot` for production)
 - `attestation.container.image_digest` - SHA256 of the running container image
+- `attestation.nvidia_gpu` - gpu deployments only: `cc_mode` (`"ON"` = confidential computing active), `gpus[].hwmodel` (`GCP_NVIDIA_H100`), driver version
 - `attestation.gce.*` - GCP project, zone, instance info
 - `raw_token` - Full JWT for independent verification against Google's JWKS
