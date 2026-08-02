@@ -241,7 +241,7 @@ start email name=vm_default machine_type="" machine_boot_size=machine_boot_size_
         mt_default="{{machine_type_gpu_default}}"
         cc_type="TDX"
         hw_flags=(--provisioning-model=FLEX_START --max-run-duration={{gpu_run_duration_seconds}}s --instance-termination-action=DELETE --reservation-affinity=none)
-        gpu_md="~tee-install-gpu-driver=true~tee-env-LD_LIBRARY_PATH=/usr/local/nvidia/lib64"
+        gpu_md="~tee-install-gpu-driver=true"
         ;;
       *)
         echo "Error: hardware must be 'cpu' or 'gpu' (got '{{hardware}}')." >&2; exit 1 ;;
@@ -306,7 +306,7 @@ start-debug email name=vm_default machine_type="" machine_boot_size=machine_boot
         mt_default="{{machine_type_gpu_default}}"
         cc_type="TDX"
         hw_flags=(--provisioning-model=FLEX_START --max-run-duration={{gpu_run_duration_seconds}}s --instance-termination-action=DELETE --reservation-affinity=none)
-        gpu_md="~tee-install-gpu-driver=true~tee-env-LD_LIBRARY_PATH=/usr/local/nvidia/lib64"
+        gpu_md="~tee-install-gpu-driver=true"
         ;;
       *)
         echo "Error: hardware must be 'cpu' or 'gpu' (got '{{hardware}}')." >&2; exit 1 ;;

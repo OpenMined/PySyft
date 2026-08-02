@@ -36,10 +36,7 @@ locals {
       "tee-env-SYFT_ENCLAVE_USE_ENCRYPTION" = local.use_encryption ? "true" : "false"
     },
     var.dev_mode ? { "tee-container-log-redirect" = "true" } : {},
-    local.is_gpu ? {
-      "tee-install-gpu-driver"  = "true"
-      "tee-env-LD_LIBRARY_PATH" = "/usr/local/nvidia/lib64"
-    } : {},
+    local.is_gpu ? { "tee-install-gpu-driver" = "true" } : {},
     var.job_timeout_seconds != null
     ? { "tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS" = tostring(var.job_timeout_seconds) }
     : {}
