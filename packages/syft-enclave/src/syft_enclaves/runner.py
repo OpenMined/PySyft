@@ -44,6 +44,7 @@ class EnclaveRunner:
         self.fresh_state = fresh_state
         self.post_init = post_init
         self._shutdown_requested = False
+        self._ignored_peer_requests: set[str] = set()
 
     # -- public API -------------------------------------------------------
 
@@ -157,17 +158,29 @@ class EnclaveRunner:
             self._sleep()
 
     def _accept_peers(self) -> None:
-        """Accept any pending peer requests."""
+        """Accept pending peer requests — only from the configured data owners.
+
+        With no data owners configured, NO peers are accepted.
+        """
         self.client.load_peers()
+        allowed = {e.strip().lower() for e in self.client.data_owners}
         for peer in self.client.peers:
-            if getattr(peer, "state", None) == "requested_by_peer":
-                try:
-                    self.client.approve_peer_request(peer.email)
-                    logger.info("Accepted peer: %s", peer.email)
-                except Exception:
+            if getattr(peer, "state", None) != "requested_by_peer":
+                continue
+            if peer.email.strip().lower() not in allowed:
+                if peer.email not in self._ignored_peer_requests:
+                    self._ignored_peer_requests.add(peer.email)
                     logger.warning(
-                        "Failed to accept peer: %s", peer.email, exc_info=True
+                        "Ignoring peer request from %s — not in the configured "
+                        "data owners (SYFT_ENCLAVE_DATA_OWNERS)",
+                        peer.email,
                     )
+                continue
+            try:
+                self.client.approve_peer_request(peer.email)
+                logger.info("Accepted peer: %s", peer.email)
+            except Exception:
+                logger.warning("Failed to accept peer: %s", peer.email, exc_info=True)
 
     # -- utilities --------------------------------------------------------
 
