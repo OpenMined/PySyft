@@ -22,6 +22,11 @@ RUN uv pip install --python /repo/.venv/bin/python -r /tmp/requirements.txt && \
 
 ENV PATH="/repo/.venv/bin:$PATH"
 
+# GPU deployments: Confidential Space installs the NVIDIA driver at
+# /usr/local/nvidia (tee-install-gpu-driver=true) and the workload must have
+# its libs on LD_LIBRARY_PATH.
+ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib64
+
 WORKDIR /app
 COPY packages/syft-enclave/docker/attestation_server.py .
 COPY packages/syft-enclave/docker/entrypoint.sh .
