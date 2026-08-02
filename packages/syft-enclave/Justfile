@@ -1,7 +1,11 @@
 dockerhub_username := "openminedreleasebot"
 image_base := "docker.io/openminedreleasebot/syft-client-enclave"
-image := image_base + ":latest"
+image_tag := "latest"
+image_digest := "" #image digest when set, always take precedence over image_tag
 machine_type_default := "n2d-standard-2"
+machine_type_gpu_default := "a3-highgpu-1g"
+hardware := "cpu"
+gpu_run_duration_seconds := "172800" # flex-start max VM run; 600..604800 (2 days default)
 machine_boot_size_default := "200"
 vm_default := "syft-enclave-vm"
 secret_name_default := "syft-enclave-token"
@@ -204,13 +208,46 @@ provision-secret-sa token_path secret=secret_name_default sa=sa_name_default: _p
 # No WIF — use when org policy blocks WIF provider creation. Requires
 # `just provision-secret-sa <token>` first.
 [group('deploy')]
-start email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds: _provision
+start email name=vm_default machine_type="" machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds image_tag=image_tag image_digest=image_digest hardware=hardware: _provision
     #!/bin/bash
     set -e
     {{load_settings}}
     [ -n "$sa_email" ] || { echo "Error: SA not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
     [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
     [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
+
+    # image_digest (when set) always wins over image_tag
+    if [ -n "{{image_digest}}" ]; then
+      case "{{image_digest}}" in
+        sha256:*) ;;
+        *) echo "Error: image_digest must be of the form sha256:<64-hex>" >&2; exit 1 ;;
+      esac
+      image_ref="{{image_base}}@{{image_digest}}"
+    else
+      image_ref="{{image_base}}:{{image_tag}}"
+    fi
+    echo "Using image: $image_ref"
+
+    # hardware profile: cpu = SEV on-demand; gpu = TDX flex-start (queues for H100
+    # capacity, runs {{gpu_run_duration_seconds}}s, then VM+disk auto-DELETE — redeploy to continue)
+    case "{{hardware}}" in
+      cpu)
+        mt_default="{{machine_type_default}}"
+        cc_type="SEV"
+        hw_flags=(--min-cpu-platform="AMD Milan")
+        gpu_md=""
+        ;;
+      gpu)
+        mt_default="{{machine_type_gpu_default}}"
+        cc_type="TDX"
+        hw_flags=(--provisioning-model=FLEX_START --max-run-duration={{gpu_run_duration_seconds}}s --instance-termination-action=DELETE --reservation-affinity=none)
+        gpu_md="~tee-install-gpu-driver=true"
+        ;;
+      *)
+        echo "Error: hardware must be 'cpu' or 'gpu' (got '{{hardware}}')." >&2; exit 1 ;;
+    esac
+    machine_type="{{machine_type}}"; machine_type="${machine_type:-$mt_default}"
+    echo "Using hardware: {{hardware}} ($machine_type, $cc_type)"
 
     # Job timeout: defaults to 30 days (job_timeout_seconds); pass an empty value to fall back to the container default (600s).
     job_timeout_env=""
@@ -221,28 +258,61 @@ start email name=vm_default machine_type=machine_type_default machine_boot_size=
     gcloud compute instances create {{name}} \
       --project="$project_id" \
       --zone="$zone" \
-      --machine-type={{machine_type}} \
-      --confidential-compute-type=SEV \
+      --machine-type="$machine_type" \
+      --confidential-compute-type="$cc_type" \
       --shielded-secure-boot \
-      --maintenance-policy=MIGRATE \
-      --min-cpu-platform="AMD Milan" \
+      --maintenance-policy=TERMINATE \
+      "${hw_flags[@]}" \
       --boot-disk-size={{machine_boot_size}} \
       --boot-disk-type=pd-ssd \
       --image-family=confidential-space \
       --image-project=confidential-space-images \
       --scopes=cloud-platform \
       --service-account="$sa_email" \
-      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}"
+      --metadata="^~^tee-image-reference=${image_ref}~tee-restart-policy=Never~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION=true${job_timeout_env}${gpu_md}"
 
 
 [group('deploy')]
-start-debug email name=vm_default machine_type=machine_type_default machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds use_encryption="false": _provision
+start-debug email name=vm_default machine_type="" machine_boot_size=machine_boot_size_default job_timeout_seconds=job_timeout_seconds use_encryption="false" image_tag=image_tag image_digest=image_digest hardware=hardware: _provision
     #!/bin/bash
     set -e
     {{load_settings}}
     [ -n "$sa_email" ] || { echo "Error: SA not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
     [ -n "$secret_resource" ] || { echo "Error: secret not provisioned. Run: just provision-secret-sa <token_path>" >&2; exit 1; }
     [ -n "$data_owners" ] || { echo "Error: data_owners not set. Re-run: just init <project_id> <token_path> <data_owners>" >&2; exit 1; }
+
+    # image_digest (when set) always wins over image_tag
+    if [ -n "{{image_digest}}" ]; then
+      case "{{image_digest}}" in
+        sha256:*) ;;
+        *) echo "Error: image_digest must be of the form sha256:<64-hex>" >&2; exit 1 ;;
+      esac
+      image_ref="{{image_base}}@{{image_digest}}"
+    else
+      image_ref="{{image_base}}:{{image_tag}}"
+    fi
+    echo "Using image: $image_ref"
+
+    # hardware profile: cpu = SEV on-demand; gpu = TDX flex-start (queues for H100
+    # capacity, runs {{gpu_run_duration_seconds}}s, then VM+disk auto-DELETE — redeploy to continue)
+    case "{{hardware}}" in
+      cpu)
+        mt_default="{{machine_type_default}}"
+        cc_type="SEV"
+        hw_flags=(--min-cpu-platform="AMD Milan")
+        gpu_md=""
+        ;;
+      gpu)
+        mt_default="{{machine_type_gpu_default}}"
+        cc_type="TDX"
+        hw_flags=(--provisioning-model=FLEX_START --max-run-duration={{gpu_run_duration_seconds}}s --instance-termination-action=DELETE --reservation-affinity=none)
+        gpu_md="~tee-install-gpu-driver=true"
+        ;;
+      *)
+        echo "Error: hardware must be 'cpu' or 'gpu' (got '{{hardware}}')." >&2; exit 1 ;;
+    esac
+    machine_type="{{machine_type}}"; machine_type="${machine_type:-$mt_default}"
+    echo "Using hardware: {{hardware}} ($machine_type, $cc_type)"
 
     # Job timeout: defaults to 30 days (job_timeout_seconds); pass an empty value to fall back to the container default (600s).
     job_timeout_env=""
@@ -253,18 +323,18 @@ start-debug email name=vm_default machine_type=machine_type_default machine_boot
     gcloud compute instances create {{name}} \
       --project="$project_id" \
       --zone="$zone" \
-      --machine-type={{machine_type}} \
-      --confidential-compute-type=SEV \
+      --machine-type="$machine_type" \
+      --confidential-compute-type="$cc_type" \
       --shielded-secure-boot \
-      --maintenance-policy=MIGRATE \
-      --min-cpu-platform="AMD Milan" \
+      --maintenance-policy=TERMINATE \
+      "${hw_flags[@]}" \
       --boot-disk-size={{machine_boot_size}} \
       --boot-disk-type=pd-ssd \
       --image-family=confidential-space-debug \
       --image-project=confidential-space-images \
       --scopes=cloud-platform \
       --service-account="$sa_email" \
-      --metadata="^~^tee-image-reference={{image}}~tee-restart-policy=Always~tee-container-log-redirect=true~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION={{use_encryption}}${job_timeout_env}"
+      --metadata="^~^tee-image-reference=${image_ref}~tee-restart-policy=Always~tee-container-log-redirect=true~tee-env-SYFT_ENCLAVE_EMAIL={{email}}~tee-env-SYFT_ENCLAVE_DATA_OWNERS=${data_owners}~tee-env-SYFT_ENCLAVE_REQUIRE_TEE=true~tee-env-SYFT_BOOTSTRAP=sa~tee-env-SYFT_BOOTSTRAP_SA_SECRET=${secret_resource}~tee-env-SYFT_ENCLAVE_USE_ENCRYPTION={{use_encryption}}${job_timeout_env}${gpu_md}"
 
 
 # Delete the enclave VM
@@ -439,8 +509,8 @@ build-push-amd tags="latest":
 # Build the enclave image locally (no push) for iterating on Python
 # code before publishing to Docker Hub. Builds for the host architecture
 # (no --platform pin) — fastest local iteration, but note prod is
-# amd64-only (Confidential Spaces requires AMD SEV), so arm64 hosts
-# won't catch amd64-specific issues here; use `build-push` for that.
+# amd64-only (AMD EPYC for cpu deploys, Intel Sapphire Rapids for gpu),
+# so arm64 hosts won't catch amd64-specific issues here; use `build-push`.
 [group('dev')]
 local-build tag="dev":
     docker build \

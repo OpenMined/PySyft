@@ -9,9 +9,24 @@ locals {
   # Prod ignores the override.
   use_encryption = var.dev_mode ? coalesce(var.use_encryption, false) : true
 
+  # image_digest (when set) always wins over image_tag
+  container_image = var.image_digest != "" ? "${var.image_repo}@${var.image_digest}" : "${var.image_repo}:${var.image_tag}"
+
+  # Hardware profiles. gpu is the only GPU config Confidential Space supports:
+  # a3-highgpu-1g (1x H100, Intel TDX), flex-start provisioning (no on-demand
+  # exists for it) — runs max_run_duration, then VM+disk auto-delete.
+  hw = {
+    cpu = { machine_type = "n2d-standard-2", confidential_type = "SEV", min_cpu_platform = "AMD Milan" }
+    gpu = { machine_type = "a3-highgpu-1g", confidential_type = "TDX", min_cpu_platform = null }
+  }[var.hardware]
+
+  is_gpu = var.hardware == "gpu"
+
+  machine_type = coalesce(var.machine_type, local.hw.machine_type)
+
   tee_metadata = merge(
     {
-      "tee-image-reference"                 = var.container_image
+      "tee-image-reference"                 = local.container_image
       "tee-restart-policy"                  = var.dev_mode ? "Always" : "Never"
       "tee-env-SYFT_ENCLAVE_EMAIL"          = var.enclave_email
       "tee-env-SYFT_ENCLAVE_DATA_OWNERS"    = join(",", var.data_owners)
@@ -21,6 +36,7 @@ locals {
       "tee-env-SYFT_ENCLAVE_USE_ENCRYPTION" = local.use_encryption ? "true" : "false"
     },
     var.dev_mode ? { "tee-container-log-redirect" = "true" } : {},
+    local.is_gpu ? { "tee-install-gpu-driver" = "true" } : {},
     var.job_timeout_seconds != null
     ? { "tee-env-SYFT_DEFAULT_JOB_TIMEOUT_SECONDS" = tostring(var.job_timeout_seconds) }
     : {}
@@ -36,12 +52,13 @@ resource "terraform_data" "tee_metadata" {
 resource "google_compute_instance" "enclave" {
   name             = var.vm_name
   zone             = var.zone
-  machine_type     = var.machine_type
-  min_cpu_platform = "AMD Milan"
+  machine_type     = local.machine_type
+  min_cpu_platform = local.hw.min_cpu_platform # null (gpu): a3 pins Sapphire Rapids itself
 
   confidential_instance_config {
-    enable_confidential_compute = true
-    confidential_instance_type  = "SEV" # Confidential Space supports SEV/TDX, not SEV_SNP
+    # enable_confidential_compute is an SEV-only field — must be unset for TDX
+    enable_confidential_compute = local.hw.confidential_type == "SEV" ? true : null
+    confidential_instance_type  = local.hw.confidential_type # Confidential Space supports SEV/TDX, not SEV_SNP
   }
 
   shielded_instance_config {
@@ -51,7 +68,30 @@ resource "google_compute_instance" "enclave" {
   }
 
   scheduling {
-    on_host_maintenance = "MIGRATE" # allowed for SEV only
+    on_host_maintenance         = "TERMINATE"
+    provisioning_model          = local.is_gpu ? "FLEX_START" : null
+    automatic_restart           = local.is_gpu ? false : true
+    instance_termination_action = local.is_gpu ? "DELETE" : null
+
+    dynamic "max_run_duration" {
+      for_each = local.is_gpu ? [1] : []
+      content {
+        seconds = var.max_run_duration_seconds
+      }
+    }
+  }
+
+  dynamic "reservation_affinity" {
+    for_each = local.is_gpu ? [1] : []
+    content {
+      type = "NO_RESERVATION"
+    }
+  }
+
+  # Flex-start queues for H100 capacity — give the create call room to wait
+  # instead of failing at terraform's 20m default. No fallback: it waits or errors.
+  timeouts {
+    create = "2h"
   }
 
   boot_disk {
