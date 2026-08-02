@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -35,6 +36,8 @@ from syft_enclaves.utils import (
 from syft_enclaves.immutability import (
     make_private_dataset_immutability_filter,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SyftEnclaveClient:
@@ -303,6 +306,14 @@ class SyftEnclaveClient:
         distributed_marker = review_dir / "distributed"
         if distributed_marker.exists():
             return
+
+        # First time we see this job — the "new job arrived" moment.
+        logger.info(
+            "New job received: '%s' from %s (datasets: %s)",
+            ref.job_name,
+            ref.ds_email,
+            ", ".join(config.datasets.keys()),
+        )
 
         # Forward the job to the DOs referenced in the submission, but gate
         # approval on the enclave's globally-configured data owners. The job is
