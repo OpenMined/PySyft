@@ -154,6 +154,49 @@ class PhaseAError(RuntimeError):
     """Dependency installation failed before the job could be sandboxed."""
 
 
+def prepare_sandbox_filesystem(
+    submission_dir: Path, syftbox_folder: Path, uid: int, gid: int
+) -> None:
+    """Make the job tree writable, and the datasite readable, by the sandbox user.
+
+    Without this a sandboxed job fails immediately: it cannot create its
+    virtualenv or write ``outputs/``, and it cannot read the datasets it was
+    approved for. Both are needed for the job to do anything useful, and neither
+    weakens the lockdown -- the Drive credential and the runner's own code stay
+    root-owned and out of reach.
+
+    A no-op when not running as root, which is the case in tests and on a data
+    owner's own machine, where the job already runs as the invoking user.
+    """
+    if os.geteuid() != 0:
+        return
+
+    # The job owns its own working tree: venv, code, outputs.
+    os.chown(submission_dir, uid, gid)
+    for root, dirs, files in os.walk(submission_dir):
+        for name in dirs + files:
+            path = os.path.join(root, name)
+            if not os.path.islink(path):
+                os.chown(path, uid, gid)
+
+    # The datasite is read-only to the job. Ownership stays with root; we only
+    # open traversal and read. Every parent must be traversable or the job
+    # cannot reach the datasets at all -- the folder lives under /root (0700)
+    # by default, since the container runs as root and that is its home.
+    for parent in list(syftbox_folder.parents)[:-1]:
+        try:
+            os.chmod(parent, os.stat(parent).st_mode | 0o011)
+        except OSError:
+            pass
+    for root, dirs, files in os.walk(syftbox_folder):
+        for name in [root] + [os.path.join(root, n) for n in dirs + files]:
+            try:
+                mode = os.stat(name).st_mode
+                os.chmod(name, mode | (0o011 if os.path.isdir(name) else 0o004))
+            except OSError:
+                pass
+
+
 def _is_submitter_code(spec: str) -> bool:
     """Whether a dependency string would fetch and build submitter-chosen code.
 
@@ -479,9 +522,15 @@ class SyftJobRunner:
         metadata = self._get_job_metadata(ref)
         if metadata is None:
             return build_job_command(run_script)
-        return build_two_phase_command(
+        command = build_two_phase_command(
             submission_dir, metadata, run_script, timeout=timeout
         )
+        # After phase A, so the venv it created is handed over too.
+        uid, gid = _sandbox_ids()
+        prepare_sandbox_filesystem(
+            submission_dir, Path(self.config.syftbox_folder_path_str), uid, gid
+        )
+        return command
 
     def _execute_job_streaming(self, ref: JobRef, timeout: int) -> int:
         """Execute job with real-time streaming output.

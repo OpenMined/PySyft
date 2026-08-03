@@ -27,6 +27,12 @@ ENV PATH="/repo/.venv/bin:$PATH"
 # its libs on LD_LIBRARY_PATH.
 ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib64
 
+# Unprivileged account that sandboxed jobs run as (SYFT_JOB_SANDBOX). Jobs are
+# untrusted code; running them as root would let them read the Drive token and
+# rewrite the enclave's own source. Nologin: it exists to own processes, not to
+# be logged into.
+RUN useradd --uid 1500 --no-create-home --shell /usr/sbin/nologin syftjob
+
 WORKDIR /app
 COPY packages/syft-enclave/docker/attestation_server.py .
 COPY packages/syft-enclave/docker/entrypoint.sh .
@@ -45,7 +51,10 @@ SYFT_BOOTSTRAP,\
 SYFT_BOOTSTRAP_WIF_AUDIENCE,\
 SYFT_BOOTSTRAP_WIF_SECRET,\
 SYFT_BOOTSTRAP_SA_SECRET,\
-SYFT_ENCLAVE_TOKEN_CONTENT"
+SYFT_ENCLAVE_TOKEN_CONTENT,\
+SYFT_JOB_SANDBOX,\
+SYFT_JOB_SANDBOX_UID,\
+SYFT_JOB_SANDBOX_GID"
 
 
 LABEL "tee.launch_policy.log_redirect"="always"
