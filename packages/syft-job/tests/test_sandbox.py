@@ -288,3 +288,73 @@ def test_setgid_must_precede_setuid_is_documented():
     assert drop.index("os.setgroups") < drop.index("os.setgid") < drop.index(
         "os.setuid"
     ), "privilege drop order changed: setgroups -> setgid -> setuid is required"
+
+
+# --------------------------------------------------------------------------
+# integration: the lockdown must actually engage through the real runner
+# --------------------------------------------------------------------------
+
+NETWORK_PROBE_MAIN_PY = """\
+import os, socket
+
+os.makedirs("outputs", exist_ok=True)
+try:
+    socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    verdict = "NETWORK_ALLOWED"
+except OSError:
+    verdict = "NETWORK_BLOCKED"
+with open("outputs/verdict.txt", "w") as f:
+    f.write(verdict)
+print(verdict)
+"""
+
+
+def _run_probe_job(tmp_path: Path) -> str:
+    """Submit and run a job that reports whether it can make a socket."""
+    from syft_job.client import JobClient
+    from syft_job.config import SyftJobConfig
+    from syft_job.job_runner import SyftJobRunner
+
+    do_email, ds_email = "do@test.org", "ds@test.org"
+    syftbox = tmp_path / "SyftBox"
+    syftbox.mkdir()
+    code_file = tmp_path / "main.py"
+    code_file.write_text(NETWORK_PROBE_MAIN_PY)
+
+    do_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=do_email)
+    ds_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=ds_email)
+    JobClient(config=ds_config).submit_python_job(
+        user=do_email, code_path=str(code_file), job_name="probe.job"
+    )
+    do_client = JobClient(config=do_config)
+    do_client.jobs[0].approve()
+    SyftJobRunner(config=do_config).process_approved_jobs(
+        stream_output=False, timeout=900
+    )
+
+    review = do_config.get_review_job_dir(do_email, ds_email, "probe.job")
+    verdict_file = review / "outputs" / "verdict.txt"
+    if not verdict_file.exists():
+        stderr = (review / "stderr.txt").read_text() if (
+            review / "stderr.txt"
+        ).exists() else "<no stderr>"
+        raise AssertionError(f"job produced no verdict; stderr:\n{stderr[-3000:]}")
+    return verdict_file.read_text().strip()
+
+
+@requires_linux_x86
+@pytest.mark.slow
+def test_job_has_network_without_sandbox(tmp_path, monkeypatch):
+    """Control: confirms the probe would otherwise succeed."""
+    monkeypatch.setenv(job_runner.SANDBOX_ENV_VAR, "off")
+    assert _run_probe_job(tmp_path) == "NETWORK_ALLOWED"
+
+
+@requires_linux_x86
+@pytest.mark.slow
+def test_job_network_blocked_with_sandbox(tmp_path, monkeypatch):
+    """The whole point: a real job, run through the real runner, cannot network."""
+    monkeypatch.setenv(job_runner.SANDBOX_ENV_VAR, "require")
+    monkeypatch.setenv(job_runner.SANDBOX_UID_ENV_VAR, str(os.getuid()))
+    monkeypatch.setenv(job_runner.SANDBOX_GID_ENV_VAR, str(os.getgid()))
+    assert _run_probe_job(tmp_path) == "NETWORK_BLOCKED"

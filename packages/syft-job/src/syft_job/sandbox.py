@@ -29,7 +29,14 @@ import os
 import platform
 import sys
 
-__all__ = ["is_supported", "apply_lockdown", "main", "SandboxError"]
+__all__ = [
+    "is_supported",
+    "apply_lockdown",
+    "main",
+    "SandboxError",
+    "REFUSED_EXIT_CODE",
+    "SENTINEL",
+]
 
 # Exit code used when the sandbox refuses to run the command. Distinct from any
 # plausible exit code of the job itself so the caller can tell "we refused" from
