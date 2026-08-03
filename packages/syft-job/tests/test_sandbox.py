@@ -358,3 +358,66 @@ def test_job_network_blocked_with_sandbox(tmp_path, monkeypatch):
     monkeypatch.setenv(job_runner.SANDBOX_UID_ENV_VAR, str(os.getuid()))
     monkeypatch.setenv(job_runner.SANDBOX_GID_ENV_VAR, str(os.getgid()))
     assert _run_probe_job(tmp_path) == "NETWORK_BLOCKED"
+
+
+# --------------------------------------------------------------------------
+# partial lockdown must not pass silently
+# --------------------------------------------------------------------------
+
+
+@requires_linux_x86
+@pytest.mark.skipif(os.getuid() == 0, reason="needs to run as a non-root user")
+def test_refuses_when_privileges_cannot_be_dropped():
+    """As a non-root user the uid drop is impossible.
+
+    The seccomp half would still apply, but the job would keep this user's file
+    access -- so `require` must refuse rather than half-protect.
+    """
+    proc = subprocess.run(
+        [sys.executable, SANDBOX_PY, "--uid", "65534", "--", "echo", "SHOULD_NOT_RUN"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert proc.returncode == sandbox.REFUSED_EXIT_CODE
+    assert "cannot drop to uid 65534" in proc.stderr
+    assert "SHOULD_NOT_RUN" not in proc.stdout
+
+
+@requires_linux_x86
+@pytest.mark.skipif(os.getuid() == 0, reason="needs to run as a non-root user")
+def test_best_effort_proceeds_but_warns():
+    proc = subprocess.run(
+        [
+            sys.executable,
+            SANDBOX_PY,
+            "--uid",
+            "65534",
+            "--best-effort",
+            "--",
+            sys.executable,
+            "-c",
+            "import socket\n"
+            "try:\n"
+            "    socket.socket(2, 1); print('ALLOWED')\n"
+            "except OSError: print('BLOCKED')\n",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert proc.returncode == 0
+    assert proc.stdout.strip() == "BLOCKED"  # filter still applied
+    assert "WARNING" in proc.stderr  # but the partial application is announced
+
+
+@requires_linux_x86
+def test_require_mode_does_not_pass_best_effort(monkeypatch):
+    monkeypatch.setenv(job_runner.SANDBOX_ENV_VAR, "require")
+    assert "--best-effort" not in job_runner.build_job_command(Path("/tmp/run.sh"))
+
+
+@requires_linux_x86
+def test_on_mode_passes_best_effort(monkeypatch):
+    monkeypatch.setenv(job_runner.SANDBOX_ENV_VAR, "on")
+    assert "--best-effort" in job_runner.build_job_command(Path("/tmp/run.sh"))

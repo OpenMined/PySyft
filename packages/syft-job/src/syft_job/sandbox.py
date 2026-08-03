@@ -189,7 +189,9 @@ def is_supported() -> tuple[bool, str]:
     return True, ""
 
 
-def apply_lockdown(uid: int = DEFAULT_UID, gid: int = DEFAULT_GID) -> None:
+def apply_lockdown(
+    uid: int = DEFAULT_UID, gid: int = DEFAULT_GID, strict: bool = True
+) -> None:
     """Drop privileges and install the seccomp filter, in that order.
 
     Raises ``SandboxError`` if any step fails. On return the calling process
@@ -203,6 +205,13 @@ def apply_lockdown(uid: int = DEFAULT_UID, gid: int = DEFAULT_GID) -> None:
     * ``PR_SET_NO_NEW_PRIVS`` must precede ``PR_SET_SECCOMP`` -- installing a
       filter otherwise requires CAP_SYS_ADMIN, which the enclave container does
       not have.
+
+    Only root can change user id, so when invoked as an ordinary user the drop
+    is impossible. With ``strict`` (the default) that is an error rather than a
+    silent half-application: the seccomp filter alone still blocks the network,
+    but it leaves the job able to read credentials and modify the runner's own
+    files, which is the more valuable half of the protection. Callers that
+    genuinely want best-effort behaviour must ask for it explicitly.
     """
     supported, reason = is_supported()
     if not supported:
@@ -220,9 +229,14 @@ def apply_lockdown(uid: int = DEFAULT_UID, gid: int = DEFAULT_GID) -> None:
         if os.getuid() != uid or os.geteuid() != uid:
             raise SandboxError("privilege drop did not take effect")
     elif os.getuid() != uid:
-        # Already unprivileged. Continue -- the filter is still worth applying --
-        # but do not pretend we dropped to the requested account.
-        pass
+        message = (
+            f"cannot drop to uid {uid}: running as uid {os.getuid()}, not root. "
+            f"The seccomp filter would still apply, but the job would keep this "
+            f"user's file access"
+        )
+        if strict:
+            raise SandboxError(message)
+        print(f"{SENTINEL}-WARNING: {message}", file=sys.stderr, flush=True)
 
     if libc.prctl(_PR_SET_NO_NEW_PRIVS, 1, None, 0, 0) != 0:
         raise SandboxError(
@@ -254,12 +268,17 @@ def main(argv: list[str] | None = None) -> None:
     """Entry point: apply the lockdown, then become the requested command."""
     args = list(sys.argv[1:] if argv is None else argv)
 
-    uid, gid = DEFAULT_UID, DEFAULT_GID
+    uid, gid, strict = DEFAULT_UID, DEFAULT_GID, True
     while args and args[0].startswith("--"):
         flag = args.pop(0)
         if flag == "--":
             break
-        if flag in ("--uid", "--gid"):
+        if flag == "--best-effort":
+            # Apply what is possible here rather than refusing. Only for callers
+            # that accept a partial lockdown; never use where the guarantee is
+            # being relied upon.
+            strict = False
+        elif flag in ("--uid", "--gid"):
             if not args:
                 _refuse(f"{flag} requires a value")
             try:
@@ -277,7 +296,7 @@ def main(argv: list[str] | None = None) -> None:
         _refuse("no command given")
 
     try:
-        apply_lockdown(uid=uid, gid=gid)
+        apply_lockdown(uid=uid, gid=gid, strict=strict)
     except SandboxError as exc:
         _refuse(str(exc))
 

@@ -95,6 +95,9 @@ def _wrap_in_sandbox(command: List[str]) -> List[str]:
     from . import sandbox as _sandbox
 
     uid, gid = _sandbox_ids()
+    # "on" is explicitly best-effort; "require" must refuse a partial lockdown
+    # (e.g. running as a non-root user, where privileges cannot be dropped).
+    best_effort = ["--best-effort"] if get_sandbox_mode() == "on" else []
     return [
         sys.executable,
         os.fspath(Path(_sandbox.__file__).resolve()),
@@ -102,6 +105,7 @@ def _wrap_in_sandbox(command: List[str]) -> List[str]:
         str(uid),
         "--gid",
         str(gid),
+        *best_effort,
         "--",
         *command,
     ]
