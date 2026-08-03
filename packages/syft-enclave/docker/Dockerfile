@@ -1,6 +1,20 @@
-FROM python:3.12-slim
+FROM ubuntu:24.04
 
-RUN pip install uv
+# Ubuntu 24.04 LTS ships Python 3.12 as its system interpreter, which is the
+# version the workspace targets. python3-venv is separate on Debian/Ubuntu and
+# uv needs it to build /repo/.venv; ca-certificates is required for TLS to the
+# package index. uv is installed from its standalone distribution rather than
+# pip, since Ubuntu marks the system interpreter externally managed (PEP 668).
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        ca-certificates \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV UV_INSTALL_DIR=/usr/local/bin
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && uv --version
 
 # Build context is the monorepo root (set by packages/syft-enclave/Justfile).
 # We install syft-enclave from the workspace so syft-client + its workspace
