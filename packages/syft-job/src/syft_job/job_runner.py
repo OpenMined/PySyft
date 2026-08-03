@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +31,112 @@ def get_job_timeout_seconds() -> int:
 
 
 IS_IN_JOB_ENV_VAR = "SYFT_IS_IN_JOB"
+
+# Sandbox mode for job execution. Job code is untrusted, but this runner also
+# runs on data owners' own machines, where sandboxing is neither expected nor
+# always possible -- hence "off" by default. The enclave opts in explicitly.
+#
+#   off     -- execute the job directly (previous behaviour)
+#   on      -- sandbox when supported, warn and continue when not
+#   require -- sandbox, or refuse to run the job at all
+SANDBOX_ENV_VAR = "SYFT_JOB_SANDBOX"
+SANDBOX_UID_ENV_VAR = "SYFT_JOB_SANDBOX_UID"
+SANDBOX_GID_ENV_VAR = "SYFT_JOB_SANDBOX_GID"
+_SANDBOX_MODES = ("off", "on", "require")
+
+# Environment handed to a sandboxed job. The unsandboxed path still inherits the
+# full environment; under the sandbox we pass only what a job legitimately needs,
+# so bootstrap secrets in the runner's environment are not exposed to job code.
+_SANDBOX_ENV_ALLOWLIST = (
+    "PATH",
+    "HOME",
+    "LANG",
+    "LC_ALL",
+    "TZ",
+    "TMPDIR",
+    "LD_LIBRARY_PATH",  # GPU deploys need the NVIDIA driver libs
+    "CUDA_VISIBLE_DEVICES",
+    "NVIDIA_VISIBLE_DEVICES",
+    "UV_SYSTEM_PYTHON",
+    "UV_CACHE_DIR",
+)
+
+
+class SandboxUnavailableError(RuntimeError):
+    """Sandbox required by configuration but not applicable here."""
+
+
+def get_sandbox_mode() -> str:
+    """Job sandbox mode from the environment. Defaults to ``off``."""
+    mode = os.environ.get(SANDBOX_ENV_VAR, "off").strip().lower()
+    if mode not in _SANDBOX_MODES:
+        raise ValueError(
+            f"{SANDBOX_ENV_VAR} must be one of {_SANDBOX_MODES}, got {mode!r}"
+        )
+    return mode
+
+
+def _sandbox_ids() -> tuple[int, int]:
+    from .sandbox import DEFAULT_GID, DEFAULT_UID
+
+    return (
+        int(os.environ.get(SANDBOX_UID_ENV_VAR, DEFAULT_UID)),
+        int(os.environ.get(SANDBOX_GID_ENV_VAR, DEFAULT_GID)),
+    )
+
+
+def build_job_command(run_script: Path) -> List[str]:
+    """Command used to launch a job, wrapped in the sandbox when enabled.
+
+    The wrapper is invoked by file path rather than as ``-m syft_job.sandbox``
+    so that installing the lockdown does not depend on the ``syft_job`` package
+    (and its dependencies) importing successfully inside the job environment.
+    """
+    direct = ["bash", str(run_script)]
+    mode = get_sandbox_mode()
+    if mode == "off":
+        return direct
+
+    from . import sandbox as _sandbox
+
+    supported, reason = _sandbox.is_supported()
+    if not supported:
+        if mode == "require":
+            raise SandboxUnavailableError(
+                f"{SANDBOX_ENV_VAR}=require but the sandbox cannot be applied: {reason}"
+            )
+        print(
+            f" WARNING: {SANDBOX_ENV_VAR}=on but sandbox unavailable ({reason}); "
+            f"running job WITHOUT network isolation"
+        )
+        return direct
+
+    uid, gid = _sandbox_ids()
+    return [
+        sys.executable,
+        os.fspath(Path(_sandbox.__file__).resolve()),
+        "--uid",
+        str(uid),
+        "--gid",
+        str(gid),
+        "--",
+        *direct,
+    ]
+
+
+def build_job_env(config_folder: str, email: str) -> dict:
+    """Environment for a job subprocess."""
+    if get_sandbox_mode() == "off":
+        env = os.environ.copy()
+    else:
+        env = {
+            k: v for k, v in os.environ.items() if k in _SANDBOX_ENV_ALLOWLIST
+        }
+    env["SYFTBOX_FOLDER"] = config_folder
+    env["SYFTBOX_EMAIL"] = email
+    env[IS_IN_JOB_ENV_VAR] = "true"
+    env["PYTHONUNBUFFERED"] = "1"
+    return env
 
 
 def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
@@ -235,11 +342,10 @@ class SyftJobRunner:
         os.chmod(run_script, 0o755)
 
         # Prepare environment variables
-        env = os.environ.copy()
-        env["SYFTBOX_FOLDER"] = self.config.syftbox_folder_path_str
-        env["SYFTBOX_EMAIL"] = self.config.current_user_email
-        env[IS_IN_JOB_ENV_VAR] = "true"
-        env["PYTHONUNBUFFERED"] = "1"
+        env = build_job_env(
+            self.config.syftbox_folder_path_str, self.config.current_user_email
+        )
+        command = build_job_command(run_script)
 
         # stdout/stderr go to review/
         stdout_file = review_dir / "stdout.txt"
@@ -252,7 +358,7 @@ class SyftJobRunner:
             open(stderr_file, "w") as stderr_f,
         ):
             process = subprocess.Popen(
-                ["bash", str(run_script)],
+                command,
                 cwd=submission_dir,  # run.sh executes from inbox/ where code/ lives
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -322,14 +428,12 @@ class SyftJobRunner:
         os.chmod(run_script, 0o755)
 
         # Prepare environment variables
-        env = os.environ.copy()
-        env["SYFTBOX_FOLDER"] = self.config.syftbox_folder_path_str
-        env["SYFTBOX_EMAIL"] = self.config.current_user_email
-        env[IS_IN_JOB_ENV_VAR] = "true"
-        env["PYTHONUNBUFFERED"] = "1"
+        env = build_job_env(
+            self.config.syftbox_folder_path_str, self.config.current_user_email
+        )
 
         process = subprocess.Popen(
-            ["bash", str(run_script)],
+            build_job_command(run_script),
             cwd=submission_dir,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
