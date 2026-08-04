@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from syft_migration.identity import MigrationError, _identity
+from syft_migration.identity import MigrationError, _identity, _version_order
 
 if TYPE_CHECKING:
     from syft_migration.base import MigratableObject
@@ -45,13 +45,14 @@ class ProtocolSchema(BaseModel):
             versions = supported_versions.setdefault(canonical_name, [])
             if object_version not in versions:
                 versions.append(object_version)
-            if object_version == max(versions):
+            if object_version == max(versions, key=_version_order):
                 latest_classes[canonical_name] = klass
         return cls(
             protocol_name=protocol_name,
             version=version,
             supported_versions={
-                name: sorted(versions) for name, versions in supported_versions.items()
+                name: sorted(versions, key=_version_order)
+                for name, versions in supported_versions.items()
             },
             current_object_schemas={
                 name: klass.model_json_schema()
@@ -64,7 +65,7 @@ class ProtocolSchema(BaseModel):
         versions = self.supported_versions.get(canonical_name)
         if not versions:
             raise MigrationError(f"Schema does not include object {canonical_name!r}")
-        return max(versions)
+        return max(versions, key=_version_order)
 
     def save(self, path: PathLike) -> None:
         Path(path).write_text(self.model_dump_json(indent=2))

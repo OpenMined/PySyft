@@ -3,7 +3,12 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING, Callable
 
-from syft_migration.identity import MigrationError, _has_identity, _identity
+from syft_migration.identity import (
+    MigrationError,
+    _has_identity,
+    _identity,
+    _version_order,
+)
 from syft_migration.schema import (
     PackageInfo,
     ProtocolSchema,
@@ -49,6 +54,8 @@ class MigrationRegistry:
         if not _has_identity(cls):
             return
         canonical_name, version = _identity(cls)
+        # Reject a version that cannot be ordered, at class definition time.
+        _version_order(version)
         existing = self.objects.get(canonical_name, {}).get(version)
         if existing is not None and existing is not cls:
             raise MigrationError(
@@ -72,7 +79,7 @@ class MigrationRegistry:
         versions = self.versions(canonical_name)
         if not versions:
             raise MigrationError(f"No versions registered for {canonical_name!r}")
-        return max(versions)
+        return max(versions, key=_version_order)
 
     # -- migrations --------------------------------------------------------
     def register_migration(
@@ -206,7 +213,7 @@ class MigrationRegistry:
             protocol_name=self.protocol_name,
             version=self.protocol_version,
             supported_versions={
-                canonical_name: sorted(versions)
+                canonical_name: sorted(versions, key=_version_order)
                 for canonical_name, versions in self.objects.items()
             },
             current_object_schemas={
