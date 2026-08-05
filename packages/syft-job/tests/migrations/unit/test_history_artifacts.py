@@ -87,6 +87,16 @@ def test_protocol_bumped_when_changed():
     assert not job_registry.protocol_changed_without_bump()
 
 
+def test_protocol_bump_not_missing():
+    # Stays live between a protocol bump and the release that freezes it, which is
+    # exactly where test_protocol_bumped_when_changed goes quiet.
+    assert not job_registry.protocol_bump_missing(), (
+        "The job protocol changed since the newest released protocol without a "
+        "bump. Bump JOB_PROTOCOL_VERSION in syft_job/migrations/registry.py, or "
+        "revert the model change."
+    )
+
+
 def test_historic_schemas_registered_on_import():
     # syft_job/__init__ registers every artifact in migrations/history/.
     assert job_registry.package_version_history["0"].version == "0.1.38"

@@ -63,6 +63,16 @@ def test_protocol_not_changed_without_bump():
     assert not client_registry.protocol_changed_without_bump()
 
 
+def test_protocol_bump_not_missing():
+    # Stays live between a protocol bump and the release that freezes it, which is
+    # exactly where test_protocol_not_changed_without_bump goes quiet.
+    assert not client_registry.protocol_bump_missing(), (
+        "The client protocol changed since the newest released protocol without a "
+        "bump. Bump SYFT_CLIENT_PROTOCOL_VERSION in "
+        "syft_client/migrations/registry.py, or revert the model change."
+    )
+
+
 def test_bump_guard_trips_on_protocol_change():
     # A registry claiming the same protocol version as a released schema but
     # supporting different object versions must trip the guard.

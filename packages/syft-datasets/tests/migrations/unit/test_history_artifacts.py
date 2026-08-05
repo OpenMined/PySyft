@@ -1,14 +1,13 @@
 """The hardcoded release artifacts of past syft-dataset releases."""
 
+from syft_datasets.migrations import dataset_registry
+from syft_datasets.migrations.history import PACKAGE_ARTIFACTS_DIR, PROTOCOLS_DIR
+from syft_datasets.models import DatasetV1
 from syft_migration import (
     MigrationService,
     ReleasedPackageProtocolInfo,
     ReleasedProtocol,
 )
-
-from syft_datasets.migrations import dataset_registry
-from syft_datasets.migrations.history import PACKAGE_ARTIFACTS_DIR, PROTOCOLS_DIR
-from syft_datasets.models import DatasetV1
 
 
 def test_all_released_package_artifacts_load():
@@ -77,6 +76,16 @@ def test_protocol_bumped_when_changed():
     # Fires when the dataset protocol changes (e.g. a new object version registers)
     # without bumping DATASET_PROTOCOL_VERSION.
     assert not dataset_registry.protocol_changed_without_bump()
+
+
+def test_protocol_bump_not_missing():
+    # Stays live between a protocol bump and the release that freezes it, which is
+    # exactly where test_protocol_bumped_when_changed goes quiet.
+    assert not dataset_registry.protocol_bump_missing(), (
+        "The dataset protocol changed since the newest released protocol without a "
+        "bump. Bump DATASET_PROTOCOL_VERSION in "
+        "syft_datasets/migrations/registry.py, or revert the model change."
+    )
 
 
 def test_historic_schemas_registered_on_import():

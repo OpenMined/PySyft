@@ -10,7 +10,6 @@ _nc := '\033[0m'
 
 alias b := build
 alias p := publish
-alias bp:= bump-and-publish
 # ---------------------------------------------------------------------------------------------------------------------
 
 
@@ -140,12 +139,10 @@ publish: build
     uvx twine upload dist/*
     @echo "{{ _green }}Publish complete!{{ _nc }}"
 
-# Bump version and publish to PyPI
+# Export the frozen release artifacts for the current version
 [group('publish')]
-bump-and-publish part="patch":
-    just bump {{ part }}
-    just publish
-    @echo "{{ _green }}Bump and publish complete!{{ _nc }}"
+export-release-artifacts:
+    uv run python scripts/export_release_artifact.py
 
 # Launch Jupyter Lab
 jupyter:

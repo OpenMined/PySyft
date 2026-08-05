@@ -285,3 +285,25 @@ class MigrationRegistry:
             return False
         current = self.compute_protocol_schema()
         return released.supported_versions != current.supported_versions
+
+    def latest_released_protocol_version(self) -> str | None:
+        """The newest protocol version with a frozen schema. None if there is none."""
+        if not self.protocol_version_history:
+            return None
+        return max(self.protocol_version_history, key=_version_order)
+
+    def protocol_bump_missing(self) -> bool:
+        """Whether the protocol changed since the newest RELEASED protocol
+        without a bump of the version constant.
+
+        Only object versions are compared. A protocol change that alters the
+        on-disk layout, but adds no object version, is invisible here.
+        """
+        latest = self.latest_released_protocol_version()
+        if latest is None:
+            return False
+        released = self.protocol_version_history[latest]
+        current = self.compute_protocol_schema()
+        if current.supported_versions == released.supported_versions:
+            return False
+        return _version_order(self.protocol_version) <= _version_order(latest)

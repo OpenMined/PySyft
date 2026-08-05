@@ -1,17 +1,32 @@
-"""Bump a package version and propagate the change to all dependents.
+"""Bump the version of one package, and update the packages that depend on it.
 
-Usage: python scripts/bump_version.py <package-name> <patch|minor|major>
+Usage:
+    python scripts/bump_version.py <package-name> <patch|minor|major>
+                                   [--dependents {bumped,published}]
 
-Output (two lines):
-  Line 1: new version
-  Line 2: space-separated list of all modified pyproject.toml files
+The script writes the new version into the pyproject.toml of the package. It
+then writes a version pin for the package into each pyproject.toml that depends
+on it.
+
+The --dependents option selects the version for those pins:
+
+- published: the version that was in the file before this run. A release
+  publishes the version on the branch, and bumps the version after that. This
+  version is therefore the version on PyPI. Use this option for a release.
+- bumped: the new version. PyPI does not have this version yet. Use this option
+  only if the script runs before the release.
+
+The script prints two lines:
+
+- Line 1: the new version.
+- Line 2: the modified pyproject.toml files, separated by spaces.
 """
 
 import argparse
 import re
-import tomllib
 from pathlib import Path
 
+import tomllib
 from packaging.version import Version
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -88,11 +103,24 @@ def main() -> None:
     )
     parser.add_argument("package_name", help="Package name (e.g. syft-perms)")
     parser.add_argument("bump_type", choices=["major", "minor", "patch"])
+    parser.add_argument(
+        "--dependents",
+        choices=["bumped", "published"],
+        default="bumped",
+        help=(
+            "Version for the dependent pins. 'bumped' is the new version. "
+            "'published' is the version that was in the file before this run, "
+            "which is the version a release publishes."
+        ),
+    )
     args = parser.parse_args()
 
     target_path = find_target_pyproject(args.package_name)
+    with open(target_path, "rb") as f:
+        published_version = Version(tomllib.load(f)["project"]["version"])
     new_version = update_target_version(target_path, args.bump_type)
-    modified_deps = update_dependents(args.package_name, new_version, target_path)
+    pinned = new_version if args.dependents == "bumped" else published_version
+    modified_deps = update_dependents(args.package_name, pinned, target_path)
 
     all_modified = [target_path] + modified_deps
     relative_paths = [str(p.relative_to(REPO_ROOT)) for p in all_modified]

@@ -152,3 +152,78 @@ def test_protocol_changed_without_bump():
         version: str = "2"
 
     assert reg.protocol_changed_without_bump()
+
+
+def test_bump_missing_is_live_before_the_protocol_is_released():
+    # protocol_changed_without_bump needs a frozen schema for the CURRENT protocol
+    # version, so it cannot see a change made after a bump. protocol_bump_missing
+    # compares against the newest released protocol instead.
+    reg = _fresh_registry(protocol_version="0")
+
+    class WidgetV1(MigratableObject, registry=reg):
+        canonical_name: str = "widget"
+        version: str = "1"
+
+    reg.register_released_protocol(released=reg.compute_released_protocol())
+    assert reg.latest_released_protocol_version() == "0"
+    assert not reg.protocol_bump_missing()
+
+    # Bump the protocol, then add an object version. Protocol 1 is not released,
+    # so the old guard goes quiet and the new one must not.
+    reg.protocol_version = "1"
+
+    class WidgetV2(MigratableObject, registry=reg):
+        canonical_name: str = "widget"
+        version: str = "2"
+
+    assert not reg.protocol_changed_without_bump()
+    assert not reg.protocol_bump_missing()
+
+    class WidgetV3(MigratableObject, registry=reg):
+        canonical_name: str = "widget"
+        version: str = "3"
+
+    # Still one bump ahead of the newest released protocol, so still clean.
+    assert not reg.protocol_bump_missing()
+
+    # Roll the constant back onto the released protocol: the change is now unbumped.
+    reg.protocol_version = "0"
+    assert reg.protocol_bump_missing()
+
+
+def test_bump_missing_compares_against_the_newest_released_protocol():
+    reg = _fresh_registry(protocol_version="2")
+
+    class PartV1(MigratableObject, registry=reg):
+        canonical_name: str = "part"
+        version: str = "1"
+
+    # Freeze protocol 0 holding only version 1.
+    reg.register_released_protocol(released=reg.compute_released_protocol())
+    protocol_0 = reg.protocol_version_history.pop("2")
+    protocol_0.version = "0"
+    reg.register_historic_protocol_schema(schema=protocol_0)
+
+    class PartV2(MigratableObject, registry=reg):
+        canonical_name: str = "part"
+        version: str = "2"
+
+    # Freeze protocol 10 holding both versions. A string sort would treat "2" as
+    # the newest released protocol and miss that the code matches protocol 10.
+    protocol_10 = reg.compute_released_protocol().protocol_schema
+    protocol_10.version = "10"
+    reg.register_historic_protocol_schema(schema=protocol_10)
+
+    assert reg.latest_released_protocol_version() == "10"
+    assert not reg.protocol_bump_missing()
+
+
+def test_bump_missing_is_false_without_history():
+    reg = _fresh_registry()
+
+    class BoltV1(MigratableObject, registry=reg):
+        canonical_name: str = "bolt"
+        version: str = "1"
+
+    assert reg.latest_released_protocol_version() is None
+    assert not reg.protocol_bump_missing()
