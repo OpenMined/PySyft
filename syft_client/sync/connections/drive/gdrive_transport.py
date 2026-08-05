@@ -1,58 +1,58 @@
 """Google Drive Files transport layer implementation"""
 
-import logging
 import io
 import json
-from pathlib import Path
+import logging
 import pickle
-from syft_client.sync.utils.syftbox_utils import check_env
-from syft_client.version import SYFT_CLIENT_VERSION
-from typing import Any, Dict, List, Optional, Tuple
-from typing import TYPE_CHECKING
-from pydantic import BaseModel
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Optional
+
+from google.oauth2.credentials import Credentials as GoogleCredentials
 from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload, build_http
-from google.oauth2.credentials import Credentials as GoogleCredentials
-
-from syft_client.sync.connections.drive.gdrive_utils import (
-    gather_all_file_and_folder_ids_recursive,
-)
-from syft_client.sync.connections.drive.gdrive_retry import (
-    execute_with_retries,
-    next_chunk_with_retries,
-    batch_execute_with_retries,
-)
-from syft_client.sync.version.version_info import _parse_semver
-
-from syft_client.sync.connections.base_connection import (
-    FileCollection,
-    SyftboxPlatformConnection,
-)
+from pydantic import BaseModel
 from syft_datasets.dataset_manager import (
     DATASET_COLLECTION_PREFIX,
     PRIVATE_DATASET_COLLECTION_PREFIX,
 )
-from syft_client.sync.events.file_change_event import (
-    FileChangeEventsMessageFileName,
-    FileChangeEventsMessage,
-)
-from syft_client.sync.messages.proposed_filechange import (
-    MessageFileName,
-    FileNameParseError,
-    ProposedFileChangesMessage,
-)
-from syft_client.sync.environments.environment import Environment
+from syft_migration import MigrationError
+
 from syft_client.sync.checkpoints.checkpoint import (
-    Checkpoint,
-    IncrementalCheckpoint,
     CHECKPOINT_FILENAME_PREFIX,
     INCREMENTAL_CHECKPOINT_PREFIX,
+    Checkpoint,
+    IncrementalCheckpoint,
 )
 from syft_client.sync.checkpoints.rolling_state import (
-    RollingState,
     ROLLING_STATE_FILENAME_PREFIX,
+    RollingState,
 )
+from syft_client.sync.connections.base_connection import (
+    FileCollection,
+    SyftboxPlatformConnection,
+)
+from syft_client.sync.connections.drive.gdrive_retry import (
+    batch_execute_with_retries,
+    execute_with_retries,
+    next_chunk_with_retries,
+)
+from syft_client.sync.connections.drive.gdrive_utils import (
+    gather_all_file_and_folder_ids_recursive,
+)
+from syft_client.sync.environments.environment import Environment
+from syft_client.sync.events.file_change_event import (
+    FileChangeEventsMessage,
+    FileChangeEventsMessageFileName,
+)
+from syft_client.sync.messages.proposed_filechange import (
+    FileNameParseError,
+    MessageFileName,
+    ProposedFileChangesMessage,
+)
+from syft_client.sync.utils.syftbox_utils import check_env
+from syft_client.sync.version.version_info import _parse_semver
+from syft_client.version import SYFT_CLIENT_VERSION
 
 if TYPE_CHECKING:
     from syft_client.sync.connections.drive.grdrive_config import (
@@ -80,8 +80,8 @@ def build_drive_service(
     http = build_http()
     http.timeout = timeout
     if environment == Environment.COLAB:
-        from google.colab import auth as colab_auth
         import google.auth
+        from google.colab import auth as colab_auth
 
         colab_auth.authenticate_user()
         creds, _ = google.auth.default()
@@ -250,6 +250,53 @@ def _filter_patch_compatible(
     return kept
 
 
+# A folder id and name, with the version from the name. The version fields come
+# first, so the default sort puts these in version order.
+_VersionedFolder = tuple[int, int, int, str, str]
+
+
+def _partition_by_version(
+    folders: list[tuple[str, str]],
+    current_version: str | None = None,
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]], list[tuple[str, str]]]:
+    """Split folders into (compatible, older, newer) by the version in the name.
+
+    Compatible means the same major and minor as the current version. The function
+    drops a folder that has no version in its name. Each list starts at the lowest
+    version.
+    """
+    if current_version is None:
+        current_version = SYFT_CLIENT_VERSION
+    try:
+        current = _parse_semver(current_version)
+    except ValueError:
+        return [], [], []
+
+    compatible: list[_VersionedFolder] = []
+    older: list[_VersionedFolder] = []
+    newer: list[_VersionedFolder] = []
+    for fid, name in folders:
+        version_str = _extract_version_from_name(name)
+        if version_str is None:
+            continue
+        try:
+            found = _parse_semver(version_str)
+        except ValueError:
+            continue
+        entry = (*found, fid, name)
+        if found[:2] == current[:2]:
+            compatible.append(entry)
+        elif found < current:
+            older.append(entry)
+        else:
+            newer.append(entry)
+
+    def _ordered(entries: list[_VersionedFolder]) -> list[tuple[str, str]]:
+        return [(fid, name) for *_, fid, name in sorted(entries)]
+
+    return _ordered(compatible), _ordered(older), _ordered(newer)
+
+
 class GDriveConnection(SyftboxPlatformConnection):
     """Google Drive Files API transport layer"""
 
@@ -272,21 +319,21 @@ class GDriveConnection(SyftboxPlatformConnection):
     _personal_syftbox_folder_id: str | None = None
 
     # peer_email -> folder_id (folders I created for peer's datasite)
-    peer_datasite_inbox_cache: Dict[str, str] = {}
-    peer_datasite_outbox_cache: Dict[str, str] = {}
+    peer_datasite_inbox_cache: dict[str, str] = {}
+    peer_datasite_outbox_cache: dict[str, str] = {}
 
     # peer_email -> folder_id (folders peer created for my datasite)
-    own_datasite_inbox_cache: Dict[str, str] = {}
-    own_datasite_outbox_cache: Dict[str, str] = {}
+    own_datasite_inbox_cache: dict[str, str] = {}
+    own_datasite_outbox_cache: dict[str, str] = {}
 
     # sender email -> archive folder id
-    archive_folder_id_cache: Dict[str, str] = {}
+    archive_folder_id_cache: dict[str, str] = {}
 
     # fname -> gdrive id
-    personal_syftbox_event_id_cache: Dict[str, str] = {}
+    personal_syftbox_event_id_cache: dict[str, str] = {}
 
     # tag -> dataset collection folder id
-    dataset_collection_folder_id_cache: Dict[str, str] = {}
+    dataset_collection_folder_id_cache: dict[str, str] = {}
 
     # Rolling state caches for single-API-call optimization
     _rolling_state_folder_id: str | None = None
@@ -296,7 +343,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     _encryption_bundles_folder_id: str | None = None
 
     # Cached SYFT_peers.json contents (None = not loaded yet).
-    _peers_json_cache: Dict[str, Dict[str, str]] | None = None
+    _peers_json_cache: dict[str, dict[str, str]] | None = None
 
     @classmethod
     def from_config(cls, config: "GdriveConnectionConfig") -> "GDriveConnection":
@@ -470,7 +517,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         items = results.get("files", [])
         return items[0]["id"] if items else None
 
-    def _download_peers_json(self) -> Dict[str, Dict[str, str]]:
+    def _download_peers_json(self) -> dict[str, dict[str, str]]:
         """Fetch peers JSON from GDrive. Returns empty dict if not found."""
         file_id = self._get_peers_file_id()
         if file_id is None:
@@ -478,21 +525,25 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         try:
             file_data = self.download_file(file_id)
-            return json.loads(file_data.decode("utf-8"))
         except Exception as e:
-            print(f"Warning: Error reading peers file: {e}")
+            print(f"Warning: could not download the peers file: {e}")
+            return {}
+        try:
+            return json.loads(file_data.decode("utf-8"))
+        except ValueError as e:
+            print(f"Warning: could not read the peers file: {e}")
             return {}
 
     def _get_peers_json(
         self, force_download: bool = False
-    ) -> Dict[str, Dict[str, str]]:
+    ) -> dict[str, dict[str, str]]:
         """Return peers JSON, using the in-memory cache when available."""
         if self._peers_json_cache is not None and not force_download:
             return self._peers_json_cache
         self._peers_json_cache = self._download_peers_json()
         return self._peers_json_cache
 
-    def _write_peers_json(self, peers_data: Dict[str, Dict[str, str]]):
+    def _write_peers_json(self, peers_data: dict[str, dict[str, str]]):
         """Write peers JSON to GDrive. Creates or updates the file."""
         syftbox_folder_id = self.get_syftbox_folder_id()
         file_id = self._get_peers_file_id()
@@ -542,7 +593,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         peers_data[peer_email] = existing
         self._write_peers_json(peers_data)
 
-    def get_peer_requests(self) -> List[str]:
+    def get_peer_requests(self) -> list[str]:
         """Get list of pending peer requests.
 
         Scans for syft_datasite_#version#{self}_*  folders NOT owned by self — those are
@@ -563,10 +614,12 @@ class GDriveConnection(SyftboxPlatformConnection):
         for f in results.get("files", []):
             try:
                 folder = GdriveP2PFolder.from_name(f["name"])
-                if folder.datasite_email == self.email:
-                    all_folder_peers.add(folder.peer_email)
-            except (ValueError, Exception):
+            except ValueError:
+                # The query matches a name prefix, so a folder with another shape
+                # can appear here.
                 continue
+            if folder.datasite_email == self.email:
+                all_folder_peers.add(folder.peer_email)
 
         peers_data = self._get_peers_json()
         pending_peers = []
@@ -609,7 +662,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def watcher_get_events_messages(
         self, peer_email: str, since_timestamp: float | None
-    ) -> List[FileChangeEventsMessage]:
+    ) -> list[FileChangeEventsMessage]:
         raw_list = self.watcher_download_raw_events_from_outbox(
             peer_email, since_timestamp
         )
@@ -617,7 +670,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def watcher_get_outbox_file_metadatas(
         self, peer_email: str, since_timestamp: float | None
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Get file metadata from peer's outbox folder without downloading."""
         folder_id = self._get_peer_datasite_outbox_id(peer_email)
         if folder_id is None:
@@ -667,7 +720,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def owner_get_all_accepted_event_file_ids(
         self, since_timestamp: float | None = None
-    ) -> List[str]:
+    ) -> list[str]:
         personal_syftbox_folder_id = self.get_personal_syftbox_folder_id()
         file_metadatas = self.get_file_metadatas_from_folder(
             personal_syftbox_folder_id, since_timestamp=since_timestamp
@@ -689,7 +742,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             try:
                 file_data = self.download_file(gdrive_id)
             except Exception as e:
-                print(e)
+                print(f"Warning: could not download event {fname_obj.as_string()}: {e}")
                 continue
             result.append(file_data)
         return result
@@ -822,7 +875,10 @@ class GDriveConnection(SyftboxPlatformConnection):
         # '#{peer}#{type}#{email}'. Personal folder shape is exactly
         # '{version}#{email}', so require a single '#'.
         folders = [(fid, name) for fid, name in folders if name.count("#") == 1]
-        folder_id = self._expect_one(_filter_patch_compatible(folders))
+        folder_id = self._find_or_adopt_versioned_folder(
+            folders,
+            current_name=GdrivePersonalSyftboxFolder(email=self.email).as_string(),
+        )
         if folder_id:
             self._personal_syftbox_folder_id = folder_id
             return folder_id
@@ -901,7 +957,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         folder_id: str,
         since_timestamp: float | None = None,
         page_size: int = 100,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Get file metadatas from folder with early termination.
 
@@ -966,37 +1022,39 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     @staticmethod
     def _filter_valid_file_metadatas(
-        file_metadatas: List[Dict],
-    ) -> List[Dict]:
+        file_metadatas: list[dict],
+    ) -> list[dict]:
         res = []
         for file_metadata in file_metadatas:
             fname = file_metadata["name"]
             try:
-                _ = FileChangeEventsMessageFileName.from_string(fname)
-                res.append(file_metadata)
-            except Exception:
+                FileChangeEventsMessageFileName.from_string(fname)
+            except ValueError:
+                # The folder holds other files, so a name that is not an event
+                # name is normal here. This method filters them out.
                 continue
+            res.append(file_metadata)
         return res
 
     @staticmethod
     def _get_valid_events_from_file_metadatas(
-        file_metadatas: List[Dict],
-    ) -> List[FileChangeEventsMessageFileName]:
+        file_metadatas: list[dict],
+    ) -> list[FileChangeEventsMessageFileName]:
         res = []
         for file_metadata in file_metadatas:
             fname = file_metadata["name"]
             try:
                 message_filename = FileChangeEventsMessageFileName.from_string(fname)
-                res.append(message_filename)
-            except Exception:
-                print("Warning, invalid file name: ", fname)
+            except ValueError:
+                print(f"Warning: invalid event file name: {fname}")
                 continue
+            res.append(message_filename)
         return res
 
     @staticmethod
     def _get_valid_messages_from_file_metadatas(
-        file_metadatas: List[Dict],
-    ) -> List[MessageFileName]:
+        file_metadatas: list[dict],
+    ) -> list[MessageFileName]:
         res = []
         for file_metadata in file_metadatas:
             try:
@@ -1180,7 +1238,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         self._encryption_bundles_folder_id = None
         self._peers_json_cache = None
 
-    def gather_all_file_and_folder_ids(self) -> List[str]:
+    def gather_all_file_and_folder_ids(self) -> list[str]:
         syftbox_folder_id = self.get_syftbox_folder_id()
         return gather_all_file_and_folder_ids_recursive(
             self.drive_service, syftbox_folder_id
@@ -1188,7 +1246,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def delete_multiple_files_by_ids(
         self,
-        file_ids: List[str],
+        file_ids: list[str],
         ignore_permissions_errors: bool = True,
         ignore_file_not_found: bool = True,
     ):
@@ -1226,17 +1284,13 @@ class GDriveConnection(SyftboxPlatformConnection):
                 batch.add(self.drive_service.files().delete(fileId=file_id))
             batch_execute_with_retries(batch)
 
-    def delete_file_by_id(
-        self, file_id: str, verbose: bool = False, raise_on_error: bool = False
-    ):
+    def delete_file_by_id(self, file_id: str, raise_on_error: bool = False):
         try:
             execute_with_retries(self.drive_service.files().delete(fileId=file_id))
         except Exception as e:
             if raise_on_error:
                 raise e
-            else:
-                if verbose:
-                    print(f"Error deleting file: {file_id}")
+            print(f"Warning: could not delete file {file_id}: {e}")
 
     def delete_unversioned_state(self) -> None:
         """Delete non-versioned remote artifacts during upgrade.
@@ -1350,7 +1404,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         return file_ids
 
-    def create_file_payload(self, data: Any) -> Tuple[MediaIoBaseUpload, str]:
+    def create_file_payload(self, data: Any) -> tuple[MediaIoBaseUpload, str]:
         """Create a file payload for the GDrive"""
         if isinstance(data, str):
             file_data = data.encode("utf-8")
@@ -1447,6 +1501,54 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"folder(s) on Drive (keeping the one with your data) and retry."
         )
 
+    def _find_or_adopt_versioned_folder(
+        self,
+        folders: list[tuple[str, str]],
+        current_name: str,
+        current_version: str | None = None,
+    ) -> str | None:
+        """Return the id of a PRIVATE folder for this client version, or None.
+
+        A private folder name holds the client version, so a minor upgrade looks
+        for a name that does not exist yet. This method renames the folder of the
+        highest earlier version to `current_name` and keeps the data. A new folder
+        would leave the data of the user on Drive and out of reach.
+
+        Renames the folder, so the caller must own it and no peer may look it up by
+        name. A P2P folder fails both conditions: use `_expect_one` for those.
+
+        Raises RuntimeError if only a folder from a later version exists, or if
+        more than one compatible folder exists.
+        """
+        compatible, older, newer = _partition_by_version(folders, current_version)
+        if compatible:
+            return self._expect_one(compatible)
+        if newer:
+            names = [n for _, n in newer]
+            latest = _extract_version_from_name(names[-1])
+            raise RuntimeError(
+                f"Found a folder from a later client version on Drive: {names}. "
+                f"This client is {current_version or SYFT_CLIENT_VERSION} and "
+                f"cannot read that data. Install syft-client {latest} or later."
+            )
+        if not older:
+            return None
+
+        folder_id, name = older[-1]
+        execute_with_retries(
+            self.drive_service.files().update(
+                fileId=folder_id, body={"name": current_name}
+            )
+        )
+        print(f"Adopted the folder of an earlier version: {name} -> {current_name}")
+        if len(older) > 1:
+            stale = [n for _, n in older[:-1]]
+            print(
+                f"Warning: {len(stale)} folder(s) of earlier versions stay on "
+                f"Drive: {stale}"
+            )
+        return folder_id
+
     def download_file(self, file_id: str) -> bytes:
         request = self.drive_service.files().get_media(fileId=file_id)
 
@@ -1457,7 +1559,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         done = False
         while not done:
-            status, done = next_chunk_with_retries(downloader)
+            _, done = next_chunk_with_retries(downloader)
 
         message_data = file_buffer.getvalue()
         return message_data
@@ -1541,10 +1643,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         """Add reader permissions for multiple users in a single batch request."""
 
         def callback(request_id, response, exception):
-            if exception:
-                # Ignore "already shared" errors
-                if "alreadyShared" not in str(exception):
-                    raise exception
+            # Ignore "already shared" errors
+            if exception and "alreadyShared" not in str(exception):
+                raise exception
 
         BATCH_SIZE = 100
         for i in range(0, len(users), BATCH_SIZE):
@@ -1620,23 +1721,21 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         collections = []
         for folder in results.get("files", []):
-            folder_id = folder["id"]
             try:
                 folder_obj = DatasetCollectionFolder.from_name(folder["name"])
-                has_anyone = (
-                    folder.get("appProperties", {}).get("syft_shared_with_any")
-                    == "true"
-                )
-                collections.append(
-                    FileCollection(
-                        folder_id=folder_id,
-                        tag=folder_obj.tag,
-                        content_hash=folder_obj.content_hash,
-                        has_any_permission=has_anyone,
-                    )
-                )
-            except Exception:
+            except ValueError:
                 continue
+            has_anyone = (
+                folder.get("appProperties", {}).get("syft_shared_with_any") == "true"
+            )
+            collections.append(
+                FileCollection(
+                    folder_id=folder["id"],
+                    tag=folder_obj.tag,
+                    content_hash=folder_obj.content_hash,
+                    has_any_permission=has_anyone,
+                )
+            )
 
         return collections
 
@@ -1705,7 +1804,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def watcher_get_dataset_collection_file_metadatas(
         self, tag: str, content_hash: str, owner_email: str
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Get file metadata from a dataset collection without downloading."""
         folder_obj = DatasetCollectionFolder(tag=tag, content_hash=content_hash)
         folder_name = folder_obj.as_string()
@@ -1822,7 +1921,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def owner_get_private_collection_file_metadatas(
         self, tag: str, content_hash: str, owner_email: str
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Get file metadata from a private dataset collection without downloading."""
         folder_obj = PrivateDatasetCollectionFolder(tag=tag, content_hash=content_hash)
         folder_name = folder_obj.as_string()
@@ -1916,8 +2015,13 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         try:
             file_data = self.download_file(file_id)
+        except Exception as e:
+            print(f"Warning: could not download the own version file: {e}")
+            return None
+        try:
             return VersionInfo.from_json(file_data.decode("utf-8"))
-        except Exception:
+        except (ValueError, MigrationError) as e:
+            print(f"Warning: could not read the own version file: {e}")
             return None
 
     def read_peer_version_file(self, peer_email: str) -> Optional["VersionInfo"]:
@@ -1930,8 +2034,13 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         try:
             file_data = self.download_file(file_id)
+        except Exception as e:
+            print(f"Warning: could not download the version file of {peer_email}: {e}")
+            return None
+        try:
             return VersionInfo.from_json(file_data.decode("utf-8"))
-        except Exception:
+        except (ValueError, MigrationError) as e:
+            print(f"Warning: could not read the version file of {peer_email}: {e}")
             return None
 
     def share_version_file_with_peer(self, peer_email: str) -> None:
@@ -1961,7 +2070,9 @@ class GDriveConnection(SyftboxPlatformConnection):
             name_contains=[f"{self.email}-", "-checkpoints"],
             parent_id=self.get_syftbox_folder_id(),
         )
-        return self._expect_one(_filter_patch_compatible(folders))
+        return self._find_or_adopt_versioned_folder(
+            folders, current_name=self._get_checkpoints_folder_name()
+        )
 
     def _get_or_create_checkpoints_folder_id(self) -> str:
         """Get or create the checkpoints folder."""
@@ -2264,7 +2375,9 @@ class GDriveConnection(SyftboxPlatformConnection):
             name_contains=[f"{self.email}-", "-rolling-state"],
             parent_id=self.get_syftbox_folder_id(),
         )
-        folder_id = self._expect_one(_filter_patch_compatible(folders))
+        folder_id = self._find_or_adopt_versioned_folder(
+            folders, current_name=self._get_rolling_state_folder_name()
+        )
         if folder_id is not None:
             self._rolling_state_folder_id = folder_id
         return folder_id
@@ -2296,7 +2409,13 @@ class GDriveConnection(SyftboxPlatformConnection):
                     media_body=payload,
                 ).execute()
                 return self._rolling_state_file_id
-            except Exception:
+            except Exception as e:
+                # The cached file is gone or unreachable. Clear the cache and
+                # write a new file below.
+                print(
+                    f"Warning: could not update rolling state "
+                    f"{self._rolling_state_file_id}, writing a new file: {e}"
+                )
                 self._rolling_state_file_id = None
 
         folder_id = self._get_or_create_rolling_state_folder_id()
@@ -2451,6 +2570,11 @@ class GDriveConnection(SyftboxPlatformConnection):
             return None
         try:
             data = self.download_file(items[0]["id"])
+        except Exception as e:
+            print(f"Warning: could not download the bundle of {peer_email}: {e}")
+            return None
+        try:
             return data.decode("utf-8")
-        except Exception:
+        except ValueError as e:
+            print(f"Warning: could not read the bundle of {peer_email}: {e}")
             return None
