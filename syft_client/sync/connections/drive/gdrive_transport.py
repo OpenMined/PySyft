@@ -221,38 +221,28 @@ def _extract_version_from_name(name: str) -> str | None:
     return None
 
 
-def _filter_patch_compatible(
-    folders: list[tuple[str, str]],
-    current_version: str | None = None,
-) -> list[tuple[str, str]]:
-    """Keep folders whose embedded version has matching major.minor.
-
-    `current_version` defaults to the module-level SYFT_CLIENT_VERSION at call
-    time (not import time) so tests that patch the version take effect.
-    """
-    if current_version is None:
-        current_version = SYFT_CLIENT_VERSION
-    try:
-        cur_major, cur_minor, _ = _parse_semver(current_version)
-    except ValueError:
-        return []
-    kept: list[tuple[str, str]] = []
-    for fid, name in folders:
-        version_str = _extract_version_from_name(name)
-        if version_str is None:
-            continue
-        try:
-            major, minor, _ = _parse_semver(version_str)
-        except ValueError:
-            continue
-        if major == cur_major and minor == cur_minor:
-            kept.append((fid, name))
-    return kept
-
-
 # A folder id and name, with the version from the name. The version fields come
 # first, so the default sort puts these in version order.
 _VersionedFolder = tuple[int, int, int, str, str]
+
+
+def _sorted_by_version(folders: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Folders from the lowest version to the highest.
+
+    A name with no readable version sorts first, so a versioned folder always
+    wins when the caller takes the last entry.
+    """
+
+    def key(entry: tuple[str, str]) -> tuple[int, int, int]:
+        version_str = _extract_version_from_name(entry[1])
+        if version_str is None:
+            return (-1, -1, -1)
+        try:
+            return _parse_semver(version_str)
+        except ValueError:
+            return (-1, -1, -1)
+
+    return sorted(folders, key=key)
 
 
 def _partition_by_version(
@@ -1123,8 +1113,21 @@ class GDriveConnection(SyftboxPlatformConnection):
                 and folder.peer_email == peer_email
             )
 
-        folders = [(fid, name) for fid, name in folders if _is_exact_match(name)]
-        return self._expect_one(_filter_patch_compatible(folders))
+        # Ignore the version in the name. Each peer builds this name from its own
+        # client version, so a filter here hides the folder that the peer uses.
+        # After an upgrade the client therefore finds the old folder and writes to
+        # it. It makes no second folder, which an older peer would never look for.
+        candidates = _sorted_by_version(
+            [(fid, name) for fid, name in folders if _is_exact_match(name)]
+        )
+        if not candidates:
+            return None
+        if len(candidates) > 1:
+            print(
+                f"Warning: {len(candidates)} P2P folders for {datasite_email} "
+                f"{folder_type} {peer_email}; using {candidates[-1][1]}"
+            )
+        return candidates[-1][0]
 
     def _get_peer_datasite_inbox_id(self, peer_email: str) -> str | None:
         """Get folder: syft_datasite_{peer}_inbox_{self}, owned by self."""
@@ -1456,7 +1459,8 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         Thin wrapper over Drive's files.list -- handles query building and
         pagination, knows nothing about versions. Pair with
-        _filter_patch_compatible when the caller cares about version compat.
+        _partition_by_version or _sorted_by_version when the caller cares about
+        the version in the folder name.
         """
         clauses = [f"mimeType='{GOOGLE_FOLDER_MIME_TYPE}'", "trashed=false"]
         for substr in name_contains:

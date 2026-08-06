@@ -2,7 +2,6 @@
 
 from unittest.mock import patch
 
-from syft_client.sync.utils.syftbox_utils import delete_local_syftbox
 from syft_client.sync.connections.drive.gdrive_transport import (
     GDRIVE_P2P_FOLDER_DATASITE_PREFIX,
     GOOGLE_FOLDER_MIME_TYPE,
@@ -12,6 +11,7 @@ from syft_client.sync.connections.drive.mock_drive_service import (
     MockDriveService,
 )
 from syft_client.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
+from syft_client.sync.utils.syftbox_utils import delete_local_syftbox
 from syft_client.version import SYFT_CLIENT_VERSION
 
 from tests.unit.utils import create_test_project_folder, create_tmp_dataset_files
@@ -240,12 +240,23 @@ def test_version_mismatch_and_backup_flow():
         do_manager.load_peers()
         do_manager.approve_peer_request(ds_manager.email)
 
-        # Now new versioned P2P folders should exist
+        # The P2P folders of the old version are reused, not replaced. Both
+        # peers compute this folder name from their own client version, so a
+        # peer that has not upgraded still looks for the old name. A second
+        # folder under NEW_VERSION would hide the first one from that peer.
         do_p2p_new = _find_versioned_p2p_folders(do_conn_new, ds_email, NEW_VERSION)
-        assert len(do_p2p_new) > 0
+        assert len(do_p2p_new) == 0
+        do_p2p_old = _find_versioned_p2p_folders(
+            do_conn_new, ds_email, SYFT_CLIENT_VERSION
+        )
+        assert len(do_p2p_old) > 0
 
         ds_p2p_new = _find_versioned_p2p_folders(ds_conn_new, do_email, NEW_VERSION)
-        assert len(ds_p2p_new) > 0
+        assert len(ds_p2p_new) == 0
+        ds_p2p_old = _find_versioned_p2p_folders(
+            ds_conn_new, do_email, SYFT_CLIENT_VERSION
+        )
+        assert len(ds_p2p_old) > 0
 
         # -- Step 14: Re-upload dataset --
         mock_path2, private_path2, readme_path2 = create_tmp_dataset_files()
