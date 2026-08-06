@@ -1,38 +1,42 @@
 import logging
-from pathlib import Path
-from uuid import uuid4
-
-from pydantic import ConfigDict, Field, BaseModel, PrivateAttr
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from queue import Queue
 from typing import List, Tuple
-from syft_client.sync.events.file_change_event import (
-    FileChangeEventsMessage,
-    FileChangeEventsMessageFileName,
-    FileChangeEvent,
+from uuid import uuid4
+
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+from syft_perms import SyftPermContext
+
+from syft_client.sync.callback_mixin import BaseModelCallbackMixin
+from syft_client.sync.checkpoints.checkpoint import (
+    DEFAULT_COMPACTING_THRESHOLD,
+    Checkpoint,
+    CheckpointFile,
+    IncrementalCheckpoint,
+    compact_incremental_checkpoints,
+)
+from syft_client.sync.checkpoints.rolling_state import (
+    RollingState,
+    raise_for_later_version,
 )
 from syft_client.sync.connections.base_connection import (
     ConnectionConfig,
     FileCollection,
 )
+from syft_client.sync.connections.connection_router import ConnectionRouter
+from syft_client.sync.events.file_change_event import (
+    FileChangeEvent,
+    FileChangeEventsMessage,
+    FileChangeEventsMessageFileName,
+)
+from syft_client.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft_client.sync.sync.caches.datasite_owner_cache import (
+    DataSiteOwnerEventCache,
     DataSiteOwnerEventCacheConfig,
 )
-from syft_client.sync.connections.connection_router import ConnectionRouter
-from syft_client.sync.sync.caches.datasite_owner_cache import DataSiteOwnerEventCache
-from syft_client.sync.callback_mixin import BaseModelCallbackMixin
-from syft_client.sync.messages.proposed_filechange import ProposedFileChangesMessage
-from syft_client.sync.utils.path_filters import is_normal_syncable_path
-from syft_client.sync.checkpoints.checkpoint import (
-    Checkpoint,
-    CheckpointFile,
-    IncrementalCheckpoint,
-    compact_incremental_checkpoints,
-    DEFAULT_COMPACTING_THRESHOLD,
-)
-from syft_client.sync.checkpoints.rolling_state import RollingState
-from syft_perms import SyftPermContext
 from syft_client.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
+from syft_client.sync.utils.path_filters import is_normal_syncable_path
 
 logger = logging.getLogger(__name__)
 
@@ -124,9 +128,14 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if not path.exists():
             return
         try:
-            self._rolling_state = RollingState.model_validate_json(path.read_text())
-        except Exception:
-            pass
+            state = RollingState.model_validate_json(path.read_text())
+            raise_for_later_version(state.version)
+        except (ValueError, OSError) as e:
+            # A later client wrote this file, or it is damaged. The caller falls
+            # back to a download of all events.
+            print(f"Warning: could not load the local rolling state: {e}")
+            return
+        self._rolling_state = state
 
     def _save_rolling_state(self) -> None:
         """Save rolling state to disk for cross-process consistency."""
@@ -537,8 +546,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if content is None:
             return None
         from syft_client.sync.utils.syftbox_utils import (
-            get_event_hash_from_content,
             create_event_timestamp,
+            get_event_hash_from_content,
         )
 
         timestamp = create_event_timestamp()
