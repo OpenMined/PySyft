@@ -96,6 +96,15 @@ def build_drive_service(
 LEGACY_GDRIVE_OUTBOX_INBOX_FOLDER_PREFIX = "syft_outbox_inbox"  # legacy prefix
 GDRIVE_P2P_FOLDER_DATASITE_PREFIX = "syft_datasite"
 SYFT_PEERS_FILE = "SYFT_peers.json"
+
+# SYFT_peers.json is a flat map of peer email to entry, so a version at the top
+# level would look like a peer email. The version goes under this reserved key.
+# A client written before the key reads a peer state from that entry and fails.
+# The key therefore never appears as a peer.
+PEERS_META_KEY = "_meta"
+# Shape of one entry in SYFT_peers.json. Raise this when an entry changes. A file
+# with no reserved entry was written before the version, and is version 0.
+SYFT_PEERS_VERSION = 1
 SYFT_VERSION_FILE = "SYFT_version.json"
 
 
@@ -535,6 +544,10 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def _write_peers_json(self, peers_data: dict[str, dict[str, str]]):
         """Write peers JSON to GDrive. Creates or updates the file."""
+        peers_data = {
+            **peers_data,
+            PEERS_META_KEY: {"version": SYFT_PEERS_VERSION},
+        }
         syftbox_folder_id = self.get_syftbox_folder_id()
         file_id = self._get_peers_file_id()
 

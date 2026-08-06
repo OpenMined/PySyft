@@ -1,27 +1,36 @@
-from pydantic import BaseModel
+import logging
 from typing import TYPE_CHECKING, List, Optional
+
+from pydantic import BaseModel
+
+from syft_client.sync.checkpoints.checkpoint import Checkpoint, IncrementalCheckpoint
+from syft_client.sync.checkpoints.rolling_state import RollingState
 from syft_client.sync.connections.base_connection import (
     ConnectionConfig,
     FileCollection,
     SyftboxPlatformConnection,
 )
-from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft_client.sync.connections.drive.gdrive_transport import (
+    PEERS_META_KEY,
+    GDriveConnection,
+)
 from syft_client.sync.events.file_change_event import (
     FileChangeEventsMessage,
 )
-from syft_client.sync.checkpoints.checkpoint import Checkpoint, IncrementalCheckpoint
-from syft_client.sync.checkpoints.rolling_state import RollingState
-from syft_client.sync.peers.peer_store import PeerStore
 from syft_client.sync.messages.proposed_filechange import ProposedFileChangesMessage
-from syft_client.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft_client.sync.peers.peer import Peer, PeerState
+from syft_client.sync.peers.peer_store import PeerStore
+from syft_client.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft_client.sync.utils.print_utils import (
-    print_peer_adding_to_platform,
     print_peer_added_to_platform,
+    print_peer_adding_to_platform,
 )
 
 if TYPE_CHECKING:
     from syft_client.sync.version.version_info import VersionInfo
+
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionRouter(BaseModel):
@@ -194,9 +203,19 @@ class ConnectionRouter(BaseModel):
         peers_data = connection._get_peers_json(force_download=force_download)
         peers = []
         for email, data in peers_data.items():
+            if email == PEERS_META_KEY:
+                continue
             try:
                 state = PeerState(data.get("state", "unknown"))
             except ValueError:
+                # A later client wrote a state that this client does not know.
+                # The writer changes one entry and keeps the rest, so the entry
+                # stays in the file. The peer returns after an upgrade.
+                logger.warning(
+                    f"Skipping peer {email}: unknown state "
+                    f"{data.get('state')!r}. Install a newer syft-client to see "
+                    "this peer."
+                )
                 continue
             peer = Peer(
                 email=email,
