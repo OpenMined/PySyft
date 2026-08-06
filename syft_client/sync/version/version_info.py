@@ -157,6 +157,7 @@ def _slim_schema_of(registry) -> ProtocolSchema:
     return ProtocolSchema(
         protocol_name=registry.protocol_name,
         version=registry.protocol_version,
+        min_supported_version=registry.min_supported_protocol_version,
         supported_versions={
             canonical_name: sorted(versions)
             for canonical_name, versions in registry.objects.items()

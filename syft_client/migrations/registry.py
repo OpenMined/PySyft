@@ -14,6 +14,11 @@ PROTOCOL_NAME = "syft-client"
 # fields on every versioned object.
 SYFT_CLIENT_PROTOCOL_VERSION = "1"
 
+# Oldest syft-client protocol this release still reads. "0" refuses no peer.
+# Raise it only when the code drops support for a released protocol, because a
+# peer below the floor cannot exchange syft-client messages with this release.
+MIN_SUPPORTED_SYFT_CLIENT_PROTOCOL_VERSION = "0"
+
 # Package-local registry for all versioned syft-client objects. The current
 # protocol schema is computed from the objects registered into it.
 client_registry = MigrationRegistry(
@@ -21,6 +26,7 @@ client_registry = MigrationRegistry(
     package_name=PACKAGE_NAME,
     package_version=SYFT_CLIENT_VERSION,
     protocol_version=SYFT_CLIENT_PROTOCOL_VERSION,
+    min_supported_protocol_version=MIN_SUPPORTED_SYFT_CLIENT_PROTOCOL_VERSION,
 )
 
 # Shared service for loading/migrating syft-client objects.

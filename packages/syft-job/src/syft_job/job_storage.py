@@ -72,13 +72,17 @@ class JobStorage:
         """The job protocol version to speak with ``peer_email``.
 
         Negotiated as the minimum of our own protocol version and the peer's,
-        so both sides use a version they can read. A peer without a known
-        schema raises by default; with ``raise_on_unknown=False`` it is assumed
-        to run the current protocol.
+        so both sides use a version they can read. The result must also be at or
+        above the floor of each side, or the negotiation raises. A peer without a
+        known schema raises by default; with ``raise_on_unknown=False`` it is
+        assumed to run the current protocol.
         """
         schema = self.peer_schemas.get(peer_email)
         if schema is not None:
-            return min(JOB_PROTOCOL_VERSION, schema.version, key=int)
+            return self.registry.negotiate_protocol_version(
+                peer_version=schema.version,
+                peer_min=schema.min_supported_version,
+            )
         if raise_on_unknown:
             raise MigrationError(
                 f"No job protocol schema known for peer {peer_email!r}"

@@ -32,11 +32,15 @@ class MigrationRegistry:
         package_name: str,
         package_version: str,
         protocol_version: str,
+        min_supported_protocol_version: str = "0",
     ) -> None:
         self.protocol_name = protocol_name
         self.package_name = package_name
         self.package_version = package_version
         self.protocol_version = protocol_version
+        # The oldest protocol version this package still reads. Raise it only
+        # when the code drops support for a protocol that a release froze.
+        self.min_supported_protocol_version = min_supported_protocol_version
         # canonical_name -> {version: object_class}
         self.objects: dict[str, dict[str, type[MigratableObject]]] = {}
         # canonical_name -> {(from_version, to_version): migration_fn}
@@ -212,6 +216,7 @@ class MigrationRegistry:
         return ProtocolSchema(
             protocol_name=self.protocol_name,
             version=self.protocol_version,
+            min_supported_version=self.min_supported_protocol_version,
             supported_versions={
                 canonical_name: sorted(versions, key=_version_order)
                 for canonical_name, versions in self.objects.items()
@@ -223,6 +228,31 @@ class MigrationRegistry:
                 for canonical_name in self.objects
             },
         )
+
+    def negotiate_protocol_version(
+        self, peer_version: str, peer_min: str | None = None
+    ) -> str:
+        """The protocol version to speak with a peer.
+
+        Both sides speak the lower of the two current versions, because each side
+        must read what the other writes. That version must also be at or above
+        both floors. A peer that publishes no floor is treated as ``"0"``, which
+        refuses nothing.
+
+        Raises MigrationError when no version satisfies both sides.
+        """
+        chosen = min(self.protocol_version, peer_version, key=_version_order)
+        floor = max(
+            self.min_supported_protocol_version, peer_min or "0", key=_version_order
+        )
+        if _version_order(chosen) < _version_order(floor):
+            raise MigrationError(
+                f"No usable {self.protocol_name} protocol version with this peer. "
+                f"This client speaks {self.protocol_version} and reads down to "
+                f"{self.min_supported_protocol_version}; the peer speaks "
+                f"{peer_version} and reads down to {peer_min or '0'}."
+            )
+        return chosen
 
     def compute_released_protocol(self) -> ReleasedProtocol:
         """The protocol artifact a release emits when the protocol changed."""

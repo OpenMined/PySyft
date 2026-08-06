@@ -25,6 +25,9 @@ class ProtocolSchema(BaseModel):
     # Incrementing protocol version ("0", "1", ...); bumped when the on-disk /
     # on-the-wire layout of the protocol changes, independent of package versions.
     version: str
+    # The oldest protocol version this speaker still reads. A peer that predates
+    # this field says nothing, so "0" refuses nothing.
+    min_supported_version: str = "0"
     # canonical_name -> all supported versions
     supported_versions: dict[str, list[str]] = {}
     # canonical_name -> JSON schema of the protocol's current (latest) object
