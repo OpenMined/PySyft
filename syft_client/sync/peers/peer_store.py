@@ -21,8 +21,8 @@ PRIVATE_DIR_NAME = "private"
 CRYPTO_KEYS_FILENAME = "crypto_keys.json"
 
 # Format of the crypto key file. Raise it when the layout of the file changes,
-# and add a read path for every earlier version. A file with no version predates
-# the field and is version 0.
+# and add a read path for every earlier version. A file with no version was
+# written before the field, and is version 0.
 CRYPTO_KEYS_VERSION = 1
 
 
@@ -251,7 +251,7 @@ class PeerStore(BaseModel):
     @classmethod
     def load_keys(cls, path: Path) -> "PeerStore":
         data = json.loads(Path(path).read_text())
-        # A file with no version predates the field, and its layout is the one
+        # A file with no version was written before the field, and its layout is
         # this client reads. A later version is refused: a user cannot rebuild a
         # private key, so a wrong read loses the keys.
         version = data.get("version", 0)

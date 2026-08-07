@@ -33,7 +33,7 @@ import portalocker
 
 # Format of the persisted file: {"version": N, "entries": {...}}. Raise it when
 # the layout of an entry changes. A file with no version holds the entries at the
-# top level and predates the field, so it is version 0.
+# top level, was written before the field, and is version 0.
 PERSISTED_DICT_VERSION = 1
 
 

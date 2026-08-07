@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Iterator, Optional
 
@@ -14,6 +15,8 @@ from .job_ref import JobRef, JobStateNotFoundError
 from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata
 from .protocolcodecs import CODECS, ProtocolCodec
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["JobRef", "JobStateNotFoundError", "JobStorage"]
 
@@ -87,6 +90,14 @@ class JobStorage:
             raise MigrationError(
                 f"No job protocol schema known for peer {peer_email!r}"
             )
+        # raise_on_unknown=False skips the refusal of a peer with an unknown
+        # version. A peer that speaks an earlier protocol does not scan this
+        # layout. It never sees the job.
+        logger.warning(
+            f"No job protocol schema known for peer {peer_email!r}. This client "
+            f"writes job protocol {JOB_PROTOCOL_VERSION}. A peer that speaks an "
+            "earlier protocol will not see this job."
+        )
         return JOB_PROTOCOL_VERSION
 
     def _get_write_target_schema(

@@ -1,3 +1,4 @@
+import logging
 import shutil
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -26,6 +27,8 @@ from .migrations.registry import DATASET_PROTOCOL_VERSION, dataset_registry
 from .models import Dataset, PrivateDatasetConfig
 from .protocolcodecs import CODECS, ProtocolCodec
 from .url import SyftBoxURL
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "DatasetRef",
@@ -153,6 +156,14 @@ class DatasetStorage:
             raise MigrationError(
                 f"No dataset protocol schema known for peer {peer_email!r}"
             )
+        # raise_on_unknown=False skips the refusal of a peer with an unknown
+        # version. A peer that speaks an earlier protocol does not read this
+        # layout. The dataset never arrives.
+        logger.warning(
+            f"No dataset protocol schema known for peer {peer_email!r}. This "
+            f"client writes dataset protocol {DATASET_PROTOCOL_VERSION}. A peer "
+            "that speaks an earlier protocol will not read this dataset."
+        )
         return DATASET_PROTOCOL_VERSION
 
     def target_protocol_versions_for_peers(
@@ -162,8 +173,14 @@ class DatasetStorage:
 
         A dataset is written once per distinct version in the audience. A known
         peer contributes ``min(ours, theirs)``; an unknown peer (or no audience)
-        contributes the widest-compatible protocol, since we cannot assume it can
-        read a newer layout.
+        contributes the widest-compatible protocol, since we cannot assume it
+        can read a newer layout.
+
+        The two unknown-peer answers differ on purpose. This method serves an
+        audience. An unknown peer therefore takes the widest protocol, and every
+        reader can read a copy. ``negotiated_protocol_version_for_peer`` serves
+        one peer, so an unknown peer takes the current protocol. The caller of
+        that method accepts the risk when it passes ``raise_on_unknown=False``.
         """
         if not peer_emails:
             return {self._widest_protocol_version}
