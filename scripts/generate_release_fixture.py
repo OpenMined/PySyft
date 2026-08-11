@@ -1,8 +1,13 @@
 """Generate a p2p backward-compatibility fixture for the current syft-client release.
 
-Run on EVERY release, after bumping the version:
+Run on EVERY release, at the released commit:
 
+    git checkout syft-client/v<released version>
     uv run python scripts/generate_release_fixture.py
+
+The fixture name comes from SYFT_CLIENT_VERSION in the tree. The release job
+publishes the version on the branch, tags it, then bumps. A run after the bump
+therefore names the fixture after the next version, which is not published yet.
 
 Writes the serialized artifacts exactly as this release produces them, into
 
