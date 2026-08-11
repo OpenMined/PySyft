@@ -17,7 +17,7 @@ def create_tmp_dataset_files():
     return mock_path, private_path
 
 
-def test_share_private_dataset_with_enclave():
+def test_share_private_dataset_with_enclave(private_dataset_dir):
     """Test full flow: DO creates dataset, shares private data with enclave, enclave can access it."""
     enclave, do1, do2, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
         use_in_memory_cache=False,
@@ -50,14 +50,10 @@ def test_share_private_dataset_with_enclave():
     mock_content = ds_dataset.mock_files[0].read_text()
     assert mock_content == "Hello, world!"
 
-    non_existing_ds_private_dir = (
-        ds._manager.syftbox_folder
-        / do1.email
-        / "private"
-        / "syft_datasets"
-        / "testdataset"
+    assert (
+        private_dataset_dir(ds._manager.syftbox_folder, do1.email, "testdataset")
+        is None
     )
-    assert not non_existing_ds_private_dir.exists()
 
     # DO1 shares private dataset with enclave
     do1.share_private_dataset("testdataset", enclave.email)
@@ -67,14 +63,10 @@ def test_share_private_dataset_with_enclave():
 
     # Enclave can see the dataset via mock data (shared with DS and enclave shares peers)
     # But more importantly, enclave can access private files via shared_private_dir
-    enclave_private_dir = (
-        enclave._manager.syftbox_folder
-        / do1.email
-        / "private"
-        / "syft_datasets"
-        / "testdataset"
+    enclave_private_dir = private_dataset_dir(
+        enclave._manager.syftbox_folder, do1.email, "testdataset"
     )
-    assert enclave_private_dir.exists()
+    assert enclave_private_dir is not None
     private_files = list(enclave_private_dir.iterdir())
     file_names = {f.name for f in private_files}
     assert "private.txt" in file_names
