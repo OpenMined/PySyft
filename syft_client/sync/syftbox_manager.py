@@ -59,9 +59,7 @@ from syft_client.sync.version.peer_manager import (
     PeerManager,
     PeerManagerConfig,
 )
-from syft_client.sync.version.version_info import VersionInfo
 from syft_client.utils import resolve_path
-from syft_client.version import VERSION_FILE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -460,21 +458,10 @@ class SyftboxManager(BaseModel):
     def __dir__(self):
         return list(self._PUBLIC_API)
 
-    def read_local_version(self) -> VersionInfo | None:
-        """Read the local SYFT_version.json from the SyftBox directory."""
-        version_file = self.syftbox_folder / VERSION_FILE_NAME
-        if not version_file.exists():
-            return None
-        try:
-            return VersionInfo.from_json(version_file.read_text())
-        except Exception:
-            return None
-
-    def write_local_version(self) -> None:
-        """Write current version info to a local SYFT_version.json."""
-        self.syftbox_folder.mkdir(parents=True, exist_ok=True)
-        version_file = self.syftbox_folder / VERSION_FILE_NAME
-        version_file.write_text(VersionInfo.current().to_json())
+    # Version file IO lives in syft_client.sync.version.local_version, and
+    # `write_own_version` writes both the local and the remote file. A
+    # local-only writer on the manager leaves the remote file stale, which is
+    # the bug that made the login mismatch prompt repeat at every login.
 
     @property
     def peers(self) -> PeerList:
@@ -517,12 +504,13 @@ class SyftboxManager(BaseModel):
         peer_manager = PeerManager.from_config(
             config.peer_manager_config, email=config.email
         )
-        # Do not give the dataset manager a peer-schema map. Datasets go to a
-        # peer through the dataset-collection transport. This transport writes
-        # all the files of a dataset into COLLECTION_SUBPATH/<name>. It cannot
-        # write a v<n> directory. If the manager selects a newer layout, it
-        # writes metadata that points to a directory that the peer does not get.
-        dataset_manager = SyftDatasetManager.from_config(config.dataset_manager_config)
+        # The dataset manager gets the live peer-schema map, as the job client
+        # does. It selects a layout for each peer, and the transport carries one
+        # collection for each layout.
+        dataset_manager = SyftDatasetManager.from_config(
+            config.dataset_manager_config,
+            peer_schemas=peer_manager.live_peer_schemas("syft-dataset"),
+        )
         job_client = JobClient.from_config(
             config.job_client_config,
             peer_schemas=peer_manager.live_peer_schemas("syft-job"),
@@ -1069,10 +1057,14 @@ class SyftboxManager(BaseModel):
 
         Uses cache populated during pull_initial_state() in DatasiteOwnerSyncer.
         """
-        for tag, content_hash in self.datasite_owner_syncer._any_shared_datasets:
+        for (
+            tag,
+            content_hash,
+            protocol_version,
+        ) in self.datasite_owner_syncer._any_shared_datasets:
             try:
                 self._connection_router.owner_share_dataset_collection(
-                    tag, content_hash, [peer_email]
+                    tag, content_hash, [peer_email], protocol_version
                 )
             except Exception:
                 # Ignore errors (e.g., already shared)
@@ -1202,12 +1194,13 @@ class SyftboxManager(BaseModel):
 
         dataset_name = None
         created_local = False
-        mock_folder_id = None
-        private_folder_id = None
+        mock_folder_ids: list[str] = []
+        private_folder_ids: list[str] = []
 
         try:
-            # Create dataset locally
-            dataset = self.dataset_manager.create(
+            # Create the dataset locally, in one layout for each protocol
+            # version that the audience reads.
+            created = self.dataset_manager.create_all(
                 name=name,
                 mock_path=mock_path,
                 private_path=private_path,
@@ -1218,14 +1211,21 @@ class SyftboxManager(BaseModel):
                 users=users,
             )
             created_local = True
+            # The newest copy has the richest layout. It is what create returns.
+            dataset = created[max(created, key=int)]
             dataset_name = dataset.name
 
-            # Upload mock data to collection folder
-            mock_folder_id = self._upload_dataset_to_collection(dataset, users)
-
-            # Upload private data to a separate owner-only collection
-            if upload_private:
-                private_folder_id = self._upload_private_dataset_to_collection(dataset)
+            # Each copy gets its own collections. The private data of a copy
+            # must go up with it: the copies hold separate private directories,
+            # so one upload of the newest would leave the others local only, and
+            # a cold start would not restore them.
+            for protocol_version in sorted(created, key=int):
+                copy = created[protocol_version]
+                mock_folder_ids.append(self._upload_dataset_to_collection(copy, users))
+                if upload_private:
+                    private_folder_id = self._upload_private_dataset_to_collection(copy)
+                    if private_folder_id is not None:
+                        private_folder_ids.append(private_folder_id)
 
             if sync:
                 self.sync()
@@ -1238,7 +1238,7 @@ class SyftboxManager(BaseModel):
                 f" '{dataset_name}'" if dataset_name else "",
             )
             self._cleanup_failed_dataset_creation(
-                dataset_name, created_local, mock_folder_id, private_folder_id
+                dataset_name, created_local, mock_folder_ids, private_folder_ids
             )
             raise
 
@@ -1246,11 +1246,11 @@ class SyftboxManager(BaseModel):
         self,
         dataset_name: str | None,
         created_local: bool,
-        mock_folder_id: str | None,
-        private_folder_id: str | None,
+        mock_folder_ids: list[str],
+        private_folder_ids: list[str],
     ) -> None:
         """Best-effort cleanup after a failed create_dataset, in reverse order."""
-        if private_folder_id is not None:
+        for private_folder_id in reversed(private_folder_ids):
             try:
                 self._connection_router.delete_file_by_id(private_folder_id)
             except Exception:
@@ -1259,7 +1259,7 @@ class SyftboxManager(BaseModel):
                     private_folder_id,
                 )
 
-        if mock_folder_id is not None:
+        for mock_folder_id in reversed(mock_folder_ids):
             try:
                 self._connection_router.delete_file_by_id(mock_folder_id)
             except Exception:
@@ -1278,12 +1278,19 @@ class SyftboxManager(BaseModel):
                 )
 
     def _upload_dataset_to_collection(self, dataset, users: list[str] | str) -> str:
-        """Upload dataset files to collection folder. Returns the folder ID."""
+        """Upload one protocol copy of a dataset. Returns the folder ID.
+
+        Each copy gets its own collection, named for its protocol version. Every
+        copy goes to the whole audience, and each peer selects the newest copy
+        that it reads. A peer that upgrades later therefore moves to the newer
+        layout with no action by the owner.
+        """
         from syft_client.sync.connections.drive.gdrive_transport import (
             DatasetCollectionFolder,
         )
 
         collection_tag = dataset.name
+        protocol_version = dataset.protocol_version
 
         # Prepare files to upload
         files = {}
@@ -1303,31 +1310,43 @@ class SyftboxManager(BaseModel):
 
         # Create collection folder with hash in name
         folder_id = self._connection_router.owner_create_dataset_collection_folder(
-            tag=collection_tag, content_hash=content_hash, owner_email=self.email
+            tag=collection_tag,
+            content_hash=content_hash,
+            owner_email=self.email,
+            protocol_version=protocol_version,
         )
 
         # Upload files
         self._connection_router.owner_upload_dataset_files(
-            collection_tag, content_hash, files
+            collection_tag,
+            content_hash,
+            files,
+            protocol_version=protocol_version,
         )
 
         # Share with users
         if users == "any":
             self._connection_router.owner_tag_dataset_collection_as_any(
-                collection_tag, content_hash
+                collection_tag, content_hash, protocol_version=protocol_version
             )
             self.datasite_owner_syncer._any_shared_datasets.append(
-                (collection_tag, content_hash)
+                (collection_tag, content_hash, protocol_version)
             )
             # Share with all already-approved peers
             peer_emails = [p.email for p in self.peer_manager.approved_peers]
             if peer_emails:
                 self._connection_router.owner_share_dataset_collection(
-                    collection_tag, content_hash, peer_emails
+                    collection_tag,
+                    content_hash,
+                    peer_emails,
+                    protocol_version=protocol_version,
                 )
         else:
             self._connection_router.owner_share_dataset_collection(
-                collection_tag, content_hash, users
+                collection_tag,
+                content_hash,
+                users,
+                protocol_version=protocol_version,
             )
 
         return folder_id
@@ -1340,6 +1359,7 @@ class SyftboxManager(BaseModel):
         )
 
         collection_tag = dataset.name
+        protocol_version = dataset.protocol_version
 
         # Collect all files in private dir (data, metadata, permissions)
         files = {}
@@ -1355,13 +1375,16 @@ class SyftboxManager(BaseModel):
         # Create private collection folder (no sharing)
         folder_id = (
             self._connection_router.owner_create_private_dataset_collection_folder(
-                tag=collection_tag, content_hash=content_hash, owner_email=self.email
+                tag=collection_tag,
+                content_hash=content_hash,
+                owner_email=self.email,
+                protocol_version=protocol_version,
             )
         )
 
         # Upload files
         self._connection_router.owner_upload_private_dataset_files(
-            collection_tag, content_hash, files
+            collection_tag, content_hash, files, protocol_version
         )
 
         return folder_id
@@ -1405,10 +1428,6 @@ class SyftboxManager(BaseModel):
             users: List of email addresses or "any"
             sync: Whether to sync after sharing
         """
-        from syft_client.sync.connections.drive.gdrive_transport import (
-            DatasetCollectionFolder,
-        )
-
         if self.dataset_manager is None:
             raise ValueError("Dataset manager is not set")
 
@@ -1420,36 +1439,40 @@ class SyftboxManager(BaseModel):
         if dataset is None:
             raise ValueError(f"Dataset {tag} not found")
 
-        # Compute current content hash from local files
-        files = {}
-        for mock_file in dataset.mock_files:
-            if mock_file.exists():
-                files[mock_file.name] = mock_file.read_bytes()
-        metadata_path = dataset.mock_dir / "dataset.yaml"
-        if metadata_path.exists():
-            files["dataset.yaml"] = metadata_path.read_bytes()
-        if dataset.readme_path and dataset.readme_path.exists():
-            files[dataset.readme_path.name] = dataset.readme_path.read_bytes()
+        # A dataset has one collection for each protocol version it was written
+        # in. Share them all, so a peer of any supported version finds a copy.
+        # The listing gives the hash of each copy, so no hash is recomputed here.
+        collections = [
+            c
+            for c in self._connection_router.owner_list_all_dataset_collections_with_permissions()
+            if c.tag == tag
+        ]
+        if not collections:
+            raise ValueError(f"No uploaded collection found for dataset {tag}")
 
-        content_hash = DatasetCollectionFolder.compute_hash(files)
+        if users != "any" and isinstance(users, str):
+            users = [users]
 
-        # Share collection
-        if users == "any":
-            self._connection_router.owner_tag_dataset_collection_as_any(
-                tag, content_hash
-            )
-            self.datasite_owner_syncer._any_shared_datasets.append((tag, content_hash))
-            peer_emails = [p.email for p in self.peer_manager.approved_peers]
-            if peer_emails:
-                self._connection_router.owner_share_dataset_collection(
-                    tag, content_hash, peer_emails
+        for collection in collections:
+            if users == "any":
+                self._connection_router.owner_tag_dataset_collection_as_any(
+                    tag, collection.content_hash, collection.protocol_version
                 )
-        else:
-            if isinstance(users, str):
-                users = [users]
-            self._connection_router.owner_share_dataset_collection(
-                tag, content_hash, users
-            )
+                self.datasite_owner_syncer._any_shared_datasets.append(
+                    (tag, collection.content_hash, collection.protocol_version)
+                )
+                peer_emails = [p.email for p in self.peer_manager.approved_peers]
+                if peer_emails:
+                    self._connection_router.owner_share_dataset_collection(
+                        tag,
+                        collection.content_hash,
+                        peer_emails,
+                        collection.protocol_version,
+                    )
+            else:
+                self._connection_router.owner_share_dataset_collection(
+                    tag, collection.content_hash, users, collection.protocol_version
+                )
 
         if sync:
             self.sync()

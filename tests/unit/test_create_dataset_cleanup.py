@@ -30,13 +30,13 @@ class TestCreateDatasetCleanup:
         )
 
     def test_no_cleanup_when_local_create_fails(self):
-        """If dataset_manager.create raises, nothing was created so nothing to clean."""
+        """If create_all raises, nothing was created so nothing to clean."""
         do_manager = self._make_do_manager()
 
         with (
             patch.object(
                 do_manager.dataset_manager,
-                "create",
+                "create_all",
                 side_effect=ValueError("bad input"),
             ),
             patch.object(
@@ -47,7 +47,7 @@ class TestCreateDatasetCleanup:
                 do_manager.create_dataset(**self._dataset_kwargs())
 
         # Cleanup called with nothing to clean
-        mock_cleanup.assert_called_once_with(None, False, None, None)
+        mock_cleanup.assert_called_once_with(None, False, [], [])
 
     def test_cleanup_on_mock_upload_failure(self):
         """If mock upload fails, local dataset is cleaned up."""

@@ -1492,9 +1492,11 @@ def test_ds_dataset_cache_aware_sync():
     # Get the original hash from the collection
     collections = ds_manager._connection_router.watcher_list_dataset_collections()
     remote_hash = None
+    remote_protocol = None
     for c in collections:
         if c["tag"] == "cached dataset":
             remote_hash = c["content_hash"]
+            remote_protocol = c["protocol_version"]
             break
     assert remote_hash is not None
 
@@ -1531,8 +1533,11 @@ def test_ds_dataset_cache_aware_sync():
 
     # Verify hash was loaded from disk on startup
     ds_cache = ds_manager2.datasite_watcher_syncer.datasite_watcher_cache
-    # Cache uses full path as key: syftbox_folder / owner_email / collection_subpath / tag
-    cache_key = ds_cache.get_collection_path(do_email, "cached dataset")
+    # The key is the full local path of the collection, which holds the v<n>
+    # segment of the protocol version that this client selected.
+    cache_key = ds_cache.get_collection_path(
+        do_email, "cached dataset", remote_protocol
+    )
     assert cache_key in ds_cache.dataset_collection_hashes, (
         "Hash should be loaded from disk on startup"
     )
@@ -2083,11 +2088,14 @@ def test_dataset_delete_propagates_to_ds():
 def test_dataset_delivery_layout_matches_published_metadata():
     """Check that the metadata of a dataset points to the files that the peer gets.
 
-    Datasets go to a peer only through the dataset-collection transport. This
-    transport writes all the files of a dataset into COLLECTION_SUBPATH/<name>.
-    If the owner writes a dataset in a newer v<n> layout, the metadata points to
-    a directory that the peer does not get. The peer then finds no files.
+    A dataset goes to a peer as one collection for each protocol version that its
+    audience reads. The peer takes the newest layout that it reads, and writes the
+    files into the directory of that layout. If the layout of the files and the
+    layout in the metadata disagree, the peer finds no files.
     """
+    from syft_datasets.config import protocol_dir_name
+    from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
+
     from syft_client.sync.syftbox_manager import COLLECTION_SUBPATH
 
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
@@ -2103,21 +2111,23 @@ def test_dataset_delivery_layout_matches_published_metadata():
         users=[ds_manager.email],
     )
 
-    # The DO knows the dataset protocol version of the DS. The DO must still
-    # write the layout of the transport. This makes sure the test does not pass
-    # only because the peer is unknown.
+    # The DO knows the dataset protocol version of the DS. This makes sure the
+    # test does not pass only because the peer is unknown.
     assert ds_manager.email in do_manager.peer_manager.live_peer_schemas("syft-dataset")
 
     ds_manager.sync()
 
     dataset = ds_manager.datasets.get("layout dataset", datasite=do_manager.email)
-    assert (
-        dataset.mock_dir
-        == ds_manager.syftbox_folder
+    # Both clients are current, so the peer reads the current layout.
+    assert dataset.protocol_version == DATASET_PROTOCOL_VERSION
+    expected_dir = (
+        ds_manager.syftbox_folder
         / do_manager.email
         / COLLECTION_SUBPATH
+        / protocol_dir_name(DATASET_PROTOCOL_VERSION)
         / "layout dataset"
     )
+    assert dataset.mock_dir == expected_dir
     assert dataset.mock_files
     for path in dataset.mock_files:
         assert path.exists(), (

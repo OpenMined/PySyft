@@ -58,7 +58,8 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
     email: str
     # Full path to collections (datasets) folder
     collections_folder: Path | None = None
-    # Cache of collection hashes: "tag" -> content_hash
+    # Cache of collection hashes, keyed by tag and protocol version. See
+    # `_collection_hash_key`: "tag" for protocol 0, "v<n>/tag" for protocol n.
     collection_hashes: Dict[str, str] = {}
 
     @model_validator(mode="before")
@@ -142,24 +143,50 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
 
     def _load_collection_hashes_from_disk(self):
         """Scan local dataset directories and compute hashes to populate collection_hashes."""
+        from syft_datasets.config import is_protocol_dir_name
+
         from syft_client.sync.file_utils import compute_directory_hash
 
         if self.collections_folder is None or not self.collections_folder.exists():
             return
 
-        for tag_dir in self.collections_folder.iterdir():
-            if tag_dir.is_dir():
+        for entry in self.collections_folder.iterdir():
+            if not entry.is_dir():
+                continue
+            # A v<n> directory holds the tags of one protocol version.
+            if is_protocol_dir_name(entry.name):
+                # Names here match ^v\d+$, so drop the leading 'v'.
+                protocol_version = entry.name[1:]
+                tag_dirs = [tag for tag in entry.iterdir() if tag.is_dir()]
+            else:
+                protocol_version = "0"
+                tag_dirs = [entry]
+            for tag_dir in tag_dirs:
                 content_hash = compute_directory_hash(tag_dir)
                 if content_hash:
-                    self.collection_hashes[tag_dir.name] = content_hash
+                    self.collection_hashes[
+                        self._collection_hash_key(tag_dir.name, protocol_version)
+                    ] = content_hash
 
-    def get_collection_hash(self, tag: str) -> str | None:
+    @staticmethod
+    def _collection_hash_key(tag: str, protocol_version: str) -> str:
+        # A dataset has one collection for each protocol version, and each has
+        # its own contents. A key of the tag alone would give them one entry.
+        return tag if protocol_version == "0" else f"v{protocol_version}/{tag}"
+
+    def get_collection_hash(self, tag: str, protocol_version: str = "0") -> str | None:
         """Get the cached hash for a collection."""
-        return self.collection_hashes.get(tag)
+        return self.collection_hashes.get(
+            self._collection_hash_key(tag, protocol_version)
+        )
 
-    def set_collection_hash(self, tag: str, content_hash: str):
+    def set_collection_hash(
+        self, tag: str, content_hash: str, protocol_version: str = "0"
+    ):
         """Set the cached hash for a collection."""
-        self.collection_hashes[tag] = content_hash
+        self.collection_hashes[self._collection_hash_key(tag, protocol_version)] = (
+            content_hash
+        )
 
     @property
     def latest_cached_timestamp(self) -> float | None:

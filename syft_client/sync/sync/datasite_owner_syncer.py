@@ -87,7 +87,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     _executor: ThreadPoolExecutor = PrivateAttr(
         default_factory=lambda: ThreadPoolExecutor(max_workers=10)
     )
-    # Cache of datasets shared with "any" - list of (tag, content_hash) tuples
+    # Datasets shared with "any": (tag, content_hash, protocol_version) tuples.
+    # One entry for each protocol copy, because each has its own collection.
     _any_shared_datasets: List[tuple] = PrivateAttr(default_factory=list)
     # Cache of read permissions per file path → frozenset of peer emails
     _read_perm_cache: dict[str, frozenset[str]] = PrivateAttr(default_factory=dict)
@@ -343,9 +344,21 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """Populate _any_shared_datasets cache from collections with 'any' permission."""
         for collection in collections:
             if collection.has_any_permission:
-                entry = (collection.tag, collection.content_hash)
+                entry = (
+                    collection.tag,
+                    collection.content_hash,
+                    collection.protocol_version,
+                )
                 if entry not in self._any_shared_datasets:
                     self._any_shared_datasets.append(entry)
+
+    def _collection_local_dir(self, collection: FileCollection) -> Path:
+        """The local directory that holds one protocol copy of a collection."""
+        from syft_datasets.config import protocol_dir_name
+
+        segment = protocol_dir_name(collection.protocol_version)
+        base = self.collections_folder
+        return base / segment / collection.tag if segment else base / collection.tag
 
     def _filter_collections_needing_download(
         self, collections: list[FileCollection]
@@ -356,14 +369,19 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         result = []
         for collection in collections:
             # Use cached hash from event_cache first
-            cached_hash = self.event_cache.get_collection_hash(collection.tag)
+            cached_hash = self.event_cache.get_collection_hash(
+                collection.tag, collection.protocol_version
+            )
             if cached_hash is None and self.collections_folder is not None:
                 # Fallback: compute hash from local filesystem (for locally created datasets)
-                local_dataset_dir = self.collections_folder / collection.tag
-                cached_hash = compute_directory_hash(local_dataset_dir)
+                cached_hash = compute_directory_hash(
+                    self._collection_local_dir(collection)
+                )
                 # Update cache if we computed a hash
                 if cached_hash is not None:
-                    self.event_cache.set_collection_hash(collection.tag, cached_hash)
+                    self.event_cache.set_collection_hash(
+                        collection.tag, cached_hash, collection.protocol_version
+                    )
 
             if cached_hash != collection.content_hash:
                 result.append(collection)
@@ -399,14 +417,14 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
         # Write all files to disk
         for (collection, metadata), content in zip(all_downloads, downloaded_contents):
-            local_dataset_dir = self.collections_folder / collection.tag
+            local_dataset_dir = self._collection_local_dir(collection)
             local_dataset_dir.mkdir(parents=True, exist_ok=True)
             (local_dataset_dir / metadata["file_name"]).write_bytes(content)
 
         # Update cached hashes for downloaded collections
         for collection in collections:
             self.event_cache.set_collection_hash(
-                collection.tag, collection.content_hash
+                collection.tag, collection.content_hash, collection.protocol_version
             )
 
     def _get_file_metadatas_with_new_connection(
@@ -418,6 +436,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             tag=collection.tag,
             content_hash=collection.content_hash,
             owner_email=self.email,
+            protocol_version=collection.protocol_version,
         )
 
     def _download_file_with_new_connection(self, file_id: str) -> bytes:
@@ -444,8 +463,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         )
         self._download_private_collections_parallel(collections_to_download)
 
-    def _private_dataset_local_dir(self, tag: str) -> Path:
-        return self.syftbox_folder / self.email / "private" / "syft_datasets" / tag
+    def _private_dataset_local_dir(self, tag: str, protocol_version: str = "0") -> Path:
+        """The private directory of one protocol copy of a dataset."""
+        from syft_datasets.config import protocol_dir_name
+
+        base = self.syftbox_folder / self.email / "private" / "syft_datasets"
+        segment = protocol_dir_name(protocol_version)
+        return base / segment / tag if segment else base / tag
 
     def _filter_private_collections_needing_download(
         self, collections: list[FileCollection]
@@ -453,7 +477,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """Return private collections that don't exist locally yet."""
         result = []
         for collection in collections:
-            local_dir = self._private_dataset_local_dir(collection.tag)
+            local_dir = self._private_dataset_local_dir(
+                collection.tag, collection.protocol_version
+            )
             if not local_dir.exists() or not any(local_dir.iterdir()):
                 result.append(collection)
         return result
@@ -484,13 +510,17 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         )
 
         for (collection, metadata), content in zip(all_downloads, downloaded_contents):
-            local_dir = self._private_dataset_local_dir(collection.tag)
+            local_dir = self._private_dataset_local_dir(
+                collection.tag, collection.protocol_version
+            )
             local_dir.mkdir(parents=True, exist_ok=True)
             (local_dir / metadata["file_name"]).write_bytes(content)
 
         # Fix data_dir in private_metadata.yaml to point to current local path
         for collection in collections:
-            self._fix_private_metadata_data_dir(collection.tag)
+            self._fix_private_metadata_data_dir(
+                collection.tag, collection.protocol_version
+            )
 
     def _get_private_file_metadatas_with_new_connection(
         self, collection: FileCollection
@@ -501,11 +531,14 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             tag=collection.tag,
             content_hash=collection.content_hash,
             owner_email=self.email,
+            protocol_version=collection.protocol_version,
         )
 
-    def _fix_private_metadata_data_dir(self, dataset_tag: str):
+    def _fix_private_metadata_data_dir(
+        self, dataset_tag: str, protocol_version: str = "0"
+    ):
         """Update data_dir in private_metadata.yaml to match the current syftbox path."""
-        local_dir = self._private_dataset_local_dir(dataset_tag)
+        local_dir = self._private_dataset_local_dir(dataset_tag, protocol_version)
         metadata_path = local_dir / "private_metadata.yaml"
         if not metadata_path.exists():
             return

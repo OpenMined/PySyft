@@ -1,21 +1,37 @@
+import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Dict, List
-from syft_client.sync.sync.caches.cache_file_writer_connection import FSFileConnection
-from pathlib import Path
-from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Callable, Dict, List
+
+from pydantic import BaseModel, Field
+
+from syft_client.sync.connections.base_connection import ConnectionConfig
+from syft_client.sync.connections.connection_router import ConnectionRouter
 from syft_client.sync.events.file_change_event import (
     FileChangeEvent,
     FileChangeEventsMessage,
 )
-from syft_client.sync.connections.connection_router import ConnectionRouter
-from syft_client.sync.connections.base_connection import ConnectionConfig
 from syft_client.sync.sync.caches.cache_file_writer_connection import (
     CacheFileConnection,
+    FSFileConnection,
     InMemoryCacheFileConnection,
 )
 
+logger = logging.getLogger(__name__)
+
 SECONDS_BEFORE_SYNCING_DOWN = 0
+
+
+def _readable_dataset_protocol_versions() -> set[str]:
+    """The dataset protocol versions that this client has a layout for."""
+    from syft_datasets.protocolcodecs import CODECS
+
+    return {
+        protocol_version
+        for codec_cls in CODECS
+        for protocol_version in codec_cls.dataset_config_cls.protocol_versions
+    }
 
 
 class DataSiteWatcherCacheConfig(BaseModel):
@@ -141,14 +157,34 @@ class DataSiteWatcherCache(BaseModel):
         """Extract the owner email from a collection path."""
         return collection_path.relative_to(self.syftbox_folder).parts[0]
 
-    def get_collection_path(self, owner_email: str, tag: str) -> Path | None:
-        """Get the full path to a collection for a given owner and tag."""
+    def _collection_rel_dir(
+        self, owner_email: str, tag: str, protocol_version: str = "0"
+    ) -> Path:
+        """The local directory of a collection, relative to the SyftBox folder.
+
+        Protocol 0 is flat. A later protocol adds its v<n> segment, so the files
+        land where the metadata of that copy points.
+        """
+        from syft_datasets.config import protocol_dir_name
+
+        base = Path(owner_email) / self.collection_subpath
+        segment = protocol_dir_name(protocol_version)
+        return base / segment / tag if segment else base / tag
+
+    def get_collection_path(
+        self, owner_email: str, tag: str, protocol_version: str = "0"
+    ) -> Path | None:
+        """Get the full path to a collection for a given owner, tag and protocol."""
         if self.syftbox_folder is None or self.collection_subpath is None:
             return None
-        return self.syftbox_folder / owner_email / self.collection_subpath / tag
+        return self.syftbox_folder / self._collection_rel_dir(
+            owner_email, tag, protocol_version
+        )
 
     def _get_local_dataset_folders(self):
-        """Yield paths to all local dataset folders."""
+        """Yield paths to all local dataset folders, in every protocol layout."""
+        from syft_datasets.config import is_protocol_dir_name
+
         if self.syftbox_folder is None or not self.syftbox_folder.exists():
             return
         if self.collection_subpath is None:
@@ -160,9 +196,14 @@ class DataSiteWatcherCache(BaseModel):
             datasets_dir = email_dir / self.collection_subpath
             if not datasets_dir.exists():
                 continue
-            for tag_dir in datasets_dir.iterdir():
-                if tag_dir.is_dir():
-                    yield tag_dir
+            for entry in datasets_dir.iterdir():
+                if not entry.is_dir():
+                    continue
+                # A v<n> directory holds the tags of one protocol version.
+                if is_protocol_dir_name(entry.name):
+                    yield from (tag for tag in entry.iterdir() if tag.is_dir())
+                else:
+                    yield entry
 
     def _compute_local_dataset_hash(self, collection_path: Path) -> str | None:
         """Compute content hash from local dataset files on disk."""
@@ -280,17 +321,69 @@ class DataSiteWatcherCache(BaseModel):
             self.sync_down_if_needed(peer)
         return self.file_hashes.get(path, None)
 
+    def _select_collections_to_sync(self, collections: list[dict]) -> list[dict]:
+        """Keep one collection for each dataset: the newest layout we can read.
+
+        An owner publishes a dataset once for each protocol version that its
+        audience reads. This client takes the newest of those that it reads, and
+        ignores the rest.
+        """
+        readable = _readable_dataset_protocol_versions()
+        best: dict[tuple[str, str], dict] = {}
+        for collection in collections:
+            protocol_version = collection.get("protocol_version", "0")
+            if protocol_version not in readable:
+                logger.warning(
+                    "Skipping dataset '%s' from %s: it uses dataset protocol %s, "
+                    "which this client does not read.",
+                    collection["tag"],
+                    collection["owner_email"],
+                    protocol_version,
+                )
+                continue
+            key = (collection["owner_email"], collection["tag"])
+            current = best.get(key)
+            if current is None or int(protocol_version) > int(
+                current.get("protocol_version", "0")
+            ):
+                best[key] = collection
+        return list(best.values())
+
     def _cleanup_stale_dataset_collections(
-        self, peer_email: str, remote_collections: list[dict]
+        self,
+        peer_email: str,
+        selected_collections: list[dict],
+        remote_collections: list[dict],
     ):
-        """Remove locally cached dataset collections that no longer exist remotely."""
-        remote_tags = {c["tag"] for c in remote_collections}
+        """Remove local collections that this client no longer syncs from a peer.
+
+        Two cases get removed: the owner deleted the dataset, and this client now
+        reads a newer layout of it. The second case would otherwise leave the
+        older copy on disk, where a dataset scan finds the same dataset twice.
+
+        A dataset that the owner still publishes, but in no layout this client
+        reads, is kept. The copy on disk is then the last one this client could
+        read, and a delete would take it away over an upgrade by someone else.
+        ``_select_collections_to_sync`` already logged why it is not refreshed.
+        """
+        selected_paths = {
+            self.get_collection_path(
+                c["owner_email"], c["tag"], c.get("protocol_version", "0")
+            )
+            for c in selected_collections
+        }
+        published = {(c["owner_email"], c["tag"]) for c in remote_collections}
+        readable = {(c["owner_email"], c["tag"]) for c in selected_collections}
 
         for local_collection_path in list(self.dataset_collection_hashes.keys()):
             owner_email = self.get_collection_owner_email(local_collection_path)
             if owner_email != peer_email:
                 continue
-            if local_collection_path.name in remote_tags:
+            if local_collection_path in selected_paths:
+                continue
+            # The last path segment is the tag, in a flat and a v<n> layout both.
+            dataset = (owner_email, local_collection_path.name)
+            if dataset in published and dataset not in readable:
                 continue
             del self.dataset_collection_hashes[local_collection_path]
             if self.syftbox_folder is not None:
@@ -308,18 +401,22 @@ class DataSiteWatcherCache(BaseModel):
         # Get list of collections shared with us (now returns list of dicts)
         collections = self.connection_router.watcher_list_dataset_collections()
 
-        # Filter by peer
-        peer_collections = [c for c in collections if c["owner_email"] == peer_email]
+        # Filter by peer, then take one layout for each dataset
+        published = [c for c in collections if c["owner_email"] == peer_email]
+        peer_collections = self._select_collections_to_sync(published)
 
-        self._cleanup_stale_dataset_collections(peer_email, peer_collections)
+        self._cleanup_stale_dataset_collections(peer_email, peer_collections, published)
 
         for collection in peer_collections:
             owner_email = collection["owner_email"]
             tag = collection["tag"]
             content_hash = collection["content_hash"]
+            protocol_version = collection.get("protocol_version", "0")
 
             # Check if hash changed - skip download if unchanged
-            collection_path = self.get_collection_path(owner_email, tag)
+            collection_path = self.get_collection_path(
+                owner_email, tag, protocol_version
+            )
             if collection_path is None:
                 continue
             cached_hash = self.dataset_collection_hashes.get(collection_path)
@@ -328,13 +425,13 @@ class DataSiteWatcherCache(BaseModel):
 
             # Download collection files
             files = self.connection_router.watcher_download_dataset_collection(
-                tag, content_hash, owner_email
+                tag, content_hash, owner_email, protocol_version
             )
 
             # Write files to local cache (path relative to syftbox_folder)
+            rel_dir = self._collection_rel_dir(owner_email, tag, protocol_version)
             for file_name, content in files.items():
-                rel_path = f"{owner_email}/{self.collection_subpath}/{tag}/{file_name}"
-                self.file_connection.write_file(rel_path, content)
+                self.file_connection.write_file(str(rel_dir / file_name), content)
 
             # Update hash cache
             self.dataset_collection_hashes[collection_path] = content_hash
@@ -350,9 +447,10 @@ class DataSiteWatcherCache(BaseModel):
         Downloads all files from all collections in a single parallel batch.
         """
         collections = self.connection_router.watcher_list_dataset_collections()
-        peer_collections = [c for c in collections if c["owner_email"] == peer_email]
+        published = [c for c in collections if c["owner_email"] == peer_email]
+        peer_collections = self._select_collections_to_sync(published)
 
-        self._cleanup_stale_dataset_collections(peer_email, peer_collections)
+        self._cleanup_stale_dataset_collections(peer_email, peer_collections, published)
 
         # Gather all files to download across all collections
         all_downloads = []  # List of (collection_info, file_metadata)
@@ -362,9 +460,12 @@ class DataSiteWatcherCache(BaseModel):
             owner_email = collection["owner_email"]
             tag = collection["tag"]
             content_hash = collection["content_hash"]
+            protocol_version = collection.get("protocol_version", "0")
 
             # Check if hash changed - skip download if unchanged
-            collection_path = self.get_collection_path(owner_email, tag)
+            collection_path = self.get_collection_path(
+                owner_email, tag, protocol_version
+            )
             if collection_path is None:
                 continue
             cached_hash = self.dataset_collection_hashes.get(collection_path)
@@ -374,7 +475,7 @@ class DataSiteWatcherCache(BaseModel):
             # Get file metadata (no download yet)
             file_metadatas = (
                 self.connection_router.watcher_get_dataset_collection_file_metadatas(
-                    tag, content_hash, owner_email
+                    tag, content_hash, owner_email, protocol_version
                 )
             )
 
@@ -394,16 +495,21 @@ class DataSiteWatcherCache(BaseModel):
 
         # Write files to local cache (path relative to syftbox_folder)
         for (collection, metadata), content in zip(all_downloads, downloaded_contents):
-            owner_email = collection["owner_email"]
-            tag = collection["tag"]
-            file_name = metadata["file_name"]
-            rel_path = f"{owner_email}/{self.collection_subpath}/{tag}/{file_name}"
-            self.file_connection.write_file(rel_path, content)
+            rel_dir = self._collection_rel_dir(
+                collection["owner_email"],
+                collection["tag"],
+                collection.get("protocol_version", "0"),
+            )
+            self.file_connection.write_file(
+                str(rel_dir / metadata["file_name"]), content
+            )
 
         # Update hash cache for all collections
         for collection in collections_to_update:
             collection_path = self.get_collection_path(
-                collection["owner_email"], collection["tag"]
+                collection["owner_email"],
+                collection["tag"],
+                collection.get("protocol_version", "0"),
             )
             if collection_path is not None:
                 self.dataset_collection_hashes[collection_path] = collection[

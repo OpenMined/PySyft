@@ -10,6 +10,9 @@ class FileCollection(BaseModel):
     tag: str
     content_hash: str
     has_any_permission: bool = False
+    # The protocol version whose layout this collection holds. A dataset has one
+    # collection for each version that its audience reads.
+    protocol_version: str = "0"
 
 
 class ConnectionConfig(BaseModel):
@@ -33,20 +36,30 @@ class SyftboxPlatformConnection(BaseModel):
         return config.connection_type.from_config(config)
 
     def owner_create_dataset_collection_folder(
-        self, tag: str, content_hash: str, owner_email: str
+        self, tag: str, content_hash: str, owner_email: str, protocol_version: str = "0"
     ) -> str:
         raise NotImplementedError()
 
-    def owner_tag_dataset_collection_as_any(self, tag: str, content_hash: str) -> None:
+    def owner_tag_dataset_collection_as_any(
+        self, tag: str, content_hash: str, protocol_version: str = "0"
+    ) -> None:
         raise NotImplementedError()
 
     def owner_share_dataset_collection(
-        self, tag: str, content_hash: str, users: list[str]
+        self,
+        tag: str,
+        content_hash: str,
+        users: list[str],
+        protocol_version: str = "0",
     ) -> None:
         raise NotImplementedError()
 
     def owner_upload_dataset_files(
-        self, tag: str, content_hash: str, files: dict[str, bytes]
+        self,
+        tag: str,
+        content_hash: str,
+        files: dict[str, bytes],
+        protocol_version: str = "0",
     ) -> None:
         raise NotImplementedError()
 
@@ -60,21 +73,29 @@ class SyftboxPlatformConnection(BaseModel):
         raise NotImplementedError()
 
     def watcher_list_dataset_collections(self) -> list[dict]:
-        """Returns list of dicts with keys: owner_email, tag, content_hash"""
+        """Returns dicts with: owner_email, tag, content_hash, protocol_version"""
         raise NotImplementedError()
 
     def watcher_download_dataset_collection(
-        self, tag: str, content_hash: str, owner_email: str
+        self,
+        tag: str,
+        content_hash: str,
+        owner_email: str,
+        protocol_version: str = "0",
     ) -> dict[str, bytes]:
         raise NotImplementedError()
 
     def owner_create_private_dataset_collection_folder(
-        self, tag: str, content_hash: str, owner_email: str
+        self, tag: str, content_hash: str, owner_email: str, protocol_version: str = "0"
     ) -> str:
         raise NotImplementedError()
 
     def owner_upload_private_dataset_files(
-        self, tag: str, content_hash: str, files: dict[str, bytes]
+        self,
+        tag: str,
+        content_hash: str,
+        files: dict[str, bytes],
+        protocol_version: str = "0",
     ) -> None:
         raise NotImplementedError()
 
@@ -82,7 +103,7 @@ class SyftboxPlatformConnection(BaseModel):
         raise NotImplementedError()
 
     def owner_get_private_collection_file_metadatas(
-        self, tag: str, content_hash: str, owner_email: str
+        self, tag: str, content_hash: str, owner_email: str, protocol_version: str = "0"
     ) -> list[dict]:
         raise NotImplementedError()
 

@@ -555,6 +555,6 @@ def test_encrypted_dataset_collection_syncs():
 
     c = do_collections[0]
     files = cr.watcher_download_dataset_collection(
-        c["tag"], c["content_hash"], do_manager.email
+        c["tag"], c["content_hash"], do_manager.email, c["protocol_version"]
     )
     assert files, "DS could not download the dataset collection files"

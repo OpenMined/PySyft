@@ -82,6 +82,38 @@ class SyftDatasetManager:
         Returns:
             Dataset: The created Dataset object (the newest protocol version written).
         """
+        created = self.create_all(
+            name=name,
+            mock_path=mock_path,
+            private_path=private_path,
+            summary=summary,
+            readme_path=readme_path,
+            location=location,
+            tags=tags,
+            users=users,
+            protocol_versions=protocol_versions,
+        )
+        # Return the newest protocol version written (richest layout).
+        return created[max(created, key=int)]
+
+    def create_all(
+        self,
+        name: str,
+        mock_path: PathLike,
+        private_path: PathLike,
+        summary: str | None = None,
+        readme_path: Path | None = None,
+        location: str | None = None,
+        tags: list[str] | None = None,
+        users: list[str] | str | None = None,
+        protocol_versions: list[str] | None = None,
+    ) -> dict[str, "Dataset"]:
+        """Create a dataset and return every protocol copy it wrote.
+
+        Same as ``create``, but returns {protocol_version: Dataset} instead of
+        one copy. A caller that puts the dataset on a transport needs them all,
+        because each copy goes to the peers that read its layout.
+        """
         source = DatasetSourceFiles(
             mock=to_path(mock_path),
             private=to_path(private_path),
@@ -98,8 +130,7 @@ class SyftDatasetManager:
         )
         for dataset in created.values():
             self._set_new_dataset_permissions(dataset=dataset, users=users)
-        # Return the newest protocol version written (richest layout).
-        return created[max(created, key=int)]
+        return created
 
     def migrate(
         self,
