@@ -9,7 +9,7 @@ from syft_bg.common.monitor import Monitor
 
 if TYPE_CHECKING:
     from syft_bg.approve.config import PeerApprovalConfig
-    from syft_client.sync.syftbox_manager import SyftboxManager
+    from syft_rds import SyftRDSClient
 
 
 class PeerMonitor(Monitor):
@@ -17,7 +17,7 @@ class PeerMonitor(Monitor):
 
     def __init__(
         self,
-        client: SyftboxManager,
+        client: SyftRDSClient,
         config: PeerApprovalConfig,
         state: Optional[StateManager] = None,
         on_approve: Optional[Callable[[str], None]] = None,

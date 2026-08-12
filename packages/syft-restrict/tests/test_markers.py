@@ -237,3 +237,25 @@ def test_marker_lookalike_comment_prose_is_ignored():
     obfuscate, hide = parse_markers(src)
     assert obfuscate == [(3, 3)]
     assert hide == []
+
+
+def test_block_start_marker_sharing_a_line_with_code_raises():
+    # A start/end block marker must be on a line by itself; code before it would sit on an
+    # excluded boundary line and escape verification. The one-line form exists for that case.
+    src = normalize_source("""
+    a = 1  # syft-restrict: obfuscate-start
+    b = 2
+    # syft-restrict: obfuscate-end
+    """)
+    with pytest.raises(MarkerError):
+        parse_markers(src)
+
+
+def test_block_end_marker_sharing_a_line_with_code_raises():
+    src = normalize_source("""
+    # syft-restrict: obfuscate-start
+    a = 1
+    b = 2  # syft-restrict: obfuscate-end
+    """)
+    with pytest.raises(MarkerError):
+        parse_markers(src)

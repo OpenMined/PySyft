@@ -1,0 +1,25 @@
+[project]
+name = "syft-rds"
+version = "0.1.0"
+description = "Remote Data Science product: datasets + jobs composed on top of the syft-client sync engine"
+authors = [{ name = "OpenMined", email = "info@openmined.org" }]
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+
+dependencies = [
+    "syft-client",
+    "syft-job",
+    "syft-dataset",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+"syft-client" = { workspace = true }
+"syft-job" = { workspace = true }
+"syft-dataset" = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/syft_rds"]

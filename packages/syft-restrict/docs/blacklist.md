@@ -116,8 +116,20 @@ Same idea as calling dunders on a value (`x.__repr__()`), spelled as a bare call
 - `format`
 - `bytes`
 
-> [!WARNING] > `bytes(x)` can dump raw buffer contents. `print` is a stdout channel. F-strings are banned
-> separately as constructs (above), including with no `{...}` at all.
+### Interpreter / site builtins
+
+Injected by the `site` module. `copyright`/`credits`/`license` write to stdout (same channel as
+`print`); `exit`/`quit` shut the interpreter down (`SystemExit`); `help` is an interactive/IO surface.
+
+- `copyright`
+- `credits`
+- `license`
+- `exit`
+- `quit`
+- `help`
+
+> [!WARNING] > `bytes(x)` can dump raw buffer contents. `print`, `copyright`, `credits`, and `license` are stdout
+> channels. F-strings are banned separately as constructs (above), including with no `{...}` at all.
 
 ```python
 # all rejected (banned-name)
@@ -141,7 +153,7 @@ y = [v for v in open(path)]  # passive positions still checked
 | Attribute on a value                         | `x.shape`, `x.T`, `obj.send = data`        | `attr-on-value`    |
 | Deep `self` chain                            | `self.a.b`, `self.sub.evil(...)`           | `attr-on-value`    |
 | Unsafe `self.<name>(...)`                    | stashed `open` on `self` in `setup`        | `attr-on-value`    |
-| Dunder attribute                             | `obj.__class__`, `self.__dict__`           | `dunder-attr`      |
+| Dunder attribute                             | `obj.__class__`, `jnp.fn.__wrapped__(x)`   | `dunder-attr`      |
 | Bare dunder name                             | `c = __class__`                            | `dunder-name`      |
 | Library attr not allowed                     | `np.pi` when numpy is not allowed          | `attr-not-allowed` |
 
@@ -162,6 +174,11 @@ def apply(fn, x):
 Only single-level `self.<name>` / `cls.<name>` is special-cased. Rules for when `self.x(...)` is
 safe are in [verify.md](verify.md#self-and-flax-style-modules).
 
+> [!IMPORTANT] > **Dunders are denied in call position too, not just when read.** A dunder segment on an
+> allow-listed path — `jnp.einsum.__wrapped__(x)`, `jnp.fn.__globals__[...]` — reaches the
+> function-object introspection surface (`__wrapped__`, `__globals__`, `__defaults__`,
+> `__closure__`, …) and is rejected as `dunder-attr` **regardless of the allow-list**.
+
 ---
 
 ## Classes and definitions
@@ -172,7 +189,7 @@ safe are in [verify.md](verify.md#self-and-flax-style-modules).
 | Bad base class         | `class M(SomeLib)`, `class M(object)` | `class-base`    |
 | Forbidden magic method | `def __getattr__`, `def __reduce__`   | `dunder-def`    |
 
-Allowed hooks only: `setup`, `__call__`.
+Allowed hooks only: `setup`, `__call__`, `__post_init__`.
 
 Decorators are banned outright as a [forbidden construct](#forbidden-constructs).
 

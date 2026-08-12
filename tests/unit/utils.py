@@ -194,3 +194,16 @@ with open("outputs/result.json", "w") as f:
 """)
 
     return project_dir
+
+
+# Domain-free collection used by engine-level tests, in place of the RDS
+# dataset specs (syft-client must not depend on the product layer).
+TEST_COLLECTION_PREFIX = "syft_testcollection"
+TEST_COLLECTION_SUBPATH = Path("public/test_collections")
+
+
+def grant_job_inbox_access(do_manager, ds_email: str) -> None:
+    """Grant DS write access to the DO's job inbox."""
+    do_manager.datasite_owner_syncer.perm_context.open(
+        f"app_data/job/inbox/{ds_email}/"
+    ).grant_write_access(ds_email)

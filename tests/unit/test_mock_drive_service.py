@@ -14,7 +14,6 @@ from syft_client.sync.connections.drive.mock_drive_service import (
     GOOGLE_FOLDER_MIME_TYPE,
 )
 from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
-from tests.unit.utils import create_tmp_dataset_files
 
 
 class TestMockDriveBackingStore:
@@ -498,8 +497,12 @@ class TestPairWithMockDriveServiceConnection:
             sync_automatically=False,
         )
 
-        # DS sends a file change to DO's job folder (where DS has write access)
+        # DS sends a file change to DO's job folder
         from tests.unit.test_sync_manager import path_for_job
+
+        do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
+            ds_manager.email
+        )
 
         file_path = path_for_job(do_manager.email, ds_manager.email)
         ds_manager._send_file_change(file_path, "Hello from DS!")
@@ -510,39 +513,3 @@ class TestPairWithMockDriveServiceConnection:
         # Check that DO received the event
         events = do_manager._get_all_accepted_events_do()
         assert len(events) > 0
-
-    def test_dataset_creation_and_sync(self):
-        """Test that datasets created by DO are visible to DS via mock drive."""
-        ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-            use_in_memory_cache=False,
-        )
-
-        mock_dset_path, private_dset_path, readme_path = create_tmp_dataset_files()
-
-        # DO creates a dataset
-        do_manager.create_dataset(
-            name="mock drive dataset",
-            mock_path=mock_dset_path,
-            private_path=private_dset_path,
-            summary="Test dataset via mock drive",
-            readme_path=readme_path,
-            tags=["test"],
-            users=[ds_manager.email],
-        )
-
-        # Verify DO can see it
-        do_datasets = do_manager.datasets.get_all()
-        assert len(do_datasets) == 1
-
-        # DS syncs
-        ds_manager.sync()
-
-        # DS should see the dataset
-        ds_datasets = ds_manager.datasets.get_all()
-        assert len(ds_datasets) == 1
-
-        dataset = ds_manager.datasets.get(
-            "mock drive dataset", datasite=do_manager.email
-        )
-        assert dataset is not None
-        assert len(dataset.mock_files) > 0

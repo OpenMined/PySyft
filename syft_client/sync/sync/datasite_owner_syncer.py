@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from uuid import uuid4
+from functools import partial
 
 from pydantic import ConfigDict, Field, BaseModel, PrivateAttr
 from concurrent.futures import ThreadPoolExecutor
@@ -20,6 +21,7 @@ from syft_client.sync.sync.caches.datasite_owner_cache import (
 )
 from syft_client.sync.connections.connection_router import ConnectionRouter
 from syft_client.sync.sync.caches.datasite_owner_cache import DataSiteOwnerEventCache
+from syft_client.sync.sync.collection_spec import CollectionSyncSpec
 from syft_client.sync.callback_mixin import BaseModelCallbackMixin
 from syft_client.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft_client.sync.utils.path_filters import is_normal_syncable_path
@@ -53,6 +55,9 @@ class DatasiteOwnerSyncerConfig(BaseModel):
     write_files: bool = True
     # Full path to collections folder - must be provided explicitly
     collections_folder: Path | None = None
+    # Collection sync specs (public prefix + local subpath). Empty for a bare
+    # sync engine; the domain layer (e.g. syft-rds) supplies the concrete specs.
+    collection_specs: List[CollectionSyncSpec] = []
     cache_config: DataSiteOwnerEventCacheConfig = Field(
         default_factory=DataSiteOwnerEventCacheConfig
     )
@@ -74,6 +79,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     perm_context: SyftPermContext
     # Full path to collections folder
     collections_folder: Path | None = None
+    # Collection sync specs (public prefix + local subpath), supplied by rds.
+    collection_specs: List[CollectionSyncSpec] = []
 
     syftbox_events_queue: Queue[FileChangeEventsMessage] = Field(default_factory=Queue)
     outbox_queue: Queue[Tuple[str, FileChangeEventsMessage]] = Field(
@@ -83,8 +90,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     _executor: ThreadPoolExecutor = PrivateAttr(
         default_factory=lambda: ThreadPoolExecutor(max_workers=10)
     )
-    # Cache of datasets shared with "any" - list of (tag, content_hash) tuples
-    _any_shared_datasets: List[tuple] = PrivateAttr(default_factory=list)
+    # Cache of collections shared with "any" - list of (tag, content_hash) tuples
+    _any_shared_collections: List[tuple] = PrivateAttr(default_factory=list)
     # Cache of read permissions per file path → frozenset of peer emails
     _read_perm_cache: dict[str, frozenset[str]] = PrivateAttr(default_factory=dict)
 
@@ -112,6 +119,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             syftbox_folder=config.syftbox_folder,
             perm_context=SyftPermContext(datasite=datasite),
             collections_folder=config.collections_folder,
+            collection_specs=config.collection_specs,
         )
 
     @property
@@ -289,11 +297,10 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if restored_events and not self.event_cache.get_cached_events():
             self._write_events_to_messages_cache(restored_events)
 
-        # Load datasets from connection and populate _any_shared_datasets cache
-        self._pull_datasets_for_initial_sync()
-
-        # Restore private datasets from GDrive (owner-only collections)
-        self._pull_private_datasets_for_initial_sync()
+        # Restore ALL registered collections (public + private) generically. Each
+        # spec's flags decide the behaviour: `immutable` picks mirror vs restore-only;
+        # the local destination comes from the spec's local_subpath.
+        self._pull_collections_for_initial_sync()
 
         self.initial_sync_done = True
 
@@ -316,43 +323,79 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                         str(event.path_in_datasite), event.content
                     )
 
-    def _pull_datasets_for_initial_sync(self):
-        """Load datasets from GDrive when DO connects.
+    def _collection_local_dir(self, spec: CollectionSyncSpec, tag: str) -> Path:
+        """Local directory a collection with the given tag restores to."""
+        return self.syftbox_folder / self.email / spec.local_subpath / tag
 
-        Restores datasets to local filesystem and populates the _any_shared_datasets cache.
+    def _pull_collections_for_initial_sync(self):
+        """Restore the owner's own collections from the sync backend on connect.
+
+        Iterates every registered spec (public, private, or any future kind). For
+        each it lists the owner's collections, refreshes the _any_shared_collections
+        cache, filters by the spec's download policy, and restores to disk.
         """
-        collections = (
-            self.connection_router.owner_list_all_dataset_collections_with_permissions()
-        )
+        for spec in self.collection_specs:
+            collections = (
+                self.connection_router.owner_list_all_collections_with_permissions(
+                    spec.prefix
+                )
+            )
+            if not collections:
+                continue
 
-        self._update_any_shared_datasets_cache(collections)
+            self._update_any_shared_collections_cache(collections)
 
-        collections_to_download = self._filter_collections_needing_download(collections)
-        self._download_dataset_collections_parallel(collections_to_download)
+            collections_to_download = self._filter_collections_needing_download(
+                collections, spec
+            )
+            self._download_collections_parallel(collections_to_download, spec)
 
-    def _update_any_shared_datasets_cache(self, collections: list[FileCollection]):
-        """Populate _any_shared_datasets cache from collections with 'any' permission."""
+    @property
+    def any_shared_collections(self) -> List[tuple]:
+        """Collections shared with "any" as (tag, content_hash) pairs.
+
+        Read-only view: mutate via ``register_any_shared_collection``.
+        """
+        return list(self._any_shared_collections)
+
+    def register_any_shared_collection(self, tag: str, content_hash: str) -> None:
+        """Record a collection as shared-with-"any" (deduplicated)."""
+        entry = (tag, content_hash)
+        if entry not in self._any_shared_collections:
+            self._any_shared_collections.append(entry)
+
+    def _update_any_shared_collections_cache(self, collections: list[FileCollection]):
+        """Populate the any-shared cache from collections with 'any' permission."""
         for collection in collections:
             if collection.has_any_permission:
-                entry = (collection.tag, collection.content_hash)
-                if entry not in self._any_shared_datasets:
-                    self._any_shared_datasets.append(entry)
+                self.register_any_shared_collection(
+                    collection.tag, collection.content_hash
+                )
 
     def _filter_collections_needing_download(
-        self, collections: list[FileCollection]
+        self, collections: list[FileCollection], spec: CollectionSyncSpec
     ) -> list[FileCollection]:
-        """Return collections that don't exist locally or have different content hash."""
+        """Return the collections that need downloading, per the spec's policy.
+
+        * immutable (restore-only): download only when absent locally — the local
+          copy is authoritative and must never be overwritten by the backup.
+        * mutable (mirror): download when the remote content-hash differs from ours.
+        """
         from syft_client.sync.file_utils import compute_directory_hash
 
         result = []
         for collection in collections:
-            # Use cached hash from event_cache first
+            local_dir = self._collection_local_dir(spec, collection.tag)
+
+            if spec.immutable:
+                if not local_dir.exists() or not any(local_dir.iterdir()):
+                    result.append(collection)
+                continue
+
+            # Mirror: use the cached hash first, else compute it from local files.
             cached_hash = self.event_cache.get_collection_hash(collection.tag)
-            if cached_hash is None and self.collections_folder is not None:
-                # Fallback: compute hash from local filesystem (for locally created datasets)
-                local_dataset_dir = self.collections_folder / collection.tag
-                cached_hash = compute_directory_hash(local_dataset_dir)
-                # Update cache if we computed a hash
+            if cached_hash is None and local_dir.exists():
+                cached_hash = compute_directory_hash(local_dir)
                 if cached_hash is not None:
                     self.event_cache.set_collection_hash(collection.tag, cached_hash)
 
@@ -360,7 +403,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 result.append(collection)
         return result
 
-    def _download_dataset_collections_parallel(self, collections: list[FileCollection]):
+    def _download_collections_parallel(
+        self, collections: list[FileCollection], spec: CollectionSyncSpec
+    ):
         """Download all files from collections in parallel and write to disk."""
         if not collections:
             return
@@ -368,7 +413,10 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         # Fetch file metadatas for all collections in parallel
         all_file_metadatas = list(
             self._executor.map(
-                self._get_file_metadatas_with_new_connection, collections
+                partial(
+                    self._get_file_metadatas_with_new_connection, prefix=spec.prefix
+                ),
+                collections,
             )
         )
 
@@ -388,24 +436,36 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self._executor.map(self._download_file_with_new_connection, file_ids)
         )
 
-        # Write all files to disk
+        # Write all files to disk under the spec's local subpath.
         for (collection, metadata), content in zip(all_downloads, downloaded_contents):
-            local_dataset_dir = self.collections_folder / collection.tag
-            local_dataset_dir.mkdir(parents=True, exist_ok=True)
-            (local_dataset_dir / metadata["file_name"]).write_bytes(content)
+            local_dir = self._collection_local_dir(spec, collection.tag)
+            local_dir.mkdir(parents=True, exist_ok=True)
+            (local_dir / metadata["file_name"]).write_bytes(content)
 
-        # Update cached hashes for downloaded collections
+        # Update cached hashes ONLY for mutable specs
+        if not spec.immutable:
+            for collection in collections:
+                self.event_cache.set_collection_hash(
+                    collection.tag, collection.content_hash
+                )
+
+        # Notify the domain layer (e.g. syft-rds) that these collections were restored,
+        # so it can run any collection-specific post-processing
         for collection in collections:
-            self.event_cache.set_collection_hash(
-                collection.tag, collection.content_hash
+            self._emit(
+                "collection_restored",
+                spec.prefix,
+                collection.tag,
+                self._collection_local_dir(spec, collection.tag),
             )
 
     def _get_file_metadatas_with_new_connection(
-        self, collection: FileCollection
+        self, collection: FileCollection, prefix: str
     ) -> list:
         """Get file metadatas for a collection using a new connection for thread safety."""
         connection = self.connection_router.connection_for_parallel_download()
-        return connection.watcher_get_dataset_collection_file_metadatas(
+        return connection.watcher_get_collection_file_metadatas(
+            prefix,
             tag=collection.tag,
             content_hash=collection.content_hash,
             owner_email=self.email,
@@ -414,100 +474,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     def _download_file_with_new_connection(self, file_id: str) -> bytes:
         """Download a file using a new connection for thread safety."""
         connection = self.connection_router.connection_for_parallel_download()
-        return connection.watcher_download_dataset_file(file_id)
-
-    # =========================================================================
-    # PRIVATE DATASET RESTORE METHODS
-    # =========================================================================
-
-    def _pull_private_datasets_for_initial_sync(self):
-        """Restore private datasets from GDrive when DO reconnects.
-
-        Downloads private data from owner-only collection folders
-        to {syftbox_folder}/private/syft_datasets/{tag}/.
-        """
-        collections = self.connection_router.owner_list_private_dataset_collections()
-        if not collections:
-            return
-
-        collections_to_download = self._filter_private_collections_needing_download(
-            collections
-        )
-        self._download_private_collections_parallel(collections_to_download)
-
-    def _private_dataset_local_dir(self, tag: str) -> Path:
-        return self.syftbox_folder / self.email / "private" / "syft_datasets" / tag
-
-    def _filter_private_collections_needing_download(
-        self, collections: list[FileCollection]
-    ) -> list[FileCollection]:
-        """Return private collections that don't exist locally yet."""
-        result = []
-        for collection in collections:
-            local_dir = self._private_dataset_local_dir(collection.tag)
-            if not local_dir.exists() or not any(local_dir.iterdir()):
-                result.append(collection)
-        return result
-
-    def _download_private_collections_parallel(self, collections: list[FileCollection]):
-        """Download private collection files in parallel and write to disk."""
-        if not collections:
-            return
-
-        all_file_metadatas = list(
-            self._executor.map(
-                self._get_private_file_metadatas_with_new_connection, collections
-            )
-        )
-
-        all_downloads = [
-            (collection, metadata)
-            for collection, file_metadatas in zip(collections, all_file_metadatas)
-            for metadata in file_metadatas
-        ]
-
-        if not all_downloads:
-            return
-
-        file_ids = [metadata["file_id"] for _, metadata in all_downloads]
-        downloaded_contents = list(
-            self._executor.map(self._download_file_with_new_connection, file_ids)
-        )
-
-        for (collection, metadata), content in zip(all_downloads, downloaded_contents):
-            local_dir = self._private_dataset_local_dir(collection.tag)
-            local_dir.mkdir(parents=True, exist_ok=True)
-            (local_dir / metadata["file_name"]).write_bytes(content)
-
-        # Fix data_dir in private_metadata.yaml to point to current local path
-        for collection in collections:
-            self._fix_private_metadata_data_dir(collection.tag)
-
-    def _get_private_file_metadatas_with_new_connection(
-        self, collection: FileCollection
-    ) -> list:
-        """Get file metadatas for a private collection using a new connection."""
-        connection = self.connection_router.connection_for_parallel_download()
-        return connection.owner_get_private_collection_file_metadatas(
-            tag=collection.tag,
-            content_hash=collection.content_hash,
-            owner_email=self.email,
-        )
-
-    def _fix_private_metadata_data_dir(self, dataset_tag: str):
-        """Update data_dir in private_metadata.yaml to match the current syftbox path."""
-        local_dir = self._private_dataset_local_dir(dataset_tag)
-        metadata_path = local_dir / "private_metadata.yaml"
-        if not metadata_path.exists():
-            return
-
-        import yaml
-
-        data = yaml.safe_load(metadata_path.read_text())
-        expected_dir = str(local_dir)
-        if data.get("data_dir") != expected_dir:
-            data["data_dir"] = expected_dir
-            metadata_path.write_text(yaml.safe_dump(data, indent=2, sort_keys=False))
+        return connection.watcher_download_collection_file(file_id)
 
     def _get_readers(self, path: str, recipients: list[str]) -> frozenset[str]:
         """Return the set of recipients that have read access to the given path."""

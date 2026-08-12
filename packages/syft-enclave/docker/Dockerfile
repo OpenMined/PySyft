@@ -1,6 +1,20 @@
-FROM python:3.12-slim
+FROM ubuntu:24.04
 
-RUN pip install uv
+# Ubuntu 24.04 LTS ships Python 3.12 as its system interpreter, which is the
+# version the workspace targets. python3-venv is separate on Debian/Ubuntu and
+# uv needs it to build /repo/.venv; ca-certificates is required for TLS to the
+# package index. uv is installed from its standalone distribution rather than
+# pip, since Ubuntu marks the system interpreter externally managed (PEP 668).
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 \
+        python3-venv \
+        ca-certificates \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV UV_INSTALL_DIR=/usr/local/bin
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && uv --version
 
 # Build context is the monorepo root (set by packages/syft-enclave/Justfile).
 # We install syft-enclave from the workspace so syft-client + its workspace
@@ -22,6 +36,11 @@ RUN uv pip install --python /repo/.venv/bin/python -r /tmp/requirements.txt && \
 
 ENV PATH="/repo/.venv/bin:$PATH"
 
+# GPU deployments: Confidential Space installs the NVIDIA driver at
+# /usr/local/nvidia (tee-install-gpu-driver=true) and the workload must have
+# its libs on LD_LIBRARY_PATH.
+ENV LD_LIBRARY_PATH=/usr/local/nvidia/lib64
+
 WORKDIR /app
 COPY packages/syft-enclave/docker/attestation_server.py .
 COPY packages/syft-enclave/docker/entrypoint.sh .
@@ -41,6 +60,9 @@ SYFT_BOOTSTRAP_WIF_AUDIENCE,\
 SYFT_BOOTSTRAP_WIF_SECRET,\
 SYFT_BOOTSTRAP_SA_SECRET,\
 SYFT_ENCLAVE_TOKEN_CONTENT"
+
+
+LABEL "tee.launch_policy.log_redirect"="always"
 
 # Confidential Spaces expects port 8080
 # Note: runs as root because the TEE attestation socket

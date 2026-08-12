@@ -36,6 +36,20 @@ def node_in_ranges(node: ast.AST, ranges) -> bool:
     return line is not None and row_in_ranges(line, ranges)
 
 
+def node_overlaps_ranges(node: ast.AST, ranges) -> bool:
+    """True if a node's line SPAN intersects any range.
+
+    Unlike ``node_in_ranges`` (which tests only the start line), this also catches a multi-line
+    node that begins outside the ranges but extends into one -- a statement straddling the
+    public/private boundary. Nodes with no position never overlap.
+    """
+    start = getattr(node, "lineno", None)
+    if start is None:
+        return False
+    end = getattr(node, "end_lineno", None) or start
+    return any(start <= hi and lo <= end for lo, hi in ranges)
+
+
 # ── reading names and dotted paths off the tree ──────────────────────────────────────────────
 def dotted_name(node: ast.AST) -> str | None:
     """The dotted path for a pure Name/Attribute chain (``jnp.numpy.einsum``), else None.
@@ -124,8 +138,20 @@ def scan_file(tree: ast.Module, private_ranges) -> FileScan:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                # `import jax.numpy as jnp` -> bindings["jnp"] = "jax.numpy"; `import os.path` -> bindings["os"] = "os.path"
-                import_bindings[alias.asname or alias.name.split(".")[0]] = alias.name
+                # The alias (key) is the name the private code writes; the value is the
+                # fully-qualified path the policy matches against. _Checker._resolve() swaps a
+                # call's root name for this value and keeps the rest of the chain verbatim.
+                # Bind the name Python actually binds at runtime:
+                #   `import jax.numpy as jnp` binds `jnp` -> the jax.numpy module
+                #   `import jax.numpy`        binds `jax` -> the jax PACKAGE (not jax.numpy!) --
+                #      you reach save through `jax.numpy.save`, so the root resolves to itself.
+                # Binding the root to the full dotted path would mis-resolve `jax.numpy.save` to
+                # `jax.numpy.numpy.save` and let it slip a disallow floor (see tests/verify).
+                if alias.asname:
+                    import_bindings[alias.asname] = alias.name
+                else:
+                    root = alias.name.split(".")[0]
+                    import_bindings[root] = root
         elif isinstance(node, ast.ImportFrom) and node.module:
             for alias in node.names:
                 import_bindings[alias.asname or alias.name] = (

@@ -47,4 +47,4 @@ repos:
     rev: 'v3.0.0-alpha.9-for-vscode'
     hooks:
       - id: prettier
-        exclude: (\.min\.(js|css)$|^ci/|^test_outputs/)
+        exclude: (\.min\.(js|css)$|^ci/|^test_outputs/|^packages/syft-datasets/tests/migrations/(p2p|unit)/fixtures/)

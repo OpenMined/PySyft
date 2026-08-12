@@ -11,11 +11,6 @@ from syft_client.sync.connections.drive.gdrive_transport import (
 from syft_client.sync.login_utils import handle_potential_version_mismatches_on_login
 from syft_client.sync.syftbox_manager import SyftboxManager
 from syft_client.sync.version.version_info import VersionInfo
-from syft_datasets.dataset_manager import (
-    DATASET_COLLECTION_PREFIX,
-    PRIVATE_DATASET_COLLECTION_PREFIX,
-)
-from tests.unit.utils import create_tmp_dataset_files
 
 
 EMAIL = "test@example.com"
@@ -105,18 +100,6 @@ def test_delete_unversioned_state_removes_correct_folders():
         sync_automatically=False,
         encryption=True,
     )
-
-    # Create dataset so collection folders exist
-    mock_path, private_path, readme_path = create_tmp_dataset_files()
-    do_manager.create_dataset(
-        name="my dataset",
-        mock_path=mock_path,
-        private_path=private_path,
-        summary="Test",
-        readme_path=readme_path,
-        users=[ds_manager.email],
-        upload_private=True,
-    )
     do_manager.sync()
 
     do_conn = do_manager.peer_manager.connection_router.connections[0]
@@ -125,8 +108,6 @@ def test_delete_unversioned_state_removes_correct_folders():
     # Assert artifacts exist before deletion
     do_enc_bundles = f"syft_encryption_bundles#{do_email}"
     assert len(_query_files(do_conn, do_enc_bundles)) > 0
-    assert len(_query_files(do_conn, DATASET_COLLECTION_PREFIX)) > 0
-    assert len(_query_files(do_conn, PRIVATE_DATASET_COLLECTION_PREFIX)) > 0
     assert len(_query_files(do_conn, SYFT_PEERS_FILE)) > 0
     assert len(_query_files(do_conn, SYFT_VERSION_FILE)) > 0
 
@@ -139,8 +120,6 @@ def test_delete_unversioned_state_removes_correct_folders():
 
     # Assert unversioned artifacts are gone
     assert len(_query_files(do_conn, do_enc_bundles)) == 0
-    assert len(_query_files(do_conn, DATASET_COLLECTION_PREFIX)) == 0
-    assert len(_query_files(do_conn, PRIVATE_DATASET_COLLECTION_PREFIX)) == 0
     # peers/version files: DO's are gone, DS's may still exist
     do_peers = [
         f

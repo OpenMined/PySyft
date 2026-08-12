@@ -6,7 +6,6 @@ import pytest
 from syft_client.sync.syftbox_manager import SyftboxManager
 from syft_client.sync.version.exceptions import (
     VersionMismatchError,
-    VersionUnknownError,
 )
 from syft_client.sync.version.peer_manager import CompatAction
 from syft_client.sync.version.version_info import CompatibilityStatus, VersionInfo
@@ -256,69 +255,6 @@ class TestPeerManager:
         )
 
 
-class TestForceSubmission:
-    """Tests for force_submission parameter."""
-
-    def test_job_submission_blocked_without_version(self):
-        ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-            add_peers=False,
-            sync_automatically=False,
-            check_versions=True,
-        )
-
-        ds_manager.add_peer(do_manager.email)
-
-        test_py_path = "/tmp/test_version.py"
-        with open(test_py_path, "w") as f:
-            f.write('print("hello")')
-
-        with pytest.raises(VersionUnknownError):
-            ds_manager.submit_python_job(
-                user=do_manager.email,
-                code_path=test_py_path,
-                job_name="test.job",
-            )
-
-    def test_job_submission_allowed_with_force(self):
-        ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-            add_peers=False,
-            sync_automatically=False,
-            check_versions=True,
-        )
-
-        ds_manager.add_peer(do_manager.email)
-
-        test_py_path = "/tmp/test_version_force.py"
-        with open(test_py_path, "w") as f:
-            f.write('print("hello")')
-
-        with pytest.raises(VersionUnknownError):
-            ds_manager.submit_python_job(
-                user=do_manager.email,
-                code_path=test_py_path,
-                job_name="test.fail.job",
-            )
-
-        ds_manager.submit_python_job(
-            user=do_manager.email,
-            code_path=test_py_path,
-            job_name="test.force.job",
-            force_submission=True,
-        )
-
-        job_dir = (
-            ds_manager.syftbox_folder
-            / do_manager.email
-            / "app_data"
-            / "job"
-            / "inbox"
-            / ds_manager.email
-            / "v1"
-            / "test.force.job"
-        )
-        assert job_dir.exists()
-
-
 def _set_peer_version(manager: SyftboxManager, peer_email: str, version: VersionInfo):
     """Override the cached version for a peer without a Drive round-trip."""
     peer = manager.peer_manager.get_cached_peer(peer_email)
@@ -544,43 +480,6 @@ class TestVersionMismatchBehavior:
             )
         )
         assert ds_manager.email not in compatible_peers
-
-    def test_job_execution_forced_with_incompatible_version(self):
-        ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-            sync_automatically=False,
-            use_in_memory_cache=False,
-        )
-
-        test_py_path = "/tmp/test_exec_force.py"
-        with open(test_py_path, "w") as f:
-            f.write('print("hello")')
-
-        ds_manager.submit_python_job(
-            user=do_manager.email,
-            code_path=test_py_path,
-            job_name="test.exec.force.job",
-        )
-
-        do_manager.sync()
-        assert len(do_manager.job_client.jobs) == 1
-        job = do_manager.job_client.jobs[0]
-        job.approve()
-
-        _set_peer_version(do_manager, ds_manager.email, build_client_version("0.0.1"))
-
-        executed_jobs = []
-
-        def mock_process_approved_jobs(
-            stream_output=True, timeout=None, skip_job_names=None, **kwargs
-        ):
-            executed_jobs.append(skip_job_names)
-
-        do_manager.job_runner.process_approved_jobs = mock_process_approved_jobs
-
-        do_manager.process_approved_jobs(force_execution=True)
-
-        assert len(executed_jobs) == 1
-        assert executed_jobs[0] is None  # No jobs skipped when force=True
 
     def test_version_upgrade_breaks_communication(self):
         """Major-bump upgrade should now make peers incompatible."""

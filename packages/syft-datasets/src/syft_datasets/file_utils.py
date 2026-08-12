@@ -3,10 +3,16 @@ from pathlib import Path
 from typing import Iterator
 
 
-def copy_dir_contents(src: Path, dst: Path, exists_ok: bool = False) -> list[Path]:
+def copy_dir_contents(
+    src: Path,
+    dst: Path,
+    exists_ok: bool = False,
+    exclude_names: frozenset[str] = frozenset(),
+) -> list[Path]:
     if not src.is_dir():
         raise ValueError(f"Source path {src} is not a directory.")
-    return copy_paths(src.iterdir(), dst, exists_ok)
+    files = (p for p in src.iterdir() if p.name not in exclude_names)
+    return copy_paths(files, dst, exists_ok)
 
 
 def copy_paths(files: Iterator[Path], dst: Path, exists_ok: bool = False) -> list[Path]:

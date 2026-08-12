@@ -5,8 +5,8 @@ from pathlib import Path
 from syft_client.sync.environments.environment import Environment
 from syft_client.sync.login import _init_client_login, _resolve_login_params
 from syft_client.sync.login_utils import handle_potential_version_mismatches_on_login
-from syft_client.sync.syftbox_manager import SyftboxManagerConfig
 from syft_client.sync.utils.syftbox_utils import check_env
+from syft_rds import SyftRDSClientConfig
 
 from syft_enclaves.client import SyftEnclaveClient
 
@@ -38,7 +38,7 @@ def _login(
     handle_potential_version_mismatches_on_login(email, token_path)
 
     if env == Environment.COLAB:
-        config = SyftboxManagerConfig.for_colab(
+        config = SyftRDSClientConfig.for_colab(
             email=email,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
@@ -47,7 +47,7 @@ def _login(
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         )
     else:
-        config = SyftboxManagerConfig.for_jupyter(
+        config = SyftRDSClientConfig.for_jupyter(
             email=email,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
@@ -62,8 +62,9 @@ def _login(
     client = SyftEnclaveClient.from_config(config)
 
     # Reuses syft-client's login init: verifies the token authenticates as
-    # `email`, writes the local version, then syncs / loads peers.
-    _init_client_login(client._manager, sync=sync, load_peers=load_peers)
+    # `email`, writes the local version, then syncs / loads peers. Operates on
+    # the generic sync engine nested inside the RDS client.
+    _init_client_login(client._rds.sync_engine, sync=sync, load_peers=load_peers)
     return client
 
 

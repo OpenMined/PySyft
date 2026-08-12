@@ -45,9 +45,7 @@ class SyftBgConfig(BaseModel):
         if not isinstance(data, dict):
             return data
         if not data.get("syftbox_root") and data.get("do_email"):
-            from syft_client.sync.syftbox_manager import (
-                get_jupyter_default_syftbox_folder,
-            )
+            from syft_rds import get_jupyter_default_syftbox_folder
 
             data = dict(data)
             data["syftbox_root"] = str(

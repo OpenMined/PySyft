@@ -15,21 +15,21 @@ def test_quad_initialization():
     assert all(isinstance(c, SyftEnclaveClient) for c in clients)
 
     # Correct roles
-    assert enclave._manager.has_do_role is True
-    assert enclave._manager.has_ds_role is True
+    assert enclave._rds.has_do_role is True
+    assert enclave._rds.has_ds_role is True
 
-    assert do1._manager.has_do_role is True
-    assert do1._manager.has_ds_role is True
+    assert do1._rds.has_do_role is True
+    assert do1._rds.has_ds_role is True
 
-    assert do2._manager.has_do_role is True
-    assert do2._manager.has_ds_role is True
+    assert do2._rds.has_do_role is True
+    assert do2._rds.has_ds_role is True
 
-    assert ds._manager.has_do_role is False
-    assert ds._manager.has_ds_role is True
+    assert ds._rds.has_do_role is False
+    assert ds._rds.has_ds_role is True
 
-    # Helper to get approved peer emails for a manager
+    # Helper to get approved peer emails for a client
     def approved_emails(client):
-        return {p.email for p in client._manager.peer_manager.approved_peers}
+        return {p.email for p in client._rds.peer_manager.approved_peers}
 
     # Enclave (DO-only): approved DS, DO1, DO2
     assert approved_emails(enclave) == {ds.email, do1.email, do2.email}
