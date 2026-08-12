@@ -1,12 +1,15 @@
 """Top-level SyftBg configuration model (mirrors config.yaml)."""
 
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
 import yaml
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.common.config import get_default_paths
+from syft_bg.common.locking import file_lock
 from syft_bg.email_approve.config import EmailApproveConfig
 from syft_bg.notify.config import NotifyConfig
 from syft_bg.sync.config import SyncConfig
@@ -15,15 +18,19 @@ from syft_bg.sync.config import SyncConfig
 class SyftBgConfig(BaseModel):
     """Top-level syft-bg configuration, matching the config.yaml structure."""
 
+    # Preserve top-level keys we don't model (e.g. written by another
+    # syft-bg version) instead of silently dropping them on save().
+    model_config = ConfigDict(extra="allow")
+
     do_email: str | None = None
-    syftbox_root: str | None = None
+    syftbox_root: str | Path | None = None
     credentials_path: Path = Field(
         default_factory=lambda: get_default_paths().credentials
     )
     gmail_token_path: Path = Field(
         default_factory=lambda: get_default_paths().gmail_token
     )
-    drive_token_path: Path = Field(
+    drive_token_path: Path | None = Field(
         default_factory=lambda: get_default_paths().drive_token
     )
     notify: NotifyConfig = Field(default_factory=NotifyConfig)
@@ -62,10 +69,18 @@ class SyftBgConfig(BaseModel):
             ):
                 if self.syftbox_root is not None:
                     service_config.syftbox_root = Path(self.syftbox_root)
-            for path_field in ("drive_token_path", "gmail_token_path"):
+            # These fields default to a concrete path, not None, so use the
+            # default itself (not "is None") to detect an unset field.
+            default_paths = get_default_paths()
+            path_field_defaults = {
+                "drive_token_path": default_paths.drive_token,
+                "gmail_token_path": default_paths.gmail_token,
+            }
+            for path_field, own_default in path_field_defaults.items():
                 if hasattr(service_config, path_field):
                     parent_val = getattr(self, path_field, None)
-                    if parent_val is not None:
+                    current_val = getattr(service_config, path_field, None)
+                    if parent_val is not None and current_val == own_default:
                         setattr(service_config, path_field, parent_val)
 
     def set_service_config(self, name: str, config: dict) -> None:
@@ -96,8 +111,11 @@ location: {get_default_paths().config} <br>
 <pre>{yaml_str}</pre>"""
 
     @classmethod
-    def from_path(cls, config_path: Path | None = None) -> "SyftBgConfig":
-        """Load from a YAML config file, merging common fields into services."""
+    def from_path(
+        cls, config_path: Path | None = None, *, merge: bool = True
+    ) -> "SyftBgConfig":
+        """Load from a YAML config file. Pass merge=False before saving back
+        (e.g. edit()) to avoid baking inherited fields into sub-configs."""
         if config_path is None:
             config_path = get_default_paths().config
 
@@ -105,7 +123,8 @@ location: {get_default_paths().config} <br>
             data = yaml.safe_load(f) or {}
 
         config = cls.model_validate(data)
-        config._merge_common_into_services()
+        if merge:
+            config._merge_common_into_services()
         return config
 
     def save(self, config_path: Path | None = None) -> None:
@@ -122,3 +141,26 @@ location: {get_default_paths().config} <br>
                 default_flow_style=False,
                 sort_keys=False,
             )
+
+    @classmethod
+    def load(
+        cls, config_path: Path | None = None, *, merge: bool = True
+    ) -> "SyftBgConfig":
+        """Load config from path, returning defaults if the file doesn't exist."""
+        try:
+            return cls.from_path(config_path, merge=merge)
+        except FileNotFoundError:
+            return cls()
+
+    @classmethod
+    @contextmanager
+    def edit(cls, config_path: Path | None = None) -> Iterator["SyftBgConfig"]:
+        """Locked load-mutate-save cycle. Skips save() if the block raises."""
+        if config_path is None:
+            config_path = get_default_paths().config
+
+        lock_path = config_path.with_suffix(".lock")
+        with file_lock(lock_path):
+            config = cls.load(config_path, merge=False)
+            yield config
+            config.save(config_path)

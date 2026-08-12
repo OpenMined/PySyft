@@ -8,10 +8,10 @@ from dataclasses import replace
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.approve.orchestrator import ApprovalOrchestrator
 from syft_bg.common.config import get_default_paths
 from syft_bg.common.state import JsonStateManager
+from syft_bg.common.syft_bg_config import SyftBgConfig
 from syft_bg.email_approve.gmail_message import GmailMessage
 from syft_bg.email_approve.handler import EmailApproveHandler
 from syft_bg.email_approve.monitor import EmailApproveMonitor
@@ -38,7 +38,12 @@ def _temp_config_paths():
         )
         with (
             patch("syft_bg.common.config.get_default_paths", return_value=patched),
+            patch("syft_bg.api.api.get_default_paths", return_value=patched),
+            patch("syft_bg.api.utils.get_default_paths", return_value=patched),
             patch("syft_bg.approve.config.get_default_paths", return_value=patched),
+            patch(
+                "syft_bg.common.syft_bg_config.get_default_paths", return_value=patched
+            ),
         ):
             yield patched
 
@@ -202,7 +207,7 @@ def test_email_auto_approve_creates_object_and_approves_future_jobs():
         assert result["params"]["run"] == 1
 
         # -- Step 5: Verify auto-approve object was created correctly --
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job_name]
         content_names = {e.relative_path for e in obj.file_contents}
         assert content_names == {"main.py"}
@@ -225,7 +230,7 @@ def test_email_auto_approve_creates_object_and_approves_future_jobs():
         assert second_job.status == "pending"
 
         # -- Step 7: Run approval orchestrator — should auto-approve --
-        approve_config = AutoApproveConfig.load()
+        approve_config = SyftBgConfig.load().approve
         approve_config.do_email = do_manager.email
         approve_config.syftbox_root = do_manager.syftbox_folder
         approve_config.approve_state_path = tmp / "approve_state.json"
