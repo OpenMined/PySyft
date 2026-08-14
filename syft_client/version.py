@@ -6,7 +6,7 @@ Bump these versions on each release (via `bump2version patch/minor/major`).
 
 # Current client version — the single source of truth.
 # pyproject.toml and syft_client/__init__.py read from here.
-SYFT_CLIENT_VERSION = "0.1.117"
+SYFT_CLIENT_VERSION = "0.2.0"
 
 # Minimum client version we support communicating with
 MIN_SUPPORTED_SYFT_CLIENT_VERSION = "0.1.93"
