@@ -1528,27 +1528,45 @@ class SyftboxManager(BaseModel):
         if not missing:
             return False
 
-        # Each copy holds its own private directory. Give the new copy its
-        # private collection iff the dataset's copies are drive-backed, so a
-        # cold start restores it like any other.
+        for protocol_version in sorted(missing, key=int):
+            self._materialize_dataset_copy(tag, protocol_version, users)
+        return True
+
+    def _materialize_dataset_copy(
+        self, tag: str, protocol_version: str, users: list[str] | str
+    ) -> None:
+        """Create and upload one layout copy of an existing dataset.
+
+        The copy uploads unshared; sharing stays with the caller. Each copy
+        holds its own private directory, so the copy gets its private
+        collection iff the dataset's copies are drive-backed -- then a cold
+        start restores it like any other.
+        """
+        copy = self.dataset_manager.migrate(tag, protocol_version, users=users)
+        self._upload_dataset_to_collection(copy, users=[])
         has_private_collections = any(
             c.tag == tag
             for c in self._connection_router.owner_list_private_dataset_collections()
         )
-        for protocol_version in sorted(missing, key=int):
-            copy = self.dataset_manager.migrate(tag, protocol_version, users=users)
-            self._upload_dataset_to_collection(copy, users=[])
-            if has_private_collections:
-                self._upload_private_dataset_to_collection(copy)
-        return True
+        if has_private_collections:
+            self._upload_private_dataset_to_collection(copy)
 
     def share_private_dataset(self, tag: str, enclave_email: str):
-        """Share private dataset files with an enclave via outbox events."""
+        """Share private dataset files
+
+        The files ship at the layout the enclave reads: the newest local copy
+        at or below its negotiated dataset protocol, materialized first when
+        no copy qualifies. An enclave without a known schema is assumed to run
+        the current protocol, the same policy as jobs.
+        """
         if not self.has_do_role:
             raise ValueError("Only data owners can share private datasets")
 
         with self._sync_file_lock():
-            files = self.dataset_manager.get_private_dataset_files(tag)
+            protocol_version = self._private_share_protocol_version(tag, enclave_email)
+            files = self.dataset_manager.get_private_dataset_files(
+                tag, protocol_version=protocol_version
+            )
             events_message = (
                 self.datasite_owner_syncer.event_cache.create_events_for_files(files)
             )
@@ -1557,6 +1575,27 @@ class SyftboxManager(BaseModel):
                 file_change_events_message=events_message,
             )
             self.datasite_owner_syncer.process_syftbox_events_queue()
+
+    def _private_share_protocol_version(self, tag: str, peer_email: str) -> str:
+        """The protocol version of the copy to ship privately to this peer.
+
+        A reader scans every layout at or below its negotiated version, so the
+        newest existing copy at or below it serves; only when none qualifies
+        is a copy at the negotiated version materialized.
+        """
+        storage = self.dataset_manager.storage
+        negotiated = storage.negotiated_protocol_version_for_peer(
+            peer_email, raise_on_unknown=False
+        )
+        readable = {
+            ref.protocol_version
+            for ref in storage.iter_dataset_refs_all_protocols(self.email)
+            if ref.name == tag and int(ref.protocol_version) <= int(negotiated)
+        }
+        if readable:
+            return max(readable, key=int)
+        self._materialize_dataset_copy(tag, negotiated, users=[peer_email])
+        return negotiated
 
     @property
     def datasets(self) -> SyftDatasetManager:

@@ -318,15 +318,21 @@ class SyftDatasetManager:
         # Remove every on-disk copy (all protocol versions) via the storage layer.
         self.storage.delete_dataset(datasite, name)
 
-    def get_private_dataset_files(self, name: str) -> dict[Path, bytes]:
+    def get_private_dataset_files(
+        self, name: str, protocol_version: str | None = None
+    ) -> dict[Path, bytes]:
         """Get private dataset files as {path_in_datasite: content}.
 
         Returns paths relative to the datasite (e.g.
-        private/syft_datasets/[v<n>/]{name}/{file}). For private_metadata.yaml,
-        clears data_dir before including it.
+        private/syft_datasets/[v<n>/]{name}/{file}); the paths carry the copy's
+        protocol layout, so ``protocol_version`` selects the copy a specific
+        reader scans (the preferred/newest copy by default). For
+        private_metadata.yaml, clears data_dir before including it.
         """
         datasite = self.syftbox_config.email
-        ref = self.storage.find_dataset_ref(datasite, name)
+        ref = self.storage.find_dataset_ref(
+            datasite, name, protocol_version=protocol_version
+        )
         private_dir = self.storage.private_dataset_dir(ref)
         if not private_dir.exists():
             raise ValueError(f"Private data directory not found: {private_dir}")
