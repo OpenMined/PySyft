@@ -1455,6 +1455,9 @@ class SyftboxManager(BaseModel):
         if dataset is None:
             raise ValueError(f"Dataset {tag} not found")
 
+        if users != "any" and isinstance(users, str):
+            users = [users]
+
         # A dataset has one collection for each protocol version it was written
         # in. Share them all, so a peer of any supported version finds a copy.
         # The listing gives the hash of each copy, so no hash is recomputed here.
@@ -1466,8 +1469,18 @@ class SyftboxManager(BaseModel):
         if not collections:
             raise ValueError(f"No uploaded collection found for dataset {tag}")
 
-        if users != "any" and isinstance(users, str):
-            users = [users]
+        # A share is a change of audience. The layouts were decided by the
+        # audience at create time, so a new peer whose protocol reads none of
+        # them would get a grant on a folder its client never even lists.
+        # Materialize what is missing first, then share everything.
+        if self._ensure_dataset_layouts_for(
+            tag, users, {c.protocol_version for c in collections}
+        ):
+            collections = [
+                c
+                for c in self._connection_router.owner_list_all_dataset_collections_with_permissions()
+                if c.tag == tag
+            ]
 
         for collection in collections:
             if users == "any":
@@ -1492,6 +1505,42 @@ class SyftboxManager(BaseModel):
 
         if sync:
             self.sync()
+
+    def _ensure_dataset_layouts_for(
+        self, tag: str, users: list[str] | str, existing_versions: set[str]
+    ) -> bool:
+        """Materialize any layout the audience reads but no existing copy serves.
+
+        A peer reads every layout at or below its negotiated protocol version,
+        so a copy is only missing when no uploaded collection sits at or below
+        the version a peer reads. The new copy uploads unshared; the caller
+        shares every collection uniformly afterwards. Returns whether a copy
+        was added.
+        """
+        storage = self.dataset_manager.storage
+        peer_emails = self.dataset_manager._peer_emails(users)
+        needed = storage.target_protocol_versions_for_peers(peer_emails)
+        missing = {
+            version
+            for version in needed
+            if not any(int(e) <= int(version) for e in existing_versions)
+        }
+        if not missing:
+            return False
+
+        # Each copy holds its own private directory. Give the new copy its
+        # private collection iff the dataset's copies are drive-backed, so a
+        # cold start restores it like any other.
+        has_private_collections = any(
+            c.tag == tag
+            for c in self._connection_router.owner_list_private_dataset_collections()
+        )
+        for protocol_version in sorted(missing, key=int):
+            copy = self.dataset_manager.migrate(tag, protocol_version, users=users)
+            self._upload_dataset_to_collection(copy, users=[])
+            if has_private_collections:
+                self._upload_private_dataset_to_collection(copy)
+        return True
 
     def share_private_dataset(self, tag: str, enclave_email: str):
         """Share private dataset files with an enclave via outbox events."""
