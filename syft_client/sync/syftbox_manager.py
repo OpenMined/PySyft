@@ -551,7 +551,23 @@ class SyftboxManager(BaseModel):
         if peer_manager.peer_store.use_encryption:
             manager_res._set_peer_store(peer_manager.peer_store)
 
+        # Every router that sends peer-directed messages downgrades them to the
+        # peer's negotiated syft-client protocol, so each one gets the live map.
+        manager_res._set_peer_schemas(peer_manager.live_peer_schemas("syft-client"))
+
         return manager_res
+
+    def _set_peer_schemas(self, peer_schemas) -> None:
+        """Wire PeerManager's live syft-client schema map into all routers."""
+        if self.datasite_owner_syncer:
+            self.datasite_owner_syncer.connection_router.set_peer_schemas(peer_schemas)
+        if self.datasite_watcher_syncer:
+            self.datasite_watcher_syncer.connection_router.set_peer_schemas(
+                peer_schemas
+            )
+            self.datasite_watcher_syncer.datasite_watcher_cache.connection_router.set_peer_schemas(
+                peer_schemas
+            )
 
     def _set_peer_store(self, peer_store) -> None:
         """Wire shared peer_store into all connection routers."""

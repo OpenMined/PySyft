@@ -1,8 +1,14 @@
 import logging
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
+from syft_migration import MigratableObject, ProtocolSchema
 
+from syft_client.migrations import (
+    SYFT_CLIENT_PROTOCOL_VERSION,
+    client_migration_service,
+    client_registry,
+)
 from syft_client.sync.checkpoints.checkpoint import Checkpoint, IncrementalCheckpoint
 from syft_client.sync.checkpoints.rolling_state import RollingState
 from syft_client.sync.connections.base_connection import (
@@ -37,6 +43,15 @@ class ConnectionRouter(BaseModel):
     connections: List[SyftboxPlatformConnection]
 
     peer_store: PeerStore
+
+    # peer email -> syft-client ProtocolSchema; syft_client wires PeerManager's
+    # live map here (updated in place as peer version files load), so outgoing
+    # messages downgrade to what each peer reads.
+    _peer_schemas: Dict[str, ProtocolSchema] = PrivateAttr(default_factory=dict)
+
+    def set_peer_schemas(self, peer_schemas: Dict[str, ProtocolSchema]) -> None:
+        """Adopt the live {peer email -> syft-client ProtocolSchema} map."""
+        self._peer_schemas = peer_schemas
 
     @classmethod
     def from_configs(cls, email: str, connection_configs: List[ConnectionConfig]):
@@ -90,9 +105,47 @@ class ConnectionRouter(BaseModel):
     # MESSAGE SEND/RECEIVE (with encryption)
     # =========================================================================
 
+    def _downgrade_for_peer(
+        self, message: MigratableObject, peer_email: str
+    ) -> MigratableObject:
+        """Downgrade an outgoing message to the protocol the peer reads.
+
+        The receive paths upgrade every blob on read, so this is the other
+        half of the contract: both sides speak the lower of the two protocol
+        versions, bounded by both floors. Migrations return new objects, so
+        the caller's message is never mutated (one instance fans out to many
+        recipients).
+
+        A peer without a known schema is assumed to run the current protocol,
+        the same policy as jobs; the assumption is logged.
+        """
+        schema = self._peer_schemas.get(peer_email)
+        if schema is None:
+            logger.warning(
+                f"No syft-client protocol schema known for peer {peer_email!r}. "
+                f"This client writes protocol {SYFT_CLIENT_PROTOCOL_VERSION}. A "
+                "peer that speaks an earlier protocol cannot read this message."
+            )
+            return message
+        protocol_version = client_registry.negotiate_protocol_version(
+            peer_version=schema.version,
+            peer_min=schema.min_supported_version,
+        )
+        if schema.version == protocol_version:
+            # The peer speaks the negotiated version, so its advertised slim
+            # schema is the target; computing our own full schema on every
+            # send would rebuild every object's JSON schema for nothing.
+            target = schema
+        else:
+            target = client_registry.schema_for_protocol_version(protocol_version)
+        return client_migration_service.migrate_to_schema(message, target)
+
     def watcher_send_proposed_file_changes_message(
         self, recipient: str, proposed_file_changes_message: ProposedFileChangesMessage
     ):
+        proposed_file_changes_message = self._downgrade_for_peer(
+            proposed_file_changes_message, recipient
+        )
         data = proposed_file_changes_message.as_compressed_data()
         data = self.peer_store.encrypt_if_needed(recipient, data)
         filename = proposed_file_changes_message.message_filename.as_string()
@@ -118,6 +171,7 @@ class ConnectionRouter(BaseModel):
     def owner_write_event_messages_to_outbox(
         self, recipient_email: str, events_message: FileChangeEventsMessage
     ):
+        events_message = self._downgrade_for_peer(events_message, recipient_email)
         data = events_message.as_compressed_data()
         data = self.peer_store.encrypt_if_needed(recipient_email, data)
         fname = events_message.message_filepath.as_string()
