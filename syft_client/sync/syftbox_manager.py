@@ -11,6 +11,7 @@ from typing import List, Optional, cast
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 from syft_datasets.config import SyftBoxConfig
 from syft_datasets.dataset_manager import SyftDatasetManager
+from syft_datasets.dataset_ref import DatasetNotFoundError
 from syft_job import SyftJobConfig
 from syft_job.client import BaseJobClient, JobClient
 from syft_job.job import JobsList
@@ -1541,8 +1542,23 @@ class SyftboxManager(BaseModel):
         holds its own private directory, so the copy gets its private
         collection iff the dataset's copies are drive-backed -- then a cold
         start restores it like any other.
+
+        The layout may already be on disk with no collection of its own: an
+        upload can fail after the migrate, and `migrate` is public. A second
+        write of the same layout raises, so an existing copy is read and
+        uploaded instead. Permissions are re-applied either way, because a
+        migrate re-applies them and both paths must leave the same state.
         """
-        copy = self.dataset_manager.migrate(tag, protocol_version, users=users)
+        storage = self.dataset_manager.storage
+        try:
+            ref = storage.find_dataset_ref(
+                self.email, tag, protocol_version=protocol_version
+            )
+        except DatasetNotFoundError:
+            copy = self.dataset_manager.migrate(tag, protocol_version, users=users)
+        else:
+            copy = storage.read_dataset(ref)
+            self.dataset_manager._set_new_dataset_permissions(dataset=copy, users=users)
         self._upload_dataset_to_collection(copy, users=[])
         has_private_collections = any(
             c.tag == tag

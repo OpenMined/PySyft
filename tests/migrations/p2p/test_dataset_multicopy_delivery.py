@@ -495,3 +495,26 @@ def test_a_copy_materialized_at_share_time_uploads_its_private_collection(pair):
         if c.tag == "private fill"
     ]
     assert {c.protocol_version for c in private} == {"0", "1"}
+
+
+def test_a_share_uploads_a_local_copy_that_has_no_collection(pair):
+    # A share that fails after the migrate leaves the copy on disk with no
+    # collection of its own. The next share must upload that copy. A second
+    # write of the same layout raises, and the share then grants nothing at
+    # all -- not even the collections that were already there.
+    ds_manager, do_manager = pair
+    _create_for_the_current_audience(ds_manager, do_manager, "half done")
+    do_manager.dataset_manager.migrate("half done", "0", users=[ds_manager.email])
+    assert {c.protocol_version for c in _collections_for(do_manager, "half done")} == {
+        "1"
+    }
+
+    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
+        _dataset_schema("0")
+    )
+    do_manager.share_dataset("half done", [OLD_PEER], sync=False)
+
+    assert {c.protocol_version for c in _collections_for(do_manager, "half done")} == {
+        "0",
+        "1",
+    }
