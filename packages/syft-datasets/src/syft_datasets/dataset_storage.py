@@ -443,12 +443,28 @@ class DatasetStorage:
                 best[key] = ref
         yield from best.values()
 
-    def find_dataset_ref(self, datasite_email: str, name: str) -> DatasetRef:
-        """The ref for ``name`` in a datasite, in its preferred protocol layout."""
-        for ref in self.iter_dataset_refs(datasite_email):
-            if ref.name == name:
+    def find_dataset_ref(
+        self,
+        datasite_email: str,
+        name: str,
+        protocol_version: Optional[str] = None,
+    ) -> DatasetRef:
+        """The ref for ``name`` in a datasite.
+
+        The preferred (newest) protocol layout by default; ``protocol_version``
+        selects one specific layout instead, e.g. the layout a peer reads.
+        """
+        if protocol_version is None:
+            for ref in self.iter_dataset_refs(datasite_email):
+                if ref.name == name:
+                    return ref
+            raise DatasetNotFoundError(f"Dataset '{name}' not found")
+        for ref in self.iter_dataset_refs_all_protocols(datasite_email):
+            if ref.name == name and ref.protocol_version == protocol_version:
                 return ref
-        raise DatasetNotFoundError(f"Dataset '{name}' not found")
+        raise DatasetNotFoundError(
+            f"Dataset '{name}' not found in protocol {protocol_version} layout"
+        )
 
     # -- deletion ------------------------------------------------------------
     def delete_dataset(self, datasite_email: str, name: str) -> list[Path]:

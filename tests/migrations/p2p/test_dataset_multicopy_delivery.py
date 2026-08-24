@@ -386,3 +386,135 @@ def test_a_newer_readable_layout_removes_the_older_local_copy(pair):
 
     cache._cleanup_stale_dataset_collections(peer, selected, published)
     assert old_local not in cache.dataset_collection_hashes
+
+
+# -- sharing after the fact --------------------------------------------------
+
+
+def _create_for_the_current_audience(ds_manager, do_manager, name: str, **kwargs):
+    """Create a dataset whose audience reads only the current protocol.
+
+    The paired DS advertises the current dataset protocol, so the create
+    writes the v1 layout only -- the starting point for a share that later
+    brings in a peer of another protocol.
+    """
+    mock_path, private_path, readme_path = create_tmp_dataset_files()
+    return do_manager.create_dataset(
+        name=name,
+        mock_path=mock_path,
+        private_path=private_path,
+        readme_path=readme_path,
+        users=[ds_manager.email],
+        **kwargs,
+    )
+
+
+def _collections_for(do_manager, tag: str):
+    return [
+        c
+        for c in do_manager._connection_router.owner_list_all_dataset_collections_with_permissions()
+        if c.tag == tag
+    ]
+
+
+def test_sharing_with_a_protocol0_peer_materializes_the_flat_copy(pair):
+    # A share is a change of audience. The audience decided the layouts at
+    # create time, so a new audience member of another protocol needs a copy
+    # in its layout -- granting it the versioned collection gives it a folder
+    # its own client never even lists.
+    ds_manager, do_manager = pair
+    _create_for_the_current_audience(ds_manager, do_manager, "afterthought")
+    assert {
+        c.protocol_version for c in _collections_for(do_manager, "afterthought")
+    } == {"1"}
+
+    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
+        _dataset_schema("0")
+    )
+    do_manager.share_dataset("afterthought", [OLD_PEER], sync=False)
+
+    assert {
+        c.protocol_version for c in _collections_for(do_manager, "afterthought")
+    } == {
+        "0",
+        "1",
+    }
+    # The flat copy exists locally too, so the owner's own scan and a cold
+    # start both see what the collection holds.
+    storage = do_manager.dataset_manager.storage
+    flat_dir = storage.public_dataset_dir(storage.new_dataset_ref("afterthought", "0"))
+    assert flat_dir.exists()
+
+
+def test_sharing_with_a_current_peer_creates_no_extra_copy(pair):
+    # The control: a peer of our own protocol reads the existing layout, so
+    # the test above measures the fill and not an unconditional copy.
+    ds_manager, do_manager = pair
+    _create_for_the_current_audience(ds_manager, do_manager, "current share")
+
+    do_manager.peer_manager.live_peer_schemas("syft-dataset")["new@test.org"] = (
+        _dataset_schema("1")
+    )
+    do_manager.share_dataset("current share", ["new@test.org"], sync=False)
+
+    assert {
+        c.protocol_version for c in _collections_for(do_manager, "current share")
+    } == {"1"}
+
+
+def test_sharing_with_an_unknown_peer_materializes_the_widest_layout(pair):
+    # An unknown peer may run any released client, so it gets the layout every
+    # release reads -- the same audience rule create_dataset applies.
+    ds_manager, do_manager = pair
+    _create_for_the_current_audience(ds_manager, do_manager, "unknown share")
+
+    do_manager.share_dataset("unknown share", ["stranger@test.org"], sync=False)
+
+    assert {
+        c.protocol_version for c in _collections_for(do_manager, "unknown share")
+    } == {"0", "1"}
+
+
+def test_a_copy_materialized_at_share_time_uploads_its_private_collection(pair):
+    # Each copy holds its own private directory (see the cold-start test
+    # above). A copy created at share time must follow the same rule, or a
+    # cold start loses its private data.
+    ds_manager, do_manager = pair
+    _create_for_the_current_audience(
+        ds_manager, do_manager, "private fill", upload_private=True
+    )
+
+    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
+        _dataset_schema("0")
+    )
+    do_manager.share_dataset("private fill", [OLD_PEER], sync=False)
+
+    private = [
+        c
+        for c in do_manager._connection_router.owner_list_private_dataset_collections()
+        if c.tag == "private fill"
+    ]
+    assert {c.protocol_version for c in private} == {"0", "1"}
+
+
+def test_a_share_uploads_a_local_copy_that_has_no_collection(pair):
+    # A share that fails after the migrate leaves the copy on disk with no
+    # collection of its own. The next share must upload that copy. A second
+    # write of the same layout raises, and the share then grants nothing at
+    # all -- not even the collections that were already there.
+    ds_manager, do_manager = pair
+    _create_for_the_current_audience(ds_manager, do_manager, "half done")
+    do_manager.dataset_manager.migrate("half done", "0", users=[ds_manager.email])
+    assert {c.protocol_version for c in _collections_for(do_manager, "half done")} == {
+        "1"
+    }
+
+    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
+        _dataset_schema("0")
+    )
+    do_manager.share_dataset("half done", [OLD_PEER], sync=False)
+
+    assert {c.protocol_version for c in _collections_for(do_manager, "half done")} == {
+        "0",
+        "1",
+    }
