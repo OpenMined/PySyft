@@ -1,6 +1,6 @@
 [project]
 name = "syft-rds"
-version = "0.6.0"
+version = "0.6.1"
 description = "PySyft 0.10+ Remote Data Science client: datasets + jobs on top of the syft sync engine (SyftBox users of the earlier syft-rds 0.x should pin syft-rds<0.6)"
 readme = "README.md"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
@@ -9,8 +9,8 @@ requires-python = ">=3.10"
 
 dependencies = [
     "syft>=0.10.0",  # floor: the `syft` PyPI project also hosts legacy PySyft <=0.9
-    "syft-job",
-    "syft-dataset",
+    "syft-job==0.1.40",
+    "syft-dataset==0.1.21",
 ]
 
 [build-system]

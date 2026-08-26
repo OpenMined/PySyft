@@ -1,13 +1,13 @@
 [project]
 name = "syft-perms"
-version = "0.1.14"
+version = "0.1.15"
 description = "User-facing permission API for Syft datasites"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 
 dependencies = [
-    "syft-permissions==0.1.14",
+    "syft-permissions==0.1.15",
 ]
 
 [build-system]

@@ -31,10 +31,10 @@ dependencies = [
     "rich>=13.0.0",
     "pydantic-settings>=2.11.0",
     "portalocker>=2.8.0",
-    "syft-permissions==0.1.14",
-    "syft-perms==0.1.14",
+    "syft-permissions==0.1.15",
+    "syft-perms==0.1.15",
     "syft-crypto-python>=0.1.2b2",
-    "syft-dataset==0.1.20",
+    "syft-dataset==0.1.21",
 ]
 
 
@@ -172,9 +172,9 @@ test = [
     "isort>=5.12.0",
     "coverage>=7.0.0",
     "enclave-model-api-example[test]",  # pulls fastapi/httpx for the inference server tests
-    "syft-bg",  # tests/unit/syft_bg/ lives under this package's testpaths and imports syft_bg
+    "syft-bg==0.3.12",  # tests/unit/syft_bg/ lives under this package's testpaths and imports syft_bg
     "syft-enclave",
     "syft-restrict",
-    "syft-migration",
+    "syft-migration==0.1.1",
     "pyarrow",  # only used by parquet test fixtures (tests/unit/utils.py)
 ]

@@ -1,6 +1,6 @@
 [project]
 name = "syft-dataset"
-version = "0.1.20"
+version = "0.1.21"
 description = "Syft Datasets"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }
@@ -9,8 +9,8 @@ requires-python = ">=3.10"
 dependencies = [
     "pyyaml>=6.0.3",
     "syft-notebook-ui",
-    "syft-perms==0.1.14",
-    "syft-migration>=0.1.0",
+    "syft-perms==0.1.15",
+    "syft-migration>=0.1.1",
 ]
 
 

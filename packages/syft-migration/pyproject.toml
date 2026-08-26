@@ -1,6 +1,6 @@
 [project]
 name = "syft-migration"
-version = "0.1.0"
+version = "0.1.1"
 description = "Versioning and on-the-fly migration foundation for Syft objects"
 readme = "README.md"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
