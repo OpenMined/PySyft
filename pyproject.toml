@@ -175,6 +175,6 @@ test = [
     "syft-bg",  # tests/unit/syft_bg/ lives under this package's testpaths and imports syft_bg
     "syft-enclave",
     "syft-restrict",
-    "syft-migration",
+    "syft-migration==0.1.1",
     "pyarrow",  # only used by parquet test fixtures (tests/unit/utils.py)
 ]
