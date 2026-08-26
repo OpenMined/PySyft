@@ -17,6 +17,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "google-cloud-pubsub>=2.18.0",
     "syft-job==0.1.39",
+    "syft-rds",
 ]
 
 [project.scripts]
@@ -24,6 +25,7 @@ syft-bg = "syft_bg.cli:main"
 
 [tool.uv.sources]
 "syft-job" = { workspace = true }
+"syft-rds" = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

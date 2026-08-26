@@ -1,58 +1,53 @@
 """Google Drive Files transport layer implementation"""
 
-import logging
 import io
 import json
-from pathlib import Path
+import logging
 import pickle
-from syft_client.sync.utils.syftbox_utils import check_env
-from syft_client.version import SYFT_CLIENT_VERSION
-from typing import Any, Dict, List, Optional, Tuple
-from typing import TYPE_CHECKING
-from pydantic import BaseModel
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+
+from google.oauth2.credentials import Credentials as GoogleCredentials
 from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload, build_http
-from google.oauth2.credentials import Credentials as GoogleCredentials
+from pydantic import BaseModel
 
-from syft_client.sync.connections.drive.gdrive_utils import (
-    gather_all_file_and_folder_ids_recursive,
+from syft_client.sync.checkpoints.checkpoint import (
+    CHECKPOINT_FILENAME_PREFIX,
+    INCREMENTAL_CHECKPOINT_PREFIX,
+    Checkpoint,
+    IncrementalCheckpoint,
 )
-from syft_client.sync.connections.drive.gdrive_retry import (
-    execute_with_retries,
-    next_chunk_with_retries,
-    batch_execute_with_retries,
+from syft_client.sync.checkpoints.rolling_state import (
+    ROLLING_STATE_FILENAME_PREFIX,
+    RollingState,
 )
-from syft_client.sync.version.version_info import _parse_semver
-
 from syft_client.sync.connections.base_connection import (
     FileCollection,
     SyftboxPlatformConnection,
 )
-from syft_datasets.dataset_manager import (
-    DATASET_COLLECTION_PREFIX,
-    PRIVATE_DATASET_COLLECTION_PREFIX,
+from syft_client.sync.connections.drive.gdrive_retry import (
+    batch_execute_with_retries,
+    execute_with_retries,
+    next_chunk_with_retries,
 )
-from syft_client.sync.events.file_change_event import (
-    FileChangeEventsMessageFileName,
-    FileChangeEventsMessage,
-)
-from syft_client.sync.messages.proposed_filechange import (
-    MessageFileName,
-    FileNameParseError,
-    ProposedFileChangesMessage,
+from syft_client.sync.connections.drive.gdrive_utils import (
+    gather_all_file_and_folder_ids_recursive,
 )
 from syft_client.sync.environments.environment import Environment
-from syft_client.sync.checkpoints.checkpoint import (
-    Checkpoint,
-    IncrementalCheckpoint,
-    CHECKPOINT_FILENAME_PREFIX,
-    INCREMENTAL_CHECKPOINT_PREFIX,
+from syft_client.sync.events.file_change_event import (
+    FileChangeEventsMessage,
+    FileChangeEventsMessageFileName,
 )
-from syft_client.sync.checkpoints.rolling_state import (
-    RollingState,
-    ROLLING_STATE_FILENAME_PREFIX,
+from syft_client.sync.messages.proposed_filechange import (
+    FileNameParseError,
+    MessageFileName,
+    ProposedFileChangesMessage,
 )
+from syft_client.sync.utils.syftbox_utils import check_env
+from syft_client.sync.version.version_info import _parse_semver
+from syft_client.version import SYFT_CLIENT_VERSION
 
 if TYPE_CHECKING:
     from syft_client.sync.connections.drive.grdrive_config import (
@@ -60,12 +55,19 @@ if TYPE_CHECKING:
     )
     from syft_client.sync.version.version_info import VersionInfo
 
+from syft_client.sync.connections.collection_prefixes import (
+    DATASET_COLLECTION_PREFIX,
+    PRIVATE_DATASET_COLLECTION_PREFIX,
+)
+
 # Timeout for Google API requests (in seconds)
 GOOGLE_API_TIMEOUT = 120  # 2 minutes
 
 SYFTBOX_FOLDER = "SyftBox"
 GOOGLE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 SCOPES = ["https://www.googleapis.com/auth/drive"]
+
+
 logging.getLogger("google_auth_httplib2").setLevel(logging.ERROR)
 
 
@@ -80,8 +82,8 @@ def build_drive_service(
     http = build_http()
     http.timeout = timeout
     if environment == Environment.COLAB:
-        from google.colab import auth as colab_auth
         import google.auth
+        from google.colab import auth as colab_auth
 
         colab_auth.authenticate_user()
         creds, _ = google.auth.default()
@@ -143,58 +145,42 @@ class GdrivePersonalSyftboxFolder(BaseModel):
         return f"{SYFT_CLIENT_VERSION}#{self.email}"
 
 
-class DatasetCollectionFolder(BaseModel):
-    """Represents a dataset collection folder with format: {prefix}_{tag}_{hash}"""
+class CollectionFolder(BaseModel):
+    """Naming value object for collection folders (domain-agnostic).
 
+    Collections (datasets, private datasets, or any future collection type) are
+    named ``{prefix}_{tag}_{content_hash}`` on the wire. This is the single
+    source of truth for building and parsing that name; it also computes the
+    content hash from the folder's file contents.
+    """
+
+    prefix: str
     tag: str
     content_hash: str
 
-    def as_string(self) -> str:
-        return f"{DATASET_COLLECTION_PREFIX}_{self.tag}_{self.content_hash}"
+    @property
+    def folder_name(self) -> str:
+        """The on-wire folder name. Doubles as the cache key (same string)."""
+        return f"{self.prefix}_{self.tag}_{self.content_hash}"
 
     @classmethod
-    def from_name(cls, name: str) -> "DatasetCollectionFolder":
-        """Parse folder name like 'syft_datasetcollection_mytag_abc123'"""
-        parts = name.split("_")
-        if len(parts) < 3:
-            raise ValueError(f"Invalid dataset collection folder name: {name}")
-        # prefix is parts[0:2] joined = "syft_datasetcollection"
-        # tag is parts[2:-1] joined (in case tag has underscores)
-        # hash is parts[-1]
-        tag = "_".join(parts[2:-1])
-        content_hash = parts[-1]
-        return cls(tag=tag, content_hash=content_hash)
+    def from_name(cls, prefix: str, name: str) -> "CollectionFolder":
+        """Parse '{prefix}_{tag}_{hash}' into a CollectionFolder.
+
+        Raises ValueError if the name does not carry the prefix, so callers can
+        skip non-matching folders.
+        """
+        marker = f"{prefix}_"
+        if not name.startswith(marker):
+            raise ValueError(f"Invalid collection folder name: {name}")
+        tag, separator, content_hash = name[len(prefix) + 1 :].rpartition("_")
+        if not separator or not tag or not content_hash:
+            raise ValueError(f"Invalid collection folder name: {name}")
+        return cls(prefix=prefix, tag=tag, content_hash=content_hash)
 
     @staticmethod
     def compute_hash(files: dict[str, bytes]) -> str:
-        """Compute a hash from file contents."""
-        from syft_client.sync.file_utils import compute_file_hashes
-
-        return compute_file_hashes(files)
-
-
-class PrivateDatasetCollectionFolder(BaseModel):
-    """Represents a private dataset collection folder with format: {prefix}_{tag}_{hash}"""
-
-    tag: str
-    content_hash: str
-
-    def as_string(self) -> str:
-        return f"{PRIVATE_DATASET_COLLECTION_PREFIX}_{self.tag}_{self.content_hash}"
-
-    @classmethod
-    def from_name(cls, name: str) -> "PrivateDatasetCollectionFolder":
-        """Parse folder name like 'syft_privatecollection_mytag_abc123'"""
-        parts = name.split("_")
-        if len(parts) < 3:
-            raise ValueError(f"Invalid private collection folder name: {name}")
-        tag = "_".join(parts[2:-1])
-        content_hash = parts[-1]
-        return cls(tag=tag, content_hash=content_hash)
-
-    @staticmethod
-    def compute_hash(files: dict[str, bytes]) -> str:
-        """Compute a hash from file contents."""
+        """Compute a content hash from file contents."""
         from syft_client.sync.file_utils import compute_file_hashes
 
         return compute_file_hashes(files)
@@ -286,7 +272,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     personal_syftbox_event_id_cache: Dict[str, str] = {}
 
     # tag -> dataset collection folder id
-    dataset_collection_folder_id_cache: Dict[str, str] = {}
+    collection_folder_id_cache: Dict[str, str] = {}
 
     # Rolling state caches for single-API-call optimization
     _rolling_state_folder_id: str | None = None
@@ -404,9 +390,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         other.personal_syftbox_event_id_cache = dict(
             self.personal_syftbox_event_id_cache
         )
-        other.dataset_collection_folder_id_cache = dict(
-            self.dataset_collection_folder_id_cache
-        )
+        other.collection_folder_id_cache = dict(self.collection_folder_id_cache)
 
     @property
     def environment(self) -> Environment:
@@ -1174,7 +1158,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         self.own_datasite_outbox_cache.clear()
         self.archive_folder_id_cache.clear()
         self.personal_syftbox_event_id_cache.clear()
-        self.dataset_collection_folder_id_cache.clear()
+        self.collection_folder_id_cache.clear()
         self._rolling_state_folder_id = None
         self._rolling_state_file_id = None
         self._encryption_bundles_folder_id = None
@@ -1493,34 +1477,44 @@ class GDriveConnection(SyftboxPlatformConnection):
         items = results.get("files", [])
         return items[0]["id"] if items else None
 
-    def owner_create_dataset_collection_folder(
-        self, tag: str, content_hash: str, owner_email: str
+    # =========================================================================
+    # GENERIC COLLECTION METHODS (parameterized on `prefix`)
+    #
+    # Folder names are built and parsed via CollectionFolder, the single source
+    # of truth for the f"{prefix}_{tag}_{content_hash}" scheme. On-wire behavior
+    # is byte-identical to the previous inline construction.
+    # =========================================================================
+
+    def owner_create_collection_folder(
+        self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> str:
-        """Create /SyftBox/{DATASET_COLLECTION_PREFIX}_{tag}_{hash} folder."""
-        folder_obj = DatasetCollectionFolder(tag=tag, content_hash=content_hash)
-        folder_name = folder_obj.as_string()
-        cache_key = f"{tag}_{content_hash}"
+        """Create /SyftBox/{prefix}_{tag}_{hash} folder."""
+        folder_name = CollectionFolder(
+            prefix=prefix, tag=tag, content_hash=content_hash
+        ).folder_name
 
         # Check cache
-        if cache_key in self.dataset_collection_folder_id_cache:
-            return self.dataset_collection_folder_id_cache[cache_key]
+        if folder_name in self.collection_folder_id_cache:
+            return self.collection_folder_id_cache[folder_name]
 
         syftbox_folder_id = self.get_syftbox_folder_id()
 
         # Check if exists
         folder_id = self._find_folder_by_name(folder_name, parent_id=syftbox_folder_id)
         if folder_id:
-            self.dataset_collection_folder_id_cache[cache_key] = folder_id
+            self.collection_folder_id_cache[folder_name] = folder_id
             return folder_id
 
         # Create new folder
         folder_id = self.create_folder(folder_name, syftbox_folder_id)
-        self.dataset_collection_folder_id_cache[cache_key] = folder_id
+        self.collection_folder_id_cache[folder_name] = folder_id
         return folder_id
 
-    def owner_tag_dataset_collection_as_any(self, tag: str, content_hash: str) -> None:
-        """Mark dataset collection as shared with 'any' via appProperties."""
-        folder_id = self._get_dataset_collection_folder_id(tag, content_hash)
+    def owner_tag_collection_as_any(
+        self, prefix: str, tag: str, content_hash: str
+    ) -> None:
+        """Mark collection as shared with 'any' via appProperties."""
+        folder_id = self._get_collection_folder_id(prefix, tag, content_hash)
         execute_with_retries(
             self.drive_service.files().update(
                 fileId=folder_id,
@@ -1528,13 +1522,13 @@ class GDriveConnection(SyftboxPlatformConnection):
             )
         )
 
-    def owner_share_dataset_collection(
-        self, tag: str, content_hash: str, users: list[str]
+    def owner_share_collection(
+        self, prefix: str, tag: str, content_hash: str, users: list[str]
     ) -> None:
-        """Share dataset collection folder with specific users via batch API."""
+        """Share collection folder with specific users via batch API."""
         if not users:
             return
-        folder_id = self._get_dataset_collection_folder_id(tag, content_hash)
+        folder_id = self._get_collection_folder_id(prefix, tag, content_hash)
         self._batch_add_permissions(folder_id, users)
 
     def _batch_add_permissions(self, file_id: str, users: list[str]) -> None:
@@ -1565,11 +1559,11 @@ class GDriveConnection(SyftboxPlatformConnection):
                 )
             batch_execute_with_retries(batch)
 
-    def owner_upload_dataset_files(
-        self, tag: str, content_hash: str, files: dict[str, bytes]
+    def owner_upload_collection_files(
+        self, prefix: str, tag: str, content_hash: str, files: dict[str, bytes]
     ) -> None:
-        """Upload dataset files to collection folder."""
-        folder_id = self._get_dataset_collection_folder_id(tag, content_hash)
+        """Upload files to a collection folder."""
+        folder_id = self._get_collection_folder_id(prefix, tag, content_hash)
 
         for file_path, content in files.items():
             file_payload, _ = self.create_file_payload(content)
@@ -1582,11 +1576,11 @@ class GDriveConnection(SyftboxPlatformConnection):
                 )
             )
 
-    def owner_list_dataset_collections(self) -> list[str]:
-        """List collections created by DO (owned by me)."""
+    def owner_list_collections(self, prefix: str) -> list[str]:
+        """List collections created by DO (owned by me). Returns list of tags."""
         syftbox_folder_id = self.get_syftbox_folder_id()
         query = (
-            f"name contains '{DATASET_COLLECTION_PREFIX}_' and '{syftbox_folder_id}' in parents "
+            f"name contains '{prefix}_' and '{syftbox_folder_id}' in parents "
             f"and 'me' in owners and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
         )
         results = execute_with_retries(
@@ -1597,19 +1591,20 @@ class GDriveConnection(SyftboxPlatformConnection):
         result = []
         for folder in folders:
             try:
-                folder_obj = DatasetCollectionFolder.from_name(folder["name"])
-                result.append(folder_obj.tag)
+                cf = CollectionFolder.from_name(prefix, folder["name"])
+                result.append(cf.tag)
             except ValueError:
                 continue
         return result
 
-    def owner_list_all_dataset_collections_with_permissions(
+    def owner_list_all_collections_with_permissions(
         self,
+        prefix: str,
     ) -> list[FileCollection]:
-        """List all DO's dataset collections with permissions info."""
+        """List all DO's collections with permissions info."""
         syftbox_folder_id = self.get_syftbox_folder_id()
         query = (
-            f"name contains '{DATASET_COLLECTION_PREFIX}_' and '{syftbox_folder_id}' in parents "
+            f"name contains '{prefix}_' and '{syftbox_folder_id}' in parents "
             f"and 'me' in owners and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
         )
         results = execute_with_retries(
@@ -1622,7 +1617,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         for folder in results.get("files", []):
             folder_id = folder["id"]
             try:
-                folder_obj = DatasetCollectionFolder.from_name(folder["name"])
+                cf = CollectionFolder.from_name(prefix, folder["name"])
                 has_anyone = (
                     folder.get("appProperties", {}).get("syft_shared_with_any")
                     == "true"
@@ -1630,8 +1625,8 @@ class GDriveConnection(SyftboxPlatformConnection):
                 collections.append(
                     FileCollection(
                         folder_id=folder_id,
-                        tag=folder_obj.tag,
-                        content_hash=folder_obj.content_hash,
+                        tag=cf.tag,
+                        content_hash=cf.content_hash,
                         has_any_permission=has_anyone,
                     )
                 )
@@ -1640,22 +1635,24 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         return collections
 
-    def owner_delete_dataset_collection(self, tag: str) -> None:
-        """Delete all public dataset collection folders matching the given tag."""
-        collections = self.owner_list_all_dataset_collections_with_permissions()
+    def owner_delete_collection(self, prefix: str, tag: str) -> None:
+        """Delete all collection folders (for prefix) matching the given tag."""
+        collections = self.owner_list_all_collections_with_permissions(prefix)
         for c in collections:
             if c.tag == tag:
                 self.delete_file_by_id(c.folder_id)
-                cache_key = f"{c.tag}_{c.content_hash}"
-                self.dataset_collection_folder_id_cache.pop(cache_key, None)
+                folder_name = CollectionFolder(
+                    prefix=prefix, tag=c.tag, content_hash=c.content_hash
+                ).folder_name
+                self.collection_folder_id_cache.pop(folder_name, None)
 
-    def watcher_list_dataset_collections(self) -> list[dict]:
+    def watcher_list_collections(self, prefix: str) -> list[dict]:
         """List collections shared with DS (not owned by me).
 
         Returns list of dicts with keys: owner_email, tag, content_hash
         """
         query = (
-            f"name contains '{DATASET_COLLECTION_PREFIX}_' and not 'me' in owners "
+            f"name contains '{prefix}_' and not 'me' in owners "
             f"and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
         )
         results = execute_with_retries(
@@ -1666,15 +1663,15 @@ class GDriveConnection(SyftboxPlatformConnection):
         result = []
         for folder in folders:
             try:
-                folder_obj = DatasetCollectionFolder.from_name(folder["name"])
+                cf = CollectionFolder.from_name(prefix, folder["name"])
                 owner_email = folder.get("owners", [{}])[0].get(
                     "emailAddress", "unknown"
                 )
                 result.append(
                     {
                         "owner_email": owner_email,
-                        "tag": folder_obj.tag,
-                        "content_hash": folder_obj.content_hash,
+                        "tag": cf.tag,
+                        "content_hash": cf.content_hash,
                     }
                 )
             except ValueError:
@@ -1682,12 +1679,13 @@ class GDriveConnection(SyftboxPlatformConnection):
                 continue
         return result
 
-    def watcher_download_dataset_collection(
-        self, tag: str, content_hash: str, owner_email: str
+    def watcher_download_collection(
+        self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> dict[str, bytes]:
-        """Download all files from a dataset collection."""
-        folder_obj = DatasetCollectionFolder(tag=tag, content_hash=content_hash)
-        folder_name = folder_obj.as_string()
+        """Download all files from a collection."""
+        folder_name = CollectionFolder(
+            prefix=prefix, tag=tag, content_hash=content_hash
+        ).folder_name
         # Try to find folder by name (could be owned by someone else)
         folder_id = self._find_folder_by_name(folder_name, owner_email=owner_email)
 
@@ -1703,12 +1701,13 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         return files
 
-    def watcher_get_dataset_collection_file_metadatas(
-        self, tag: str, content_hash: str, owner_email: str
+    def watcher_get_collection_file_metadatas(
+        self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> List[Dict]:
-        """Get file metadata from a dataset collection without downloading."""
-        folder_obj = DatasetCollectionFolder(tag=tag, content_hash=content_hash)
-        folder_name = folder_obj.as_string()
+        """Get file metadata from a collection without downloading."""
+        folder_name = CollectionFolder(
+            prefix=prefix, tag=tag, content_hash=content_hash
+        ).folder_name
         folder_id = self._find_folder_by_name(folder_name, owner_email=owner_email)
 
         if not folder_id:
@@ -1717,18 +1716,20 @@ class GDriveConnection(SyftboxPlatformConnection):
         file_metadatas = self.get_file_metadatas_from_folder(folder_id)
         return [{"file_id": f["id"], "file_name": f["name"]} for f in file_metadatas]
 
-    def watcher_download_dataset_file(self, file_id: str) -> bytes:
-        """Download a single file from a dataset collection."""
+    def watcher_download_collection_file(self, file_id: str) -> bytes:
+        """Download a single file from a collection."""
         return self.download_file(file_id)
 
-    def _get_dataset_collection_folder_id(self, tag: str, content_hash: str) -> str:
-        """Get folder ID for dataset collection, with caching."""
-        cache_key = f"{tag}_{content_hash}"
-        if cache_key in self.dataset_collection_folder_id_cache:
-            return self.dataset_collection_folder_id_cache[cache_key]
+    def _get_collection_folder_id(
+        self, prefix: str, tag: str, content_hash: str
+    ) -> str:
+        """Get folder ID for a collection, with caching."""
+        folder_name = CollectionFolder(
+            prefix=prefix, tag=tag, content_hash=content_hash
+        ).folder_name
+        if folder_name in self.collection_folder_id_cache:
+            return self.collection_folder_id_cache[folder_name]
 
-        folder_obj = DatasetCollectionFolder(tag=tag, content_hash=content_hash)
-        folder_name = folder_obj.as_string()
         syftbox_folder_id = self.get_syftbox_folder_id()
         folder_id = self._find_folder_by_name(folder_name, parent_id=syftbox_folder_id)
 
@@ -1737,122 +1738,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 f"Collection folder {tag} with hash {content_hash} not found"
             )
 
-        self.dataset_collection_folder_id_cache[cache_key] = folder_id
-        return folder_id
-
-    # =========================================================================
-    # PRIVATE DATASET COLLECTION METHODS
-    # =========================================================================
-
-    def owner_create_private_dataset_collection_folder(
-        self, tag: str, content_hash: str, owner_email: str
-    ) -> str:
-        """Create /SyftBox/{PRIVATE_DATASET_COLLECTION_PREFIX}_{tag}_{hash} folder.
-
-        No sharing is applied — only the owner can access this folder.
-        """
-        folder_obj = PrivateDatasetCollectionFolder(tag=tag, content_hash=content_hash)
-        folder_name = folder_obj.as_string()
-        cache_key = f"private_{tag}_{content_hash}"
-
-        if cache_key in self.dataset_collection_folder_id_cache:
-            return self.dataset_collection_folder_id_cache[cache_key]
-
-        syftbox_folder_id = self.get_syftbox_folder_id()
-        folder_id = self._find_folder_by_name(folder_name, parent_id=syftbox_folder_id)
-        if folder_id:
-            self.dataset_collection_folder_id_cache[cache_key] = folder_id
-            return folder_id
-
-        folder_id = self.create_folder(folder_name, syftbox_folder_id)
-        self.dataset_collection_folder_id_cache[cache_key] = folder_id
-        return folder_id
-
-    def owner_upload_private_dataset_files(
-        self, tag: str, content_hash: str, files: dict[str, bytes]
-    ) -> None:
-        """Upload files to a private dataset collection folder."""
-        folder_id = self._get_private_collection_folder_id(tag, content_hash)
-        for file_path, content in files.items():
-            file_payload, _ = self.create_file_payload(content)
-            file_name = Path(file_path).name
-            file_metadata = {"name": file_name, "parents": [folder_id]}
-            execute_with_retries(
-                self.drive_service.files().create(
-                    body=file_metadata, media_body=file_payload, fields="id"
-                )
-            )
-
-    def owner_list_private_dataset_collections(self) -> list[FileCollection]:
-        """List private collections owned by DO."""
-        syftbox_folder_id = self.get_syftbox_folder_id()
-        query = (
-            f"name contains '{PRIVATE_DATASET_COLLECTION_PREFIX}_' "
-            f"and '{syftbox_folder_id}' in parents "
-            f"and 'me' in owners and trashed=false "
-            f"and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
-        )
-        results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id,name)")
-        )
-
-        collections = []
-        for folder in results.get("files", []):
-            try:
-                folder_obj = PrivateDatasetCollectionFolder.from_name(folder["name"])
-                collections.append(
-                    FileCollection(
-                        folder_id=folder["id"],
-                        tag=folder_obj.tag,
-                        content_hash=folder_obj.content_hash,
-                    )
-                )
-            except ValueError:
-                continue
-        return collections
-
-    def owner_delete_private_dataset_collection(self, tag: str) -> None:
-        """Delete all private dataset collection folders matching the given tag."""
-        collections = self.owner_list_private_dataset_collections()
-        for c in collections:
-            if c.tag == tag:
-                self.delete_file_by_id(c.folder_id)
-                cache_key = f"private_{c.tag}_{c.content_hash}"
-                self.dataset_collection_folder_id_cache.pop(cache_key, None)
-
-    def owner_get_private_collection_file_metadatas(
-        self, tag: str, content_hash: str, owner_email: str
-    ) -> List[Dict]:
-        """Get file metadata from a private dataset collection without downloading."""
-        folder_obj = PrivateDatasetCollectionFolder(tag=tag, content_hash=content_hash)
-        folder_name = folder_obj.as_string()
-        folder_id = self._find_folder_by_name(folder_name, owner_email=owner_email)
-
-        if not folder_id:
-            raise ValueError(
-                f"Private collection {tag} with hash {content_hash} not found"
-            )
-
-        file_metadatas = self.get_file_metadatas_from_folder(folder_id)
-        return [{"file_id": f["id"], "file_name": f["name"]} for f in file_metadatas]
-
-    def _get_private_collection_folder_id(self, tag: str, content_hash: str) -> str:
-        """Get folder ID for private dataset collection, with caching."""
-        cache_key = f"private_{tag}_{content_hash}"
-        if cache_key in self.dataset_collection_folder_id_cache:
-            return self.dataset_collection_folder_id_cache[cache_key]
-
-        folder_obj = PrivateDatasetCollectionFolder(tag=tag, content_hash=content_hash)
-        folder_name = folder_obj.as_string()
-        syftbox_folder_id = self.get_syftbox_folder_id()
-        folder_id = self._find_folder_by_name(folder_name, parent_id=syftbox_folder_id)
-
-        if not folder_id:
-            raise ValueError(
-                f"Private collection folder {tag} with hash {content_hash} not found"
-            )
-
-        self.dataset_collection_folder_id_cache[cache_key] = folder_id
+        self.collection_folder_id_cache[folder_name] = folder_id
         return folder_id
 
     def _get_version_file_id(self) -> Optional[str]:

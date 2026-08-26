@@ -1,14 +1,17 @@
 from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
-from syft_client.sync.syftbox_manager import SyftboxManager
-from syft_datasets.dataset_manager import PRIVATE_DATASET_COLLECTION_PREFIX
-from tests.unit.utils import create_tmp_dataset_files
+from syft_rds import SyftRDSClient
+from syft_datasets.dataset_manager import (
+    DATASET_COLLECTION_PREFIX,
+    PRIVATE_DATASET_COLLECTION_PREFIX,
+)
+from dataset_test_utils import create_tmp_dataset_files
 
 
 class TestDatasetUploadPrivate:
     def test_ds_cannot_see_private_data(self):
         """When DO creates a dataset with upload_private=True,
         DS should see mock data but NOT private data."""
-        ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
             use_in_memory_cache=False,
         )
 
@@ -36,14 +39,14 @@ class TestDatasetUploadPrivate:
         assert len(dataset.mock_files) > 0
 
         # DS should NOT see any private collections via the connection
-        private_collections = (
-            ds_manager._connection_router.owner_list_private_dataset_collections()
+        private_collections = ds_manager.sync_engine._connection_router.owner_list_all_collections_with_permissions(
+            PRIVATE_DATASET_COLLECTION_PREFIX
         )
         assert len(private_collections) == 0
 
         # Verify private collection folder exists on GDrive (visible to DO)
-        do_private_collections = (
-            do_manager._connection_router.owner_list_private_dataset_collections()
+        do_private_collections = do_manager.sync_engine._connection_router.owner_list_all_collections_with_permissions(
+            PRIVATE_DATASET_COLLECTION_PREFIX
         )
         assert len(do_private_collections) == 1
         assert do_private_collections[0].tag == "testdataset"
@@ -51,7 +54,7 @@ class TestDatasetUploadPrivate:
     def test_do_cold_start_restores_private_data(self):
         """When DO creates a dataset with upload_private=True, then loses local data,
         a fresh sync should restore the private files."""
-        ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
             use_in_memory_cache=False,
         )
 
@@ -79,7 +82,7 @@ class TestDatasetUploadPrivate:
 
         shutil.rmtree(private_dir)
         assert not private_dir.exists()
-        do_manager.datasite_owner_syncer.initial_sync_done = False
+        do_manager.sync_engine.datasite_owner_syncer.initial_sync_done = False
 
         # Sync again — should restore private data from GDrive
         do_manager.sync()
@@ -91,7 +94,7 @@ class TestDatasetUploadPrivate:
 
     def test_default_behavior_no_private_upload(self):
         """When upload_private is not set, no private collection should be created."""
-        ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
             use_in_memory_cache=False,
         )
 
@@ -107,20 +110,22 @@ class TestDatasetUploadPrivate:
         )
 
         # No private collection should exist
-        private_collections = (
-            do_manager._connection_router.owner_list_private_dataset_collections()
+        private_collections = do_manager.sync_engine._connection_router.owner_list_all_collections_with_permissions(
+            PRIVATE_DATASET_COLLECTION_PREFIX
         )
         assert len(private_collections) == 0
 
         # Mock collection should still exist
         mock_collections = (
-            do_manager._connection_router.owner_list_dataset_collections()
+            do_manager.sync_engine._connection_router.owner_list_collections(
+                DATASET_COLLECTION_PREFIX
+            )
         )
         assert "testdataset" in mock_collections
 
     def test_ds_cannot_find_private_folders_via_gdrive_query(self):
         """DS searching GDrive directly for private collection prefix should find nothing."""
-        ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
             use_in_memory_cache=False,
         )
 
@@ -137,7 +142,9 @@ class TestDatasetUploadPrivate:
         )
 
         # Get the DS's raw GDrive connection and search for private folders
-        ds_connection: GDriveConnection = ds_manager._connection_router.connections[0]
+        ds_connection: GDriveConnection = (
+            ds_manager.sync_engine._connection_router.connections[0]
+        )
         results = (
             ds_connection.drive_service.files()
             .list(
@@ -152,7 +159,9 @@ class TestDatasetUploadPrivate:
         assert len(results.get("files", [])) == 0
 
         # DO should find it with the same query
-        do_connection: GDriveConnection = do_manager._connection_router.connections[0]
+        do_connection: GDriveConnection = (
+            do_manager.sync_engine._connection_router.connections[0]
+        )
         do_results = (
             do_connection.drive_service.files()
             .list(

@@ -95,6 +95,10 @@ def test_push_job_files_pushes_all_files_and_warns(caplog):
     """push_job_files should push every file but log a warning for non-syncable ones."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
 
+    do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
+        ds_manager.email
+    )
+
     with tempfile.TemporaryDirectory() as tmp:
         job_dir = _create_job_dir_with_hidden_files(Path(tmp))
 

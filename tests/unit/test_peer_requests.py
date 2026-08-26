@@ -2,6 +2,7 @@ from pathlib import Path
 
 from syft_client.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
+from tests.unit.utils import grant_job_inbox_access
 
 
 def test_peer_request_blocks_sync_until_approved():
@@ -44,8 +45,9 @@ def test_peer_request_blocks_sync_until_approved():
     do_cache = do_manager.datasite_owner_syncer.event_cache
     assert len(do_cache.file_hashes) == 0, "Cache should be empty - peer not approved"
 
-    # Step 4: DO approves peer request (grants write to app_data/job/{ds_email}/)
+    # Step 4: DO approves peer request
     do_manager.approve_peer_request(ds_manager.email)
+    grant_job_inbox_access(do_manager, ds_manager.email)
 
     # Verify: Peer moved from requests to approved
     assert len(do_manager.peer_manager.requested_by_peer_peers) == 0

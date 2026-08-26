@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 import os
 
-from syft_client.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
+from syft_rds import SyftRDSClient, SyftRDSClientConfig
 from syft_client.sync.version.peer_manager import CompatAction
 from syft_client.sync.peers.peer import Peer
 from syft_client.sync.peers.peer_list import PeerList
@@ -40,31 +40,34 @@ from syft_enclaves.immutability import (
 class SyftEnclaveClient:
     def __init__(
         self,
-        manager: SyftboxManager,
+        rds: SyftRDSClient,
         data_owners: list[str] | None = None,
     ):
-        self._manager = manager
+        # The Remote Data Science product client. It OWNS the job + dataset
+        # surface (job_client / job_runner / dataset_manager) and composes the
+        # generic sync engine (a SyftboxManager) as ``rds.sync_engine``.
+        self._rds = rds
         # Data owners whose approval gates every job run on this enclave.
         # Fixed at launch/deploy time; stored in memory.
         self.data_owners = list(data_owners or [])
 
     @property
     def email(self) -> str:
-        return self._manager.email
+        return self._rds.email
 
     @property
     def syftbox_folder(self) -> Path:
-        return self._manager.syftbox_folder
+        return self._rds.syftbox_folder
 
     @property
     def peers(self) -> PeerList:
-        return self._manager.peers
+        return self._rds.peers
 
     def add_peer(self, peer_email: str, force: bool = False, verbose: bool = True):
-        self._manager.add_peer(peer_email, force=force, verbose=verbose)
+        self._rds.add_peer(peer_email, force=force, verbose=verbose)
 
     def load_peers(self):
-        self._manager.load_peers()
+        self._rds.load_peers()
 
     def approve_peer_request(
         self,
@@ -72,12 +75,12 @@ class SyftEnclaveClient:
         verbose: bool = True,
         peer_must_exist: bool = True,
     ):
-        self._manager.approve_peer_request(
+        self._rds.approve_peer_request(
             email_or_peer, verbose=verbose, peer_must_exist=peer_must_exist
         )
 
     def reject_peer_request(self, email_or_peer: str | Peer):
-        self._manager.reject_peer_request(email_or_peer)
+        self._rds.reject_peer_request(email_or_peer)
 
     def attest_peer(
         self,
@@ -104,10 +107,8 @@ class SyftEnclaveClient:
         if expected_image_digest is not None:
             policy = AppraisalPolicy(expected_image_digest=expected_image_digest)
 
-        version_info = (
-            self._manager.peer_manager.connection_router.read_peer_version_file(
-                peer_email
-            )
+        version_info = self._rds.peer_manager.connection_router.read_peer_version_file(
+            peer_email
         )
         if version_info is None:
             print(
@@ -123,29 +124,29 @@ class SyftEnclaveClient:
         return verify_attestation_token(version_info.attestation_token, policy=policy)
 
     def sync(self):
-        self._manager.sync()
+        self._rds.sync()
 
     def delete_syftbox(
         self, verbose: bool = True, broadcast_delete_events: bool = True
     ):
         """Delete all SyftBox state (Drive files + local caches/folder)."""
-        self._manager.delete_syftbox(
+        self._rds.delete_syftbox(
             verbose=verbose, broadcast_delete_events=broadcast_delete_events
         )
 
     def create_dataset(self, *args, **kwargs):
-        return self._manager.create_dataset(*args, **kwargs)
+        return self._rds.create_dataset(*args, **kwargs)
 
     def share_private_dataset(self, tag: str, enclave_email: str):
-        self._manager.share_private_dataset(tag, enclave_email)
+        self._rds.share_private_dataset(tag, enclave_email)
 
     @property
     def datasets(self) -> SyftDatasetManager:
-        return self._manager.dataset_manager
+        return self._rds.dataset_manager
 
     @property
     def jobs(self) -> JobsList:
-        jobs_list = self._manager.jobs
+        jobs_list = self._rds.jobs
         wrapped = [
             EnclaveJobInfo.from_job_info(j)
             if j.job_headers.get("job_type") == "enclave"
@@ -173,14 +174,14 @@ class SyftEnclaveClient:
         otherwise surfaces much later as a stuck, never-distributed job).
         """
         if not force_submission:
-            result = self._manager.peer_manager.get_peer_compatibility_status(
+            result = self._rds.peer_manager.get_peer_compatibility_status(
                 enclave_email,
                 action=CompatAction.SUBMIT,
                 ignore_peer_version=ignore_peer_version,
             )
             result.raise_on_skip(operation="submit job")
             result.maybe_warn()
-        job_dir = self._manager.job_client.submit_python_job(
+        job_dir = self._rds.job_client.submit_python_job(
             enclave_email,
             code_path,
             job_name,
@@ -188,7 +189,7 @@ class SyftEnclaveClient:
             share_results_with_do=share_results_with_do,
             **kwargs,
         )
-        self._manager.push_job_files(job_dir)
+        self._rds.sync_engine.push_job_files(job_dir)
 
     def run_jobs(self) -> None:
         """Run approved enclave jobs."""
@@ -202,7 +203,7 @@ class SyftEnclaveClient:
                     state.status = JobStatus.APPROVED
                     state.save(job.job_review_path / "state.yaml")
 
-        self._manager.process_approved_jobs(
+        self._rds.process_approved_jobs(
             force_execution=True,
             share_outputs_with_submitter=True,
             share_logs_with_submitter=True,
@@ -230,14 +231,14 @@ class SyftEnclaveClient:
 
             results_shared_marker.write_text("shared")
 
-        self._manager.sync()
+        self._rds.sync()
 
     def _read_state_file(self, job: JobInfo) -> dict[Path, bytes]:
         """Read the job state.yaml as a {path_in_datasite: bytes} dict."""
         state_file = job.job_review_path / "state.yaml"
         if not state_file.exists():
             return {}
-        datasite_dir = self._manager.syftbox_folder / self._manager.email
+        datasite_dir = self._rds.syftbox_folder / self._rds.email
         state_rel = state_file.relative_to(datasite_dir)
         return {state_rel: state_file.read_bytes()}
 
@@ -250,21 +251,20 @@ class SyftEnclaveClient:
         files_by_datasite_path.update(self._read_state_file(job))
         if not files_by_datasite_path:
             return
-        events_message = (
-            self._manager.datasite_owner_syncer.event_cache.create_events_for_files(
-                files_by_datasite_path
-            )
+        syncer = self._rds.sync_engine.datasite_owner_syncer
+        events_message = syncer.event_cache.create_events_for_files(
+            files_by_datasite_path
         )
-        self._manager.datasite_owner_syncer.queue_event_for_syftbox(
+        syncer.queue_event_for_syftbox(
             recipients=recipients,
             file_change_events_message=events_message,
         )
-        self._manager.datasite_owner_syncer.process_syftbox_events_queue()
+        syncer.process_syftbox_events_queue()
 
     def approve_job(self, job: JobInfo) -> None:
         """Approve an enclave job and push the approval state file to the enclave."""
         if os.environ.get("PRE_SYNC", "true").lower() == "true":
-            self._manager.sync()
+            self._rds.sync()
 
         job.approve()
         file_name = enclave_approval_file_name(self.email)
@@ -273,8 +273,8 @@ class SyftEnclaveClient:
             print(
                 "🟠 Approval file does not exist yet. Kindly wait until enclave sends it."
             )
-        relative_path = approval_file.relative_to(self._manager.syftbox_folder)
-        self._manager.datasite_watcher_syncer.on_file_change(
+        relative_path = approval_file.relative_to(self._rds.syftbox_folder)
+        self._rds.sync_engine.datasite_watcher_syncer.on_file_change(
             relative_path, process_now=True
         )
 
@@ -286,14 +286,14 @@ class SyftEnclaveClient:
         3. Creates JobState with PartyApprovalStatus per DO
         4. Sets permissions and marks as distributed
         """
-        self._manager.job_client.scan_inbox()
-        job_manager = self._manager.job_client.manager
-        for ref in job_manager.iter_submission_refs(self._manager.email):
+        self._rds.job_client.scan_inbox()
+        job_manager = self._rds.job_client.manager
+        for ref in job_manager.iter_submission_refs(self._rds.email):
             self._try_distribute_job(ref)
 
     def _try_distribute_job(self, ref: JobRef):
         """Distribute a single enclave job to relevant DOs if not yet distributed."""
-        job_manager = self._manager.job_client.manager
+        job_manager = self._rds.job_client.manager
         job_dir = job_manager.submission_dir(ref)
         config = job_manager.read_submission(ref)
         if config.job_type != "enclave" or not config.datasets:
@@ -323,39 +323,37 @@ class SyftEnclaveClient:
     def _forward_job_to_dos(self, job_dir: Path, do_emails: list[str]):
         """Forward job files to DOs via the event-based outbox mechanism."""
         files_by_datasite_path = self._get_files_in_dir(job_dir)
-        events_message = (
-            self._manager.datasite_owner_syncer.event_cache.create_events_for_files(
-                files_by_datasite_path
-            )
+        syncer = self._rds.sync_engine.datasite_owner_syncer
+        events_message = syncer.event_cache.create_events_for_files(
+            files_by_datasite_path
         )
-        self._manager.datasite_owner_syncer.queue_event_for_syftbox(
+        syncer.queue_event_for_syftbox(
             recipients=do_emails,
             file_change_events_message=events_message,
         )
-        self._manager.datasite_owner_syncer.process_syftbox_events_queue()
+        syncer.process_syftbox_events_queue()
 
     def _forward_approval_files_to_dos(self, review_dir: Path, do_emails: list[str]):
         """Forward each DO's approval state file to them individually."""
-        datasite_dir = self._manager.syftbox_folder / self._manager.email
+        datasite_dir = self._rds.syftbox_folder / self._rds.email
+        syncer = self._rds.sync_engine.datasite_owner_syncer
         for do_email in do_emails:
             file_name = enclave_approval_file_name(do_email)
             approval_file = review_dir / file_name
             path_in_datasite = approval_file.relative_to(datasite_dir)
             files_by_datasite_path = {path_in_datasite: approval_file.read_bytes()}
-            events_message = (
-                self._manager.datasite_owner_syncer.event_cache.create_events_for_files(
-                    files_by_datasite_path
-                )
+            events_message = syncer.event_cache.create_events_for_files(
+                files_by_datasite_path
             )
-            self._manager.datasite_owner_syncer.queue_event_for_syftbox(
+            syncer.queue_event_for_syftbox(
                 recipients=[do_email],
                 file_change_events_message=events_message,
             )
-            self._manager.datasite_owner_syncer.process_syftbox_events_queue()
+            syncer.process_syftbox_events_queue()
 
     def _get_files_in_dir(self, directory: Path) -> dict[Path, bytes]:
         """Read all files under directory, keyed by path relative to the datasite root."""
-        datasite_dir = self._manager.syftbox_folder / self._manager.email
+        datasite_dir = self._rds.syftbox_folder / self._rds.email
         files_by_datasite_path = {}
         for f in directory.rglob("*"):
             if not f.is_file():
@@ -393,8 +391,8 @@ class SyftEnclaveClient:
     ):
         """Grant inbox read to everyone who needs to see the job (referenced +
         approving DOs), and approval-file write to the approving DOs."""
-        job_manager = self._manager.job_client.manager
-        datasite = self._manager.syftbox_folder / self._manager.email
+        job_manager = self._rds.job_client.manager
+        datasite = self._rds.syftbox_folder / self._rds.email
         ctx = SyftPermContext(datasite=datasite)
         inbox_rel = job_manager.submission_dir(ref).relative_to(datasite)
         review_rel = job_manager.review_dir(ref).relative_to(datasite)
@@ -409,25 +407,26 @@ class SyftEnclaveClient:
     @classmethod
     def from_config(
         cls,
-        config: SyftboxManagerConfig,
+        config: SyftRDSClientConfig,
         data_owners: list[str] | None = None,
     ) -> "SyftEnclaveClient":
-        """Build a SyftEnclaveClient from a manager config with a wrapped job_client.
+        """Build a SyftEnclaveClient from an RDS config with a wrapped job_client.
 
-        Encryption rides along on ``config`` via
+        Encryption rides along on ``config.sync`` via
         ``peer_manager_config.use_encryption``; ``SyftboxManager.from_config``
-        loads/generates this datasite's keys from its per-datasite key file, so no
-        extra step is needed.
+        (invoked inside ``SyftRDSClient.from_config``) loads/generates this
+        datasite's keys from its per-datasite key file, so no extra step is needed.
         """
-        manager = SyftboxManager.from_config(config)
-        manager.job_client = EnclaveJobClient(manager.job_client)
+        rds = SyftRDSClient.from_config(config)
+        rds.job_client = EnclaveJobClient(rds.job_client)
 
-        if manager.datasite_watcher_syncer:
-            manager.datasite_watcher_syncer.datasite_watcher_cache.pre_write_filter = (
-                make_private_dataset_immutability_filter(manager.syftbox_folder)
+        sync_engine = rds.sync_engine
+        if sync_engine.datasite_watcher_syncer:
+            sync_engine.datasite_watcher_syncer.datasite_watcher_cache.pre_write_filter = make_private_dataset_immutability_filter(
+                sync_engine.syftbox_folder
             )
 
-        return cls(manager, data_owners=data_owners)
+        return cls(rds, data_owners=data_owners)
 
     @classmethod
     def for_enclave(
@@ -444,7 +443,7 @@ class SyftEnclaveClient:
             data_owners: Emails whose approval gates every job on this enclave.
             encryption: Enable end-to-end drive encryption.
         """
-        config = SyftboxManagerConfig.for_jupyter(
+        config = SyftRDSClientConfig.for_jupyter(
             email=email,
             has_ds_role=True,
             has_do_role=True,
@@ -491,7 +490,12 @@ class SyftEnclaveClient:
         clients = create_clients(configs)
         enclave, do1, do2, ds = clients
         enclave.data_owners = [do1.email, do2.email]
-        managers = tuple(c._manager for c in clients)
+        # The setup helpers manipulate the generic sync engine directly
+        # (connections, file-watcher callbacks, version files, encryption,
+        # peering). Each client's sync engine lives at ``rds.sync_engine``; the
+        # RDS-owned job/dataset managers react via the peer-lifecycle callbacks
+        # registered on that same engine during SyftRDSClient.__init__.
+        managers = tuple(c._rds.sync_engine for c in clients)
         setup_connections(managers)
         setup_callbacks(managers)
         write_versions(managers)

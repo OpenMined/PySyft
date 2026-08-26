@@ -11,10 +11,11 @@ from syft_client.sync.connections.drive.gdrive_transport import (
 from syft_client.sync.connections.drive.mock_drive_service import (
     MockDriveService,
 )
-from syft_client.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
+from syft_rds import SyftRDSClient
+from syft_rds.config import SyftRDSClientConfig
 from syft_client.version import SYFT_CLIENT_VERSION
 
-from tests.unit.utils import create_test_project_folder, create_tmp_dataset_files
+from dataset_test_utils import create_test_project_folder, create_tmp_dataset_files
 
 NEW_VERSION = "99.0.0"
 
@@ -52,27 +53,27 @@ def _reinitialize_manager(email, backing_store, has_do_role, has_ds_role):
     single manager, reusing the same backing store so the new manager sees
     the same GDrive state.
     """
-    config = SyftboxManagerConfig._base_config_for_testing(
+    config = SyftRDSClientConfig._base_config_for_testing(
         email=email,
         has_do_role=has_do_role,
         has_ds_role=has_ds_role,
         use_in_memory_cache=False,
     )
-    manager = SyftboxManager.from_config(config)
+    manager = SyftRDSClient.from_config(config)
 
     mock_service = MockDriveService(backing_store, email)
     conn = GDriveConnection.from_service(email, mock_service)
-    manager._add_connection(conn)
+    manager.sync_engine._add_connection(conn)
 
     if has_ds_role:
-        manager.file_writer.add_callback(
+        manager.sync_engine.file_writer.add_callback(
             "write_file",
-            manager.datasite_watcher_syncer.on_file_change,
+            manager.sync_engine.datasite_watcher_syncer.on_file_change,
         )
     if has_do_role:
-        manager.datasite_owner_syncer.event_cache.add_callback(
+        manager.sync_engine.datasite_owner_syncer.event_cache.add_callback(
             "on_event_local_write",
-            manager.job_file_change_handler._handle_file_change,
+            manager.sync_engine.job_file_change_handler._handle_file_change,
         )
 
     manager.peer_manager.write_own_version()
@@ -138,7 +139,7 @@ def test_version_mismatch_and_backup_flow():
     """Full flow: create state on v1 -> upgrade to v2 -> old state preserved, new version works."""
 
     # -- Step 1: Create DO/DS on current version --
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )

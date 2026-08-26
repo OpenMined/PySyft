@@ -6,14 +6,16 @@ from unittest.mock import patch
 import pytest
 
 from syft_client.sync.syftbox_manager import SyftboxManager
-from tests.unit.utils import create_tmp_dataset_files
+from syft_rds import SyftRDSClient
+from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
+from dataset_test_utils import create_tmp_dataset_files
 
 
 class TestCreateDatasetCleanup:
     """Tests that create_dataset cleans up partial state on failure."""
 
     def _make_do_manager(self):
-        _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        _, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
             use_in_memory_cache=False,
         )
         return do_manager
@@ -95,7 +97,9 @@ class TestCreateDatasetCleanup:
         )
 
         # Mock GDrive folder should have been cleaned up too
-        collections = do_manager._connection_router.owner_list_dataset_collections()
+        collections = do_manager.sync_engine._connection_router.owner_list_collections(
+            DATASET_COLLECTION_PREFIX
+        )
         assert "testdataset" not in collections
 
     def test_cleanup_on_sync_failure(self):
@@ -147,9 +151,7 @@ class TestCreateDatasetCleanup:
                 side_effect=OSError("delete broken"),
             ),
         ):
-            with caplog.at_level(
-                logging.WARNING, logger="syft_client.sync.syftbox_manager"
-            ):
+            with caplog.at_level(logging.WARNING, logger="syft_rds.client"):
                 with pytest.raises(RuntimeError, match="upload failed"):
                     do_manager.create_dataset(**self._dataset_kwargs())
 

@@ -8,10 +8,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from syft_bg.api import auto_approve_job
-from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.common.config import get_default_paths
-from syft_client.job_auto_approval import auto_approve_and_run_jobs
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft_bg.common.syft_bg_config import SyftBgConfig
+from syft_rds import SyftRDSClient
+from syft_rds.job_auto_approval import auto_approve_and_run_jobs
 
 
 @contextmanager
@@ -27,7 +27,12 @@ def _temp_config_paths():
         )
         with (
             patch("syft_bg.common.config.get_default_paths", return_value=patched),
+            patch("syft_bg.api.api.get_default_paths", return_value=patched),
+            patch("syft_bg.api.utils.get_default_paths", return_value=patched),
             patch("syft_bg.approve.config.get_default_paths", return_value=patched),
+            patch(
+                "syft_bg.common.syft_bg_config.get_default_paths", return_value=patched
+            ),
         ):
             yield patched
 
@@ -41,7 +46,7 @@ def test_auto_approve_and_run_jobs():
     - The exact Python script content (newline agnostic)
     - Exactly the required files (no more, no less)
     """
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -134,7 +139,7 @@ def _create_project_dir(script_content="print('hello')\n", data_content='{"k": "
 
 def test_auto_approve_job_default_all_content_matched():
     """Default behavior: all files are content-matched."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -145,7 +150,7 @@ def test_auto_approve_job_default_all_content_matched():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         content_names = {e.relative_path for e in obj.file_contents}
         assert content_names == {"main.py", "data.json"}
@@ -156,7 +161,7 @@ def test_auto_approve_job_default_all_content_matched():
 
 def test_auto_approve_job_file_paths_only():
     """file_paths specified: those are name-only, rest are content-matched."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -167,7 +172,7 @@ def test_auto_approve_job_file_paths_only():
         result = auto_approve_job(job, file_paths=["data.json"])
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         assert [e.relative_path for e in obj.file_contents] == ["main.py"]
         assert obj.file_paths == ["data.json"]
@@ -175,7 +180,7 @@ def test_auto_approve_job_file_paths_only():
 
 def test_auto_approve_job_contents_only():
     """contents specified: only those files are content-matched, rest ignored."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -186,7 +191,7 @@ def test_auto_approve_job_contents_only():
         result = auto_approve_job(job, contents=["main.py"])
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         assert [e.relative_path for e in obj.file_contents] == ["main.py"]
         assert obj.file_paths == []
@@ -194,7 +199,7 @@ def test_auto_approve_job_contents_only():
 
 def test_auto_approve_job_both_contents_and_file_paths():
     """Both specified: contents are content-matched, file_paths are name-only."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -205,7 +210,7 @@ def test_auto_approve_job_both_contents_and_file_paths():
         result = auto_approve_job(job, contents=["main.py"], file_paths=["data.json"])
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         assert [e.relative_path for e in obj.file_contents] == ["main.py"]
         assert obj.file_paths == ["data.json"]
@@ -213,7 +218,7 @@ def test_auto_approve_job_both_contents_and_file_paths():
 
 def test_auto_approve_job_overlap_error():
     """Overlap between contents and file_paths should fail."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -227,7 +232,7 @@ def test_auto_approve_job_overlap_error():
 
 def test_auto_approve_job_file_not_found_error():
     """Referencing a non-existent file should fail."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -241,7 +246,7 @@ def test_auto_approve_job_file_not_found_error():
 
 def test_auto_approve_job_nested_directory():
     """Files in subdirectories are stored with relative paths."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -258,7 +263,7 @@ def test_auto_approve_job_nested_directory():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         entries = {e.relative_path: e for e in obj.file_contents}
         assert set(entries.keys()) == {"main.py", "subdir/helper.py", "data.json"}
@@ -272,7 +277,7 @@ def test_auto_approve_job_nested_directory():
 
 def test_auto_approve_job_default_no_special_treatment_for_non_params_json():
     """Default behavior with non-params.json files: all are content-matched."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -285,7 +290,7 @@ def test_auto_approve_job_default_no_special_treatment_for_non_params_json():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         content_names = {e.relative_path for e in obj.file_contents}
         assert content_names == {"main.py", "somefile.json"}
@@ -294,7 +299,7 @@ def test_auto_approve_job_default_no_special_treatment_for_non_params_json():
 
 def test_auto_approve_job_default_params_json_is_name_only():
     """Default behavior: params.json is automatically name-only."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
     )
@@ -307,7 +312,7 @@ def test_auto_approve_job_default_params_json_is_name_only():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = AutoApproveConfig.load()
+        config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job.name]
         content_names = {e.relative_path for e in obj.file_contents}
         assert content_names == {"main.py"}

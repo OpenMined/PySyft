@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 from syft_job.job import JobInfo
 
 if TYPE_CHECKING:
-    from syft_client.sync.syftbox_manager import SyftboxManager
+    from syft_rds.client import SyftRDSClient
 
 
 def _get_non_empty_lines(content: str) -> list[str]:
@@ -143,7 +143,7 @@ def job_matches_criteria(
 
 
 def auto_approve_and_run_jobs(
-    client: SyftboxManager,
+    client: SyftRDSClient,
     *,
     required_file_contents: Dict[str, str],
     required_file_paths: List[str],
@@ -164,7 +164,7 @@ def auto_approve_and_run_jobs(
     5. (Optional) Were submitted by an approved peer
 
     Args:
-        client: SyftboxManager instance
+        client: SyftRDSClient instance
         required_file_contents: Dict mapping filename to expected content.
                          Content is compared after stripping trailing whitespace.
                          Example: {"main.py": "print('hello')"}
@@ -180,8 +180,8 @@ def auto_approve_and_run_jobs(
         List of JobInfo objects that were approved.
 
     Example:
-        >>> from syft_client.sync.syftbox_manager import SyftboxManager
-        >>> client = SyftboxManager.for_jupyter(email="me@example.com", ...)
+        >>> from syft_rds import login_do
+        >>> client = login_do(email="me@example.com", ...)
         >>> approved = auto_approve_and_run_jobs(
         ...     client,
         ...     required_file_contents={"main.py": EXPECTED_SCRIPT},
@@ -193,7 +193,7 @@ def auto_approve_and_run_jobs(
     approved_peers = None
     if peers_only:
         client.load_peers()
-        approved_peers = [p.email for p in client._approved_peers]
+        approved_peers = [p.email for p in client.peer_manager.approved_peers]
 
     approved_jobs = []
     jobs = client.jobs
