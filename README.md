@@ -13,7 +13,7 @@
 [![Python 3.10+](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2Fpysyft%2Fdev%2Fpyproject.toml)](https://github.com/OpenMined/pysyft)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/OpenMined/pysyft/blob/main/pyproject.toml)
 
-PySyft lets data scientists submit computations which are ran by data owners on private data — all through cloud storage their organizations already use (Google Drive, Microsoft 365, etc.). No new infrastructure required.
+PySyft lets data scientists submit computations which are run by data owners on private data — all through cloud storage their organizations already use (Google Drive, Microsoft 365, etc.). No new infrastructure required.
 
 ## Docs
 
