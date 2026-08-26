@@ -172,7 +172,7 @@ test = [
     "isort>=5.12.0",
     "coverage>=7.0.0",
     "enclave-model-api-example[test]",  # pulls fastapi/httpx for the inference server tests
-    "syft-bg",  # tests/unit/syft_bg/ lives under this package's testpaths and imports syft_bg
+    "syft-bg==0.3.12",  # tests/unit/syft_bg/ lives under this package's testpaths and imports syft_bg
     "syft-enclave",
     "syft-restrict",
     "syft-migration==0.1.1",
