@@ -90,7 +90,7 @@ delete-syftbox email name="do":
     [ -f "$token" ] || { echo "Error: $token not found" >&2; exit 1; }
     echo "Deleting syftbox for {{email}}..."
     uv run python -c "
-    from syft_client.sync.utils.syftbox_utils import delete_syftbox
+    from syft.sync.utils.syftbox_utils import delete_syftbox
     delete_syftbox(token_path='$token', email='{{email}}')
     "
 
@@ -108,7 +108,8 @@ clean:
         fi
     }
 
-    remove_dirs "syft_client.egg-info"
+    remove_dirs "syft.egg-info"
+    remove_dirs "syft_client.egg-info"  # stale checkouts from before the rename
     remove_dirs "__pycache__"
     remove_dirs ".pytest_cache"
 
@@ -123,13 +124,13 @@ bump part="patch":
 # Show current version
 [group('version')]
 version:
-    @python3 -c "import syft_client; print(syft_client.__version__)"
+    @python3 -c "import syft; print(syft.__version__)"
 
 # Build syft client wheel
 [group('build')]
 build:
-    @echo "{{ _cyan }}Building syft-client wheel...{{ _nc }}"
-    rm -rf dist/
+    @echo "{{ _cyan }}Building syft wheel...{{ _nc }}"
+    rm -rf dist/ build/ *.egg-info
     uv build
     @echo "{{ _green }}Build complete!{{ _nc }}"
 

@@ -2,8 +2,8 @@
 
 import pytest
 
-from syft_client.sync.version.exceptions import VersionUnknownError
-from syft_client.sync.version.version_info import VersionInfo
+from syft.sync.version.exceptions import VersionUnknownError
+from syft.sync.version.version_info import VersionInfo
 from syft_rds import SyftRDSClient
 
 

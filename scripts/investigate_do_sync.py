@@ -153,16 +153,16 @@ def main() -> None:
     assert TOKEN_DO.exists(), f"DO token missing at {TOKEN_DO}"
     assert TOKEN_DS.exists(), f"DS token missing at {TOKEN_DS}"
 
-    import syft_client as sc
-    from syft_client.sync.peers.peer import PeerState
+    import syft as sy
+    from syft.sync.peers.peer import PeerState
 
     print("=" * 80)
     print("STEP 1: login DO + DS (sync disabled — may have stale Drive state)")
     print("=" * 80)
-    do_client = sc.login_do(
+    do_client = sy.login_do(
         email=DO_EMAIL, token_path=str(TOKEN_DO), sync=False, load_peers=False
     )
-    ds_client = sc.login_ds(
+    ds_client = sy.login_ds(
         email=DS_EMAIL, token_path=str(TOKEN_DS), sync=False, load_peers=False
     )
 
@@ -173,8 +173,8 @@ def main() -> None:
     _wipe(ds_client)
     time.sleep(5)
 
-    do_client = sc.login_do(email=DO_EMAIL, token_path=str(TOKEN_DO))
-    ds_client = sc.login_ds(email=DS_EMAIL, token_path=str(TOKEN_DS))
+    do_client = sy.login_do(email=DO_EMAIL, token_path=str(TOKEN_DO))
+    ds_client = sy.login_ds(email=DS_EMAIL, token_path=str(TOKEN_DS))
 
     print("\n" + "=" * 80)
     print("STEP 3: establish peer relationship")

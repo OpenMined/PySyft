@@ -78,14 +78,14 @@ import csv
 import json
 import os
 
-import syft_client as sc
+import syft as sy
 
-model_files = sc.resolve_dataset_files_path(
+model_files = sy.resolve_dataset_files_path(
     "gpt2_model", owner_email="model_owner@openmined.org"
 )
 model_dir = str(model_files[0].parent)
 
-mod = sc.load_dataset_code(
+mod = sy.load_dataset_code(
     "gpt2_model.nano_lm", owner_email="model_owner@openmined.org"
 )
 
@@ -95,7 +95,7 @@ with open(os.path.join(model_dir, "weights.json")) as f:
 model = mod.model
 model.init(weights)
 
-benchmark_path = sc.resolve_dataset_file_path(
+benchmark_path = sy.resolve_dataset_file_path(
     "eval_benchmark", owner_email="benchmark_owner@openmined.org"
 )
 results = []

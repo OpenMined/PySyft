@@ -75,7 +75,7 @@ variable "boot_disk_size_gb" {
 
 variable "image_repo" {
   type        = string
-  default     = "docker.io/openminedreleasebot/syft-client-enclave"
+  default     = "docker.io/openminedreleasebot/syft-enclave"
   description = "Enclave container image repo, without tag or digest."
 }
 

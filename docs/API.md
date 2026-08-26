@@ -1,5 +1,17 @@
 # Client API Reference
 
+The client described here is `syft_rds.SyftRDSClient` (package `syft-rds`), which composes datasets and jobs on top of the `syft` sync engine:
+
+```bash
+pip install "syft>=0.10.0" "syft-rds>=0.10.0"
+```
+
+```python
+from syft_rds import login_do, login_ds
+```
+
+`syft.login_do` / `syft.login_ds` also exist, but they return the bare sync engine (peers and file sync only) — no `datasets`, `jobs`, `create_dataset` or `submit_python_job`.
+
 ## Creating a Client
 
 ### `login_do(email, token_path=None)`

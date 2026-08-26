@@ -1,7 +1,7 @@
 # Inference flavor of the enclave image: base enclave + pre-packaged Gemma
 # inference pipeline behind /infer on the same port (8080).
 # Build context is the monorepo root (set by this package's Justfile).
-ARG BASE_IMAGE=docker.io/openminedreleasebot/syft-client-enclave:latest
+ARG BASE_IMAGE=docker.io/openminedreleasebot/syft-enclave:latest
 FROM ${BASE_IMAGE}
 
 # Install this example package (pulls fastapi/uvicorn) into the base image's

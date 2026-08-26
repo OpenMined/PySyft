@@ -34,8 +34,8 @@ def path_for_job(do_email: str, ds_email: str, filename: str = "test.job") -> st
     return f"{do_email}/app_data/job/inbox/{ds_email}/{filename}"
 
 
-SYFT_CLIENT_DIR = Path(__file__).parent.parent.parent.parent
-CREDENTIALS_DIR = SYFT_CLIENT_DIR / "credentials"
+SYFT_DIR = Path(__file__).parent.parent.parent.parent
+CREDENTIALS_DIR = SYFT_DIR / "credentials"
 
 FILE_DO = os.environ.get("ai_audit_credentials_fname_do", "token_do.json")
 EMAIL_DO = os.environ.get("AI_AUDIT_EMAIL_DO", "do@test.com")
@@ -461,7 +461,7 @@ def test_version_upgrade_breaks_communication():
     2. Update one peer's version file (simulating an upgrade)
     3. Reload the version and verify peers are now incompatible
     """
-    from syft_client.sync.version.version_info import VersionInfo
+    from syft.sync.version.version_info import VersionInfo
 
     # Phase 1: Create managers with compatible versions
     ds_manager, do_manager = create_test_pair(

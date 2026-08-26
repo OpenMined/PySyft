@@ -5,16 +5,16 @@ These tests are unique to integration testing and verify behavior that
 cannot be adequately tested with mocked connections.
 """
 
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.syftbox_manager import SyftboxManager
 import os
 from pathlib import Path
 from time import sleep
 import pytest
 
 
-SYFT_CLIENT_DIR = Path(__file__).parent.parent.parent.parent
+SYFT_DIR = Path(__file__).parent.parent.parent.parent
 # These are in gitignore, create yourself
-CREDENTIALS_DIR = SYFT_CLIENT_DIR / "credentials"
+CREDENTIALS_DIR = SYFT_DIR / "credentials"
 
 # koen gmail
 FILE_DO = os.environ.get("ai_audit_credentials_fname_do", "token_do.json")

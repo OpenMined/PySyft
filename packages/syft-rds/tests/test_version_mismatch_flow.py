@@ -2,18 +2,18 @@
 
 from unittest.mock import patch
 
-from syft_client.sync.utils.syftbox_utils import delete_local_syftbox
-from syft_client.sync.connections.drive.gdrive_transport import (
+from syft.sync.utils.syftbox_utils import delete_local_syftbox
+from syft.sync.connections.drive.gdrive_transport import (
     GDRIVE_P2P_FOLDER_DATASITE_PREFIX,
     GOOGLE_FOLDER_MIME_TYPE,
     GDriveConnection,
 )
-from syft_client.sync.connections.drive.mock_drive_service import (
+from syft.sync.connections.drive.mock_drive_service import (
     MockDriveService,
 )
 from syft_rds import SyftRDSClient
 from syft_rds.config import SyftRDSClientConfig
-from syft_client.version import SYFT_CLIENT_VERSION
+from syft.version import SYFT_VERSION
 
 from dataset_test_utils import create_test_project_folder, create_tmp_dataset_files
 
@@ -104,31 +104,31 @@ def _simulate_upgrade(manager, backing_store):
 
     with (
         patch(
-            "syft_client.sync.login_utils._resolve_token_path",
+            "syft.sync.login_utils._resolve_token_path",
             return_value=None,
         ),
         patch(
-            "syft_client.sync.login_utils._get_default_syftbox_path",
+            "syft.sync.login_utils._get_default_syftbox_path",
             return_value=syftbox_folder,
         ),
         patch(
-            "syft_client.sync.login_utils._read_remote_version",
+            "syft.sync.login_utils._read_remote_version",
             side_effect=read_remote,
         ),
         patch(
-            "syft_client.sync.login_utils._prompt_mismatch",
+            "syft.sync.login_utils._prompt_mismatch",
             return_value="1",
         ),
         patch(
-            "syft_client.sync.login_utils.delete_local_syftbox",
+            "syft.sync.login_utils.delete_local_syftbox",
             side_effect=do_delete_local,
         ),
         patch(
-            "syft_client.sync.login_utils._delete_remote_unversioned_state",
+            "syft.sync.login_utils._delete_remote_unversioned_state",
             side_effect=do_delete_unversioned,
         ),
     ):
-        from syft_client.sync.login_utils import (
+        from syft.sync.login_utils import (
             handle_potential_version_mismatches_on_login,
         )
 
@@ -177,7 +177,7 @@ def test_version_mismatch_and_backup_flow():
     # -- Step 4: Assert only P2P folders with current version --
     do_conn = do_manager.peer_manager.connection_router.connections[0]
     do_p2p_current = _find_versioned_p2p_folders(
-        do_conn, ds_manager.email, SYFT_CLIENT_VERSION
+        do_conn, ds_manager.email, SYFT_VERSION
     )
     assert len(do_p2p_current) > 0
     # No folders with a different version
@@ -191,13 +191,13 @@ def test_version_mismatch_and_backup_flow():
 
     # -- Step 6+7: Upgrade DO --
     with (
-        patch("syft_client.version.SYFT_CLIENT_VERSION", NEW_VERSION),
+        patch("syft.version.SYFT_VERSION", NEW_VERSION),
         patch(
-            "syft_client.sync.connections.drive.gdrive_transport.SYFT_CLIENT_VERSION",
+            "syft.sync.connections.drive.gdrive_transport.SYFT_VERSION",
             NEW_VERSION,
         ),
-        patch("syft_client.sync.login_utils.SYFT_CLIENT_VERSION", NEW_VERSION),
-        patch("syft_client.sync.version.version_info.SYFT_CLIENT_VERSION", NEW_VERSION),
+        patch("syft.sync.login_utils.SYFT_VERSION", NEW_VERSION),
+        patch("syft.sync.version.version_info.SYFT_VERSION", NEW_VERSION),
     ):
         _simulate_upgrade(do_manager, backing_store)
         do_manager = _reinitialize_manager(
@@ -275,9 +275,7 @@ def test_version_mismatch_and_backup_flow():
         assert len(do_manager.jobs) == 1
 
         # Old versioned P2P folders still have old data
-        old_do_p2p = _find_versioned_p2p_folders(
-            do_conn_new, ds_email, SYFT_CLIENT_VERSION
-        )
+        old_do_p2p = _find_versioned_p2p_folders(do_conn_new, ds_email, SYFT_VERSION)
         assert len(old_do_p2p) > 0
 
         # -- Step 17: DO runs new job --

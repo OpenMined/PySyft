@@ -22,10 +22,10 @@ from pathlib import Path
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
-from syft_client import SYFT_CLIENT_DIR
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft import SYFT_DIR
+from syft.sync.syftbox_manager import SyftboxManager
 
-CREDENTIALS_DIR = SYFT_CLIENT_DIR / "credentials"
+CREDENTIALS_DIR = SYFT_DIR / "credentials"
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 
 FILE_DO = os.environ.get("ai_audit_credentials_fname_do", "token_do.json")

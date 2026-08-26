@@ -3,8 +3,8 @@ set -euo pipefail
 
 TEE_SOCKET="/run/container_launcher/teeserver.sock"
 
-echo "=== Syft Client Enclave Inference Server ==="
-echo "syft-client version: $(python -c 'from syft_client import __version__; print(__version__)' 2>/dev/null || echo 'unknown')"
+echo "=== Syft Enclave Inference Server ==="
+echo "syft version: $(python -c 'from syft import __version__; print(__version__)' 2>/dev/null || echo 'unknown')"
 
 # Token bootstrap. SYFT_BOOTSTRAP picks the provider; see
 # src/syft_enclaves/bootstrap.py for details.

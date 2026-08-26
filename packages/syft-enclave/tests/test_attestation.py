@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from syft_client.version import SYFT_CLIENT_VERSION
+from syft.version import SYFT_VERSION
 
 from syft_enclaves.attestation import (
     JWT_EXPIRY_GRACE_SECONDS,
@@ -15,7 +15,7 @@ from syft_enclaves.attestation import (
 )
 
 FAKE_IMAGE_DIGEST = "sha256:abc123"
-EXPECTED_VERSION_NONCE = f"syft-client-{SYFT_CLIENT_VERSION}"
+EXPECTED_VERSION_NONCE = f"syft-{SYFT_VERSION}"
 
 # The image digest is not shipped as a constant — it's supplied per-call via an
 # AppraisalPolicy. A policy pinning the fake token's digest is used by the
@@ -97,13 +97,13 @@ class TestVerifyAttestationToken:
 
     def test_version_mismatch(self, mock_verify):
         # Older enclave version sent in the correct (prefixed) format.
-        mock_verify.return_value = _valid_claims(eat_nonce=["syft-client-0.0.1"])
+        mock_verify.return_value = _valid_claims(eat_nonce=["syft-0.0.1"])
         with pytest.raises(AttestationError, match="version_match"):
             verify_attestation_token("fake-token", verbose=False)
 
     def test_version_unprefixed_rejected(self, mock_verify):
         """A bare version (pre-fix sender) must be rejected, not accepted."""
-        mock_verify.return_value = _valid_claims(eat_nonce=[SYFT_CLIENT_VERSION])
+        mock_verify.return_value = _valid_claims(eat_nonce=[SYFT_VERSION])
         with pytest.raises(AttestationError, match="version_match"):
             verify_attestation_token("fake-token", verbose=False)
 
@@ -187,7 +187,7 @@ class TestVerifyAttestationToken:
         mock_verify.return_value = _valid_claims(
             secboot=False,
             dbgstat="enabled",
-            eat_nonce=["syft-client-0.0.1"],
+            eat_nonce=["syft-0.0.1"],
         )
         with pytest.raises(AttestationError) as exc_info:
             verify_attestation_token("fake-token", verbose=False)

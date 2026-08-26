@@ -10,13 +10,13 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, ConfigDict
 
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.syftbox_manager import SyftboxManager
 from syft_datasets.dataset_manager import (
     DATASET_COLLECTION_PREFIX,
     PRIVATE_DATASET_COLLECTION_PREFIX,
 )
-from syft_client.sync.utils.pre_submit_scan import run_pre_submit_check
-from syft_client.sync.version.peer_manager import CompatAction
+from syft.sync.utils.pre_submit_scan import run_pre_submit_check
+from syft.sync.version.peer_manager import CompatAction
 from syft_job.client import JobClient
 from syft_job.job_runner import SyftJobRunner
 from syft_datasets.dataset_manager import SyftDatasetManager
@@ -484,7 +484,7 @@ class SyftRDSClient(BaseModel):
 
         Returns ``(folder_id, content_hash)``.
         """
-        from syft_client.sync.connections.drive.gdrive_transport import (
+        from syft.sync.connections.drive.gdrive_transport import (
             CollectionFolder,
         )
 
@@ -604,7 +604,7 @@ class SyftRDSClient(BaseModel):
             users: List of email addresses or "any"
             sync: Whether to sync after sharing
         """
-        from syft_client.sync.connections.drive.gdrive_transport import (
+        from syft.sync.connections.drive.gdrive_transport import (
             CollectionFolder,
         )
 
@@ -657,7 +657,7 @@ class SyftRDSClient(BaseModel):
     def _resolve_dataset_owners_for_name(self, dataset_name: str) -> list:
         """Resolve which datasite(s) own a dataset of the given name.
 
-        Used by syft_client.utils.resolve_dataset_files_path when a client is
+        Used by syft.utils.resolve_dataset_files_path when a client is
         passed. Owned here (drives the RDS dataset manager).
         """
         return [

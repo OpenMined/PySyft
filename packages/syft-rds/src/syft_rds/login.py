@@ -13,10 +13,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from syft_client.sync.environments.environment import Environment
-from syft_client.sync.login import _init_client_login, _resolve_login_params
-from syft_client.sync.login_utils import handle_potential_version_mismatches_on_login
-from syft_client.sync.utils.syftbox_utils import check_env
+from syft.sync.environments.environment import Environment
+from syft.sync.login import _init_client_login, _resolve_login_params
+from syft.sync.login_utils import handle_potential_version_mismatches_on_login
+from syft.sync.utils.syftbox_utils import check_env
 
 from syft_rds.client import SyftRDSClient
 from syft_rds.config import SyftRDSClientConfig
@@ -34,7 +34,7 @@ def _login(
 ) -> SyftRDSClient:
     """Shared RDS login.
 
-    Mirrors the pre-split ``syft_client`` login flow: detect the environment,
+    Mirrors the pre-split ``syft`` login flow: detect the environment,
     resolve login params
     """
     env = check_env()

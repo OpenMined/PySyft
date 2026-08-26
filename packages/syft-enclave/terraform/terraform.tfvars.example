@@ -21,7 +21,7 @@ token_file    = "/absolute/path/to/token_enclave.json"
 # vm_name             = "syft-enclave-vm"
 # machine_type        = ""            # null = follow hardware (n2d-standard-2 / a3-highgpu-1g)
 # boot_disk_size_gb   = 200
-# image_repo          = "docker.io/openminedreleasebot/syft-client-enclave"
+# image_repo          = "docker.io/openminedreleasebot/syft-enclave"
 # image_tag           = "latest"
 # image_digest        = ""            # e.g. "sha256:<64-hex>"; when set, takes precedence over image_tag
 # use_encryption      = false         # dev-mode override only (default false); production always encrypts

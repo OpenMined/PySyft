@@ -3,8 +3,8 @@
 import tempfile
 from pathlib import Path
 
-from syft_client.sync.syftbox_manager import SyftboxManager
-from syft_client.sync.utils.path_filters import (
+from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.utils.path_filters import (
     is_excluded_path,
     is_normal_syncable_path,
 )
@@ -118,7 +118,7 @@ def test_push_job_files_pushes_all_files_and_warns(caplog):
             shutil.rmtree(target)
         shutil.copytree(job_dir, target)
 
-        with caplog.at_level("WARNING", logger="syft_client.sync.syftbox_manager"):
+        with caplog.at_level("WARNING", logger="syft.sync.syftbox_manager"):
             ds_manager.push_job_files(target)
         do_manager.sync()
 
@@ -150,10 +150,10 @@ def test_push_job_files_pushes_all_files_and_warns(caplog):
 
 def test_owner_cache_get_syncable_paths_filters_all_three_categories(tmp_path):
     """DataSiteOwnerEventCache.get_syncable_paths excludes excluded/private/collections."""
-    from syft_client.sync.sync.caches.datasite_owner_cache import (
+    from syft.sync.sync.caches.datasite_owner_cache import (
         DataSiteOwnerEventCache,
     )
-    from syft_client.sync.sync.caches.cache_file_writer_connection import (
+    from syft.sync.sync.caches.cache_file_writer_connection import (
         InMemoryCacheFileConnection,
     )
 
@@ -181,10 +181,10 @@ def test_owner_cache_get_syncable_paths_filters_all_three_categories(tmp_path):
 
 def test_create_checkpoint_excludes_collections(tmp_path):
     """create_checkpoint must drop files under the collections folder."""
-    from syft_client.sync.sync.caches.datasite_owner_cache import (
+    from syft.sync.sync.caches.datasite_owner_cache import (
         DataSiteOwnerEventCache,
     )
-    from syft_client.sync.sync.caches.cache_file_writer_connection import (
+    from syft.sync.sync.caches.cache_file_writer_connection import (
         InMemoryCacheFileConnection,
     )
 

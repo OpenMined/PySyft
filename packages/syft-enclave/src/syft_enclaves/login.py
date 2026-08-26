@@ -2,10 +2,10 @@
 
 from pathlib import Path
 
-from syft_client.sync.environments.environment import Environment
-from syft_client.sync.login import _init_client_login, _resolve_login_params
-from syft_client.sync.login_utils import handle_potential_version_mismatches_on_login
-from syft_client.sync.utils.syftbox_utils import check_env
+from syft.sync.environments.environment import Environment
+from syft.sync.login import _init_client_login, _resolve_login_params
+from syft.sync.login_utils import handle_potential_version_mismatches_on_login
+from syft.sync.utils.syftbox_utils import check_env
 from syft_rds import SyftRDSClientConfig
 
 from syft_enclaves.client import SyftEnclaveClient
@@ -25,7 +25,7 @@ def _login(
 ) -> SyftEnclaveClient:
     """Shared login for enclave-flow participants.
 
-    Mirrors ``syft_client.login_do``: detect the environment, resolve params,
+    Mirrors ``syft.login_do``: detect the environment, resolve params,
     run the login-time version-mismatch check, then build the enclave client
     for Colab or Jupyter — always wrapping the job_client with EnclaveJobClient.
 
@@ -61,7 +61,7 @@ def _login(
     # config's peer_manager_config.
     client = SyftEnclaveClient.from_config(config)
 
-    # Reuses syft-client's login init: verifies the token authenticates as
+    # Reuses syft's login init: verifies the token authenticates as
     # `email`, writes the local version, then syncs / loads peers. Operates on
     # the generic sync engine nested inside the RDS client.
     _init_client_login(client._rds.sync_engine, sync=sync, load_peers=load_peers)

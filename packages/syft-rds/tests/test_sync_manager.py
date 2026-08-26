@@ -7,8 +7,8 @@ import tempfile
 
 import pytest
 
-from syft_client.sync.connections.drive import mock_drive_service
-from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive import mock_drive_service
+from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft_datasets import Dataset
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 from syft_rds import SyftRDSClient
@@ -77,7 +77,7 @@ def test_datasets():
     assert len(mock_content_ds) > 0
 
     # test getting it via resolve path
-    from syft_client import resolve_dataset_file_path
+    from syft import resolve_dataset_file_path
 
     mock_file_path = resolve_dataset_file_path("my dataset", client=ds_manager)
     assert mock_file_path.exists()
@@ -332,20 +332,20 @@ def test_jobs_with_dataset():
 
     dataset_ds = ds_manager.datasets.get("my dataset", datasite=do_manager.email)
     assert dataset_ds.mock_files[0].exists()
-    import syft_client as sc
+    import syft as sy
 
     assert (
-        sc.resolve_dataset_file_path("my dataset", client=ds_manager)
+        sy.resolve_dataset_file_path("my dataset", client=ds_manager)
         == dataset_ds.mock_files[0]
     )
 
     test_py_path = "/tmp/test.py"
     with open(test_py_path, "w") as f:
         f.write("""
-import syft_client as sc
+import syft as sy
 import json
 
-data_path = sc.resolve_dataset_file_path("my dataset")
+data_path = sy.resolve_dataset_file_path("my dataset")
 with open(data_path, "r") as f:
     data = f.read()
 result = {"result": len(data)}
@@ -726,9 +726,9 @@ def test_single_file_job_flow_with_dataset():
     with open(test_py_path, "w") as f:
         f.write("""
 import json
-import syft_client as sc
+import syft as sy
 
-data_path = sc.resolve_dataset_file_path("my dataset")
+data_path = sy.resolve_dataset_file_path("my dataset")
 
 with open(data_path, "r") as data_file:
     data = data_file.read()
@@ -1055,7 +1055,7 @@ def test_ds_dataset_cache_aware_sync():
     original_method = syncer.download_collection_file_with_new_connection
 
     with patch(
-        "syft_client.sync.sync.datasite_watcher_syncer.DatasiteWatcherSyncer.download_collection_file_with_new_connection",
+        "syft.sync.sync.datasite_watcher_syncer.DatasiteWatcherSyncer.download_collection_file_with_new_connection",
         wraps=original_method,
     ) as mock_download:
         # Sync - no download should happen because hash matches

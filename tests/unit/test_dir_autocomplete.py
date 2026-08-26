@@ -1,4 +1,4 @@
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.syftbox_manager import SyftboxManager
 
 
 def test_dir_returns_only_public_api():

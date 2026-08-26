@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       package_version:
-        description: 'syft-client version to test (e.g. 0.1.106)'
+        description: 'syft version to test (e.g. 0.10.0)'
         type: string
         required: true
   workflow_call:
@@ -27,38 +27,63 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
-      - name: Poll PyPI for syft-client==${{ inputs.package_version }}
+      - name: Poll PyPI for syft==${{ inputs.package_version }}
         run: |
           VERSION="${{ inputs.package_version }}"
           MAX_ATTEMPTS=15
           SLEEP=10
           for i in $(seq 1 $MAX_ATTEMPTS); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/syft-client/${VERSION}/json")
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/syft/${VERSION}/json")
             if [ "$STATUS" = "200" ]; then
-              echo "syft-client==${VERSION} is available on PyPI"
+              echo "syft==${VERSION} is available on PyPI"
               exit 0
             fi
             echo "Attempt $i/$MAX_ATTEMPTS: not yet available (HTTP $STATUS), waiting ${SLEEP}s..."
             sleep $SLEEP
           done
-          echo "Timed out waiting for syft-client==${VERSION} on PyPI"
+          echo "Timed out waiting for syft==${VERSION} on PyPI"
           exit 1
 
       - name: Wait for PyPI CDN propagation
         run: sleep 30
 
-      - name: Install syft-client from PyPI
-        run: |
-          uv venv .venv
-          source .venv/bin/activate
-          uv pip install "syft-client==${{ inputs.package_version }}"
+      # tests/unit also imports workspace siblings (syft_bg, syft_job, syft_rds, ...)
+      # that are not dependencies of the published wheel, so build the full
+      # workspace env first and then swap only `syft` for the PyPI artifact.
+      - name: Install workspace test environment
+        run: uv sync --all-extras
 
-      - name: Install test dependencies
+      # Clean-venv probe with dependencies from PyPI (no --no-deps): proves the
+      # published wheel's pins (syft-dataset==X, syft-perms==X, ...) are all
+      # installable AND that the published sub-packages are the code the wheel
+      # expects — a stale sub-package artifact on PyPI fails `import syft` even
+      # though resolution succeeds.
+      - name: Install the published wheel from PyPI in a clean venv and import it
         run: |
-          source .venv/bin/activate
-          uv pip install pytest pytest-xdist pytest-rerunfailures
+          uv venv /tmp/pypi-check
+          uv pip install --python /tmp/pypi-check/bin/python "syft==${{ inputs.package_version }}"
+          /tmp/pypi-check/bin/python -c "
+          import syft as sy, syft.sync.login, syft.utils
+          assert sy.__version__ == '${{ inputs.package_version }}', sy.__version__
+          print('clean-venv import OK:', sy.__version__)
+          "
 
+      # Swap only `syft` for the wheel, then move the source tree out of the
+      # way: both `python -c` and pytest (prepend import mode, tests/__init__.py)
+      # put the checkout on sys.path, so a `./syft/` directory would shadow the
+      # installed package and the tests would silently exercise the source.
+      - name: Replace the editable syft with the PyPI artifact
+        run: |
+          uv pip install --reinstall --no-deps "syft==${{ inputs.package_version }}"
+          mv syft /tmp/syft-src
+          uv run --no-sync python -c "
+          import syft
+          assert 'site-packages' in syft.__file__, syft.__file__
+          assert syft.__version__ == '${{ inputs.package_version }}', syft.__version__
+          print('syft', syft.__version__, 'from', syft.__file__)
+          "
+
+      # --no-sync is essential: a plain `uv run` would re-sync the project and
+      # restore the editable install we just replaced.
       - name: Run unit tests
-        run: |
-          source .venv/bin/activate
-          pytest -n auto ./tests/unit
+        run: uv run --no-sync pytest -n auto ./tests/unit

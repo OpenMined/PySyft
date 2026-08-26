@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-import syft_client as sc
+import syft as sy
 from syft_rds import SyftRDSClient
 
 
@@ -54,11 +54,11 @@ def test_load_dataset_code_top_level_and_nested():
     )
     _create_local_dataset(do_manager, "my_code_dataset")
 
-    top = sc.load_dataset_code("my_code_dataset.helpers", client=do_manager)
+    top = sy.load_dataset_code("my_code_dataset.helpers", client=do_manager)
     assert top.double(4) == 8
     assert top.VALUE == "top-level"
 
-    nested = sc.load_dataset_code("my_code_dataset.utils.nested", client=do_manager)
+    nested = sy.load_dataset_code("my_code_dataset.utils.nested", client=do_manager)
     assert nested.triple(4) == 12
     assert nested.VALUE == "nested"
 
@@ -73,7 +73,7 @@ def test_load_dataset_code_explicit_module_name():
     )
     _create_local_dataset(do_manager, "my_code_dataset")
 
-    mod = sc.load_dataset_code(
+    mod = sy.load_dataset_code(
         "my_code_dataset.helpers",
         client=do_manager,
         module_name="my_custom_name",
@@ -86,7 +86,7 @@ def test_load_dataset_code_invalid_path_raises():
         use_in_memory_cache=False,
     )
     with pytest.raises(ValueError, match="Invalid path"):
-        sc.load_dataset_code("just_a_name", client=do_manager)
+        sy.load_dataset_code("just_a_name", client=do_manager)
 
 
 def test_load_dataset_code_missing_file_raises():
@@ -96,4 +96,4 @@ def test_load_dataset_code_missing_file_raises():
     _create_local_dataset(do_manager, "my_code_dataset")
 
     with pytest.raises(FileNotFoundError, match="Code file not found"):
-        sc.load_dataset_code("my_code_dataset.does_not_exist", client=do_manager)
+        sy.load_dataset_code("my_code_dataset.does_not_exist", client=do_manager)

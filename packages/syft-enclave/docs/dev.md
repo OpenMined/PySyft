@@ -36,7 +36,7 @@ just build-push        # multi-arch (linux/amd64 + linux/arm64)
 just build-push-amd    # amd64 only
 ```
 
-Both push to `docker.io/openminedreleasebot/syft-client-enclave:latest`. You need push access to that Docker Hub namespace.
+Both push to `docker.io/openminedreleasebot/syft-enclave:latest`. You need push access to that Docker Hub namespace.
 
 ## Troubleshooting
 
