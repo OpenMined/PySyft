@@ -10,12 +10,12 @@ from time import sleep
 
 import pytest
 
-from syft_client.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
+from syft.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
 from tests.integration.with_unit_coverage.utils import is_mock_mode
 
 
-SYFT_CLIENT_DIR = Path(__file__).parent.parent.parent.parent
-CREDENTIALS_DIR = SYFT_CLIENT_DIR / "credentials"
+SYFT_DIR = Path(__file__).parent.parent.parent.parent
+CREDENTIALS_DIR = SYFT_DIR / "credentials"
 
 FILE_DO = os.environ.get("ai_audit_credentials_fname_do", "token_do.json")
 EMAIL_DO = os.environ.get("AI_AUDIT_EMAIL_DO", "do@test.com")

@@ -1,7 +1,7 @@
 """
-Tests for detecting syft-client installation source.
+Tests for detecting syft installation source.
 
-These tests verify that we can correctly determine how syft-client was installed:
+These tests verify that we can correctly determine how syft was installed:
 - Editable install from local directory
 - Non-editable install from local directory
 - Install from PyPI
@@ -20,11 +20,11 @@ import pytest
 @pytest.fixture(autouse=True)
 def clear_install_source_cache():
     """Clear the lru_cache before each test."""
-    from syft_job.install_source import get_syft_client_install_source
+    from syft_job.install_source import get_syft_install_source
 
-    get_syft_client_install_source.cache_clear()
+    get_syft_install_source.cache_clear()
     yield
-    get_syft_client_install_source.cache_clear()
+    get_syft_install_source.cache_clear()
 
 
 class MockDistribution:
@@ -58,67 +58,67 @@ def create_mock_distributions(*dists):
 
 
 class TestGetInstallSource:
-    """Tests for get_syft_client_install_source function."""
+    """Tests for get_syft_install_source function."""
 
     def test_env_var_override_takes_precedence(self):
         """Environment variable should override all other detection methods."""
-        from syft_job.install_source import get_syft_client_install_source
+        from syft_job.install_source import get_syft_install_source
 
-        with patch.dict(os.environ, {"SYFT_CLIENT_INSTALL_SOURCE": "/custom/path"}):
-            result = get_syft_client_install_source()
+        with patch.dict(os.environ, {"SYFT_INSTALL_SOURCE": "/custom/path"}):
+            result = get_syft_install_source()
             assert result == "/custom/path"
 
     def test_editable_install_returns_local_path(self):
         """Editable install should return the local directory path."""
-        from syft_job.install_source import get_syft_client_install_source
+        from syft_job.install_source import get_syft_install_source
 
         mock_dist = MockDistribution(
-            name="syft-client",
-            path="/path/to/site-packages/syft_client-0.1.94.dist-info",
+            name="syft",
+            path="/path/to/site-packages/syft-0.1.94.dist-info",
             direct_url={
-                "url": "file:///Users/test/workspace/syft-client",
+                "url": "file:///Users/test/workspace/syft",
                 "dir_info": {"editable": True},
             },
         )
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("SYFT_CLIENT_INSTALL_SOURCE", None)
+            os.environ.pop("SYFT_INSTALL_SOURCE", None)
             with patch(
                 "syft_job.install_source.distributions",
                 create_mock_distributions(mock_dist),
             ):
-                result = get_syft_client_install_source()
-                assert result == "/Users/test/workspace/syft-client"
+                result = get_syft_install_source()
+                assert result == "/Users/test/workspace/syft"
 
     def test_local_non_editable_install_returns_path(self):
         """Non-editable local install should return the local directory path."""
-        from syft_job.install_source import get_syft_client_install_source
+        from syft_job.install_source import get_syft_install_source
 
         mock_dist = MockDistribution(
-            name="syft-client",
-            path="/path/to/site-packages/syft_client-0.1.94.dist-info",
+            name="syft",
+            path="/path/to/site-packages/syft-0.1.94.dist-info",
             direct_url={
-                "url": "file:///Users/test/workspace/syft-client",
+                "url": "file:///Users/test/workspace/syft",
                 "dir_info": {},  # No editable flag
             },
         )
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("SYFT_CLIENT_INSTALL_SOURCE", None)
+            os.environ.pop("SYFT_INSTALL_SOURCE", None)
             with patch(
                 "syft_job.install_source.distributions",
                 create_mock_distributions(mock_dist),
             ):
-                result = get_syft_client_install_source()
-                assert result == "/Users/test/workspace/syft-client"
+                result = get_syft_install_source()
+                assert result == "/Users/test/workspace/syft"
 
     def test_github_install_returns_git_url(self):
         """GitHub install should return the git+ URL with branch."""
-        from syft_job.install_source import get_syft_client_install_source
+        from syft_job.install_source import get_syft_install_source
 
         mock_dist = MockDistribution(
-            name="syft-client",
-            path="/path/to/site-packages/syft_client-0.1.94.dist-info",
+            name="syft",
+            path="/path/to/site-packages/syft-0.1.94.dist-info",
             direct_url={
                 "url": "https://github.com/OpenMined/PySyft",
                 "vcs_info": {
@@ -130,21 +130,21 @@ class TestGetInstallSource:
         )
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("SYFT_CLIENT_INSTALL_SOURCE", None)
+            os.environ.pop("SYFT_INSTALL_SOURCE", None)
             with patch(
                 "syft_job.install_source.distributions",
                 create_mock_distributions(mock_dist),
             ):
-                result = get_syft_client_install_source()
+                result = get_syft_install_source()
                 assert result == "git+https://github.com/OpenMined/PySyft@dev"
 
     def test_github_install_with_branch(self):
         """GitHub install with specific branch should include branch in URL."""
-        from syft_job.install_source import get_syft_client_install_source
+        from syft_job.install_source import get_syft_install_source
 
         mock_dist = MockDistribution(
-            name="syft-client",
-            path="/path/to/site-packages/syft_client-0.1.94.dist-info",
+            name="syft",
+            path="/path/to/site-packages/syft-0.1.94.dist-info",
             direct_url={
                 "url": "https://github.com/OpenMined/PySyft.git",
                 "vcs_info": {
@@ -156,12 +156,12 @@ class TestGetInstallSource:
         )
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("SYFT_CLIENT_INSTALL_SOURCE", None)
+            os.environ.pop("SYFT_INSTALL_SOURCE", None)
             with patch(
                 "syft_job.install_source.distributions",
                 create_mock_distributions(mock_dist),
             ):
-                result = get_syft_client_install_source()
+                result = get_syft_install_source()
                 assert (
                     result
                     == "git+https://github.com/OpenMined/PySyft.git@feature/new-stuff"
@@ -169,11 +169,11 @@ class TestGetInstallSource:
 
     def test_github_install_without_branch_uses_commit(self):
         """GitHub install without requested_revision should use commit_id."""
-        from syft_job.install_source import get_syft_client_install_source
+        from syft_job.install_source import get_syft_install_source
 
         mock_dist = MockDistribution(
-            name="syft-client",
-            path="/path/to/site-packages/syft_client-0.1.94.dist-info",
+            name="syft",
+            path="/path/to/site-packages/syft-0.1.94.dist-info",
             direct_url={
                 "url": "https://github.com/OpenMined/PySyft",
                 "vcs_info": {
@@ -184,82 +184,85 @@ class TestGetInstallSource:
         )
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("SYFT_CLIENT_INSTALL_SOURCE", None)
+            os.environ.pop("SYFT_INSTALL_SOURCE", None)
             with patch(
                 "syft_job.install_source.distributions",
                 create_mock_distributions(mock_dist),
             ):
-                result = get_syft_client_install_source()
+                result = get_syft_install_source()
                 assert result == "git+https://github.com/OpenMined/PySyft@abc123def456"
 
     def test_pypi_install_returns_package_name_with_version(self):
         """PyPI install (no direct_url.json) should return package name with version."""
-        from syft_job.install_source import get_syft_client_install_source
+        from syft_job.install_source import get_syft_install_source
 
         mock_dist = MockDistribution(
-            name="syft-client",
-            path="/path/to/site-packages/syft_client-0.1.94.dist-info",
+            name="syft",
+            path="/path/to/site-packages/syft-0.1.94.dist-info",
             direct_url=None,  # No direct_url.json for PyPI installs
             version="0.1.94",
         )
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("SYFT_CLIENT_INSTALL_SOURCE", None)
+            os.environ.pop("SYFT_INSTALL_SOURCE", None)
             with patch(
                 "syft_job.install_source.distributions",
                 create_mock_distributions(mock_dist),
             ):
-                result = get_syft_client_install_source()
-                assert result == "syft-client==0.1.94"
+                result = get_syft_install_source()
+                assert result == "syft==0.1.94"
 
     def test_no_package_found_returns_pypi_name_without_version_and_warns(self, caplog):
-        """When syft-client is not installed, fall back to PyPI name and log a warning."""
+        """When syft is not installed, fall back to the floored PyPI spec and warn.
+
+        The floor matters: the `syft` PyPI project also hosts legacy PySyft <=0.9.
+        """
         import logging
 
-        from syft_job.install_source import get_syft_client_install_source
+        from syft_job.install_source import get_syft_install_source
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("SYFT_CLIENT_INSTALL_SOURCE", None)
+            os.environ.pop("SYFT_INSTALL_SOURCE", None)
             with patch(
                 "syft_job.install_source.distributions",
                 create_mock_distributions(),  # No distributions
             ):
                 with caplog.at_level(logging.WARNING):
-                    result = get_syft_client_install_source()
+                    result = get_syft_install_source()
 
-                assert result == "syft-client"
-                assert "Could not detect syft-client installation source" in caplog.text
+                assert result == "syft>=0.10.0"
+                assert "Could not detect syft installation source" in caplog.text
                 assert "Falling back to" in caplog.text
 
     def test_multiple_distributions_finds_dist_info(self):
         """When both egg-info and dist-info exist, use dist-info with direct_url."""
-        from syft_job.install_source import get_syft_client_install_source
+        from syft_job.install_source import get_syft_install_source
 
         # Egg-info without direct_url.json (older format)
         mock_egg_info = MockDistribution(
-            name="syft-client",
-            path="syft_client.egg-info",
+            name="syft",
+            path="syft.egg-info",
             direct_url=None,
         )
 
         # Dist-info with direct_url.json (newer format)
         mock_dist_info = MockDistribution(
-            name="syft-client",
-            path="/path/to/site-packages/syft_client-0.1.94.dist-info",
+            name="syft",
+            path="/path/to/site-packages/syft-0.1.94.dist-info",
             direct_url={
-                "url": "file:///Users/test/workspace/syft-client",
+                "url": "file:///Users/test/workspace/syft",
                 "dir_info": {"editable": True},
             },
         )
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("SYFT_CLIENT_INSTALL_SOURCE", None)
+            os.environ.pop("SYFT_INSTALL_SOURCE", None)
             with patch(
                 "syft_job.install_source.distributions",
                 create_mock_distributions(mock_egg_info, mock_dist_info),
             ):
-                result = get_syft_client_install_source()
-                assert result == "/Users/test/workspace/syft-client"
+                result = get_syft_install_source()
+                assert result == "/Users/test/workspace/syft"
 
 
 class TestGetInstallSourceCurrentEnvironment:
@@ -272,12 +275,12 @@ class TestGetInstallSourceCurrentEnvironment:
         This test verifies that our detection logic actually works with
         real installed packages, not just mocks.
         """
-        from syft_job.install_source import get_syft_client_install_source
+        from syft_job.install_source import get_syft_install_source
 
         # Clear the env var to test auto-detection
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("SYFT_CLIENT_INSTALL_SOURCE", None)
-            result = get_syft_client_install_source()
+            os.environ.pop("SYFT_INSTALL_SOURCE", None)
+            result = get_syft_install_source()
 
             # The result should be a non-empty string
             assert isinstance(result, str)
@@ -286,10 +289,10 @@ class TestGetInstallSourceCurrentEnvironment:
             # In this test environment (editable install), it should be a path
             # If this is an editable install, it should be the repo root
             if Path(result).exists():
-                # Check it looks like the syft-client repo
+                # Check it looks like the syft repo
                 assert Path(result).is_dir()
-                # Should contain syft_client package
-                assert (Path(result) / "syft_client").exists() or (
+                # Should contain syft package
+                assert (Path(result) / "syft").exists() or (
                     Path(result) / "pyproject.toml"
                 ).exists()
 
@@ -307,20 +310,20 @@ class TestRuntimeEvaluation:
 
         Note: We use cache_clear() between calls because the function uses
         lru_cache for performance. In production, the cache means the env var
-        must be set BEFORE the first call to get_syft_client_install_source().
+        must be set BEFORE the first call to get_syft_install_source().
         """
-        from syft_job.install_source import get_syft_client_install_source
+        from syft_job.install_source import get_syft_install_source
 
         # First, check with no env var
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("SYFT_CLIENT_INSTALL_SOURCE", None)
-            get_syft_client_install_source.cache_clear()
-            result_without_env = get_syft_client_install_source()
+            os.environ.pop("SYFT_INSTALL_SOURCE", None)
+            get_syft_install_source.cache_clear()
+            result_without_env = get_syft_install_source()
 
         # Now set an env var and verify it's respected
-        with patch.dict(os.environ, {"SYFT_CLIENT_INSTALL_SOURCE": "/new/test/path"}):
-            get_syft_client_install_source.cache_clear()
-            result_with_env = get_syft_client_install_source()
+        with patch.dict(os.environ, {"SYFT_INSTALL_SOURCE": "/new/test/path"}):
+            get_syft_install_source.cache_clear()
+            result_with_env = get_syft_install_source()
             assert result_with_env == "/new/test/path"
 
         # The results should be different (env var overrides auto-detection)

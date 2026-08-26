@@ -37,7 +37,7 @@ class JobStorage:
         self.config = config
         self.registry = registry
         self.service = MigrationService(registry=registry)
-        # peer email -> job ProtocolSchema; filled in by syft-client later.
+        # peer email -> job ProtocolSchema; filled in by syft later.
         # Peers without an entry are assumed to run the current protocol.
         self.peer_schemas: dict[str, ProtocolSchema] = peer_schemas or {}
         self.codecs = [cls(config) for cls in CODECS]
@@ -106,7 +106,7 @@ class JobStorage:
             datasite_email=do_email,
             ds_email=self.config.current_user_email,
             job_name=job_name,
-            # Until syft-client fills peer_schemas, unknown peers are assumed
+            # Until syft fills peer_schemas, unknown peers are assumed
             # to run the current protocol.
             protocol_version=self.negotiated_protocol_version_for_peer(
                 do_email, raise_on_unknown=False

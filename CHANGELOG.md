@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.10.0
+
+- **Package renamed `syft-client` → `syft`.** Install with `pip install syft` and
+  use `import syft as sy` (`import syft_client as sc` no longer works). Version
+  numbering continues the PySyft lineage on PyPI: 0.10.0 follows syft-client
+  0.1.117 and legacy PySyft 0.9.x. If you depend on the legacy PySyft ≤0.9 API,
+  pin `syft<0.10`.
+- Environment variables renamed, with no fallback to the old names:
+  `SYFTCLIENT_TOKEN_PATH` → `SYFT_TOKEN_PATH`, `SYFTCLIENT_DEV_MODE` →
+  `SYFT_DEV_MODE`, `SYFT_CLIENT_INSTALL_SOURCE` → `SYFT_INSTALL_SOURCE`.
+- `MIN_SUPPORTED_SYFT_VERSION` is `0.10.0`: peers on syft-client 0.1.x are
+  reported as incompatible. Every user sees the version-mismatch prompt on
+  first login and must upgrade; 0.10.0 clients create fresh versioned folders
+  on Google Drive.
+- Enclave rebranded with the package: Docker Hub images are now
+  `openminedreleasebot/syft-enclave` and `syft-enclave-inference` (old
+  `syft-client-enclave*` images are not rebuilt), the attestation audience is
+  `syft-attestation`, the version nonce is `syft-<version>`, and the enclave's
+  HTTP landing/attestation JSON reports `service: syft-enclave` and `syft_version`.
+  0.10.0 clients can only attest 0.10.0 images.
+
 ## v0.1.94
 
 - #98 Fix truncated job logs when process exits quickly

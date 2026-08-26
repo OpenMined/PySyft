@@ -23,8 +23,8 @@ resolution-markers = [
 [manifest]
 members = [
     "enclave-model-api-example",
+    "syft",
     "syft-bg",
-    "syft-client",
     "syft-dataset",
     "syft-enclave",
     "syft-job",
@@ -4458,40 +4458,7 @@ wheels = [
 ]
 
 [[package]]
-name = "syft-bg"
-version = "0.3.11"
-source = { editable = "packages/syft-bg" }
-dependencies = [
-    { name = "click" },
-    { name = "google-api-python-client" },
-    { name = "google-auth" },
-    { name = "google-auth-oauthlib" },
-    { name = "google-cloud-pubsub" },
-    { name = "jinja2" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "syft-job" },
-    { name = "syft-rds" },
-    { name = "textual" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "click", specifier = ">=8.0.0" },
-    { name = "google-api-python-client", specifier = ">=2.95.0" },
-    { name = "google-auth", specifier = ">=2.22.0" },
-    { name = "google-auth-oauthlib", specifier = ">=1.0.0" },
-    { name = "google-cloud-pubsub", specifier = ">=2.18.0" },
-    { name = "jinja2", specifier = ">=3.1.0" },
-    { name = "pydantic", specifier = ">=2.0.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "syft-job", editable = "packages/syft-job" },
-    { name = "syft-rds", editable = "packages/syft-rds" },
-    { name = "textual", specifier = ">=0.40.0" },
-]
-
-[[package]]
-name = "syft-client"
+name = "syft"
 source = { editable = "." }
 dependencies = [
     { name = "google-api-python-client" },
@@ -4578,6 +4545,39 @@ test = [
 ]
 
 [[package]]
+name = "syft-bg"
+version = "0.3.11"
+source = { editable = "packages/syft-bg" }
+dependencies = [
+    { name = "click" },
+    { name = "google-api-python-client" },
+    { name = "google-auth" },
+    { name = "google-auth-oauthlib" },
+    { name = "google-cloud-pubsub" },
+    { name = "jinja2" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "syft-job" },
+    { name = "syft-rds" },
+    { name = "textual" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = ">=8.0.0" },
+    { name = "google-api-python-client", specifier = ">=2.95.0" },
+    { name = "google-auth", specifier = ">=2.22.0" },
+    { name = "google-auth-oauthlib", specifier = ">=1.0.0" },
+    { name = "google-cloud-pubsub", specifier = ">=2.18.0" },
+    { name = "jinja2", specifier = ">=3.1.0" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "syft-job", editable = "packages/syft-job" },
+    { name = "syft-rds", editable = "packages/syft-rds" },
+    { name = "textual", specifier = ">=0.40.0" },
+]
+
+[[package]]
 name = "syft-crypto-python"
 version = "0.1.2b3"
 source = { registry = "https://pypi.org/simple" }
@@ -4625,7 +4625,7 @@ dependencies = [
     { name = "google-auth", extra = ["pyjwt"] },
     { name = "pydantic-settings" },
     { name = "requests" },
-    { name = "syft-client" },
+    { name = "syft" },
     { name = "syft-rds" },
 ]
 
@@ -4634,7 +4634,7 @@ requires-dist = [
     { name = "google-auth", extras = ["pyjwt"], specifier = ">=2.22.0" },
     { name = "pydantic-settings", specifier = ">=2.11.0" },
     { name = "requests", specifier = ">=2.32.0" },
-    { name = "syft-client", editable = "." },
+    { name = "syft", editable = "." },
     { name = "syft-rds", editable = "packages/syft-rds" },
 ]
 
@@ -4730,14 +4730,14 @@ name = "syft-rds"
 version = "0.1.0"
 source = { editable = "packages/syft-rds" }
 dependencies = [
-    { name = "syft-client" },
+    { name = "syft" },
     { name = "syft-dataset" },
     { name = "syft-job" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "syft-client", editable = "." },
+    { name = "syft", editable = "." },
     { name = "syft-dataset", editable = "packages/syft-datasets" },
     { name = "syft-job", editable = "packages/syft-job" },
 ]

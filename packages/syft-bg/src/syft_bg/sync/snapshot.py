@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 
 class PeerVersionInfo(BaseModel):
-    """Version info for compat checks. Slim projection of syft_client VersionInfo."""
+    """Version info for compat checks. Slim projection of syft VersionInfo."""
 
     syft_client_version: str
     protocol_version: str

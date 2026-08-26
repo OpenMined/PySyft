@@ -118,11 +118,11 @@ def get_multiplier():
     main_path = project_dir / "main.py"
     main_path.write_text("""
 import json
-import syft_client as sc
+import syft as sy
 from helpers.helper import process_data, get_multiplier
 
 # Read data from dataset
-data_path = sc.resolve_dataset_file_path("my dataset")
+data_path = sy.resolve_dataset_file_path("my dataset")
 
 with open(data_path, "r") as data_file:
     data = data_file.read()

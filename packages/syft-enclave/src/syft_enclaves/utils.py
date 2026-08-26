@@ -1,9 +1,9 @@
 from syft_rds import SyftRDSClientConfig
-from syft_client.sync.connections.drive.mock_drive_service import (
+from syft.sync.connections.drive.mock_drive_service import (
     MockDriveBackingStore,
     MockDriveService,
 )
-from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
 
 def create_configs(

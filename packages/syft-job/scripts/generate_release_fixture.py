@@ -64,7 +64,7 @@ class _PrettierDumper(yaml.SafeDumper):
 def _normalize(target: Path) -> None:
     """Strip machine-specific values so the committed fixture is portable.
 
-    The submitter's absolute ``code_path`` and the local syft-client install
+    The submitter's absolute ``code_path`` and the local syft install
     source (an absolute repo path that leaks into config.yaml dependencies and
     run.sh when no DO advertises one) are not part of the release's on-disk
     format; drop the executable bit since fixtures are data, not scripts.
@@ -79,7 +79,7 @@ def _normalize(target: Path) -> None:
         except UnicodeDecodeError:
             continue
         if repo_root in text:
-            path.write_text(text.replace(repo_root, "syft-client"))
+            path.write_text(text.replace(repo_root, "syft"))
 
     for config in target.rglob("config.yaml"):
         data = yaml.safe_load(config.read_text())

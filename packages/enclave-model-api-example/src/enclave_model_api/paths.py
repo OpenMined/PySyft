@@ -7,7 +7,7 @@ paths inside the syftbox folder, which these helpers compute.
 
 from pathlib import Path
 
-from syft_client.sync.syftbox_manager import get_jupyter_default_syftbox_folder
+from syft.sync.syftbox_manager import get_jupyter_default_syftbox_folder
 from syft_datasets.config import SyftBoxConfig
 from syft_datasets.dataset_ref import DatasetNotFoundError, DatasetRef
 from syft_datasets.dataset_storage import DatasetStorage

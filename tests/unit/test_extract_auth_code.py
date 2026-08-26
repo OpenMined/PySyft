@@ -1,6 +1,6 @@
 import pytest
 
-from syft_client.gdrive_utils import _extract_auth_code
+from syft.gdrive_utils import _extract_auth_code
 
 
 def test_raw_code_returned_as_is():

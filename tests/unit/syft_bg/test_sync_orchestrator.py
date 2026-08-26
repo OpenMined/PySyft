@@ -9,18 +9,18 @@ from syft_bg.sync.snapshot import SyncSnapshot
 
 
 def _make_orchestrator(temp_dir, **config_overrides):
-    syft_client = MagicMock()
-    syft_client.job_client.jobs = []
-    syft_client.peer_manager.approved_peers = []
-    syft_client.peer_manager.requested_by_peer_peers = []
+    mock_client = MagicMock()
+    mock_client.job_client.jobs = []
+    mock_client.peer_manager.approved_peers = []
+    mock_client.peer_manager.requested_by_peer_peers = []
 
     state = JsonStateManager(state_file=temp_dir / "sync_state.json")
     defaults = {"interval": 1, "max_retries": 2, "retry_backoff": 0.01}
     defaults.update(config_overrides)
     config = SyncConfig(**defaults)
 
-    orch = SyncOrchestrator(syft_client, state, config)
-    return orch, syft_client, state
+    orch = SyncOrchestrator(mock_client, state, config)
+    return orch, mock_client, state
 
 
 def _read_snapshot(state: JsonStateManager) -> SyncSnapshot | None:

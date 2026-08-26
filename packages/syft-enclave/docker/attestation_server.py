@@ -39,7 +39,7 @@ app = FastAPI(title="Syft Client Enclave", version="0.1.0")
 
 def _get_syft_version() -> str:
     try:
-        from syft_client import __version__
+        from syft import __version__
 
         return __version__
     except ImportError:
@@ -133,10 +133,10 @@ def _structure_claims(claims: dict) -> dict:
 
 @app.get("/")
 def index():
-    """Landing page with syft-client info and available endpoints."""
+    """Landing page with syft info and available endpoints."""
     return {
-        "service": "syft-client-enclave",
-        "syft_client_version": _get_syft_version(),
+        "service": "syft-enclave",
+        "syft_version": _get_syft_version(),
         "confidential_space_detected": _is_confidential_space(),
         "endpoints": {
             "/": "This page",
@@ -180,14 +180,14 @@ def attestation(nonce: str | None = None):
     if not _is_confidential_space():
         return {
             "status": "not_in_confidential_space",
-            "syft_client_version": version,
+            "syft_version": version,
             "message": (
                 "Attestation unavailable. This container must run on "
                 "Google Confidential Spaces. The TEE socket at "
                 f"{TEE_SOCKET_PATH} was not found."
             ),
             "instructions": {
-                "build": "docker build -t syft-client-enclave -f docker/Dockerfile .",
+                "build": "docker build -t syft-enclave -f docker/Dockerfile .",
                 "deploy": (
                     "Deploy on a Confidential VM with the Confidential Spaces "
                     "image to enable attestation."
@@ -203,7 +203,7 @@ def attestation(nonce: str | None = None):
 
         return {
             "status": "running_in_confidential_space",
-            "syft_client_version": version,
+            "syft_version": version,
             "attestation": structured,
             "nonce_info": {
                 "version": eat_nonce[0],
@@ -217,7 +217,7 @@ def attestation(nonce: str | None = None):
             status_code=500,
             content={
                 "status": "attestation_error",
-                "syft_client_version": version,
+                "syft_version": version,
                 "error": str(e),
             },
         )

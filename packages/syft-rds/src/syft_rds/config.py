@@ -18,10 +18,10 @@ from pathlib import Path
 
 from pydantic import BaseModel, model_validator
 
-from syft_client.sync.syftbox_manager import (
+from syft.sync.syftbox_manager import (
     SyftboxManagerConfig,
 )
-from syft_client.sync.sync.collection_spec import CollectionSyncSpec
+from syft.sync.sync.collection_spec import CollectionSyncSpec
 from syft_job import SyftJobConfig
 from syft_datasets.config import SyftBoxConfig
 from syft_datasets.dataset_manager import (
@@ -30,11 +30,11 @@ from syft_datasets.dataset_manager import (
 )
 
 # The RDS layer owns the local subpaths; the on-wire prefixes come from
-# syft_datasets (imported above), mirrored in syft_client for login-time cleanup.
+# syft_datasets (imported above), mirrored in syft for login-time cleanup.
 COLLECTION_SUBPATH = Path("public/syft_datasets")
 PRIVATE_COLLECTION_SUBPATH = Path("private/syft_datasets")
 
-# The RDS layer OWNS the dataset collection specs (syft-client core stays domain-free).
+# The RDS layer OWNS the dataset collection specs (syft core stays domain-free).
 # Two specs, distinguished purely by the two generic behavioral flags:
 #   * public (mock)  – mirror + shareable  → peers' watchers pull it.
 #   * private (real) – restore-only + owner-only → the owner restores it for itself;

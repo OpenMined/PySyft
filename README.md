@@ -1,13 +1,15 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/Syft-Logo-Light.svg">
-  <img alt="Syft Logo" src="docs/img/Syft-Logo.svg" width="200px" />
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/Syft-Logo-Light.svg">
+  <img alt="Syft Logo" src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/Syft-Logo.svg" width="200px" />
 </picture>
 
 # PySyft v2
 
+> **`syft` 0.10+ is the successor of `syft-client`.** Install with `pip install "syft>=0.10.0"` and import as `import syft as sy`. If you depend on the legacy PySyft ≤0.9 API, pin `syft<0.10`.
+
 [![Unit Tests](https://github.com/OpenMined/pysyft/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/OpenMined/PySyft/actions/workflows/unit-tests.yml)
 [![Integration Tests](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml)
-[![PyPI](https://img.shields.io/pypi/v/syft-client)](https://pypi.org/project/syft-client/)
+[![PyPI](https://img.shields.io/pypi/v/syft)](https://pypi.org/project/syft/)
 [![Python 3.10+](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2Fpysyft%2Fdev%2Fpyproject.toml)](https://github.com/OpenMined/pysyft)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/OpenMined/pysyft/blob/main/pyproject.toml)
 
@@ -15,13 +17,13 @@ PySyft lets data scientists submit computations which are ran by data owners on 
 
 ## Docs
 
-- [Workflow](docs/workflow.md) — End-to-end privacy-preserving data analysis workflow
-- [API Reference](docs/API.md) — All public client methods and properties
-- [Authentication & Setup](docs/auth.md) — Google Cloud OAuth setup for local/Jupyter usage
-- [Background Services](packages/syft-bg/README.md) — Email notifications, auto-approval, and TUI dashboard
-- [Connections](docs/connections.md) — How the Google Drive transport layer works
-- [Permissions](packages/syft-permissions/docs/permission-user-docs.md) - Permissions for syft-client
-- [Enclaves](packages/syft-enclave) - Enclaves with syft-client
+- [Workflow](https://github.com/OpenMined/PySyft/blob/dev/docs/workflow.md) — End-to-end privacy-preserving data analysis workflow
+- [API Reference](https://github.com/OpenMined/PySyft/blob/dev/docs/API.md) — All public client methods and properties
+- [Authentication & Setup](https://github.com/OpenMined/PySyft/blob/dev/docs/auth.md) — Google Cloud OAuth setup for local/Jupyter usage
+- [Background Services](https://github.com/OpenMined/PySyft/blob/dev/packages/syft-bg/README.md) — Email notifications, auto-approval, and TUI dashboard
+- [Connections](https://github.com/OpenMined/PySyft/blob/dev/docs/connections.md) — How the Google Drive transport layer works
+- [Permissions](https://github.com/OpenMined/PySyft/blob/dev/packages/syft-permissions/docs/permission-user-docs.md) - Permissions for syft
+- [Enclaves](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-enclave) - Enclaves with syft
 
 ## Features
 
@@ -35,17 +37,17 @@ PySyft lets data scientists submit computations which are ran by data owners on 
 ## Quick Start
 
 ```
-uv pip install syft-client
+uv pip install "syft>=0.10.0"
 ```
 
 ```python
-import syft_client as sc
+import syft as sy
 ```
 
 ```python
 # Login (colab auth, for non-colab pass token_path)
-do = sc.login_do(email="do@org.com")
-ds = sc.login_ds(email="ds@org.com")
+do = sy.login_do(email="do@org.com")
+ds = sy.login_ds(email="ds@org.com")
 
 # Peer request & approve
 ds.add_peer("do@org.com")
@@ -67,9 +69,9 @@ Write an `analysis.py` that reads the dataset and produces a result in our case 
 ```python
 # analysis.py
 import json
-import syft_client as sc
+import syft as sy
 
-data_path = sc.resolve_dataset_file_path("census")
+data_path = sy.resolve_dataset_file_path("census")
 with open(data_path, "r") as f:
     data = f.read()
 
@@ -96,14 +98,14 @@ result = open(ds.jobs[-1].output_paths[0]).read()
 
 ## Packages
 
-| Package                                         | Description                                   |
-| ----------------------------------------------- | --------------------------------------------- |
-| [`syft-datasets`](packages/syft-datasets)       | Dataset management and sharing                |
-| [`syft-job`](packages/syft-job)                 | Job submission and execution                  |
-| [`syft-permissions`](packages/syft-permissions) | Permission system for Syft datasites          |
-| [`syft-perms`](packages/syft-perms)             | User-facing permission API for Syft datasites |
-| [`syft-bg`](packages/syft-bg)                   | Background services TUI dashboard for SyftBox |
-| [`syft-notebook-ui`](packages/syft-notebook-ui) | Jupyter notebook display utilities            |
+| Package                                                                                      | Description                                   |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| [`syft-datasets`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-datasets)       | Dataset management and sharing                |
+| [`syft-job`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-job)                 | Job submission and execution                  |
+| [`syft-permissions`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-permissions) | Permission system for Syft datasites          |
+| [`syft-perms`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-perms)             | User-facing permission API for Syft datasites |
+| [`syft-bg`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-bg)                   | Background services TUI dashboard for SyftBox |
+| [`syft-notebook-ui`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-notebook-ui) | Jupyter notebook display utilities            |
 
 ## Development
 
@@ -135,8 +137,8 @@ Supported by the OpenMined Foundation, the OpenMined Community is an online netw
 OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please reach out via <a href="https://github.com/OpenMined/PySyft/issues">Github</a> or <a href="https://join.slack.com/t/openmined/shared_invite/zt-2hxwk07i9-HO7u5C7XOgou4Z62VU78zA/">Slack</a>!
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/contributors_dark.jpg">
-  <img src="docs/img/contributors_light.jpg" alt="Contributors" width="100%" />
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/contributors_dark.jpg">
+  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/contributors_light.jpg" alt="Contributors" width="100%" />
 </picture>
 
 # About OpenMined
@@ -151,43 +153,43 @@ OpenMined is a non-profit foundation creating technology infrastructure that hel
 <table border="0">
 <tr>
 <th align="center">
-<a href="https://sloan.org/"><img src="docs/img/logo_sloan.png" /></a>
+<a href="https://sloan.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_sloan.png" /></a>
 </th>
 <th align="center">
-<a href="https://opensource.fb.com/"><img src="docs/img/logo_meta.png" /></a>
+<a href="https://opensource.fb.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_meta.png" /></a>
 </th>
 <th align="center">
-<a href="https://pytorch.org/"><img src="docs/img/logo_torch.png" /></a>
+<a href="https://pytorch.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_torch.png" /></a>
 </th>
 <th align="center">
 <a href="https://www.dpmc.govt.nz/">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_nz_dark.png">
-  <img src="docs/img/logo_nz_light.png" />
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_nz_dark.png">
+  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_nz_light.png" />
 </picture>
 </a>
 </th>
 <th align="center">
-<a href="https://twitter.com/"><img src="docs/img/logo_twitter.png" /></a>
+<a href="https://twitter.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_twitter.png" /></a>
 </th>
 <th align="center">
-<a href="https://google.com/"><img src="docs/img/logo_google.png" /></a>
+<a href="https://google.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_google.png" /></a>
 </th>
 <th align="center">
-<a href="https://microsoft.com/"><img src="docs/img/logo_microsoft.png" /></a>
+<a href="https://microsoft.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_microsoft.png" /></a>
 </th>
 <th align="center">
-<a href="https://omidyar.com/"><img src="docs/img/logo_on.png" /></a>
+<a href="https://omidyar.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_on.png" /></a>
 </th>
 <th align="center">
-<a href="https://www.udacity.com/"><img src="docs/img/logo_udacity.png" /></a>
+<a href="https://www.udacity.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_udacity.png" /></a>
 </th>
 <th align="center">
 <a href="https://www.centerfordigitalhealthinnovation.org/">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_cdhi_dark.png">
-  <img src="docs/img/logo_cdhi_light.png" />
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_cdhi_dark.png">
+  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_cdhi_light.png" />
 </picture>
 
 </a>
@@ -195,8 +197,8 @@ OpenMined is a non-profit foundation creating technology infrastructure that hel
 <th align="center">
 <a href="https://arkhn.org/">
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo_arkhn.png">
-  <img src="docs/img/logo_arkhn_light.png" />
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_arkhn.png">
+  <img src="https://raw.githubusercontent.com/OpenMined/PySyft/dev/docs/img/logo_arkhn_light.png" />
 </picture>
 </a>
 </th>
@@ -205,5 +207,5 @@ OpenMined is a non-profit foundation creating technology infrastructure that hel
 
 # License
 
-[Apache License 2.0](LICENSE)<br />
+[Apache License 2.0](https://github.com/OpenMined/PySyft/tree/dev/LICENSE)<br />
 <a href="https://www.flaticon.com/free-icons/person" title="person icons">Person icons created by Freepik - Flaticon</a>

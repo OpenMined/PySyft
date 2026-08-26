@@ -4,8 +4,8 @@ These tests verify that the mock Google Drive service provides a compatible
 interface for testing GDriveConnection code paths without real API calls.
 """
 
-from syft_client.sync.syftbox_manager import SyftboxManager
-from syft_client.sync.connections.drive.mock_drive_service import (
+from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.connections.drive.mock_drive_service import (
     MockDriveBackingStore,
     MockDriveService,
     MockDriveFile,
@@ -13,7 +13,7 @@ from syft_client.sync.connections.drive.mock_drive_service import (
     parse_gdrive_query,
     GOOGLE_FOLDER_MIME_TYPE,
 )
-from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
 
 class TestMockDriveBackingStore:

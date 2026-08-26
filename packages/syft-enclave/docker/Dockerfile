@@ -17,16 +17,20 @@ ENV UV_INSTALL_DIR=/usr/local/bin
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && uv --version
 
 # Build context is the monorepo root (set by packages/syft-enclave/Justfile).
-# We install syft-enclave from the workspace so syft-client + its workspace
+# We install syft-enclave from the workspace so syft + its workspace
 # peers (syft-bg, syft-job, syft-dataset, syft-permissions, syft-perms) resolve
 # from packages/* instead of PyPI.
 WORKDIR /repo
 COPY pyproject.toml uv.lock README.md ./
-COPY syft_client ./syft_client
+COPY syft ./syft
 COPY packages ./packages
 
 # Sync just the deps of the syft-enclave package into /repo/.venv.
 RUN uv sync --frozen --no-dev --package syft-enclave
+
+# Fail the *build* (not the entrypoint, which swallows import errors) if the
+# root package did not make it into the image.
+RUN /repo/.venv/bin/python -c "import syft, syft_enclaves; print('syft', syft.__version__)"
 
 # FastAPI + uvicorn for the attestation server (not part of syft-enclave's own
 # deps; only needed inside the image).

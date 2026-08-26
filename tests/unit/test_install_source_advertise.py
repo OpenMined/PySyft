@@ -1,4 +1,4 @@
-"""VersionInfo carries the syft-client install source and round-trips through JSON."""
+"""VersionInfo carries the syft install source and round-trips through JSON."""
 
 from __future__ import annotations
 
@@ -7,17 +7,17 @@ from unittest.mock import patch
 
 import pytest
 
-from syft_client.sync.version.version_info import VersionInfo
+from syft.sync.version.version_info import VersionInfo
 
 
 @pytest.fixture(autouse=True)
 def _clear_install_source_cache():
-    """get_syft_client_install_source uses lru_cache; clear so env-var patches work."""
-    from syft_job.install_source import get_syft_client_install_source
+    """get_syft_install_source uses lru_cache; clear so env-var patches work."""
+    from syft_job.install_source import get_syft_install_source
 
-    get_syft_client_install_source.cache_clear()
+    get_syft_install_source.cache_clear()
     yield
-    get_syft_client_install_source.cache_clear()
+    get_syft_install_source.cache_clear()
 
 
 class TestVersionInfoCarriesInstallSource:
@@ -28,13 +28,13 @@ class TestVersionInfoCarriesInstallSource:
         assert len(v.syft_client_install_source) > 0
 
     def test_current_uses_env_var_override(self, monkeypatch):
-        monkeypatch.setenv("SYFT_CLIENT_INSTALL_SOURCE", "/do/local/path")
+        monkeypatch.setenv("SYFT_INSTALL_SOURCE", "/do/local/path")
         # cache cleared by fixture
         v = VersionInfo.current()
         assert v.syft_client_install_source == "/do/local/path"
 
     def test_json_roundtrip_preserves_install_source(self, monkeypatch):
-        monkeypatch.setenv("SYFT_CLIENT_INSTALL_SOURCE", "/do/local/path")
+        monkeypatch.setenv("SYFT_INSTALL_SOURCE", "/do/local/path")
         v = VersionInfo.current()
         restored = VersionInfo.from_json(v.to_json())
         assert restored.syft_client_install_source == "/do/local/path"
@@ -56,7 +56,7 @@ class TestVersionInfoCurrentNeverRaises:
         # Force the install-source helper to blow up; current() must still return
         # a usable VersionInfo with install_source=None.
         with patch(
-            "syft_job.install_source.get_syft_client_install_source",
+            "syft_job.install_source.get_syft_install_source",
             side_effect=RuntimeError("boom"),
         ):
             v = VersionInfo.current()

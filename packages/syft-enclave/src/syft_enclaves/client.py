@@ -4,9 +4,9 @@ from typing import Optional
 import os
 
 from syft_rds import SyftRDSClient, SyftRDSClientConfig
-from syft_client.sync.version.peer_manager import CompatAction
-from syft_client.sync.peers.peer import Peer
-from syft_client.sync.peers.peer_list import PeerList
+from syft.sync.version.peer_manager import CompatAction
+from syft.sync.peers.peer import Peer
+from syft.sync.peers.peer_list import PeerList
 from syft_datasets.dataset_manager import SyftDatasetManager
 from syft_job.job import JobInfo, JobsList
 from syft_job.job_storage import JobRef
@@ -98,7 +98,7 @@ class SyftEnclaveClient:
                 trust — . When set, the attestation
                 is appraised against it.
             policy: a full ``AppraisalPolicy`` for finer control (image digest
-                *and* syft-client version). Mutually exclusive with
+                *and* syft version). Mutually exclusive with
                 ``expected_image_digest``.
         """
 

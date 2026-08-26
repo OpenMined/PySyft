@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
 

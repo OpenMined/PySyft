@@ -4,7 +4,7 @@ Once the container is running, the following endpoints are available at `http://
 
 | Endpoint           | Description                                                       |
 | ------------------ | ----------------------------------------------------------------- |
-| `GET /`            | Landing page with syft-client version and available endpoints     |
+| `GET /`            | Landing page with syft version and available endpoints            |
 | `GET /attestation` | TEE attestation report (signed JWT with hardware/software claims) |
 | `GET /health`      | Health check                                                      |
 | `GET /docs`        | FastAPI auto-generated Swagger UI                                 |

@@ -3,7 +3,7 @@
 from pprint import pprint
 from pathlib import Path
 from google.oauth2.credentials import Credentials
-from syft_client.sync.connections.gdrive_transport_v2 import GDriveFilesTransport
+from syft.sync.connections.gdrive_transport_v2 import GDriveFilesTransport
 
 # Path to credentials
 SCOPES = ["https://www.googleapis.com/auth/drive"]

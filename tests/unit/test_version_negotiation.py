@@ -3,12 +3,12 @@
 import logging
 
 import pytest
-from syft_client.sync.syftbox_manager import SyftboxManager
-from syft_client.sync.version.exceptions import (
+from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.version.exceptions import (
     VersionMismatchError,
 )
-from syft_client.sync.version.peer_manager import CompatAction
-from syft_client.sync.version.version_info import CompatibilityStatus, VersionInfo
+from syft.sync.version.peer_manager import CompatAction
+from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 
 
 def build_client_version(client_version: str) -> VersionInfo:
@@ -102,6 +102,19 @@ class TestCompatibilityStatus:
     def test_major_diff_is_incompatible(self):
         assert build_client_version("0.1.113").compatibility_status_with(
             build_client_version("1.0.0")
+        ) == (CompatibilityStatus.INCOMPATIBLE)
+
+    def test_two_digit_minor_compares_numerically(self):
+        """0.10.x is the first `syft` release line; it must not be confused with
+        0.1.x (lexicographic) and must stay patch-compatible within itself."""
+        assert build_client_version("0.10.0").compatibility_status_with(
+            build_client_version("0.1.117")
+        ) == (CompatibilityStatus.INCOMPATIBLE)
+        assert build_client_version("0.10.0").compatibility_status_with(
+            build_client_version("0.10.1")
+        ) == (CompatibilityStatus.PATCH_DIFF)
+        assert build_client_version("0.10.0").compatibility_status_with(
+            build_client_version("0.9.5")
         ) == (CompatibilityStatus.INCOMPATIBLE)
 
     def test_unknown_when_other_none(self):
@@ -205,10 +218,10 @@ class TestPeerManager:
         assert version is None
 
     def test_load_peer_versions_parallel(self):
-        from syft_client.sync.connections.drive.gdrive_transport import (
+        from syft.sync.connections.drive.gdrive_transport import (
             SYFT_VERSION_FILE,
         )
-        from syft_client.sync.connections.drive.mock_drive_service import (
+        from syft.sync.connections.drive.mock_drive_service import (
             MockDriveFile,
             MockPermission,
         )
@@ -278,7 +291,7 @@ class TestPatchTolerance:
         )
         _set_peer_version(ds_manager, do_manager.email, _patch_plus_one_version())
 
-        with caplog.at_level(logging.INFO, logger="syft_client"):
+        with caplog.at_level(logging.INFO, logger="syft"):
             compatible = ds_manager.peer_manager.get_compatible_peer_emails_for_syncing(
                 [do_manager.email]
             )
@@ -292,7 +305,7 @@ class TestPatchTolerance:
         )
         _set_peer_version(do_manager, ds_manager.email, _patch_plus_one_version())
 
-        with caplog.at_level(logging.INFO, logger="syft_client"):
+        with caplog.at_level(logging.INFO, logger="syft"):
             compatible = do_manager.peer_manager.get_compatible_peer_emails_for_syncing(
                 [ds_manager.email]
             )
@@ -306,7 +319,7 @@ class TestPatchTolerance:
         )
         _set_peer_version(ds_manager, do_manager.email, _patch_plus_one_version())
 
-        with caplog.at_level(logging.INFO, logger="syft_client"):
+        with caplog.at_level(logging.INFO, logger="syft"):
             result = ds_manager.peer_manager.get_peer_compatibility_status(
                 do_manager.email, action=CompatAction.SUBMIT
             )
@@ -322,7 +335,7 @@ class TestPatchTolerance:
         _set_peer_version(do_manager, ds_manager.email, _patch_plus_one_version())
         do_manager.peer_manager.force_ignore_peer_version = True
 
-        with caplog.at_level(logging.INFO, logger="syft_client"):
+        with caplog.at_level(logging.INFO, logger="syft"):
             compatible = do_manager.peer_manager.get_compatible_peer_emails_for_syncing(
                 [ds_manager.email]
             )
@@ -363,7 +376,7 @@ class TestPeerManagerConfigPatchSkipDefault:
     def _make_config(self, **kwargs):
         from pathlib import Path
 
-        from syft_client.sync.version.peer_manager import PeerManagerConfig
+        from syft.sync.version.peer_manager import PeerManagerConfig
 
         return PeerManagerConfig(syftbox_folder=Path("/tmp/syftbox"), **kwargs)
 
@@ -410,7 +423,7 @@ class TestForceAllowIncompatiblePeers:
         _set_peer_version(do_manager, ds_manager.email, build_client_version("99.0.0"))
 
         do_manager.peer_manager.force_ignore_peer_version = True
-        with caplog.at_level(logging.INFO, logger="syft_client"):
+        with caplog.at_level(logging.INFO, logger="syft"):
             compatible = do_manager.peer_manager.get_compatible_peer_emails_for_syncing(
                 [ds_manager.email]
             )

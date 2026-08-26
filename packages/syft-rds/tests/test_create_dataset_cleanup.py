@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.syftbox_manager import SyftboxManager
 from syft_rds import SyftRDSClient
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 from dataset_test_utils import create_tmp_dataset_files

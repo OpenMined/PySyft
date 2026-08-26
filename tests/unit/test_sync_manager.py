@@ -3,16 +3,16 @@ from pathlib import Path
 import pytest
 import yaml
 
-from syft_client.sync.connections.connection_router import ConnectionRouter
-from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
-from syft_client.sync.peers.peer_store import PeerStore
-from syft_client.sync.messages.proposed_filechange import ProposedFileChangesMessage
-from syft_client.sync.messages.proposed_filechange import ProposedFileChange
-from syft_client.sync.syftbox_manager import SyftboxManager
-from syft_client.sync.sync.caches.datasite_owner_cache import (
+from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.peers.peer_store import PeerStore
+from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
+from syft.sync.messages.proposed_filechange import ProposedFileChange
+from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.sync.caches.datasite_owner_cache import (
     ProposedEventFileOutdatedException,
 )
-from syft_client.sync.sync.collection_spec import CollectionSyncSpec
+from syft.sync.sync.collection_spec import CollectionSyncSpec
 from tests.unit.utils import (
     TEST_COLLECTION_PREFIX,
     TEST_COLLECTION_SUBPATH,
@@ -689,7 +689,7 @@ def test_permission_change_triggers_resend():
 
 def test_default_collections_folder_picks_shareable_spec_regardless_of_order():
     """The collections folder is chosen by owner_only, not by position."""
-    from syft_client.sync.syftbox_manager import default_collections_folder
+    from syft.sync.syftbox_manager import default_collections_folder
 
     shareable = CollectionSyncSpec.public("syft_pub", Path("public/pub"))
     owner_only = CollectionSyncSpec.private("syft_priv", Path("private/priv"))

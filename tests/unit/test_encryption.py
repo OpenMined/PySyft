@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from syft_client.sync.peers.peer import Peer
-from syft_client.sync.peers.peer_store import PeerStore
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.peers.peer import Peer
+from syft.sync.peers.peer_store import PeerStore
+from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
 
@@ -356,8 +356,8 @@ def test_encrypted_checkpoint_roundtrip():
 
 def test_encrypted_rolling_state_roundtrip():
     """Rolling state is encrypted at rest and decrypted on read."""
-    from syft_client.sync.checkpoints.rolling_state import RollingState
-    from syft_client.sync.events.file_change_event import (
+    from syft.sync.checkpoints.rolling_state import RollingState
+    from syft.sync.events.file_change_event import (
         FileChangeEvent,
         FileChangeEventsMessage,
     )

@@ -25,7 +25,7 @@ class SyftDatasetManager:
             syftbox_folder=to_path(syftbox_folder_path), email=email
         )
         # peer_schemas (peer email -> dataset ProtocolSchema) will be filled in by
-        # syft-client later; until then every peer resolves to the widest-
+        # syft later; until then every peer resolves to the widest-
         # compatible protocol, so datasets are written in that layout.
         self.storage = DatasetStorage(config=self.syftbox_config)
 

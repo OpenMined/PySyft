@@ -35,7 +35,7 @@ To use Syft Client outside of Google Colab, you need to set up a Google Cloud pr
 4. Select **External** user type (unless you have a Google Workspace organization), click next
 5. Fill in your email, click **next**
 6. Mark the policy checkbox, click **Continue** and **Create**
-7. On the **data access** section for the Oauth Consent screen. As a data scientist, you only ever need gdrive, but if you are using syft-client as a data owner, you may also need Gmail, specifically if you use email features like notifications or email approval.
+7. On the **data access** section for the Oauth Consent screen. As a data scientist, you only ever need gdrive, but if you are using syft as a data owner, you may also need Gmail, specifically if you use email features like notifications or email approval.
    - GDrive:
      - Click **Add or Remove Scopes**
      - Search for and select `https://www.googleapis.com/auth/drive`
@@ -77,6 +77,6 @@ To use Syft Client outside of Google Colab, you need to set up a Google Cloud pr
 Once you've completed the Google Cloud Console setup, generate a token and log in:
 
 ```bash
-token_path = sc.credentials_to_token(credentials_path)
+token_path = sy.credentials_to_token(credentials_path)
 do_client = login_do(email="your@email.com", token_path=token_path) # or login_ds
 ```

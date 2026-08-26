@@ -1,14 +1,14 @@
-from syft_client.sync.events.file_change_event import FileChangeEventsMessage
-from syft_client.sync.events.file_change_event import FileChangeEvent
-from syft_client.sync.events.file_change_event import FileChangeEventsMessageFileName
+from syft.sync.events.file_change_event import FileChangeEventsMessage
+from syft.sync.events.file_change_event import FileChangeEvent
+from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
 from pathlib import Path
 import uuid
 import random
 from typing import List
 import time
-from syft_client.sync.messages.proposed_filechange import ProposedFileChangesMessage
-from syft_client.sync.messages.proposed_filechange import ProposedFileChange
-from syft_client.sync.utils.syftbox_utils import get_event_hash_from_content
+from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
+from syft.sync.messages.proposed_filechange import ProposedFileChange
+from syft.sync.utils.syftbox_utils import get_event_hash_from_content
 
 
 def get_mock_event(path: str = "email@email.com/test.job") -> FileChangeEvent:
@@ -170,11 +170,11 @@ def get_multiplier():
     main_path = project_dir / "main.py"
     main_path.write_text("""
 import json
-import syft_client as sc
+import syft as sy
 from helpers.helper import process_data, get_multiplier
 
 # Read data from dataset
-data_path = sc.resolve_dataset_file_path("my dataset")
+data_path = sy.resolve_dataset_file_path("my dataset")
 
 with open(data_path, "r") as data_file:
     data = data_file.read()
@@ -197,7 +197,7 @@ with open("outputs/result.json", "w") as f:
 
 
 # Domain-free collection used by engine-level tests, in place of the RDS
-# dataset specs (syft-client must not depend on the product layer).
+# dataset specs (syft must not depend on the product layer).
 TEST_COLLECTION_PREFIX = "syft_testcollection"
 TEST_COLLECTION_SUBPATH = Path("public/test_collections")
 

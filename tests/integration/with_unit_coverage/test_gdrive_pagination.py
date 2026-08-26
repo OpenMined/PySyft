@@ -8,7 +8,7 @@ from tests.integration.utils import (
     token_path_do,
     token_path_ds,
 )
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.syftbox_manager import SyftboxManager
 from tests.integration.with_unit_coverage.utils import is_mock_mode
 
 
@@ -17,7 +17,7 @@ from tests.integration.with_unit_coverage.utils import is_mock_mode
 @pytest.mark.usefixtures("setup_delete_syftboxes")
 def test_pagination_and_early_termination():
     """Test pagination with small page size and early termination with since_timestamp"""
-    from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
+    from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
     manager_ds, manager_do = SyftboxManager._pair_with_google_drive_testing_connection(
         do_email=EMAIL_DO,

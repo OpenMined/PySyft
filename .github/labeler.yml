@@ -1,7 +1,7 @@
-pkg:syft-client:
+pkg:syft:
   - changed-files:
       - any-glob-to-any-file:
-          - 'syft_client/**'
+          - 'syft/**'
 
 pkg:syft-bg:
   - changed-files:

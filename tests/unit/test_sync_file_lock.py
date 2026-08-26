@@ -16,7 +16,7 @@ from pathlib import Path
 from contextlib import contextmanager
 from unittest.mock import patch
 
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.syftbox_manager import SyftboxManager
 
 
 def _subprocess_sync_with_instrumented_lock(

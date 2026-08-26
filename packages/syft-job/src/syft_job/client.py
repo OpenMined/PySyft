@@ -11,7 +11,7 @@ from syft_perms.syftperm_context import SyftPermContext
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from .config import SyftJobConfig
-from .install_source import get_syft_client_install_source
+from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
@@ -72,9 +72,9 @@ class JobClient(BaseJobClient):
         self.has_do_role = config.has_do_role
         self.peer_install_sources: dict[
             str, str
-        ] = {}  # do_email -> syft-client install source (local path, git URL, or "syft-client==X.Y.Z") advertised by that DO in their VersionInfo
+        ] = {}  # do_email -> syft install source (local path, git URL, or "syft==X.Y.Z") advertised by that DO in their VersionInfo
         # All model reads/writes and path resolution go through the manager;
-        # peer_schemas (peer email -> job ProtocolSchema) is filled by syft-client.
+        # peer_schemas (peer email -> job ProtocolSchema) is filled by syft.
         self.manager = JobStorage(config=config, peer_schemas=peer_schemas)
 
         # Validate that user_email exists in SyftBox root
@@ -290,7 +290,7 @@ class JobClient(BaseJobClient):
         return resolved_path, is_folder_submission, entrypoint
 
     def _resolve_install_source_for(self, do_email: str) -> str:
-        """Return the syft-client install source to bake into a job's run.sh.
+        """Return the syft install source to bake into a job's run.sh.
 
         Prefers the source advertised by the DO during peer-version exchange
         (stored on `self.peer_install_sources`). Falls back to local detection
@@ -300,12 +300,12 @@ class JobClient(BaseJobClient):
         if advertised:
             return advertised
 
-        fallback = get_syft_client_install_source()
+        fallback = get_syft_install_source()
         warnings.warn(
             f"\n{'=' * 78}\n"
-            f"WARNING: No syft-client install source advertised by DO {do_email!r}.\n"
+            f"WARNING: No syft install source advertised by DO {do_email!r}.\n"
             f"Falling back to local detection on the DS side: {fallback!r}.\n"
-            f"The DO may be running an older syft-client; the job may fail to\n"
+            f"The DO may be running an older syft; the job may fail to\n"
             f"install dependencies on the DO's machine.\n"
             f"{'=' * 78}",
             stacklevel=3,
@@ -326,7 +326,7 @@ class JobClient(BaseJobClient):
             entrypoint_path: Filename to execute (e.g., "main.py" or "script.py")
             dependencies: List of dependencies to install
             has_pyproject: Whether the code has a pyproject.toml
-            install_source: Syft-client install source to use (pip/uv-compatible string).
+            install_source: syft install source to use (pip/uv-compatible string).
 
         Returns:
             Bash script content
@@ -337,7 +337,7 @@ class JobClient(BaseJobClient):
             # For projects with pyproject.toml, run uv sync inside the code folder
             # entrypoint_path is like "code/main.py", code_folder is "code"
             code_folder = "code"
-            # Always install syft_client (and any extra dependencies) after uv sync
+            # Always install syft (and any extra dependencies) after uv sync
             deps_str = " ".join(f'"{dep}"' for dep in all_dependencies)
             install_deps_cmd = f"uv pip install {deps_str}"
 

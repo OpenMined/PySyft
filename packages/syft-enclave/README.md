@@ -1,6 +1,6 @@
 # syft-enclave
 
-Enclave support for syft-client, enabling secure computation in Trusted Execution Environments (TEEs).
+Enclave support for syft, enabling secure computation in Trusted Execution Environments (TEEs).
 
 ## About
 

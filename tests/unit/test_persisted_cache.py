@@ -3,8 +3,8 @@
 If the cache persistence feature is removed or broken, these tests fail.
 """
 
-from syft_client.sync.syftbox_manager import SyftboxManager
-from syft_client.sync.sync.constants import (
+from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.sync.constants import (
     CACHE_DIR,
     OWNER_FILE_HASHES_FILENAME,
     ROLLING_STATE_FILENAME,

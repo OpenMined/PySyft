@@ -3,9 +3,9 @@ requires = ["setuptools>=64.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "syft-client"
+name = "syft"
 dynamic = ["version"]
-description = "A simple client library for setting up secure communication channels using Google Drive"
+description = "PySyft : privacy-preserving data science over file-based transports."
 readme = "README.md"
 authors = [
     {name = "OpenMined", email = "info@openmined.org"}
@@ -17,10 +17,9 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Security :: Cryptography",
     "Topic :: Communications :: File Sharing"
@@ -65,11 +64,14 @@ Documentation = "https://github.com/OpenMined/PySyft#readme"
 "Bug Tracker" = "https://github.com/OpenMined/PySyft/issues"
 
 [tool.setuptools.dynamic]
-version = {attr = "syft_client.version.SYFT_CLIENT_VERSION"}
+version = {attr = "syft.version.SYFT_VERSION"}
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["syft_client*"]
+# Exact names, no namespace discovery: a stale `syft_client/` or `__pycache__`
+# tree left in a checkout must never end up in the wheel.
+include = ["syft", "syft.*"]
+namespaces = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -92,7 +94,7 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["syft_client"]
+source = ["syft"]
 omit = [
     "*/tests/*",
     "*/test_*.py",
@@ -117,7 +119,7 @@ extend-exclude = ["*.obfuscated.py"]
 profile = "black"
 multi_line_output = 3
 line_length = 88
-known_first_party = ["syft_client"]
+known_first_party = ["syft"]
 skip_glob = ["**/__pycache__/**"]
 
 [tool.prettier]

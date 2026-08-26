@@ -15,9 +15,9 @@ from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from pydantic import BaseModel
 
-from syft_client.version import SYFT_CLIENT_VERSION
+from syft.version import SYFT_VERSION
 
-ATTESTATION_AUDIENCE = "syft-client-attestation"
+ATTESTATION_AUDIENCE = "syft-attestation"
 CONFIDENTIAL_COMPUTING_CERTS_URL = (
     "https://www.googleapis.com/service_accounts/v1/metadata/jwk/"
     "signer@confidentialspace-sign.iam.gserviceaccount.com"
@@ -49,8 +49,8 @@ class AppraisalPolicy(BaseModel):
     # None → image-digest check skipped (no image pinned). Set a "sha256:..."
     # digest to pin, and require, a specific enclave image.
     expected_image_digest: Optional[str] = None
-    # By default, the enclave must run the same version of syft-client as the verifier.
-    expected_syft_version: Optional[str] = SYFT_CLIENT_VERSION
+    # By default, the enclave must run the same version of syft as the verifier.
+    expected_syft_version: Optional[str] = SYFT_VERSION
 
 
 class AttestationError(Exception):
@@ -204,7 +204,7 @@ def verify_attestation_token(
         eat_nonce = [eat_nonce]
     actual_version_nonce = eat_nonce[0] if eat_nonce else None
     # Must match the format produced by syft_enclaves.tee_token.build_eat_nonce.
-    expected_version_nonce = f"syft-client-{expected_syft_version}"
+    expected_version_nonce = f"syft-{expected_syft_version}"
     if not actual_version_nonce:
         result.add(
             "version_match",
@@ -217,7 +217,7 @@ def verify_attestation_token(
             "version_match",
             "Version match",
             True,
-            f"enclave runs expected syft-client {expected_syft_version}",
+            f"enclave runs expected syft {expected_syft_version}",
         )
     else:
         result.add(

@@ -6,8 +6,8 @@ events they don't already have locally, avoiding redundant re-downloads on resta
 
 from pathlib import Path
 
-from syft_client.sync.syftbox_manager import SyftboxManager
-from syft_client.sync.sync.collection_spec import CollectionSyncSpec
+from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.sync.collection_spec import CollectionSyncSpec
 
 from tests.unit.utils import (
     TEST_COLLECTION_PREFIX,
@@ -174,7 +174,7 @@ def test_do_cache_handles_deletions_correctly():
     # Now test cache reload - deletion should still be reflected
     syftbox_folder = do_manager.syftbox_folder
 
-    from syft_client.sync.sync.caches.datasite_owner_cache import (
+    from syft.sync.sync.caches.datasite_owner_cache import (
         DataSiteOwnerEventCache,
         DataSiteOwnerEventCacheConfig,
     )
@@ -232,7 +232,7 @@ def test_ds_cache_handles_deletions_correctly():
     # Test cache reload
     syftbox_folder = ds_manager.syftbox_folder
 
-    from syft_client.sync.sync.caches.datasite_watcher_cache import (
+    from syft.sync.sync.caches.datasite_watcher_cache import (
         DataSiteWatcherCache,
         DataSiteWatcherCacheConfig,
     )

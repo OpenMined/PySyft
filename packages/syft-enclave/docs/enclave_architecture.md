@@ -1,6 +1,6 @@
 # Syft Client Enclave - Confidential Spaces Deployment
 
-This directory contains a Docker image that packages `syft-client` with an HTTP attestation server. When deployed on Google Confidential Spaces, the `/attestation` endpoint returns a cryptographically signed TEE attestation report.
+This directory contains a Docker image that packages `syft` with an HTTP attestation server. When deployed on Google Confidential Spaces, the `/attestation` endpoint returns a cryptographically signed TEE attestation report.
 
 ## Architecture
 
@@ -19,7 +19,7 @@ This directory contains a Docker image that packages `syft-client` with an HTTP 
 │  │  └──────────────┬──────────────────────────┘  │  │
 │  │                 │                             │  │
 │  │  ┌──────────────▼──────────────────────────┐  │  │
-│  │  │  syft-client-enclave container          │  │  │
+│  │  │  syft-enclave container                 │  │  │
 │  │  │  - Attestation published via gdrive     │  │  │
 │  │  │  - signed JWT with TEE claims           │  │  │
 │  │  └─────────────────────────────────────────┘  │  │

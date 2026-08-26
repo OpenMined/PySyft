@@ -1,5 +1,5 @@
 dockerhub_username := "openminedreleasebot"
-image_base := "docker.io/openminedreleasebot/syft-client-enclave"
+image_base := "docker.io/openminedreleasebot/syft-enclave"
 image_tag := "latest"
 image_digest := "" #image digest when set, always take precedence over image_tag
 machine_type_default := "n2d-standard-2"
@@ -359,7 +359,7 @@ delete-syftbox email token_path="../../credentials/token_enclave.json":
     [ -f "{{token_path}}" ] || { echo "Error: token file not found: {{token_path}}" >&2; exit 1; }
     echo "Deleting syftbox for {{email}} (token: {{token_path}})..."
     uv run --project ../.. -- python -c "
-    from syft_client.sync.utils.syftbox_utils import delete_syftbox
+    from syft.sync.utils.syftbox_utils import delete_syftbox
     delete_syftbox(token_path='{{token_path}}', email='{{email}}')
     "
 
@@ -540,7 +540,7 @@ credentials-to-token credentials_path output_path:
     #!/bin/bash
     set -e
     uv run --project ../.. -- python -c "
-    from syft_client import credentials_to_token
+    from syft import credentials_to_token
     out = credentials_to_token('{{credentials_path}}', '{{output_path}}')
     print(f'token written: {out}')
     "
