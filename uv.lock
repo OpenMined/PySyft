@@ -4546,7 +4546,7 @@ test = [
 
 [[package]]
 name = "syft-bg"
-version = "0.3.11"
+version = "0.3.12"
 source = { editable = "packages/syft-bg" }
 dependencies = [
     { name = "click" },
@@ -4592,7 +4592,7 @@ wheels = [
 
 [[package]]
 name = "syft-dataset"
-version = "0.1.20"
+version = "0.1.21"
 source = { editable = "packages/syft-datasets" }
 dependencies = [
     { name = "pyyaml" },
@@ -4640,7 +4640,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-job"
-version = "0.1.39"
+version = "0.1.40"
 source = { editable = "packages/syft-job" }
 dependencies = [
     { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -4699,7 +4699,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-permissions"
-version = "0.1.14"
+version = "0.1.15"
 source = { editable = "packages/syft-permissions" }
 dependencies = [
     { name = "pydantic" },
@@ -4716,7 +4716,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-perms"
-version = "0.1.14"
+version = "0.1.15"
 source = { editable = "packages/syft-perms" }
 dependencies = [
     { name = "syft-permissions" },
@@ -4727,7 +4727,7 @@ requires-dist = [{ name = "syft-permissions", editable = "packages/syft-permissi
 
 [[package]]
 name = "syft-rds"
-version = "0.6.0"
+version = "0.6.1"
 source = { editable = "packages/syft-rds" }
 dependencies = [
     { name = "syft" },
