@@ -7,6 +7,13 @@
   numbering continues the PySyft lineage on PyPI: 0.10.0 follows syft-client
   0.1.117 and legacy PySyft 0.9.x. If you depend on the legacy PySyft ≤0.9 API,
   pin `syft<0.10`.
+- `syft` is the sync engine only. `syft.login_do()` / `syft.login_ds()` return a
+  `SyftboxManager` (peers + file sync); datasets and jobs (`create_dataset`,
+  `submit_python_job`, `jobs`, `datasets`, `process_approved_jobs`, ...) are on
+  `syft_rds.SyftRDSClient`: `pip install syft-rds` and
+  `from syft_rds import login_do, login_ds`. Data owners running background
+  services also install `syft-bg`. `syft` no longer depends on `syft-bg` or
+  `syft-job`.
 - Environment variables renamed, with no fallback to the old names:
   `SYFTCLIENT_TOKEN_PATH` → `SYFT_TOKEN_PATH`, `SYFTCLIENT_DEV_MODE` →
   `SYFT_DEV_MODE`, `SYFT_CLIENT_INSTALL_SOURCE` → `SYFT_INSTALL_SOURCE`.

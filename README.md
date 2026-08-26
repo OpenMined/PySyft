@@ -5,7 +5,7 @@
 
 # PySyft v2
 
-> **`syft` 0.10+ is the successor of `syft-client`.** Install with `pip install "syft>=0.10.0"` and import as `import syft as sy`. If you depend on the legacy PySyft ≤0.9 API, pin `syft<0.10`.
+> **`syft` 0.10+ is the successor of `syft-client`.** `syft` is the sync engine (`import syft as sy`); datasets and jobs live in `syft-rds` (`from syft_rds import login_do, login_ds`). If you depend on the legacy PySyft ≤0.9 API, pin `syft<0.10`.
 
 [![Unit Tests](https://github.com/OpenMined/pysyft/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/OpenMined/PySyft/actions/workflows/unit-tests.yml)
 [![Integration Tests](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml)
@@ -36,18 +36,22 @@ PySyft lets data scientists submit computations which are run by data owners on 
 
 ## Quick Start
 
-```
-uv pip install "syft>=0.10.0"
+```bash
+# Data scientist
+uv pip install "syft>=0.10.0" "syft-rds>=0.10.0"
+# Data owner (adds the background services)
+uv pip install "syft>=0.10.0" "syft-rds>=0.10.0" "syft-bg>=0.3.12"
 ```
 
 ```python
-import syft as sy
+import syft as sy                          # sync engine + helpers (resolve_dataset_file_path, bug_report, ...)
+from syft_rds import login_do, login_ds    # datasets + jobs (the Remote Data Science client)
 ```
 
 ```python
 # Login (colab auth, for non-colab pass token_path)
-do = sy.login_do(email="do@org.com")
-ds = sy.login_ds(email="ds@org.com")
+do = login_do(email="do@org.com")
+ds = login_ds(email="ds@org.com")
 
 # Peer request & approve
 ds.add_peer("do@org.com")
@@ -98,14 +102,15 @@ result = open(ds.jobs[-1].output_paths[0]).read()
 
 ## Packages
 
-| Package                                                                                      | Description                                   |
-| -------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| [`syft-datasets`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-datasets)       | Dataset management and sharing                |
-| [`syft-job`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-job)                 | Job submission and execution                  |
-| [`syft-permissions`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-permissions) | Permission system for Syft datasites          |
-| [`syft-perms`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-perms)             | User-facing permission API for Syft datasites |
-| [`syft-bg`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-bg)                   | Background services TUI dashboard for SyftBox |
-| [`syft-notebook-ui`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-notebook-ui) | Jupyter notebook display utilities            |
+| Package                                                                                      | Description                                                       |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [`syft-rds`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-rds)                 | Remote Data Science client: `login_do`/`login_ds`, datasets, jobs |
+| [`syft-datasets`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-datasets)       | Dataset management and sharing                                    |
+| [`syft-job`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-job)                 | Job submission and execution                                      |
+| [`syft-permissions`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-permissions) | Permission system for Syft datasites                              |
+| [`syft-perms`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-perms)             | User-facing permission API for Syft datasites                     |
+| [`syft-bg`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-bg)                   | Background services TUI dashboard for SyftBox                     |
+| [`syft-notebook-ui`](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-notebook-ui) | Jupyter notebook display utilities                                |
 
 ## Development
 

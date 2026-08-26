@@ -78,5 +78,6 @@ Once you've completed the Google Cloud Console setup, generate a token and log i
 
 ```bash
 token_path = sy.credentials_to_token(credentials_path)
-do_client = login_do(email="your@email.com", token_path=token_path) # or login_ds
+from syft_rds import login_do  # or login_ds
+do_client = login_do(email="your@email.com", token_path=token_path)
 ```
