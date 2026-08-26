@@ -4664,7 +4664,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-migration"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "packages/syft-migration" }
 dependencies = [
     { name = "pydantic" },
@@ -4727,7 +4727,7 @@ requires-dist = [{ name = "syft-permissions", editable = "packages/syft-permissi
 
 [[package]]
 name = "syft-rds"
-version = "0.1.0"
+version = "0.6.0"
 source = { editable = "packages/syft-rds" }
 dependencies = [
     { name = "syft" },

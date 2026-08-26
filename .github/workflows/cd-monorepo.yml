@@ -32,6 +32,11 @@ on:
         type: boolean
         default: true
 
+      release_syft_migration:
+        description: Release syft-migration
+        type: boolean
+        default: true
+
       release_syft_job:
         description: Release syft-job
         type: boolean
@@ -39,6 +44,11 @@ on:
 
       release_syft_dataset:
         description: Release syft-dataset
+        type: boolean
+        default: true
+
+      release_syft_rds:
+        description: Release syft-rds
         type: boolean
         default: true
 
@@ -65,12 +75,14 @@ jobs:
     uses: OpenMined/PySyft/.github/workflows/integration-tests.yml@dev
     secrets: inherit
 
-  # Release order follows dependency graph:
+  # Release order follows the dependency graph:
   # 1. syft-permissions (no internal deps)
   # 2. syft-perms (depends on syft-permissions)
-  # 3. syft-job + syft-dataset (depend on syft-perms) — parallel
-  # 4. syft-bg (depends on syft-job)
-  # 5. syft (depends on all above)
+  # 3. syft-migration (no internal deps; needed by dataset + job)
+  # 4. syft-dataset, then syft-job (depend on syft-perms + syft-migration)
+  # 5. syft-rds (depends on syft, syft-job, syft-dataset)
+  # 6. syft-bg (depends on syft-job, syft-rds)
+  # 7. syft (root; its pins were rewritten by the jobs above)
 
   release-syft-permissions:
     needs: [call-linting-tests, call-unit-tests, call-integration-tests]
@@ -92,8 +104,18 @@ jobs:
       bump_type: ${{ inputs.bump_type }}
     secrets: inherit
 
-  release-syft-dataset:
+  release-syft-migration:
     needs: [release-syft-perms]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_migration == true
+    uses: ./.github/workflows/cd-syft-migration.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
+
+  release-syft-dataset:
+    needs: [release-syft-migration]
     if: >-
       !cancelled() && !failure() &&
       inputs.release_syft_dataset == true
@@ -112,8 +134,18 @@ jobs:
       bump_type: ${{ inputs.bump_type }}
     secrets: inherit
 
-  release-syft-bg:
+  release-syft-rds:
     needs: [release-syft-job]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_rds == true
+    uses: ./.github/workflows/cd-syft-rds.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
+
+  release-syft-bg:
+    needs: [release-syft-rds]
     if: >-
       !cancelled() && !failure() &&
       inputs.release_syft_bg == true

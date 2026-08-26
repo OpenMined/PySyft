@@ -3,7 +3,7 @@
 The client described here is `syft_rds.SyftRDSClient` (package `syft-rds`), which composes datasets and jobs on top of the `syft` sync engine:
 
 ```bash
-pip install "syft>=0.10.0" "syft-rds>=0.10.0"
+pip install "syft>=0.10.0" "syft-rds>=0.6.0"
 ```
 
 ```python

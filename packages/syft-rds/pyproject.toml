@@ -1,7 +1,8 @@
 [project]
 name = "syft-rds"
-version = "0.1.0"
-description = "Remote Data Science product: datasets + jobs composed on top of the syft sync engine"
+version = "0.6.0"
+description = "PySyft 0.10+ Remote Data Science client: datasets + jobs on top of the syft sync engine (SyftBox users of the earlier syft-rds 0.x should pin syft-rds<0.6)"
+readme = "README.md"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
