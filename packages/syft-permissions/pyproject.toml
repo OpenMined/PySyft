@@ -1,6 +1,6 @@
 [project]
 name = "syft-permissions"
-version = "0.1.14"
+version = "0.1.15"
 description = "Permission system for Syft datasites"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }
