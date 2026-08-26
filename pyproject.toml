@@ -34,7 +34,7 @@ dependencies = [
     "syft-permissions==0.1.15",
     "syft-perms==0.1.15",
     "syft-crypto-python>=0.1.2b2",
-    "syft-dataset==0.1.20",
+    "syft-dataset==0.1.21",
 ]
 
 
