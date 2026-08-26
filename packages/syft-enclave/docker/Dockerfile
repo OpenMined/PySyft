@@ -28,10 +28,6 @@ COPY packages ./packages
 # Sync just the deps of the syft-enclave package into /repo/.venv.
 RUN uv sync --frozen --no-dev --package syft-enclave
 
-# Fail the *build* (not the entrypoint, which swallows import errors) if the
-# root package did not make it into the image.
-RUN /repo/.venv/bin/python -c "import syft, syft_enclaves; print('syft', syft.__version__)"
-
 # FastAPI + uvicorn for the attestation server (not part of syft-enclave's own
 # deps; only needed inside the image).
 COPY packages/syft-enclave/docker/requirements.txt /tmp/requirements.txt

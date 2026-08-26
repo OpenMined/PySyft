@@ -1,8 +1,6 @@
 """
 syft - A unified client for secure file syncing (formerly published as ``syft-client``).
 
-PySyft <= 0.9 was a different codebase with a different API; pin ``syft<0.10``
-if you depend on it.
 """
 
 import logging
