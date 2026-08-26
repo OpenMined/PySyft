@@ -139,6 +139,11 @@ jobs:
     if: >-
       !cancelled() && !failure() &&
       inputs.release_syft_rds == true
+    # A called workflow cannot exceed the caller's token permissions, so the
+    # OIDC permission for trusted publishing has to be granted here as well.
+    permissions:
+      contents: write
+      id-token: write
     uses: ./.github/workflows/cd-syft-rds.yml
     with:
       bump_type: ${{ inputs.bump_type }}

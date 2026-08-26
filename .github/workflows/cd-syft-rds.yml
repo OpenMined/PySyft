@@ -24,8 +24,11 @@ concurrency:
 jobs:
   deploy-syft-rds:
     runs-on: ubuntu-latest
+    # PyPI Trusted Publishing (OIDC)
+    environment: pypi
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v6
@@ -58,12 +61,11 @@ jobs:
         working-directory: packages/syft-rds
         run: uv build --out-dir dist
 
-      - name: Publish to PyPI
-        working-directory: packages/syft-rds
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT_RDS }}
-        run: uvx twine upload --verbose dist/*
+      - name: Publish to PyPI (trusted publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/syft-rds/dist
+          verbose: true
 
       # Annotated tag + explicit push: `--follow-tags` only pushes annotated
       # tags, so a lightweight tag would never reach origin.
