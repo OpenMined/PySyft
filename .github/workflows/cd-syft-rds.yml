@@ -1,4 +1,4 @@
-name: CD - Syft BG
+name: CD - Syft RDS
 
 on:
   workflow_dispatch:
@@ -18,14 +18,17 @@ on:
         required: true
 
 concurrency:
-  group: 'CD - Syft BG'
+  group: 'CD - Syft RDS'
   cancel-in-progress: false
 
 jobs:
-  deploy-syft-bg:
+  deploy-syft-rds:
     runs-on: ubuntu-latest
+    # PyPI Trusted Publishing (OIDC)
+    environment: pypi
     permissions:
       contents: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v6
@@ -47,30 +50,29 @@ jobs:
         run: |
           git pull
           pip install packaging
-          OUTPUT=$(python scripts/bump_version.py syft-bg ${{ inputs.bump_type }})
+          OUTPUT=$(python scripts/bump_version.py syft-rds ${{ inputs.bump_type }})
           VERSION=$(echo "$OUTPUT" | sed -n '1p')
           MODIFIED=$(echo "$OUTPUT" | sed -n '2p')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "MODIFIED=$MODIFIED" >> $GITHUB_ENV
-          echo "Bumped syft-bg to $VERSION (modified: $MODIFIED)"
+          echo "Bumped syft-rds to $VERSION (modified: $MODIFIED)"
 
       - name: Build package
-        working-directory: packages/syft-bg
+        working-directory: packages/syft-rds
         run: uv build --out-dir dist
 
-      - name: Publish to PyPI
-        working-directory: packages/syft-bg
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT_BG }}
-        run: uvx twine upload --verbose dist/*
+      - name: Publish to PyPI (trusted publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: packages/syft-rds/dist
+          verbose: true
 
       # Annotated tag + explicit push: `--follow-tags` only pushes annotated
       # tags, so a lightweight tag would never reach origin.
       - name: Commit and tag
         run: |
           git add ${{ env.MODIFIED }}
-          git commit -m "Release syft-bg v${{ env.VERSION }}"
-          git tag -a "syft-bg/v${{ env.VERSION }}" -m "syft-bg v${{ env.VERSION }}"
+          git commit -m "Release syft-rds v${{ env.VERSION }}"
+          git tag -a "syft-rds/v${{ env.VERSION }}" -m "syft-rds v${{ env.VERSION }}"
           git push origin HEAD
-          git push origin "refs/tags/syft-bg/v${{ env.VERSION }}"
+          git push origin "refs/tags/syft-rds/v${{ env.VERSION }}"

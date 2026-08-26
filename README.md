@@ -38,9 +38,9 @@ PySyft lets data scientists submit computations which are run by data owners on 
 
 ```bash
 # Data scientist
-uv pip install "syft>=0.10.0" "syft-rds>=0.10.0"
+uv pip install "syft>=0.10.0" "syft-rds>=0.6.0"
 # Data owner (adds the background services)
-uv pip install "syft>=0.10.0" "syft-rds>=0.10.0" "syft-bg>=0.3.12"
+uv pip install "syft>=0.10.0" "syft-rds>=0.6.0" "syft-bg>=0.3.12"
 ```
 
 ```python

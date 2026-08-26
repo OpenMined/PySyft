@@ -10,7 +10,7 @@ dependencies = [
     "pyyaml>=6.0.3",
     "syft-notebook-ui",
     "syft-perms==0.1.14",
-    "syft-migration",
+    "syft-migration>=0.1.0",
 ]
 
 

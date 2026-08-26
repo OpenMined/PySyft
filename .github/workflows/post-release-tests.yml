@@ -61,11 +61,17 @@ jobs:
       - name: Install the published wheel from PyPI in a clean venv and import it
         run: |
           uv venv /tmp/pypi-check
-          uv pip install --python /tmp/pypi-check/bin/python "syft==${{ inputs.package_version }}"
+          # syft-rds and syft-bg are what users actually install (README quick start);
+          # unpinned = latest, which is correct right after the run that published them.
+          uv pip install --python /tmp/pypi-check/bin/python "syft==${{ inputs.package_version }}" syft-rds syft-bg
           /tmp/pypi-check/bin/python -c "
           import syft as sy, syft.sync.login, syft.utils
+          import syft_bg
+          from syft_rds import SyftRDSClient, login_do, login_ds
           assert sy.__version__ == '${{ inputs.package_version }}', sy.__version__
-          print('clean-venv import OK:', sy.__version__)
+          missing = [a for a in ('create_dataset', 'submit_python_job', 'process_approved_jobs', 'jobs', 'datasets') if not hasattr(SyftRDSClient, a)]
+          assert not missing, missing
+          print('clean-venv import OK: syft', sy.__version__)
           "
 
       # Swap only `syft` for the wheel, then move the source tree out of the

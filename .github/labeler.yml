@@ -37,3 +37,13 @@ pkg:syft-enclave:
   - changed-files:
       - any-glob-to-any-file:
           - 'packages/syft-enclave/**'
+
+pkg:syft-rds:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/syft-rds/**'
+
+pkg:syft-migration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/syft-migration/**'

@@ -1,4 +1,4 @@
-name: CD - Syft BG
+name: CD - Syft Migration
 
 on:
   workflow_dispatch:
@@ -18,11 +18,11 @@ on:
         required: true
 
 concurrency:
-  group: 'CD - Syft BG'
+  group: 'CD - Syft Migration'
   cancel-in-progress: false
 
 jobs:
-  deploy-syft-bg:
+  deploy-syft-migration:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -47,22 +47,22 @@ jobs:
         run: |
           git pull
           pip install packaging
-          OUTPUT=$(python scripts/bump_version.py syft-bg ${{ inputs.bump_type }})
+          OUTPUT=$(python scripts/bump_version.py syft-migration ${{ inputs.bump_type }})
           VERSION=$(echo "$OUTPUT" | sed -n '1p')
           MODIFIED=$(echo "$OUTPUT" | sed -n '2p')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "MODIFIED=$MODIFIED" >> $GITHUB_ENV
-          echo "Bumped syft-bg to $VERSION (modified: $MODIFIED)"
+          echo "Bumped syft-migration to $VERSION (modified: $MODIFIED)"
 
       - name: Build package
-        working-directory: packages/syft-bg
+        working-directory: packages/syft-migration
         run: uv build --out-dir dist
 
       - name: Publish to PyPI
-        working-directory: packages/syft-bg
+        working-directory: packages/syft-migration
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT_BG }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT_MIGRATION }}
         run: uvx twine upload --verbose dist/*
 
       # Annotated tag + explicit push: `--follow-tags` only pushes annotated
@@ -70,7 +70,7 @@ jobs:
       - name: Commit and tag
         run: |
           git add ${{ env.MODIFIED }}
-          git commit -m "Release syft-bg v${{ env.VERSION }}"
-          git tag -a "syft-bg/v${{ env.VERSION }}" -m "syft-bg v${{ env.VERSION }}"
+          git commit -m "Release syft-migration v${{ env.VERSION }}"
+          git tag -a "syft-migration/v${{ env.VERSION }}" -m "syft-migration v${{ env.VERSION }}"
           git push origin HEAD
-          git push origin "refs/tags/syft-bg/v${{ env.VERSION }}"
+          git push origin "refs/tags/syft-migration/v${{ env.VERSION }}"
