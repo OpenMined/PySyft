@@ -1,6 +1,6 @@
 [project]
 name = "syft-rds"
-version = "0.6.0"
+version = "0.6.1"
 description = "PySyft 0.10+ Remote Data Science client: datasets + jobs on top of the syft sync engine (SyftBox users of the earlier syft-rds 0.x should pin syft-rds<0.6)"
 readme = "README.md"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]

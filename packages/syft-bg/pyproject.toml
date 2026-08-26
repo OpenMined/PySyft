@@ -17,7 +17,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "google-cloud-pubsub>=2.18.0",
     "syft-job==0.1.40",
-    "syft-rds>=0.6.0",
+    "syft-rds>=0.6.1",
 ]
 
 [project.scripts]
