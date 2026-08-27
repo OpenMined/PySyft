@@ -40,6 +40,7 @@ PySyft lets data scientists submit computations which are run by data owners on 
 - **Dataset sharing with mock/private separation** — Data scientists explore mock data, then submit jobs that run on the real thing
 
 ## Quick Start
+We assume two parties here, a Data Owner (DO) and a Data Scientist (DS), the DS wants to do an analysis on private data of the DO. For brevity we use code blocks, but in practice these would be distributed: each party executes their code on their own machine.
 
 ```bash
 # Data scientist
