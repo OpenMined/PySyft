@@ -49,11 +49,8 @@ uv pip install "syft>=0.10.0" "syft-rds>=0.6.0" "syft-bg>=0.3.12"
 ```
 
 ```python
-import syft as sy  # sync engine + helpers (resolve_dataset_file_path, bug_report, ...)
-from syft_rds import (
-    login_do,
-    login_ds,
-)  # datasets + jobs (the Remote Data Science client)
+import syft as sy                          # sync engine + helpers (resolve_dataset_file_path, bug_report, ...)
+from syft_rds import login_do, login_ds    # datasets + jobs (the Remote Data Science client)
 ```
 
 ```python
@@ -72,8 +69,7 @@ do.create_dataset(
     private_path="private.txt",
     users=["ds@org.com"],
 )
-do.sync()
-ds.sync()
+do.sync(); ds.sync()
 datasets = ds.datasets.get_all()
 ```
 
@@ -100,14 +96,12 @@ ds.submit_python_job(
     user="do@org.com",
     code_path="analysis.py",
 )
-ds.sync()
-do.sync()
+ds.sync(); do.sync()
 
 # Data owner Approves & runs job
 do.jobs[0].approve()
 do.process_approved_jobs(share_outputs_with_submitter=True)
-do.sync()
-ds.sync()
+do.sync(); ds.sync()
 result = open(ds.jobs[-1].output_paths[0]).read()
 ```
 
