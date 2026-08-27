@@ -25,6 +25,11 @@ PySyft lets data scientists submit computations which are run by data owners on 
 - [Permissions](https://github.com/OpenMined/PySyft/blob/dev/packages/syft-permissions/docs/permission-user-docs.md) - Permissions for syft
 - [Enclaves](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-enclave) - Enclaves with syft
 
+## Tutorials
+
+- [Double blind LLM evals in enclaves](https://github.com/OpenMined/PySyft/blob/dev/notebooks/enclave/gemma/colab-3-persona/3.%20DS-researcher-gemma-restrict.ipynb) — a researcher evaluates a private model on a private benchmark inside an enclave, with neither side revealing its assets
+- [LLM user logs analysis](https://github.com/OpenMined/PySyft/blob/dev/notebooks/ai_audit/external/DS_Tutorial_v2.ipynb) — submit jobs against private LLM user logs and get back only the approved results ([data owner notebook](https://github.com/OpenMined/PySyft/blob/dev/notebooks/ai_audit/internal/DO_Tutorial_V3.ipynb))
+
 ## Features
 
 - **Privacy-preserving** — Private data never leaves the data owner's machine; only approved results are shared
