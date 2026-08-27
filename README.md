@@ -56,8 +56,8 @@ from syft_rds import login_do, login_ds    # datasets + jobs (the Remote Data Sc
 
 ```python
 # Login (colab auth, for non-colab pass token_path)
-do = login_do(email="do@org.com")
-ds = login_ds(email="ds@org.com")
+do = login_do(email="do@org.com") # use your own email
+ds = login_ds(email="ds@org.com") # use another email here
 
 # Peer request & approve
 ds.add_peer("do@org.com")
@@ -66,8 +66,8 @@ do.approve_peer_request("ds@org.com")
 # Create & sync dataset
 do.create_dataset(
     name="census",
-    mock_path="mock.txt",
-    private_path="private.txt",
+    mock_path="mock.txt", # create this and add some text
+    private_path="private.txt", # create this and add some text
     users=["ds@org.com"],
 )
 do.sync(); ds.sync()
