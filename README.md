@@ -25,6 +25,11 @@ PySyft lets data scientists submit computations which are run by data owners on 
 - [Permissions](https://github.com/OpenMined/PySyft/blob/dev/packages/syft-permissions/docs/permission-user-docs.md) - Permissions for syft
 - [Enclaves](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-enclave) - Enclaves with syft
 
+## Tutorials
+
+- [Double blind LLM evals in enclaves](https://github.com/OpenMined/PySyft/blob/dev/notebooks/enclave/gemma/colab-3-persona/3.%20DS-researcher-gemma-restrict.ipynb) — a researcher evaluates a private model on a private benchmark inside an enclave, with neither side revealing its assets
+- [LLM user logs analysis](https://github.com/OpenMined/PySyft/blob/dev/notebooks/ai_audit/external/DS_Tutorial_v2.ipynb) — submit jobs against private LLM user logs and get back only the approved results ([data owner notebook](https://github.com/OpenMined/PySyft/blob/dev/notebooks/ai_audit/internal/DO_Tutorial_V3.ipynb))
+
 ## Features
 
 - **Privacy-preserving** — Private data never leaves the data owner's machine; only approved results are shared
@@ -44,8 +49,11 @@ uv pip install "syft>=0.10.0" "syft-rds>=0.6.0" "syft-bg>=0.3.12"
 ```
 
 ```python
-import syft as sy                          # sync engine + helpers (resolve_dataset_file_path, bug_report, ...)
-from syft_rds import login_do, login_ds    # datasets + jobs (the Remote Data Science client)
+import syft as sy  # sync engine + helpers (resolve_dataset_file_path, bug_report, ...)
+from syft_rds import (
+    login_do,
+    login_ds,
+)  # datasets + jobs (the Remote Data Science client)
 ```
 
 ```python
@@ -64,7 +72,8 @@ do.create_dataset(
     private_path="private.txt",
     users=["ds@org.com"],
 )
-do.sync(); ds.sync()
+do.sync()
+ds.sync()
 datasets = ds.datasets.get_all()
 ```
 
@@ -91,12 +100,14 @@ ds.submit_python_job(
     user="do@org.com",
     code_path="analysis.py",
 )
-ds.sync(); do.sync()
+ds.sync()
+do.sync()
 
 # Data owner Approves & runs job
 do.jobs[0].approve()
 do.process_approved_jobs(share_outputs_with_submitter=True)
-do.sync(); ds.sync()
+do.sync()
+ds.sync()
 result = open(ds.jobs[-1].output_paths[0]).read()
 ```
 
