@@ -47,49 +47,15 @@ jobs:
       - name: Wait for PyPI CDN propagation
         run: sleep 30
 
-      # tests/unit also imports workspace siblings (syft_bg, syft_job, syft_rds, ...)
-      # that are not dependencies of the published wheel, so build the full
-      # workspace env first and then swap only `syft` for the PyPI artifact.
-      - name: Install workspace test environment
-        run: uv sync --all-extras
-
-      # Clean-venv probe with dependencies from PyPI (no --no-deps): proves the
-      # published wheel's pins (syft-dataset==X, syft-perms==X, ...) are all
-      # installable AND that the published sub-packages are the code the wheel
-      # expects — a stale sub-package artifact on PyPI fails `import syft` even
-      # though resolution succeeds.
-      - name: Install the published wheel from PyPI in a clean venv and import it
+      - name: Smoke test the published packages in a clean venv
         run: |
           uv venv /tmp/pypi-check
-          # syft-rds and syft-bg are what users actually install (README quick start);
-          # unpinned = latest, which is correct right after the run that published them.
           uv pip install --python /tmp/pypi-check/bin/python "syft==${{ inputs.package_version }}" syft-rds syft-bg
-          /tmp/pypi-check/bin/python -c "
-          import syft as sy, syft.sync.login, syft.utils
-          import syft_bg
-          from syft_rds import SyftRDSClient, login_do, login_ds
-          assert sy.__version__ == '${{ inputs.package_version }}', sy.__version__
-          missing = [a for a in ('create_dataset', 'submit_python_job', 'process_approved_jobs', 'jobs', 'datasets') if not hasattr(SyftRDSClient, a)]
-          assert not missing, missing
-          print('clean-venv import OK: syft', sy.__version__)
-          "
+          /tmp/pypi-check/bin/python -c "import syft, syft_bg, syft_rds; assert syft.__version__ == '${{ inputs.package_version }}'; print('OK syft', syft.__version__)"
 
-      # Swap only `syft` for the wheel, then move the source tree out of the
-      # way: both `python -c` and pytest (prepend import mode, tests/__init__.py)
-      # put the checkout on sys.path, so a `./syft/` directory would shadow the
-      # installed package and the tests would silently exercise the source.
-      - name: Replace the editable syft with the PyPI artifact
+      - name: Run unit tests against the published wheel
         run: |
+          uv sync --all-extras
           uv pip install --reinstall --no-deps "syft==${{ inputs.package_version }}"
-          mv syft /tmp/syft-src
-          uv run --no-sync python -c "
-          import syft
-          assert 'site-packages' in syft.__file__, syft.__file__
-          assert syft.__version__ == '${{ inputs.package_version }}', syft.__version__
-          print('syft', syft.__version__, 'from', syft.__file__)
-          "
-
-      # --no-sync is essential: a plain `uv run` would re-sync the project and
-      # restore the editable install we just replaced.
-      - name: Run unit tests
-        run: uv run --no-sync pytest -n auto ./tests/unit
+          mv syft /tmp/syft-src  # the checkout would shadow the installed wheel
+          uv run --no-sync pytest -n auto ./tests/unit

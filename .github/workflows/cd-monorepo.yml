@@ -17,11 +17,6 @@ on:
           - minor
           - major
 
-      publish_without_bump:
-        description: Publish the root `syft` package at the version already in syft/version.py (no bump, no commit). One-time use for the 0.10.0 rename release; sub-packages still bump normally.
-        type: boolean
-        default: false
-
       release_syft_permissions:
         description: Release syft-permissions
         type: boolean
@@ -195,21 +190,15 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT }}
         run: |
           git pull
-          if [ "${{ inputs.publish_without_bump }}" = "true" ]; then
-            just publish
-          else
-            just bump-and-publish ${{ inputs.bump_type }}
-          fi
+          just bump-and-publish ${{ inputs.bump_type }}
           VERSION=$(python3 syft/version.py)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # bump-and-publish already commits; with publish_without_bump there is no
-      # new commit and only the tag is pushed. Root tags continue the repo's
-      # historical vX.Y.Z lineage; sub-packages use <name>/vX.Y.Z.
+      # bump-and-publish already committed the version bump. Root tags continue
+      # the repo's historical vX.Y.Z lineage; sub-packages use <name>/vX.Y.Z.
       # The tag is annotated and pushed explicitly: `--follow-tags` only pushes
-      # annotated tags, and only alongside commits, so a lightweight tag with
-      # no new commit would never reach origin.
+      # annotated tags, so a lightweight tag would never reach origin.
       - name: Tag and push
         run: |
           git tag -a "v${{ env.VERSION }}" -m "syft v${{ env.VERSION }}"
