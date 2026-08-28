@@ -47,6 +47,11 @@ on:
         type: boolean
         default: true
 
+      release_syft_enclave:
+        description: Release syft-enclave
+        type: boolean
+        default: true
+
       release_syft_bg:
         description: Release syft-bg
         type: boolean
@@ -76,7 +81,7 @@ jobs:
   # 3. syft-migration (no internal deps; needed by dataset + job)
   # 4. syft-dataset, then syft-job (depend on syft-perms + syft-migration)
   # 5. syft-rds (depends on syft, syft-job, syft-dataset)
-  # 6. syft-bg (depends on syft-job, syft-rds)
+  # 6. syft-enclave + syft-bg (depend on syft-rds) — parallel
   # 7. syft (root; its pins were rewritten by the jobs above)
 
   release-syft-permissions:
@@ -144,6 +149,16 @@ jobs:
       bump_type: ${{ inputs.bump_type }}
     secrets: inherit
 
+  release-syft-enclave:
+    needs: [release-syft-rds]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_enclave == true
+    uses: ./.github/workflows/cd-syft-enclave.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
+
   release-syft-bg:
     needs: [release-syft-rds]
     if: >-
@@ -155,7 +170,7 @@ jobs:
     secrets: inherit
 
   deploy-syft:
-    needs: [release-syft-bg, release-syft-dataset]
+    needs: [release-syft-bg, release-syft-enclave, release-syft-dataset]
     if: >-
       !cancelled() && !failure()
     runs-on: ubuntu-latest

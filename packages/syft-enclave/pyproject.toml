@@ -1,7 +1,8 @@
 [project]
 name = "syft-enclave"
-version = "0.1.0"
+version = "0.1.1"
 description = "TEE attestation server for syft"
+readme = "README.md"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
@@ -24,4 +25,15 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/syft_enclaves"]
+
+# Explicit sdist file selection: don't rely on Git-based VCS ignore detection,
+# which misbehaves in this repo's git-worktree checkout and otherwise pulls in
+# local Terraform state/provider binaries (multi-hundred-MB) into the sdist.
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/syft_enclaves",
+    "tests",
+    "README.md",
+    "LICENSE",
+]
 
