@@ -101,7 +101,7 @@ class DatasetStorage:
         self.config = config
         self.registry = registry
         self.service = MigrationService(registry=registry)
-        # peer email -> dataset ProtocolSchema; syft-client passes PeerManager's
+        # peer email -> dataset ProtocolSchema; syft passes PeerManager's
         # live map here (updated in place as peer version files load). Peers
         # without an entry cannot be assumed to read the current layout, so
         # they resolve to the widest-compatible (oldest) protocol.

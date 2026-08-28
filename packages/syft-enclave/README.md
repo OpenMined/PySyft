@@ -1,6 +1,6 @@
 # syft-enclave
 
-Enclave support for syft-client, enabling secure computation in Trusted Execution Environments (TEEs).
+Enclave support for syft, enabling secure computation in Trusted Execution Environments (TEEs).
 
 ## About
 
@@ -57,6 +57,19 @@ just start-debug EMAIL                          # defaults: syft-enclave-vm, n2d
 just start-debug EMAIL my-vm n2d-standard-4     # override name / machine type
 just stop [name]                                # Teardown: Deletes the VM.
 ```
+
+Debug enclaves run with encryption off — data owner clients must match: `login_do(encryption=False)`.
+
+## GPU deployments
+
+Prefix any deploy with `hardware=gpu` to switch from the CPU default to `a3-highgpu-1g` (1× H100 80GB, Intel TDX):
+
+```bash
+just hardware=gpu start EMAIL           # production
+just hardware=gpu start-debug EMAIL     # debug
+```
+
+GPU enclaves use flex-start provisioning: the create call may wait for H100 capacity (up to 2h), then the VM runs `gpu_run_duration_seconds` (default 2 days). Details: [docs/terraform.md — GPU deployments](docs/terraform.md#gpu-deployments).
 
 ## Inspect a running VM
 

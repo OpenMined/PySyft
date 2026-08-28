@@ -74,13 +74,16 @@ jobs:
         run: uvx twine upload --verbose dist/*
 
       # The tag must name the published version, so it is created before the bump.
+      # The tag is annotated and pushed explicitly: `--follow-tags` only pushes
+      # annotated tags, so a lightweight tag would never reach origin.
       - name: Tag the release, then bump for the next one
         run: |
-          git tag "syft-dataset/v${{ env.VERSION }}"
+          git tag -a "syft-dataset/v${{ env.VERSION }}" -m "syft-dataset v${{ env.VERSION }}"
           pip install packaging
           OUTPUT=$(python scripts/bump_version.py syft-dataset ${{ inputs.bump_type }} --dependents published)
           NEXT=$(echo "$OUTPUT" | sed -n '1p')
           MODIFIED=$(echo "$OUTPUT" | sed -n '2p')
           git add $MODIFIED
           git commit -m "Bump syft-dataset to $NEXT for the next release"
-          git push origin --follow-tags
+          git push origin HEAD
+          git push origin "refs/tags/syft-dataset/v${{ env.VERSION }}"

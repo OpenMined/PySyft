@@ -11,12 +11,12 @@ cold start and nothing else.
 """
 
 import pytest
-from syft_client.sync.checkpoints.checkpoint import (
+from syft.sync.checkpoints.checkpoint import (
     CHECKPOINT_VERSION,
     Checkpoint,
     IncrementalCheckpoint,
 )
-from syft_client.sync.checkpoints.rolling_state import (
+from syft.sync.checkpoints.rolling_state import (
     ROLLING_STATE_VERSION,
     RollingState,
 )

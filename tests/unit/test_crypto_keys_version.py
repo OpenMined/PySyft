@@ -8,7 +8,7 @@ read it wrong and lose the keys.
 import json
 
 import pytest
-from syft_client.sync.peers.peer_store import CRYPTO_KEYS_VERSION, PeerStore
+from syft.sync.peers.peer_store import CRYPTO_KEYS_VERSION, PeerStore
 
 
 def _saved(tmp_path):

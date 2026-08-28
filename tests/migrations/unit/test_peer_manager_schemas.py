@@ -1,7 +1,7 @@
 """PeerManager's live peer-schema maps track loaded peer versions."""
 
-from syft_client.sync.version.peer_manager import PeerManager
-from syft_client.sync.version.version_info import VersionInfo, VersionInfoV1
+from syft.sync.version.peer_manager import PeerManager
+from syft.sync.version.version_info import VersionInfo, VersionInfoV1
 
 
 def _peer_manager() -> PeerManager:
@@ -43,7 +43,7 @@ def test_pre_v2_peer_is_an_unknown_speaker():
 
 def test_cleared_version_removes_peer():
     pm = _peer_manager()
-    live = pm.live_peer_schemas("syft-client")
+    live = pm.live_peer_schemas("syft")
     pm._update_peer_schemas("do@test.org", _v2_with_schemas())
     pm._update_peer_schemas("do@test.org", None)
     assert live == {}

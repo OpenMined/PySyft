@@ -34,21 +34,21 @@ def test_encrypted_quad_keys_and_bundles():
     )
 
     for client in (enclave, do1, do2, ds):
-        store = client._manager._peer_store
+        store = client._rds.sync_engine._peer_store
         assert store is not None
         assert store.use_encryption is True
         assert store.has_my_keys() is True
 
     # The enclave peers with all three; it should hold each of their bundles
     # after wiring, so it can encrypt to and verify from them.
-    enclave_store = enclave._manager._peer_store
+    enclave_store = enclave._rds.sync_engine._peer_store
     for peer_email in (do1.email, do2.email, ds.email):
         assert enclave_store.has_peer_bundle(peer_email), (
             f"enclave missing encryption bundle for {peer_email}"
         )
 
     # And the DS holds the enclave's bundle (the link we care most about).
-    assert ds._manager._peer_store.has_peer_bundle(enclave.email)
+    assert ds._rds.sync_engine._peer_store.has_peer_bundle(enclave.email)
 
 
 def test_encrypted_message_to_enclave_roundtrips():

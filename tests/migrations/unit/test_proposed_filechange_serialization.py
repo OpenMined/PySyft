@@ -3,14 +3,14 @@
 import base64
 import json
 
-from syft_client.migrations import client_registry
-from syft_client.sync.messages.proposed_filechange import (
+from syft.migrations import client_registry
+from syft.sync.messages.proposed_filechange import (
     ProposedFileChange,
     ProposedFileChangesMessage,
     ProposedFileChangesMessageV1,
     ProposedFileChangeV1,
 )
-from syft_client.sync.utils.syftbox_utils import compress_data
+from syft.sync.utils.syftbox_utils import compress_data
 
 
 def _make_message(content) -> ProposedFileChangesMessage:

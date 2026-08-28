@@ -1,17 +1,17 @@
-"""Generate a p2p backward-compatibility fixture for the current syft-client release.
+"""Generate a p2p backward-compatibility fixture for the current syft release.
 
 Run on EVERY release, at the released commit:
 
-    git checkout syft-client/v<released version>
+    git checkout v<released version>
     uv run python scripts/generate_release_fixture.py
 
-The fixture name comes from SYFT_CLIENT_VERSION in the tree. The release job
+The fixture name comes from SYFT_VERSION in the tree. The release job
 publishes the version on the branch, tags it, then bumps. A run after the bump
 therefore names the fixture after the next version, which is not published yet.
 
 Writes the serialized artifacts exactly as this release produces them, into
 
-    tests/migrations/p2p/fixtures/syft_client-<version>-protocol<p>/
+    tests/migrations/p2p/fixtures/syft-<version>-protocol<p>/
         SYFT_version.json                       # the published version file
         msgv2_<...>.tar.gz                      # a proposed-changes message (DS -> DO)
         syfteventsmessagev3_<...>.tar.gz        # an events message (DO -> watchers)
@@ -28,17 +28,17 @@ Protocol 0 / release 0.1.117 predates this script; its fixture
 import sys
 from pathlib import Path
 
-from syft_client.migrations.registry import SYFT_CLIENT_PROTOCOL_VERSION
-from syft_client.sync.events.file_change_event import (
+from syft.migrations.registry import SYFT_CLIENT_PROTOCOL_VERSION
+from syft.sync.events.file_change_event import (
     FileChangeEvent,
     FileChangeEventsMessage,
 )
-from syft_client.sync.messages.proposed_filechange import (
+from syft.sync.messages.proposed_filechange import (
     ProposedFileChange,
     ProposedFileChangesMessage,
 )
-from syft_client.sync.version.version_info import VersionInfo
-from syft_client.version import SYFT_CLIENT_VERSION
+from syft.sync.version.version_info import VersionInfo
+from syft.version import SYFT_VERSION
 
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
@@ -94,14 +94,14 @@ def build_events_message(
 def main() -> None:
     # Any fixture for this version (any protocol) means the version was
     # already released; a released version's serialized form is frozen.
-    existing = sorted(FIXTURES_DIR.glob(f"syft_client-{SYFT_CLIENT_VERSION}-protocol*"))
+    existing = sorted(FIXTURES_DIR.glob(f"syft-{SYFT_VERSION}-protocol*"))
     if existing:
         sys.exit(
             f"{existing[0]} already exists — fixtures are frozen once written. "
-            "Bump SYFT_CLIENT_VERSION before generating."
+            "Bump SYFT_VERSION before generating."
         )
     target = FIXTURES_DIR / (
-        f"syft_client-{SYFT_CLIENT_VERSION}-protocol{SYFT_CLIENT_PROTOCOL_VERSION}"
+        f"syft-{SYFT_VERSION}-protocol{SYFT_CLIENT_PROTOCOL_VERSION}"
     )
     target.mkdir(parents=True)
 

@@ -84,7 +84,11 @@ def update_dependents(
         rf'"'  # closing quote
         rf"(?!\s*=)"  # not a TOML key (e.g. in [tool.uv.sources])
     )
-    replacement = f'"{package_name}=={new_version}"'
+
+    def replacement(match: re.Match) -> str:
+        # Keep a `>=` floor as a floor; anything else becomes an exact pin.
+        operator = ">=" if match.group(0).startswith(f'"{package_name}>=') else "=="
+        return f'"{package_name}{operator}{new_version}"'
 
     for path in find_all_pyproject_files():
         if path == target_path:

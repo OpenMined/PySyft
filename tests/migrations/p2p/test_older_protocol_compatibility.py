@@ -1,6 +1,7 @@
-"""Reading every released syft-client serialized format with the current code.
+"""Reading every released syft serialized format with the current code.
 
-Each fixture directory under fixtures/ is named ``syft_client-<version>-protocol<p>``
+Each fixture directory under fixtures/ is named ``<package>-<version>-protocol<p>``
+(``syft_client-`` before the package was renamed to ``syft``)
 and holds the serialized artifacts exactly as that release produced them: the
 published SYFT_version.json, one msgv2 proposed-changes blob and one events blob.
 The current code must still read, upgrade and round-trip all of them.
@@ -17,14 +18,14 @@ from pathlib import Path
 
 import pytest
 
-from syft_client.migrations import client_registry
-from syft_client.sync.events.file_change_event import FileChangeEventsMessage
-from syft_client.sync.messages.proposed_filechange import ProposedFileChangesMessage
-from syft_client.sync.utils.syftbox_utils import uncompress_data
-from syft_client.sync.version.version_info import VersionInfo
+from syft.migrations import client_registry
+from syft.sync.events.file_change_event import FileChangeEventsMessage
+from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
+from syft.sync.utils.syftbox_utils import uncompress_data
+from syft.sync.version.version_info import VersionInfo
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
-RELEASE_FIXTURES = sorted(FIXTURES_DIR.glob("syft_client-*-protocol*"))
+RELEASE_FIXTURES = sorted(FIXTURES_DIR.glob("*-protocol*"))
 
 released_fixtures = pytest.mark.parametrize(
     "fixture", RELEASE_FIXTURES, ids=lambda f: f.name

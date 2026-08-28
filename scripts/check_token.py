@@ -9,7 +9,7 @@ from google.auth.exceptions import GoogleAuthError, RefreshError
 from google.oauth2.credentials import Credentials
 from googleapiclient.errors import HttpError
 
-from syft_client.sync.connections.drive.gdrive_transport import (
+from syft.sync.connections.drive.gdrive_transport import (
     SCOPES,
     build_drive_service,
 )

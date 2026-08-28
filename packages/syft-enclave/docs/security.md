@@ -16,13 +16,13 @@ The flow rests on a few security building blocks. This document describes what m
 ## 1. SyftBox and permissions
 
 The basic unit is a **SyftBox**: a local folder of files. Every file carries **read and write
-permissions for each peer**, which decide who is allowed to see or change it. `syft-client`
+permissions for each peer**, which decide who is allowed to see or change it. `syft`
 expresses those permissions in small **permission files** with a `.gitignore`-like syntax — patterns that say who
 can read or write which paths. Most of the time you do not edit them by hand: higher-level
 components (the enclave package, the job package) manage them for you, though a user can always set
 them directly.
 
-`syft-client` uses the permissions to decide **which files to share with which
+`syft` uses the permissions to decide **which files to share with which
 peers over Google Drive** — only the files a peer is allowed to read are ever synced to them.
 
 See the [permissions guide](../../syft-permissions/docs/permission-user-docs.md) for the full
@@ -31,7 +31,7 @@ syntax.
 ## 2. Peer-to-peer file sharing
 
 Communication between parties is **transport-agnostic** — it works over any mechanism that can
-deliver a file. Today that transport is **Google Drive**. `syft-client` makes "requests" simply by
+deliver a file. Today that transport is **Google Drive**. `syft` makes "requests" simply by
 uploading and downloading shared files: to files with another party, it creates a folder
 that both parties can access and uploads the file into it. That is the whole channel — no dedicated
 servers, just shared files.
@@ -40,14 +40,14 @@ See the [Google Drive connection doc](../../../docs/connections.md) for the fold
 
 ## 3. All files are encrypted and signed
 
-Every file `syft-client` exchanges is **encrypted and signed**. The signature lets the recipient
+Every file `syft` exchanges is **encrypted and signed**. The signature lets the recipient
 **cryptographically prove who** produced a file. Encryption means that even if a file is accidentally shared with the wrong person, it is
 **unreadable** to them. The shared Google Drive folder is just a delivery mechanism; the security
 does not depend on Google Drive keeping anything secret.
 
 ## 4. The enclave runs in a Trusted Execution Environment
 
-The computation itself runs inside a **secure enclave**: a **docker container with `syft-client`**
+The computation itself runs inside a **secure enclave**: a **docker container with `syft`**
 executing in a **Trusted Execution Environment (TEE)** on confidential-compute hardware. The TEE
 isolates the running code and encrypts its memory, so the workload is **not controlled or observable
 by any person** — not the cloud operator, not the data owners, and not the data scientist. Nobody
@@ -71,7 +71,7 @@ For how the enclave is built and deployed, see the
 ## 5. Attestation bootstraps the encryption handshake
 
 Encryption and signing only help if you know whose keys to trust. For a **person**, this is relatively trivial:
-if a real human controls a Google Drive account, `syft-client` can reasonably assume that what comes
+if a real human controls a Google Drive account, `syft` can reasonably assume that what comes
 from that account came from them — trust is bootstrapped from the fact that the account is human-operated.
 
 An **enclave is different on purpose**: it must _not_ be controllable by any single person — that is

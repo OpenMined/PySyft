@@ -3,9 +3,9 @@ requires = ["setuptools>=64.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "syft-client"
+name = "syft"
 dynamic = ["version"]
-description = "A simple client library for setting up secure communication channels using Google Drive"
+description = "PySyft : privacy-preserving data science over file-based transports."
 readme = "README.md"
 authors = [
     {name = "OpenMined", email = "info@openmined.org"}
@@ -17,10 +17,9 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Security :: Cryptography",
     "Topic :: Communications :: File Sharing"
@@ -30,32 +29,16 @@ dependencies = [
     "google-auth[pyjwt]>=2.22.0",
     "google-auth-oauthlib>=1.0.0",
     "rich>=13.0.0",
-    "pandas",
     "pydantic-settings>=2.11.0",
-    "pyyaml>=6.0",
-    "jinja2>=3.1.0",
-    "click>=8.0.0",
     "portalocker>=2.8.0",
-    "python-daemon>=3.0.0",
-    "syft-bg==0.3.11",
-    "syft-job==0.1.39", # TODO: move to optional-dependencies after adding lazy imports
-    "syft-dataset==0.1.20", # TODO: move to optional-dependencies after adding lazy imports
-    "syft-permissions==0.1.14",
-    "syft-perms==0.1.14",
-    "syft-migration",
+    "syft-permissions==0.1.15",
+    "syft-perms==0.1.15",
+    "syft-migration==0.1.1",
     "syft-crypto-python>=0.1.2b2",
+    "syft-dataset==0.1.21",
 ]
 
-[project.optional-dependencies]
-datasets = [
-    "syft-dataset==0.1.20",
-]
-job = [
-    "syft-job==0.1.39",
-]
-all = [
-    "syft-client[datasets,job]",
-]
+
 
 [tool.uv]
 default-groups = ["dev", "test"]
@@ -82,11 +65,14 @@ Documentation = "https://github.com/OpenMined/PySyft#readme"
 "Bug Tracker" = "https://github.com/OpenMined/PySyft/issues"
 
 [tool.setuptools.dynamic]
-version = {attr = "syft_client.version.SYFT_CLIENT_VERSION"}
+version = {attr = "syft.version.SYFT_VERSION"}
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["syft_client*"]
+# Exact names, no namespace discovery: a stale `syft_client/` or `__pycache__`
+# tree left in a checkout must never end up in the wheel.
+include = ["syft", "syft.*"]
+namespaces = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -109,7 +95,7 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["syft_client"]
+source = ["syft"]
 omit = [
     "*/tests/*",
     "*/test_*.py",
@@ -126,11 +112,15 @@ exclude_lines = [
     "if TYPE_CHECKING:"
 ]
 
+[tool.ruff]
+# Obfuscator output is deliberately not valid Python; keep it out of lint/format.
+extend-exclude = ["*.obfuscated.py"]
+
 [tool.isort]
 profile = "black"
 multi_line_output = 3
 line_length = 88
-known_first_party = ["syft_client"]
+known_first_party = ["syft"]
 skip_glob = ["**/__pycache__/**"]
 
 [tool.prettier]
@@ -183,8 +173,9 @@ test = [
     "isort>=5.12.0",
     "coverage>=7.0.0",
     "enclave-model-api-example[test]",  # pulls fastapi/httpx for the inference server tests
+    "syft-bg==0.3.12",  # tests/unit/syft_bg/ lives under this package's testpaths and imports syft_bg
     "syft-enclave",
     "syft-restrict",
-    "syft-migration",
+    "syft-migration==0.1.1",
     "pyarrow",  # only used by parquet test fixtures (tests/unit/utils.py)
 ]

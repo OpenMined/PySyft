@@ -10,18 +10,35 @@ collection gives the version, and the peer takes the newest layout that it reads
 These tests drive that path from the name of the folder to the file on disk.
 """
 
-from pathlib import Path
-
 import pytest
-from syft_client.sync.connections.drive.gdrive_transport import (
-    DATASET_COLLECTION_NAME_QUERY,
-    DatasetCollectionFolder,
+from syft.sync.connections.drive.gdrive_transport import (
+    CollectionFolder,
+    collection_name_query,
 )
-from syft_client.sync.syftbox_manager import COLLECTION_SUBPATH, SyftboxManager
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 from syft_migration import ProtocolSchema
+from syft_rds import SyftRDSClient
+from syft_rds.config import (
+    COLLECTION_SUBPATH,
+    MOCK_DATASET_SPEC,
+    dataset_variant,
+)
 
 from tests.unit.utils import create_tmp_dataset_files
+
+DATASET_COLLECTION_NAME_QUERY = collection_name_query(DATASET_COLLECTION_PREFIX)
+
+
+def dataset_collection_folder(
+    tag: str, content_hash: str, protocol_version: str = "0"
+) -> CollectionFolder:
+    """The collection folder one protocol copy of a dataset writes."""
+    return CollectionFolder(
+        prefix=DATASET_COLLECTION_PREFIX,
+        tag=tag,
+        content_hash=content_hash,
+        variant=dataset_variant(protocol_version),
+    )
 
 
 # An audience member on an earlier client, so a create writes both layouts.
@@ -39,7 +56,7 @@ def _dataset_schema(protocol_version: str) -> ProtocolSchema:
 
 @pytest.fixture
 def pair():
-    return SyftboxManager.pair_with_mock_drive_service_connection(
+    return SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
     )
 
@@ -48,44 +65,41 @@ def pair():
 
 
 def test_a_collection_name_carries_the_protocol_version():
-    folder = DatasetCollectionFolder(
-        tag="mytag", content_hash="abc123", protocol_version="1"
+    folder = dataset_collection_folder("mytag", "abc123", "1")
+    assert (
+        CollectionFolder.from_name(DATASET_COLLECTION_PREFIX, folder.folder_name)
+        == folder
     )
-    assert DatasetCollectionFolder.from_name(folder.as_string()) == folder
 
 
 def test_a_tag_with_an_underscore_still_round_trips():
-    folder = DatasetCollectionFolder(
-        tag="my_tag_here", content_hash="abc123", protocol_version="2"
-    )
-    parsed = DatasetCollectionFolder.from_name(folder.as_string())
+    folder = dataset_collection_folder("my_tag_here", "abc123", "2")
+    parsed = CollectionFolder.from_name(DATASET_COLLECTION_PREFIX, folder.folder_name)
     assert parsed.tag == "my_tag_here"
     assert parsed.content_hash == "abc123"
-    assert parsed.protocol_version == "2"
+    assert parsed.variant == "v2"
 
 
 def test_a_protocol_0_name_is_what_earlier_clients_write():
     # Byte-identical to the name used before multi-copy, so a client that
     # predates this change still finds the copy that it can read.
-    folder = DatasetCollectionFolder(tag="mytag", content_hash="abc123")
-    assert folder.as_string() == f"{DATASET_COLLECTION_PREFIX}_mytag_abc123"
+    folder = dataset_collection_folder("mytag", "abc123")
+    assert folder.folder_name == f"{DATASET_COLLECTION_PREFIX}_mytag_abc123"
 
 
 def test_a_name_with_no_version_reads_as_protocol_0():
-    parsed = DatasetCollectionFolder.from_name(
-        f"{DATASET_COLLECTION_PREFIX}_mytag_abc123"
+    parsed = CollectionFolder.from_name(
+        DATASET_COLLECTION_PREFIX, f"{DATASET_COLLECTION_PREFIX}_mytag_abc123"
     )
-    assert parsed.protocol_version == "0"
+    assert parsed.variant == ""
 
 
 def test_an_earlier_client_does_not_see_a_versioned_collection():
     # An earlier client searches Drive for names that contain '<prefix>_'. The
     # version infix breaks that match, so it never lists a layout it cannot
     # read. It still lists the protocol-0 copy.
-    versioned = DatasetCollectionFolder(
-        tag="mytag", content_hash="abc123", protocol_version="1"
-    ).as_string()
-    flat = DatasetCollectionFolder(tag="mytag", content_hash="abc123").as_string()
+    versioned = dataset_collection_folder("mytag", "abc123", "1").folder_name
+    flat = dataset_collection_folder("mytag", "abc123").folder_name
 
     assert f"{DATASET_COLLECTION_PREFIX}_" not in versioned
     assert f"{DATASET_COLLECTION_PREFIX}_" in flat
@@ -96,7 +110,7 @@ def test_an_earlier_client_does_not_see_a_versioned_collection():
 
 def test_a_damaged_name_raises():
     with pytest.raises(ValueError):
-        DatasetCollectionFolder.from_name("not_a_collection")
+        CollectionFolder.from_name(DATASET_COLLECTION_PREFIX, "not_a_collection")
 
 
 # -- local layout ----------------------------------------------------------
@@ -105,17 +119,8 @@ def test_a_damaged_name_raises():
 def test_the_local_directory_of_a_collection_follows_its_protocol(pair):
     # The peer writes the files where the metadata of that copy points. Protocol
     # 0 is flat; a later protocol adds its v<n> segment.
-    ds_manager, _ = pair
-    cache = ds_manager.datasite_watcher_syncer.datasite_watcher_cache
-
-    assert (
-        cache._collection_rel_dir("do@test.org", "d", "0")
-        == Path("do@test.org") / COLLECTION_SUBPATH / "d"
-    )
-    assert (
-        cache._collection_rel_dir("do@test.org", "d", "1")
-        == Path("do@test.org") / COLLECTION_SUBPATH / "v1" / "d"
-    )
+    assert MOCK_DATASET_SPEC.layout_for("").local_subpath == COLLECTION_SUBPATH
+    assert MOCK_DATASET_SPEC.layout_for("v1").local_subpath == COLLECTION_SUBPATH / "v1"
 
 
 # -- delivery --------------------------------------------------------------
@@ -172,12 +177,8 @@ def test_a_mixed_audience_gets_one_collection_for_each_protocol(pair):
     for copy in created.values():
         do_manager._upload_dataset_to_collection(copy, users=[])
 
-    collections = [
-        c
-        for c in do_manager._connection_router.owner_list_all_dataset_collections_with_permissions()
-        if c.tag == "mixed dataset"
-    ]
-    assert {c.protocol_version for c in collections} == {"0", "1"}
+    collections = do_manager._mock_collections_for("mixed dataset")
+    assert {do_manager._protocol_of(c) for c in collections} == {"0", "1"}
     # Each copy has its own folder, so neither overwrites the other.
     assert len({c.folder_id for c in collections}) == 2
 
@@ -198,7 +199,9 @@ def test_the_owner_listing_names_each_dataset_once(pair):
     for copy in created.values():
         do_manager._upload_dataset_to_collection(copy, users=[])
 
-    tags = do_manager._connection_router.owner_list_dataset_collections()
+    tags = do_manager.sync_engine._connection_router.owner_list_collections(
+        DATASET_COLLECTION_PREFIX
+    )
     assert tags.count("mixed dataset") == 1
 
 
@@ -222,12 +225,8 @@ def test_a_mixed_audience_through_create_dataset_writes_both_layouts(pair):
     ds_manager, do_manager = pair
     _create_for_a_mixed_audience(ds_manager, do_manager, "mixed")
 
-    public = [
-        c
-        for c in do_manager._connection_router.owner_list_all_dataset_collections_with_permissions()
-        if c.tag == "mixed"
-    ]
-    assert {c.protocol_version for c in public} == {"0", "1"}
+    public = do_manager._mock_collections_for("mixed")
+    assert {do_manager._protocol_of(c) for c in public} == {"0", "1"}
 
 
 def test_every_copy_uploads_its_own_private_collection(pair):
@@ -236,12 +235,8 @@ def test_every_copy_uploads_its_own_private_collection(pair):
     ds_manager, do_manager = pair
     _create_for_a_mixed_audience(ds_manager, do_manager, "mixed", upload_private=True)
 
-    private = [
-        c
-        for c in do_manager._connection_router.owner_list_private_dataset_collections()
-        if c.tag == "mixed"
-    ]
-    assert {c.protocol_version for c in private} == {"0", "1"}
+    private = do_manager._private_collections_for("mixed")
+    assert {do_manager._protocol_of(c) for c in private} == {"0", "1"}
 
 
 def test_a_cold_start_restores_the_private_data_of_every_copy(pair):
@@ -263,7 +258,7 @@ def test_a_cold_start_restores_the_private_data_of_every_copy(pair):
     # Lose the local private data of every copy, then sync from cold.
     for directory in private_dirs.values():
         shutil.rmtree(directory)
-    do_manager.datasite_owner_syncer.initial_sync_done = False
+    do_manager.sync_engine.datasite_owner_syncer.initial_sync_done = False
     do_manager.sync()
 
     for protocol_version, directory in private_dirs.items():
@@ -277,50 +272,51 @@ def test_a_collection_of_an_unreadable_protocol_is_skipped(pair, caplog):
     import logging
 
     ds_manager, _ = pair
-    cache = ds_manager.datasite_watcher_syncer.datasite_watcher_cache
+    cache = ds_manager.sync_engine.datasite_watcher_syncer.datasite_watcher_cache
 
     remote = [
         {
             "owner_email": "do@test.org",
             "tag": "future dataset",
             "content_hash": "abc123",
-            "protocol_version": "99",
+            "variant": "v99",
         }
     ]
     with caplog.at_level(logging.WARNING):
-        assert cache._select_collections_to_sync(remote) == []
+        assert cache._select_collections_to_sync(MOCK_DATASET_SPEC, remote) == []
     assert "future dataset" in caplog.text
-    assert "99" in caplog.text
+    assert "v99" in caplog.text
 
 
 def test_the_newest_readable_layout_wins(pair):
     ds_manager, _ = pair
-    cache = ds_manager.datasite_watcher_syncer.datasite_watcher_cache
+    cache = ds_manager.sync_engine.datasite_watcher_syncer.datasite_watcher_cache
 
     remote = [
         {
             "owner_email": "do@test.org",
             "tag": "both",
             "content_hash": "flat",
-            "protocol_version": "0",
+            "variant": "",
         },
         {
             "owner_email": "do@test.org",
             "tag": "both",
             "content_hash": "versioned",
-            "protocol_version": "1",
+            "variant": "v1",
         },
     ]
-    selected = cache._select_collections_to_sync(remote)
-    assert [c["protocol_version"] for c in selected] == ["1"]
+    selected = cache._select_collections_to_sync(MOCK_DATASET_SPEC, remote)
+    assert [c["variant"] for c in selected] == ["v1"]
 
 
 # -- cleanup of local copies -----------------------------------------------
 
 
-def _seed_local_copy(cache, peer, tag, protocol_version):
-    path = cache.get_collection_path(peer, tag, protocol_version)
-    cache.dataset_collection_hashes[path] = f"hash{protocol_version}"
+def _seed_local_copy(cache, peer, tag, variant=""):
+    layout = MOCK_DATASET_SPEC.layout_for(variant)
+    path = cache.get_collection_path(peer, tag, layout.local_subpath)
+    cache.collection_hashes[path] = f"hash{variant or '0'}"
     return path
 
 
@@ -331,61 +327,61 @@ def test_an_unreadable_remote_layout_keeps_the_local_copy(pair):
     and we cannot replace it until this client can read the newer layout.
     """
     ds_manager, do_manager = pair
-    cache = ds_manager.datasite_watcher_syncer.datasite_watcher_cache
+    cache = ds_manager.sync_engine.datasite_watcher_syncer.datasite_watcher_cache
     peer = do_manager.email
-    local = _seed_local_copy(cache, peer, "shared data", "0")
+    local = _seed_local_copy(cache, peer, "shared data")
 
     published = [
         {
             "owner_email": peer,
             "tag": "shared data",
             "content_hash": "hash99",
-            "protocol_version": "99",
+            "variant": "v99",
         }
     ]
-    selected = cache._select_collections_to_sync(published)
+    selected = cache._select_collections_to_sync(MOCK_DATASET_SPEC, published)
     assert selected == []
 
-    cache._cleanup_stale_dataset_collections(peer, selected, published)
-    assert local in cache.dataset_collection_hashes
+    cache._cleanup_stale_collections(MOCK_DATASET_SPEC, peer, selected, published)
+    assert local in cache.collection_hashes
 
 
 def test_a_deleted_dataset_removes_the_local_copy(pair):
     ds_manager, do_manager = pair
-    cache = ds_manager.datasite_watcher_syncer.datasite_watcher_cache
+    cache = ds_manager.sync_engine.datasite_watcher_syncer.datasite_watcher_cache
     peer = do_manager.email
-    local = _seed_local_copy(cache, peer, "gone", "0")
+    local = _seed_local_copy(cache, peer, "gone")
 
-    cache._cleanup_stale_dataset_collections(peer, [], [])
-    assert local not in cache.dataset_collection_hashes
+    cache._cleanup_stale_collections(MOCK_DATASET_SPEC, peer, [], [])
+    assert local not in cache.collection_hashes
 
 
 def test_a_newer_readable_layout_removes_the_older_local_copy(pair):
     """Otherwise a dataset scan finds the same dataset twice."""
     ds_manager, do_manager = pair
-    cache = ds_manager.datasite_watcher_syncer.datasite_watcher_cache
+    cache = ds_manager.sync_engine.datasite_watcher_syncer.datasite_watcher_cache
     peer = do_manager.email
-    old_local = _seed_local_copy(cache, peer, "both", "0")
+    old_local = _seed_local_copy(cache, peer, "both")
 
     published = [
         {
             "owner_email": peer,
             "tag": "both",
             "content_hash": "hash0",
-            "protocol_version": "0",
+            "variant": "",
         },
         {
             "owner_email": peer,
             "tag": "both",
             "content_hash": "hash1",
-            "protocol_version": "1",
+            "variant": "v1",
         },
     ]
-    selected = cache._select_collections_to_sync(published)
-    assert [c["protocol_version"] for c in selected] == ["1"]
+    selected = cache._select_collections_to_sync(MOCK_DATASET_SPEC, published)
+    assert [c["variant"] for c in selected] == ["v1"]
 
-    cache._cleanup_stale_dataset_collections(peer, selected, published)
-    assert old_local not in cache.dataset_collection_hashes
+    cache._cleanup_stale_collections(MOCK_DATASET_SPEC, peer, selected, published)
+    assert old_local not in cache.collection_hashes
 
 
 # -- sharing after the fact --------------------------------------------------
@@ -410,11 +406,7 @@ def _create_for_the_current_audience(ds_manager, do_manager, name: str, **kwargs
 
 
 def _collections_for(do_manager, tag: str):
-    return [
-        c
-        for c in do_manager._connection_router.owner_list_all_dataset_collections_with_permissions()
-        if c.tag == tag
-    ]
+    return {do_manager._protocol_of(c) for c in do_manager._mock_collections_for(tag)}
 
 
 def test_sharing_with_a_protocol0_peer_materializes_the_flat_copy(pair):
@@ -424,21 +416,14 @@ def test_sharing_with_a_protocol0_peer_materializes_the_flat_copy(pair):
     # its own client never even lists.
     ds_manager, do_manager = pair
     _create_for_the_current_audience(ds_manager, do_manager, "afterthought")
-    assert {
-        c.protocol_version for c in _collections_for(do_manager, "afterthought")
-    } == {"1"}
+    assert _collections_for(do_manager, "afterthought") == {"1"}
 
     do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
         _dataset_schema("0")
     )
     do_manager.share_dataset("afterthought", [OLD_PEER], sync=False)
 
-    assert {
-        c.protocol_version for c in _collections_for(do_manager, "afterthought")
-    } == {
-        "0",
-        "1",
-    }
+    assert _collections_for(do_manager, "afterthought") == {"0", "1"}
     # The flat copy exists locally too, so the owner's own scan and a cold
     # start both see what the collection holds.
     storage = do_manager.dataset_manager.storage
@@ -457,9 +442,7 @@ def test_sharing_with_a_current_peer_creates_no_extra_copy(pair):
     )
     do_manager.share_dataset("current share", ["new@test.org"], sync=False)
 
-    assert {
-        c.protocol_version for c in _collections_for(do_manager, "current share")
-    } == {"1"}
+    assert _collections_for(do_manager, "current share") == {"1"}
 
 
 def test_sharing_with_an_unknown_peer_materializes_the_widest_layout(pair):
@@ -470,9 +453,7 @@ def test_sharing_with_an_unknown_peer_materializes_the_widest_layout(pair):
 
     do_manager.share_dataset("unknown share", ["stranger@test.org"], sync=False)
 
-    assert {
-        c.protocol_version for c in _collections_for(do_manager, "unknown share")
-    } == {"0", "1"}
+    assert _collections_for(do_manager, "unknown share") == {"0", "1"}
 
 
 def test_a_copy_materialized_at_share_time_uploads_its_private_collection(pair):
@@ -489,12 +470,8 @@ def test_a_copy_materialized_at_share_time_uploads_its_private_collection(pair):
     )
     do_manager.share_dataset("private fill", [OLD_PEER], sync=False)
 
-    private = [
-        c
-        for c in do_manager._connection_router.owner_list_private_dataset_collections()
-        if c.tag == "private fill"
-    ]
-    assert {c.protocol_version for c in private} == {"0", "1"}
+    private = do_manager._private_collections_for("private fill")
+    assert {do_manager._protocol_of(c) for c in private} == {"0", "1"}
 
 
 def test_a_share_uploads_a_local_copy_that_has_no_collection(pair):
@@ -505,16 +482,11 @@ def test_a_share_uploads_a_local_copy_that_has_no_collection(pair):
     ds_manager, do_manager = pair
     _create_for_the_current_audience(ds_manager, do_manager, "half done")
     do_manager.dataset_manager.migrate("half done", "0", users=[ds_manager.email])
-    assert {c.protocol_version for c in _collections_for(do_manager, "half done")} == {
-        "1"
-    }
+    assert _collections_for(do_manager, "half done") == {"1"}
 
     do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
         _dataset_schema("0")
     )
     do_manager.share_dataset("half done", [OLD_PEER], sync=False)
 
-    assert {c.protocol_version for c in _collections_for(do_manager, "half done")} == {
-        "0",
-        "1",
-    }
+    assert _collections_for(do_manager, "half done") == {"0", "1"}

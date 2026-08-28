@@ -4,15 +4,15 @@ import base64
 import json
 from uuid import uuid4
 
-from syft_client.migrations import client_registry
-from syft_client.sync.events.file_change_event import (
+from syft.migrations import client_registry
+from syft.sync.events.file_change_event import (
     FileChangeEvent,
     FileChangeEventsMessage,
     FileChangeEventsMessageV1,
     FileChangeEventV1,
 )
-from syft_client.sync.messages.proposed_filechange import ProposedFileChange
-from syft_client.sync.utils.syftbox_utils import compress_data
+from syft.sync.messages.proposed_filechange import ProposedFileChange
+from syft.sync.utils.syftbox_utils import compress_data
 
 
 def _make_event(content) -> FileChangeEvent:

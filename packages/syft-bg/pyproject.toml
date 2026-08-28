@@ -1,6 +1,6 @@
 [project]
 name = "syft-bg"
-version = "0.3.11"
+version = "0.3.12"
 description = "Background services TUI dashboard for SyftBox"
 readme = "README.md"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
@@ -16,7 +16,8 @@ dependencies = [
     "google-auth-oauthlib>=1.0.0",
     "pydantic>=2.0.0",
     "google-cloud-pubsub>=2.18.0",
-    "syft-job==0.1.39",
+    "syft-job==0.1.40",
+    "syft-rds>=0.6.1",
 ]
 
 [project.scripts]
@@ -24,6 +25,7 @@ syft-bg = "syft_bg.cli:main"
 
 [tool.uv.sources]
 "syft-job" = { workspace = true }
+"syft-rds" = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

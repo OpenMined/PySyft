@@ -1,15 +1,15 @@
-from syft_client.sync.events.file_change_event import FileChangeEvent
-from syft_client.sync.events.file_change_event import FileChangeEventsMessageFileName
+from syft.sync.events.file_change_event import FileChangeEvent
+from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
 import os
 import uuid
 import time
 from pathlib import Path
 from typing import List
-from syft_client.sync.utils.syftbox_utils import get_event_hash_from_content
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.utils.syftbox_utils import get_event_hash_from_content
+from syft.sync.syftbox_manager import SyftboxManager
 
-SYFT_CLIENT_DIR = Path(__file__).parent.parent.parent
-CREDENTIALS_DIR = SYFT_CLIENT_DIR / "credentials"
+SYFT_DIR = Path(__file__).parent.parent.parent
+CREDENTIALS_DIR = SYFT_DIR / "credentials"
 
 FILE_DO = os.environ.get("ai_audit_credentials_fname_do", "token_do.json")
 EMAIL_DO = os.environ.get("AI_AUDIT_EMAIL_DO", "")

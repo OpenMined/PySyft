@@ -12,8 +12,8 @@ the migration system:
 Adding a field is safe on its own: pydantic ignores a field it does not know.
 """
 
-import syft_client  # noqa: F401 -- imports models and registers history
-from syft_client.sync.version.version_info import VersionInfoV1, VersionInfoV2
+import syft  # noqa: F401 -- imports models and registers history
+from syft.sync.version.version_info import VersionInfoV1, VersionInfoV2
 
 # Frozen on purpose. A change here means a change to the bootstrap file, so read
 # the two rules above before editing this set.

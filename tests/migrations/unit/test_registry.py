@@ -1,17 +1,17 @@
-"""The syft-client migration registry exists and computes a valid protocol schema."""
+"""The syft migration registry exists and computes a valid protocol schema."""
 
-from syft_client.migrations import (
+from syft.migrations import (
     PROTOCOL_NAME,
     SYFT_CLIENT_PROTOCOL_VERSION,
     client_registry,
 )
-from syft_client.version import SYFT_CLIENT_VERSION
+from syft.version import SYFT_VERSION
 
 
 def test_registry_identity():
     assert client_registry.protocol_name == PROTOCOL_NAME
-    assert client_registry.package_name == "syft-client"
-    assert client_registry.package_version == SYFT_CLIENT_VERSION
+    assert client_registry.package_name == "syft"
+    assert client_registry.package_version == SYFT_VERSION
     assert client_registry.protocol_version == SYFT_CLIENT_PROTOCOL_VERSION
 
 

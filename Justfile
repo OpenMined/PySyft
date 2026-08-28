@@ -41,6 +41,9 @@ test-client-migrations:
     #!/bin/bash
     uv run pytest -n auto ./tests/migrations
 
+test-unit-rds:
+    #!/bin/bash
+    uv run pytest -n auto ./packages/syft-rds/tests
 
 test-unit-enclave:
     #!/bin/bash
@@ -52,7 +55,7 @@ test-unit-enclave-model-api:
 
 test-unit-fast:
     #!/bin/bash
-    uv run pytest ./tests/unit --ignore=tests/unit/test_job_auto_approval.py --ignore=tests/unit/test_version_mismatch_flow.py --ignore=tests/unit/syft_bg/test_email_auto_approve_flow.py --ignore=tests/unit/syft_bg/test_email_approval_flow.py --ignore=tests/unit/test_sync_file_lock.py -k "not (test_jobs or job_flow_with_dataset)"
+    uv run pytest ./tests/unit --ignore=tests/unit/syft_bg/test_email_auto_approve_flow.py --ignore=tests/unit/syft_bg/test_email_approval_flow.py --ignore=tests/unit/test_sync_file_lock.py -k "not (test_jobs or job_flow_with_dataset)"
 
 
 test-integration-mock-mode:
@@ -89,7 +92,7 @@ delete-syftbox email name="do":
     [ -f "$token" ] || { echo "Error: $token not found" >&2; exit 1; }
     echo "Deleting syftbox for {{email}}..."
     uv run python -c "
-    from syft_client.sync.utils.syftbox_utils import delete_syftbox
+    from syft.sync.utils.syftbox_utils import delete_syftbox
     delete_syftbox(token_path='$token', email='{{email}}')
     "
 
@@ -107,7 +110,8 @@ clean:
         fi
     }
 
-    remove_dirs "syft_client.egg-info"
+    remove_dirs "syft.egg-info"
+    remove_dirs "syft_client.egg-info"  # stale checkouts from before the rename
     remove_dirs "__pycache__"
     remove_dirs ".pytest_cache"
 
@@ -122,13 +126,13 @@ bump part="patch":
 # Show current version
 [group('version')]
 version:
-    @python3 -c "import syft_client; print(syft_client.__version__)"
+    @python3 -c "import syft; print(syft.__version__)"
 
 # Build syft client wheel
 [group('build')]
 build:
-    @echo "{{ _cyan }}Building syft-client wheel...{{ _nc }}"
-    rm -rf dist/
+    @echo "{{ _cyan }}Building syft wheel...{{ _nc }}"
+    rm -rf dist/ build/ *.egg-info
     uv build
     @echo "{{ _green }}Build complete!{{ _nc }}"
 

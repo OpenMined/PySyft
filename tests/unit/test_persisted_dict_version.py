@@ -7,7 +7,7 @@ therefore starts empty instead of stopping the client.
 
 import json
 
-from syft_client.sync.sync.caches.persisted_dict import (
+from syft.sync.sync.caches.persisted_dict import (
     PERSISTED_DICT_VERSION,
     PersistedDict,
 )

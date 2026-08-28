@@ -1,33 +1,33 @@
-from syft_client.sync.syftbox_manager import SyftboxManagerConfig
-from syft_client.sync.connections.drive.mock_drive_service import (
+from syft_rds import SyftRDSClientConfig
+from syft.sync.connections.drive.mock_drive_service import (
     MockDriveBackingStore,
     MockDriveService,
 )
-from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
 
 def create_configs(
     enclave_email, do1_email, do2_email, ds_email, use_in_memory_cache
 ) -> tuple:
-    enclave_config = SyftboxManagerConfig._base_config_for_testing(
+    enclave_config = SyftRDSClientConfig._base_config_for_testing(
         email=enclave_email,
         has_do_role=True,
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
     )
-    do1_config = SyftboxManagerConfig._base_config_for_testing(
+    do1_config = SyftRDSClientConfig._base_config_for_testing(
         email=do1_email,
         has_do_role=True,
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
     )
-    do2_config = SyftboxManagerConfig._base_config_for_testing(
+    do2_config = SyftRDSClientConfig._base_config_for_testing(
         email=do2_email,
         has_do_role=True,
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
     )
-    ds_config = SyftboxManagerConfig._base_config_for_testing(
+    ds_config = SyftRDSClientConfig._base_config_for_testing(
         email=ds_email,
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,

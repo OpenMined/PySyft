@@ -12,7 +12,7 @@ out.
 """
 
 import pytest
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft_rds import SyftRDSClient
 from syft_migration import ProtocolSchema
 
 from tests.unit.utils import create_tmp_dataset_files
@@ -32,7 +32,7 @@ def _dataset_schema(protocol_version: str) -> ProtocolSchema:
 
 @pytest.fixture
 def pair():
-    return SyftboxManager.pair_with_mock_drive_service_connection(
+    return SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
     )
 
@@ -57,7 +57,7 @@ def _create(ds_manager, do_manager, name: str, mixed_audience: bool):
 
 def _shipped_private_paths(ds_manager, do_manager) -> list[str]:
     """The private-file paths of the events the DO put in our outbox."""
-    messages = ds_manager._connection_router.watcher_get_events_messages(
+    messages = ds_manager.sync_engine._connection_router.watcher_get_events_messages(
         do_manager.email, None
     )
     return [

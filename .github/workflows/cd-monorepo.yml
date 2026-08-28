@@ -27,6 +27,11 @@ on:
         type: boolean
         default: true
 
+      release_syft_migration:
+        description: Release syft-migration
+        type: boolean
+        default: true
+
       release_syft_job:
         description: Release syft-job
         type: boolean
@@ -34,6 +39,16 @@ on:
 
       release_syft_dataset:
         description: Release syft-dataset
+        type: boolean
+        default: true
+
+      release_syft_rds:
+        description: Release syft-rds
+        type: boolean
+        default: true
+
+      release_syft_enclave:
+        description: Release syft-enclave
         type: boolean
         default: true
 
@@ -60,12 +75,14 @@ jobs:
     uses: OpenMined/PySyft/.github/workflows/integration-tests.yml@dev
     secrets: inherit
 
-  # Release order follows dependency graph:
+  # Release order follows the dependency graph:
   # 1. syft-permissions (no internal deps)
   # 2. syft-perms (depends on syft-permissions)
-  # 3. syft-job + syft-dataset (depend on syft-perms) — parallel
-  # 4. syft-bg (depends on syft-job)
-  # 5. syft-client (depends on all above)
+  # 3. syft-migration (no internal deps; needed by dataset + job)
+  # 4. syft-dataset, then syft-job (depend on syft-perms + syft-migration)
+  # 5. syft-rds (depends on syft, syft-job, syft-dataset)
+  # 6. syft-enclave + syft-bg (depend on syft-rds) — parallel
+  # 7. syft (root; its pins were rewritten by the jobs above)
 
   release-syft-permissions:
     needs: [call-linting-tests, call-unit-tests, call-integration-tests]
@@ -87,8 +104,18 @@ jobs:
       bump_type: ${{ inputs.bump_type }}
     secrets: inherit
 
-  release-syft-dataset:
+  release-syft-migration:
     needs: [release-syft-perms]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_migration == true
+    uses: ./.github/workflows/cd-syft-migration.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
+
+  release-syft-dataset:
+    needs: [release-syft-migration]
     if: >-
       !cancelled() && !failure() &&
       inputs.release_syft_dataset == true
@@ -107,8 +134,33 @@ jobs:
       bump_type: ${{ inputs.bump_type }}
     secrets: inherit
 
-  release-syft-bg:
+  release-syft-rds:
     needs: [release-syft-job]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_rds == true
+    # A called workflow cannot exceed the caller's token permissions, so the
+    # OIDC permission for trusted publishing has to be granted here as well.
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/cd-syft-rds.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
+
+  release-syft-enclave:
+    needs: [release-syft-rds]
+    if: >-
+      !cancelled() && !failure() &&
+      inputs.release_syft_enclave == true
+    uses: ./.github/workflows/cd-syft-enclave.yml
+    with:
+      bump_type: ${{ inputs.bump_type }}
+    secrets: inherit
+
+  release-syft-bg:
+    needs: [release-syft-rds]
     if: >-
       !cancelled() && !failure() &&
       inputs.release_syft_bg == true
@@ -117,8 +169,8 @@ jobs:
       bump_type: ${{ inputs.bump_type }}
     secrets: inherit
 
-  deploy-syft-client:
-    needs: [release-syft-bg, release-syft-dataset]
+  deploy-syft:
+    needs: [release-syft-bg, release-syft-enclave, release-syft-dataset]
     if: >-
       !cancelled() && !failure()
     runs-on: ubuntu-latest
@@ -151,39 +203,44 @@ jobs:
       - name: Read the version to release
         run: |
           git pull
-          VERSION=$(python3 syft_client/version.py)
+          VERSION=$(python3 syft/version.py)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Releasing syft-client $VERSION"
+          echo "Releasing syft $VERSION"
 
       # Artifacts live inside the package, so they must be committed before the
       # build. Re-running the export writes nothing when they already exist.
       - name: Freeze release artifacts
         run: |
           just export-release-artifacts
-          git add syft_client/migrations/history
+          git add syft/migrations/history
           git diff --cached --quiet || \
-            git commit -m "Freeze syft-client v${{ env.VERSION }} release artifacts"
+            git commit -m "Freeze syft v${{ env.VERSION }} release artifacts"
 
       - name: Upload to PyPI
         id: publish
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT_CLIENT }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT }}
         run: |
           just publish
           echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
 
       # The tag must name the published version, so it is created before the bump.
+      # Root tags continue the repo's historical vX.Y.Z lineage; sub-packages
+      # use <name>/vX.Y.Z. The tag is annotated and pushed explicitly:
+      # `--follow-tags` only pushes annotated tags, so a lightweight tag would
+      # never reach origin.
       - name: Tag the release, then bump for the next one
         run: |
-          git tag "syft-client/v${{ env.VERSION }}"
+          git tag -a "v${{ env.VERSION }}" -m "syft v${{ env.VERSION }}"
           just bump ${{ inputs.bump_type }}
-          git push origin --follow-tags
+          git push origin HEAD
+          git push origin "refs/tags/v${{ env.VERSION }}"
 
   post-release-tests:
-    needs: [deploy-syft-client]
+    needs: [deploy-syft]
     if: >-
       !cancelled() && !failure()
     uses: ./.github/workflows/post-release-tests.yml
     with:
-      package_version: ${{ needs.deploy-syft-client.outputs.version }}
+      package_version: ${{ needs.deploy-syft.outputs.version }}

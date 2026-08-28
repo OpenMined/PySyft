@@ -3,8 +3,8 @@
 import json
 from pathlib import Path
 
-from syft_client.migrations import client_migration_service, client_registry
-from syft_client.sync.version.version_info import (
+from syft.migrations import client_migration_service, client_registry
+from syft.sync.version.version_info import (
     VersionInfo,
     VersionInfoV1,
     VersionInfoV2,
@@ -58,9 +58,9 @@ def test_current_advertises_slim_schemas():
     # The client's own schema is always present; job/dataset only when the
     # optional packages are importable (both are in the workspace env, but
     # the code must degrade on client-only installs).
-    assert "syft-client" in schemas
-    assert set(schemas) <= {"syft-client", "syft-job", "syft-dataset"}
-    client_schema = schemas["syft-client"]
+    assert "syft" in schemas
+    assert set(schemas) <= {"syft", "syft-job", "syft-dataset"}
+    client_schema = schemas["syft"]
     assert client_schema.version == client_registry.protocol_version
     assert client_schema.supported_versions == (
         client_registry.compute_protocol_schema().supported_versions

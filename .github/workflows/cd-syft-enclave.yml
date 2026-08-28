@@ -1,0 +1,80 @@
+name: CD - Syft Enclave
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: Version bump type
+        type: choice
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+  workflow_call:
+    inputs:
+      bump_type:
+        type: string
+        required: true
+
+concurrency:
+  group: 'CD - Syft Enclave'
+  cancel-in-progress: false
+
+jobs:
+  deploy-syft-enclave:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # The branch already holds the version to release. The bump happens after
+      # the publish, so the version on the branch always names an unreleased
+      # version while people develop.
+      - name: Read the version to release
+        run: |
+          git pull
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('packages/syft-enclave/pyproject.toml','rb'))['project']['version'])")
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Releasing syft-enclave $VERSION"
+
+      - name: Build package
+        working-directory: packages/syft-enclave
+        run: uv build --out-dir dist
+
+      - name: Publish to PyPI
+        working-directory: packages/syft-enclave
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT_ENCLAVE }}
+        run: uvx twine upload --verbose dist/*
+
+      # The tag must name the published version, so it is created before the bump.
+      # The tag is annotated and pushed explicitly: `--follow-tags` only pushes
+      # annotated tags, so a lightweight tag would never reach origin.
+      - name: Tag the release, then bump for the next one
+        run: |
+          git tag -a "syft-enclave/v${{ env.VERSION }}" -m "syft-enclave v${{ env.VERSION }}"
+          pip install packaging
+          OUTPUT=$(python scripts/bump_version.py syft-enclave ${{ inputs.bump_type }} --dependents published)
+          NEXT=$(echo "$OUTPUT" | sed -n '1p')
+          MODIFIED=$(echo "$OUTPUT" | sed -n '2p')
+          git add $MODIFIED
+          git commit -m "Bump syft-enclave to $NEXT for the next release"
+          git push origin HEAD
+          git push origin "refs/tags/syft-enclave/v${{ env.VERSION }}"

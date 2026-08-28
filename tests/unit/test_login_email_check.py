@@ -1,7 +1,7 @@
 import pytest
 
-from syft_client.sync.login import _verify_token_matches_email
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.login import _verify_token_matches_email
+from syft.sync.syftbox_manager import SyftboxManager
 
 
 def test_get_authenticated_email_matches_constructor_email():

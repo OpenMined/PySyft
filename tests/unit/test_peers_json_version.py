@@ -14,12 +14,12 @@ client cannot read is not erased for the other side.
 import logging
 from unittest.mock import Mock, patch
 
-from syft_client.sync.connections.drive.gdrive_transport import (
+from syft.sync.connections.drive.gdrive_transport import (
     PEERS_META_KEY,
     SYFT_PEERS_VERSION,
     GDriveConnection,
 )
-from syft_client.sync.peers.peer import PeerState
+from syft.sync.peers.peer import PeerState
 
 PEER = "bob@example.com"
 
@@ -34,7 +34,7 @@ def _conn(peers_data):
 def _router(conn):
     router = Mock()
     router.connection_for_send_message = Mock(return_value=conn)
-    from syft_client.sync.connections.connection_router import ConnectionRouter
+    from syft.sync.connections.connection_router import ConnectionRouter
 
     return ConnectionRouter.get_all_peers_from_json.__get__(router, ConnectionRouter)
 
@@ -75,7 +75,7 @@ def test_a_known_state_loads():
 
 def test_an_unknown_state_is_skipped_and_logged(caplog):
     conn = _conn({PEER: {"state": "quarantined"}})
-    with caplog.at_level(logging.WARNING, logger="syft_client"):
+    with caplog.at_level(logging.WARNING, logger="syft"):
         peers = _router(conn)()
     assert peers == []
     assert any(PEER in r.getMessage() for r in caplog.records)
@@ -96,6 +96,6 @@ def test_a_reserved_entry_from_a_newer_client_does_not_stop_the_read(caplog):
             PEER: {"state": "accepted"},
         }
     )
-    with caplog.at_level(logging.WARNING, logger="syft_client"):
+    with caplog.at_level(logging.WARNING, logger="syft"):
         peers = _router(conn)()
     assert [p.email for p in peers] == [PEER]

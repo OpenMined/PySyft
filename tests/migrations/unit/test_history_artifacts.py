@@ -1,11 +1,11 @@
 """Past release artifacts register cleanly and guard against schema drift."""
 
 import pytest
-import syft_client  # noqa: F401 -- imports models and registers history
+import syft  # noqa: F401 -- imports models and registers history
 from syft_migration import MigrationError, MigrationRegistry, ReleasedProtocol
 
-from syft_client.migrations import client_registry
-from syft_client.migrations.history import (
+from syft.migrations import client_registry
+from syft.migrations.history import (
     PACKAGE_ARTIFACTS_DIR,
     PROTOCOLS_DIR,
     register_historic_schemas,
@@ -15,9 +15,10 @@ PROTOCOL_0_PATH = PROTOCOLS_DIR / "protocol-0.json"
 
 
 def test_protocol0_artifacts_registered():
-    # importing syft_client registered the hardcoded 0.1.117 artifacts.
+    # importing syft registered the hardcoded 0.1.117 artifacts.
     assert "0" in client_registry.protocol_version_history
     package_info = client_registry.package_version_history["0"]
+    # The distribution was still named syft-client at 0.1.117.
     assert package_info.package_name == "syft-client"
     assert package_info.version == "0.1.117"
 
@@ -53,7 +54,7 @@ def test_no_schema_drift_against_released_protocols():
         "A released object schema drifted. Fix by either: (1) reverting the "
         "model change; or (2) adding a new V<n+1> model class, registering "
         "migrations in both directions, and bumping "
-        "SYFT_CLIENT_PROTOCOL_VERSION in syft_client/migrations/registry.py. "
+        "SYFT_CLIENT_PROTOCOL_VERSION in syft/migrations/registry.py. "
         "If the drift comes from a pydantic upgrade changing JSON-schema "
         "output only, regenerate the artifacts instead."
     )
@@ -69,7 +70,7 @@ def test_protocol_bump_not_missing():
     assert not client_registry.protocol_bump_missing(), (
         "The client protocol changed since the newest released protocol without a "
         "bump. Bump SYFT_CLIENT_PROTOCOL_VERSION in "
-        "syft_client/migrations/registry.py, or revert the model change."
+        "syft/migrations/registry.py, or revert the model change."
     )
 
 
@@ -91,7 +92,7 @@ def test_bump_guard_trips_on_protocol_change():
 
 
 def test_unknown_object_version_in_artifact_raises():
-    # The fail-at-import guarantee syft_client/__init__.py relies on: an
+    # The fail-at-import guarantee syft/__init__.py relies on: an
     # artifact naming an object version this release cannot load must raise.
     schema = ReleasedProtocol.load(PROTOCOL_0_PATH).protocol_schema
     schema = schema.model_copy(

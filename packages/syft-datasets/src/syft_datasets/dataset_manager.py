@@ -31,7 +31,7 @@ class SyftDatasetManager:
         self.syftbox_config = SyftBoxConfig(
             syftbox_folder=to_path(syftbox_folder_path), email=email
         )
-        # peer_schemas (peer email -> dataset ProtocolSchema): syft-client
+        # peer_schemas (peer email -> dataset ProtocolSchema): syft
         # passes PeerManager's live map here (updated in place as peer version
         # files load). Peers without an entry resolve to the widest-compatible
         # protocol, so datasets stay readable by unknown-version peers.

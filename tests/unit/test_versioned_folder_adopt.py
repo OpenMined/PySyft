@@ -12,7 +12,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from syft_client.sync.connections.drive.gdrive_transport import (
+from syft.sync.connections.drive.gdrive_transport import (
     GDriveConnection,
     _partition_by_version,
 )

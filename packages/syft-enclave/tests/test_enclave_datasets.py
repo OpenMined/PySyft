@@ -38,7 +38,7 @@ def test_share_private_dataset_with_enclave(private_dataset_dir):
 
     # DO1 + DS sync -> DS can see mock data
     do1.sync()
-    ds._manager.sync()
+    ds._rds.sync()
     ds_datasets = ds.datasets.get_all()
     assert len(ds_datasets) == 1
     assert ds_datasets[0].name == "testdataset"
@@ -50,21 +50,18 @@ def test_share_private_dataset_with_enclave(private_dataset_dir):
     mock_content = ds_dataset.mock_files[0].read_text()
     assert mock_content == "Hello, world!"
 
-    assert (
-        private_dataset_dir(ds._manager.syftbox_folder, do1.email, "testdataset")
-        is None
-    )
+    assert private_dataset_dir(ds._rds.syftbox_folder, do1.email, "testdataset") is None
 
     # DO1 shares private dataset with enclave
     do1.share_private_dataset("testdataset", enclave.email)
 
     # Enclave syncs (as DS) and pulls the private data events from DO1's outbox
-    enclave._manager.sync()
+    enclave._rds.sync()
 
     # Enclave can see the dataset via mock data (shared with DS and enclave shares peers)
     # But more importantly, enclave can access private files via shared_private_dir
     enclave_private_dir = private_dataset_dir(
-        enclave._manager.syftbox_folder, do1.email, "testdataset"
+        enclave._rds.syftbox_folder, do1.email, "testdataset"
     )
     assert enclave_private_dir is not None
     private_files = list(enclave_private_dir.iterdir())

@@ -378,20 +378,22 @@ def remove_auto_approval(files: tuple[str, ...], name: str):
 
       syft-bg remove-auto-approval main.py utils.py -n my_analysis
     """
-    from syft_bg.approve.config import AutoApproveConfig
+    from syft_bg.common.syft_bg_config import SyftBgConfig
 
-    config = AutoApproveConfig.load()
+    with SyftBgConfig.edit() as syft_bg_config:
+        config = syft_bg_config.approve
 
-    if name not in config.auto_approvals.objects:
-        click.echo(f"Auto-approval object '{name}' not found in config.", err=True)
-        raise SystemExit(1)
+        if name not in config.auto_approvals.objects:
+            click.echo(f"Auto-approval object '{name}' not found in config.", err=True)
+            raise SystemExit(1)
 
-    obj = config.auto_approvals.objects[name]
-    before = len(obj.file_contents)
-    obj.file_contents = [s for s in obj.file_contents if s.relative_path not in files]
-    removed = before - len(obj.file_contents)
+        obj = config.auto_approvals.objects[name]
+        before = len(obj.file_contents)
+        obj.file_contents = [
+            s for s in obj.file_contents if s.relative_path not in files
+        ]
+        removed = before - len(obj.file_contents)
 
-    config.save()
     click.echo(f"Removed {removed} script(s) from '{name}'.")
 
 
@@ -412,30 +414,30 @@ def remove_peer(peer: str, name: str | None):
 
       syft-bg remove-peer alice@uni.edu -n my_analysis
     """
-    from syft_bg.approve.config import AutoApproveConfig
+    from syft_bg.common.syft_bg_config import SyftBgConfig
 
-    config = AutoApproveConfig.load()
-    removed_from = 0
+    with SyftBgConfig.edit() as syft_bg_config:
+        config = syft_bg_config.approve
+        removed_from = 0
 
-    if name:
-        if name not in config.auto_approvals.objects:
-            click.echo(f"Auto-approval object '{name}' not found.", err=True)
-            raise SystemExit(1)
-        obj = config.auto_approvals.objects[name]
-        if peer in obj.peers:
-            obj.peers.remove(peer)
-            removed_from = 1
-    else:
-        for obj in config.auto_approvals.objects.values():
+        if name:
+            if name not in config.auto_approvals.objects:
+                click.echo(f"Auto-approval object '{name}' not found.", err=True)
+                raise SystemExit(1)
+            obj = config.auto_approvals.objects[name]
             if peer in obj.peers:
                 obj.peers.remove(peer)
-                removed_from += 1
+                removed_from = 1
+        else:
+            for obj in config.auto_approvals.objects.values():
+                if peer in obj.peers:
+                    obj.peers.remove(peer)
+                    removed_from += 1
 
-    if removed_from == 0:
-        click.echo(f"Peer {peer} not found in any auto-approval object.", err=True)
-        raise SystemExit(1)
+        if removed_from == 0:
+            click.echo(f"Peer {peer} not found in any auto-approval object.", err=True)
+            raise SystemExit(1)
 
-    config.save()
     click.echo(f"Removed peer {peer} from {removed_from} object(s).")
 
 
@@ -455,21 +457,21 @@ def list_auto_approvals(name: str | None):
 
       syft-bg list-auto-approvals -n my_analysis
     """
-    from syft_bg.approve.config import AutoApproveConfig
+    from syft_bg.api.api import list_auto_approvals as api_list_auto_approvals
 
-    config = AutoApproveConfig.load()
+    objects = api_list_auto_approvals()
 
-    if not config.auto_approvals.objects:
+    if not objects:
         click.echo("No auto-approval objects configured.")
         return
 
     if name:
-        if name not in config.auto_approvals.objects:
+        if name not in objects:
             click.echo(f"Auto-approval object '{name}' not found.", err=True)
             raise SystemExit(1)
-        objects_to_show = {name: config.auto_approvals.objects[name]}
+        objects_to_show = {name: objects[name]}
     else:
-        objects_to_show = config.auto_approvals.objects
+        objects_to_show = objects
 
     for obj_name, obj in objects_to_show.items():
         click.echo(f"\n[{obj_name}]")

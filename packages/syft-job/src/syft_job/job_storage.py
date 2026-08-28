@@ -40,10 +40,10 @@ class JobStorage:
         self.config = config
         self.registry = registry
         self.service = MigrationService(registry=registry)
-        # peer email -> job ProtocolSchema; syft-client passes PeerManager's
+        # peer email -> job ProtocolSchema; syft passes PeerManager's
         # live map here (updated in place as peer version files load). Peers
         # without an entry are assumed to run the current protocol.
-        # `is not None`, not `or`: syft-client passes a live (initially empty)
+        # `is not None`, not `or`: syft passes a live (initially empty)
         # dict it mutates as peer version files load; `or {}` would drop the
         # shared reference and freeze negotiation at construction-time state.
         self.peer_schemas: dict[str, ProtocolSchema] = (

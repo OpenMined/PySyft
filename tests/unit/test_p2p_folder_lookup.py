@@ -11,7 +11,7 @@ A folder the peer owns must be found whatever version the peer wrote into it.
 
 from unittest.mock import Mock
 
-from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
 ME = "alice@example.com"
 PEER = "bob@example.com"

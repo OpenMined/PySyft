@@ -6,8 +6,14 @@ events they don't already have locally, avoiding redundant re-downloads on resta
 
 from pathlib import Path
 
-from syft_client.sync.syftbox_manager import SyftboxManager
-from tests.unit.utils import get_mock_events_messages
+from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.sync.collection_spec import CollectionSyncSpec
+
+from tests.unit.utils import (
+    TEST_COLLECTION_PREFIX,
+    TEST_COLLECTION_SUBPATH,
+    get_mock_events_messages,
+)
 
 
 def test_do_incremental_sync_downloads_only_new_events():
@@ -168,14 +174,12 @@ def test_do_cache_handles_deletions_correctly():
     # Now test cache reload - deletion should still be reflected
     syftbox_folder = do_manager.syftbox_folder
 
-    from syft_client.sync.sync.caches.datasite_owner_cache import (
+    from syft.sync.sync.caches.datasite_owner_cache import (
         DataSiteOwnerEventCache,
         DataSiteOwnerEventCacheConfig,
     )
 
-    from syft_client.sync.syftbox_manager import COLLECTION_SUBPATH
-
-    collections_folder = syftbox_folder / do_manager.email / COLLECTION_SUBPATH
+    collections_folder = syftbox_folder / do_manager.email / TEST_COLLECTION_SUBPATH
     config = DataSiteOwnerEventCacheConfig(
         use_in_memory_cache=False,
         syftbox_folder=syftbox_folder,
@@ -228,18 +232,18 @@ def test_ds_cache_handles_deletions_correctly():
     # Test cache reload
     syftbox_folder = ds_manager.syftbox_folder
 
-    from syft_client.sync.sync.caches.datasite_watcher_cache import (
+    from syft.sync.sync.caches.datasite_watcher_cache import (
         DataSiteWatcherCache,
         DataSiteWatcherCacheConfig,
     )
-
-    from syft_client.sync.syftbox_manager import COLLECTION_SUBPATH
 
     config = DataSiteWatcherCacheConfig(
         email=do_manager.email,
         use_in_memory_cache=False,
         syftbox_folder=syftbox_folder,
-        collection_subpath=COLLECTION_SUBPATH,
+        collection_specs=[
+            CollectionSyncSpec.public(TEST_COLLECTION_PREFIX, TEST_COLLECTION_SUBPATH)
+        ],
         connection_configs=[],
     )
     new_cache = DataSiteWatcherCache.from_config(config)

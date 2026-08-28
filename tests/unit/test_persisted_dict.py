@@ -4,7 +4,7 @@ import json
 import threading
 from pathlib import Path
 
-from syft_client.sync.sync.caches.persisted_dict import PersistedDict
+from syft.sync.sync.caches.persisted_dict import PersistedDict
 
 
 def test_concurrent_writes_no_rename_race(tmp_path: Path):

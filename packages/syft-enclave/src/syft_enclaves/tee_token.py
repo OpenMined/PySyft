@@ -13,10 +13,10 @@ import socket
 from http.client import HTTPConnection
 from pathlib import Path
 
-import syft_client
+import syft
 
 TEE_SOCKET_PATH = Path("/run/container_launcher/teeserver.sock")
-TOKEN_AUDIENCE = "syft-client-attestation"
+TOKEN_AUDIENCE = "syft-attestation"
 
 _NONCE_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]+$")
 _NONCE_MAX_LEN = 74
@@ -28,12 +28,12 @@ _NONCE_MAX_LEN = 74
 def build_eat_nonce(caller_nonce: str | None = None) -> list[str]:
     """Build the nonces array for the attestation token request.
 
-    Slot 0: namespaced syft-client version, built dynamically from
-            ``syft_client.__version__``. The ``syft-client-`` prefix satisfies
+    Slot 0: namespaced syft version, built dynamically from
+            ``syft.__version__``. The ``syft-`` prefix satisfies
             the CS attestation service's 8-byte minimum.
     Slot 1: caller-supplied freshness nonce (if provided).
     """
-    nonces = [f"syft-client-{syft_client.__version__}"]
+    nonces = [f"syft-{syft.__version__}"]
     if caller_nonce:
         nonces.append(caller_nonce)
     return nonces

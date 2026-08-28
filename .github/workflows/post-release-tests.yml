@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       package_version:
-        description: 'syft-client version to test (e.g. 0.1.106)'
+        description: 'syft version to test (e.g. 0.10.0)'
         type: string
         required: true
   workflow_call:
@@ -27,43 +27,38 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
-      - name: Poll PyPI for syft-client==${{ inputs.package_version }}
+      - name: Poll PyPI for syft==${{ inputs.package_version }}
         run: |
           VERSION="${{ inputs.package_version }}"
           MAX_ATTEMPTS=15
           SLEEP=10
           for i in $(seq 1 $MAX_ATTEMPTS); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/syft-client/${VERSION}/json")
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://pypi.org/pypi/syft/${VERSION}/json")
             if [ "$STATUS" = "200" ]; then
-              echo "syft-client==${VERSION} is available on PyPI"
+              echo "syft==${VERSION} is available on PyPI"
               exit 0
             fi
             echo "Attempt $i/$MAX_ATTEMPTS: not yet available (HTTP $STATUS), waiting ${SLEEP}s..."
             sleep $SLEEP
           done
-          echo "Timed out waiting for syft-client==${VERSION} on PyPI"
+          echo "Timed out waiting for syft==${VERSION} on PyPI"
           exit 1
 
       - name: Wait for PyPI CDN propagation
         run: sleep 30
 
-      - name: Install syft-client from PyPI
+      - name: Smoke test the published packages in a clean venv
         run: |
-          uv venv .venv
-          source .venv/bin/activate
-          uv pip install "syft-client==${{ inputs.package_version }}"
+          uv venv /tmp/pypi-check
+          uv pip install --python /tmp/pypi-check/bin/python "syft==${{ inputs.package_version }}" syft-rds syft-bg
+          /tmp/pypi-check/bin/python -c "import syft, syft_bg, syft_rds; assert syft.__version__ == '${{ inputs.package_version }}'; print('OK syft', syft.__version__)"
 
-      - name: Install test dependencies
+      - name: Run unit tests against the published wheel
         run: |
-          source .venv/bin/activate
-          uv pip install pytest pytest-xdist pytest-rerunfailures
+          uv sync --all-extras
+          uv pip install --reinstall --no-deps "syft==${{ inputs.package_version }}"
+          mv syft /tmp/syft-src  # the checkout would shadow the installed wheel
+          uv run --no-sync pytest -n auto ./tests/unit
 
-      - name: Run unit tests
-        run: |
-          source .venv/bin/activate
-          pytest -n auto ./tests/unit
-
-      - name: Run client migration tests
-        run: |
-          source .venv/bin/activate
-          pytest -n auto ./tests/migrations
+      - name: Run client migration tests against the published wheel
+        run: uv run --no-sync pytest -n auto ./tests/migrations
