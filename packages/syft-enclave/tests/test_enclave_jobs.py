@@ -436,3 +436,56 @@ def test_approval_gated_on_configured_data_owners():
     do2.approve_job(do2.jobs["test_job"])
     enclave.sync()
     assert enclave.jobs["test_job"].status == "approved"
+
+
+def test_approve_job_refuses_when_the_approval_file_is_missing():
+    """Check before acting: no approval file means the approval cannot land.
+
+    The old code printed a warning and then queued the missing path for sync,
+    so the data owner was told something was wrong and given no way to tell
+    whether their approval had gone through.
+    """
+    enclave, do1, do2, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+        encryption=False,
+    )
+
+    for owner, name in ((do1, "dataset1"), (do2, "dataset2")):
+        mock_path, private_path = create_tmp_dataset_files(name)
+        owner.create_dataset(
+            name=name,
+            mock_path=mock_path,
+            private_path=private_path,
+            summary=name,
+            users=[ds.email],
+            upload_private=True,
+            sync=False,
+        )
+        owner.share_private_dataset(name, enclave.email)
+        owner.sync()
+    ds.sync()
+
+    code_path = create_tmp_code_file(make_job_code(do1.email, do2.email))
+    ds.submit_python_job(
+        enclave.email,
+        code_path,
+        "test_job",
+        datasets={do1.email: ["dataset1"], do2.email: ["dataset2"]},
+    )
+    enclave.sync()
+    enclave.receive_jobs()
+    do1.sync()
+
+    job = do1.jobs["test_job"]
+    approval_file = job.job_review_path / f"{do1.email}_approval_state.json"
+    assert approval_file.exists()
+    # The state a data owner hits when the enclave has not distributed yet.
+    approval_file.unlink()
+
+    with pytest.raises(FileNotFoundError) as exc:
+        do1.approve_job(job)
+
+    message = str(exc.value)
+    assert do1.email in message
+    assert "test_job" in message
+    assert "client.sync()" in message

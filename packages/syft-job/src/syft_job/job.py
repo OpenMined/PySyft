@@ -120,7 +120,7 @@ class JobInfo:
                     for item in outputs_dir.iterdir()
                     if item.name != PERMISSION_FILE_NAME
                 ]
-            except Exception:
+            except OSError:
                 return []
 
         if status == JobStatus.FAILED:
@@ -174,7 +174,7 @@ class JobInfo:
                     ):
                         continue
                     all_files.append(f)
-        except Exception:
+        except OSError:
             pass
         return all_files
 
@@ -213,8 +213,10 @@ class JobInfo:
 
         if self.datasite_owner_email != self.current_user_email:
             raise PermissionError(
-                f"Only the admin user ({self.datasite_owner_email}) can approve jobs in their folder. "
-                f"Current job is in {self.datasite_owner_email}'s folder."
+                f"You are {self.current_user_email}, and job '{self.name}' is on "
+                f"{self.datasite_owner_email}'s datasite. Only they can approve "
+                f"it. If you meant one of your own, index it by name: "
+                f'jobs["<name>"].'
             )
 
         self._state.status = JobStatus.APPROVED
@@ -246,7 +248,8 @@ class JobInfo:
 
         if self.datasite_owner_email != self.current_user_email:
             raise PermissionError(
-                f"Only the admin user ({self.datasite_owner_email}) can reject jobs."
+                f"You are {self.current_user_email}, and job '{self.name}' is on "
+                f"{self.datasite_owner_email}'s datasite. Only they can reject it."
             )
 
         self._state.status = JobStatus.REJECTED
@@ -435,10 +438,24 @@ class JobsList:
         if isinstance(index, int):
             return self._jobs[index]
         elif isinstance(index, str):
-            for job in self._jobs:
-                if job.name == index:
-                    return job
-            raise ValueError(f"Job with name '{index}' not found")
+            matches = [job for job in self._jobs if job.name == index]
+            if not matches:
+                raise ValueError(f"Job with name '{index}' not found")
+            if len(matches) > 1:
+                # Names are unique per datasite and submitter, not across the
+                # list. Returning the first match approves the wrong job. Both
+                # fields are named because either one can be the difference:
+                # two submitters to one datasite, or one submitter to two.
+                locations = ", ".join(
+                    f"[{i}] on {job.datasite_owner_email} from {job.submitted_by}"
+                    for i, job in enumerate(self._jobs)
+                    if job.name == index
+                )
+                raise ValueError(
+                    f"Multiple jobs are named '{index}': {locations}. "
+                    "Use the index to select one."
+                )
+            return matches[0]
         else:
             raise TypeError(f"Invalid index type: {type(index)}")
 

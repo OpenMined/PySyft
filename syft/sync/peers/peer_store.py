@@ -11,7 +11,8 @@ from typing import List, Optional
 import syft_crypto_python as syc
 from pydantic import BaseModel, PrivateAttr
 
-from syft.sync.peers.peer import Peer
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
+from syft.sync.peers.peer import Peer, PeerState
 
 # Encryption key bundles persist inside the participant's own SyftBox datasite
 # folder, under private/ (which is never synced to Drive). This scopes keys per
@@ -123,20 +124,64 @@ class PeerStore(BaseModel):
 
     def _ensure_private_keys(self) -> syc.SyftPrivateKeys:
         if self._private_keys is None:
-            raise ValueError("No private keys — call generate_keys() first")
+            raise ValueError(
+                f"No private keys for {self.email}. Encryption is on for this "
+                "client, but it holds no key pair. Keys are created at login, "
+                "so log in again to create them."
+            )
         return self._private_keys
 
     def _ensure_peer(self, email: str) -> Peer:
         peer = self.get_cached_peer(email)
         if peer is None:
-            raise ValueError(f"No cached peer for {email}")
+            raise SyftPeerNotReadyError(
+                email,
+                cause=f"No cached peer for {email}.",
+                remedy=(
+                    "Run client.sync() to refresh your peers, or "
+                    f"client.add_peer('{email}') if you have not added them."
+                ),
+            )
         return peer
 
     def _ensure_peer_bundle(self, email: str) -> dict:
         peer = self._ensure_peer(email)
         if peer.public_encryption_bundle is None:
-            raise ValueError(f"No public encryption bundle for {email}")
+            cause, remedy = self._missing_bundle_reason(peer)
+            raise SyftPeerNotReadyError(email, cause=cause, remedy=remedy)
         return peer.public_encryption_bundle
+
+    @staticmethod
+    def _missing_bundle_reason(peer: Peer) -> tuple[str, str]:
+        """The cause and the remedy for a peer that has no encryption bundle.
+
+        A bundle is only stored for a peer who is accepted (or requested by
+        you) and who has already published one, so the four states below are
+        the four reasons the bundle can be missing.
+        """
+        email = peer.email
+        if peer.state == PeerState.REQUESTED_BY_PEER:
+            return (
+                f"{email} asked to peer with you, but you have not accepted yet.",
+                f"Run client.approve_peer_request('{email}').",
+            )
+        if peer.state == PeerState.REJECTED:
+            return (
+                f"You rejected {email}, so no encryption bundle was kept.",
+                f"Run client.add_peer('{email}') to peer with them again.",
+            )
+        if peer.state == PeerState.REQUESTED_BY_ME:
+            return (
+                f"You asked to peer with {email}, but they have not accepted yet.",
+                "Wait for them to accept, then run client.sync().",
+            )
+        return (
+            f"{email} is an accepted peer, but you do not have their public "
+            "encryption bundle. Either they have not published one yet, or you "
+            "have not synced since they did.",
+            "Run client.sync(). If it continues, the peer may not have "
+            "encryption enabled.",
+        )
 
     # ========== Crypto methods ==========
 

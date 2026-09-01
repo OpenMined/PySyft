@@ -134,7 +134,12 @@ def test_dataset_repr_html_mentions_mock_files():
 # --- JobsList tests ---
 
 
-def _make_job_info(name: str, status: str = "pending") -> JobInfo:
+def _make_job_info(
+    name: str,
+    status: str = "pending",
+    ds_email: str = "ds@test.com",
+    owner_email: str = "test@test.com",
+) -> JobInfo:
     """Create a minimal JobInfo for testing."""
     from datetime import datetime, timezone
     from pathlib import Path
@@ -151,15 +156,15 @@ def _make_job_info(name: str, status: str = "pending") -> JobInfo:
     submission_config = JobSubmissionMetadata(
         name=name,
         type="python",
-        submitted_by="ds@test.com",
-        datasite_email="ds@test.com",
+        submitted_by=ds_email,
+        datasite_email=ds_email,
         submitted_at=datetime.now(timezone.utc),
     )
     state = JobState(status=JobStatus(status))
     # Identity (owner, submitter, name) comes from the path-derived ref.
     ref = JobRef(
-        datasite_email="test@test.com",
-        ds_email="ds@test.com",
+        datasite_email=owner_email,
+        ds_email=ds_email,
         job_name=name,
         protocol_version="1",
     )
@@ -196,6 +201,68 @@ def test_jobs_list_getitem_str_not_found():
     )
     with pytest.raises(ValueError, match="not found"):
         jobs["nonexistent"]
+
+
+def test_jobs_list_getitem_str_ambiguous():
+    """Two submitters can use one job name; the lookup must not guess between them.
+
+    Names are unique per datasite and submitter, so the same name can appear
+    more than once in one list. Returning the first match approves the wrong
+    job and says nothing.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("analysis", ds_email="ds1@test.com"),
+            _make_job_info("analysis", ds_email="ds2@test.com"),
+        ],
+        root_email="test@test.com",
+    )
+    with pytest.raises(ValueError, match="Multiple jobs are named 'analysis'") as exc:
+        jobs["analysis"]
+
+    message = str(exc.value)
+    assert "[0] on test@test.com from ds1@test.com" in message
+    assert "[1] on test@test.com from ds2@test.com" in message
+
+
+def test_jobs_list_getitem_str_ambiguous_names_the_datasite():
+    """One submitter can send the same job name to two data owners.
+
+    The submitter is then identical on every row, so the message has to name
+    the datasite as well. This is the DS-side call the README recommends.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("analysis", owner_email="do1@test.com"),
+            _make_job_info("analysis", owner_email="do2@test.com"),
+        ],
+        root_email="ds@test.com",
+    )
+    with pytest.raises(ValueError) as exc:
+        jobs["analysis"]
+
+    message = str(exc.value)
+    assert "[0] on do1@test.com" in message
+    assert "[1] on do2@test.com" in message
+
+
+def test_jobs_list_repr_counts_distinct_owners():
+    """The owner total counts owners, not table sections.
+
+    The renderers group consecutive rows to keep the table order equal to the
+    list order. A list that is not grouped by owner gives an owner more than
+    one section, which must not inflate the total.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("job-a", owner_email="do1@test.com"),
+            _make_job_info("job-b", owner_email="do2@test.com"),
+            _make_job_info("job-c", owner_email="do1@test.com"),
+        ],
+        root_email="do1@test.com",
+    )
+    assert "3 jobs across 2 users" in str(jobs)
+    assert "3 jobs across 2 users" in jobs._repr_html_()
 
 
 def test_jobs_list_getitem_invalid_type():

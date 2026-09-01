@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
@@ -731,6 +732,44 @@ def job_info_repr_html(job: "JobInfo") -> str:
         """
 
 
+def _hint_job_subscript(jobs: List["JobInfo"], root_email: str) -> str | None:
+    """The subscript for the usage hint, written as the user must type it.
+
+    Prefers a pending job on the DO's own datasite — the one the hint's
+    `approve()` applies to. Skips a name that more than one job has, because
+    indexing by such a name raises; gives the position instead. Returns None
+    when the DO owns none of these jobs: every subscript would then name a job
+    on someone else's datasite, which `approve()` refuses.
+    """
+    owned = [j for j in jobs if j.datasite_owner_email == root_email]
+    if not owned:
+        return None
+    name_counts = Counter(job.name for job in jobs)
+    candidates = [j for j in owned if name_counts[j.name] == 1] or owned
+    pick = next((j for j in candidates if j.status == "pending"), candidates[0])
+    if name_counts[pick.name] == 1:
+        return f'"{pick.name}"'
+    return str(jobs.index(pick))
+
+
+def _owner_groups(jobs: List["JobInfo"]) -> List[tuple[str, List["JobInfo"]]]:
+    """Split jobs into consecutive owner sections without reordering.
+
+    JobClient.jobs is the authority for order. Re-sorting here is what
+    made the table's [N] disagree with jobs[N]. A list that is not already
+    grouped by owner gives an owner more than one section; the row indexes
+    stay correct.
+    """
+    groups: List[tuple[str, List["JobInfo"]]] = []
+    for job in jobs:
+        owner = job.datasite_owner_email
+        if groups and groups[-1][0] == owner:
+            groups[-1][1].append(job)
+        else:
+            groups.append((owner, [job]))
+    return groups
+
+
 def jobs_list_str(
     jobs: List["JobInfo"], root_email: str, has_do_role: bool = False
 ) -> str:
@@ -738,11 +777,7 @@ def jobs_list_str(
     if not jobs:
         return "📭 No jobs found.\n"
 
-    jobs_by_user: dict[str, list["JobInfo"]] = {}
-    for job in jobs:
-        if job.datasite_owner_email not in jobs_by_user:
-            jobs_by_user[job.datasite_owner_email] = []
-        jobs_by_user[job.datasite_owner_email].append(job)
+    owner_groups = _owner_groups(jobs)
 
     status_emojis = {
         "received": "📨",
@@ -758,25 +793,12 @@ def jobs_list_str(
     lines.append("📊 Jobs Overview")
     lines.append("=" * 50)
 
-    total_jobs = 0
+    total_jobs = len(jobs)
     global_status_counts: dict[str, int] = {}
-
-    def user_sort_key(item):
-        user_email, _user_jobs = item
-        if user_email == root_email:
-            return (0, user_email)
-        return (1, user_email)
-
-    sorted_users = sorted(jobs_by_user.items(), key=user_sort_key)
 
     job_index = 0
 
-    for user_email, user_jobs in sorted_users:
-        if not user_jobs:
-            continue
-
-        total_jobs += len(user_jobs)
-
+    for user_email, user_jobs in owner_groups:
         lines.append("")
         lines.append(f"👤 {user_email}")
         lines.append("-" * 60)
@@ -795,9 +817,7 @@ def jobs_list_str(
         lines.append(header)
         lines.append("-" * len(header))
 
-        sorted_jobs = user_jobs
-
-        for job in sorted_jobs:
+        for job in user_jobs:
             emoji = status_emojis.get(job.status, "❓")
             status_display = f"{emoji} {job.status}"
             approval_display = job.approval_method or "—"
@@ -824,7 +844,8 @@ def jobs_list_str(
 
     lines.append("")
     lines.append("=" * 50)
-    lines.append(f"📈 Total: {total_jobs} jobs across {len(jobs_by_user)} users")
+    owner_count = len({job.datasite_owner_email for job in jobs})
+    lines.append(f"📈 Total: {total_jobs} jobs across {owner_count} users")
 
     global_summary_parts = []
     for status, count in global_status_counts.items():
@@ -834,10 +855,12 @@ def jobs_list_str(
     if global_summary_parts:
         lines.append("📋 Global: " + " | ".join(global_summary_parts))
 
-    if has_do_role:
+    subscript = _hint_job_subscript(jobs, root_email) if has_do_role else None
+    if subscript is not None:
         lines.append("")
         lines.append(
-            "💡 Use job_client.jobs[0].approve() to approve jobs or job_client.jobs[0].accept_by_depositing_result('file_or_folder') to complete jobs"
+            f"💡 Use job_client.jobs[{subscript}].approve() to approve jobs or "
+            f"job_client.jobs[{subscript}].accept_by_depositing_result('file_or_folder') to complete jobs"
         )
 
     return "\n".join(lines)
@@ -919,11 +942,7 @@ def jobs_list_repr_html(
             </div>
             """
 
-    jobs_by_user: dict[str, list["JobInfo"]] = {}
-    for job in jobs:
-        if job.datasite_owner_email not in jobs_by_user:
-            jobs_by_user[job.datasite_owner_email] = []
-        jobs_by_user[job.datasite_owner_email].append(job)
+    owner_groups = _owner_groups(jobs)
 
     status_styles = {
         "received": {
@@ -964,6 +983,7 @@ def jobs_list_repr_html(
     }
 
     total_jobs = len(jobs)
+    owner_count = len({job.datasite_owner_email for job in jobs})
     global_status_counts: dict[str, int] = {}
     for job in jobs:
         global_status_counts[job.status] = global_status_counts.get(job.status, 0) + 1
@@ -1217,25 +1237,12 @@ def jobs_list_repr_html(
         <div class="syftjob-overview">
             <div class="syftjob-global-header">
                 <h3>📊 Jobs Overview</h3>
-                <p>Total: {total_jobs} jobs across {len(jobs_by_user)} users</p>
+                <p>Total: {total_jobs} jobs across {owner_count} users</p>
             </div>
         """
 
-    def user_sort_key(item):
-        user_email, _user_jobs = item
-        if user_email == root_email:
-            return (0, user_email)
-        return (1, user_email)
-
-    sorted_users = sorted(jobs_by_user.items(), key=user_sort_key)
-
     job_index = 0
-    for user_email, user_jobs in sorted_users:
-        if not user_jobs:
-            continue
-
-        sorted_user_jobs = user_jobs
-
+    for user_email, user_jobs in owner_groups:
         user_status_counts: dict[str, int] = {}
         for job in user_jobs:
             user_status_counts[job.status] = user_status_counts.get(job.status, 0) + 1
@@ -1264,7 +1271,7 @@ def jobs_list_repr_html(
                     <tbody>
             """
 
-        for i, job in enumerate(sorted_user_jobs):
+        for i, job in enumerate(user_jobs):
             style_info = status_styles.get(job.status, {"emoji": "❓"})
             row_class = "syftjob-row-even" if i % 2 == 0 else "syftjob-row-odd"
 
@@ -1314,10 +1321,11 @@ def jobs_list_repr_html(
     html += """
                 </div>
         """
-    if has_do_role:
-        html += """
+    subscript = _hint_job_subscript(jobs, root_email) if has_do_role else None
+    if subscript is not None:
+        html += f"""
                 <div class="syftjob-hint">
-                    💡 Use <code class="syftjob-code">jobs[0].approve()</code> to approve jobs or <code class="syftjob-code">jobs[0].accept_by_depositing_result('file_or_folder')</code> to complete jobs
+                    💡 Use <code class="syftjob-code">jobs[{subscript}].approve()</code> to approve jobs or <code class="syftjob-code">jobs[{subscript}].accept_by_depositing_result('file_or_folder')</code> to complete jobs
                 </div>
         """
     html += """

@@ -59,7 +59,18 @@ Returns a `PeerList`.
 
 Get the list of jobs. Auto-syncs before returning.
 
-Returns a `JobsList`.
+Returns a `JobsList`. Index it **by job name** — the name stays the same as jobs
+are added and their statuses change:
+
+```python
+client.jobs["analysis"].approve()
+```
+
+Job names are unique per datasite and submitter, not across the list. If two
+jobs share a name, the lookup raises and gives the index of each.
+
+Positional indexing (`client.jobs[0]`) also works and matches the Index column
+in the table, but positions shift as jobs are added, so prefer the name.
 
 ### `client.datasets`
 
@@ -174,6 +185,7 @@ Submit a Python job to a Data Owner. **DS only.**
 ds_client.submit_python_job(
     user="owner@example.com",
     code_path="/path/to/script.py",
+    job_name="analysis",
 )
 ```
 
@@ -195,10 +207,22 @@ Run all approved jobs. **DO only.**
 - `stream_output`: Stream stdout/stderr in real-time.
 - `timeout`: Timeout in seconds per job (default: 300).
 - `force_execution`: Skip version compatibility checks.
+- `ignore_peer_version`: Run jobs from peers whose version is incompatible.
 
 ```python
 do_client.process_approved_jobs()
 ```
+
+A job whose submitter runs an incompatible version is not run. Each one is
+reported by name, with the submitter and the reason:
+
+```
+⏭️  1 approved job(s) did not run:
+   • analysis (submitted by ds@example.com): Skipping peer ds@example.com: incompatible version.
+   Pass ignore_peer_version=True to run them anyway.
+```
+
+The job stays at `approved`, so it runs on the next call once the versions match.
 
 ---
 

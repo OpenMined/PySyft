@@ -604,8 +604,14 @@ python {entrypoint_path}
         """
         Get all jobs from all peer directories as an indexable list grouped by user.
 
+        Order is the same as the jobs table: jobs on your own datasite first,
+        then the other datasites alphabetically, newest-first within each one.
+        ``jobs[N]`` is the row labelled ``[N]``. Prefer name indexing
+        (``jobs["analysis"]``); the name stays the same as jobs are added.
+
         Returns a JobsList object that can be:
-        - Indexed: jobs[0], jobs[1], etc.
+        - Indexed by name (preferred): jobs["analysis"]
+        - Indexed by position: jobs[0], jobs[1] — matches the table Index column
         - Iterated: for job in jobs
         - Displayed: print(jobs) shows separate tables for each user
         - HTML display: in Jupyter, shows separate tables for each user with jobs
@@ -618,25 +624,18 @@ python {entrypoint_path}
 
         current_jobs = self._get_all_jobs()
 
-        # Sort jobs by recent submissions first (newest first), then by user/status
         def job_sort_key(job):
-            # Parse submitted_at timestamp for sorting (most recent first)
+            # Root owner first, then peers, newest-first within each owner.
+            # This list is the authority for both jobs[N] and the table's [N].
             try:
                 if job.submitted_at:
-                    from datetime import datetime as dt
-
-                    # Parse ISO format timestamp
-                    ts = dt.fromisoformat(job.submitted_at.replace("Z", "+00:00"))
-                    # Use negative timestamp for reverse chronological order (newest first)
+                    ts = datetime.fromisoformat(job.submitted_at.replace("Z", "+00:00"))
                     time_priority = -ts.timestamp()
                 else:
-                    # Jobs without submitted_at go to the end
                     time_priority = float("inf")
             except Exception:
-                # Invalid timestamps go to the end
                 time_priority = float("inf")
 
-            # Secondary sorting: user priority (root first), then user name, then status
             user_priority = (
                 0 if job.datasite_owner_email == self.current_user_email else 1
             )
@@ -652,9 +651,9 @@ python {entrypoint_path}
             status_priority = status_order.get(job.status, 7)
 
             return (
-                time_priority,
                 user_priority,
                 job.datasite_owner_email,
+                time_priority,
                 status_priority,
                 job.name.lower(),
             )
