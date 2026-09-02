@@ -131,11 +131,13 @@ line, and write nothing when there is nothing wrong. Look for:
 - string building that is not an f-string
 - a repeated or magic value that belongs in a module-level constant
 - two functions or methods that do substantially the same work; one of them belongs, called from
-  both places. Name the pair and what they share
+  both places. Name the pair and what they share. Let a repeated line or two go — the copy has to be
+  big enough that pulling it out is worth a helper
 - an import inside a function; fine only to break a circular import, and worth one short note
-- a test name that does not say what it checks, or pads a name that does. Length is free when every
-  word earns it, so drop articles and filler: `test_no_hint_when_do_owns_no_jobs`, not
-  `test_no_hint_when_the_do_owns_none_of_the_jobs`
+- a name that does not say what the thing is, or pads a name that does. Length is free when every
+  word earns it, so drop articles and filler. Say it as a plain sentence and stop there:
+  ``test_no_hint_when_the_do_owns_none_of_the_jobs() violates the no-filler rule, rename to
+  test_no_hint_when_do_owns_no_jobs()``
 
 ## Rules
 
