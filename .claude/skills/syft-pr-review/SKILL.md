@@ -1,13 +1,14 @@
 ---
 name: syft-pr-review
-description: Write a review document for a syft pull request. Takes a PR number or URL, reads the diff, and produces a checkbox-structured summary of the flows that changed, what was added, each individual change, and the tests. Use when the user says "review PR 1234", "write me a review doc for <PR link>", or "what changed in this PR".
+description: Write a review document for a syft pull request. Takes a PR number or URL, reads the diff, and produces a checkbox-structured summary of the flows that changed, what was added, each individual change, the tests, and any code-standards problems in the new code. Use when the user says "review PR 1234", "write me a review doc for <PR link>", or "what changed in this PR".
 allowed-tools: Bash(gh:*), Bash(git:*), Bash(cat:*), Bash(sed:*), Bash(grep:*), Bash(rg:*), Bash(mkdir:*), Bash(wc:*), Bash(ls:*), Read, Write, Glob, Grep
 ---
 
 # Review a syft PR
 
 Write a document a reader finishes in a few minutes and still knows **what changed** and **what was
-decided**. Explain the change; do not hunt for bugs (that is `/code-review`).
+decided**. Explain the change, and flag where the new code breaks a house standard. Do not hunt for
+bugs — that is `/code-review`.
 
 ## Input
 
@@ -93,9 +94,28 @@ Flows come first, because they are why the reader opened the document.
         `Class.method()` signature. Nothing is asserted differently.
   - [ ] Decision: <only when a test settles something a reader would otherwise wonder about>
 
-- [ ] **5. Blocked on** — drop this section unless something real stops the merge
+- [ ] **5. Code standards** — only where the new code breaks one; drop the section when it does not
+
+  - [ ] `path/file.py: Class.method()` — <the problem, one line>
+
+- [ ] **6. Blocked on** — drop this section unless something real stops the merge
   - [ ] <the problem, and what has to happen before this can go in>
 ```
+
+### What counts as a code-standards problem
+
+Judge only the lines this PR touched. Do not review the code around them, and do not turn this into
+a second review. Name the file and the `Class.method()` or `file.py: function()`, keep each to one
+line, and write nothing when there is nothing wrong. Look for:
+
+- a function or method you have to scroll to read; aim for 10 lines, and allow more only when it
+  calls nothing else
+- a method that calls out and then works on the answer inline — `ab = Y.Z()` followed by logic on
+  `ab` belongs in its own helper
+- string building that is not an f-string
+- a repeated or magic value that belongs in a module-level constant
+- an import inside a function; fine only to break a circular import, and worth one short note
+- a test whose name does not say what it checks; a long name is fine
 
 ## Rules
 
@@ -110,8 +130,10 @@ Flows come first, because they are why the reader opened the document.
       that only follow the new code — a changed call, a rebuilt fixture — into a single bullet with
       a count, since nothing is asserted differently. Give a line to a test whose meaning actually
       changed, and say why. Do not walk through test bodies.
+- [ ] **Standards: new code only.** Flag a standards problem only in lines this PR touched, and
+      only when there is one. Never audit the surrounding code.
 - [ ] **No question list.** A reviewer can ask their own questions, so do not collect them. Only
-      name something that genuinely blocks the merge, and leave section 5 out when nothing does.
+      name something that genuinely blocks the merge, and leave section 6 out when nothing does.
 - [ ] **Plain words.** Explain any term you have to use. Do not write "on the wire" (say _sent over
       the network_), "opaque", "envelope", "surface", "inert" or "residual".
 - [ ] **Every bullet stands alone.** A reader three levels deep must not need the bullet above it.
