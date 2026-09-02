@@ -247,22 +247,45 @@ reports **`operator-disabled`**.
 ## Optional `disallow_functions`
 
 There is no built-in library denylist. Everything not explicitly allow-listed is
-rejected. Safety comes from **`allow_functions`**.
+rejected — safety comes from **`allow_functions`**, and the model is default-deny.
 
-When you use a broad allow (`jax.*`), pass `disallow_functions=[...]` for a hard floor. Hits report
-**`call-not-allowed`**.
+**Prefer a tight `allow_functions`: list the exact leaves your code calls** (e.g.
+`"jax.numpy.einsum"`, `"flax.linen.Module"`), not a glob. Under a tight allow-list `disallow_functions`
+is unnecessary — a function that isn't named is already denied, so there is nothing to subtract.
 
-Useful patterns under broad JAX/Flax allows:
+**Avoid glob allows like `jax.*` / `flax.*`.** A glob silently allows in the library's entire surface,
+including host-callback, disk-serialization, and network functions the private region could use to
+exfiltrate data. If you nonetheless use a glob, add `disallow_functions=[...]` as a hard floor (hits
+report **`call-not-allowed`**) — but treat this as a leaky backstop, not a substitute for a tight
+allow: the floor only blocks what you remembered to list.
 
-- Host / debug / experimental: `jax.experimental.*`, `jax.debug.*`, `jax.pure_callback`, `*.io_callback`, `*.host_callback*`
-- FFI / interop: `jax.dlpack.*`, `jax.ffi*`
-- Array ↔ disk: `jax.numpy.save`, `load`, `tofile`, `fromfile`, `memmap`, …
-- Checkpointing: `flax.serialization.*`, `flax.training.checkpoints.*`, `orbax.*`
+Recommended floor when a broad glob is unavoidable (dangerous JAX/Flax I/O surface):
+
+```python
+disallow_functions=[
+    # host / debug / experimental callbacks (arbitrary host code, stdout)
+    "jax.debug.*", "jax.experimental.*", "jax.pure_callback",
+    "*.io_callback", "*.host_callback*",
+    # profiler — writes traces to disk AND accepts gs://... paths / opens a network server
+    "jax.profiler.*",
+    # multi-host / distributed — outbound network connections
+    "jax.distributed.*", "jax.monitoring.*", "jax.experimental.multihost_utils.*",
+    # FFI / interop
+    "jax.dlpack.*", "jax.ffi.*",
+    # array <-> disk (save/savez/savez_compressed/savetxt, load/loadtxt, tofile/fromfile/memmap)
+    "jax.numpy.save*", "jax.numpy.load*", "*.tofile", "*.fromfile", "*.memmap",
+    # checkpointing / serialization (write to disk, incl. gs://)
+    "flax.serialization.*", "flax.training.checkpoints.*", "orbax.*",
+]
+```
+
+Even this list is not exhaustive — that is the point of preferring a tight allow. A disallow glob is
+resolved through the import table like any path, so a renamed re-export is still caught:
 
 ```python
 # public import, private use — still resolved and checked
 from jax.numpy import save as persist
-persist(x, "out.npz")   # call-not-allowed if disallow includes jax.numpy.save
+persist(x, "out.npz")   # call-not-allowed if disallow includes jax.numpy.save*
 ```
 
 ---

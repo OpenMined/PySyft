@@ -10,6 +10,11 @@ requires-python = ">=3.10"
 # Static analysis on the stdlib (ast, tokenize, hashlib, fnmatch); pydantic models the results.
 dependencies = ["pydantic>=2"]
 
+# Console script for the catalog linter, so authors can lint their own catalog after install
+# (e.g. `uv run syft-restrict-lint path/to/catalog --fix`) without a source-tree path.
+[project.scripts]
+syft-restrict-lint = "syft_restrict.catalog_lint:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
