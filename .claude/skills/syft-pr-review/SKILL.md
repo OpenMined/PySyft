@@ -101,8 +101,8 @@ Flows come first, because they are why the reader opened the document.
 - [ ] **4. Tests**
 
   - [ ] **NEW `path/test_file.py`** — <n> tests<, and how they are set up, when it is worth a clause>
-    - [ ] `test_a()` — <what it checks>
-    - [ ] `test_b()` — <what it checks>
+    - [ ] `test_a()` — <the condition, what runs, and what is then true>
+    - [ ] `test_b()` — <the condition, what runs, and what is then true>
   - [ ] **REWRITTEN `test_c()`** — `path/test_file.py` — now asserts <X> instead of <Y>, because
         <reason>.
   - [ ] **UPDATED for the new code** — <n> tests across <n> files follow the new
@@ -130,8 +130,12 @@ line, and write nothing when there is nothing wrong. Look for:
   `ab` belongs in its own helper
 - string building that is not an f-string
 - a repeated or magic value that belongs in a module-level constant
+- two functions or methods that do substantially the same work; one of them belongs, called from
+  both places. Name the pair and what they share
 - an import inside a function; fine only to break a circular import, and worth one short note
-- a test whose name does not say what it checks; a long name is fine
+- a test name that does not say what it checks, or pads a name that does. Length is free when every
+  word earns it, so drop articles and filler: `test_no_hint_when_do_owns_no_jobs`, not
+  `test_no_hint_when_the_do_owns_none_of_the_jobs`
 
 ## Rules
 
@@ -139,16 +143,20 @@ line, and write nothing when there is nothing wrong. Look for:
 - [ ] **Scannable, not prose.** Keep a bullet to two or three lines. When a bullet reaches for a
       semicolon to join items, or repeats the same shape three times over, those items are separate
       child bullets. The reader is looking for one thing, not reading front to back.
-- [ ] **Length follows the code.** A ten-line class gets a few words, not five bullets. Group small
-      related additions under one bullet. Give something its own top-level bullet only when a reader
-      needs it on its own.
+- [ ] **Length and position follow the code.** Word count and placement are both claims about how
+      much something matters, so a ten-line class gets a few words, not five bullets. Group small
+      related additions under one bullet. Collect mechanical cleanups — a moved import, a renamed
+      local, a deleted comment — into one short note at the end of the theme they belong to, never a
+      bullet of their own.
 - [ ] **Say it once.** Section 2 describes code that was added. Section 3 covers what behaviour
       changed and what was deleted, and refers to new code by name rather than describing it again.
       Tests belong only in section 4.
-- [ ] **One test, one bullet, nested under its file.** Never a single bullet that lists several
-      tests separated by semicolons — a reader scans that list for one name and has to read a
-      paragraph instead. The file gets the parent bullet with the count; each test gets a child
-      bullet of `` `test_name()` — what it checks``, one sentence. Do not walk through test bodies.
+- [ ] **One test, one bullet, nested under its file.** The file gets the parent bullet with the
+      count, each test a child bullet. Do not walk through test bodies.
+- [ ] **A test bullet carries its own context.** One sentence naming the condition, what runs, and
+      what is then true — the reader has only that line. Write _if a job list holds no unique name,
+      the hint under the table renders a position instead of a name_, not _with no unique name left,
+      the hint gives a position_. Give the minimum that makes it stand up, not the whole setup.
 - [ ] **Tests, in proportion.** Collapse tests that only follow the new code — a changed call, a
       rebuilt fixture — into a single bullet with a count, since nothing is asserted differently.
       Give a bullet of its own to a test whose meaning actually changed, and say why.
@@ -158,7 +166,10 @@ line, and write nothing when there is nothing wrong. Look for:
       name something that genuinely blocks the merge, and leave section 6 out when nothing does.
 - [ ] **Plain words.** Explain any term you have to use. Do not write "on the wire" (say _sent over
       the network_), "opaque", "envelope", "surface", "inert" or "residual".
-- [ ] **Every bullet stands alone.** A reader three levels deep must not need the bullet above it.
+- [ ] **Every bullet stands alone.** A reader three levels deep must not need the bullet above it. A
+      theme heading is a filing label, not context: "B — Errors that name both sides" says nothing
+      about what raises the error or who the two sides are, so every bullet under it names its own
+      subject.
 - [ ] **Name both sides.** Never just "a version mismatch" — say which versions, held by whom, and
       compared against what: this client against the peer's version file, the local folder against the
       copy on Drive, one protocol against another. The same goes for any comparison or hand-off.
