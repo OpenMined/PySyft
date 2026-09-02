@@ -1,6 +1,6 @@
 ---
 name: syft-pr-review
-description: Write a review document for a syft pull request. Takes a PR number or URL, reads the diff, and produces a checkbox-structured summary of the flows that changed, what was added, and each individual change. Use when the user says "review PR 1234", "write me a review doc for <PR link>", or "what changed in this PR".
+description: Write a review document for a syft pull request. Takes a PR number or URL, reads the diff, and produces a checkbox-structured summary of the flows that changed, what was added, each individual change, and the tests. Use when the user says "review PR 1234", "write me a review doc for <PR link>", or "what changed in this PR".
 allowed-tools: Bash(gh:*), Bash(git:*), Bash(cat:*), Bash(sed:*), Bash(grep:*), Bash(rg:*), Bash(mkdir:*), Bash(wc:*), Bash(ls:*), Read, Write, Glob, Grep
 ---
 
@@ -36,10 +36,10 @@ gh pr diff <N> > /tmp/pr-<N>.diff
 grep -n '^diff --git' /tmp/pr-<N>.diff    # file boundaries; read the chunks with sed
 ```
 
-Read source files first, then the places that call them — that is where the flows are. Read test
-names only. Count and skip lock files, generated data, fixtures and reformatting, and say what you
-skipped. Open the changed file from the repo when a diff chunk alone is not enough to describe
-something correctly.
+Read source files first, then the places that call them — that is where the flows are. For tests,
+read the name and what it asserts, not the whole body. Count and skip lock files, generated data,
+fixtures and reformatting, and say what you skipped. Open the changed file from the repo when a diff
+chunk alone is not enough to describe something correctly.
 
 Check before you write: whether a name is a method or a plain function, whether a folder is really a
 package, and whether each claim in the PR description is still true.
@@ -77,15 +77,24 @@ Flows come first, because they are why the reader opened the document.
   - [ ] **NEW MODULE `path/file.py`** — <what it is for>. Defines `file.py: func()`. (Flow 1.1)
   - [ ] **NEW helpers in `path/file.py`** — `f()` <does X>, `g()` <does Y>. (Flow 1.1)
 
-- [ ] **3. Changes** — everything changed or deleted, grouped by theme
+- [ ] **3. Changes** — everything changed or deleted except tests, grouped by theme
 
   - [ ] **A — <Theme>**
     - [ ] **A1 <label>** (Flow 1.2) — When we <do X>, we previously <did Z>, now we <do A>.
           `path/file.py: Class.method()`
     - [ ] **A2 <label>** — DELETED `Class.old()` and `file.py: helper()`, because <reason>.
 
-- [ ] **4. Open questions**
-  - [ ] <real decisions a reviewer must make; drop the section when there are none>
+- [ ] **4. Tests**
+
+  - [ ] **NEW `path/test_file.py`** — <n> tests: `test_a()` <what it checks>, `test_b()`
+        <what it checks>.
+  - [ ] **REWRITTEN `test_c()`** — now asserts <X> instead of <Y>, because <reason>.
+  - [ ] **UPDATED for the new code** — <n> tests across <n> files follow the new
+        `Class.method()` signature. Nothing is asserted differently.
+  - [ ] Decision: <only when a test settles something a reader would otherwise wonder about>
+
+- [ ] **5. Blocked on** — drop this section unless something real stops the merge
+  - [ ] <the problem, and what has to happen before this can go in>
 ```
 
 ## Rules
@@ -96,6 +105,13 @@ Flows come first, because they are why the reader opened the document.
       needs it on its own.
 - [ ] **Say it once.** Section 2 describes code that was added. Section 3 covers what behaviour
       changed and what was deleted, and refers to new code by name rather than describing it again.
+      Tests belong only in section 4.
+- [ ] **Tests, in proportion.** One sentence per new test, saying what it checks. Collapse tests
+      that only follow the new code — a changed call, a rebuilt fixture — into a single bullet with
+      a count, since nothing is asserted differently. Give a line to a test whose meaning actually
+      changed, and say why. Do not walk through test bodies.
+- [ ] **No question list.** A reviewer can ask their own questions, so do not collect them. Only
+      name something that genuinely blocks the merge, and leave section 5 out when nothing does.
 - [ ] **Plain words.** Explain any term you have to use. Do not write "on the wire" (say _sent over
       the network_), "opaque", "envelope", "surface", "inert" or "residual".
 - [ ] **Every bullet stands alone.** A reader three levels deep must not need the bullet above it.
@@ -106,7 +122,8 @@ Flows come first, because they are why the reader opened the document.
       function. Never a bare `_helper()` — the reader will guess the wrong owner.
 - [ ] **Say who calls whom, and when it runs.** "`A.b()` calls `c.py: d()`", not "`A.b()` → `d()`".
 - [ ] **Before and after, everywhere:** _When we do X, we previously did Z. Now we do A._
-- [ ] **Say what was decided** — the alternative and why it lost — not only what changed.
+- [ ] **Say what was decided** — the alternative and why it lost — not only what changed. Only for
+      decisions that change how someone reads the code; skip the rest.
 - [ ] **Budget reading time:** roughly 40 bullets for a normal PR, 120 for a very large one.
 - [ ] Do not repeat the PR description. If your text matches it, you read the wrong thing.
 - [ ] Cross-reference by name, e.g. `(Flow 1.2)`. Links such as `[x](#slug)` do not work: GitHub
