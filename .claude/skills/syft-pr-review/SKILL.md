@@ -109,7 +109,8 @@ a second review. Name the file and the `Class.method()` or `file.py: function()`
 line, and write nothing when there is nothing wrong. Look for:
 
 - a function or method you have to scroll to read; aim for 30 lines, and allow more only when it
-  calls nothing else
+  calls nothing else. Test functions are exempt — a long test is normal, so never flag one for
+  length
 - a method that calls out and then works on the answer inline — `ab = Y.Z()` followed by logic on
   `ab` belongs in its own helper
 - string building that is not an f-string
