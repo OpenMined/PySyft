@@ -176,6 +176,9 @@ SyftBox/
 # Claude AI settings
 .claude/*
 !.claude/settings.json
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/syft-pr-review/
 CLAUDE.md
 
 # CI test outputs
