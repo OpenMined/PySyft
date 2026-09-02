@@ -37,7 +37,10 @@ gh pr view "$PR" --json files \
   | sort -rn >"$OUT/files.txt"
 
 # Lock files, notebooks and generated data are counted and skipped, not read.
-grep -E '(\.lock|lock\.json|\.ipynb|\.min\.(js|css)|\.svg|\.png|\.csv|\.parquet)$' \
+# `.claude/` too: agent tooling is not the PR author's work, and it rides along
+# in the diff whenever a skill edit is landed on the branch before it lands on
+# the base. Reviewing it would attribute it to the wrong person.
+grep -E '(\.lock|lock\.json|\.ipynb|\.min\.(js|css)|\.svg|\.png|\.csv|\.parquet)$|(^| )\.claude/' \
   "$OUT/files.txt" >"$OUT/files-skippable.txt" || true
 
 # ----------------------------------------------------------------- history ---
