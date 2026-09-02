@@ -1,7 +1,7 @@
 ---
 name: syft-pr-review
 description: Write a review document for a syft pull request. Takes a PR number or URL, reads the diff, and produces a checkbox-structured summary of the flows that changed, what was added, each individual change, the tests, and any code-standards problems in the new code. Use when the user says "review PR 1234", "write me a review doc for <PR link>", or "what changed in this PR".
-allowed-tools: Bash(gh:*), Bash(git:*), Bash(cat:*), Bash(sed:*), Bash(grep:*), Bash(rg:*), Bash(mkdir:*), Bash(wc:*), Bash(ls:*), Read, Write, Glob, Grep
+allowed-tools: Bash(gh:*), Bash(git:*), Bash(cat:*), Bash(sed:*), Bash(grep:*), Bash(rg:*), Bash(mkdir:*), Bash(wc:*), Bash(ls:*), Bash(jq:*), Bash(bash:*), Bash(./.claude/skills/syft-pr-review/prefetch.sh:*), Read, Write, Glob, Grep
 ---
 
 # Review a syft PR
@@ -14,36 +14,49 @@ bugs — that is `/code-review`.
 
 A PR number or URL. If none was given, ask for it.
 
-## Step 1 — Load the PR, and find the branch it really builds on
+## Step 1 — Prefetch, in one call
 
 ```bash
-gh pr view <N> --json title,body,author,state,baseRefName,headRefName,additions,deletions,changedFiles
-gh pr view <N> --json files -q '.files[] | "\(.additions)+ \(.deletions)- \(.path)"' | sort -rn
+./.claude/skills/syft-pr-review/prefetch.sh <N>       # writes /tmp/pr-<N>/
 ```
 
-If the description names a base branch other than the GitHub one, check whether it is merged yet:
-`git merge-base --is-ancestor origin/<named-base> origin/<default>`. If it is not, its commits land
-with this PR, so review those too — do not shrink the document to the author's own commits. Say so
-in one sentence at the top and tag each item with the branch it came from. The author's own commits:
+It prints an index and writes:
 
-```bash
-git log --oneline --no-merges origin/<head> ^origin/<default> ^origin/<named-base>
-```
+| file                  | what is in it                                                       |
+| --------------------- | ------------------------------------------------------------------- |
+| `meta.json`           | title, body, author, state, base, head, +/-, file count             |
+| `body.md`             | the description, to check its claims against the diff               |
+| `files.txt`           | every changed path with its +/-, largest first                      |
+| `files-skippable.txt` | lock files, notebooks and generated data — count these, do not read |
+| `commits.txt`         | non-merge commits on the head branch that are not in the base       |
+| `merges.txt`          | merge commits in that same range                                    |
+| `base-check.txt`      | every branch named in the body, and whether it has landed yet       |
+| `full.diff`           | the whole diff                                                      |
+| `diff-index.txt`      | `path<TAB>per-file diff`; `cat` the chunk you want                  |
+| `new-symbols.txt`     | every `def`/`class` the diff adds, with its line number on the head |
+| `new-tests.txt`       | every test function and class the diff adds                         |
+
+Read `base-check.txt` first. A branch marked NOT-MERGED is a base that has not landed, so its
+commits land with this PR and belong in the document — say so in one sentence at the top and tag
+each item with the branch it came from. `commits.txt` is the author's own work.
+
+`new-symbols.txt` is a candidate list, not the answer: it also catches a nested function and a
+pre-existing `def` whose signature changed. Confirm each one is really new before you call it new.
+
+**Keep the script in step with this file.** If a step below needs something `/tmp/pr-<N>/` does not
+hold — because the skill changed, or because this PR has a shape the script does not cover — add it
+to `prefetch.sh` and re-run, rather than running the command by hand. The point of the script is
+that one call answers the whole of steps 1 and 2.
 
 ## Step 2 — Read the diff, not the description
 
-```bash
-gh pr diff <N> > /tmp/pr-<N>.diff
-grep -n '^diff --git' /tmp/pr-<N>.diff    # file boundaries; read the chunks with sed
-```
-
-Read source files first, then the places that call them — that is where the flows are. For tests,
-read the name and what it asserts, not the whole body. Count and skip lock files, generated data,
-fixtures and reformatting, and say what you skipped. Open the changed file from the repo when a diff
-chunk alone is not enough to describe something correctly.
+`cat` the per-file chunks from `diff-index.txt`, source files first, then the places that call them
+— that is where the flows are. For tests, read the name and what it asserts, not the whole body.
+Say what you skipped, with counts, using `files-skippable.txt`. Open the changed file from the repo
+when a diff chunk alone is not enough to describe something correctly.
 
 Check before you write: whether a name is a method or a plain function, whether a folder is really a
-package, and whether each claim in the PR description is still true.
+package, and whether each claim in `body.md` is still true.
 
 ## Step 3 — Write it
 
@@ -87,9 +100,11 @@ Flows come first, because they are why the reader opened the document.
 
 - [ ] **4. Tests**
 
-  - [ ] **NEW `path/test_file.py`** — <n> tests: `test_a()` <what it checks>, `test_b()`
-        <what it checks>.
-  - [ ] **REWRITTEN `test_c()`** — now asserts <X> instead of <Y>, because <reason>.
+  - [ ] **NEW `path/test_file.py`** — <n> tests<, and how they are set up, when it is worth a clause>
+    - [ ] `test_a()` — <what it checks>
+    - [ ] `test_b()` — <what it checks>
+  - [ ] **REWRITTEN `test_c()`** — `path/test_file.py` — now asserts <X> instead of <Y>, because
+        <reason>.
   - [ ] **UPDATED for the new code** — <n> tests across <n> files follow the new
         `Class.method()` signature. Nothing is asserted differently.
   - [ ] Decision: <only when a test settles something a reader would otherwise wonder about>
@@ -121,16 +136,22 @@ line, and write nothing when there is nothing wrong. Look for:
 ## Rules
 
 - [ ] **Every bullet is a checkbox**, at every depth.
+- [ ] **Scannable, not prose.** Keep a bullet to two or three lines. When a bullet reaches for a
+      semicolon to join items, or repeats the same shape three times over, those items are separate
+      child bullets. The reader is looking for one thing, not reading front to back.
 - [ ] **Length follows the code.** A ten-line class gets a few words, not five bullets. Group small
       related additions under one bullet. Give something its own top-level bullet only when a reader
       needs it on its own.
 - [ ] **Say it once.** Section 2 describes code that was added. Section 3 covers what behaviour
       changed and what was deleted, and refers to new code by name rather than describing it again.
       Tests belong only in section 4.
-- [ ] **Tests, in proportion.** One sentence per new test, saying what it checks. Collapse tests
-      that only follow the new code — a changed call, a rebuilt fixture — into a single bullet with
-      a count, since nothing is asserted differently. Give a line to a test whose meaning actually
-      changed, and say why. Do not walk through test bodies.
+- [ ] **One test, one bullet, nested under its file.** Never a single bullet that lists several
+      tests separated by semicolons — a reader scans that list for one name and has to read a
+      paragraph instead. The file gets the parent bullet with the count; each test gets a child
+      bullet of `` `test_name()` — what it checks``, one sentence. Do not walk through test bodies.
+- [ ] **Tests, in proportion.** Collapse tests that only follow the new code — a changed call, a
+      rebuilt fixture — into a single bullet with a count, since nothing is asserted differently.
+      Give a bullet of its own to a test whose meaning actually changed, and say why.
 - [ ] **Standards: new code only.** Flag a standards problem only in lines this PR touched, and
       only when there is one. Never audit the surrounding code.
 - [ ] **No question list.** A reviewer can ask their own questions, so do not collect them. Only
