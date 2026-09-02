@@ -175,13 +175,9 @@ SyftBox/
 
 # Claude AI settings
 #
-# Skills are split in two:
-#   .claude/skills/        team skills, checked in - add one !-rule per skill
-#   .claude/skills.local/  personal skills, never checked in
-#
-# Claude Code only discovers skills under .claude/skills/, so a personal skill
-# is symlinked from there into skills.local/. The .claude/skills/* rule below
-# ignores those symlinks, so only the explicitly listed team skills are tracked.
+# Skills are private by default: .claude/skills/* ignores every skill, so a new
+# one is never committed by accident. Share a skill with the team by adding a
+# !-rule for it below.
 .claude/*
 !.claude/settings.json
 !.claude/skills/
