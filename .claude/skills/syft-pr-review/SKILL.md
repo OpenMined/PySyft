@@ -136,8 +136,8 @@ line, and write nothing when there is nothing wrong. Look for:
 - an import inside a function; fine only to break a circular import, and worth one short note
 - a name that does not say what the thing is, or pads a name that does. Length is free when every
   word earns it, so drop articles and filler. Say it as a plain sentence and stop there:
-  ``test_no_hint_when_the_do_owns_none_of_the_jobs() violates the no-filler rule, rename to
-  test_no_hint_when_do_owns_no_jobs()``
+  `test_no_hint_when_the_do_owns_none_of_the_jobs() violates the no-filler rule, rename to
+test_no_hint_when_do_owns_no_jobs()`
 
 ## Rules
 
