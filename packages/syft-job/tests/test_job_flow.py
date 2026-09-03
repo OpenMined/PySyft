@@ -259,13 +259,13 @@ def test_timeout_does_not_hang_runner(tmp_path: Path):
     assert do_client.jobs[0].status == "failed"
 
 
-def test_jobs_table_hint_names_the_datasite_and_the_job(tmp_path: Path):
-    """The DO hint must point at jobs["datasite"]["name"], not jobs[0].
+def test_hint_names_submitter_and_job(tmp_path: Path):
+    """The DO hint must point at jobs["submitter"]["name"], not jobs[0].
 
     Positional indexing is not safe to recommend: positions shift as jobs are
     added. A bare name is not safe either — it searches every datasite, so a
-    peer's job of the same name can answer instead. The datasite makes the name
-    resolve to one job.
+    peer's job of the same name can answer instead. The email in a chain is the
+    other party, which for a data owner is the submitter.
     """
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
@@ -289,11 +289,12 @@ def test_jobs_table_hint_names_the_datasite_and_the_job(tmp_path: Path):
     html = jobs._repr_html_()
 
     for rendering in (text, html):
-        assert f'jobs["{DO_EMAIL}"]["analysis.job"].approve()' in rendering
+        assert f'jobs["{DS_EMAIL}"]["analysis.job"].approve()' in rendering
         assert "jobs[0]" not in rendering
+        assert DO_EMAIL not in rendering.split("💡")[1], "the DO's own email is noise"
 
     # The hint names a job the DO can actually approve, as written.
-    assert do_client.jobs[DO_EMAIL]["analysis.job"].status == "pending"
+    assert do_client.jobs[DS_EMAIL]["analysis.job"].status == "pending"
 
 
 def _index_name_pairs_from_text(text: str) -> list[tuple[int, str]]:
@@ -351,12 +352,12 @@ def test_jobs_table_index_matches_getitem(tmp_path: Path):
         assert jobs[index].name == name
 
 
-def test_jobs_table_hint_skips_an_ambiguous_job_name(tmp_path: Path):
-    """The hint must not name a job that two submitters both use.
+def test_hint_names_submitter_for_shared_name(tmp_path: Path):
+    """A name two submitters share needs the submitter to reach one job.
 
     Job names are unique per datasite and submitter, so two data scientists can
-    submit "analysis" to the same data owner. The datasite key does not separate
-    them, so a hint that named it would send the data owner straight to an error.
+    submit "analysis" to the same data owner. The hint adds the submitter rather
+    than giving up on the name.
     """
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
@@ -387,20 +388,21 @@ def test_jobs_table_hint_skips_an_ambiguous_job_name(tmp_path: Path):
 
     jobs = do_client.jobs
     for rendering in (str(jobs), jobs._repr_html_()):
-        assert f'jobs["{DO_EMAIL}"]["solo"].approve()' in rendering
-        assert '["analysis"]' not in rendering
+        assert f'jobs["{DS2_EMAIL}"]["analysis"].approve()' in rendering
 
-    assert jobs[DO_EMAIL]["solo"].name == "solo"
-    # The datasite does not narrow two submitters, so this stays ambiguous.
+    # The chain the hint gives reaches exactly one job, and the datasite alone
+    # does not, which is why it names the submitter.
+    job = jobs[DS2_EMAIL]["analysis"]
+    assert (job.submitted_by, job.status) == (DS2_EMAIL, "pending")
     with pytest.raises(ValueError, match="Multiple jobs are named 'analysis'"):
         jobs[DO_EMAIL]["analysis"]
 
 
-def test_jobs_table_hint_falls_back_to_the_index(tmp_path: Path):
-    """With no unambiguous name left, the hint must give a position.
+def test_hint_names_every_submitter_of_shared_name(tmp_path: Path):
+    """Every job in the table shares its name, so every chain needs a submitter.
 
-    Every job in the table shares its name here, so jobs["analysis"] raises.
-    The hint still has to name something the data owner can run.
+    The datasite alone reaches neither, and the hint still has to name something
+    the data owner can run.
     """
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
@@ -420,10 +422,11 @@ def test_jobs_table_hint_falls_back_to_the_index(tmp_path: Path):
 
     jobs = do_client.jobs
     for rendering in (str(jobs), jobs._repr_html_()):
-        assert "jobs[0].approve()" in rendering
-        assert '["analysis"]' not in rendering
+        assert f'jobs["{DS2_EMAIL}"]["analysis"].approve()' in rendering
+        assert "jobs[0]" not in rendering
 
-    assert jobs[0].name == "analysis"
+    for ds_email in (DS_EMAIL, DS2_EMAIL):
+        assert jobs[ds_email]["analysis"].submitted_by == ds_email
 
 
 def test_skipping_one_job_spares_its_same_named_sibling(tmp_path: Path):
@@ -461,7 +464,7 @@ def test_skipping_one_job_spares_its_same_named_sibling(tmp_path: Path):
     assert final[DS2_EMAIL] == "done", "its same-named sibling must still run"
 
 
-def test_no_hint_when_the_do_owns_none_of_the_jobs(tmp_path: Path):
+def test_no_hint_when_do_owns_no_jobs(tmp_path: Path):
     """Every subscript would name a job on another datasite, which approve() refuses.
 
     A hint is worse than no hint when the only command it can give raises
@@ -489,7 +492,7 @@ def test_no_hint_when_the_do_owns_none_of_the_jobs(tmp_path: Path):
         assert "💡" not in rendering
 
 
-def test_datasite_key_resolves_name_shared_by_two_datasites(tmp_path: Path):
+def test_email_key_resolves_name_shared_by_two_datasites(tmp_path: Path):
     """One submitter can send the same job name to two data owners.
 
     The bare name has no way to choose between them and raises. Selecting the
@@ -521,7 +524,7 @@ def test_datasite_key_resolves_name_shared_by_two_datasites(tmp_path: Path):
         assert job.datasite_owner_email == owner
 
 
-def test_datasite_key_names_the_datasites_it_has(tmp_path: Path):
+def test_email_key_names_emails_it_has(tmp_path: Path):
     """An email with no jobs on it is a typo the message has to help with."""
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
@@ -541,14 +544,17 @@ def test_datasite_key_names_the_datasites_it_has(tmp_path: Path):
     message = str(exc.value)
     assert "nobody@test.org" in message
     assert DO_EMAIL in message, "must name the datasites that do have jobs"
+    assert DS_EMAIL in message, "must name the submitters too"
 
 
-def test_hint_keeps_the_name_when_a_peer_shares_it(tmp_path: Path):
-    """A peer's job of the same name must not push the hint onto a position.
+def test_hint_adds_datasite_when_submitter_used_name_twice(
+    tmp_path: Path,
+):
+    """One submitter can send the same name to the DO and to a peer.
 
-    The hint names the DO's own datasite, so only jobs on that datasite can
-    make its name ambiguous. Before the datasite was part of the subscript, a
-    peer holding the name was enough to fall back to a position.
+    The submitter alone then reaches both, so this is the one case where the
+    DO's own datasite has to join the chain, and the only thing that earns the
+    third key.
     """
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
@@ -573,13 +579,17 @@ def test_hint_keeps_the_name_when_a_peer_shares_it(tmp_path: Path):
 
     jobs = do_client.jobs
     assert {job.datasite_owner_email for job in jobs} == {DO_EMAIL, PEER_EMAIL}
+    chain = f'jobs["{DO_EMAIL}"]["{DS_EMAIL}"]["analysis.job"]'
     for rendering in (str(jobs), jobs._repr_html_()):
-        assert f'jobs["{DO_EMAIL}"]["analysis.job"].approve()' in rendering
+        assert f"{chain}.approve()" in rendering
 
-    assert jobs[DO_EMAIL]["analysis.job"].datasite_owner_email == DO_EMAIL
+    # The submitter alone reaches both datasites, so the chain needs both keys.
+    with pytest.raises(ValueError, match="Multiple jobs are named 'analysis.job'"):
+        jobs[DS_EMAIL]["analysis.job"]
+    assert jobs[DO_EMAIL][DS_EMAIL]["analysis.job"].datasite_owner_email == DO_EMAIL
 
 
-def test_job_name_cannot_contain_an_at_sign(tmp_path: Path):
+def test_job_name_cannot_contain_at_sign(tmp_path: Path):
     """An '@' is how a subscript tells a datasite email from a job name."""
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
@@ -704,7 +714,7 @@ def test_approval_error_names_both_parties(tmp_path: Path):
     assert f'jobs["{DO_EMAIL}"]' in message, "must point at your own datasite"
 
 
-def test_job_files_do_not_hide_a_non_filesystem_error(tmp_path: Path, monkeypatch):
+def test_job_files_do_not_hide_non_filesystem_error(tmp_path: Path, monkeypatch):
     """Only the filesystem may truncate the file list; other errors propagate."""
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()

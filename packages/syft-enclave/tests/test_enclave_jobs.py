@@ -438,7 +438,7 @@ def test_approval_gated_on_configured_data_owners():
     assert enclave.jobs["test_job"].status == "approved"
 
 
-def test_approve_job_refuses_when_the_approval_file_is_missing():
+def test_approve_job_refuses_when_approval_file_missing():
     """Check before acting: no approval file means the approval cannot land.
 
     The old code printed a warning and then queued the missing path for sync,

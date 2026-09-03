@@ -606,12 +606,14 @@ python {entrypoint_path}
 
         Order is the same as the jobs table: jobs on your own datasite first,
         then the other datasites alphabetically, newest-first within each one.
-        ``jobs[N]`` is the row labelled ``[N]``. Prefer datasite-then-name
+        ``jobs[N]`` is the row labelled ``[N]``. Prefer an email and a name
         (``jobs["do@org.com"]["analysis"]``); both parts stay the same as jobs
-        are added, and the datasite is what makes the name resolve to one job.
+        are added, and the email is what makes the name resolve to one job.
 
         Returns a JobsList object that can be:
-        - Indexed by datasite, then name (preferred): jobs["do@org.com"]["analysis"]
+        - Indexed by email, then name (preferred): jobs["do@org.com"]["analysis"]
+        - Indexed by datasite and submitter, for a name they share:
+          jobs["do@org.com"]["ds@org.com"]["analysis"]
         - Indexed by name across every datasite: jobs["analysis"]
         - Indexed by position: jobs[0], jobs[1] — matches the table Index column
         - Iterated: for job in jobs

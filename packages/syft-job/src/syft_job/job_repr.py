@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-from collections import Counter
 from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
@@ -732,28 +731,6 @@ def job_info_repr_html(job: "JobInfo") -> str:
         """
 
 
-def _hint_job_accessor(jobs: List["JobInfo"], root_email: str) -> str | None:
-    """The subscript chain for the usage hint, written as the user must type it.
-
-    Prefers a pending job on the DO's own datasite — the one the hint's
-    `approve()` applies to — and names that datasite, so a peer's job of the
-    same name cannot answer instead. Two submitters to one datasite can still
-    share a name, which the datasite does not narrow, so such a name is skipped
-    and the position given instead. Returns None when the DO owns none of these
-    jobs: every chain would then name a job on someone else's datasite, which
-    `approve()` refuses.
-    """
-    owned = [j for j in jobs if j.datasite_owner_email == root_email]
-    if not owned:
-        return None
-    name_counts = Counter(job.name for job in owned)
-    candidates = [j for j in owned if name_counts[j.name] == 1] or owned
-    pick = next((j for j in candidates if j.status == "pending"), candidates[0])
-    if name_counts[pick.name] == 1:
-        return f'["{root_email}"]["{pick.name}"]'
-    return f"[{jobs.index(pick)}]"
-
-
 def _owner_groups(jobs: List["JobInfo"]) -> List[tuple[str, List["JobInfo"]]]:
     """Split jobs into consecutive owner sections without reordering.
 
@@ -772,9 +749,7 @@ def _owner_groups(jobs: List["JobInfo"]) -> List[tuple[str, List["JobInfo"]]]:
     return groups
 
 
-def jobs_list_str(
-    jobs: List["JobInfo"], root_email: str, has_do_role: bool = False
-) -> str:
+def jobs_list_str(jobs: List["JobInfo"], hint_accessor: str | None = None) -> str:
     """Format jobs list as separate tables grouped by user."""
     if not jobs:
         return "📭 No jobs found.\n"
@@ -857,20 +832,17 @@ def jobs_list_str(
     if global_summary_parts:
         lines.append("📋 Global: " + " | ".join(global_summary_parts))
 
-    accessor = _hint_job_accessor(jobs, root_email) if has_do_role else None
-    if accessor is not None:
+    if hint_accessor is not None:
         lines.append("")
         lines.append(
-            f"💡 Use job_client.jobs{accessor}.approve() to approve jobs or "
-            f"job_client.jobs{accessor}.accept_by_depositing_result('file_or_folder') to complete jobs"
+            f"💡 Use job_client.jobs{hint_accessor}.approve() to approve jobs or "
+            f"job_client.jobs{hint_accessor}.accept_by_depositing_result('file_or_folder') to complete jobs"
         )
 
     return "\n".join(lines)
 
 
-def jobs_list_repr_html(
-    jobs: List["JobInfo"], root_email: str, has_do_role: bool = False
-) -> str:
+def jobs_list_repr_html(jobs: List["JobInfo"], hint_accessor: str | None = None) -> str:
     """HTML representation for Jupyter notebooks with enhanced visual appeal."""
     if not jobs:
         return """
@@ -1323,11 +1295,10 @@ def jobs_list_repr_html(
     html += """
                 </div>
         """
-    accessor = _hint_job_accessor(jobs, root_email) if has_do_role else None
-    if accessor is not None:
+    if hint_accessor is not None:
         html += f"""
                 <div class="syftjob-hint">
-                    💡 Use <code class="syftjob-code">jobs{accessor}.approve()</code> to approve jobs or <code class="syftjob-code">jobs{accessor}.accept_by_depositing_result('file_or_folder')</code> to complete jobs
+                    💡 Use <code class="syftjob-code">jobs{hint_accessor}.approve()</code> to approve jobs or <code class="syftjob-code">jobs{hint_accessor}.accept_by_depositing_result('file_or_folder')</code> to complete jobs
                 </div>
         """
     html += """

@@ -59,26 +59,43 @@ Returns a `PeerList`.
 
 Get the list of jobs. Auto-syncs before returning.
 
-Returns a `JobsList`. Address a job by **datasite, then name** — a job name is
-unique per datasite and submitter, so the datasite is what makes the name
-resolve to one job, and both parts stay the same as jobs are added:
+Returns a `JobsList`. Address a job by **email, then name** — a job name is
+unique per datasite and submitter, so the email is what makes the name resolve
+to one job, and both parts stay the same as jobs are added:
 
 ```python
-client.jobs["do@org.com"]["analysis"].approve()
+# as the data scientist, naming the data owner
+client.jobs["do@org.com"]["analysis"].output_paths
+
+# as the data owner, naming the submitter
+client.jobs["ds@org.com"]["analysis"].approve()
 ```
 
-An email selects the datasite the jobs sit on: your own when you are the data
-owner, the data owner's when you are the data scientist. Job names cannot
-contain `@`, so the two kinds of key never collide.
+**An email keeps the jobs it is a party to**, on either side: the datasite they
+sit on, or the person who submitted them. Usually that is the other party — a
+data scientist names the data owner, a data owner names the submitter — but
+naming yourself works and keeps your own, which is what a `PermissionError` on
+someone else's job suggests. Job names cannot contain `@`, so the two kinds of
+key never collide.
+
+Chain both emails when one submitter sent the same name to two datasites:
+
+```python
+client.jobs["do@org.com"]["ds@org.com"]["analysis"].approve()
+```
 
 A bare name (`client.jobs["analysis"]`) searches every datasite at once. It
-still works, but it raises when two datasites hold that name.
+still works, but it raises when more than one job answers to it, and the message
+names whichever key separates them.
 
-Two submitters can send the same name to one datasite. The datasite does not
-narrow that, so the lookup raises and gives the position of each candidate.
+A job name can no longer hold an `@`. A job submitted before that rule still
+resolves by name, with a `DeprecationWarning`; the next version will not resolve
+it, so rename such a job.
 
 Positional indexing (`client.jobs[0]`) also works and matches the Index column
-in the table, but positions shift as jobs are added, so prefer the name.
+in the table, but positions shift as jobs are added, so prefer an email and a
+name. A position is worth using in one case: two jobs that share a datasite, a
+submitter and a name, which no email separates.
 
 ### `client.datasets`
 
