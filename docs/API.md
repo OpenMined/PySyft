@@ -59,15 +59,23 @@ Returns a `PeerList`.
 
 Get the list of jobs. Auto-syncs before returning.
 
-Returns a `JobsList`. Index it **by job name** — the name stays the same as jobs
-are added and their statuses change:
+Returns a `JobsList`. Address a job by **datasite, then name** — a job name is
+unique per datasite and submitter, so the datasite is what makes the name
+resolve to one job, and both parts stay the same as jobs are added:
 
 ```python
-client.jobs["analysis"].approve()
+client.jobs["do@org.com"]["analysis"].approve()
 ```
 
-Job names are unique per datasite and submitter, not across the list. If two
-jobs share a name, the lookup raises and gives the index of each.
+An email selects the datasite the jobs sit on: your own when you are the data
+owner, the data owner's when you are the data scientist. Job names cannot
+contain `@`, so the two kinds of key never collide.
+
+A bare name (`client.jobs["analysis"]`) searches every datasite at once. It
+still works, but it raises when two datasites hold that name.
+
+Two submitters can send the same name to one datasite. The datasite does not
+narrow that, so the lookup raises and gives the position of each candidate.
 
 Positional indexing (`client.jobs[0]`) also works and matches the Index column
 in the table, but positions shift as jobs are added, so prefer the name.

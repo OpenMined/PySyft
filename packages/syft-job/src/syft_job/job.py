@@ -215,8 +215,8 @@ class JobInfo:
             raise PermissionError(
                 f"You are {self.current_user_email}, and job '{self.name}' is on "
                 f"{self.datasite_owner_email}'s datasite. Only they can approve "
-                f"it. If you meant one of your own, index it by name: "
-                f'jobs["<name>"].'
+                f"it. If you meant one of your own, select your datasite "
+                f'first: jobs["{self.current_user_email}"]["<name>"].'
             )
 
         self._state.status = JobStatus.APPROVED
@@ -434,30 +434,60 @@ class JobsList:
         self._root_email = root_email
         self._has_do_role = has_do_role
 
-    def __getitem__(self, index: int | str) -> JobInfo:
+    def __getitem__(self, index: int | str) -> "JobInfo | JobsList":
+        """A job by position or name, or the jobs on one datasite by email.
+
+        An email selects a datasite and returns the jobs on it, so
+        ``jobs["do@x.org"]["analysis"]`` names one job on one datasite. A bare
+        name searches every datasite at once and raises when more than one job
+        answers to it. Job names cannot contain ``@``, so the two never collide.
+        """
         if isinstance(index, int):
             return self._jobs[index]
         elif isinstance(index, str):
-            matches = [job for job in self._jobs if job.name == index]
-            if not matches:
-                raise ValueError(f"Job with name '{index}' not found")
-            if len(matches) > 1:
-                # Names are unique per datasite and submitter, not across the
-                # list. Returning the first match approves the wrong job. Both
-                # fields are named because either one can be the difference:
-                # two submitters to one datasite, or one submitter to two.
-                locations = ", ".join(
-                    f"[{i}] on {job.datasite_owner_email} from {job.submitted_by}"
-                    for i, job in enumerate(self._jobs)
-                    if job.name == index
-                )
-                raise ValueError(
-                    f"Multiple jobs are named '{index}': {locations}. "
-                    "Use the index to select one."
-                )
-            return matches[0]
+            if "@" in index:
+                return self._on_datasite(index)
+            return self._by_name(index)
         else:
             raise TypeError(f"Invalid index type: {type(index)}")
+
+    def _on_datasite(self, email: str) -> "JobsList":
+        matches = [job for job in self._jobs if job.datasite_owner_email == email]
+        if not matches:
+            datasites = ", ".join(
+                sorted({job.datasite_owner_email for job in self._jobs})
+            )
+            raise ValueError(
+                f"No jobs on {email}'s datasite. These jobs are on: {datasites}."
+            )
+        return JobsList(matches, self._root_email, self._has_do_role)
+
+    def _by_name(self, name: str) -> JobInfo:
+        matches = [job for job in self._jobs if job.name == name]
+        if not matches:
+            raise ValueError(f"Job with name '{name}' not found")
+        if len(matches) > 1:
+            raise ValueError(self._ambiguous_name_message(name, matches))
+        return matches[0]
+
+    def _ambiguous_name_message(self, name: str, matches: List[JobInfo]) -> str:
+        """Why the name did not resolve, and the narrower subscript to use.
+
+        A name is unique per datasite and submitter, not across the list. Both
+        fields are named because either one can be the difference: two
+        submitters to one datasite, or one submitter to two. Only the second
+        kind narrows by datasite; the first needs the position.
+        """
+        locations = ", ".join(
+            f"[{i}] on {job.datasite_owner_email} from {job.submitted_by}"
+            for i, job in enumerate(self._jobs)
+            if job.name == name
+        )
+        if len({job.datasite_owner_email for job in matches}) > 1:
+            remedy = f'Select the datasite first: jobs["<datasite email>"]["{name}"].'
+        else:
+            remedy = "Use the position to select one."
+        return f"Multiple jobs are named '{name}': {locations}. {remedy}"
 
     def __len__(self) -> int:
         return len(self._jobs)

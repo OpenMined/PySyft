@@ -223,6 +223,8 @@ def test_jobs_list_getitem_str_ambiguous():
     message = str(exc.value)
     assert "[0] on test@test.com from ds1@test.com" in message
     assert "[1] on test@test.com from ds2@test.com" in message
+    # One datasite holds both, so selecting it changes nothing.
+    assert "Use the position" in message
 
 
 def test_jobs_list_getitem_str_ambiguous_names_the_datasite():
@@ -244,6 +246,50 @@ def test_jobs_list_getitem_str_ambiguous_names_the_datasite():
     message = str(exc.value)
     assert "[0] on do1@test.com" in message
     assert "[1] on do2@test.com" in message
+    assert 'jobs["<datasite email>"]["analysis"]' in message, (
+        "the datasite narrows this"
+    )
+
+
+def test_jobs_list_getitem_email_selects_a_datasite():
+    """An email key narrows to one datasite, where the name is unique."""
+    jobs = JobsList(
+        [
+            _make_job_info("analysis", owner_email="do1@test.com"),
+            _make_job_info("analysis", owner_email="do2@test.com"),
+        ],
+        root_email="ds@test.com",
+    )
+    on_do1 = jobs["do1@test.com"]
+    assert isinstance(on_do1, JobsList)
+    assert len(on_do1) == 1
+    assert on_do1["analysis"].datasite_owner_email == "do1@test.com"
+
+
+def test_jobs_list_getitem_email_not_found():
+    jobs = JobsList(
+        [_make_job_info("analysis", owner_email="do1@test.com")],
+        root_email="ds@test.com",
+    )
+    with pytest.raises(ValueError, match="No jobs on nobody@test.com's datasite"):
+        jobs["nobody@test.com"]
+
+
+def test_jobs_list_getitem_email_does_not_narrow_two_submitters():
+    """Two submitters to one datasite share a name the datasite cannot separate.
+
+    The lookup must keep raising rather than guess, which is why the ambiguity
+    check still runs inside the narrowed list.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("analysis", ds_email="ds1@test.com"),
+            _make_job_info("analysis", ds_email="ds2@test.com"),
+        ],
+        root_email="test@test.com",
+    )
+    with pytest.raises(ValueError, match="Multiple jobs are named 'analysis'"):
+        jobs["test@test.com"]["analysis"]
 
 
 def test_jobs_list_repr_counts_distinct_owners():

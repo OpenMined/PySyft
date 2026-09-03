@@ -259,13 +259,13 @@ def test_timeout_does_not_hang_runner(tmp_path: Path):
     assert do_client.jobs[0].status == "failed"
 
 
-def test_jobs_table_hint_uses_name_based_indexing(tmp_path: Path):
-    """The DO hint must point at jobs["name"], not jobs[0].
+def test_jobs_table_hint_names_the_datasite_and_the_job(tmp_path: Path):
+    """The DO hint must point at jobs["datasite"]["name"], not jobs[0].
 
-    Positional indexing is not safe to recommend: the row numbers rendered in the
-    table are assigned in per-owner display order, while __getitem__ subscripts
-    the underlying time-sorted list, so the two disagree once more than one
-    datasite owner has jobs.
+    Positional indexing is not safe to recommend: positions shift as jobs are
+    added. A bare name is not safe either — it searches every datasite, so a
+    peer's job of the same name can answer instead. The datasite makes the name
+    resolve to one job.
     """
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
@@ -289,11 +289,11 @@ def test_jobs_table_hint_uses_name_based_indexing(tmp_path: Path):
     html = jobs._repr_html_()
 
     for rendering in (text, html):
-        assert 'jobs["analysis.job"].approve()' in rendering
+        assert f'jobs["{DO_EMAIL}"]["analysis.job"].approve()' in rendering
         assert "jobs[0]" not in rendering
 
-    # The hint names a job the DO can actually approve.
-    assert do_client.jobs["analysis.job"].status == "pending"
+    # The hint names a job the DO can actually approve, as written.
+    assert do_client.jobs[DO_EMAIL]["analysis.job"].status == "pending"
 
 
 def _index_name_pairs_from_text(text: str) -> list[tuple[int, str]]:
@@ -355,8 +355,8 @@ def test_jobs_table_hint_skips_an_ambiguous_job_name(tmp_path: Path):
     """The hint must not name a job that two submitters both use.
 
     Job names are unique per datasite and submitter, so two data scientists can
-    submit "analysis" to the same data owner. jobs["analysis"] then raises, so a
-    hint that named it would send the data owner straight to an error.
+    submit "analysis" to the same data owner. The datasite key does not separate
+    them, so a hint that named it would send the data owner straight to an error.
     """
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
@@ -387,12 +387,13 @@ def test_jobs_table_hint_skips_an_ambiguous_job_name(tmp_path: Path):
 
     jobs = do_client.jobs
     for rendering in (str(jobs), jobs._repr_html_()):
-        assert 'jobs["solo"].approve()' in rendering
-        assert 'jobs["analysis"]' not in rendering
+        assert f'jobs["{DO_EMAIL}"]["solo"].approve()' in rendering
+        assert '["analysis"]' not in rendering
 
-    assert jobs["solo"].name == "solo"
+    assert jobs[DO_EMAIL]["solo"].name == "solo"
+    # The datasite does not narrow two submitters, so this stays ambiguous.
     with pytest.raises(ValueError, match="Multiple jobs are named 'analysis'"):
-        jobs["analysis"]
+        jobs[DO_EMAIL]["analysis"]
 
 
 def test_jobs_table_hint_falls_back_to_the_index(tmp_path: Path):
@@ -420,7 +421,7 @@ def test_jobs_table_hint_falls_back_to_the_index(tmp_path: Path):
     jobs = do_client.jobs
     for rendering in (str(jobs), jobs._repr_html_()):
         assert "jobs[0].approve()" in rendering
-        assert 'jobs["analysis"]' not in rendering
+        assert '["analysis"]' not in rendering
 
     assert jobs[0].name == "analysis"
 
@@ -486,6 +487,112 @@ def test_no_hint_when_the_do_owns_none_of_the_jobs(tmp_path: Path):
     for rendering in (str(jobs), jobs._repr_html_()):
         assert "peer-owned.job" in rendering
         assert "💡" not in rendering
+
+
+def test_datasite_key_resolves_name_shared_by_two_datasites(tmp_path: Path):
+    """One submitter can send the same job name to two data owners.
+
+    The bare name has no way to choose between them and raises. Selecting the
+    datasite first leaves one job, which is the whole point of the two-step
+    subscript.
+    """
+    syftbox = tmp_path / "SyftBox"
+    syftbox.mkdir()
+    code_file = tmp_path / "main.py"
+    code_file.write_text(MAIN_PY)
+
+    ds_client = JobClient(
+        config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
+    )
+    for owner in (DO_EMAIL, PEER_EMAIL):
+        ds_client.submit_python_job(
+            user=owner, code_path=str(code_file), job_name="analysis.job"
+        )
+        JobClient(
+            config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=owner)
+        ).scan_inbox()
+
+    jobs = ds_client.jobs
+    with pytest.raises(ValueError, match="Multiple jobs are named 'analysis.job'"):
+        jobs["analysis.job"]
+
+    for owner in (DO_EMAIL, PEER_EMAIL):
+        job = jobs[owner]["analysis.job"]
+        assert job.datasite_owner_email == owner
+
+
+def test_datasite_key_names_the_datasites_it_has(tmp_path: Path):
+    """An email with no jobs on it is a typo the message has to help with."""
+    syftbox = tmp_path / "SyftBox"
+    syftbox.mkdir()
+    code_file = tmp_path / "main.py"
+    code_file.write_text(MAIN_PY)
+
+    ds_client = JobClient(
+        config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
+    )
+    ds_client.submit_python_job(
+        user=DO_EMAIL, code_path=str(code_file), job_name="analysis.job"
+    )
+
+    with pytest.raises(ValueError) as exc:
+        ds_client.jobs["nobody@test.org"]
+
+    message = str(exc.value)
+    assert "nobody@test.org" in message
+    assert DO_EMAIL in message, "must name the datasites that do have jobs"
+
+
+def test_hint_keeps_the_name_when_a_peer_shares_it(tmp_path: Path):
+    """A peer's job of the same name must not push the hint onto a position.
+
+    The hint names the DO's own datasite, so only jobs on that datasite can
+    make its name ambiguous. Before the datasite was part of the subscript, a
+    peer holding the name was enough to fall back to a position.
+    """
+    syftbox = tmp_path / "SyftBox"
+    syftbox.mkdir()
+    code_file = tmp_path / "main.py"
+    code_file.write_text(MAIN_PY)
+
+    do_client = JobClient(
+        config=SyftJobConfig(
+            syftbox_folder=syftbox, current_user_email=DO_EMAIL, has_do_role=True
+        )
+    )
+    ds_client = JobClient(
+        config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
+    )
+    for owner in (DO_EMAIL, PEER_EMAIL):
+        ds_client.submit_python_job(
+            user=owner, code_path=str(code_file), job_name="analysis.job"
+        )
+        JobClient(
+            config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=owner)
+        ).scan_inbox()
+
+    jobs = do_client.jobs
+    assert {job.datasite_owner_email for job in jobs} == {DO_EMAIL, PEER_EMAIL}
+    for rendering in (str(jobs), jobs._repr_html_()):
+        assert f'jobs["{DO_EMAIL}"]["analysis.job"].approve()' in rendering
+
+    assert jobs[DO_EMAIL]["analysis.job"].datasite_owner_email == DO_EMAIL
+
+
+def test_job_name_cannot_contain_an_at_sign(tmp_path: Path):
+    """An '@' is how a subscript tells a datasite email from a job name."""
+    syftbox = tmp_path / "SyftBox"
+    syftbox.mkdir()
+    code_file = tmp_path / "main.py"
+    code_file.write_text(MAIN_PY)
+
+    ds_client = JobClient(
+        config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
+    )
+    with pytest.raises(ValueError, match="cannot contain '@'"):
+        ds_client.submit_python_job(
+            user=DO_EMAIL, code_path=str(code_file), job_name="ds@test.org"
+        )
 
 
 def test_runner_ignores_approved_jobs_on_another_datasite(tmp_path: Path):
@@ -592,6 +699,9 @@ def test_approval_error_names_both_parties(tmp_path: Path):
     assert PEER_EMAIL in message, "must say whose datasite it is"
     assert "peer-owned.job" in message
     assert "admin user" not in message
+    # The remedy must not send them back to the same job: a bare name searches
+    # every datasite, and this job is the only one that answers to this one.
+    assert f'jobs["{DO_EMAIL}"]' in message, "must point at your own datasite"
 
 
 def test_job_files_do_not_hide_a_non_filesystem_error(tmp_path: Path, monkeypatch):

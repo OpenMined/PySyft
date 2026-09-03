@@ -102,10 +102,10 @@ ds.submit_python_job(
 ds.sync(); do.sync()
 
 # Data owner Approves & runs job
-do.jobs["analysis"].approve()
+do.jobs["do@org.com"]["analysis"].approve()
 do.process_approved_jobs(share_outputs_with_submitter=True)
 do.sync(); ds.sync()
-result = open(ds.jobs["analysis"].output_paths[0]).read()
+result = open(ds.jobs["do@org.com"]["analysis"].output_paths[0]).read()
 ```
 
 ## Packages
