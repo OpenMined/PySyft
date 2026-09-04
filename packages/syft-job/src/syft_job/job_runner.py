@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +31,300 @@ def get_job_timeout_seconds() -> int:
 
 
 IS_IN_JOB_ENV_VAR = "SYFT_IS_IN_JOB"
+
+# Sandbox mode for job execution. Job code is untrusted, but this runner also
+# runs on data owners' own machines, where sandboxing is neither expected nor
+# always possible -- hence "off" by default. The enclave opts in explicitly.
+#
+#   off     -- execute the job directly (previous behaviour)
+#   on      -- sandbox when supported, warn and continue when not
+#   require -- sandbox, or refuse to run the job at all
+SANDBOX_ENV_VAR = "SYFT_JOB_SANDBOX"
+SANDBOX_UID_ENV_VAR = "SYFT_JOB_SANDBOX_UID"
+SANDBOX_GID_ENV_VAR = "SYFT_JOB_SANDBOX_GID"
+_SANDBOX_MODES = ("off", "on", "require")
+
+# Environment handed to a sandboxed job. The unsandboxed path still inherits the
+# full environment; under the sandbox we pass only what a job legitimately needs,
+# so bootstrap secrets in the runner's environment are not exposed to job code.
+_SANDBOX_ENV_ALLOWLIST = (
+    "PATH",
+    "HOME",
+    "LANG",
+    "LC_ALL",
+    "TZ",
+    "TMPDIR",
+    "LD_LIBRARY_PATH",  # GPU deploys need the NVIDIA driver libs
+    "CUDA_VISIBLE_DEVICES",
+    "NVIDIA_VISIBLE_DEVICES",
+    "UV_SYSTEM_PYTHON",
+    "UV_CACHE_DIR",
+)
+
+
+class SandboxUnavailableError(RuntimeError):
+    """Sandbox required by configuration but not applicable here."""
+
+
+def get_sandbox_mode() -> str:
+    """Job sandbox mode from the environment. Defaults to ``off``."""
+    mode = os.environ.get(SANDBOX_ENV_VAR, "off").strip().lower()
+    if mode not in _SANDBOX_MODES:
+        raise ValueError(
+            f"{SANDBOX_ENV_VAR} must be one of {_SANDBOX_MODES}, got {mode!r}"
+        )
+    return mode
+
+
+def _sandbox_ids() -> tuple[int, int]:
+    from .sandbox import DEFAULT_GID, DEFAULT_UID
+
+    return (
+        int(os.environ.get(SANDBOX_UID_ENV_VAR, DEFAULT_UID)),
+        int(os.environ.get(SANDBOX_GID_ENV_VAR, DEFAULT_GID)),
+    )
+
+
+def _wrap_in_sandbox(command: List[str]) -> List[str]:
+    """Prefix ``command`` with the sandbox wrapper.
+
+    The wrapper is invoked by file path rather than as ``-m syft_job.sandbox``
+    so that installing the lockdown does not depend on the ``syft_job`` package
+    (and its dependencies) importing successfully inside the job environment.
+    """
+    from . import sandbox as _sandbox
+
+    uid, gid = _sandbox_ids()
+    # "on" is explicitly best-effort; "require" must refuse a partial lockdown
+    # (e.g. running as a non-root user, where privileges cannot be dropped).
+    best_effort = ["--best-effort"] if get_sandbox_mode() == "on" else []
+    return [
+        sys.executable,
+        os.fspath(Path(_sandbox.__file__).resolve()),
+        "--uid",
+        str(uid),
+        "--gid",
+        str(gid),
+        *best_effort,
+        "--",
+        *command,
+    ]
+
+
+def _sandbox_available_or_raise(mode: str) -> bool:
+    """Whether to sandbox. Raises in ``require`` mode if we cannot."""
+    from . import sandbox as _sandbox
+
+    supported, reason = _sandbox.is_supported()
+    if supported:
+        return True
+    if mode == "require":
+        raise SandboxUnavailableError(
+            f"{SANDBOX_ENV_VAR}=require but the sandbox cannot be applied: {reason}"
+        )
+    print(
+        f" WARNING: {SANDBOX_ENV_VAR}=on but sandbox unavailable ({reason}); "
+        f"running job WITHOUT network isolation"
+    )
+    return False
+
+
+def build_job_command(run_script: Path) -> List[str]:
+    """Command used to launch a job, wrapped in the sandbox when enabled.
+
+    This sandboxes ``run.sh`` wholesale. It is correct only for submissions
+    whose script does no dependency installation -- installers need local
+    sockets, which the sandbox denies. Python jobs go through
+    :func:`build_two_phase_command` instead.
+    """
+    direct = ["bash", str(run_script)]
+    mode = get_sandbox_mode()
+    if mode == "off" or not _sandbox_available_or_raise(mode):
+        return direct
+    return _wrap_in_sandbox(direct)
+
+
+# Python version used for the job virtualenv. Mirrors
+# ``syft_job.client.RUN_SCRIPT_PYTHON_VERSION``, which generates the equivalent
+# run.sh for the unsandboxed path.
+JOB_PYTHON_VERSION = "3.12"
+
+
+class PhaseAError(RuntimeError):
+    """Dependency installation failed before the job could be sandboxed."""
+
+
+def prepare_sandbox_filesystem(
+    submission_dir: Path, syftbox_folder: Path, uid: int, gid: int
+) -> None:
+    """Make the job tree writable, and the datasite readable, by the sandbox user.
+
+    Without this a sandboxed job fails immediately: it cannot create its
+    virtualenv or write ``outputs/``, and it cannot read the datasets it was
+    approved for. Both are needed for the job to do anything useful, and neither
+    weakens the lockdown -- the Drive credential and the runner's own code stay
+    root-owned and out of reach.
+
+    A no-op when not running as root, which is the case in tests and on a data
+    owner's own machine, where the job already runs as the invoking user.
+    """
+    if os.geteuid() != 0:
+        return
+
+    # The job owns its own working tree: venv, code, outputs.
+    os.chown(submission_dir, uid, gid)
+    for root, dirs, files in os.walk(submission_dir):
+        for name in dirs + files:
+            path = os.path.join(root, name)
+            if not os.path.islink(path):
+                os.chown(path, uid, gid)
+
+    # The datasite is read-only to the job. Ownership stays with root; we only
+    # open traversal and read. Every parent must be traversable or the job
+    # cannot reach the datasets at all -- the folder lives under /root (0700)
+    # by default, since the container runs as root and that is its home.
+    for parent in list(syftbox_folder.parents)[:-1]:
+        try:
+            os.chmod(parent, os.stat(parent).st_mode | 0o011)
+        except OSError:
+            pass
+    for root, dirs, files in os.walk(syftbox_folder):
+        for name in [root] + [os.path.join(root, n) for n in dirs + files]:
+            try:
+                mode = os.stat(name).st_mode
+                os.chmod(name, mode | (0o011 if os.path.isdir(name) else 0o004))
+            except OSError:
+                pass
+
+
+def _is_submitter_code(spec: str) -> bool:
+    """Whether a dependency string would fetch and build submitter-chosen code.
+
+    Local paths and VCS URLs execute their own build scripts on install, so
+    under sandboxing they are refused rather than run: phase A has the network
+    and runs unsandboxed, which is precisely the position an attacker wants.
+    """
+    s = spec.strip().lower()
+    if any(s.startswith(p) for p in ("git+", "hg+", "svn+", "bzr+")):
+        return True
+    if s.startswith((".", "/", "file://")):
+        return True
+    return " @ " in s or s.startswith("-e ")
+
+
+def install_dependencies(
+    submission_dir: Path, dependencies: List[str], timeout: int = 900
+) -> Path:
+    """Phase A: build the job's virtualenv with the network available.
+
+    Runs *before* the sandbox is applied, so it must not execute code the
+    submitter chose. Two rules enforce that:
+
+    * ``syft-client`` is installed from *this* runner's own install source --
+      part of the attested enclave image -- not from whatever the submission
+      declared. It may be a local path, so it is installed without the
+      wheels-only restriction.
+    * every submitter-declared dependency is installed ``--only-binary=:all:``,
+      because building a source distribution runs its build backend. Declared
+      dependencies that are local paths or VCS URLs are refused outright.
+
+    Returns the interpreter to use for phase B.
+    """
+    from .install_source import get_syft_client_install_source
+
+    code_dir = submission_dir / "code"
+    venv_dir = code_dir / ".venv"
+    venv_python = venv_dir / "bin" / "python"
+
+    rejected = [d for d in dependencies if _is_submitter_code(d)]
+    declared = [d for d in dependencies if not _is_submitter_code(d)]
+    if rejected:
+        print(
+            f" Sandbox: ignoring {len(rejected)} dependency spec(s) that would build "
+            f"submitter-supplied code: {', '.join(rejected)}"
+        )
+
+    steps: List[List[str]] = [
+        ["uv", "venv", "--python", JOB_PYTHON_VERSION, str(venv_dir)],
+        # Trusted: comes from the enclave image, not the submission.
+        [
+            "uv",
+            "pip",
+            "install",
+            "--python",
+            str(venv_python),
+            get_syft_client_install_source(),
+        ],
+    ]
+    if declared:
+        steps.append(
+            [
+                "uv",
+                "pip",
+                "install",
+                "--python",
+                str(venv_python),
+                "--only-binary=:all:",
+                *declared,
+            ]
+        )
+
+    for step in steps:
+        result = subprocess.run(
+            step, cwd=code_dir, capture_output=True, text=True, timeout=timeout
+        )
+        if result.returncode != 0:
+            raise PhaseAError(
+                f"{' '.join(step[:3])} failed ({result.returncode}):\n"
+                f"{result.stderr.strip()[-2000:]}"
+            )
+
+    return venv_python
+
+
+def build_two_phase_command(
+    submission_dir: Path,
+    metadata: JobSubmissionMetadata,
+    run_script: Path,
+    timeout: int = 900,
+) -> List[str]:
+    """Install dependencies unsandboxed, then return a sandboxed run command.
+
+    The submitted ``run.sh`` is deliberately not executed for python jobs when
+    sandboxing: it interleaves installation and execution in one script, so it
+    cannot be split, and its contents are chosen by the submitter. The two
+    phases are rebuilt from the declared ``entrypoint`` and ``dependencies``
+    instead.
+    """
+    mode = get_sandbox_mode()
+    if mode == "off" or not _sandbox_available_or_raise(mode):
+        return ["bash", str(run_script)]
+
+    # Only python submissions carry the metadata needed to split the phases.
+    if metadata.type != "python" or not metadata.entrypoint:
+        return _wrap_in_sandbox(["bash", str(run_script)])
+
+    python = install_dependencies(
+        submission_dir, list(metadata.dependencies or []), timeout=timeout
+    )
+    return _wrap_in_sandbox(
+        ["bash", "-c", f'cd code && exec "$0" "$1"', str(python), metadata.entrypoint]
+    )
+
+
+def build_job_env(config_folder: str, email: str) -> dict:
+    """Environment for a job subprocess."""
+    if get_sandbox_mode() == "off":
+        env = os.environ.copy()
+    else:
+        env = {
+            k: v for k, v in os.environ.items() if k in _SANDBOX_ENV_ALLOWLIST
+        }
+    env["SYFTBOX_FOLDER"] = config_folder
+    env["SYFTBOX_EMAIL"] = email
+    env[IS_IN_JOB_ENV_VAR] = "true"
+    env["PYTHONUNBUFFERED"] = "1"
+    return env
 
 
 def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
@@ -218,6 +513,25 @@ class SyftJobRunner:
             self.config.current_user_email, job_name, ds_email=user
         )
 
+    def _build_command(
+        self, ref: JobRef, submission_dir: Path, run_script: Path, timeout: int
+    ) -> List[str]:
+        """Command to launch this job, sandboxed and phase-split when enabled."""
+        if get_sandbox_mode() == "off":
+            return build_job_command(run_script)
+        metadata = self._get_job_metadata(ref)
+        if metadata is None:
+            return build_job_command(run_script)
+        command = build_two_phase_command(
+            submission_dir, metadata, run_script, timeout=timeout
+        )
+        # After phase A, so the venv it created is handed over too.
+        uid, gid = _sandbox_ids()
+        prepare_sandbox_filesystem(
+            submission_dir, Path(self.config.syftbox_folder_path_str), uid, gid
+        )
+        return command
+
     def _execute_job_streaming(self, ref: JobRef, timeout: int) -> int:
         """Execute job with real-time streaming output.
 
@@ -235,11 +549,10 @@ class SyftJobRunner:
         os.chmod(run_script, 0o755)
 
         # Prepare environment variables
-        env = os.environ.copy()
-        env["SYFTBOX_FOLDER"] = self.config.syftbox_folder_path_str
-        env["SYFTBOX_EMAIL"] = self.config.current_user_email
-        env[IS_IN_JOB_ENV_VAR] = "true"
-        env["PYTHONUNBUFFERED"] = "1"
+        env = build_job_env(
+            self.config.syftbox_folder_path_str, self.config.current_user_email
+        )
+        command = self._build_command(ref, submission_dir, run_script, timeout)
 
         # stdout/stderr go to review/
         stdout_file = review_dir / "stdout.txt"
@@ -252,7 +565,7 @@ class SyftJobRunner:
             open(stderr_file, "w") as stderr_f,
         ):
             process = subprocess.Popen(
-                ["bash", str(run_script)],
+                command,
                 cwd=submission_dir,  # run.sh executes from inbox/ where code/ lives
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -322,14 +635,12 @@ class SyftJobRunner:
         os.chmod(run_script, 0o755)
 
         # Prepare environment variables
-        env = os.environ.copy()
-        env["SYFTBOX_FOLDER"] = self.config.syftbox_folder_path_str
-        env["SYFTBOX_EMAIL"] = self.config.current_user_email
-        env[IS_IN_JOB_ENV_VAR] = "true"
-        env["PYTHONUNBUFFERED"] = "1"
+        env = build_job_env(
+            self.config.syftbox_folder_path_str, self.config.current_user_email
+        )
 
         process = subprocess.Popen(
-            ["bash", str(run_script)],
+            self._build_command(ref, submission_dir, run_script, timeout),
             cwd=submission_dir,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
