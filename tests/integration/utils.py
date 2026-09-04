@@ -4,7 +4,7 @@ import os
 import uuid
 import time
 from pathlib import Path
-from typing import List
+from typing import Callable, List
 from syft.sync.utils.syftbox_utils import get_event_hash_from_content
 from syft.sync.syftbox_manager import SyftboxManager
 
@@ -21,7 +21,35 @@ token_path_do = CREDENTIALS_DIR / FILE_DO
 token_path_ds = CREDENTIALS_DIR / FILE_DS
 
 
+def wait_until(
+    predicate: Callable[[], bool], timeout: float = 30.0, interval: float = 0.5
+) -> bool:
+    """Poll ``predicate`` until it holds, and say whether it did.
+
+    Drive gives no upper bound on how long a write takes to reach the other
+    side, so a fixed sleep is a guess: too short and the test fails on a slow
+    day, too long and every run pays for it. Returns False on timeout, leaving
+    the assertion to the caller so the failure names what never arrived.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        if predicate():
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(interval)
+
+
 def remove_syftboxes_from_drive():
+    """Clear both accounts on Drive, including the state outside the folder tree.
+
+    ``delete_syftbox`` walks the /SyftBox tree, and Drive's eventual consistency
+    can leave a recent file out of that listing. SYFT_peers.json is the one that
+    matters: a surviving entry marks the peer accepted or rejected, and the next
+    run's peer request is then filtered out of the folder scan and never seen.
+    ``delete_unversioned_state`` removes it by name, and runs first because
+    ``get_syftbox_folder_id`` recreates the folder it needs.
+    """
     manager_ds, manager_do = SyftboxManager._pair_with_google_drive_testing_connection(
         do_email=EMAIL_DO,
         ds_email=EMAIL_DS,
@@ -29,8 +57,9 @@ def remove_syftboxes_from_drive():
         ds_token_path=token_path_ds,
         add_peers=False,
     )
-    manager_ds.delete_syftbox(broadcast_delete_events=False)
-    manager_do.delete_syftbox(broadcast_delete_events=False)
+    for manager in (manager_ds, manager_do):
+        manager._connection_router.connection_for_own_syftbox().delete_unversioned_state()
+        manager.delete_syftbox(broadcast_delete_events=False)
 
 
 def get_mock_event(path: str = "email@email.com/test.job") -> FileChangeEvent:
