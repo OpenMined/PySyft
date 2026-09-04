@@ -12,6 +12,11 @@ PROTOCOL_NAME = "syft-dataset"
 # syft_datasets folder (see config.protocol_dir_name).
 DATASET_PROTOCOL_VERSION = "1"
 
+# Oldest dataset protocol this release still reads. "0" refuses no peer. Raise it
+# only when the code drops support for a released protocol, because a peer below
+# the floor cannot exchange datasets with this release.
+MIN_SUPPORTED_DATASET_PROTOCOL_VERSION = "0"
+
 # Package-local registry for all versioned syft-dataset objects. The current
 # protocol schema is computed from the objects registered into it.
 dataset_registry = MigrationRegistry(
@@ -19,4 +24,5 @@ dataset_registry = MigrationRegistry(
     package_name=PACKAGE_NAME,
     package_version=__version__,
     protocol_version=DATASET_PROTOCOL_VERSION,
+    min_supported_protocol_version=MIN_SUPPORTED_DATASET_PROTOCOL_VERSION,
 )

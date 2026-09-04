@@ -3,7 +3,12 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING, Callable
 
-from syft_migration.identity import MigrationError, _has_identity, _identity
+from syft_migration.identity import (
+    MigrationError,
+    _has_identity,
+    _identity,
+    _version_order,
+)
 from syft_migration.schema import (
     PackageInfo,
     ProtocolSchema,
@@ -27,11 +32,15 @@ class MigrationRegistry:
         package_name: str,
         package_version: str,
         protocol_version: str,
+        min_supported_protocol_version: str = "0",
     ) -> None:
         self.protocol_name = protocol_name
         self.package_name = package_name
         self.package_version = package_version
         self.protocol_version = protocol_version
+        # The oldest protocol version this package still reads. Raise it only
+        # when the code drops support for a protocol that a release froze.
+        self.min_supported_protocol_version = min_supported_protocol_version
         # canonical_name -> {version: object_class}
         self.objects: dict[str, dict[str, type[MigratableObject]]] = {}
         # canonical_name -> {(from_version, to_version): migration_fn}
@@ -49,6 +58,8 @@ class MigrationRegistry:
         if not _has_identity(cls):
             return
         canonical_name, version = _identity(cls)
+        # Reject a version that cannot be ordered, at class definition time.
+        _version_order(version)
         existing = self.objects.get(canonical_name, {}).get(version)
         if existing is not None and existing is not cls:
             raise MigrationError(
@@ -72,7 +83,7 @@ class MigrationRegistry:
         versions = self.versions(canonical_name)
         if not versions:
             raise MigrationError(f"No versions registered for {canonical_name!r}")
-        return max(versions)
+        return max(versions, key=_version_order)
 
     # -- migrations --------------------------------------------------------
     def register_migration(
@@ -205,8 +216,9 @@ class MigrationRegistry:
         return ProtocolSchema(
             protocol_name=self.protocol_name,
             version=self.protocol_version,
+            min_supported_version=self.min_supported_protocol_version,
             supported_versions={
-                canonical_name: sorted(versions)
+                canonical_name: sorted(versions, key=_version_order)
                 for canonical_name, versions in self.objects.items()
             },
             current_object_schemas={
@@ -216,6 +228,31 @@ class MigrationRegistry:
                 for canonical_name in self.objects
             },
         )
+
+    def negotiate_protocol_version(
+        self, peer_version: str, peer_min: str | None = None
+    ) -> str:
+        """The protocol version to speak with a peer.
+
+        Both sides speak the lower of the two current versions, because each side
+        must read what the other writes. That version must also be at or above
+        both floors. A peer that publishes no floor is treated as ``"0"``, which
+        refuses nothing.
+
+        Raises MigrationError when no version satisfies both sides.
+        """
+        chosen = min(self.protocol_version, peer_version, key=_version_order)
+        floor = max(
+            self.min_supported_protocol_version, peer_min or "0", key=_version_order
+        )
+        if _version_order(chosen) < _version_order(floor):
+            raise MigrationError(
+                f"No usable {self.protocol_name} protocol version with this peer. "
+                f"This client speaks {self.protocol_version} and reads down to "
+                f"{self.min_supported_protocol_version}; the peer speaks "
+                f"{peer_version} and reads down to {peer_min or '0'}."
+            )
+        return chosen
 
     def compute_released_protocol(self) -> ReleasedProtocol:
         """The protocol artifact a release emits when the protocol changed."""
@@ -278,3 +315,25 @@ class MigrationRegistry:
             return False
         current = self.compute_protocol_schema()
         return released.supported_versions != current.supported_versions
+
+    def latest_released_protocol_version(self) -> str | None:
+        """The newest protocol version with a frozen schema. None if there is none."""
+        if not self.protocol_version_history:
+            return None
+        return max(self.protocol_version_history, key=_version_order)
+
+    def protocol_bump_missing(self) -> bool:
+        """Whether the protocol changed since the newest RELEASED protocol
+        without a bump of the version constant.
+
+        Only object versions are compared. A protocol change that alters the
+        on-disk layout, but adds no object version, is invisible here.
+        """
+        latest = self.latest_released_protocol_version()
+        if latest is None:
+            return False
+        released = self.protocol_version_history[latest]
+        current = self.compute_protocol_schema()
+        if current.supported_versions == released.supported_versions:
+            return False
+        return _version_order(self.protocol_version) <= _version_order(latest)

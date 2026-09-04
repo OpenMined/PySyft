@@ -12,7 +12,10 @@ from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft_datasets import Dataset
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 from syft_rds import SyftRDSClient
-from syft_rds.config import COLLECTION_SUBPATH, SyftRDSClientConfig
+from syft_rds.config import (
+    MOCK_DATASET_SPEC,
+    SyftRDSClientConfig,
+)
 from dataset_test_utils import (
     create_test_project_folder,
     create_tmp_dataset_files,
@@ -1035,9 +1038,11 @@ def test_ds_dataset_cache_aware_sync():
 
     # Verify hash was loaded from disk on startup
     ds_cache = ds_manager2.sync_engine.datasite_watcher_syncer.datasite_watcher_cache
-    # Cache uses full path as key: syftbox_folder / owner_email / collection_subpath / tag
+    # Cache uses full path as key: syftbox_folder / owner_email /
+    # <the subpath of the layout the peer took> / tag
+    newest_layout = MOCK_DATASET_SPEC.layouts[-1]
     cache_key = ds_cache.get_collection_path(
-        do_email, "cached dataset", COLLECTION_SUBPATH
+        do_email, "cached dataset", newest_layout.local_subpath
     )
     assert cache_key in ds_cache.collection_hashes, (
         "Hash should be loaded from disk on startup"
@@ -1275,7 +1280,7 @@ def test_in_memory_connection_load_state():
         len(do_manager2.sync_engine.datasite_owner_syncer.any_shared_collections) == 1
     )
     assert (
-        do_manager2.sync_engine.datasite_owner_syncer.any_shared_collections[0][0]
+        do_manager2.sync_engine.datasite_owner_syncer.any_shared_collections[0][1]
         == "load_state_dataset"
     )
 

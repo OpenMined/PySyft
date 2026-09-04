@@ -2,11 +2,7 @@
 
 import logging
 
-import pytest
 from syft.sync.syftbox_manager import SyftboxManager
-from syft.sync.version.exceptions import (
-    VersionMismatchError,
-)
 from syft.sync.version.peer_manager import CompatAction
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 
@@ -404,33 +400,36 @@ class TestPeerManagerConfigPatchSkipDefault:
 class TestForceAllowIncompatiblePeers:
     """Tests for force_ignore_peer_version and per-call ignore_peer_version."""
 
-    def test_incompatible_peer_skipped_by_default(self):
+    def test_incompatible_peer_is_included_with_a_log(self, caplog):
+        # A different client version no longer refuses a peer. The protocol floor
+        # in VersionInfo decides what the two sides may exchange.
         ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
             check_versions=True,
         )
         _set_peer_version(do_manager, ds_manager.email, build_client_version("99.0.0"))
 
-        do_manager.peer_manager.suppress_version_warnings = True
-        compatible = do_manager.peer_manager.get_compatible_peer_emails_for_syncing(
-            [ds_manager.email]
+        with caplog.at_level(logging.INFO, logger="syft_client"):
+            compatible = do_manager.peer_manager.get_compatible_peer_emails_for_syncing(
+                [ds_manager.email]
+            )
+        assert ds_manager.email in compatible
+        assert any(
+            "client version mismatch" in r.getMessage().lower() for r in caplog.records
         )
-        assert ds_manager.email not in compatible
 
-    def test_force_allow_includes_incompatible_peer(self, caplog):
+    def test_force_allow_is_redundant_for_an_incompatible_peer(self):
+        # The flag overrode a refusal that no longer happens. The peer is included
+        # either way.
         ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
             check_versions=True,
         )
         _set_peer_version(do_manager, ds_manager.email, build_client_version("99.0.0"))
 
         do_manager.peer_manager.force_ignore_peer_version = True
-        with caplog.at_level(logging.INFO, logger="syft"):
-            compatible = do_manager.peer_manager.get_compatible_peer_emails_for_syncing(
-                [ds_manager.email]
-            )
-        assert ds_manager.email in compatible
-        assert any(
-            "proceeding anyway" in r.getMessage().lower() for r in caplog.records
+        compatible = do_manager.peer_manager.get_compatible_peer_emails_for_syncing(
+            [ds_manager.email]
         )
+        assert ds_manager.email in compatible
 
     def test_per_call_ignore_peer_version_includes_peer(self):
         ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
@@ -443,19 +442,22 @@ class TestForceAllowIncompatiblePeers:
         )
         assert ds_manager.email in compatible
 
-    def test_per_call_ignore_peer_version_in_submit(self):
+    def test_submit_no_longer_raises_for_an_incompatible_peer(self):
+        # A client version difference does not stop a submission. Only an unknown
+        # peer version does (see test_job_submission_blocked_without_version).
         ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
             check_versions=True,
         )
         _set_peer_version(ds_manager, do_manager.email, build_client_version("99.0.0"))
 
-        with pytest.raises(VersionMismatchError):
-            result = ds_manager.peer_manager.get_peer_compatibility_status(
-                do_manager.email, action=CompatAction.SUBMIT
-            )
-            result.raise_on_skip(operation="submit job")
+        result = ds_manager.peer_manager.get_peer_compatibility_status(
+            do_manager.email, action=CompatAction.SUBMIT
+        )
+        assert result.status == CompatibilityStatus.INCOMPATIBLE
+        assert not result.should_skip
+        result.raise_on_skip(operation="submit job")
 
-        # With per-call override, should not raise
+        # The per-call override is redundant now, and still does not raise.
         result = ds_manager.peer_manager.get_peer_compatibility_status(
             do_manager.email,
             action=CompatAction.SUBMIT,
@@ -480,11 +482,30 @@ class TestForceAllowIncompatiblePeers:
 class TestVersionMismatchBehavior:
     """Tests for version mismatch behavior during operations."""
 
-    def test_sync_skips_incompatible_peers(self):
+    def test_sync_keeps_an_incompatible_peer(self):
         ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
             check_versions=True,
         )
         _set_peer_version(do_manager, ds_manager.email, build_client_version("0.0.1"))
+
+        do_manager.peer_manager.suppress_version_warnings = True
+        compatible_peers = (
+            do_manager.peer_manager.get_compatible_peer_emails_for_syncing(
+                [ds_manager.email]
+            )
+        )
+        assert ds_manager.email in compatible_peers
+
+    def test_sync_still_skips_a_peer_of_unknown_version(self):
+        # The boundary of the policy: a known difference is allowed, an unknown
+        # peer is not. Nothing can be negotiated without the version of the peer.
+        ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+            check_versions=True,
+        )
+        peer = do_manager.peer_manager.get_cached_peer(ds_manager.email)
+        assert peer is not None
+        peer.version = None
+        do_manager.peer_manager._loaded_peer_versions[ds_manager.email] = None
 
         do_manager.peer_manager.suppress_version_warnings = True
         compatible_peers = (

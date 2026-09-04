@@ -221,3 +221,6 @@ jobs:
 
       - name: Run migration tests
         run: just test-unit-migration
+
+      - name: Run client migration tests
+        run: just test-client-migrations

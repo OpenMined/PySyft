@@ -70,6 +70,11 @@ class DatasetV1(MigratableObject, PydanticFormatterMixin, registry=dataset_regis
         return self._ref.owner
 
     @property
+    def protocol_version(self) -> str:
+        """The protocol version of the on-disk layout that holds this copy."""
+        return self._ref.protocol_version
+
+    @property
     def syftbox_config(self) -> SyftBoxConfig:
         if self._syftbox_config is None:
             raise ValueError("SyftBox config is not set.")

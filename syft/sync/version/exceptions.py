@@ -11,8 +11,6 @@ if TYPE_CHECKING:
 class VersionError(Exception):
     """Base exception for version-related errors."""
 
-    pass
-
 
 class VersionMismatchError(VersionError):
     """Raised when versions are incompatible between peers."""
@@ -63,35 +61,3 @@ class VersionUnknownError(VersionError):
             )
 
         super().__init__(message)
-
-
-class ClientVersionMismatchError(VersionMismatchError):
-    """Raised specifically for client version mismatches."""
-
-    def __init__(
-        self,
-        peer_email: str,
-        local_version: "VersionInfo",
-        peer_version: "VersionInfo",
-    ):
-        reason = (
-            f"Client version mismatch: local={local_version.syft_client_version}, "
-            f"peer={peer_version.syft_client_version}"
-        )
-        super().__init__(peer_email, local_version, peer_version, reason)
-
-
-class ProtocolVersionMismatchError(VersionMismatchError):
-    """Raised specifically for protocol version mismatches."""
-
-    def __init__(
-        self,
-        peer_email: str,
-        local_version: "VersionInfo",
-        peer_version: "VersionInfo",
-    ):
-        reason = (
-            f"Protocol version mismatch: local={local_version.protocol_version}, "
-            f"peer={peer_version.protocol_version}"
-        )
-        super().__init__(peer_email, local_version, peer_version, reason)

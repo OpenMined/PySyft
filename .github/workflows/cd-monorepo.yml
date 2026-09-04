@@ -198,25 +198,42 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      # The branch already holds the version to release. The bump happens after
+      # the publish, so the version on the branch names an unreleased version
+      - name: Read the version to release
+        run: |
+          git pull
+          VERSION=$(python3 syft/version.py)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Releasing syft $VERSION"
+
+      # Artifacts live inside the package, so they must be committed before the
+      # build. Re-running the export writes nothing when they already exist.
+      - name: Freeze release artifacts
+        run: |
+          just export-release-artifacts
+          git add syft/migrations/history
+          git diff --cached --quiet || \
+            git commit -m "Freeze syft v${{ env.VERSION }} release artifacts"
+
       - name: Upload to PyPI
         id: publish
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT }}
         run: |
-          git pull
-          just bump-and-publish ${{ inputs.bump_type }}
-          VERSION=$(python3 syft/version.py)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          just publish
+          echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
 
-      # bump-and-publish already committed the version bump. Root tags continue
-      # the repo's historical vX.Y.Z lineage; sub-packages use <name>/vX.Y.Z.
-      # The tag is annotated and pushed explicitly: `--follow-tags` only pushes
-      # annotated tags, so a lightweight tag would never reach origin.
-      - name: Tag and push
+      # The tag must name the published version, so it is created before the bump.
+      # Root tags continue the repo's historical vX.Y.Z lineage; sub-packages
+      # use <name>/vX.Y.Z. The tag is annotated and pushed explicitly:
+      # `--follow-tags` only pushes annotated tags, so a lightweight tag would
+      # never reach origin.
+      - name: Tag the release, then bump for the next one
         run: |
           git tag -a "v${{ env.VERSION }}" -m "syft v${{ env.VERSION }}"
+          just bump ${{ inputs.bump_type }}
           git push origin HEAD
           git push origin "refs/tags/v${{ env.VERSION }}"
 

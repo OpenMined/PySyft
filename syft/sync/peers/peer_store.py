@@ -20,6 +20,11 @@ from syft.sync.peers.peer import Peer
 PRIVATE_DIR_NAME = "private"
 CRYPTO_KEYS_FILENAME = "crypto_keys.json"
 
+# Format of the crypto key file. Raise it when the layout of the file changes,
+# and add a read path for every earlier version. A file with no version was
+# written before the field, and is version 0.
+CRYPTO_KEYS_VERSION = 1
+
 
 def datasite_crypto_keys_path(syftbox_folder: Path | str, email: str) -> Path:
     """Per-datasite key file: ``<syftbox_folder>/<email>/private/crypto_keys.json``."""
@@ -230,6 +235,7 @@ class PeerStore(BaseModel):
     def save_keys(self, path: Path) -> None:
         keys = self._ensure_private_keys()
         data = {
+            "version": CRYPTO_KEYS_VERSION,
             "email": self.email,
             "keys_jwk": keys.to_jwks(),
             "peer_bundles": {
@@ -245,6 +251,16 @@ class PeerStore(BaseModel):
     @classmethod
     def load_keys(cls, path: Path) -> "PeerStore":
         data = json.loads(Path(path).read_text())
+        # A file with no version was written before the field, and its layout is
+        # this client reads. A later version is refused: a user cannot rebuild a
+        # private key, so a wrong read loses the keys.
+        version = data.get("version", 0)
+        if version > CRYPTO_KEYS_VERSION:
+            raise ValueError(
+                f"The crypto key file at {path} has version {version}, and this "
+                f"client reads up to version {CRYPTO_KEYS_VERSION}. Install a "
+                "newer syft to use these keys."
+            )
         store = cls(email=data["email"], use_encryption=True)
         store._private_keys = syc.SyftPrivateKeys.from_jwks(data["keys_jwk"])
         for email, bundle_dict in data.get("peer_bundles", {}).items():

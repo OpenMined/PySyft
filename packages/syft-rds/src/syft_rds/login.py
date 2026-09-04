@@ -39,7 +39,7 @@ def _login(
     """
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
-    handle_potential_version_mismatches_on_login(email, token_path)
+    repair_pending = handle_potential_version_mismatches_on_login(email, token_path)
 
     if env == Environment.COLAB:
         config = SyftRDSClientConfig.for_colab(
@@ -58,7 +58,12 @@ def _login(
         )
 
     client = SyftRDSClient.from_config(config)
-    _init_client_login(client.sync_engine, sync=sync, load_peers=load_peers)
+    _init_client_login(
+        client.sync_engine,
+        sync=sync,
+        load_peers=load_peers,
+        repair_pending=repair_pending,
+    )
     return client
 
 

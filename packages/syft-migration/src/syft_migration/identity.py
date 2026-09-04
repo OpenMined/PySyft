@@ -23,6 +23,21 @@ def _has_identity(cls: type[MigratableObject]) -> bool:
     return not (name_field.is_required() or version_field.is_required())
 
 
+def _version_order(version: str) -> int:
+    """Return the sort key of an object version.
+
+    Object versions are incrementing integers held as strings. A string sort puts
+    ``"10"`` before ``"2"``, so every comparison must use this key.
+    """
+    try:
+        return int(version)
+    except ValueError:
+        raise MigrationError(
+            f"Object version {version!r} is not an integer. Object versions are "
+            "incrementing integers, for example '1', '2', '3'."
+        ) from None
+
+
 def _identity(cls: type[MigratableObject]) -> tuple[str, str]:
     """Return (canonical_name, version) for a concrete subclass.
 

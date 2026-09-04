@@ -3,13 +3,7 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from syft.sync.connections.drive.gdrive_transport import (
-    GDRIVE_P2P_FOLDER_DATASITE_PREFIX,
-    SYFT_PEERS_FILE,
-    SYFT_VERSION_FILE,
-)
 from syft.sync.login_utils import handle_potential_version_mismatches_on_login
-from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.version.version_info import VersionInfo
 
 
@@ -49,30 +43,56 @@ class TestVersionMismatchCheck:
         mock_delete_local.assert_called_once()
         mock_delete_remote.assert_called_once()
 
-    @patch("syft.sync.login_utils._delete_remote_unversioned_state")
     @patch("syft.sync.login_utils.delete_remote_syftbox")
     @patch("syft.sync.login_utils.delete_local_syftbox")
     @patch("syft.sync.login_utils._prompt_mismatch", return_value="1")
     @patch("syft.sync.login_utils._read_remote_version")
     @patch("syft.sync.login_utils.read_local_version")
-    def test_upgrade_deletes_local_only(
+    def test_continue_keeps_local_and_remote(
         self,
         mock_read_local,
         mock_read_remote,
         mock_prompt,
         mock_delete_local,
         mock_delete_remote,
-        mock_delete_unversioned,
     ):
-        """Mismatch + choice 1 (upgrade) → local deleted, unversioned state deleted, full remote preserved."""
+        """Mismatch + choice 1 (continue) → no deletes; data is kept for repair."""
         mock_read_local.return_value = _old_version_info()
         mock_read_remote.return_value = _old_version_info()
 
         handle_potential_version_mismatches_on_login(EMAIL, TOKEN_PATH)
 
-        mock_delete_local.assert_called_once()
+        mock_delete_local.assert_not_called()
         mock_delete_remote.assert_not_called()
-        mock_delete_unversioned.assert_called_once()
+
+    @patch("syft.sync.login_utils.sys.exit")
+    @patch("syft.sync.login_utils.delete_remote_syftbox")
+    @patch("syft.sync.login_utils.delete_local_syftbox")
+    @patch("syft.sync.login_utils._prompt_mismatch", return_value="3")
+    @patch("syft.sync.login_utils._read_remote_version")
+    @patch("syft.sync.login_utils.read_local_version")
+    def test_quit_exits_without_delete(
+        self,
+        mock_read_local,
+        mock_read_remote,
+        mock_prompt,
+        mock_delete_local,
+        mock_delete_remote,
+        mock_exit,
+    ):
+        """Mismatch + choice 3 (quit) → exit, no deletes."""
+        mock_read_local.return_value = _old_version_info()
+        mock_read_remote.return_value = _old_version_info()
+        mock_exit.side_effect = SystemExit(0)
+
+        try:
+            handle_potential_version_mismatches_on_login(EMAIL, TOKEN_PATH)
+        except SystemExit:
+            pass
+
+        mock_delete_local.assert_not_called()
+        mock_delete_remote.assert_not_called()
+        mock_exit.assert_called_once_with(0)
 
     @patch("syft.sync.login_utils._read_remote_version")
     @patch("syft.sync.login_utils.read_local_version")
@@ -84,6 +104,28 @@ class TestVersionMismatchCheck:
         handle_potential_version_mismatches_on_login(EMAIL, TOKEN_PATH)
 
 
+class TestPromptWithoutATerminal:
+    """A notebook or a scheduled run has no terminal to answer the prompt."""
+
+    @patch("syft.sync.login_utils.sys.stdin")
+    def test_no_terminal_keeps_data_and_continues(self, mock_stdin):
+        # Choice 1 keeps every file and changes nothing, so it is safe to take
+        # without an answer. A prompt would stop the run instead.
+        from syft.sync.login_utils import _prompt_mismatch
+
+        mock_stdin.isatty.return_value = False
+        with patch("builtins.input", side_effect=AssertionError("must not prompt")):
+            assert _prompt_mismatch(_old_version_info(), _old_version_info()) == "1"
+
+    @patch("syft.sync.login_utils.sys.stdin")
+    def test_a_terminal_still_asks(self, mock_stdin):
+        from syft.sync.login_utils import _prompt_mismatch
+
+        mock_stdin.isatty.return_value = True
+        with patch("builtins.input", return_value="2"):
+            assert _prompt_mismatch(_old_version_info(), _old_version_info()) == "2"
+
+
 def _query_files(connection, name_contains):
     """Query mock drive for files/folders whose name contains a substring."""
     q = f"name contains '{name_contains}' and trashed=false"
@@ -91,52 +133,6 @@ def _query_files(connection, name_contains):
         connection.drive_service.files().list(q=q, fields="files(id, name)").execute()
     )
     return results.get("files", [])
-
-
-def test_delete_unversioned_state_removes_correct_folders():
-    """delete_unversioned_state removes exactly the right artifacts from mock drive."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        use_in_memory_cache=False,
-        sync_automatically=False,
-        encryption=True,
-    )
-    do_manager.sync()
-
-    do_conn = do_manager.peer_manager.connection_router.connections[0]
-    do_email = do_manager.email
-
-    # Assert artifacts exist before deletion
-    do_enc_bundles = f"syft_encryption_bundles#{do_email}"
-    assert len(_query_files(do_conn, do_enc_bundles)) > 0
-    assert len(_query_files(do_conn, SYFT_PEERS_FILE)) > 0
-    assert len(_query_files(do_conn, SYFT_VERSION_FILE)) > 0
-
-    # Assert versioned folders exist
-    p2p_before = _query_files(do_conn, GDRIVE_P2P_FOLDER_DATASITE_PREFIX)
-    assert len(p2p_before) > 0
-
-    # Delete unversioned state
-    do_conn.delete_unversioned_state()
-
-    # Assert unversioned artifacts are gone
-    assert len(_query_files(do_conn, do_enc_bundles)) == 0
-    # peers/version files: DO's are gone, DS's may still exist
-    do_peers = [
-        f
-        for f in _query_files(do_conn, SYFT_PEERS_FILE)
-        if f["id"] == do_conn._get_peers_file_id()
-    ]
-    assert len(do_peers) == 0
-    do_version = [
-        f
-        for f in _query_files(do_conn, SYFT_VERSION_FILE)
-        if f["id"] == do_conn._get_version_file_id()
-    ]
-    assert len(do_version) == 0
-
-    # Assert versioned folders survive
-    p2p_after = _query_files(do_conn, GDRIVE_P2P_FOLDER_DATASITE_PREFIX)
-    assert len(p2p_after) == len(p2p_before)
 
 
 class TestDeleteSyftboxImport:

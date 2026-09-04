@@ -32,7 +32,10 @@ from syft.sync.checkpoints.checkpoint import (
     compact_incremental_checkpoints,
     DEFAULT_COMPACTING_THRESHOLD,
 )
-from syft.sync.checkpoints.rolling_state import RollingState
+from syft.sync.checkpoints.rolling_state import (
+    RollingState,
+    raise_for_later_version,
+)
 from syft_perms import SyftPermContext
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
 
@@ -132,9 +135,14 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if not path.exists():
             return
         try:
-            self._rolling_state = RollingState.model_validate_json(path.read_text())
-        except Exception:
-            pass
+            state = RollingState.model_validate_json(path.read_text())
+            raise_for_later_version(state.version)
+        except (ValueError, OSError) as e:
+            # A later client wrote this file, or it is damaged. The caller falls
+            # back to a download of all events.
+            print(f"Warning: could not load the local rolling state: {e}")
+            return
+        self._rolling_state = state
 
     def _save_rolling_state(self) -> None:
         """Save rolling state to disk for cross-process consistency."""
@@ -323,9 +331,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                         str(event.path_in_datasite), event.content
                     )
 
-    def _collection_local_dir(self, spec: CollectionSyncSpec, tag: str) -> Path:
-        """Local directory a collection with the given tag restores to."""
-        return self.syftbox_folder / self.email / spec.local_subpath / tag
+    def _collection_local_dir(
+        self, spec: CollectionSyncSpec, tag: str, variant: str = ""
+    ) -> Path:
+        """Local directory one layout of a collection restores to."""
+        layout = spec.layout_for(variant)
+        subpath = layout.local_subpath if layout else spec.local_subpath
+        return self.syftbox_folder / self.email / subpath / tag
 
     def _pull_collections_for_initial_sync(self):
         """Restore the owner's own collections from the sync backend on connect.
@@ -343,7 +355,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             if not collections:
                 continue
 
-            self._update_any_shared_collections_cache(collections)
+            self._update_any_shared_collections_cache(spec, collections)
 
             collections_to_download = self._filter_collections_needing_download(
                 collections, spec
@@ -352,24 +364,33 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     @property
     def any_shared_collections(self) -> List[tuple]:
-        """Collections shared with "any" as (tag, content_hash) pairs.
+        """Collections shared with "any" as (wire_prefix, tag, content_hash) triples.
+
+        One entry per layout: each layout is its own collection on the wire, so
+        sharing one with a new peer needs the prefix that names it.
 
         Read-only view: mutate via ``register_any_shared_collection``.
         """
         return list(self._any_shared_collections)
 
-    def register_any_shared_collection(self, tag: str, content_hash: str) -> None:
-        """Record a collection as shared-with-"any" (deduplicated)."""
-        entry = (tag, content_hash)
+    def register_any_shared_collection(
+        self, wire_prefix: str, tag: str, content_hash: str
+    ) -> None:
+        """Record one layout of a collection as shared-with-"any" (deduplicated)."""
+        entry = (wire_prefix, tag, content_hash)
         if entry not in self._any_shared_collections:
             self._any_shared_collections.append(entry)
 
-    def _update_any_shared_collections_cache(self, collections: list[FileCollection]):
+    def _update_any_shared_collections_cache(
+        self, spec: CollectionSyncSpec, collections: list[FileCollection]
+    ):
         """Populate the any-shared cache from collections with 'any' permission."""
         for collection in collections:
             if collection.has_any_permission:
                 self.register_any_shared_collection(
-                    collection.tag, collection.content_hash
+                    spec.wire_prefix(collection.variant),
+                    collection.tag,
+                    collection.content_hash,
                 )
 
     def _filter_collections_needing_download(
@@ -385,7 +406,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
         result = []
         for collection in collections:
-            local_dir = self._collection_local_dir(spec, collection.tag)
+            local_dir = self._collection_local_dir(
+                spec, collection.tag, collection.variant
+            )
 
             if spec.immutable:
                 if not local_dir.exists() or not any(local_dir.iterdir()):
@@ -393,11 +416,15 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 continue
 
             # Mirror: use the cached hash first, else compute it from local files.
-            cached_hash = self.event_cache.get_collection_hash(collection.tag)
+            cached_hash = self.event_cache.get_collection_hash(
+                collection.tag, collection.variant
+            )
             if cached_hash is None and local_dir.exists():
                 cached_hash = compute_directory_hash(local_dir)
                 if cached_hash is not None:
-                    self.event_cache.set_collection_hash(collection.tag, cached_hash)
+                    self.event_cache.set_collection_hash(
+                        collection.tag, cached_hash, collection.variant
+                    )
 
             if cached_hash != collection.content_hash:
                 result.append(collection)
@@ -410,12 +437,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if not collections:
             return
 
-        # Fetch file metadatas for all collections in parallel
+        # Fetch file metadatas for all collections in parallel. Each collection
+        # names its own layout, so the prefix comes from the collection.
         all_file_metadatas = list(
             self._executor.map(
-                partial(
-                    self._get_file_metadatas_with_new_connection, prefix=spec.prefix
-                ),
+                partial(self._get_file_metadatas_with_new_connection, spec=spec),
                 collections,
             )
         )
@@ -436,9 +462,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self._executor.map(self._download_file_with_new_connection, file_ids)
         )
 
-        # Write all files to disk under the spec's local subpath.
+        # Write all files to disk under the layout's local subpath.
         for (collection, metadata), content in zip(all_downloads, downloaded_contents):
-            local_dir = self._collection_local_dir(spec, collection.tag)
+            local_dir = self._collection_local_dir(
+                spec, collection.tag, collection.variant
+            )
             local_dir.mkdir(parents=True, exist_ok=True)
             (local_dir / metadata["file_name"]).write_bytes(content)
 
@@ -446,7 +474,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if not spec.immutable:
             for collection in collections:
                 self.event_cache.set_collection_hash(
-                    collection.tag, collection.content_hash
+                    collection.tag, collection.content_hash, collection.variant
                 )
 
         # Notify the domain layer (e.g. syft-rds) that these collections were restored,
@@ -456,16 +484,16 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 "collection_restored",
                 spec.prefix,
                 collection.tag,
-                self._collection_local_dir(spec, collection.tag),
+                self._collection_local_dir(spec, collection.tag, collection.variant),
             )
 
     def _get_file_metadatas_with_new_connection(
-        self, collection: FileCollection, prefix: str
+        self, collection: FileCollection, spec: CollectionSyncSpec
     ) -> list:
         """Get file metadatas for a collection using a new connection for thread safety."""
         connection = self.connection_router.connection_for_parallel_download()
         return connection.watcher_get_collection_file_metadatas(
-            prefix,
+            spec.wire_prefix(collection.variant),
             tag=collection.tag,
             content_hash=collection.content_hash,
             owner_email=self.email,

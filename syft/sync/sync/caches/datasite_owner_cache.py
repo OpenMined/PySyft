@@ -35,6 +35,9 @@ class DataSiteOwnerEventCacheConfig(BaseModel):
     events_base_path: Path | None = None
     # Full path to collections folder - must be provided explicitly
     collections_folder: Path | None = None
+    # Layout variants published under collections_folder, from the shareable
+    # spec's layouts. "" is the original layout, which holds its tags directly.
+    collection_variants: List[str] = []
 
 
 class DataSiteOwnerEventCache(BaseModelCallbackMixin):
@@ -58,7 +61,10 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
     email: str
     # Full path to collections (datasets) folder
     collections_folder: Path | None = None
-    # Cache of collection hashes: "tag" -> content_hash
+    # Layout variants published under collections_folder; see the config.
+    collection_variants: List[str] = []
+    # Cache of collection hashes, keyed by `collection_hash_key`: "tag" for the
+    # original layout, "<variant>/tag" for any other.
     collection_hashes: Dict[str, str] = {}
 
     @model_validator(mode="before")
@@ -84,6 +90,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
                 syftbox_folder=config.syftbox_folder,
                 file_hashes=PersistedDict(),
                 collections_folder=config.collections_folder,
+                collection_variants=config.collection_variants,
             )
         else:
             if config.syftbox_folder is None:
@@ -102,6 +109,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
                 syftbox_folder=config.syftbox_folder,
                 email=config.email,
                 collections_folder=config.collections_folder,
+                collection_variants=config.collection_variants,
             )
             cache._load_cached_state()
             return cache
@@ -137,25 +145,45 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
             self.file_hashes._write_to_file()
 
     def _load_collection_hashes_from_disk(self):
-        """Scan local dataset directories and compute hashes to populate collection_hashes."""
+        """Scan local collection directories and compute hashes to populate collection_hashes.
+
+        Scans one directory per layout, so a collection published in several
+        layouts keeps one hash per copy.
+        """
         from syft.sync.file_utils import compute_directory_hash
 
         if self.collections_folder is None or not self.collections_folder.exists():
             return
 
-        for tag_dir in self.collections_folder.iterdir():
-            if tag_dir.is_dir():
+        for variant in self.collection_variants or [""]:
+            layout_dir = (
+                self.collections_folder / variant
+                if variant
+                else (self.collections_folder)
+            )
+            if not layout_dir.is_dir():
+                continue
+            for tag_dir in layout_dir.iterdir():
+                if not tag_dir.is_dir():
+                    continue
                 content_hash = compute_directory_hash(tag_dir)
                 if content_hash:
-                    self.collection_hashes[tag_dir.name] = content_hash
+                    self.collection_hashes[
+                        self.collection_hash_key(tag_dir.name, variant)
+                    ] = content_hash
 
-    def get_collection_hash(self, tag: str) -> str | None:
-        """Get the cached hash for a collection."""
-        return self.collection_hashes.get(tag)
+    @staticmethod
+    def collection_hash_key(tag: str, variant: str = "") -> str:
+        """The cache key of one layout of a collection."""
+        return f"{variant}/{tag}" if variant else tag
 
-    def set_collection_hash(self, tag: str, content_hash: str):
-        """Set the cached hash for a collection."""
-        self.collection_hashes[tag] = content_hash
+    def get_collection_hash(self, tag: str, variant: str = "") -> str | None:
+        """Get the cached hash for one layout of a collection."""
+        return self.collection_hashes.get(self.collection_hash_key(tag, variant))
+
+    def set_collection_hash(self, tag: str, content_hash: str, variant: str = ""):
+        """Set the cached hash for one layout of a collection."""
+        self.collection_hashes[self.collection_hash_key(tag, variant)] = content_hash
 
     @property
     def latest_cached_timestamp(self) -> float | None:

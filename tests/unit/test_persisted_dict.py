@@ -36,7 +36,7 @@ def test_concurrent_writes_no_rename_race(tmp_path: Path):
     assert errors == [], f"Concurrent writes raised: {errors!r}"
 
     # Every key from both writers must be present in the final on-disk state.
-    final = json.loads(target.read_text())
+    final = json.loads(target.read_text())["entries"]
     expected = {f"a-{i}": i for i in range(iterations)} | {
         f"b-{i}": i for i in range(iterations)
     }
@@ -60,7 +60,7 @@ def test_set_with_write_false_does_not_persist(tmp_path: Path):
 
     with d.exclusive_lock():
         d._write_to_file()
-    assert json.loads(target.read_text()) == {"k": "v"}
+    assert json.loads(target.read_text())["entries"] == {"k": "v"}
 
 
 def test_batch_write_with_exclusive_lock(tmp_path: Path):
@@ -86,7 +86,7 @@ def test_batch_write_with_exclusive_lock(tmp_path: Path):
     t1.join()
     t2.join()
 
-    final = json.loads(target.read_text())
+    final = json.loads(target.read_text())["entries"]
     expected = {f"a-{i}": i for i in range(50)} | {f"b-{i}": i for i in range(50)}
     assert final == expected
 
@@ -108,4 +108,4 @@ def test_contains_and_delete_with_flags(tmp_path: Path):
         d._write_to_file()
 
     # After the batch, on-disk state reflects the in-memory delete.
-    assert json.loads(target.read_text()) == {}
+    assert json.loads(target.read_text())["entries"] == {}

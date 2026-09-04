@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Iterator, Optional
 
@@ -14,6 +15,8 @@ from .job_ref import JobRef, JobStateNotFoundError
 from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata
 from .protocolcodecs import CODECS, ProtocolCodec
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["JobRef", "JobStateNotFoundError", "JobStorage"]
 
@@ -37,9 +40,15 @@ class JobStorage:
         self.config = config
         self.registry = registry
         self.service = MigrationService(registry=registry)
-        # peer email -> job ProtocolSchema; filled in by syft later.
-        # Peers without an entry are assumed to run the current protocol.
-        self.peer_schemas: dict[str, ProtocolSchema] = peer_schemas or {}
+        # peer email -> job ProtocolSchema; syft passes PeerManager's
+        # live map here (updated in place as peer version files load). Peers
+        # without an entry are assumed to run the current protocol.
+        # `is not None`, not `or`: syft passes a live (initially empty)
+        # dict it mutates as peer version files load; `or {}` would drop the
+        # shared reference and freeze negotiation at construction-time state.
+        self.peer_schemas: dict[str, ProtocolSchema] = (
+            peer_schemas if peer_schemas is not None else {}
+        )
         self.codecs = [cls(config) for cls in CODECS]
 
     @property
@@ -66,17 +75,29 @@ class JobStorage:
         """The job protocol version to speak with ``peer_email``.
 
         Negotiated as the minimum of our own protocol version and the peer's,
-        so both sides use a version they can read. A peer without a known
-        schema raises by default; with ``raise_on_unknown=False`` it is assumed
-        to run the current protocol.
+        so both sides use a version they can read. The result must also be at or
+        above the floor of each side, or the negotiation raises. A peer without a
+        known schema raises by default; with ``raise_on_unknown=False`` it is
+        assumed to run the current protocol.
         """
         schema = self.peer_schemas.get(peer_email)
         if schema is not None:
-            return min(JOB_PROTOCOL_VERSION, schema.version, key=int)
+            return self.registry.negotiate_protocol_version(
+                peer_version=schema.version,
+                peer_min=schema.min_supported_version,
+            )
         if raise_on_unknown:
             raise MigrationError(
                 f"No job protocol schema known for peer {peer_email!r}"
             )
+        # raise_on_unknown=False skips the refusal of a peer with an unknown
+        # version. A peer that speaks an earlier protocol does not scan this
+        # layout. It never sees the job.
+        logger.warning(
+            f"No job protocol schema known for peer {peer_email!r}. This client "
+            f"writes job protocol {JOB_PROTOCOL_VERSION}. A peer that speaks an "
+            "earlier protocol will not see this job."
+        )
         return JOB_PROTOCOL_VERSION
 
     def _get_write_target_schema(
@@ -106,8 +127,8 @@ class JobStorage:
             datasite_email=do_email,
             ds_email=self.config.current_user_email,
             job_name=job_name,
-            # Until syft fills peer_schemas, unknown peers are assumed
-            # to run the current protocol.
+            # Peers without a known schema are assumed to run the current
+            # protocol.
             protocol_version=self.negotiated_protocol_version_for_peer(
                 do_email, raise_on_unknown=False
             ),

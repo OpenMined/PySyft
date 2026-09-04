@@ -35,7 +35,7 @@ def _login(
     """
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
-    handle_potential_version_mismatches_on_login(email, token_path)
+    repair_pending = handle_potential_version_mismatches_on_login(email, token_path)
 
     if env == Environment.COLAB:
         config = SyftRDSClientConfig.for_colab(
@@ -64,7 +64,12 @@ def _login(
     # Reuses syft's login init: verifies the token authenticates as
     # `email`, writes the local version, then syncs / loads peers. Operates on
     # the generic sync engine nested inside the RDS client.
-    _init_client_login(client._rds.sync_engine, sync=sync, load_peers=load_peers)
+    _init_client_login(
+        client._rds.sync_engine,
+        sync=sync,
+        load_peers=load_peers,
+        repair_pending=repair_pending,
+    )
     return client
 
 

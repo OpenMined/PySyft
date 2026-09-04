@@ -4469,6 +4469,7 @@ dependencies = [
     { name = "rich" },
     { name = "syft-crypto-python" },
     { name = "syft-dataset" },
+    { name = "syft-migration" },
     { name = "syft-permissions" },
     { name = "syft-perms" },
 ]
@@ -4512,6 +4513,7 @@ requires-dist = [
     { name = "rich", specifier = ">=13.0.0" },
     { name = "syft-crypto-python", specifier = ">=0.1.2b2" },
     { name = "syft-dataset", editable = "packages/syft-datasets" },
+    { name = "syft-migration", editable = "packages/syft-migration" },
     { name = "syft-permissions", editable = "packages/syft-permissions" },
     { name = "syft-perms", editable = "packages/syft-perms" },
 ]
@@ -4619,7 +4621,7 @@ dev = [{ name = "ipykernel", specifier = ">=7.1.0" }]
 
 [[package]]
 name = "syft-enclave"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "packages/syft-enclave" }
 dependencies = [
     { name = "google-auth", extra = ["pyjwt"] },

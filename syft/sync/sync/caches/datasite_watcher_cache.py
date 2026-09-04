@@ -1,3 +1,4 @@
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Dict, List
 from syft.sync.sync.caches.cache_file_writer_connection import FSFileConnection
@@ -15,6 +16,8 @@ from syft.sync.sync.caches.cache_file_writer_connection import (
     InMemoryCacheFileConnection,
 )
 from syft.sync.sync.collection_spec import CollectionSyncSpec
+
+logger = logging.getLogger(__name__)
 
 SECONDS_BEFORE_SYNCING_DOWN = 0
 
@@ -147,7 +150,7 @@ class DataSiteWatcherCache(BaseModel):
         return self.syftbox_folder / owner_email / local_subpath / tag
 
     def _get_local_collection_folders(self):
-        """Yield paths to all local collection folders across all specs."""
+        """Yield paths to all local collection folders, in every layout of every spec."""
         if self.syftbox_folder is None or not self.syftbox_folder.exists():
             return
 
@@ -159,12 +162,13 @@ class DataSiteWatcherCache(BaseModel):
             for email_dir in self.syftbox_folder.iterdir():
                 if not email_dir.is_dir() or "@" not in email_dir.name:
                     continue
-                collections_dir = email_dir / spec.local_subpath
-                if not collections_dir.exists():
-                    continue
-                for tag_dir in collections_dir.iterdir():
-                    if tag_dir.is_dir():
-                        yield tag_dir
+                for layout in spec.layouts:
+                    collections_dir = email_dir / layout.local_subpath
+                    if not collections_dir.exists():
+                        continue
+                    for tag_dir in collections_dir.iterdir():
+                        if tag_dir.is_dir():
+                            yield tag_dir
 
     def _compute_local_collection_hash(self, collection_path: Path) -> str | None:
         """Compute content hash from local collection files on disk."""
@@ -282,26 +286,86 @@ class DataSiteWatcherCache(BaseModel):
             self.sync_down_if_needed(peer)
         return self.file_hashes.get(path, None)
 
-    def _cleanup_stale_collections(
-        self, peer_email: str, remote_collections: list[dict], local_subpath: Path
-    ):
-        """Remove locally cached collections that no longer exist remotely.
+    def _select_collections_to_sync(
+        self, spec: CollectionSyncSpec, collections: list[dict]
+    ) -> list[dict]:
+        """Keep one collection per tag: the newest layout this client reads.
 
-        Only considers collections under the given local_subpath so that
-        collections from other specs are not treated as stale.
+        An owner publishes a collection once for each layout its audience reads.
+        This client takes the newest of those it reads, and warns about the rest.
         """
-        remote_tags = {c["tag"] for c in remote_collections}
+        best: dict[tuple[str, str], dict] = {}
+        for collection in collections:
+            variant = collection.get("variant", "")
+            if spec.rank_of(variant) < 0:
+                logger.warning(
+                    "Skipping '%s' from %s: it uses the %r layout of %s, which "
+                    "this client does not read.",
+                    collection["tag"],
+                    collection["owner_email"],
+                    variant,
+                    spec.prefix,
+                )
+                continue
+            key = (collection["owner_email"], collection["tag"])
+            current = best.get(key)
+            if current is None or spec.rank_of(variant) > spec.rank_of(
+                current.get("variant", "")
+            ):
+                best[key] = collection
+        return list(best.values())
+
+    def _collection_path_of(self, spec: CollectionSyncSpec, collection: dict):
+        """The local path a listed collection syncs to, or None without a syftbox."""
+        layout = spec.layout_for(collection.get("variant", ""))
+        if layout is None:
+            return None
+        return self.get_collection_path(
+            collection["owner_email"], collection["tag"], layout.local_subpath
+        )
+
+    def _cleanup_stale_collections(
+        self,
+        spec: CollectionSyncSpec,
+        peer_email: str,
+        selected_collections: list[dict],
+        remote_collections: list[dict],
+    ):
+        """Remove local collections this client no longer syncs from a peer.
+
+        Two cases get removed: the owner deleted the collection, and this client
+        now reads a newer layout of it. The second case would otherwise leave the
+        older copy on disk, where a scan finds the same collection twice.
+
+        A collection the owner still publishes, but in no layout this client
+        reads, is kept: the copy on disk is then the last one this client could
+        read. ``_select_collections_to_sync`` already logged why it is not
+        refreshed.
+        """
+        layout_parents = set()
+        if self.syftbox_folder is not None:
+            layout_parents = {
+                self.syftbox_folder / peer_email / layout.local_subpath
+                for layout in spec.layouts
+            }
+        selected_paths = {
+            self._collection_path_of(spec, c) for c in selected_collections
+        }
+        published = {(c["owner_email"], c["tag"]) for c in remote_collections}
+        readable = {(c["owner_email"], c["tag"]) for c in selected_collections}
 
         for local_collection_path in list(self.collection_hashes.keys()):
             owner_email = self.get_collection_owner_email(local_collection_path)
             if owner_email != peer_email:
                 continue
-            # Only consider collections that live under this spec's subpath.
-            if self.syftbox_folder is not None:
-                expected_parent = self.syftbox_folder / owner_email / local_subpath
-                if local_collection_path.parent != expected_parent:
-                    continue
-            if local_collection_path.name in remote_tags:
+            # Only consider collections that live under one of this spec's layouts.
+            if layout_parents and local_collection_path.parent not in layout_parents:
+                continue
+            if local_collection_path in selected_paths:
+                continue
+            # The last path segment is the tag, in every layout.
+            collection = (owner_email, local_collection_path.name)
+            if collection in published and collection not in readable:
                 continue
             del self.collection_hashes[local_collection_path]
             if self.syftbox_folder is not None:
@@ -320,26 +384,26 @@ class DataSiteWatcherCache(BaseModel):
             if spec.owner_only:
                 # Never pull owner-only collections (e.g. private data) from a peer.
                 continue
-            # Get list of collections shared with us (returns list of dicts)
+            # Every layout the peer published; the prefix matches all of them.
             collections = self.connection_router.watcher_list_collections(spec.prefix)
 
-            # Filter by peer
-            peer_collections = [
-                c for c in collections if c["owner_email"] == peer_email
-            ]
+            # Filter by peer, then take one layout for each collection
+            published = [c for c in collections if c["owner_email"] == peer_email]
+            peer_collections = self._select_collections_to_sync(spec, published)
 
             self._cleanup_stale_collections(
-                peer_email, peer_collections, spec.local_subpath
+                spec, peer_email, peer_collections, published
             )
 
             for collection in peer_collections:
                 owner_email = collection["owner_email"]
                 tag = collection["tag"]
                 content_hash = collection["content_hash"]
+                layout = spec.layout_for(collection.get("variant", ""))
 
                 # Check if hash changed - skip download if unchanged
                 collection_path = self.get_collection_path(
-                    owner_email, tag, spec.local_subpath
+                    owner_email, tag, layout.local_subpath
                 )
                 if collection_path is None:
                     continue
@@ -349,12 +413,12 @@ class DataSiteWatcherCache(BaseModel):
 
                 # Download collection files
                 files = self.connection_router.watcher_download_collection(
-                    spec.prefix, tag, content_hash, owner_email
+                    spec.wire_prefix(layout.variant), tag, content_hash, owner_email
                 )
 
                 # Write files to local cache (path relative to syftbox_folder)
                 for file_name, content in files.items():
-                    rel_path = f"{owner_email}/{spec.local_subpath}/{tag}/{file_name}"
+                    rel_path = f"{owner_email}/{layout.local_subpath}/{tag}/{file_name}"
                     self.file_connection.write_file(rel_path, content)
 
                 # Update hash cache
@@ -376,12 +440,11 @@ class DataSiteWatcherCache(BaseModel):
                 # Never pull owner-only collections (e.g. private data) from a peer.
                 continue
             collections = self.connection_router.watcher_list_collections(spec.prefix)
-            peer_collections = [
-                c for c in collections if c["owner_email"] == peer_email
-            ]
+            published = [c for c in collections if c["owner_email"] == peer_email]
+            peer_collections = self._select_collections_to_sync(spec, published)
 
             self._cleanup_stale_collections(
-                peer_email, peer_collections, spec.local_subpath
+                spec, peer_email, peer_collections, published
             )
 
             # Gather all files to download across all collections for this spec
@@ -392,10 +455,11 @@ class DataSiteWatcherCache(BaseModel):
                 owner_email = collection["owner_email"]
                 tag = collection["tag"]
                 content_hash = collection["content_hash"]
+                layout = spec.layout_for(collection.get("variant", ""))
 
                 # Check if hash changed - skip download if unchanged
                 collection_path = self.get_collection_path(
-                    owner_email, tag, spec.local_subpath
+                    owner_email, tag, layout.local_subpath
                 )
                 if collection_path is None:
                     continue
@@ -406,7 +470,10 @@ class DataSiteWatcherCache(BaseModel):
                 # Get file metadata (no download yet)
                 file_metadatas = (
                     self.connection_router.watcher_get_collection_file_metadatas(
-                        spec.prefix, tag, content_hash, owner_email
+                        spec.wire_prefix(layout.variant),
+                        tag,
+                        content_hash,
+                        owner_email,
                     )
                 )
 
@@ -431,13 +498,12 @@ class DataSiteWatcherCache(BaseModel):
                 owner_email = collection["owner_email"]
                 tag = collection["tag"]
                 file_name = metadata["file_name"]
-                rel_path = f"{owner_email}/{spec.local_subpath}/{tag}/{file_name}"
+                subpath = spec.layout_for(collection.get("variant", "")).local_subpath
+                rel_path = f"{owner_email}/{subpath}/{tag}/{file_name}"
                 self.file_connection.write_file(rel_path, content)
 
             # Update hash cache for all collections in this spec
             for collection in collections_to_update:
-                collection_path = self.get_collection_path(
-                    collection["owner_email"], collection["tag"], spec.local_subpath
-                )
+                collection_path = self._collection_path_of(spec, collection)
                 if collection_path is not None:
                     self.collection_hashes[collection_path] = collection["content_hash"]

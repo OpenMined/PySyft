@@ -59,3 +59,6 @@ jobs:
           uv pip install --reinstall --no-deps "syft==${{ inputs.package_version }}"
           mv syft /tmp/syft-src  # the checkout would shadow the installed wheel
           uv run --no-sync pytest -n auto ./tests/unit
+
+      - name: Run client migration tests against the published wheel
+        run: uv run --no-sync pytest -n auto ./tests/migrations

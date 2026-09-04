@@ -1,3 +1,4 @@
+import logging
 import shutil
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -26,6 +27,8 @@ from .migrations.registry import DATASET_PROTOCOL_VERSION, dataset_registry
 from .models import Dataset, PrivateDatasetConfig
 from .protocolcodecs import CODECS, ProtocolCodec
 from .url import SyftBoxURL
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "DatasetRef",
@@ -98,10 +101,15 @@ class DatasetStorage:
         self.config = config
         self.registry = registry
         self.service = MigrationService(registry=registry)
-        # peer email -> dataset ProtocolSchema; filled in by syft later.
-        # Peers without an entry cannot be assumed to read the current layout, so
+        # peer email -> dataset ProtocolSchema; syft passes PeerManager's
+        # live map here (updated in place as peer version files load). Peers
+        # without an entry cannot be assumed to read the current layout, so
         # they resolve to the widest-compatible (oldest) protocol.
-        self.peer_schemas: dict[str, ProtocolSchema] = peer_schemas or {}
+        # `is not None`, not `or`: the live dict starts empty and `or {}` would
+        # drop the shared reference, freezing negotiation at construction time.
+        self.peer_schemas: dict[str, ProtocolSchema] = (
+            peer_schemas if peer_schemas is not None else {}
+        )
         self.codecs = [cls(config) for cls in CODECS]
 
     @property
@@ -133,17 +141,29 @@ class DatasetStorage:
         """The dataset protocol version to speak with ``peer_email``.
 
         Negotiated as the minimum of our own protocol version and the peer's, so
-        both sides use a version they can read. A peer without a known schema
-        raises by default; with ``raise_on_unknown=False`` it is assumed to run
-        the current protocol.
+        both sides use a version they can read. The result must also be at or
+        above the floor of each side, or the negotiation raises. A peer without a
+        known schema raises by default; with ``raise_on_unknown=False`` it is
+        assumed to run the current protocol.
         """
         schema = self.peer_schemas.get(peer_email)
         if schema is not None:
-            return min(DATASET_PROTOCOL_VERSION, schema.version, key=int)
+            return self.registry.negotiate_protocol_version(
+                peer_version=schema.version,
+                peer_min=schema.min_supported_version,
+            )
         if raise_on_unknown:
             raise MigrationError(
                 f"No dataset protocol schema known for peer {peer_email!r}"
             )
+        # raise_on_unknown=False skips the refusal of a peer with an unknown
+        # version. A peer that speaks an earlier protocol does not read this
+        # layout. The dataset never arrives.
+        logger.warning(
+            f"No dataset protocol schema known for peer {peer_email!r}. This "
+            f"client writes dataset protocol {DATASET_PROTOCOL_VERSION}. A peer "
+            "that speaks an earlier protocol will not read this dataset."
+        )
         return DATASET_PROTOCOL_VERSION
 
     def target_protocol_versions_for_peers(
@@ -153,8 +173,14 @@ class DatasetStorage:
 
         A dataset is written once per distinct version in the audience. A known
         peer contributes ``min(ours, theirs)``; an unknown peer (or no audience)
-        contributes the widest-compatible protocol, since we cannot assume it can
-        read a newer layout.
+        contributes the widest-compatible protocol, since we cannot assume it
+        can read a newer layout.
+
+        The two unknown-peer answers differ on purpose. This method serves an
+        audience. An unknown peer therefore takes the widest protocol, and every
+        reader can read a copy. ``negotiated_protocol_version_for_peer`` serves
+        one peer, so an unknown peer takes the current protocol. The caller of
+        that method accepts the risk when it passes ``raise_on_unknown=False``.
         """
         if not peer_emails:
             return {self._widest_protocol_version}
@@ -417,12 +443,28 @@ class DatasetStorage:
                 best[key] = ref
         yield from best.values()
 
-    def find_dataset_ref(self, datasite_email: str, name: str) -> DatasetRef:
-        """The ref for ``name`` in a datasite, in its preferred protocol layout."""
-        for ref in self.iter_dataset_refs(datasite_email):
-            if ref.name == name:
+    def find_dataset_ref(
+        self,
+        datasite_email: str,
+        name: str,
+        protocol_version: Optional[str] = None,
+    ) -> DatasetRef:
+        """The ref for ``name`` in a datasite.
+
+        The preferred (newest) protocol layout by default; ``protocol_version``
+        selects one specific layout instead, e.g. the layout a peer reads.
+        """
+        if protocol_version is None:
+            for ref in self.iter_dataset_refs(datasite_email):
+                if ref.name == name:
+                    return ref
+            raise DatasetNotFoundError(f"Dataset '{name}' not found")
+        for ref in self.iter_dataset_refs_all_protocols(datasite_email):
+            if ref.name == name and ref.protocol_version == protocol_version:
                 return ref
-        raise DatasetNotFoundError(f"Dataset '{name}' not found")
+        raise DatasetNotFoundError(
+            f"Dataset '{name}' not found in protocol {protocol_version} layout"
+        )
 
     # -- deletion ------------------------------------------------------------
     def delete_dataset(self, datasite_email: str, name: str) -> list[Path]:

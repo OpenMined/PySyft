@@ -43,16 +43,24 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump version
+      # The branch already holds the version to release. The bump happens after
+      # the publish, so the version on the branch always names an unreleased
+      # version while people develop.
+      - name: Read the version to release
         run: |
           git pull
-          pip install packaging
-          OUTPUT=$(python scripts/bump_version.py syft-job ${{ inputs.bump_type }})
-          VERSION=$(echo "$OUTPUT" | sed -n '1p')
-          MODIFIED=$(echo "$OUTPUT" | sed -n '2p')
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('packages/syft-job/pyproject.toml','rb'))['project']['version'])")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "MODIFIED=$MODIFIED" >> $GITHUB_ENV
-          echo "Bumped syft-job to $VERSION (modified: $MODIFIED)"
+          echo "Releasing syft-job $VERSION"
+
+      # Artifacts live inside the package, so they must be committed before the
+      # build. Re-running the export writes nothing when they already exist.
+      - name: Freeze release artifacts
+        run: |
+          uv run python packages/syft-job/scripts/export_release_artifact.py
+          git add packages/syft-job/src/syft_job/migrations/history
+          git diff --cached --quiet || \
+            git commit -m "Freeze syft-job v${{ env.VERSION }} release artifacts"
 
       - name: Build package
         working-directory: packages/syft-job
@@ -65,12 +73,17 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_PASS_SYFT_JOB }}
         run: uvx twine upload --verbose dist/*
 
-      # Annotated tag + explicit push: `--follow-tags` only pushes annotated
-      # tags, so a lightweight tag would never reach origin.
-      - name: Commit and tag
+      # The tag must name the published version, so it is created before the bump.
+      # The tag is annotated and pushed explicitly: `--follow-tags` only pushes
+      # annotated tags, so a lightweight tag would never reach origin.
+      - name: Tag the release, then bump for the next one
         run: |
-          git add ${{ env.MODIFIED }}
-          git commit -m "Release syft-job v${{ env.VERSION }}"
           git tag -a "syft-job/v${{ env.VERSION }}" -m "syft-job v${{ env.VERSION }}"
+          pip install packaging
+          OUTPUT=$(python scripts/bump_version.py syft-job ${{ inputs.bump_type }} --dependents published)
+          NEXT=$(echo "$OUTPUT" | sed -n '1p')
+          MODIFIED=$(echo "$OUTPUT" | sed -n '2p')
+          git add $MODIFIED
+          git commit -m "Bump syft-job to $NEXT for the next release"
           git push origin HEAD
           git push origin "refs/tags/syft-job/v${{ env.VERSION }}"

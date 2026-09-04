@@ -13,20 +13,34 @@ Flow:
 """
 
 from typing import List
+
 from pydantic import BaseModel, Field
-from syft.sync.utils.syftbox_utils import (
-    create_event_timestamp,
-    compress_data,
-    uncompress_data,
-)
+
 from syft.sync.events.file_change_event import (
     FileChangeEvent,
     FileChangeEventsMessage,
 )
-
+from syft.sync.utils.syftbox_utils import (
+    compress_data,
+    create_event_timestamp,
+    uncompress_data,
+)
 
 ROLLING_STATE_FILENAME_PREFIX = "rolling_state"
 ROLLING_STATE_VERSION = 1
+
+
+def raise_for_later_version(version: int) -> None:
+    """Refuse a rolling state from a later client."""
+
+    # A later client can change what a field holds while the object still
+    # parses. The restore would then be wrong and silent. Every caller falls
+    # back to a download of all events, so a refusal costs one slow cold start.
+    if version > ROLLING_STATE_VERSION:
+        raise ValueError(
+            f"This rolling state has version {version}, and this client reads up "
+            f"to version {ROLLING_STATE_VERSION}."
+        )
 
 
 class RollingState(BaseModel):
@@ -111,7 +125,9 @@ class RollingState(BaseModel):
     def from_compressed_data(cls, data: bytes) -> "RollingState":
         """Load rolling state from compressed data."""
         uncompressed_data = uncompress_data(data)
-        return cls.model_validate_json(uncompressed_data)
+        state = cls.model_validate_json(uncompressed_data)
+        raise_for_later_version(state.version)
+        return state
 
     @classmethod
     def filename_to_timestamp(cls, filename: str) -> float | None:
