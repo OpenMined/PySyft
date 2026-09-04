@@ -60,8 +60,9 @@ package, and whether each claim in `body.md` is still true.
 
 ## Step 3 — Write it
 
-Save to `koen/pr-reviews/pr-<N>-<slug>.md` when a git-ignored `koen/` folder exists, otherwise
-`pr-reviews/` in the repo root — and say the file is untracked.
+Save to `koen/reviews/<N>/summary.md` when a git-ignored `koen/` folder exists, otherwise
+`reviews/<N>/summary.md` in the repo root — and say the file is untracked. One folder per PR, so
+anything else about that review lands beside the summary later.
 
 Flows come first, because they are why the reader opened the document.
 
@@ -87,35 +88,41 @@ Flows come first, because they are why the reader opened the document.
 
 - [ ] **2. What is new** — additions only
 
-  - [ ] **NEW CLASS `Name`** — `path/file.py:<line>` — <what it is for>. Built by `A.b()`. (Flow 1.2)
-  - [ ] **NEW MODULE `path/file.py`** — <what it is for>. Defines `file.py: func()`. (Flow 1.1)
-  - [ ] **NEW helpers in `path/file.py`** — `f()` <does X>, `g()` <does Y>. (Flow 1.1)
+  - [ ] **2.1 NEW CLASS `Name`** — `path/file.py:<line>` — <what it is for>. Built by `A.b()`. (Flow 1.2)
+  - [ ] **2.2 NEW MODULE `path/file.py`** — <what it is for>. Defines `file.py: func()`. (Flow 1.1)
+  - [ ] **2.3 NEW helpers in `path/file.py`** — `f()` <does X>, `g()` <does Y>. (Flow 1.1)
 
 - [ ] **3. Changes** — everything changed or deleted except tests, grouped by theme
 
-  - [ ] **A — <Theme>**
-    - [ ] **A1 <label>** (Flow 1.2) — When we <do X>, we previously <did Z>, now we <do A>.
+  - [ ] **3.1 <Theme>**
+    - [ ] **3.1.1 <label>** (Flow 1.2) — When we <do X>, we previously <did Z>, now we <do A>.
           `path/file.py: Class.method()`
-    - [ ] **A2 <label>** — DELETED `Class.old()` and `file.py: helper()`, because <reason>.
+    - [ ] **3.1.2 <label>** — DELETED `Class.old()` and `file.py: helper()`, because <reason>.
 
 - [ ] **4. Tests**
 
-  - [ ] **NEW `path/test_file.py`** — <n> tests<, and how they are set up, when it is worth a clause>
+  - [ ] **4.1 NEW `path/test_file.py`** — <n> tests<, and how they are set up, when it is worth a clause>
     - [ ] `test_a()` — <the condition, what runs, and what is then true>
     - [ ] `test_b()` — <the condition, what runs, and what is then true>
-  - [ ] **REWRITTEN `test_c()`** — `path/test_file.py` — now asserts <X> instead of <Y>, because
+  - [ ] **4.2 REWRITTEN `test_c()`** — `path/test_file.py` — now asserts <X> instead of <Y>, because
         <reason>.
-  - [ ] **UPDATED for the new code** — <n> tests across <n> files follow the new
+  - [ ] **4.3 UPDATED for the new code** — <n> tests across <n> files follow the new
         `Class.method()` signature. Nothing is asserted differently.
   - [ ] Decision: <only when a test settles something a reader would otherwise wonder about>
 
 - [ ] **5. Code standards** — only where the new code breaks one; drop the section when it does not
 
-  - [ ] `path/file.py: Class.method()` — <the problem, one line>
+  - [ ] **5.1** `path/file.py: Class.method()` — <the problem, one line>
 
 - [ ] **6. Blocked on** — drop this section unless something real stops the merge
-  - [ ] <the problem, and what has to happen before this can go in>
+
+  - [ ] **6.1** <the problem, and what has to happen before this can go in>
+
+- [ ] **7. Comments for the author** — leave it empty; the review UI writes into it
 ```
+
+Number the comments section after the sections that survived, so it is 5, 6 or 7 depending on which
+of those were dropped. It is always last, and always there.
 
 ### What counts as a code-standards problem
 
@@ -183,8 +190,11 @@ line, and write nothing when there is nothing wrong. Look for:
       decisions that change how someone reads the code; skip the rest.
 - [ ] **Budget reading time:** roughly 40 bullets for a normal PR, 120 for a very large one.
 - [ ] Do not repeat the PR description. If your text matches it, you read the wrong thing.
-- [ ] Cross-reference by name, e.g. `(Flow 1.2)`. Links such as `[x](#slug)` do not work: GitHub
-      gives headings no `id` inside a comment, so there is nothing to point at.
+- [ ] **Number every section and subsection**, `**<N>.<M> <label>**`, in every section and to the
+      same depth as the template shows. A leaf bullet is not numbered — its position under a
+      numbered parent already names it. This is what lets a comment say which bullet it is about.
+- [ ] Cross-reference by number, e.g. `(Flow 1.2)` or `(3.1.2)`. Links such as `[x](#slug)` do not
+      work: GitHub gives headings no `id` inside a comment, so there is nothing to point at.
 
 ## Finally
 
