@@ -61,13 +61,27 @@ def test_peer_request_blocks_sync_until_approved():
     # Step 1: DS makes peer request by adding DO
     ds_manager.add_peer(do_manager.email)
 
-    # Verify: DO sees this as a pending request, once it reaches them
+    # Verify: DO sees this as a pending request, once it reaches them.
+    # force_download because the DS is an external writer of SYFT_peers.json;
+    # the cached copy cannot show a request made after it was read.
     def _peer_request_arrived() -> bool:
-        do_manager.load_peers()
+        do_manager.load_peers(force_download=True)
         return len(do_manager.peer_manager.requested_by_peer_peers) == 1
 
+    def _peer_states() -> str:
+        """What the DO thinks of every peer, for when the request never shows."""
+        router = do_manager.peer_manager.connection_router
+        known = ", ".join(
+            f"{p.email}={p.state.value}"
+            for p in router.get_all_peers_from_json(force_download=True)
+        )
+        requests = ", ".join(p.email for p in router.get_peer_requests())
+        return f"peers.json: [{known or 'empty'}], folder scan: [{requests or 'empty'}]"
+
     assert wait_until(_peer_request_arrived), (
-        f"peer request from {ds_manager.email} never reached {do_manager.email}"
+        f"peer request from {ds_manager.email} never reached {do_manager.email}. "
+        f"{_peer_states()}. A stale 'accepted' or 'rejected' entry for the DS "
+        f"filters the request out of the folder scan."
     )
     assert len(do_manager.peer_manager.approved_peers) == 0
     assert do_manager.peer_manager.requested_by_peer_peers[0].email == ds_manager.email

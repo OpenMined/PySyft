@@ -17,7 +17,12 @@ from tests.integration.utils import (
 
 @pytest.fixture()
 def setup_delete_syftboxes():
-    """Clean up syftboxes from drive before running integration tests."""
+    """Clear both Drive accounts around every integration test.
+
+    Cleaning up afterwards as well as before is what keeps one test's leftovers
+    out of the next run: the accounts are shared, so state that outlives a run
+    is state the next run inherits.
+    """
     if os.environ.get("INTEGRATION_TEST_MOCK_MODE", "").lower() == "true":
         yield
         return
@@ -29,4 +34,7 @@ def setup_delete_syftboxes():
             as token_do.json and token_ds.json. Also set the environment variables AI_AUDIT_EMAIL_DO and AI_AUDIT_EMAIL_DS to the email addresses of the DO and DS."""
         )
     remove_syftboxes_from_drive()
-    yield
+    try:
+        yield
+    finally:
+        remove_syftboxes_from_drive()
