@@ -1,5 +1,7 @@
 """Tests for SyftDatasetManager and JobsList repr and indexing."""
 
+import warnings
+
 import pytest
 
 from syft_rds import SyftRDSClient
@@ -134,7 +136,12 @@ def test_dataset_repr_html_mentions_mock_files():
 # --- JobsList tests ---
 
 
-def _make_job_info(name: str, status: str = "pending") -> JobInfo:
+def _make_job_info(
+    name: str,
+    status: str = "pending",
+    ds_email: str = "ds@test.com",
+    owner_email: str = "test@test.com",
+) -> JobInfo:
     """Create a minimal JobInfo for testing."""
     from datetime import datetime, timezone
     from pathlib import Path
@@ -151,15 +158,15 @@ def _make_job_info(name: str, status: str = "pending") -> JobInfo:
     submission_config = JobSubmissionMetadata(
         name=name,
         type="python",
-        submitted_by="ds@test.com",
-        datasite_email="ds@test.com",
+        submitted_by=ds_email,
+        datasite_email=ds_email,
         submitted_at=datetime.now(timezone.utc),
     )
     state = JobState(status=JobStatus(status))
     # Identity (owner, submitter, name) comes from the path-derived ref.
     ref = JobRef(
-        datasite_email="test@test.com",
-        ds_email="ds@test.com",
+        datasite_email=owner_email,
+        ds_email=ds_email,
         job_name=name,
         protocol_version="1",
     )
@@ -196,6 +203,241 @@ def test_jobs_list_getitem_str_not_found():
     )
     with pytest.raises(ValueError, match="not found"):
         jobs["nonexistent"]
+
+
+def test_jobs_list_getitem_str_ambiguous():
+    """Two submitters can use one job name; the lookup must not guess between them.
+
+    Names are unique per datasite and submitter, so the same name can appear
+    more than once in one list. Returning the first match approves the wrong
+    job and says nothing.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("analysis", ds_email="ds1@test.com"),
+            _make_job_info("analysis", ds_email="ds2@test.com"),
+        ],
+        root_email="test@test.com",
+    )
+    with pytest.raises(ValueError, match="Multiple jobs are named 'analysis'") as exc:
+        jobs["analysis"]
+
+    message = str(exc.value)
+    assert "[0] on test@test.com from ds1@test.com" in message
+    assert "[1] on test@test.com from ds2@test.com" in message
+    # One datasite holds both, so the submitter is what separates them.
+    assert 'jobs["<submitter email>"]["analysis"]' in message
+
+
+def test_jobs_list_getitem_str_ambiguous_names_the_datasite():
+    """One submitter can send the same job name to two data owners.
+
+    The submitter is then identical on every row, so the message has to name
+    the datasite as well. This is the DS-side call the README recommends.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("analysis", owner_email="do1@test.com"),
+            _make_job_info("analysis", owner_email="do2@test.com"),
+        ],
+        root_email="ds@test.com",
+    )
+    with pytest.raises(ValueError) as exc:
+        jobs["analysis"]
+
+    message = str(exc.value)
+    assert "[0] on do1@test.com" in message
+    assert "[1] on do2@test.com" in message
+    assert 'jobs["<datasite email>"]["analysis"]' in message, (
+        "the datasite narrows this"
+    )
+
+
+def test_jobs_list_getitem_email_selects_datasite():
+    """An email key narrows to one datasite, where the name is unique."""
+    jobs = JobsList(
+        [
+            _make_job_info("analysis", owner_email="do1@test.com"),
+            _make_job_info("analysis", owner_email="do2@test.com"),
+        ],
+        root_email="ds@test.com",
+    )
+    on_do1 = jobs["do1@test.com"]
+    assert isinstance(on_do1, JobsList)
+    assert len(on_do1) == 1
+    assert on_do1["analysis"].datasite_owner_email == "do1@test.com"
+
+
+def test_jobs_list_getitem_email_not_found():
+    jobs = JobsList(
+        [_make_job_info("analysis", owner_email="do1@test.com")],
+        root_email="ds@test.com",
+    )
+    with pytest.raises(ValueError, match="No jobs involving nobody@test.com"):
+        jobs["nobody@test.com"]
+
+
+def test_jobs_list_getitem_submitter_narrows_one_datasite():
+    """Two submitters to one datasite share a name the datasite cannot separate.
+
+    Chaining the submitter is what reaches one job, and without it the lookup
+    must keep raising rather than guess.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("analysis", ds_email="ds1@test.com"),
+            _make_job_info("analysis", ds_email="ds2@test.com"),
+        ],
+        root_email="test@test.com",
+    )
+    with pytest.raises(ValueError, match="Multiple jobs are named 'analysis'"):
+        jobs["test@test.com"]["analysis"]
+
+    job = jobs["test@test.com"]["ds2@test.com"]["analysis"]
+    assert job.submitted_by == "ds2@test.com"
+
+
+def test_jobs_list_getitem_legacy_name_with_at_warns():
+    """A job named before the '@' ban must stay readable, and say it is on notice.
+
+    Nothing warned the submitter at the time, so the name is already on disk.
+    The email key answers first; only a key no party answers to falls back.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info(
+                "report@2026-09", owner_email="do@test.com", ds_email="ds@test.com"
+            )
+        ],
+        root_email="do@test.com",
+    )
+    with pytest.warns(DeprecationWarning, match="deprecated"):
+        job = jobs["report@2026-09"]
+    assert job.name == "report@2026-09"
+
+    # A real party still wins the key, and warns about nothing.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert len(jobs["do@test.com"]) == 1
+
+
+def test_hint_prefers_pending_job_over_unique_name():
+    """The hint's approve() only accepts a pending job, so status wins.
+
+    A finished job with a name no one shares once won the pick, and handed the
+    data owner a command that raises on status.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("solo", ds_email="ds1@test.com", status="done"),
+            _make_job_info("analysis", ds_email="ds1@test.com", status="pending"),
+            _make_job_info("analysis", ds_email="ds2@test.com", status="pending"),
+        ],
+        root_email="test@test.com",
+        has_do_role=True,
+    )
+    assert jobs.hint_accessor() == '["ds1@test.com"]["analysis"]'
+
+
+def test_hint_chain_reaches_job_it_names():
+    """Whatever chain the hint gives, subscripting by it must return that job.
+
+    The hint and the lookup read a chain through the same evaluator, so this
+    holds for the two-key and three-key forms alike.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info(
+                "analysis", owner_email="do@test.com", ds_email="ds@test.com"
+            ),
+            _make_job_info(
+                "analysis", owner_email="peer@test.com", ds_email="ds@test.com"
+            ),
+        ],
+        root_email="do@test.com",
+        has_do_role=True,
+    )
+    # One submitter, two datasites: the chain needs all three keys.
+    assert jobs.hint_accessor() == '["do@test.com"]["ds@test.com"]["analysis"]'
+
+    reached = jobs["do@test.com"]["ds@test.com"]["analysis"]
+    assert reached.datasite_owner_email == "do@test.com"
+
+
+def test_hint_gives_position_when_no_chain_resolves():
+    """One submitter can hold a name twice across protocol layouts.
+
+    Datasite and submitter are then identical on both rows, so no chain reaches
+    one job and the position is all that is left.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("analysis", ds_email="ds1@test.com"),
+            _make_job_info("analysis", ds_email="ds1@test.com"),
+        ],
+        root_email="test@test.com",
+        has_do_role=True,
+    )
+    assert jobs.hint_accessor() == "[0]"
+
+
+def test_ambiguous_name_offers_position_when_no_email_narrows():
+    """One submitter can hold a name twice across protocol layouts.
+
+    Datasite and submitter are identical on both rows, so naming either would
+    return the caller to this same error. Only the position separates them.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("analysis", ds_email="ds1@test.com"),
+            _make_job_info("analysis", ds_email="ds1@test.com"),
+        ],
+        root_email="test@test.com",
+    )
+    with pytest.raises(ValueError) as exc:
+        jobs["analysis"]
+
+    message = str(exc.value)
+    assert "by position" in message
+    assert "Select the submitter" not in message, "the submitter does not narrow this"
+    assert "Select the datasite" not in message
+
+
+def test_no_hint_when_no_owned_job_is_pending():
+    """The hint's approve() takes a pending job, so a reviewed list gets no hint.
+
+    Every job here is finished, and naming one would print a command that
+    raises on status rather than on ownership.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("analysis", status="done"),
+            _make_job_info("failed-one", status="failed"),
+            _make_job_info("approved-one", status="approved"),
+        ],
+        root_email="test@test.com",
+        has_do_role=True,
+    )
+    assert jobs.hint_accessor() is None
+
+
+def test_jobs_list_repr_counts_distinct_owners():
+    """The owner total counts owners, not table sections.
+
+    The renderers group consecutive rows to keep the table order equal to the
+    list order. A list that is not grouped by owner gives an owner more than
+    one section, which must not inflate the total.
+    """
+    jobs = JobsList(
+        [
+            _make_job_info("job-a", owner_email="do1@test.com"),
+            _make_job_info("job-b", owner_email="do2@test.com"),
+            _make_job_info("job-c", owner_email="do1@test.com"),
+        ],
+        root_email="do1@test.com",
+    )
+    assert "3 jobs across 2 users" in str(jobs)
+    assert "3 jobs across 2 users" in jobs._repr_html_()
 
 
 def test_jobs_list_getitem_invalid_type():

@@ -4619,13 +4619,14 @@ dev = [{ name = "ipykernel", specifier = ">=7.1.0" }]
 
 [[package]]
 name = "syft-enclave"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "packages/syft-enclave" }
 dependencies = [
     { name = "google-auth", extra = ["pyjwt"] },
     { name = "pydantic-settings" },
     { name = "requests" },
     { name = "syft" },
+    { name = "syft-job" },
     { name = "syft-rds" },
 ]
 
@@ -4635,6 +4636,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.11.0" },
     { name = "requests", specifier = ">=2.32.0" },
     { name = "syft", editable = "." },
+    { name = "syft-job", editable = "packages/syft-job" },
     { name = "syft-rds", editable = "packages/syft-rds" },
 ]
 

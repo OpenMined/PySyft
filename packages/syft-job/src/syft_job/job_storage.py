@@ -120,6 +120,10 @@ class JobStorage:
             raise ValueError(
                 f"Job name {job_name!r} is reserved for protocol version directories"
             )
+        if "@" in job_name:
+            # An '@' marks a datasite email in JobsList.__getitem__, which is
+            # how jobs["do@x.org"]["analysis"] tells the two keys apart.
+            raise ValueError(f"Job name {job_name!r} cannot contain '@'")
 
     # -- scanning (union over all protocol layouts) -------------------------------
     def iter_submission_refs(self, datasite_email: str) -> Iterator[JobRef]:

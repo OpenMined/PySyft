@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
@@ -120,7 +121,7 @@ class JobInfo:
                     for item in outputs_dir.iterdir()
                     if item.name != PERMISSION_FILE_NAME
                 ]
-            except Exception:
+            except OSError:
                 return []
 
         if status == JobStatus.FAILED:
@@ -174,7 +175,7 @@ class JobInfo:
                     ):
                         continue
                     all_files.append(f)
-        except Exception:
+        except OSError:
             pass
         return all_files
 
@@ -213,8 +214,10 @@ class JobInfo:
 
         if self.datasite_owner_email != self.current_user_email:
             raise PermissionError(
-                f"Only the admin user ({self.datasite_owner_email}) can approve jobs in their folder. "
-                f"Current job is in {self.datasite_owner_email}'s folder."
+                f"You are {self.current_user_email}, and job '{self.name}' is on "
+                f"{self.datasite_owner_email}'s datasite. Only they can approve "
+                f"it. If you meant one of your own, select your datasite "
+                f'first: jobs["{self.current_user_email}"]["<name>"].'
             )
 
         self._state.status = JobStatus.APPROVED
@@ -246,7 +249,8 @@ class JobInfo:
 
         if self.datasite_owner_email != self.current_user_email:
             raise PermissionError(
-                f"Only the admin user ({self.datasite_owner_email}) can reject jobs."
+                f"You are {self.current_user_email}, and job '{self.name}' is on "
+                f"{self.datasite_owner_email}'s datasite. Only they can reject it."
             )
 
         self._state.status = JobStatus.REJECTED
@@ -423,6 +427,27 @@ class JobInfo:
         return job_info_repr_html(self)
 
 
+def _with_party(jobs: List[JobInfo], email: str) -> List[JobInfo]:
+    """The jobs ``email`` is a party to: on its datasite, or submitted by it."""
+    return [j for j in jobs if email in (j.datasite_owner_email, j.submitted_by)]
+
+
+def _with_name(jobs: List[JobInfo], name: str) -> List[JobInfo]:
+    """The jobs called ``name``."""
+    return [j for j in jobs if j.name == name]
+
+
+def _keep(jobs: List[JobInfo], key: str) -> List[JobInfo]:
+    """The jobs one subscript key keeps, read the way ``__getitem__`` reads it.
+
+    The '@' tells the two kinds of key apart, so the usage hint can measure a
+    chain before offering it. A deprecated job name holding an '@' reads here
+    as an email and keeps nothing, where ``__getitem__`` falls back to the
+    name; the hint then offers a position, which is the safe direction to err.
+    """
+    return _with_party(jobs, key) if "@" in key else _with_name(jobs, key)
+
+
 class JobsList:
     """A list-like container for JobInfo objects with nice display."""
 
@@ -431,16 +456,133 @@ class JobsList:
         self._root_email = root_email
         self._has_do_role = has_do_role
 
-    def __getitem__(self, index: int | str) -> JobInfo:
+    def __getitem__(self, index: int | str) -> "JobInfo | JobsList":
+        """A job by position or name, or the jobs of one party by email.
+
+        An email keeps the jobs it is a party to, on either side. That is
+        usually the other party — a data scientist names the data owner, a data
+        owner names the submitter — but naming yourself keeps your own. So
+        ``jobs["do@x.org"]["analysis"]`` reads as one job, and chaining both —
+        ``jobs["do@x.org"]["ds@y.org"]["analysis"]`` — pins the datasite and the
+        submitter, the pair a job name is unique under. A bare name searches
+        every datasite at once and raises when more than one job answers to it.
+        Job names cannot contain ``@``, so the two kinds of key never collide.
+        """
         if isinstance(index, int):
             return self._jobs[index]
         elif isinstance(index, str):
-            for job in self._jobs:
-                if job.name == index:
-                    return job
-            raise ValueError(f"Job with name '{index}' not found")
+            if "@" in index:
+                return self._by_email(index)
+            return self._by_name(index)
         else:
             raise TypeError(f"Invalid index type: {type(index)}")
+
+    def _by_email(self, email: str) -> "JobInfo | JobsList":
+        """The jobs this email is a party to: on its datasite, or submitted by it.
+
+        One key covers both roles because which one narrows depends on who is
+        asking. A data scientist names the data owner's datasite; a data owner
+        names the submitter. Chaining the two pins the pair.
+
+        A job submitted before names could not hold an '@' answers to no party,
+        and reading it is the one thing this key must not take away, so a key
+        that names no party falls back to the name.
+        """
+        matches = _with_party(self._jobs, email)
+        if matches:
+            return JobsList(matches, self._root_email, self._has_do_role)
+
+        if any(job.name == email for job in self._jobs):
+            warnings.warn(
+                f"Job name {email!r} holds an '@', which now marks a datasite or "
+                "submitter email. Such names are deprecated and the next version "
+                "will not resolve them. Rename the job.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            return self._by_name(email)
+
+        datasites = ", ".join(sorted({job.datasite_owner_email for job in self._jobs}))
+        submitters = ", ".join(sorted({job.submitted_by for job in self._jobs}))
+        raise ValueError(
+            f"No jobs involving {email}. These jobs are on: {datasites}. "
+            f"They were submitted by: {submitters}."
+        )
+
+    def _by_name(self, name: str) -> JobInfo:
+        matches = _with_name(self._jobs, name)
+        if not matches:
+            raise ValueError(f"Job with name '{name}' not found")
+        if len(matches) > 1:
+            raise ValueError(self._ambiguous_name_message(name, matches))
+        return matches[0]
+
+    def _ambiguous_name_message(self, name: str, matches: List[JobInfo]) -> str:
+        """Why the name did not resolve, and the narrower subscript to use.
+
+        A name is unique per datasite and submitter, not across the list, so
+        the remedy names whichever of the two separates these candidates. One
+        submitter holding a name twice across protocol layouts shares both, and
+        naming either would send the caller back to this same error, so the
+        position is the only thing left to offer.
+        """
+        locations = ", ".join(
+            f"[{i}] on {job.datasite_owner_email} from {job.submitted_by}"
+            for i, job in enumerate(self._jobs)
+            if job.name == name
+        )
+        if len({job.datasite_owner_email for job in matches}) > 1:
+            remedy = f'Select the datasite first: jobs["<datasite email>"]["{name}"].'
+        elif len({job.submitted_by for job in matches}) > 1:
+            remedy = f'Select the submitter first: jobs["<submitter email>"]["{name}"].'
+        else:
+            remedy = "One datasite and one submitter hold both, so no email "
+            remedy += "narrows them: select one by position."
+        return f"Multiple jobs are named '{name}': {locations}. {remedy}"
+
+    def hint_accessor(self) -> str | None:
+        """The subscript chain the jobs table tells a data owner to type.
+
+        Names a pending job on the DO's own datasite and gives the shortest
+        chain that reaches it and nothing else. The email in a chain is the
+        other party, so the submitter comes first; the datasite joins it only
+        when that submitter used the name on another datasite too. One
+        submitter holding a name twice across protocol layouts defeats every
+        chain, which is what the position is for.
+
+        Returns None when no such job is there to name, because the hint's
+        ``approve()`` takes only a pending job on your own datasite: a client
+        with no data-owner role, a DO who owns none of these jobs, or a DO
+        whose own jobs have all been reviewed already. The hint also offers
+        ``accept_by_depositing_result()``, which an approved job would still
+        take; withholding both is the cost of never printing a command that
+        raises.
+        """
+        if not self._has_do_role:
+            return None
+        owned = [
+            j
+            for j in self._jobs
+            if j.datasite_owner_email == self._root_email and j.status == "pending"
+        ]
+        if not owned:
+            return None
+        pick = owned[0]
+        chains = (
+            (pick.submitted_by, pick.name),
+            (self._root_email, pick.submitted_by, pick.name),
+        )
+        for keys in chains:
+            if self._reaches_only(keys, pick):
+                return "".join(f'["{key}"]' for key in keys)
+        return f"[{self._jobs.index(pick)}]"
+
+    def _reaches_only(self, keys: tuple[str, ...], job: JobInfo) -> bool:
+        """Whether subscripting by ``keys`` in turn reaches ``job`` and nothing else."""
+        reached = self._jobs
+        for key in keys:
+            reached = _keep(reached, key)
+        return len(reached) == 1 and reached[0] is job
 
     def __len__(self) -> int:
         return len(self._jobs)
@@ -449,10 +591,10 @@ class JobsList:
         return iter(self._jobs)
 
     def __str__(self) -> str:
-        return jobs_list_str(self._jobs, self._root_email, self._has_do_role)
+        return jobs_list_str(self._jobs, self.hint_accessor())
 
     def __repr__(self) -> str:
         return f"JobsList({len(self._jobs)} jobs)"
 
     def _repr_html_(self) -> str:
-        return jobs_list_repr_html(self._jobs, self._root_email, self._has_do_role)
+        return jobs_list_repr_html(self._jobs, self.hint_accessor())

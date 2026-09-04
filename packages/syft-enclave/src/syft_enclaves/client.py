@@ -153,7 +153,7 @@ class SyftEnclaveClient:
             else j
             for j in jobs_list
         ]
-        return JobsList(wrapped, jobs_list._root_email)
+        return JobsList(wrapped, jobs_list._root_email, jobs_list._has_do_role)
 
     def submit_python_job(
         self,
@@ -266,13 +266,10 @@ class SyftEnclaveClient:
         if os.environ.get("PRE_SYNC", "true").lower() == "true":
             self._rds.sync()
 
+        # approve() refuses when the party's approval file is missing, so
+        # reaching the next line means there is a file to sync.
         job.approve()
-        file_name = enclave_approval_file_name(self.email)
-        approval_file = job.job_review_path / file_name
-        if not approval_file.exists():
-            print(
-                "🟠 Approval file does not exist yet. Kindly wait until enclave sends it."
-            )
+        approval_file = job.job_review_path / enclave_approval_file_name(self.email)
         relative_path = approval_file.relative_to(self._rds.syftbox_folder)
         self._rds.sync_engine.datasite_watcher_syncer.on_file_change(
             relative_path, process_now=True

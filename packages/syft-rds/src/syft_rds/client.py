@@ -25,6 +25,14 @@ from syft_rds.config import DATASET_COLLECTION_SPECS, SyftRDSClientConfig
 logger = logging.getLogger(__name__)
 
 
+def _print_skipped_jobs(skipped: list[tuple[str, str, str]]) -> None:
+    """Report the approved jobs that did not run, and why."""
+    print(f"\n⏭️  {len(skipped)} approved job(s) did not run:")
+    for job_name, peer_email, reason in skipped:
+        print(f"   • {job_name} (submitted by {peer_email}): {reason}")
+    print("   Pass ignore_peer_version=True to run them anyway.")
+
+
 class SyftRDSClient(BaseModel):
     # Holds live service objects (sync engine + RDS-owned managers), not
     # serializable data, so arbitrary types are allowed.
@@ -346,11 +354,18 @@ class SyftRDSClient(BaseModel):
         if self.job_runner is None:
             raise ValueError("Job runner is not configured for this client")
 
-        skip_job_names = []
+        skipped: list[tuple[str, str, str]] = []
 
         if not force_execution:
+            # Only jobs on this client's own datasite: job_client.jobs spans
+            # every datasite in the folder, but the runner never runs a job on
+            # a peer's. Reporting those as skipped would offer a remedy that
+            # cannot help.
             approved_jobs = [
-                job for job in self.job_client.jobs if job.status == "approved"
+                job
+                for job in self.job_client.jobs
+                if job.status == "approved"
+                and job.datasite_owner_email == self.job_client.current_user_email
             ]
             for job in approved_jobs:
                 result = self.sync_engine.peer_manager.get_peer_compatibility_status(
@@ -360,15 +375,25 @@ class SyftRDSClient(BaseModel):
                 )
                 result.maybe_warn()
                 if result.should_skip:
-                    skip_job_names.append(job.name)
+                    skipped.append(
+                        (
+                            job.name,
+                            job.submitted_by,
+                            result.explanation_skip or "peer version is not compatible",
+                        )
+                    )
 
         self.job_runner.process_approved_jobs(
             stream_output=stream_output,
             timeout=timeout,
-            skip_job_names=skip_job_names if skip_job_names else None,
+            skip_jobs=[(name, peer) for name, peer, _ in skipped] or None,
             share_outputs_with_submitter=share_outputs_with_submitter,
             share_logs_with_submitter=share_logs_with_submitter,
         )
+
+        # maybe_warn() above logs the peer, never the job.
+        if skipped:
+            _print_skipped_jobs(skipped)
 
         if self._pre_sync_enabled:
             self.sync_engine.sync()
