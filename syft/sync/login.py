@@ -24,9 +24,18 @@ def _verify_token_matches_email(client: SyftboxManager) -> None:
 
 
 def _init_client_login(
-    client: SyftboxManager, sync: bool, load_peers: bool
+    client: SyftboxManager,
+    sync: bool,
+    load_peers: bool,
+    repair_pending: bool = False,
 ) -> SyftboxManager:
-    """Common post-creation initialization: write version, sync, load peers."""
+    """Common post-creation initialization: write version, sync, load peers.
+
+    `repair_pending` says that a version mismatch kept the data, so the state
+    still needs a repair. The repair is lazy: the client adopts a Drive folder
+    when it first looks that folder up, and a cache resets when it is read. A
+    sync does all of that at once, so this function reports whether one runs.
+    """
     _verify_token_matches_email(client)
     print_client_connecting(client.email)
     # Write the version file on both sides. A local-only write leaves the remote
@@ -34,6 +43,21 @@ def _init_client_login(
     # login mismatch check reads that stale file and prompts at every login, and
     # a peer reads it to select a job or dataset protocol version for us.
     client.peer_manager.write_own_version()
+
+    if repair_pending:
+        if sync:
+            print(
+                "Repairing the state now. Drive folders of an earlier client "
+                "version are adopted, and caches and checkpoints rebuild "
+                "themselves.\n"
+            )
+        else:
+            print(
+                "Warning: the state is not repaired yet, because this login "
+                "does not sync. Drive folders of an earlier client version are "
+                "adopted, and caches and checkpoints rebuild themselves, at the "
+                "first sync. Call client.sync() to do it now.\n"
+            )
 
     if sync:
         client.sync()
@@ -96,7 +120,7 @@ def login_ds(
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
 
-    handle_potential_version_mismatches_on_login(email, token_path)
+    repair_pending = handle_potential_version_mismatches_on_login(email, token_path)
 
     if env == Environment.COLAB:
         client = SyftboxManager.for_colab(
@@ -112,7 +136,7 @@ def login_ds(
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         )
 
-    return _init_client_login(client, sync, load_peers)
+    return _init_client_login(client, sync, load_peers, repair_pending)
 
 
 def login_do(
@@ -126,7 +150,7 @@ def login_do(
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
 
-    handle_potential_version_mismatches_on_login(email, token_path)
+    repair_pending = handle_potential_version_mismatches_on_login(email, token_path)
 
     if env == Environment.COLAB:
         client = SyftboxManager.for_colab(
@@ -142,4 +166,4 @@ def login_do(
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         )
 
-    return _init_client_login(client, sync, load_peers)
+    return _init_client_login(client, sync, load_peers, repair_pending)

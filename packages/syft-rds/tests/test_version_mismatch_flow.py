@@ -397,3 +397,55 @@ def test_the_mismatch_prompt_does_not_return_after_a_login():
             handle_potential_version_mismatches_on_login(email)
             handle_potential_version_mismatches_on_login(email)
             assert mock_prompt.call_count == 1
+
+
+# -- what a login says about the repair ---------------------------------------
+#
+# The mismatch check runs before the client exists, so it cannot sync. It
+# reports that the data stays and that the state needs a repair, and the caller
+# says what happens next. A login that syncs repairs the state at once. A login
+# that does not sync must not promise a repair that no code performs.
+
+
+def _client_stub(email: str = "someone@test.org"):
+    from unittest.mock import MagicMock
+
+    client = MagicMock()
+    client.email = email
+    client._connection_router.get_authenticated_email.return_value = email
+    return client
+
+
+def test_a_login_that_syncs_says_it_repairs_the_state_now(capsys):
+    from syft.sync.login import _init_client_login
+
+    client = _client_stub()
+    _init_client_login(client, sync=True, load_peers=False, repair_pending=True)
+
+    out = capsys.readouterr().out
+    assert "Repairing the state now" in out
+    assert "Warning" not in out
+    client.sync.assert_called_once()
+
+
+def test_a_login_that_does_not_sync_warns_that_no_repair_ran(capsys):
+    from syft.sync.login import _init_client_login
+
+    client = _client_stub()
+    _init_client_login(client, sync=False, load_peers=False, repair_pending=True)
+
+    out = capsys.readouterr().out
+    assert "not repaired yet" in out
+    assert "client.sync()" in out
+    client.sync.assert_not_called()
+
+
+def test_a_login_with_no_mismatch_says_nothing_about_a_repair(capsys):
+    from syft.sync.login import _init_client_login
+
+    client = _client_stub()
+    _init_client_login(client, sync=True, load_peers=False)
+
+    out = capsys.readouterr().out
+    assert "Repairing the state now" not in out
+    assert "not repaired yet" not in out
