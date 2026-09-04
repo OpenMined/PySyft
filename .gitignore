@@ -174,8 +174,15 @@ SyftBox/
 *~
 
 # Claude AI settings
+#
+# Skills are private by default: .claude/skills/* ignores every skill, so a new
+# one is never committed by accident. Share a skill with the team by adding a
+# !-rule for it below.
 .claude/*
 !.claude/settings.json
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/syft-pr-review/
 CLAUDE.md
 
 # CI test outputs
