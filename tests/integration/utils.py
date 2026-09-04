@@ -4,7 +4,7 @@ import os
 import uuid
 import time
 from pathlib import Path
-from typing import List
+from typing import Callable, List
 from syft.sync.utils.syftbox_utils import get_event_hash_from_content
 from syft.sync.syftbox_manager import SyftboxManager
 
@@ -19,6 +19,25 @@ EMAIL_DS = os.environ.get("AI_AUDIT_EMAIL_DS", "")
 
 token_path_do = CREDENTIALS_DIR / FILE_DO
 token_path_ds = CREDENTIALS_DIR / FILE_DS
+
+
+def wait_until(
+    predicate: Callable[[], bool], timeout: float = 30.0, interval: float = 0.5
+) -> bool:
+    """Poll ``predicate`` until it holds, and say whether it did.
+
+    Drive gives no upper bound on how long a write takes to reach the other
+    side, so a fixed sleep is a guess: too short and the test fails on a slow
+    day, too long and every run pays for it. Returns False on timeout, leaving
+    the assertion to the caller so the failure names what never arrived.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        if predicate():
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(interval)
 
 
 def remove_syftboxes_from_drive():

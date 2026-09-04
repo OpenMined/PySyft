@@ -11,6 +11,8 @@ from pathlib import Path
 from time import sleep
 import pytest
 
+from tests.integration.utils import wait_until
+
 
 SYFT_DIR = Path(__file__).parent.parent.parent.parent
 # These are in gitignore, create yourself
@@ -59,12 +61,14 @@ def test_peer_request_blocks_sync_until_approved():
     # Step 1: DS makes peer request by adding DO
     ds_manager.add_peer(do_manager.email)
 
-    # Wait for sync
-    sleep(1)
+    # Verify: DO sees this as a pending request, once it reaches them
+    def _peer_request_arrived() -> bool:
+        do_manager.load_peers()
+        return len(do_manager.peer_manager.requested_by_peer_peers) == 1
 
-    # Verify: DO sees this as a pending request
-    do_manager.load_peers()
-    assert len(do_manager.peer_manager.requested_by_peer_peers) == 1
+    assert wait_until(_peer_request_arrived), (
+        f"peer request from {ds_manager.email} never reached {do_manager.email}"
+    )
     assert len(do_manager.peer_manager.approved_peers) == 0
     assert do_manager.peer_manager.requested_by_peer_peers[0].email == ds_manager.email
 
