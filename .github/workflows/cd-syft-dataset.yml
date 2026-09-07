@@ -80,7 +80,7 @@ jobs:
         run: |
           git tag -a "syft-dataset/v${{ env.VERSION }}" -m "syft-dataset v${{ env.VERSION }}"
           pip install packaging
-          OUTPUT=$(python scripts/bump_version.py syft-dataset ${{ inputs.bump_type }} --dependents published)
+          OUTPUT=$(python scripts/bump_version.py syft-dataset ${{ inputs.bump_type }})
           NEXT=$(echo "$OUTPUT" | sed -n '1p')
           MODIFIED=$(echo "$OUTPUT" | sed -n '2p')
           git add $MODIFIED

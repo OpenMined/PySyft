@@ -71,7 +71,7 @@ jobs:
         run: |
           git tag -a "syft-migration/v${{ env.VERSION }}" -m "syft-migration v${{ env.VERSION }}"
           pip install packaging
-          OUTPUT=$(python scripts/bump_version.py syft-migration ${{ inputs.bump_type }} --dependents published)
+          OUTPUT=$(python scripts/bump_version.py syft-migration ${{ inputs.bump_type }})
           NEXT=$(echo "$OUTPUT" | sed -n '1p')
           MODIFIED=$(echo "$OUTPUT" | sed -n '2p')
           git add $MODIFIED

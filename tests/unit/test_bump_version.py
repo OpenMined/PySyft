@@ -62,27 +62,21 @@ def _versions(fake_repo):
     return source, pin.split("==")[1].split('"')[0]
 
 
-def test_default_pins_dependents_to_the_bumped_version(fake_repo):
-    _run(fake_repo)
-    source, pin = _versions(fake_repo)
-    assert source == "0.1.10"
-    assert pin == "0.1.10"
-
-
-def test_published_pins_dependents_to_the_version_just_released(fake_repo):
+def test_a_dependent_pins_the_version_just_released(fake_repo):
     # A release publishes the version on the branch, then bumps the version. The
     # monorepo releases a dependent later in the same run. The pin must therefore
     # name a version that PyPI already has.
-    _run(fake_repo, "--dependents", "published")
+    _run(fake_repo)
     source, pin = _versions(fake_repo)
     assert source == "0.1.10"
     assert pin == "0.1.9"
 
 
-def test_dependent_pin_is_a_published_version_for_every_release_order(fake_repo):
+def test_a_dependent_never_pins_the_bumped_version(fake_repo):
     # This test covers the monorepo order. syft-perms releases before syft-job. If
-    # the script pins a dependent to the new version, syft-job publishes a
+    # the script pinned a dependent to the new version, syft-job would publish a
     # dependency that PyPI does not have.
-    _run(fake_repo, "--dependents", "published")
+    _run(fake_repo)
     _, pin = _versions(fake_repo)
+    assert pin != "0.1.10", "a dependent must not pin a version PyPI does not hold"
     assert pin == "0.1.9", "a dependent must pin the version that the release published"
