@@ -4548,7 +4548,7 @@ test = [
 
 [[package]]
 name = "syft-bg"
-version = "0.3.12"
+version = "0.3.13"
 source = { editable = "packages/syft-bg" }
 dependencies = [
     { name = "click" },
@@ -4594,7 +4594,7 @@ wheels = [
 
 [[package]]
 name = "syft-dataset"
-version = "0.1.21"
+version = "0.1.22"
 source = { editable = "packages/syft-datasets" }
 dependencies = [
     { name = "pyyaml" },
@@ -4621,7 +4621,7 @@ dev = [{ name = "ipykernel", specifier = ">=7.1.0" }]
 
 [[package]]
 name = "syft-enclave"
-version = "0.1.1"
+version = "0.1.2"
 source = { editable = "packages/syft-enclave" }
 dependencies = [
     { name = "google-auth", extra = ["pyjwt"] },
@@ -4642,7 +4642,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-job"
-version = "0.1.40"
+version = "0.1.41"
 source = { editable = "packages/syft-job" }
 dependencies = [
     { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -4666,7 +4666,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-migration"
-version = "0.1.1"
+version = "0.1.2"
 source = { editable = "packages/syft-migration" }
 dependencies = [
     { name = "pydantic" },
@@ -4701,7 +4701,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-permissions"
-version = "0.1.15"
+version = "0.1.16"
 source = { editable = "packages/syft-permissions" }
 dependencies = [
     { name = "pydantic" },
@@ -4718,7 +4718,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-perms"
-version = "0.1.15"
+version = "0.1.16"
 source = { editable = "packages/syft-perms" }
 dependencies = [
     { name = "syft-permissions" },
@@ -4729,7 +4729,7 @@ requires-dist = [{ name = "syft-permissions", editable = "packages/syft-permissi
 
 [[package]]
 name = "syft-rds"
-version = "0.6.1"
+version = "0.6.2"
 source = { editable = "packages/syft-rds" }
 dependencies = [
     { name = "syft" },
