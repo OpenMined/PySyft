@@ -10,6 +10,10 @@ These tests drive the two send paths of the ConnectionRouter (DS -> DO
 proposals, DO -> DS events) against a peer that advertises an older syft
 protocol, and read the raw bytes off the mock drive to see which version was
 actually put on the wire.
+
+Every test runs with encryption off and on. The downgrade runs before the
+encrypt, so the version on the wire sits inside the envelope, and a reader has
+to open the envelope to see it.
 """
 
 import json
@@ -42,11 +46,12 @@ def _client_schema(
     )
 
 
-@pytest.fixture
-def pair():
+@pytest.fixture(params=[False, True], ids=["plaintext", "encrypted"])
+def pair(request):
     return SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
+        encryption=request.param,
     )
 
 
@@ -98,12 +103,26 @@ def v2_wire_envelopes():
         client_registry.migrations.get(canonical_name, {}).pop(("2", "1"), None)
 
 
+def _wire_version(manager, peer_email: str, raw: bytes) -> str:
+    """The unparsed version field of one blob `peer_email` sent to `manager`.
+
+    Decrypts first, so the reader works for an encrypted pair as well as a
+    plaintext one. `decrypt_and_verify_if_needed` passes plaintext through, and
+    the assert keeps the encrypted parametrization from passing on plaintext.
+    """
+    peer_store = manager.peer_manager.peer_store
+    opened = peer_store.decrypt_and_verify_if_needed(peer_email, raw)
+    if peer_store.peer_uses_encryption(peer_email):
+        assert opened != raw, "encryption is on, but the wire holds plaintext"
+    return json.loads(uncompress_data(opened))["version"]
+
+
 def _raw_proposal_version(do_manager, ds_email: str) -> str:
     """The version field of the next proposal blob in the DO's inbox, unparsed."""
     raw, _ = do_manager._connection_router.connections[
         0
     ].owner_download_next_raw_proposed_message_from_inbox(ds_email)
-    return json.loads(uncompress_data(raw))["version"]
+    return _wire_version(do_manager, ds_email, raw)
 
 
 def _raw_outbox_versions(ds_manager, do_email: str) -> list[str]:
@@ -111,7 +130,7 @@ def _raw_outbox_versions(ds_manager, do_email: str) -> list[str]:
     raw_list = ds_manager._connection_router.connections[
         0
     ].watcher_download_raw_events_from_outbox(do_email, None)
-    return [json.loads(uncompress_data(raw))["version"] for raw in raw_list]
+    return [_wire_version(ds_manager, do_email, raw) for raw in raw_list]
 
 
 def test_a_v2_proposal_for_a_protocol0_peer_downgrades_on_the_wire(
