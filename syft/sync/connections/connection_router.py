@@ -127,7 +127,7 @@ class ConnectionRouter(BaseModel):
                 "peer that speaks an earlier protocol cannot read this message."
             )
             return message
-        protocol_version = client_registry.negotiate_protocol_version(
+        protocol_version = client_registry.infer_protocol_version_to_use(
             peer_version=schema.version,
             peer_min=schema.min_supported_version,
         )

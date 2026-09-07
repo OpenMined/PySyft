@@ -148,7 +148,7 @@ class DatasetStorage:
         """
         schema = self.peer_schemas.get(peer_email)
         if schema is not None:
-            return self.registry.negotiate_protocol_version(
+            return self.registry.infer_protocol_version_to_use(
                 peer_version=schema.version,
                 peer_min=schema.min_supported_version,
             )

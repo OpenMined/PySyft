@@ -229,7 +229,7 @@ class MigrationRegistry:
             },
         )
 
-    def negotiate_protocol_version(
+    def infer_protocol_version_to_use(
         self, peer_version: str, peer_min: str | None = None
     ) -> str:
         """The protocol version to speak with a peer.
