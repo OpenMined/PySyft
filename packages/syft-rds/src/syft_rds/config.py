@@ -21,13 +21,14 @@ from pydantic import BaseModel, model_validator
 from syft.sync.syftbox_manager import (
     SyftboxManagerConfig,
 )
-from syft.sync.sync.collection_spec import CollectionSyncSpec
+from syft.sync.sync.collection_spec import CollectionLayout, CollectionSyncSpec
 from syft_job import SyftJobConfig
-from syft_datasets.config import SyftBoxConfig
+from syft_datasets.config import SyftBoxConfig, protocol_dir_name
 from syft_datasets.dataset_manager import (
     DATASET_COLLECTION_PREFIX,
     PRIVATE_DATASET_COLLECTION_PREFIX,
 )
+from syft_datasets.protocolcodecs import CODECS
 
 # The RDS layer owns the local subpaths; the on-wire prefixes come from
 # syft_datasets (imported above), mirrored in syft for login-time cleanup.
@@ -39,12 +40,47 @@ PRIVATE_COLLECTION_SUBPATH = Path("private/syft_datasets")
 #   * public (mock)  – mirror + shareable  → peers' watchers pull it.
 #   * private (real) – restore-only + owner-only → the owner restores it for itself;
 #                      peer-facing watchers skip it; it is never shared.
-DATASET_COLLECTION_SPECS = [
-    CollectionSyncSpec.public(DATASET_COLLECTION_PREFIX, COLLECTION_SUBPATH),
-    CollectionSyncSpec.private(
-        PRIVATE_DATASET_COLLECTION_PREFIX, PRIVATE_COLLECTION_SUBPATH
-    ),
+# Every dataset protocol version this release reads, oldest first. Protocol 0
+# has no path segment and no name infix, so its layout is unchanged byte for
+# byte; protocol n lives under a v<n> segment and writes a v<n> name infix.
+READABLE_DATASET_PROTOCOL_VERSIONS = [
+    version
+    for codec_cls in CODECS
+    for version in codec_cls.dataset_config_cls.protocol_versions
 ]
+
+
+def dataset_layouts(subpath: Path) -> list[CollectionLayout]:
+    """One layout for each dataset protocol version this release reads."""
+    layouts = []
+    for version in READABLE_DATASET_PROTOCOL_VERSIONS:
+        segment = protocol_dir_name(version)
+        layouts.append(
+            CollectionLayout(
+                variant=segment or "",
+                local_subpath=subpath / segment if segment else subpath,
+            )
+        )
+    return layouts
+
+
+MOCK_DATASET_SPEC = CollectionSyncSpec.public(
+    DATASET_COLLECTION_PREFIX,
+    COLLECTION_SUBPATH,
+    layouts=dataset_layouts(COLLECTION_SUBPATH),
+)
+PRIVATE_DATASET_SPEC = CollectionSyncSpec.private(
+    PRIVATE_DATASET_COLLECTION_PREFIX,
+    PRIVATE_COLLECTION_SUBPATH,
+    layouts=dataset_layouts(PRIVATE_COLLECTION_SUBPATH),
+)
+
+DATASET_COLLECTION_SPECS = [MOCK_DATASET_SPEC, PRIVATE_DATASET_SPEC]
+
+
+def dataset_variant(protocol_version: str) -> str:
+    """The wire variant of a dataset protocol version. Protocol 0 has none."""
+    return protocol_dir_name(protocol_version) or ""
 
 
 class SyftRDSClientConfig(BaseModel):

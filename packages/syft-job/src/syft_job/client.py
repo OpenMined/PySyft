@@ -81,8 +81,12 @@ class JobClient(BaseJobClient):
         self._validate_user_email()
 
     @classmethod
-    def from_config(cls, config: SyftJobConfig) -> "JobClient":
-        return cls(config, config.current_user_email)
+    def from_config(
+        cls,
+        config: SyftJobConfig,
+        peer_schemas: Optional[dict[str, ProtocolSchema]] = None,
+    ) -> "JobClient":
+        return cls(config, config.current_user_email, peer_schemas=peer_schemas)
 
     def _validate_user_email(self) -> None:
         """Validate that the user_email directory exists in SyftBox root."""

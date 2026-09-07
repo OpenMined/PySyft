@@ -4,13 +4,16 @@ VersionInfo model for representing version information.
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+from syft_migration import MigratableObject, ProtocolSchema
 
+from syft.migrations import client_registry, load_as_latest
 from syft.version import (
     MIN_SUPPORTED_PROTOCOL_VERSION,
     MIN_SUPPORTED_SYFT_VERSION,
@@ -36,8 +39,17 @@ def _parse_semver(version_str: str) -> tuple[int, int, int]:
     return (int(parts[0]), int(parts[1]), int(parts[2]))
 
 
-class VersionInfo(BaseModel):
-    """Model representing version information for a syft client."""
+class VersionInfoV1(MigratableObject, registry=client_registry):
+    """Model representing version information for a syft client.
+
+    Stored as SYFT_version.json in the peer-visible SyftBox folder. This file
+    is the bootstrap channel for protocol negotiation (peers read it to learn
+    what we speak), so its schema may only ever change additively: every
+    supported client version must be able to parse every newer version file.
+    """
+
+    canonical_name: str = "VersionInfo"
+    version: str = "1"
 
     syft_client_version: str
     min_supported_syft_client_version: str
@@ -126,5 +138,92 @@ class VersionInfo(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> "VersionInfo":
-        """Deserialize from JSON string."""
-        return cls.model_validate_json(json_str)
+        """Deserialize from JSON string, upgraded to the latest version.
+
+        Files written by protocol-0 clients (<= 0.1.117) predate the identity
+        fields; they are all version 1.
+        """
+        return load_as_latest(json.loads(json_str), "VersionInfo")
+
+
+def _slim_schema_of(registry) -> ProtocolSchema:
+    """The registry's protocol schema without the embedded object JSON schemas.
+
+    Negotiation needs only ``version`` and ``supported_versions``; skipping
+    ``current_object_schemas`` keeps the published version file small (the
+    full frozen schemas live in the release artifacts, not on the wire) and
+    avoids computing every object's JSON schema just to discard it.
+    """
+    return ProtocolSchema(
+        protocol_name=registry.protocol_name,
+        version=registry.protocol_version,
+        min_supported_version=registry.min_supported_protocol_version,
+        supported_versions={
+            canonical_name: sorted(versions)
+            for canonical_name, versions in registry.objects.items()
+        },
+    )
+
+
+def _gather_protocol_schemas() -> dict[str, ProtocolSchema]:
+    """Slim protocol schemas of every syft package present in this install.
+
+    Keyed by protocol name. syft-job/syft-dataset are optional dependencies;
+    a missing or broken package simply means its schema is not advertised and
+    peers treat this client as an unknown speaker of that protocol (same
+    failure-tolerant pattern as the install-source detection in ``current``).
+    """
+    logger = logging.getLogger(__name__)
+    schemas = {client_registry.protocol_name: _slim_schema_of(client_registry)}
+    try:
+        from syft_job.migrations import job_registry
+
+        schemas[job_registry.protocol_name] = _slim_schema_of(job_registry)
+    except Exception as e:
+        logger.debug(f"Not advertising a syft-job protocol schema: {e}")
+    try:
+        from syft_datasets.migrations.registry import dataset_registry
+
+        schemas[dataset_registry.protocol_name] = _slim_schema_of(dataset_registry)
+    except Exception as e:
+        logger.debug(f"Not advertising a syft-dataset protocol schema: {e}")
+    return schemas
+
+
+class VersionInfoV2(VersionInfoV1):
+    """V2 adds the protocol schemas this client speaks (client, job, dataset).
+
+    Purely additive over V1 (see the bootstrap-channel rule in the V1
+    docstring): protocol-0/1 readers ignore the extra key.
+    """
+
+    version: str = "2"
+
+    # protocol name -> slim ProtocolSchema (no embedded object JSON schemas).
+    protocol_schemas: dict[str, ProtocolSchema] = Field(default_factory=dict)
+
+    @classmethod
+    def current(cls) -> "VersionInfo":
+        info = super().current()
+        info.protocol_schemas = _gather_protocol_schemas()
+        return info
+
+
+@client_registry.migration("VersionInfo", "1", "2")
+def _version_info_v1_to_v2(obj: VersionInfoV1) -> VersionInfoV2:
+    # A v1 file says nothing about package protocols: empty schemas, meaning
+    # "unknown speaker" to consumers.
+    return VersionInfoV2.model_validate(
+        obj.model_dump(exclude={"canonical_name", "version"})
+    )
+
+
+@client_registry.migration("VersionInfo", "2", "1")
+def _version_info_v2_to_v1(obj: VersionInfoV2) -> VersionInfoV1:
+    return VersionInfoV1.model_validate(
+        obj.model_dump(exclude={"canonical_name", "version", "protocol_schemas"})
+    )
+
+
+# Current-version alias: callers always work with the latest VersionInfo.
+VersionInfo = VersionInfoV2

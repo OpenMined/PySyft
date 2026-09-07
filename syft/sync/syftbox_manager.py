@@ -53,9 +53,7 @@ from syft.sync.version.peer_manager import (
     PeerManager,
     PeerManagerConfig,
 )
-from syft.sync.version.version_info import VersionInfo
 from syft.utils import resolve_path
-from syft.version import VERSION_FILE_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +90,20 @@ def default_collections_folder(
     if spec is None:
         return None
     return Path(syftbox_folder) / email / spec.local_subpath
+
+
+def default_collection_variants(
+    collection_specs: list["CollectionSyncSpec"],
+) -> list[str]:
+    """Layout variants published under ``default_collections_folder``.
+
+    Same convention as that function: the first shareable spec owns the folder,
+    so its layouts name the subdirectories inside it.
+    """
+    spec = next((s for s in collection_specs if not s.owner_only), None)
+    if spec is None:
+        return []
+    return [layout.variant for layout in spec.layouts]
 
 
 class SyftboxManagerConfig(BaseModel):
@@ -134,6 +146,7 @@ class SyftboxManagerConfig(BaseModel):
         collections_folder = default_collections_folder(
             syftbox_folder, email, collection_specs
         )
+        collection_variants = default_collection_variants(collection_specs)
         connection_configs = [GdriveConnectionConfig(email=email, token_path=None)]
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
@@ -146,6 +159,7 @@ class SyftboxManagerConfig(BaseModel):
                 use_in_memory_cache=use_in_memory_cache,
                 syftbox_folder=syftbox_folder,
                 collections_folder=collections_folder,
+                collection_variants=collection_variants,
             ),
         )
         datasite_watcher_syncer_config = DatasiteWatcherSyncerConfig(
@@ -211,6 +225,7 @@ class SyftboxManagerConfig(BaseModel):
         collections_folder = default_collections_folder(
             syftbox_folder, email, collection_specs
         )
+        collection_variants = default_collection_variants(collection_specs)
 
         connection_configs = [
             GdriveConnectionConfig(email=email, token_path=token_path)
@@ -226,6 +241,7 @@ class SyftboxManagerConfig(BaseModel):
                 use_in_memory_cache=False,
                 syftbox_folder=syftbox_folder,
                 collections_folder=collections_folder,
+                collection_variants=collection_variants,
                 connection_configs=connection_configs,
             ),
         )
@@ -286,6 +302,7 @@ class SyftboxManagerConfig(BaseModel):
         collections_folder = default_collections_folder(
             syftbox_folder, email, collection_specs
         )
+        collection_variants = default_collection_variants(collection_specs)
 
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
@@ -298,6 +315,7 @@ class SyftboxManagerConfig(BaseModel):
                 use_in_memory_cache=use_in_memory_cache,
                 syftbox_folder=syftbox_folder,
                 collections_folder=collections_folder,
+                collection_variants=collection_variants,
             ),
         )
         datasite_watcher_syncer_config = DatasiteWatcherSyncerConfig(
@@ -357,6 +375,7 @@ class SyftboxManagerConfig(BaseModel):
         collections_folder = default_collections_folder(
             syftbox_folder, email, collection_specs
         )
+        collection_variants = default_collection_variants(collection_specs)
         connection_configs = [
             GdriveConnectionConfig(email=email, token_path=token_path)
         ]
@@ -371,6 +390,7 @@ class SyftboxManagerConfig(BaseModel):
                 use_in_memory_cache=use_in_memory_cache,
                 syftbox_folder=syftbox_folder,
                 collections_folder=collections_folder,
+                collection_variants=collection_variants,
             ),
         )
         datasite_watcher_syncer_config = DatasiteWatcherSyncerConfig(
@@ -453,21 +473,10 @@ class SyftboxManager(BaseModelCallbackMixin):
     def __dir__(self):
         return list(self._PUBLIC_API)
 
-    def read_local_version(self) -> VersionInfo | None:
-        """Read the local SYFT_version.json from the SyftBox directory."""
-        version_file = self.syftbox_folder / VERSION_FILE_NAME
-        if not version_file.exists():
-            return None
-        try:
-            return VersionInfo.from_json(version_file.read_text())
-        except Exception:
-            return None
-
-    def write_local_version(self) -> None:
-        """Write current version info to a local SYFT_version.json."""
-        self.syftbox_folder.mkdir(parents=True, exist_ok=True)
-        version_file = self.syftbox_folder / VERSION_FILE_NAME
-        version_file.write_text(VersionInfo.current().to_json())
+    # Version file IO lives in syft.sync.version.local_version, and
+    # `write_own_version` writes both the local and the remote file. A
+    # local-only writer on the manager leaves the remote file stale, which is
+    # the bug that made the login mismatch prompt repeat at every login.
 
     @property
     def peers(self) -> PeerList:
@@ -537,7 +546,23 @@ class SyftboxManager(BaseModelCallbackMixin):
         if peer_manager.peer_store.use_encryption:
             manager_res._set_peer_store(peer_manager.peer_store)
 
+        # Every router that sends peer-directed messages downgrades them to the
+        # peer's negotiated syft protocol, so each one gets the live map.
+        manager_res._set_peer_schemas(peer_manager.live_peer_schemas("syft"))
+
         return manager_res
+
+    def _set_peer_schemas(self, peer_schemas) -> None:
+        """Wire PeerManager's live syft schema map into all routers."""
+        if self.datasite_owner_syncer:
+            self.datasite_owner_syncer.connection_router.set_peer_schemas(peer_schemas)
+        if self.datasite_watcher_syncer:
+            self.datasite_watcher_syncer.connection_router.set_peer_schemas(
+                peer_schemas
+            )
+            self.datasite_watcher_syncer.datasite_watcher_cache.connection_router.set_peer_schemas(
+                peer_schemas
+            )
 
     def _set_peer_store(self, peer_store) -> None:
         """Wire shared peer_store into all connection routers."""
