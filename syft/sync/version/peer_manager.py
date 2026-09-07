@@ -99,8 +99,8 @@ class PeerManagerConfig(BaseModel):
     syftbox_folder: Path
     email: str = ""
     connection_configs: List[ConnectionConfig] = []
-    # Applies to a peer of unknown version only. A client version difference does
-    # not skip a peer, so this flag has no effect on one.
+    # Proceeds with a peer whose version is unknown or whose client version is
+    # incompatible, instead of skipping it.
     force_ignore_peer_version: bool = False
     suppress_version_warnings: bool = False
     n_threads: int = 10
@@ -374,11 +374,11 @@ class PeerManager(BaseModel):
         PATCH_DIFF → no skip and a "patch differs" log, or a skip when
         `skip_peer_on_patch_version_diff` is set.
 
-        INCOMPATIBLE → no skip; the client version difference is logged, and
-        each protocol decides separately through its floor.
-
-        UNKNOWN → skip, unless effective `force_ignore_peer_version or
-        ignore_peer_version`; the message includes a "call client.sync()" hint.
+        INCOMPATIBLE and UNKNOWN → skip, unless effective
+        `force_ignore_peer_version or ignore_peer_version`. The UNKNOWN message
+        includes a "call client.sync()" hint. A protocol applies its own floor on
+        top of this gate, so a peer that passes here can still be refused for one
+        protocol and accepted for another.
         """
         own_version = self.get_own_version()
         peer_version = self.get_peer_version(peer_email)
@@ -426,26 +426,16 @@ class PeerManager(BaseModel):
                 **common,
             )
 
-        if status == CompatibilityStatus.INCOMPATIBLE:
-            # A different client version does not refuse the peer. What each side
-            # can exchange is decided per protocol by the floor published in
-            # VersionInfo (MigrationRegistry.negotiate_protocol_version), not by
-            # comparing package versions.
-            return PeerCompatibilityResult(
-                should_skip=False,
-                explanation_not_skip=(
-                    f"Peer {peer_email}: "
-                    f"{own_version.get_incompatibility_reason(peer_version)}."
-                ),
-                **common,
+        # UNKNOWN or INCOMPATIBLE. An unknown peer has no capabilities to check,
+        # and an incompatible client version is refused by default. Either way the
+        # override lets the caller proceed.
+        if status == CompatibilityStatus.UNKNOWN:
+            detail = (
+                "version information not available "
+                "(if you are unsure if it is up to date, call client.sync())"
             )
-
-        # UNKNOWN: the capabilities of the peer are not known, so there is no
-        # floor to check. Skipping stays the safe answer.
-        detail = (
-            "version information not available "
-            "(if you are unsure if it is up to date, call client.sync())"
-        )
+        else:
+            detail = own_version.get_incompatibility_reason(peer_version)
 
         effective_ignore = self.force_ignore_peer_version or ignore_peer_version
         if effective_ignore:
@@ -501,10 +491,10 @@ class PeerManager(BaseModel):
         )
         if not any_compatible:
             warnings.warn(
-                f"All connected peers ({len(peer_emails)}) run a different client "
-                "version, or their version is unknown. A peer with an unknown "
-                "version cannot receive jobs or datasets; call client.sync() to "
-                "read the version of each peer."
+                f"All connected peers ({len(peer_emails)}) run an incompatible "
+                "client version, or their version is unknown. Such a peer is "
+                "skipped, and cannot receive jobs or datasets; call client.sync() "
+                "to read the version of each peer."
             )
 
     def shutdown(self) -> None:
