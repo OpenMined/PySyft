@@ -6,16 +6,25 @@ folder, and the datasite of the user stays on Drive out of reach.
 
 These tests cover the private folders only. The name of a P2P folder is a
 rendezvous string that both peers compute, so a client must never rename one.
+
+Adoption renames a folder and nothing else, so the new name says the current
+client version while the files inside still hold what the earlier client wrote.
+The last section reads a file out of an adopted folder to show where the format
+is decided: the name gives the address, and the version field of each file
+decides whether the content loads.
 """
 
 from unittest.mock import Mock
 
 import pytest
 
+from syft.sync.checkpoints.checkpoint import CHECKPOINT_VERSION, Checkpoint
 from syft.sync.connections.drive.gdrive_transport import (
     GDriveConnection,
     _partition_by_version,
+    execute_with_retries,
 )
+from syft.sync.syftbox_manager import SyftboxManager
 
 EMAIL = "alice@example.com"
 
@@ -132,3 +141,69 @@ def test_two_compatible_folders_still_raise():
         conn._find_or_adopt_versioned_folder(
             folders, current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
         )
+
+
+# ---------- reading a file out of an adopted folder -------------------------
+
+
+def _checkpoints_owner_with_version(checkpoint_version: int):
+    """A DO whose checkpoints folder is named for an earlier client version.
+
+    Uploads one checkpoint at `checkpoint_version`, then renames the folder as a
+    pre-upgrade client would have left it. Returns (router, connection,
+    older_name).
+    """
+    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+        sync_automatically=False,
+    )
+    router = do_manager._connection_router
+    connection = router.connections[0]
+    router.upload_checkpoint(
+        Checkpoint(email=do_manager.email, version=checkpoint_version)
+    )
+
+    folder_id = connection._get_checkpoints_folder_id()
+    older_name = f"{do_manager.email}-0.0.1-checkpoints"
+    execute_with_retries(
+        connection.drive_service.files().update(
+            fileId=folder_id, body={"name": older_name}
+        )
+    )
+    return router, connection, older_name
+
+
+def _checkpoints_folder_names(connection) -> list[str]:
+    return [
+        name
+        for _, name in connection._find_folders(
+            name_contains=[f"{connection.email}-", "-checkpoints"],
+            parent_id=connection.get_syftbox_folder_id(),
+        )
+    ]
+
+
+def test_an_adopted_folder_serves_a_checkpoint_from_an_earlier_client():
+    # Version 0 predates the field, which is the shape an earlier client wrote.
+    # The rename finds the folder and the file still loads.
+    router, connection, older_name = _checkpoints_owner_with_version(0)
+
+    checkpoint = router.get_latest_checkpoint()
+
+    assert checkpoint is not None, "the adopted folder must still serve its files"
+    assert checkpoint.version == 0
+    assert _checkpoints_folder_names(connection) == [
+        connection._get_checkpoints_folder_name()
+    ], "the read must go through the adopt, which renames the folder"
+    assert older_name not in _checkpoints_folder_names(connection)
+
+
+def test_an_adopted_folder_still_refuses_a_later_checkpoint(capsys):
+    # The answer to "how do we know the renamed folder is in the right format":
+    # the rename does not vouch for the content. A checkpoint from a later client
+    # is refused inside an adopted folder exactly as it is anywhere else, and the
+    # caller falls back to a download of all events.
+    router, connection, _ = _checkpoints_owner_with_version(CHECKPOINT_VERSION + 1)
+
+    assert router.get_latest_checkpoint() is None
+    assert "Failed to load checkpoint" in capsys.readouterr().out
