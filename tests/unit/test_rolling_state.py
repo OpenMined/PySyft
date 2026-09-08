@@ -9,6 +9,7 @@ Tests verify that:
 import time
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.checkpoints.rolling_state import RollingState
+from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
 from tests.unit.utils import get_mock_event
 
 
@@ -244,3 +245,28 @@ def test_rolling_state_clear_resets_base_timestamp():
     assert rs.event_count == 0
     assert rs.base_checkpoint_timestamp == 2000.0
     assert rs.last_event_timestamp is None
+
+
+def test_no_rolling_state_when_checkpoints_disabled():
+    """Rolling state is part of the checkpoint machinery, so it goes off too.
+
+    This is the write that costs the most: the upload threshold is 1, so
+    without this gate an enclave would push a rolling state per event.
+    """
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_checkpoints=False,
+    )
+    do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
+        ds_manager.email
+    )
+
+    ds_manager._send_file_change(f"{do_manager.email}/file1.txt", "content1")
+    ds_manager._send_file_change(f"{do_manager.email}/file2.txt", "content2")
+    do_manager.sync()
+
+    assert do_manager._connection_router.get_rolling_state() is None
+
+    syncer = do_manager.datasite_owner_syncer
+    assert not (syncer.syftbox_folder / CACHE_DIR / ROLLING_STATE_FILENAME).exists()
+    # The in-memory state is initialised but never accumulates events.
+    assert syncer._rolling_state.event_count == 0

@@ -10,6 +10,8 @@ import time
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
+
 from syft.sync.checkpoints.checkpoint import (
     Checkpoint,
     IncrementalCheckpoint,
@@ -603,3 +605,87 @@ def test_local_do_changes_end_up_in_incremental_checkpoint():
             f"local_{i}.txt missing from incremental checkpoints. "
             f"process_local_changes did not add it to rolling state."
         )
+
+
+def test_no_checkpoints_written_when_disabled():
+    """With use_checkpoints=False, nothing checkpoint-shaped reaches the drive.
+
+    The second half is the point of the flag: turning checkpoints off must not
+    cost correctness, so the DS still has to see every DO change.
+    """
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=True,
+        use_checkpoints=False,
+    )
+    do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
+        ds_manager.email
+    )
+
+    do_email = do_manager.email
+
+    # Sync well past both thresholds, on the same code path a real client takes.
+    for i in range(6):
+        ds_manager._send_file_change(f"{do_email}/test{i}.txt", f"Content {i}")
+        do_manager.sync(auto_checkpoint=True, checkpoint_threshold=1)
+
+    router = do_manager._connection_router
+    assert router.get_latest_checkpoint() is None
+    assert router.get_all_incremental_checkpoints() == []
+    assert router.get_rolling_state() is None
+
+    # No local rolling state file either.
+    rolling_state_path = (
+        do_manager.datasite_owner_syncer.syftbox_folder
+        / ".cache"
+        / "rolling_state.json"
+    )
+    assert not rolling_state_path.exists()
+
+    # Sync still works: the DO holds every file and the DS receives them back.
+    do_cache = do_manager.datasite_owner_syncer.event_cache
+    assert len(do_cache.file_hashes) == 6
+
+    ds_manager.sync()
+    ds_cache = ds_manager.datasite_watcher_syncer.datasite_watcher_cache
+    ds_paths = {str(event.path_in_datasite) for event in ds_cache.get_cached_events()}
+    for i in range(6):
+        assert f"test{i}.txt" in ds_paths
+
+
+def test_disabled_checkpoints_restore_via_all_events():
+    """A cold start with checkpoints off rebuilds state from the events instead."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=True,
+        use_checkpoints=False,
+    )
+    do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
+        ds_manager.email
+    )
+
+    do_email = do_manager.email
+    ds_manager._send_file_change(f"{do_email}/test1.txt", "Content 1")
+    ds_manager._send_file_change(f"{do_email}/test2.txt", "Content 2")
+    do_manager.sync()
+    assert len(do_manager.datasite_owner_syncer.event_cache.file_hashes) == 2
+
+    # Simulate a fresh login: no checkpoint exists to restore from.
+    do_manager.datasite_owner_syncer.event_cache.clear_cache()
+    do_manager.datasite_owner_syncer.initial_sync_done = False
+
+    do_manager.sync()
+
+    assert len(do_manager.datasite_owner_syncer.event_cache.file_hashes) == 2
+
+
+def test_explicit_checkpoint_calls_raise_when_disabled():
+    """An explicit request fails loudly rather than silently doing nothing."""
+    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=True,
+        use_checkpoints=False,
+    )
+
+    with pytest.raises(ValueError, match="use_checkpoints=False"):
+        do_manager.create_checkpoint()
+
+    # The automatic path stays silent instead - it is not a caller error.
+    assert do_manager.try_create_checkpoint(threshold=1) is None

@@ -38,6 +38,7 @@ def test_defaults_applied_when_required_fields_set(required_env):
     assert settings.log_level == "INFO"
     assert settings.fresh_state is True  # default: always start with a clean slate
     assert settings.use_encryption is True  # default: encryption on
+    assert settings.use_checkpoints is False  # default: no cold start to speed up
 
 
 def test_data_owners_parsed_from_comma_separated_string(clean_env):
@@ -112,3 +113,35 @@ def test_use_encryption_can_be_disabled_via_env(required_env):
     required_env.setenv("SYFT_ENCLAVE_USE_ENCRYPTION", "false")
     settings = EnclaveSettings(_env_file=None)
     assert settings.use_encryption is False
+
+
+def test_use_checkpoints_can_be_enabled_via_env(required_env):
+    required_env.setenv("SYFT_ENCLAVE_USE_CHECKPOINTS", "true")
+    settings = EnclaveSettings(_env_file=None)
+    assert settings.use_checkpoints is True
+
+
+def test_use_checkpoints_reaches_the_do_syncer_config():
+    """Guard the `**kw` hole between for_enclave and the sync engine.
+
+    ``SyftRDSClientConfig.for_jupyter`` forwards unknown kwargs straight to
+    ``SyftboxManagerConfig.for_jupyter``, so nothing type-checks this hop. A
+    rename on either side would silently give an enclave checkpoints back.
+    """
+    from syft_rds.config import SyftRDSClientConfig
+
+    config = SyftRDSClientConfig.for_jupyter(
+        email="enclave@openmined.org",
+        has_do_role=True,
+        has_ds_role=True,
+        use_checkpoints=False,
+    )
+    assert config.sync.use_checkpoints is False
+    assert config.sync.datasite_owner_syncer_config.use_checkpoints is False
+
+    default = SyftRDSClientConfig.for_jupyter(
+        email="enclave@openmined.org",
+        has_do_role=True,
+        has_ds_role=True,
+    )
+    assert default.sync.datasite_owner_syncer_config.use_checkpoints is True

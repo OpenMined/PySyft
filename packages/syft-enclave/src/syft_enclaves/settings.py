@@ -94,3 +94,14 @@ class EnclaveSettings(BaseSettings):
             "Enabled by default; set false to disable."
         ),
     )
+    use_checkpoints: bool = Field(
+        default=False,
+        description=(
+            "Write and restore sync checkpoints. Off by default: checkpoints "
+            "only pay off on a cold start, and an enclave boots with "
+            "fresh_state, so there is never a snapshot to restore — every "
+            "checkpoint write would just spend Drive API calls inside the "
+            "poll loop. Set true only for a stateful enclave "
+            "(fresh_state=false)."
+        ),
+    )
