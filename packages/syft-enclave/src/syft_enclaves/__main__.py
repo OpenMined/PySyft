@@ -44,7 +44,7 @@ def main() -> None:
         f"token_path={settings.token_path} poll_interval={settings.poll_interval}s "
         f"require_tee={settings.require_tee} fresh_state={settings.fresh_state} "
         f"use_encryption={settings.use_encryption} "
-        f"use_checkpoints={settings.use_checkpoints}"
+        f"persist_owner_state={settings.persist_owner_state}"
     )
 
     logger.info("Building SyftEnclaveClient...")
@@ -53,7 +53,7 @@ def main() -> None:
         token_path=settings.token_path,
         data_owners=settings.data_owners,
         encryption=settings.use_encryption,
-        use_checkpoints=settings.use_checkpoints,
+        persist_owner_state=settings.persist_owner_state,
     )
     logger.info("SyftEnclaveClient ready")
 

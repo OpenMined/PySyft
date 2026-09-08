@@ -247,14 +247,14 @@ def test_rolling_state_clear_resets_base_timestamp():
     assert rs.last_event_timestamp is None
 
 
-def test_no_rolling_state_when_checkpoints_disabled():
-    """Rolling state is part of the checkpoint machinery, so it goes off too.
+def test_no_rolling_state_when_owner_state_disabled():
+    """Rolling state is owner-only state, so it goes off with the rest.
 
     This is the write that costs the most: the upload threshold is 1, so
     without this gate an enclave would push a rolling state per event.
     """
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        use_checkpoints=False,
+        persist_owner_state=False,
     )
     do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
         ds_manager.email
@@ -268,5 +268,5 @@ def test_no_rolling_state_when_checkpoints_disabled():
 
     syncer = do_manager.datasite_owner_syncer
     assert not (syncer.syftbox_folder / CACHE_DIR / ROLLING_STATE_FILENAME).exists()
-    # The in-memory state is initialised but never accumulates events.
-    assert syncer._rolling_state.event_count == 0
+    # Nothing is tracked in memory either - there is nothing to track it for.
+    assert syncer._rolling_state is None

@@ -113,9 +113,10 @@ class SyftboxManagerConfig(BaseModel):
     has_ds_role: bool = False
     has_do_role: bool = False
     use_in_memory_cache: bool = True
-    # Checkpoints speed up a cold start at the cost of Drive writes. Off for
-    # datasites that never restore (see syft-enclave's EnclaveSettings).
-    use_checkpoints: bool = True
+    # Keep the owner-only state used to restore this datasite later: event
+    # log, rolling state, checkpoints. Off for datasites that can never
+    # restore (see syft-enclave's EnclaveSettings).
+    persist_owner_state: bool = True
 
     datasite_owner_syncer_config: DatasiteOwnerSyncerConfig
     peer_manager_config: PeerManagerConfig
@@ -129,7 +130,7 @@ class SyftboxManagerConfig(BaseModel):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         encryption: bool = False,
-        use_checkpoints: bool = True,
+        persist_owner_state: bool = True,
         crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -154,7 +155,7 @@ class SyftboxManagerConfig(BaseModel):
         connection_configs = [GdriveConnectionConfig(email=email, token_path=None)]
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
             collection_specs=collection_specs,
@@ -197,7 +198,7 @@ class SyftboxManagerConfig(BaseModel):
             has_do_role=has_do_role,
             connection_configs=connection_configs,
             use_in_memory_cache=False,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
             datasite_watcher_syncer_config=datasite_watcher_syncer_config,
             peer_manager_config=peer_manager_config,
@@ -211,7 +212,7 @@ class SyftboxManagerConfig(BaseModel):
         has_do_role: bool = False,
         token_path: Path | None = None,
         encryption: bool = False,
-        use_checkpoints: bool = True,
+        persist_owner_state: bool = True,
         crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -239,7 +240,7 @@ class SyftboxManagerConfig(BaseModel):
         ]
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
             collection_specs=collection_specs,
@@ -282,7 +283,7 @@ class SyftboxManagerConfig(BaseModel):
             has_ds_role=has_ds_role,
             has_do_role=has_do_role,
             use_in_memory_cache=False,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
             datasite_watcher_syncer_config=datasite_watcher_syncer_config,
             peer_manager_config=peer_manager_config,
@@ -297,7 +298,7 @@ class SyftboxManagerConfig(BaseModel):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         use_in_memory_cache: bool = True,
-        use_checkpoints: bool = True,
+        persist_owner_state: bool = True,
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
@@ -316,7 +317,7 @@ class SyftboxManagerConfig(BaseModel):
 
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
             collection_specs=collection_specs,
@@ -357,7 +358,7 @@ class SyftboxManagerConfig(BaseModel):
             has_ds_role=has_ds_role,
             has_do_role=has_do_role,
             use_in_memory_cache=use_in_memory_cache,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
             datasite_watcher_syncer_config=datasite_watcher_syncer_config,
             peer_manager_config=peer_manager_config,
@@ -373,7 +374,7 @@ class SyftboxManagerConfig(BaseModel):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         use_in_memory_cache: bool = True,
-        use_checkpoints: bool = True,
+        persist_owner_state: bool = True,
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
@@ -394,7 +395,7 @@ class SyftboxManagerConfig(BaseModel):
         ]
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
             collection_specs=collection_specs,
@@ -432,7 +433,7 @@ class SyftboxManagerConfig(BaseModel):
             email=email,
             syftbox_folder=syftbox_folder,
             write_files=write_files,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
             datasite_watcher_syncer_config=datasite_watcher_syncer_config,
             has_ds_role=has_ds_role,
@@ -602,7 +603,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         encryption: bool = False,
-        use_checkpoints: bool = True,
+        persist_owner_state: bool = True,
         crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -615,7 +616,7 @@ class SyftboxManager(BaseModelCallbackMixin):
                 has_ds_role=has_ds_role,
                 has_do_role=has_do_role,
                 encryption=encryption,
-                use_checkpoints=use_checkpoints,
+                persist_owner_state=persist_owner_state,
                 crypto_keys_path=crypto_keys_path,
                 skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=force_ignore_peer_version,
@@ -631,7 +632,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         has_do_role: bool = False,
         token_path: Path | None = None,
         encryption: bool = False,
-        use_checkpoints: bool = True,
+        persist_owner_state: bool = True,
         crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -647,7 +648,7 @@ class SyftboxManager(BaseModelCallbackMixin):
                 has_do_role=has_do_role,
                 token_path=token_path,
                 encryption=encryption,
-                use_checkpoints=use_checkpoints,
+                persist_owner_state=persist_owner_state,
                 crypto_keys_path=crypto_keys_path,
                 skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=force_ignore_peer_version,
@@ -667,7 +668,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         add_peers: bool = True,
         load_peers: bool = False,
         use_in_memory_cache: bool = True,
-        use_checkpoints: bool = True,
+        persist_owner_state: bool = True,
         clear_caches: bool = True,
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
@@ -676,7 +677,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             email=do_email,
             syftbox_folder=base_path1,
             use_in_memory_cache=use_in_memory_cache,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             token_path=do_token_path,
             has_ds_role=False,
             has_do_role=True,
@@ -690,7 +691,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             email=ds_email,
             syftbox_folder=base_path2,
             use_in_memory_cache=use_in_memory_cache,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             token_path=ds_token_path,
             has_ds_role=True,
             has_do_role=False,
@@ -754,7 +755,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         sync_automatically: bool = False,
         add_peers: bool = True,
         use_in_memory_cache: bool = True,
-        use_checkpoints: bool = True,
+        persist_owner_state: bool = True,
         check_versions: bool = False,
         encryption: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
@@ -773,7 +774,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             sync_automatically: Whether to sync when DS sends changes
             add_peers: Whether to automatically add and approve peers
             use_in_memory_cache: Whether to use in-memory caches
-            use_checkpoints: Whether the DO writes and restores checkpoints
+            persist_owner_state: Whether the DO keeps restorable owner state
             check_versions: Whether to check protocol/client versions
 
         Returns:
@@ -786,7 +787,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             has_ds_role=False,
             has_do_role=True,
             use_in_memory_cache=use_in_memory_cache,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             check_versions=check_versions,
             collection_specs=collection_specs,
         )
@@ -797,7 +798,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             has_ds_role=True,
             has_do_role=False,
             use_in_memory_cache=use_in_memory_cache,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
             check_versions=check_versions,
             collection_specs=collection_specs,
         )
@@ -961,7 +962,8 @@ class SyftboxManager(BaseModelCallbackMixin):
             auto_checkpoint: If True, automatically create checkpoint when
                             event count exceeds threshold (DO only). Has no
                             effect when this manager was built with
-                            use_checkpoints=False.
+                            persist_owner_state=False, which keeps no
+                            checkpoints at all.
             checkpoint_threshold: Create checkpoint when events >= this value.
             auto_compact: If True, after each DO sync, compact each peer's
                           outbox if it holds at least `compact_threshold`

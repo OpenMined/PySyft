@@ -78,10 +78,12 @@ class DatasiteOwnerSyncerConfig(BaseModel):
     email: str
     syftbox_folder: Path
     write_files: bool = True
-    # Checkpoints only speed up a cold start. Turn them off for a datasite that
-    # never restores (e.g. an enclave booting with fresh_state) to save the
-    # Drive writes they cost.
-    use_checkpoints: bool = True
+    # Whether to keep the owner-only state that exists solely to restore this
+    # datasite later: the append-only event log, the rolling state and the
+    # checkpoints. Off for a datasite that can never restore - an enclave gets
+    # ephemeral keys and wipes its state each boot - so those writes are pure
+    # cost. Peer-facing state (outbox, collections, peers) is unaffected.
+    persist_owner_state: bool = True
     # Full path to collections folder - must be provided explicitly
     collections_folder: Path | None = None
     # Collection sync specs (public prefix + local subpath). Empty for a bare
@@ -101,7 +103,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         default_factory=lambda: DataSiteOwnerEventCache()
     )
     write_files: bool = True
-    use_checkpoints: bool = True
+    persist_owner_state: bool = True
     connection_router: ConnectionRouter
     initial_sync_done: bool = False
     email: str
@@ -142,7 +144,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         return cls(
             event_cache=DataSiteOwnerEventCache.from_config(config.cache_config),
             write_files=config.write_files,
-            use_checkpoints=config.use_checkpoints,
+            persist_owner_state=config.persist_owner_state,
             connection_router=ConnectionRouter.from_configs(
                 config.email, config.connection_configs
             ),
@@ -183,7 +185,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         tmp.rename(path)
 
     def sync(self, peer_emails: list[str], recompute_hashes: bool = True):
-        if self.use_checkpoints:
+        if self.persist_owner_state:
             self._load_rolling_state()
         try:
             if not self.initial_sync_done:
@@ -210,7 +212,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                     )
                 self.process_syftbox_events_queue()
         finally:
-            if self.use_checkpoints:
+            if self.persist_owner_state:
                 self._save_rolling_state()
 
     def download_events_message_by_id_with_connection(
@@ -239,15 +241,26 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """
         Pull initial state from Google Drive.
 
-        Flow:
-        1. Restore from the full checkpoint, the incrementals and the rolling
-           state. Skipped entirely when checkpoints are off, which leaves the
-           download-all-events fallback below.
-        2. Download any events newer than the restored cursor, or all events
-           when there is no cursor and no checkpoint to anchor one.
-        3. Ensure events_messages_connection is populated for get_cached_events()
+        Two halves:
+        1. The owner's own state - checkpoints, rolling state, and the events
+           newer than those. Skipped entirely when `persist_owner_state` is
+           off: nothing was ever written, so there is nothing to read back.
+        2. The owner's collections, which are shared with peers rather than
+           owner-only, so they are restored either way.
         """
-        restore = self._restore_checkpoints_or_start_empty()
+        if self.persist_owner_state:
+            self._restore_owner_state()
+
+        # Restore ALL registered collections (public + private) generically. Each
+        # spec's flags decide the behaviour: `immutable` picks mirror vs restore-only;
+        # the local destination comes from the spec's local_subpath.
+        self._pull_collections_for_initial_sync()
+
+        self.initial_sync_done = True
+
+    def _restore_owner_state(self) -> None:
+        """Rebuild the cache from the owner's persisted state on the backend."""
+        restore = self._restore_from_checkpoints()
 
         if restore.events_since_timestamp is not None:
             self._download_events_since(restore.events_since_timestamp)
@@ -259,32 +272,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         # events_messages_connection, which get_cached_events() reads from.
         if restore.events and not self.event_cache.get_cached_events():
             self._write_events_to_messages_cache(restore.events)
-
-        # Restore ALL registered collections (public + private) generically. Each
-        # spec's flags decide the behaviour: `immutable` picks mirror vs restore-only;
-        # the local destination comes from the spec's local_subpath.
-        self._pull_collections_for_initial_sync()
-
-        self.initial_sync_done = True
-
-    def _restore_checkpoints_or_start_empty(self) -> _CheckpointRestore:
-        """Restore from checkpoints, or begin from an empty rolling state.
-
-        With checkpoints off there is nothing on Drive to restore, so we skip
-        the three downloads entirely and let the caller fall back to events.
-        """
-        if self.use_checkpoints:
-            return self._restore_from_checkpoints()
-
-        self._rolling_state = RollingState(
-            email=self.email,
-            base_checkpoint_timestamp=0.0,
-        )
-        return _CheckpointRestore(
-            events_since_timestamp=None,
-            events=[],
-            found_checkpoint=False,
-        )
 
     def _restore_from_checkpoints(self) -> _CheckpointRestore:
         """Apply the full checkpoint, then the incrementals, then the rolling state.
@@ -774,7 +761,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     def queue_event_for_syftbox(
         self, recipients: list[str], file_change_events_message: FileChangeEventsMessage
     ):
-        self.syftbox_events_queue.put(file_change_events_message)
+        # The syftbox queue is the owner's own append-only log, read back only
+        # to restore this datasite. The outbox is how peers get the change, so
+        # it is queued either way.
+        if self.persist_owner_state:
+            self.syftbox_events_queue.put(file_change_events_message)
 
         for recipient in recipients:
             self.outbox_queue.put((recipient, file_change_events_message))
@@ -917,7 +908,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             events_message: The events to add.
             upload_threshold: Upload to GDrive after this many events added.
         """
-        if not self.use_checkpoints or self._rolling_state is None:
+        if not self.persist_owner_state or self._rolling_state is None:
             return
 
         self._rolling_state.add_events_message(events_message)
@@ -929,7 +920,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     def _upload_rolling_state(self) -> None:
         """Upload the in-memory rolling state to GDrive."""
-        if not self.use_checkpoints:
+        if not self.persist_owner_state:
             return
         if self._rolling_state is None or self._rolling_state.event_count == 0:
             return
@@ -940,14 +931,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     # =========================================================================
     # CHECKPOINT METHODS
     # =========================================================================
-
-    def _raise_if_checkpoints_disabled(self) -> None:
-        """Refuse an explicit checkpoint request when checkpoints are off."""
-        if not self.use_checkpoints:
-            raise ValueError(
-                "This client was created with use_checkpoints=False, so it "
-                "cannot create checkpoints."
-            )
 
     def create_incremental_checkpoint(self) -> IncrementalCheckpoint:
         """
@@ -960,7 +943,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Returns:
             The created IncrementalCheckpoint object.
         """
-        self._raise_if_checkpoints_disabled()
         if self._rolling_state is None or self._rolling_state.event_count == 0:
             raise ValueError("No rolling state to create checkpoint from")
 
@@ -1017,7 +999,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Returns:
             The created Checkpoint object.
         """
-        self._raise_if_checkpoints_disabled()
         self._load_rolling_state()
         try:
             last_event_timestamp = self.event_cache.get_latest_event_timestamp()
@@ -1087,7 +1068,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Returns:
             The compacted Checkpoint object.
         """
-        self._raise_if_checkpoints_disabled()
         print("Compacting incremental checkpoints...")
 
         # Download existing full checkpoint (if exists)
@@ -1188,9 +1168,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
         Returns:
             The created checkpoint (incremental or compacted), or None. Always
-            None when this client has checkpoints turned off.
+            None when this client keeps no owner state.
         """
-        if not self.use_checkpoints:
+        if not self.persist_owner_state:
             return None
 
         self._load_rolling_state()

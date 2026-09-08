@@ -94,14 +94,16 @@ class EnclaveSettings(BaseSettings):
             "Enabled by default; set false to disable."
         ),
     )
-    use_checkpoints: bool = Field(
+    persist_owner_state: bool = Field(
         default=False,
         description=(
-            "Write and restore sync checkpoints. Off by default: checkpoints "
-            "only pay off on a cold start, and an enclave boots with "
-            "fresh_state, so there is never a snapshot to restore — every "
-            "checkpoint write would just spend Drive API calls inside the "
-            "poll loop. Set true only for a stateful enclave "
-            "(fresh_state=false)."
+            "Keep the owner-only state that exists solely to restore this "
+            "datasite later: the append-only event log, the rolling state and "
+            "the checkpoints. Off by default because an enclave can never "
+            "restore — it gets an ephemeral keypair each boot and wipes its "
+            "state under fresh_state — so those writes only spend Drive API "
+            "calls inside the poll loop. Peer-facing state (outbox, "
+            "collections, peers) is unaffected. Set true only for a stateful "
+            "enclave (fresh_state=false)."
         ),
     )

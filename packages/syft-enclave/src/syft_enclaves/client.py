@@ -435,7 +435,7 @@ class SyftEnclaveClient:
         token_path: Path | str | None = None,
         data_owners: list[str] | None = None,
         encryption: bool = False,
-        use_checkpoints: bool = False,
+        persist_owner_state: bool = False,
     ) -> "SyftEnclaveClient":
         """Build an enclave client backed by a real Google Drive connection.
         Args:
@@ -443,9 +443,10 @@ class SyftEnclaveClient:
             token_path: Path to a pre-authorized Google Drive OAuth token.
             data_owners: Emails whose approval gates every job on this enclave.
             encryption: Enable end-to-end drive encryption.
-            use_checkpoints: Write and restore sync checkpoints. Off by
-                default - an enclave wipes its state on boot, so there is
-                nothing for a checkpoint to restore.
+            persist_owner_state: Keep the owner-only state used to restore
+                this datasite later (event log, rolling state, checkpoints).
+                Off by default - an enclave gets ephemeral keys and wipes its
+                state on boot, so there is never anything to restore.
         """
         config = SyftRDSClientConfig.for_jupyter(
             email=email,
@@ -453,7 +454,7 @@ class SyftEnclaveClient:
             has_do_role=True,
             token_path=Path(token_path) if token_path is not None else None,
             encryption=encryption,
-            use_checkpoints=use_checkpoints,
+            persist_owner_state=persist_owner_state,
         )
 
         # Note: We do not currently provide the ability to load encryption keys passed during creation of enclave.
