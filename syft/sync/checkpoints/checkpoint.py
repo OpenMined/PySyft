@@ -11,12 +11,14 @@ Flow:
 - After N incremental checkpoints: compact into single full Checkpoint
 """
 
-from typing import List, Dict, TYPE_CHECKING
-from pydantic import BaseModel, Field
 from pathlib import Path
+from typing import TYPE_CHECKING, Dict, List
+
+from pydantic import BaseModel, Field
+
 from syft.sync.utils.syftbox_utils import (
-    create_event_timestamp,
     compress_data,
+    create_event_timestamp,
     uncompress_data,
 )
 
@@ -27,6 +29,21 @@ if TYPE_CHECKING:
 CHECKPOINT_FILENAME_PREFIX = "checkpoint"
 INCREMENTAL_CHECKPOINT_PREFIX = "incremental_checkpoint"
 CHECKPOINT_VERSION = 1
+
+
+def _check_version(version: int, kind: str) -> None:
+    """Refuse a checkpoint from a later client."""
+
+    # A later client can change what a field holds while the object still parses.
+    # The restore would then be wrong and silent. Every caller falls back to a
+    # download of all events, so a refusal costs one slow cold start.
+
+    if version > CHECKPOINT_VERSION:
+        raise ValueError(
+            f"This {kind} has version {version}, and this client reads up to "
+            f"version {CHECKPOINT_VERSION}."
+        )
+
 
 # Default compacting threshold: merge after this many incremental checkpoints
 DEFAULT_COMPACTING_THRESHOLD = 4
@@ -124,7 +141,9 @@ class Checkpoint(BaseModel):
     def from_compressed_data(cls, data: bytes) -> "Checkpoint":
         """Load checkpoint from compressed data."""
         uncompressed_data = uncompress_data(data)
-        return cls.model_validate_json(uncompressed_data)
+        checkpoint = cls.model_validate_json(uncompressed_data)
+        _check_version(checkpoint.version, "checkpoint")
+        return checkpoint
 
 
 class IncrementalCheckpoint(BaseModel):
@@ -180,7 +199,9 @@ class IncrementalCheckpoint(BaseModel):
     def from_compressed_data(cls, data: bytes) -> "IncrementalCheckpoint":
         """Load from compressed data."""
         uncompressed_data = uncompress_data(data)
-        return cls.model_validate_json(uncompressed_data)
+        checkpoint = cls.model_validate_json(uncompressed_data)
+        _check_version(checkpoint.version, "incremental checkpoint")
+        return checkpoint
 
 
 def compact_incremental_checkpoints(

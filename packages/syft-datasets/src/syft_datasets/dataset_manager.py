@@ -1,7 +1,9 @@
 from pathlib import Path
+
 from typing_extensions import Self
 
 import yaml
+from syft_migration import ProtocolSchema
 
 from .types import PathLike, to_path
 from syft_notebook_ui.types import TableList
@@ -20,18 +22,34 @@ SHARE_WITH_ANY = "any"
 
 
 class SyftDatasetManager:
-    def __init__(self, syftbox_folder_path: PathLike, email: str):
+    def __init__(
+        self,
+        syftbox_folder_path: PathLike,
+        email: str,
+        peer_schemas: dict[str, ProtocolSchema] | None = None,
+    ):
         self.syftbox_config = SyftBoxConfig(
             syftbox_folder=to_path(syftbox_folder_path), email=email
         )
-        # peer_schemas (peer email -> dataset ProtocolSchema) will be filled in by
-        # syft later; until then every peer resolves to the widest-
-        # compatible protocol, so datasets are written in that layout.
-        self.storage = DatasetStorage(config=self.syftbox_config)
+        # peer_schemas (peer email -> dataset ProtocolSchema): syft
+        # passes PeerManager's live map here (updated in place as peer version
+        # files load). Peers without an entry resolve to the widest-compatible
+        # protocol, so datasets stay readable by unknown-version peers.
+        self.storage = DatasetStorage(
+            config=self.syftbox_config, peer_schemas=peer_schemas
+        )
 
     @classmethod
-    def from_config(cls, config: SyftBoxConfig) -> Self:
-        return cls(syftbox_folder_path=config.syftbox_folder, email=config.email)
+    def from_config(
+        cls,
+        config: SyftBoxConfig,
+        peer_schemas: dict[str, ProtocolSchema] | None = None,
+    ) -> Self:
+        return cls(
+            syftbox_folder_path=config.syftbox_folder,
+            email=config.email,
+            peer_schemas=peer_schemas,
+        )
 
     def create(
         self,
@@ -64,6 +82,38 @@ class SyftDatasetManager:
         Returns:
             Dataset: The created Dataset object (the newest protocol version written).
         """
+        created = self.create_all(
+            name=name,
+            mock_path=mock_path,
+            private_path=private_path,
+            summary=summary,
+            readme_path=readme_path,
+            location=location,
+            tags=tags,
+            users=users,
+            protocol_versions=protocol_versions,
+        )
+        # Return the newest protocol version written (richest layout).
+        return created[max(created, key=int)]
+
+    def create_all(
+        self,
+        name: str,
+        mock_path: PathLike,
+        private_path: PathLike,
+        summary: str | None = None,
+        readme_path: Path | None = None,
+        location: str | None = None,
+        tags: list[str] | None = None,
+        users: list[str] | str | None = None,
+        protocol_versions: list[str] | None = None,
+    ) -> dict[str, "Dataset"]:
+        """Create a dataset and return every protocol copy it wrote.
+
+        Same as ``create``, but returns {protocol_version: Dataset} instead of
+        one copy. A caller that puts the dataset on a transport needs them all,
+        because each copy goes to the peers that read its layout.
+        """
         source = DatasetSourceFiles(
             mock=to_path(mock_path),
             private=to_path(private_path),
@@ -80,8 +130,7 @@ class SyftDatasetManager:
         )
         for dataset in created.values():
             self._set_new_dataset_permissions(dataset=dataset, users=users)
-        # Return the newest protocol version written (richest layout).
-        return created[max(created, key=int)]
+        return created
 
     def migrate(
         self,
@@ -269,15 +318,21 @@ class SyftDatasetManager:
         # Remove every on-disk copy (all protocol versions) via the storage layer.
         self.storage.delete_dataset(datasite, name)
 
-    def get_private_dataset_files(self, name: str) -> dict[Path, bytes]:
+    def get_private_dataset_files(
+        self, name: str, protocol_version: str | None = None
+    ) -> dict[Path, bytes]:
         """Get private dataset files as {path_in_datasite: content}.
 
         Returns paths relative to the datasite (e.g.
-        private/syft_datasets/[v<n>/]{name}/{file}). For private_metadata.yaml,
-        clears data_dir before including it.
+        private/syft_datasets/[v<n>/]{name}/{file}); the paths carry the copy's
+        protocol layout, so ``protocol_version`` selects the copy a specific
+        reader scans (the preferred/newest copy by default). For
+        private_metadata.yaml, clears data_dir before including it.
         """
         datasite = self.syftbox_config.email
-        ref = self.storage.find_dataset_ref(datasite, name)
+        ref = self.storage.find_dataset_ref(
+            datasite, name, protocol_version=protocol_version
+        )
         private_dir = self.storage.private_dataset_dir(ref)
         if not private_dir.exists():
             raise ValueError(f"Private data directory not found: {private_dir}")

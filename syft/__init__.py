@@ -36,6 +36,15 @@ from syft.sync.utils.syftbox_utils import (  # noqa: F401, E402
     delete_syftbox,
     delete_local_syftbox,
 )
+from syft.migrations.history import register_historic_schemas  # noqa: E402
+
+# Import the versioned model modules explicitly so registration is intentional,
+# not a side-effect of whatever login happened to pull in first.
+import syft.sync.version.version_info  # noqa: F401, E402
+import syft.sync.messages.proposed_filechange  # noqa: F401, E402
+import syft.sync.events.file_change_event  # noqa: F401, E402
+
+register_historic_schemas()
 
 SYFT_DIR = Path(__file__).parent.parent
 CREDENTIALS_DIR = SYFT_DIR / "credentials"

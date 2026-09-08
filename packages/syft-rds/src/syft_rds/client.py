@@ -20,7 +20,14 @@ from syft.sync.version.peer_manager import CompatAction
 from syft_job.client import JobClient
 from syft_job.job_runner import SyftJobRunner
 from syft_datasets.dataset_manager import SyftDatasetManager
-from syft_rds.config import DATASET_COLLECTION_SPECS, SyftRDSClientConfig
+from syft_datasets.dataset_ref import DatasetNotFoundError
+from syft_rds.config import (
+    DATASET_COLLECTION_SPECS,
+    MOCK_DATASET_SPEC,
+    PRIVATE_DATASET_SPEC,
+    SyftRDSClientConfig,
+    dataset_variant,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +59,22 @@ class SyftRDSClient(BaseModel):
     @classmethod
     def from_config(cls, config: "SyftRDSClientConfig") -> "SyftRDSClient":
         sync_engine = SyftboxManager.from_config(config.sync)
-        job_client = JobClient.from_config(config.job)
+        # The job client selects a job protocol version per peer from the live
+        # peer-schema map, as the dataset manager does for dataset layouts.
+        job_client = JobClient.from_config(
+            config.job,
+            peer_schemas=sync_engine.peer_manager.live_peer_schemas("syft-job"),
+        )
         job_runner = (
             SyftJobRunner.from_config(config.job) if config.sync.has_do_role else None
         )
-        dataset_manager = SyftDatasetManager.from_config(config.dataset)
+        # The dataset manager gets the live peer-schema map, as the job client
+        # does. It selects a layout for each peer, and the transport carries one
+        # collection for each layout.
+        dataset_manager = SyftDatasetManager.from_config(
+            config.dataset,
+            peer_schemas=sync_engine.peer_manager.live_peer_schemas("syft-dataset"),
+        )
         return cls(
             sync_engine=sync_engine,
             job_client=job_client,
@@ -82,11 +100,17 @@ class SyftRDSClient(BaseModel):
             config = SyftRDSClientConfig._compose(mgr.config)
             return cls(
                 sync_engine=mgr,
-                job_client=JobClient.from_config(config.job),
+                job_client=JobClient.from_config(
+                    config.job,
+                    peer_schemas=mgr.peer_manager.live_peer_schemas("syft-job"),
+                ),
                 job_runner=(
                     SyftJobRunner.from_config(config.job) if mgr.has_do_role else None
                 ),
-                dataset_manager=SyftDatasetManager.from_config(config.dataset),
+                dataset_manager=SyftDatasetManager.from_config(
+                    config.dataset,
+                    peer_schemas=mgr.peer_manager.live_peer_schemas("syft-dataset"),
+                ),
             )
 
         ds_rds = _build(ds_mgr)
@@ -230,12 +254,13 @@ class SyftRDSClient(BaseModel):
         ``pull_initial_state()`` in the nested DatasiteOwnerSyncer.
         """
         for (
+            wire_prefix,
             tag,
             content_hash,
         ) in self.sync_engine.datasite_owner_syncer.any_shared_collections:
             try:
                 self.sync_engine.share_collection(
-                    DATASET_COLLECTION_PREFIX, tag, content_hash, [peer_email]
+                    wire_prefix, tag, content_hash, [peer_email]
                 )
             except Exception:
                 # One collection failing (missing folder, quota, network) must
@@ -402,12 +427,13 @@ class SyftRDSClient(BaseModel):
 
         dataset_name = None
         created_local = False
-        mock_folder_id = None
-        private_folder_id = None
+        mock_folder_ids: list[str] = []
+        private_folder_ids: list[str] = []
 
         try:
-            # Create dataset locally
-            dataset = self.dataset_manager.create(
+            # Create the dataset locally, in one layout for each protocol
+            # version the audience reads.
+            created = self.dataset_manager.create_all(
                 name=name,
                 mock_path=mock_path,
                 private_path=private_path,
@@ -418,14 +444,19 @@ class SyftRDSClient(BaseModel):
                 users=users,
             )
             created_local = True
+            # The newest copy is the one to hand back to the owner.
+            dataset = created[max(created, key=int)]
             dataset_name = dataset.name
 
-            # Upload mock data to collection folder
-            mock_folder_id = self._upload_dataset_to_collection(dataset, users)
-
-            # Upload private data to a separate owner-only collection
-            if upload_private:
-                private_folder_id = self._upload_private_dataset_to_collection(dataset)
+            # Each copy gets its own collection. The private data of a copy goes
+            # up with it, because the metadata of that copy points at it.
+            for protocol_version in sorted(created, key=int):
+                copy = created[protocol_version]
+                mock_folder_ids.append(self._upload_dataset_to_collection(copy, users))
+                if upload_private:
+                    private_folder_id = self._upload_private_dataset_to_collection(copy)
+                    if private_folder_id is not None:
+                        private_folder_ids.append(private_folder_id)
 
             if sync:
                 self.sync()
@@ -438,7 +469,7 @@ class SyftRDSClient(BaseModel):
                 f" '{dataset_name}'" if dataset_name else "",
             )
             self._cleanup_failed_dataset_creation(
-                dataset_name, created_local, mock_folder_id, private_folder_id
+                dataset_name, created_local, mock_folder_ids, private_folder_ids
             )
             raise
 
@@ -446,11 +477,11 @@ class SyftRDSClient(BaseModel):
         self,
         dataset_name: str | None,
         created_local: bool,
-        mock_folder_id: str | None,
-        private_folder_id: str | None,
+        mock_folder_ids: list[str],
+        private_folder_ids: list[str],
     ) -> None:
         """Best-effort cleanup after a failed create_dataset, in reverse order."""
-        if private_folder_id is not None:
+        for private_folder_id in reversed(private_folder_ids):
             try:
                 self.sync_engine.delete_file_by_id(private_folder_id)
             except Exception:
@@ -459,7 +490,7 @@ class SyftRDSClient(BaseModel):
                     private_folder_id,
                 )
 
-        if mock_folder_id is not None:
+        for mock_folder_id in reversed(mock_folder_ids):
             try:
                 self.sync_engine.delete_file_by_id(mock_folder_id)
             except Exception:
@@ -511,43 +542,53 @@ class SyftRDSClient(BaseModel):
         return files
 
     def _share_dataset_collection(
-        self, tag: str, content_hash: str, users: list[str] | str
+        self, wire_prefix: str, tag: str, content_hash: str, users: list[str] | str
     ) -> None:
-        """Share a dataset collection with ``users``, or tag it ``"any"`` and
-        share with all already-approved peers."""
+        """Share one layout of a dataset with ``users``, or tag it ``"any"`` and
+        share with all already-approved peers.
+
+        Every layout is shared with the whole audience, so a peer that upgrades
+        later moves to the newer layout with no action by the owner.
+        """
         if users == "any":
-            self.sync_engine.tag_collection_as_any(
-                DATASET_COLLECTION_PREFIX, tag, content_hash
-            )
+            self.sync_engine.tag_collection_as_any(wire_prefix, tag, content_hash)
             self.sync_engine.datasite_owner_syncer.register_any_shared_collection(
-                tag, content_hash
+                wire_prefix, tag, content_hash
             )
             peer_emails = [
                 p.email for p in self.sync_engine.peer_manager.approved_peers
             ]
             if peer_emails:
                 self.sync_engine.share_collection(
-                    DATASET_COLLECTION_PREFIX, tag, content_hash, peer_emails
+                    wire_prefix, tag, content_hash, peer_emails
                 )
         else:
             if isinstance(users, str):
                 users = [users]
-            self.sync_engine.share_collection(
-                DATASET_COLLECTION_PREFIX, tag, content_hash, users
-            )
+            self.sync_engine.share_collection(wire_prefix, tag, content_hash, users)
 
     def _upload_dataset_to_collection(self, dataset, users: list[str] | str) -> str:
-        """Upload dataset files to collection folder. Returns the folder ID."""
+        """Upload one protocol copy of a dataset. Returns the folder ID.
+
+        Each copy gets its own collection, named for its layout, so a peer picks
+        the newest copy it can read.
+        """
+        variant = dataset_variant(dataset.protocol_version)
+        wire_prefix = MOCK_DATASET_SPEC.wire_prefix(variant)
         files = self._collect_mock_files(dataset)
         folder_id, content_hash = self._create_and_upload_collection(
-            DATASET_COLLECTION_PREFIX, dataset.name, files
+            wire_prefix, dataset.name, files
         )
-        self._share_dataset_collection(dataset.name, content_hash, users)
+        self._share_dataset_collection(wire_prefix, dataset.name, content_hash, users)
         return folder_id
 
     def _upload_private_dataset_to_collection(self, dataset) -> str | None:
-        """Upload private dataset files to a separate owner-only collection folder.
-        Returns the folder ID, or None if no files to upload."""
+        """Upload the private files of one protocol copy to an owner-only collection.
+
+        The copies hold separate private directories, so one upload of the newest
+        would leave the others local only and a cold start would not restore them.
+        Returns the folder ID, or None if there are no files to upload.
+        """
         collection_tag = dataset.name
 
         # Collect all files in private dir (data, metadata, permissions)
@@ -560,8 +601,9 @@ class SyftRDSClient(BaseModel):
             return None
 
         # Private collection: no sharing step.
+        variant = dataset_variant(dataset.protocol_version)
         folder_id, _ = self._create_and_upload_collection(
-            PRIVATE_DATASET_COLLECTION_PREFIX, collection_tag, files
+            PRIVATE_DATASET_SPEC.wire_prefix(variant), collection_tag, files
         )
         return folder_id
 
@@ -604,9 +646,6 @@ class SyftRDSClient(BaseModel):
             users: List of email addresses or "any"
             sync: Whether to sync after sharing
         """
-        from syft.sync.connections.drive.gdrive_transport import (
-            CollectionFolder,
-        )
 
         if self.dataset_manager is None:
             raise ValueError("Dataset manager is not set")
@@ -619,21 +658,133 @@ class SyftRDSClient(BaseModel):
         if dataset is None:
             raise ValueError(f"Dataset {tag} not found")
 
-        # Compute current content hash from local files, then share.
-        files = self._collect_mock_files(dataset)
-        content_hash = CollectionFolder.compute_hash(files)
-        self._share_dataset_collection(tag, content_hash, users)
+        if users != "any" and isinstance(users, str):
+            users = [users]
+
+        # A dataset has one collection for each layout it was written in. Share
+        # them all, so a peer of any supported version finds a copy. The listing
+        # gives the hash of each copy, so no hash is recomputed here.
+        collections = self._mock_collections_for(tag)
+        if not collections:
+            raise ValueError(f"No uploaded collection found for dataset {tag}")
+
+        # A share is a change of audience. The layouts were decided by the
+        # audience at create time, so a new peer whose protocol reads none of
+        # them would get a grant on a folder its client never even lists.
+        # Materialize what is missing first, then share everything.
+        if self._ensure_dataset_layouts_for(
+            tag, users, {self._protocol_of(c) for c in collections}
+        ):
+            collections = self._mock_collections_for(tag)
+
+        for collection in collections:
+            self._share_dataset_collection(
+                MOCK_DATASET_SPEC.wire_prefix(collection.variant),
+                tag,
+                collection.content_hash,
+                users,
+            )
 
         if sync:
             self.sync()
 
+    def _mock_collections_for(self, tag: str) -> list:
+        """Every uploaded mock-data layout of one dataset."""
+        return [
+            c
+            for c in self.sync_engine._connection_router.owner_list_all_collections_with_permissions(
+                DATASET_COLLECTION_PREFIX
+            )
+            if c.tag == tag
+        ]
+
+    def _private_collections_for(self, tag: str) -> list:
+        """Every uploaded private-data layout of one dataset."""
+        return [
+            c
+            for c in self.sync_engine._connection_router.owner_list_all_collections_with_permissions(
+                PRIVATE_DATASET_COLLECTION_PREFIX
+            )
+            if c.tag == tag
+        ]
+
+    @staticmethod
+    def _protocol_of(collection) -> str:
+        """The dataset protocol version a collection's wire variant stands for."""
+        return collection.variant.removeprefix("v") or "0"
+
+    def _ensure_dataset_layouts_for(
+        self, tag: str, users: list[str] | str, existing_versions: set[str]
+    ) -> bool:
+        """Materialize any layout the audience reads but no existing copy serves.
+
+        A peer reads every layout at or below its negotiated protocol version,
+        so a copy is only missing when no uploaded collection sits at or below
+        the version a peer reads. The new copy uploads unshared; the caller
+        shares every collection uniformly afterwards. Returns whether a copy
+        was added.
+        """
+        storage = self.dataset_manager.storage
+        peer_emails = self.dataset_manager._peer_emails(users)
+        needed = storage.target_protocol_versions_for_peers(peer_emails)
+        missing = {
+            version
+            for version in needed
+            if not any(int(e) <= int(version) for e in existing_versions)
+        }
+        if not missing:
+            return False
+
+        for protocol_version in sorted(missing, key=int):
+            self._materialize_dataset_copy(tag, protocol_version, users)
+        return True
+
+    def _materialize_dataset_copy(
+        self, tag: str, protocol_version: str, users: list[str] | str
+    ) -> None:
+        """Create and upload one layout copy of an existing dataset.
+
+        The copy uploads unshared; sharing stays with the caller. Each copy
+        holds its own private directory, so the copy gets its private
+        collection iff the dataset's copies are drive-backed -- then a cold
+        start restores it like any other.
+
+        The layout may already be on disk with no collection of its own: an
+        upload can fail after the migrate, and `migrate` is public. A second
+        write of the same layout raises, so an existing copy is read and
+        uploaded instead. Permissions are re-applied either way, because a
+        migrate re-applies them and both paths must leave the same state.
+        """
+        storage = self.dataset_manager.storage
+        try:
+            ref = storage.find_dataset_ref(
+                self.email, tag, protocol_version=protocol_version
+            )
+        except DatasetNotFoundError:
+            copy = self.dataset_manager.migrate(tag, protocol_version, users=users)
+        else:
+            copy = storage.read_dataset(ref)
+            self.dataset_manager._set_new_dataset_permissions(dataset=copy, users=users)
+        self._upload_dataset_to_collection(copy, users=[])
+        if self._private_collections_for(tag):
+            self._upload_private_dataset_to_collection(copy)
+
     def share_private_dataset(self, tag: str, enclave_email: str):
-        """Share private dataset files with an enclave via outbox events."""
+        """Share private dataset files with an enclave via outbox events.
+
+        The files ship at the layout the enclave reads: the newest local copy
+        at or below its negotiated dataset protocol, materialized first when
+        no copy qualifies. An enclave without a known schema is assumed to run
+        the current protocol, the same policy as jobs.
+        """
         if not self.has_do_role:
             raise ValueError("Only data owners can share private datasets")
 
         with self.sync_engine.sync_file_lock():
-            files = self.dataset_manager.get_private_dataset_files(tag)
+            protocol_version = self._private_share_protocol_version(tag, enclave_email)
+            files = self.dataset_manager.get_private_dataset_files(
+                tag, protocol_version=protocol_version
+            )
             events_message = self.sync_engine.datasite_owner_syncer.event_cache.create_events_for_files(
                 files
             )
@@ -642,6 +793,27 @@ class SyftRDSClient(BaseModel):
                 file_change_events_message=events_message,
             )
             self.sync_engine.datasite_owner_syncer.process_syftbox_events_queue()
+
+    def _private_share_protocol_version(self, tag: str, peer_email: str) -> str:
+        """The protocol version of the copy to ship privately to this peer.
+
+        A reader scans every layout at or below its negotiated version, so the
+        newest existing copy at or below it serves; only when none qualifies
+        is a copy at the negotiated version materialized.
+        """
+        storage = self.dataset_manager.storage
+        negotiated = storage.negotiated_protocol_version_for_peer(
+            peer_email, raise_on_unknown=False
+        )
+        readable = {
+            ref.protocol_version
+            for ref in storage.iter_dataset_refs_all_protocols(self.email)
+            if ref.name == tag and int(ref.protocol_version) <= int(negotiated)
+        }
+        if readable:
+            return max(readable, key=int)
+        self._materialize_dataset_copy(tag, negotiated, users=[peer_email])
+        return negotiated
 
     @property
     def datasets(self) -> Any:

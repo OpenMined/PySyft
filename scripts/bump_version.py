@@ -1,17 +1,28 @@
-"""Bump a package version and propagate the change to all dependents.
+"""Bump the version of one package, and update the packages that depend on it.
 
-Usage: python scripts/bump_version.py <package-name> <patch|minor|major>
+Usage:
+    python scripts/bump_version.py <package-name> <patch|minor|major>
 
-Output (two lines):
-  Line 1: new version
-  Line 2: space-separated list of all modified pyproject.toml files
+The script writes the new version into the pyproject.toml of the package. It
+then writes a version pin for the package into each pyproject.toml that depends
+on it.
+
+A pin names the version that was in the file before this run, not the new one. A
+release publishes the version on the branch and bumps the version after that, so
+the earlier version is the one PyPI has. A pin on the new version names a
+version that PyPI does not hold yet, and an install of a dependent then fails.
+
+The script prints two lines:
+
+- Line 1: the new version.
+- Line 2: the modified pyproject.toml files, separated by spaces.
 """
 
 import argparse
 import re
-import tomllib
 from pathlib import Path
 
+import tomllib
 from packaging.version import Version
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -95,8 +106,10 @@ def main() -> None:
     args = parser.parse_args()
 
     target_path = find_target_pyproject(args.package_name)
+    with open(target_path, "rb") as f:
+        published_version = Version(tomllib.load(f)["project"]["version"])
     new_version = update_target_version(target_path, args.bump_type)
-    modified_deps = update_dependents(args.package_name, new_version, target_path)
+    modified_deps = update_dependents(args.package_name, published_version, target_path)
 
     all_modified = [target_path] + modified_deps
     relative_paths = [str(p.relative_to(REPO_ROOT)) for p in all_modified]

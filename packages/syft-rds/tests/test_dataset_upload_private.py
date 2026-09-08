@@ -1,4 +1,7 @@
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.gdrive_transport import (
+    GDriveConnection,
+    collection_name_query,
+)
 from syft_rds import SyftRDSClient
 from syft_datasets.dataset_manager import (
     DATASET_COLLECTION_PREFIX,
@@ -148,10 +151,7 @@ class TestDatasetUploadPrivate:
         results = (
             ds_connection.drive_service.files()
             .list(
-                q=(
-                    f"name contains '{PRIVATE_DATASET_COLLECTION_PREFIX}_' "
-                    f"and trashed=false"
-                ),
+                q=f"{collection_name_query(PRIVATE_DATASET_COLLECTION_PREFIX)} and trashed=false",
                 fields="files(id,name)",
             )
             .execute()
@@ -165,10 +165,7 @@ class TestDatasetUploadPrivate:
         do_results = (
             do_connection.drive_service.files()
             .list(
-                q=(
-                    f"name contains '{PRIVATE_DATASET_COLLECTION_PREFIX}_' "
-                    f"and trashed=false"
-                ),
+                q=f"{collection_name_query(PRIVATE_DATASET_COLLECTION_PREFIX)} and trashed=false",
                 fields="files(id,name)",
             )
             .execute()
