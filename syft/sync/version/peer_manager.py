@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
+from syft_migration import ProtocolSchema
 
 from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
@@ -98,8 +99,9 @@ class PeerManagerConfig(BaseModel):
     syftbox_folder: Path
     email: str = ""
     connection_configs: List[ConnectionConfig] = []
+    # Proceeds with a peer whose version is unknown or whose client version is
+    # incompatible, instead of skipping it.
     force_ignore_peer_version: bool = False
-    force_ignore_protocol_version: bool = True
     suppress_version_warnings: bool = False
     n_threads: int = 10
     has_do_role: bool = False
@@ -139,7 +141,6 @@ class PeerManager(BaseModel):
     connection_router: ConnectionRouter
     peer_store: PeerStore
     force_ignore_peer_version: bool = False
-    force_ignore_protocol_version: bool = True
     suppress_version_warnings: bool = False
     n_threads: int = 10
     has_do_role: bool = False
@@ -148,6 +149,17 @@ class PeerManager(BaseModel):
 
     _own_version: Optional[VersionInfo] = PrivateAttr(default=None)
     _executor: Optional[ThreadPoolExecutor] = PrivateAttr(default=None)
+    # protocol name -> {peer email -> ProtocolSchema}. Inner dicts are handed
+    # out by live_peer_schemas() and mutated in place as peer versions load,
+    # so consumers (JobStorage, DatasetStorage) always see current knowledge.
+    _peer_protocol_schemas: Dict[str, Dict[str, ProtocolSchema]] = PrivateAttr(
+        default_factory=dict
+    )
+    # peer email -> last loaded VersionInfo (or None); lets a protocol map
+    # registered AFTER versions were loaded backfill instead of starting empty.
+    _loaded_peer_versions: Dict[str, Optional[VersionInfo]] = PrivateAttr(
+        default_factory=dict
+    )
 
     # ========== Peer List Properties ==========
 
@@ -199,7 +211,6 @@ class PeerManager(BaseModel):
             connection_router=connection_router,
             peer_store=peer_store,
             force_ignore_peer_version=config.force_ignore_peer_version,
-            force_ignore_protocol_version=config.force_ignore_protocol_version,
             suppress_version_warnings=config.suppress_version_warnings,
             n_threads=config.n_threads,
             has_do_role=config.has_do_role,
@@ -212,6 +223,53 @@ class PeerManager(BaseModel):
     def model_post_init(self, __context) -> None:
         """Initialize the thread pool executor."""
         self._executor = ThreadPoolExecutor(max_workers=self.n_threads)
+
+    def live_peer_schemas(self, protocol_name: str) -> Dict[str, ProtocolSchema]:
+        """The live {peer email -> ProtocolSchema} map for ``protocol_name``.
+
+        The returned dict is owned by this PeerManager and updated in place
+        whenever a peer's version file is (re)loaded: peers advertising the
+        protocol appear, peers that stop advertising it (or whose version is
+        cleared) disappear. Hand it to JobStorage/DatasetStorage as
+        ``peer_schemas`` so negotiation always uses current knowledge. A map
+        registered after peer versions were already loaded is backfilled from
+        them.
+        """
+        per_peer = self._peer_protocol_schemas.get(protocol_name)
+        if per_peer is None:
+            per_peer = self._peer_protocol_schemas[protocol_name] = {}
+            for email, version_info in list(self._loaded_peer_versions.items()):
+                self._sync_one(per_peer, protocol_name, email, version_info)
+        return per_peer
+
+    @staticmethod
+    def _sync_one(
+        per_peer: Dict[str, ProtocolSchema],
+        protocol_name: str,
+        peer_email: str,
+        version_info: Optional[VersionInfo],
+    ) -> None:
+        # getattr: a peer's version may be a V1 object (no schemas attribute).
+        advertised = getattr(version_info, "protocol_schemas", None) or {}
+        schema = advertised.get(protocol_name)
+        if schema is not None:
+            per_peer[peer_email] = schema
+        else:
+            per_peer.pop(peer_email, None)
+
+    def _update_peer_schemas(
+        self, peer_email: str, version_info: Optional[VersionInfo]
+    ) -> None:
+        """Sync the live schema maps with a freshly loaded peer version.
+
+        A None version or a pre-V2 version file (empty ``protocol_schemas``)
+        removes the peer: it is an unknown speaker, and consumers apply their
+        own unknown-peer defaults.
+        """
+        self._loaded_peer_versions[peer_email] = version_info
+        # list(): guard against a concurrent live_peer_schemas() registration.
+        for protocol_name, per_peer in list(self._peer_protocol_schemas.items()):
+            self._sync_one(per_peer, protocol_name, peer_email, version_info)
 
     def get_own_version(self) -> VersionInfo:
         """Get current client's version info."""
@@ -241,6 +299,7 @@ class PeerManager(BaseModel):
         cached_peer = self.get_cached_peer(peer_email)
         if cached_peer:
             cached_peer.version = version_info
+        self._update_peer_schemas(peer_email, version_info)
         return version_info
 
     def _load_single_peer_version(
@@ -275,6 +334,7 @@ class PeerManager(BaseModel):
             peer = self.get_cached_peer(email)
             if peer:
                 peer.version = version
+            self._update_peer_schemas(email, version)
 
         return {email: version for email, version in results}
 
@@ -288,6 +348,7 @@ class PeerManager(BaseModel):
         peer = self.get_cached_peer(peer_email)
         if peer:
             peer.version = None
+        self._update_peer_schemas(peer_email, None)
 
     def peer_compatibility_status(self, peer_email: str) -> CompatibilityStatus:
         """Get the CompatibilityStatus for a peer (UNKNOWN if version not loaded)."""
@@ -308,11 +369,16 @@ class PeerManager(BaseModel):
         """Build a PeerCompatibilityResult describing whether the caller should
         skip / raise / warn for this peer.
 
-        SAME → no skip, no warning. PATCH_DIFF → no skip, "patch differs"
-        warning. INCOMPATIBLE / UNKNOWN → skip unless effective
-        `force_ignore_peer_version or ignore_peer_version` (then proceed with
-        a "proceeding to {action}" warning). UNKNOWN's skip message includes
-        a "call client.sync()" hint.
+        SAME → no skip, no log.
+
+        PATCH_DIFF → no skip and a "patch differs" log, or a skip when
+        `skip_peer_on_patch_version_diff` is set.
+
+        INCOMPATIBLE and UNKNOWN → skip, unless effective
+        `force_ignore_peer_version or ignore_peer_version`. The UNKNOWN message
+        includes a "call client.sync()" hint. A protocol applies its own floor on
+        top of this gate, so a peer that passes here can still be refused for one
+        protocol and accepted for another.
         """
         own_version = self.get_own_version()
         peer_version = self.get_peer_version(peer_email)
@@ -360,7 +426,9 @@ class PeerManager(BaseModel):
                 **common,
             )
 
-        # UNKNOWN or INCOMPATIBLE
+        # UNKNOWN or INCOMPATIBLE. An unknown peer has no capabilities to check,
+        # and an incompatible client version is refused by default. Either way the
+        # override lets the caller proceed.
         if status == CompatibilityStatus.UNKNOWN:
             detail = (
                 "version information not available "
@@ -423,8 +491,10 @@ class PeerManager(BaseModel):
         )
         if not any_compatible:
             warnings.warn(
-                f"All connected peers ({len(peer_emails)}) have incompatible versions. "
-                "You may not be able to submit jobs or load datasets until versions match."
+                f"All connected peers ({len(peer_emails)}) run an incompatible "
+                "client version, or their version is unknown. Such a peer is "
+                "skipped, and cannot receive jobs or datasets; call client.sync() "
+                "to read the version of each peer."
             )
 
     def shutdown(self) -> None:
@@ -490,6 +560,7 @@ class PeerManager(BaseModel):
         )
         self.share_version_with_peer(peer_email)
         version_info = self.connection_router.read_peer_version_file(peer_email)
+        self._update_peer_schemas(peer_email, version_info)
 
         new_peer_obj.version = version_info
         new_peer_obj.public_encryption_bundle = peer_bundle

@@ -10,6 +10,10 @@ class FileCollection(BaseModel):
     tag: str
     content_hash: str
     has_any_permission: bool = False
+    # The layout this collection holds, as written into the folder name. An owner
+    # publishes one collection per layout its audience reads; "" is the original
+    # layout. See CollectionSyncSpec.
+    variant: str = ""
 
 
 class ConnectionConfig(BaseModel):
@@ -65,9 +69,15 @@ class SyftboxPlatformConnection(BaseModel):
         raise NotImplementedError()
 
     def owner_delete_collection(self, prefix: str, tag: str) -> None:
+        """Delete every layout of ``tag`` published under ``prefix``."""
         raise NotImplementedError()
 
     def watcher_list_collections(self, prefix: str) -> list[dict]:
+        """Collections a peer shared with us, in every layout they published.
+
+        Each dict carries owner_email, tag, content_hash and variant. ``prefix``
+        matches all layouts, so the caller picks the one it can read.
+        """
         raise NotImplementedError()
 
     def watcher_download_collection(

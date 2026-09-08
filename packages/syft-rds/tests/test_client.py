@@ -48,53 +48,6 @@ def test_dataset_creation_and_sync():
     assert len(dataset.mock_files) > 0
 
 
-def test_delete_unversioned_state_removes_dataset_collections():
-    """delete_unversioned_state clears both dataset collection folders."""
-    from syft_datasets.dataset_manager import (
-        DATASET_COLLECTION_PREFIX,
-        PRIVATE_DATASET_COLLECTION_PREFIX,
-    )
-    from dataset_test_utils import create_tmp_dataset_files
-
-    def query(conn, name_contains):
-        results = (
-            conn.drive_service.files()
-            .list(
-                q=f"name contains '{name_contains}' and trashed=false",
-                fields="files(id, name)",
-            )
-            .execute()
-        )
-        return results.get("files", [])
-
-    ds, do = SyftRDSClient.pair_with_mock_drive_service_connection(
-        use_in_memory_cache=False,
-        sync_automatically=False,
-        encryption=True,
-    )
-
-    mock_path, private_path, readme_path = create_tmp_dataset_files()
-    do.create_dataset(
-        name="my dataset",
-        mock_path=mock_path,
-        private_path=private_path,
-        summary="Test",
-        readme_path=readme_path,
-        users=[ds.email],
-        upload_private=True,
-    )
-    do.sync()
-
-    conn = do.peer_manager.connection_router.connections[0]
-    assert len(query(conn, DATASET_COLLECTION_PREFIX)) > 0
-    assert len(query(conn, PRIVATE_DATASET_COLLECTION_PREFIX)) > 0
-
-    conn.delete_unversioned_state()
-
-    assert len(query(conn, DATASET_COLLECTION_PREFIX)) == 0
-    assert len(query(conn, PRIVATE_DATASET_COLLECTION_PREFIX)) == 0
-
-
 def test_dir_returns_only_public_api():
     _ds, do = SyftRDSClient.pair_with_mock_drive_service_connection()
 
@@ -137,6 +90,7 @@ def test_encrypted_dataset_collection_syncs():
     """Dataset-collection sync-down works under encryption."""
     from dataset_test_utils import create_tmp_dataset_files
     from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
+    from syft_rds.config import MOCK_DATASET_SPEC
 
     ds, do = SyftRDSClient.pair_with_mock_drive_service_connection(
         encryption=True,
@@ -162,20 +116,12 @@ def test_encrypted_dataset_collection_syncs():
     do_collections = [c for c in collections if c["owner_email"] == do.email]
     assert do_collections, "DS does not see the DO's dataset collection"
 
+    # The download names the layout the owner published, not the bare prefix.
     c = do_collections[0]
     files = cr.watcher_download_collection(
-        DATASET_COLLECTION_PREFIX, c["tag"], c["content_hash"], do.email
+        MOCK_DATASET_SPEC.wire_prefix(c["variant"]),
+        c["tag"],
+        c["content_hash"],
+        do.email,
     )
     assert files, "DS could not download the dataset collection files"
-
-
-def test_collection_prefixes_match_syft_datasets():
-    """The sync core mirrors the prefixes rather than importing the domain."""
-    from syft.sync.connections import collection_prefixes as core
-    from syft_datasets import dataset_manager as domain
-
-    assert core.DATASET_COLLECTION_PREFIX == domain.DATASET_COLLECTION_PREFIX
-    assert (
-        core.PRIVATE_DATASET_COLLECTION_PREFIX
-        == domain.PRIVATE_DATASET_COLLECTION_PREFIX
-    )

@@ -494,6 +494,25 @@ class TestVersionMismatchBehavior:
         )
         assert ds_manager.email not in compatible_peers
 
+    def test_sync_skips_a_peer_of_unknown_version(self):
+        # A separate reason to skip: nothing can be negotiated without the version
+        # of the peer, so this holds whatever the client version policy is.
+        ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+            check_versions=True,
+        )
+        peer = do_manager.peer_manager.get_cached_peer(ds_manager.email)
+        assert peer is not None
+        peer.version = None
+        do_manager.peer_manager._loaded_peer_versions[ds_manager.email] = None
+
+        do_manager.peer_manager.suppress_version_warnings = True
+        compatible_peers = (
+            do_manager.peer_manager.get_compatible_peer_emails_for_syncing(
+                [ds_manager.email]
+            )
+        )
+        assert ds_manager.email not in compatible_peers
+
     def test_version_upgrade_breaks_communication(self):
         """Major-bump upgrade should now make peers incompatible."""
         ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(

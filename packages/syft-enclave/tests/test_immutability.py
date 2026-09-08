@@ -20,6 +20,14 @@ def test_is_private_dataset_path_positive():
     )
 
 
+def test_is_private_dataset_path_versioned_layout():
+    # A protocol copy holds its files under a v<n> segment. The filter must
+    # protect that layout too, and not only the flat one of protocol 0.
+    assert is_private_dataset_path(
+        "do@example.com/private/syft_datasets/v1/my_ds/data.csv"
+    )
+
+
 def test_is_private_dataset_path_public():
     assert not is_private_dataset_path(
         "do@example.com/public/syft_datasets/my_ds/data.csv"
@@ -103,7 +111,7 @@ def _create_tmp_dataset_files():
     return mock_path, private_path
 
 
-def test_enclave_blocks_reshare_of_private_dataset():
+def test_enclave_blocks_reshare_of_private_dataset(private_dataset_dir):
     """After DO shares private data with enclave, a second share should not overwrite."""
     enclave, do1, do2, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
         use_in_memory_cache=False,
@@ -124,14 +132,10 @@ def test_enclave_blocks_reshare_of_private_dataset():
     do1.share_private_dataset("testdataset", enclave.email)
     enclave._rds.sync()
 
-    enclave_private_dir = (
-        enclave._rds.syftbox_folder
-        / do1.email
-        / "private"
-        / "syft_datasets"
-        / "testdataset"
+    enclave_private_dir = private_dataset_dir(
+        enclave._rds.syftbox_folder, do1.email, "testdataset"
     )
-    assert enclave_private_dir.exists()
+    assert enclave_private_dir is not None
     original_content = (enclave_private_dir / "private.txt").read_bytes()
     assert original_content == b"Hello, world private!"
 

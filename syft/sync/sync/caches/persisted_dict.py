@@ -31,6 +31,11 @@ from uuid import uuid4
 
 import portalocker
 
+# Format of the persisted file: {"version": N, "entries": {...}}. Raise it when
+# the layout of an entry changes. A file with no version holds the entries at the
+# top level, was written before the field, and is version 0.
+PERSISTED_DICT_VERSION = 1
+
 
 class PersistedDict(dict):
     """Dict that persists to a JSON file. With path=None it's a plain in-memory dict."""
@@ -94,10 +99,28 @@ class PersistedDict(dict):
             return
         try:
             data = json.loads(self._path.read_text())
-            for k, v in data.items():
-                super().__setitem__(self._key_deserializer(k), v)
         except (json.JSONDecodeError, OSError):
-            pass
+            return
+        entries = self._entries_of(data)
+        for k, v in entries.items():
+            super().__setitem__(self._key_deserializer(k), v)
+
+    @staticmethod
+    def _entries_of(data: Any) -> dict:
+        """The entries to load from a parsed file, empty when it cannot be read.
+
+        The client rebuilds every cache that uses this class, so an unreadable
+        file costs a re-scan and nothing else. A file from a later version
+        therefore starts empty instead of stopping the client.
+        """
+        if not isinstance(data, dict):
+            return {}
+        if "version" not in data or "entries" not in data:
+            # Written before the version field existed: entries at the top level.
+            return data
+        if data["version"] > PERSISTED_DICT_VERSION:
+            return {}
+        return data["entries"]
 
     def _write_to_file(self) -> None:
         if self._path is None:
@@ -106,7 +129,10 @@ class PersistedDict(dict):
         # Per-process unique tmp path: even with the file lock, this guards
         # against any path where two writers share a tmp filename.
         tmp = self._path.with_suffix(f".tmp.{os.getpid()}.{uuid4().hex}")
-        serialized = {self._key_serializer(k): v for k, v in super().items()}
+        serialized = {
+            "version": PERSISTED_DICT_VERSION,
+            "entries": {self._key_serializer(k): v for k, v in super().items()},
+        }
         try:
             tmp.write_text(json.dumps(serialized))
             tmp.replace(self._path)

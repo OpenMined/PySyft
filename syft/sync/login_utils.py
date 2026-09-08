@@ -25,36 +25,33 @@ def _read_remote_version(
     return conn.read_own_version_file()
 
 
-def _delete_remote_unversioned_state(
-    email: str,
-    token_path: Optional[Path],
-) -> None:
-    """Delete non-versioned remote state during upgrade."""
-    from syft.sync.connections.drive.gdrive_transport import GDriveConnection
-
-    conn = GDriveConnection.from_token_path(email=email, token_path=token_path)
-    conn.delete_unversioned_state()
-
-
 def _handle_version_incompatible(
     email: str,
     token_path: Optional[Path],
     local_syftbox_path: Path,
     local_version: Optional[VersionInfo],
     remote_version: Optional[VersionInfo],
-) -> None:
-    """Handle version mismatch with unified prompt."""
+) -> bool:
+    """Handle a client major/minor mismatch at login.
+
+    The default is to keep local and remote data. Folder adopt, refuse-later
+    checks, and cache reset repair the state. A full wipe is an explicit second
+    choice only.
+
+    Returns True when the data stays and the state still needs a repair. This
+    function runs before the client exists, so it cannot sync. The caller holds
+    the client, and it reports what happens to the repair.
+    """
     choice = _prompt_mismatch(local_version, remote_version)
     if choice == "1":
-        print(f"Upgrading to v{SYFT_VERSION}...")
-        delete_local_syftbox(
-            email=email,
-            local_syftbox_path=local_syftbox_path,
-            verbose=True,
+        print(
+            f"Continuing with v{SYFT_VERSION}. Local and remote data are kept.\n"
+            "Encryption keys are the one exception. A key file from a newer "
+            "client is refused, because a private key cannot be rebuilt. Install "
+            "that client to use those keys.\n"
         )
-        _delete_remote_unversioned_state(email, token_path)
-        print("Done. Continuing login.\n")
-    elif choice == "2":
+        return True
+    if choice == "2":
         print(f"Deleting all state and starting fresh with v{SYFT_VERSION}...")
         delete_local_syftbox(
             email=email,
@@ -67,22 +64,25 @@ def _handle_version_incompatible(
             verbose=True,
         )
         print("Done. Continuing login.\n")
-    else:
-        print("Exiting.")
-        sys.exit(0)
+        return False
+    print("Exiting.")
+    sys.exit(0)
 
 
 def handle_potential_version_mismatches_on_login(
     email: str,
     token_path: Optional[str | Path] = None,
-) -> None:
-    """Check local and remote versions against installed version.
+) -> bool:
+    """Check local and remote versions against the installed client.
 
     Runs before client init. Creates a temporary GDrive connection to read
     the remote version file.
 
-    On mismatch, prompts user to upgrade (local delete only, remote preserved
-    via version subfolders) or hard-reset (delete everything).
+    On a major/minor mismatch, the default is to keep data and continue. The
+    user can still choose a full wipe, or quit. Patch differences are not a
+    mismatch.
+
+    Returns True when the data stays and the state still needs a repair.
     """
     resolved_email = _resolve_email(email)
     resolved_token_path = _resolve_token_path(token_path)
@@ -100,13 +100,14 @@ def handle_potential_version_mismatches_on_login(
     )
 
     if not (local_compatible and remote_compatible):
-        _handle_version_incompatible(
+        return _handle_version_incompatible(
             resolved_email,
             resolved_token_path,
             local_syftbox_path,
             local_version,
             remote_version,
         )
+    return False
 
 
 def _print_version_status(
@@ -130,11 +131,21 @@ def _prompt_mismatch(
     local_version: Optional[VersionInfo],
     remote_version: Optional[VersionInfo],
 ) -> str:
-    """Prompt user about version mismatch. Returns choice."""
+    """Prompt the user about a version mismatch. Returns the choice string."""
     _print_version_status(local_version, remote_version)
+    if not sys.stdin.isatty():
+        # No terminal, so no answer can arrive. Choice 1 keeps every file and
+        # changes nothing, so it is safe to take without an answer. A prompt
+        # here would stop a notebook or a scheduled run instead.
+        print(
+            "No terminal is attached. Continuing with all data kept.\n"
+            "To start fresh instead, call delete_local_syftbox and "
+            "delete_remote_syftbox, then log in again.\n"
+        )
+        return "1"
     print(
         f"""
-[1] Upgrade to v{SYFT_VERSION} and archive old data
+[1] Continue with v{SYFT_VERSION} (keep data; repair on sync)
 [2] Delete all state and start fresh with v{SYFT_VERSION}
 [3] Quit
 
