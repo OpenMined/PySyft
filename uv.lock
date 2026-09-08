@@ -4746,7 +4746,7 @@ requires-dist = [
 
 [[package]]
 name = "syft-restrict"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "packages/syft-restrict" }
 dependencies = [
     { name = "pydantic" },

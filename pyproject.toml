@@ -175,7 +175,7 @@ test = [
     "enclave-model-api-example[test]",  # pulls fastapi/httpx for the inference server tests
     "syft-bg==0.3.12",  # tests/unit/syft_bg/ lives under this package's testpaths and imports syft_bg
     "syft-enclave==0.1.1",
-    "syft-restrict",
+    "syft-restrict==0.1.0",
     "syft-migration==0.1.1",
     "pyarrow",  # only used by parquet test fixtures (tests/unit/utils.py)
 ]
