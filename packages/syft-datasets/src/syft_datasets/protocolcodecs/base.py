@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Iterator
 
+import yaml
 from syft_migration import MigratableObject
 
 from ..config import SyftBoxConfig
@@ -51,4 +52,20 @@ class ProtocolCodec(ABC):
     def read(self, path: Path, canonical_name: str) -> dict: ...
 
     @abstractmethod
-    def write(self, path: Path, obj: MigratableObject) -> None: ...
+    def _data_for_disk(self, obj: MigratableObject) -> dict:
+        """The fields to serialize for this layout.
+
+        The one place a codec decides its on-disk shape. Abstract on purpose: a
+        codec states its shaping rather than inheriting a default that may not
+        match the layout it speaks.
+        """
+        ...
+
+    def dumps(self, obj: MigratableObject) -> str:
+        """YAML for ``obj`` in this codec's on-disk format."""
+        return yaml.safe_dump(self._data_for_disk(obj), indent=2, sort_keys=False)
+
+    def write(self, path: Path, obj: MigratableObject) -> None:
+        """Persist ``obj`` at ``path`` in this codec's on-disk format."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(self.dumps(obj))
