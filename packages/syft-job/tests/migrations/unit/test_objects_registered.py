@@ -1,10 +1,5 @@
 """Every versioned syft-job object is known to the package registry."""
 
-import importlib
-import pkgutil
-
-from syft_migration import MigratableObject
-
 import syft_job
 from syft_job.migrations import job_registry
 from syft_job.models import (
@@ -13,6 +8,7 @@ from syft_job.models import (
     JobSubmissionMetadata,
     JobSubmissionMetadataV1,
 )
+from syft_migration import unregistered_objects, versioned_objects
 
 
 def test_versioned_objects_registered_and_aliased():
@@ -31,26 +27,8 @@ def test_versioned_objects_registered_and_aliased():
     assert schema.current_schema(canonical_name="JobSubmissionMetadata")
 
 
-def _all_subclasses(cls: type) -> set[type]:
-    subclasses = set(cls.__subclasses__())
-    for sub in cls.__subclasses__():
-        subclasses |= _all_subclasses(sub)
-    return subclasses
-
-
 def test_all_migratable_objects_in_package_are_registered():
-    # Import every syft_job module so all MigratableObject subclasses are defined.
-    for module_info in pkgutil.walk_packages(syft_job.__path__, prefix="syft_job."):
-        importlib.import_module(module_info.name)
-
-    package_objects = [
-        cls
-        for cls in _all_subclasses(MigratableObject)
-        if cls.__module__.startswith("syft_job.")
-    ]
-    assert len(package_objects) >= 2  # the scan actually found the job objects
-
-    for cls in package_objects:
-        canonical_name = cls.model_fields["canonical_name"].default
-        version = cls.model_fields["version"].default
-        assert job_registry.get_class(canonical_name, version) is cls
+    # The scan imports every syft_job module, so it sees objects that nothing
+    # else imports.
+    assert len(versioned_objects(syft_job)) >= 2
+    assert unregistered_objects(job_registry, syft_job) == []
