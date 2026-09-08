@@ -144,6 +144,71 @@ def test_wire_bytes_match_write_and_strip_private_config_identity_on_v0(tmp_path
     assert raw1["canonical_name"] == "PrivateDatasetConfig" and raw1["version"] == "1"
 
 
+@pytest.fixture
+def private_config_v2():
+    """A throwaway PrivateDatasetConfig V2, as the next release would ship it.
+
+    Subclassing a registered class registers it, so this lands in the global
+    dataset_registry; the teardown pops it back out, because the registry has no
+    deregister call and another test must not see a version "2".
+    """
+    from syft_datasets.models import PrivateDatasetConfigV1
+
+    # The class body registers V2, so everything after it needs the teardown.
+    class PrivateDatasetConfigV2(PrivateDatasetConfigV1, registry=dataset_registry):
+        version: str = "2"
+        checksum: str = ""
+
+    try:
+        dataset_registry.register_migration(
+            canonical_name="PrivateDatasetConfig",
+            from_version="1",
+            to_version="2",
+            fn=lambda obj: PrivateDatasetConfigV2(
+                **obj.model_dump(exclude={"version"})
+            ),
+        )
+        yield PrivateDatasetConfigV2
+    finally:
+        dataset_registry.objects["PrivateDatasetConfig"].pop("2", None)
+        dataset_registry.migrations.get("PrivateDatasetConfig", {}).pop(
+            ("1", "2"), None
+        )
+
+
+def test_dataset_private_config_upgrades_a_v1_file_to_the_latest_version(
+    tmp_path: Path, private_config_v2
+):
+    # Dataset.private_config must read through storage, which upgrades. Reading the
+    # file into PrivateDatasetConfigV1 by name would return version 1 forever.
+    storage = _storage(tmp_path)
+    ref = DatasetRef(DO_EMAIL, "demo", "1")
+    dataset = _mock_dataset(storage, ref)
+    storage.write_dataset_metadata(ref, dataset)
+
+    path = storage.private_metadata_path(ref)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "canonical_name": "PrivateDatasetConfig",
+                "version": "1",
+                "uid": str(dataset.uid),
+                "data_dir": "",
+            },
+            indent=2,
+            sort_keys=False,
+        )
+    )
+
+    config = storage.read_dataset(ref).private_config
+
+    assert isinstance(config, private_config_v2)
+    assert config.version == "2"
+    # The uid comes from the file, so a fresh V2 that ignored it would fail here.
+    assert config.uid == dataset.uid
+
+
 # -- behavior 2: each codec scans only its own layout --------------------------
 def test_scan_partitions_by_layout(tmp_path: Path):
     storage = _storage(tmp_path)
