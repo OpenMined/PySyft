@@ -1,6 +1,6 @@
 [project]
 name = "syft-restrict"
-version = "0.1.0"
+version = "0.1.1"
 description = "Verify + obfuscate: prove JAX/Flax inference code only does math (no data theft) while hiding the model architecture"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }

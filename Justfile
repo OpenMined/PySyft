@@ -45,6 +45,10 @@ test-unit-rds:
     #!/bin/bash
     uv run pytest -n auto ./packages/syft-rds/tests
 
+test-unit-restrict:
+    #!/bin/bash
+    uv run pytest -n auto ./packages/syft-restrict/tests
+
 test-unit-enclave:
     #!/bin/bash
     uv run pytest -n auto ./packages/syft-enclave/tests

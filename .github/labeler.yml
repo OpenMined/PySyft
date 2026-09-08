@@ -47,3 +47,8 @@ pkg:syft-migration:
   - changed-files:
       - any-glob-to-any-file:
           - 'packages/syft-migration/**'
+
+pkg:syft-restrict:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/syft-restrict/**'
