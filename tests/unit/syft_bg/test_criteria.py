@@ -17,6 +17,7 @@ from syft_bg.approve.criteria import (
     _validate_job_against_object,
 )
 from syft_bg.approve.handlers.job import JobApprovalHandler
+from syft_bg.common.syft_bg_config import SyftBgConfig
 
 
 def _write_files(base_dir: Path, files: dict[str, str]) -> Path:
@@ -215,7 +216,7 @@ def _make_handler(config: AutoApprovalsConfig, tmp_dir: Path) -> JobApprovalHand
     it via its config_path-backed property.
     """
     config_path = tmp_dir / "config.yaml"
-    AutoApproveConfig(auto_approvals=config).save(config_path)
+    SyftBgConfig(approve=AutoApproveConfig(auto_approvals=config)).save(config_path)
     return JobApprovalHandler(client=MagicMock(), config_path=config_path)
 
 

@@ -615,3 +615,154 @@ def test_duplicate_method_name_split_across_public_and_private_must_be_flagged(
             return x
     """
     _assert_error_code(verify_all, src, "duplicate-method", private=[[8, 9]])
+
+
+# ── safe-local verdict must be cleared on every rebind form, not just plain assign ───────────
+
+
+def test_tuple_unpack_rebind_clears_safe_local_verdict(verify_all):
+    # `b = self.dense` marks b safe; `b, _ = fn, b` rebinds b to an opaque param (tuple-unpack
+    # targets bind in the current scope, so the rebind leaks). The unpack must clear b's safe
+    # verdict, so the later b(x) is call-unresolved rather than trusting the stale verdict.
+    src = """
+    class Block:
+        def __call__(self, x):
+            return x
+    class M:
+        def setup(self):
+            self.dense = Block()
+        def steal(self, x, fn):
+            b = self.dense
+            b, _ = fn, b
+            return b(x)
+    """
+    _assert_error_code(verify_all, src, "call-unresolved")
+
+
+def test_for_loop_target_rebind_clears_safe_local_verdict(verify_all):
+    # `for b in [fn]:` rebinds b to an opaque element (for-loop vars leak to the enclosing scope).
+    # The for-target must clear b's safe verdict, so b(x) is call-unresolved.
+    src = """
+    class Block:
+        def __call__(self, x):
+            return x
+    class M:
+        def setup(self):
+            self.dense = Block()
+        def steal(self, x, fn):
+            b = self.dense
+            for b in [fn]:
+                return b(x)
+            return x
+    """
+    _assert_error_code(verify_all, src, "call-unresolved")
+
+
+# ── multi-line statement straddling the public->private boundary ─────────────
+
+
+def test_boundary_straddle_is_verified_as_private(verify_all):
+    # `jnp.save(` starts on a PUBLIC line but its args are in the private range. Range membership
+    # is start-line based, so the call was historically skipped. Default-deny: a node whose span
+    # overlaps the private region is verified as private. Under a tight policy (no jnp.save) the
+    # straddling call must be caught.
+    src = """
+    import jax.numpy as jnp
+    def f(arr):
+        r = jnp.save(
+            "x.npy",
+            arr)
+        return r
+    """
+    result = verify_all(
+        src, pol=make_policy(functions=["jax.numpy.einsum"]), private=[[4, 5]]
+    )
+    assert "call-not-allowed" in get_error_codes(result)
+
+
+# ── dunder segment in call position on an allow-listed path ──────────────────────────────────
+
+
+def test_dunder_in_call_position_on_allowed_path(verify_all):
+    # A dunder in DIRECT call position on an allow-listed dotted path must be rejected as
+    # dunder-attr, not gated only by the allow-list. Under a broad `jax.*` glob,
+    # `jnp.einsum.__wrapped__` resolves to a `jax.*` path and would otherwise pass, handing
+    # back the function-object introspection surface (`__wrapped__`, and by the same shape
+    # `__globals__`/`__defaults__` if reachable this way). Read position was already caught;
+    # call position must match.
+    src = """
+    import jax.numpy as jnp
+    def f(x):
+        return jnp.einsum.__wrapped__(x)
+    """
+    codes = get_error_codes(verify_all(src, private=[[2, 3]]))
+    assert "dunder-attr" in codes
+
+
+def test_dunder_call_and_read_positions_are_consistent(verify_all):
+    # The read-then-call form of the same access is caught; the direct-call form must be too.
+    read_then_call = """
+    import jax.numpy as jnp
+    def f(x):
+        g = jnp.einsum.__wrapped__
+        return g(x)
+    """
+    assert "dunder-attr" in get_error_codes(
+        verify_all(read_then_call, private=[[2, 4]])
+    )
+
+
+# ── multi-segment `import a.b` must not poison path resolution / defeat the floor ────────────
+
+
+def test_multisegment_import_does_not_bypass_disallow_floor(verify_all):
+    # `import jax.numpy` binds the NAME `jax` (to the jax package) at runtime -- not `jax.numpy`.
+    # A resolver that binds jax -> "jax.numpy" mis-resolves `jax.numpy.save` to
+    # "jax.numpy.numpy.save", so a disallow floor listing jax.numpy.save misses it while runtime
+    # still calls the real function.
+    src = """
+    import jax.numpy
+    def f(x):
+        return jax.numpy.save("/tmp/leak.npy", x)
+    """
+    codes = get_error_codes(
+        verify_all(src, pol=make_policy(disallow=["jax.numpy.save"]), private=[[2, 3]])
+    )
+    assert "call-not-allowed" in codes
+
+
+def test_multi_import_last_wins_does_not_bypass_floor(verify_all):
+    # `import jax` then `import jax.tree_util` must not clobber the `jax` binding to jax.tree_util.
+    src = """
+    import jax
+    import jax.tree_util
+    def f(x):
+        return jax.pure_callback(x, x, x)
+    """
+    codes = get_error_codes(
+        verify_all(
+            src, pol=make_policy(disallow=["jax.pure_callback"]), private=[[3, 4]]
+        )
+    )
+    assert "call-not-allowed" in codes
+
+
+def test_public_for_header_over_private_body_clears_safe_local(verify_all):
+    # A `for` header on a PUBLIC line with a PRIVATE body still rebinds the loop target in the
+    # enclosing scope. The `for` is a compound node (exempt from straddle-enforce), so the target
+    # clear must happen in the walk whenever the loop overlaps a private range -- otherwise b keeps
+    # its stale safe verdict and the private b(x) wrongly trusts it (reintroducing the rebind hole).
+    src = """
+    class Block:
+        def __call__(self, x):
+            return x
+    class M:
+        def setup(self):
+            self.dense = Block()
+        def steal(self, x, fn):
+            b = self.dense
+            for b in [fn]:
+                return b(x)
+    """
+    # line 8 (b = self.dense) private, line 9 (for header) PUBLIC, line 10 (return b(x)) private
+    _assert_error_code(verify_all, src, "call-unresolved", private=[[8, 8], [10, 10]])

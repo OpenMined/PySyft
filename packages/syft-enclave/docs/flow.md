@@ -6,7 +6,7 @@ assumes you have read it first.
 
 Users connect via **Jupyter or Google Colab** and sync through **Google Drive**. Using this as a
 communication platform, several parties can compute on each other's data. Backed by **confidential
-compute**, a **secure enclave** running an **open-source docker container with syft-client** runs
+compute**, a **secure enclave** running an **open-source docker container with syft** runs
 computations from those parties **without any of them having to reveal that data**.
 
 > **Where we are.** This is an early **alpha** release — a deliberate zero-to-one effort. The goal

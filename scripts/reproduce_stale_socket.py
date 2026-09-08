@@ -31,8 +31,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.oauth2.credentials import Credentials
 
-from syft_client.sync.connections.drive.gdrive_retry import execute_with_retries
-from syft_client.sync.connections.drive.gdrive_transport import build_drive_service
+from syft.sync.connections.drive.gdrive_retry import execute_with_retries
+from syft.sync.connections.drive.gdrive_transport import build_drive_service
 
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 REPO_ROOT = Path(__file__).resolve().parent.parent

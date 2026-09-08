@@ -26,7 +26,7 @@ def test_fresh_state_true_invokes_delete_syftbox(tmp_path, monkeypatch):
     runner = EnclaveRunner(client=client, fresh_state=True)
     runner.init()
 
-    client._manager.delete_syftbox.assert_called_once_with()
+    client.delete_syftbox.assert_called_once_with()
 
 
 def test_fresh_state_false_skips_delete_syftbox(tmp_path, monkeypatch):
@@ -39,7 +39,7 @@ def test_fresh_state_false_skips_delete_syftbox(tmp_path, monkeypatch):
     runner = EnclaveRunner(client=client, fresh_state=False)
     runner.init()
 
-    client._manager.delete_syftbox.assert_not_called()
+    client.delete_syftbox.assert_not_called()
 
 
 def test_fresh_state_default_is_true(tmp_path, monkeypatch):
@@ -52,7 +52,7 @@ def test_fresh_state_default_is_true(tmp_path, monkeypatch):
     runner = EnclaveRunner(client=client)  # no fresh_state arg
     assert runner.fresh_state is True
     runner.init()
-    client._manager.delete_syftbox.assert_called_once_with()
+    client.delete_syftbox.assert_called_once_with()
 
 
 def test_fresh_state_uses_default_kwargs_on_delete(tmp_path, monkeypatch):
@@ -66,6 +66,6 @@ def test_fresh_state_uses_default_kwargs_on_delete(tmp_path, monkeypatch):
 
     # Must be called with no positional or keyword args — let the method's
     # own defaults handle broadcast_delete_events and verbose.
-    call = client._manager.delete_syftbox.call_args
+    call = client.delete_syftbox.call_args
     assert call.args == ()
     assert call.kwargs == {}

@@ -2,6 +2,7 @@
 
 import hashlib
 import shutil
+from collections.abc import Sequence
 from pathlib import Path
 
 from syft_bg.approve.config import AutoApproveConfig, FileEntry
@@ -104,6 +105,8 @@ def move_token_to_syftbg_dir(token_path: Path) -> Path:
         else:
             print(f"Warning: Provided token_path ({token_path}) does not exist.")
 
+    return Path(token_path)
+
 
 def credentials_setup_steps(creds_path: Path, colab: bool) -> str:
     """Return step-by-step instructions for setting up credentials.json."""
@@ -189,9 +192,10 @@ def save_gcp_project_id(credentials_path: Path) -> None:
     """Extract project_id from credentials.json and save to config.yaml."""
     try:
         project_id = get_project_id_from_credentials(credentials_path)
-        config = SyftBgConfig.from_path()
-        config.email_approve.gcp_project_id = project_id
-        config.save()
+        if not get_default_paths().config.exists():
+            return
+        with SyftBgConfig.edit() as config:
+            config.email_approve.gcp_project_id = project_id
     except Exception:
         pass
 
@@ -220,7 +224,7 @@ def generate_unique_name(
 
 
 def resolve_content_files(
-    contents: list[str | Path], base_dir: Path | None
+    contents: Sequence[str | Path], base_dir: Path | None
 ) -> tuple[list[tuple[str, Path]], str | None]:
     """Resolve content paths to (relative_path, absolute_path) pairs.
 

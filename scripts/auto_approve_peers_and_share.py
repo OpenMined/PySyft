@@ -12,8 +12,8 @@ import os
 import time
 from pathlib import Path
 
-from syft_client.sync.syftbox_manager import SyftboxManager
-from syft_client.sync.peers.peer import PeerState
+from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.peers.peer import PeerState
 
 
 def get_email_domain(email: str) -> str:

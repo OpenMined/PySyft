@@ -15,7 +15,7 @@ from time import sleep
 
 import pytest
 
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.syftbox_manager import SyftboxManager
 from tests.integration.utils import token_path_do, token_path_ds
 
 

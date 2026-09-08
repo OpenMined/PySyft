@@ -10,13 +10,13 @@ import time
 from pathlib import Path
 from uuid import uuid4
 
-from syft_client.sync.checkpoints.checkpoint import (
+from syft.sync.checkpoints.checkpoint import (
     Checkpoint,
     IncrementalCheckpoint,
 )
-from syft_client.sync.checkpoints.rolling_state import RollingState
-from syft_client.sync.events.file_change_event import FileChangeEvent
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.checkpoints.rolling_state import RollingState
+from syft.sync.events.file_change_event import FileChangeEvent
+from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.utils import get_mock_event
 
 

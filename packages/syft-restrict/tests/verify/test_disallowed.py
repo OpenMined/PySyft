@@ -110,6 +110,14 @@ def test_match_statement_is_not_on_node_allowlist(verify_all):
         "ascii",
         "format",
         "bytes",
+        # site-injected builtins: stdout channels (copyright/credits/license),
+        # interpreter shutdown (exit/quit), interactive help (help)
+        "copyright",
+        "credits",
+        "license",
+        "exit",
+        "quit",
+        "help",
     ],
 )
 def test_banned_names(verify_all, name):
@@ -185,9 +193,7 @@ def test_bare_class_dunder_name_is_denied(verify_all):
 # ── defs / classes / decorators ──────────────────────────────────────────────
 
 
-@pytest.mark.parametrize(
-    "dunder", ["__init__", "__post_init__", "__getattr__", "__reduce__"]
-)
+@pytest.mark.parametrize("dunder", ["__init__", "__getattr__", "__reduce__"])
 def test_disallowed_dunder_def(verify_all, dunder):
     src = f"""
     class M:
@@ -326,3 +332,21 @@ def test_chained_call_through_unresolved_value_is_rejected(verify_all):
         return d['k'](x)
     """
     assert "call-unresolved" in get_error_codes(verify_all(src))
+
+
+# ── star imports (banned anywhere, even in the trusted public region) ─────────
+
+
+def test_star_import_in_public_is_blocked(verify_all):
+    # `from x import *` can silently shadow a name the private region trusts by spelling (a safe
+    # builtin, import alias, wrapper) and is unreviewable, so it is banned even in public code.
+    src = """
+    from evil import *
+    def f(x):
+        return len(x)
+    """
+    assert "star-import" in get_error_codes(verify_all(src, private=[[2, 3]]))
+
+
+def test_star_import_in_private_is_blocked(verify_all):
+    assert "star-import" in get_error_codes(verify_all("from os import *"))

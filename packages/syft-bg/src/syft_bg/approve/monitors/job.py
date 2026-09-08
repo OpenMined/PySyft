@@ -10,7 +10,7 @@ from syft_bg.common.monitor import Monitor
 
 if TYPE_CHECKING:
     from syft_job.job import JobInfo
-    from syft_client.sync.syftbox_manager import SyftboxManager
+    from syft_rds import SyftRDSClient
 
 
 class JobMonitor(Monitor):
@@ -18,7 +18,7 @@ class JobMonitor(Monitor):
 
     def __init__(
         self,
-        client: SyftboxManager,
+        client: SyftRDSClient,
         config_path: Optional[Path] = None,
         state: Optional[StateManager] = None,
         on_approve: Optional[Callable[[JobInfo], None]] = None,

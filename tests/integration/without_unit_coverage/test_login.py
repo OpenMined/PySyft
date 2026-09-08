@@ -10,12 +10,13 @@ from pathlib import Path
 
 import pytest
 
-import syft_client as sc
-from syft_client.sync.syftbox_manager import SyftboxManager
+import syft as sy
+import syft_rds as rds
+from syft.sync.syftbox_manager import SyftboxManager
 
 
-SYFT_CLIENT_DIR = Path(__file__).parent.parent.parent.parent
-CREDENTIALS_DIR = SYFT_CLIENT_DIR / "credentials"
+SYFT_DIR = Path(__file__).parent.parent.parent.parent
+CREDENTIALS_DIR = SYFT_DIR / "credentials"
 
 # Credentials from CI environment
 FILE_DO = os.environ.get("ai_audit_credentials_fname_do", "token_do.json")
@@ -47,9 +48,9 @@ def check_credentials():
 def test_login_ds():
     """Test that login_ds works with Jupyter environment and token credentials.
 
-    This tests the actual code path that notebook users hit when calling sc.login_ds().
+    This tests the actual code path that notebook users hit when calling sy.login_ds().
     """
-    client = sc.login_ds(
+    client = sy.login_ds(
         email=EMAIL_DS,
         token_path=token_path_ds,
         sync=False,  # Don't sync to avoid side effects in CI
@@ -66,9 +67,9 @@ def test_login_ds():
 def test_login_do():
     """Test that login_do works with Jupyter environment and token credentials.
 
-    This tests the actual code path that notebook users hit when calling sc.login_do().
+    This tests the actual code path that notebook users hit when calling sy.login_do().
     """
-    client = sc.login_do(
+    client = sy.login_do(
         email=EMAIL_DO,
         token_path=token_path_do,
         sync=False,  # Don't sync to avoid side effects in CI
@@ -84,7 +85,7 @@ def test_login_do():
 @pytest.mark.usefixtures("check_credentials")
 def test_login_ds_with_sync_and_load_peers():
     """Test that login_ds works with sync and load_peers enabled."""
-    client = sc.login_ds(
+    client = sy.login_ds(
         email=EMAIL_DS,
         token_path=token_path_ds,
         sync=True,
@@ -94,16 +95,17 @@ def test_login_ds_with_sync_and_load_peers():
     assert client is not None
     assert isinstance(client, SyftboxManager)
     assert client.email == EMAIL_DS
-    # Verify client has expected attributes
-    assert hasattr(client, "datasets")
-    assert hasattr(client, "job_client")
+    # syft's login returns the domain-free sync engine
+    assert hasattr(client, "peers")
+    assert not hasattr(client, "datasets")
+    assert not hasattr(client, "job_client")
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
 @pytest.mark.usefixtures("check_credentials")
 def test_login_do_with_sync_and_load_peers():
     """Test that login_do works with sync and load_peers enabled."""
-    client = sc.login_do(
+    client = sy.login_do(
         email=EMAIL_DO,
         token_path=token_path_do,
         sync=True,
@@ -113,9 +115,45 @@ def test_login_do_with_sync_and_load_peers():
     assert client is not None
     assert isinstance(client, SyftboxManager)
     assert client.email == EMAIL_DO
-    # Verify client has expected attributes
+    # syft's login returns the domain-free sync engine
+    assert hasattr(client, "peers")
+    assert not hasattr(client, "datasets")
+    assert not hasattr(client, "job_client")
+
+
+@pytest.mark.flaky(reruns=3, reruns_delay=2)
+@pytest.mark.usefixtures("check_credentials")
+def test_rds_login_ds_returns_product_client():
+    """syft_rds.login_ds returns an RDS client carrying the dataset/job surface."""
+    client = rds.login_ds(
+        email=EMAIL_DS,
+        token_path=token_path_ds,
+        sync=True,
+        load_peers=True,
+    )
+
+    assert isinstance(client, rds.SyftRDSClient)
+    assert client.email == EMAIL_DS
     assert hasattr(client, "datasets")
     assert hasattr(client, "job_client")
+
+
+@pytest.mark.flaky(reruns=3, reruns_delay=2)
+@pytest.mark.usefixtures("check_credentials")
+def test_rds_login_do_returns_product_client():
+    """syft_rds.login_do returns an RDS client carrying the dataset/job surface."""
+    client = rds.login_do(
+        email=EMAIL_DO,
+        token_path=token_path_do,
+        sync=True,
+        load_peers=True,
+    )
+
+    assert isinstance(client, rds.SyftRDSClient)
+    assert client.email == EMAIL_DO
+    assert hasattr(client, "datasets")
+    assert hasattr(client, "job_client")
+    assert client.job_runner is not None
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
@@ -123,7 +161,7 @@ def test_login_do_with_sync_and_load_peers():
 def test_login_ds_email_mismatch_raises():
     """Login must fail fast when the email doesn't match the token's account."""
     with pytest.raises(ValueError, match="Token/email mismatch") as exc_info:
-        sc.login_ds(
+        sy.login_ds(
             email=EMAIL_DO,  # intentionally wrong: DO's email with DS's token
             token_path=token_path_ds,
             sync=False,
@@ -139,9 +177,9 @@ def test_login_ds_email_mismatch_raises():
 def test_login_ds_missing_token_path_raises(monkeypatch):
     """Test that login_ds raises error when token_path is missing in Jupyter env."""
     # Unset the env var so the test can verify the error is raised
-    monkeypatch.delenv("SYFTCLIENT_TOKEN_PATH", raising=False)
+    monkeypatch.delenv("SYFT_TOKEN_PATH", raising=False)
     with pytest.raises(NotImplementedError, match="token path"):
-        sc.login_ds(
+        sy.login_ds(
             email="test@test.com",
             token_path=None,
             sync=False,
@@ -153,9 +191,9 @@ def test_login_ds_missing_token_path_raises(monkeypatch):
 def test_login_do_missing_token_path_raises(monkeypatch):
     """Test that login_do raises error when token_path is missing in Jupyter env."""
     # Unset the env var so the test can verify the error is raised
-    monkeypatch.delenv("SYFTCLIENT_TOKEN_PATH", raising=False)
+    monkeypatch.delenv("SYFT_TOKEN_PATH", raising=False)
     with pytest.raises(NotImplementedError, match="token path"):
-        sc.login_do(
+        sy.login_do(
             email="test@test.com",
             token_path=None,
             sync=False,

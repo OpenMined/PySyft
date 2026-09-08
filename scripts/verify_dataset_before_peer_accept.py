@@ -24,8 +24,8 @@ import time
 import uuid
 from pathlib import Path
 
-from syft_client.sync.peers.peer import PeerState
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.peers.peer import PeerState
+from syft.sync.syftbox_manager import SyftboxManager
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CRED_DIR = REPO_ROOT / "credentials"

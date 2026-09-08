@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Callable, Optional, Protocol
 from syft_bg.approve.config import PeerApprovalConfig
 
 if TYPE_CHECKING:
-    from syft_client.sync.syftbox_manager import SyftboxManager
+    from syft_rds import SyftRDSClient
 
 
 class StateManager(Protocol):
@@ -22,7 +22,7 @@ class PeerApprovalHandler:
 
     def __init__(
         self,
-        client: SyftboxManager,
+        client: SyftRDSClient,
         config: PeerApprovalConfig,
         state: Optional[StateManager] = None,
         on_approve: Optional[Callable[[str], None]] = None,

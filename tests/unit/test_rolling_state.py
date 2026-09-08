@@ -7,8 +7,8 @@ Tests verify that:
 """
 
 import time
-from syft_client.sync.syftbox_manager import SyftboxManager
-from syft_client.sync.checkpoints.rolling_state import RollingState
+from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.checkpoints.rolling_state import RollingState
 from tests.unit.utils import get_mock_event
 
 

@@ -4,8 +4,9 @@ import ast
 import shutil
 from pathlib import Path
 
-from syft_restrict import obfuscate, run
+from syft_restrict import obfuscate
 from syft_restrict.astutil import scan_file
+from syft_restrict.runner import _run
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
@@ -24,7 +25,7 @@ def _obfuscate_fixture(tmp_path: Path):
     shutil.copy(FIXTURES / "compliant_model.py", src_path)
     source = src_path.read_text()
     private, config_line = _private_from_config(source)
-    result = run(
+    result = _run(
         src_path,
         obfuscate=private,
         allow_functions=ALLOW_FUNCTIONS,
@@ -67,7 +68,7 @@ def test_hide_blanks_whole_body_keeping_indentation(tmp_path):
         if ln.lstrip().startswith("def scale_pattern")
     )
     body = [def_line + 1, def_line + 2]  # the two body lines (4-space indented)
-    result = run(
+    result = _run(
         src_path,
         obfuscate=[[def_line, def_line]],
         hide=[body],

@@ -10,7 +10,10 @@ import json
 import tempfile
 from pathlib import Path
 
+from syft_datasets.dataset_ref import DatasetNotFoundError
+
 from enclave_model_api.log_writer import LOG_FILE_NAME
+from enclave_model_api.paths import resolve_private_dataset_dir
 
 LOGS_DATASET_SUMMARY = (
     "Inference request logs (prompt, completion, stats) collected by the "
@@ -41,9 +44,12 @@ def ensure_logs_dataset(client, name: str) -> Path:
 
     Idempotent so reboots with fresh_state=false keep the existing logs.
     """
-    config = client.datasets.syftbox_config
-    if (config.get_my_mock_dataset_dir(name) / "dataset.yaml").exists():
-        return config.private_dir_for_my_dataset(name)
+    storage = client.datasets.storage
+    email = storage.config.email
+    try:
+        return storage.private_dataset_dir(storage.find_dataset_ref(email, name))
+    except DatasetNotFoundError:
+        pass
 
     mock_dir, private_dir = _seed_dirs()
     client.create_dataset(
@@ -56,4 +62,4 @@ def ensure_logs_dataset(client, name: str) -> Path:
         sync=False,
     )
     client.sync()
-    return config.private_dir_for_my_dataset(name)
+    return resolve_private_dataset_dir(storage, email, name)

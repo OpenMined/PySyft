@@ -3,8 +3,9 @@ terraform {
 
   required_providers {
     google = {
+      # >= 7.41 for FLEX_START on google_compute_instance (gpu hardware profile)
       source  = "hashicorp/google"
-      version = "~> 6.0"
+      version = "~> 7.41"
     }
     time = {
       source  = "hashicorp/time"
