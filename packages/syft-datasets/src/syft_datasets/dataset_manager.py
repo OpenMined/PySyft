@@ -2,7 +2,6 @@ from pathlib import Path
 
 from typing_extensions import Self
 
-import yaml
 from syft_migration import ProtocolSchema
 
 from .types import PathLike, to_path
@@ -362,5 +361,4 @@ class SyftDatasetManager:
         """
         config = self.storage.read_private_config(ref)
         config.data_dir = Path("")
-        data = config.disk_dict()
-        return yaml.safe_dump(data, indent=2, sort_keys=False).encode()
+        return self.storage.wire_bytes(ref, config)
