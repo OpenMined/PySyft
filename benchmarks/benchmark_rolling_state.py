@@ -16,7 +16,7 @@ Test scenario (two-phase approach to ensure rolling state is populated):
 import os
 import time
 from pathlib import Path
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.syftbox_manager import SyftboxManager
 
 REPO_ROOT = Path(__file__).parent.parent
 CREDENTIALS_DIR = REPO_ROOT / "credentials"

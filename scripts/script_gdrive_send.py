@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from google.oauth2.credentials import Credentials
-from syft_client.sync.connections.gdrive_transport_v2 import (
+from syft.sync.connections.gdrive_transport_v2 import (
     GDriveFilesTransport,
     ProposedFileChange,
     ProposedFileChangesMessage,

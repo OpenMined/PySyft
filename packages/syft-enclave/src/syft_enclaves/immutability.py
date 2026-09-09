@@ -10,7 +10,9 @@ PRIVATE_DATASET_PARTS = ("private", "syft_datasets")
 def is_private_dataset_path(path: str) -> bool:
     """Check if *path* points to a file inside a private dataset directory.
 
-    Expected shape: ``<email>/private/syft_datasets/<dataset_name>/<file>``
+    Expected shapes: ``<email>/private/syft_datasets/<dataset_name>/<file>``
+    (protocol 0) and ``<email>/private/syft_datasets/v<n>/<dataset_name>/<file>``
+    (protocol 1 on) -- the prefix check covers every protocol layout.
     """
     parts = Path(path).parts
     return len(parts) >= 5 and parts[1:3] == PRIVATE_DATASET_PARTS

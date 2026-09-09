@@ -1,6 +1,6 @@
 # Connections — Google Drive Transport
 
-Syft-client uses Google Drive as its file-based transport layer. All peer-to-peer communication happens through shared GDrive folders.
+Syft uses Google Drive as its file-based transport layer. All peer-to-peer communication happens through shared GDrive folders.
 
 ## Folder Structure & Permissions
 

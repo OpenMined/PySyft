@@ -1,7 +1,7 @@
 """Unit tests for DO outbox compaction."""
 
-from syft_client.sync.events.file_change_event import FileChangeEventsMessage
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.events.file_change_event import FileChangeEventsMessage
+from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.utils import get_mock_event
 
 

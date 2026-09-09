@@ -1,8 +1,8 @@
 """Tests for PeerList's human-friendly summary rendering (__str__/_repr_html_/__repr__)."""
 
 import pytest
-from syft_client.sync.peers.peer import Peer, PeerState
-from syft_client.sync.peers.peer_list import PeerList
+from syft.sync.peers.peer import Peer, PeerState
+from syft.sync.peers.peer_list import PeerList
 
 
 def _mixed_peer_list() -> PeerList:

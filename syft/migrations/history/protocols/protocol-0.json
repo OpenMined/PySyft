@@ -1,0 +1,346 @@
+{
+  "protocol_schema": {
+    "protocol_name": "syft",
+    "version": "0",
+    "supported_versions": {
+      "VersionInfo": ["1"],
+      "ProposedFileChangesMessage": ["1"],
+      "FileChangeEventsMessage": ["1"]
+    },
+    "current_object_schemas": {
+      "VersionInfo": {
+        "description": "Model representing version information for a syft client.\n\nStored as SYFT_version.json in the peer-visible SyftBox folder. This file\nis the bootstrap channel for protocol negotiation (peers read it to learn\nwhat we speak), so its schema may only ever change additively: every\nsupported client version must be able to parse every newer version file.",
+        "properties": {
+          "canonical_name": {
+            "default": "VersionInfo",
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "version": {
+            "default": "1",
+            "title": "Version",
+            "type": "string"
+          },
+          "syft_client_version": {
+            "title": "Syft Client Version",
+            "type": "string"
+          },
+          "min_supported_syft_client_version": {
+            "title": "Min Supported Syft Client Version",
+            "type": "string"
+          },
+          "protocol_version": {
+            "title": "Protocol Version",
+            "type": "string"
+          },
+          "min_supported_protocol_version": {
+            "title": "Min Supported Protocol Version",
+            "type": "string"
+          },
+          "syft_client_install_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Syft Client Install Source"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "attestation_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Attestation Token"
+          }
+        },
+        "required": [
+          "syft_client_version",
+          "min_supported_syft_client_version",
+          "protocol_version",
+          "min_supported_protocol_version"
+        ],
+        "title": "VersionInfoV1",
+        "type": "object"
+      },
+      "ProposedFileChangesMessage": {
+        "$defs": {
+          "MessageFileName": {
+            "properties": {
+              "submitted_timestamp": {
+                "title": "Submitted Timestamp",
+                "type": "number"
+              },
+              "uid": {
+                "title": "Uid",
+                "type": "string"
+              }
+            },
+            "title": "MessageFileName",
+            "type": "object"
+          },
+          "ProposedFileChangeV1": {
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "old_hash": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Old Hash"
+              },
+              "new_hash": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "New Hash"
+              },
+              "submitted_timestamp": {
+                "title": "Submitted Timestamp",
+                "type": "number"
+              },
+              "path_in_datasite": {
+                "format": "path",
+                "title": "Path In Datasite",
+                "type": "string"
+              },
+              "content": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Content"
+              },
+              "datasite_email": {
+                "title": "Datasite Email",
+                "type": "string"
+              },
+              "is_deleted": {
+                "default": false,
+                "title": "Is Deleted",
+                "type": "boolean"
+              }
+            },
+            "required": ["path_in_datasite", "datasite_email"],
+            "title": "ProposedFileChangeV1",
+            "type": "object"
+          }
+        },
+        "description": "The msgv2 wire envelope (DS -> DO). The envelope is the migratable unit;\nits items are pinned to the exact version class, never a floating alias.",
+        "properties": {
+          "canonical_name": {
+            "default": "ProposedFileChangesMessage",
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "version": {
+            "default": "1",
+            "title": "Version",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "sender_email": {
+            "title": "Sender Email",
+            "type": "string"
+          },
+          "message_filename": {
+            "$ref": "#/$defs/MessageFileName"
+          },
+          "proposed_file_changes": {
+            "items": {
+              "$ref": "#/$defs/ProposedFileChangeV1"
+            },
+            "title": "Proposed File Changes",
+            "type": "array"
+          },
+          "platform_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Platform Id"
+          }
+        },
+        "required": ["sender_email", "proposed_file_changes"],
+        "title": "ProposedFileChangesMessageV1",
+        "type": "object"
+      },
+      "FileChangeEventsMessage": {
+        "$defs": {
+          "FileChangeEventV1": {
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "path_in_datasite": {
+                "format": "path",
+                "title": "Path In Datasite",
+                "type": "string"
+              },
+              "datasite_email": {
+                "title": "Datasite Email",
+                "type": "string"
+              },
+              "content": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Content"
+              },
+              "old_hash": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Old Hash"
+              },
+              "new_hash": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "New Hash"
+              },
+              "is_deleted": {
+                "default": false,
+                "title": "Is Deleted",
+                "type": "boolean"
+              },
+              "submitted_timestamp": {
+                "title": "Submitted Timestamp",
+                "type": "number"
+              },
+              "timestamp": {
+                "title": "Timestamp",
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "path_in_datasite",
+              "datasite_email",
+              "submitted_timestamp",
+              "timestamp"
+            ],
+            "title": "FileChangeEventV1",
+            "type": "object"
+          },
+          "FileChangeEventsMessageFileName": {
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "title": "Id",
+                "type": "string"
+              },
+              "timestamp": {
+                "title": "Timestamp",
+                "type": "number"
+              },
+              "extension": {
+                "default": ".tar.gz",
+                "title": "Extension",
+                "type": "string"
+              }
+            },
+            "title": "FileChangeEventsMessageFileName",
+            "type": "object"
+          }
+        },
+        "description": "The events wire envelope (DO -> watchers). The envelope is the migratable\nunit; its items are pinned to the exact version class, never a floating alias.",
+        "properties": {
+          "canonical_name": {
+            "default": "FileChangeEventsMessage",
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "version": {
+            "default": "1",
+            "title": "Version",
+            "type": "string"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/$defs/FileChangeEventV1"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "message_filepath": {
+            "$ref": "#/$defs/FileChangeEventsMessageFileName"
+          }
+        },
+        "required": ["events"],
+        "title": "FileChangeEventsMessageV1",
+        "type": "object"
+      }
+    }
+  }
+}

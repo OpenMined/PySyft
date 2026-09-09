@@ -1,7 +1,7 @@
 """
-Detect how syft-client was installed to determine the correct dependency string.
+Detect how syft was installed to determine the correct dependency string.
 
-This module uses PEP 610 (direct_url.json) to determine if syft-client was installed
+This module uses PEP 610 (direct_url.json) to determine if syft was installed
 from a local directory, a git URL, or from PyPI.
 
 See: https://packaging.python.org/en/latest/specifications/direct-url/
@@ -15,8 +15,12 @@ from importlib.metadata import distributions
 
 logger = logging.getLogger(__name__)
 
-PACKAGE_NAME = "syft-client"
-ENV_VAR_NAME = "SYFT_CLIENT_INSTALL_SOURCE"
+PACKAGE_NAME = "syft"
+ENV_VAR_NAME = "SYFT_INSTALL_SOURCE"
+# Used only when no installed `syft` distribution can be found at all. The lower
+# bound keeps a stale index from resolving the bare name to the legacy PySyft
+# <=0.9 releases, which share the PyPI project but are a different codebase.
+FALLBACK_SPEC = "syft>=0.10.0"
 
 
 def _parse_direct_url(direct_url: dict) -> str:
@@ -58,9 +62,9 @@ def _parse_direct_url(direct_url: dict) -> str:
     return url
 
 
-def _find_syft_client_info() -> tuple[dict | None, str | None]:
+def _find_syft_info() -> tuple[dict | None, str | None]:
     """
-    Find the direct_url.json content and version for syft-client.
+    Find the direct_url.json content and version for syft.
 
     Returns:
         Tuple of (direct_url dict or None, version string or None)
@@ -93,20 +97,20 @@ def _find_syft_client_info() -> tuple[dict | None, str | None]:
 
 
 @lru_cache(maxsize=1)
-def get_syft_client_install_source() -> str:
+def get_syft_install_source() -> str:
     """
-    Determine how syft-client was installed and return the appropriate dependency string.
+    Determine how syft was installed and return the appropriate dependency string.
 
     Priority:
-    1. Environment variable override (SYFT_CLIENT_INSTALL_SOURCE)
+    1. Environment variable override (SYFT_INSTALL_SOURCE)
     2. Auto-detection from package metadata (direct_url.json)
     3. Fallback to PyPI package name with version
 
     Returns:
         A string suitable for pip/uv install, one of:
-        - A local path (e.g., "/Users/test/workspace/syft-client")
+        - A local path (e.g., "/Users/test/workspace/syft")
         - A git URL (e.g., "git+https://github.com/OpenMined/PySyft@dev")
-        - The PyPI package name with version (e.g., "syft-client==0.1.94")
+        - The PyPI package name with version (e.g., "syft==0.10.0")
     """
     # Check for environment variable override
     env_override = os.environ.get(ENV_VAR_NAME)
@@ -114,7 +118,7 @@ def get_syft_client_install_source() -> str:
         return env_override
 
     # Try to detect from package metadata
-    direct_url, version = _find_syft_client_info()
+    direct_url, version = _find_syft_info()
     if direct_url:
         return _parse_direct_url(direct_url)
 
@@ -123,8 +127,8 @@ def get_syft_client_install_source() -> str:
         return f"{PACKAGE_NAME}=={version}"
 
     logger.warning(
-        f"Could not detect syft-client installation source or version. "
-        f"Falling back to '{PACKAGE_NAME}'. "
-        f"Jobs may fail if syft-client is not available on PyPI."
+        f"Could not detect syft installation source or version. "
+        f"Falling back to '{FALLBACK_SPEC}'. "
+        f"Jobs may fail if syft is not available on PyPI."
     )
-    return PACKAGE_NAME
+    return FALLBACK_SPEC

@@ -106,16 +106,16 @@ def _make_job_code() -> str:
 import json
 import os
 
-import syft_client as sc
+import syft as sy
 
 # Resolve Model owner's private model dataset directory
-model_files = sc.resolve_dataset_files_path(
+model_files = sy.resolve_dataset_files_path(
     "gemma3_model", owner_email="model_owner@openmined.org"
 )
 weights_dir = str(model_files[0].parent)
 
 # Import the inference module from the model owner's private dataset
-gemma = sc.load_dataset_code(
+gemma = sy.load_dataset_code(
     "gemma3_model.gemma_inference", owner_email="model_owner@openmined.org"
 )
 
@@ -125,7 +125,7 @@ model, tokenizer, params = gemma.setup("{MODEL_SIZE}", weights_dir)
 print("Model loaded successfully")
 
 # Load benchmark owner's private prompts (one per line)
-prompt_path = sc.resolve_dataset_file_path(
+prompt_path = sy.resolve_dataset_file_path(
     "safety_prompts", owner_email="benchmark_owner@openmined.org"
 )
 prompts = [line for line in open(prompt_path).read().splitlines() if line.strip()]
