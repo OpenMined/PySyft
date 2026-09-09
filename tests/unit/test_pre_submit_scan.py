@@ -4,7 +4,7 @@ import ast
 
 import pytest
 
-from syft_client.sync.utils.pre_submit_scan import (
+from syft.sync.utils.pre_submit_scan import (
     find_client_kwarg_in_ast,
     run_pre_submit_check,
 )
@@ -16,12 +16,12 @@ from syft_client.sync.utils.pre_submit_scan import (
 @pytest.mark.parametrize(
     "src",
     [
-        'sc.resolve_dataset_files_path("foo", client=c)',
+        'sy.resolve_dataset_files_path("foo", client=c)',
         'resolve_dataset_files_path("foo", client=c)',
         'resolve_dataset_file_path("foo", client=c)',
-        'sc.resolve_dataset_file_path("foo", owner_email="x", client=c)',
+        'sy.resolve_dataset_file_path("foo", owner_email="x", client=c)',
         # Call buried inside other expressions still detected
-        'x = [sc.resolve_dataset_files_path("foo", client=c) for _ in range(1)]',
+        'x = [sy.resolve_dataset_files_path("foo", client=c) for _ in range(1)]',
     ],
 )
 def test_find_client_kwarg_in_ast_positive(src):
@@ -34,7 +34,7 @@ def test_find_client_kwarg_in_ast_positive(src):
     [
         'resolve_dataset_files_path("foo", owner_email="x")',
         'resolve_dataset_files_path("foo")',
-        'sc.resolve_dataset_files_path("foo")',
+        'sy.resolve_dataset_files_path("foo")',
         # Function definition, not a Call
         "def foo(client=client): pass",
         # Plain assignment
@@ -61,7 +61,7 @@ def test_run_pre_submit_check_clean_script(tmp_path, capsys):
     script = _write_script(
         tmp_path,
         "main.py",
-        'import syft_client as sc\nsc.resolve_dataset_files_path("foo")\n',
+        'import syft as sy\nsy.resolve_dataset_files_path("foo")\n',
     )
     assert run_pre_submit_check(script) is True
     out = capsys.readouterr().out
@@ -72,7 +72,7 @@ def test_run_pre_submit_check_client_kwarg(tmp_path, capsys):
     script = _write_script(
         tmp_path,
         "main.py",
-        'import syft_client as sc\nsc.resolve_dataset_files_path("ds", client=client)\n',
+        'import syft as sy\nsy.resolve_dataset_files_path("ds", client=client)\n',
     )
     # Non-TTY in pytest → continues without prompt
     assert run_pre_submit_check(script) is True
@@ -110,7 +110,7 @@ def test_client_kwarg_takes_priority_over_dataset_files(tmp_path, capsys):
     _write_script(
         tmp_path,
         "a.py",
-        'sc.resolve_dataset_files_path("ds", client=client)\n',
+        'sy.resolve_dataset_files_path("ds", client=client)\n',
     )
     _write_script(
         tmp_path,
@@ -129,7 +129,7 @@ def test_syntax_error_falls_back_to_regex(tmp_path, capsys):
     script = _write_script(
         tmp_path,
         "broken.py",
-        'sc.resolve_dataset_files_path("ds", client=client\n# unterminated\n',
+        'sy.resolve_dataset_files_path("ds", client=client\n# unterminated\n',
     )
     assert run_pre_submit_check(script) is True
     out = capsys.readouterr().out

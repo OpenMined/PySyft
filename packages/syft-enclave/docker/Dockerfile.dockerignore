@@ -15,8 +15,8 @@
 !uv.lock
 !README.md
 
-# syft-client lives at the workspace root.
-!syft_client
+# syft lives at the workspace root.
+!syft
 
 # All workspace member packages — uv needs every member's pyproject.toml
 # to consider the workspace valid, even if only syft-enclave's transitive
@@ -44,4 +44,4 @@
 # Tests aren't needed to install the packages.
 tests
 packages/*/tests
-syft_client/tests
+syft/tests

@@ -11,6 +11,11 @@ PROTOCOL_NAME = "syft-job"
 # jobs under a v<n> segment after the peer email (see config.protocol_dir_name).
 JOB_PROTOCOL_VERSION = "1"
 
+# Oldest job protocol this release still reads. "0" refuses no peer. Raise it
+# only when the code drops support for a released protocol, because a peer below
+# the floor cannot exchange jobs with this release.
+MIN_SUPPORTED_JOB_PROTOCOL_VERSION = "0"
+
 # Package-local registry for all versioned syft-job objects. The current
 # protocol schema is computed from the objects registered into it.
 job_registry = MigrationRegistry(
@@ -18,4 +23,5 @@ job_registry = MigrationRegistry(
     package_name=PACKAGE_NAME,
     package_version=__version__,
     protocol_version=JOB_PROTOCOL_VERSION,
+    min_supported_protocol_version=MIN_SUPPORTED_JOB_PROTOCOL_VERSION,
 )

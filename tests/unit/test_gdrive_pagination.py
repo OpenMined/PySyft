@@ -1,7 +1,7 @@
 from unittest.mock import Mock, patch
 from uuid import uuid4
-from syft_client.sync.connections.drive.gdrive_transport import GDriveConnection
-from syft_client.sync.events.file_change_event import (
+from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
     FileChangeEventsMessageFileName,
 )
@@ -55,11 +55,9 @@ def test_empty_folder():
 
 
 @patch(
-    "syft_client.sync.connections.drive.gdrive_transport.GDriveConnection._get_peer_datasite_outbox_id"
+    "syft.sync.connections.drive.gdrive_transport.GDriveConnection._get_peer_datasite_outbox_id"
 )
-@patch(
-    "syft_client.sync.connections.drive.gdrive_transport.GDriveConnection.download_file"
-)
+@patch("syft.sync.connections.drive.gdrive_transport.GDriveConnection.download_file")
 def test_events_returned_in_chronological_order(mock_download_file, mock_get_folder_id):
     """Events should be returned in chronological order by timestamp"""
     conn = create_mock_connection()

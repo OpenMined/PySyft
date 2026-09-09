@@ -1,4 +1,4 @@
-"""Unit tests for syft_client.sync.connections.drive.gdrive_retry.
+"""Unit tests for syft.sync.connections.drive.gdrive_retry.
 
 Focus: the retry helpers must recover from socket-level transients
 (ConnectionResetError, BrokenPipeError, etc.) that surface when httplib2's
@@ -20,7 +20,7 @@ from unittest.mock import Mock, patch
 import pytest
 from googleapiclient.errors import HttpError
 
-from syft_client.sync.connections.drive.gdrive_retry import (
+from syft.sync.connections.drive.gdrive_retry import (
     batch_execute_with_retries,
     execute_with_retries,
     is_retryable_error,
@@ -50,7 +50,7 @@ TRANSPORT_INSTANCES = [
 @pytest.fixture(autouse=True)
 def _no_sleep():
     """Patch time.sleep so tests run instantly."""
-    with patch("syft_client.sync.connections.drive.gdrive_retry.time.sleep"):
+    with patch("syft.sync.connections.drive.gdrive_retry.time.sleep"):
         yield
 
 

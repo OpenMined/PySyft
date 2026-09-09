@@ -22,3 +22,7 @@ class PolicyViolation(RestrictError):
             f"restrict refused: {len(self.violations)} policy violation(s) in the private region:\n"
             f"{lines}"
         )
+
+
+class MarkerError(RestrictError):
+    """Raised when ``# syft-restrict: ...`` markers in a source file are malformed or absent."""

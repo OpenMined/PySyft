@@ -1,9 +1,9 @@
 import time
 from concurrent.futures import ThreadPoolExecutor, wait
 import io
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft.sync.syftbox_manager import SyftboxManager
 import os
-from syft_client.sync.events.file_change_event import FileChangeEventsMessage
+from syft.sync.events.file_change_event import FileChangeEventsMessage
 from pathlib import Path
 import httplib2
 from google_auth_httplib2 import AuthorizedHttp
@@ -13,9 +13,9 @@ from googleapiclient.http import MediaIoBaseDownload
 # Timeout for Google API requests (in seconds)
 GOOGLE_API_TIMEOUT = 120  # 2 minutes
 
-SYFT_CLIENT_DIR = Path(__file__).parent.parent
+SYFT_DIR = Path(__file__).parent.parent
 # These are in gitignore, create yourself
-CREDENTIALS_DIR = SYFT_CLIENT_DIR / "credentials"
+CREDENTIALS_DIR = SYFT_DIR / "credentials"
 
 # koen gmail
 FILE_DO = os.environ.get("ai_audit_credentials_fname_do", "token_do.json")

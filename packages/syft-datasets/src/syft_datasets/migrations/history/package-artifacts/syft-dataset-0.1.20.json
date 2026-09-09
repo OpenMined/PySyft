@@ -1,0 +1,149 @@
+{
+  "package_info": {
+    "package_name": "syft-dataset",
+    "version": "0.1.20",
+    "protocol_version": "0"
+  },
+  "protocol_schema": {
+    "protocol_name": "syft-dataset",
+    "version": "0",
+    "supported_versions": {
+      "PrivateDatasetConfig": ["1"],
+      "Dataset": ["1"]
+    },
+    "current_object_schemas": {
+      "PrivateDatasetConfig": {
+        "description": "Private dataset metadata, stored as private_metadata.yaml outside the sync folder.",
+        "properties": {
+          "canonical_name": {
+            "default": "PrivateDatasetConfig",
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "version": {
+            "default": "1",
+            "title": "Version",
+            "type": "string"
+          },
+          "uid": {
+            "format": "uuid",
+            "title": "Uid",
+            "type": "string"
+          },
+          "data_dir": {
+            "format": "path",
+            "title": "Data Dir",
+            "type": "string"
+          }
+        },
+        "required": ["uid", "data_dir"],
+        "title": "PrivateDatasetConfigV1",
+        "type": "object"
+      },
+      "Dataset": {
+        "description": "Public dataset metadata, stored as dataset.yaml under\nSyftBox/<datasite>/public/syft_datasets/[v<n>/]<name>/.",
+        "properties": {
+          "canonical_name": {
+            "default": "Dataset",
+            "title": "Canonical Name",
+            "type": "string"
+          },
+          "version": {
+            "default": "1",
+            "title": "Version",
+            "type": "string"
+          },
+          "uid": {
+            "format": "uuid",
+            "title": "Uid",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Summary"
+          },
+          "tags": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Location"
+          },
+          "mock_url": {
+            "description": "A SyftBox URL",
+            "format": "uri",
+            "title": "Mock Url",
+            "type": "string"
+          },
+          "private_url": {
+            "description": "A SyftBox URL",
+            "format": "uri",
+            "title": "Private Url",
+            "type": "string"
+          },
+          "readme_url": {
+            "anyOf": [
+              {
+                "description": "A SyftBox URL",
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Readme Url"
+          },
+          "mock_files_urls": {
+            "items": {
+              "description": "A SyftBox URL",
+              "format": "uri",
+              "type": "string"
+            },
+            "title": "Mock Files Urls",
+            "type": "array"
+          }
+        },
+        "required": ["name", "mock_url", "private_url"],
+        "title": "DatasetV1",
+        "type": "object"
+      }
+    }
+  }
+}

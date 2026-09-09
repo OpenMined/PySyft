@@ -1,6 +1,6 @@
-# Contributing to syft-client
+# Contributing to syft
 
-Thank you for your interest in contributing to syft-client! This document provides guidelines and setup instructions for contributors.
+Thank you for your interest in contributing to syft! This document provides guidelines and setup instructions for contributors.
 
 ## Development Setup
 
@@ -16,7 +16,7 @@ Thank you for your interest in contributing to syft-client! This document provid
 
    ```bash
    git clone https://github.com/OpenMined/PySyft.git
-   cd syft-client
+   cd PySyft
    ```
 
 2. **Create a virtual environment**
@@ -71,31 +71,31 @@ pre-commit run --all-files
 
 ```bash
 # Check formatting
-black --check syft_client
+black --check syft
 
 # Auto-format code
-black syft_client
+black syft
 
 # Check import order
-isort --check-only syft_client
+isort --check-only syft
 
 # Fix import order
-isort syft_client
+isort syft
 
 # Run flake8
-flake8 syft_client
+flake8 syft
 ```
 
 ### Type Checking
 
 ```bash
-mypy syft_client --no-strict-optional --ignore-missing-imports
+mypy syft --no-strict-optional --ignore-missing-imports
 ```
 
 ### Security Scanning
 
 ```bash
-bandit -r syft_client -c pyproject.toml
+bandit -r syft -c pyproject.toml
 ```
 
 ## Development Workflow
@@ -125,10 +125,10 @@ Before committing:
 pre-commit run --all-files
 
 # Verify no issues
-black syft_client
-isort syft_client
-flake8 syft_client
-bandit -r syft_client -c pyproject.toml
+black syft
+isort syft
+flake8 syft
+bandit -r syft -c pyproject.toml
 ```
 
 ### 4. Commit Your Changes

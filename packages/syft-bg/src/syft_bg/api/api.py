@@ -1,6 +1,8 @@
 """Pythonic API for syft-bg initialization and configuration."""
 
 import shutil
+import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 
 from syft_bg.api.results import AutoApproveResult, InstallationResult, StatusResult
@@ -14,8 +16,8 @@ from syft_bg.api.utils import (
     setup_orchestrator,
     validate_auto_approve_job_inputs,
 )
-from syft_bg.approve.config import AutoApproveConfig, AutoApprovalObj
-from syft_bg.common.config import get_syftbg_dir, get_default_paths
+from syft_bg.approve.config import AutoApprovalObj, FileEntry
+from syft_bg.common.config import get_default_paths, get_syftbg_dir
 from syft_bg.common.drive import is_colab
 from syft_bg.common.syft_bg_config import SyftBgConfig
 from syft_bg.services import ServiceManager
@@ -31,15 +33,16 @@ def init(
     token_path: str | Path | None = None,
     settings: dict[str, dict] | None = None,
 ) -> None:
+    token_kwargs: dict = {}
     if token_path is not None:
-        token_path = Path(token_path)
-        move_token_to_syftbg_dir(token_path)
+        # A single OAuth token is used for both the Gmail and Drive APIs.
+        token_path = move_token_to_syftbg_dir(Path(token_path))
+        token_kwargs = {"drive_token_path": token_path, "gmail_token_path": token_path}
 
     config = SyftBgConfig(
         do_email=do_email,
         syftbox_root=syftbox_root,
-        token_path=token_path,
-        drive_token_path=token_path,
+        **token_kwargs,
     )
 
     if settings:
@@ -55,10 +58,8 @@ def ensure_running(
     restart: bool = False,
     install: bool = False,
 ) -> None:
-    # store new settings
-    try:
-        config = SyftBgConfig.from_path()
-    except FileNotFoundError:
+    config_path = get_default_paths().config
+    if not config_path.exists():
         print("No config file found, run init first")
         return
 
@@ -67,23 +68,24 @@ def ensure_running(
     manager = ServiceManager()
 
     # store new settings
-    for name, service_config in services.items():
-        service = manager.get_service(name)
-        if not service:
-            raise ValueError(f"Unknown service: {name}")
-        config.set_service_config(name, service_config)
-
-    config.save()
+    with SyftBgConfig.edit(config_path) as config:
+        for name, service_config in services.items():
+            service = manager.get_service(name)
+            if not service:
+                raise ValueError(f"Unknown service: {name}")
+            config.set_service_config(name, service_config)
 
     # make sure services are running
     for name, service_config in services.items():
         service = manager.get_service(name)
-        if service.is_running() and not restart:
+
+        # service was already confirmed to exist above, so ignore type checker here
+        if service.is_running() and not restart:  # ty:ignore[unresolved-attribute]
             print(
                 f"{name} is already running, skipping. If you want to restart it, set restart=True."
             )
             continue
-        elif service.is_running() and restart:
+        elif service.is_running() and restart:  # ty:ignore[unresolved-attribute]
             manager.restart_service(name)
         else:
             manager.start_service(name)
@@ -233,7 +235,7 @@ def uninstall(service: str | None = None) -> list[InstallationResult]:
     return results
 
 
-def logs(service: str, n: int = 50, as_list: bool = False) -> list[str]:
+def logs(service: str, n: int = 50, as_list: bool = False) -> list[str] | None:
     """Get recent log lines for a service.
 
     Args:
@@ -306,8 +308,17 @@ def status() -> StatusResult:
 # ---------------------------------------------------------------------------
 
 
+class _AutoApprovalNotFound(Exception):
+    """Raised inside SyftBgConfig.edit() to skip its save()."""
+
+
+class _AutoApproveDirectoryConflict(Exception):
+    """Raised inside SyftBgConfig.edit() to skip its save() when the staging
+    directory can't be moved into place."""
+
+
 def auto_approve(
-    contents: list[str | Path],
+    contents: Sequence[str | Path],
     file_paths: list[str] | None = None,
     peers: list[str] | None = None,
     name: str | None = None,
@@ -344,18 +355,56 @@ def auto_approve(
     if not content_files and not file_paths:
         return AutoApproveResult(success=False, error="No files to process")
 
-    config = AutoApproveConfig.load()
-    name = generate_unique_name(name, content_files, config)
-
-    file_entries = copy_and_hash_files(content_files, name)
-
-    obj = AutoApprovalObj(
-        file_contents=file_entries,
-        file_paths=file_paths,
-        peers=peers,
+    # Copy/hash into a private staging directory (unique per call) unlocked,
+    # so the config lock in SyftBgConfig.edit() is held for the minimum time
+    # possible. Concurrent callers never share a directory before the lock
+    # resolves the final name, unlike copying straight into a name-derived
+    # directory. The staging dir lives inside auto_approvals_dir so the
+    # later rename into place is an atomic same-filesystem move.
+    #
+    auto_approvals_dir = get_default_paths().auto_approvals_dir
+    auto_approvals_dir.mkdir(parents=True, exist_ok=True)
+    current_dir = Path(
+        tempfile.mkdtemp(prefix=".auto_approve_staging_", dir=auto_approvals_dir)
     )
-    config.auto_approvals.objects[name] = obj
-    config.save()
+    succeeded = False
+    try:
+        file_entries = copy_and_hash_files(content_files, current_dir.name)
+
+        with SyftBgConfig.edit() as syft_bg_config:
+            config = syft_bg_config.approve
+            name = generate_unique_name(name, content_files, config)
+            final_dir = auto_approvals_dir / name
+            try:
+                current_dir.rename(final_dir)
+            except OSError as e:
+                raise _AutoApproveDirectoryConflict(str(e)) from e
+            current_dir = final_dir
+
+            file_entries = [
+                FileEntry(
+                    relative_path=entry.relative_path,
+                    path=str(final_dir / entry.relative_path),
+                    hash=entry.hash,
+                )
+                for entry in file_entries
+            ]
+
+            obj = AutoApprovalObj(
+                file_contents=file_entries,
+                file_paths=file_paths,
+                peers=peers,
+            )
+            config.auto_approvals.objects[name] = obj
+        succeeded = True
+    except _AutoApproveDirectoryConflict as e:
+        return AutoApproveResult(
+            success=False,
+            error=f"Could not finalize auto-approval directory '{name}': {e}",
+        )
+    finally:
+        if not succeeded:
+            shutil.rmtree(current_dir, ignore_errors=True)
 
     return AutoApproveResult(
         success=True,
@@ -421,7 +470,7 @@ def list_auto_approvals() -> dict[str, AutoApprovalObj]:
     Returns:
         Mapping of name → AutoApprovalObj.
     """
-    return AutoApproveConfig.load().auto_approvals.objects
+    return SyftBgConfig.load().approve.auto_approvals.objects
 
 
 def remove_auto_approve(name: str) -> AutoApproveResult:
@@ -437,14 +486,19 @@ def remove_auto_approve(name: str) -> AutoApproveResult:
     Returns:
         AutoApproveResult with success/error status.
     """
-    config = AutoApproveConfig.load()
-    if name not in config.auto_approvals.objects:
+    # `return` inside edit() is normal control flow and wouldn't skip its
+    # save() — raise instead so it's actually skipped.
+    try:
+        with SyftBgConfig.edit() as syft_bg_config:
+            config = syft_bg_config.approve
+            if name not in config.auto_approvals.objects:
+                raise _AutoApprovalNotFound(name)
+
+            del config.auto_approvals.objects[name]
+    except _AutoApprovalNotFound:
         return AutoApproveResult(
             success=False, error=f"Auto-approval object '{name}' not found"
         )
-
-    del config.auto_approvals.objects[name]
-    config.save()
 
     obj_dir = get_default_paths().auto_approvals_dir / name
     if obj_dir.exists():

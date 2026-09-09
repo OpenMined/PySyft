@@ -148,7 +148,7 @@ def install_rolling_state_logging(log_path: Path) -> None:
     Patch DatasiteOwnerSyncer rolling-state methods so we can see exactly
     which events end up in the rolling state and when it gets uploaded.
     """
-    from syft_client.sync.sync import datasite_owner_syncer as dos
+    from syft.sync.sync import datasite_owner_syncer as dos
 
     log_path.write_text("")  # truncate
     orig_add = dos.DatasiteOwnerSyncer._add_events_to_rolling_state
@@ -161,7 +161,7 @@ def install_rolling_state_logging(log_path: Path) -> None:
 
     def patched_add(self, events_message, upload_threshold=None, **kwargs):
         if upload_threshold is None:
-            from syft_client.sync.sync.datasite_owner_syncer import (
+            from syft.sync.sync.datasite_owner_syncer import (
                 DEFAULT_ROLLING_STATE_UPLOAD_THRESHOLD,
             )
 
@@ -206,16 +206,16 @@ def main() -> None:
     assert TOKEN_DO.exists(), f"DO token missing at {TOKEN_DO}"
     assert TOKEN_DS.exists(), f"DS token missing at {TOKEN_DS}"
 
-    import syft_client as sc
-    from syft_client.sync.peers.peer import PeerState
+    import syft as sy
+    from syft.sync.peers.peer import PeerState
 
     print("=" * 80)
     print("STEP 1: login DO + DS (sync disabled — may have stale Drive state)")
     print("=" * 80)
-    do_client = sc.login_do(
+    do_client = sy.login_do(
         email=DO_EMAIL, token_path=str(TOKEN_DO), sync=False, load_peers=False
     )
-    ds_client = sc.login_ds(
+    ds_client = sy.login_ds(
         email=DS_EMAIL, token_path=str(TOKEN_DS), sync=False, load_peers=False
     )
 
@@ -226,8 +226,8 @@ def main() -> None:
     _wipe(ds_client)
     time.sleep(5)
 
-    do_client = sc.login_do(email=DO_EMAIL, token_path=str(TOKEN_DO))
-    ds_client = sc.login_ds(email=DS_EMAIL, token_path=str(TOKEN_DS))
+    do_client = sy.login_do(email=DO_EMAIL, token_path=str(TOKEN_DO))
+    ds_client = sy.login_ds(email=DS_EMAIL, token_path=str(TOKEN_DS))
 
     print("\n" + "=" * 80)
     print("STEP 3: establish peer relationship")

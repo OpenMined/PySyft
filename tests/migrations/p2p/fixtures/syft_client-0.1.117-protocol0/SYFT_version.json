@@ -1,0 +1,9 @@
+{
+  "syft_client_version": "0.1.117",
+  "min_supported_syft_client_version": "0.1.93",
+  "protocol_version": "1.0.0",
+  "min_supported_protocol_version": "1.0.0",
+  "syft_client_install_source": "pip",
+  "updated_at": "2026-07-20T10:15:30.123456Z",
+  "attestation_token": null
+}
