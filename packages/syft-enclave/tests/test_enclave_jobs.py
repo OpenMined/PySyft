@@ -27,10 +27,10 @@ def create_tmp_dataset_files(prefix=""):
 def make_job_code(do1_email: str, do2_email: str) -> str:
     return f"""\
 import json
-import syft_client as sc
+import syft as sy
 
-data_path_1 = sc.resolve_dataset_file_path("dataset1", owner_email="{do1_email}")
-data_path_2 = sc.resolve_dataset_file_path("dataset2", owner_email="{do2_email}")
+data_path_1 = sy.resolve_dataset_file_path("dataset1", owner_email="{do1_email}")
+data_path_2 = sy.resolve_dataset_file_path("dataset2", owner_email="{do2_email}")
 
 with open(data_path_1, "r") as f:
     data1 = f.read()

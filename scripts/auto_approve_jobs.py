@@ -9,8 +9,8 @@ import sys
 import time
 from pathlib import Path
 
-from syft_client.job_auto_approval import auto_approve_and_run_jobs
-from syft_client.sync.syftbox_manager import SyftboxManager
+from syft_rds import login_do
+from syft_rds.job_auto_approval import auto_approve_and_run_jobs
 
 # Configuration - edit these values
 EMAIL = "your-email@example.com"
@@ -37,9 +37,8 @@ PEERS_ONLY = False
 
 
 def main():
-    client = SyftboxManager.for_jupyter(
+    client = login_do(
         email=EMAIL,
-        has_do_role=True,
         token_path=TOKEN_PATH,
     )
 

@@ -112,7 +112,7 @@ class EnclaveRunner:
                 "fresh_state=true — wiping ALL SyftBox state "
                 "(local folder + Google Drive files) before init"
             )
-            self.client._manager.delete_syftbox()
+            self.client.delete_syftbox()
             logger.info("State wipe complete — enclave starts with a clean slate")
 
     def _on_attesting(self) -> None:
@@ -133,8 +133,9 @@ class EnclaveRunner:
         """Fetch attestation JWT from the TEE and write it into the version file."""
         eat_nonce = build_eat_nonce()
         token = fetch_attestation_token(eat_nonce=eat_nonce)
-        self.client._manager.peer_manager.get_own_version().attestation_token = token
-        self.client._manager.peer_manager.write_own_version()
+        peer_manager = self.client._rds.peer_manager
+        peer_manager.get_own_version().attestation_token = token
+        peer_manager.write_own_version()
         logger.info("Attestation token published to SYFT_version.json")
 
     def _on_peering(self) -> None:

@@ -45,7 +45,7 @@ from pathlib import Path
 
 os.environ["PRE_SYNC"] = "false"
 import requests
-from syft_client.sync.version.peer_manager import CompatAction
+from syft.sync.version.peer_manager import CompatAction
 from syft_enclaves import login_do
 
 from enclave_model_api.mock_backend import BANANA_BREAD, REFUSAL
@@ -252,9 +252,9 @@ def main():
 
     banner("DO2 submits the analysis job")
     job_code = f'''import json, os
-import syft_client as sc
+import syft as sy
 
-files = sc.resolve_dataset_files_path("{LOGS_DATASET}", owner_email="{ENCLAVE}")
+files = sy.resolve_dataset_files_path("{LOGS_DATASET}", owner_email="{ENCLAVE}")
 log = next(f for f in files if f.name == "requests.jsonl")
 records = [json.loads(line) for line in open(log).read().splitlines() if line.strip()]
 n = sum(1 for r in records if "bio-weapon" in r["prompt"].lower())

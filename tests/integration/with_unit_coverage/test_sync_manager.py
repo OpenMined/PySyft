@@ -14,14 +14,19 @@ Unit test equivalents:
 """
 
 from syft_datasets import Dataset
+from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 import os
 from pathlib import Path
 import time
 import json
 from time import sleep
 import pytest
-from tests.unit.utils import create_tmp_dataset_files
-from tests.integration.with_unit_coverage.utils import create_test_pair, is_mock_mode
+from tests.unit.utils import create_tmp_dataset_files, grant_job_inbox_access
+from tests.integration.with_unit_coverage.utils import (
+    create_rds_test_pair,
+    create_test_pair,
+    is_mock_mode,
+)
 
 
 def path_for_job(do_email: str, ds_email: str, filename: str = "test.job") -> str:
@@ -29,8 +34,8 @@ def path_for_job(do_email: str, ds_email: str, filename: str = "test.job") -> st
     return f"{do_email}/app_data/job/inbox/{ds_email}/{filename}"
 
 
-SYFT_CLIENT_DIR = Path(__file__).parent.parent.parent.parent
-CREDENTIALS_DIR = SYFT_CLIENT_DIR / "credentials"
+SYFT_DIR = Path(__file__).parent.parent.parent.parent
+CREDENTIALS_DIR = SYFT_DIR / "credentials"
 
 FILE_DO = os.environ.get("ai_audit_credentials_fname_do", "token_do.json")
 EMAIL_DO = os.environ.get("AI_AUDIT_EMAIL_DO", "do@test.com")
@@ -51,6 +56,8 @@ def test_google_drive_connection_syncing():
         do_token_path=token_path_do,
         ds_token_path=token_path_ds,
     )
+
+    grant_job_inbox_access(manager_do, EMAIL_DS)
 
     # this calls connection.send_propose_file_change_message via callbacks
     if not is_mock_mode():
@@ -131,7 +138,7 @@ def test_google_drive_files():
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
 @pytest.mark.usefixtures("setup_delete_syftboxes")
 def test_datasets():
-    ds_manager, do_manager = create_test_pair(
+    ds_manager, do_manager = create_rds_test_pair(
         do_email=EMAIL_DO,
         ds_email=EMAIL_DS,
         do_token_path=token_path_do,
@@ -181,7 +188,7 @@ def test_datasets():
 def test_datasets_shared_with_any():
     """Test that datasets shared with 'any' become discoverable after peer approval."""
     # Create managers WITHOUT auto peer setup
-    ds_manager, do_manager = create_test_pair(
+    ds_manager, do_manager = create_rds_test_pair(
         do_email=EMAIL_DO,
         ds_email=EMAIL_DS,
         do_token_path=token_path_do,
@@ -204,7 +211,9 @@ def test_datasets_shared_with_any():
     )
 
     # DS should NOT see the dataset yet (not approved)
-    ds_collections = ds_manager._connection_router.watcher_list_dataset_collections()
+    ds_collections = ds_manager.sync_engine._connection_router.watcher_list_collections(
+        DATASET_COLLECTION_PREFIX
+    )
     assert not any(c["tag"] == "any dataset" for c in ds_collections)
 
     # DS adds peer, DO approves (this should share 'any' datasets)
@@ -215,14 +224,16 @@ def test_datasets_shared_with_any():
     # DS should now see the dataset
     # Google Drive search index takes time to propagate permission changes
     time.sleep(5)
-    ds_collections = ds_manager._connection_router.watcher_list_dataset_collections()
+    ds_collections = ds_manager.sync_engine._connection_router.watcher_list_collections(
+        DATASET_COLLECTION_PREFIX
+    )
     assert any(c["tag"] == "any dataset" for c in ds_collections)
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
 @pytest.mark.usefixtures("setup_delete_syftboxes")
 def test_jobs():
-    ds_manager, do_manager = create_test_pair(
+    ds_manager, do_manager = create_rds_test_pair(
         do_email=EMAIL_DO,
         ds_email=EMAIL_DS,
         do_token_path=token_path_do,
@@ -341,7 +352,7 @@ def test_google_drive_connection_load_state():
     # create the state
 
     # load the clients and add the peers
-    manager_ds1, manager_do1 = create_test_pair(
+    manager_ds1, manager_do1 = create_rds_test_pair(
         do_email=EMAIL_DO,
         ds_email=EMAIL_DS,
         do_token_path=token_path_do,
@@ -350,11 +361,13 @@ def test_google_drive_connection_load_state():
         load_peers=False,
     )
 
+    grant_job_inbox_access(manager_do1, EMAIL_DS)
+
     # make some changes
-    manager_ds1._send_file_change(
+    manager_ds1.sync_engine._send_file_change(
         path_for_job(EMAIL_DO, EMAIL_DS, "my.job"), "Hello, world!"
     )
-    manager_ds1._send_file_change(
+    manager_ds1.sync_engine._send_file_change(
         path_for_job(EMAIL_DO, EMAIL_DS, "my_second.job"), "Hello, world!"
     )
 
@@ -372,10 +385,12 @@ def test_google_drive_connection_load_state():
 
     # verify dataset was created and cache was populated
     assert len(manager_do1.datasets.get_all()) == 1
-    assert len(manager_do1.datasite_owner_syncer._any_shared_datasets) == 1
+    assert (
+        len(manager_do1.sync_engine.datasite_owner_syncer.any_shared_collections) == 1
+    )
 
     # test loading the peers and loading the inbox
-    manager_ds2, manager_do2 = create_test_pair(
+    manager_ds2, manager_do2 = create_rds_test_pair(
         do_email=EMAIL_DO,
         ds_email=EMAIL_DS,
         do_token_path=token_path_do,
@@ -393,11 +408,16 @@ def test_google_drive_connection_load_state():
     # sync so we have something in the syftbox and do outbox
     manager_do2.sync()
 
-    assert len(manager_do2.datasite_owner_syncer.event_cache.get_cached_events()) == 2
+    assert (
+        len(
+            manager_do2.sync_engine.datasite_owner_syncer.event_cache.get_cached_events()
+        )
+        == 2
+    )
 
     # we have created some state now, so now we can log in again and load the state
     # use a fresh syftbox folder to simulate clean filesystem
-    manager_ds3, manager_do3 = create_test_pair(
+    manager_ds3, manager_do3 = create_rds_test_pair(
         do_email=EMAIL_DO,
         ds_email=EMAIL_DS,
         do_token_path=token_path_do,
@@ -409,12 +429,12 @@ def test_google_drive_connection_load_state():
     manager_do3.sync()
     manager_ds3.sync()
 
-    loaded_events_do = manager_do3.datasite_owner_syncer.event_cache.get_cached_events()
+    loaded_events_do = (
+        manager_do3.sync_engine.datasite_owner_syncer.event_cache.get_cached_events()
+    )
     assert len(loaded_events_do) == 2
 
-    loaded_events_ds = (
-        manager_ds3.datasite_watcher_syncer.datasite_watcher_cache.get_cached_events()
-    )
+    loaded_events_ds = manager_ds3.sync_engine.datasite_watcher_syncer.datasite_watcher_cache.get_cached_events()
     assert len(loaded_events_ds) == 2
 
     # verify datasets were loaded from GDrive
@@ -422,10 +442,12 @@ def test_google_drive_connection_load_state():
     assert len(loaded_datasets) == 1
     assert loaded_datasets[0].name == "load_state_dataset"
 
-    # verify _any_shared_datasets cache was populated during pull_initial_state
-    assert len(manager_do3.datasite_owner_syncer._any_shared_datasets) == 1
+    # verify any_shared_collections cache was populated during pull_initial_state
     assert (
-        manager_do3.datasite_owner_syncer._any_shared_datasets[0][0]
+        len(manager_do3.sync_engine.datasite_owner_syncer.any_shared_collections) == 1
+    )
+    assert (
+        manager_do3.sync_engine.datasite_owner_syncer.any_shared_collections[0][0]
         == "load_state_dataset"
     )
 
@@ -439,7 +461,7 @@ def test_version_upgrade_breaks_communication():
     2. Update one peer's version file (simulating an upgrade)
     3. Reload the version and verify peers are now incompatible
     """
-    from syft_client.sync.version.version_info import VersionInfo
+    from syft.sync.version.version_info import VersionInfo
 
     # Phase 1: Create managers with compatible versions
     ds_manager, do_manager = create_test_pair(

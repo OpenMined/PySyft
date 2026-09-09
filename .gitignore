@@ -174,8 +174,15 @@ SyftBox/
 *~
 
 # Claude AI settings
+#
+# Skills are private by default: .claude/skills/* ignores every skill, so a new
+# one is never committed by accident. Share a skill with the team by adding a
+# !-rule for it below.
 .claude/*
 !.claude/settings.json
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/syft-pr-review/
 CLAUDE.md
 
 # CI test outputs
@@ -184,7 +191,11 @@ test_suite_output.log
 
 
 # Notebooks
+# Files notebooks download at runtime — ignored everywhere, since a notebook may be run
+# from any directory. Canonical checked-in copies are re-included by the ! rules below.
 *ailuminate_prompts.csv
+*safety_prompts*.csv
+!notebooks/enclave/gemma/data/safety_prompts*.csv
 notebooks/e2e/sales_mock.csv
 notebooks/e2e/sales_private.csv
 notebooks/e2e/readme.mdpackages/syft-bg/docs/sync-service.md

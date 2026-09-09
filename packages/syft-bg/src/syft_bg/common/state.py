@@ -1,6 +1,5 @@
 """State management for tracking notified/approved entities."""
 
-import fcntl
 import json
 from contextlib import contextmanager
 from datetime import datetime, timezone
@@ -8,6 +7,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError
+
+from syft_bg.common.locking import file_lock
 
 
 class BgState(BaseModel):
@@ -43,13 +44,8 @@ class JsonStateManager(BaseModel):
     @contextmanager
     def _file_lock(self):
         """Acquire exclusive file lock for thread-safe writes."""
-        self._lock_file.touch(exist_ok=True)
-        with open(self._lock_file, "r") as lock_handle:
-            try:
-                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
-                yield
-            finally:
-                fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+        with file_lock(self._lock_file):
+            yield
 
     def _load(self) -> BgState:
         if not self.state_file.exists():

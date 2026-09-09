@@ -8,10 +8,21 @@ enclave_email = "enclave@example.org"
 data_owners   = ["do1@openmined.org", "do2@openmined.org"]
 token_file    = "/absolute/path/to/token_enclave.json"
 
+# --- hardware ---
+# Set here in tfvars, NOT via -var, so it persists across tf-plan/tf-apply/tf-redeploy.
+# "cpu" (default): n2d-standard-2, AMD SEV, on-demand.
+# "gpu": a3-highgpu-1g (1x H100 80GB, Intel TDX), flex-start provisioning — queues for
+#        capacity, runs max_run_duration_seconds, then the VM AND DISK are auto-deleted
+#        (redeploy to continue; no on-demand exists for confidential H100).
+# hardware                 = "cpu"
+# max_run_duration_seconds = 172800   # gpu only: VM lifetime, 600..604800 (2 days default)
+
 # --- optional overrides (defaults shown) ---
 # vm_name             = "syft-enclave-vm"
-# machine_type        = "n2d-standard-2"
+# machine_type        = ""            # null = follow hardware (n2d-standard-2 / a3-highgpu-1g)
 # boot_disk_size_gb   = 200
-# container_image     = "docker.io/openminedreleasebot/syft-client-enclave:latest"
+# image_repo          = "docker.io/openminedreleasebot/syft-enclave"
+# image_tag           = "latest"
+# image_digest        = ""            # e.g. "sha256:<64-hex>"; when set, takes precedence over image_tag
 # use_encryption      = false         # dev-mode override only (default false); production always encrypts
 # job_timeout_seconds = 2592000   # 30 days (default); set to null to use the container default (600s)

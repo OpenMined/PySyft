@@ -35,9 +35,9 @@ def _make_bioweapon_job_code(enclave_email: str) -> str:
 import json
 import os
 
-import syft_client as sc
+import syft as sy
 
-log_files = sc.resolve_dataset_files_path(
+log_files = sy.resolve_dataset_files_path(
     "inference_logs", owner_email="{enclave_email}"
 )
 log_file = [f for f in log_files if f.name == "{LOG_FILE_NAME}"][0]

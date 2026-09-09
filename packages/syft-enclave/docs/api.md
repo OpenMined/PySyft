@@ -4,7 +4,7 @@ Once the container is running, the following endpoints are available at `http://
 
 | Endpoint           | Description                                                       |
 | ------------------ | ----------------------------------------------------------------- |
-| `GET /`            | Landing page with syft-client version and available endpoints     |
+| `GET /`            | Landing page with syft version and available endpoints            |
 | `GET /attestation` | TEE attestation report (signed JWT with hardware/software claims) |
 | `GET /health`      | Health check                                                      |
 | `GET /docs`        | FastAPI auto-generated Swagger UI                                 |
@@ -41,9 +41,10 @@ curl http://EXTERNAL_IP:8080/attestation | python3 -m json.tool
 
 The response includes:
 
-- `attestation.hardware.hwmodel` - TEE hardware type (`GCP_AMD_SEV`)
+- `attestation.hardware.hwmodel` - TEE hardware type (`GCP_AMD_SEV`; `GCP_INTEL_TDX` on gpu deployments)
 - `attestation.hardware.secboot` - Secure boot status
 - `attestation.hardware.dbgstat` - Debug status (`enabled` for debug image, `disabled-since-boot` for production)
 - `attestation.container.image_digest` - SHA256 of the running container image
+- `attestation.nvidia_gpu` - gpu deployments only: `cc_mode` (`"ON"` = confidential computing active), `gpus[].hwmodel` (`GCP_NVIDIA_H100`), driver version
 - `attestation.gce.*` - GCP project, zone, instance info
 - `raw_token` - Full JWT for independent verification against Google's JWKS
