@@ -3,7 +3,7 @@ name: 'PR: Unit Tests'
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, dev]
 
   workflow_call:
 
