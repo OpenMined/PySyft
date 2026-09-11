@@ -456,19 +456,21 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if not all_downloads:
             return
 
-        # Download all files in parallel
-        file_ids = [metadata["file_id"] for _, metadata in all_downloads]
-        downloaded_contents = list(
-            self._executor.map(self._download_file_with_new_connection, file_ids)
-        )
-
-        # Write all files to disk under the layout's local subpath.
-        for (collection, metadata), content in zip(all_downloads, downloaded_contents):
-            local_dir = self._collection_local_dir(
-                spec, collection.tag, collection.variant
+        # Download all files in parallel, each streamed to disk under the layout's
+        # local subpath and decrypted there (own backups are sealed for self).
+        targets = [
+            (
+                metadata["file_id"],
+                self._collection_local_dir(spec, collection.tag, collection.variant)
+                / metadata["file_name"],
             )
-            local_dir.mkdir(parents=True, exist_ok=True)
-            (local_dir / metadata["file_name"]).write_bytes(content)
+            for collection, metadata in all_downloads
+        ]
+        list(
+            self._executor.map(
+                lambda t: self._download_file_with_new_connection(*t), targets
+            )
+        )
 
         # Update cached hashes ONLY for mutable specs
         if not spec.immutable:
@@ -499,10 +501,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             owner_email=self.email,
         )
 
-    def _download_file_with_new_connection(self, file_id: str) -> bytes:
-        """Download a file using a new connection for thread safety."""
+    def _download_file_with_new_connection(self, file_id: str, dest: Path) -> None:
+        """Stream one of the owner's own collection files to ``dest`` using a new
+        connection (thread-safe), decrypting it if it was sealed for self."""
         connection = self.connection_router.connection_for_parallel_download()
-        return connection.watcher_download_collection_file(file_id)
+        self.connection_router.watcher_download_collection_file_to_path(
+            file_id, self.email, dest, connection=connection
+        )
 
     def _get_readers(self, path: str, recipients: list[str]) -> frozenset[str]:
         """Return the set of recipients that have read access to the given path."""

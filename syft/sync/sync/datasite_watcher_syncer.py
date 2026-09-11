@@ -146,6 +146,15 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         )
         return data
 
+    def download_collection_file_to_path_with_new_connection(
+        self, file_id: str, owner_email: str, dest: Path
+    ) -> None:
+        """Stream a collection file to ``dest`` using a new connection (thread-safe)."""
+        connection = self.connection_router.connection_for_parallel_download()
+        self.connection_router.watcher_download_collection_file_to_path(
+            file_id, owner_email, dest, connection=connection
+        )
+
     def sync_down(self, peer_emails: list[str]):
         for peer_email in peer_emails:
             # Sync messages with parallel download
@@ -159,12 +168,13 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             )
             if event_count:
                 print(f"Pulled {event_count} inbound event(s) from {peer_email}")
-            # Sync collections with parallel download
+            # Sync collections with parallel download, streamed to disk
             self.datasite_watcher_cache.sync_down_collections_parallel(
                 peer_email,
                 self._executor,
-                lambda fid,
+                download_fn=lambda fid,
                 pe=peer_email: self.download_collection_file_with_new_connection(
                     fid, pe
                 ),
+                download_to_path_fn=self.download_collection_file_to_path_with_new_connection,
             )

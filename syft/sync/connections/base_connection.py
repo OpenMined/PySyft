@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import ClassVar, Type
 from pydantic import BaseModel
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
@@ -56,8 +57,14 @@ class SyftboxPlatformConnection(BaseModel):
         raise NotImplementedError()
 
     def owner_upload_collection_files(
-        self, prefix: str, tag: str, content_hash: str, files: dict[str, bytes]
+        self,
+        prefix: str,
+        tag: str,
+        content_hash: str,
+        files: "dict[str, bytes | Path]",
     ) -> None:
+        """Upload a collection's files. A ``bytes`` value is uploaded from memory;
+        a ``Path`` value is streamed from disk, so files of any size can be sent."""
         raise NotImplementedError()
 
     def owner_list_collections(self, prefix: str) -> list[str]:
@@ -91,6 +98,13 @@ class SyftboxPlatformConnection(BaseModel):
         raise NotImplementedError()
 
     def watcher_download_collection_file(self, file_id: str) -> bytes:
+        raise NotImplementedError()
+
+    def watcher_download_collection_file_to_path(
+        self, file_id: str, dest: "Path"
+    ) -> None:
+        """Download one collection file straight to ``dest``, streaming, so files of
+        any size can be received with bounded memory."""
         raise NotImplementedError()
 
     # =========================================================================
