@@ -59,7 +59,43 @@ Returns a `PeerList`.
 
 Get the list of jobs. Auto-syncs before returning.
 
-Returns a `JobsList`.
+Returns a `JobsList`. Address a job by **email, then name** — a job name is
+unique per datasite and submitter, so the email is what makes the name resolve
+to one job, and both parts stay the same as jobs are added:
+
+```python
+# as the data scientist, naming the data owner
+client.jobs["do@org.com"]["analysis"].output_paths
+
+# as the data owner, naming the submitter
+client.jobs["ds@org.com"]["analysis"].approve()
+```
+
+**An email keeps the jobs it is a party to**, on either side: the datasite they
+sit on, or the person who submitted them. Usually that is the other party — a
+data scientist names the data owner, a data owner names the submitter — but
+naming yourself works and keeps your own, which is what a `PermissionError` on
+someone else's job suggests. Job names cannot contain `@`, so the two kinds of
+key never collide.
+
+Chain both emails when one submitter sent the same name to two datasites:
+
+```python
+client.jobs["do@org.com"]["ds@org.com"]["analysis"].approve()
+```
+
+A bare name (`client.jobs["analysis"]`) searches every datasite at once. It
+still works, but it raises when more than one job answers to it, and the message
+names whichever key separates them.
+
+A job name can no longer hold an `@`. A job submitted before that rule still
+resolves by name, with a `DeprecationWarning`; the next version will not resolve
+it, so rename such a job.
+
+Positional indexing (`client.jobs[0]`) also works and matches the Index column
+in the table, but positions shift as jobs are added, so prefer an email and a
+name. A position is worth using in one case: two jobs that share a datasite, a
+submitter and a name, which no email separates.
 
 ### `client.datasets`
 
@@ -174,6 +210,7 @@ Submit a Python job to a Data Owner. **DS only.**
 ds_client.submit_python_job(
     user="owner@example.com",
     code_path="/path/to/script.py",
+    job_name="analysis",
 )
 ```
 
@@ -195,10 +232,22 @@ Run all approved jobs. **DO only.**
 - `stream_output`: Stream stdout/stderr in real-time.
 - `timeout`: Timeout in seconds per job (default: 300).
 - `force_execution`: Skip version compatibility checks.
+- `ignore_peer_version`: Run jobs from peers whose version is incompatible.
 
 ```python
 do_client.process_approved_jobs()
 ```
+
+A job whose submitter runs an incompatible version is not run. Each one is
+reported by name, with the submitter and the reason:
+
+```
+⏭️  1 approved job(s) did not run:
+   • analysis (submitted by ds@example.com): Skipping peer ds@example.com: incompatible version.
+   Pass ignore_peer_version=True to run them anyway.
+```
+
+The job stays at `approved`, so it runs on the next call once the versions match.
 
 ---
 
