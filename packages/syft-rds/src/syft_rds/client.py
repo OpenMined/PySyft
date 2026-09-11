@@ -6,6 +6,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Any
+import shutil
 
 import yaml
 from pydantic import BaseModel, ConfigDict
@@ -20,6 +21,7 @@ from syft.sync.version.peer_manager import CompatAction
 from syft_job.client import JobClient
 from syft_job.job_runner import SyftJobRunner
 from syft_datasets.dataset_manager import SyftDatasetManager
+from syft_datasets.config import PRIVATE_METADATA_FILENAME
 from syft_datasets.dataset_ref import DatasetNotFoundError
 from syft_rds.config import (
     DATASET_COLLECTION_SPECS,
@@ -454,9 +456,9 @@ class SyftRDSClient(BaseModel):
                 copy = created[protocol_version]
                 mock_folder_ids.append(self._upload_dataset_to_collection(copy, users))
                 if upload_private:
-                    private_folder_id = self._upload_private_dataset_to_collection(copy)
-                    if private_folder_id is not None:
-                        private_folder_ids.append(private_folder_id)
+                    uploaded = self._upload_private_dataset_to_collection(copy)
+                    if uploaded is not None:
+                        private_folder_ids.append(uploaded[0])
 
             if sync:
                 self.sync()
@@ -509,9 +511,19 @@ class SyftRDSClient(BaseModel):
                 )
 
     def _create_and_upload_collection(
-        self, prefix: str, tag: str, files: dict[str, bytes]
+        self,
+        prefix: str,
+        tag: str,
+        files: "dict[str, bytes | Path]",
+        recipients: list[str] | None = None,
     ) -> tuple[str, str]:
         """Create a hash-named collection folder and upload its files.
+
+        ``Path`` values stream from disk. ``recipients`` (the owner may be one)
+        seal every file in one multi-recipient envelope and are folded into the
+        content hash, so the same files for a different audience are a different
+        collection. A collection whose name already exists on the backend is
+        complete by construction (the name is the hash), so it is not re-uploaded.
 
         Returns ``(folder_id, content_hash)``.
         """
@@ -519,12 +531,41 @@ class SyftRDSClient(BaseModel):
             CollectionFolder,
         )
 
-        content_hash = CollectionFolder.compute_hash(files)
+        content_hash = CollectionFolder.compute_hash(files, extra_tokens=recipients)
+        existing = self._find_own_collection(prefix, tag, content_hash)
+        if existing is not None:
+            logger.info(
+                "Collection %s/%s@%s already uploaded, skipping",
+                prefix,
+                tag,
+                content_hash,
+            )
+            return existing.folder_id, content_hash
         folder_id = self.sync_engine.create_collection_folder(
             prefix, tag=tag, content_hash=content_hash
         )
-        self.sync_engine.upload_collection_files(prefix, tag, content_hash, files)
+        self.sync_engine.upload_collection_files(
+            prefix, tag, content_hash, files, recipients=recipients
+        )
         return folder_id, content_hash
+
+    def _find_own_collection(self, wire_prefix: str, tag: str, content_hash: str):
+        """The owner's already-uploaded collection with this exact name, if any."""
+        if wire_prefix.startswith(PRIVATE_DATASET_COLLECTION_PREFIX):
+            base_prefix, spec = PRIVATE_DATASET_COLLECTION_PREFIX, PRIVATE_DATASET_SPEC
+        else:
+            base_prefix, spec = DATASET_COLLECTION_PREFIX, MOCK_DATASET_SPEC
+        listed = self.sync_engine._connection_router.owner_list_all_collections_with_permissions(
+            base_prefix
+        )
+        for c in listed:
+            if (
+                c.tag == tag
+                and c.content_hash == content_hash
+                and spec.wire_prefix(c.variant) == wire_prefix
+            ):
+                return c
+        return None
 
     def _collect_mock_files(self, dataset) -> dict[str, bytes]:
         """Read a dataset's mock files, metadata and readme into a name->bytes map."""
@@ -582,30 +623,66 @@ class SyftRDSClient(BaseModel):
         self._share_dataset_collection(wire_prefix, dataset.name, content_hash, users)
         return folder_id
 
-    def _upload_private_dataset_to_collection(self, dataset) -> str | None:
-        """Upload the private files of one protocol copy to an owner-only collection.
+    def _collect_private_paths(self, dataset) -> tuple[dict[str, Path], Path | None]:
+        """Map each private file's name to its path on disk, without reading it.
+
+        ``private_metadata.yaml`` is replaced by a copy with ``data_dir`` cleared
+        (the owner's absolute path is meaningless elsewhere), written to a temp
+        dir that the caller removes. Returns ``(files, tmp_dir_or_None)``.
+        """
+        import tempfile
+
+        files: dict[str, Path] = {}
+        tmp_dir: Path | None = None
+        for f in dataset.private_dir.iterdir():
+            if not f.is_file():
+                continue
+            if f.name == PRIVATE_METADATA_FILENAME:
+                ref = self.dataset_manager.storage.find_dataset_ref(
+                    self.email, dataset.name, protocol_version=dataset.protocol_version
+                )
+                tmp_dir = Path(tempfile.mkdtemp(prefix="syft-private-meta-"))
+                sanitized = tmp_dir / f.name
+                sanitized.write_bytes(
+                    self.dataset_manager._private_config_without_data_dir(ref)
+                )
+                files[f.name] = sanitized
+            else:
+                files[f.name] = f
+        return files, tmp_dir
+
+    def _upload_private_dataset_to_collection(
+        self, dataset, recipients: list[str] | None = None
+    ) -> tuple[str, str, str] | None:
+        """Upload the private files of one protocol copy as a private collection.
+
+        Files stream from disk and are sealed for the owner plus ``recipients``
+        in one envelope each, so the same upload serves the owner's cold-start
+        restore and every peer it is shared with. The recipient set is part of
+        the collection name: a re-upload for the same audience is skipped, and a
+        new audience gets its own collection.
 
         The copies hold separate private directories, so one upload of the newest
         would leave the others local only and a cold start would not restore them.
-        Returns the folder ID, or None if there are no files to upload.
+        Returns ``(folder_id, wire_prefix, content_hash)``, or None if there are
+        no files to upload.
         """
-        collection_tag = dataset.name
 
-        # Collect all files in private dir (data, metadata, permissions)
-        files = {}
-        for f in dataset.private_dir.iterdir():
-            if f.is_file():
-                files[f.name] = f.read_bytes()
-
-        if not files:
-            return None
-
-        # Private collection: no sharing step.
-        variant = dataset_variant(dataset.protocol_version)
-        folder_id, _ = self._create_and_upload_collection(
-            PRIVATE_DATASET_SPEC.wire_prefix(variant), collection_tag, files
-        )
-        return folder_id
+        audience = sorted({self.email, *(recipients or [])})
+        files, tmp_dir = self._collect_private_paths(dataset)
+        try:
+            if not files:
+                return None
+            wire_prefix = PRIVATE_DATASET_SPEC.wire_prefix(
+                dataset_variant(dataset.protocol_version)
+            )
+            folder_id, content_hash = self._create_and_upload_collection(
+                wire_prefix, dataset.name, files, recipients=audience
+            )
+            return folder_id, wire_prefix, content_hash
+        finally:
+            if tmp_dir is not None:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
 
     def delete_dataset(
         self,
@@ -770,29 +847,39 @@ class SyftRDSClient(BaseModel):
             self._upload_private_dataset_to_collection(copy)
 
     def share_private_dataset(self, tag: str, enclave_email: str):
-        """Share private dataset files with an enclave via outbox events.
+        """Share a dataset's private files with an enclave.
 
-        The files ship at the layout the enclave reads: the newest local copy
-        at or below its negotiated dataset protocol, materialized first when
-        no copy qualifies. An enclave without a known schema is assumed to run
-        the current protocol, the same policy as jobs.
+        The files travel as a private collection: streamed from disk, sealed for
+        the owner and the enclave in one envelope each, uploaded once per audience
+        (the collection is named by content and recipients, so a repeat share
+        uploads nothing), and made visible to the enclave by sharing the folder.
+        The enclave's watcher pulls it on its next sync into
+        ``<owner>/private/syft_datasets/[v<n>/]<tag>/``.
+
+        The files ship at the layout the enclave reads: the newest local copy at
+        or below its negotiated dataset protocol, materialized first when no copy
+        qualifies. An enclave without a known schema is assumed to run the
+        current protocol, the same policy as jobs.
         """
         if not self.has_do_role:
             raise ValueError("Only data owners can share private datasets")
 
         with self.sync_engine.sync_file_lock():
             protocol_version = self._private_share_protocol_version(tag, enclave_email)
-            files = self.dataset_manager.get_private_dataset_files(
-                tag, protocol_version=protocol_version
+            storage = self.dataset_manager.storage
+            ref = storage.find_dataset_ref(
+                self.email, tag, protocol_version=protocol_version
             )
-            events_message = self.sync_engine.datasite_owner_syncer.event_cache.create_events_for_files(
-                files
+            dataset = storage.read_dataset(ref)
+            uploaded = self._upload_private_dataset_to_collection(
+                dataset, recipients=[enclave_email]
             )
-            self.sync_engine.datasite_owner_syncer.queue_event_for_syftbox(
-                recipients=[enclave_email],
-                file_change_events_message=events_message,
+            if uploaded is None:
+                raise ValueError(f"Dataset {tag} has no private files to share")
+            _, wire_prefix, content_hash = uploaded
+            self.sync_engine.share_collection(
+                wire_prefix, tag, content_hash, [enclave_email]
             )
-            self.sync_engine.datasite_owner_syncer.process_syftbox_events_queue()
 
     def _private_share_protocol_version(self, tag: str, peer_email: str) -> str:
         """The protocol version of the copy to ship privately to this peer.

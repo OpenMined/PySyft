@@ -1,18 +1,18 @@
 """Private dataset files ship in the layout the receiving peer reads.
 
-A private share sends the files of one local copy to an enclave as outbox
-events, path by path. The paths carry the copy's protocol layout: flat for
-protocol 0, a v<n> segment from protocol 1 on. A receiver scans only the
-layouts it knows, so files at paths of a newer layout never become a readable
+A private share publishes the files of one local copy as a private collection
+shared with the recipient. The collection's layout carries the copy's protocol:
+flat for protocol 0, a v<n> segment from protocol 1 on. A receiver scans only
+the layouts it knows, so files in a newer layout never become a readable
 dataset there -- the job that needed them cannot find its input.
 
 These tests drive share_private_dataset against a recipient that advertises an
-older dataset protocol and assert on the paths of the events that actually go
-out.
+older dataset protocol and assert on the paths the shared collection resolves to.
 """
 
 import pytest
 from syft_rds import SyftRDSClient
+from syft_rds.config import PRIVATE_DATASET_SPEC
 from syft_migration import ProtocolSchema
 
 from tests.unit.utils import create_tmp_dataset_files
@@ -56,16 +56,30 @@ def _create(ds_manager, do_manager, name: str, mixed_audience: bool):
 
 
 def _shipped_private_paths(ds_manager, do_manager) -> list[str]:
-    """The private-file paths of the events the DO put in our outbox."""
-    messages = ds_manager.sync_engine._connection_router.watcher_get_events_messages(
-        do_manager.email, None
-    )
-    return [
-        str(event.path_in_datasite)
-        for message in messages
-        for event in message.events
-        if "private/syft_datasets" in str(event.path_in_datasite)
-    ]
+    """The datasite-relative paths of the private files the DO shared with us.
+
+    Read from the private collections visible to us, each in the layout its
+    wire variant names -- the same resolution the watcher applies when pulling.
+    """
+    router = ds_manager.sync_engine._connection_router
+    spec = PRIVATE_DATASET_SPEC
+    paths = []
+    for collection in router.watcher_list_collections(spec.prefix):
+        if collection["owner_email"] != do_manager.email:
+            continue
+        variant = collection.get("variant", "")
+        layout = spec.layout_for(variant)
+        assert layout is not None, f"unreadable layout {variant!r}"
+        for meta in router.watcher_get_collection_file_metadatas(
+            spec.wire_prefix(variant),
+            collection["tag"],
+            collection["content_hash"],
+            collection["owner_email"],
+        ):
+            paths.append(
+                f"{layout.local_subpath}/{collection['tag']}/{meta['file_name']}"
+            )
+    return paths
 
 
 def test_private_files_for_a_protocol0_peer_ship_in_the_flat_layout(pair):

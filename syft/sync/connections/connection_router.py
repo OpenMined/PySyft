@@ -1,3 +1,6 @@
+import shutil
+import tempfile
+from pathlib import Path
 import logging
 from typing import TYPE_CHECKING, Dict, List, Optional
 
@@ -359,17 +362,59 @@ class ConnectionRouter(BaseModel):
         prefix: str,
         tag: str,
         content_hash: str,
-        files: dict[str, bytes],
+        files: "dict[str, bytes | Path]",
         recipient_email: str | None = None,
+        recipients: list[str] | None = None,
     ) -> None:
-        """Upload collection files, encrypting each file if encryption is enabled."""
-        if recipient_email and self.peer_store:
-            files = {
-                name: self.peer_store.encrypt_if_needed(recipient_email, data)
-                for name, data in files.items()
-            }
-        connection = self.connection_for_send_message()
-        connection.owner_upload_collection_files(prefix, tag, content_hash, files)
+        """Upload collection files, encrypting each for ``recipients`` when possible.
+
+        ``bytes`` values are buffered; ``Path`` values are encrypted to a temp file
+        and streamed, so memory does not grow with the file. ``recipients`` may
+        include the owner itself, giving one ciphertext that both the owner's
+        restore and the shared-with peers can open. ``recipient_email`` is the
+        single-recipient form kept for existing callers.
+        """
+        if recipient_email and not recipients:
+            recipients = [recipient_email]
+        recipients = sorted(set(recipients or []))
+        encrypt = bool(recipients) and self.peer_store is not None
+        if encrypt and not self.peer_store.can_encrypt_for(recipients):
+            encrypt = (
+                False  # same rule as messages: a non-encrypting audience gets plaintext
+            )
+
+        tmp_dir: Path | None = None
+        to_upload: dict[str, bytes | Path] = {}
+        try:
+            for name, data in files.items():
+                if not encrypt:
+                    to_upload[name] = data
+                    continue
+                if isinstance(data, Path):
+                    if tmp_dir is None:
+                        tmp_dir = Path(tempfile.mkdtemp(prefix="syft-upload-"))
+                    enc = tmp_dir / f"{name}.syc"
+                    self.peer_store.encrypt_file_for(recipients, data, enc)
+                    to_upload[name] = enc
+                elif len(recipients) == 1:
+                    to_upload[name] = self.peer_store.encrypt(recipients[0], data)
+                else:
+                    # Multi-recipient bytes go through the file API too (one envelope).
+                    if tmp_dir is None:
+                        tmp_dir = Path(tempfile.mkdtemp(prefix="syft-upload-"))
+                    src = tmp_dir / f"{name}.plain"
+                    src.write_bytes(data)
+                    enc = tmp_dir / f"{name}.syc"
+                    self.peer_store.encrypt_file_for(recipients, src, enc)
+                    src.unlink()
+                    to_upload[name] = enc
+            connection = self.connection_for_send_message()
+            connection.owner_upload_collection_files(
+                prefix, tag, content_hash, to_upload
+            )
+        finally:
+            if tmp_dir is not None:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
 
     def owner_list_collections(self, prefix: str) -> list[str]:
         connection = self.connection_for_send_message()
@@ -446,6 +491,31 @@ class ConnectionRouter(BaseModel):
         data = connection.watcher_download_collection_file(file_id)
         data = self.peer_store.decrypt_dataset_if_needed(owner_email, data)
         return data
+
+    def watcher_download_collection_file_to_path(
+        self,
+        file_id: str,
+        owner_email: str,
+        dest: Path,
+        connection: "SyftboxPlatformConnection | None" = None,
+    ) -> None:
+        """Download one collection file to ``dest`` and decrypt it there, streaming.
+
+        ``owner_email`` may be a peer or self (the owner restoring its own backup).
+        Pass ``connection`` to use a dedicated (thread-safe) connection.
+        """
+        connection = connection or self.connection_for_datasite_watcher()
+        dest = Path(dest)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        staged = dest.with_name(dest.name + ".syc.download")
+        try:
+            connection.watcher_download_collection_file_to_path(file_id, staged)
+            if self.peer_store is None:
+                staged.replace(dest)
+            else:
+                self.peer_store.decrypt_collection_file(owner_email, staged, dest)
+        finally:
+            staged.unlink(missing_ok=True)
 
     # =========================================================================
     # MISC
