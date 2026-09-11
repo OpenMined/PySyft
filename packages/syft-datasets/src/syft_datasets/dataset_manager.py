@@ -13,7 +13,7 @@ from syft_datasets.models import Dataset
 from syft_datasets.dataset_ref import DatasetRef
 from syft_datasets.dataset_storage import DatasetSourceFiles, DatasetStorage
 
-from .config import PRIVATE_METADATA_FILENAME, SyftBoxConfig
+from .config import SyftBoxConfig
 from .permissions import set_mock_dataset_permissions, set_private_dataset_permissions
 
 DATASET_COLLECTION_PREFIX = "syft_datasetcollection"
@@ -317,43 +317,6 @@ class SyftDatasetManager:
 
         # Remove every on-disk copy (all protocol versions) via the storage layer.
         self.storage.delete_dataset(datasite, name)
-
-    def get_private_dataset_files(
-        self, name: str, protocol_version: str | None = None
-    ) -> dict[Path, bytes]:
-        """Get private dataset files as {path_in_datasite: content}.
-
-        Returns paths relative to the datasite (e.g.
-        private/syft_datasets/[v<n>/]{name}/{file}); the paths carry the copy's
-        protocol layout, so ``protocol_version`` selects the copy a specific
-        reader scans (the preferred/newest copy by default). For
-        private_metadata.yaml, clears data_dir before including it.
-        """
-        datasite = self.syftbox_config.email
-        ref = self.storage.find_dataset_ref(
-            datasite, name, protocol_version=protocol_version
-        )
-        private_dir = self.storage.private_dataset_dir(ref)
-        if not private_dir.exists():
-            raise ValueError(f"Private data directory not found: {private_dir}")
-
-        datasite_root = self.syftbox_config.syftbox_folder / datasite
-        private_rel_root = private_dir.relative_to(datasite_root)
-
-        files = {}
-        for f in private_dir.rglob("*"):
-            if not f.is_file():
-                continue
-            rel = f.relative_to(private_dir)
-            path_in_datasite = private_rel_root / rel
-            if f.name == PRIVATE_METADATA_FILENAME and rel == Path(f.name):
-                files[path_in_datasite] = self._private_config_without_data_dir(ref)
-            else:
-                files[path_in_datasite] = f.read_bytes()
-
-        if not files:
-            raise ValueError(f"No private files found for dataset '{name}'")
-        return files
 
     def _private_config_without_data_dir(self, ref: DatasetRef) -> bytes:
         """Serialize the dataset's private_metadata.yaml with data_dir cleared.
