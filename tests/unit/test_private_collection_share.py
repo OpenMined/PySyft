@@ -176,13 +176,18 @@ def test_private_share_streams_dedups_and_reaches_only_the_enclave(tmp_path):
     src_dir.mkdir()
     mock_path = src_dir / "mock.txt"
     mock_path.write_text("mock")
-    private_path = src_dir / "model.bin"
+    private_dir = src_dir / "private"
+    (private_dir / "ckpt").mkdir(parents=True)
+    private_path = private_dir / "model.bin"
     _write_random(private_path, 32 * MiB)
+    # A nested file, as an Orbax checkpoint directory would be laid out.
+    nested = private_dir / "ckpt" / "shard-0"
+    nested.write_bytes(b"nested shard")
 
     do1.create_dataset(
         name="bigmodel",
         mock_path=mock_path,
-        private_path=private_path,
+        private_path=private_dir,
         summary="big private file",
         users=[ds.email],
         upload_private=True,
@@ -206,6 +211,8 @@ def test_private_share_streams_dedups_and_reaches_only_the_enclave(tmp_path):
     received = enclave_dir / "model.bin"
     assert received.exists() and _same_content(private_path, received)
     assert not PeerStore.is_envelope_file(received), "must be decrypted on arrival"
+    # Nested files keep their relative path on the receiver.
+    assert (enclave_dir / "ckpt" / "shard-0").read_bytes() == b"nested shard"
 
     # A second collection exists: same files, audience {owner, enclave}.
     shared = _private_collections_of(do1, "bigmodel")

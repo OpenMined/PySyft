@@ -624,7 +624,7 @@ class SyftRDSClient(BaseModel):
         return folder_id
 
     def _collect_private_paths(self, dataset) -> tuple[dict[str, Path], Path | None]:
-        """Map each private file's name to its path on disk, without reading it.
+        """Map each private file's relative path to its path on disk, without reading it.
 
         ``private_metadata.yaml`` is replaced by a copy with ``data_dir`` cleared
         (the owner's absolute path is meaningless elsewhere), written to a temp
@@ -634,10 +634,15 @@ class SyftRDSClient(BaseModel):
 
         files: dict[str, Path] = {}
         tmp_dir: Path | None = None
-        for f in dataset.private_dir.iterdir():
+        private_dir = dataset.private_dir
+        # Recursive: a dataset may hold nested files (e.g. a checkpoint directory).
+        # Keys are paths relative to the private dir, so they land at the same
+        # relative path on the receiver.
+        for f in sorted(private_dir.rglob("*")):
             if not f.is_file():
                 continue
-            if f.name == PRIVATE_METADATA_FILENAME:
+            rel = f.relative_to(private_dir).as_posix()
+            if rel == PRIVATE_METADATA_FILENAME:
                 ref = self.dataset_manager.storage.find_dataset_ref(
                     self.email, dataset.name, protocol_version=dataset.protocol_version
                 )
@@ -646,9 +651,9 @@ class SyftRDSClient(BaseModel):
                 sanitized.write_bytes(
                     self.dataset_manager._private_config_without_data_dir(ref)
                 )
-                files[f.name] = sanitized
+                files[rel] = sanitized
             else:
-                files[f.name] = f
+                files[rel] = f
         return files, tmp_dir
 
     def _upload_private_dataset_to_collection(

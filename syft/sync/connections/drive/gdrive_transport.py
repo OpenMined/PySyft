@@ -186,6 +186,23 @@ def _collection_name_re(prefix: str) -> "re.Pattern[str]":
     )
 
 
+# A collection is a flat Drive folder, but a dataset may hold nested files (an
+# Orbax checkpoint is a directory of shards). Drive file names cannot contain "/",
+# so a nested relative path travels with its separators encoded and is restored on
+# download. A flat name is unchanged, so existing collections are unaffected.
+COLLECTION_PATH_SEPARATOR = "%2F"
+
+
+def collection_wire_name(rel_path: str) -> str:
+    """On-wire Drive file name for a file at ``rel_path`` inside a collection."""
+    return Path(rel_path).as_posix().replace("/", COLLECTION_PATH_SEPARATOR)
+
+
+def collection_local_name(wire_name: str) -> str:
+    """Relative path inside the collection for an on-wire Drive file name."""
+    return wire_name.replace(COLLECTION_PATH_SEPARATOR, "/")
+
+
 class CollectionFolder(BaseModel):
     """Naming value object for collection folders (domain-agnostic).
 
@@ -1702,7 +1719,9 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         for file_path, content in files.items():
             file_payload, _ = self.create_file_payload(content)
-            file_name = Path(file_path).name
+            # The key is the file's path relative to the collection root; nested
+            # paths are encoded into the flat Drive name.
+            file_name = collection_wire_name(file_path)
 
             file_metadata = {"name": file_name, "parents": [folder_id]}
             execute_with_retries(
@@ -1834,7 +1853,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         files = {}
         for file_meta in file_metadatas:
             file_id = file_meta["id"]
-            file_name = file_meta["name"]
+            file_name = collection_local_name(file_meta["name"])
             files[file_name] = self.download_file(file_id)
 
         return files
@@ -1852,7 +1871,10 @@ class GDriveConnection(SyftboxPlatformConnection):
             raise ValueError(f"Collection {tag} with hash {content_hash} not found")
 
         file_metadatas = self.get_file_metadatas_from_folder(folder_id)
-        return [{"file_id": f["id"], "file_name": f["name"]} for f in file_metadatas]
+        return [
+            {"file_id": f["id"], "file_name": collection_local_name(f["name"])}
+            for f in file_metadatas
+        ]
 
     def watcher_download_collection_file(self, file_id: str) -> bytes:
         """Download a single file from a collection."""

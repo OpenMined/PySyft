@@ -393,7 +393,8 @@ class ConnectionRouter(BaseModel):
                 if isinstance(data, Path):
                     if tmp_dir is None:
                         tmp_dir = Path(tempfile.mkdtemp(prefix="syft-upload-"))
-                    enc = tmp_dir / f"{name}.syc"
+                    enc = tmp_dir / f"{name}.syc"  # name may be a nested relative path
+                    enc.parent.mkdir(parents=True, exist_ok=True)
                     self.peer_store.encrypt_file_for(recipients, data, enc)
                     to_upload[name] = enc
                 elif len(recipients) == 1:
@@ -403,6 +404,7 @@ class ConnectionRouter(BaseModel):
                     if tmp_dir is None:
                         tmp_dir = Path(tempfile.mkdtemp(prefix="syft-upload-"))
                     src = tmp_dir / f"{name}.plain"
+                    src.parent.mkdir(parents=True, exist_ok=True)
                     src.write_bytes(data)
                     enc = tmp_dir / f"{name}.syc"
                     self.peer_store.encrypt_file_for(recipients, src, enc)
