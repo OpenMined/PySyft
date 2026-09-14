@@ -31,6 +31,7 @@ def _obfuscate_fixture(tmp_path: Path):
         allow_functions=ALLOW_FUNCTIONS,
         allow_operators=ALLOW_OPERATORS,
     )
+    assert result.obfuscated_path is not None
     obf = Path(result.obfuscated_path).read_text()
     return source, obf, config_line
 
@@ -75,6 +76,7 @@ def test_hide_blanks_whole_body_keeping_indentation(tmp_path):
         allow_functions=ALLOW_FUNCTIONS,
         allow_operators=ALLOW_OPERATORS,
     )
+    assert result.obfuscated_path is not None and result.certificate is not None
     obf_lines = Path(result.obfuscated_path).read_text().splitlines()
     note = "# hidden/obfuscated lines can only execute restricted python"
     # the signature line survives (not hidden); the body is blanked with indentation kept
