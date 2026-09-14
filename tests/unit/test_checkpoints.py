@@ -603,3 +603,124 @@ def test_local_do_changes_end_up_in_incremental_checkpoint():
             f"local_{i}.txt missing from incremental checkpoints. "
             f"process_local_changes did not add it to rolling state."
         )
+
+
+def test_no_owner_state_written_when_disabled():
+    """With persist_owner_state=False, no owner-only state reaches the drive.
+
+    Owner-only means read back by nobody but this datasite: the append-only
+    event log, the rolling state and the checkpoints. The second half is the
+    point of the flag - dropping that state must not cost correctness, so the
+    peer still has to see every change.
+    """
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=True,
+        persist_owner_state=False,
+    )
+    do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
+        ds_manager.email
+    )
+
+    do_email = do_manager.email
+
+    # Sync well past both thresholds, on the same code path a real client takes.
+    for i in range(6):
+        ds_manager._send_file_change(f"{do_email}/test{i}.txt", f"Content {i}")
+        do_manager.sync(auto_checkpoint=True, checkpoint_threshold=1)
+
+    router = do_manager._connection_router
+    assert router.get_latest_checkpoint() is None
+    assert router.get_all_incremental_checkpoints() == []
+    assert router.get_rolling_state() is None
+    # The append-only event log is owner-only too, so it stays empty.
+    assert router.owner_get_all_accepted_event_file_ids() == []
+
+    # No local rolling state file either.
+    rolling_state_path = (
+        do_manager.datasite_owner_syncer.syftbox_folder
+        / ".cache"
+        / "rolling_state.json"
+    )
+    assert not rolling_state_path.exists()
+
+    # The automatic checkpoint path stays silent rather than raising.
+    assert do_manager.try_create_checkpoint(threshold=1) is None
+
+    # Sync still works: the DO holds every file and the DS receives them back
+    # through the outbox, which is peer-facing and so unaffected.
+    do_cache = do_manager.datasite_owner_syncer.event_cache
+    assert len(do_cache.file_hashes) == 6
+
+    ds_manager.sync()
+    ds_cache = ds_manager.datasite_watcher_syncer.datasite_watcher_cache
+    ds_paths = {str(event.path_in_datasite) for event in ds_cache.get_cached_events()}
+    for i in range(6):
+        assert f"test{i}.txt" in ds_paths
+
+
+def test_disabled_owner_state_does_not_restore():
+    """A datasite that persists no owner state comes back empty, by design.
+
+    This is the behaviour an enclave wants: its keypair is ephemeral, so
+    restoring a previous boot's state does not fit the security model. The
+    restore path must not silently fall back to replaying the event log.
+    """
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=True,
+        persist_owner_state=False,
+    )
+    do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
+        ds_manager.email
+    )
+
+    do_email = do_manager.email
+    ds_manager._send_file_change(f"{do_email}/test1.txt", "Content 1")
+    ds_manager._send_file_change(f"{do_email}/test2.txt", "Content 2")
+    do_manager.sync()
+    assert len(do_manager.datasite_owner_syncer.event_cache.file_hashes) == 2
+
+    # Simulate a fresh boot: local cache gone, nothing durable behind it.
+    do_manager.datasite_owner_syncer.event_cache.clear_cache()
+    do_manager.datasite_owner_syncer.initial_sync_done = False
+
+    # No event download should be attempted at all.
+    downloads = 0
+    syncer = do_manager.datasite_owner_syncer
+    original = syncer.download_events_message_by_id_with_connection
+
+    def counted(event_id):
+        nonlocal downloads
+        downloads += 1
+        return original(event_id)
+
+    syncer.download_events_message_by_id_with_connection = counted
+
+    do_manager.sync()
+
+    assert downloads == 0
+    assert len(syncer.event_cache.file_hashes) == 0
+
+
+def test_owner_state_is_written_by_default():
+    """The inverse of the flag: by default the owner-only state is all there.
+
+    Asserted on the backend rather than on a restored cache, because what the
+    flag controls is what gets written - the testing config runs with
+    write_files=False, so a restored cache is not a sound signal here.
+    """
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=True,
+    )
+    do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
+        ds_manager.email
+    )
+
+    do_email = do_manager.email
+    ds_manager._send_file_change(f"{do_email}/test1.txt", "Content 1")
+    ds_manager._send_file_change(f"{do_email}/test2.txt", "Content 2")
+    do_manager.sync(auto_checkpoint=False)
+
+    router = do_manager._connection_router
+    assert router.owner_get_all_accepted_event_file_ids() != []
+    assert router.get_rolling_state() is not None
+    assert do_manager.datasite_owner_syncer._rolling_state is not None
