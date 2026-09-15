@@ -354,7 +354,11 @@ source .venv/bin/activate
 uv sync --python {RUN_SCRIPT_PYTHON_VERSION}
 {install_deps_cmd}
 export PYTHONPATH=.:${{PYTHONPATH:-}}
-python {entrypoint_path}
+if [ -n "${{SYFT_JOB_TRACE_RUNNER:-}}" ]; then
+  python "$SYFT_JOB_TRACE_RUNNER" {entrypoint_path}
+else
+  python {entrypoint_path}
+fi
 """
         else:
             # entrypoint_path is just the filename (e.g. "main.py")
@@ -370,7 +374,11 @@ uv venv --python {RUN_SCRIPT_PYTHON_VERSION}
 source .venv/bin/activate
 uv pip install {deps_str}
 export PYTHONPATH=.:${{PYTHONPATH:-}}
-python {entrypoint_path}
+if [ -n "${{SYFT_JOB_TRACE_RUNNER:-}}" ]; then
+  python "$SYFT_JOB_TRACE_RUNNER" {entrypoint_path}
+else
+  python {entrypoint_path}
+fi
 """
 
     def submit_python_job(

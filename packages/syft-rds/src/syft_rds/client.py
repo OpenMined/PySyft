@@ -362,7 +362,7 @@ class SyftRDSClient(BaseModel):
         timeout: int | None = None,
         force_execution: bool = False,
         share_outputs_with_submitter: bool = False,
-        share_logs_with_submitter: bool = False,
+        share_logs_with_submitter: bool = True,
         ignore_peer_version: bool = False,
     ) -> None:
         """Process approved jobs (DO only). Auto-syncs after unless PRE_SYNC=false."""

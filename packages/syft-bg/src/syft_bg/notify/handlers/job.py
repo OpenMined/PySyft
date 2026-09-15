@@ -69,7 +69,7 @@ def _read_job_stderr(
         return None, None
 
     stderr_text = None
-    stderr_file = job.job_review_path / "stderr.txt"
+    stderr_file = job.artifact_path("stderr.txt")
     if stderr_file.exists():
         try:
             file_size = stderr_file.stat().st_size

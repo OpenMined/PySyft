@@ -60,7 +60,7 @@ class StderrViewer:
         if self.job_info.status not in ("done", "failed"):
             return "No stderr available - job not completed yet"
 
-        stderr_file = self.job_info.job_review_path / "stderr.txt"
+        stderr_file = self.job_info.artifact_path("stderr.txt")
 
         if not stderr_file.exists():
             return "No stderr file found"
@@ -89,7 +89,7 @@ class StderrViewer:
         if self.job_info.status not in ("done", "failed"):
             error_msg = "No stderr available - job not completed yet"
         else:
-            stderr_file = self.job_info.job_review_path / "stderr.txt"
+            stderr_file = self.job_info.artifact_path("stderr.txt")
 
             if not stderr_file.exists():
                 error_msg = "No stderr file found"

@@ -5,6 +5,8 @@ from syft_job.client import BaseJobClient, JobClient
 from syft_job.job import JobsList
 from syft_job.models import JobSubmissionMetadata
 
+from syft_enclaves.enclave_job_info import normalize_disclosures
+
 
 class EnclaveJobClient(BaseJobClient):
     """Wraps a JobClient to add enclave-specific job submission behavior.
@@ -52,6 +54,7 @@ class EnclaveJobClient(BaseJobClient):
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
         share_results_with_do: bool = False,
+        request_disclosures: Optional[list[str]] = None,
         **kwargs,
     ) -> Path:
         """Submit a Python job with enclave metadata.
@@ -69,6 +72,11 @@ class EnclaveJobClient(BaseJobClient):
         config.headers = {
             "job_type": "enclave",
             "share_results_with_do": share_results_with_do,
+            # The items the submitter asks for. Each data owner sees this list
+            # next to the code, then releases none, some, or all of it.
+            "requested_disclosures": sorted(
+                normalize_disclosures(request_disclosures)
+            ),
         }
         config.save(job_dir / "config.yaml")
 

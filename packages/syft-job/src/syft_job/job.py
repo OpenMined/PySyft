@@ -3,7 +3,7 @@ from __future__ import annotations
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Iterable, List, Optional
 
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
@@ -16,6 +16,11 @@ from .job_repr import (
 from .job_stdout import StdoutViewer
 from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .traceback_capture import FRAMES_FILENAME
+
+# The artifacts that wait in staging until a party releases them. returncode.txt
+# stays in review: it holds one integer, which state.yaml already carries.
+STAGED_LOG_FILES = ("stdout.txt", "stderr.txt")
 
 if TYPE_CHECKING:
     from .client import JobClient
@@ -52,6 +57,48 @@ class JobInfo:
     @property
     def job_review_path(self) -> Path:
         return self._client.manager.review_dir(self._ref)
+
+    @property
+    def job_staging_path(self) -> Path:
+        """Where an artifact waits until a party releases it."""
+        return self._client.manager.staging_dir(self._ref)
+
+    def artifact_path(self, filename: str) -> Path:
+        """Return where ``filename`` is now: released, or still staged.
+
+        A released artifact sits in the review directory. Every other artifact
+        sits in the staging directory. The datasite owner reads both, so a
+        viewer on the owner side finds the file either way.
+        """
+        released = self.job_review_path / filename
+        if released.exists():
+            return released
+        return self.job_staging_path / filename
+
+    def release_logs(self) -> list[str]:
+        """Move the staged logs into the review directory, and return the names.
+
+        The submitter reads the review directory, so this move discloses the
+        logs. A copy that already reached another party does not come back.
+        """
+        return self.release_artifacts(STAGED_LOG_FILES)
+
+    def release_artifacts(self, filenames: Iterable[str]) -> list[str]:
+        """Move the named staged artifacts into the review directory.
+
+        Returns the names it moved. A name that is absent from staging, or that
+        a release already moved, is skipped.
+        """
+        moved = []
+        for filename in filenames:
+            staged = self.job_staging_path / filename
+            if not staged.exists():
+                continue
+            target = self.job_review_path / filename
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(staged), str(target))
+            moved.append(filename)
+        return moved
 
     # ──────────────────────────────────────────────
     # Properties from config (inbox/)
@@ -324,12 +371,13 @@ class JobInfo:
 
         changes_made = []
 
-        # Clean up review/ artifacts
-        for filename in ("stdout.txt", "stderr.txt", "returncode.txt"):
-            f = self.job_review_path / filename
-            if f.exists():
-                f.unlink()
-                changes_made.append(filename)
+        # Clean up the artifacts of the previous run. A staged copy must go
+        # too, or a later release sends a log that belongs to the old run.
+        for filename in ("stdout.txt", "stderr.txt", "returncode.txt", FRAMES_FILENAME):
+            for f in (self.job_review_path / filename, self.job_staging_path / filename):
+                if f.exists():
+                    f.unlink()
+                    changes_made.append(filename)
 
         outputs_dir = self.job_review_path / "outputs"
         if outputs_dir.exists() and outputs_dir.is_dir():
