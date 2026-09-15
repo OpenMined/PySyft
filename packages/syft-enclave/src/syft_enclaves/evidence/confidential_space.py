@@ -17,7 +17,7 @@ from syft_enclaves.attestation.envelope import (
     AttestationKind,
     confidential_space_evidence,
 )
-from syft_enclaves.tee_token import (
+from syft_enclaves.evidence.tee_token import (
     TEE_SOCKET_PATH,
     TOKEN_AUDIENCE,
     build_eat_nonce,

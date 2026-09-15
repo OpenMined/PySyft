@@ -1,8 +1,10 @@
-"""TEE attestation token client.
+"""Confidential Space launcher client.
 
-Talks directly to the Confidential Spaces launcher via Unix socket
-to fetch signed attestation JWTs.  Shared by the attestation HTTP
-server (``docker/attestation_server.py``) and the enclave runner.
+Talks directly to the Confidential Spaces launcher over a Unix socket to fetch
+signed attestation JWTs. Lives here because it is one half of *producing*
+evidence on that target: ``evidence/confidential_space.py`` is what the
+provider seam sees, and this is how it reaches the launcher. The attestation
+HTTP server also borrows ``validate_nonce`` from it.
 """
 
 from __future__ import annotations

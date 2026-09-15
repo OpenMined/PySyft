@@ -165,7 +165,7 @@ def verify_attestation_token(
     if isinstance(eat_nonce, str):
         eat_nonce = [eat_nonce]
     actual_version_nonce = eat_nonce[0] if eat_nonce else None
-    # Must match the format produced by syft_enclaves.tee_token.build_eat_nonce.
+    # Must match the format produced by syft_enclaves.evidence.tee_token.build_eat_nonce.
     expected_version_nonce = f"syft-{expected_syft_version}"
     if not actual_version_nonce:
         result.add(

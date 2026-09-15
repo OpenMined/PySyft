@@ -22,7 +22,7 @@ from fastapi.responses import JSONResponse
 from syft_enclaves.evidence import probed_locations, select_provider
 from syft_enclaves.evidence.key_bundle import read_public_bundle, sign_nonce
 from syft_enclaves.settings import AttestationSettings
-from syft_enclaves.tee_token import validate_nonce
+from syft_enclaves.evidence.tee_token import validate_nonce
 
 app = FastAPI(title="Syft Client Enclave", version="0.1.0")
 
