@@ -7,7 +7,7 @@ Two repositories are in play:
 - **this one** builds and pushes the enclave image to Docker Hub;
 - **[`OpenMined/syft-enclave-tinfoil`](https://github.com/OpenMined/syft-enclave-tinfoil)** holds the measured `tinfoil-config.yml`, and its GitHub releases publish the expected launch measurement.
 
-The canonical copy of that config lives here at [`tinfoil/tinfoil-config.yml`](../tinfoil/tinfoil-config.yml), so the image and the config that pins it are reviewed together. `just tinfoil-release` syncs it over.
+The canonical copy of that config lives here at [`tinfoil/tinfoil-config.yml`](../tinfoil/tinfoil-config.yml), so the image and the config that pins it are reviewed together; `just tinfoil-release` syncs it over. The release workflows live only in the config repo — nothing in PySyft runs them.
 
 Run all commands from `packages/syft-enclave/`.
 

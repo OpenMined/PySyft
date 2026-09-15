@@ -1,9 +1,14 @@
 # Tinfoil workload config for the syft enclave.
 #
-# This is the canonical copy. `just tinfoil-config-pr` opens a pull request
-# that syncs it to the root of the public config repo, whose signed GitHub
-# releases publish the expected launch measurement. Keeping it here means the
-# image and the config that pins it are reviewed together.
+# This is the canonical copy: `just tinfoil-release` pins the digest of the
+# image it just pushed into this file, and `just tinfoil-config-pr` opens a
+# pull request syncing it to the root of the public config repo, whose signed
+# GitHub releases publish the expected launch measurement. Keeping it here
+# means the image and the config that pins it are reviewed together.
+#
+# The release workflows themselves live only in that repo
+# (OpenMined/syft-enclave-tinfoil), not here — nothing in PySyft runs or reads
+# them, and a second copy would just drift.
 #
 # Everything in this file is MEASURED: its sha256 lands in the CVM's kernel
 # command line, so any change needs a new config release. Deployment-specific
