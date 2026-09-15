@@ -7,13 +7,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from syft_enclaves.attestation import AppraisalPolicy
-from syft_enclaves.attestation_dispatch import policy_for, verify_evidence
-from syft_enclaves.attestation_envelope import (
+from syft_enclaves.attestation.dispatch import policy_for, verify_evidence
+from syft_enclaves.attestation.envelope import (
     AttestationKind,
     confidential_space_evidence,
     tinfoil_evidence,
 )
-from syft_enclaves.attestation_tinfoil import TinfoilAppraisalPolicy
+from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
 from syft_enclaves.client import SyftEnclaveClient
 
 TINFOIL_DOC = {
@@ -27,14 +27,14 @@ TINFOIL_EVIDENCE = tinfoil_evidence(TINFOIL_DOC)
 class TestRouting:
     def test_confidential_space_goes_to_the_jwt_verifier(self):
         with patch(
-            "syft_enclaves.attestation_dispatch.verify_attestation_token"
+            "syft_enclaves.attestation.dispatch.verify_attestation_token"
         ) as verify:
             verify_evidence(CS_EVIDENCE, verbose=False)
         assert verify.call_args.args[0] == "header.payload.sig"
 
     def test_tinfoil_goes_to_the_tinfoil_verifier(self):
         with patch(
-            "syft_enclaves.attestation_tinfoil.verify_tinfoil_evidence"
+            "syft_enclaves.attestation.tinfoil.verify_tinfoil_evidence"
         ) as verify:
             verify_evidence(TINFOIL_EVIDENCE, verbose=False)
         assert verify.call_args.args[0] is TINFOIL_EVIDENCE
@@ -61,7 +61,7 @@ class TestPolicyTypeGuard:
             verify_evidence(evidence, policy=policy, verbose=False)
 
     def test_no_policy_is_allowed(self):
-        with patch("syft_enclaves.attestation_dispatch.verify_attestation_token"):
+        with patch("syft_enclaves.attestation.dispatch.verify_attestation_token"):
             verify_evidence(CS_EVIDENCE, policy=None, verbose=False)
 
 
@@ -104,7 +104,9 @@ class TestAttestPeer:
             self._peer_publishing(TINFOIL_EVIDENCE.to_version_field())
         )
         with patch("syft_enclaves.client.verify_evidence") as verify:
-            client.attest_peer("enclave@openmined.org", expected_image_digest="sha256:a")
+            client.attest_peer(
+                "enclave@openmined.org", expected_image_digest="sha256:a"
+            )
         policy = verify.call_args.kwargs["policy"]
         assert isinstance(policy, TinfoilAppraisalPolicy)
         assert policy.expected_image_digest == "sha256:a"
@@ -127,7 +129,7 @@ def test_importing_syft_enclaves_does_not_pull_in_the_tinfoil_sdk():
     code = (
         "import sys, syft_enclaves;"
         "from syft_enclaves.client import SyftEnclaveClient;"
-        "from syft_enclaves.attestation_tinfoil import TinfoilAppraisalPolicy;"
+        "from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy;"
         "TinfoilAppraisalPolicy();"
         "assert not [m for m in sys.modules if m.split('.')[0] == 'tinfoil'], "
         "sorted(m for m in sys.modules if m.split('.')[0] == 'tinfoil')"

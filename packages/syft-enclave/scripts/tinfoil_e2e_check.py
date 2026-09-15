@@ -42,7 +42,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--do-email", required=True)
     parser.add_argument("--token", required=True, help="Drive token for the data owner")
     parser.add_argument("--repo", default=DEFAULT_REPO)
-    parser.add_argument("--tag", default=None, help="pin the release tag being verified")
+    parser.add_argument(
+        "--tag", default=None, help="pin the release tag being verified"
+    )
     parser.add_argument("--expected-image-digest", default=None)
     parser.add_argument("--dataset-name", default="tinfoil-e2e-dataset")
     parser.add_argument("--peer-attempts", type=int, default=15)
@@ -81,7 +83,7 @@ def main() -> int:
     os.environ.setdefault("PRE_SYNC", "false")
 
     from syft_enclaves import login_do
-    from syft_enclaves.attestation_tinfoil import TinfoilAppraisalPolicy
+    from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
 
     print("=== 1. login as the data owner ===", flush=True)
     client = login_do(email=args.do_email, token_path=args.token, encryption=True)
@@ -110,7 +112,9 @@ def main() -> int:
     store = client._rds.peer_manager.peer_store
     bound = result.verified_key_bundle is not None
     print(f"  key bundle bound to the report: {bound}", flush=True)
-    print(f"  peer keys now set: {store.has_peer_bundle(args.enclave_email)}", flush=True)
+    print(
+        f"  peer keys now set: {store.has_peer_bundle(args.enclave_email)}", flush=True
+    )
     if not bound:
         print("FAILED: no attestation-bound key bundle", file=sys.stderr)
         return 1
@@ -118,7 +122,9 @@ def main() -> int:
     print("=== 4. upload a private dataset and share it ===", flush=True)
     private, mock = write_dataset_files(Path("/tmp/tinfoil-e2e/data"))
     existing = [
-        d for d in client.datasets.get_all() if getattr(d, "name", None) == args.dataset_name
+        d
+        for d in client.datasets.get_all()
+        if getattr(d, "name", None) == args.dataset_name
     ]
     if existing:
         print("  dataset already exists, reusing", flush=True)

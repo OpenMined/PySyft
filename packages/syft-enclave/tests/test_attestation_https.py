@@ -1,10 +1,11 @@
 """Tests for the pinned fetch itself."""
+
 import json
 from unittest.mock import MagicMock
 
 import pytest
 
-from syft_enclaves.attestation_https import (
+from syft_enclaves.attestation.https import (
     AttestationFetchError,
     fetch_attested_payload,
     public_key_fp_from_cert,
@@ -19,7 +20,11 @@ class _FakeResponse:
         self.status = status
 
     def read(self):
-        return self._payload if isinstance(self._payload, bytes) else json.dumps(self._payload).encode()
+        return (
+            self._payload
+            if isinstance(self._payload, bytes)
+            else json.dumps(self._payload).encode()
+        )
 
 
 def _connection(responses, der=b"\x30\x00"):
@@ -34,11 +39,11 @@ def patched(monkeypatch):
     def _install(responses, der=b"\x30\x00"):
         conn = _connection(responses, der)
         monkeypatch.setattr(
-            "syft_enclaves.attestation_https.http.client.HTTPSConnection",
+            "syft_enclaves.attestation.https.http.client.HTTPSConnection",
             lambda *a, **k: conn,
         )
         monkeypatch.setattr(
-            "syft_enclaves.attestation_https.public_key_fp_from_cert",
+            "syft_enclaves.attestation.https.public_key_fp_from_cert",
             lambda der_bytes: "ab" * 32,
         )
         return conn
@@ -48,7 +53,9 @@ def patched(monkeypatch):
 
 def test_returns_document_bundle_and_tls_fingerprint(patched):
     bundle = {"identity": "enclave@openmined.org"}
-    patched([_FakeResponse({"evidence": {**DOC, "kind": "tinfoil"}, "key_bundle": bundle})])
+    patched(
+        [_FakeResponse({"evidence": {**DOC, "kind": "tinfoil"}, "key_bundle": bundle})]
+    )
     payload = fetch_attested_payload("enclave.example")
     assert payload.document == DOC
     assert payload.key_bundle == bundle
@@ -109,7 +116,8 @@ def test_an_echoed_nonce_that_differs_is_refused(patched):
 
 def test_fingerprint_is_the_spki_sha256_of_a_real_certificate():
     # Not mocked: the fingerprint must match what the report encodes.
-    import datetime, hashlib
+    import datetime
+    import hashlib
     from cryptography import x509
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import ec
@@ -134,4 +142,7 @@ def test_fingerprint_is_the_spki_sha256_of_a_real_certificate():
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
     ).hexdigest()
-    assert public_key_fp_from_cert(cert.public_bytes(serialization.Encoding.DER)) == expected
+    assert (
+        public_key_fp_from_cert(cert.public_bytes(serialization.Encoding.DER))
+        == expected
+    )

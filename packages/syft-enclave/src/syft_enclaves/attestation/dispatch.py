@@ -1,7 +1,7 @@
 """Routing attestation evidence to the verifier for its deployment target.
 
 The evidence itself says which kind it is, and the envelope refuses a ``kind``
-that disagrees with its ``format`` (see ``attestation_envelope``), so a peer
+that disagrees with its ``format`` (see ``attestation.envelope``), so a peer
 cannot pick a weaker verifier for its own evidence.
 """
 
@@ -9,12 +9,12 @@ from __future__ import annotations
 
 from typing import Optional, Union
 
-from syft_enclaves.attestation import (
+from syft_enclaves.attestation.confidential_space import (
     AppraisalPolicy,
-    AttestationResult,
     verify_attestation_token,
 )
-from syft_enclaves.attestation_envelope import AttestationEvidence, AttestationKind
+from syft_enclaves.attestation.result import AttestationResult
+from syft_enclaves.attestation.envelope import AttestationEvidence, AttestationKind
 
 Policy = Union[AppraisalPolicy, "object"]
 
@@ -39,7 +39,7 @@ def verify_evidence(
     if evidence.kind is AttestationKind.TINFOIL:
         # Imported here so installs without the tinfoil extra can still verify
         # Confidential Space evidence.
-        from syft_enclaves.attestation_tinfoil import (
+        from syft_enclaves.attestation.tinfoil import (
             TinfoilAppraisalPolicy,
             verify_tinfoil_evidence,
         )
@@ -55,7 +55,7 @@ def policy_for(kind: AttestationKind, **kwargs) -> Policy:
     if kind is AttestationKind.CONFIDENTIAL_SPACE:
         return AppraisalPolicy(**kwargs)
     if kind is AttestationKind.TINFOIL:
-        from syft_enclaves.attestation_tinfoil import TinfoilAppraisalPolicy
+        from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
 
         return TinfoilAppraisalPolicy(**kwargs)
     raise ValueError(f"No appraisal policy for attestation kind {kind!r}")

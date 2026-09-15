@@ -17,8 +17,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from syft_enclaves.attestation import AttestationError
-from syft_enclaves.attestation_envelope import tinfoil_evidence
-from syft_enclaves.attestation_tinfoil import DEPLOYMENT_ASSET, HASH_ASSET
+from syft_enclaves.attestation.envelope import tinfoil_evidence
+from syft_enclaves.attestation.tinfoil import DEPLOYMENT_ASSET, HASH_ASSET
 from syft_enclaves.optional_deps import MissingOptionalDependency
 
 TINFOIL_DOC = {
@@ -37,6 +37,8 @@ def _real_keys():
     bundle = keys.to_public_bundle().to_did_document("did:syft:enclave@openmined.org")
     bundle["identity"] = "enclave@openmined.org"
     return keys, bundle
+
+
 IMAGE_DIGEST = "sha256:" + "ab" * 32
 IMAGE = f"docker.io/openminedreleasebot/syft-enclave@{IMAGE_DIGEST}"
 SYFT_VERSION_IN_CONFIG = "9.9.9"
@@ -160,8 +162,8 @@ def sdk(monkeypatch):
 @pytest.fixture
 def pinned(monkeypatch):
     """Patch the pinned fetch with a payload the enclave would really serve."""
-    from syft_enclaves.attestation_https import AttestedPayload
-    from syft_enclaves.nonce_challenge import new_nonce, sign_challenge
+    from syft_enclaves.attestation.https import AttestedPayload
+    from syft_enclaves.attestation.nonce import new_nonce, sign_challenge
 
     def _install(
         *,
@@ -192,13 +194,13 @@ def pinned(monkeypatch):
 
         def fetch(host, *a, **kw):
             if unreachable:
-                from syft_enclaves.attestation_https import AttestationFetchError
+                from syft_enclaves.attestation.https import AttestationFetchError
 
                 raise AttestationFetchError("connection refused")
             return payload
 
         monkeypatch.setattr(
-            "syft_enclaves.attestation_tinfoil.fetch_attested_payload", fetch
+            "syft_enclaves.attestation.tinfoil.fetch_attested_payload", fetch
         )
         return payload
 
@@ -208,7 +210,7 @@ def pinned(monkeypatch):
 @pytest.fixture
 def verify(sdk, pinned):
     """verify_tinfoil_evidence with the SDK and a pinned fetch stubbed, quiet."""
-    from syft_enclaves.attestation_tinfoil import (
+    from syft_enclaves.attestation.tinfoil import (
         TinfoilAppraisalPolicy,
         verify_tinfoil_evidence,
     )
@@ -437,9 +439,7 @@ class TestConfigDerivedChecks:
         assert _check(result, "image_digest").passed is False
         assert _check(result, "version_match").passed is None
 
-    def test_falls_back_to_github_when_the_proxy_rejects_the_asset(
-        self, verify, sdk
-    ):
+    def test_falls_back_to_github_when_the_proxy_rejects_the_asset(self, verify, sdk):
         # Regression: tinfoil's proxy allowlists tinfoil.hash only, so reading
         # the config must fall through to github.com.
         result = verify(expected_image_digest=IMAGE_DIGEST)
@@ -501,7 +501,7 @@ class TestChecklistBehaviour:
 
 class TestOptionalDependency:
     def test_missing_tinfoil_explains_how_to_install_it(self, monkeypatch, pinned):
-        from syft_enclaves.attestation_tinfoil import (
+        from syft_enclaves.attestation.tinfoil import (
             TinfoilAppraisalPolicy,
             verify_tinfoil_evidence,
         )
@@ -526,6 +526,6 @@ class TestOptionalDependency:
 
     def test_the_policy_is_usable_without_the_sdk(self):
         # Importing the module for its policy must not need the extra.
-        from syft_enclaves.attestation_tinfoil import TinfoilAppraisalPolicy
+        from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
 
         assert TinfoilAppraisalPolicy().repo == "OpenMined/syft-enclave-tinfoil"

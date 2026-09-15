@@ -8,7 +8,6 @@ the claims inside it to ensure the enclave is trustworthy.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import Optional
 
 from google.auth.transport import requests as google_requests
@@ -16,6 +15,11 @@ from google.oauth2 import id_token
 from pydantic import BaseModel
 
 from syft.version import SYFT_VERSION
+
+from syft_enclaves.attestation.result import (
+    AttestationError,
+    AttestationResult,
+)
 
 ATTESTATION_AUDIENCE = "syft-attestation"
 CONFIDENTIAL_COMPUTING_CERTS_URL = (
@@ -51,53 +55,6 @@ class AppraisalPolicy(BaseModel):
     expected_image_digest: Optional[str] = None
     # By default, the enclave must run the same version of syft as the verifier.
     expected_syft_version: Optional[str] = SYFT_VERSION
-
-
-class AttestationError(Exception):
-    """Raised when enclave attestation verification fails."""
-
-    def __init__(self, message: str, result: AttestationResult | None = None):
-        self.result = result
-        super().__init__(message)
-
-
-@dataclass
-class CheckResult:
-    name: str
-    label: str
-    passed: bool | None = None  # None = not yet run
-    detail: str = ""
-
-
-@dataclass
-class AttestationResult:
-    checks: list[CheckResult] = field(default_factory=list)
-    #: The peer's syft public key bundle, when it arrived over a channel bound
-    #: to the attestation report (see ``attestation_https``). None whenever
-    #: there was no such channel — a bundle read from Drive is not bound to
-    #: anything and must not be set here.
-    verified_key_bundle: Optional[dict] = None
-
-    def add(self, name: str, label: str, passed: bool, detail: str) -> None:
-        self.checks.append(
-            CheckResult(name=name, label=label, passed=passed, detail=detail)
-        )
-
-    def all_passed(self) -> bool:
-        return all(c.passed for c in self.checks)
-
-    def first_failure(self) -> CheckResult | None:
-        return next((c for c in self.checks if not c.passed), None)
-
-    def print_checklist(self) -> None:
-        for check in self.checks:
-            if check.passed is None:
-                icon = "  ⏭️"
-            elif check.passed:
-                icon = "  ✅"
-            else:
-                icon = "  ❌"
-            print(f"{icon} {check.label:<20s} — {check.detail}")
 
 
 def verify_attestation_token(

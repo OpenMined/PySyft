@@ -19,7 +19,7 @@ from typing import Callable, Optional
 from syft.sync.peers.peer_store import datasite_crypto_keys_path
 
 from syft_enclaves.client import SyftEnclaveClient
-from syft_enclaves.key_bundle import write_public_bundle
+from syft_enclaves.evidence.key_bundle import write_public_bundle
 from syft_enclaves.evidence import (
     AUTO,
     EvidenceProvider,

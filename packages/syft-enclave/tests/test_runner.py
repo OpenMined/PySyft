@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from syft_enclaves.attestation_envelope import (
+from syft_enclaves.attestation.envelope import (
     AttestationEvidence,
     AttestationKind,
     tinfoil_evidence,

@@ -4,7 +4,7 @@ import pytest
 
 from syft.sync.version.version_info import VersionInfoV2
 
-from syft_enclaves.attestation_envelope import (
+from syft_enclaves.attestation.envelope import (
     CONFIDENTIAL_SPACE_FORMAT,
     EXTRA_KEY,
     AttestationEvidence,

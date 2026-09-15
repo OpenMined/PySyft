@@ -17,8 +17,8 @@ from syft_enclaves.enclave_job_info import (
     PartyApprovalStatus,
     enclave_approval_file_name,
 )
-from syft_enclaves.attestation_dispatch import policy_for, verify_evidence
-from syft_enclaves.attestation_envelope import AttestationEvidence
+from syft_enclaves.attestation.dispatch import policy_for, verify_evidence
+from syft_enclaves.attestation.envelope import AttestationEvidence
 from syft_perms.syftperm_context import SyftPermContext
 
 from syft_enclaves.enclave_job_client import EnclaveJobClient
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     # Only for the attest_peer annotation: importing the tinfoil policy at
     # runtime would drag the optional SDK onto the always-imported path.
     from syft_enclaves.attestation import AppraisalPolicy
-    from syft_enclaves.attestation_tinfoil import TinfoilAppraisalPolicy
+    from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
 
 
 class SyftEnclaveClient:
@@ -130,7 +130,7 @@ class SyftEnclaveClient:
         """Trust the peer's keys when attestation bound them to its report.
 
         Only a bundle delivered over a channel pinned to the attested TLS key
-        gets here — see ``attestation_https``. The copy the peer publishes to
+        gets here — see ``attestation.https``. The copy the peer publishes to
         Drive is unsigned, so a mismatch means the Drive copy was tampered
         with; the bound one wins and we say so rather than failing, since the
         bound one is exactly what we should be using.

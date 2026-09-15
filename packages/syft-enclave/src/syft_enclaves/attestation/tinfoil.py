@@ -17,8 +17,8 @@ A workload cannot inject a nonce: the report's 64 bytes of user data are the
 sha256 of the shim's TLS public key followed by its HPKE public key. That is
 also what makes key binding possible, because the report commits to the key
 terminating a TLS connection to the enclave — see
-``syft_enclaves.attestation_https``. Freshness for the syft key comes from a nonce the
-enclave signs with that bundle (``nonce_challenge``), which the report cannot
+``syft_enclaves.attestation.https``. Freshness for the syft key comes from a nonce the
+enclave signs with that bundle (``attestation.nonce``), which the report cannot
 carry. Evidence stays published to Drive as provenance, but it is never a
 fallback here: appraising it instead would mean unbound keys and a replayable
 report, so an unreachable enclave is an error.
@@ -35,14 +35,14 @@ from pydantic import BaseModel
 
 from syft.version import SYFT_VERSION
 
-from syft_enclaves.attestation import AttestationError, AttestationResult
-from syft_enclaves.attestation_envelope import AttestationEvidence
-from syft_enclaves.attestation_https import (
+from syft_enclaves.attestation.result import AttestationError, AttestationResult
+from syft_enclaves.attestation.envelope import AttestationEvidence
+from syft_enclaves.attestation.https import (
     AttestationFetchError,
     AttestedPayload,
     fetch_attested_payload,
 )
-from syft_enclaves.nonce_challenge import NonceVerificationError, verify_challenge
+from syft_enclaves.attestation.nonce import NonceVerificationError, verify_challenge
 from syft_enclaves.optional_deps import MissingOptionalDependency, require
 
 #: The config repo whose signed releases publish the expected measurement for
@@ -85,7 +85,6 @@ class TinfoilAppraisalPolicy(BaseModel):
     host: Optional[str] = None
 
 
-
 def verify_tinfoil_evidence(
     evidence: AttestationEvidence,
     policy: Optional[TinfoilAppraisalPolicy] = None,
@@ -94,7 +93,7 @@ def verify_tinfoil_evidence(
     """Verify Tinfoil evidence and return the check checklist.
 
     Prefers a pinned HTTPS fetch from the enclave: that yields a fresh report
-    and binds the enclave's syft key bundle to it (see ``attestation_https``).
+    and binds the enclave's syft key bundle to it (see ``attestation.https``).
     Falls back to the evidence the enclave published to Drive, which still
     proves what code is running but gives no key binding and no freshness.
 
@@ -103,7 +102,9 @@ def verify_tinfoil_evidence(
     no measurements to compare, so it fails fast.
     """
     policy = policy or TinfoilAppraisalPolicy()
-    return _TinfoilVerifier(evidence, policy, verbose, _fetch_pinned(evidence, policy)).run()
+    return _TinfoilVerifier(
+        evidence, policy, verbose, _fetch_pinned(evidence, policy)
+    ).run()
 
 
 def _fetch_pinned(

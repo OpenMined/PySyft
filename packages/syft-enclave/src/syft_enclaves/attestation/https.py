@@ -27,7 +27,7 @@ import ssl
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from syft_enclaves.nonce_challenge import new_nonce
+from syft_enclaves.attestation.nonce import new_nonce
 
 ATTESTATION_PATH = "/attestation"
 WELL_KNOWN_PATH = "/.well-known/tinfoil-attestation"
@@ -38,7 +38,7 @@ DEFAULT_TIMEOUT_SECONDS = 30
 class AttestedPayload:
     """What the enclave served, and the key that terminated the connection.
 
-    Untrusted until :mod:`syft_enclaves.attestation_tinfoil` has checked
+    Untrusted until :mod:`syft_enclaves.attestation.tinfoil` has checked
     ``tls_public_key_fp`` against the verified report and the signature over
     ``nonce`` against ``key_bundle``.
     """
@@ -81,7 +81,9 @@ def fetch_attested_payload(
         document, key_bundle = _split_payload(payload, connection, timeout)
         fingerprint = _peer_public_key_fp(connection)
     except (OSError, ssl.SSLError, ValueError) as e:
-        raise AttestationFetchError(f"Could not fetch attestation from {host}: {e}") from e
+        raise AttestationFetchError(
+            f"Could not fetch attestation from {host}: {e}"
+        ) from e
     finally:
         connection.close()
 

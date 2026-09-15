@@ -12,7 +12,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from syft_enclaves.attestation_envelope import (
+from syft_enclaves.attestation.envelope import (
     AttestationEvidence,
     AttestationKind,
     confidential_space_evidence,

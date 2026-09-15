@@ -14,8 +14,8 @@ import argparse
 import sys
 
 from syft_enclaves.attestation import AttestationError
-from syft_enclaves.attestation_envelope import tinfoil_evidence
-from syft_enclaves.attestation_tinfoil import (
+from syft_enclaves.attestation.envelope import tinfoil_evidence
+from syft_enclaves.attestation.tinfoil import (
     DEFAULT_TINFOIL_CONFIG_REPO,
     TinfoilAppraisalPolicy,
     verify_tinfoil_evidence,
@@ -27,7 +27,9 @@ ATTESTATION_PATH = "/.well-known/tinfoil-attestation"
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("host", help="enclave hostname, e.g. x.y.containers.tinfoil.dev")
+    parser.add_argument(
+        "host", help="enclave hostname, e.g. x.y.containers.tinfoil.dev"
+    )
     parser.add_argument("--repo", default=DEFAULT_TINFOIL_CONFIG_REPO)
     parser.add_argument(
         "--tag",

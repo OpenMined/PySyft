@@ -31,7 +31,7 @@ from pathlib import Path
 import requests
 
 from syft_enclaves._unix_socket import UnixSocketConnection
-from syft_enclaves.providers.tinfoil import TINFOIL_ATTESTATION_PATH
+from syft_enclaves.evidence.tinfoil import TINFOIL_ATTESTATION_PATH
 
 logger = logging.getLogger(__name__)
 

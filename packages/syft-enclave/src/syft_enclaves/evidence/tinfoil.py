@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 
-from syft_enclaves.attestation_envelope import (
+from syft_enclaves.attestation.envelope import (
     AttestationEvidence,
     AttestationKind,
     tinfoil_evidence,

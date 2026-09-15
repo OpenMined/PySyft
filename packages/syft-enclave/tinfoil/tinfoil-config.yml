@@ -41,11 +41,11 @@ containers:
     read_only: false
     env:
       # Key AND value pinned here, so both are measured and verifiable.
-      - SYFT_ENCLAVE_ATTESTATION_PROVIDER: "tinfoil"
-      - SYFT_ENCLAVE_TINFOIL_REPO: "OpenMined/syft-enclave-tinfoil"
+      - SYFT_ENCLAVE_ATTESTATION_PROVIDER: 'tinfoil'
+      - SYFT_ENCLAVE_TINFOIL_REPO: 'OpenMined/syft-enclave-tinfoil'
       # Tinfoil has no Secret Manager equivalent; the Drive token arrives as a
       # deploy-time secret and this provider writes it to disk (0600).
-      - SYFT_BOOTSTRAP: "tinfoil"
+      - SYFT_BOOTSTRAP: 'tinfoil'
       # Declared as bare names: the key is measured, the VALUE comes from
       # `--variable` at deploy time and is therefore NOT measured — a data
       # owner cannot verify it. Declaring is mandatory even so: the shim

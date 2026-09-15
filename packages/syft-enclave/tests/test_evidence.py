@@ -6,18 +6,18 @@ from unittest.mock import patch
 
 import pytest
 
-from syft_enclaves.attestation_envelope import AttestationKind
+from syft_enclaves.attestation.envelope import AttestationKind
 from syft_enclaves.evidence import (
     PROVIDERS,
     probed_locations,
     select_provider,
 )
-from syft_enclaves.providers.confidential_space import (
+from syft_enclaves.evidence.confidential_space import (
     ConfidentialSpaceProvider,
     decode_jwt_payload,
     structure_claims,
 )
-from syft_enclaves.providers.tinfoil import TinfoilProvider
+from syft_enclaves.evidence.tinfoil import TinfoilProvider
 
 TINFOIL_DOC = {
     "format": "https://tinfoil.sh/predicate/sev-snp-guest/v2",
@@ -36,9 +36,7 @@ def tinfoil_mount(tmp_path, monkeypatch):
         ("config.yml", "TINFOIL_CONFIG_PATH"),
         ("container-status.json", "TINFOIL_STATUS_PATH"),
     ]:
-        monkeypatch.setattr(
-            f"syft_enclaves.providers.tinfoil.{attr}", tmp_path / name
-        )
+        monkeypatch.setattr(f"syft_enclaves.evidence.tinfoil.{attr}", tmp_path / name)
     return tmp_path
 
 
@@ -104,7 +102,7 @@ class TestTinfoilProvider:
 
     def test_missing_document_explains_why(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
-            "syft_enclaves.providers.tinfoil.TINFOIL_ATTESTATION_PATH",
+            "syft_enclaves.evidence.tinfoil.TINFOIL_ATTESTATION_PATH",
             tmp_path / "absent.json",
         )
         with pytest.raises(RuntimeError, match="not running inside a Tinfoil enclave"):
@@ -115,7 +113,7 @@ class TestTinfoilProvider:
         path = tmp_path / "attestation.json"
         path.write_text(content)
         monkeypatch.setattr(
-            "syft_enclaves.providers.tinfoil.TINFOIL_ATTESTATION_PATH", path
+            "syft_enclaves.evidence.tinfoil.TINFOIL_ATTESTATION_PATH", path
         )
         with pytest.raises(RuntimeError, match="Malformed"):
             TinfoilProvider().collect()
@@ -124,7 +122,7 @@ class TestTinfoilProvider:
         path = tmp_path / "attestation.json"
         path.write_text('{"something": "else"}')
         monkeypatch.setattr(
-            "syft_enclaves.providers.tinfoil.TINFOIL_ATTESTATION_PATH", path
+            "syft_enclaves.evidence.tinfoil.TINFOIL_ATTESTATION_PATH", path
         )
         with pytest.raises(ValueError, match="'format' and 'body'"):
             TinfoilProvider().collect()
@@ -140,10 +138,10 @@ class TestTinfoilProvider:
         path = tmp_path / "attestation.json"
         path.write_text(json.dumps(TINFOIL_DOC))
         monkeypatch.setattr(
-            "syft_enclaves.providers.tinfoil.TINFOIL_ATTESTATION_PATH", path
+            "syft_enclaves.evidence.tinfoil.TINFOIL_ATTESTATION_PATH", path
         )
         monkeypatch.setattr(
-            "syft_enclaves.providers.tinfoil.TINFOIL_CONFIG_PATH", tmp_path / "gone.yml"
+            "syft_enclaves.evidence.tinfoil.TINFOIL_CONFIG_PATH", tmp_path / "gone.yml"
         )
         provider = TinfoilProvider()
         assert provider.describe(provider.collect())["config"] is None
@@ -153,7 +151,7 @@ class TestConfidentialSpaceProvider:
     def test_detect_follows_the_launcher_socket(self, tmp_path, monkeypatch):
         socket_path = tmp_path / "teeserver.sock"
         monkeypatch.setattr(
-            "syft_enclaves.providers.confidential_space.TEE_SOCKET_PATH", socket_path
+            "syft_enclaves.evidence.confidential_space.TEE_SOCKET_PATH", socket_path
         )
         assert ConfidentialSpaceProvider.detect() is False
         socket_path.write_text("")
@@ -161,7 +159,7 @@ class TestConfidentialSpaceProvider:
 
     def test_collect_wraps_the_launcher_token(self):
         with patch(
-            "syft_enclaves.providers.confidential_space.fetch_attestation_token",
+            "syft_enclaves.evidence.confidential_space.fetch_attestation_token",
             return_value="header.payload.signature",
         ) as fetch:
             evidence = ConfidentialSpaceProvider().collect()
@@ -174,7 +172,7 @@ class TestConfidentialSpaceProvider:
 
     def test_collect_passes_a_caller_nonce_through(self):
         with patch(
-            "syft_enclaves.providers.confidential_space.fetch_attestation_token",
+            "syft_enclaves.evidence.confidential_space.fetch_attestation_token",
             return_value="a.b.c",
         ) as fetch:
             ConfidentialSpaceProvider().collect(caller_nonce="freshness")
@@ -218,9 +216,7 @@ class TestAttestationServerWiring:
     """
 
     def _app(self, monkeypatch):
-        monkeypatch.syspath_prepend(
-            str(Path(__file__).resolve().parents[1] / "docker")
-        )
+        monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1] / "docker"))
         import attestation_server
 
         return attestation_server

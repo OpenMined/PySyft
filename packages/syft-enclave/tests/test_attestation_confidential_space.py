@@ -49,8 +49,10 @@ def mock_verify():
     targeting image_digest pass their own policy.
     """
     with (
-        patch("syft_enclaves.attestation.id_token.verify_token") as mock_vt,
-        patch("syft_enclaves.attestation.google_requests.Request"),
+        patch(
+            "syft_enclaves.attestation.confidential_space.id_token.verify_token"
+        ) as mock_vt,
+        patch("syft_enclaves.attestation.confidential_space.google_requests.Request"),
     ):
         mock_vt.return_value = _valid_claims()
         yield mock_vt

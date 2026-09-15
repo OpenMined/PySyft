@@ -25,7 +25,9 @@ logger = logging.getLogger(__name__)
 #: Written by the runner, read by docker/attestation_server.py. Lives beside
 #: the Drive token, on a path that is writable in every deployment.
 PUBLIC_BUNDLE_PATH = Path(
-    os.environ.get("SYFT_ENCLAVE_PUBLIC_BUNDLE_PATH", "/run/syft-enclave/public_bundle.json")
+    os.environ.get(
+        "SYFT_ENCLAVE_PUBLIC_BUNDLE_PATH", "/run/syft-enclave/public_bundle.json"
+    )
 )
 
 
@@ -78,7 +80,7 @@ def sign_nonce(nonce: str, path: Path = PUBLIC_BUNDLE_PATH) -> Optional[str]:
     try:
         import syft_crypto_python as syc
 
-        from syft_enclaves.nonce_challenge import sign_challenge
+        from syft_enclaves.attestation.nonce import sign_challenge
 
         keys = syc.SyftPrivateKeys.from_jwks(
             json.loads(Path(published["keys_path"]).read_text())["keys_jwk"]

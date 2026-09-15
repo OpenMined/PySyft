@@ -20,7 +20,7 @@ import os
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from syft_enclaves.evidence import probed_locations, select_provider
-from syft_enclaves.key_bundle import read_public_bundle, sign_nonce
+from syft_enclaves.evidence.key_bundle import read_public_bundle, sign_nonce
 from syft_enclaves.settings import AttestationSettings
 from syft_enclaves.tee_token import validate_nonce
 

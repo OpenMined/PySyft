@@ -4,7 +4,7 @@ One provider per deployment target. A provider knows how to tell whether it is
 running on its own kind of TEE (``detect``), how to obtain the evidence
 (``collect``), and how to summarise it for the operator-facing HTTP endpoint
 (``describe``). Nothing here verifies anything — an enclave never appraises its
-own evidence; that is the verifier's job (``attestation_dispatch``).
+own evidence; that is the verifier's job (``attestation.dispatch``).
 
 Adding a provider is: write a class with ``kind``/``probe_path``/``detect``/
 ``from_settings``/``collect``/``describe``, and add it to ``PROVIDERS``.
@@ -16,9 +16,9 @@ import logging
 from pathlib import Path
 from typing import Any, Optional, Protocol, runtime_checkable
 
-from syft_enclaves.attestation_envelope import AttestationEvidence, AttestationKind
-from syft_enclaves.providers.confidential_space import ConfidentialSpaceProvider
-from syft_enclaves.providers.tinfoil import TinfoilProvider
+from syft_enclaves.attestation.envelope import AttestationEvidence, AttestationKind
+from syft_enclaves.evidence.confidential_space import ConfidentialSpaceProvider
+from syft_enclaves.evidence.tinfoil import TinfoilProvider
 
 logger = logging.getLogger(__name__)
 
