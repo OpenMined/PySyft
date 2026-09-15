@@ -86,9 +86,17 @@ keys into that attestation report**, and shares the report on Google Drive with 
 
 Because any peer can **verify the attestation report**, they know those public keys were genuinely
 produced by an enclave running the expected open-source container — not by some person who happens to
-have access to the account. The data owners and the DS then download the enclave's verified keys (and
-share their own), and from that point on there is a **trusted, end-to-end secure channel** between the
-enclave and every participant.
+have access to the account.
+
+> **Status on each deployment target.** On **Tinfoil** this binding is implemented, by a different
+> route than nonces: the report commits to the TLS key of the enclave's own endpoint, so a peer that
+> pins its connection to that key can trust the key bundle served over it. `attest_peer` does this
+> and sets the peer's keys from the result. On **Confidential Spaces** it is still unimplemented —
+> the channel exists (a workload can inject nonces into the token) but is unused, so there the key
+> bundle remains an unsigned Drive file. See
+> [Tinfoil Deployment](./tinfoil.md#what-this-proves-and-what-it-does-not). The data owners and the DS then download the enclave's verified keys (and
+> share their own), and from that point on there is a **trusted, end-to-end secure channel** between the
+> enclave and every participant.
 
 Crucially, Google Drive is treated purely as an **untrusted transport** — a message-passing channel
 and nothing more. The threat model assumes a fully adversarial transport: an attacker (or Google

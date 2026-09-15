@@ -1,4 +1,4 @@
-# Terraform Deployment
+# Confidential Spaces Deployment (Terraform)
 
 A declarative alternative to the gcloud-based Justfile recipes (`init` / `provision-secret-sa` / `start` / `start-debug`). Terraform manages the full stack in one `apply`:
 

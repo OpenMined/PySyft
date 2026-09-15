@@ -1,38 +1,28 @@
 """
 Syft Client Attestation Server
 
-When running inside Google Confidential Spaces, this server fetches
-the TEE attestation token from the Confidential Space launcher and
-displays it as structured JSON.
+Operator-facing view of the enclave's own attestation evidence, whichever
+deployment target it is running on. The evidence itself comes from
+``syft_enclaves.evidence``:
 
-The attestation token is a signed JWT issued by Google's Confidential
-Computing attestation service. It contains cryptographic proof of:
-  - The hardware TEE type (AMD SEV-SNP, Intel TDX)
-  - Secure boot status
-  - The exact container image digest running
-  - Debug status of the VM
-  - GPU confidential computing mode (if applicable)
+  - Confidential Space: a signed JWT from the launcher socket, proving the
+    hardware TEE type, secure boot, debug status and container image digest.
+  - Tinfoil: the hardware attestation document from the ``/tinfoil`` mount.
 
-Architecture:
-  Container -> Unix socket (/run/container_launcher/teeserver.sock)
-            -> Confidential Space Launcher
-            -> Google Attestation Service
-            -> Signed JWT returned to container
+This endpoint is for humans and for ``just attest`` / ``just tinfoil-attest``.
+Production publishes evidence to peers through ``SYFT_version.json``; nothing
+here is verified, and a relying party appraises the evidence itself (see
+``syft_enclaves.attestation``).
 """
 
-import base64
-import json
 import os
-from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from syft_enclaves.tee_token import (
-    TEE_SOCKET_PATH,
-    build_eat_nonce,
-    fetch_attestation_token,
-    validate_nonce,
-)
+from syft_enclaves.evidence import probed_locations, select_provider
+from syft_enclaves.key_bundle import read_public_bundle, sign_nonce
+from syft_enclaves.settings import AttestationSettings
+from syft_enclaves.tee_token import validate_nonce
 
 app = FastAPI(title="Syft Client Enclave", version="0.1.0")
 
@@ -46,101 +36,27 @@ def _get_syft_version() -> str:
         return "unknown"
 
 
-def _is_confidential_space() -> bool:
-    """Check if we're running inside Google Confidential Spaces."""
-    return os.path.exists(str(TEE_SOCKET_PATH))
+def _detect_provider():
+    """The configured provider for this deployment target, or None outside a TEE.
 
-
-def _decode_jwt_payload(token: str) -> dict:
-    """Base64-decode the JWT payload (middle segment) without signature verification.
-
-    We decode without verification because the purpose of this endpoint is to
-    DISPLAY the attestation claims. The token itself (returned in raw_token)
-    is what a relying party would verify against Google's JWKS endpoint.
+    Reads settings per request rather than at import so the endpoint reflects
+    the environment the container was actually started with.
     """
-    parts = token.split(".")
-    if len(parts) != 3:
-        raise ValueError(f"Invalid JWT: expected 3 parts, got {len(parts)}")
-
-    # JWT base64url encoding — add padding if needed
-    payload_b64 = parts[1]
-    padding = 4 - len(payload_b64) % 4
-    if padding != 4:
-        payload_b64 += "=" * padding
-
-    payload_bytes = base64.urlsafe_b64decode(payload_b64)
-    return json.loads(payload_bytes)
-
-
-def _format_timestamp(epoch: int | float | None) -> str | None:
-    if epoch is None:
-        return None
-    return datetime.fromtimestamp(epoch, tz=timezone.utc).isoformat()
-
-
-def _structure_claims(claims: dict) -> dict:
-    """Organize raw JWT claims into logical sections for display."""
-    submods = claims.get("submods", {})
-    container = submods.get("container", {})
-    gce = submods.get("gce", {})
-    cs = {}
-    for key, val in submods.items():
-        if key.startswith("confidential_space"):
-            cs[key] = val
-
-    result = {
-        "hardware": {
-            "hwmodel": claims.get("hwmodel"),
-            "secboot": claims.get("secboot"),
-            "dbgstat": claims.get("dbgstat"),
-        },
-        "software": {
-            "swname": claims.get("swname"),
-            "swversion": claims.get("swversion"),
-        },
-        "container": {
-            "image_digest": container.get("image_digest"),
-            "image_reference": container.get("image_reference"),
-            "restart_policy": container.get("restart_policy"),
-            "env": container.get("env"),
-        },
-        "gce": {
-            "project_id": gce.get("project_id"),
-            "zone": gce.get("zone"),
-            "instance_id": gce.get("instance_id"),
-        },
-        "issuer": claims.get("iss"),
-        "subject": claims.get("sub"),
-        "issued_at": _format_timestamp(claims.get("iat")),
-        "expires_at": _format_timestamp(claims.get("exp")),
-    }
-
-    # GPU confidential computing claims (if present)
-    nvidia_cc = claims.get("nvidia_gpu", submods.get("nvidia_gpu", {}))
-    if nvidia_cc:
-        result["gpu"] = nvidia_cc
-
-    # Confidential Space-specific claims
-    if cs:
-        result["confidential_space"] = cs
-
-    eat_nonce_raw = claims.get("eat_nonce")
-    if eat_nonce_raw:
-        result["eat_nonce"] = eat_nonce_raw
-
-    return result
+    settings = AttestationSettings()
+    return select_provider(settings.attestation_provider, settings)
 
 
 @app.get("/")
 def index():
     """Landing page with syft info and available endpoints."""
+    provider = _detect_provider()
     return {
         "service": "syft-enclave",
         "syft_version": _get_syft_version(),
-        "confidential_space_detected": _is_confidential_space(),
+        "attestation_provider": provider.kind.value if provider else None,
         "endpoints": {
             "/": "This page",
-            "/attestation": "TEE attestation report (requires Confidential Spaces)",
+            "/attestation": "TEE attestation evidence (requires a TEE deployment)",
             "/health": "Health check",
         },
     }
@@ -153,22 +69,15 @@ def health():
 
 @app.get("/attestation")
 def attestation(nonce: str | None = None):
-    """Fetch and display the TEE attestation report.
+    """Show this enclave's own attestation evidence.
 
     Query params:
-      nonce — optional caller-supplied freshness nonce. When provided it is
-              embedded in the signed JWT via ``eat_nonce`` so the caller can
-              verify the report was generated on demand (not replayed).
+      nonce — optional freshness nonce. Only Confidential Space can bind one
+              into the evidence (via ``eat_nonce``); Tinfoil rejects it,
+              because its report's user data is fully used by the shim's keys
+              and the attestation document is a static file.
 
-    When running in Confidential Spaces:
-      1. Validates the nonce (if supplied)
-      2. Builds an eat_nonce array (version hash + optional caller nonce)
-      3. Requests an OIDC attestation token with eat_nonce
-      4. Decodes the JWT claims
-      5. Returns structured attestation data + the raw token
-
-    When NOT in Confidential Spaces:
-      Returns instructions for how to deploy correctly.
+    Outside a TEE, returns deployment instructions instead.
     """
     if nonce is not None:
         error = validate_nonce(nonce)
@@ -176,51 +85,66 @@ def attestation(nonce: str | None = None):
             return JSONResponse(status_code=400, content={"error": error})
 
     version = _get_syft_version()
-
-    if not _is_confidential_space():
-        return {
-            "status": "not_in_confidential_space",
-            "syft_version": version,
-            "message": (
-                "Attestation unavailable. This container must run on "
-                "Google Confidential Spaces. The TEE socket at "
-                f"{TEE_SOCKET_PATH} was not found."
-            ),
-            "instructions": {
-                "build": "docker build -t syft-enclave -f docker/Dockerfile .",
-                "deploy": (
-                    "Deploy on a Confidential VM with the Confidential Spaces "
-                    "image to enable attestation."
-                ),
-            },
-        }
+    provider = _detect_provider()
+    if provider is None:
+        return _not_in_a_tee(version)
 
     try:
-        eat_nonce = build_eat_nonce(caller_nonce=nonce)
-        raw_token = fetch_attestation_token(eat_nonce=eat_nonce)
-        claims = _decode_jwt_payload(raw_token)
-        structured = _structure_claims(claims)
-
+        # Only some TEEs can bind a caller nonce into the report itself.
+        # Where they cannot, the nonce is still answered — signed with the
+        # enclave's own key below — so the caller gets freshness either way.
+        evidence = (
+            provider.collect(caller_nonce=nonce)
+            if nonce and provider.accepts_caller_nonce
+            else provider.collect()
+        )
         return {
-            "status": "running_in_confidential_space",
+            "status": "running_in_tee",
+            "provider": provider.kind.value,
             "syft_version": version,
-            "attestation": structured,
-            "nonce_info": {
-                "version": eat_nonce[0],
-                "caller_nonce": nonce,
-            },
-            "raw_token": raw_token,
+            "attestation": provider.describe(evidence),
+            "evidence": evidence.to_version_field(),
+            # The enclave's syft public keys. A caller that pinned this
+            # connection to the TLS key the report commits to can trust these;
+            # over an unpinned connection they are worth nothing. None when
+            # encryption is disabled or the runner has not started yet.
+            "key_bundle": read_public_bundle(),
+            # Proof the enclave holds the private half of that bundle, and
+            # that this response was produced for this exchange: a signature
+            # over the caller's nonce by the bundle's identity key.
+            "nonce": nonce,
+            "nonce_signature": sign_nonce(nonce) if nonce else None,
         }
-
     except Exception as e:
         return JSONResponse(
             status_code=500,
             content={
                 "status": "attestation_error",
+                "provider": provider.kind.value,
                 "syft_version": version,
                 "error": str(e),
             },
         )
+
+
+def _not_in_a_tee(version: str) -> dict:
+    return {
+        "status": "not_in_a_tee",
+        "syft_version": version,
+        "message": (
+            f"Attestation unavailable: no TEE detected. Probed: {probed_locations()}."
+        ),
+        "instructions": {
+            "build": "docker build -t syft-enclave -f docker/Dockerfile .",
+            "confidential_space": (
+                "Deploy on a Confidential VM with the Confidential Space image "
+                "— see docs/terraform.md."
+            ),
+            "tinfoil": (
+                "Deploy a Tinfoil container from the config repo — see docs/tinfoil.md."
+            ),
+        },
+    }
 
 
 if __name__ == "__main__":

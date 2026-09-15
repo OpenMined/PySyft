@@ -1,0 +1,35 @@
+# DO NOT RUN MANUALLY. This workflow is dispatched automatically by
+# `tinfoil-release.yml` against the newly created release tag.
+#
+# Computes the expected CVM launch measurement for tinfoil-config.yml, creates
+# the GitHub release carrying it, and signs it keylessly to Sigstore via GitHub
+# OIDC. Nothing is built or pulled here: the measurement covers the CVM launch
+# state and the config, and the container image appears only as a digest.
+#
+# Kept in step with tinfoilsh/tinfoil-containers-template — the supported path.
+# This copy lives in PySyft for review; the live one is in the config repo.
+name: Tinfoil Release - Publish (auto-triggered)
+
+run-name: Publish release ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: tinfoil-container-release-${{ github.ref_name }}
+
+jobs:
+  measure-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # create the GitHub release
+      packages: write       # attach the attestation to the image
+      id-token: write       # keyless attestation signing
+      attestations: write   # publish the attestation
+
+    steps:
+      - name: Measure image, attest, and publish the release
+        uses: tinfoilsh/measure-image-action@c33809b2a4a9ced570ab869765aecd44b4d3cbd5 # v0.11.0
+        with:
+          config-file: ${{ github.workspace }}/tinfoil-config.yml
+          github-token: ${{ secrets.GITHUB_TOKEN }}

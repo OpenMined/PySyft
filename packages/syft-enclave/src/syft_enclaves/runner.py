@@ -16,11 +16,15 @@ import signal
 import time
 from typing import Callable, Optional
 
+from syft.sync.peers.peer_store import datasite_crypto_keys_path
+
 from syft_enclaves.client import SyftEnclaveClient
-from syft_enclaves.tee_token import (
-    TEE_SOCKET_PATH,
-    build_eat_nonce,
-    fetch_attestation_token,
+from syft_enclaves.key_bundle import write_public_bundle
+from syft_enclaves.evidence import (
+    AUTO,
+    EvidenceProvider,
+    probed_locations,
+    select_provider,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,12 +41,19 @@ class EnclaveRunner:
         require_tee: bool = False,
         fresh_state: bool = True,
         post_init: Optional[Callable[[], None]] = None,
+        attestation_provider: str = AUTO,
+        settings: Optional[object] = None,
     ) -> None:
         self.client = client
         self.poll_interval = poll_interval
         self.require_tee = require_tee
         self.fresh_state = fresh_state
         self.post_init = post_init
+        # Which deployment target to collect evidence from; see
+        # syft_enclaves.evidence. ``settings`` is passed through so each
+        # provider can read its own configuration.
+        self.attestation_provider = attestation_provider
+        self.settings = settings
         self._shutdown_requested = False
 
     # -- public API -------------------------------------------------------
@@ -116,27 +127,62 @@ class EnclaveRunner:
             logger.info("State wipe complete — enclave starts with a clean slate")
 
     def _on_attesting(self) -> None:
-        """Verify TEE environment and publish attestation token to version file."""
-        in_tee = TEE_SOCKET_PATH.exists()
-        if self.require_tee and not in_tee:
-            raise RuntimeError(
-                f"TEE socket not found at {TEE_SOCKET_PATH}. "
-                "Set require_tee=False for local testing."
-            )
-        if in_tee:
-            logger.info("Confidential Spaces TEE detected — fetching attestation token")
-            self._publish_attestation()
-        else:
+        """Collect attestation evidence and publish it to the version file."""
+        provider = select_provider(self.attestation_provider, self.settings)
+        if provider is None:
+            if self.require_tee:
+                raise RuntimeError(
+                    "No TEE detected. Probed: "
+                    f"{probed_locations()}. "
+                    "Set require_tee=False for local testing."
+                )
             logger.warning("Running outside TEE — attestation unavailable")
+            return
+        logger.info(
+            "TEE detected (%s) — collecting attestation evidence", provider.kind.value
+        )
+        self._publish_attestation(provider)
+        self._publish_key_bundle()
 
-    def _publish_attestation(self) -> None:
-        """Fetch attestation JWT from the TEE and write it into the version file."""
-        eat_nonce = build_eat_nonce()
-        token = fetch_attestation_token(eat_nonce=eat_nonce)
+    def _publish_attestation(self, provider: EvidenceProvider) -> None:
+        """Write the provider's evidence into the peer-visible version file."""
+        evidence = provider.collect()
         peer_manager = self.client._rds.peer_manager
-        peer_manager.get_own_version().attestation_token = token
+        evidence.publish_to(peer_manager.get_own_version())
         peer_manager.write_own_version()
-        logger.info("Attestation token published to SYFT_version.json")
+        logger.info(
+            "Attestation evidence (%s) published to SYFT_version.json",
+            evidence.kind.value,
+        )
+
+    def _publish_key_bundle(self) -> None:
+        """Expose our public key bundle on the attestation endpoint.
+
+        A peer fetching the report over a pinned connection gets the bundle
+        from the same channel, which binds it to the hardware report. Skipped
+        when encryption is off, since then there is no bundle.
+        """
+        peer_store = self.client._rds.peer_manager.peer_store
+        if not peer_store.use_encryption or not peer_store.has_my_keys():
+            logger.info("Encryption disabled — no key bundle to publish")
+            return
+        peer_manager = self.client._rds.peer_manager
+        # The per-datasite default location; the enclave never overrides
+        # crypto_keys_path, and PeerManager does not carry the resolved value.
+        keys_path = datasite_crypto_keys_path(
+            peer_manager.syftbox_folder, peer_store.email
+        )
+        try:
+            # fresh_state wiped the syftbox folder a moment ago, taking the key
+            # file with it — the keys live on in memory, so persist them again
+            # before advertising where they are. Without this the endpoint
+            # serves a bundle it cannot sign a nonce with.
+            peer_store.save_keys(keys_path)
+            write_public_bundle(peer_store.get_public_bundle(), keys_path=keys_path)
+        except OSError as e:
+            # Not fatal: peers can still fall back to the Drive-published
+            # bundle, they just lose the attestation binding.
+            logger.warning("Could not publish the public key bundle: %s", e)
 
     def _on_peering(self) -> None:
         """Load peers and accept pending peer requests."""

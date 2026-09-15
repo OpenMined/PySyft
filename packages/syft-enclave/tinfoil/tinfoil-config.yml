@@ -1,0 +1,98 @@
+# Tinfoil workload config for the syft enclave.
+#
+# This is the canonical copy. `just tinfoil-config-pr` opens a pull request
+# that syncs it to the root of the public config repo, whose signed GitHub
+# releases publish the expected launch measurement. Keeping it here means the
+# image and the config that pins it are reviewed together.
+#
+# Everything in this file is MEASURED: its sha256 lands in the CVM's kernel
+# command line, so any change needs a new config release. Deployment-specific
+# values are therefore passed at deploy time with `--variable` instead (see
+# `just tinfoil-deploy`), which also means they are NOT verifiable — same
+# position as `tee-env-*` metadata on Confidential Spaces.
+#
+# Field reference: https://docs.tinfoil.sh/containers/configuration
+cvm-version: 0.14.7
+cpus: 2
+memory: 8192
+gpus: 0
+
+containers:
+  - name: syft-enclave
+    # Must be pinned by digest: this is what the attestation commits to and
+    # what a data owner verifies. `just tinfoil-release` fills it in from the
+    # image it just pushed.
+    image: docker.io/openminedreleasebot/syft-enclave@sha256:fa733440e581ad635f8ff6260b348a9ce127347c34b335fa29bbdc3736117bd2
+    restart: always
+    networks: [egress]
+    # Tinfoil runs containers with a read-only root filesystem, but syft needs
+    # a writable /tmp before it can even import: portalocker calls
+    # tempfile.gettempdir() at import time and raises without one.
+    #
+    # Writable here means the CVM's ramdisk, which SEV-SNP encrypts in
+    # hardware and which never touches a host disk. There is no persistent
+    # volume to encrypt — Tinfoil Containers have none, and state is lost on
+    # restart. That suits us: SYFT_ENCLAVE_FRESH_STATE wipes it at boot anyway.
+    read_only: false
+    env:
+      # Key AND value pinned here, so both are measured and verifiable.
+      - SYFT_ENCLAVE_ATTESTATION_PROVIDER: "tinfoil"
+      - SYFT_ENCLAVE_TINFOIL_REPO: "OpenMined/syft-enclave-tinfoil"
+      # Tinfoil has no Secret Manager equivalent; the Drive token arrives as a
+      # deploy-time secret and this provider writes it to disk (0600).
+      - SYFT_BOOTSTRAP: "tinfoil"
+      # Declared as bare names: the key is measured, the VALUE comes from
+      # `--variable` at deploy time and is therefore NOT measured — a data
+      # owner cannot verify it. Declaring is mandatory even so: the shim
+      # silently drops a --variable whose key the config does not declare.
+      - SYFT_ENCLAVE_EMAIL
+      - SYFT_ENCLAVE_DATA_OWNERS
+      - SYFT_ENCLAVE_REQUIRE_TEE
+      - SYFT_ENCLAVE_USE_ENCRYPTION
+      - SYFT_ENCLAVE_TINFOIL_RELEASE_TAG
+      # Where peers fetch the report over a connection pinned to the key the
+      # report commits to. Untrusted: a wrong host either fails the pin or is
+      # this enclave.
+      - SYFT_ENCLAVE_TINFOIL_HOST
+    secrets:
+      # Value supplied by `tinfoil container create --secret`; only the NAME is
+      # measured, never the value.
+      - SYFT_ENCLAVE_TOKEN_CONTENT
+
+shim:
+  # Required — the config is rejected without it.
+  upstream-port: 8080
+  upstream-container: syft-enclave
+  # Only these paths are reachable; everything else 404s. The shim serves
+  # /.well-known/tinfoil-attestation regardless of this list.
+  paths:
+    - /
+    - /health
+    - /attestation
+  publish-attestation: true
+  dummy-attestation: false
+
+# Keyed by network name (the schema is a map, not a list). Do NOT call a
+# network "default" — Docker predefines that name and the firewall setup fails
+# at deploy time with "operation is not permitted on predefined default
+# network". The canonical schema only reserves "shim-net", so this passes
+# validation and fails on the host.
+networks:
+  egress:
+    # `open` allows any public address; RFC1918 and other private ranges stay
+    # blocked. `closed` (the default) would leave the enclave unable to reach
+    # Google Drive at all.
+    #
+    # Why not `allowlist`? It was tried and does not work for Google. The
+    # firewall resolves allowlisted hostnames to IPs once, at boot, and Google
+    # rotates them: with both www.googleapis.com and oauth2.googleapis.com
+    # listed, www stayed reachable while oauth2's current address
+    # (172.217.78.95) timed out, so every OAuth token refresh hung. Wildcards
+    # and IP literals are rejected by the schema, so there is no way to express
+    # a stable rule for these endpoints.
+    #
+    # The enclave's confidentiality does not rest on this: that comes from the
+    # measurement and the hardware. Egress filtering was defence-in-depth
+    # against a misbehaving workload, and it is the one property we give up
+    # here. Revisit if Tinfoil starts re-resolving allowlist entries.
+    egress: open

@@ -9,6 +9,9 @@ Writes a token to ``SYFT_ENCLAVE_TOKEN_PATH`` before the runner starts.
   Federation. The Confidential Spaces attestation JWT is exchanged
   at STS for a federated Google access token, which is used to call
   Secret Manager.
+- ``tinfoil`` — read ``SYFT_ENCLAVE_TOKEN_CONTENT``, which Tinfoil
+  populates from a deploy-time ``--secret``. Tinfoil has no Secret
+  Manager equivalent.
 
 If ``SYFT_BOOTSTRAP`` is unset, a pre-existing token at the path is
 accepted (bind mount, init container, etc.). Adding a new
@@ -22,12 +25,13 @@ import base64
 import json
 import logging
 import os
-import socket
 import sys
-from http.client import HTTPConnection
 from pathlib import Path
 
 import requests
+
+from syft_enclaves._unix_socket import UnixSocketConnection
+from syft_enclaves.providers.tinfoil import TINFOIL_ATTESTATION_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -55,16 +59,6 @@ def write_atomic(path: Path, data: bytes, *, mode: int = 0o600) -> None:
 # ---------------------------------------------------------------------------
 
 
-class _UnixSocketConnection(HTTPConnection):
-    def __init__(self, socket_path: str):
-        super().__init__("localhost")
-        self._socket_path = socket_path
-
-    def connect(self) -> None:
-        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self.sock.connect(self._socket_path)
-
-
 def request_attestation_jwt(audience: str) -> str:
     """POST to the Confidential Spaces launcher socket; return the JWT."""
     if not os.path.exists(TEE_SOCKET_PATH):
@@ -72,7 +66,7 @@ def request_attestation_jwt(audience: str) -> str:
             f"TEE socket not found at {TEE_SOCKET_PATH}. "
             "wif requires a Confidential Spaces VM."
         )
-    conn = _UnixSocketConnection(TEE_SOCKET_PATH)
+    conn = UnixSocketConnection(TEE_SOCKET_PATH)
     conn.request(
         "POST",
         "/v1/token",
@@ -122,8 +116,9 @@ def secret_manager_access(resource: str, bearer: str) -> bytes:
 
 def envvar_provider() -> bytes:
     logger.warning(
-        "DEPRECATION: SYFT_BOOTSTRAP=envvar exposes the token in instance "
-        "metadata and attestation claims. Use only with a dev token."
+        "DEPRECATION: on Confidential Space, SYFT_BOOTSTRAP=envvar exposes "
+        "the token in instance metadata and attestation claims. Use only with "
+        "a dev token. On Tinfoil use SYFT_BOOTSTRAP=tinfoil instead."
     )
     v = os.environ.get("SYFT_ENCLAVE_TOKEN_CONTENT")
     if not v:
@@ -167,10 +162,36 @@ def sa_provider() -> bytes:
     return secret_manager_access(secret, resp.json()["access_token"])
 
 
+def tinfoil_provider() -> bytes:
+    """Read the token from the env var Tinfoil injects the secret into.
+
+    Tinfoil supplies ``--secret NAME`` values as environment variables inside
+    the CVM, and the measured config records only the *name*. So unlike
+    ``envvar`` on Confidential Space, the value is not in instance metadata or
+    in the attestation — which is why this is its own provider rather than an
+    alias, and why it carries no deprecation warning.
+    """
+    if not TINFOIL_ATTESTATION_PATH.exists():
+        raise RuntimeError(
+            f"SYFT_BOOTSTRAP=tinfoil but {TINFOIL_ATTESTATION_PATH} is missing. "
+            "This is not a Tinfoil enclave; use SYFT_BOOTSTRAP=envvar for local "
+            "testing."
+        )
+    value = os.environ.get("SYFT_ENCLAVE_TOKEN_CONTENT")
+    if not value:
+        raise RuntimeError(
+            "SYFT_BOOTSTRAP=tinfoil but SYFT_ENCLAVE_TOKEN_CONTENT is unset. "
+            "Deploy with: tinfoil container create ... --secret "
+            "SYFT_ENCLAVE_TOKEN_CONTENT"
+        )
+    return value.encode()
+
+
 PROVIDERS = {
     "envvar": envvar_provider,
     "wif": wif_provider,
     "sa": sa_provider,
+    "tinfoil": tinfoil_provider,
 }
 
 

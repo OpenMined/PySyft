@@ -1,0 +1,57 @@
+# Creates and pushes the version tag, then hands off to the publish workflow.
+# This is what `tinfoil repo build run <repo> --version vX.Y.Z` dispatches
+# through the Tinfoil GitHub App; `just tinfoil-publish` wraps that.
+#
+# Kept in step with tinfoilsh/tinfoil-containers-template — the supported path.
+# This copy lives in PySyft for review; the live one is in the config repo.
+name: Tinfoil Release
+
+run-name: Release ${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. v1.0.0)'
+        required: true
+        type: string
+
+concurrency:
+  group: tinfoil-container-release-${{ inputs.version }}
+
+jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # push the release tag
+      actions: write        # dispatch tinfoil-release-publish.yml on the new tag
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+        with:
+          persist-credentials: true  # needed to push the release tag below
+
+      - name: Check if version tag already exists
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if git ls-remote --tags origin "refs/tags/$VERSION" | grep -q .; then
+            echo "::error::Tag $VERSION already exists"
+            exit 1
+          fi
+
+      - name: Create and push the release tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git tag "$VERSION" "$GITHUB_SHA"
+          git push origin "refs/tags/$VERSION"
+
+      - name: Dispatch the publish workflow on the new tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh workflow run tinfoil-release-publish.yml --ref "$VERSION"

@@ -72,6 +72,11 @@ class CheckResult:
 @dataclass
 class AttestationResult:
     checks: list[CheckResult] = field(default_factory=list)
+    #: The peer's syft public key bundle, when it arrived over a channel bound
+    #: to the attestation report (see ``attestation_https``). None whenever
+    #: there was no such channel — a bundle read from Drive is not bound to
+    #: anything and must not be set here.
+    verified_key_bundle: Optional[dict] = None
 
     def add(self, name: str, label: str, passed: bool, detail: str) -> None:
         self.checks.append(
