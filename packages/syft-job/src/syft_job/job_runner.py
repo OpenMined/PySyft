@@ -1,7 +1,6 @@
 import os
 import shutil
 import subprocess
-import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,15 +14,7 @@ from . import __version__
 from .config import SyftJobConfig
 from .job_storage import JobRef, JobStorage, JobStateNotFoundError
 from .models import JobState, JobStatus, JobSubmissionMetadata
-from .traceback_capture import (
-    BUNDLE_FILENAME,
-    RAW_TRACE_FILENAME,
-    load_or_create_bundle,
-    RAW_TRACE_PATH_ENV,
-    TRACE_RUNNER_ENV,
-    trace_runner_path,
-    write_frames_record,
-)
+from .traceback_capture import write_frames_record
 
 # Default timeout for job execution (10 minutes)
 DEFAULT_JOB_TIMEOUT_SECONDS = 600
@@ -40,18 +31,6 @@ def get_job_timeout_seconds() -> int:
 
 
 IS_IN_JOB_ENV_VAR = "SYFT_IS_IN_JOB"
-
-
-def _add_trace_env(env: dict, trace_dir: "Path | None") -> None:
-    """Point the job process at the traceback wrapper and its output file.
-
-    Without these variables run.sh runs the entrypoint directly, so an older
-    run.sh and a newer run.sh both work.
-    """
-    if trace_dir is None:
-        return
-    env[TRACE_RUNNER_ENV] = str(trace_runner_path())
-    env[RAW_TRACE_PATH_ENV] = str(trace_dir / RAW_TRACE_FILENAME)
 
 
 def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
@@ -240,9 +219,7 @@ class SyftJobRunner:
             self.config.current_user_email, job_name, ds_email=user
         )
 
-    def _execute_job_streaming(
-        self, ref: JobRef, timeout: int, trace_dir: Path | None = None
-    ) -> int:
+    def _execute_job_streaming(self, ref: JobRef, timeout: int) -> int:
         """Execute job with real-time streaming output.
 
         Reads run.sh from inbox/, writes stdout/stderr to staging/.
@@ -263,7 +240,6 @@ class SyftJobRunner:
         env["SYFTBOX_EMAIL"] = self.config.current_user_email
         env[IS_IN_JOB_ENV_VAR] = "true"
         env["PYTHONUNBUFFERED"] = "1"
-        _add_trace_env(env, trace_dir)
 
         staging_dir = self.manager.staging_dir(ref)
         staging_dir.mkdir(parents=True, exist_ok=True)
@@ -333,9 +309,7 @@ class SyftJobRunner:
 
         return returncode
 
-    def _execute_job_captured(
-        self, ref: JobRef, timeout: int, trace_dir: Path | None = None
-    ) -> int:
+    def _execute_job_captured(self, ref: JobRef, timeout: int) -> int:
         """Execute job with captured output (non-streaming).
 
         Reads run.sh from inbox/, writes stdout/stderr to staging/.
@@ -353,7 +327,6 @@ class SyftJobRunner:
         env["SYFTBOX_EMAIL"] = self.config.current_user_email
         env[IS_IN_JOB_ENV_VAR] = "true"
         env["PYTHONUNBUFFERED"] = "1"
-        _add_trace_env(env, trace_dir)
 
         process = subprocess.Popen(
             ["bash", str(run_script)],
@@ -429,27 +402,13 @@ class SyftJobRunner:
         state.status = JobStatus.RUNNING
         self.manager.write_state(ref, state)
 
-        trace_dir = Path(tempfile.mkdtemp(prefix="syft-job-trace-"))
-        # The job writes into code/ while it runs, so the record must come from
-        # the tree as it stood before the first run.
-        code_bundle = load_or_create_bundle(
-            self.manager.staging_dir(ref) / BUNDLE_FILENAME,
-            submission_dir / "code",
-        )
         try:
             if stream_output:
-                returncode = self._execute_job_streaming(ref, timeout, trace_dir)
+                returncode = self._execute_job_streaming(ref, timeout)
             else:
-                returncode = self._execute_job_captured(ref, timeout, trace_dir)
+                returncode = self._execute_job_captured(ref, timeout)
 
-            # The job writes the raw record, so check it before any party reads
-            # it. A job that writes nothing produces no file.
-            write_frames_record(
-                trace_dir / RAW_TRACE_FILENAME,
-                self.manager.staging_dir(ref),
-                submission_dir / "code",
-                code_bundle,
-            )
+            self._capture_traceback(ref, returncode)
 
             # Move outputs from inbox/ to review/
             self._move_outputs_to_review(submission_dir, review_dir)
@@ -489,8 +448,19 @@ class SyftJobRunner:
             self._set_finalized_job_state(ref, -1)
             return False
 
-        finally:
-            shutil.rmtree(trace_dir, ignore_errors=True)
+    def _capture_traceback(self, ref: JobRef, returncode: int) -> None:
+        """Stage where the job failed, from the traceback it printed.
+
+        A run that succeeds prints no traceback, so it leaves no record.
+        """
+        if returncode == 0:
+            return
+        staging_dir = self.manager.staging_dir(ref)
+        write_frames_record(
+            staging_dir / "stderr.txt",
+            staging_dir,
+            self.manager.submission_dir(ref) / "code",
+        )
 
     def _set_finalized_job_state(self, ref: JobRef, returncode: int) -> None:
         state = self.manager.read_state(ref)

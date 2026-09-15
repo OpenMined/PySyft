@@ -74,9 +74,7 @@ class EnclaveJobClient(BaseJobClient):
             "share_results_with_do": share_results_with_do,
             # The items the submitter asks for. Each data owner sees this list
             # next to the code, then releases none, some, or all of it.
-            "requested_disclosures": sorted(
-                normalize_disclosures(request_disclosures)
-            ),
+            "requested_disclosures": sorted(normalize_disclosures(request_disclosures)),
         }
         config.save(job_dir / "config.yaml")
 

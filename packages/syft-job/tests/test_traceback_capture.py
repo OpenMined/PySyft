@@ -1,278 +1,179 @@
-"""The sanitizer treats the raw record as attacker-controlled input."""
+"""``traceback_frames`` reports where a job failed, and never the message."""
 
 import json
 import subprocess
 import sys
-from pathlib import Path
 
 import pytest
 
-from syft_job._trace_runner import raw_record
 from syft_job.traceback_capture import (
-    EXTERNAL_LABEL,
     FALLBACK_TYPE,
     FRAMES_FILENAME,
     MAX_CHAIN,
     MAX_FRAMES,
-    sanitize_raw_trace,
-    snapshot_code_bundle,
-    trace_runner_path,
+    frames_from_stderr,
     write_frames_record,
 )
 
+CRASH = """\
+def inner():
+    raise ValueError("patient 4171 is positive")
 
-def sanitize(raw, code_root):
-    """Sanitize against a snapshot taken from the current tree."""
-    return sanitize_raw_trace(raw, code_root, snapshot_code_bundle(code_root))
+
+def outer():
+    inner()
+
+
+outer()
+"""
+
+CHAINED = """\
+try:
+    raise KeyError("patient 4171")
+except KeyError as exc:
+    raise RuntimeError("wrapped") from exc
+"""
 
 
 @pytest.fixture
 def code_root(tmp_path):
     root = tmp_path / "code"
     root.mkdir()
-    (root / "main.py").write_text("\n".join(f"line {i}" for i in range(1, 21)))
     return root
 
 
-def frame(filename, lineno):
-    return {"filename": filename, "lineno": lineno}
-
-
-def chain(mro, frames):
-    return {"chain": [{"mro": mro, "frames": frames}]}
-
-
-# -- what a reader is allowed to see ------------------------------------------
-
-
-def test_frame_in_the_bundle_keeps_its_file_and_line(code_root):
-    out = sanitize(chain(["ValueError"], [frame("main.py", 12)]), code_root)
-    assert out["chain"][0]["frames"] == [{"file": "main.py", "line": 12}]
-    assert out["chain"][0]["type"] == "ValueError"
-
-
-def test_absolute_path_in_the_bundle_is_relative_in_the_record(code_root):
-    raw = chain(["KeyError"], [frame(str(code_root / "main.py"), 3)])
-    out = sanitize(raw, code_root)
-    assert out["chain"][0]["frames"] == [{"file": "main.py", "line": 3}]
-
-
-def test_the_record_never_holds_a_message_or_a_function_name(code_root):
-    raw = chain(["ValueError"], [frame("main.py", 1)])
-    raw["chain"][0]["frames"][0]["name"] = "leak_do2_row_4171"
-    raw["chain"][0]["message"] = "patient 4171 is positive"
-    out = sanitize(raw, code_root)
-    assert set(out["chain"][0]) == {"type", "frames"}
-    assert set(out["chain"][0]["frames"][0]) == {"file", "line"}
-
-
-# -- smuggling attempts --------------------------------------------------------
-
-
-def test_a_forged_file_name_never_reaches_the_record(code_root):
-    """A job picks the file name of a frame through compile()."""
-    raw = chain(["ValueError"], [frame("DO2_row_4171_diagnosis_POSITIVE.py", 1)])
-    out = sanitize(raw, code_root)
-    assert out["chain"][0]["frames"] == [{"file": EXTERNAL_LABEL, "line": None}]
-
-
-def test_a_path_outside_the_bundle_is_labelled(code_root, tmp_path):
-    outside = tmp_path / "secret.py"
-    outside.write_text("x = 1\n")
-    out = sanitize(chain(["OSError"], [frame(str(outside), 1)]), code_root)
-    assert out["chain"][0]["frames"] == [{"file": EXTERNAL_LABEL, "line": None}]
-
-
-def test_a_traversal_path_stays_outside(code_root):
-    raw = chain(["OSError"], [frame("../../../etc/passwd", 1)])
-    out = sanitize(raw, code_root)
-    assert out["chain"][0]["frames"][0]["file"] == EXTERNAL_LABEL
-
-
-def test_a_line_past_the_end_of_the_file_is_dropped(code_root):
-    """main.py holds 20 lines, so line 99999 is a forged position."""
-    out = sanitize(chain(["ValueError"], [frame("main.py", 99999)]), code_root)
-    assert out["chain"][0]["frames"] == [{"file": EXTERNAL_LABEL, "line": None}]
-
-
-def test_a_custom_exception_reports_its_builtin_base(code_root):
-    raw = chain(["DO2DataWasPositive", "ValueError", "Exception"], [])
-    out = sanitize(raw, code_root)
-    assert out["chain"][0]["type"] == "ValueError"
-
-
-def test_an_all_custom_mro_falls_back(code_root):
-    out = sanitize(chain(["SecretName", "AlsoSecret"], []), code_root)
-    assert out["chain"][0]["type"] == FALLBACK_TYPE
-
-
-def test_the_chain_and_the_frame_count_are_bounded(code_root):
-    raw = {
-        "chain": [
-            {"mro": ["ValueError"], "frames": [frame("main.py", 1)] * 500}
-            for _ in range(50)
-        ]
-    }
-    out = sanitize(raw, code_root)
-    assert len(out["chain"]) == MAX_CHAIN
-    assert len(out["chain"][0]["frames"]) == MAX_FRAMES
-
-
-@pytest.mark.parametrize(
-    "raw",
-    [None, {}, {"chain": []}, {"chain": "nope"}, [1, 2, 3], {"chain": [None]}],
-)
-def test_malformed_input_yields_no_record(raw, code_root):
-    assert sanitize(raw, code_root) in (None, {"chain": []})
-
-
-def test_a_non_integer_line_is_dropped(code_root):
-    out = sanitize(chain(["ValueError"], [frame("main.py", "12")]), code_root)
-    assert out["chain"][0]["frames"][0]["line"] is None
-
-
-# -- the file the parent writes -------------------------------------------------
-
-
-def test_write_frames_record_writes_only_checked_fields(tmp_path, code_root):
-    raw_path = tmp_path / "raw.json"
-    review = tmp_path / "review"
-    raw_path.write_text(
-        json.dumps(chain(["ValueError"], [frame("main.py", 2), frame("/etc/shadow", 1)]))
+def run(code_root, source):
+    """Run a script the way run.sh does, from inside code/, and return stderr."""
+    (code_root / "main.py").write_text(source)
+    proc = subprocess.run(
+        [sys.executable, "main.py"],
+        cwd=code_root,
+        capture_output=True,
+        text=True,
     )
-    out = write_frames_record(
-        raw_path, review, code_root, snapshot_code_bundle(code_root)
-    )
-    assert out == review / FRAMES_FILENAME
-    record = json.loads(out.read_text())
+    assert proc.returncode != 0
+    return proc.stderr
+
+
+# -- what the record holds ------------------------------------------------------
+
+
+def test_record_holds_every_frame_of_the_crash(code_root):
+    record = frames_from_stderr(run(code_root, CRASH), code_root)
+    assert record["chain"][0]["type"] == "ValueError"
     assert record["chain"][0]["frames"] == [
+        {"file": "main.py", "line": 9},
+        {"file": "main.py", "line": 6},
         {"file": "main.py", "line": 2},
-        {"file": EXTERNAL_LABEL, "line": None},
     ]
 
 
-def test_no_raw_file_means_no_record(tmp_path, code_root):
-    review = tmp_path / "review"
-    bundle = snapshot_code_bundle(code_root)
-    assert (
-        write_frames_record(tmp_path / "absent.json", review, code_root, bundle) is None
-    )
-    assert not (review / FRAMES_FILENAME).exists()
+def test_record_never_holds_the_exception_message(code_root):
+    record = frames_from_stderr(run(code_root, CRASH), code_root)
+    assert "positive" not in json.dumps(record)
+    assert "4171" not in json.dumps(record)
 
 
-def test_invalid_json_means_no_record(tmp_path, code_root):
-    raw_path = tmp_path / "raw.json"
-    raw_path.write_text("{not json")
-    bundle = snapshot_code_bundle(code_root)
-    assert (
-        write_frames_record(raw_path, tmp_path / "review", code_root, bundle) is None
-    )
+def test_frame_holds_only_a_file_and_a_line(code_root):
+    record = frames_from_stderr(run(code_root, CRASH), code_root)
+    assert set(record["chain"][0]) == {"type", "frames"}
+    assert set(record["chain"][0]["frames"][0]) == {"file", "line"}
 
 
-# -- the wrapper that runs inside the job ---------------------------------------
+def test_chained_exception_puts_the_last_failure_first(code_root):
+    record = frames_from_stderr(run(code_root, CHAINED), code_root)
+    assert [entry["type"] for entry in record["chain"]] == ["RuntimeError", "KeyError"]
+    assert "patient" not in json.dumps(record)
 
 
-def test_raw_record_holds_no_message():
-    try:
-        raise ValueError("patient 4171 is positive")
-    except ValueError as exc:
-        record = raw_record(exc)
-    blob = json.dumps(record)
-    assert "positive" not in blob
-    assert record["chain"][0]["mro"][0] == "ValueError"
+def test_library_frame_keeps_the_path_the_interpreter_printed(code_root):
+    source = "import json\njson.loads('{')\n"
+    record = frames_from_stderr(run(code_root, source), code_root)
+    files = [f["file"] for f in record["chain"][0]["frames"]]
+    assert files[0] == "main.py"
+    assert any(f.endswith("json/decoder.py") for f in files)
 
 
-def test_raw_record_follows_a_chained_exception():
-    try:
-        try:
-            raise KeyError("inner")
-        except KeyError as inner:
-            raise RuntimeError("outer") from inner
-    except RuntimeError as exc:
-        record = raw_record(exc)
-    assert [c["mro"][0] for c in record["chain"]] == ["RuntimeError", "KeyError"]
-    assert "inner" not in json.dumps(record)
+# -- input that carries no failure ----------------------------------------------
 
 
-def test_the_wrapper_records_a_crash_and_keeps_the_exit_code(tmp_path):
-    entry = tmp_path / "main.py"
-    entry.write_text("raise ValueError('secret value')\n")
-    raw_path = tmp_path / "raw.json"
-
+def test_clean_run_leaves_no_record(code_root):
+    (code_root / "main.py").write_text("print('ok')\n")
     proc = subprocess.run(
-        [sys.executable, str(trace_runner_path()), str(entry)],
-        capture_output=True,
-        text=True,
-        env={"PATH": "/usr/bin:/bin", "SYFT_JOB_RAW_TRACE_PATH": str(raw_path)},
-    )
-
-    assert proc.returncode != 0
-    assert "ValueError" in proc.stderr  # the real traceback still reaches stderr
-    record = json.loads(raw_path.read_text())
-    assert record["chain"][0]["mro"][0] == "ValueError"
-    assert "secret value" not in raw_path.read_text()
-
-    out = sanitize_raw_trace(record, tmp_path, snapshot_code_bundle(tmp_path))
-    assert out["chain"][0]["frames"][-1] == {"file": "main.py", "line": 1}
-
-
-def test_the_wrapper_leaves_a_clean_run_alone(tmp_path):
-    entry = tmp_path / "main.py"
-    entry.write_text("print('ok')\n")
-    raw_path = tmp_path / "raw.json"
-    proc = subprocess.run(
-        [sys.executable, str(trace_runner_path()), str(entry)],
-        capture_output=True,
-        text=True,
-        env={"PATH": "/usr/bin:/bin", "SYFT_JOB_RAW_TRACE_PATH": str(raw_path)},
+        [sys.executable, "main.py"], cwd=code_root, capture_output=True, text=True
     )
     assert proc.returncode == 0
-    assert "ok" in proc.stdout
-    assert not raw_path.exists()
+    assert frames_from_stderr(proc.stderr, code_root) is None
 
 
-def test_a_deliberate_exit_writes_no_record(tmp_path):
-    entry = tmp_path / "main.py"
-    entry.write_text("import sys; sys.exit(3)\n")
-    raw_path = tmp_path / "raw.json"
+def test_deliberate_exit_leaves_no_record(code_root):
+    source = "import sys\nsys.exit(3)\n"
+    (code_root / "main.py").write_text(source)
     proc = subprocess.run(
-        [sys.executable, str(trace_runner_path()), str(entry)],
-        capture_output=True,
-        text=True,
-        env={"PATH": "/usr/bin:/bin", "SYFT_JOB_RAW_TRACE_PATH": str(raw_path)},
+        [sys.executable, "main.py"], cwd=code_root, capture_output=True, text=True
     )
     assert proc.returncode == 3
-    assert not raw_path.exists()
+    assert frames_from_stderr(proc.stderr, code_root) is None
 
 
-def test_a_file_the_job_plants_after_approval_is_external(code_root):
-    """run.sh builds a venv inside code/, so the job can write there."""
-    bundle = snapshot_code_bundle(code_root)
-
-    planted = code_root / "DO2_row_4171_diagnosis_POSITIVE.py"
-    planted.write_text("\n" * 50)
-
-    raw = chain(["ValueError"], [frame(planted.name, 42)])
-    out = sanitize_raw_trace(raw, code_root, bundle)
-    assert out["chain"][0]["frames"] == [{"file": EXTERNAL_LABEL, "line": None}]
+@pytest.mark.parametrize("stderr", ["", "some log output\n", "Traceback: not really\n"])
+def test_stderr_without_a_traceback_yields_no_record(stderr, code_root):
+    assert frames_from_stderr(stderr, code_root) is None
 
 
-def test_a_file_the_job_grows_keeps_its_approved_length(code_root):
-    """A longer file must not widen the range of accepted line numbers."""
-    bundle = snapshot_code_bundle(code_root)
-    (code_root / "main.py").write_text("\n" * 5000)
-
-    out = sanitize_raw_trace(chain(["ValueError"], [frame("main.py", 900)]), code_root, bundle)
-    assert out["chain"][0]["frames"] == [{"file": EXTERNAL_LABEL, "line": None}]
+def test_install_output_before_the_traceback_is_ignored(code_root):
+    noisy = "+ pandas==2.0.0\n+ numpy==1.26\n" + run(code_root, CRASH)
+    record = frames_from_stderr(noisy, code_root)
+    assert record["chain"][0]["type"] == "ValueError"
 
 
-def test_a_venv_file_is_external(code_root):
-    bundle = snapshot_code_bundle(code_root)
-    venv_file = code_root / ".venv" / "lib" / "evil.py"
-    venv_file.parent.mkdir(parents=True)
-    venv_file.write_text("x = 1\n")
+# -- size limits ----------------------------------------------------------------
 
-    raw = chain(["ValueError"], [frame(".venv/lib/evil.py", 1)])
-    assert sanitize_raw_trace(raw, code_root, bundle)["chain"][0]["frames"] == [
-        {"file": EXTERNAL_LABEL, "line": None}
-    ]
+
+def test_chain_and_frame_count_are_capped(code_root):
+    block = (
+        "Traceback (most recent call last):\n"
+        + "".join(f'  File "main.py", line {i}, in f\n' for i in range(1, 200))
+        + "ValueError\n"
+    )
+    record = frames_from_stderr(block * 20, code_root)
+    assert len(record["chain"]) == MAX_CHAIN
+    assert len(record["chain"][0]["frames"]) == MAX_FRAMES
+
+
+def test_a_coloured_traceback_parses(code_root):
+    """Python 3.13 and later colour the traceback when the environment asks."""
+    coloured = (
+        "Traceback (most recent call last):\n"
+        '  File \x1b[35m"main.py"\x1b[0m, line \x1b[35m2\x1b[0m, in \x1b[35mf\x1b[0m\n'
+        "\x1b[1;35mValueError\x1b[0m: \x1b[35mpatient 4171\x1b[0m\n"
+    )
+    record = frames_from_stderr(coloured, code_root)
+    assert record["chain"][0]["type"] == "ValueError"
+    assert record["chain"][0]["frames"] == [{"file": "main.py", "line": 2}]
+    assert "4171" not in json.dumps(record)
+
+
+def test_a_block_without_a_type_line_falls_back(code_root):
+    block = 'Traceback (most recent call last):\n  File "main.py", line 1, in f\n'
+    record = frames_from_stderr(block, code_root)
+    assert record["chain"][0]["type"] == FALLBACK_TYPE
+
+
+# -- the file the runner writes -------------------------------------------------
+
+
+def test_write_frames_record_writes_the_staged_file(tmp_path, code_root):
+    stderr_path = tmp_path / "stderr.txt"
+    stderr_path.write_text(run(code_root, CRASH))
+    staging = tmp_path / "staging"
+
+    out = write_frames_record(stderr_path, staging, code_root)
+    assert out == staging / FRAMES_FILENAME
+    assert json.loads(out.read_text())["chain"][0]["type"] == "ValueError"
+
+
+def test_no_stderr_file_means_no_record(tmp_path, code_root):
+    staging = tmp_path / "staging"
+    assert write_frames_record(tmp_path / "absent.txt", staging, code_root) is None
+    assert not (staging / FRAMES_FILENAME).exists()

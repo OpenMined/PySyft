@@ -3,16 +3,11 @@
 import json
 from pathlib import Path
 
-import pytest
 
 from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
 from syft_job.job_runner import SyftJobRunner
-from syft_job.traceback_capture import (
-    BUNDLE_FILENAME,
-    FRAMES_FILENAME,
-    load_or_create_bundle,
-)
+from syft_job.traceback_capture import FRAMES_FILENAME
 
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
@@ -145,28 +140,3 @@ def test_rerun_clears_the_crash_record(tmp_path):
 
     assert not (staging / FRAMES_FILENAME).exists()
     assert not (review / FRAMES_FILENAME).exists()
-
-
-def test_a_rerun_keeps_the_bundle_the_parties_approved(tmp_path):
-    """The first run leaves .venv and any file the job wrote in code/.
-
-    A rerun must judge frames against the tree as it stood before the first
-    run, or a planted file counts as approved and the real sources drop out.
-    """
-    job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
-    bundle_path = staging / BUNDLE_FILENAME
-    assert bundle_path.exists()
-
-    recorded = json.loads(bundle_path.read_text())
-    assert "main.py" in recorded
-    assert not any(name.startswith(".venv") for name in recorded)
-
-    # The first run really did leave a virtual environment behind.
-    code_dir = job.job_submission_path / "code"
-    assert (code_dir / ".venv").is_dir()
-
-    # A job that plants a file gains nothing on the next run.
-    (code_dir / "DO2_row_4171_POSITIVE.py").write_text("\n" * 50)
-    reloaded = load_or_create_bundle(bundle_path, code_dir)
-    assert "DO2_row_4171_POSITIVE.py" not in reloaded
-    assert reloaded == recorded

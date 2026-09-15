@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, Optional
-import hashlib
 import json
 import os
 
@@ -14,7 +13,7 @@ from syft_job.job import JobInfo, JobsList
 from syft_job.job_storage import JobRef
 from syft_job.models import JobState, JobStatus
 
-from syft_job.traceback_capture import FRAMES_FILENAME, write_no_failure_record
+from syft_job.traceback_capture import FRAMES_FILENAME
 
 from syft_enclaves.enclave_job_info import (
     DisclosureItem,
@@ -52,6 +51,16 @@ GATED_ARTIFACTS = {
     DisclosureItem.LOGS.value: ("stdout.txt", "stderr.txt"),
     DisclosureItem.TRACEBACK_FRAMES.value: (FRAMES_FILENAME,),
 }
+
+
+def gated_names(granted: Iterable[str]) -> list[str]:
+    """The filenames that the granted disclosure items cover."""
+    return [
+        name
+        for item, names in GATED_ARTIFACTS.items()
+        if item in granted
+        for name in names
+    ]
 
 
 def pre_sync_enabled() -> bool:
@@ -264,125 +273,66 @@ class SyftEnclaveClient:
         for job in self._local_jobs():
             if job.status not in ("done", "failed"):
                 continue
-            granted = self.granted_disclosures(job)
-            released = [
-                name
-                for item, names in GATED_ARTIFACTS.items()
-                if item in granted
-                for name in names
-            ]
-            job.release_artifacts(released)
+            job.release_artifacts(gated_names(self.granted_disclosures(job)))
 
     def distribute_results(self) -> None:
         """Distribute job results to DS (always) and optionally to DOs."""
         for job in self.jobs:
             if job.status not in ("done", "failed"):
                 continue
-            if self._results_already_shared(job):
-                continue
-
-            # Always share results with the DS (submitter)
-            self._forward_results_to_recipients(job, [job.submitted_by])
-
-            # Optionally share with DOs
-            datasets = job.job_metadata.datasets
-            if job.job_headers.get("share_results_with_do") and datasets:
-                do_emails = list(datasets.keys())
-                job.share_outputs(do_emails)
-                self._forward_results_to_recipients(job, do_emails)
-
-            self._mark_results_shared(job)
-
-        # A grant can arrive after the results went out, so released artifacts
-        # travel on their own schedule.
-        for job in self.jobs:
-            if job.status in ("done", "failed"):
-                self._forward_new_releases(job)
+            self._share_results_once(job)
+            # A grant can arrive after the results went out, so a released
+            # artifact travels on its own schedule.
+            self._forward_new_releases(job)
 
         self._rds.sync()
 
-    def _state_digest(self, job: JobInfo) -> str:
-        """A digest of the job state, which changes with every run."""
-        state_file = Path(job.job_review_path) / "state.yaml"
-        if not state_file.is_file():
-            return ""
-        return hashlib.sha256(state_file.read_bytes()).hexdigest()
+    def _share_results_once(self, job: JobInfo) -> None:
+        """Send the outputs and the state, the first time the job finishes."""
+        marker = job.job_review_path / RESULTS_SHARED_MARKER
+        if marker.exists():
+            return
 
-    def _results_already_shared(self, job: JobInfo) -> bool:
-        """Whether the results of the current run already went out.
+        # Always share results with the DS (submitter)
+        self._forward_results_to_recipients(job, [job.submitted_by])
 
-        A rerun writes a new state, so the marker names the run it covers. A
-        marker that names an earlier run does not stop the new results.
-        """
-        marker = Path(job.job_review_path) / RESULTS_SHARED_MARKER
-        if not marker.exists():
-            return False
-        try:
-            recorded = json.loads(marker.read_text())
-        except (OSError, json.JSONDecodeError):
-            recorded = None
-        if not isinstance(recorded, dict):
-            # A marker from an older client holds plain text. Record the
-            # current run and keep the results as sent.
-            self._mark_results_shared(job)
-            return True
-        return recorded.get("state") == self._state_digest(job)
+        # Optionally share with DOs
+        datasets = job.job_metadata.datasets
+        if job.job_headers.get("share_results_with_do") and datasets:
+            do_emails = list(datasets.keys())
+            job.share_outputs(do_emails)
+            self._forward_results_to_recipients(job, do_emails)
 
-    def _mark_results_shared(self, job: JobInfo) -> None:
-        marker = Path(job.job_review_path) / RESULTS_SHARED_MARKER
-        marker.write_text(json.dumps({"state": self._state_digest(job)}))
+        marker.write_text("shared")
 
     def _forward_new_releases(self, job: JobInfo) -> list[str]:
         """Send each released artifact that the parties do not hold yet.
 
         A party that releases an item also receives it, so the data owners get
-        the same file as the submitter.
-
-        The record holds a digest for each name, not the name alone. A rerun
-        writes a new record under the same name, and a digest tells the two
-        apart, so the parties never keep the artifact of an earlier run.
+        the same file as the submitter. The record names what already went out,
+        because a grant can arrive long after the results did.
         """
-        review_dir = Path(job.job_review_path)
+        review_dir = job.job_review_path
         sent_path = review_dir / FORWARDED_RECORD
         try:
-            sent = json.loads(sent_path.read_text())
-        except (OSError, json.JSONDecodeError):
-            sent = {}
-        if not isinstance(sent, dict):
-            sent = {}
+            sent = set(json.loads(sent_path.read_text()))
+        except (OSError, TypeError, json.JSONDecodeError):
+            sent = set()
 
-        granted = self.granted_disclosures(job)
-
-        # A later run that did not fail leaves no record, so the parties would
-        # keep the crash of an earlier run. Replace it instead.
-        if (
-            DisclosureItem.TRACEBACK_FRAMES.value in granted
-            and FRAMES_FILENAME in sent
-            and not (review_dir / FRAMES_FILENAME).is_file()
-        ):
-            write_no_failure_record(review_dir)
-
-        released = [
+        pending = sorted(
             name
-            for item, names in GATED_ARTIFACTS.items()
-            if item in granted
-            for name in names
-            if (review_dir / name).is_file()
-        ]
-
-        pending = {}
-        for name in released:
-            content = (review_dir / name).read_bytes()
-            digest = hashlib.sha256(content).hexdigest()
-            if sent.get(name) != digest:
-                pending[name] = (content, digest)
+            for name in gated_names(self.granted_disclosures(job))
+            if name not in sent and (review_dir / name).is_file()
+        )
         if not pending:
             return []
 
         datasite_dir = self._rds.syftbox_folder / self._rds.email
         files = {
-            (review_dir / name).relative_to(datasite_dir): content
-            for name, (content, _) in pending.items()
+            (review_dir / name).relative_to(datasite_dir): (
+                review_dir / name
+            ).read_bytes()
+            for name in pending
         }
         datasets = job.job_metadata.datasets or {}
         recipients = list(
@@ -390,9 +340,8 @@ class SyftEnclaveClient:
         )
         self._push_files_to_recipients(files, recipients)
 
-        sent.update({name: digest for name, (_, digest) in pending.items()})
-        sent_path.write_text(json.dumps(sent, sort_keys=True))
-        return sorted(pending)
+        sent_path.write_text(json.dumps(sorted(sent.union(pending))))
+        return pending
 
     def _read_state_file(self, job: JobInfo) -> dict[Path, bytes]:
         """Read the job state.yaml as a {path_in_datasite: bytes} dict."""

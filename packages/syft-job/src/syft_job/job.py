@@ -374,7 +374,10 @@ class JobInfo:
         # Clean up the artifacts of the previous run. A staged copy must go
         # too, or a later release sends a log that belongs to the old run.
         for filename in ("stdout.txt", "stderr.txt", "returncode.txt", FRAMES_FILENAME):
-            for f in (self.job_review_path / filename, self.job_staging_path / filename):
+            for f in (
+                self.job_review_path / filename,
+                self.job_staging_path / filename,
+            ):
                 if f.exists():
                     f.unlink()
                     changes_made.append(filename)

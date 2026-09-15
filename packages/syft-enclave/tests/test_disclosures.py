@@ -3,7 +3,6 @@
 import json
 import os
 import random
-import shutil
 import tempfile
 from pathlib import Path
 
@@ -64,7 +63,9 @@ def test_an_approval_file_without_the_field_grants_nothing(tmp_path):
 
 
 def test_the_requested_set_narrows_the_result(tmp_path):
-    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True, FRAMES: True})
+    write_approval(
+        tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True, FRAMES: True}
+    )
     assert approved_disclosures(tmp_path, [FRAMES]) == {FRAMES}
 
 
@@ -292,123 +293,4 @@ def test_a_released_artifact_is_not_sent_twice():
     run_to_completion(enclave, do1, do2, ds, [FRAMES])
 
     job = enclave.jobs["j"]
-    assert enclave._forward_new_releases(job) == []
-
-
-def test_a_changed_record_reaches_the_parties_again():
-    """The forwarded record holds a digest, so new content goes out again."""
-    enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
-    run_to_completion(enclave, do1, do2, ds, [FRAMES])
-
-    review = Path(enclave.jobs["j"].job_review_path)
-    first = json.loads((review / FRAMES_FILENAME).read_text())
-    assert enclave._forward_new_releases(enclave.jobs["j"]) == []
-
-    # A later run writes a different record under the same name.
-    (review / FRAMES_FILENAME).write_text(
-        json.dumps({"chain": [{"type": "KeyError", "frames": []}]})
-    )
-    assert enclave._forward_new_releases(enclave.jobs["j"]) == [FRAMES_FILENAME]
-
-    do1.sync()
-    delivered = json.loads(
-        (Path(do1.jobs["j"].job_review_path) / FRAMES_FILENAME).read_text()
-    )
-    assert delivered["chain"][0]["type"] == "KeyError"
-    assert delivered != first
-
-
-def test_a_new_run_is_not_skipped_as_already_shared():
-    """distribute_results marks a failed job, so a later run must not be skipped.
-
-    The marker names the run it covers. An end-to-end rerun cannot drive this:
-    `rerun()` leaves code/.venv and `uv venv` then fails, for every python job.
-    """
-    enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
-    run_to_completion(enclave, do1, do2, ds, [FRAMES])
-
-    job = enclave.jobs["j"]
-    assert job.status == "failed"
-    assert enclave._results_already_shared(job)
-
-    # A later run writes a new state, which is what rerun() prepares for.
-    state_file = Path(job.job_review_path) / "state.yaml"
-    state_file.write_text(state_file.read_text() + "\n# next run\n")
-    assert not enclave._results_already_shared(job)
-
-
-def test_a_marker_from_an_older_client_still_counts_as_shared():
-    enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    run_to_completion(enclave, do1, do2, ds, [LOGS])
-
-    job = enclave.jobs["j"]
-    marker = Path(job.job_review_path) / "results_shared"
-    marker.write_text("shared")
-
-    assert enclave._results_already_shared(job)
-    # The marker now names the current run, so the next run redistributes.
-    assert json.loads(marker.read_text())["state"] == enclave._state_digest(job)
-
-
-# A job that fails once, then succeeds, with no edit between the runs.
-FAIL_THEN_PASS_CODE = """\
-import json, os
-
-flag = {flag!r}
-if not os.path.exists(flag):
-    open(flag, "w").write("x")
-    raise ValueError("patient 4171 is positive")
-
-os.makedirs("outputs", exist_ok=True)
-open("outputs/r.json", "w").write(json.dumps({{"ok": 1}}))
-"""
-
-
-def rerun_on_the_enclave(enclave):
-    """Prepare a rerun, and clear what blocks one.
-
-    `rerun()` leaves code/.venv, and `run.sh` then runs `uv venv`, which stops
-    under `set -euo pipefail`. That defect predates the staging work and no
-    caller hits it, so the test clears the directory itself.
-    """
-    job = enclave.jobs["j"]
-    job.rerun()
-    shutil.rmtree(Path(job.job_submission_path) / "code" / ".venv", ignore_errors=True)
-
-
-def test_a_run_that_does_not_fail_replaces_the_crash_record():
-    enclave, do1, do2, ds = build_quad()
-    flag = str(Path(tempfile.mkdtemp()) / "once")
-    submit(ds, enclave, do1, do2, FAIL_THEN_PASS_CODE.format(flag=flag), [FRAMES])
-    run_to_completion(enclave, do1, do2, ds, [FRAMES])
-    do1.sync()
-
-    assert enclave.jobs["j"].status == "failed"
-    do1_record = Path(do1.jobs["j"].job_review_path) / FRAMES_FILENAME
-    assert json.loads(do1_record.read_text())["chain"][0]["type"] == "ValueError"
-
-    rerun_on_the_enclave(enclave)
-    enclave.run_jobs()
-    enclave.distribute_results()
-    ds.sync()
-    do1.sync()
-
-    assert enclave.jobs["j"].status == "done"
-    # No party keeps a crash description for a run that did not fail.
-    for holder in (ds, do1):
-        record = Path(holder.jobs["j"].job_review_path) / FRAMES_FILENAME
-        assert json.loads(record.read_text()) == {"chain": []}
-
-
-def test_no_replacement_when_the_parties_hold_no_record():
-    """A job that never failed sends nothing, so there is nothing to replace."""
-    enclave, do1, do2, ds = build_quad()
-    submit(ds, enclave, do1, do2, OK_CODE, [FRAMES])
-    run_to_completion(enclave, do1, do2, ds, [FRAMES])
-
-    job = enclave.jobs["j"]
-    assert not (Path(job.job_review_path) / FRAMES_FILENAME).exists()
     assert enclave._forward_new_releases(job) == []

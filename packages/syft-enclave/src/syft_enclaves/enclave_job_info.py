@@ -14,9 +14,9 @@ from syft_job.models import JobStatus
 class DisclosureItem(str, Enum):
     """A class of job data that a party can release to the other parties.
 
-    - ``TRACEBACK_FRAMES``: the failure position in the approved code, and the
-      builtin exception type. Bounded.
-    - ``LOGS``: stdout and stderr. Unbounded, and the job chooses every byte.
+    - ``TRACEBACK_FRAMES``: the file and the line of each frame, and the
+      exception type. Never the exception message.
+    - ``LOGS``: stdout and stderr, as the job wrote them.
     """
 
     TRACEBACK_FRAMES = "traceback_frames"
