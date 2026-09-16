@@ -184,6 +184,11 @@ an old token by saying what it expects: `AppraisalPolicy` takes `expected_image_
 `expected_data_owners`, and when they are set, the check fails if the enclave runs a different image
 or lists different data owners. Both are unset by default.
 
+This is a current limitation, and 6.4 lists the plan for removing it. Two assumptions make the
+limitation acceptable for now. The enclave's private key never leaves the enclave, which is a
+reasonable thing to rest on, so an attacker holds no old key to pair with a replayed token. And an
+enclave is short-lived, so few old tokens exist to replay.
+
 ### 6.2 Binding extra facts on Tinfoil
 
 Tinfoil gives the code inside the enclave no way to add anything to the report, so the enclave binds
