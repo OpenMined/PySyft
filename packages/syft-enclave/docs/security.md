@@ -198,7 +198,6 @@ error, not a downgrade.
 | key bundle bound               | ✅ digest in the signed token | ✅ served over a channel the report vouches for |
 | email and data owners attested | ✅ same digest                | ✅ signed with the bound key                    |
 | freshness                      | ❌ minted once at boot        | ✅ live connection and a per-request nonce      |
-| works offline                  | ✅ binding rides in the file  | ❌ needs the enclave reachable                  |
 
 Whichever route bound them, the attested facts are appraised identically: `AppraisalPolicy` and
 `TinfoilAppraisalPolicy` both take an optional `expected_email` and `expected_data_owners`, and both
