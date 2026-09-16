@@ -185,11 +185,6 @@ the claims are accepted only if steps 2 and 4 both pass.
 whose private half lives in an enclave the attacker does not control, so the pin fails, and the
 nonce is ours and new each time.
 
-**Weakness: it needs the enclave online.** Evidence is still published to `SYFT_version.json` as
-provenance and to advertise the host, but it is never appraised in place of the live exchange —
-doing so would silently mean unbound keys and a replayable report. An unreachable enclave is an
-error, not a downgrade.
-
 ### 6.3 Side by side
 
 |                                | Confidential Spaces           | Tinfoil                                         |
