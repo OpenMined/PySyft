@@ -200,31 +200,35 @@ enclave is short-lived, so few old tokens exist to replay.
 
 ### 6.2 Binding extra facts on Tinfoil
 
-Tinfoil gives the code inside the enclave no way to add anything to the report, so the enclave binds
-its claims document a different way: it signs the document, over a connection that the report
-vouches for.
+Unlike Confidential Spaces, Tinfoil gives the code inside the enclave no way to add anything to the
+report. All 64 bytes of user data in a Tinfoil report are already in use: they hold the sha256 of
+the shim's TLS public key, followed by the shim's HPKE public key. But those bytes are exactly what
+makes binding possible, because they mean the report commits to the key that terminates a TLS
+connection to the enclave. So the enclave binds its claims document the other way round: it signs
+the document, and serves the document over a connection that the report vouches for.
 
-All 64 bytes of user data in a Tinfoil report are already in use. Those bytes hold the sha256 of the
-shim's TLS public key, followed by the shim's HPKE public key. That is what makes binding possible,
-because the report commits to the key that terminates a TLS connection to the enclave. So the client:
+The client does four things, in this order:
 
-1. verifies the report;
-2. opens HTTPS to the enclave and checks the certificate it is served carries that same key, which
-   proves the connection ends inside the attested enclave;
-3. takes the key bundle served over that connection, which is now authentic;
-4. sends a random nonce, and checks the enclave signed **the nonce together with the claims
-   document** using the identity key from that bundle.
+1. generates a random nonce, then opens HTTPS to the enclave and asks for its attestation. The
+   enclave's certificate is self-signed, so the client does not try to validate the certificate
+   against a certificate authority. The client records the public key inside the certificate
+   instead;
+2. receives the report, the enclave's key bundle, and a signature over the nonce and the claims
+   document, all over that one connection;
+3. verifies the report against the CPU vendor's trust root. A verified report gives the fingerprint
+   of the key that terminates the connection, and the client checks that fingerprint against the
+   certificate from step 1. If the two match, the connection ends inside the attested enclave;
+4. checks the signature from step 2 against the identity key in the key bundle.
 
-No certificate authority takes part. The enclave's certificate is self-signed, and the report is
-what decides whether to trust the key inside that certificate. The signature in step 4 proves three
-separate things: the enclave holds the private half of the key you are about to encrypt to, the
-answer was produced for this exchange rather than an earlier one, and the claims are the facts the
-enclave meant to assert. The client accepts the bundle and the claims only if step 2 and step 4 both
-pass.
+The report is what decides whether to trust the key in the certificate, which is why no certificate
+authority takes part. The signature in step 4 then proves three separate things: the enclave holds
+the private half of the key you are about to encrypt to, the answer was produced for this exchange
+rather than an earlier one, and the claims are the facts the enclave meant to assert. The client
+accepts the key bundle and the claims only if step 3 and step 4 both pass.
 
 Tinfoil can retire a key, because every check is live. A captured report commits to a TLS key whose
-private half sits in an enclave the attacker does not control, so the certificate check fails, and
-the nonce is new on every request.
+private half sits in an enclave the attacker does not control, so the check in step 3 fails, and the
+nonce is new on every request.
 
 ### 6.3 Side by side
 
