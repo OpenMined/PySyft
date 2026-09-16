@@ -549,8 +549,8 @@ class TestOptionalDependency:
 class TestSignedClaims:
     """Tinfoil's route to attested runtime facts.
 
-    Its report leaves no room for the enclave to commit to anything itself,
-    so instead it signs the same claims
+    Its report can carry a nonce, but the caller picks that nonce, so the
+    enclave cannot assert anything with it. Instead it signs the same claims
     document Confidential Space commits to in its token, with the key the
     report already binds, and serves it over the pinned connection.
     """

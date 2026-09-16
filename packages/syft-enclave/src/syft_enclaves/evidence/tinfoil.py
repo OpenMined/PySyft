@@ -66,11 +66,11 @@ class TinfoilProvider:
     ) -> AttestationEvidence:
         if claims is not None:
             raise ValueError(
-                "Tinfoil evidence cannot commit to claims: the report's user "
-                "data is the shim's own keys, leaving the enclave no room "
-                "to commit to anything of its own. The "
-                "equivalent guarantee comes from a pinned connection instead "
-                "(see attestation.https)."
+                "Tinfoil evidence cannot commit to claims. The report can "
+                "carry a nonce, but whoever asks for the report picks it, so "
+                "the enclave cannot assert anything with it. The equivalent "
+                "guarantee comes from signing the claims over a pinned "
+                "connection instead (see attestation.https)."
             )
         if caller_nonce is not None:
             raise ValueError(

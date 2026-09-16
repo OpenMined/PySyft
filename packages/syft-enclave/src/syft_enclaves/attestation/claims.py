@@ -17,11 +17,12 @@ inside. So the enclave publishes a claims document alongside its token and
 commits to its digest. The document itself is untrusted — the digest is what
 makes it true.
 
-Tinfoil has no such channel — its report's user data is the shim's own keys —
-so it reaches the same guarantee a third way: the enclave signs the same claims
-document with the key the report already binds, and serves it over the pinned
-connection. Different route, same document, same digest, so the expectation
-checks below are shared.
+Tinfoil cannot use its report this way. Its report can carry a nonce, but
+whoever asks for the report picks that nonce, so the enclave cannot assert
+anything with it. Tinfoil therefore reaches the same guarantee a third way: the
+enclave signs the same claims document with the key the report already binds,
+and serves the document over the pinned connection. Different route, same
+document, same digest, so the expectation checks below are shared.
 """
 
 from __future__ import annotations

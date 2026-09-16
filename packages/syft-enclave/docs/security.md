@@ -200,12 +200,19 @@ enclave is short-lived, so few old tokens exist to replay.
 
 ### 6.2 Binding extra facts on Tinfoil
 
-Unlike Confidential Spaces, Tinfoil gives the code inside the enclave no way to add anything to the
-report. All 64 bytes of user data in a Tinfoil report are already in use: they hold the sha256 of
-the shim's TLS public key, followed by the shim's HPKE public key. But those bytes are exactly what
-makes binding possible, because they mean the report commits to the key that terminates a TLS
-connection to the enclave. So the enclave binds its claims document the other way round: it signs
-the document, and serves the document over a connection that the report vouches for.
+Tinfoil can put extra bytes in a report, but the enclave does not get to choose them. Ask the
+enclave for its attestation with `?nonce=<64 hex chars>` and the shim mints a fresh report whose
+report data is derived from that nonce. Whoever calls the endpoint picks the nonce, though, so the
+enclave cannot use the nonce to assert anything: an attacker can ask the same enclave for a report
+over a nonce of their own choosing, and that report is just as genuine. This is the opposite of
+Confidential Spaces, where only code inside the container can set `eat_nonce`, which is why the two
+targets need different solutions. A Tinfoil nonce is a question the verifier asks; a Confidential
+Space nonce is a statement the enclave makes.
+
+So the enclave binds its claims document the other way round: it signs the document, and serves the
+document over a connection that the report vouches for. The report commits to the sha256 of the
+shim's TLS public key, followed by the shim's HPKE public key, which is what lets a client tie a
+connection to the enclave the report describes.
 
 The client does four things, in this order:
 

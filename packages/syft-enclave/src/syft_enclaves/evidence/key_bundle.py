@@ -84,7 +84,8 @@ def sign_nonce(nonce: str, path: Path = PUBLIC_BUNDLE_PATH) -> Optional[str]:
     One signature therefore carries three things: the enclave holds the key it
     served, the answer is for this exchange, and these are the runtime facts it
     asserts. On Tinfoil this is the *only* route to the last one, since its
-    report has no room for the enclave to commit to them itself.
+    report cannot carry facts the enclave asserts: a Tinfoil report can hold a
+    nonce, but the caller picks it, not the enclave.
 
     None when there is nothing to sign with, so the endpoint degrades to
     "served a bundle but proved nothing" rather than failing outright — the
