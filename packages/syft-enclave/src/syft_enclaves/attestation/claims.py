@@ -30,6 +30,10 @@ import hashlib
 import json
 from typing import Any, Optional
 
+from pydantic import BaseModel, model_validator
+
+from syft.version import SYFT_VERSION
+
 CLAIMS_VERSION = 1
 
 
@@ -118,3 +122,54 @@ def _compare(
     if expected == actual:
         return (name, label, True, f"matches {actual!r}")
     return (name, label, False, f"enclave reports {actual!r}, expected {expected!r}")
+
+
+class Expectations(BaseModel):
+    """The reference values a verifier appraises an enclave against.
+
+    Shared by both targets, so the rule below cannot drift between them.
+
+    A verifier that pins nothing learns only that *some* genuine enclave
+    exists. It does not learn which code that enclave runs, nor who has to
+    approve a job on it, because those checks are skipped. Skipping them
+    silently is the dangerous case, so a policy refuses to be built without
+    them. Pass ``allow_unpinned=True`` to say you accept that on purpose.
+    """
+
+    model_config = {"frozen": True}
+
+    # A "sha256:..." container image digest you trust.
+    expected_image_digest: Optional[str] = None
+    # The data owners whose approval must gate a job on this enclave.
+    expected_data_owners: Optional[list[str]] = None
+    # The datasite the enclave should be running as. Optional: a peer already
+    # addresses the enclave by email, so it is a cross-check rather than the
+    # thing at stake.
+    expected_email: Optional[str] = None
+    # By default the enclave must run the same version of syft as the verifier.
+    expected_syft_version: Optional[str] = SYFT_VERSION
+    # Verify without pinning. The image-digest and data-owner checks then
+    # report as skipped, and prove nothing.
+    allow_unpinned: bool = False
+
+    @model_validator(mode="after")
+    def _require_pinning(self) -> "Expectations":
+        if self.allow_unpinned:
+            return self
+        missing = [
+            name
+            for name, value in (
+                ("expected_image_digest", self.expected_image_digest),
+                ("expected_data_owners", self.expected_data_owners),
+            )
+            if value is None
+        ]
+        if missing:
+            raise ValueError(
+                f"{type(self).__name__} needs {' and '.join(missing)}. Without "
+                "them the attestation proves that some genuine enclave exists, "
+                "but not which code it runs or who approves a job on it. Pass "
+                "the values you independently confirmed, or "
+                "allow_unpinned=True to accept that on purpose."
+            )
+        return self

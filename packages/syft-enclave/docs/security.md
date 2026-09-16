@@ -181,8 +181,9 @@ Two things make a replay harder. A replayer has to control the enclave's Drive a
 is where a verifier reads the token from. And a token from a debug-mode enclave, where an operator
 can log in over SSH and read the key, already fails the `dbgstat` check. A verifier can also refuse
 an old token by saying what it expects: `AppraisalPolicy` takes `expected_image_digest` and
-`expected_data_owners`, and when they are set, the check fails if the enclave runs a different image
-or lists different data owners. Both are unset by default.
+`expected_data_owners`, and the check fails if the enclave runs a different image or lists
+different data owners. A policy refuses to be built without both of them, so a verifier cannot skip
+these two checks by accident. To verify without pinning, say so with `allow_unpinned=True`.
 
 This is a current limitation, and 6.4 lists the plan for removing it. Two assumptions make the
 limitation acceptable for now. The enclave's private key never leaves the enclave, which is a
@@ -227,10 +228,11 @@ the nonce is new on every request.
 | freshness, so keys can be retired | ❌ one token, issued at boot    | ✅ live connection and a per-request nonce         |
 
 Both targets appraise the facts the same way, once the document is trustworthy. `AppraisalPolicy`
-for Confidential Spaces and `TinfoilAppraisalPolicy` for Tinfoil each take an optional
-`expected_email` and `expected_data_owners`, and both run the same comparison. Left unset, a
-verifier reports the attested values. Set, a verifier requires them. Binding proves the enclave
-started with those values. Whether they are the right values is the verifier's call.
+for Confidential Spaces and `TinfoilAppraisalPolicy` for Tinfoil take the same expectations and run
+the same comparison. Each policy has to pin `expected_image_digest` and `expected_data_owners`, or
+say `allow_unpinned=True`; `expected_email` stays optional, because a peer already addresses the
+enclave by email. Binding proves the enclave started with those values. Whether they are the right
+values is the verifier's call.
 
 ### 6.4 Todo
 
@@ -241,8 +243,6 @@ started with those values. Whether they are the right values is the verifier's c
   to a month, because the enclave writes its token once at boot. Asking for a new token on a timer,
   and cutting the window, bounds how old a token can be. That is enough to revoke one, and it does
   not need the spare nonce slot.
-- **Pin by default.** Setting `expected_image_digest` and `expected_data_owners` on the policy is
-  what makes a verifier refuse a token from an older configuration. Both are unset today.
 
 For how to deploy either target, see [Confidential Spaces Deployment](./terraform_cs.md) and
 [Tinfoil Deployment](./tinfoil_deployment.md).

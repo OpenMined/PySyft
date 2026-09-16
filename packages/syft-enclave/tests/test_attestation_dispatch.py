@@ -41,17 +41,35 @@ class TestRouting:
 
     def test_policy_for_builds_the_matching_class(self):
         assert isinstance(
-            policy_for(AttestationKind.CONFIDENTIAL_SPACE), AppraisalPolicy
+            policy_for(AttestationKind.CONFIDENTIAL_SPACE, allow_unpinned=True),
+            AppraisalPolicy,
         )
-        assert isinstance(policy_for(AttestationKind.TINFOIL), TinfoilAppraisalPolicy)
+        assert isinstance(
+            policy_for(AttestationKind.TINFOIL, allow_unpinned=True),
+            TinfoilAppraisalPolicy,
+        )
+
+    def test_policy_for_refuses_to_build_an_unpinned_policy(self):
+        # policy_for passes straight through to the policy class, so the
+        # pinning rule holds there too.
+        with pytest.raises(ValueError, match="expected_image_digest"):
+            policy_for(AttestationKind.CONFIDENTIAL_SPACE)
 
 
 class TestPolicyTypeGuard:
     @pytest.mark.parametrize(
         "evidence,policy",
         [
-            (CS_EVIDENCE, TinfoilAppraisalPolicy(expected_image_digest="sha256:a")),
-            (TINFOIL_EVIDENCE, AppraisalPolicy(expected_image_digest="sha256:a")),
+            (
+                CS_EVIDENCE,
+                TinfoilAppraisalPolicy(
+                    expected_image_digest="sha256:a", allow_unpinned=True
+                ),
+            ),
+            (
+                TINFOIL_EVIDENCE,
+                AppraisalPolicy(expected_image_digest="sha256:a", allow_unpinned=True),
+            ),
         ],
     )
     def test_a_policy_for_the_other_target_is_refused(self, evidence, policy):
@@ -105,11 +123,14 @@ class TestAttestPeer:
         )
         with patch("syft_enclaves.client.verify_evidence") as verify:
             client.attest_peer(
-                "enclave@openmined.org", expected_image_digest="sha256:a"
+                "enclave@openmined.org",
+                expected_image_digest="sha256:a",
+                expected_data_owners=["do@openmined.org"],
             )
         policy = verify.call_args.kwargs["policy"]
         assert isinstance(policy, TinfoilAppraisalPolicy)
         assert policy.expected_image_digest == "sha256:a"
+        assert policy.expected_data_owners == ["do@openmined.org"]
 
     def test_digest_and_policy_together_are_refused(self):
         client = self._client(MagicMock(extra={}))
@@ -117,7 +138,7 @@ class TestAttestPeer:
             client.attest_peer(
                 "enclave@openmined.org",
                 expected_image_digest="sha256:a",
-                policy=TinfoilAppraisalPolicy(),
+                policy=TinfoilAppraisalPolicy(allow_unpinned=True),
             )
 
 
@@ -130,7 +151,7 @@ def test_importing_syft_enclaves_does_not_pull_in_the_tinfoil_sdk():
         "import sys, syft_enclaves;"
         "from syft_enclaves.client import SyftEnclaveClient;"
         "from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy;"
-        "TinfoilAppraisalPolicy();"
+        "TinfoilAppraisalPolicy(allow_unpinned=True);"
         "assert not [m for m in sys.modules if m.split('.')[0] == 'tinfoil'], "
         "sorted(m for m in sys.modules if m.split('.')[0] == 'tinfoil')"
     )

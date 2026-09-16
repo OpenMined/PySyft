@@ -34,12 +34,9 @@ import hashlib
 import json
 from typing import Any, NoReturn, Optional
 
-from pydantic import BaseModel
-
-from syft.version import SYFT_VERSION
 
 from syft_enclaves.attestation.result import AttestationError, AttestationResult
-from syft_enclaves.attestation.claims import check_expected
+from syft_enclaves.attestation.claims import Expectations, check_expected
 from syft_enclaves.attestation.envelope import AttestationEvidence
 from syft_enclaves.attestation.https import (
     AttestationFetchError,
@@ -63,34 +60,26 @@ DOCS = "packages/syft-enclave/docs/tinfoil_deployment.md"
 REQUEST_TIMEOUT_SECONDS = 30
 
 
-class TinfoilAppraisalPolicy(BaseModel):
-    """Reference values a Tinfoil enclave's evidence is appraised against.
+class TinfoilAppraisalPolicy(Expectations):
+    """Reference values a Tinfoil enclave is appraised against.
+
+    The expectation fields, and the rule that a policy must pin an image
+    digest and a data-owner list, come from
+    ``attestation.claims.Expectations``.
 
     ``repo`` deliberately has a shipped default and is never taken from the
-    peer: the enclave (and whoever controls its transport) writes its own
-    evidence, so letting it name the repo would let it choose which releases
-    are trusted.
+    peer: the enclave writes its own evidence, so letting the enclave name the
+    repo would let the enclave choose which releases are trusted.
     """
-
-    model_config = {"frozen": True}
 
     repo: str = DEFAULT_TINFOIL_CONFIG_REPO
     # None -> appraise against the repo's latest release.
     release_tag: Optional[str] = None
-    # None -> the image-digest check is skipped and the image is not pinned.
-    expected_image_digest: Optional[str] = None
-    # None -> skipped. Only meaningful when the config pins SYFT_VERSION.
-    expected_syft_version: Optional[str] = SYFT_VERSION
-    # Which container in the config carries the enclave.
-    container_name: str = "syft-enclave"
     # Where to fetch the report over a connection pinned to the key the report
     # commits to. None -> use the host the enclave advertised in its evidence.
     host: Optional[str] = None
-    # Runtime facts the enclave asserts and signs. None -> the value is
-    # reported but not required; set one to refuse an enclave started with
-    # anything else. Same fields, and the same checks, as Confidential Space.
-    expected_email: Optional[str] = None
-    expected_data_owners: Optional[list[str]] = None
+    # Which container in the config carries the enclave.
+    container_name: str = "syft-enclave"
 
 
 def verify_tinfoil_evidence(

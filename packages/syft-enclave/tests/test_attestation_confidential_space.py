@@ -20,7 +20,11 @@ EXPECTED_VERSION_NONCE = f"syft-{SYFT_VERSION}"
 # The image digest is not shipped as a constant — it's supplied per-call via an
 # AppraisalPolicy. A policy pinning the fake token's digest is used by the
 # tests that need the image-digest check to pass.
-DEFAULT_TEST_POLICY = AppraisalPolicy(expected_image_digest=FAKE_IMAGE_DIGEST)
+DEFAULT_TEST_POLICY = AppraisalPolicy(
+    expected_image_digest=FAKE_IMAGE_DIGEST, expected_data_owners=["do@openmined.org"]
+)
+# For checks that are not about pinning.
+UNPINNED = AppraisalPolicy(allow_unpinned=True)
 
 
 def _valid_claims(**overrides):
@@ -73,12 +77,12 @@ class TestVerifyAttestationToken:
     def test_jwt_signature_failure(self, mock_verify):
         mock_verify.side_effect = ValueError("bad signature")
         with pytest.raises(AttestationError, match="JWT signature"):
-            verify_attestation_token("fake-token", verbose=False)
+            verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
 
     def test_jwt_expiry_grace_passed_through(self, mock_verify):
         """The enclave doesn't yet refresh its token, so the verifier accepts an
         expired token for a grace window (~1 month) via clock_skew_in_seconds."""
-        verify_attestation_token("fake-token", verbose=False)
+        verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
         _, kwargs = mock_verify.call_args
         assert kwargs["clock_skew_in_seconds"] == JWT_EXPIRY_GRACE_SECONDS
         assert JWT_EXPIRY_GRACE_SECONDS == 30 * 24 * 60 * 60
@@ -86,36 +90,36 @@ class TestVerifyAttestationToken:
     def test_secure_boot_disabled(self, mock_verify):
         mock_verify.return_value = _valid_claims(secboot=False)
         with pytest.raises(AttestationError, match="secure_boot"):
-            verify_attestation_token("fake-token", verbose=False)
+            verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
 
     def test_secure_boot_missing(self, mock_verify):
         claims = _valid_claims()
         del claims["secboot"]
         mock_verify.return_value = claims
         with pytest.raises(AttestationError, match="secure_boot"):
-            verify_attestation_token("fake-token", verbose=False)
+            verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
 
     def test_debug_enabled(self, mock_verify):
         mock_verify.return_value = _valid_claims(dbgstat="enabled")
         with pytest.raises(AttestationError, match="debug_disabled"):
-            verify_attestation_token("fake-token", verbose=False)
+            verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
 
     def test_version_mismatch(self, mock_verify):
         # Older enclave version sent in the correct (prefixed) format.
         mock_verify.return_value = _valid_claims(eat_nonce=["syft-0.0.1"])
         with pytest.raises(AttestationError, match="version_match"):
-            verify_attestation_token("fake-token", verbose=False)
+            verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
 
     def test_version_unprefixed_rejected(self, mock_verify):
         """A bare version (pre-fix sender) must be rejected, not accepted."""
         mock_verify.return_value = _valid_claims(eat_nonce=[SYFT_VERSION])
         with pytest.raises(AttestationError, match="version_match"):
-            verify_attestation_token("fake-token", verbose=False)
+            verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
 
     def test_version_missing(self, mock_verify):
         """Missing version is logged but doesn't abort verification (skip semantics)."""
         mock_verify.return_value = _valid_claims(eat_nonce=[])
-        result = verify_attestation_token("fake-token", verbose=False)
+        result = verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
         version_check = next(c for c in result.checks if c.name == "version_match")
         assert version_check.passed is None
         assert "no version" in version_check.detail.lower()
@@ -123,12 +127,14 @@ class TestVerifyAttestationToken:
     def test_version_as_string(self, mock_verify):
         """Google returns eat_nonce as a string for single nonce."""
         mock_verify.return_value = _valid_claims(eat_nonce=EXPECTED_VERSION_NONCE)
-        result = verify_attestation_token("fake-token", verbose=False)
+        result = verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
         version_check = next(c for c in result.checks if c.name == "version_match")
         assert version_check.passed is True
 
     def test_image_digest_mismatch(self, mock_verify):
-        policy = AppraisalPolicy(expected_image_digest="sha256:expected")
+        policy = AppraisalPolicy(
+            expected_image_digest="sha256:expected", allow_unpinned=True
+        )
         with pytest.raises(AttestationError, match="image_digest"):
             verify_attestation_token("fake-token", policy=policy, verbose=False)
 
@@ -136,7 +142,7 @@ class TestVerifyAttestationToken:
         """No expected digest supplied → the image-digest check is skipped
         (passed=None), not failed. The default policy pins no image."""
         result = verify_attestation_token(
-            "fake-token", policy=AppraisalPolicy(), verbose=False
+            "fake-token", policy=AppraisalPolicy(allow_unpinned=True), verbose=False
         )
         image_check = next(c for c in result.checks if c.name == "image_digest")
         assert image_check.passed is None
@@ -164,7 +170,7 @@ class TestVerifyAttestationToken:
     def test_error_carries_result(self, mock_verify):
         mock_verify.return_value = _valid_claims(secboot=False)
         with pytest.raises(AttestationError) as exc_info:
-            verify_attestation_token("fake-token", verbose=False)
+            verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
         assert exc_info.value.result is not None
         assert exc_info.value.result.first_failure().name == "secure_boot"
 
@@ -175,7 +181,7 @@ class TestVerifyAttestationToken:
         to inspect for the remaining checks)."""
         mock_verify.return_value = _valid_claims(secboot=False)
         with pytest.raises(AttestationError) as exc_info:
-            verify_attestation_token("fake-token", verbose=False)
+            verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
         check_names = [c.name for c in exc_info.value.result.checks]
         # Every check should appear, even though secure_boot failed early.
         assert check_names == [
@@ -196,7 +202,7 @@ class TestVerifyAttestationToken:
             eat_nonce=["syft-0.0.1"],
         )
         with pytest.raises(AttestationError) as exc_info:
-            verify_attestation_token("fake-token", verbose=False)
+            verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
 
         failed = {c.name for c in exc_info.value.result.checks if c.passed is False}
         assert failed == {"secure_boot", "debug_disabled", "version_match"}
@@ -211,7 +217,7 @@ class TestVerifyAttestationToken:
         """JWT signature failure is the one exception to 'run all checks'."""
         mock_verify.side_effect = ValueError("bad signature")
         with pytest.raises(AttestationError) as exc_info:
-            verify_attestation_token("fake-token", verbose=False)
+            verify_attestation_token("fake-token", policy=UNPINNED, verbose=False)
         # Only the JWT check ran; nothing downstream could inspect claims.
         check_names = [c.name for c in exc_info.value.result.checks]
         assert check_names == ["jwt_signature"]

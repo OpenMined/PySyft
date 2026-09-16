@@ -227,6 +227,10 @@ def verify(sdk, pinned):
             pinned()
         policy_kwargs.setdefault("expected_syft_version", SYFT_VERSION_IN_CONFIG)
         policy_kwargs.setdefault("host", HOST)
+        # A policy must pin unless it opts out; these tests pin only when the
+        # check under test needs it.
+        if "expected_data_owners" not in policy_kwargs:
+            policy_kwargs.setdefault("allow_unpinned", True)
         return verify_tinfoil_evidence(
             evidence or tinfoil_evidence(TINFOIL_DOC),
             policy=policy or TinfoilAppraisalPolicy(**policy_kwargs),
@@ -525,7 +529,7 @@ class TestOptionalDependency:
         with pytest.raises(MissingOptionalDependency) as excinfo:
             verify_tinfoil_evidence(
                 tinfoil_evidence(TINFOIL_DOC),
-                policy=TinfoilAppraisalPolicy(host=HOST),
+                policy=TinfoilAppraisalPolicy(host=HOST, allow_unpinned=True),
                 verbose=False,
             )
         message = str(excinfo.value)
@@ -536,7 +540,10 @@ class TestOptionalDependency:
         # Importing the module for its policy must not need the extra.
         from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
 
-        assert TinfoilAppraisalPolicy().repo == "OpenMined/syft-enclave-tinfoil"
+        assert (
+            TinfoilAppraisalPolicy(allow_unpinned=True).repo
+            == "OpenMined/syft-enclave-tinfoil"
+        )
 
 
 class TestSignedClaims:

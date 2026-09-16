@@ -17,12 +17,11 @@ from typing import Optional
 
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
-from pydantic import BaseModel
 
-from syft.version import SYFT_VERSION
 
 from syft_enclaves.attestation.claims import (
     ClaimsBindingError,
+    Expectations,
     check_expected,
     verify_claims_digest,
 )
@@ -47,31 +46,14 @@ CONFIDENTIAL_COMPUTING_CERTS_URL = (
 JWT_EXPIRY_GRACE_SECONDS = 30 * 24 * 60 * 60  # ~1 month
 
 
-class AppraisalPolicy(BaseModel):
-    """Reference values the verifier appraises attestation evidence against.
+class AppraisalPolicy(Expectations):
+    """Reference values a Confidential Space enclave is appraised against.
 
-    In RATS terms this is the *appraisal policy*: the
-    set of trusted reference values the enclave's evidence is compared to.
-
-    The image digest is intentionally not shipped as a constant — the data
-    owner supplies the digest they independently confirmed. Left unset
-    (``None``), the image-digest check is skipped and the image is not pinned.
+    In RATS terms this is the *appraisal policy*: the set of trusted reference
+    values the enclave's evidence is compared to. The fields, and the rule that
+    a policy must pin an image digest and a data-owner list, come from
+    ``attestation.claims.Expectations``.
     """
-
-    model_config = {"frozen": True}
-
-    # None → image-digest check skipped (no image pinned). Set a "sha256:..."
-    # digest to pin, and require, a specific enclave image.
-    expected_image_digest: Optional[str] = None
-    # By default, the enclave must run the same version of syft as the verifier.
-    expected_syft_version: Optional[str] = SYFT_VERSION
-    # Runtime facts the enclave commits to in its token. None → the value is
-    # reported but not required; set one to refuse an enclave that was started
-    # with anything else. These are only meaningful because the token binds
-    # them (see attestation.claims); without the binding they would be the
-    # enclave's unsigned word.
-    expected_email: Optional[str] = None
-    expected_data_owners: Optional[list[str]] = None
 
 
 def _nonce_slots(claims: dict) -> list[str]:

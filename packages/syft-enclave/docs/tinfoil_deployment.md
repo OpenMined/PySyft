@@ -122,10 +122,14 @@ Step 3 onwards is where the admin API key becomes mandatory.
 Then from a data owner's client, against the evidence the enclave published to Drive:
 
 ```python
-do.attest_peer(ENCLAVE_EMAIL, expected_image_digest="sha256:...")
+do.attest_peer(
+    ENCLAVE_EMAIL,
+    expected_image_digest="sha256:...",
+    expected_data_owners=["do1@openmined.org", "do2@openmined.org"],
+)
 ```
 
-Pass the digest `tinfoil-release` printed. Without it the image-digest check is **skipped**, not failed — the attestation then proves a genuine enclave booted a signed config, but not that the config pinned the image you reviewed.
+Pass the digest `tinfoil-release` printed. Both arguments are required: without them the attestation would prove a genuine enclave booted a signed config, but not that the config pinned the image you reviewed, nor who has to approve a job. To skip them on purpose, pass a policy with `allow_unpinned=True`.
 
 The whole data-owner side (peer, attest over Drive, upload a dataset) is scripted:
 

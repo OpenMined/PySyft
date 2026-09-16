@@ -46,6 +46,12 @@ def parse_args() -> argparse.Namespace:
         "--tag", default=None, help="pin the release tag being verified"
     )
     parser.add_argument("--expected-image-digest", default=None)
+    parser.add_argument(
+        "--expected-data-owners",
+        default=None,
+        type=lambda v: [e.strip() for e in v.split(",") if e.strip()],
+        help="comma-separated emails whose approval must gate a job",
+    )
     parser.add_argument("--dataset-name", default="tinfoil-e2e-dataset")
     parser.add_argument("--peer-attempts", type=int, default=15)
     parser.add_argument("--peer-interval", type=int, default=15)
@@ -101,9 +107,14 @@ def main() -> int:
         repo=args.repo,
         release_tag=args.tag,
         expected_image_digest=args.expected_image_digest,
+        expected_data_owners=args.expected_data_owners,
         # The config pins no SYFT_VERSION, so leave this unset rather than
         # failing a check the deployment cannot satisfy.
         expected_syft_version=None,
+        # A policy has to pin an image digest and a data-owner list. This
+        # script is often run before either is known, so say so explicitly
+        # rather than let the run fail at policy construction.
+        allow_unpinned=not (args.expected_image_digest and args.expected_data_owners),
     )
     result = client.attest_peer(args.enclave_email, policy=policy)
     if result is None:

@@ -107,7 +107,9 @@ class TestBindingThroughTheToken:
         token_with(claims_nonce=claims_digest(claims))
         evidence = confidential_space_evidence("a.b.c", "syft-attestation", claims)
 
-        result = verify_evidence(evidence, verbose=False)
+        result = verify_evidence(
+            evidence, policy=AppraisalPolicy(allow_unpinned=True), verbose=False
+        )
 
         assert _check(result, "claims_binding").passed is True
         assert EMAIL in _check(result, "claims_binding").detail
@@ -123,7 +125,9 @@ class TestBindingThroughTheToken:
         )
 
         with pytest.raises(AttestationError) as excinfo:
-            verify_evidence(evidence, verbose=False)
+            verify_evidence(
+                evidence, policy=AppraisalPolicy(allow_unpinned=True), verbose=False
+            )
 
         assert _check(excinfo.value.result, "claims_binding").passed is False
         # An unbound bundle must never be adopted.
@@ -135,7 +139,9 @@ class TestBindingThroughTheToken:
         evidence = confidential_space_evidence("a.b.c", "syft-attestation", _claims())
 
         with pytest.raises(AttestationError) as excinfo:
-            verify_evidence(evidence, verbose=False)
+            verify_evidence(
+                evidence, policy=AppraisalPolicy(allow_unpinned=True), verbose=False
+            )
 
         assert _check(excinfo.value.result, "claims_binding").passed is False
 
@@ -145,7 +151,9 @@ class TestBindingThroughTheToken:
         token_with()
         evidence = confidential_space_evidence("a.b.c", "syft-attestation")
 
-        result = verify_evidence(evidence, verbose=False)
+        result = verify_evidence(
+            evidence, policy=AppraisalPolicy(allow_unpinned=True), verbose=False
+        )
 
         assert _check(result, "claims_binding").passed is None
         assert result.all_passed()
@@ -164,20 +172,27 @@ class TestExpectedValues:
     def test_matching_email_and_owners_pass(self, token_with):
         result = self._verify(
             token_with,
-            AppraisalPolicy(expected_email=EMAIL, expected_data_owners=OWNERS),
+            AppraisalPolicy(
+                expected_email=EMAIL,
+                expected_data_owners=OWNERS,
+                expected_image_digest="sha256:abc",
+            ),
         )
         assert _check(result, "enclave_email").passed is True
         assert _check(result, "data_owners").passed is True
 
     def test_unpinned_values_are_reported_not_required(self, token_with):
-        result = self._verify(token_with, AppraisalPolicy())
+        result = self._verify(token_with, AppraisalPolicy(allow_unpinned=True))
         assert _check(result, "enclave_email").passed is None
         assert EMAIL in _check(result, "enclave_email").detail
 
     def test_a_different_email_fails(self, token_with):
         with pytest.raises(AttestationError):
             self._verify(
-                token_with, AppraisalPolicy(expected_email="someone-else@openmined.org")
+                token_with,
+                AppraisalPolicy(
+                    expected_email="someone-else@openmined.org", allow_unpinned=True
+                ),
             )
 
     def test_an_unexpected_data_owner_fails(self, token_with):
@@ -185,13 +200,19 @@ class TestExpectedValues:
         with pytest.raises(AttestationError) as excinfo:
             self._verify(
                 token_with,
-                AppraisalPolicy(expected_data_owners=["model_owner@openmined.org"]),
+                AppraisalPolicy(
+                    expected_data_owners=["model_owner@openmined.org"],
+                    allow_unpinned=True,
+                ),
             )
         assert _check(excinfo.value.result, "data_owners").passed is False
 
     def test_expected_owner_order_does_not_matter(self, token_with):
         result = self._verify(
-            token_with, AppraisalPolicy(expected_data_owners=list(reversed(OWNERS)))
+            token_with,
+            AppraisalPolicy(
+                expected_data_owners=list(reversed(OWNERS)), allow_unpinned=True
+            ),
         )
         assert _check(result, "data_owners").passed is True
 
@@ -229,3 +250,47 @@ class TestProviderBinding:
         )
         with pytest.raises(ValueError, match="cannot commit to claims"):
             TinfoilProvider().collect(claims=_claims())
+
+
+class TestPolicyMustPin:
+    """A policy refuses to exist without pinning, on both targets.
+
+    Skipping the image-digest and data-owner checks silently is the dangerous
+    case: the appraisal then says only that some genuine enclave exists.
+    """
+
+    def _classes(self):
+        from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
+
+        return [AppraisalPolicy, TinfoilAppraisalPolicy]
+
+    def test_nothing_pinned_is_refused(self):
+        for cls in self._classes():
+            with pytest.raises(ValueError, match="expected_image_digest"):
+                cls()
+
+    def test_a_half_pinned_policy_is_refused(self):
+        for cls in self._classes():
+            with pytest.raises(ValueError, match="expected_data_owners"):
+                cls(expected_image_digest="sha256:abc")
+            with pytest.raises(ValueError, match="expected_image_digest"):
+                cls(expected_data_owners=["do@openmined.org"])
+
+    def test_both_pinned_is_accepted(self):
+        for cls in self._classes():
+            policy = cls(
+                expected_image_digest="sha256:abc",
+                expected_data_owners=["do@openmined.org"],
+            )
+            assert policy.allow_unpinned is False
+
+    def test_opting_out_has_to_be_explicit(self):
+        for cls in self._classes():
+            assert cls(allow_unpinned=True).expected_image_digest is None
+
+    def test_the_error_says_how_to_proceed(self):
+        with pytest.raises(ValueError) as excinfo:
+            AppraisalPolicy()
+        message = str(excinfo.value)
+        assert "allow_unpinned=True" in message
+        assert "who approves a job" in message

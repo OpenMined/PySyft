@@ -90,6 +90,7 @@ class SyftEnclaveClient:
         self,
         peer_email: str,
         expected_image_digest: str | None = None,
+        expected_data_owners: list[str] | None = None,
         policy: "AppraisalPolicy | TinfoilAppraisalPolicy | None" = None,
     ):
         """Verify an enclave peer's attestation by re-reading SYFT_version.json
@@ -102,26 +103,39 @@ class SyftEnclaveClient:
         evidence needs the optional ``tinfoil`` package; see
         ``docs/tinfoil_deployment.md``.
 
+        A policy has to pin an image digest and a data-owner list, so pass both
+        shorthands or build a policy yourself. Without them the attestation
+        would prove that some genuine enclave exists, but not which code it
+        runs or who approves a job on it. To accept that on purpose, pass a
+        policy with ``allow_unpinned=True``.
+
         Args:
             peer_email: the enclave peer to attest.
             expected_image_digest: a "sha256:..." container image digest you
-                trust. When set, the attestation is appraised against it.
+                trust.
+            expected_data_owners: the emails whose approval must gate a job on
+                this enclave.
             policy: a full appraisal policy for finer control — an
                 ``AppraisalPolicy`` for Confidential Space or a
                 ``TinfoilAppraisalPolicy`` for Tinfoil. Mutually exclusive with
-                ``expected_image_digest``.
+                the two shorthands.
         """
 
-        if expected_image_digest is not None and policy is not None:
-            raise ValueError("Pass either expected_image_digest or policy, not both.")
+        shorthands = {
+            "expected_image_digest": expected_image_digest,
+            "expected_data_owners": expected_data_owners,
+        }
+        given = {name: value for name, value in shorthands.items() if value is not None}
+        if given and policy is not None:
+            raise ValueError(
+                f"Pass either {' / '.join(shorthands)} or policy, not both."
+            )
 
         evidence = self._peer_evidence(peer_email)
         if evidence is None:
             return None
-        if expected_image_digest is not None:
-            policy = policy_for(
-                evidence.kind, expected_image_digest=expected_image_digest
-            )
+        if given:
+            policy = policy_for(evidence.kind, **given)
         result = verify_evidence(evidence, policy=policy)
         self._adopt_verified_key_bundle(peer_email, result)
         return result
