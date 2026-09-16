@@ -42,6 +42,11 @@ def parse_args() -> argparse.Namespace:
         help="'sha256:...' digest to pin; omit to skip the image check",
     )
     parser.add_argument(
+        "--expected-enclave-email",
+        default=None,
+        help="the datasite the enclave should be running as",
+    )
+    parser.add_argument(
         "--expected-data-owners",
         default=None,
         type=lambda v: [e.strip() for e in v.split(",") if e.strip()],
@@ -70,11 +75,16 @@ def main() -> int:
         release_tag=args.tag,
         expected_image_digest=args.expected_image_digest,
         expected_data_owners=args.expected_data_owners,
+        expected_email=args.expected_enclave_email,
         container_name=args.container_name,
         # This script checks a live host, often before the digest and the
         # data-owner list are known, so it opts out rather than refusing to
         # build a policy.
-        allow_unpinned=not (args.expected_image_digest and args.expected_data_owners),
+        allow_unpinned=not (
+            args.expected_image_digest
+            and args.expected_data_owners
+            and args.expected_enclave_email
+        ),
     )
     try:
         verify_tinfoil_evidence(tinfoil_evidence(fetch_document(args.host)), policy)

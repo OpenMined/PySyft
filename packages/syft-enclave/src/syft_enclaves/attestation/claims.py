@@ -130,10 +130,11 @@ class Expectations(BaseModel):
     Shared by both targets, so the rule below cannot drift between them.
 
     A verifier that pins nothing learns only that *some* genuine enclave
-    exists. It does not learn which code that enclave runs, nor who has to
-    approve a job on it, because those checks are skipped. Skipping them
-    silently is the dangerous case, so a policy refuses to be built without
-    them. Pass ``allow_unpinned=True`` to say you accept that on purpose.
+    exists. It does not learn which code that enclave runs, which datasite it
+    runs as, nor who has to approve a job on it, because those checks are
+    skipped. Skipping them silently is the dangerous case, so a policy refuses
+    to be built without all three. Pass ``allow_unpinned=True`` to say you
+    accept that on purpose.
     """
 
     model_config = {"frozen": True}
@@ -142,9 +143,7 @@ class Expectations(BaseModel):
     expected_image_digest: Optional[str] = None
     # The data owners whose approval must gate a job on this enclave.
     expected_data_owners: Optional[list[str]] = None
-    # The datasite the enclave should be running as. Optional: a peer already
-    # addresses the enclave by email, so it is a cross-check rather than the
-    # thing at stake.
+    # The datasite the enclave should be running as.
     expected_email: Optional[str] = None
     # By default the enclave must run the same version of syft as the verifier.
     expected_syft_version: Optional[str] = SYFT_VERSION
@@ -161,15 +160,17 @@ class Expectations(BaseModel):
             for name, value in (
                 ("expected_image_digest", self.expected_image_digest),
                 ("expected_data_owners", self.expected_data_owners),
+                ("expected_email", self.expected_email),
             )
             if value is None
         ]
         if missing:
             raise ValueError(
-                f"{type(self).__name__} needs {' and '.join(missing)}. Without "
-                "them the attestation proves that some genuine enclave exists, "
-                "but not which code it runs or who approves a job on it. Pass "
-                "the values you independently confirmed, or "
-                "allow_unpinned=True to accept that on purpose."
+                f"{type(self).__name__} needs {', '.join(missing)}. Without "
+                "all three the attestation proves that some genuine enclave "
+                "exists, but not which code it runs, which datasite it runs "
+                "as, or who approves a job on it. Pass the values you "
+                "independently confirmed, or allow_unpinned=True to accept "
+                "that on purpose."
             )
         return self

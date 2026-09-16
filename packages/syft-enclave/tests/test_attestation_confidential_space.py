@@ -21,7 +21,9 @@ EXPECTED_VERSION_NONCE = f"syft-{SYFT_VERSION}"
 # AppraisalPolicy. A policy pinning the fake token's digest is used by the
 # tests that need the image-digest check to pass.
 DEFAULT_TEST_POLICY = AppraisalPolicy(
-    expected_image_digest=FAKE_IMAGE_DIGEST, expected_data_owners=["do@openmined.org"]
+    expected_image_digest=FAKE_IMAGE_DIGEST,
+    expected_data_owners=["do@openmined.org"],
+    expected_email="enclave@openmined.org",
 )
 # For checks that are not about pinning.
 UNPINNED = AppraisalPolicy(allow_unpinned=True)

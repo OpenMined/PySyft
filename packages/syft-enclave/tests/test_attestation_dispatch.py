@@ -126,11 +126,13 @@ class TestAttestPeer:
                 "enclave@openmined.org",
                 expected_image_digest="sha256:a",
                 expected_data_owners=["do@openmined.org"],
+                expected_email="enclave@openmined.org",
             )
         policy = verify.call_args.kwargs["policy"]
         assert isinstance(policy, TinfoilAppraisalPolicy)
         assert policy.expected_image_digest == "sha256:a"
         assert policy.expected_data_owners == ["do@openmined.org"]
+        assert policy.expected_email == "enclave@openmined.org"
 
     def test_digest_and_policy_together_are_refused(self):
         client = self._client(MagicMock(extra={}))

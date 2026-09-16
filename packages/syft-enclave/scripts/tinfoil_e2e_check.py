@@ -47,6 +47,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--expected-image-digest", default=None)
     parser.add_argument(
+        "--expected-enclave-email",
+        default=None,
+        help="the datasite the enclave should be running as",
+    )
+    parser.add_argument(
         "--expected-data-owners",
         default=None,
         type=lambda v: [e.strip() for e in v.split(",") if e.strip()],
@@ -108,13 +113,18 @@ def main() -> int:
         release_tag=args.tag,
         expected_image_digest=args.expected_image_digest,
         expected_data_owners=args.expected_data_owners,
+        expected_email=args.expected_enclave_email,
         # The config pins no SYFT_VERSION, so leave this unset rather than
         # failing a check the deployment cannot satisfy.
         expected_syft_version=None,
         # A policy has to pin an image digest and a data-owner list. This
         # script is often run before either is known, so say so explicitly
         # rather than let the run fail at policy construction.
-        allow_unpinned=not (args.expected_image_digest and args.expected_data_owners),
+        allow_unpinned=not (
+            args.expected_image_digest
+            and args.expected_data_owners
+            and args.expected_enclave_email
+        ),
     )
     result = client.attest_peer(args.enclave_email, policy=policy)
     if result is None:

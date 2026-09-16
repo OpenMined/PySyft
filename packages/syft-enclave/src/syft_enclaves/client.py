@@ -91,6 +91,7 @@ class SyftEnclaveClient:
         peer_email: str,
         expected_image_digest: str | None = None,
         expected_data_owners: list[str] | None = None,
+        expected_email: str | None = None,
         policy: "AppraisalPolicy | TinfoilAppraisalPolicy | None" = None,
     ):
         """Verify an enclave peer's attestation by re-reading SYFT_version.json
@@ -103,11 +104,12 @@ class SyftEnclaveClient:
         evidence needs the optional ``tinfoil`` package; see
         ``docs/tinfoil_deployment.md``.
 
-        A policy has to pin an image digest and a data-owner list, so pass both
-        shorthands or build a policy yourself. Without them the attestation
-        would prove that some genuine enclave exists, but not which code it
-        runs or who approves a job on it. To accept that on purpose, pass a
-        policy with ``allow_unpinned=True``.
+        A policy has to pin an image digest, a data-owner list and the enclave's
+        email, so pass all three shorthands or build a policy yourself. Without
+        them the attestation would prove that some genuine enclave exists, but
+        not which code it runs, which datasite it runs as, or who approves a
+        job on it. To accept that on purpose, pass a policy with
+        ``allow_unpinned=True``.
 
         Args:
             peer_email: the enclave peer to attest.
@@ -115,15 +117,17 @@ class SyftEnclaveClient:
                 trust.
             expected_data_owners: the emails whose approval must gate a job on
                 this enclave.
+            expected_email: the datasite the enclave should be running as.
             policy: a full appraisal policy for finer control — an
                 ``AppraisalPolicy`` for Confidential Space or a
                 ``TinfoilAppraisalPolicy`` for Tinfoil. Mutually exclusive with
-                the two shorthands.
+                the shorthands.
         """
 
         shorthands = {
             "expected_image_digest": expected_image_digest,
             "expected_data_owners": expected_data_owners,
+            "expected_email": expected_email,
         }
         given = {name: value for name, value in shorthands.items() if value is not None}
         if given and policy is not None:

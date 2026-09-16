@@ -126,10 +126,11 @@ do.attest_peer(
     ENCLAVE_EMAIL,
     expected_image_digest="sha256:...",
     expected_data_owners=["do1@openmined.org", "do2@openmined.org"],
+    expected_email=ENCLAVE_EMAIL,
 )
 ```
 
-Pass the digest `tinfoil-release` printed. Both arguments are required: without them the attestation would prove a genuine enclave booted a signed config, but not that the config pinned the image you reviewed, nor who has to approve a job. To skip them on purpose, pass a policy with `allow_unpinned=True`.
+Pass the digest `tinfoil-release` printed. All three arguments are required: without them the attestation would prove a genuine enclave booted a signed config, but not that the config pinned the image you reviewed, which datasite the enclave runs as, or who has to approve a job. To skip them on purpose, pass a policy with `allow_unpinned=True`.
 
 The whole data-owner side (peer, attest over Drive, upload a dataset) is scripted:
 

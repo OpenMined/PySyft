@@ -181,9 +181,10 @@ Two things make a replay harder. A replayer has to control the enclave's Drive a
 is where a verifier reads the token from. And a token from a debug-mode enclave, where an operator
 can log in over SSH and read the key, already fails the `dbgstat` check. A verifier can also refuse
 an old token by saying what it expects: `AppraisalPolicy` takes `expected_image_digest` and
-`expected_data_owners`, and the check fails if the enclave runs a different image or lists
-different data owners. A policy refuses to be built without both of them, so a verifier cannot skip
-these two checks by accident. To verify without pinning, say so with `allow_unpinned=True`.
+`expected_data_owners` and `expected_email`, and a check fails if the enclave runs a different
+image, lists different data owners, or runs as a different datasite. A policy refuses to be built
+without all three, so a verifier cannot skip those checks by accident. To verify without pinning,
+say so with `allow_unpinned=True`.
 
 This is a current limitation, and 6.4 lists the plan for removing it. Two assumptions make the
 limitation acceptable for now. The enclave's private key never leaves the enclave, which is a
@@ -229,10 +230,9 @@ the nonce is new on every request.
 
 Both targets appraise the facts the same way, once the document is trustworthy. `AppraisalPolicy`
 for Confidential Spaces and `TinfoilAppraisalPolicy` for Tinfoil take the same expectations and run
-the same comparison. Each policy has to pin `expected_image_digest` and `expected_data_owners`, or
-say `allow_unpinned=True`; `expected_email` stays optional, because a peer already addresses the
-enclave by email. Binding proves the enclave started with those values. Whether they are the right
-values is the verifier's call.
+the same comparison. Each policy has to pin `expected_image_digest`, `expected_data_owners` and
+`expected_email`, or say `allow_unpinned=True`. Binding proves the enclave started with those
+values. Whether they are the right values is the verifier's call.
 
 ### 6.4 Todo
 

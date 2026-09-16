@@ -269,18 +269,24 @@ class TestPolicyMustPin:
             with pytest.raises(ValueError, match="expected_image_digest"):
                 cls()
 
-    def test_a_half_pinned_policy_is_refused(self):
+    def test_a_part_pinned_policy_is_refused(self):
         for cls in self._classes():
             with pytest.raises(ValueError, match="expected_data_owners"):
                 cls(expected_image_digest="sha256:abc")
             with pytest.raises(ValueError, match="expected_image_digest"):
                 cls(expected_data_owners=["do@openmined.org"])
+            with pytest.raises(ValueError, match="expected_email"):
+                cls(
+                    expected_image_digest="sha256:abc",
+                    expected_data_owners=["do@openmined.org"],
+                )
 
-    def test_both_pinned_is_accepted(self):
+    def test_all_three_pinned_is_accepted(self):
         for cls in self._classes():
             policy = cls(
                 expected_image_digest="sha256:abc",
                 expected_data_owners=["do@openmined.org"],
+                expected_email="enclave@openmined.org",
             )
             assert policy.allow_unpinned is False
 
@@ -294,3 +300,9 @@ class TestPolicyMustPin:
         message = str(excinfo.value)
         assert "allow_unpinned=True" in message
         assert "who approves a job" in message
+        for field in (
+            "expected_image_digest",
+            "expected_data_owners",
+            "expected_email",
+        ):
+            assert field in message

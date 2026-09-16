@@ -608,5 +608,6 @@ class TestSignedClaims:
                 install_pinned=False,
                 expected_image_digest=IMAGE_DIGEST,
                 expected_data_owners=["someone-else@openmined.org"],
+                allow_unpinned=True,
             )
         assert _check(excinfo.value.result, "data_owners").passed is False
