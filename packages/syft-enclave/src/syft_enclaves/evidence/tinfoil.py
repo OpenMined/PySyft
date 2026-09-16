@@ -67,7 +67,8 @@ class TinfoilProvider:
         if claims is not None:
             raise ValueError(
                 "Tinfoil evidence cannot commit to claims: the report's user "
-                "data is the shim's own keys, with no workload channel. The "
+                "data is the shim's own keys, leaving the enclave no room "
+                "to commit to anything of its own. The "
                 "equivalent guarantee comes from a pinned connection instead "
                 "(see attestation.https)."
             )

@@ -217,7 +217,7 @@ class TestProviderBinding:
             ConfidentialSpaceProvider().collect(caller_nonce="abc", claims=_claims())
 
     def test_tinfoil_cannot_bind_claims(self, tmp_path, monkeypatch):
-        """Tinfoil has no workload channel, so it refuses rather than ignores."""
+        """Tinfoil cannot commit to claims in its report, so it refuses."""
         import json
 
         from syft_enclaves.evidence.tinfoil import TinfoilProvider

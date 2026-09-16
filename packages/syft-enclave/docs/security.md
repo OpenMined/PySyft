@@ -139,8 +139,8 @@ is the mechanism that makes it true.
 
 ### 6.1 Confidential Spaces: committed to inside the signed token
 
-Confidential Space lets a workload ask the launcher to embed bytes of its choosing into the
-Google-signed token, via `eat_nonce`. Only code running inside the measured container can do that,
+Confidential Space lets the code running inside the enclave ask the launcher to embed bytes of its
+choosing into the Google-signed token, via a field called `eat_nonce`. Only code running inside the measured container can do that,
 and the signature is unforgeable. So the enclave commits to the **sha256 of the claims document** in
 the token, and a verifier recomputes that digest from the published document and compares.
 
@@ -176,7 +176,8 @@ superseded configuration — but pinning is optional and off by default.
 
 ### 6.2 Tinfoil: bound to a connection, then signed over it
 
-Tinfoil has no workload channel at all: its report's 64 bytes of user data are the sha256 of the
+Tinfoil gives the code inside the enclave no way to put anything of its own into the report: its
+64 bytes of user data are the sha256 of the
 shim's TLS public key followed by its HPKE public key. But that is exactly what makes binding
 possible, because the report **commits to the key terminating a TLS connection to the enclave**. So
 the client:
