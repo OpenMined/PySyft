@@ -155,11 +155,24 @@ a field per fact.
 The binding travels **inside the file**, so it needs no connection to the enclave, which suits the
 offline-first transport.
 
-**Weakness: no freshness.** The token is minted once at boot and written to `SYFT_version.json`, so
-a captured one stays acceptable for the length of the expiry grace window. The single spare nonce
-slot is spent on the claims digest, leaving no room for a per-verifier challenge. Bounded staleness
-— re-publishing periodically and narrowing the grace window — is the remaining work, tracked as H16
-in the [protocol security review](../../../research/protocol-security-review/SUMMARY.md).
+**Limitation: no freshness, which means no revocation.** The token is minted once at boot and
+written to `SYFT_version.json`, so a captured one stays acceptable for the length of the expiry
+grace window (we widened it to a month, because the enclave does not yet re-publish).
+
+This is narrower than it sounds. The token commits to the key bundle, so replaying an old token
+replays an old _bundle_ — and its private half never left that enclave. A replayer can make you
+encrypt to a dead key, which is a denial of service, but cannot read what you send. Confidentiality
+holds.
+
+What you lose is the ability to **retire a key**. If some past instance's private key ever does
+become known, its token stays acceptable for ever, so that instance can be impersonated
+indefinitely — and then decryption really is possible. A staleness check is revocation by another
+name. Two things narrow it further: a replayer must control the enclave's Drive account to put the
+old token where you read it, and a debug-mode enclave (where an operator could read the key over
+SSH) is already rejected by the `dbgstat` check.
+
+Pinning covers the rest — `expected_image_digest` and `expected_data_owners` reject a token from a
+superseded configuration — but pinning is optional and off by default.
 
 ### 6.2 Tinfoil: bound to a connection, then signed over it
 
@@ -181,24 +194,35 @@ the enclave **holds the private half** of the key we are about to encrypt to, th
 produced for _this_ exchange, and that the claims are the facts it meant to assert. The bundle and
 the claims are accepted only if steps 2 and 4 both pass.
 
-**Freshness comes free**, unlike on Confidential Spaces: a captured report commits to a TLS key
-whose private half lives in an enclave the attacker does not control, so the pin fails, and the
-nonce is ours and new each time.
+**Freshness comes free**, unlike on Confidential Spaces, so keys can be retired here: a captured
+report commits to a TLS key whose private half lives in an enclave the attacker does not control,
+so the pin fails, and the nonce is ours and new each time.
 
 ### 6.3 Side by side
 
-|                                | Confidential Spaces           | Tinfoil                                         |
-| ------------------------------ | ----------------------------- | ----------------------------------------------- |
-| hardware, code, config         | ✅                            | ✅                                              |
-| key bundle bound               | ✅ digest in the signed token | ✅ served over a channel the report vouches for |
-| email and data owners attested | ✅ same digest                | ✅ signed with the bound key                    |
-| freshness                      | ❌ minted once at boot        | ✅ live connection and a per-request nonce      |
+|                                   | Confidential Spaces           | Tinfoil                                         |
+| --------------------------------- | ----------------------------- | ----------------------------------------------- |
+| hardware, code, config            | ✅                            | ✅                                              |
+| key bundle bound                  | ✅ digest in the signed token | ✅ served over a channel the report vouches for |
+| email and data owners attested    | ✅ same digest                | ✅ signed with the bound key                    |
+| freshness, so keys can be retired | ❌ minted once at boot        | ✅ live connection and a per-request nonce      |
 
 Whichever route bound them, the attested facts are appraised identically: `AppraisalPolicy` and
 `TinfoilAppraisalPolicy` both take an optional `expected_email` and `expected_data_owners`, and both
 run the same comparison. Left unset the attested values are reported; set, they are required.
 Binding proves the enclave really was started with those values — whether they are the _right_ ones
 is the verifier's call.
+
+### 6.4 Todo
+
+- **Confidential Spaces: re-publish the token and narrow the expiry grace window** (H16 in the
+  [protocol security review](../../../research/protocol-security-review/SUMMARY.md)). Google mints
+  these with roughly a 30-minute life; `JWT_EXPIRY_GRACE_SECONDS` widens that to a month only
+  because the enclave writes its token once at boot. Re-publishing on a timer and cutting the
+  window gives bounded staleness, which is enough for revocation and does not need the spare nonce
+  slot.
+- **Pin by default.** `expected_image_digest` and `expected_data_owners` are what reject a
+  superseded configuration, and both currently default to unset.
 
 For how to deploy either target, see [Confidential Spaces Deployment](./terraform_cs.md) and
 [Tinfoil Deployment](./tinfoil_deployment.md).
