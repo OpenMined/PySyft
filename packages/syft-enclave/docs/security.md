@@ -120,84 +120,84 @@ a different remaining weakness. This section is the honest accounting.
 ### 6.0 What has to be bound, and why
 
 A verified report proves the workload runs on genuine confidential-computing hardware with debug
-disabled, and that the **code and configuration** are the ones published: on Tinfoil, the CVM image
-and `tinfoil-config.yml` of a named Sigstore-signed release, including the container image digest it
-pins; on Confidential Spaces, the image digest in the token's claims.
+disabled, and that the **code and configuration** are the ones published. On Tinfoil that means the
+CVM image and the `tinfoil-config.yml` of a named Sigstore-signed release, including the container
+image digest the config pins. On Confidential Spaces it means the image digest in the token's
+claims.
 
-That is not enough on its own. Three things a peer needs are _runtime_ values, outside the
-measurement:
+A verified report is not enough on its own. Three of the things a peer needs are runtime values,
+which sit outside the measurement:
 
-| Fact                                | Why it matters                                                                                                                                                |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| the enclave's **public key bundle** | you are about to encrypt private data to it. An unbound bundle can be swapped by whoever controls the enclave's Drive account, and they then read everything. |
-| the enclave's **email**             | it identifies the datasite you are talking to.                                                                                                                |
-| its configured **data owners**      | this list is the approval gate — a job runs only once _all_ of them approve, so anyone who could change it unobserved could approve work on their own.        |
+| Fact                                | Why it matters                                                                                                                                           |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the enclave's **public key bundle** | you are about to encrypt private data to it. Whoever controls the enclave's Drive account can swap an unbound bundle, and then read everything you send. |
+| the enclave's **email**             | it identifies the datasite you are talking to.                                                                                                           |
+| its configured **data owners**      | this list is the approval gate. A job runs only once _all_ of them approve, so anyone who can change the list unseen can approve work on their own.      |
 
-Both targets therefore bind the same document — email, data owners, syft version, key bundle — to
-the report. The document always travels in the clear and is never trusted on its own; what differs
-is the mechanism that makes it true.
+Both targets bind the same document to the report: email, data owners, syft version and key bundle.
+The document always travels in the clear, and a verifier never trusts it on its own. The two
+targets differ only in how they make the document trustworthy.
 
 ### 6.1 Confidential Spaces: committed to inside the signed token
 
-Confidential Space lets the code running inside the enclave ask the launcher to embed bytes of its
-choosing into the Google-signed token, via a field called `eat_nonce`. Only code running inside the measured container can do that,
-and the signature is unforgeable. So the enclave commits to the **sha256 of the claims document** in
-the token, and a verifier recomputes that digest from the published document and compares.
+Confidential Space lets the code inside the enclave ask the launcher to put bytes of its choosing
+into the Google-signed token, in a field called `eat_nonce`. Only code inside the measured container
+can ask for this, and nobody can forge Google's signature. So the enclave puts the sha256 of its
+claims document there, and a verifier recomputes that hash from the published document and compares
+the two. The signature is what makes this work, not secrecy: measurements and image digests are
+public on both targets, on purpose, because that is what lets anyone audit them.
 
-It is the _signature_ doing the work, not secrecy — measurements and image digests are public on
-both targets, deliberately, because that is what makes them auditable.
+There is room for one hash and no more. Slot 0 already holds the syft version as plain text, and
+the launcher caps a nonce at 74 characters drawn from `[a-zA-Z0-9_.-]`. An email address cannot go
+in, because `@` is not in that set, while a 64-character sha256 fits. That is why the enclave
+commits to one hash over one document, rather than one field per fact. The token carries the hash,
+so a verifier needs no connection to the enclave, which suits a transport built out of files.
 
-There is room for exactly one digest: slot 0 carries the syft version in plain text, and a nonce is
-capped at 74 characters matching `[a-zA-Z0-9_.-]`, which rules out carrying an email literally and
-leaves a 64-character sha256 hex comfortably inside. Hence one digest over one document rather than
-a field per fact.
+**Limitation: the token is never refreshed, so a key can never be retired.** The enclave asks for
+one token at boot and writes it to `SYFT_version.json`. Google issues these tokens with a short
+life, but we widened the window we accept to a month, because the enclave does not yet ask for a
+new one. Anyone who keeps a copy of an old token can present it later as if it were current.
+Presenting an old, captured token is called a replay.
 
-The binding travels **inside the file**, so it needs no connection to the enclave, which suits the
-offline-first transport.
+A replay is less useful than it sounds. The token commits to the enclave's key bundle, so replaying
+an old token also replays an old bundle, and the private half of that bundle never left the enclave
+that made it. A replayer can make you encrypt data to a key nobody holds any more, which stops the
+work, but cannot read what you send. Confidentiality holds. What a replay does cost you is the
+ability to retire a key. Say a past enclave's private key
+becomes known to an attacker. That enclave's token stays acceptable for ever, so the attacker can
+keep presenting it, and can then decrypt what you send. Checking that a token is recent is the only
+way to say "stop trusting that enclave", so without such a check there is no way to revoke one.
 
-**Limitation: no freshness, which means no revocation.** The token is minted once at boot and
-written to `SYFT_version.json`, so a captured one stays acceptable for the length of the expiry
-grace window (we widened it to a month, because the enclave does not yet re-publish).
-
-This is narrower than it sounds. The token commits to the key bundle, so replaying an old token
-replays an old _bundle_ — and its private half never left that enclave. A replayer can make you
-encrypt to a dead key, which is a denial of service, but cannot read what you send. Confidentiality
-holds.
-
-What you lose is the ability to **retire a key**. If some past instance's private key ever does
-become known, its token stays acceptable for ever, so that instance can be impersonated
-indefinitely — and then decryption really is possible. A staleness check is revocation by another
-name. Two things narrow it further: a replayer must control the enclave's Drive account to put the
-old token where you read it, and a debug-mode enclave (where an operator could read the key over
-SSH) is already rejected by the `dbgstat` check.
-
-Pinning covers the rest — `expected_image_digest` and `expected_data_owners` reject a token from a
-superseded configuration — but pinning is optional and off by default.
+Two things make a replay harder. A replayer has to control the enclave's Drive account, because
+that is where a verifier reads the token from. And a token from a debug-mode enclave, where an
+operator can log in over SSH and read the key, already fails the `dbgstat` check. A verifier can
+also refuse an old token by saying what it expects. `AppraisalPolicy` takes
+`expected_image_digest` and `expected_data_owners`. When they are set, the check fails if the
+enclave runs a different image or lists different data owners. Both are unset by default.
 
 ### 6.2 Tinfoil: bound to a connection, then signed over it
 
-Tinfoil gives the code inside the enclave no way to put anything of its own into the report: its
-64 bytes of user data are the sha256 of the
-shim's TLS public key followed by its HPKE public key. But that is exactly what makes binding
-possible, because the report **commits to the key terminating a TLS connection to the enclave**. So
-the client:
+Tinfoil gives the code inside the enclave no way to put anything of its own into the report. All 64
+bytes of user data are already in use: the sha256 of the shim's TLS public key, followed by the
+shim's HPKE public key. That turns out to be what makes binding possible, because the report
+commits to the key that terminates a TLS connection to the enclave. So the client:
 
 1. verifies the report;
-2. opens HTTPS to the enclave and checks the certificate it is served carries that same key — the
-   channel therefore provably ends inside the attested enclave;
-3. takes the key bundle served over that channel, which is now authentic;
+2. opens HTTPS to the enclave and checks the certificate it is served carries that same key, which
+   proves the connection ends inside the attested enclave;
+3. takes the key bundle served over that connection, which is now authentic;
 4. sends a random nonce, and checks the enclave signed **the nonce together with the claims
    document** using the identity key from that bundle.
 
-No certificate authority is involved anywhere: the enclave's certificate is self-signed, and the
-_report_ is what decides whether to trust it. Step 4 does three jobs in one signature — it proves
-the enclave **holds the private half** of the key we are about to encrypt to, that the answer was
-produced for _this_ exchange, and that the claims are the facts it meant to assert. The bundle and
-the claims are accepted only if steps 2 and 4 both pass.
+No certificate authority takes part. The enclave's certificate is self-signed, and the report is
+what decides whether to trust the key inside it. The signature in step 4 proves three separate
+things: the enclave holds the private half of the key you are about to encrypt to, the answer was
+produced for this exchange rather than an earlier one, and the claims are the facts the enclave
+meant to assert. The client accepts the bundle and the claims only if step 2 and step 4 both pass.
 
-**Freshness comes free**, unlike on Confidential Spaces, so keys can be retired here: a captured
-report commits to a TLS key whose private half lives in an enclave the attacker does not control,
-so the pin fails, and the nonce is ours and new each time.
+Keys can be retired here, because every check is live. A captured report commits to a TLS key whose
+private half sits in an enclave the attacker does not control, so the certificate check fails, and
+the nonce is new on every request.
 
 ### 6.3 Side by side
 
@@ -206,24 +206,24 @@ so the pin fails, and the nonce is ours and new each time.
 | hardware, code, config            | ✅                            | ✅                                              |
 | key bundle bound                  | ✅ digest in the signed token | ✅ served over a channel the report vouches for |
 | email and data owners attested    | ✅ same digest                | ✅ signed with the bound key                    |
-| freshness, so keys can be retired | ❌ minted once at boot        | ✅ live connection and a per-request nonce      |
+| freshness, so keys can be retired | ❌ issued once at boot        | ✅ live connection and a per-request nonce      |
 
-Whichever route bound them, the attested facts are appraised identically: `AppraisalPolicy` and
-`TinfoilAppraisalPolicy` both take an optional `expected_email` and `expected_data_owners`, and both
-run the same comparison. Left unset the attested values are reported; set, they are required.
-Binding proves the enclave really was started with those values — whether they are the _right_ ones
-is the verifier's call.
+Both targets appraise the facts the same way, once the document is trustworthy. `AppraisalPolicy`
+for Confidential Spaces and `TinfoilAppraisalPolicy` for Tinfoil each take an optional
+`expected_email` and `expected_data_owners`, and both run the same comparison. Left unset, a
+verifier reports the attested values. Set, a verifier requires them. Binding proves the enclave
+started with those values. Whether they are the right values is the verifier's call.
 
 ### 6.4 Todo
 
-- **Confidential Spaces: re-publish the token and narrow the expiry grace window** (H16 in the
-  [protocol security review](../../../research/protocol-security-review/SUMMARY.md)). Google mints
-  these with roughly a 30-minute life; `JWT_EXPIRY_GRACE_SECONDS` widens that to a month only
-  because the enclave writes its token once at boot. Re-publishing on a timer and cutting the
-  window gives bounded staleness, which is enough for revocation and does not need the spare nonce
-  slot.
-- **Pin by default.** `expected_image_digest` and `expected_data_owners` are what reject a
-  superseded configuration, and both currently default to unset.
+- **Confidential Spaces: ask for a new token periodically, and narrow the window we accept** (H16
+  in the [protocol security review](../../../research/protocol-security-review/SUMMARY.md)). Google
+  issues these tokens with roughly a 30-minute life. `JWT_EXPIRY_GRACE_SECONDS` in the verifier
+  widens that to a month, only because the enclave writes its token once at boot. Asking for a new
+  token on a timer, and cutting the window, bounds how old a token can be. That is enough to
+  revoke one, and it does not need the spare nonce slot.
+- **Pin by default.** Setting `expected_image_digest` and `expected_data_owners` is what makes a
+  verifier refuse a token from an older configuration. Both are unset today.
 
 For how to deploy either target, see [Confidential Spaces Deployment](./terraform_cs.md) and
 [Tinfoil Deployment](./tinfoil_deployment.md).
