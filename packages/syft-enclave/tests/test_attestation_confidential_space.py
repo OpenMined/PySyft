@@ -64,8 +64,11 @@ class TestVerifyAttestationToken:
             "fake-token", policy=DEFAULT_TEST_POLICY, verbose=False
         )
         assert result.all_passed()
-        assert len(result.checks) == 5
-        assert all(c.passed for c in result.checks)
+        assert len(result.checks) == 6
+        # claims_binding skips here: this fixture publishes no claims, so
+        # there is nothing for the token to be checked against.
+        assert [c.name for c in result.checks if c.passed is None] == ["claims_binding"]
+        assert all(c.passed is not False for c in result.checks)
 
     def test_jwt_signature_failure(self, mock_verify):
         mock_verify.side_effect = ValueError("bad signature")
@@ -174,9 +177,10 @@ class TestVerifyAttestationToken:
         with pytest.raises(AttestationError) as exc_info:
             verify_attestation_token("fake-token", verbose=False)
         check_names = [c.name for c in exc_info.value.result.checks]
-        # All five checks should appear, even though secure_boot failed early.
+        # Every check should appear, even though secure_boot failed early.
         assert check_names == [
             "jwt_signature",
+            "claims_binding",
             "secure_boot",
             "debug_disabled",
             "version_match",
@@ -236,4 +240,37 @@ class TestAttestationResult:
     def test_first_failure_none_when_all_pass(self):
         result = AttestationResult()
         result.add("a", "A", True, "ok")
+        assert result.first_failure() is None
+
+
+class TestSkippedIsNotFailed:
+    """A skipped check must not read as a failure.
+
+    Several checks skip by default when the policy pins nothing, so conflating
+    skipped with failed would report a successful appraisal as failed — and
+    make first_failure() point at a check that never ran.
+    """
+
+    def test_all_passed_ignores_skipped(self):
+        result = AttestationResult()
+        result.add("a", "A", True, "")
+        result.add("b", "B", None, "skipped")
+        assert result.all_passed()
+
+    def test_all_passed_is_false_on_a_real_failure(self):
+        result = AttestationResult()
+        result.add("a", "A", None, "skipped")
+        result.add("b", "B", False, "failed")
+        assert not result.all_passed()
+
+    def test_first_failure_skips_the_skipped(self):
+        result = AttestationResult()
+        result.add("a", "A", None, "skipped")
+        result.add("b", "B", False, "failed")
+        assert result.first_failure().name == "b"
+
+    def test_first_failure_is_none_when_only_skips(self):
+        result = AttestationResult()
+        result.add("a", "A", True, "")
+        result.add("b", "B", None, "skipped")
         assert result.first_failure() is None

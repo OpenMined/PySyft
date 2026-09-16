@@ -114,13 +114,26 @@ class AttestationEvidence(BaseModel):
         return cls.from_version_field((version_info.extra or {}).get(EXTRA_KEY))
 
 
-def confidential_space_evidence(token: str, audience: str) -> AttestationEvidence:
-    """Wrap a Confidential Space attestation JWT."""
+def confidential_space_evidence(
+    token: str,
+    audience: str,
+    claims: Optional[dict[str, Any]] = None,
+) -> AttestationEvidence:
+    """Wrap a Confidential Space attestation JWT.
+
+    ``claims`` are the runtime facts the token's nonce commits to — the
+    enclave's email, its data owners and its key bundle. Carried in the clear
+    and untrusted: the digest inside the signed token is what makes them true.
+    See ``attestation.claims``.
+    """
+    metadata: dict[str, Any] = {"audience": audience}
+    if claims is not None:
+        metadata["claims"] = claims
     return AttestationEvidence(
         kind=AttestationKind.CONFIDENTIAL_SPACE,
         format=CONFIDENTIAL_SPACE_FORMAT,
         body=token,
-        metadata={"audience": audience},
+        metadata=metadata,
     )
 
 

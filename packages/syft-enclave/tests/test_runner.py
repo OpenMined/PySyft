@@ -179,3 +179,63 @@ class TestAttestPhase:
         ).init()
 
         assert seen == {"name": "tinfoil", "settings": settings}
+
+
+class TestClaimsBinding:
+    """The runner commits runtime facts on targets that can commit to any."""
+
+    def _provider(self, monkeypatch, *, accepts_nonce):
+        provider = MagicMock()
+        provider.kind = AttestationKind.CONFIDENTIAL_SPACE
+        provider.accepts_caller_nonce = accepts_nonce
+        provider.collect.return_value = tinfoil_evidence(TINFOIL_DOC)
+        monkeypatch.setattr(
+            "syft_enclaves.runner.select_provider", lambda name, settings: provider
+        )
+        monkeypatch.setattr(
+            "syft_enclaves.runner.write_public_bundle", lambda bundle, keys_path: None
+        )
+        return provider
+
+    def _client(self):
+        client = _make_client()
+        client._rds.peer_manager.syftbox_folder = Path("/tmp/SyftBox_enclave")
+        client.email = "enclave@openmined.org"
+        client.data_owners = ["b@openmined.org", "a@openmined.org"]
+        store = client._rds.peer_manager.peer_store
+        store.email = "enclave@openmined.org"
+        store.use_encryption = True
+        store.has_my_keys.return_value = True
+        store.get_public_bundle.return_value = {"identity": "enclave@openmined.org"}
+        return client
+
+    def test_the_email_and_data_owners_are_bound(self, monkeypatch):
+        provider = self._provider(monkeypatch, accepts_nonce=True)
+        EnclaveRunner(client=self._client(), require_tee=True).init()
+
+        claims = provider.collect.call_args.kwargs["claims"]
+        assert claims["email"] == "enclave@openmined.org"
+        assert claims["data_owners"] == ["a@openmined.org", "b@openmined.org"]
+        assert claims["key_bundle"] == {"identity": "enclave@openmined.org"}
+
+    def test_the_key_bundle_exists_before_the_token_is_minted(self, monkeypatch):
+        # Ordering matters: the token commits to a digest covering the bundle.
+        provider = self._provider(monkeypatch, accepts_nonce=True)
+        client = self._client()
+        order = []
+        client._rds.peer_manager.peer_store.save_keys.side_effect = (
+            lambda p: order.append("keys")
+        )
+        provider.collect.side_effect = lambda **kw: (
+            order.append("mint"),
+            tinfoil_evidence(TINFOIL_DOC),
+        )[1]
+
+        EnclaveRunner(client=client, require_tee=True).init()
+
+        assert order == ["keys", "mint"]
+
+    def test_a_target_without_a_nonce_channel_binds_nothing(self, monkeypatch):
+        provider = self._provider(monkeypatch, accepts_nonce=False)
+        EnclaveRunner(client=self._client(), require_tee=True).init()
+        assert provider.collect.call_args.kwargs == {}

@@ -1,9 +1,14 @@
-"""Attestation verification for enclave peers.
+"""Appraising Confidential Space evidence.
 
-When a researcher calls ``add_peer(enclave_email)``, the enclave's
-``SYFT_version.json`` may contain an ``attestation_token`` — a Google-signed
-JWT from Confidential Spaces.  This module verifies that token and checks
-the claims inside it to ensure the enclave is trustworthy.
+The enclave publishes a Google-signed JWT from the Confidential Space launcher.
+This module verifies that token, checks the hardware and container claims
+inside it, and checks the **claims binding**: the enclave commits to a digest of
+its own runtime facts — email, configured data owners, key bundle — in the
+token's spare nonce slot, which is the only thing that makes those facts
+trustworthy rather than self-asserted. See ``attestation.claims``.
+
+Whether those facts are the ones the verifier wanted is a separate question,
+answered by ``AppraisalPolicy.expected_email`` and ``expected_data_owners``.
 """
 
 from __future__ import annotations
@@ -16,6 +21,7 @@ from pydantic import BaseModel
 
 from syft.version import SYFT_VERSION
 
+from syft_enclaves.attestation.claims import ClaimsBindingError, verify_claims_digest
 from syft_enclaves.attestation.result import (
     AttestationError,
     AttestationResult,
@@ -55,12 +61,111 @@ class AppraisalPolicy(BaseModel):
     expected_image_digest: Optional[str] = None
     # By default, the enclave must run the same version of syft as the verifier.
     expected_syft_version: Optional[str] = SYFT_VERSION
+    # Runtime facts the enclave commits to in its token. None → the value is
+    # reported but not required; set one to refuse an enclave that was started
+    # with anything else. These are only meaningful because the token binds
+    # them (see attestation.claims); without the binding they would be the
+    # enclave's unsigned word.
+    expected_email: Optional[str] = None
+    expected_data_owners: Optional[list[str]] = None
+
+
+def _nonce_slots(claims: dict) -> list[str]:
+    """The token's eat_nonce as a list; Google returns a bare string for one."""
+    nonce = claims.get("eat_nonce", [])
+    return [nonce] if isinstance(nonce, str) else list(nonce)
+
+
+def _check_claims_binding(
+    result: AttestationResult,
+    claims: dict,
+    published_claims: Optional[dict],
+    policy: AppraisalPolicy,
+    verbose: bool,
+) -> None:
+    """Check the published runtime facts are the ones the token commits to.
+
+    This is what turns the enclave's email, its data owners and its key bundle
+    from unsigned assertions into attested ones: only code inside the measured
+    container can get the launcher to sign a digest of them.
+    """
+    if verbose:
+        print("  ⏳ Claims binding ...")
+    if published_claims is None:
+        result.add(
+            "claims_binding",
+            "Claims binding",
+            None,
+            "the enclave published no claims, so its email, data owners and "
+            "keys are unattested (skipped)",
+        )
+        return
+
+    slots = _nonce_slots(claims)
+    digest = slots[1] if len(slots) > 1 else ""
+    try:
+        verify_claims_digest(published_claims, digest)
+    except ClaimsBindingError as e:
+        result.add("claims_binding", "Claims binding", False, str(e))
+        return
+
+    owners = published_claims.get("data_owners") or []
+    result.add(
+        "claims_binding",
+        "Claims binding",
+        True,
+        f"token commits to email={published_claims.get('email')!r} and "
+        f"{len(owners)} data owner(s)",
+    )
+    if published_claims.get("key_bundle"):
+        result.verified_key_bundle = published_claims["key_bundle"]
+    _check_expected_claims(result, published_claims, policy, verbose)
+
+
+def _check_expected_claims(
+    result: AttestationResult,
+    published_claims: dict,
+    policy: AppraisalPolicy,
+    verbose: bool,
+) -> None:
+    """Compare the now-attested facts against what the verifier expected.
+
+    Binding proves the enclave really was started with these values; only the
+    caller knows whether they are the right ones.
+    """
+    for name, label, expected, actual in [
+        (
+            "enclave_email",
+            "Enclave email",
+            policy.expected_email,
+            published_claims.get("email"),
+        ),
+        (
+            "data_owners",
+            "Data owners",
+            sorted(policy.expected_data_owners)
+            if policy.expected_data_owners is not None
+            else None,
+            published_claims.get("data_owners"),
+        ),
+    ]:
+        if verbose:
+            print(f"  ⏳ {label} ...")
+        if expected is None:
+            result.add(name, label, None, f"not pinned; enclave reports {actual!r}")
+        elif expected == actual:
+            result.add(name, label, True, f"matches {actual!r}")
+        else:
+            result.add(
+                name, label, False, f"enclave reports {actual!r}, expected {expected!r}"
+            )
 
 
 def verify_attestation_token(
     token: str,
     policy: AppraisalPolicy | None = None,
     verbose: bool = True,
+    published_claims: Optional[dict] = None,
 ) -> AttestationResult:
     """Verify an attestation JWT and return the result checklist.
 
@@ -127,7 +232,11 @@ def verify_attestation_token(
             )
         raise AttestationError("JWT signature verification failed", result) from e
 
-    # 2. Secure boot
+    # 2. Claims binding — the enclave's runtime facts, committed to in the
+    # token's spare nonce slot. Skipped when the enclave published none.
+    _check_claims_binding(result, claims, published_claims, policy, verbose)
+
+    # 3. Secure boot
     if verbose:
         print("  ⏳ Secure boot ...")
     secboot = claims.get("secboot")

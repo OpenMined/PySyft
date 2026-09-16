@@ -42,10 +42,18 @@ class AttestationResult:
         )
 
     def all_passed(self) -> bool:
-        return all(c.passed for c in self.checks)
+        """Whether nothing failed. A *skipped* check is not a failure.
+
+        Matches how the verifiers decide to raise: they look for
+        ``passed is False``. Treating ``None`` as failure would report a
+        successful appraisal as failed whenever the policy left something
+        unpinned, which is the default for several checks.
+        """
+        return all(check.passed is not False for check in self.checks)
 
     def first_failure(self) -> CheckResult | None:
-        return next((c for c in self.checks if not c.passed), None)
+        """The first check that actually failed, skipping the skipped ones."""
+        return next((check for check in self.checks if check.passed is False), None)
 
     def print_checklist(self) -> None:
         for check in self.checks:

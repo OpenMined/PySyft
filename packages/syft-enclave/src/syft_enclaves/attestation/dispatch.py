@@ -34,7 +34,12 @@ def verify_evidence(
     """Appraise *evidence* with the verifier for its kind."""
     if evidence.kind is AttestationKind.CONFIDENTIAL_SPACE:
         _require_policy_type(evidence.kind, policy, AppraisalPolicy)
-        return verify_attestation_token(evidence.body, policy=policy, verbose=verbose)
+        return verify_attestation_token(
+            evidence.body,
+            policy=policy,
+            verbose=verbose,
+            published_claims=evidence.metadata.get("claims"),
+        )
 
     if evidence.kind is AttestationKind.TINFOIL:
         # Imported here so installs without the tinfoil extra can still verify

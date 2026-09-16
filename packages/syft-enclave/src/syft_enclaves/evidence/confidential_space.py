@@ -12,6 +12,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+from syft_enclaves.attestation.claims import claims_digest
 from syft_enclaves.attestation.envelope import (
     AttestationEvidence,
     AttestationKind,
@@ -42,9 +43,28 @@ class ConfidentialSpaceProvider:
         # Nothing to configure: the launcher socket and audience are fixed.
         return cls()
 
-    def collect(self, caller_nonce: Optional[str] = None) -> AttestationEvidence:
-        token = fetch_attestation_token(eat_nonce=build_eat_nonce(caller_nonce))
-        return confidential_space_evidence(token, audience=TOKEN_AUDIENCE)
+    def collect(
+        self,
+        caller_nonce: Optional[str] = None,
+        claims: Optional[dict] = None,
+    ) -> AttestationEvidence:
+        """Mint a token, committing to *claims* in its spare nonce slot.
+
+        ``caller_nonce`` and ``claims`` are alternatives: there is only one
+        spare slot, so a caller asking for a freshness nonce gets that instead
+        of a claims binding. The runner binds claims; the HTTP endpoint answers
+        a caller's nonce.
+        """
+        if caller_nonce and claims:
+            raise ValueError(
+                "Confidential Space has one spare nonce slot: pass either a "
+                "caller nonce or claims to bind, not both."
+            )
+        nonce = caller_nonce or (claims_digest(claims) if claims else None)
+        token = fetch_attestation_token(eat_nonce=build_eat_nonce(nonce))
+        return confidential_space_evidence(
+            token, audience=TOKEN_AUDIENCE, claims=claims
+        )
 
     def describe(self, evidence: AttestationEvidence) -> dict[str, Any]:
         return structure_claims(decode_jwt_payload(evidence.body))

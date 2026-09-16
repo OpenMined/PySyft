@@ -59,7 +59,18 @@ class TinfoilProvider:
             host=getattr(settings, "tinfoil_host", None),
         )
 
-    def collect(self, caller_nonce: Optional[str] = None) -> AttestationEvidence:
+    def collect(
+        self,
+        caller_nonce: Optional[str] = None,
+        claims: Optional[dict] = None,
+    ) -> AttestationEvidence:
+        if claims is not None:
+            raise ValueError(
+                "Tinfoil evidence cannot commit to claims: the report's user "
+                "data is the shim's own keys, with no workload channel. The "
+                "equivalent guarantee comes from a pinned connection instead "
+                "(see attestation.https)."
+            )
         if caller_nonce is not None:
             raise ValueError(
                 "Tinfoil evidence cannot carry a caller nonce: the report's 64 "

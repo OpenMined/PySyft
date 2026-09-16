@@ -17,6 +17,9 @@ import time
 from typing import Callable, Optional
 
 from syft.sync.peers.peer_store import datasite_crypto_keys_path
+from syft.version import SYFT_VERSION
+
+from syft_enclaves.attestation.claims import build_claims
 
 from syft_enclaves.client import SyftEnclaveClient
 from syft_enclaves.evidence.key_bundle import write_public_bundle
@@ -141,12 +144,14 @@ class EnclaveRunner:
         logger.info(
             "TEE detected (%s) — collecting attestation evidence", provider.kind.value
         )
-        self._publish_attestation(provider)
+        # The key bundle first: on a target that can bind claims, the token
+        # commits to a digest covering it, so it has to exist before minting.
         self._publish_key_bundle()
+        self._publish_attestation(provider)
 
     def _publish_attestation(self, provider: EvidenceProvider) -> None:
         """Write the provider's evidence into the peer-visible version file."""
-        evidence = provider.collect()
+        evidence = provider.collect(**self._binding_for(provider))
         peer_manager = self.client._rds.peer_manager
         evidence.publish_to(peer_manager.get_own_version())
         peer_manager.write_own_version()
@@ -154,6 +159,37 @@ class EnclaveRunner:
             "Attestation evidence (%s) published to SYFT_version.json",
             evidence.kind.value,
         )
+
+    def _binding_for(self, provider: EvidenceProvider) -> dict:
+        """The runtime facts to commit to, on targets that can commit to any.
+
+        Confidential Space lets the workload put a digest into the signed
+        token, which is the only way a peer can trust the enclave's email, its
+        configured data owners or its key bundle — all runtime values outside
+        the measurement. Tinfoil has no such channel and binds over a pinned
+        connection instead, so it gets nothing here.
+        """
+        if not getattr(provider, "accepts_caller_nonce", False):
+            return {}
+        peer_store = self.client._rds.peer_manager.peer_store
+        bundle = (
+            peer_store.get_public_bundle()
+            if peer_store.use_encryption and peer_store.has_my_keys()
+            else None
+        )
+        claims = build_claims(
+            email=self.client.email,
+            data_owners=self.client.data_owners,
+            syft_version=SYFT_VERSION,
+            key_bundle=bundle,
+        )
+        logger.info(
+            "Binding runtime claims into the attestation token: email, "
+            "%d data owner(s), key bundle %s",
+            len(claims["data_owners"]),
+            "included" if bundle else "absent",
+        )
+        return {"claims": claims}
 
     def _publish_key_bundle(self) -> None:
         """Expose our public key bundle on the attestation endpoint.
