@@ -138,6 +138,13 @@ which sit outside what the report measures:
 So the enclave writes those facts into one document — its email, its data owners, its syft version
 and its public key bundle — and then binds that document to its attestation report. The document
 itself always travels in the clear, and a verifier never trusts the document on its own.
+
+Both targets appraise those facts the same way, once the document is trustworthy.
+`AppraisalPolicy` for Confidential Spaces and `TinfoilAppraisalPolicy` for Tinfoil take the same
+expectations and run the same comparison. Each policy has to pin `expected_image_digest`,
+`expected_data_owners` and `expected_email`, or say `allow_unpinned=True`. Binding proves the
+enclave started with those values. Whether they are the right values is the verifier's call.
+
 Confidential Spaces and Tinfoil differ only in how each one makes the document trustworthy.
 
 ### 6.1 Binding extra facts on Confidential Spaces
@@ -227,12 +234,6 @@ the nonce is new on every request.
 | key bundle bound                  | ✅ hash inside the signed token | ✅ served over a connection the report vouches for |
 | email and data owners attested    | ✅ same hash                    | ✅ signed with the bound key                       |
 | freshness, so keys can be retired | ❌ one token, issued at boot    | ✅ live connection and a per-request nonce         |
-
-Both targets appraise the facts the same way, once the document is trustworthy. `AppraisalPolicy`
-for Confidential Spaces and `TinfoilAppraisalPolicy` for Tinfoil take the same expectations and run
-the same comparison. Each policy has to pin `expected_image_digest`, `expected_data_owners` and
-`expected_email`, or say `allow_unpinned=True`. Binding proves the enclave started with those
-values. Whether they are the right values is the verifier's call.
 
 ### 6.4 Todo
 
