@@ -737,8 +737,11 @@ tinfoil-release version:
     set -e
     {{tinfoil_preflight}}
     just build-push-amd {{version}}
-    digest=$(docker buildx imagetools inspect {{image_base}}:{{version}} --format '{{{{.Manifest.Digest}}}}')
-    [ -n "$digest" ] || { echo "Error: could not read the pushed image digest" >&2; exit 1; }
+    # --raw is the manifest bytes, and an index digest is by definition their
+    # sha256. Do NOT use --format '{{{{.Manifest.Digest}}}}': for a
+    # multi-platform index it prints the whole inspect listing, not the digest.
+    digest=$(docker buildx imagetools inspect {{image_base}}:{{version}} --raw | shasum -a 256 | awk '{print "sha256:"$1}')
+    echo "$digest" | grep -qE '^sha256:[0-9a-f]{64}$' || { echo "Error: could not read a valid image digest (got '$digest')" >&2; exit 1; }
     echo "Pushed {{image_base}}:{{version}} @ $digest"
     tmp=$(mktemp)
     # Replace whichever digest the config currently pins (placeholder or real).
