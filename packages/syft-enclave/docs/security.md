@@ -93,7 +93,7 @@ have access to the account.
 > **Status.** Implemented on both targets, binding the same facts — keys, email and configured data
 > owners — by different mechanisms: **Confidential Spaces** commits to a digest of them inside the
 > signed token (§6.1), **Tinfoil** signs them with a key its report vouches for, over a connection
-> pinned to that key (§6.2). Each route has a different remaining weakness; §6.3 compares them.
+> pinned to that key (§6.2). Section 6 sets out what each one proves, and §6.3 compares them.
 
 The data owners and the DS then download the enclave's verified keys (and
 share their own), and from that point on there is a **trusted, end-to-end secure channel** between the
@@ -114,19 +114,20 @@ anyone trusting Google Drive, the network, or each other.
 
 ## 6. What attestation proves on each target
 
-Section 5 describes the intent. Both targets deliver it, but by different routes, and each route has
-a different remaining weakness. This section is the honest accounting.
+Section 5 says the enclave binds its own public keys to its attestation report, so that nobody can
+swap those keys for their own. Confidential Spaces and Tinfoil both do that, by different means.
+This section sets out what each one proves about an enclave, and what each one leaves open.
 
 ### 6.0 What has to be bound, and why
 
 A verified report proves the workload runs on genuine confidential-computing hardware with debug
 disabled, and that the **code and configuration** are the ones published. On Tinfoil that means the
 CVM image and the `tinfoil-config.yml` of a named Sigstore-signed release, including the container
-image digest the config pins. On Confidential Spaces it means the image digest in the token's
+image digest that the config pins. On Confidential Spaces it means the image digest in the report's
 claims.
 
 A verified report is not enough on its own. Three of the things a peer needs are runtime values,
-which sit outside the measurement:
+which sit outside what the report measures:
 
 | Fact                                | Why it matters                                                                                                                                           |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -134,53 +135,64 @@ which sit outside the measurement:
 | the enclave's **email**             | it identifies the datasite you are talking to.                                                                                                           |
 | its configured **data owners**      | this list is the approval gate. A job runs only once _all_ of them approve, so anyone who can change the list unseen can approve work on their own.      |
 
-Both targets bind the same document to the report: email, data owners, syft version and key bundle.
-The document always travels in the clear, and a verifier never trusts it on its own. The two
-targets differ only in how they make the document trustworthy.
+So the enclave writes those facts into one document — its email, its data owners, its syft version
+and its public key bundle — and then binds that document to its attestation report. The document
+itself always travels in the clear, and a verifier never trusts the document on its own.
+Confidential Spaces and Tinfoil differ only in how each one makes the document trustworthy.
 
-### 6.1 Confidential Spaces: committed to inside the signed token
+### 6.1 Binding extra facts on Confidential Spaces
 
-Confidential Space lets the code inside the enclave ask the launcher to put bytes of its choosing
-into the Google-signed token, in a field called `eat_nonce`. Only code inside the measured container
-can ask for this, and nobody can forge Google's signature. So the enclave puts the sha256 of its
-claims document there, and a verifier recomputes that hash from the published document and compares
-the two. The signature is what makes this work, not secrecy: measurements and image digests are
-public on both targets, on purpose, because that is what lets anyone audit them.
+On Confidential Spaces the attestation report is a token: a signed statement that Google's launcher
+issues to the enclave at boot. The launcher lets the code inside the enclave add a few values of its
+own to that token, in a field called `eat_nonce`. Only code inside the measured container can ask
+for this, and nobody can forge Google's signature on the result.
 
-There is room for one hash and no more. Slot 0 already holds the syft version as plain text, and
-the launcher caps a nonce at 74 characters drawn from `[a-zA-Z0-9_.-]`. An email address cannot go
-in, because `@` is not in that set, while a 64-character sha256 fits. That is why the enclave
-commits to one hash over one document, rather than one field per fact. The token carries the hash,
-so a verifier needs no connection to the enclave, which suits a transport built out of files.
+The enclave hashes its claims document with sha256, then asks the launcher to put that hash in the
+token. A verifier reads the published document, hashes it the same way, and compares the two hashes.
+If anyone alters the document, the two hashes no longer match.
 
-**Limitation: the token is never refreshed, so a key can never be retired.** The enclave asks for
-one token at boot and writes it to `SYFT_version.json`. Google issues these tokens with a short
-life, but we widened the window we accept to a month, because the enclave does not yet ask for a
-new one. Anyone who keeps a copy of an old token can present it later as if it were current.
-Presenting an old, captured token is called a replay.
+The token is public, and we do not try to hide it. Anyone can read the measurements and the image
+digest inside the token, which is what lets anyone audit what the enclave runs. Google's signature
+is what makes the hash trustworthy, not secrecy.
 
-A replay is less useful than it sounds. The token commits to the enclave's key bundle, so replaying
-an old token also replays an old bundle, and the private half of that bundle never left the enclave
-that made it. A replayer can make you encrypt data to a key nobody holds any more, which stops the
-work, but cannot read what you send. Confidentiality holds. What a replay does cost you is the
-ability to retire a key. Say a past enclave's private key
-becomes known to an attacker. That enclave's token stays acceptable for ever, so the attacker can
-keep presenting it, and can then decrypt what you send. Checking that a token is recent is the only
-way to say "stop trusting that enclave", so without such a check there is no way to revoke one.
+The `eat_nonce` field holds a short list of values. Slot 0 of that list already holds the syft
+version as plain text, which leaves one spare slot, and the launcher caps each value at 74
+characters drawn from `[a-zA-Z0-9_.-]`. An email address does not fit, because `@` is not in that
+set, while a 64-character sha256 hash does. That is why the enclave binds one hash of one document,
+rather than one value per fact. The token carries the hash, so a verifier needs no connection to the
+enclave, which suits a transport built out of files.
 
-Two things make a replay harder. A replayer has to control the enclave's Drive account, because
-that is where a verifier reads the token from. And a token from a debug-mode enclave, where an
-operator can log in over SSH and read the key, already fails the `dbgstat` check. A verifier can
-also refuse an old token by saying what it expects. `AppraisalPolicy` takes
-`expected_image_digest` and `expected_data_owners`. When they are set, the check fails if the
-enclave runs a different image or lists different data owners. Both are unset by default.
+**Limitation: the enclave never asks for a new token, so a key can never be retired.** The enclave
+asks for one token at boot and writes it to `SYFT_version.json`. Google issues these tokens with a
+short life, but the verifier accepts a token up to a month old, because the enclave does not yet ask
+for a new one. Anyone who keeps a copy of an old token can present it later as though it were
+current. Presenting an old, captured token is called a replay.
 
-### 6.2 Tinfoil: bound to a connection, then signed over it
+A replay does not let an attacker read your data. The token binds the enclave's key bundle, so
+replaying an old token also replays an old bundle, and the private half of that bundle never left
+the enclave that made it. A replayer can make you encrypt data to a key that nobody holds any more,
+which stops the work, but cannot read what you send. What a replay does cost you is the ability to
+retire a key. Say a past enclave's private key becomes known to an attacker. That enclave's token
+stays acceptable for ever, so the attacker can keep presenting the token, and can then decrypt what
+you send. Checking that a token is recent is the only way to say "stop trusting that enclave", so
+without such a check there is no way to revoke one.
 
-Tinfoil gives the code inside the enclave no way to put anything of its own into the report. All 64
-bytes of user data are already in use: the sha256 of the shim's TLS public key, followed by the
-shim's HPKE public key. That turns out to be what makes binding possible, because the report
-commits to the key that terminates a TLS connection to the enclave. So the client:
+Two things make a replay harder. A replayer has to control the enclave's Drive account, because that
+is where a verifier reads the token from. And a token from a debug-mode enclave, where an operator
+can log in over SSH and read the key, already fails the `dbgstat` check. A verifier can also refuse
+an old token by saying what it expects: `AppraisalPolicy` takes `expected_image_digest` and
+`expected_data_owners`, and when they are set, the check fails if the enclave runs a different image
+or lists different data owners. Both are unset by default.
+
+### 6.2 Binding extra facts on Tinfoil
+
+Tinfoil gives the code inside the enclave no way to add anything to the report, so the enclave binds
+its claims document a different way: it signs the document, over a connection that the report
+vouches for.
+
+All 64 bytes of user data in a Tinfoil report are already in use. Those bytes hold the sha256 of the
+shim's TLS public key, followed by the shim's HPKE public key. That is what makes binding possible,
+because the report commits to the key that terminates a TLS connection to the enclave. So the client:
 
 1. verifies the report;
 2. opens HTTPS to the enclave and checks the certificate it is served carries that same key, which
@@ -190,23 +202,24 @@ commits to the key that terminates a TLS connection to the enclave. So the clien
    document** using the identity key from that bundle.
 
 No certificate authority takes part. The enclave's certificate is self-signed, and the report is
-what decides whether to trust the key inside it. The signature in step 4 proves three separate
-things: the enclave holds the private half of the key you are about to encrypt to, the answer was
-produced for this exchange rather than an earlier one, and the claims are the facts the enclave
-meant to assert. The client accepts the bundle and the claims only if step 2 and step 4 both pass.
+what decides whether to trust the key inside that certificate. The signature in step 4 proves three
+separate things: the enclave holds the private half of the key you are about to encrypt to, the
+answer was produced for this exchange rather than an earlier one, and the claims are the facts the
+enclave meant to assert. The client accepts the bundle and the claims only if step 2 and step 4 both
+pass.
 
-Keys can be retired here, because every check is live. A captured report commits to a TLS key whose
+Tinfoil can retire a key, because every check is live. A captured report commits to a TLS key whose
 private half sits in an enclave the attacker does not control, so the certificate check fails, and
 the nonce is new on every request.
 
 ### 6.3 Side by side
 
-|                                   | Confidential Spaces           | Tinfoil                                         |
-| --------------------------------- | ----------------------------- | ----------------------------------------------- |
-| hardware, code, config            | ✅                            | ✅                                              |
-| key bundle bound                  | ✅ digest in the signed token | ✅ served over a channel the report vouches for |
-| email and data owners attested    | ✅ same digest                | ✅ signed with the bound key                    |
-| freshness, so keys can be retired | ❌ issued once at boot        | ✅ live connection and a per-request nonce      |
+|                                   | Confidential Spaces             | Tinfoil                                            |
+| --------------------------------- | ------------------------------- | -------------------------------------------------- |
+| hardware, code, config            | ✅                              | ✅                                                 |
+| key bundle bound                  | ✅ hash inside the signed token | ✅ served over a connection the report vouches for |
+| email and data owners attested    | ✅ same hash                    | ✅ signed with the bound key                       |
+| freshness, so keys can be retired | ❌ one token, issued at boot    | ✅ live connection and a per-request nonce         |
 
 Both targets appraise the facts the same way, once the document is trustworthy. `AppraisalPolicy`
 for Confidential Spaces and `TinfoilAppraisalPolicy` for Tinfoil each take an optional
@@ -216,14 +229,15 @@ started with those values. Whether they are the right values is the verifier's c
 
 ### 6.4 Todo
 
-- **Confidential Spaces: ask for a new token periodically, and narrow the window we accept** (H16
-  in the [protocol security review](../../../research/protocol-security-review/SUMMARY.md)). Google
-  issues these tokens with roughly a 30-minute life. `JWT_EXPIRY_GRACE_SECONDS` in the verifier
-  widens that to a month, only because the enclave writes its token once at boot. Asking for a new
-  token on a timer, and cutting the window, bounds how old a token can be. That is enough to
-  revoke one, and it does not need the spare nonce slot.
-- **Pin by default.** Setting `expected_image_digest` and `expected_data_owners` is what makes a
-  verifier refuse a token from an older configuration. Both are unset today.
+- **Confidential Spaces: ask for a new token periodically, and narrow the window the verifier
+  accepts** (H16 in the
+  [protocol security review](../../../research/protocol-security-review/SUMMARY.md)). Google issues
+  these tokens with roughly a 30-minute life. `JWT_EXPIRY_GRACE_SECONDS` in the verifier widens that
+  to a month, because the enclave writes its token once at boot. Asking for a new token on a timer,
+  and cutting the window, bounds how old a token can be. That is enough to revoke one, and it does
+  not need the spare nonce slot.
+- **Pin by default.** Setting `expected_image_digest` and `expected_data_owners` on the policy is
+  what makes a verifier refuse a token from an older configuration. Both are unset today.
 
 For how to deploy either target, see [Confidential Spaces Deployment](./terraform_cs.md) and
 [Tinfoil Deployment](./tinfoil_deployment.md).
