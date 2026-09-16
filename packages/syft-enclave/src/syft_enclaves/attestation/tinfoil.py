@@ -55,7 +55,7 @@ HASH_ASSET = "tinfoil.hash"
 #: Tinfoil's GitHub proxy only serves some asset paths (``tinfoil.hash`` yes,
 #: ``tinfoil-deployment.json`` no), so fall through to GitHub itself.
 GITHUB_RELEASES = "https://github.com"
-DOCS = "packages/syft-enclave/docs/tinfoil.md"
+DOCS = "packages/syft-enclave/docs/tinfoil_deployment.md"
 REQUEST_TIMEOUT_SECONDS = 30
 
 

@@ -138,10 +138,10 @@ def _not_in_a_tee(version: str) -> dict:
             "build": "docker build -t syft-enclave -f docker/Dockerfile .",
             "confidential_space": (
                 "Deploy on a Confidential VM with the Confidential Space image "
-                "— see docs/terraform.md."
+                "— see docs/terraform_cs.md."
             ),
             "tinfoil": (
-                "Deploy a Tinfoil container from the config repo — see docs/tinfoil.md."
+                "Deploy a Tinfoil container from the config repo — see docs/tinfoil_deployment.md."
             ),
         },
     }

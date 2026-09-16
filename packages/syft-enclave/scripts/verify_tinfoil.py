@@ -50,7 +50,7 @@ def fetch_document(host: str) -> dict:
         "requests",
         extra="tinfoil",
         feature="Verifying a Tinfoil enclave",
-        docs="packages/syft-enclave/docs/tinfoil.md",
+        docs="packages/syft-enclave/docs/tinfoil_deployment.md",
     )
     response = requests.get(f"https://{host}{ATTESTATION_PATH}", timeout=30)
     response.raise_for_status()

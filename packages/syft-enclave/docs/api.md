@@ -37,7 +37,7 @@ The same `python -m syft_enclaves` entry point runs unchanged locally, inside
 Docker, in Confidential Spaces, and in a Tinfoil CVM — only the environment
 differs. Which attestation provider is used is detected from the environment
 unless `SYFT_ENCLAVE_ATTESTATION_PROVIDER` says otherwise; see
-[Tinfoil Deployment](./tinfoil.md).
+[Tinfoil Deployment](./tinfoil_deployment.md).
 
 ## Example: Fetching the attestation report
 

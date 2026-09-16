@@ -100,7 +100,7 @@ class SyftEnclaveClient:
         The peer's evidence says which TEE produced it, and it is routed to that
         target's verifier (Confidential Space or Tinfoil). Verifying Tinfoil
         evidence needs the optional ``tinfoil`` package; see
-        ``docs/tinfoil.md``.
+        ``docs/tinfoil_deployment.md``.
 
         Args:
             peer_email: the enclave peer to attest.

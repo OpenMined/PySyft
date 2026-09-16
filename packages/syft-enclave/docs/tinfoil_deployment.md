@@ -1,6 +1,6 @@
 # Tinfoil Deployment
 
-An alternative to [Confidential Spaces](./terraform.md) with no GCP involved. The enclave runs in an AMD SEV-SNP or Intel TDX confidential VM managed by [Tinfoil](https://docs.tinfoil.sh), and a data owner verifies it against a measurement published in a Sigstore-signed GitHub release.
+An alternative to [Confidential Spaces](./terraform_cs.md) with no GCP involved. The enclave runs in an AMD SEV-SNP or Intel TDX confidential VM managed by [Tinfoil](https://docs.tinfoil.sh), and a data owner verifies it against a measurement published in a Sigstore-signed GitHub release.
 
 Two repositories are in play:
 
@@ -11,26 +11,10 @@ The canonical copy of that config lives here at [`tinfoil/tinfoil-config.yml`](.
 
 Run all commands from `packages/syft-enclave/`.
 
-## What this proves, and what it does not
-
-**Proves.** The enclave is genuine SEV-SNP/TDX hardware with debug disabled and its firmware TCB at or above minimum; it booted the exact CVM image and config published in a named release of the config repo; that release was signed by GitHub OIDC from that repo's tag via Sigstore; and the container image digest matches the one you pinned.
-
-**Does not prove.** Which email or data owners the enclave was started with. Those are deploy-time `--variable`s, so they are outside the measurement and the attested code merely relays whatever its deployer handed it. Confidential Spaces is in the same position today (`tee-env-*` metadata is not checked either).
-
-**Key binding, and how it is achieved.** A workload cannot inject a nonce into the report: its 64 bytes of user data are the sha256 of the shim's TLS public key followed by its HPKE public key. But that is exactly what makes binding possible — the report _commits to the key terminating a TLS connection to the enclave_. So the client:
-
-1. verifies the report,
-2. opens HTTPS to the enclave and checks the certificate it is served carries that same key,
-3. checks the enclave signed the client's nonce with the key bundle it served,
-4. and then trusts that bundle, which came down the same connection.
-
-No certificate authority is involved anywhere: the enclave's certificate is self-signed, and the _report_ is what decides whether to trust it. `attest_peer` then sets those keys for the peer, so the enclave's public keys are no longer an unsigned Drive file. This is the binding `docs/security.md` §5 describes.
-
-It also gets freshness for free: a replayed report commits to a TLS key whose private half lives in an enclave the attacker does not control, so the pin fails.
-
-**Freshness comes from a nonce, not from the report.** A workload cannot influence the report's user data, so the client sends a random nonce and the enclave signs it with the identity key from the bundle it just served. That proves two things the report cannot: the enclave _holds the private half_ of the key we are about to encrypt to, and the answer was produced for _this_ exchange rather than replayed. The bundle is adopted only when both `key_binding` and `nonce_freshness` pass.
-
-**Drive is not a fallback.** Evidence is still published to `SYFT_version.json` — as provenance, and so the path exists if it is ever needed again — but the client always appraises a Tinfoil enclave from the live API. An unreachable enclave is an error, not a downgrade: accepting the Drive copy would silently mean unbound keys and a replayable report.
+When something fails, see [Tinfoil Troubleshooting](./tinfoil_troubleshooting.md). For what the
+attestation does and does not prove, see
+[Security Overview](./security.md#6-what-attestation-proves-on-each-target) — this doc covers the
+mechanics, not the guarantees.
 
 ## Prerequisites
 
@@ -219,30 +203,6 @@ Other knobs:
   ```
   The enclave will publish that document as its own evidence; verification against our config repo will of course fail the measurement check. Useful for exercising the publish path, not the verify path.
 - `SYFT_ENCLAVE_ATTESTATION_PROVIDER=none` disables attestation entirely.
-
-## Troubleshooting
-
-Every row below was hit for real while bringing the first enclave up, in this order.
-
-| Symptom                                                                                                              | Cause and fix                                                                                                                                                                                                                                                                        |
-| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Firewall setup failed: creating docker network "default": operation is not permitted on predefined default network` | a network named `default` collides with Docker's predefined one. The canonical schema only reserves `shim-net`, so this **validates fine and fails on the host**. Name it anything else.                                                                                             |
-| `FileNotFoundError: No usable temporary directory found in ['/tmp', ...]` and a crash-loop                           | containers run with a read-only rootfs, and `portalocker` (a syft dependency) calls `tempfile.gettempdir()` at import. Set `read_only: false`.                                                                                                                                       |
-| `2 validation errors for EnclaveSettings: email / data_owners Field required` — despite passing `--variable`         | the shim only injects variables whose **key the measured config declares**. An undeclared `--variable` is silently dropped. Declare it as a bare name under `env:`.                                                                                                                  |
-| The enclave hangs at "Building SyftEnclaveClient"                                                                    | OAuth token refresh cannot reach `oauth2.googleapis.com`. See the egress note in `tinfoil-config.yml`: `allowlist` resolves hostnames to IPs once at boot and Google rotates them, so use `egress: open`.                                                                            |
-| `curl: (60) SSL certificate problem: self signed certificate`                                                        | expected. The enclave's TLS key is generated inside it and the report commits to that key, so there is no CA. Use `-k` (as `just tinfoil-attest` does) and get your trust from `just tinfoil-verify`.                                                                                |
-| `The server had an error while processing your request.` from the domain                                             | the shim is up but your container is not serving on `upstream-port`. It has probably crashed — `just tinfoil-debug <tag> <email>` then `just tinfoil-logs`.                                                                                                                          |
-| `ValueError: Serialization error: sender fingerprint mismatch` on a data owner's login                               | with `encryption=True` the keypair is persisted at `<syftbox_folder>/<email>/private/crypto_keys.json`. A fresh `SYFTBOX_FOLDER` mints a new identity that cannot verify that account's own history on Drive. Point at the account's existing folder, or wipe its Drive state first. |
-| `upstream port is not set`                                                                                           | the config's `shim.upstream-port` is missing; it is required                                                                                                                                                                                                                         |
-| Config rejected: image must be a digest                                                                              | `image:` uses a tag; it must be `repo@sha256:...`                                                                                                                                                                                                                                    |
-| A path 404s                                                                                                          | it is not in `shim.paths`. `/.well-known/tinfoil-attestation` is exempt                                                                                                                                                                                                              |
-| `Tag vX.Y.Z already exists`                                                                                          | releases are permanent; pick the next version                                                                                                                                                                                                                                        |
-| `image_digest` check fails with a 400 from `github-proxy.tinfoil.sh`                                                 | expected — the proxy only serves `tinfoil.hash`; the verifier falls through to github.com                                                                                                                                                                                            |
-| `MissingOptionalDependency: ... tinfoil`                                                                             | `uv pip install "syft-enclave[tinfoil]"`                                                                                                                                                                                                                                             |
-| `measurement_match` fails                                                                                            | the running enclave is not the release you are verifying against — check the deployed tag with `just tinfoil-status`                                                                                                                                                                 |
-| Peer skipped with "published no attestation evidence"                                                                | the enclave booted outside a TEE, or with `attestation_provider=none`                                                                                                                                                                                                                |
-
-Redeploying? Delete the accounts' syftboxes **first**, then redeploy — the enclave caches peer Drive folders at boot, so wiping state afterwards breaks the flow.
 
 ## Formatting and validation
 

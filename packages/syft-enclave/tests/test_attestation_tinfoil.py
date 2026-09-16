@@ -522,7 +522,7 @@ class TestOptionalDependency:
             )
         message = str(excinfo.value)
         assert 'pip install "syft-enclave[tinfoil]"' in message
-        assert "docs/tinfoil.md" in message
+        assert "docs/tinfoil_deployment.md" in message
 
     def test_the_policy_is_usable_without_the_sdk(self):
         # Importing the module for its policy must not need the extra.

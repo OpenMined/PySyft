@@ -48,13 +48,13 @@ ensure_dockerhub_login := '''
 # Preflight for terraform recipes: terraform installed + tfvars present.
 tf_preflight := '''
     command -v terraform >/dev/null 2>&1 || { echo "Error: terraform not found. Install: https://developer.hashicorp.com/terraform/install" >&2; exit 1; }
-    [ -f terraform/terraform.tfvars ] || { echo "Error: terraform/terraform.tfvars not found. Copy terraform/terraform.tfvars.example and fill it in (see docs/terraform.md — Confidential Spaces deployment)." >&2; exit 1; }
+    [ -f terraform/terraform.tfvars ] || { echo "Error: terraform/terraform.tfvars not found. Copy terraform/terraform.tfvars.example and fill it in (see docs/terraform_cs.md — Confidential Spaces deployment)." >&2; exit 1; }
 '''
 
 # Preflight for tinfoil recipes: CLI installed + authenticated.
 tinfoil_preflight := '''
     command -v tinfoil >/dev/null 2>&1 || { echo "Error: tinfoil CLI not found. Install: curl -fsSL https://github.com/tinfoilsh/tinfoil-cli/raw/main/install.sh | sh" >&2; exit 1; }
-    [ -f "$HOME/.tinfoil/config.json" ] || [ -n "${TINFOIL_API_KEY:-}" ] || { echo "Error: not authenticated with Tinfoil. Run: tinfoil login (or set TINFOIL_API_KEY). See docs/tinfoil.md." >&2; exit 1; }
+    [ -f "$HOME/.tinfoil/config.json" ] || [ -n "${TINFOIL_API_KEY:-}" ] || { echo "Error: not authenticated with Tinfoil. Run: tinfoil login (or set TINFOIL_API_KEY). See docs/tinfoil_deployment.md." >&2; exit 1; }
 '''
 
 # List all available commands
@@ -558,7 +558,7 @@ credentials-to-token credentials_path output_path:
 # ---------------------------------------------------------------------------------------------------------------------
 # Terraform
 #
-# Declarative alternative to the gcloud recipes above — see docs/terraform.md.
+# Declarative alternative to the gcloud recipes above — see docs/terraform_cs.md.
 # Config lives in terraform/terraform.tfvars (gitignored, copy the .example);
 # these recipes never read ~/.syft-enclaves/settings.json. dev_mode is always
 # forced on the CLI by tf-apply / tf-apply-dev so tfvars can't override it.
@@ -677,7 +677,7 @@ tf-ssh:
 # measured config whose signed GitHub releases publish the expected
 # measurement. `tinfoil-release` is what keeps the two in step.
 #
-# Full walkthrough: docs/tinfoil.md
+# Full walkthrough: docs/tinfoil_deployment.md
 # ---------------------------------------------------------------------------------------------------------------------
 
 # Who am I logged in to Tinfoil as
@@ -752,7 +752,7 @@ tinfoil-release version:
 
 # EMAIL and DATA_OWNERS are deploy-time variables, so they are NOT part of the
 # measurement and a data owner cannot verify them — same as tee-env-* metadata
-# on Confidential Spaces. See docs/tinfoil.md.
+# on Confidential Spaces. See docs/tinfoil_deployment.md.
 # Deploy a container from a published release
 [group('tinfoil')]
 tinfoil-deploy tag email data_owners="" extra_args="":

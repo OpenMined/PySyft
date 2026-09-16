@@ -93,10 +93,11 @@ have access to the account.
 > pins its connection to that key can trust the key bundle served over it. `attest_peer` does this
 > and sets the peer's keys from the result. On **Confidential Spaces** it is still unimplemented —
 > the channel exists (a workload can inject nonces into the token) but is unused, so there the key
-> bundle remains an unsigned Drive file. See
-> [Tinfoil Deployment](./tinfoil.md#what-this-proves-and-what-it-does-not). The data owners and the DS then download the enclave's verified keys (and
-> share their own), and from that point on there is a **trusted, end-to-end secure channel** between the
-> enclave and every participant.
+> bundle remains an unsigned Drive file. Section 6 has the detail.
+
+The data owners and the DS then download the enclave's verified keys (and
+share their own), and from that point on there is a **trusted, end-to-end secure channel** between the
+enclave and every participant.
 
 Crucially, Google Drive is treated purely as an **untrusted transport** — a message-passing channel
 and nothing more. The threat model assumes a fully adversarial transport: an attacker (or Google
@@ -110,3 +111,37 @@ forge an accepted message.
 
 This is what lets Steps 1–5 of the [Enclave Flow](./flow.md) happen without
 anyone trusting Google Drive, the network, or each other.
+
+## 6. What attestation proves on each target
+
+Section 5 describes the intent. What each deployment target actually delivers differs, so this is
+the honest accounting. It is written for **Tinfoil**; where Confidential Spaces differs, it is
+called out.
+
+**Proves.** The enclave is genuine SEV-SNP/TDX hardware with debug disabled and its firmware TCB at or above minimum; it booted the exact CVM image and config published in a named release of the config repo; that release was signed by GitHub OIDC from that repo's tag via Sigstore; and the container image digest matches the one you pinned.
+
+**Does not prove.** Which email or data owners the enclave was started with. Those are deploy-time `--variable`s, so they are outside the measurement and the attested code merely relays whatever its deployer handed it. Confidential Spaces is in the same position today (`tee-env-*` metadata is not checked either).
+
+**Key binding, and how it is achieved.** A workload cannot inject a nonce into the report: its 64 bytes of user data are the sha256 of the shim's TLS public key followed by its HPKE public key. But that is exactly what makes binding possible — the report _commits to the key terminating a TLS connection to the enclave_. So the client:
+
+1. verifies the report,
+2. opens HTTPS to the enclave and checks the certificate it is served carries that same key,
+3. checks the enclave signed the client's nonce with the key bundle it served,
+4. and then trusts that bundle, which came down the same connection.
+
+No certificate authority is involved anywhere: the enclave's certificate is self-signed, and the _report_ is what decides whether to trust it. `attest_peer` then sets those keys for the peer, so the enclave's public keys are no longer an unsigned Drive file. This is the binding section 5 describes.
+
+It also gets freshness for free: a replayed report commits to a TLS key whose private half lives in an enclave the attacker does not control, so the pin fails.
+
+**Freshness comes from a nonce, not from the report.** A workload cannot influence the report's user data, so the client sends a random nonce and the enclave signs it with the identity key from the bundle it just served. That proves two things the report cannot: the enclave _holds the private half_ of the key we are about to encrypt to, and the answer was produced for _this_ exchange rather than replayed. The bundle is adopted only when both `key_binding` and `nonce_freshness` pass.
+
+**Drive is not a fallback.** Evidence is still published to `SYFT_version.json` — as provenance, and so the path exists if it is ever needed again — but the client always appraises a Tinfoil enclave from the live API. An unreachable enclave is an error, not a downgrade: accepting the Drive copy would silently mean unbound keys and a replayable report.
+
+**On Confidential Spaces**, none of the binding above is implemented. The report is a Google-signed
+JWT fetched at boot and written once to `SYFT_version.json`, and `build_eat_nonce()` is called with
+no caller nonce — so the enclave's public keys are not committed into it, and a captured token stays
+acceptable for the length of the expiry grace window. The channel for fixing this exists (a workload
+_can_ inject nonces into the token) but is unused.
+
+For how to deploy either target, see [Confidential Spaces Deployment](./terraform_cs.md) and
+[Tinfoil Deployment](./tinfoil_deployment.md).

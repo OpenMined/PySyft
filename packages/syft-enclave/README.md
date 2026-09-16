@@ -8,8 +8,9 @@ Enclave support for syft, enabling secure computation in Trusted Execution Envir
 - [Security Overview](./docs/security.md)
 - [Enclave Architecture](./docs/enclave_architecture.md)
 - [API](./docs/api.md)
-- [Confidential Spaces Deployment (Terraform)](./docs/terraform.md)
-- [Tinfoil Deployment](./docs/tinfoil.md)
+- [Confidential Spaces Deployment (Terraform)](./docs/terraform_cs.md)
+- [Tinfoil Deployment](./docs/tinfoil_deployment.md)
+- [Tinfoil Troubleshooting](./docs/tinfoil_troubleshooting.md)
 
 ## Prerequisites
 
@@ -23,13 +24,13 @@ For Confidential Spaces (the rest of this README):
 - `gcloud` [CLI installed](https://docs.cloud.google.com/sdk/docs/install-sdk)
 - A GCP project with billing enabled
 
-For Tinfoil, see [docs/tinfoil.md](./docs/tinfoil.md) — no GCP needed.
+For Tinfoil, see [docs/tinfoil_deployment.md](./docs/tinfoil_deployment.md) — no GCP needed.
 
 All commands are defined in the [`Justfile`](./Justfile). Run them from this directory.
 
-Prefer declarative deploys? The same stack can be managed with Terraform — see [Confidential Spaces Deployment](./docs/terraform.md) (`just tf-apply` / `just tf-apply-dev`).
+Prefer declarative deploys? The same stack can be managed with Terraform — see [Confidential Spaces Deployment](./docs/terraform_cs.md) (`just tf-apply` / `just tf-apply-dev`).
 
-Deploying without GCP? See [Tinfoil Deployment](./docs/tinfoil.md) (`just tinfoil-release` / `just tinfoil-deploy`), which needs the `tinfoil` CLI instead of `gcloud`.
+Deploying without GCP? See [Tinfoil Deployment](./docs/tinfoil_deployment.md) (`just tinfoil-release` / `just tinfoil-deploy`), which needs the `tinfoil` CLI instead of `gcloud`.
 
 ## One-time setup
 
@@ -79,7 +80,7 @@ just hardware=gpu start EMAIL           # production
 just hardware=gpu start-debug EMAIL     # debug
 ```
 
-GPU enclaves use flex-start provisioning: the create call may wait for H100 capacity (up to 2h), then the VM runs `gpu_run_duration_seconds` (default 2 days). Details: [Confidential Spaces — GPU deployments](docs/terraform.md#gpu-deployments).
+GPU enclaves use flex-start provisioning: the create call may wait for H100 capacity (up to 2h), then the VM runs `gpu_run_duration_seconds` (default 2 days). Details: [Confidential Spaces — GPU deployments](docs/terraform_cs.md#gpu-deployments).
 
 ## Inspect a running VM
 

@@ -22,7 +22,7 @@ The debug image allows SSH access and container log redirection to serial output
 
 ```bash
 just start-debug                 # cpu (default)
-just hardware=gpu start-debug    # gpu (a3-highgpu-1g, 1x H100) — see docs/terraform.md (Confidential Spaces) "GPU deployments"
+just hardware=gpu start-debug    # gpu (a3-highgpu-1g, 1x H100) — see docs/terraform_cs.md (Confidential Spaces) "GPU deployments"
 ```
 
 Debug enclaves run with encryption off — data owner clients must match: `login_do(encryption=False)`.
