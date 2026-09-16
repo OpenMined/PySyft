@@ -122,8 +122,8 @@ class TestAttestPhase:
         written = {}
         monkeypatch.setattr(
             "syft_enclaves.runner.write_public_bundle",
-            lambda bundle, keys_path: written.update(
-                bundle=bundle, keys_path=keys_path
+            lambda bundle, keys_path, claims=None: written.update(
+                bundle=bundle, keys_path=keys_path, claims=claims
             ),
         )
 
@@ -154,7 +154,7 @@ class TestAttestPhase:
         calls = []
         monkeypatch.setattr(
             "syft_enclaves.runner.write_public_bundle",
-            lambda bundle, keys_path: calls.append(bundle),
+            lambda bundle, keys_path, claims=None: calls.append(bundle),
         )
 
         client = _make_client()
@@ -193,7 +193,8 @@ class TestClaimsBinding:
             "syft_enclaves.runner.select_provider", lambda name, settings: provider
         )
         monkeypatch.setattr(
-            "syft_enclaves.runner.write_public_bundle", lambda bundle, keys_path: None
+            "syft_enclaves.runner.write_public_bundle",
+            lambda bundle, keys_path, claims=None: None,
         )
         return provider
 
@@ -235,7 +236,9 @@ class TestClaimsBinding:
 
         assert order == ["keys", "mint"]
 
-    def test_a_target_without_a_nonce_channel_binds_nothing(self, monkeypatch):
+    def test_a_target_without_a_nonce_channel_gets_no_token_binding(self, monkeypatch):
+        # Tinfoil still asserts the same claims, but over its pinned channel —
+        # nothing goes into the report, so collect() is given nothing.
         provider = self._provider(monkeypatch, accepts_nonce=False)
         EnclaveRunner(client=self._client(), require_tee=True).init()
         assert provider.collect.call_args.kwargs == {}

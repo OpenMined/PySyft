@@ -90,10 +90,10 @@ Because any peer can **verify the attestation report**, they know those public k
 produced by an enclave running the expected open-source container — not by some person who happens to
 have access to the account.
 
-> **Status.** This binding is implemented on both targets, by different routes: **Tinfoil** binds
-> over a connection its report vouches for (§6.1), **Confidential Spaces** commits to the facts
-> inside the signed token itself (§6.2). The Confidential Space route reaches further, covering the
-> enclave's email and configured data owners as well as its keys.
+> **Status.** Implemented on both targets, binding the same facts — keys, email and configured data
+> owners — by different mechanisms: **Confidential Spaces** commits to a digest of them inside the
+> signed token (§6.1), **Tinfoil** signs them with a key its report vouches for, over a connection
+> pinned to that key (§6.2). Each route has a different remaining weakness; §6.3 compares them.
 
 The data owners and the DS then download the enclave's verified keys (and
 share their own), and from that point on there is a **trusted, end-to-end secure channel** between the
@@ -114,81 +114,97 @@ anyone trusting Google Drive, the network, or each other.
 
 ## 6. What attestation proves on each target
 
-Section 5 describes the intent. Both targets deliver the first half of it — proof of _what code is
-running_ — but they differ on the second half, whether the enclave's keys are bound to that proof.
-So this section is split by target.
+Section 5 describes the intent. Both targets deliver it, but by different routes, and each route has
+a different remaining weakness. This section is the honest accounting.
 
-**Common to both.** A verified report proves the workload runs on genuine confidential-computing
-hardware with debug disabled, and that the code and configuration are the ones published: on
-Tinfoil, the CVM image and `tinfoil-config.yml` of a named, Sigstore-signed release of the config
-repo, including the container image digest it pins; on Confidential Spaces, the image digest in the
-token's claims. Neither proves anything about values supplied at deploy time — the enclave's email
-and its configured data owners are deploy-time inputs on both targets, and attested code faithfully
-relays whatever its deployer handed it.
+### 6.0 What has to be bound, and why
 
-### 6.1 Tinfoil: the keys come down a connection the report vouches for
+A verified report proves the workload runs on genuine confidential-computing hardware with debug
+disabled, and that the **code and configuration** are the ones published: on Tinfoil, the CVM image
+and `tinfoil-config.yml` of a named Sigstore-signed release, including the container image digest it
+pins; on Confidential Spaces, the image digest in the token's claims.
 
-A workload cannot inject a nonce into a Tinfoil report — its 64 bytes of user data are the sha256 of
-the shim's TLS public key followed by its HPKE public key. But that is exactly what makes binding
+That is not enough on its own. Three things a peer needs are _runtime_ values, outside the
+measurement:
+
+| Fact                                | Why it matters                                                                                                                                                |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the enclave's **public key bundle** | you are about to encrypt private data to it. An unbound bundle can be swapped by whoever controls the enclave's Drive account, and they then read everything. |
+| the enclave's **email**             | it identifies the datasite you are talking to.                                                                                                                |
+| its configured **data owners**      | this list is the approval gate — a job runs only once _all_ of them approve, so anyone who could change it unobserved could approve work on their own.        |
+
+Both targets therefore bind the same document — email, data owners, syft version, key bundle — to
+the report. The document always travels in the clear and is never trusted on its own; what differs
+is the mechanism that makes it true.
+
+### 6.1 Confidential Spaces: committed to inside the signed token
+
+Confidential Space lets a workload ask the launcher to embed bytes of its choosing into the
+Google-signed token, via `eat_nonce`. Only code running inside the measured container can do that,
+and the signature is unforgeable. So the enclave commits to the **sha256 of the claims document** in
+the token, and a verifier recomputes that digest from the published document and compares.
+
+It is the _signature_ doing the work, not secrecy — measurements and image digests are public on
+both targets, deliberately, because that is what makes them auditable.
+
+There is room for exactly one digest: slot 0 carries the syft version in plain text, and a nonce is
+capped at 74 characters matching `[a-zA-Z0-9_.-]`, which rules out carrying an email literally and
+leaves a 64-character sha256 hex comfortably inside. Hence one digest over one document rather than
+a field per fact.
+
+The binding travels **inside the file**, so it needs no connection to the enclave, which suits the
+offline-first transport.
+
+**Weakness: no freshness.** The token is minted once at boot and written to `SYFT_version.json`, so
+a captured one stays acceptable for the length of the expiry grace window. The single spare nonce
+slot is spent on the claims digest, leaving no room for a per-verifier challenge. Bounded staleness
+— re-publishing periodically and narrowing the grace window — is the remaining work, tracked as H16
+in the [protocol security review](../../../research/protocol-security-review/SUMMARY.md).
+
+### 6.2 Tinfoil: bound to a connection, then signed over it
+
+Tinfoil has no workload channel at all: its report's 64 bytes of user data are the sha256 of the
+shim's TLS public key followed by its HPKE public key. But that is exactly what makes binding
 possible, because the report **commits to the key terminating a TLS connection to the enclave**. So
 the client:
 
 1. verifies the report;
-2. opens HTTPS to the enclave and checks the certificate it is served carries that same key;
-3. sends a random nonce and checks the enclave signed it with the identity key from the bundle it
-   served;
-4. and then trusts that bundle, which came down the same connection.
+2. opens HTTPS to the enclave and checks the certificate it is served carries that same key — the
+   channel therefore provably ends inside the attested enclave;
+3. takes the key bundle served over that channel, which is now authentic;
+4. sends a random nonce, and checks the enclave signed **the nonce together with the claims
+   document** using the identity key from that bundle.
 
 No certificate authority is involved anywhere: the enclave's certificate is self-signed, and the
-_report_ is what decides whether to trust it. Step 3 adds what the report cannot carry — that the
-enclave **holds the private half** of the key we are about to encrypt to, and that the answer was
-produced for this exchange rather than replayed. `attest_peer` then sets those keys for the peer, so
-the enclave's public keys are no longer an unsigned Drive file. The bundle is adopted only when both
-the pin and the nonce check pass.
+_report_ is what decides whether to trust it. Step 4 does three jobs in one signature — it proves
+the enclave **holds the private half** of the key we are about to encrypt to, that the answer was
+produced for _this_ exchange, and that the claims are the facts it meant to assert. The bundle and
+the claims are accepted only if steps 2 and 4 both pass.
 
-Replay is ruled out as a side effect: a captured report commits to a TLS key whose private half
-lives in an enclave the attacker does not control, so the pin fails.
+**Freshness comes free**, unlike on Confidential Spaces: a captured report commits to a TLS key
+whose private half lives in an enclave the attacker does not control, so the pin fails, and the
+nonce is ours and new each time.
 
-The cost is that this needs the enclave **online**. Evidence is still published to
-`SYFT_version.json` as provenance, but it is never appraised in place of the live exchange — doing
-so would silently mean unbound keys and a replayable report.
+**Weakness: it needs the enclave online.** Evidence is still published to `SYFT_version.json` as
+provenance and to advertise the host, but it is never appraised in place of the live exchange —
+doing so would silently mean unbound keys and a replayable report. An unreachable enclave is an
+error, not a downgrade.
 
-### 6.2 Confidential Spaces: the facts are committed to inside the token
+### 6.3 Side by side
 
-Confidential Space gives a workload something Tinfoil does not: it can ask the launcher to embed
-bytes of its choosing into the Google-signed token, via `eat_nonce`. Only code running inside the
-measured container can do that, and the token's signature is unforgeable. Note that it is the
-_signature_ doing the work, not secrecy — measurements and image digests are public on both targets,
-deliberately, because that is what makes them auditable.
+|                                | Confidential Spaces           | Tinfoil                                         |
+| ------------------------------ | ----------------------------- | ----------------------------------------------- |
+| hardware, code, config         | ✅                            | ✅                                              |
+| key bundle bound               | ✅ digest in the signed token | ✅ served over a channel the report vouches for |
+| email and data owners attested | ✅ same digest                | ✅ signed with the bound key                    |
+| freshness                      | ❌ minted once at boot        | ✅ live connection and a per-request nonce      |
+| works offline                  | ✅ binding rides in the file  | ❌ needs the enclave reachable                  |
 
-So the enclave publishes a **claims document** — its email, its configured data owners, its syft
-version and its public key bundle — and commits to that document's sha256 in the token. A verifier
-recomputes the digest from the published document and compares. The document travels in the clear
-and is untrusted; the digest inside the signed token is what makes it true.
-
-There is room for exactly one digest. Slot 0 carries the syft version in plain text, and a nonce is
-capped at 74 characters matching `[a-zA-Z0-9_.-]` — which rules out carrying an email address
-literally, and leaves a 64-character sha256 hex comfortably inside. Hence one digest over one
-document rather than a field per fact.
-
-This closes the gap section 5 describes, and closes it more cheaply than Tinfoil does: the binding
-travels **inside the file**, so it needs no connection to the enclave, which suits the offline-first
-transport. It also reaches further. Tinfoil binds the enclave's keys; here the same commitment
-covers the enclave's **email and its configured data owners**, which are deploy-time inputs and
-otherwise unverifiable. That matters most for the data owners, because that list is the approval gate
-— a job runs only once all of them approve, so an operator who could change it unobserved could
-approve work on their own.
-
-Binding proves the enclave really was started with those values. Whether they are the _right_ values
-is the verifier's call, so `AppraisalPolicy` takes an optional `expected_email` and
-`expected_data_owners`: left unset the attested values are reported, set they are required.
-
-What it does not give is freshness. The token is minted once at boot and written to
-`SYFT_version.json`, so a captured one stays acceptable for the length of the expiry grace window;
-the second nonce slot is spent on the claims digest, so there is no room for a per-verifier
-challenge as well. Tinfoil gets freshness from its live connection instead. Bounded staleness —
-re-publishing periodically and narrowing the grace window — is the remaining work, tracked as H16 in
-the [protocol security review](../../../research/protocol-security-review/SUMMARY.md).
+Whichever route bound them, the attested facts are appraised identically: `AppraisalPolicy` and
+`TinfoilAppraisalPolicy` both take an optional `expected_email` and `expected_data_owners`, and both
+run the same comparison. Left unset the attested values are reported; set, they are required.
+Binding proves the enclave really was started with those values — whether they are the _right_ ones
+is the verifier's call.
 
 For how to deploy either target, see [Confidential Spaces Deployment](./terraform_cs.md) and
 [Tinfoil Deployment](./tinfoil_deployment.md).

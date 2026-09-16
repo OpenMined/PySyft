@@ -173,15 +173,21 @@ def pinned(monkeypatch):
         sign_with=None,
         signature="valid",
         unreachable=False,
+        claims=None,
+        claims_served="same",
     ):
         keys, real_bundle = _real_keys()
         served = real_bundle if bundle == "real" else bundle
         nonce = new_nonce()
         if signature == "valid":
             signer = sign_with or keys
-            nonce_signature = sign_challenge(signer.to_jwks(), nonce)
+            # Signed over the claims the enclave meant; claims_served lets a
+            # test serve different ones, as a tamperer would.
+            nonce_signature = sign_challenge(signer.to_jwks(), nonce, claims)
         else:
             nonce_signature = signature
+        if claims_served != "same":
+            claims = claims_served
 
         payload = AttestedPayload(
             document=document or TINFOIL_DOC,
@@ -190,6 +196,7 @@ def pinned(monkeypatch):
             host=HOST,
             nonce=nonce,
             nonce_signature=nonce_signature,
+            claims=claims,
         )
 
         def fetch(host, *a, **kw):
@@ -244,6 +251,7 @@ class TestHappyPath:
             "hardware_report",
             "key_binding",
             "nonce_freshness",
+            "claims_binding",
             "release_lookup",
             "sigstore_bundle",
             "measurement_match",
@@ -529,3 +537,68 @@ class TestOptionalDependency:
         from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
 
         assert TinfoilAppraisalPolicy().repo == "OpenMined/syft-enclave-tinfoil"
+
+
+class TestSignedClaims:
+    """Tinfoil's route to attested runtime facts.
+
+    Its report has no workload channel, so the enclave signs the same claims
+    document Confidential Space commits to in its token, with the key the
+    report already binds, and serves it over the pinned connection.
+    """
+
+    OWNERS = ["model_owner@openmined.org", "benchmark_owner@openmined.org"]
+
+    def _claims(self, **overrides):
+        from syft.version import SYFT_VERSION
+        from syft_enclaves.attestation.claims import build_claims
+
+        claims = build_claims(
+            "enclave@openmined.org", self.OWNERS, SYFT_VERSION, {"identity": "e"}
+        )
+        claims.update(overrides)
+        return claims
+
+    def test_signed_claims_are_accepted_and_reported(self, verify, pinned):
+        claims = self._claims()
+        pinned(claims=claims)
+        result = verify(install_pinned=False, expected_image_digest=IMAGE_DIGEST)
+        check = _check(result, "claims_binding")
+        assert check.passed is True
+        assert "enclave@openmined.org" in check.detail
+
+    def test_claims_altered_after_signing_are_rejected(self, verify, pinned):
+        # The signature covers nonce AND claims, so swapping the claims breaks
+        # the one signature — nonce_freshness fails, and the claims with it.
+        pinned(claims=self._claims(), claims_served=self._claims(email="evil@x.com"))
+        with pytest.raises(AttestationError) as excinfo:
+            verify(install_pinned=False, expected_image_digest=IMAGE_DIGEST)
+        assert _check(excinfo.value.result, "nonce_freshness").passed is False
+        assert _check(excinfo.value.result, "claims_binding").passed is False
+
+    def test_no_claims_is_skipped_not_failed(self, verify, pinned):
+        pinned(claims=None)
+        result = verify(install_pinned=False, expected_image_digest=IMAGE_DIGEST)
+        assert _check(result, "claims_binding").passed is None
+
+    def test_expected_email_and_owners_are_enforced(self, verify, pinned):
+        pinned(claims=self._claims())
+        result = verify(
+            install_pinned=False,
+            expected_image_digest=IMAGE_DIGEST,
+            expected_email="enclave@openmined.org",
+            expected_data_owners=list(reversed(self.OWNERS)),
+        )
+        assert _check(result, "enclave_email").passed is True
+        assert _check(result, "data_owners").passed is True
+
+    def test_an_unexpected_data_owner_fails(self, verify, pinned):
+        # The load-bearing one: this list is the approval gate.
+        pinned(claims=self._claims())
+        with pytest.raises(AttestationError) as excinfo:
+            verify(
+                install_pinned=False,
+                expected_image_digest=IMAGE_DIGEST,
+                expected_data_owners=["someone-else@openmined.org"],
+            )
+        assert _check(excinfo.value.result, "data_owners").passed is False

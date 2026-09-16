@@ -20,7 +20,11 @@ import os
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from syft_enclaves.evidence import probed_locations, select_provider
-from syft_enclaves.evidence.key_bundle import read_public_bundle, sign_nonce
+from syft_enclaves.evidence.key_bundle import (
+    read_claims,
+    read_public_bundle,
+    sign_nonce,
+)
 from syft_enclaves.settings import AttestationSettings
 from syft_enclaves.evidence.tee_token import validate_nonce
 
@@ -109,9 +113,14 @@ def attestation(nonce: str | None = None):
             # over an unpinned connection they are worth nothing. None when
             # encryption is disabled or the runner has not started yet.
             "key_bundle": read_public_bundle(),
-            # Proof the enclave holds the private half of that bundle, and
-            # that this response was produced for this exchange: a signature
-            # over the caller's nonce by the bundle's identity key.
+            # The runtime facts this enclave asserts about itself — email,
+            # data owners, key bundle. Untrusted on their own; the signature
+            # below is what makes them trustworthy on Tinfoil, and on
+            # Confidential Space the token's nonce commits to them too.
+            "claims": read_claims(),
+            # One signature over the caller's nonce AND the claims, by the
+            # bundle's identity key: proof the enclave holds that key, that
+            # this answer is for this exchange, and that these are its facts.
             "nonce": nonce,
             "nonce_signature": sign_nonce(nonce) if nonce else None,
         }

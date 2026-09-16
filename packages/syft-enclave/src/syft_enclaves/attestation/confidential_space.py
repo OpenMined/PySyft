@@ -21,7 +21,11 @@ from pydantic import BaseModel
 
 from syft.version import SYFT_VERSION
 
-from syft_enclaves.attestation.claims import ClaimsBindingError, verify_claims_digest
+from syft_enclaves.attestation.claims import (
+    ClaimsBindingError,
+    check_expected,
+    verify_claims_digest,
+)
 from syft_enclaves.attestation.result import (
     AttestationError,
     AttestationResult,
@@ -130,35 +134,16 @@ def _check_expected_claims(
 ) -> None:
     """Compare the now-attested facts against what the verifier expected.
 
-    Binding proves the enclave really was started with these values; only the
-    caller knows whether they are the right ones.
+    Delegates to ``attestation.claims.check_expected``, shared with Tinfoil:
+    the two targets bind the document differently, but once it is trustworthy
+    the appraisal is identical.
     """
-    for name, label, expected, actual in [
-        (
-            "enclave_email",
-            "Enclave email",
-            policy.expected_email,
-            published_claims.get("email"),
-        ),
-        (
-            "data_owners",
-            "Data owners",
-            sorted(policy.expected_data_owners)
-            if policy.expected_data_owners is not None
-            else None,
-            published_claims.get("data_owners"),
-        ),
-    ]:
+    for name, label, passed, detail in check_expected(
+        published_claims, policy.expected_email, policy.expected_data_owners
+    ):
         if verbose:
             print(f"  ⏳ {label} ...")
-        if expected is None:
-            result.add(name, label, None, f"not pinned; enclave reports {actual!r}")
-        elif expected == actual:
-            result.add(name, label, True, f"matches {actual!r}")
-        else:
-            result.add(
-                name, label, False, f"enclave reports {actual!r}, expected {expected!r}"
-            )
+        result.add(name, label, passed, detail)
 
 
 def verify_attestation_token(

@@ -17,9 +17,11 @@ inside. So the enclave publishes a claims document alongside its token and
 commits to its digest. The document itself is untrusted — the digest is what
 makes it true.
 
-Tinfoil cannot do this: its report's user data is the shim's own keys, with no
-workload channel. It reaches the same guarantee over a pinned connection
-instead; see ``attestation.https``.
+Tinfoil has no such channel — its report's user data is the shim's own keys —
+so it reaches the same guarantee a third way: the enclave signs the same claims
+document with the key the report already binds, and serves it over the pinned
+connection. Different route, same document, same digest, so the expectation
+checks below are shared.
 """
 
 from __future__ import annotations
@@ -79,3 +81,40 @@ def verify_claims_digest(claims: dict[str, Any], digest: str) -> None:
             f"published claims hash to {actual[:16]}… but the token commits to "
             f"{digest[:16]}… — they have been altered or do not belong together"
         )
+
+
+def check_expected(
+    claims: dict[str, Any],
+    expected_email: Optional[str],
+    expected_data_owners: Optional[list[str]],
+) -> list[tuple[str, str, Optional[bool], str]]:
+    """Compare attested facts against what the verifier expected.
+
+    Binding proves the enclave really was started with these values; only the
+    caller knows whether they are the right ones. Returns
+    ``(name, label, passed, detail)`` rows for the caller's checklist —
+    ``passed=None`` where nothing was pinned, so an unpinned value is reported
+    rather than demanded.
+
+    Shared by both targets: they bind the document differently, but once it is
+    trustworthy the appraisal is identical.
+    """
+    return [
+        _compare("enclave_email", "Enclave email", expected_email, claims.get("email")),
+        _compare(
+            "data_owners",
+            "Data owners",
+            sorted(expected_data_owners) if expected_data_owners is not None else None,
+            claims.get("data_owners"),
+        ),
+    ]
+
+
+def _compare(
+    name: str, label: str, expected: Any, actual: Any
+) -> tuple[str, str, Optional[bool], str]:
+    if expected is None:
+        return (name, label, None, f"not pinned; enclave reports {actual!r}")
+    if expected == actual:
+        return (name, label, True, f"matches {actual!r}")
+    return (name, label, False, f"enclave reports {actual!r}, expected {expected!r}")

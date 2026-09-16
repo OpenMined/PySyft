@@ -22,12 +22,15 @@ would tie the response to this exchange rather than an earlier one.
 from __future__ import annotations
 
 import base64
+import json
 import secrets
-from typing import Any
+from typing import Any, Optional
 
 #: Domain separator, so a signature made here can never be replayed as a
 #: signature for some other syft protocol that also signs with the identity key.
-CHALLENGE_PREFIX = b"syft-enclave-attestation-nonce-v1:"
+#: v2 covers the claims document as well as the nonce; a v1 enclave's signature
+#: will simply fail to verify, which is the outcome we want from a mismatch.
+CHALLENGE_PREFIX = b"syft-enclave-attestation-challenge-v2:"
 NONCE_BYTES = 32
 
 
@@ -40,12 +43,23 @@ def new_nonce() -> str:
     return secrets.token_hex(NONCE_BYTES)
 
 
-def challenge_message(nonce: str) -> bytes:
-    """Exactly the bytes both sides sign and verify."""
-    return CHALLENGE_PREFIX + nonce.encode()
+def challenge_message(nonce: str, claims: Optional[dict[str, Any]] = None) -> bytes:
+    """Exactly the bytes both sides sign and verify.
+
+    Covers the claims document as well as the nonce, so a single signature
+    proves three things at once: the enclave holds the key, the answer is for
+    this exchange, and these are the facts it meant to assert. Canonical JSON
+    so both sides hash the same bytes from the same values.
+    """
+    payload = json.dumps(
+        {"nonce": nonce, "claims": claims}, sort_keys=True, separators=(",", ":")
+    )
+    return CHALLENGE_PREFIX + payload.encode()
 
 
-def sign_challenge(private_jwks: dict[str, Any], nonce: str) -> str:
+def sign_challenge(
+    private_jwks: dict[str, Any], nonce: str, claims: Optional[dict[str, Any]] = None
+) -> str:
     """Sign *nonce* with the identity key from a JWKS, base64 encoded.
 
     Runs inside the enclave. Takes the JWKS rather than a ``PeerStore`` so the
@@ -57,10 +71,16 @@ def sign_challenge(private_jwks: dict[str, Any], nonce: str) -> str:
     if identity.get("crv") != "Ed25519":
         raise ValueError(f"identity key is not Ed25519: {identity.get('crv')!r}")
     private_key = Ed25519PrivateKey.from_private_bytes(_b64url_decode(identity["d"]))
-    return base64.b64encode(private_key.sign(challenge_message(nonce))).decode()
+    message = challenge_message(nonce, claims)
+    return base64.b64encode(private_key.sign(message)).decode()
 
 
-def verify_challenge(bundle: dict[str, Any], nonce: str, signature_b64: str) -> None:
+def verify_challenge(
+    bundle: dict[str, Any],
+    nonce: str,
+    signature_b64: str,
+    claims: Optional[dict[str, Any]] = None,
+) -> None:
     """Check the enclave signed *our* nonce with the bundle's identity key.
 
     Raises :class:`NonceVerificationError` on any failure — a bad signature is
@@ -74,7 +94,8 @@ def verify_challenge(bundle: dict[str, Any], nonce: str, signature_b64: str) -> 
         raise NonceVerificationError("the enclave returned no nonce signature")
     try:
         public_key = Ed25519PublicKey.from_public_bytes(identity_key_bytes(bundle))
-        public_key.verify(base64.b64decode(signature_b64), challenge_message(nonce))
+        message = challenge_message(nonce, claims)
+        public_key.verify(base64.b64decode(signature_b64), message)
     except InvalidSignature as e:
         raise NonceVerificationError(
             "the nonce signature does not match the key bundle: the responder "

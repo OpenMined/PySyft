@@ -17,9 +17,12 @@ A workload cannot inject a nonce: the report's 64 bytes of user data are the
 sha256 of the shim's TLS public key followed by its HPKE public key. That is
 also what makes key binding possible, because the report commits to the key
 terminating a TLS connection to the enclave — see
-``syft_enclaves.attestation.https``. Freshness for the syft key comes from a nonce the
-enclave signs with that bundle (``attestation.nonce``), which the report cannot
-carry. Evidence stays published to Drive as provenance, but it is never a
+``syft_enclaves.attestation.https``. Freshness, and the enclave's own runtime facts
+(email, configured data owners), come from a nonce the enclave signs *together
+with* its claims document using that bundle — see ``attestation.nonce`` and
+``attestation.claims``. Neither is something the report itself can carry, and
+Confidential Space reaches the same guarantee by committing to that document's
+digest inside its signed token instead. Evidence stays published to Drive as provenance, but it is never a
 fallback here: appraising it instead would mean unbound keys and a replayable
 report, so an unreachable enclave is an error.
 """
@@ -36,6 +39,7 @@ from pydantic import BaseModel
 from syft.version import SYFT_VERSION
 
 from syft_enclaves.attestation.result import AttestationError, AttestationResult
+from syft_enclaves.attestation.claims import check_expected
 from syft_enclaves.attestation.envelope import AttestationEvidence
 from syft_enclaves.attestation.https import (
     AttestationFetchError,
@@ -80,9 +84,13 @@ class TinfoilAppraisalPolicy(BaseModel):
     # Which container in the config carries the enclave.
     container_name: str = "syft-enclave"
     # Where to fetch the report over a connection pinned to the key the report
-    # commits to. None -> fall back to the host the enclave advertised in its
-    # evidence; still None -> Drive-only, with no key binding.
+    # commits to. None -> use the host the enclave advertised in its evidence.
     host: Optional[str] = None
+    # Runtime facts the enclave asserts and signs. None -> the value is
+    # reported but not required; set one to refuse an enclave started with
+    # anything else. Same fields, and the same checks, as Confidential Space.
+    expected_email: Optional[str] = None
+    expected_data_owners: Optional[list[str]] = None
 
 
 def verify_tinfoil_evidence(
@@ -141,6 +149,11 @@ def _fetch_pinned(
         ) from e
 
 
+def _passed(result: AttestationResult, name: str) -> bool:
+    """Whether a check already recorded passed outright."""
+    return any(c.name == name and c.passed is True for c in result.checks)
+
+
 class _TinfoilVerifier:
     """One verification run. Holds the state the checks hand to each other."""
 
@@ -174,6 +187,7 @@ class _TinfoilVerifier:
         self._check_hardware_report()
         self._check_key_binding()
         self._check_nonce_freshness()
+        self._check_claims()
         self._check_release_lookup()
         self._check_sigstore_bundle()
         self._check_measurement_match()
@@ -272,7 +286,12 @@ class _TinfoilVerifier:
             )
             return
         try:
-            verify_challenge(bundle, self.payload.nonce, self.payload.nonce_signature)
+            verify_challenge(
+                bundle,
+                self.payload.nonce,
+                self.payload.nonce_signature,
+                self.payload.claims,
+            )
         except NonceVerificationError as e:
             self.result.add("nonce_freshness", "Nonce freshness", False, str(e))
             return
@@ -280,8 +299,50 @@ class _TinfoilVerifier:
             "nonce_freshness",
             "Nonce freshness",
             True,
-            "the enclave signed our nonce with the key it served",
+            "the enclave signed our nonce, and its claims, with the key it served",
         )
+
+    def _check_claims(self) -> None:
+        """The runtime facts the enclave asserts, and whether we wanted them.
+
+        Trustworthy because the signature checked in ``nonce_freshness``
+        covers this document as well as the nonce — which is Tinfoil's route
+        to the guarantee Confidential Space gets from the token's nonce slot.
+        """
+        self._progress("Claims binding")
+        claims = self.payload.claims
+        proven = _passed(self.result, "nonce_freshness")
+        if not claims:
+            self.result.add(
+                "claims_binding",
+                "Claims binding",
+                None,
+                "the enclave asserted no claims, so its email and data owners "
+                "are unattested (skipped)",
+            )
+            return
+        if not proven:
+            # The signature covering them did not verify, so they are words.
+            self.result.add(
+                "claims_binding",
+                "Claims binding",
+                False,
+                "claims are not covered by a verified signature",
+            )
+            return
+        owners = claims.get("data_owners") or []
+        self.result.add(
+            "claims_binding",
+            "Claims binding",
+            True,
+            f"signed claims: email={claims.get('email')!r}, "
+            f"{len(owners)} data owner(s)",
+        )
+        for name, label, passed, detail in check_expected(
+            claims, self.policy.expected_email, self.policy.expected_data_owners
+        ):
+            self._progress(label)
+            self.result.add(name, label, passed, detail)
 
     def _check_release_lookup(self) -> None:
         """Resolve which published release we appraise against."""

@@ -48,9 +48,12 @@ class AttestedPayload:
     #: sha256 of the served certificate's DER SubjectPublicKeyInfo.
     tls_public_key_fp: str
     host: str
-    #: The nonce we sent, and the enclave's signature over it.
+    #: The nonce we sent, and the enclave's signature over it *and* the
+    #: claims below — one statement, so all three are proven together.
     nonce: str = ""
     nonce_signature: Optional[str] = None
+    #: The runtime facts the enclave asserts: email, data owners, key bundle.
+    claims: Optional[dict[str, Any]] = None
 
 
 class AttestationFetchError(RuntimeError):
@@ -100,6 +103,7 @@ def fetch_attested_payload(
         host=host,
         nonce=nonce,
         nonce_signature=payload.get("nonce_signature"),
+        claims=payload.get("claims"),
     )
 
 

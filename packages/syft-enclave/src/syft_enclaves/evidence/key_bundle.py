@@ -32,7 +32,10 @@ PUBLIC_BUNDLE_PATH = Path(
 
 
 def write_public_bundle(
-    bundle: dict[str, Any], keys_path: Path, path: Path = PUBLIC_BUNDLE_PATH
+    bundle: dict[str, Any],
+    keys_path: Path,
+    claims: Optional[dict[str, Any]] = None,
+    path: Path = PUBLIC_BUNDLE_PATH,
 ) -> None:
     """Record the public bundle and where its private half lives.
 
@@ -43,7 +46,9 @@ def write_public_bundle(
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f".{path.name}.tmp")
-    tmp.write_text(json.dumps({"bundle": bundle, "keys_path": str(keys_path)}))
+    tmp.write_text(
+        json.dumps({"bundle": bundle, "keys_path": str(keys_path), "claims": claims})
+    )
     os.replace(tmp, path)
     logger.info("Published public key bundle to %s", path)
 
@@ -67,8 +72,19 @@ def read_public_bundle(path: Path = PUBLIC_BUNDLE_PATH) -> Optional[dict[str, An
     return published.get("bundle") if published else None
 
 
+def read_claims(path: Path = PUBLIC_BUNDLE_PATH) -> Optional[dict[str, Any]]:
+    """The runtime facts the enclave asserts: email, data owners, keys."""
+    published = read_published(path)
+    return published.get("claims") if published else None
+
+
 def sign_nonce(nonce: str, path: Path = PUBLIC_BUNDLE_PATH) -> Optional[str]:
-    """Sign a caller's nonce with the enclave's identity key.
+    """Sign a caller's nonce, together with the claims, as one statement.
+
+    One signature therefore carries three things: the enclave holds the key it
+    served, the answer is for this exchange, and these are the runtime facts it
+    asserts. On Tinfoil this is the *only* route to the last one, since its
+    report has no workload channel to commit to them.
 
     None when there is nothing to sign with, so the endpoint degrades to
     "served a bundle but proved nothing" rather than failing outright — the
@@ -85,7 +101,7 @@ def sign_nonce(nonce: str, path: Path = PUBLIC_BUNDLE_PATH) -> Optional[str]:
         keys = syc.SyftPrivateKeys.from_jwks(
             json.loads(Path(published["keys_path"]).read_text())["keys_jwk"]
         )
-        return sign_challenge(keys.to_jwks(), nonce)
+        return sign_challenge(keys.to_jwks(), nonce, published.get("claims"))
     except Exception as e:
         logger.warning("Could not sign the attestation nonce: %s", e)
         return None

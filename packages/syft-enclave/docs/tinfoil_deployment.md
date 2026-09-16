@@ -12,8 +12,8 @@ The canonical copy of that config lives here at [`tinfoil/tinfoil-config.yml`](.
 Run all commands from `packages/syft-enclave/`.
 
 When something fails, see [Tinfoil Troubleshooting](./tinfoil_troubleshooting.md). For what the
-attestation does and does not prove, see
-[Security Overview](./security.md#6-what-attestation-proves-on-each-target) — this doc covers the
+attestation proves — and how Tinfoil's route to it differs from Confidential Spaces' — see
+[Security Overview §6](./security.md#6-what-attestation-proves-on-each-target). This doc covers the
 mechanics, not the guarantees.
 
 ## Prerequisites

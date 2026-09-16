@@ -144,14 +144,18 @@ class EnclaveRunner:
         logger.info(
             "TEE detected (%s) — collecting attestation evidence", provider.kind.value
         )
-        # The key bundle first: on a target that can bind claims, the token
-        # commits to a digest covering it, so it has to exist before minting.
-        self._publish_key_bundle()
-        self._publish_attestation(provider)
+        # The key bundle and claims first: on a target that commits to them in
+        # the token, the digest has to exist before minting.
+        claims = self._build_claims()
+        self._publish_key_bundle(claims)
+        self._publish_attestation(provider, claims)
 
-    def _publish_attestation(self, provider: EvidenceProvider) -> None:
+    def _publish_attestation(
+        self, provider: EvidenceProvider, claims: Optional[dict]
+    ) -> None:
         """Write the provider's evidence into the peer-visible version file."""
-        evidence = provider.collect(**self._binding_for(provider))
+        binding = {"claims": claims} if claims and provider.accepts_caller_nonce else {}
+        evidence = provider.collect(**binding)
         peer_manager = self.client._rds.peer_manager
         evidence.publish_to(peer_manager.get_own_version())
         peer_manager.write_own_version()
@@ -160,17 +164,16 @@ class EnclaveRunner:
             evidence.kind.value,
         )
 
-    def _binding_for(self, provider: EvidenceProvider) -> dict:
-        """The runtime facts to commit to, on targets that can commit to any.
+    def _build_claims(self) -> Optional[dict]:
+        """The runtime facts this enclave asserts about itself.
 
-        Confidential Space lets the workload put a digest into the signed
-        token, which is the only way a peer can trust the enclave's email, its
-        configured data owners or its key bundle — all runtime values outside
-        the measurement. Tinfoil has no such channel and binds over a pinned
-        connection instead, so it gets nothing here.
+        Email, configured data owners and public key bundle are all runtime or
+        deploy-time values, outside the measurement, so a peer has only the
+        enclave's word for them until they are bound to the report. Both
+        targets bind this same document — Confidential Space commits to its
+        digest inside the signed token, Tinfoil signs it with the key the
+        report already binds and serves it over the pinned connection.
         """
-        if not getattr(provider, "accepts_caller_nonce", False):
-            return {}
         peer_store = self.client._rds.peer_manager.peer_store
         bundle = (
             peer_store.get_public_bundle()
@@ -184,14 +187,14 @@ class EnclaveRunner:
             key_bundle=bundle,
         )
         logger.info(
-            "Binding runtime claims into the attestation token: email, "
-            "%d data owner(s), key bundle %s",
+            "Asserting runtime claims: email=%s, %d data owner(s), key bundle %s",
+            claims["email"],
             len(claims["data_owners"]),
             "included" if bundle else "absent",
         )
-        return {"claims": claims}
+        return claims
 
-    def _publish_key_bundle(self) -> None:
+    def _publish_key_bundle(self, claims: Optional[dict] = None) -> None:
         """Expose our public key bundle on the attestation endpoint.
 
         A peer fetching the report over a pinned connection gets the bundle
@@ -214,7 +217,9 @@ class EnclaveRunner:
             # before advertising where they are. Without this the endpoint
             # serves a bundle it cannot sign a nonce with.
             peer_store.save_keys(keys_path)
-            write_public_bundle(peer_store.get_public_bundle(), keys_path=keys_path)
+            write_public_bundle(
+                peer_store.get_public_bundle(), keys_path=keys_path, claims=claims
+            )
         except OSError as e:
             # Not fatal: peers can still fall back to the Drive-published
             # bundle, they just lose the attestation binding.
