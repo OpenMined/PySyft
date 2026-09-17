@@ -590,7 +590,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         perm_events = []
         data_events = []
         for event in events:
-            if str(event.path_in_datasite).endswith(PERMISSION_FILE_NAME):
+            # Compare the last path part without case, as the ACL gate does.
+            if event.path_in_datasite.name.casefold() == PERMISSION_FILE_NAME:
                 perm_events.append(event)
             else:
                 data_events.append(event)
