@@ -111,7 +111,7 @@ def test_permission_file_gate_ignores_case():
         assert service.can_access(_req(path, AccessLevel.WRITE, "admin@test.com"))
 
 
-def test_permission_file_gate_matches_the_last_path_part_only():
+def test_permission_file_gate_matches_last_path_part_only():
     """A name that ends with the constant is not a permission file."""
     service = _service()
     service.add_ruleset(
