@@ -11,6 +11,10 @@ vm_default := "syft-enclave-vm"
 secret_name_default := "syft-enclave-token"
 sa_name_default := "syft-enclave-service-account"
 tf_dir := "terraform"
+tinfoil_repo := "OpenMined/syft-enclave-tinfoil"
+tinfoil_container := "syft-enclave"
+tinfoil_config := "tinfoil/tinfoil-config.yml"
+tinfoil_org_domain := "openmined.containers.tinfoil.dev"
 job_timeout_seconds := "2592000" # 30 days
 
 # Shared shell snippet: loads settings from ~/.syft-enclaves/settings.json.
@@ -44,7 +48,13 @@ ensure_dockerhub_login := '''
 # Preflight for terraform recipes: terraform installed + tfvars present.
 tf_preflight := '''
     command -v terraform >/dev/null 2>&1 || { echo "Error: terraform not found. Install: https://developer.hashicorp.com/terraform/install" >&2; exit 1; }
-    [ -f terraform/terraform.tfvars ] || { echo "Error: terraform/terraform.tfvars not found. Copy terraform/terraform.tfvars.example and fill it in (see docs/terraform.md)." >&2; exit 1; }
+    [ -f terraform/terraform.tfvars ] || { echo "Error: terraform/terraform.tfvars not found. Copy terraform/terraform.tfvars.example and fill it in (see docs/terraform_cs.md — Confidential Spaces deployment)." >&2; exit 1; }
+'''
+
+# Preflight for tinfoil recipes: CLI installed + authenticated.
+tinfoil_preflight := '''
+    command -v tinfoil >/dev/null 2>&1 || { echo "Error: tinfoil CLI not found. Install: curl -fsSL https://github.com/tinfoilsh/tinfoil-cli/raw/main/install.sh | sh" >&2; exit 1; }
+    [ -f "$HOME/.tinfoil/config.json" ] || [ -n "${TINFOIL_API_KEY:-}" ] || { echo "Error: not authenticated with Tinfoil. Run: tinfoil login (or set TINFOIL_API_KEY). See docs/tinfoil_deployment.md." >&2; exit 1; }
 '''
 
 # List all available commands
@@ -548,7 +558,7 @@ credentials-to-token credentials_path output_path:
 # ---------------------------------------------------------------------------------------------------------------------
 # Terraform
 #
-# Declarative alternative to the gcloud recipes above — see docs/terraform.md.
+# Declarative alternative to the gcloud recipes above — see docs/terraform_cs.md.
 # Config lives in terraform/terraform.tfvars (gitignored, copy the .example);
 # these recipes never read ~/.syft-enclaves/settings.json. dev_mode is always
 # forced on the CLI by tf-apply / tf-apply-dev so tfvars can't override it.
@@ -656,3 +666,272 @@ tf-ssh:
       "$(terraform -chdir={{tf_dir}} output -raw vm_name)" \
       --project="$(terraform -chdir={{tf_dir}} output -raw project_id)" \
       --zone="$(terraform -chdir={{tf_dir}} output -raw zone)"
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Tinfoil
+#
+# The alternative to Confidential Spaces: the enclave runs in an AMD SEV-SNP /
+# Intel TDX CVM managed by Tinfoil, with no GCP involved. Two repos are in play
+# — the image is built and pushed from here, while `{{tinfoil_repo}}` holds the
+# measured config whose signed GitHub releases publish the expected
+# measurement. `tinfoil-release` is what keeps the two in step.
+#
+# Full walkthrough: docs/tinfoil_deployment.md
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Who am I logged in to Tinfoil as
+[group('tinfoil')]
+tinfoil-whoami:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil whoami
+
+# The config the release repo currently holds
+[group('tinfoil')]
+tinfoil-config-get *args:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil repo config get {{tinfoil_repo}} {{args}}
+
+# Open a PR syncing the local config to the release repo
+[group('tinfoil')]
+tinfoil-config-pr file=tinfoil_config body="sync tinfoil-config.yml from PySyft":
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil repo config pr {{tinfoil_repo}} --file {{file}} --body "{{body}}"
+
+# Status of a config PR
+[group('tinfoil')]
+tinfoil-pr-status number:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil repo pr status {{tinfoil_repo}} {{number}}
+
+# Latest published release and the suggested next version
+[group('tinfoil')]
+tinfoil-build-info:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil repo build info {{tinfoil_repo}}
+
+# Publish a measured, Sigstore-signed config release
+[group('tinfoil')]
+tinfoil-publish version:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    echo "Publishing {{tinfoil_repo}} {{version}} — a release is permanent and cannot be unpublished."
+    tinfoil repo build run {{tinfoil_repo}} --version {{version}}
+
+# Without this it is easy to publish a release pinned to a stale image.
+# Build + push the image, pin its digest in the config, and open the PR
+[group('tinfoil')]
+tinfoil-release version:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    just build-push-amd {{version}}
+    # --raw is the manifest bytes, and an index digest is by definition their
+    # sha256. Do NOT use --format '{{{{.Manifest.Digest}}}}': for a
+    # multi-platform index it prints the whole inspect listing, not the digest.
+    digest=$(docker buildx imagetools inspect {{image_base}}:{{version}} --raw | shasum -a 256 | awk '{print "sha256:"$1}')
+    echo "$digest" | grep -qE '^sha256:[0-9a-f]{64}$' || { echo "Error: could not read a valid image digest (got '$digest')" >&2; exit 1; }
+    echo "Pushed {{image_base}}:{{version}} @ $digest"
+    tmp=$(mktemp)
+    # Replace whichever digest the config currently pins (placeholder or real).
+    sed -E "s|({{image_base}})@sha256:[0-9a-f]{64}|\1@$digest|" {{tinfoil_config}} > "$tmp"
+    grep -q "@$digest" "$tmp" || { echo "Error: no image line to pin in {{tinfoil_config}}" >&2; rm -f "$tmp"; exit 1; }
+    cp "$tmp" {{tinfoil_config}} && rm -f "$tmp"
+    just tinfoil-config-pr {{tinfoil_config}} "pin syft-enclave {{version}} ($digest)"
+    echo ""
+    echo "Next: merge the PR, then 'just tinfoil-publish {{version}}', then 'just tinfoil-deploy {{version}}'."
+    echo "Keep $digest — a data owner needs it for attest_peer(expected_image_digest=...)."
+
+# EMAIL and DATA_OWNERS are deploy-time variables, so they are NOT part of the
+# measurement and a data owner cannot verify them — same as tee-env-* metadata
+# on Confidential Spaces. See docs/tinfoil_deployment.md.
+# Deploy a container from a published release
+[group('tinfoil')]
+tinfoil-deploy tag email data_owners="" extra_args="":
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    owners="{{data_owners}}"
+    if [ -z "$owners" ]; then
+        settings="$HOME/.syft-enclaves/settings.json"
+        [ -f "$settings" ] && owners=$(jq -r '.data_owners // empty' "$settings")
+    fi
+    [ -n "$owners" ] || { echo "Error: pass DATA_OWNERS (comma-separated) or run 'just init' first." >&2; exit 1; }
+    echo "Deploying {{tinfoil_container}} from {{tinfoil_repo}} {{tag}} for $owners"
+    tinfoil container create {{tinfoil_container}} \
+      --repo {{tinfoil_repo}} \
+      --tag {{tag}} \
+      --variable SYFT_ENCLAVE_EMAIL={{email}} \
+      --variable SYFT_ENCLAVE_DATA_OWNERS="$owners" \
+      --variable SYFT_ENCLAVE_REQUIRE_TEE=true \
+      --variable SYFT_ENCLAVE_USE_ENCRYPTION=true \
+      --variable SYFT_ENCLAVE_TINFOIL_RELEASE_TAG={{tag}} \
+      --variable SYFT_ENCLAVE_TINFOIL_HOST={{tinfoil_container}}.{{tinfoil_org_domain}} \
+      --secret SYFT_ENCLAVE_TOKEN_CONTENT \
+      {{extra_args}}
+
+# Move the deployment to another published release
+[group('tinfoil')]
+tinfoil-update tag *args:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil deployment update {{tinfoil_repo}} --tag {{tag}} {{args}}
+
+# Relaunch the container on a given release (use --promote-release=false to roll back)
+[group('tinfoil')]
+tinfoil-relaunch tag *args:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil container relaunch {{tinfoil_container}} --tag {{tag}} {{args}}
+
+# Where an in-flight update has got to
+[group('tinfoil')]
+tinfoil-status:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil container update status {{tinfoil_container}}
+
+# Accept a staged update
+[group('tinfoil')]
+tinfoil-accept:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil container update accept {{tinfoil_container}}
+
+# Cancel a staged update
+[group('tinfoil')]
+tinfoil-cancel:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil container update cancel {{tinfoil_container}}
+
+# Unlike the Confidential Spaces equivalent this needs no SSH — the shim serves
+# it whether or not the path is in the config's allowlist.
+#
+# -k is deliberate: the enclave presents a self-signed certificate, because its
+# TLS key is generated inside the enclave and the attestation report commits to
+# that key's fingerprint. Trust comes from the report, not from a CA — so
+# fetching the report over an unvalidated transport is exactly right. Verifying
+# it is `just tinfoil-verify`.
+# The enclave's raw attestation document, straight from the shim
+[group('tinfoil')]
+tinfoil-attest host:
+    #!/bin/bash
+    set -e
+    curl -sSk "https://{{host}}/.well-known/tinfoil-attestation" | python3 -m json.tool
+
+# Needs the optional tinfoil extra: uv pip install "syft-enclave[tinfoil]"
+# Verify a live enclave the way a data owner would
+[group('tinfoil')]
+tinfoil-verify host *args:
+    #!/bin/bash
+    set -e
+    uv run --project ../.. python scripts/verify_tinfoil.py {{host}} --repo {{tinfoil_repo}} {{args}}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Tinfoil — debug
+#
+# A debug instance is a SEPARATE deployment at
+# `<name>.debug.<org>.containers.tinfoil.dev`, and it deliberately does NOT
+# pass attestation: `SecureClient` and `attest_peer` will refuse it, because a
+# debug enclave is not confidential. Use it to find out why a container will
+# not start, then redeploy without --debug for anything real.
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Register a public SSH key with the org (once per machine)
+[group('tinfoil-debug')]
+tinfoil-ssh-key name keyfile="~/.ssh/id_ed25519.pub":
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil ssh-key create {{name}} --public-key-file {{keyfile}}
+
+# EMAIL/DATA_OWNERS must be repeated: relaunch overrides variables wholesale.
+# Redeploy the container in debug mode with SSH enabled
+[group('tinfoil-debug')]
+tinfoil-debug tag email data_owners="" ssh_key="koen-debug":
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    owners="{{data_owners}}"
+    if [ -z "$owners" ]; then
+        settings="$HOME/.syft-enclaves/settings.json"
+        [ -f "$settings" ] && owners=$(jq -r '.data_owners // empty' "$settings")
+    fi
+    [ -n "$owners" ] || { echo "Error: pass DATA_OWNERS (comma-separated) or run 'just init' first." >&2; exit 1; }
+    echo "⚠️  Debug instances do not pass attestation — do not use for real data."
+    tinfoil container relaunch {{tinfoil_container}} \
+      --tag {{tag}} \
+      --debug true \
+      --ssh-key {{ssh_key}} \
+      --variable SYFT_ENCLAVE_EMAIL={{email}} \
+      --variable SYFT_ENCLAVE_DATA_OWNERS="$owners" \
+      --variable SYFT_ENCLAVE_REQUIRE_TEE=true \
+      --variable SYFT_ENCLAVE_USE_ENCRYPTION=true \
+      --variable SYFT_ENCLAVE_TINFOIL_RELEASE_TAG={{tag}} \
+      --variable SYFT_ENCLAVE_TINFOIL_HOST={{tinfoil_container}}.debug.{{tinfoil_org_domain}} \
+      --secret SYFT_ENCLAVE_TOKEN_CONTENT
+
+# The SSH command for the running debug instance (host and port come from the API)
+[group('tinfoil-debug')]
+tinfoil-ssh-command:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    j=$(tinfoil container get {{tinfoil_container}} -o json)
+    port=$(echo "$j" | jq -r '.ssh_port')
+    host=$(echo "$j" | jq -r '.host_name')
+    [ "$port" != "0" ] || { echo "Error: no SSH port. Deploy with 'just tinfoil-debug <tag> <email>' first." >&2; exit 1; }
+    echo "ssh -p $port root@$host"
+
+# Enclave container logs (debug instances only — there is no control-plane log API)
+[group('tinfoil-debug')]
+tinfoil-logs n="80":
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    j=$(tinfoil container get {{tinfoil_container}} -o json)
+    port=$(echo "$j" | jq -r '.ssh_port')
+    host=$(echo "$j" | jq -r '.host_name')
+    [ "$port" != "0" ] || { echo "Error: logs need a debug instance. Run 'just tinfoil-debug <tag> <email>' first." >&2; exit 1; }
+    ssh -o StrictHostKeyChecking=accept-new -p "$port" "root@$host" \
+      "docker logs \$(docker ps -aq --filter name={{tinfoil_container}} | head -1) 2>&1 | tail -n {{n}}"
+
+# Shell inside the running debug enclave
+[group('tinfoil-debug')]
+tinfoil-shell:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    j=$(tinfoil container get {{tinfoil_container}} -o json)
+    port=$(echo "$j" | jq -r '.ssh_port')
+    host=$(echo "$j" | jq -r '.host_name')
+    [ "$port" != "0" ] || { echo "Error: no SSH port. Run 'just tinfoil-debug <tag> <email>' first." >&2; exit 1; }
+    ssh -o StrictHostKeyChecking=accept-new -p "$port" "root@$host"
+
+# Boot stages and errors, straight from the control plane
+[group('tinfoil-debug')]
+tinfoil-why:
+    #!/bin/bash
+    set -e
+    {{tinfoil_preflight}}
+    tinfoil container get {{tinfoil_container}} -o json | jq '{status, current_tag, debug, ssh_port, error_message}'
+    host=$(tinfoil container get {{tinfoil_container}} -o json | jq -r '.domain')
+    echo "--- shim boot status (https://$host/health) ---"
+    curl -sk --max-time 20 "https://$host/health" | jq '.' 2>/dev/null || echo "(no JSON — the workload may be serving instead)"

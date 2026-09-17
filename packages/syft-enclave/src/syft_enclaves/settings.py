@@ -1,13 +1,68 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
-class EnclaveSettings(BaseSettings):
+class AttestationSettings(BaseSettings):
+    """Which attestation provider to use, and its configuration.
+
+    Separate from :class:`EnclaveSettings` because the attestation HTTP server
+    needs only these, and requiring ``email``/``data_owners`` there would mean
+    the endpoint silently degraded whenever they were absent. ``EnclaveSettings``
+    inherits it, so both paths read the same environment variables.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="SYFT_ENCLAVE_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        frozen=True,
+    )
+
+    attestation_provider: Literal["auto", "confidential_space", "tinfoil", "none"] = (
+        Field(
+            default="auto",
+            description=(
+                "Which deployment target to collect attestation evidence from. "
+                "'auto' probes each provider's marker path; 'none' disables "
+                "attestation entirely (local development)."
+            ),
+        )
+    )
+    tinfoil_repo: Optional[str] = Field(
+        default=None,
+        description=(
+            "Tinfoil config repo ('owner/name') whose signed release published "
+            "this enclave's expected measurement. Recorded in the published "
+            "evidence so a verifier can warn on a mismatch; verifiers must "
+            "still supply their own, since this value is enclave-controlled."
+        ),
+    )
+    tinfoil_release_tag: Optional[str] = Field(
+        default=None,
+        description=(
+            "Tinfoil config release tag this enclave was deployed from, e.g. "
+            "'v0.1.3'. Recorded in the published evidence, as above."
+        ),
+    )
+    tinfoil_host: Optional[str] = Field(
+        default=None,
+        description=(
+            "Public hostname peers can reach this enclave on, e.g. "
+            "'syft-enclave.openmined.containers.tinfoil.dev'. Published in the "
+            "evidence so a peer knows where to fetch the attestation over a "
+            "pinned connection. Untrusted: a wrong host either fails the pin "
+            "or is the right enclave."
+        ),
+    )
+
+
+class EnclaveSettings(AttestationSettings):
     """Runtime configuration for ``python -m syft_enclaves``.
 
     Every field maps to an environment variable with a ``SYFT_ENCLAVE_``
@@ -70,8 +125,8 @@ class EnclaveSettings(BaseSettings):
     require_tee: bool = Field(
         default=False,
         description=(
-            "Refuse to start unless a Confidential Spaces TEE socket is "
-            "present. Set true in production, false for local testing."
+            "Refuse to start unless an attestation provider detects its TEE. "
+            "Set true in production, false for local testing."
         ),
     )
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = Field(

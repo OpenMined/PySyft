@@ -15,6 +15,16 @@ dependencies = [
     "google-auth[pyjwt]>=2.22.0",
 ]
 
+# Verifying Tinfoil attestation evidence. Optional because the SDK pulls in
+# openai, sigstore and pyopenssl, which an enclave deployed on Confidential
+# Space has no use for. The enclave container never needs it either — it reads
+# its own evidence from a file and never verifies itself.
+[project.optional-dependencies]
+tinfoil = [
+    "tinfoil>=0.14.0",
+    "pyyaml>=6.0",  # reading the measured tinfoil-config.yml
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
