@@ -196,6 +196,10 @@ test_suite_output.log
 *ailuminate_prompts.csv
 *safety_prompts*.csv
 !notebooks/enclave/gemma/data/safety_prompts*.csv
+# double-blind-eval notebooks: prompts come from OpenMined/double-blind-eval-bench
+# and the adapter from HuggingFace, so nothing canonical is checked in here.
+*dbe_prompts*.csv
+dbe-adapter/
 notebooks/e2e/sales_mock.csv
 notebooks/e2e/sales_private.csv
 notebooks/e2e/readme.mdpackages/syft-bg/docs/sync-service.md
