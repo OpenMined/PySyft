@@ -170,6 +170,40 @@ def test_multi_version_write_for_mixed_audience(tmp_path: Path):
     assert mgr.get("demo")._ref.protocol_version == "1"
 
 
+def _wire_private_metadata(mgr: SyftDatasetManager, name: str, protocol_version: str):
+    files = mgr.get_private_dataset_files(name, protocol_version=protocol_version)
+    metas = [
+        content
+        for path, content in files.items()
+        if path.name == "private_metadata.yaml"
+    ]
+    assert len(metas) == 1
+    return yaml.safe_load(metas[0])
+
+
+def test_private_files_wire_private_metadata_in_protocol_format(tmp_path: Path):
+    """get_private_dataset_files serializes private_metadata through the codec."""
+    mock, private, readme = _create_dataset_files(tmp_path)
+    mgr = _dataset_manager(tmp_path)
+
+    mgr.create(name="flat", mock_path=mock, private_path=private, readme_path=readme)
+    raw0 = _wire_private_metadata(mgr, "flat", "0")
+    assert "canonical_name" not in raw0 and "version" not in raw0
+    assert "uid" in raw0
+    assert not Path(str(raw0["data_dir"])).is_absolute()
+
+    mgr.create(
+        name="nested",
+        mock_path=mock,
+        private_path=private,
+        readme_path=readme,
+        protocol_versions=["1"],
+    )
+    raw1 = _wire_private_metadata(mgr, "nested", "1")
+    assert raw1["canonical_name"] == "PrivateDatasetConfig" and raw1["version"] == "1"
+    assert not Path(str(raw1["data_dir"])).is_absolute()
+
+
 def test_delete_removes_all_protocol_versions(tmp_path: Path):
     schema0 = dataset_registry.schema_for_protocol_version("0")
     schema1 = dataset_registry.schema_for_protocol_version("1")

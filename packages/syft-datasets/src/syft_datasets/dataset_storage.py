@@ -529,10 +529,24 @@ class DatasetStorage:
         codec = self._codec_for(ref.protocol_version)
         return self._write(codec, codec.private_metadata_path(ref), config, ref)
 
+    def wire_bytes(self, ref: DatasetRef, obj: MigratableObject) -> bytes:
+        """The bytes to put on the wire for ``obj`` under this ref's protocol.
+
+        Same shaping as the write methods: downgrade to the protocol schema,
+        then the codec's on-disk format. Use it when the bytes go to a peer
+        instead of to a path.
+        """
+        codec = self._codec_for(ref.protocol_version)
+        return codec.dumps(self._downgrade(obj, ref)).encode()
+
     # -- internals -----------------------------------------------------------
     def _upgrade(self, data: dict, canonical_name: str) -> MigratableObject:
         obj = self.service.load(data)
         return self.service.migrate(obj, self.registry.latest_version(canonical_name))
+
+    def _downgrade(self, obj: MigratableObject, ref: DatasetRef) -> MigratableObject:
+        schema = self.registry.schema_for_protocol_version(ref.protocol_version)
+        return self.service.migrate_to_schema(obj, schema)
 
     def _write(
         self,
@@ -542,7 +556,5 @@ class DatasetStorage:
         ref: DatasetRef,
     ) -> Path:
         """Downgrade ``obj`` to the ref's protocol schema, then let the codec persist it."""
-        schema = self.registry.schema_for_protocol_version(ref.protocol_version)
-        downgraded = self.service.migrate_to_schema(obj, schema)
-        codec.write(path, downgraded)
+        codec.write(path, self._downgrade(obj, ref))
         return path
