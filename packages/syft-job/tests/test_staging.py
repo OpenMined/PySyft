@@ -23,7 +23,7 @@ with open("outputs/result.txt", "w") as f:
 
 CRASH_PY = """\
 x = 1
-raise ValueError("patient 4171 is positive")
+raise ValueError("account 88213 holds 4120550")
 """
 
 
@@ -108,7 +108,7 @@ def test_the_traceback_record_is_staged(tmp_path):
 
     record = json.loads(record_path.read_text())
     assert record["chain"][0]["type"] == "ValueError"
-    assert "positive" not in record_path.read_text()
+    assert "4120550" not in record_path.read_text()
 
     assert job.release_artifacts([FRAMES_FILENAME]) == [FRAMES_FILENAME]
     assert (review / FRAMES_FILENAME).exists()

@@ -17,7 +17,7 @@ from syft_job.traceback_capture import (
 
 CRASH = """\
 def inner():
-    raise ValueError("patient 4171 is positive")
+    raise ValueError("account 88213 holds 4120550")
 
 
 def outer():
@@ -27,9 +27,20 @@ def outer():
 outer()
 """
 
+EXCEPTION_GROUP = """\
+def boom():
+    raise ValueError("account 88213 holds 4120550")
+
+
+try:
+    boom()
+except ValueError as exc:
+    raise ExceptionGroup("eg", [exc])
+"""
+
 CHAINED = """\
 try:
-    raise KeyError("patient 4171")
+    raise KeyError("account 88213")
 except KeyError as exc:
     raise RuntimeError("wrapped") from exc
 """
@@ -70,8 +81,8 @@ def test_record_holds_every_frame_of_the_crash(code_root):
 
 def test_record_never_holds_the_exception_message(code_root):
     record = frames_from_stderr(run(code_root, CRASH), code_root)
-    assert "positive" not in json.dumps(record)
-    assert "4171" not in json.dumps(record)
+    assert "4120550" not in json.dumps(record)
+    assert "88213" not in json.dumps(record)
 
 
 def test_frame_holds_only_a_file_and_a_line(code_root):
@@ -83,7 +94,7 @@ def test_frame_holds_only_a_file_and_a_line(code_root):
 def test_chained_exception_puts_the_last_failure_first(code_root):
     record = frames_from_stderr(run(code_root, CHAINED), code_root)
     assert [entry["type"] for entry in record["chain"]] == ["RuntimeError", "KeyError"]
-    assert "patient" not in json.dumps(record)
+    assert "account" not in json.dumps(record)
 
 
 def test_library_frame_keeps_the_path_the_interpreter_printed(code_root):
@@ -92,6 +103,49 @@ def test_library_frame_keeps_the_path_the_interpreter_printed(code_root):
     files = [f["file"] for f in record["chain"][0]["frames"]]
     assert files[0] == "main.py"
     assert any(f.endswith("json/decoder.py") for f in files)
+
+
+def test_header_without_frames_yields_no_record(code_root):
+    """A job that prints the header itself must not reach the record.
+
+    The type was previously read from anywhere in the block, so a line of
+    ordinary stderr became the exception type.
+    """
+    stderr = "Traceback (most recent call last):\naccount_88213_balance: 4120550\n"
+    assert frames_from_stderr(stderr, code_root) is None
+
+
+def test_output_after_the_traceback_is_not_read_as_the_type(code_root):
+    stderr = run(code_root, CRASH) + "account_88213_balance: 4120550\n"
+    record = frames_from_stderr(stderr, code_root)
+    assert record["chain"][0]["type"] == "ValueError"
+    assert "account_88213_balance" not in json.dumps(record)
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 11), reason="ExceptionGroup needs Python 3.11"
+)
+def test_exception_group_keeps_its_frames_and_leaks_no_output(code_root):
+    """An ExceptionGroup prints each frame behind a '|' gutter.
+
+    No frame matched before, so the whole block was scanned for a type and a
+    later line of job output supplied it.
+    """
+    stderr = run(code_root, EXCEPTION_GROUP) + "account_88213_balance: 4120550\n"
+    record = frames_from_stderr(stderr, code_root)
+
+    blob = json.dumps(record)
+    assert "account_88213_balance" not in blob
+    assert "88213" not in blob
+    assert any(
+        frame["file"] == "main.py"
+        for entry in record["chain"]
+        for frame in entry["frames"]
+    )
+    assert {entry["type"] for entry in record["chain"]} <= {
+        "ExceptionGroup",
+        "ValueError",
+    }
 
 
 # -- input that carries no failure ----------------------------------------------
@@ -146,12 +200,29 @@ def test_a_coloured_traceback_parses(code_root):
     coloured = (
         "Traceback (most recent call last):\n"
         '  File \x1b[35m"main.py"\x1b[0m, line \x1b[35m2\x1b[0m, in \x1b[35mf\x1b[0m\n'
-        "\x1b[1;35mValueError\x1b[0m: \x1b[35mpatient 4171\x1b[0m\n"
+        "\x1b[1;35mValueError\x1b[0m: \x1b[35maccount 88213\x1b[0m\n"
     )
     record = frames_from_stderr(coloured, code_root)
     assert record["chain"][0]["type"] == "ValueError"
     assert record["chain"][0]["frames"] == [{"file": "main.py", "line": 2}]
-    assert "4171" not in json.dumps(record)
+    assert "88213" not in json.dumps(record)
+
+
+def test_frame_cap_keeps_the_innermost_frames(code_root):
+    """Python prints the outermost frame first, so the job stopped at the last.
+
+    The cap previously kept the first frames, which drops the failure site on
+    exactly the deep-recursion case that motivates the cap.
+    """
+    block = (
+        "Traceback (most recent call last):\n"
+        + "".join(f'  File "main.py", line {i}, in f\n' for i in range(1, 200))
+        + "ValueError\n"
+    )
+    frames = frames_from_stderr(block, code_root)["chain"][0]["frames"]
+    assert len(frames) == MAX_FRAMES
+    assert frames[-1]["line"] == 199
+    assert frames[0]["line"] == 199 - MAX_FRAMES + 1
 
 
 def test_a_block_without_a_type_line_falls_back(code_root):

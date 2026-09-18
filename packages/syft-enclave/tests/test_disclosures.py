@@ -16,6 +16,7 @@ from syft_job.traceback_capture import FRAMES_FILENAME  # noqa: E402
 from syft_enclaves import SyftEnclaveClient  # noqa: E402
 from syft_enclaves.enclave_job_info import (  # noqa: E402
     DisclosureItem,
+    EnclaveJobInfo,
     PartyApprovalStatus,
     approved_disclosures,
     enclave_approval_file_name,
@@ -79,6 +80,18 @@ def test_an_unknown_item_never_survives(tmp_path):
     assert normalize_disclosures(["everything", LOGS]) == {LOGS: True}
 
 
+def test_a_mapping_with_a_false_value_drops_the_item(tmp_path):
+    """update_disclosures returns a map, so a caller can send one back.
+
+    Every element used to count as a grant, therefore a map carrying False
+    re-granted the item it was meant to drop.
+    """
+    assert normalize_disclosures({LOGS: True, FRAMES: False}) == {LOGS: True}
+
+    granted = normalize_disclosures([LOGS])
+    assert normalize_disclosures({**granted, LOGS: False}) == {}
+
+
 # -- end to end -----------------------------------------------------------------
 
 
@@ -119,7 +132,7 @@ def submit(ds, enclave, do1, do2, code, requested):
 
 
 OK_CODE = "import os, json\nos.makedirs('outputs', exist_ok=True)\nopen('outputs/r.json','w').write('{}')\n"
-CRASH_CODE = "x = 1\ny = 2\nraise ValueError('patient 4171 is positive')\n"
+CRASH_CODE = "x = 1\ny = 2\nraise ValueError('account 88213 holds 4120550')\n"
 
 
 def run_to_completion(enclave, do1, do2, ds, grants):
@@ -165,7 +178,7 @@ def test_granted_frames_carry_the_position_but_not_the_message():
     entry = record["chain"][0]
     assert entry["type"] == "ValueError"
     assert {"file": "main.py", "line": 3} in entry["frames"]
-    assert "positive" not in json.dumps(record)
+    assert "4120550" not in json.dumps(record)
 
 
 def test_frames_reach_the_data_owners_too():
@@ -294,3 +307,25 @@ def test_a_released_artifact_is_not_sent_twice():
 
     job = enclave.jobs["j"]
     assert enclave._forward_new_releases(job) == []
+
+
+def test_approve_job_rejects_a_job_that_is_not_an_enclave_job():
+    """JobInfo.approve takes a reason first, so disclosures would land there.
+
+    SyftEnclaveClient.jobs wraps only a job whose job_type header says enclave.
+    An unwrapped job used to record the disclosures as its approval reason and
+    grant nothing, with no error.
+    """
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
+    enclave.sync()
+    enclave.receive_jobs()
+    do1.sync()
+
+    # The same job, read through the plain client, is a JobInfo and not an
+    # EnclaveJobInfo.
+    plain = do1._rds.job_client.jobs["j"]
+    assert not isinstance(plain, EnclaveJobInfo)
+
+    with pytest.raises(TypeError, match="not an enclave job"):
+        do1.approve_job(plain, [LOGS])

@@ -386,10 +386,15 @@ class SyftEnclaveClient:
         owner releases. The enclave releases an item only when every data owner
         released it. Omit the argument to release nothing.
         """
+        if not isinstance(job, EnclaveJobInfo):
+            raise TypeError(
+                f"Job '{job.name}' is not an enclave job, so it carries no "
+                f"disclosures. Approve it through the datasite client."
+            )
         if pre_sync_enabled():
             self._rds.sync()
 
-        job.approve(disclosures)
+        job.approve(disclosures=disclosures)
         file_name = enclave_approval_file_name(self.email)
         approval_file = job.job_review_path / file_name
         if not approval_file.exists():

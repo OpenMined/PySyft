@@ -24,8 +24,10 @@ MAX_FRAMES = 50
 TRACEBACK_HEADER = "Traceback (most recent call last):"
 # Python 3.13 and later colour the traceback when the environment asks for it.
 _ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
-_FRAME = re.compile(r'^  File "(?P<file>.+)", line (?P<line>\d+)', re.M)
-_TYPE = re.compile(r"^(?P<type>[A-Za-z_][A-Za-z0-9_.]*)(?::|$)", re.M)
+# An ExceptionGroup prints each frame behind a "|" gutter, one level per nesting.
+_FRAME = re.compile(r'^[ |]+File "(?P<file>.+)", line (?P<line>\d+)')
+_GUTTER = re.compile(r"^[ |]*")
+_TYPE = re.compile(r"^(?P<type>[A-Za-z_][A-Za-z0-9_.]*)(?::|$)")
 
 
 def _frame_file(raw: str, code_root: Path) -> str:
@@ -44,18 +46,45 @@ def _frame_file(raw: str, code_root: Path) -> str:
         return raw
 
 
+def _frame_matches(block: str) -> list:
+    """Every frame line in ``block``, in the order the interpreter printed it."""
+    return [m for m in (_FRAME.match(line) for line in block.splitlines()) if m]
+
+
 def _frames(block: str, code_root: Path) -> list[dict]:
     return [
         {"file": _frame_file(m["file"], code_root), "line": int(m["line"])}
-        for m in list(_FRAME.finditer(block))[:MAX_FRAMES]
+        for m in _frame_matches(block)[-MAX_FRAMES:]
     ]
 
 
 def _exception_type(block: str) -> str:
-    """The type name on the line that closes a traceback block."""
-    tail = block[max((m.end() for m in _FRAME.finditer(block)), default=0) :]
-    match = _TYPE.search(tail)
-    return match["type"] if match else FALLBACK_TYPE
+    """The type name on the line that closes a traceback block.
+
+    Only the lines after the last frame are read, and only until one of them
+    names a type. Anything the job printed after the traceback therefore stays
+    out of the record.
+    """
+    lines = block.splitlines()
+    positions = [i for i, line in enumerate(lines) if _FRAME.match(line)]
+    if not positions:
+        return FALLBACK_TYPE
+
+    last = positions[-1]
+    depth = _GUTTER.match(lines[last]).end()
+    for line in lines[last + 1 :]:
+        prefix = _GUTTER.match(line).end()
+        # A source line and an annotation sit deeper than the frame they follow.
+        # The line that closes the block sits at the depth of the frame or less,
+        # which holds for an ExceptionGroup behind its gutter too.
+        if prefix > depth:
+            continue
+        text = line[prefix:]
+        if not text:
+            continue
+        match = _TYPE.match(text)
+        return match["type"] if match else FALLBACK_TYPE
+    return FALLBACK_TYPE
 
 
 def frames_from_stderr(stderr: str, code_root: Path) -> Optional[dict]:
@@ -71,12 +100,14 @@ def frames_from_stderr(stderr: str, code_root: Path) -> Optional[dict]:
         root = code_root.resolve()
     except OSError:
         root = code_root
-    return {
-        "chain": [
-            {"type": _exception_type(b), "frames": _frames(b, root)}
-            for b in reversed(blocks[-MAX_CHAIN:])
-        ]
-    }
+    chain = []
+    for block in reversed(blocks[-MAX_CHAIN:]):
+        frames = _frames(block, root)
+        if not frames:
+            # No frame means the job printed the header itself, not a traceback.
+            continue
+        chain.append({"type": _exception_type(block), "frames": frames})
+    return {"chain": chain} if chain else None
 
 
 def write_frames_record(

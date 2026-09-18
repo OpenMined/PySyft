@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
 from typing import Iterable, Optional, Union
@@ -27,17 +28,23 @@ DISCLOSURE_ITEMS = frozenset(item.value for item in DisclosureItem)
 
 
 def normalize_disclosures(
-    items: Union[str, DisclosureItem, Iterable[str], None],
+    items: Union[str, DisclosureItem, Iterable[str], Mapping[str, bool], None],
 ) -> dict[str, bool]:
     """Return the known items in ``items`` as a map. Unknown names are dropped.
 
     A single name is accepted on its own, because iterating a string would
     produce its characters and grant nothing.
+
+    A map is accepted in the form that this function returns, therefore a
+    caller can read the current grant, set an item to False, and send it back
+    to drop that item.
     """
     if not items:
         return {}
     if isinstance(items, (str, DisclosureItem)):
         items = [items]
+    elif isinstance(items, Mapping):
+        items = [name for name, allowed in items.items() if allowed]
     names = {str(getattr(i, "value", i)) for i in items}
     return {name: True for name in sorted(names & DISCLOSURE_ITEMS)}
 
