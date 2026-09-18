@@ -69,10 +69,13 @@ MOCK_DATASET_SPEC = CollectionSyncSpec.public(
     COLLECTION_SUBPATH,
     layouts=dataset_layouts(COLLECTION_SUBPATH),
 )
+# The owner's private data: backed up for the owner, and pulled by a peer (an
+# enclave) only when the owner shared that collection with it.
 PRIVATE_DATASET_SPEC = CollectionSyncSpec.private(
     PRIVATE_DATASET_COLLECTION_PREFIX,
     PRIVATE_COLLECTION_SUBPATH,
     layouts=dataset_layouts(PRIVATE_COLLECTION_SUBPATH),
+    pull_when_shared=True,
 )
 
 DATASET_COLLECTION_SPECS = [MOCK_DATASET_SPEC, PRIVATE_DATASET_SPEC]

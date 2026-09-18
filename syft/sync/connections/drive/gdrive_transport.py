@@ -12,7 +12,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from google.oauth2.credentials import Credentials as GoogleCredentials
 from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload, build_http
+from googleapiclient.http import (
+    MediaFileUpload,
+    MediaIoBaseDownload,
+    MediaIoBaseUpload,
+    build_http,
+)
 from pydantic import BaseModel
 from syft_migration import MigrationError
 
@@ -94,6 +99,12 @@ def build_drive_service(
 
 
 LEGACY_GDRIVE_OUTBOX_INBOX_FOLDER_PREFIX = "syft_outbox_inbox"  # legacy prefix
+
+# Streaming transfer sizes. Downloads read this much per API call; uploads of files
+# from disk send resumable chunks of this size, so a dropped connection retries one
+# chunk rather than the whole file.
+DOWNLOAD_CHUNK_SIZE = 10 * 1024 * 1024
+COLLECTION_UPLOAD_CHUNK_SIZE = 256 * 1024 * 1024
 GDRIVE_P2P_FOLDER_DATASITE_PREFIX = "syft_datasite"
 SYFT_PEERS_FILE = "SYFT_peers.json"
 
@@ -175,6 +186,23 @@ def _collection_name_re(prefix: str) -> "re.Pattern[str]":
     )
 
 
+# A collection is a flat Drive folder, but a dataset may hold nested files (an
+# Orbax checkpoint is a directory of shards). Drive file names cannot contain "/",
+# so a nested relative path travels with its separators encoded and is restored on
+# download. A flat name is unchanged, so existing collections are unaffected.
+COLLECTION_PATH_SEPARATOR = "%2F"
+
+
+def collection_wire_name(rel_path: str) -> str:
+    """On-wire Drive file name for a file at ``rel_path`` inside a collection."""
+    return Path(rel_path).as_posix().replace("/", COLLECTION_PATH_SEPARATOR)
+
+
+def collection_local_name(wire_name: str) -> str:
+    """Relative path inside the collection for an on-wire Drive file name."""
+    return wire_name.replace(COLLECTION_PATH_SEPARATOR, "/")
+
+
 class CollectionFolder(BaseModel):
     """Naming value object for collection folders (domain-agnostic).
 
@@ -213,11 +241,26 @@ class CollectionFolder(BaseModel):
         return cls(prefix=prefix, **match.groupdict())
 
     @staticmethod
-    def compute_hash(files: dict[str, bytes]) -> str:
-        """Compute a content hash from file contents."""
-        from syft.sync.file_utils import compute_file_hashes
+    def compute_hash(
+        files: "dict[str, bytes | Path]", extra_tokens: "list[str] | None" = None
+    ) -> str:
+        """Compute a content hash from file contents (bytes) or files on disk (Path).
 
-        return compute_file_hashes(files)
+        Both forms give the same hash for the same content. ``extra_tokens`` are
+        folded in after the files (e.g. the recipient set of an encrypted
+        collection), so one dataset published to different audiences gets
+        different folder names.
+        """
+        from syft.sync.file_utils import (
+            compute_file_hashes,
+            compute_file_hashes_from_paths,
+        )
+
+        if files and all(isinstance(v, Path) for v in files.values()):
+            return compute_file_hashes_from_paths(files, extra_tokens)
+        if any(isinstance(v, Path) for v in files.values()):
+            raise TypeError("collection files must be all bytes or all Path")
+        return compute_file_hashes(files, extra_tokens)
 
 
 # Helpers for finding folders whose names embed SYFT_VERSION. Folder
@@ -1362,7 +1405,19 @@ class GDriveConnection(SyftboxPlatformConnection):
         return file_ids
 
     def create_file_payload(self, data: Any) -> tuple[MediaIoBaseUpload, str]:
-        """Create a file payload for the GDrive"""
+        """Create a file payload for the GDrive.
+
+        A ``Path`` is streamed from disk in resumable chunks, so uploads of any
+        size run with bounded memory; every other type is buffered.
+        """
+        if isinstance(data, Path):
+            media = MediaFileUpload(
+                str(data),
+                mimetype="application/octet-stream",
+                resumable=True,
+                chunksize=COLLECTION_UPLOAD_CHUNK_SIZE,
+            )
+            return media, ".bin"
         if isinstance(data, str):
             file_data = data.encode("utf-8")
             mime_type = "text/plain"
@@ -1507,12 +1562,34 @@ class GDriveConnection(SyftboxPlatformConnection):
             )
         return folder_id
 
+    def download_file_to_path(self, file_id: str, dest: Path) -> None:
+        """Download ``file_id`` to ``dest`` with bounded memory (one chunk at a time).
+
+        Writes to a sibling temp file and renames on completion, so a partial
+        download never sits at ``dest``.
+        """
+        dest = Path(dest)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        tmp = dest.with_name(dest.name + ".part")
+        request = self.drive_service.files().get_media(fileId=file_id)
+        try:
+            with open(tmp, "wb") as fh:
+                downloader = MediaIoBaseDownload(
+                    fh, request, chunksize=DOWNLOAD_CHUNK_SIZE
+                )
+                done = False
+                while not done:
+                    _, done = next_chunk_with_retries(downloader)
+            tmp.replace(dest)
+        finally:
+            tmp.unlink(missing_ok=True)
+
     def download_file(self, file_id: str) -> bytes:
         request = self.drive_service.files().get_media(fileId=file_id)
 
         file_buffer = io.BytesIO()
         downloader = MediaIoBaseDownload(
-            file_buffer, request, chunksize=1024 * 1024 * 10
+            file_buffer, request, chunksize=DOWNLOAD_CHUNK_SIZE
         )
 
         done = False
@@ -1642,7 +1719,9 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         for file_path, content in files.items():
             file_payload, _ = self.create_file_payload(content)
-            file_name = Path(file_path).name
+            # The key is the file's path relative to the collection root; nested
+            # paths are encoded into the flat Drive name.
+            file_name = collection_wire_name(file_path)
 
             file_metadata = {"name": file_name, "parents": [folder_id]}
             execute_with_retries(
@@ -1774,7 +1853,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         files = {}
         for file_meta in file_metadatas:
             file_id = file_meta["id"]
-            file_name = file_meta["name"]
+            file_name = collection_local_name(file_meta["name"])
             files[file_name] = self.download_file(file_id)
 
         return files
@@ -1792,11 +1871,20 @@ class GDriveConnection(SyftboxPlatformConnection):
             raise ValueError(f"Collection {tag} with hash {content_hash} not found")
 
         file_metadatas = self.get_file_metadatas_from_folder(folder_id)
-        return [{"file_id": f["id"], "file_name": f["name"]} for f in file_metadatas]
+        return [
+            {"file_id": f["id"], "file_name": collection_local_name(f["name"])}
+            for f in file_metadatas
+        ]
 
     def watcher_download_collection_file(self, file_id: str) -> bytes:
         """Download a single file from a collection."""
         return self.download_file(file_id)
+
+    def watcher_download_collection_file_to_path(
+        self, file_id: str, dest: Path
+    ) -> None:
+        """Download a single collection file straight to ``dest`` in chunks."""
+        self.download_file_to_path(file_id, dest)
 
     def _get_collection_folder_id(
         self, prefix: str, tag: str, content_hash: str

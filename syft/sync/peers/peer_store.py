@@ -5,6 +5,7 @@ Shared between PeerManager and all ConnectionRouter instances.
 """
 
 import json
+import shutil
 from pathlib import Path
 from typing import List, Optional
 
@@ -229,6 +230,110 @@ class PeerStore(BaseModel):
             self.verify_message_from_self(data)
             return self.decrypt_for_self(data)
         return data
+
+    # ========== File-based (streaming) encryption ==========
+    #
+    # For payloads that must not be held in memory (dataset files). Each file is one
+    # SYC envelope sealed with the library's streaming suite, so memory is bounded by
+    # the segment size rather than the file size. A file can be encrypted for several
+    # recipients at once (one ciphertext, one key wrapping per recipient), and "self"
+    # is a valid recipient, so one upload serves both the owner's own restore and the
+    # peers it is shared with.
+
+    def file_encryption_enabled(self) -> bool:
+        """Whether this store can seal files at all (encryption on, own keys loaded)."""
+        return self.use_encryption and self.has_my_keys()
+
+    def can_encrypt_for(self, recipients: list[str]) -> bool:
+        """Whether every recipient (self included) can receive an encrypted file.
+
+        Mirrors the per-message rule: a peer that does not use encryption gets
+        plaintext, so a mixed audience cannot share one ciphertext.
+        """
+        if not self.file_encryption_enabled():
+            return False
+        return all(r == self.email or self.peer_uses_encryption(r) for r in recipients)
+
+    def _recipient_for(self, email: str) -> syc.EncryptionRecipient:
+        if email == self.email:
+            keys = self._ensure_private_keys()
+            return syc.EncryptionRecipient(self.email, keys.to_public_bundle())
+        return syc.EncryptionRecipient(email, self._get_parsed_peer_bundle(email))
+
+    def _sender_bundle(self, sender_email: str) -> syc.SyftPublicKeyBundle:
+        if sender_email == self.email:
+            return self._ensure_private_keys().to_public_bundle()
+        return self._get_parsed_peer_bundle(sender_email)
+
+    def encrypt_file_for(
+        self, recipients: list[str], src: Path | str, dst: Path | str
+    ) -> None:
+        """Encrypt the file at ``src`` into an envelope at ``dst`` for ``recipients``.
+
+        Streams segment by segment; peak memory is independent of the file size.
+        """
+        emails = sorted(set(recipients))
+        if not emails:
+            raise ValueError("at least one recipient is required")
+        keys = self._ensure_private_keys()
+        enc_recipients = [self._recipient_for(e) for e in emails]
+        syc.encrypt_file(
+            self.email,
+            keys,
+            enc_recipients,
+            str(src),
+            str(dst),
+            filename_hint=Path(src).name,
+        )
+
+    def decrypt_file(self, sender_email: str, src: Path | str, dst: Path | str) -> None:
+        """Verify ``src``'s sender signature and decrypt it into ``dst``, streaming.
+
+        ``sender_email`` may be self (own backup) or a peer. Raises on a bad
+        signature, a wrong recipient, or a tampered payload; no partial ``dst``
+        is left behind in that case.
+        """
+        keys = self._ensure_private_keys()
+        syc.decrypt_file(
+            self.email, keys, self._sender_bundle(sender_email), str(src), str(dst)
+        )
+
+    def verify_file(self, sender_email: str, path: Path | str) -> None:
+        """Verify the envelope signature of a file without reading its payload."""
+        header = syc.parse_envelope_header_file(str(path))
+        syc.verify_envelope_header_signature(
+            header, self._sender_bundle(sender_email).identity_key_bytes
+        )
+
+    @staticmethod
+    def is_envelope_file(path: Path | str) -> bool:
+        """True if the file starts with a valid SYC envelope header."""
+        try:
+            syc.parse_envelope_header_file(str(path))
+            return True
+        except Exception:
+            return False
+
+    def decrypt_collection_file(
+        self, owner_email: str, src: Path | str, dst: Path | str
+    ) -> None:
+        """File counterpart of ``decrypt_dataset_if_needed``.
+
+        A plaintext file (public mock data, or an owner without encryption) is
+        moved to ``dst`` unchanged; an envelope is verified and decrypted there.
+        ``src`` is consumed either way.
+        """
+        src, dst = Path(src), Path(dst)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if not self.is_envelope_file(src):
+            shutil.move(str(src), str(dst))
+            return
+        if not self.file_encryption_enabled():
+            raise ValueError(
+                f"{src.name} from {owner_email} is encrypted but encryption is not enabled here"
+            )
+        self.decrypt_file(owner_email, src, dst)
+        src.unlink(missing_ok=True)
 
     # ========== Persistence ==========
 

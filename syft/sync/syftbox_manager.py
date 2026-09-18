@@ -876,12 +876,22 @@ class SyftboxManager(BaseModelCallbackMixin):
         prefix: str,
         tag: str,
         content_hash: str,
-        files: dict[str, bytes],
+        files: "dict[str, bytes | Path]",
         recipient_email: str | None = None,
+        recipients: list[str] | None = None,
     ) -> None:
-        """Upload a collection's files. Delegates to ConnectionRouter."""
+        """Upload a collection's files. Delegates to ConnectionRouter.
+
+        ``Path`` values stream from disk; ``recipients`` (self allowed) get one
+        multi-recipient envelope per file.
+        """
         self._connection_router.owner_upload_collection_files(
-            prefix, tag, content_hash, files, recipient_email=recipient_email
+            prefix,
+            tag,
+            content_hash,
+            files,
+            recipient_email=recipient_email,
+            recipients=recipients,
         )
 
     def share_collection(

@@ -155,9 +155,9 @@ class DataSiteWatcherCache(BaseModel):
             return
 
         for spec in self.collection_specs:
-            if spec.owner_only:
-                # Owner-only collections (e.g. private data) are never pulled from
-                # peers, so the peer-facing watcher does not track them locally.
+            if not spec.pulled_by_peers:
+                # Pure-backup collections are never pulled from peers, so the
+                # peer-facing watcher does not track them locally.
                 continue
             for email_dir in self.syftbox_folder.iterdir():
                 if not email_dir.is_dir() or "@" not in email_dir.name:
@@ -268,6 +268,26 @@ class DataSiteWatcherCache(BaseModel):
                     str(event.path_in_syftbox), event.content
                 )
                 self.file_hashes[path_key] = event.new_hash
+
+    def _download_collection_file(
+        self,
+        file_id: str,
+        owner_email: str,
+        rel_path: str,
+        download_to_path_fn: "Callable[[str, str, Path], None] | None",
+    ) -> None:
+        """Stream one collection file to ``<syftbox>/<rel_path>``, decrypting on the
+        way, unless the pre-write filter (e.g. enclave immutability) denies it."""
+        if self.pre_write_filter and not self.pre_write_filter(rel_path, False):
+            return
+        if download_to_path_fn is not None and self.syftbox_folder is not None:
+            download_to_path_fn(file_id, owner_email, self.syftbox_folder / rel_path)
+            return
+        # No syftbox folder (in-memory cache): fall back to the buffered path.
+        data = self.connection_router.watcher_download_collection_file(
+            file_id, owner_email
+        )
+        self.file_connection.write_file(rel_path, data)
 
     def get_cached_events(self) -> List[FileChangeEvent]:
         messages = self.events_connection.get_all()
@@ -381,8 +401,8 @@ class DataSiteWatcherCache(BaseModel):
         Separate from message sync. Uses hash to skip unchanged collections.
         """
         for spec in self.collection_specs:
-            if spec.owner_only:
-                # Never pull owner-only collections (e.g. private data) from a peer.
+            if not spec.pulled_by_peers:
+                # Pure-backup collections are never pulled from a peer.
                 continue
             # Every layout the peer published; the prefix matches all of them.
             collections = self.connection_router.watcher_list_collections(spec.prefix)
@@ -411,15 +431,17 @@ class DataSiteWatcherCache(BaseModel):
                 if cached_hash == content_hash:
                     continue
 
-                # Download collection files
-                files = self.connection_router.watcher_download_collection(
-                    spec.wire_prefix(layout.variant), tag, content_hash, owner_email
+                # Download collection files, streaming each to its destination.
+                metadatas = (
+                    self.connection_router.watcher_get_collection_file_metadatas(
+                        spec.wire_prefix(layout.variant), tag, content_hash, owner_email
+                    )
                 )
-
-                # Write files to local cache (path relative to syftbox_folder)
-                for file_name, content in files.items():
-                    rel_path = f"{owner_email}/{layout.local_subpath}/{tag}/{file_name}"
-                    self.file_connection.write_file(rel_path, content)
+                for metadata in metadatas:
+                    rel_path = f"{owner_email}/{layout.local_subpath}/{tag}/{metadata['file_name']}"
+                    self._download_collection_file(
+                        metadata["file_id"], owner_email, rel_path, None
+                    )
 
                 # Update hash cache
                 self.collection_hashes[collection_path] = content_hash
@@ -428,16 +450,21 @@ class DataSiteWatcherCache(BaseModel):
         self,
         peer_email: str,
         executor: ThreadPoolExecutor,
-        download_fn: Callable[[str], bytes],
+        download_fn: "Callable[[str], bytes] | None" = None,
+        download_to_path_fn: "Callable[[str, str, Path], None] | None" = None,
     ):
         """
         Sync collections from peer with parallel file downloads, across all specs.
         For each spec, downloads all files from all collections in a single
         parallel batch.
+
+        ``download_to_path_fn(file_id, owner_email, dest)`` streams a file to disk
+        with bounded memory and is used whenever a syftbox folder is configured;
+        ``download_fn(file_id) -> bytes`` is the in-memory fallback.
         """
         for spec in self.collection_specs:
-            if spec.owner_only:
-                # Never pull owner-only collections (e.g. private data) from a peer.
+            if not spec.pulled_by_peers:
+                # Pure-backup collections are never pulled from a peer.
                 continue
             collections = self.connection_router.watcher_list_collections(spec.prefix)
             published = [c for c in collections if c["owner_email"] == peer_email]
@@ -487,20 +514,34 @@ class DataSiteWatcherCache(BaseModel):
             if not all_downloads:
                 continue
 
-            # Download all files from all collections in parallel
-            file_ids = [metadata["file_id"] for _, metadata in all_downloads]
-            downloaded_contents = list(executor.map(download_fn, file_ids))
-
-            # Write files to local cache (path relative to syftbox_folder)
-            for (collection, metadata), content in zip(
-                all_downloads, downloaded_contents
-            ):
-                owner_email = collection["owner_email"]
-                tag = collection["tag"]
-                file_name = metadata["file_name"]
+            # Download all files from all collections in parallel, each streamed
+            # straight to its destination (path relative to syftbox_folder).
+            def _target(item):
+                collection, metadata = item
                 subpath = spec.layout_for(collection.get("variant", "")).local_subpath
-                rel_path = f"{owner_email}/{subpath}/{tag}/{file_name}"
-                self.file_connection.write_file(rel_path, content)
+                rel_path = f"{collection['owner_email']}/{subpath}/{collection['tag']}/{metadata['file_name']}"
+                return metadata["file_id"], collection["owner_email"], rel_path
+
+            targets = [_target(item) for item in all_downloads]
+            if download_to_path_fn is not None and self.syftbox_folder is not None:
+                list(
+                    executor.map(
+                        lambda t: self._download_collection_file(
+                            *t, download_to_path_fn
+                        ),
+                        targets,
+                    )
+                )
+            else:
+                if download_fn is None:
+                    raise ValueError("download_fn is required without a syftbox folder")
+                contents = list(executor.map(download_fn, [t[0] for t in targets]))
+                for (_, _, rel_path), content in zip(targets, contents):
+                    if self.pre_write_filter and not self.pre_write_filter(
+                        rel_path, False
+                    ):
+                        continue
+                    self.file_connection.write_file(rel_path, content)
 
             # Update hash cache for all collections in this spec
             for collection in collections_to_update:

@@ -42,6 +42,13 @@ class CollectionSyncSpec(BaseModel):
     # True = owner-only: never shared with peers; the owner restores it for itself and
     # peer-facing watchers skip it entirely (e.g. the owner's private data backup).
     owner_only: bool = False
+    # For owner-only collections: whether a peer's watcher pulls a collection the
+    # owner explicitly shared with it (by backend permission). False = the owner is
+    # the only reader ever (pure backup). True = a shared copy is data for the peer
+    # (e.g. a private dataset shared with an enclave). Discovery is by permission:
+    # an unshared collection is invisible to peers regardless of this flag.
+    # TODO: Minor Fix, the long term solution would be to re-encrypt the same data for peers
+    pull_when_shared: bool = False
     # Every layout this client can read, oldest first. When an owner publishes a
     # collection in several layouts, the watcher keeps the last one in this list
     # that the owner published, and skips the rest. Defaults to the single
@@ -53,6 +60,11 @@ class CollectionSyncSpec(BaseModel):
         if not self.layouts:
             self.layouts = [CollectionLayout(local_subpath=self.local_subpath)]
         return self
+
+    @property
+    def pulled_by_peers(self) -> bool:
+        """Whether a peer-facing watcher tracks and pulls this collection at all."""
+        return not self.owner_only or self.pull_when_shared
 
     def wire_prefix(self, variant: str) -> str:
         """The folder-name prefix an owner writes for one layout.
@@ -99,6 +111,7 @@ class CollectionSyncSpec(BaseModel):
         prefix: str,
         local_subpath: "Path",
         layouts: list[CollectionLayout] | None = None,
+        pull_when_shared: bool = False,
     ) -> "CollectionSyncSpec":
         """An owner-only, restore-only collection (e.g. a dataset's real data).
 
@@ -111,5 +124,6 @@ class CollectionSyncSpec(BaseModel):
             local_subpath=local_subpath,
             immutable=True,
             owner_only=True,
+            pull_when_shared=pull_when_shared,
             layouts=layouts or [],
         )
