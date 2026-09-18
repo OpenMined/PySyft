@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import time
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Set
@@ -515,32 +516,76 @@ class SyftJobRunner:
             ref=ref,
         )
 
+    @staticmethod
+    def _resolve_skip_jobs(
+        approved_jobs: List[JobRef],
+        skip_jobs: list[tuple[str, str]] | None,
+        skip_job_names: list[str] | None,
+    ) -> Set[tuple[str, str]]:
+        """The (job_name, ds_email) pairs to skip, accepting the old name-only form.
+
+        A bare name expands to every submitter who used it, which is what
+        ``skip_job_names`` did. Bare names in ``skip_jobs`` are read the same
+        way, so a caller who passed the old third positional argument keeps the
+        behaviour it had.
+        """
+        pairs: Set[tuple[str, str]] = set()
+        names: List[str] = list(skip_job_names or [])
+        for entry in skip_jobs or []:
+            if isinstance(entry, str):
+                names.append(entry)
+            else:
+                pairs.add((entry[0], entry[1]))
+
+        if names:
+            warnings.warn(
+                "Skipping jobs by name alone is deprecated: a name is unique "
+                "per datasite and submitter, so it also drops other "
+                "submitters' jobs of the same name. Pass "
+                "skip_jobs=[(job_name, ds_email), ...] instead.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            wanted = set(names)
+            pairs.update(
+                (ref.job_name, ref.ds_email)
+                for ref in approved_jobs
+                if ref.job_name in wanted
+            )
+        return pairs
+
     def process_approved_jobs(
         self,
         stream_output: bool = True,
         timeout: int | None = None,
-        skip_job_names: list[str] | None = None,
+        skip_jobs: list[tuple[str, str]] | None = None,
         share_outputs_with_submitter: bool = False,
         share_logs_with_submitter: bool = False,
+        skip_job_names: list[str] | None = None,
     ) -> None:
         """Process all jobs in approved status.
 
         Args:
             stream_output: If True (default), stream output in real-time.
             timeout: Timeout in seconds per job. Defaults to 300 (5 minutes).
-            skip_job_names: Optional list of job names to skip.
+            skip_jobs: Optional (job_name, ds_email) pairs to skip. A name alone
+                does not identify a job — it is unique per datasite and
+                submitter — so skipping by name drops every other job that
+                shares it.
             share_outputs_with_submitter: If True, grant read access on outputs to submitter.
             share_logs_with_submitter: If True, grant read access on logs to submitter.
+            skip_job_names: Deprecated. The name-only form of ``skip_jobs``.
         """
         approved_jobs = self._get_jobs_in_approved()
 
         if not approved_jobs:
             return
 
-        # Filter out jobs to skip
-        if skip_job_names:
-            skip_set = set(skip_job_names)
-            approved_jobs = [j for j in approved_jobs if j.job_name not in skip_set]
+        skip_set = self._resolve_skip_jobs(approved_jobs, skip_jobs, skip_job_names)
+        if skip_set:
+            approved_jobs = [
+                j for j in approved_jobs if (j.job_name, j.ds_email) not in skip_set
+            ]
 
         if not approved_jobs:
             return

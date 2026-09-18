@@ -10,6 +10,7 @@ requires-python = ">=3.10"
 dependencies = [
     "syft>=0.10.0",  # floor: the `syft` PyPI project also hosts legacy PySyft <=0.9
     "syft-rds>=0.6.1",
+    "syft-job==0.1.40",  # imported directly for logging_config
     "pydantic-settings>=2.11.0",
     "requests>=2.32.0",
     "google-auth[pyjwt]>=2.22.0",
@@ -22,6 +23,7 @@ build-backend = "hatchling.build"
 [tool.uv.sources]
 "syft" = { workspace = true }
 "syft-rds" = { workspace = true }
+"syft-job" = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/syft_enclaves"]

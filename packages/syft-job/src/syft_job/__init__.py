@@ -1,5 +1,6 @@
 # __version__ comes from the installed distribution metadata (see version.py).
 from .version import __version__
+from .logging_config import configure_package_logger
 
 from .client import BaseJobClient, JobClient, get_client
 from .config import SyftJobConfig
@@ -32,3 +33,6 @@ __all__ = [
     # Migration registry
     "job_registry",
 ]
+
+# Last, so the imports stay at the top. Nothing here logs at import time.
+configure_package_logger(__name__)
