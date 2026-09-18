@@ -23,8 +23,8 @@ folders when it boots, so clearing them afterwards leaves it peered with folders
 exist.
 
 ```bash
-just delete-syftbox bench@openmined.org ../../credentials/token_bench.json
-just delete-syftbox model@openmined.org ../../credentials/token_model.json
+just delete-syftbox benchmark_owner@openmined.org ../../credentials/token_benchmark_owner.json
+just delete-syftbox model_owner@openmined.org ../../credentials/token_model_owner.json
 ```
 
 Without a token file to hand, each notebook has a commented cell under Step 0 that calls
@@ -40,7 +40,7 @@ is already published, so deploy it as it stands. Skip to step 5 only if you chan
 image or its config.
 
 ```bash
-just tinfoil-deploy v0.1.14 enclave@openmined.org bench@openmined.org,model@openmined.org
+just tinfoil-deploy v0.1.14 enclave@openmined.org benchmark_owner@openmined.org,model_owner@openmined.org
 ```
 
 Both party emails have to appear in that comma-separated list. It becomes
@@ -69,8 +69,8 @@ Set the same five constants in both, in the cell under **Setup**:
 
 ```python
 ENCLAVE_EMAIL         = "enclave@openmined.org"
-BENCHMARK_OWNER_EMAIL = "bench@openmined.org"
-MODEL_OWNER_EMAIL     = "model@openmined.org"
+BENCHMARK_OWNER_EMAIL = "benchmark_owner@openmined.org"
+MODEL_OWNER_EMAIL     = "model_owner@openmined.org"
 TINFOIL_REPO = "OpenMined/syft-enclave-tinfoil"
 TINFOIL_TAG  = "v0.1.14"
 IMAGE_DIGEST = "sha256:d0bd57f22af80b9dcd0dc151fb68d89cca65b65fcbbd1d2e4586cdfa9d7daebc"
@@ -83,8 +83,9 @@ the release you deployed. The digest above is the one `v0.1.14` pins; after a re
 Then run both notebooks top to bottom. They wait on each other four times, and a card in the
 notebook says so each time. Cells that wait print a 🟠 line and tell you to re-run them.
 
-The evaluation itself takes four to six minutes. It installs PyTorch, downloads a base model and
-generates on two CPUs, and a job is killed at 600 seconds.
+The evaluation takes a little over two minutes, measured on a run against this release: the enclave
+installs PyTorch, downloads the base model, and generates on two CPUs. A job is killed at 600
+seconds, so there is room to spare.
 
 ## 5. Republish, after changing the image or config
 
@@ -100,7 +101,7 @@ Merge that pull request, then publish and redeploy:
 
 ```bash
 just tinfoil-publish v0.1.15         # about a minute to compute the measurement
-just tinfoil-deploy v0.1.15 enclave@openmined.org bench@openmined.org,model@openmined.org
+just tinfoil-deploy v0.1.15 enclave@openmined.org benchmark_owner@openmined.org,model_owner@openmined.org
 ```
 
 Keep the digest `tinfoil-release` printed, and put it in both notebooks along with the new tag.

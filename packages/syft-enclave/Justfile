@@ -842,7 +842,7 @@ tinfoil-attest host:
 tinfoil-verify host *args:
     #!/bin/bash
     set -e
-    uv run --project ../.. python scripts/verify_tinfoil.py {{host}} --repo {{tinfoil_repo}} {{args}}
+    uv run --project ../.. --with tinfoil python scripts/verify_tinfoil.py {{host}} --repo {{tinfoil_repo}} {{args}}
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Tinfoil — debug
