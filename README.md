@@ -7,8 +7,8 @@
 
 > **`syft` 0.10+ is the successor of `syft-client`.** `syft` is the sync engine (`import syft as sy`); datasets and jobs live in `syft-rds` (`from syft_rds import login_do, login_ds`). If you depend on the legacy PySyft ≤0.9 API, pin `syft<0.10`.
 
-[![Unit Tests](https://github.com/OpenMined/pysyft/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/OpenMined/PySyft/actions/workflows/unit-tests.yml)
-[![Integration Tests](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml)
+[![Unit Tests](https://github.com/OpenMined/pysyft/actions/workflows/unit-tests.yml/badge.svg?branch=dev)](https://github.com/OpenMined/PySyft/actions/workflows/unit-tests.yml?query=branch%3Adev)
+[![Integration Tests](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml/badge.svg?branch=dev)](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml?query=branch%3Adev)
 [![PyPI](https://img.shields.io/pypi/v/syft)](https://pypi.org/project/syft/)
 [![Python 3.10+](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2Fpysyft%2Fdev%2Fpyproject.toml)](https://github.com/OpenMined/pysyft)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/OpenMined/pysyft/blob/main/pyproject.toml)
