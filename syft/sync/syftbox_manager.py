@@ -1009,6 +1009,38 @@ class SyftboxManager(BaseModelCallbackMixin):
         """Reject a pending peer request. Delegates to PeerManager."""
         self.peer_manager.reject_peer_request(email_or_peer)
 
+    # ========== Encryption key fingerprints ==========
+
+    @property
+    def encryption_fingerprint(self) -> str | None:
+        """Fingerprint of our own encryption key, to give peers out of band.
+
+        None when encryption is off.
+        """
+        return self.peer_manager.my_fingerprint()
+
+    def peer_fingerprint(self, peer_email: str) -> str | None:
+        """Fingerprint of the encryption key pinned for ``peer_email``.
+
+        Compare it with the fingerprint the peer reads out from their own
+        ``client.encryption_fingerprint``. The key arrived over Drive, and only
+        that comparison shows it is theirs. None when no key is pinned.
+        """
+        return self.peer_manager.peer_fingerprint(peer_email)
+
+    def trust_peer_key(self, peer_email: str) -> str | None:
+        """Adopt the key ``peer_email`` currently publishes, replacing the pin.
+
+        Run this after a peer reinstalled or regenerated their keys, once you
+        have confirmed the new fingerprint with them. Returns the fingerprint
+        now pinned.
+        """
+        fingerprint = self.peer_manager.refresh_peer_bundle(
+            peer_email, trust_new_key=True
+        )
+        self._emit_peers_loaded()
+        return fingerprint
+
     def _add_connection(self, connection: SyftboxPlatformConnection):
         if not (
             isinstance(connection, GDriveConnection)
