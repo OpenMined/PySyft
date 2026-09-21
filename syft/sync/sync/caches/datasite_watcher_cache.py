@@ -19,6 +19,20 @@ from syft.sync.sync.collection_spec import CollectionSyncSpec
 
 logger = logging.getLogger(__name__)
 
+
+def _is_within_peer_datasite(event: FileChangeEvent, peer_email: str) -> bool:
+    """Whether ``event`` targets a file under ``<syftbox>/<peer_email>/``.
+
+    The email is compared without case, as elsewhere. The path must stay
+    inside the mirror: the file connection only guards the syftbox root, so a
+    ``..`` segment could still reach another datasite's folder.
+    """
+    if event.datasite_email.casefold() != peer_email.casefold():
+        return False
+    path = event.path_in_datasite
+    return not path.is_absolute() and ".." not in path.parts
+
+
 SECONDS_BEFORE_SYNCING_DOWN = 0
 
 
@@ -201,7 +215,7 @@ class DataSiteWatcherCache(BaseModel):
             since_timestamp=peer_timestamp,
         )
         for event_message in sorted(new_event_messages, key=lambda x: x.timestamp):
-            self.apply_event_message(event_message)
+            self.apply_event_message(event_message, peer_email)
             self.last_event_timestamp_per_peer[peer_email] = event_message.timestamp
 
         self.last_sync = datetime.now()
@@ -233,41 +247,49 @@ class DataSiteWatcherCache(BaseModel):
         # Apply in timestamp order
         event_count = 0
         for event_message in sorted(downloaded_messages, key=lambda x: x.timestamp):
-            self.apply_event_message(event_message)
+            self.apply_event_message(event_message, peer_email)
             self.last_event_timestamp_per_peer[peer_email] = event_message.timestamp
             event_count += len(event_message.events)
 
         self.last_sync = datetime.now()
         return event_count
 
-    def apply_event_message(self, event_message: FileChangeEventsMessage):
+    def apply_event_message(
+        self, event_message: FileChangeEventsMessage, peer_email: str
+    ) -> None:
+        """Apply the events ``peer_email`` published in its outbox.
+
+        Every event names its own target (``datasite_email`` and
+        ``path_in_datasite``), and both fields come from the peer. A peer may
+        only change files under its own datasite, mirrored locally at
+        ``<syftbox>/<peer_email>/``, so an event aimed anywhere else is dropped
+        before it reaches the local file connection.
+        """
         self.events_connection.write_file(
             event_message.message_filepath.as_string(), event_message
         )
-
         for event in event_message.events:
-            # Normalize path to Path object for consistency in file_hashes dict
-            path_key = Path(event.path_in_syftbox)
-
-            if event.is_deleted:
-                if self.pre_write_filter and not self.pre_write_filter(
-                    str(event.path_in_syftbox), True
-                ):
-                    continue
-                # Handle deletion
-                self.file_connection.delete_file(str(event.path_in_syftbox))
-                if path_key in self.file_hashes:
-                    del self.file_hashes[path_key]
-            else:
-                if self.pre_write_filter and not self.pre_write_filter(
-                    str(event.path_in_syftbox), False
-                ):
-                    continue
-                # Handle create/update
-                self.file_connection.write_file(
-                    str(event.path_in_syftbox), event.content
+            if not _is_within_peer_datasite(event, peer_email):
+                logger.warning(
+                    f"Dropping event from {peer_email} aimed at "
+                    f"{event.path_in_syftbox}: a peer may only change files "
+                    "under its own datasite"
                 )
-                self.file_hashes[path_key] = event.new_hash
+                continue
+            self._apply_event(event)
+
+    def _apply_event(self, event: FileChangeEvent) -> None:
+        path = str(event.path_in_syftbox)
+        if self.pre_write_filter and not self.pre_write_filter(path, event.is_deleted):
+            return
+        # Normalize path to Path object for consistency in file_hashes dict
+        path_key = Path(event.path_in_syftbox)
+        if event.is_deleted:
+            self.file_connection.delete_file(path)
+            self.file_hashes.pop(path_key, None)
+        else:
+            self.file_connection.write_file(path, event.content)
+            self.file_hashes[path_key] = event.new_hash
 
     def get_cached_events(self) -> List[FileChangeEvent]:
         messages = self.events_connection.get_all()
