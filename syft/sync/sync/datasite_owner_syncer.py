@@ -52,6 +52,13 @@ DEFAULT_ROLLING_STATE_UPLOAD_THRESHOLD = 1
 MIN_MESSAGES_COMPACT = 20
 
 
+def same_email(left: str | None, right: str | None) -> bool:
+    """True if both name the same address. A mail address has no case."""
+    if left is None or right is None:
+        return False
+    return left.casefold() == right.casefold()
+
+
 class DatasiteOwnerSyncerConfig(BaseModel):
     email: str
     syftbox_folder: Path
@@ -654,11 +661,22 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             sender_email=sender_email
         )
         if message is not None:
-            sender_email = message.sender_email
-            self.handle_proposed_filechange_events_message(sender_email, message)
+            # The sender is the peer whose inbox held the message. The transport
+            # read the message from that peer's folder and checked the signature
+            # against that peer's key. The body is sender-supplied, so a claim
+            # there that disagrees is a spoof attempt.
+            if same_email(message.sender_email, sender_email):
+                self.handle_proposed_filechange_events_message(sender_email, message)
+            else:
+                logger.warning(
+                    f"Dropped a proposed change from {sender_email}: the message "
+                    f"claims sender {message.sender_email!r}."
+                )
 
             # delete the message once we are done
-            self.connection_router.owner_remove_proposed_filechange_from_inbox(message)
+            self.connection_router.owner_remove_proposed_filechange_from_inbox(
+                message, sender_email
+            )
             return message
         elif raise_on_none:
             raise ValueError("No proposed file change to process")
@@ -692,7 +710,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             return
 
         filtered_message = ProposedFileChangesMessage(
-            sender_email=proposed_events_message.sender_email,
+            sender_email=sender_email,
             proposed_file_changes=allowed_changes,
         )
 

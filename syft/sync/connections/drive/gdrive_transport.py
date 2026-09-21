@@ -799,10 +799,17 @@ class GDriveConnection(SyftboxPlatformConnection):
         self.owner_write_raw_bytes_to_outbox(recipient, fname, data)
 
     def owner_remove_proposed_filechange_message_from_inbox(
-        self, proposed_filechange_message: ProposedFileChangesMessage
+        self,
+        proposed_filechange_message: ProposedFileChangesMessage,
+        sender_email: str,
     ):
+        """Archive a handled message. ``sender_email`` is the peer it came from.
+
+        The caller reads that email from the transport. The ``sender_email``
+        field of the message is sender-supplied, and it names the archive folder,
+        so this method never reads it.
+        """
         fname = proposed_filechange_message.message_filename.as_string()
-        sender_email = proposed_filechange_message.sender_email
 
         # Use cached platform_id if available, otherwise fall back to name-based lookup
         gdrive_id = proposed_filechange_message.platform_id
