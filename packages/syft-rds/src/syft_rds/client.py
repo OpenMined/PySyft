@@ -19,8 +19,9 @@ from syft.sync.utils.pre_submit_scan import run_pre_submit_check
 from syft.sync.version.peer_manager import CompatAction
 from syft_job.client import JobClient
 from syft_job.job_runner import SyftJobRunner
-from syft_datasets.dataset_manager import SyftDatasetManager
+from syft_datasets.dataset_manager import SHARE_WITH_ANY, SyftDatasetManager
 from syft_datasets.dataset_ref import DatasetNotFoundError
+from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
 from syft_rds.config import (
     DATASET_COLLECTION_SPECS,
     MOCK_DATASET_SPEC,
@@ -30,6 +31,64 @@ from syft_rds.config import (
 )
 
 logger = logging.getLogger(__name__)
+
+_ALREADY_PUBLISHED = f"already published at protocol {DATASET_PROTOCOL_VERSION}"
+
+
+class DatasetUpgrade(BaseModel):
+    """What ``upgrade()`` did, or would do, for one dataset."""
+
+    tag: str
+    published_before: list[str]
+    published_after: list[str]
+    upload_bytes: int = 0
+    skipped_reason: str | None = None
+    error: str | None = None
+
+    @property
+    def promoted(self) -> bool:
+        return self.skipped_reason is None and self.error is None
+
+    def __str__(self) -> str:
+        if self.error is not None:
+            return f"{self.tag}: failed ({self.error})"
+        if self.skipped_reason is not None:
+            return f"{self.tag}: skipped ({self.skipped_reason})"
+        before = ",".join(self.published_before) or "none"
+        after = ",".join(self.published_after) or "none"
+        return f"{self.tag}: {before} -> {after} ({self.upload_bytes} bytes)"
+
+
+class UpgradeReport(BaseModel):
+    """The result of one ``upgrade()`` sweep."""
+
+    dry_run: bool
+    datasets: list[DatasetUpgrade] = []
+
+    @property
+    def promoted(self) -> list[DatasetUpgrade]:
+        return [d for d in self.datasets if d.promoted]
+
+    @property
+    def failed(self) -> list[DatasetUpgrade]:
+        return [d for d in self.datasets if d.error is not None]
+
+    @property
+    def upload_bytes(self) -> int:
+        return sum(d.upload_bytes for d in self.datasets)
+
+    def __str__(self) -> str:
+        head = "upgrade (dry run)" if self.dry_run else "upgrade"
+        lines = [
+            f"{head}: {len(self.promoted)} promoted, {len(self.failed)} failed, "
+            f"{self.upload_bytes} bytes"
+        ]
+        lines += [f"  {d}" for d in self.datasets]
+        return "\n".join(lines)
+
+    def _repr_html_(self) -> str:
+        rows = "".join(f"<tr><td>{d}</td></tr>" for d in self.datasets)
+        return f"<b>{self}</b><table>{rows}</table>" if rows else f"<b>{self}</b>"
 
 
 class SyftRDSClient(BaseModel):
@@ -252,24 +311,44 @@ class SyftRDSClient(BaseModel):
         Google Drive "anyone with link" files are not discoverable via search,
         so explicit user sharing is added. Reads the cache populated during
         ``pull_initial_state()`` in the nested DatasiteOwnerSyncer.
+
+        An "any" dataset holds the layouts its audience read at create time, so
+        a peer approved later may read none of them. Its layout is materialized
+        first, because a grant on a collection the peer cannot list reaches
+        nobody. The new layout is then marked "any" like the rest of the tag,
+        so the next peer finds it in the cache instead of a fresh listing.
         """
-        for (
-            wire_prefix,
-            tag,
-            content_hash,
-        ) in self.sync_engine.datasite_owner_syncer.any_shared_collections:
+        cached = self.sync_engine.datasite_owner_syncer.any_shared_collections
+        # The cache holds one entry for each layout, so the backfill is keyed on
+        # the tag and runs once for each dataset.
+        for tag in dict.fromkeys(tag for _, tag, _ in cached):
             try:
-                self.sync_engine.share_collection(
-                    wire_prefix, tag, content_hash, [peer_email]
+                self._ensure_dataset_layouts_for(
+                    tag,
+                    [peer_email],
+                    {self._protocol_of(c) for c in self._mock_collections_for(tag)},
                 )
+                # Listed again, not read from the cache: a layout materialized
+                # just now is not in the cache yet, and it is the one this peer
+                # reads.
+                for collection in self._mock_collections_for(tag):
+                    wire_prefix = MOCK_DATASET_SPEC.wire_prefix(collection.variant)
+                    if not collection.has_any_permission:
+                        self.sync_engine.tag_collection_as_any(
+                            wire_prefix, tag, collection.content_hash
+                        )
+                        self.sync_engine.datasite_owner_syncer.register_any_shared_collection(
+                            wire_prefix, tag, collection.content_hash
+                        )
+                    self.sync_engine.share_collection(
+                        wire_prefix, tag, collection.content_hash, [peer_email]
+                    )
             except Exception:
-                # One collection failing (missing folder, quota, network) must
-                # not stop us sharing the rest with this peer. "alreadyShared"
-                # is already handled in _batch_add_permissions, so anything
+                # One dataset failing (missing folder, quota, network) must not
+                # stop us sharing the rest with this peer. "alreadyShared" is
+                # already handled in _batch_add_permissions, so anything
                 # reaching here is a real failure worth a traceback.
-                logger.exception(
-                    "Failed to share collection %r with %s", tag, peer_email
-                )
+                logger.exception("Failed to share dataset %r with %s", tag, peer_email)
 
     # ------------------------------------------------------------------ #
     # job product surface (RDS-owned)
@@ -431,8 +510,10 @@ class SyftRDSClient(BaseModel):
         private_folder_ids: list[str] = []
 
         try:
-            # Create the dataset locally, in one layout for each protocol
-            # version the audience reads.
+            # Create the dataset locally: the current layout, plus one layout
+            # for each older protocol version the audience reads. Resolved here
+            # and not in storage, because "any" is an audience of the approved
+            # peers and only the client holds that list.
             created = self.dataset_manager.create_all(
                 name=name,
                 mock_path=mock_path,
@@ -442,6 +523,9 @@ class SyftRDSClient(BaseModel):
                 location=location,
                 tags=tags,
                 users=users,
+                protocol_versions=self.dataset_manager.storage.create_protocol_versions(
+                    self._audience_emails(users)
+                ),
             )
             created_local = True
             # The newest copy is the one to hand back to the owner.
@@ -685,6 +769,11 @@ class SyftRDSClient(BaseModel):
                 users,
             )
 
+        # A share changes the audience, so every layout's ruleset records it.
+        # The transport alone would leave the rulesets naming the create-time
+        # audience, and upgrade() recovers the audience from there.
+        self.dataset_manager.grant_read_on_every_layout(tag, users)
+
         if sync:
             self.sync()
 
@@ -713,6 +802,22 @@ class SyftRDSClient(BaseModel):
         """The dataset protocol version a collection's wire variant stands for."""
         return collection.variant.removeprefix("v") or "0"
 
+    def _audience_emails(self, users: list[str] | str | None) -> list[str]:
+        """The peers whose layouts an audience needs.
+
+        ``SHARE_WITH_ANY`` is an audience of the approved peers, whose versions
+        we know, so it needs no floor copy. No audience is an empty list: only
+        the current layout is written, and a peer that arrives later gets its
+        layout from the backfill.
+        """
+        if users == SHARE_WITH_ANY:
+            return [p.email for p in self.sync_engine.peer_manager.approved_peers]
+        if users is None:
+            return []
+        if isinstance(users, str):
+            return [users]
+        return list(users)
+
     def _ensure_dataset_layouts_for(
         self, tag: str, users: list[str] | str, existing_versions: set[str]
     ) -> bool:
@@ -725,8 +830,9 @@ class SyftRDSClient(BaseModel):
         was added.
         """
         storage = self.dataset_manager.storage
-        peer_emails = self.dataset_manager._peer_emails(users)
-        needed = storage.target_protocol_versions_for_peers(peer_emails)
+        needed = storage.target_protocol_versions_for_peers(
+            self._audience_emails(users)
+        )
         missing = {
             version
             for version in needed
@@ -768,6 +874,149 @@ class SyftRDSClient(BaseModel):
         self._upload_dataset_to_collection(copy, users=[])
         if self._private_collections_for(tag):
             self._upload_private_dataset_to_collection(copy)
+
+    def upgrade(self, *, dry_run: bool = False, sync: bool = True) -> UpgradeReport:
+        """Publish every owned dataset in the protocol layout of this client.
+
+        A dataset's object versions follow its layout directory, so a dataset is
+        promoted by adding the current layout. Every older layout is kept, and a
+        peer that reads one keeps reading it.
+
+        The audience of each dataset is recovered from the ruleset of its newest
+        layout, plus the "any" flag on its collections. A dataset kept by the
+        owner alone stays that way.
+
+        One sweep for each release: a create writes the current layout, so only
+        the datasets of an earlier release need this. A repeat run re-shares
+        each layout with the recovered audience, so a sweep that failed part way
+        through repairs itself. ``dry_run`` reports the plan and writes nothing.
+        """
+        if not self.has_do_role:
+            raise ValueError("Only dataset owners can upgrade datasets")
+        if self.dataset_manager is None:
+            raise ValueError("Dataset manager is not set")
+
+        # Load the peers first: the audience of an "any" dataset is the approved
+        # peers, and a stale map would decide it.
+        self.load_peers()
+
+        report = UpgradeReport(dry_run=dry_run)
+        storage = self.dataset_manager.storage
+        for ref in list(storage.iter_dataset_refs(self.email)):
+            report.datasets.append(self._upgrade_dataset(ref.name, dry_run=dry_run))
+
+        if sync and not dry_run:
+            # Housekeeping. The publish already happened, per dataset.
+            self.sync()
+        return report
+
+    def _upgrade_dataset(self, tag: str, *, dry_run: bool) -> DatasetUpgrade:
+        """Promote one dataset to the current layout, or say why it was skipped."""
+        published = sorted(
+            {self._protocol_of(c) for c in self._mock_collections_for(tag)}, key=int
+        )
+        # Published only. A layout on disk with no collection of its own is the
+        # case _materialize_dataset_copy resumes, so folding the disk into this
+        # skip would drop exactly that case and never publish the copy.
+        already_published = DATASET_PROTOCOL_VERSION in published
+
+        if dry_run:
+            return DatasetUpgrade(
+                tag=tag,
+                published_before=published,
+                published_after=published
+                if already_published
+                else sorted({*published, DATASET_PROTOCOL_VERSION}, key=int),
+                upload_bytes=0
+                if already_published
+                else self._upgrade_upload_bytes(tag),
+                skipped_reason=_ALREADY_PUBLISHED if already_published else None,
+            )
+
+        audience = self._recover_audience(tag)
+        error: str | None = None
+        if not already_published:
+            try:
+                self._materialize_dataset_copy(
+                    tag, DATASET_PROTOCOL_VERSION, users=audience
+                )
+            except Exception as exc:
+                # An added layout is additive, so a partial sweep is safe to
+                # leave. The rest of the datasets still upgrade.
+                logger.exception("Failed to promote dataset %r", tag)
+                error = f"{type(exc).__name__}: {exc}"
+
+        if error is None:
+            # Always, even for a layout that was already published: the promote
+            # uploads unshared, and a share that failed after the upload
+            # succeeded would never be retried otherwise, because the next
+            # sweep sees the layout published and skips it. A share ignores a
+            # grant that already exists, so a repeat costs nothing.
+            try:
+                for collection in self._mock_collections_for(tag):
+                    self._share_dataset_collection(
+                        MOCK_DATASET_SPEC.wire_prefix(collection.variant),
+                        tag,
+                        collection.content_hash,
+                        audience,
+                    )
+            except Exception as exc:
+                logger.exception("Failed to share the layouts of dataset %r", tag)
+                error = f"{type(exc).__name__}: {exc}"
+
+        return DatasetUpgrade(
+            tag=tag,
+            published_before=published,
+            published_after=sorted(
+                {self._protocol_of(c) for c in self._mock_collections_for(tag)},
+                key=int,
+            ),
+            upload_bytes=0
+            if (already_published or error is not None)
+            else self._upgrade_upload_bytes(tag),
+            skipped_reason=_ALREADY_PUBLISHED
+            if (already_published and error is None)
+            else None,
+            error=error,
+        )
+
+    def _recover_audience(self, tag: str) -> list[str] | str:
+        """Who a dataset on disk was shared with.
+
+        Two sources, because a peer reads a dataset through a shared collection
+        and not through ``syft.pub.yaml``: the explicit grants come from the
+        ruleset, and the "any" flag from the collections. "any" has priority,
+        because it is the wider audience and a single bit cannot be recovered
+        from a list of emails.
+        """
+        if any(c.has_any_permission for c in self._mock_collections_for(tag)):
+            return SHARE_WITH_ANY
+        return self.dataset_manager.recover_audience_from_ruleset(tag)
+
+    def _upgrade_upload_bytes(self, tag: str) -> int:
+        """The bytes a promote uploads, measured on the local copy.
+
+        The cost of a sweep is what goes to the transport, not a count of files
+        on disk. The private payload counts too when the copies of the dataset
+        are Drive-backed, because the promote uploads a private collection as
+        well as the mock one.
+        """
+        storage = self.dataset_manager.storage
+        try:
+            ref = storage.find_dataset_ref(
+                self.email, tag, protocol_version=DATASET_PROTOCOL_VERSION
+            )
+        except DatasetNotFoundError:
+            ref = storage.find_dataset_ref(self.email, tag)
+        dataset = storage.read_dataset(ref)
+        total = sum(
+            len(payload) for payload in self._collect_mock_files(dataset).values()
+        )
+        if self._private_collections_for(tag):
+            total += sum(
+                f.stat().st_size for f in dataset.private_dir.iterdir() if f.is_file()
+            )
+        return total
 
     def share_private_dataset(self, tag: str, enclave_email: str):
         """Share private dataset files with an enclave via outbox events.

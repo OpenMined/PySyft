@@ -48,17 +48,26 @@ def test_all_current_audience_drops_legacy_layout(tmp_path):
     }
 
 
-def test_unknown_peer_gets_widest_protocol(tmp_path):
+def test_a_named_peer_of_unknown_version_gets_the_floor(tmp_path):
+    # We cannot assume a peer we have not read reads the current layout, so it
+    # takes the oldest protocol we still support -- a layout it can read.
     storage = _storage(tmp_path, {})
     versions = storage.target_protocol_versions_for_peers([UNKNOWN_PEER])
-    assert versions == {storage._widest_protocol_version}
+    assert versions == {storage._floor_protocol_version}
+
+
+def test_no_audience_needs_no_older_layout(tmp_path):
+    # With no peer to serve, a create writes the current layout alone.
+    storage = _storage(tmp_path, {})
+    assert storage.target_protocol_versions_for_peers([]) == set()
+    assert storage.target_protocol_versions_for_peers() == set()
 
 
 def test_live_map_updates_are_seen_by_storage(tmp_path):
     live: dict = {}
     storage = _storage(tmp_path, live)
     assert storage.target_protocol_versions_for_peers([NEW_PEER]) == {
-        storage._widest_protocol_version
+        storage._floor_protocol_version
     }
     live[NEW_PEER] = _dataset_schema(DATASET_PROTOCOL_VERSION)
     assert storage.target_protocol_versions_for_peers([NEW_PEER]) == {
