@@ -1,18 +1,17 @@
 """Utility functions used by the syft-bg API layer."""
 
 import hashlib
+import os
 import shutil
 from collections.abc import Sequence
 from pathlib import Path, PurePosixPath
 
 from syft_bg.approve.config import AutoApproveConfig, FileEntry
 from syft_bg.approve.criteria import RUN_SCRIPT_PATH, get_job_submission_files
-from syft_bg.common.config import get_syftbg_dir, get_default_paths
+from syft_bg.common.config import get_default_paths, get_syftbg_dir
 from syft_bg.common.drive import is_colab
 from syft_bg.common.syft_bg_config import SyftBgConfig
 from syft_bg.email_approve.pubsub_setup import get_project_id_from_credentials
-
-
 from syft_bg.services.base import ServiceInfo, ServiceStatus
 
 # config.yaml carries per-job metadata (the job name, the submission time), so
@@ -241,8 +240,13 @@ def resolve_content_files(
     content_files: list[tuple[str, Path]] = []
     for item in contents:
         if base_dir is not None:
-            rel = str(item)
-            abs_path = base_dir / rel
+            # Normalize lexically, so "./code/main.py" is stored as the
+            # "code/main.py" a job is matched on.
+            abs_path = Path(os.path.abspath(base_dir / item))
+            try:
+                rel = abs_path.relative_to(os.path.abspath(base_dir)).as_posix()
+            except ValueError:
+                return [], f"{item} is outside the base directory {base_dir}"
             if not abs_path.exists():
                 return [], f"File not found: {abs_path}"
             if abs_path.is_dir():
@@ -318,19 +322,26 @@ def resolve_job_file_args(
 ) -> tuple[list[str] | None, str | None]:
     """Read owner-typed file names as paths relative to the submission root.
 
-    A name that is already a path is kept. A bare name is resolved against the
-    job, so "main.py" finds "code/main.py". A name that matches more than one
-    file is an error: the owner must say which one.
+    A name that is already a path is kept. Any other name is resolved as a
+    path suffix, so "main.py" finds "code/main.py" and "utils/helpers.py" finds
+    "code/utils/helpers.py". A name that matches more than one file is an
+    error: the owner must say which one.
     """
     if names is None:
         return None, None
 
     resolved: list[str] = []
     for name in names:
-        if name in user_files:
-            resolved.append(name)
+        path_name = PurePosixPath(name)
+        if path_name.as_posix() in user_files:
+            resolved.append(path_name.as_posix())
             continue
-        matches = [path for path in user_files if Path(path).name == name]
+        parts = path_name.parts
+        matches = [
+            path
+            for path in user_files
+            if parts and PurePosixPath(path).parts[-len(parts) :] == parts
+        ]
         if len(matches) == 1:
             resolved.append(matches[0])
         elif not matches:
@@ -416,6 +427,29 @@ def validate_auto_approve_object_covers_job(
     return None
 
 
+def validate_content_files_are_text(
+    user_files: dict[str, Path], content_rel_paths: list[str]
+) -> str | None:
+    """Check that each content-matched file is UTF-8 text.
+
+    The matcher compares content as text and refuses a file it cannot read,
+    so a rule that pins such a file approves nothing. Returns an error or None.
+    """
+    unreadable = []
+    for rel in sorted(content_rel_paths):
+        try:
+            user_files[rel].read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            unreadable.append(rel)
+    if unreadable:
+        return (
+            f"these files of the job are not UTF-8 text, so their content "
+            f"cannot be matched and no job would match: {unreadable}. A job "
+            f"that ships them cannot be auto-approved."
+        )
+    return None
+
+
 def resolve_job_approval_files(
     user_files: dict[str, Path],
     contents: list[str] | None,
@@ -446,6 +480,9 @@ def resolve_job_approval_files(
     error = validate_auto_approve_object_covers_job(
         user_files, content_rel_paths, name_only
     )
+    if error:
+        return [], [], error
+    error = validate_content_files_are_text(user_files, content_rel_paths)
     if error:
         return [], [], error
     return content_rel_paths, name_only, None

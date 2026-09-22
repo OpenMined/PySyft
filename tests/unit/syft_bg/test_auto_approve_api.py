@@ -7,9 +7,18 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-from syft_bg.api.api import auto_approve, list_auto_approvals, remove_auto_approve
-from syft_bg.api.utils import copy_and_hash_files, get_job_user_files
+from syft_bg.api.api import (
+    auto_approve,
+    auto_approve_job,
+    list_auto_approvals,
+    remove_auto_approve,
+)
+from syft_bg.api.utils import (
+    copy_and_hash_files,
+    get_job_user_files,
+    resolve_content_files,
+    resolve_job_file_args,
+)
 from syft_bg.approve.config import (
     AutoApprovalObj,
     AutoApprovalsConfig,
@@ -377,3 +386,113 @@ class TestJobUserFiles:
             "run.sh",
             "config.yaml",
         }
+
+
+class TestAutoApproveJobUnreadableFiles:
+    """A pending job can ship files that are not UTF-8 text."""
+
+    def _pending_job(self, temp_dir: Path) -> MagicMock:
+        submission = temp_dir / "job"
+        (submission / "code" / "__pycache__").mkdir(parents=True)
+        (submission / "code" / "main.py").write_text("print(1)")
+        (submission / "code" / "__pycache__" / "main.pyc").write_bytes(
+            b"\xff\xfe\x00binary"
+        )
+        (submission / "run.sh").write_text("python code/main.py")
+        (submission / "config.yaml").write_text("name: job")
+        job = MagicMock()
+        job.job_submission_path = submission
+        job.status = "pending"
+        job.name = "job"
+        job.submitted_by = "alice@test.com"
+        return job
+
+    def test_returns_error_and_writes_nothing(self, temp_dir):
+        """The matcher cannot read the file either, so no rule could match."""
+        job = self._pending_job(temp_dir)
+        with _patched_paths(temp_dir) as paths:
+            result = auto_approve_job(job)
+
+            assert result.success is False
+            assert "code/__pycache__/main.pyc" in result.error
+            assert not paths.config.exists()
+            assert not any(paths.auto_approvals_dir.glob("*"))
+
+
+_USER_FILES = {
+    "run.sh": Path("/j/run.sh"),
+    "config.yaml": Path("/j/config.yaml"),
+    "code/main.py": Path("/j/code/main.py"),
+    "code/utils/helpers.py": Path("/j/code/utils/helpers.py"),
+    "code/a/helpers.py": Path("/j/code/a/helpers.py"),
+}
+
+
+class TestResolveJobFileArgs:
+    """Owner-typed names resolve against paths from the submission root."""
+
+    def test_exact_path_is_kept(self):
+        assert resolve_job_file_args(_USER_FILES, ["code/main.py"]) == (
+            ["code/main.py"],
+            None,
+        )
+
+    def test_bare_name_resolves(self):
+        assert resolve_job_file_args(_USER_FILES, ["main.py"]) == (
+            ["code/main.py"],
+            None,
+        )
+
+    def test_path_relative_to_code_resolves(self):
+        """The form the API took when paths were relative to code/."""
+        assert resolve_job_file_args(_USER_FILES, ["utils/helpers.py"]) == (
+            ["code/utils/helpers.py"],
+            None,
+        )
+
+    def test_dot_prefix_resolves(self):
+        assert resolve_job_file_args(_USER_FILES, ["./code/main.py"]) == (
+            ["code/main.py"],
+            None,
+        )
+
+    def test_ambiguous_name_is_an_error(self):
+        resolved, error = resolve_job_file_args(_USER_FILES, ["helpers.py"])
+        assert resolved == []
+        assert "several files" in error
+
+    def test_partial_component_does_not_match(self):
+        """A suffix matches whole path components only."""
+        resolved, error = resolve_job_file_args(_USER_FILES, ["ils/helpers.py"])
+        assert resolved == []
+        assert "not found" in error
+
+
+class TestResolveContentFilesBaseDir:
+    """With a base directory, the stored path is the one a job is matched on."""
+
+    def _submission(self, temp_dir: Path) -> Path:
+        submission = temp_dir / "job"
+        (submission / "code").mkdir(parents=True)
+        (submission / "code" / "main.py").write_text("print(1)")
+        (submission / "run.sh").write_text("python code/main.py")
+        return submission
+
+    def test_dot_prefix_is_normalized(self, temp_dir):
+        base = self._submission(temp_dir)
+        files, error = resolve_content_files(["./code/main.py", "./run.sh"], base)
+        assert error is None
+        assert [rel for rel, _ in files] == ["code/main.py", "run.sh"]
+
+    def test_absolute_path_inside_base_is_made_relative(self, temp_dir):
+        base = self._submission(temp_dir)
+        files, error = resolve_content_files([str(base / "code" / "main.py")], base)
+        assert error is None
+        assert [rel for rel, _ in files] == ["code/main.py"]
+
+    def test_path_outside_base_is_an_error(self, temp_dir):
+        base = self._submission(temp_dir)
+        (temp_dir / "outside.py").write_text("x")
+        files, error = resolve_content_files(["../outside.py"], base)
+        assert files == []
+        assert "outside" in error
