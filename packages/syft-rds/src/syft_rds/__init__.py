@@ -1,6 +1,6 @@
 """syft-rds: Remote Data Science product composed on top of syft."""
 
-from syft_rds.client import SyftRDSClient
+from syft_rds.client import DatasetUpgrade, SyftRDSClient, UpgradeReport
 from syft_rds.config import SyftRDSClientConfig
 from syft_rds.job_auto_approval import auto_approve_and_run_jobs, job_matches_criteria
 from syft_rds.login import login_do, login_ds
@@ -15,6 +15,8 @@ from syft.sync.utils.syftbox_utils import check_env
 
 __all__ = [
     "SyftRDSClient",
+    "UpgradeReport",
+    "DatasetUpgrade",
     "SyftRDSClientConfig",
     "login_do",
     "login_ds",
