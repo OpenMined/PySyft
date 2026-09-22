@@ -14,6 +14,8 @@ from syft_datasets.dataset_ref import DatasetRef
 from syft_datasets.dataset_storage import DatasetSourceFiles, DatasetStorage
 
 from .config import PRIVATE_METADATA_FILENAME, SyftBoxConfig
+from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME, RuleSet
+
 from .permissions import set_mock_dataset_permissions, set_private_dataset_permissions
 
 DATASET_COLLECTION_PREFIX = "syft_datasetcollection"
@@ -33,8 +35,8 @@ class SyftDatasetManager:
         )
         # peer_schemas (peer email -> dataset ProtocolSchema): syft
         # passes PeerManager's live map here (updated in place as peer version
-        # files load). Peers without an entry resolve to the widest-compatible
-        # protocol, so datasets stay readable by unknown-version peers.
+        # files load). A named peer without an entry resolves to the floor, so
+        # the dataset stays readable by a peer of unknown version.
         self.storage = DatasetStorage(
             config=self.syftbox_config, peer_schemas=peer_schemas
         )
@@ -141,14 +143,61 @@ class SyftDatasetManager:
         """Rewrite an owned dataset into another protocol layout, re-applying permissions.
 
         Storage copies the files + writes metadata for the new layout; the manager
-        re-applies read permissions. The audience (``users``) must be supplied by
-        the caller as it is on create — granted readers are not recoverable from
-        disk via the permissions API.
+        re-applies read permissions. ``users`` is the audience of the new layout.
+        A caller that no longer holds it reads it back with
+        ``recover_audience_from_ruleset``, which covers the explicit grants; the
+        "any" flag lives on the transport, so a caller that shares collections
+        must check that too.
         """
         ref = self.storage.find_dataset_ref(self.syftbox_config.email, name)
         migrated = self.storage.migrate_dataset(ref, to_version)
         self._set_new_dataset_permissions(dataset=migrated, users=users)
         return migrated
+
+    def recover_audience_from_ruleset(
+        self, name: str, protocol_version: str | None = None
+    ) -> list[str] | str:
+        """The explicit read grants recorded on a layout's mock directory.
+
+        The audience of record for a dataset already on disk. ``"*"`` maps back
+        to ``SHARE_WITH_ANY``. An empty list is a real answer: a dataset kept by
+        the owner alone has no ruleset, and it must stay that way.
+
+        Reads the layout ``protocol_version``, or the newest layout by default.
+        Covers the explicit grants only. A collection tagged for any peer
+        carries that flag on the transport, not here.
+        """
+        ref = self.storage.find_dataset_ref(
+            self.syftbox_config.email, name, protocol_version=protocol_version
+        )
+        ruleset_path = self.storage.public_dataset_dir(ref) / PERMISSION_FILE_NAME
+        if not ruleset_path.exists():
+            return []
+        emails: list[str] = []
+        for rule in RuleSet.load(ruleset_path).rules:
+            for user in rule.access.read:
+                if user == "*":
+                    return SHARE_WITH_ANY
+                if user not in emails:
+                    emails.append(user)
+        return emails
+
+    def grant_read_on_every_layout(self, name: str, users: list[str] | str) -> None:
+        """Add ``users`` to the ruleset of every on-disk layout of a dataset.
+
+        A share reaches a peer through the transport, so a share that only
+        updates the transport leaves the rulesets naming the audience at create
+        time. The ruleset is the audience of record for ``upgrade()``, so every
+        layout records the grant.
+        """
+        for ref in self.storage.iter_dataset_refs_all_protocols(
+            self.syftbox_config.email
+        ):
+            if ref.name != name:
+                continue
+            self._set_new_dataset_permissions(
+                dataset=self.storage.read_dataset(ref), users=users
+            )
 
     @staticmethod
     def _peer_emails(users: list[str] | str | None) -> list[str] | None:
