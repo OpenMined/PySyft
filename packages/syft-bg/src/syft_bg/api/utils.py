@@ -3,9 +3,10 @@
 import hashlib
 import shutil
 from collections.abc import Sequence
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from syft_bg.approve.config import AutoApproveConfig, FileEntry
+from syft_bg.approve.criteria import RUN_SCRIPT_PATH, get_job_submission_files
 from syft_bg.common.config import get_syftbg_dir, get_default_paths
 from syft_bg.common.drive import is_colab
 from syft_bg.common.syft_bg_config import SyftBgConfig
@@ -14,8 +15,15 @@ from syft_bg.email_approve.pubsub_setup import get_project_id_from_credentials
 
 from syft_bg.services.base import ServiceInfo, ServiceStatus
 
-PERMISSION_FILE_NAME = "syft.pub.yaml"
-DEFAULT_NAME_ONLY_FILES = {"params.json"}
+# config.yaml carries per-job metadata (the job name, the submission time), so
+# its bytes are unique to one job. Pinning them makes an object that matches
+# that job and no other, so it is never content-matched. It is not executed:
+# the runner reads run.sh, which is pinned by content.
+PER_JOB_FILES = frozenset({"config.yaml"})
+
+# Matched by name unless the caller says otherwise. params.json is a job's
+# parameters, which usually vary run to run.
+DEFAULT_NAME_ONLY_FILES = PER_JOB_FILES | {"code/params.json"}
 
 
 def get_setup_state_path(service: str) -> Path:
@@ -237,6 +245,12 @@ def resolve_content_files(
             abs_path = base_dir / rel
             if not abs_path.exists():
                 return [], f"File not found: {abs_path}"
+            if abs_path.is_dir():
+                return [], (
+                    f"{abs_path} is a directory. With a base directory, name "
+                    f"each file, so that the stored path is the one a job is "
+                    f"matched on."
+                )
             content_files.append((rel, abs_path))
         else:
             p = Path(item).expanduser()
@@ -280,21 +294,53 @@ def resolve_auto_approve_file_args(
 ) -> tuple[list[str], list[str]]:
     """Determine which job files are content-matched vs name-only.
 
+    A matcher compares the whole file set, so a job file in neither bucket
+    makes the object match nothing. A branch that places the files itself
+    therefore places all of them; a branch driven by the caller does not.
+
     Returns (content_rel_paths, name_only).
     """
-    if contents is None and file_paths is None:
-        all_files = set(user_files.keys())
-        name_only = all_files.intersection(DEFAULT_NAME_ONLY_FILES)
-        content_matched = all_files - name_only
-        return list(content_matched), list(name_only)
-    elif contents is not None and file_paths is None:
-        return list(contents), []
-    elif contents is None and file_paths is not None:
-        name_only = list(file_paths)
-        content_rel_paths = set(user_files.keys()) - set(file_paths)
-        return list(content_rel_paths), name_only
-    else:
-        return list(contents), list(file_paths)  # type: ignore[arg-type]
+    all_files = set(user_files.keys())
+
+    if contents is not None:
+        # The caller placed the files itself. auto_approve_job reports one that
+        # neither bucket names, rather than guessing where it belongs.
+        return list(contents), list(file_paths or [])
+
+    name_only = all_files & DEFAULT_NAME_ONLY_FILES
+    if file_paths is not None:
+        name_only |= set(file_paths)
+    return list(all_files - name_only), list(name_only)
+
+
+def resolve_job_file_args(
+    user_files: dict[str, Path], names: list[str] | None
+) -> tuple[list[str] | None, str | None]:
+    """Read owner-typed file names as paths relative to the submission root.
+
+    A name that is already a path is kept. A bare name is resolved against the
+    job, so "main.py" finds "code/main.py". A name that matches more than one
+    file is an error: the owner must say which one.
+    """
+    if names is None:
+        return None, None
+
+    resolved: list[str] = []
+    for name in names:
+        if name in user_files:
+            resolved.append(name)
+            continue
+        matches = [path for path in user_files if Path(path).name == name]
+        if len(matches) == 1:
+            resolved.append(matches[0])
+        elif not matches:
+            return [], f"File '{name}' not found in job"
+        else:
+            return [], (
+                f"File '{name}' matches several files in the job: "
+                f"{sorted(matches)}. Use the full path."
+            )
+    return resolved, None
 
 
 def validate_auto_approve_job_inputs(
@@ -320,23 +366,116 @@ def validate_auto_approve_job_inputs(
     return None
 
 
+SUBMISSION_ROOT_FILES = frozenset({RUN_SCRIPT_PATH, "config.yaml"})
+
+
+def validate_auto_approve_object_covers_job(
+    user_files: dict[str, Path], content_rel_paths: list[str], name_only: list[str]
+) -> str | None:
+    """Check that the object being built can approve a job like this one.
+
+    The matcher compares the whole submission tree and demands pinned content
+    for run.sh, so an object that misses either one approves nothing, for ever,
+    and says so only once a job arrives. Refuse to write it.
+
+    `user_files` leaves out the directories a run creates, and the matcher does
+    not. That difference is deliberate: a rule is often built from a job that
+    already ran, which carries code/.venv, while the jobs it must approve are
+    still pending and carry none. Teaching the matcher the same skip list would
+    hide a payload under code/outputs/ from review. Returns an error or None.
+    """
+    if RUN_SCRIPT_PATH not in user_files:
+        return (
+            f"the job carries no '{RUN_SCRIPT_PATH}', so it is not a submission "
+            f"this version can approve. Check the job directory."
+        )
+
+    if RUN_SCRIPT_PATH not in content_rel_paths:
+        return (
+            f"'{RUN_SCRIPT_PATH}' must be matched by content: it is the file the "
+            f"runner executes. Name it in `contents` and not in `file_paths`, or "
+            f"leave both unset, which pins every file but "
+            f"{sorted(DEFAULT_NAME_ONLY_FILES)}."
+        )
+
+    per_job = sorted(set(content_rel_paths) & PER_JOB_FILES)
+    if per_job:
+        return (
+            f"{per_job} cannot be matched by content: the bytes carry the job "
+            f"name and the time it was submitted, so no second job would match. "
+            f"Name them in `file_paths` instead."
+        )
+
+    uncovered = set(user_files) - set(content_rel_paths) - set(name_only)
+    if uncovered:
+        return (
+            f"these files of the job are in neither bucket, so no job would "
+            f"match: {sorted(uncovered)}. Name them in `contents` to pin their "
+            f"bytes, or in `file_paths` to match them by name."
+        )
+    return None
+
+
+def resolve_job_approval_files(
+    user_files: dict[str, Path],
+    contents: list[str] | None,
+    file_paths: list[str] | None,
+) -> tuple[list[str], list[str], str | None]:
+    """Sort the files of a job into content-matched and name-only paths.
+
+    Returns (content_rel_paths, name_only, error). On error, both lists are
+    empty and the object must not be written.
+    """
+    if not user_files:
+        return [], [], "No user files found in job"
+
+    contents, error = resolve_job_file_args(user_files, contents)
+    if error:
+        return [], [], error
+    file_paths, error = resolve_job_file_args(user_files, file_paths)
+    if error:
+        return [], [], error
+
+    error = validate_auto_approve_job_inputs(user_files, contents, file_paths)
+    if error:
+        return [], [], error
+
+    content_rel_paths, name_only = resolve_auto_approve_file_args(
+        user_files, contents, file_paths
+    )
+    error = validate_auto_approve_object_covers_job(
+        user_files, content_rel_paths, name_only
+    )
+    if error:
+        return [], [], error
+    return content_rel_paths, name_only, None
+
+
 _GENERATED_DIRS = {".venv", "outputs", "__pycache__"}
+NOT_RUN_STATUSES = frozenset({"received", "pending"})
 
 
 def get_job_user_files(job) -> dict[str, Path]:
-    """Get user files from a job's code directory as {relative_path: abs_path} mapping."""
-    user_files: dict[str, Path] = {}
-    code_dir = job.code_dir
-    if code_dir.exists():
-        for f in code_dir.rglob("*"):
-            if not f.is_file() or f.name == PERMISSION_FILE_NAME:
-                continue
-            # Skip files inside directories generated during job execution
-            rel = f.relative_to(code_dir)
-            if rel.parts[0] in _GENERATED_DIRS:
-                continue
-            user_files[str(rel)] = f
-    return user_files
+    """Files of a job as {path relative to the submission root: abs_path}.
+
+    The root holds `code/`, `run.sh` and `config.yaml`, and `run.sh` is the
+    file the runner executes, so an approval built from this map pins it.
+
+    A job that has run carries directories its run created, and the jobs this
+    rule must approve are still pending and carry none, so those are left out.
+    A job that has not run carries only what the submitter shipped, and a
+    submitted `__pycache__` or `outputs` is in every later job of that shape:
+    leaving it out would write a rule that the matcher, which counts every
+    file, can never satisfy.
+    """
+    user_files = get_job_submission_files(job)
+    if str(getattr(job, "status", "")) in NOT_RUN_STATUSES:
+        return user_files
+    return {
+        rel: f
+        for rel, f in user_files.items()
+        if not set(PurePosixPath(rel).parts) & _GENERATED_DIRS
+    }
 
 
 # perhaps add this later again

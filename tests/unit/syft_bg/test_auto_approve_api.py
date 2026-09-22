@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from syft_bg.api.api import auto_approve, list_auto_approvals, remove_auto_approve
-from syft_bg.api.utils import copy_and_hash_files
+from syft_bg.api.utils import copy_and_hash_files, get_job_user_files
 from syft_bg.approve.config import (
     AutoApprovalObj,
     AutoApprovalsConfig,
@@ -244,33 +244,42 @@ class TestAutoApproveLockScope:
 class TestHandlerReloadsConfig:
     """The approve service must pick up YAML changes without a restart."""
 
-    def _make_test_job(self, code_dir: Path, submitted_by: str = "alice@test.com"):
+    def _write_submission(self, base_dir: Path) -> Path:
+        """A submission tree: code/main.py plus the root files the runner reads."""
+        (base_dir / "code").mkdir(parents=True)
+        (base_dir / "code" / "main.py").write_text("print('hello')\n")
+        (base_dir / "run.sh").write_text("#!/bin/bash\npython code/main.py\n")
+        (base_dir / "config.yaml").write_text("name: test-job\n")
+        return base_dir
+
+    def _make_test_job(
+        self, submission_dir: Path, submitted_by: str = "alice@test.com"
+    ):
         job = MagicMock()
         job.name = "test-job"
         job.status = "pending"
         job.submitted_by = submitted_by
-        job.code_dir = code_dir
+        job.job_submission_path = submission_dir
+        job.code_dir = submission_dir / "code"
         job.files = []
         return job
 
     def _create_matching_autoapprove_obj_from_dir(
-        self, code_dir: Path, peer: str
+        self, submission_dir: Path, peer: str
     ) -> AutoApprovalObj:
         entries = [
-            FileEntry.from_file(str(f.relative_to(code_dir)), f)
-            for f in sorted(code_dir.rglob("*"))
+            FileEntry.from_file(f.relative_to(submission_dir).as_posix(), f)
+            for f in sorted(submission_dir.rglob("*"))
             if f.is_file()
         ]
         return AutoApprovalObj(file_contents=entries, peers=[peer])
 
     def test_picks_up_added_object(self, temp_dir):
-        code_dir = temp_dir / "code"
-        code_dir.mkdir()
-        (code_dir / "main.py").write_text("print('hello')\n")
+        submission = self._write_submission(temp_dir / "job")
         config_path = _seed_config(temp_dir, {})
 
         handler = JobApprovalHandler(client=MagicMock(), config_path=config_path)
-        job = self._make_test_job(code_dir)
+        job = self._make_test_job(submission)
 
         # No object yet — should not match.
         first = handler.evaluate_auto_approval(job)
@@ -282,7 +291,7 @@ class TestHandlerReloadsConfig:
                 auto_approvals=AutoApprovalsConfig(
                     objects={
                         "r1": self._create_matching_autoapprove_obj_from_dir(
-                            code_dir, "alice@test.com"
+                            submission, "alice@test.com"
                         )
                     }
                 )
@@ -294,21 +303,19 @@ class TestHandlerReloadsConfig:
         assert second.match is True
 
     def test_picks_up_removed_object(self, temp_dir):
-        code_dir = temp_dir / "code"
-        code_dir.mkdir()
-        (code_dir / "main.py").write_text("print('hello')\n")
+        submission = self._write_submission(temp_dir / "job")
 
         config_path = _seed_config(
             temp_dir,
             {
                 "r1": self._create_matching_autoapprove_obj_from_dir(
-                    code_dir, "alice@test.com"
+                    submission, "alice@test.com"
                 )
             },
         )
 
         handler = JobApprovalHandler(client=MagicMock(), config_path=config_path)
-        job = self._make_test_job(code_dir)
+        job = self._make_test_job(submission)
 
         first = handler.evaluate_auto_approval(job)
         assert first.match is True
@@ -320,3 +327,53 @@ class TestHandlerReloadsConfig:
 
         second = handler.evaluate_auto_approval(job)
         assert second.match is False
+
+
+class TestJobUserFiles:
+    """What an approval object is built from."""
+
+    FILES = (
+        "code/main.py",
+        "run.sh",
+        "config.yaml",
+        "code/outputs/result.json",
+        "code/.venv/bin/python",
+        "code/__pycache__/main.pyc",
+    )
+
+    def _submission(self, temp_dir: Path, status: str) -> MagicMock:
+        submission = temp_dir / status
+        for rel in self.FILES:
+            path = submission / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("x")
+        job = MagicMock()
+        job.job_submission_path = submission
+        job.status = status
+        return job
+
+    def test_pending_job_keeps_every_file(self, temp_dir):
+        """Nothing has run, so these are files the submitter shipped.
+
+        Every later job of that shape carries them too, and the matcher counts
+        them, so a rule that left them out could never match.
+        """
+        assert set(get_job_user_files(self._submission(temp_dir, "pending"))) == {
+            "code/main.py",
+            "run.sh",
+            "config.yaml",
+            "code/outputs/result.json",
+            "code/.venv/bin/python",
+            "code/__pycache__/main.pyc",
+        }
+
+    def test_ran_job_drops_run_created_dirs(self, temp_dir):
+        """`_prepare_outputs_dir` makes code/outputs/ and run.sh makes .venv/.
+
+        A pending job carries neither, so pinning them would match nothing.
+        """
+        assert set(get_job_user_files(self._submission(temp_dir, "done"))) == {
+            "code/main.py",
+            "run.sh",
+            "config.yaml",
+        }
