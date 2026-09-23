@@ -41,13 +41,13 @@ signed receipt:
 
 | Release   | Config                        | Receipts |
 | --------- | ----------------------------- | -------- |
-| `v0.1.15` | `tinfoil-config.yml`          | off      |
-| `v0.1.16` | `tinfoil-config-receipts.yml` | on       |
+| `v0.1.17` | `tinfoil-config.yml`          | off      |
+| `v0.1.18` | `tinfoil-config-receipts.yml` | on       |
 
 Deploy one of them as it stands. Skip to step 5 only if you changed the enclave image or its config.
 
 ```bash
-just tinfoil-deploy v0.1.16 enclave@openmined.org
+just tinfoil-deploy v0.1.18 enclave@openmined.org
 ```
 
 Both configs pin `benchmark_owner@openmined.org` and `model_owner@openmined.org` as
@@ -81,12 +81,12 @@ ENCLAVE_EMAIL         = "enclave@openmined.org"
 BENCHMARK_OWNER_EMAIL = "benchmark_owner@openmined.org"
 MODEL_OWNER_EMAIL     = "model_owner@openmined.org"
 TINFOIL_REPO = "OpenMined/syft-enclave-tinfoil"
-TINFOIL_TAG  = "v0.1.16"
-IMAGE_DIGEST = "sha256:2e3cab9c3e1c80401d9cd062381226971710252cb1c166e52524d90e58b2bdf0"
+TINFOIL_TAG  = "v0.1.18"
+IMAGE_DIGEST = "sha256:49314ceb202d47e48a851670e2e8aaaa470eca95cb4496bb79cfab672901a0c2"
 ```
 
 `TINFOIL_TAG` and `IMAGE_DIGEST` are what the parties check the enclave against, so they must match
-the release you deployed. The digest above is the one both `v0.1.15` and `v0.1.16` pin; after a
+the release you deployed. The digest above is the one both `v0.1.17` and `v0.1.18` pin; after a
 republish, use the one `just tinfoil-build` printed.
 
 Then run both notebooks top to bottom. They wait on each other four times, and a card in the
@@ -102,10 +102,10 @@ Everything in `tinfoil/tinfoil-config.yml` is measured, so any edit to it — or
 — needs a new release before it can be deployed.
 
 ```bash
-just tinfoil-build v0.1.17                                          # build, push, pin the digest in both configs
-just tinfoil-release v0.1.17                                        # receipts off
-just tinfoil-release v0.1.18 tinfoil/tinfoil-config-receipts.yml    # receipts on
-just tinfoil-deploy v0.1.18 enclave@openmined.org
+just tinfoil-build v0.1.19                                          # build, push, pin the digest in both configs
+just tinfoil-release v0.1.19                                        # receipts off
+just tinfoil-release v0.1.20 tinfoil/tinfoil-config-receipts.yml    # receipts on
+just tinfoil-deploy v0.1.20 enclave@openmined.org
 ```
 
 Each `tinfoil-release` opens a pull request on the config repo and waits until you merge it. Then it
@@ -116,7 +116,7 @@ A release is a signed GitHub release and a transparency-log entry, so it cannot 
 Number versions with that in mind. To go back to an earlier one without moving "latest":
 
 ```bash
-just tinfoil-relaunch v0.1.15 --promote-release=false
+just tinfoil-relaunch v0.1.17 --promote-release=false
 ```
 
 ## Giving the model a GPU
