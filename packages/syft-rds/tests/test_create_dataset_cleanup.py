@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from syft.sync.syftbox_manager import SyftboxManager
+from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
 from syft_rds import SyftRDSClient
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 from dataset_test_utils import create_tmp_dataset_files
@@ -72,9 +73,9 @@ class TestCreateDatasetCleanup:
         do_manager = self._make_do_manager()
 
         # Compute expected local paths before the test so we can verify deletion.
-        # A dataset with no peers is written at the widest-compatible protocol.
+        # A dataset with no peers is written at the current protocol.
         storage = do_manager.dataset_manager.storage
-        ref = storage.new_dataset_ref("testdataset", storage._widest_protocol_version)
+        ref = storage.new_dataset_ref("testdataset", DATASET_PROTOCOL_VERSION)
         mock_dir = storage.public_dataset_dir(ref)
         private_metadata_dir = storage.private_dataset_dir(ref)
 
