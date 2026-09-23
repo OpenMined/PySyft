@@ -26,8 +26,10 @@ def test_build_eat_nonce_puts_key_fingerprint_in_its_slot():
 
 
 def test_build_eat_nonce_caller_nonce_follows_key_fingerprint():
-    nonces = build_eat_nonce(caller_nonce="fresh-1234", key_fingerprint="ab" * 32)
-    assert nonces == [EXPECTED_VERSION_NONCE, "ab" * 32, "fresh-1234"]
+    nonces = build_eat_nonce(
+        caller_nonce="fresh-1234", key_fingerprint=FAKE_KEY_FINGERPRINT
+    )
+    assert nonces == [EXPECTED_VERSION_NONCE, FAKE_KEY_FINGERPRINT, "fresh-1234"]
 
 
 def test_build_eat_nonce_caller_nonce_without_key_takes_next_slot():
@@ -50,8 +52,9 @@ def test_fetch_attestation_token_posts_nonces():
     response.read.return_value = b"signed.jwt.token\n"
     with patch("syft_enclaves.tee_token._UnixSocketConnection") as connection_cls:
         connection_cls.return_value.getresponse.return_value = response
-        token = fetch_attestation_token(eat_nonce=[EXPECTED_VERSION_NONCE, "ab" * 32])
+        nonces = [EXPECTED_VERSION_NONCE, FAKE_KEY_FINGERPRINT]
+        token = fetch_attestation_token(eat_nonce=nonces)
 
     assert token == "signed.jwt.token"
     _, kwargs = connection_cls.return_value.request.call_args
-    assert json.loads(kwargs["body"])["nonces"] == [EXPECTED_VERSION_NONCE, "ab" * 32]
+    assert json.loads(kwargs["body"])["nonces"] == nonces
