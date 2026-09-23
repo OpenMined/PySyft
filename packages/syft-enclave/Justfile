@@ -14,6 +14,8 @@ tf_dir := "terraform"
 tinfoil_repo := "OpenMined/syft-enclave-tinfoil"
 tinfoil_container := "syft-enclave"
 tinfoil_config := "tinfoil/tinfoil-config.yml"
+tinfoil_config_receipts := "tinfoil/tinfoil-config-receipts.yml"
+tinfoil_repo_dir := env("SYFT_TINFOIL_REPO_DIR", home_directory() / "workspace/syft-enclave-tinfoil")
 tinfoil_org_domain := "openmined.containers.tinfoil.dev"
 job_timeout_seconds := "2592000" # 30 days
 
@@ -675,7 +677,7 @@ tf-ssh:
 # Intel TDX CVM managed by Tinfoil, with no GCP involved. Two repos are in play
 # — the image is built and pushed from here, while `{{tinfoil_repo}}` holds the
 # measured config whose signed GitHub releases publish the expected
-# measurement. `tinfoil-release` is what keeps the two in step.
+# measurement. `tinfoil-build` is what keeps the two in step.
 #
 # Full walkthrough: docs/tinfoil_deployment.md
 # ---------------------------------------------------------------------------------------------------------------------
@@ -729,13 +731,14 @@ tinfoil-publish version:
     echo "Publishing {{tinfoil_repo}} {{version}} — a release is permanent and cannot be unpublished."
     tinfoil repo build run {{tinfoil_repo}} --version {{version}}
 
-# Without this it is easy to publish a release pinned to a stale image.
-# Build + push the image, pin its digest in the config, and open the PR
+# Pins the digest in BOTH configs, so the receipts-off and receipts-on releases
+# run the same image. Without this it is easy to publish a release pinned to a
+# stale image.
+# Build + push the image and pin its digest in the configs
 [group('tinfoil')]
-tinfoil-release version:
+tinfoil-build version:
     #!/bin/bash
     set -e
-    {{tinfoil_preflight}}
     just build-push-amd {{version}}
     # --raw is the manifest bytes, and an index digest is by definition their
     # sha256. Do NOT use --format '{{{{.Manifest.Digest}}}}': for a
@@ -743,37 +746,68 @@ tinfoil-release version:
     digest=$(docker buildx imagetools inspect {{image_base}}:{{version}} --raw | shasum -a 256 | awk '{print "sha256:"$1}')
     echo "$digest" | grep -qE '^sha256:[0-9a-f]{64}$' || { echo "Error: could not read a valid image digest (got '$digest')" >&2; exit 1; }
     echo "Pushed {{image_base}}:{{version}} @ $digest"
-    tmp=$(mktemp)
-    # Replace whichever digest the config currently pins (placeholder or real).
-    sed -E "s|({{image_base}})@sha256:[0-9a-f]{64}|\1@$digest|" {{tinfoil_config}} > "$tmp"
-    grep -q "@$digest" "$tmp" || { echo "Error: no image line to pin in {{tinfoil_config}}" >&2; rm -f "$tmp"; exit 1; }
-    cp "$tmp" {{tinfoil_config}} && rm -f "$tmp"
-    just tinfoil-config-pr {{tinfoil_config}} "pin syft-enclave {{version}} ($digest)"
+    for config in {{tinfoil_config}} {{tinfoil_config_receipts}}; do
+        tmp=$(mktemp)
+        # Replace whichever digest the config currently pins (placeholder or real).
+        sed -E "s|({{image_base}})@sha256:[0-9a-f]{64}|\1@$digest|" "$config" > "$tmp"
+        grep -q "@$digest" "$tmp" || { echo "Error: no image line to pin in $config" >&2; rm -f "$tmp"; exit 1; }
+        cp "$tmp" "$config" && rm -f "$tmp"
+    done
     echo ""
-    echo "Next: merge the PR, then 'just tinfoil-publish {{version}}', then 'just tinfoil-deploy {{version}}'."
+    echo "Next: 'just tinfoil-release <tag>' (receipts off) and/or"
+    echo "      'just tinfoil-release <tag> {{tinfoil_config_receipts}}' (receipts on)."
     echo "Keep $digest — a data owner needs it for attest_peer(expected_image_digest=...)."
 
-# EMAIL and DATA_OWNERS are deploy-time variables, so they are NOT part of the
-# measurement and a data owner cannot verify them — same as tee-env-* metadata
-# on Confidential Spaces. See docs/tinfoil_deployment.md.
+# The release repo holds one config, so each variant is its own release: the
+# chosen file replaces the repo's tinfoil-config.yml. Uses git + gh on a local
+# clone rather than the Tinfoil GitHub App, which is not installed on the repo.
+# Waits for you to merge the PR; skips the PR when the config is unchanged.
+# Open the config PR, wait for the merge, and publish a signed release
+[group('tinfoil')]
+tinfoil-release version file=tinfoil_config:
+    #!/bin/bash
+    set -e
+    dir="{{tinfoil_repo_dir}}"
+    [ -d "$dir/.git" ] || git clone "git@github.com:{{tinfoil_repo}}.git" "$dir"
+    digest=$(grep -oE '@sha256:[0-9a-f]{64}' {{file}} | head -1 | cut -c2-)
+    git -C "$dir" fetch -q origin main
+    git -C "$dir" checkout -q -B "release-{{version}}" origin/main
+    cp {{file}} "$dir/tinfoil-config.yml"
+    if git -C "$dir" diff --quiet; then
+        echo "Config unchanged from main — publishing without a PR."
+    else
+        git -C "$dir" commit -qam "feat: release {{version}} from $(basename {{file}}) ($digest)"
+        git -C "$dir" push -qu origin "release-{{version}}"
+        url=$(gh pr create --repo {{tinfoil_repo}} --base main --head "release-{{version}}" \
+            --title "feat: release {{version}} from $(basename {{file}})" --body "Pins $digest.")
+        echo "Waiting for $url to be merged..."
+        until [ "$(gh pr view "$url" --json state -q .state)" = "MERGED" ]; do
+            [ "$(gh pr view "$url" --json state -q .state)" = "CLOSED" ] && { echo "Error: $url was closed" >&2; exit 1; }
+            sleep 10
+        done
+    fi
+    git -C "$dir" checkout -q main && git -C "$dir" pull -q --ff-only
+    gh workflow run tinfoil-release.yml --repo {{tinfoil_repo}} -f version={{version}}
+    echo ""
+    echo "Publishing {{tinfoil_repo}} {{version}} from {{file}}, pinning $digest."
+    echo "A release is permanent. Follow it with: gh run list --repo {{tinfoil_repo}} --limit 2"
+    echo "Next: 'just tinfoil-deploy {{version}} <enclave_email>'."
+
+# EMAIL is a deploy-time variable, so it is NOT part of the measurement — same
+# as tee-env-* metadata on Confidential Spaces. The data owners and the receipts
+# flag are pinned in the release's config instead, so a data owner can verify
+# them. See docs/tinfoil_deployment.md.
 # Deploy a container from a published release
 [group('tinfoil')]
-tinfoil-deploy tag email data_owners="" extra_args="":
+tinfoil-deploy tag email extra_args="":
     #!/bin/bash
     set -e
     {{tinfoil_preflight}}
-    owners="{{data_owners}}"
-    if [ -z "$owners" ]; then
-        settings="$HOME/.syft-enclaves/settings.json"
-        [ -f "$settings" ] && owners=$(jq -r '.data_owners // empty' "$settings")
-    fi
-    [ -n "$owners" ] || { echo "Error: pass DATA_OWNERS (comma-separated) or run 'just init' first." >&2; exit 1; }
-    echo "Deploying {{tinfoil_container}} from {{tinfoil_repo}} {{tag}} for $owners"
+    echo "Deploying {{tinfoil_container}} from {{tinfoil_repo}} {{tag}} as {{email}}"
     tinfoil container create {{tinfoil_container}} \
       --repo {{tinfoil_repo}} \
       --tag {{tag}} \
       --variable SYFT_ENCLAVE_EMAIL={{email}} \
-      --variable SYFT_ENCLAVE_DATA_OWNERS="$owners" \
       --variable SYFT_ENCLAVE_REQUIRE_TEE=true \
       --variable SYFT_ENCLAVE_USE_ENCRYPTION=true \
       --variable SYFT_ENCLAVE_TINFOIL_RELEASE_TAG={{tag}} \
@@ -862,26 +896,19 @@ tinfoil-ssh-key name keyfile="~/.ssh/id_ed25519.pub":
     {{tinfoil_preflight}}
     tinfoil ssh-key create {{name}} --public-key-file {{keyfile}}
 
-# EMAIL/DATA_OWNERS must be repeated: relaunch overrides variables wholesale.
+# EMAIL must be repeated: relaunch overrides variables wholesale.
 # Redeploy the container in debug mode with SSH enabled
 [group('tinfoil-debug')]
-tinfoil-debug tag email data_owners="" ssh_key="koen-debug":
+tinfoil-debug tag email ssh_key="koen-debug":
     #!/bin/bash
     set -e
     {{tinfoil_preflight}}
-    owners="{{data_owners}}"
-    if [ -z "$owners" ]; then
-        settings="$HOME/.syft-enclaves/settings.json"
-        [ -f "$settings" ] && owners=$(jq -r '.data_owners // empty' "$settings")
-    fi
-    [ -n "$owners" ] || { echo "Error: pass DATA_OWNERS (comma-separated) or run 'just init' first." >&2; exit 1; }
     echo "⚠️  Debug instances do not pass attestation — do not use for real data."
     tinfoil container relaunch {{tinfoil_container}} \
       --tag {{tag}} \
       --debug true \
       --ssh-key {{ssh_key}} \
       --variable SYFT_ENCLAVE_EMAIL={{email}} \
-      --variable SYFT_ENCLAVE_DATA_OWNERS="$owners" \
       --variable SYFT_ENCLAVE_REQUIRE_TEE=true \
       --variable SYFT_ENCLAVE_USE_ENCRYPTION=true \
       --variable SYFT_ENCLAVE_TINFOIL_RELEASE_TAG={{tag}} \

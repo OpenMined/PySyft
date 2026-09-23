@@ -1,4 +1,8 @@
-# Tinfoil workload config for the syft enclave.
+# Tinfoil workload config for the syft enclave, with signed receipts on.
+#
+# Identical to tinfoil-config.yml apart from SYFT_ENCLAVE_RECEIPTS, and
+# released under its own tag:
+#   just tinfoil-release <version> tinfoil/tinfoil-config-receipts.yml
 #
 # This is the canonical copy: `just tinfoil-build` pins the digest of the
 # image it just pushed into this file and tinfoil-config-receipts.yml, and
@@ -50,7 +54,7 @@ containers:
       - SYFT_ENCLAVE_DATA_OWNERS: 'benchmark_owner@openmined.org,model_owner@openmined.org'
       # Whether each job's outputs carry a signed receipt. The only line that
       # differs between tinfoil-config.yml and tinfoil-config-receipts.yml.
-      - SYFT_ENCLAVE_RECEIPTS: 'false'
+      - SYFT_ENCLAVE_RECEIPTS: 'true'
       # Tinfoil has no Secret Manager equivalent; the Drive token arrives as a
       # deploy-time secret and this provider writes it to disk (0600).
       - SYFT_BOOTSTRAP: 'tinfoil'
