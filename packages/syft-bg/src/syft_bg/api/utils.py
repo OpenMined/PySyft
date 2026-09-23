@@ -24,6 +24,11 @@ PER_JOB_FILES = frozenset({"config.yaml"})
 # parameters, which usually vary run to run.
 DEFAULT_NAME_ONLY_FILES = PER_JOB_FILES | {"code/params.json"}
 
+SUBMISSION_ROOT_FILES = frozenset({RUN_SCRIPT_PATH, "config.yaml"})
+
+_GENERATED_DIRS = {".venv", "outputs", "__pycache__"}
+NOT_RUN_STATUSES = frozenset({"received", "pending"})
+
 
 def get_setup_state_path(service: str) -> Path:
     """Get the setup_state.json path for a service."""
@@ -377,9 +382,6 @@ def validate_auto_approve_job_inputs(
     return None
 
 
-SUBMISSION_ROOT_FILES = frozenset({RUN_SCRIPT_PATH, "config.yaml"})
-
-
 def validate_auto_approve_object_covers_job(
     user_files: dict[str, Path], content_rel_paths: list[str], name_only: list[str]
 ) -> str | None:
@@ -486,10 +488,6 @@ def resolve_job_approval_files(
     if error:
         return [], [], error
     return content_rel_paths, name_only, None
-
-
-_GENERATED_DIRS = {".venv", "outputs", "__pycache__"}
-NOT_RUN_STATUSES = frozenset({"received", "pending"})
 
 
 def get_job_user_files(job) -> dict[str, Path]:

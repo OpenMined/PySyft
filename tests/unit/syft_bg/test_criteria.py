@@ -259,7 +259,7 @@ class TestRunScriptPinning:
             ]
         )
 
-    def test_legacy_object_does_not_approve_an_arbitrary_run_script(self, temp_dir):
+    def test_legacy_object_does_not_approve_arbitrary_run_script(self, temp_dir):
         """The bypass: an object pinning code/ only green-lit any script."""
         approved = _write_submission(temp_dir / "approved", {"main.py": "print(1)\n"})
         submitted = _write_submission(

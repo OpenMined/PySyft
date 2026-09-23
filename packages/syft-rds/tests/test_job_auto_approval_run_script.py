@@ -99,7 +99,7 @@ def test_permission_file_other_case_is_extra(tmp_path):
     assert job_matches_criteria(job, **criteria()) is False
 
 
-def test_criteria_cannot_pin_the_per_job_config(tmp_path):
+def test_criteria_cannot_pin_per_job_config(tmp_path):
     """config.yaml carries the job name and its time, so a hash matches once."""
     job = make_job(tmp_path, default_files())
     with pytest.raises(ValueError, match="config.yaml"):
