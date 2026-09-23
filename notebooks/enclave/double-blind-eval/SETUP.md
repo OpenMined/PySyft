@@ -82,7 +82,7 @@ BENCHMARK_OWNER_EMAIL = "benchmark_owner@openmined.org"
 MODEL_OWNER_EMAIL     = "model_owner@openmined.org"
 TINFOIL_REPO = "OpenMined/syft-enclave-tinfoil"
 TINFOIL_TAG  = "v0.1.16"
-IMAGE_DIGEST = "sha256:IMAGE_DIGEST_PLACEHOLDER"
+IMAGE_DIGEST = "sha256:2e3cab9c3e1c80401d9cd062381226971710252cb1c166e52524d90e58b2bdf0"
 ```
 
 `TINFOIL_TAG` and `IMAGE_DIGEST` are what the parties check the enclave against, so they must match

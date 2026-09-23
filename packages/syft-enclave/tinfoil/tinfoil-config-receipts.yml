@@ -32,7 +32,7 @@ containers:
     # Must be pinned by digest: this is what the attestation commits to and
     # what a data owner verifies. `just tinfoil-release` fills it in from the
     # image it just pushed.
-    image: docker.io/openminedreleasebot/syft-enclave@sha256:d0bd57f22af80b9dcd0dc151fb68d89cca65b65fcbbd1d2e4586cdfa9d7daebc
+    image: docker.io/openminedreleasebot/syft-enclave@sha256:2e3cab9c3e1c80401d9cd062381226971710252cb1c166e52524d90e58b2bdf0
     restart: always
     networks: [egress]
     # Tinfoil runs containers with a read-only root filesystem, but syft needs
