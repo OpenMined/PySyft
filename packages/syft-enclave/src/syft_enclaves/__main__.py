@@ -43,7 +43,10 @@ def main() -> None:
         f"Enclave settings — email={settings.email} data_owners={settings.data_owners} "
         f"token_path={settings.token_path} poll_interval={settings.poll_interval}s "
         f"require_tee={settings.require_tee} fresh_state={settings.fresh_state} "
-        f"use_encryption={settings.use_encryption}"
+        f"use_encryption={settings.use_encryption} "
+        f"attestation_provider={settings.attestation_provider} "
+        f"tinfoil_repo={settings.tinfoil_repo} "
+        f"tinfoil_release_tag={settings.tinfoil_release_tag}"
     )
 
     logger.info("Building SyftEnclaveClient...")
@@ -61,6 +64,8 @@ def main() -> None:
         poll_interval=settings.poll_interval,
         require_tee=settings.require_tee,
         fresh_state=settings.fresh_state,
+        attestation_provider=settings.attestation_provider,
+        settings=settings,
     )
     logger.info("EnclaveRunner ready — calling runner.run()")
     runner.run()

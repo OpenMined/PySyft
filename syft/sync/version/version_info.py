@@ -8,7 +8,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import Field
 from syft_migration import MigratableObject, ProtocolSchema
@@ -57,6 +57,9 @@ class VersionInfoV1(MigratableObject, registry=client_registry):
     min_supported_protocol_version: str
     syft_client_install_source: Optional[str] = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    # Deprecated, never written: superseded by VersionInfoV2.extra. The field
+    # stays declared because protocol-0 froze this class's JSON schema, so
+    # removing it would be schema drift on a released protocol.
     attestation_token: Optional[str] = None
 
     def compatibility_status_with(
@@ -202,6 +205,15 @@ class VersionInfoV2(VersionInfoV1):
     # protocol name -> slim ProtocolSchema (no embedded object JSON schemas).
     protocol_schemas: dict[str, ProtocolSchema] = Field(default_factory=dict)
 
+    # Arbitrary JSON that other syft packages need to put on the bootstrap
+    # channel. Carried, never interpreted: syft neither defines nor reads any
+    # key in here, so a package can add one without touching this class.
+    #
+    # Each package owns one top-level key and namespaces everything under it
+    # (``syft_enclaves`` owns "attestation", for instance). Unrelated to
+    # pydantic's own ``extra`` config, which governs unknown *fields*.
+    extra: dict[str, Any] = Field(default_factory=dict)
+
     @classmethod
     def current(cls) -> "VersionInfo":
         info = super().current()
@@ -221,7 +233,9 @@ def _version_info_v1_to_v2(obj: VersionInfoV1) -> VersionInfoV2:
 @client_registry.migration("VersionInfo", "2", "1")
 def _version_info_v2_to_v1(obj: VersionInfoV2) -> VersionInfoV1:
     return VersionInfoV1.model_validate(
-        obj.model_dump(exclude={"canonical_name", "version", "protocol_schemas"})
+        obj.model_dump(
+            exclude={"canonical_name", "version", "protocol_schemas", "extra"}
+        )
     )
 
 

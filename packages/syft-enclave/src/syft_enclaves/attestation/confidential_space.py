@@ -1,21 +1,34 @@
-"""Attestation verification for enclave peers.
+"""Appraising Confidential Space evidence.
 
-When a researcher calls ``add_peer(enclave_email)``, the enclave's
-``SYFT_version.json`` may contain an ``attestation_token`` — a Google-signed
-JWT from Confidential Spaces.  This module verifies that token and checks
-the claims inside it to ensure the enclave is trustworthy.
+The enclave publishes a Google-signed JWT from the Confidential Space launcher.
+This module verifies that token, checks the hardware and container claims
+inside it, and checks the **claims binding**: the enclave commits to a digest of
+its own runtime facts — email, configured data owners, key bundle — in the
+token's spare nonce slot, which is the only thing that makes those facts
+trustworthy rather than self-asserted. See ``attestation.claims``.
+
+Whether those facts are the ones the verifier wanted is a separate question,
+answered by ``AppraisalPolicy.expected_email`` and ``expected_data_owners``.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import Optional
 
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
-from pydantic import BaseModel
 
-from syft.version import SYFT_VERSION
+
+from syft_enclaves.attestation.claims import (
+    ClaimsBindingError,
+    Expectations,
+    check_expected,
+    verify_claims_digest,
+)
+from syft_enclaves.attestation.result import (
+    AttestationError,
+    AttestationResult,
+)
 
 ATTESTATION_AUDIENCE = "syft-attestation"
 CONFIDENTIAL_COMPUTING_CERTS_URL = (
@@ -33,72 +46,93 @@ CONFIDENTIAL_COMPUTING_CERTS_URL = (
 JWT_EXPIRY_GRACE_SECONDS = 30 * 24 * 60 * 60  # ~1 month
 
 
-class AppraisalPolicy(BaseModel):
-    """Reference values the verifier appraises attestation evidence against.
+class AppraisalPolicy(Expectations):
+    """Reference values a Confidential Space enclave is appraised against.
 
-    In RATS terms this is the *appraisal policy*: the
-    set of trusted reference values the enclave's evidence is compared to.
-
-    The image digest is intentionally not shipped as a constant — the data
-    owner supplies the digest they independently confirmed. Left unset
-    (``None``), the image-digest check is skipped and the image is not pinned.
+    In RATS terms this is the *appraisal policy*: the set of trusted reference
+    values the enclave's evidence is compared to. The fields, and the rule that
+    a policy must pin an image digest and a data-owner list, come from
+    ``attestation.claims.Expectations``.
     """
 
-    model_config = {"frozen": True}
 
-    # None → image-digest check skipped (no image pinned). Set a "sha256:..."
-    # digest to pin, and require, a specific enclave image.
-    expected_image_digest: Optional[str] = None
-    # By default, the enclave must run the same version of syft as the verifier.
-    expected_syft_version: Optional[str] = SYFT_VERSION
+def _nonce_slots(claims: dict) -> list[str]:
+    """The token's eat_nonce as a list; Google returns a bare string for one."""
+    nonce = claims.get("eat_nonce", [])
+    return [nonce] if isinstance(nonce, str) else list(nonce)
 
 
-class AttestationError(Exception):
-    """Raised when enclave attestation verification fails."""
+def _check_claims_binding(
+    result: AttestationResult,
+    claims: dict,
+    published_claims: Optional[dict],
+    policy: AppraisalPolicy,
+    verbose: bool,
+) -> None:
+    """Check the published runtime facts are the ones the token commits to.
 
-    def __init__(self, message: str, result: AttestationResult | None = None):
-        self.result = result
-        super().__init__(message)
-
-
-@dataclass
-class CheckResult:
-    name: str
-    label: str
-    passed: bool | None = None  # None = not yet run
-    detail: str = ""
-
-
-@dataclass
-class AttestationResult:
-    checks: list[CheckResult] = field(default_factory=list)
-
-    def add(self, name: str, label: str, passed: bool, detail: str) -> None:
-        self.checks.append(
-            CheckResult(name=name, label=label, passed=passed, detail=detail)
+    This is what turns the enclave's email, its data owners and its key bundle
+    from unsigned assertions into attested ones: only code inside the measured
+    container can get the launcher to sign a digest of them.
+    """
+    if verbose:
+        print("  ⏳ Claims binding ...")
+    if published_claims is None:
+        result.add(
+            "claims_binding",
+            "Claims binding",
+            None,
+            "the enclave published no claims, so its email, data owners and "
+            "keys are unattested (skipped)",
         )
+        return
 
-    def all_passed(self) -> bool:
-        return all(c.passed for c in self.checks)
+    slots = _nonce_slots(claims)
+    digest = slots[1] if len(slots) > 1 else ""
+    try:
+        verify_claims_digest(published_claims, digest)
+    except ClaimsBindingError as e:
+        result.add("claims_binding", "Claims binding", False, str(e))
+        return
 
-    def first_failure(self) -> CheckResult | None:
-        return next((c for c in self.checks if not c.passed), None)
+    owners = published_claims.get("data_owners") or []
+    result.add(
+        "claims_binding",
+        "Claims binding",
+        True,
+        f"token commits to email={published_claims.get('email')!r} and "
+        f"{len(owners)} data owner(s)",
+    )
+    if published_claims.get("key_bundle"):
+        result.verified_key_bundle = published_claims["key_bundle"]
+    _check_expected_claims(result, published_claims, policy, verbose)
 
-    def print_checklist(self) -> None:
-        for check in self.checks:
-            if check.passed is None:
-                icon = "  ⏭️"
-            elif check.passed:
-                icon = "  ✅"
-            else:
-                icon = "  ❌"
-            print(f"{icon} {check.label:<20s} — {check.detail}")
+
+def _check_expected_claims(
+    result: AttestationResult,
+    published_claims: dict,
+    policy: AppraisalPolicy,
+    verbose: bool,
+) -> None:
+    """Compare the now-attested facts against what the verifier expected.
+
+    Delegates to ``attestation.claims.check_expected``, shared with Tinfoil:
+    the two targets bind the document differently, but once it is trustworthy
+    the appraisal is identical.
+    """
+    for name, label, passed, detail in check_expected(
+        published_claims, policy.expected_email, policy.expected_data_owners
+    ):
+        if verbose:
+            print(f"  ⏳ {label} ...")
+        result.add(name, label, passed, detail)
 
 
 def verify_attestation_token(
     token: str,
     policy: AppraisalPolicy | None = None,
     verbose: bool = True,
+    published_claims: Optional[dict] = None,
 ) -> AttestationResult:
     """Verify an attestation JWT and return the result checklist.
 
@@ -165,7 +199,11 @@ def verify_attestation_token(
             )
         raise AttestationError("JWT signature verification failed", result) from e
 
-    # 2. Secure boot
+    # 2. Claims binding — the enclave's runtime facts, committed to in the
+    # token's spare nonce slot. Skipped when the enclave published none.
+    _check_claims_binding(result, claims, published_claims, policy, verbose)
+
+    # 3. Secure boot
     if verbose:
         print("  ⏳ Secure boot ...")
     secboot = claims.get("secboot")
@@ -203,7 +241,7 @@ def verify_attestation_token(
     if isinstance(eat_nonce, str):
         eat_nonce = [eat_nonce]
     actual_version_nonce = eat_nonce[0] if eat_nonce else None
-    # Must match the format produced by syft_enclaves.tee_token.build_eat_nonce.
+    # Must match the format produced by syft_enclaves.evidence.tee_token.build_eat_nonce.
     expected_version_nonce = f"syft-{expected_syft_version}"
     if not actual_version_nonce:
         result.add(

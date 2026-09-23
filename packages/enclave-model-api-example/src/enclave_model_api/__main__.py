@@ -71,6 +71,8 @@ def main() -> None:
         poll_interval=settings.poll_interval,
         require_tee=settings.require_tee,
         fresh_state=settings.fresh_state,
+        attestation_provider=settings.attestation_provider,
+        settings=settings,
         post_init=lambda: ensure_logs_dataset(client, inference.logs_dataset),
     )
     logger.info("EnclaveRunner ready — calling runner.run()")
