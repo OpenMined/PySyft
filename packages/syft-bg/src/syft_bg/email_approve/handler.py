@@ -74,8 +74,10 @@ class EmailApproveHandler:
         state: JsonStateManager,
         notify_state: JsonStateManager,
         do_email: str,
+        share_logs_with_submitter: bool = False,
     ):
         self.job_client = job_client
+        self.share_logs_with_submitter = share_logs_with_submitter
         self.job_runner = job_runner
         self.state = state
         self.notify_state = notify_state
@@ -125,7 +127,7 @@ class EmailApproveHandler:
 
         self.job_runner.process_approved_jobs(
             share_outputs_with_submitter=True,
-            share_logs_with_submitter=True,
+            share_logs_with_submitter=self.share_logs_with_submitter,
         )
         print(f"[EmailApproveHandler] Approved job: {job_name}")
 

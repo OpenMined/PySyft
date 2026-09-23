@@ -10,7 +10,7 @@ import pytest
 
 os.environ["PRE_SYNC"] = "false"
 
-from syft_job.models import JobStatus  # noqa: E402
+from syft_job.models import JobState, JobStatus  # noqa: E402
 from syft_job.traceback_capture import FRAMES_FILENAME  # noqa: E402
 
 from syft_enclaves import SyftEnclaveClient  # noqa: E402
@@ -25,6 +25,7 @@ from syft_enclaves.enclave_job_info import (  # noqa: E402
 
 LOGS = DisclosureItem.LOGS.value
 FRAMES = DisclosureItem.TRACEBACK_FRAMES.value
+RETURN_CODE = DisclosureItem.RETURN_CODE.value
 
 
 def write_approval(review_dir, party, status, disclosures):
@@ -165,6 +166,28 @@ def test_a_full_grant_sends_the_logs_to_the_submitter():
 
     assert enclave.granted_disclosures(enclave.jobs["j"]) == {LOGS}
     assert (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
+
+
+def test_without_a_grant_the_submitter_gets_no_return_code():
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, CRASH_CODE, [RETURN_CODE])
+    run_to_completion(enclave, do1, do2, ds, [LOGS])
+
+    review = Path(ds.jobs["j"].job_review_path)
+    assert not (review / "returncode.txt").exists()
+    state = JobState.load(review / "state.yaml")
+    assert state.status == JobStatus.FAILED
+    assert state.return_code is None
+
+
+def test_a_return_code_grant_sends_the_exit_code_alone():
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, CRASH_CODE, [RETURN_CODE])
+    run_to_completion(enclave, do1, do2, ds, [RETURN_CODE])
+
+    review = Path(ds.jobs["j"].job_review_path)
+    assert (review / "returncode.txt").read_text().strip() == "1"
+    assert not (review / "stderr.txt").exists()
 
 
 def test_granted_frames_carry_the_position_but_not_the_message():

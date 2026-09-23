@@ -1,20 +1,25 @@
+import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, Optional
-import json
-import os
 
-from syft_rds import SyftRDSClient, SyftRDSClientConfig
-from syft.sync.version.peer_manager import CompatAction
-from syft.sync.peers.peer import Peer
-from syft.sync.peers.peer_list import PeerList
 from syft_datasets.dataset_manager import SyftDatasetManager
 from syft_job.job import JobInfo, JobsList
 from syft_job.job_storage import JobRef
 from syft_job.models import JobState, JobStatus
-
 from syft_job.traceback_capture import FRAMES_FILENAME
+from syft_perms.syftperm_context import SyftPermContext
+from syft_rds import SyftRDSClient, SyftRDSClientConfig
 
+from syft.sync.peers.peer import Peer
+from syft.sync.peers.peer_list import PeerList
+from syft.sync.version.peer_manager import CompatAction
+from syft_enclaves.attestation import (
+    AppraisalPolicy,
+    verify_attestation_token,
+)
+from syft_enclaves.enclave_job_client import EnclaveJobClient
 from syft_enclaves.enclave_job_info import (
     DisclosureItem,
     EnclaveJobInfo,
@@ -22,13 +27,9 @@ from syft_enclaves.enclave_job_info import (
     approved_disclosures,
     enclave_approval_file_name,
 )
-from syft_enclaves.attestation import (
-    AppraisalPolicy,
-    verify_attestation_token,
+from syft_enclaves.immutability import (
+    make_private_dataset_immutability_filter,
 )
-from syft_perms.syftperm_context import SyftPermContext
-
-from syft_enclaves.enclave_job_client import EnclaveJobClient
 from syft_enclaves.utils import (
     create_clients,
     create_configs,
@@ -37,10 +38,6 @@ from syft_enclaves.utils import (
     wire_peers,
     write_versions,
 )
-from syft_enclaves.immutability import (
-    make_private_dataset_immutability_filter,
-)
-
 
 # The artifacts that move only under the agreement of every party. Everything
 # else in the review folder stays readable by the submitter.
@@ -50,6 +47,7 @@ RESULTS_SHARED_MARKER = "results_shared"
 GATED_ARTIFACTS = {
     DisclosureItem.LOGS.value: ("stdout.txt", "stderr.txt"),
     DisclosureItem.TRACEBACK_FRAMES.value: (FRAMES_FILENAME,),
+    DisclosureItem.RETURN_CODE.value: ("returncode.txt",),
 }
 
 

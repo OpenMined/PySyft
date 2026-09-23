@@ -39,6 +39,9 @@ def test_full_job_lifecycle(tmp_path: Path):
     do_client = JobClient(config=do_config)
     do_runner = SyftJobRunner(config=do_config)
 
+    # --- DO approves the DS as a peer, which grants read on review/<ds>/ ---
+    do_client.setup_ds_job_folder_as_do(DS_EMAIL)
+
     # --- DS submits a python job to DO ---
     job_dir = ds_client.submit_python_job(
         user=DO_EMAIL,
@@ -70,12 +73,8 @@ def test_full_job_lifecycle(tmp_path: Path):
     job.approve()
     assert job.status == "approved"
 
-    # --- DO runs approved jobs, holding the logs back ---
-    # share_logs_with_submitter=False keeps the logs in staging/, so the
-    # assertions below see the state before any release.
-    do_runner.process_approved_jobs(
-        stream_output=False, timeout=120, share_logs_with_submitter=False
-    )
+    # --- DO runs approved jobs. By default the logs stay in staging/ ---
+    do_runner.process_approved_jobs(stream_output=False, timeout=120)
 
     # Re-fetch to get updated status
     job = do_client.jobs[0]
@@ -95,45 +94,37 @@ def test_full_job_lifecycle(tmp_path: Path):
     assert stdout_path.exists()
     assert stderr_path.exists()
     assert "hello from job" in stdout_path.read_text()
+    returncode_path = staging_path / "returncode.txt"
+    assert returncode_path.read_text().strip() == "0"
     # Nothing readable sits in review/ before the release.
-    assert not (review_path / "stdout.txt").exists()
-    assert not (review_path / "stderr.txt").exists()
+    for name in ("stdout.txt", "stderr.txt", "returncode.txt"):
+        assert not (review_path / name).exists()
     # The viewer finds the staged file, because the DO reads both directories.
     assert "hello from job" in str(job.stdout)
 
-    # --- Check returncode (now in review/) ---
-    returncode_path = review_path / "returncode.txt"
-    assert returncode_path.exists()
-    assert returncode_path.read_text().strip() == "0"
-
     # --- Before sharing, DS should NOT have read access ---
-    # This test never calls setup_ds_job_folder_as_do, so the DS holds no grant
-    # on review/<ds>/. A real datasite always calls it, and that folder grant
-    # covers every nested file. share_logs() therefore grants access the folder
-    # grant has already given, and these assertions hold only here.
     ctx = SyftPermContext(datasite=syftbox / DO_EMAIL)
+    # The DS polls state.yaml through the peer grant.
+    assert ctx.open(
+        f"app_data/job/review/{DS_EMAIL}/v1/test.job/state.yaml"
+    ).has_read_access(DS_EMAIL)
     assert not ctx.open(
         f"app_data/job/review/{DS_EMAIL}/v1/test.job/outputs/"
     ).has_read_access(DS_EMAIL)
-    assert not ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/v1/test.job/stdout.txt"
-    ).has_read_access(DS_EMAIL)
-    assert not ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/v1/test.job/stderr.txt"
-    ).has_read_access(DS_EMAIL)
-    assert not ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/v1/test.job/returncode.txt"
-    ).has_read_access(DS_EMAIL)
+    for name in ("stdout.txt", "stderr.txt", "returncode.txt"):
+        assert not ctx.open(
+            f"app_data/job/staging/{DS_EMAIL}/v1/test.job/{name}"
+        ).has_read_access(DS_EMAIL)
 
     # --- Release the logs, then share outputs and logs with DS ---
     job.share_outputs([DS_EMAIL])
-    assert sorted(job.release_logs()) == ["stderr.txt", "stdout.txt"]
+    assert sorted(job.release_logs()) == ["returncode.txt", "stderr.txt", "stdout.txt"]
     job.share_logs([DS_EMAIL])
 
     # The release moved the files into review/, which is the disclosure.
-    assert (review_path / "stdout.txt").exists()
-    assert (review_path / "stderr.txt").exists()
-    assert not stdout_path.exists()
+    for name in ("stdout.txt", "stderr.txt", "returncode.txt"):
+        assert (review_path / name).exists()
+        assert not (staging_path / name).exists()
 
     # --- Verify DS has read access via SyftPermContext ---
     ctx = SyftPermContext(datasite=syftbox / DO_EMAIL)

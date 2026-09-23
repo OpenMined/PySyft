@@ -18,9 +18,8 @@ from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
 from .traceback_capture import FRAMES_FILENAME
 
-# The artifacts that wait in staging until a party releases them. returncode.txt
-# stays in review: it holds one integer, which state.yaml already carries.
-STAGED_LOG_FILES = ("stdout.txt", "stderr.txt")
+# The artifacts that wait in staging until a party releases them.
+STAGED_LOG_FILES = ("stdout.txt", "stderr.txt", "returncode.txt")
 
 if TYPE_CHECKING:
     from .client import JobClient
@@ -373,7 +372,7 @@ class JobInfo:
 
         # Clean up the artifacts of the previous run. A staged copy must go
         # too, or a later release sends a log that belongs to the old run.
-        for filename in ("stdout.txt", "stderr.txt", "returncode.txt", FRAMES_FILENAME):
+        for filename in (*STAGED_LOG_FILES, FRAMES_FILENAME):
             for f in (
                 self.job_review_path / filename,
                 self.job_staging_path / filename,
@@ -428,7 +427,7 @@ class JobInfo:
     def share_logs(self, users: list[str]) -> None:
         """Grant read access to log files (stdout, stderr, returncode) for given users."""
         ctx = self._get_perm_context()
-        for filename in ("stdout.txt", "stderr.txt", "returncode.txt"):
+        for filename in STAGED_LOG_FILES:
             file_rel = self._relative_review_path(filename)
             f = ctx.open(file_rel)
             for user in users:

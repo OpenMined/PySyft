@@ -320,3 +320,35 @@ class TestHandlerReloadsConfig:
 
         second = handler.evaluate_auto_approval(job)
         assert second.match is False
+
+
+class TestAutoApproveLogSharing:
+    """The DS reads a log only after the DO releases it."""
+
+    def _run(self, config_path):
+        client = MagicMock()
+        job = MagicMock()
+        job.name = "j1"
+        job.submitted_by = "alice@test.com"
+        client.jobs = [job]
+        handler = JobApprovalHandler(
+            client=client, config_path=config_path, verbose=False
+        )
+        with patch.object(
+            JobApprovalHandler,
+            "evaluate_auto_approval",
+            return_value=MagicMock(match=True),
+        ):
+            handler.check_and_approve()
+        return client.process_approved_jobs.call_args.kwargs
+
+    def test_logs_are_held_back_by_default(self, temp_dir):
+        config_path = _seed_config(temp_dir, {})
+        assert self._run(config_path)["share_logs_with_submitter"] is False
+
+    def test_config_opts_in_to_sharing_logs(self, temp_dir):
+        config_path = temp_dir / "config.yaml"
+        SyftBgConfig(approve=AutoApproveConfig(share_logs_with_submitter=True)).save(
+            config_path
+        )
+        assert self._run(config_path)["share_logs_with_submitter"] is True

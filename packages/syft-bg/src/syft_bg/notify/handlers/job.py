@@ -1,5 +1,6 @@
 """Job event handler for notifications."""
 
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -60,39 +61,38 @@ def _read_job_code(job_client: "JobClient", job_name: str) -> Optional[dict[str,
     return code_files if code_files else None
 
 
+def _read_stderr_tail(path: Path) -> str | None:
+    """Return the last _MAX_STDERR_SIZE bytes of stderr, or None if absent or empty."""
+    try:
+        with open(path, "rb") as fh:
+            size = fh.seek(0, os.SEEK_END)
+            fh.seek(max(0, size - _MAX_STDERR_SIZE))
+            tail = fh.read().decode("utf-8", errors="replace")
+    except OSError:
+        return None
+    else:
+        if size > _MAX_STDERR_SIZE:
+            return (
+                f"[... truncated, showing last {_MAX_STDERR_SIZE // 1024} KB "
+                f"of {size // 1024} KB total]\n\n{tail}"
+            )
+        return tail.strip() or None
+
+
 def _read_job_stderr(
     job_client: "JobClient", job_name: str
 ) -> tuple[Optional[str], Optional[int]]:
-    """Read stderr and return code from a job's review directory."""
+    """Read stderr and return code, released or still staged."""
     job = next((j for j in job_client.jobs if j.name == job_name), None)
     if not job:
         return None, None
 
-    stderr_text = None
-    stderr_file = job.artifact_path("stderr.txt")
-    if stderr_file.exists():
-        try:
-            file_size = stderr_file.stat().st_size
-            if file_size > _MAX_STDERR_SIZE:
-                with open(stderr_file, "rb") as fh:
-                    fh.seek(-_MAX_STDERR_SIZE, 2)
-                    tail = fh.read().decode("utf-8", errors="replace")
-                stderr_text = (
-                    f"[... truncated, showing last {_MAX_STDERR_SIZE // 1024} KB "
-                    f"of {file_size // 1024} KB total]\n\n{tail}"
-                )
-            else:
-                stderr_text = stderr_file.read_text(errors="replace").strip() or None
-        except Exception:
-            pass
+    stderr_text = _read_stderr_tail(job.artifact_path("stderr.txt"))
 
-    return_code = None
-    rc_file = job.job_review_path / "returncode.txt"
-    if rc_file.exists():
-        try:
-            return_code = int(rc_file.read_text().strip())
-        except (ValueError, OSError):
-            pass
+    try:
+        return_code = int(job.artifact_path("returncode.txt").read_text().strip())
+    except (ValueError, OSError):
+        return_code = None
 
     return stderr_text, return_code
 

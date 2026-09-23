@@ -125,3 +125,16 @@ def test_encrypted_dataset_collection_syncs():
         do.email,
     )
     assert files, "DS could not download the dataset collection files"
+
+
+def test_process_approved_jobs_holds_logs_back_by_default():
+    """The DS reads a log only after the DO releases it."""
+    from unittest.mock import MagicMock
+
+    _, do = SyftRDSClient.pair_with_mock_drive_service_connection()
+    do.job_runner = MagicMock()
+
+    do.process_approved_jobs(force_execution=True)
+
+    kwargs = do.job_runner.process_approved_jobs.call_args.kwargs
+    assert kwargs["share_logs_with_submitter"] is False

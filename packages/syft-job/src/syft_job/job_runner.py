@@ -52,7 +52,8 @@ def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
 class SyftJobRunner:
     """Job runner that monitors and executes approved jobs.
 
-    Reads run.sh from inbox/. Outputs and state go to review/, logs to staging/.
+    Reads run.sh from inbox/. Outputs and state go to review/, logs and the
+    return code to staging/.
     """
 
     def __init__(self, config: SyftJobConfig, poll_interval: int = 5):
@@ -370,7 +371,8 @@ class SyftJobRunner:
         """
         Execute run.sh for an approved job.
 
-        Reads run.sh from inbox/. Outputs and state go to review/, logs to staging/.
+        Reads run.sh from inbox/. Outputs and state go to review/, logs and the
+        return code to staging/.
 
         Args:
             ref: Ref of the job to execute.
@@ -413,13 +415,7 @@ class SyftJobRunner:
             # Move outputs from inbox/ to review/
             self._move_outputs_to_review(submission_dir, review_dir)
 
-            # Write return code to review/
-            returncode_file = review_dir / "returncode.txt"
-            with open(returncode_file, "w") as f:
-                f.write(str(returncode))
-
-            # Update state to DONE or FAILED
-            self._set_finalized_job_state(ref, returncode)
+            self._finalize(ref, returncode)
 
             staging_dir = self.manager.staging_dir(ref)
             stdout_file = staging_dir / "stdout.txt"
@@ -441,11 +437,11 @@ class SyftJobRunner:
 
         except subprocess.TimeoutExpired:
             print(f" Job {job_name} timed out after {timeout // 60} minutes")
-            self._set_finalized_job_state(ref, -1)
+            self._finalize(ref, -1)
             return False
         except Exception as e:
             print(f" Error executing job {job_name}: {e}")
-            self._set_finalized_job_state(ref, -1)
+            self._finalize(ref, -1)
             return False
 
     def _capture_traceback(self, ref: JobRef, returncode: int) -> None:
@@ -462,11 +458,20 @@ class SyftJobRunner:
             self.manager.submission_dir(ref) / "code",
         )
 
-    def _set_finalized_job_state(self, ref: JobRef, returncode: int) -> None:
+    def _finalize(self, ref: JobRef, returncode: int) -> None:
+        """Stage the exit code, and set the state to DONE or FAILED.
+
+        The exit code carries more than DONE or FAILED, so it waits in staging/.
+        """
+        staging_dir = self.manager.staging_dir(ref)
+        staging_dir.mkdir(parents=True, exist_ok=True)
+        (staging_dir / "returncode.txt").write_text(str(returncode))
+
         state = self.manager.read_state(ref)
         state.status = JobStatus.DONE if returncode == 0 else JobStatus.FAILED
         state.completed_at = datetime.now(timezone.utc)
-        state.return_code = returncode
+        # The exact code is in staged returncode.txt.
+        state.return_code = None
         self.manager.write_state(ref, state)
 
     def _move_outputs_to_review(self, submission_dir: Path, review_dir: Path) -> None:
@@ -541,7 +546,7 @@ class SyftJobRunner:
         timeout: int | None = None,
         skip_job_names: list[str] | None = None,
         share_outputs_with_submitter: bool = False,
-        share_logs_with_submitter: bool = True,
+        share_logs_with_submitter: bool = False,
     ) -> None:
         """Process all jobs in approved status.
 
@@ -550,8 +555,8 @@ class SyftJobRunner:
             timeout: Timeout in seconds per job. Defaults to 300 (5 minutes).
             skip_job_names: Optional list of job names to skip.
             share_outputs_with_submitter: If True, grant read access on outputs to submitter.
-            share_logs_with_submitter: If True (default), release the logs to the
-                submitter. False keeps them in staging, where only the datasite
+            share_logs_with_submitter: If True, release the logs to the submitter.
+                False (default) keeps them in staging, where only the datasite
                 owner reads them.
         """
         approved_jobs = self._get_jobs_in_approved()

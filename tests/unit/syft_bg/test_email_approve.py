@@ -129,7 +129,7 @@ class TestStripQuotedReply:
 
 
 class TestEmailApproveHandler:
-    def _make_handler(self, tmp_path):
+    def _make_handler(self, tmp_path, **kwargs):
         state = JsonStateManager(state_file=tmp_path / "email_approve_state.json")
         notify_state = JsonStateManager(state_file=tmp_path / "notify_state.json")
         job_client = MagicMock()
@@ -140,6 +140,7 @@ class TestEmailApproveHandler:
             state=state,
             notify_state=notify_state,
             do_email="do@example.com",
+            **kwargs,
         )
         return handler, job_client, job_runner, state, notify_state
 
@@ -158,6 +159,23 @@ class TestEmailApproveHandler:
         handler.handle_reply(thread_id="thread123", reply_text="approve")
 
         mock_job.approve.assert_called_once()
+        job_runner.process_approved_jobs.assert_called_once_with(
+            share_outputs_with_submitter=True,
+            share_logs_with_submitter=False,
+        )
+
+    def test_approve_job_shares_logs_when_configured(self, tmp_path):
+        handler, job_client, job_runner, _, notify_state = self._make_handler(
+            tmp_path, share_logs_with_submitter=True
+        )
+        notify_state.store_thread_id("test.job", "thread123")
+        mock_job = MagicMock()
+        mock_job.name = "test.job"
+        mock_job.status = "pending"
+        job_client.jobs = [mock_job]
+
+        handler.handle_reply(thread_id="thread123", reply_text="approve")
+
         job_runner.process_approved_jobs.assert_called_once_with(
             share_outputs_with_submitter=True,
             share_logs_with_submitter=True,

@@ -48,6 +48,11 @@ class JobApprovalHandler:
         """Always-fresh auto-approvals config, re-read from disk on every access."""
         return SyftBgConfig.load(self._config_path).approve.auto_approvals
 
+    @property
+    def share_logs_with_submitter(self) -> bool:
+        """Re-read from disk on every access, like ``config``."""
+        return SyftBgConfig.load(self._config_path).approve.share_logs_with_submitter
+
     def _get_approved_peers(self) -> list[str]:
         """Get list of approved peer emails."""
         self.client.load_peers(force_download=True)
@@ -125,7 +130,7 @@ class JobApprovalHandler:
             self.client.process_approved_jobs(
                 stream_output=self.verbose,
                 share_outputs_with_submitter=True,
-                share_logs_with_submitter=True,
+                share_logs_with_submitter=self.share_logs_with_submitter,
             )
 
         return approved_jobs

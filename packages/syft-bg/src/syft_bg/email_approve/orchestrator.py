@@ -82,6 +82,7 @@ class EmailApproveOrchestrator(BaseOrchestrator):
             state=state,
             notify_state=notify_state,
             do_email=config.do_email,
+            share_logs_with_submitter=config.share_logs_with_submitter,
         )
 
         # Auto-create Pub/Sub resources if needed

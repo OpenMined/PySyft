@@ -18,10 +18,12 @@ class DisclosureItem(str, Enum):
     - ``TRACEBACK_FRAMES``: the file and the line of each frame, and the
       exception type. Never the exception message.
     - ``LOGS``: stdout and stderr, as the job wrote them.
+    - ``RETURN_CODE``: the exact exit code of the job.
     """
 
     TRACEBACK_FRAMES = "traceback_frames"
     LOGS = "logs"
+    RETURN_CODE = "return_code"
 
 
 DISCLOSURE_ITEMS = frozenset(item.value for item in DisclosureItem)

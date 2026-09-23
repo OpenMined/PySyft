@@ -76,6 +76,8 @@ class AutoApproveConfig(BaseModel):
         None  # None: value is determined by the role
     )
     force_ignore_peer_version: bool = False
+    # Release stdout, stderr and the exit code to the submitter after a run.
+    share_logs_with_submitter: bool = False
 
 
 # --- Backwards-compatible aliases (deprecated, will be removed) ---

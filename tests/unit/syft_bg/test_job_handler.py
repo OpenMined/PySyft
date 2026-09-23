@@ -3,7 +3,13 @@
 from unittest.mock import MagicMock
 
 from syft_bg.notify.gmail.sender import SendResult
-from syft_bg.notify.handlers.job import JobHandler, _friendly_reason
+from syft_bg.notify.handlers.job import (
+    _MAX_STDERR_SIZE,
+    JobHandler,
+    _friendly_reason,
+    _read_job_stderr,
+)
+from syft_job.job import JobInfo
 
 
 class TestJobHandler:
@@ -163,3 +169,64 @@ class TestFriendlyReason:
         msg = _friendly_reason("some other reason", "job1")
         assert "was not approved" in msg
         assert "some other reason" in msg
+
+
+def _client_for_staged_job(tmp_path):
+    """A job client with one job. Returns (job_client, staging_dir)."""
+    review = tmp_path / "review"
+    staging = tmp_path / "staging"
+    review.mkdir()
+    staging.mkdir()
+
+    job = MagicMock()
+    job.name = "job1"
+    job.job_review_path = review
+    job.job_staging_path = staging
+    job.artifact_path = lambda name: JobInfo.artifact_path(job, name)
+    job_client = MagicMock()
+    job_client.jobs = [job]
+    return job_client, staging
+
+
+def test_read_job_stderr_finds_staged_artifacts(tmp_path):
+    """A failed job keeps stderr and returncode.txt in staging until a release."""
+    job_client, staging = _client_for_staged_job(tmp_path)
+    (staging / "stderr.txt").write_text("boom")
+    (staging / "returncode.txt").write_text("3")
+
+    assert _read_job_stderr(job_client, "job1") == ("boom", 3)
+
+
+def test_read_job_stderr_missing_files(tmp_path):
+    job_client, _ = _client_for_staged_job(tmp_path)
+
+    assert _read_job_stderr(job_client, "job1") == (None, None)
+
+
+def test_read_job_stderr_empty_file(tmp_path):
+    job_client, staging = _client_for_staged_job(tmp_path)
+    (staging / "stderr.txt").write_text("  \n")
+
+    assert _read_job_stderr(job_client, "job1") == (None, None)
+
+
+def test_read_job_stderr_unreadable_file(tmp_path):
+    job_client, staging = _client_for_staged_job(tmp_path)
+    (staging / "stderr.txt").mkdir()
+
+    assert _read_job_stderr(job_client, "job1") == (None, None)
+
+
+def test_read_job_stderr_truncates_to_the_tail(tmp_path):
+    job_client, staging = _client_for_staged_job(tmp_path)
+    head = "h" * _MAX_STDERR_SIZE
+    tail = "t" * (_MAX_STDERR_SIZE - 3) + "END"
+    (staging / "stderr.txt").write_text(head + tail)
+
+    stderr_text, _ = _read_job_stderr(job_client, "job1")
+
+    total_kb = 2 * _MAX_STDERR_SIZE // 1024
+    assert stderr_text == (
+        f"[... truncated, showing last {_MAX_STDERR_SIZE // 1024} KB "
+        f"of {total_kb} KB total]\n\n{tail}"
+    )
