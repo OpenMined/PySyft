@@ -66,6 +66,16 @@ class EnclaveJobInfo(JobInfo):
             return JobStatus.APPROVED.value
         return JobStatus.PENDING.value
 
+    @property
+    def can_approve(self) -> bool:
+        """Whether the enclave has sent us our approval file yet.
+
+        A submitter sees its own job as soon as it submits, before the enclave
+        has distributed it, so seeing the job is not enough to approve it.
+        """
+        file_name = enclave_approval_file_name(self.current_user_email)
+        return (self.job_review_path / file_name).exists()
+
     def approve(self) -> None:
         """Write approval to the DO's individual approval state file."""
         file_name = enclave_approval_file_name(self.current_user_email)

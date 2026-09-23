@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import traceback
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,6 +30,9 @@ logger = logging.getLogger(__name__)
 
 #: Written into the review dir when the enclave picks the job up to run it.
 STARTED_MARKER = "run_started_at"
+#: Shipped in place of the receipt when signing one fails, so the submitter
+#: sees why instead of a receipt that silently never arrives.
+RECEIPT_ERROR_FILE_NAME = "receipt_error.txt"
 
 
 @dataclass(frozen=True)
@@ -56,6 +60,13 @@ def write_receipt(
     path.write_text(json.dumps(envelope, indent=2))
     logger.info("Wrote signed receipt for job %s to %s", job.name, path)
     return path
+
+
+def write_receipt_error(job: JobInfo) -> None:
+    """Record the current exception in the job's outputs."""
+    path = job.job_review_path / "outputs" / RECEIPT_ERROR_FILE_NAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(traceback.format_exc())
 
 
 def _receipt(

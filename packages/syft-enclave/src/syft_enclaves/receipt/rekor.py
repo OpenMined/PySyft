@@ -39,7 +39,9 @@ def upload_to_rekor(
             return _summarise(json.load(response))
     except urllib.error.HTTPError as e:
         if e.code != 409 or not e.headers.get("Location"):
-            raise RuntimeError(f"Rekor rejected the receipt: {e.read().decode()}") from e
+            raise RuntimeError(
+                f"Rekor rejected the receipt: {e.read().decode()}"
+            ) from e
         return _fetch_existing(rekor_url, e.headers["Location"])
 
 

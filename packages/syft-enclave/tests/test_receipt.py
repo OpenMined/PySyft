@@ -182,3 +182,15 @@ def test_execution_on_tinfoil_records_the_config_and_report(tmp_path, monkeypatc
     assert execution["configDigest"] == hashlib.sha256(config.read_bytes()).hexdigest()
     assert execution["attestation"]["quote"] == "Zm9v"
     assert execution["attestation"]["referenceValue"]["repo"] == "github.com/Org/repo"
+
+
+def test_a_failed_receipt_ships_the_error_instead(monkeypatch):
+    def fail(*args, **kwargs):
+        raise RuntimeError("no key to sign with")
+
+    monkeypatch.setattr("syft_enclaves.client.write_receipt", fail)
+    *_, ds, _, _ = _run_job_with_receipts()
+    by_name = {p.name: p for p in ds.jobs["test_job"].output_paths}
+    assert RECEIPT_FILE_NAME not in by_name
+    assert "no key to sign with" in by_name["receipt_error.txt"].read_text()
+    assert "result.json" in by_name

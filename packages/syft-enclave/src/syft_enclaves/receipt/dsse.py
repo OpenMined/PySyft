@@ -64,7 +64,9 @@ def verify_receipt(envelope: dict[str, Any], bundle: dict[str, Any]) -> dict:
     is what makes a valid signature mean "this enclave wrote it".
     """
     if envelope.get("payloadType") != PAYLOAD_TYPE:
-        raise ReceiptVerificationError(f"not a receipt: {envelope.get('payloadType')!r}")
+        raise ReceiptVerificationError(
+            f"not a receipt: {envelope.get('payloadType')!r}"
+        )
     public_key = identity_key_bytes(bundle)
     payload = base64.b64decode(envelope["payload"])
     _verify_any_signature(envelope.get("signatures") or [], public_key, payload)

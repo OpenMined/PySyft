@@ -23,7 +23,12 @@ from syft_enclaves.attestation.envelope import AttestationEvidence
 from syft_perms.syftperm_context import SyftPermContext
 
 from syft_enclaves.enclave_job_client import EnclaveJobClient
-from syft_enclaves.receipt.writer import ReceiptSettings, mark_started, write_receipt
+from syft_enclaves.receipt.writer import (
+    ReceiptSettings,
+    mark_started,
+    write_receipt,
+    write_receipt_error,
+)
 from syft_enclaves.utils import (
     create_clients,
     create_configs,
@@ -323,13 +328,14 @@ class SyftEnclaveClient:
     def _try_write_receipt(self, job: JobInfo) -> None:
         """Sign a receipt into the job's outputs, so it ships with them.
 
-        A failure is logged, not raised: the results still go out, just
-        without a receipt, rather than being held back on every tick.
+        A failure is not raised: the results still go out, with the error in
+        place of the receipt, rather than being held back on every tick.
         """
         try:
             write_receipt(self, job, self.receipts)
         except Exception:
             logger.exception("Could not write a receipt for job %s", job.name)
+            write_receipt_error(job)
 
     def _read_state_file(self, job: JobInfo) -> dict[Path, bytes]:
         """Read the job state.yaml as a {path_in_datasite: bytes} dict."""

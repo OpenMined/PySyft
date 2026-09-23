@@ -203,6 +203,9 @@ def test_enclave_job_approval_flow(encryption):
     do1_job = do1.jobs["test_job"]
     assert do1_job.job_headers["job_type"] == "enclave"
     assert do1_job.status == "pending"
+    assert do1_job.can_approve
+    # The submitter is not an approver, so it never gets an approval file.
+    assert not ds.jobs["test_job"].can_approve
     do1.approve_job(do1_job)
 
     # After DO1 approves but before DO2, enclave still sees pending
