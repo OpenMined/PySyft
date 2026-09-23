@@ -9,7 +9,11 @@ Spaces port (8080).
 from attestation_server import app
 from syft_enclaves.settings import EnclaveSettings
 
-from enclave_model_api.paths import default_syftbox_folder, private_dataset_dir
+from enclave_model_api.paths import (
+    default_syftbox_folder,
+    private_dataset_dir,
+    resolve_weights_dir,
+)
 from enclave_model_api.server import build_router
 from enclave_model_api.service import InferenceService
 from enclave_model_api.settings import InferenceSettings
@@ -32,9 +36,13 @@ syftbox_folder = default_syftbox_folder(settings.email)
 service = InferenceService(
     backend=backend,
     model_size=inference.model_size,
-    weights_dir=private_dataset_dir(
+    # Resolved on each poll: the model owner writes the layout its own release
+    # decided, and this process starts before the weights arrive.
+    weights_dir=lambda: resolve_weights_dir(
         syftbox_folder, inference.model_owner, inference.model_dataset
     ),
+    # The enclave owns its logs dataset and writes it, so the current layout is
+    # the right answer while it is absent.
     logs_dir=private_dataset_dir(
         syftbox_folder, settings.email, inference.logs_dataset
     ),
