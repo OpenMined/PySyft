@@ -38,25 +38,25 @@ def write_approval(review_dir, party, status, disclosures):
 # -- the resolution rule --------------------------------------------------------
 
 
-def test_an_item_needs_every_party(tmp_path):
+def test_item_needs_every_party(tmp_path):
     write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True})
     write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, {LOGS: True})
     assert approved_disclosures(tmp_path) == {LOGS}
 
 
-def test_one_party_withholding_blocks_the_item(tmp_path):
+def test_one_party_withholding_blocks_item(tmp_path):
     write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True})
     write_approval(tmp_path, "do2@x.com", JobStatus.APPROVED, {FRAMES: True})
     assert approved_disclosures(tmp_path) == set()
 
 
-def test_a_party_that_has_not_approved_blocks_everything(tmp_path):
+def test_unapproved_party_blocks_everything(tmp_path):
     write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True})
     write_approval(tmp_path, "do2@x.com", JobStatus.PENDING, {LOGS: True})
     assert approved_disclosures(tmp_path) == set()
 
 
-def test_an_approval_file_without_the_field_grants_nothing(tmp_path):
+def test_approval_file_without_disclosures_grants_nothing(tmp_path):
     """An older client writes no disclosures key, so it releases nothing."""
     path = tmp_path / enclave_approval_file_name("do1@x.com")
     path.write_text(json.dumps({"party": "do1@x.com", "status": "approved"}))
@@ -64,7 +64,7 @@ def test_an_approval_file_without_the_field_grants_nothing(tmp_path):
     assert approved_disclosures(tmp_path) == set()
 
 
-def test_the_requested_set_narrows_the_result(tmp_path):
+def test_requested_set_narrows_result(tmp_path):
     write_approval(
         tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True, FRAMES: True}
     )
@@ -75,13 +75,13 @@ def test_no_approval_file_grants_nothing(tmp_path):
     assert approved_disclosures(tmp_path) == set()
 
 
-def test_an_unknown_item_never_survives(tmp_path):
+def test_unknown_item_never_survives(tmp_path):
     write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {"everything": True})
     assert approved_disclosures(tmp_path) == set()
     assert normalize_disclosures(["everything", LOGS]) == {LOGS: True}
 
 
-def test_a_mapping_with_a_false_value_drops_the_item(tmp_path):
+def test_false_mapping_value_drops_item(tmp_path):
     """update_disclosures returns a map, so a caller can send one back.
 
     Every element used to count as a grant, therefore a map carrying False
@@ -149,7 +149,7 @@ def run_to_completion(enclave, do1, do2, ds, grants):
     ds.sync()
 
 
-def test_without_a_grant_the_submitter_gets_no_logs():
+def test_submitter_gets_no_logs_without_grant():
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
     run_to_completion(enclave, do1, do2, ds, None)
@@ -159,7 +159,7 @@ def test_without_a_grant_the_submitter_gets_no_logs():
     assert not (review / "stderr.txt").exists()
 
 
-def test_a_full_grant_sends_the_logs_to_the_submitter():
+def test_full_grant_sends_logs_to_submitter():
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
     run_to_completion(enclave, do1, do2, ds, [LOGS])
@@ -168,7 +168,7 @@ def test_a_full_grant_sends_the_logs_to_the_submitter():
     assert (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
 
 
-def test_without_a_grant_the_submitter_gets_no_return_code():
+def test_submitter_gets_no_return_code_without_grant():
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, CRASH_CODE, [RETURN_CODE])
     run_to_completion(enclave, do1, do2, ds, [LOGS])
@@ -180,7 +180,7 @@ def test_without_a_grant_the_submitter_gets_no_return_code():
     assert state.return_code is None
 
 
-def test_a_return_code_grant_sends_the_exit_code_alone():
+def test_return_code_grant_sends_only_exit_code():
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, CRASH_CODE, [RETURN_CODE])
     run_to_completion(enclave, do1, do2, ds, [RETURN_CODE])
@@ -190,7 +190,7 @@ def test_a_return_code_grant_sends_the_exit_code_alone():
     assert not (review / "stderr.txt").exists()
 
 
-def test_granted_frames_carry_the_position_but_not_the_message():
+def test_granted_frames_carry_position_not_message():
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
     run_to_completion(enclave, do1, do2, ds, [FRAMES])
@@ -204,7 +204,7 @@ def test_granted_frames_carry_the_position_but_not_the_message():
     assert "4120550" not in json.dumps(record)
 
 
-def test_frames_reach_the_data_owners_too():
+def test_frames_reach_data_owners():
     """A party that releases an item also receives it."""
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
@@ -214,7 +214,7 @@ def test_frames_reach_the_data_owners_too():
     assert (Path(do1.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
 
 
-def test_one_owner_withholding_blocks_the_frames():
+def test_one_owner_withholding_blocks_frames():
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
     enclave.sync()
@@ -231,7 +231,7 @@ def test_one_owner_withholding_blocks_the_frames():
     assert not (Path(ds.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
 
 
-def test_a_later_grant_releases_a_withheld_artifact():
+def test_later_grant_releases_withheld_artifact():
     """A party can release an item after the run, without a new submission."""
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
@@ -249,7 +249,7 @@ def test_a_later_grant_releases_a_withheld_artifact():
     assert (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
 
 
-def test_no_sync_runs_while_an_ungranted_artifact_sits_in_review(monkeypatch):
+def test_no_sync_while_ungranted_artifact_in_review(monkeypatch):
     """An ungranted artifact is never readable, whenever a sync runs.
 
     The job runner writes the logs into staging, so no ordering rule protects
@@ -290,7 +290,7 @@ def test_no_sync_runs_while_an_ungranted_artifact_sits_in_review(monkeypatch):
     assert not any(exposed), f"ungranted logs were readable during a sync: {exposed}"
 
 
-def test_an_amendment_needs_an_approval_first():
+def test_amendment_needs_approval_first():
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
     enclave.sync()
@@ -301,7 +301,7 @@ def test_an_amendment_needs_an_approval_first():
         do1.update_disclosures(do1.jobs["j"], [LOGS])
 
 
-def test_a_late_grant_reaches_the_data_owners_too():
+def test_late_grant_reaches_data_owners():
     """distribute_results runs once, so a later release needs its own path."""
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
@@ -323,7 +323,7 @@ def test_a_late_grant_reaches_the_data_owners_too():
     assert (Path(do2.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
 
 
-def test_a_released_artifact_is_not_sent_twice():
+def test_released_artifact_not_sent_twice():
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, CRASH_CODE, [FRAMES])
     run_to_completion(enclave, do1, do2, ds, [FRAMES])
@@ -332,7 +332,7 @@ def test_a_released_artifact_is_not_sent_twice():
     assert enclave._forward_new_releases(job) == []
 
 
-def test_approve_job_rejects_a_job_that_is_not_an_enclave_job():
+def test_approve_job_rejects_non_enclave_job():
     """JobInfo.approve takes a reason first, so disclosures would land there.
 
     SyftEnclaveClient.jobs wraps only a job whose job_type header says enclave.

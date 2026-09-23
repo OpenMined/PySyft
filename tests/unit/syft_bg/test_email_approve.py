@@ -144,9 +144,14 @@ class TestEmailApproveHandler:
         )
         return handler, job_client, job_runner, state, notify_state
 
-    def test_approve_job(self, tmp_path):
+    @pytest.mark.parametrize(
+        "kwargs, share_logs",
+        [({}, False), ({"share_logs_with_submitter": True}, True)],
+        ids=["default", "configured"],
+    )
+    def test_approve_job(self, tmp_path, kwargs, share_logs):
         handler, job_client, job_runner, state, notify_state = self._make_handler(
-            tmp_path
+            tmp_path, **kwargs
         )
 
         notify_state.store_thread_id("test.job", "thread123")
@@ -161,24 +166,7 @@ class TestEmailApproveHandler:
         mock_job.approve.assert_called_once()
         job_runner.process_approved_jobs.assert_called_once_with(
             share_outputs_with_submitter=True,
-            share_logs_with_submitter=False,
-        )
-
-    def test_approve_job_shares_logs_when_configured(self, tmp_path):
-        handler, job_client, job_runner, _, notify_state = self._make_handler(
-            tmp_path, share_logs_with_submitter=True
-        )
-        notify_state.store_thread_id("test.job", "thread123")
-        mock_job = MagicMock()
-        mock_job.name = "test.job"
-        mock_job.status = "pending"
-        job_client.jobs = [mock_job]
-
-        handler.handle_reply(thread_id="thread123", reply_text="approve")
-
-        job_runner.process_approved_jobs.assert_called_once_with(
-            share_outputs_with_submitter=True,
-            share_logs_with_submitter=True,
+            share_logs_with_submitter=share_logs,
         )
 
     def test_deny_job(self, tmp_path):

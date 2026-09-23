@@ -342,7 +342,7 @@ class TestAutoApproveLogSharing:
             handler.check_and_approve()
         return client.process_approved_jobs.call_args.kwargs
 
-    def test_logs_are_held_back_by_default(self, temp_dir):
+    def test_logs_held_back_by_default(self, temp_dir):
         config_path = _seed_config(temp_dir, {})
         assert self._run(config_path)["share_logs_with_submitter"] is False
 

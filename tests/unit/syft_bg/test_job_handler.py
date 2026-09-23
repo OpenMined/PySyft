@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from syft_bg.notify.gmail.sender import SendResult
 from syft_bg.notify.handlers.job import (
     _MAX_STDERR_SIZE,
@@ -197,27 +199,23 @@ def test_read_job_stderr_finds_staged_artifacts(tmp_path):
     assert _read_job_stderr(job_client, "job1") == ("boom", 3)
 
 
-def test_read_job_stderr_missing_files(tmp_path):
-    job_client, _ = _client_for_staged_job(tmp_path)
-
-    assert _read_job_stderr(job_client, "job1") == (None, None)
-
-
-def test_read_job_stderr_empty_file(tmp_path):
+@pytest.mark.parametrize(
+    "make_stderr",
+    [
+        lambda path: None,
+        lambda path: path.write_text("  \n"),
+        lambda path: path.mkdir(),
+    ],
+    ids=["missing", "empty", "unreadable"],
+)
+def test_read_job_stderr_without_usable_output(tmp_path, make_stderr):
     job_client, staging = _client_for_staged_job(tmp_path)
-    (staging / "stderr.txt").write_text("  \n")
+    make_stderr(staging / "stderr.txt")
 
     assert _read_job_stderr(job_client, "job1") == (None, None)
 
 
-def test_read_job_stderr_unreadable_file(tmp_path):
-    job_client, staging = _client_for_staged_job(tmp_path)
-    (staging / "stderr.txt").mkdir()
-
-    assert _read_job_stderr(job_client, "job1") == (None, None)
-
-
-def test_read_job_stderr_truncates_to_the_tail(tmp_path):
+def test_read_job_stderr_truncates_to_tail(tmp_path):
     job_client, staging = _client_for_staged_job(tmp_path)
     head = "h" * _MAX_STDERR_SIZE
     tail = "t" * (_MAX_STDERR_SIZE - 3) + "END"

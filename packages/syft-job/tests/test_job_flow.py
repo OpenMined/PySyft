@@ -12,6 +12,7 @@ from syft_job.models import JobState
 
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
+LOG_FILES = ("stdout.txt", "stderr.txt", "returncode.txt")
 
 MAIN_PY = """\
 import os
@@ -97,7 +98,7 @@ def test_full_job_lifecycle(tmp_path: Path):
     returncode_path = staging_path / "returncode.txt"
     assert returncode_path.read_text().strip() == "0"
     # Nothing readable sits in review/ before the release.
-    for name in ("stdout.txt", "stderr.txt", "returncode.txt"):
+    for name in LOG_FILES:
         assert not (review_path / name).exists()
     # The viewer finds the staged file, because the DO reads both directories.
     assert "hello from job" in str(job.stdout)
@@ -111,18 +112,18 @@ def test_full_job_lifecycle(tmp_path: Path):
     assert not ctx.open(
         f"app_data/job/review/{DS_EMAIL}/v1/test.job/outputs/"
     ).has_read_access(DS_EMAIL)
-    for name in ("stdout.txt", "stderr.txt", "returncode.txt"):
+    for name in LOG_FILES:
         assert not ctx.open(
             f"app_data/job/staging/{DS_EMAIL}/v1/test.job/{name}"
         ).has_read_access(DS_EMAIL)
 
     # --- Release the logs, then share outputs and logs with DS ---
     job.share_outputs([DS_EMAIL])
-    assert sorted(job.release_logs()) == ["returncode.txt", "stderr.txt", "stdout.txt"]
+    assert sorted(job.release_logs()) == sorted(LOG_FILES)
     job.share_logs([DS_EMAIL])
 
     # The release moved the files into review/, which is the disclosure.
-    for name in ("stdout.txt", "stderr.txt", "returncode.txt"):
+    for name in LOG_FILES:
         assert (review_path / name).exists()
         assert not (staging_path / name).exists()
 

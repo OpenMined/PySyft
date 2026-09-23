@@ -69,7 +69,7 @@ def run(code_root, source):
 # -- what the record holds ------------------------------------------------------
 
 
-def test_record_holds_every_frame_of_the_crash(code_root):
+def test_record_holds_every_crash_frame(code_root):
     record = frames_from_stderr(run(code_root, CRASH), code_root)
     assert record["chain"][0]["type"] == "ValueError"
     assert record["chain"][0]["frames"] == [
@@ -79,25 +79,25 @@ def test_record_holds_every_frame_of_the_crash(code_root):
     ]
 
 
-def test_record_never_holds_the_exception_message(code_root):
+def test_record_never_holds_exception_message(code_root):
     record = frames_from_stderr(run(code_root, CRASH), code_root)
     assert "4120550" not in json.dumps(record)
     assert "88213" not in json.dumps(record)
 
 
-def test_frame_holds_only_a_file_and_a_line(code_root):
+def test_frame_holds_only_file_and_line(code_root):
     record = frames_from_stderr(run(code_root, CRASH), code_root)
     assert set(record["chain"][0]) == {"type", "frames"}
     assert set(record["chain"][0]["frames"][0]) == {"file", "line"}
 
 
-def test_chained_exception_puts_the_last_failure_first(code_root):
+def test_chained_exception_puts_last_failure_first(code_root):
     record = frames_from_stderr(run(code_root, CHAINED), code_root)
     assert [entry["type"] for entry in record["chain"]] == ["RuntimeError", "KeyError"]
     assert "account" not in json.dumps(record)
 
 
-def test_library_frame_keeps_the_path_the_interpreter_printed(code_root):
+def test_library_frame_keeps_printed_path(code_root):
     source = "import json\njson.loads('{')\n"
     record = frames_from_stderr(run(code_root, source), code_root)
     files = [f["file"] for f in record["chain"][0]["frames"]]
@@ -115,7 +115,7 @@ def test_header_without_frames_yields_no_record(code_root):
     assert frames_from_stderr(stderr, code_root) is None
 
 
-def test_output_after_the_traceback_is_not_read_as_the_type(code_root):
+def test_output_after_traceback_not_read_as_type(code_root):
     stderr = run(code_root, CRASH) + "account_88213_balance: 4120550\n"
     record = frames_from_stderr(stderr, code_root)
     assert record["chain"][0]["type"] == "ValueError"
@@ -171,11 +171,11 @@ def test_deliberate_exit_leaves_no_record(code_root):
 
 
 @pytest.mark.parametrize("stderr", ["", "some log output\n", "Traceback: not really\n"])
-def test_stderr_without_a_traceback_yields_no_record(stderr, code_root):
+def test_stderr_without_traceback_yields_no_record(stderr, code_root):
     assert frames_from_stderr(stderr, code_root) is None
 
 
-def test_install_output_before_the_traceback_is_ignored(code_root):
+def test_install_output_before_traceback_ignored(code_root):
     noisy = "+ pandas==2.0.0\n+ numpy==1.26\n" + run(code_root, CRASH)
     record = frames_from_stderr(noisy, code_root)
     assert record["chain"][0]["type"] == "ValueError"
@@ -195,7 +195,7 @@ def test_chain_and_frame_count_are_capped(code_root):
     assert len(record["chain"][0]["frames"]) == MAX_FRAMES
 
 
-def test_a_coloured_traceback_parses(code_root):
+def test_coloured_traceback_parses(code_root):
     """Python 3.13 and later colour the traceback when the environment asks."""
     coloured = (
         "Traceback (most recent call last):\n"
@@ -208,7 +208,7 @@ def test_a_coloured_traceback_parses(code_root):
     assert "88213" not in json.dumps(record)
 
 
-def test_frame_cap_keeps_the_innermost_frames(code_root):
+def test_frame_cap_keeps_innermost_frames(code_root):
     """Python prints the outermost frame first, so the job stopped at the last.
 
     The cap previously kept the first frames, which drops the failure site on
@@ -225,7 +225,7 @@ def test_frame_cap_keeps_the_innermost_frames(code_root):
     assert frames[0]["line"] == 199 - MAX_FRAMES + 1
 
 
-def test_a_block_without_a_type_line_falls_back(code_root):
+def test_block_without_type_line_falls_back(code_root):
     block = 'Traceback (most recent call last):\n  File "main.py", line 1, in f\n'
     record = frames_from_stderr(block, code_root)
     assert record["chain"][0]["type"] == FALLBACK_TYPE
@@ -234,7 +234,7 @@ def test_a_block_without_a_type_line_falls_back(code_root):
 # -- the file the runner writes -------------------------------------------------
 
 
-def test_write_frames_record_writes_the_staged_file(tmp_path, code_root):
+def test_write_frames_record_writes_staged_file(tmp_path, code_root):
     stderr_path = tmp_path / "stderr.txt"
     stderr_path.write_text(run(code_root, CRASH))
     staging = tmp_path / "staging"
