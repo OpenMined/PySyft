@@ -292,9 +292,12 @@ class SyftEnclaveClient:
                     state.save(job.job_review_path / "state.yaml")
                 mark_started(job.job_review_path)
 
+        # With receipts on, outputs reach the submitter only through
+        # distribute_results, after the receipt is written, so results and
+        # receipt arrive together instead of the receipt a sync later.
         self._rds.process_approved_jobs(
             force_execution=True,
-            share_outputs_with_submitter=True,
+            share_outputs_with_submitter=self.receipts is None,
             share_logs_with_submitter=True,
         )
 

@@ -103,7 +103,7 @@ def test_upload_to_rekor_returns_the_existing_entry_on_conflict(monkeypatch):
     assert upload_to_rekor(envelope, bundle)["logIndex"] == 7
 
 
-def _run_job_with_receipts():
+def _run_job_with_receipts(before_distribute=None):
     enclave, do1, do2, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
         use_in_memory_cache=False, encryption=True
     )
@@ -138,6 +138,8 @@ def _run_job_with_receipts():
         owner.approve_job(owner.jobs["test_job"])
     enclave.sync()
     enclave.run_jobs()
+    if before_distribute is not None:
+        before_distribute(enclave, ds)
     enclave.distribute_results()
     ds.sync()
     return enclave, do1, do2, ds, code, privates
@@ -194,3 +196,14 @@ def test_a_failed_receipt_ships_the_error_instead(monkeypatch):
     assert RECEIPT_FILE_NAME not in by_name
     assert "no key to sign with" in by_name["receipt_error.txt"].read_text()
     assert "result.json" in by_name
+
+
+def test_results_do_not_arrive_ahead_of_the_receipt():
+    def check(enclave, ds):
+        enclave.sync()
+        ds.sync()
+        assert not ds.jobs["test_job"].output_paths
+
+    _, _, _, ds, _, _ = _run_job_with_receipts(before_distribute=check)
+    names = {p.name for p in ds.jobs["test_job"].output_paths}
+    assert names == {"result.json", RECEIPT_FILE_NAME}
