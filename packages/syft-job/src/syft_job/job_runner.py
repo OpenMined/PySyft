@@ -539,7 +539,7 @@ class SyftJobRunner:
 
         Args:
             stream_output: If True (default), stream output in real-time.
-            timeout: Timeout in seconds per job. Defaults to 300 (5 minutes).
+            timeout: Timeout in seconds per job. Defaults to the configured value or 600.
             skip_job_names: Optional list of job names to skip.
             share_outputs_with_submitter: If True, grant read access on outputs to submitter.
             share_logs_with_submitter: If True, grant read access on logs to submitter.
