@@ -384,7 +384,7 @@ class SyftJobRunner:
         Args:
             ref: Ref of the job to execute.
             stream_output: If True (default), stream output in real-time.
-            timeout: Timeout in seconds. Defaults to 300 (5 minutes).
+            timeout: Timeout in seconds. Defaults to the configured value or 600.
 
         Returns:
             bool: True if execution was successful, False otherwise
