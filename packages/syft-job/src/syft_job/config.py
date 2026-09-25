@@ -97,6 +97,18 @@ class SyftJobConfig(BaseModel):
         """
         return self.get_job_dir(datasite_email) / "review"
 
+    def get_staging_dir(self, datasite_email: str) -> Path:
+        """
+        Get the staging directory for artifacts that no party released yet.
+
+        Path: SyftBox/<datasite_email>/app_data/job/staging/
+
+        The submitter holds a read grant on the review directory, and a nested
+        file inherits that grant. An artifact therefore waits here until a
+        release moves it into the review directory.
+        """
+        return self.get_job_dir(datasite_email) / "staging"
+
     def get_job_submission_dir(
         self,
         datasite_email: str,
@@ -128,6 +140,23 @@ class SyftJobConfig(BaseModel):
         (no v<n> segment for protocol 0)
         """
         base = self.get_review_dir(datasite_email) / ds_email
+        segment = protocol_dir_name(protocol_version)
+        return base / segment / job_name if segment else base / job_name
+
+    def get_staging_job_dir(
+        self,
+        datasite_email: str,
+        ds_email: str,
+        job_name: str,
+        protocol_version: str = JOB_PROTOCOL_VERSION,
+    ) -> Path:
+        """
+        Get the staging path for a specific job.
+
+        Path: SyftBox/<datasite_email>/app_data/job/staging/<ds_email>/v<n>/<job_name>/
+        (no v<n> segment for protocol 0)
+        """
+        base = self.get_staging_dir(datasite_email) / ds_email
         segment = protocol_dir_name(protocol_version)
         return base / segment / job_name if segment else base / job_name
 

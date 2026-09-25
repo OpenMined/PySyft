@@ -11,6 +11,7 @@ from syft_perms.syftperm_context import SyftPermContext
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from .config import SyftJobConfig
+from .disclosures import normalize_disclosures
 from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_storage import JobRef, JobStorage
@@ -380,6 +381,7 @@ python {entrypoint_path}
         job_name: Optional[str] = "",
         dependencies: Optional[List[str]] = None,
         entrypoint: Optional[str] = None,
+        request_disclosures: Optional[List[str]] = None,
     ) -> Path:
         """
         Submit a Python job for a user (supports both files and folders).
@@ -390,6 +392,8 @@ python {entrypoint_path}
             job_name: Name of the job (directory name). If empty, auto-generated.
             dependencies: List of Python packages to install
             entrypoint: Entry point file name (auto-detected if not provided)
+            request_disclosures: The items in ``DisclosureItem`` to ask the
+                data owner for. The data owner releases none, some, or all.
 
         Returns:
             Path to the created job directory in inbox/
@@ -478,6 +482,11 @@ python {entrypoint_path}
             files=files,
             is_folder_submission=is_folder_submission,
             code_path=str(code_path_resolved),
+            headers={
+                "requested_disclosures": sorted(
+                    normalize_disclosures(request_disclosures)
+                ),
+            },
         )
         self.manager.write_submission(ref, config)
 

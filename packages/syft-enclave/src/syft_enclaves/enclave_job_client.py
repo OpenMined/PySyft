@@ -52,6 +52,7 @@ class EnclaveJobClient(BaseJobClient):
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
         share_results_with_do: bool = False,
+        request_disclosures: Optional[list[str]] = None,
         **kwargs,
     ) -> Path:
         """Submit a Python job with enclave metadata.
@@ -60,13 +61,18 @@ class EnclaveJobClient(BaseJobClient):
         to set job_type="enclave" and store the datasets mapping.
         """
         job_dir = self._job_client.submit_python_job(
-            user, code_path, job_name, **kwargs
+            user,
+            code_path,
+            job_name,
+            request_disclosures=request_disclosures,
+            **kwargs,
         )
 
         config = JobSubmissionMetadata.load(job_dir / "config.yaml")
         config.job_type = "enclave"
         config.datasets = datasets
         config.headers = {
+            **config.headers,
             "job_type": "enclave",
             "share_results_with_do": share_results_with_do,
         }

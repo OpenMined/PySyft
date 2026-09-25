@@ -121,6 +121,9 @@ class JobStorage:
     def review_dir(self, ref: JobRef) -> Path:
         return self._codec_for(ref.protocol_version).review_dir(ref)
 
+    def staging_dir(self, ref: JobRef) -> Path:
+        return self._codec_for(ref.protocol_version).staging_dir(ref)
+
     def new_submission_ref(self, do_email: str, job_name: str) -> JobRef:
         """A ref for submitting a new job to ``do_email``."""
         return JobRef(

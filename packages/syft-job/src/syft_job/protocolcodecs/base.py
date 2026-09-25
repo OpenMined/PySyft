@@ -33,6 +33,9 @@ class ProtocolCodec(ABC):
     def review_dir(self, ref: JobRef) -> Path: ...
 
     @abstractmethod
+    def staging_dir(self, ref: JobRef) -> Path: ...
+
+    @abstractmethod
     def submission_metadata_path(self, ref: JobRef) -> Path: ...
 
     @abstractmethod
