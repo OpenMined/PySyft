@@ -49,9 +49,9 @@ class JobApprovalHandler:
         return SyftBgConfig.load(self._config_path).approve.auto_approvals
 
     @property
-    def share_logs_with_submitter(self) -> bool:
+    def default_disclosures(self) -> list[str]:
         """Re-read from disk on every access, like ``config``."""
-        return SyftBgConfig.load(self._config_path).approve.share_logs_with_submitter
+        return SyftBgConfig.load(self._config_path).approve.default_disclosures
 
     def _get_approved_peers(self) -> list[str]:
         """Get list of approved peer emails."""
@@ -110,7 +110,9 @@ class JobApprovalHandler:
                 continue
 
             try:
-                job.approve(approval_method="auto")
+                job.approve(
+                    approval_method="auto", disclosures=self.default_disclosures
+                )
                 approved_jobs.append(job)
 
                 if self.state:
@@ -130,7 +132,6 @@ class JobApprovalHandler:
             self.client.process_approved_jobs(
                 stream_output=self.verbose,
                 share_outputs_with_submitter=True,
-                share_logs_with_submitter=self.share_logs_with_submitter,
             )
 
         return approved_jobs

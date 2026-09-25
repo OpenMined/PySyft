@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from html import escape
 from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
@@ -456,6 +457,15 @@ def job_info_repr_html(job: "JobInfo") -> str:
                     </div>
                 </div>"""
 
+    disclosure_details = "".join(
+        f"""
+                    <div class="syftjob-single-detail">
+                        <div class="syftjob-single-detail-label">{escape(label)}:</div>
+                        <div class="syftjob-single-detail-value">{escape(value)}</div>
+                    </div>"""
+        for label, value in job.disclosure_rows()
+    )
+
     return f"""
         <style>
             .syftjob-single {{
@@ -720,7 +730,7 @@ def job_info_repr_html(job: "JobInfo") -> str:
                     <div class="syftjob-single-detail">
                         <div class="syftjob-single-detail-label">Review reason:</div>
                         <div class="syftjob-single-detail-value">{job.review_reason or ""}</div>
-                    </div>
+                    </div>{disclosure_details}
                 </div>
                 <div class="syftjob-single-section">
                     <h4>📜 Script</h4>

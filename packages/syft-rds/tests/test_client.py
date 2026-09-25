@@ -138,3 +138,36 @@ def test_process_approved_jobs_holds_logs_back_by_default():
 
     kwargs = do.job_runner.process_approved_jobs.call_args.kwargs
     assert kwargs["share_logs_with_submitter"] is False
+
+
+def test_submit_python_job_passes_requested_disclosures(tmp_path):
+    from unittest.mock import MagicMock, patch
+
+    ds, do = SyftRDSClient.pair_with_mock_drive_service_connection()
+    ds.job_client = MagicMock()
+    code = tmp_path / "main.py"
+    code.write_text("print(1)\n")
+
+    with patch.object(type(ds.sync_engine), "push_job_files"):
+        ds.submit_python_job(
+            do.email, str(code), force_submission=True, request_disclosures=["logs"]
+        )
+
+    kwargs = ds.job_client.submit_python_job.call_args.kwargs
+    assert kwargs["request_disclosures"] == ["logs"]
+
+
+def test_submit_python_job_keeps_positional_order(tmp_path):
+    """The sixth positional argument is still force_submission."""
+    from unittest.mock import MagicMock, patch
+
+    ds, do = SyftRDSClient.pair_with_mock_drive_service_connection()
+    ds.job_client = MagicMock()
+    code = tmp_path / "main.py"
+    code.write_text("print(1)\n")
+
+    with patch.object(type(ds.sync_engine), "push_job_files"):
+        ds.submit_python_job(do.email, str(code), "", None, None, True)
+
+    kwargs = ds.job_client.submit_python_job.call_args.kwargs
+    assert kwargs["request_disclosures"] is None

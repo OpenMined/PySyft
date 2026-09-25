@@ -1,5 +1,6 @@
 """Per-item disclosure: the enclave releases an item only under full agreement."""
 
+import inspect
 import json
 import os
 import random
@@ -7,9 +8,11 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import yaml
 
 os.environ["PRE_SYNC"] = "false"
 
+from syft_job.job import JobInfo  # noqa: E402
 from syft_job.models import JobState, JobStatus  # noqa: E402
 from syft_job.traceback_capture import FRAMES_FILENAME  # noqa: E402
 
@@ -136,13 +139,30 @@ OK_CODE = "import os, json\nos.makedirs('outputs', exist_ok=True)\nopen('outputs
 CRASH_CODE = "x = 1\ny = 2\nraise ValueError('account 88213 holds 4120550')\n"
 
 
-def run_to_completion(enclave, do1, do2, ds, grants):
+# The DO calls the job, or the client method that wraps it.
+ENTRY_POINTS = pytest.mark.parametrize("via_job", [False, True], ids=["client", "job"])
+
+
+def approve(do, grants, via_job=False):
+    if via_job:
+        do.jobs["j"].approve(disclosures=grants)
+    else:
+        do.approve_job(do.jobs["j"], grants)
+
+
+def update(do, grants, via_job=False):
+    if via_job:
+        return do.jobs["j"].update_disclosures(grants)
+    return do.update_disclosures(do.jobs["j"], grants)
+
+
+def run_to_completion(enclave, do1, do2, ds, grants, via_job=False):
     enclave.sync()
     enclave.receive_jobs()
     do1.sync()
     do2.sync()
-    do1.approve_job(do1.jobs["j"], grants)
-    do2.approve_job(do2.jobs["j"], grants)
+    approve(do1, grants, via_job)
+    approve(do2, grants, via_job)
     enclave.sync()
     enclave.run_jobs()
     enclave.distribute_results()
@@ -159,10 +179,11 @@ def test_submitter_gets_no_logs_without_grant():
     assert not (review / "stderr.txt").exists()
 
 
-def test_full_grant_sends_logs_to_submitter():
+@ENTRY_POINTS
+def test_full_grant_sends_logs_to_submitter(via_job):
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
-    run_to_completion(enclave, do1, do2, ds, [LOGS])
+    run_to_completion(enclave, do1, do2, ds, [LOGS], via_job)
 
     assert enclave.granted_disclosures(enclave.jobs["j"]) == {LOGS}
     assert (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
@@ -231,7 +252,8 @@ def test_one_owner_withholding_blocks_frames():
     assert not (Path(ds.jobs["j"].job_review_path) / FRAMES_FILENAME).exists()
 
 
-def test_later_grant_releases_withheld_artifact():
+@ENTRY_POINTS
+def test_later_grant_releases_withheld_artifact(via_job):
     """A party can release an item after the run, without a new submission."""
     enclave, do1, do2, ds = build_quad()
     submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
@@ -240,7 +262,8 @@ def test_later_grant_releases_withheld_artifact():
 
     # Both owners amend their approval, then the enclave applies the grants.
     for do in (do1, do2):
-        assert do.update_disclosures(do.jobs["j"], [LOGS]) == {LOGS: True}
+        assert update(do, [LOGS], via_job) == {LOGS: True}
+        assert do.jobs["j"].disclosures == {LOGS: True}
     enclave.sync()
     enclave.run_jobs()
     enclave.distribute_results()
@@ -352,3 +375,117 @@ def test_approve_job_rejects_non_enclave_job():
 
     with pytest.raises(TypeError, match="not an enclave job"):
         do1.approve_job(plain, [LOGS])
+
+
+# -- the job-level calls, same as on a datasite ---------------------------------
+
+
+def test_approve_signature_matches_datasite_job():
+    """The DO approves both kinds of job with the same call."""
+    for name in ("approve", "update_disclosures"):
+        base = inspect.signature(getattr(JobInfo, name))
+        enclave = inspect.signature(getattr(EnclaveJobInfo, name))
+        assert list(base.parameters) == list(enclave.parameters)
+
+
+def test_data_owner_cannot_read_combined_grant():
+    """A data owner holds only its own approval file."""
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
+    enclave.sync()
+    enclave.receive_jobs()
+    do1.sync()
+    do1.jobs["j"].approve(disclosures=[LOGS])
+
+    job = do1.jobs["j"]
+    assert job.disclosures == {LOGS: True}
+    with pytest.raises(LookupError, match="Only the enclave"):
+        job.granted_disclosures
+
+
+# -- warning and display --------------------------------------------------------
+
+
+def test_owner_logs_grant_warns():
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
+    enclave.sync()
+    enclave.receive_jobs()
+    do1.sync()
+
+    with pytest.warns(UserWarning, match="stdout and stderr"):
+        do1.jobs["j"].approve(disclosures=[LOGS])
+
+
+def test_display_on_enclave_shows_every_party():
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, [LOGS, FRAMES])
+    enclave.sync()
+    enclave.receive_jobs()
+    do1.sync()
+    do1.jobs["j"].approve(disclosures=[FRAMES])
+    enclave.sync()
+
+    rows = dict(enclave.jobs["j"].disclosure_rows())
+    assert rows["Requested"] == "logs, traceback_frames"
+    assert rows[f"Granted by {do1.email}"] == "traceback_frames"
+    assert rows[f"Granted by {do2.email}"] == "(pending)"
+    assert rows["To submitter"] == "none"
+
+
+def test_display_on_data_owner_shows_own_grant():
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, [FRAMES])
+    enclave.sync()
+    enclave.receive_jobs()
+    do1.sync()
+    do1.jobs["j"].approve(disclosures=[FRAMES])
+
+    job = do1.jobs["j"]
+    assert job.disclosure_rows() == [
+        ("Requested", "traceback_frames"),
+        ("Your grant", "traceback_frames"),
+        ("To submitter", "needs the grant of every party"),
+    ]
+    assert "Your grant:" in job._repr_html_()
+
+
+# -- the request is DS-writable after the approval ------------------------------
+
+
+def test_request_edit_after_approval_adds_nothing():
+    """A wider grant than the request must not release the extra items later."""
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, [FRAMES])
+    enclave.sync()
+    enclave.receive_jobs()
+    do1.sync()
+    do2.sync()
+    for do in (do1, do2):
+        do.jobs["j"].approve(disclosures=[LOGS, FRAMES])
+        assert do.jobs["j"].disclosures == {FRAMES: True}
+    enclave.sync()
+
+    # The DS widens its request on the enclave's copy after the approval.
+    path = Path(enclave._rds.job_client.jobs["j"].job_submission_path) / "config.yaml"
+    data = yaml.safe_load(path.read_text())
+    data["headers"]["requested_disclosures"] = [LOGS, FRAMES]
+    path.write_text(yaml.safe_dump(data))
+
+    enclave.run_jobs()
+    enclave.distribute_results()
+    ds.sync()
+
+    assert enclave.jobs["j"].granted_disclosures == {FRAMES}
+    assert not (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
+
+
+def test_enclave_approve_refuses_items_as_reason():
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
+    enclave.sync()
+    enclave.receive_jobs()
+    do1.sync()
+
+    with pytest.raises(TypeError, match="disclosures="):
+        do1.jobs["j"].approve([LOGS])

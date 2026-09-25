@@ -74,10 +74,10 @@ class EmailApproveHandler:
         state: JsonStateManager,
         notify_state: JsonStateManager,
         do_email: str,
-        share_logs_with_submitter: bool = False,
+        default_disclosures: Optional[list[str]] = None,
     ):
         self.job_client = job_client
-        self.share_logs_with_submitter = share_logs_with_submitter
+        self.default_disclosures = default_disclosures or []
         self.job_runner = job_runner
         self.state = state
         self.notify_state = notify_state
@@ -122,13 +122,12 @@ class EmailApproveHandler:
         self, job, job_name: str, state_key: str, approval_method: str = "manual"
     ) -> None:
         """Approve a job, execute it, and share results."""
-        job.approve(approval_method=approval_method)
+        job.approve(
+            approval_method=approval_method, disclosures=self.default_disclosures
+        )
         self.state.mark_notified(state_key, "processed")
 
-        self.job_runner.process_approved_jobs(
-            share_outputs_with_submitter=True,
-            share_logs_with_submitter=self.share_logs_with_submitter,
-        )
+        self.job_runner.process_approved_jobs(share_outputs_with_submitter=True)
         print(f"[EmailApproveHandler] Approved job: {job_name}")
 
     def _auto_approve_job(self, job, job_name: str, state_key: str) -> None:

@@ -2,13 +2,13 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 from syft_datasets.dataset_manager import SyftDatasetManager
+from syft_job.disclosures import DisclosuresArg, gated_names
 from syft_job.job import JobInfo, JobsList
 from syft_job.job_storage import JobRef
 from syft_job.models import JobState, JobStatus
-from syft_job.traceback_capture import FRAMES_FILENAME
 from syft_perms.syftperm_context import SyftPermContext
 from syft_rds import SyftRDSClient, SyftRDSClientConfig
 
@@ -21,10 +21,8 @@ from syft_enclaves.attestation import (
 )
 from syft_enclaves.enclave_job_client import EnclaveJobClient
 from syft_enclaves.enclave_job_info import (
-    DisclosureItem,
     EnclaveJobInfo,
     PartyApprovalStatus,
-    approved_disclosures,
     enclave_approval_file_name,
 )
 from syft_enclaves.immutability import (
@@ -39,26 +37,8 @@ from syft_enclaves.utils import (
     write_versions,
 )
 
-# The artifacts that move only under the agreement of every party. Everything
-# else in the review folder stays readable by the submitter.
 FORWARDED_RECORD = "forwarded_artifacts.json"
 RESULTS_SHARED_MARKER = "results_shared"
-
-GATED_ARTIFACTS = {
-    DisclosureItem.LOGS.value: ("stdout.txt", "stderr.txt"),
-    DisclosureItem.TRACEBACK_FRAMES.value: (FRAMES_FILENAME,),
-    DisclosureItem.RETURN_CODE.value: ("returncode.txt",),
-}
-
-
-def gated_names(granted: Iterable[str]) -> list[str]:
-    """The filenames that the granted disclosure items cover."""
-    return [
-        name
-        for item, names in GATED_ARTIFACTS.items()
-        if item in granted
-        for name in names
-    ]
 
 
 def pre_sync_enabled() -> bool:
@@ -177,7 +157,7 @@ class SyftEnclaveClient:
     def jobs(self) -> JobsList:
         jobs_list = self._rds.jobs
         wrapped = [
-            EnclaveJobInfo.from_job_info(j)
+            EnclaveJobInfo.from_job_info(j, on_approval_change=self._push_approval_file)
             if j.job_headers.get("job_type") == "enclave"
             else j
             for j in jobs_list
@@ -243,16 +223,9 @@ class SyftEnclaveClient:
         )
         self._apply_disclosure_policy()
 
-    def _requested_disclosures(self, job: JobInfo) -> list[str]:
-        """The items the submitter asked for, as recorded at submission."""
-        requested = job.job_headers.get("requested_disclosures")
-        return list(requested) if isinstance(requested, list) else []
-
     def granted_disclosures(self, job: JobInfo) -> set[str]:
         """The items that every party released for this job."""
-        return approved_disclosures(
-            job.job_review_path, self._requested_disclosures(job)
-        )
+        return EnclaveJobInfo.from_job_info(job).granted_disclosures
 
     def _local_jobs(self) -> JobsList:
         """The job list read from disk, with no sync.
@@ -375,52 +348,42 @@ class SyftEnclaveClient:
         )
         syncer.process_syftbox_events_queue()
 
-    def approve_job(
-        self, job: JobInfo, disclosures: Optional[Iterable[str]] = None
-    ) -> None:
-        """Approve an enclave job and push the approval state file to the enclave.
+    def _push_approval_file(self, approval_file: Path) -> None:
+        """Push a changed approval file to the enclave."""
+        relative_path = approval_file.relative_to(self._rds.syftbox_folder)
+        self._rds.sync_engine.datasite_watcher_syncer.on_file_change(
+            relative_path, process_now=True
+        )
 
-        ``disclosures`` names the items in ``DisclosureItem`` that this data
-        owner releases. The enclave releases an item only when every data owner
-        released it. Omit the argument to release nothing.
-        """
+    def _as_enclave_job(self, job: JobInfo) -> EnclaveJobInfo:
         if not isinstance(job, EnclaveJobInfo):
             raise TypeError(
                 f"Job '{job.name}' is not an enclave job, so it carries no "
                 f"disclosures. Approve it through the datasite client."
             )
-        if pre_sync_enabled():
-            self._rds.sync()
-
-        job.approve(disclosures=disclosures)
-        file_name = enclave_approval_file_name(self.email)
-        approval_file = job.job_review_path / file_name
-        if not approval_file.exists():
-            print(
-                "🟠 Approval file does not exist yet. Kindly wait until enclave sends it."
-            )
-        relative_path = approval_file.relative_to(self._rds.syftbox_folder)
-        self._rds.sync_engine.datasite_watcher_syncer.on_file_change(
-            relative_path, process_now=True
+        return EnclaveJobInfo.from_job_info(
+            job, on_approval_change=self._push_approval_file
         )
 
-    def update_disclosures(
-        self, job: JobInfo, disclosures: Optional[Iterable[str]]
-    ) -> dict:
+    def approve_job(self, job: JobInfo, disclosures: DisclosuresArg = None) -> None:
+        """Approve an enclave job and push the approval state file to the enclave.
+
+        Same as ``job.approve(disclosures=...)`` on a job from ``self.jobs``.
+        """
+        job = self._as_enclave_job(job)
+        if pre_sync_enabled():
+            self._rds.sync()
+        job.approve(disclosures=disclosures)
+
+    def update_disclosures(self, job: JobInfo, disclosures: DisclosuresArg) -> dict:
         """Change the items this data owner releases, and push the new set.
 
-        The enclave applies the new set on its next cycle.
+        Same as ``job.update_disclosures(...)`` on a job from ``self.jobs``.
         """
+        job = self._as_enclave_job(job)
         if pre_sync_enabled():
             self._rds.sync()
-
-        result = job.update_disclosures(disclosures)
-        approval_file = job.job_review_path / enclave_approval_file_name(self.email)
-        relative_path = approval_file.relative_to(self._rds.syftbox_folder)
-        self._rds.sync_engine.datasite_watcher_syncer.on_file_change(
-            relative_path, process_now=True
-        )
-        return result
+        return job.update_disclosures(disclosures)
 
     def receive_jobs(self):
         """Receive and distribute enclave jobs to relevant DOs.

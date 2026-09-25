@@ -555,9 +555,11 @@ class SyftJobRunner:
             timeout: Timeout in seconds per job. Defaults to 300 (5 minutes).
             skip_job_names: Optional list of job names to skip.
             share_outputs_with_submitter: If True, grant read access on outputs to submitter.
-            share_logs_with_submitter: If True, release the logs to the submitter.
-                False (default) keeps them in staging, where only the datasite
-                owner reads them.
+            share_logs_with_submitter: If True, release the logs and the exit
+                code to the submitter, whatever the job requested. False
+                (default) releases only the items that the submitter requested
+                and the approval granted. The rest stays in staging, where only
+                the datasite owner reads it.
         """
         approved_jobs = self._get_jobs_in_approved()
 
@@ -600,16 +602,12 @@ class SyftJobRunner:
     def _share_job_results(
         self, ref: JobRef, share_outputs: bool, share_logs: bool
     ) -> None:
-        if not share_outputs and not share_logs:
-            return
         job_info = self._get_job_info(ref)
+        job_info.release_disclosures()
         if share_outputs:
             job_info.share_outputs([ref.ds_email])
         if share_logs:
-            # The move into the review directory is what discloses the logs.
-            # The grant covers a reader that holds no folder grant.
             job_info.release_logs()
-            job_info.share_logs([ref.ds_email])
 
     def run(self) -> None:
         """Start monitoring the inbox and approved folders for jobs."""

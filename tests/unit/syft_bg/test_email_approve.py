@@ -145,11 +145,11 @@ class TestEmailApproveHandler:
         return handler, job_client, job_runner, state, notify_state
 
     @pytest.mark.parametrize(
-        "kwargs, share_logs",
-        [({}, False), ({"share_logs_with_submitter": True}, True)],
+        "kwargs, disclosures",
+        [({}, []), ({"default_disclosures": ["logs"]}, ["logs"])],
         ids=["default", "configured"],
     )
-    def test_approve_job(self, tmp_path, kwargs, share_logs):
+    def test_approve_job(self, tmp_path, kwargs, disclosures):
         handler, job_client, job_runner, state, notify_state = self._make_handler(
             tmp_path, **kwargs
         )
@@ -163,10 +163,11 @@ class TestEmailApproveHandler:
 
         handler.handle_reply(thread_id="thread123", reply_text="approve")
 
-        mock_job.approve.assert_called_once()
+        mock_job.approve.assert_called_once_with(
+            approval_method="manual", disclosures=disclosures
+        )
         job_runner.process_approved_jobs.assert_called_once_with(
-            share_outputs_with_submitter=True,
-            share_logs_with_submitter=share_logs,
+            share_outputs_with_submitter=True
         )
 
     def test_deny_job(self, tmp_path):
@@ -275,3 +276,16 @@ class TestStateReverseLookup:
         assert state.get_job_name_by_thread_id("thread_1") == "job_a"
         assert state.get_job_name_by_thread_id("thread_2") == "job_b"
         assert state.get_job_name_by_thread_id("thread_unknown") is None
+
+
+def test_email_config_loads_default_disclosures(tmp_path):
+    from syft_bg.email_approve.config import EmailApproveConfig
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        "do_email: do@example.com\n"
+        "email_approve:\n"
+        "  default_disclosures: [logs, traceback_frames]\n"
+    )
+    config = EmailApproveConfig.load(config_path)
+    assert config.default_disclosures == ["logs", "traceback_frames"]

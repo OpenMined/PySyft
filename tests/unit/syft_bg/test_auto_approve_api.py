@@ -322,7 +322,7 @@ class TestHandlerReloadsConfig:
         assert second.match is False
 
 
-class TestAutoApproveLogSharing:
+class TestAutoApproveDisclosures:
     """The DS reads a log only after the DO releases it."""
 
     def _run(self, config_path):
@@ -340,15 +340,18 @@ class TestAutoApproveLogSharing:
             return_value=MagicMock(match=True),
         ):
             handler.check_and_approve()
-        return client.process_approved_jobs.call_args.kwargs
-
-    def test_logs_held_back_by_default(self, temp_dir):
-        config_path = _seed_config(temp_dir, {})
-        assert self._run(config_path)["share_logs_with_submitter"] is False
-
-    def test_config_opts_in_to_sharing_logs(self, temp_dir):
-        config_path = temp_dir / "config.yaml"
-        SyftBgConfig(approve=AutoApproveConfig(share_logs_with_submitter=True)).save(
-            config_path
+        assert "share_logs_with_submitter" not in (
+            client.process_approved_jobs.call_args.kwargs
         )
-        assert self._run(config_path)["share_logs_with_submitter"] is True
+        return job.approve.call_args.kwargs
+
+    def test_approval_releases_nothing_by_default(self, temp_dir):
+        config_path = _seed_config(temp_dir, {})
+        assert self._run(config_path)["disclosures"] == []
+
+    def test_config_sets_released_items(self, temp_dir):
+        config_path = temp_dir / "config.yaml"
+        SyftBgConfig(
+            approve=AutoApproveConfig(default_disclosures=["logs", "return_code"])
+        ).save(config_path)
+        assert self._run(config_path)["disclosures"] == ["logs", "return_code"]

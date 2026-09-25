@@ -25,8 +25,9 @@ class EmailApproveConfig(BaseModel):
     notify_state_path: Path = Field(
         default_factory=lambda: get_default_paths().notify_state
     )
-    # Release stdout, stderr and the exit code to the submitter after a run.
-    share_logs_with_submitter: bool = False
+    # The items in ``DisclosureItem`` that an approval releases. The submitter
+    # gets only the items it requested.
+    default_disclosures: list[str] = Field(default_factory=list)
 
     @classmethod
     def load(cls, config_path: Optional[Path] = None) -> "EmailApproveConfig":
@@ -47,6 +48,7 @@ class EmailApproveConfig(BaseModel):
         gcp_project_id = email_approve_cfg.get("gcp_project_id")
         pubsub_topic = email_approve_cfg.get("pubsub_topic")
         pubsub_subscription = email_approve_cfg.get("pubsub_subscription")
+        default_disclosures = email_approve_cfg.get("default_disclosures") or []
 
         return cls(
             do_email=do_email,
@@ -54,6 +56,7 @@ class EmailApproveConfig(BaseModel):
             gcp_project_id=gcp_project_id,
             pubsub_topic=pubsub_topic,
             pubsub_subscription=pubsub_subscription,
+            default_disclosures=default_disclosures,
         )
 
     def save_pubsub_config(self, config_path: Optional[Path] = None) -> None:

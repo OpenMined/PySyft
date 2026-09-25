@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -7,6 +8,18 @@ from typing import TYPE_CHECKING, Iterable, List, Optional
 
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
+from .disclosures import (
+    DISCLOSURE_ITEMS,
+    DISCLOSURES_FILENAME,
+    DisclosureItem,
+    DisclosuresArg,
+    check_approval_reason,
+    format_items,
+    gated_names,
+    normalize_disclosures,
+    restrict_to_request,
+    warn_on_logs_release,
+)
 from .job_repr import (
     StderrViewer,
     job_info_repr_html,
@@ -16,10 +29,11 @@ from .job_repr import (
 from .job_stdout import StdoutViewer
 from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
-from .traceback_capture import FRAMES_FILENAME
 
-# The artifacts that wait in staging until a party releases them.
-STAGED_LOG_FILES = ("stdout.txt", "stderr.txt", "returncode.txt")
+# The files that ``share_logs_with_submitter`` releases.
+STAGED_LOG_FILES = tuple(
+    gated_names([DisclosureItem.LOGS.value, DisclosureItem.RETURN_CODE.value])
+)
 
 if TYPE_CHECKING:
     from .client import JobClient
@@ -75,12 +89,22 @@ class JobInfo:
         return self.job_staging_path / filename
 
     def release_logs(self) -> list[str]:
-        """Move the staged logs into the review directory, and return the names.
+        """Release the logs and the exit code to the submitter.
 
-        The submitter reads the review directory, so this move discloses the
-        logs. A copy that already reached another party does not come back.
+        Returns the names moved. A copy that already reached another party does
+        not come back.
         """
-        return self.release_artifacts(STAGED_LOG_FILES)
+        return self._release_to_submitter(STAGED_LOG_FILES)
+
+    def _release_to_submitter(self, filenames: Iterable[str]) -> list[str]:
+        """Move the named staged files into review/, and grant the submitter read.
+
+        The move discloses a file to a reader with the review folder grant. The
+        file grant covers a reader that holds no folder grant.
+        """
+        moved = self.release_artifacts(filenames)
+        self._grant_read(moved, [self.submitted_by])
+        return moved
 
     def release_artifacts(self, filenames: Iterable[str]) -> list[str]:
         """Move the named staged artifacts into the review directory.
@@ -98,6 +122,80 @@ class JobInfo:
             shutil.move(str(staged), str(target))
             moved.append(filename)
         return moved
+
+    # ──────────────────────────────────────────────
+    # Disclosures
+    # ──────────────────────────────────────────────
+
+    @property
+    def requested_disclosures(self) -> list[str]:
+        """The items the submitter asked for, as recorded at submission."""
+        requested = self.job_headers.get("requested_disclosures")
+        if not isinstance(requested, list):
+            return []
+        return sorted(normalize_disclosures(requested))
+
+    @property
+    def disclosures(self) -> dict[str, bool]:
+        """The items the data owner released, as recorded at approval."""
+        try:
+            text = (self.job_review_path / DISCLOSURES_FILENAME).read_text()
+        except FileNotFoundError:
+            return {}
+        return normalize_disclosures(json.loads(text))
+
+    @property
+    def granted_disclosures(self) -> set[str]:
+        """The items that go to the submitter: requested and released."""
+        return set(self.disclosures) & set(self.requested_disclosures)
+
+    def _write_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
+        granted = restrict_to_request(disclosures, self.requested_disclosures)
+        # Up to the public caller: approve() or update_disclosures().
+        warn_on_logs_release(granted, self.requested_disclosures, stacklevel=4)
+        path = self.job_review_path / DISCLOSURES_FILENAME
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(granted))
+        return granted
+
+    def disclosure_rows(self) -> list[tuple[str, str]]:
+        """The disclosure state as (label, value) rows, for display."""
+        return [
+            ("Requested", format_items(self.requested_disclosures)),
+            ("Granted", format_items(self.disclosures)),
+            ("To submitter", format_items(self.granted_disclosures)),
+        ]
+
+    def update_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
+        """Replace the items the data owner releases, and return the new map.
+
+        Only the items that the submitter requested are stored. A job that
+        finished releases the newly granted items at once.
+
+        Raises:
+            ValueError: If the job was not approved
+            PermissionError: If the current user is not the datasite owner
+        """
+        if self.datasite_owner_email != self.current_user_email:
+            raise PermissionError(
+                f"Only the admin user ({self.datasite_owner_email}) can change "
+                f"the disclosures of a job."
+            )
+        self._state = self._client.manager.read_state(self._ref)
+        if self._state.status in (
+            JobStatus.RECEIVED,
+            JobStatus.PENDING,
+            JobStatus.REJECTED,
+        ):
+            raise ValueError(f"Approve the job first (current: {self.status}).")
+        granted = self._write_disclosures(disclosures)
+        if self._state.status in (JobStatus.DONE, JobStatus.FAILED):
+            self.release_disclosures()
+        return granted
+
+    def release_disclosures(self) -> list[str]:
+        """Release the granted items to the submitter, and return the names moved."""
+        return self._release_to_submitter(gated_names(self.granted_disclosures))
 
     # ──────────────────────────────────────────────
     # Properties from config (inbox/)
@@ -238,7 +336,10 @@ class JobInfo:
         return self._state.review_reason
 
     def approve(
-        self, reason: Optional[str] = None, approval_method: str = "manual"
+        self,
+        reason: Optional[str] = None,
+        approval_method: str = "manual",
+        disclosures: DisclosuresArg = None,
     ) -> None:
         """
         Approve a job by updating state.yaml in review/.
@@ -247,11 +348,17 @@ class JobInfo:
         Args:
             reason: Optional reason for approval (recorded as review_reason).
             approval_method: How the job was approved ("manual" or "auto")
+            disclosures: The items in ``DisclosureItem`` that the data owner
+                releases. Only the items that the submitter requested are
+                stored, so a later edit of the request cannot add items.
+                Omit the argument to release nothing.
 
         Raises:
             ValueError: If job is not in pending status
             PermissionError: If the current user is not authorized to approve
+            TypeError: If reason is not a string
         """
+        check_approval_reason(reason)
         if self._state.status != JobStatus.PENDING:
             raise ValueError(
                 f"Job '{self.name}' is not in pending status (current: {self.status})"
@@ -263,6 +370,8 @@ class JobInfo:
                 f"Current job is in {self.datasite_owner_email}'s folder."
             )
 
+        # The grant goes first, so the runner never sees an approval without it.
+        self._write_disclosures(disclosures)
         self._state.status = JobStatus.APPROVED
         self._state.approved_by = self.current_user_email
         self._state.approved_at = datetime.now(timezone.utc)
@@ -372,7 +481,7 @@ class JobInfo:
 
         # Clean up the artifacts of the previous run. A staged copy must go
         # too, or a later release sends a log that belongs to the old run.
-        for filename in (*STAGED_LOG_FILES, FRAMES_FILENAME):
+        for filename in gated_names(DISCLOSURE_ITEMS):
             for f in (
                 self.job_review_path / filename,
                 self.job_staging_path / filename,
@@ -426,10 +535,13 @@ class JobInfo:
 
     def share_logs(self, users: list[str]) -> None:
         """Grant read access to log files (stdout, stderr, returncode) for given users."""
+        self._grant_read(STAGED_LOG_FILES, users)
+
+    def _grant_read(self, filenames: Iterable[str], users: list[str]) -> None:
+        """Grant read access to the named review/ files for the given users."""
         ctx = self._get_perm_context()
-        for filename in STAGED_LOG_FILES:
-            file_rel = self._relative_review_path(filename)
-            f = ctx.open(file_rel)
+        for filename in filenames:
+            f = ctx.open(self._relative_review_path(filename))
             for user in users:
                 f.grant_read_access(user)
 
@@ -454,7 +566,8 @@ class JobInfo:
         base = f"{emoji} {self.name} ({self.status}{approval_info}) -> {self.datasite_owner_email}"
         if self.review_reason:
             base += f" | Review reason: {self.review_reason}"
-        return base
+        rows = "; ".join(f"{label}: {value}" for label, value in self.disclosure_rows())
+        return f"{base} | Disclosures: {rows}"
 
     def __repr__(self) -> str:
         parts = [

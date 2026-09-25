@@ -2,53 +2,22 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from collections.abc import Mapping
-from enum import Enum
 from pathlib import Path
-from typing import Iterable, Optional, Union
+from typing import Callable, Iterable, Optional
 
 from pydantic import BaseModel, Field
+from syft_job.disclosures import (  # noqa: F401 (re-exported)
+    DISCLOSURE_ITEMS,
+    DisclosureItem,
+    DisclosuresArg,
+    check_approval_reason,
+    format_items,
+    normalize_disclosures,
+    restrict_to_request,
+    warn_on_logs_release,
+)
 from syft_job.job import JobInfo
 from syft_job.models import JobStatus
-
-
-class DisclosureItem(str, Enum):
-    """A class of job data that a party can release to the other parties.
-
-    - ``TRACEBACK_FRAMES``: the file and the line of each frame, and the
-      exception type. Never the exception message.
-    - ``LOGS``: stdout and stderr, as the job wrote them.
-    - ``RETURN_CODE``: the exact exit code of the job.
-    """
-
-    TRACEBACK_FRAMES = "traceback_frames"
-    LOGS = "logs"
-    RETURN_CODE = "return_code"
-
-
-DISCLOSURE_ITEMS = frozenset(item.value for item in DisclosureItem)
-
-
-def normalize_disclosures(
-    items: Union[str, DisclosureItem, Iterable[str], Mapping[str, bool], None],
-) -> dict[str, bool]:
-    """Return the known items in ``items`` as a map. Unknown names are dropped.
-
-    A single name is accepted on its own, because iterating a string would
-    produce its characters and grant nothing.
-
-    A map is accepted in the form that this function returns, therefore a
-    caller can read the current grant, set an item to False, and send it back
-    to drop that item.
-    """
-    if not items:
-        return {}
-    if isinstance(items, (str, DisclosureItem)):
-        items = [items]
-    elif isinstance(items, Mapping):
-        items = [name for name, allowed in items.items() if allowed]
-    names = {str(getattr(i, "value", i)) for i in items}
-    return {name: True for name in sorted(names & DISCLOSURE_ITEMS)}
 
 
 class PartyApprovalStatus(BaseModel):
@@ -91,11 +60,68 @@ def load_enclave_approval_files(review_dir: Path) -> list[PartyApprovalStatus]:
 class EnclaveJobInfo(JobInfo):
     """Enclave-specific JobInfo with multi-party approval logic."""
 
+    # Called with the path of the approval file after each change, so the
+    # enclave client can push the file. None pushes nothing.
+    _on_approval_change: Optional[Callable[[Path], None]] = None
+
     @classmethod
-    def from_job_info(cls, job: JobInfo) -> EnclaveJobInfo:
+    def from_job_info(
+        cls,
+        job: JobInfo,
+        on_approval_change: Optional[Callable[[Path], None]] = None,
+    ) -> EnclaveJobInfo:
         instance = cls.__new__(cls)
         instance.__dict__.update(job.__dict__)
+        if on_approval_change is not None:
+            instance._on_approval_change = on_approval_change
         return instance
+
+    @property
+    def _approval_file(self) -> Path:
+        return self.job_review_path / enclave_approval_file_name(
+            self.current_user_email
+        )
+
+    def _load_own_approval(self) -> PartyApprovalStatus:
+        if not self._approval_file.exists():
+            raise PermissionError(
+                f"No approval file found for {self.current_user_email}. "
+                f"You may not be a designated party for this job."
+            )
+        return PartyApprovalStatus.load_json(self._approval_file)
+
+    def _save_own_approval(self, approval: PartyApprovalStatus) -> None:
+        # Up to the public caller: approve() or update_disclosures().
+        warn_on_logs_release(
+            approval.disclosures, self.requested_disclosures, stacklevel=4
+        )
+        approval.save_json(self._approval_file)
+        if self._on_approval_change is not None:
+            self._on_approval_change(self._approval_file)
+
+    @property
+    def disclosures(self) -> dict[str, bool]:
+        """The items this party released, as recorded in its approval file."""
+        if not self._approval_file.exists():
+            return {}
+        return normalize_disclosures(
+            PartyApprovalStatus.load_json(self._approval_file).disclosures
+        )
+
+    @property
+    def granted_disclosures(self) -> set[str]:
+        """The items that go out: requested, and released by every party.
+
+        Raises:
+            LookupError: Off the enclave. A data owner holds only its own
+                approval file, so it reads its own grant in ``disclosures``.
+        """
+        if self.current_user_email != self.datasite_owner_email:
+            raise LookupError(
+                "Only the enclave holds the grant of every party. "
+                "Read this party's grant in `disclosures`."
+            )
+        return approved_disclosures(self.job_review_path, self.requested_disclosures)
 
     @property
     def status(self) -> str:
@@ -110,48 +136,68 @@ class EnclaveJobInfo(JobInfo):
             return JobStatus.APPROVED.value
         return JobStatus.PENDING.value
 
-    def approve(self, disclosures: Optional[Iterable[str]] = None) -> None:
+    def disclosure_rows(self) -> list[tuple[str, str]]:
+        """The disclosure state as (label, value) rows, for display.
+
+        The enclave holds the approval file of every party, so it shows each
+        grant and the combined result. A data owner shows its own grant.
+        """
+        rows = [("Requested", format_items(self.requested_disclosures))]
+        if self.current_user_email == self.datasite_owner_email:
+            for approval in load_enclave_approval_files(self.job_review_path):
+                if approval.status == JobStatus.APPROVED:
+                    value = format_items(normalize_disclosures(approval.disclosures))
+                else:
+                    value = f"({approval.status.value})"
+                rows.append((f"Granted by {approval.party}", value))
+            rows.append(("To submitter", format_items(self.granted_disclosures)))
+        elif self._approval_file.exists():
+            rows.append(("Your grant", format_items(self.disclosures)))
+            rows.append(("To submitter", "needs the grant of every party"))
+        return rows
+
+    def approve(
+        self,
+        reason: Optional[str] = None,
+        approval_method: str = "manual",
+        disclosures: DisclosuresArg = None,
+    ) -> None:
         """Write approval to the DO's individual approval state file.
 
         ``disclosures`` names the items in ``DisclosureItem`` that this party
         releases to the other parties. The enclave releases an item only when
         every party released it. Omit the argument to release nothing.
+
+        The approval file does not record ``reason`` or ``approval_method``.
+        Only the items that the submitter requested are stored, so a later
+        edit of the request cannot add items.
         """
-        file_name = enclave_approval_file_name(self.current_user_email)
-        approval_file = self.job_review_path / file_name
-        if not approval_file.exists():
-            raise PermissionError(
-                f"No approval file found for {self.current_user_email}. "
-                f"You may not be a designated party for this job."
-            )
-        approval = PartyApprovalStatus.load_json(approval_file)
+        check_approval_reason(reason)
+        approval = self._load_own_approval()
         if approval.status != JobStatus.PENDING:
             raise ValueError(f"Already in status: {approval.status.value}")
         approval.status = JobStatus.APPROVED
         approval.approved_at = datetime.now(timezone.utc)
-        approval.disclosures = normalize_disclosures(disclosures)
-        approval.save_json(approval_file)
+        approval.disclosures = restrict_to_request(
+            disclosures, self.requested_disclosures
+        )
+        self._save_own_approval(approval)
         print(f"Job '{self.name}' approved by {self.current_user_email}!")
 
-    def update_disclosures(self, disclosures: Optional[Iterable[str]]) -> dict:
+    def update_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
         """Replace the items this party releases, and return the new map.
 
-        A copy that already reached another party does not come back.
+        The enclave applies the new set on its next cycle.
         """
-        file_name = enclave_approval_file_name(self.current_user_email)
-        approval_file = self.job_review_path / file_name
-        if not approval_file.exists():
-            raise PermissionError(
-                f"No approval file found for {self.current_user_email}. "
-                f"You may not be a designated party for this job."
-            )
-        approval = PartyApprovalStatus.load_json(approval_file)
+        approval = self._load_own_approval()
         if approval.status != JobStatus.APPROVED:
             raise ValueError(
                 f"Approve the job first (current: {approval.status.value})."
             )
-        approval.disclosures = normalize_disclosures(disclosures)
-        approval.save_json(approval_file)
+        approval.disclosures = restrict_to_request(
+            disclosures, self.requested_disclosures
+        )
+        self._save_own_approval(approval)
         return approval.disclosures
 
 
