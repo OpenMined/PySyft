@@ -21,7 +21,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from syft_enclaves.attestation.nonce import identity_key_bytes, identity_private_key
 
-PAYLOAD_TYPE = "application/vnd.openmined.syft-enclave-receipt+json"
+#: The payload is an in-toto statement, so it carries in-toto's payload type.
+PAYLOAD_TYPE = "application/vnd.in-toto+json"
 
 
 class ReceiptVerificationError(Exception):
@@ -71,7 +72,8 @@ def verify_receipt(envelope: dict[str, Any], bundle: dict[str, Any]) -> dict:
     payload = base64.b64decode(envelope["payload"])
     _verify_any_signature(envelope.get("signatures") or [], public_key, payload)
     receipt = json.loads(payload)
-    if receipt.get("execution", {}).get("runPublicKey") != public_key.hex():
+    execution = receipt.get("predicate", {}).get("execution", {})
+    if execution.get("runPublicKey") != public_key.hex():
         raise ReceiptVerificationError("runPublicKey does not match the signing key")
     return receipt
 

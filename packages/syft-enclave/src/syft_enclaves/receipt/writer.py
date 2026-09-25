@@ -11,15 +11,20 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
 from syft_job.job import JobInfo
-from syft_job.models import JobState
+from syft_job.models import JobState, JobStatus
 
+from syft_enclaves.enclave_job_info import load_enclave_approval_files
+from syft_enclaves.receipt.claims import read_job_claims
 from syft_enclaves.receipt.collect import (
     RECEIPT_FILE_NAME,
     build_receipt,
+    consent_section,
     dataset_entry,
     execution_section,
     job_section,
-    results_section,
+    outputs_section,
+    parties_section,
+    policy_section,
 )
 from syft_enclaves.receipt.dsse import sign_receipt
 
@@ -72,13 +77,26 @@ def write_receipt_error(job: JobInfo) -> None:
 def _receipt(
     client: "SyftEnclaveClient", job: JobInfo, settings: ReceiptSettings
 ) -> dict[str, Any]:
+    outputs_dir = job.job_review_path / "outputs"
+    job_entry = _job(job)
+    owners = job.job_metadata.datasets or {}
+    shared = bool(job.job_headers.get("share_results_with_do"))
     return build_receipt(
-        job=_job(job),
-        data_owners=client.data_owners,
+        read_job_claims(outputs_dir),
+        job=job_entry,
         datasets=_datasets(client, job),
-        results=results_section(job.job_review_path / "outputs"),
+        outputs=outputs_section(outputs_dir),
         execution=_execution(client, job, settings),
+        parties=parties_section(job.submitted_by, owners),
+        consent=consent_section(job_entry["code"], _approvals(job)),
+        policy=policy_section(job.submitted_by, list(owners), shared),
     )
+
+
+def _approvals(job: JobInfo) -> dict[str, Optional[datetime]]:
+    """Each data owner who approved the job, and when."""
+    approvals = load_enclave_approval_files(job.job_review_path)
+    return {a.party: a.approved_at for a in approvals if a.status == JobStatus.APPROVED}
 
 
 def _job(job: JobInfo) -> dict[str, Any]:

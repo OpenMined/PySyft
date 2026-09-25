@@ -158,8 +158,8 @@ Prefer `--tag` over the default "latest release" where you can. Unpinned, the re
 ## Receipts
 
 A release of `tinfoil-config-receipts.yml` writes a signed `receipt.dsse.json` into every finished
-job's outputs. The receipt names the code, the dataset file hashes, the data owners, the results and
-the run. The enclave signs it with its attested identity key, and the submitter can log it on Rekor
+job's outputs. The receipt names the code, the dataset file hashes, who took part and approved, the outputs and
+the run, plus what the job itself claims about the model, the eval and its results. The enclave signs it with its attested identity key, and the submitter can log it on Rekor
 with `upload_to_rekor`. [`tinfoil/CLAUDE.md`](../tinfoil/CLAUDE.md) explains why the receipt can
 be trusted.
 
