@@ -2,7 +2,10 @@
 
 from unittest.mock import MagicMock
 
+from attestation_helpers import FAKE_KEY_FINGERPRINT
+
 from syft_enclaves.runner import EnclaveRunner
+from syft_enclaves.tee_token import NO_KEY_FINGERPRINT_NONCE
 
 
 def _make_client():
@@ -69,3 +72,33 @@ def test_fresh_state_uses_default_kwargs_on_delete(tmp_path, monkeypatch):
     call = client.delete_syftbox.call_args
     assert call.args == ()
     assert call.kwargs == {}
+
+
+def _client_with_store(use_encryption: bool):
+    client = _make_client()
+    store = client._rds.peer_manager.peer_store
+    store.use_encryption = use_encryption
+    store.public_key.identity_fingerprint.return_value = FAKE_KEY_FINGERPRINT
+    return client
+
+
+def test_publish_attestation_binds_own_key(monkeypatch):
+    """The token request carries the fingerprint of the store's identity key."""
+    fetch = MagicMock(return_value="signed.jwt")
+    monkeypatch.setattr("syft_enclaves.runner.fetch_attestation_token", fetch)
+    client = _client_with_store(use_encryption=True)
+
+    EnclaveRunner(client=client, fresh_state=False)._publish_attestation()
+
+    assert fetch.call_args.kwargs["eat_nonce"][1] == FAKE_KEY_FINGERPRINT
+    assert client._rds.peer_manager.get_own_version().attestation_token == "signed.jwt"
+
+
+def test_publish_attestation_without_encryption_sends_no_key_placeholder(monkeypatch):
+    fetch = MagicMock(return_value="signed.jwt")
+    monkeypatch.setattr("syft_enclaves.runner.fetch_attestation_token", fetch)
+    client = _client_with_store(use_encryption=False)
+
+    EnclaveRunner(client=client, fresh_state=False)._publish_attestation()
+
+    assert fetch.call_args.kwargs["eat_nonce"][1] == NO_KEY_FINGERPRINT_NONCE

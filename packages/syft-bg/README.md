@@ -76,18 +76,29 @@ Each object specifies files to match by content (name + SHA256 hash) and optiona
 
 ### Creating auto-approval objects
 
+A path is relative to the job submission root, so code sits under `code/` and
+the script the runner executes is `run.sh`. A rule must name every file of the
+submission and pin the content of `run.sh`, or it matches nothing. Prefer
+building it from a job you have reviewed, with `syft_bg.auto_approve_job(job)`.
+
+Name `config.yaml` with `-f`, never as content: its bytes carry the job name
+and the time it was submitted, so a rule that hashes it matches one job and no
+other. A directory argument hashes every file it finds, `config.yaml` included.
+
+A name is read from the current directory as well as from `-b`, so run the
+command from inside the submission.
+
 ```bash
-# Approve files for specific peers
-syft-bg auto-approve main.py -p alice@uni.edu -p bob@co.com
+cd ./job   # a submission holding code/main.py, run.sh and config.yaml
 
-# Approve multiple files with a name
-syft-bg auto-approve main.py utils.py -n my_analysis
+# Approve it for specific peers
+syft-bg auto-approve code/main.py run.sh -b . -f config.yaml -p alice@uni.edu
 
-# Approve all files in a directory, allow params.json by name only
-syft-bg auto-approve ./src/ -p alice@uni.edu -f params.json
+# The same, under a name
+syft-bg auto-approve code/main.py run.sh -b . -f config.yaml -n my_analysis
 
-# Use a base directory for relative path resolution
-syft-bg auto-approve main.py -b ./project/ -f config.yaml
+# For a submission that also holds code/params.json
+syft-bg auto-approve code/main.py run.sh -b . -f code/params.json -f config.yaml
 ```
 
 ### Managing auto-approvals and peers
@@ -99,8 +110,8 @@ syft-bg list-auto-approvals
 # List a specific auto-approval object
 syft-bg list-auto-approvals -n my_analysis
 
-# Remove files from an auto-approval object
-syft-bg remove-auto-approval utils.py -n my_analysis
+# Remove files from an auto-approval object (paths as stored)
+syft-bg remove-auto-approval code/utils.py -n my_analysis
 
 # Remove a peer entirely
 syft-bg remove-peer alice@uni.edu

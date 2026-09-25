@@ -11,10 +11,9 @@ from syft_bg.api.utils import (
     generate_unique_name,
     get_job_user_files,
     move_token_to_syftbg_dir,
-    resolve_auto_approve_file_args,
     resolve_content_files,
+    resolve_job_approval_files,
     setup_orchestrator,
-    validate_auto_approve_job_inputs,
 )
 from syft_bg.approve.config import AutoApprovalObj, FileEntry
 from syft_bg.common.config import get_default_paths, get_syftbg_dir
@@ -330,6 +329,10 @@ def auto_approve(
     the approval configuration. The approve service will use this to
     automatically approve matching jobs.
 
+    A job is matched on paths relative to its submission root, so an object
+    must pin "run.sh" to approve anything. `auto_approve_job` builds that
+    shape from a reviewed job; this function takes whatever paths it is given.
+
     Args:
         contents: List of file paths to approve by content. When base_dir is set,
                   these are relative paths resolved against it. Otherwise,
@@ -425,13 +428,15 @@ def auto_approve_job(
     """Create an auto-approval config from an existing job.
 
     Extracts files from the job and routes them to auto_approve() based on
-    the contents and file_paths parameters.
+    the contents and file_paths parameters. Paths are relative to the job
+    submission root, so the object pins "run.sh", the file the runner
+    executes. A bare name is resolved against the job.
 
     Args:
         job: JobInfo object to use as template.
         contents: Filenames from the job to match by name AND content.
-                  If None and file_paths is None, all files are content-matched.
-                  If None and file_paths is set, all other files are content-matched.
+                  When None, every file is content-matched except config.yaml
+                  and code/params.json, which are matched by name.
         file_paths: Filenames from the job to match by name only.
         peers: Peer emails to restrict to. If None, defaults to the job's submitter.
         name: Name for the auto-approval object. Defaults to job name.
@@ -442,15 +447,11 @@ def auto_approve_job(
     if peers is None:
         peers = [job.submitted_by]
 
-    user_files = get_job_user_files(job)
-
-    error = validate_auto_approve_job_inputs(user_files, contents, file_paths)
+    content_rel_paths, name_only, error = resolve_job_approval_files(
+        get_job_user_files(job), contents, file_paths
+    )
     if error:
         return AutoApproveResult(success=False, error=error)
-
-    content_rel_paths, name_only = resolve_auto_approve_file_args(
-        user_files, contents, file_paths
-    )
 
     if name is None:
         name = job.name
@@ -460,7 +461,7 @@ def auto_approve_job(
         file_paths=name_only,
         peers=peers,
         name=name,
-        base_dir=job.code_dir,
+        base_dir=job.job_submission_path,
     )
 
 
