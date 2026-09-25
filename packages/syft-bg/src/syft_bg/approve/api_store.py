@@ -12,6 +12,7 @@ from pathlib import Path
 
 import yaml
 from syft_permissions import PERMISSION_FILE_NAME, Access, Rule, RuleSet
+from syft_rds.apis import ApiArg
 from syft_rds.apis.models import (
     API_FILE_NAME,
     APIS_DIR,
@@ -65,7 +66,7 @@ class ApiStore:
         content_files: list[tuple[str, Path]],
         file_paths: list[str],
         peers: list[str],
-        args: list[str] | None = None,
+        args: list[ApiArg] | None = None,
     ) -> tuple[str, AutoApprovalObj]:
         """Store a new api. Returns the final (unique) name and the object.
 

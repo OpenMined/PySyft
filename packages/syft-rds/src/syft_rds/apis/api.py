@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from syft_rds.apis.args import ApiArg, bind_args
 from syft_rds.apis.models import FILES_DIR_NAME, ApiDefinition
 from syft_rds.apis.repr import api_repr_html, api_repr_str
 
@@ -73,8 +74,12 @@ class Api:
         self._client = client
 
     @property
-    def args(self) -> list[str]:
+    def args(self) -> list[ApiArg]:
         return self.definition.args
+
+    @property
+    def arg_names(self) -> list[str]:
+        return [a.name for a in self.args]
 
     @property
     def layout(self) -> CallableLayout | None:
@@ -103,7 +108,7 @@ class Api:
             if self.name.isidentifier()
             else f'client.api["{self.name}"]'
         )
-        return f"{accessor}({', '.join(self.args)})"
+        return f"{accessor}({', '.join(self.arg_names)})"
 
     def job_code_files(self, params: dict[str, Any]) -> dict[str, bytes]:
         """The files of a job's code/ folder for a call with these params."""
@@ -118,22 +123,8 @@ class Api:
         return self.api_dir / FILES_DIR_NAME / rel_path
 
     def bind_args(self, args: tuple, kwargs: dict) -> dict[str, Any]:
-        """Map positional and keyword arguments onto the api's argument names."""
-        if len(args) > len(self.args):
-            raise TypeError(
-                f"{self.name}() takes {len(self.args)} arguments, got {len(args)}"
-            )
-        params = dict(zip(self.args, args))
-        for key, value in kwargs.items():
-            if key not in self.args:
-                raise TypeError(f"{self.name}() got an unexpected argument '{key}'")
-            if key in params:
-                raise TypeError(f"{self.name}() got multiple values for '{key}'")
-            params[key] = value
-        missing = [a for a in self.args if a not in params]
-        if missing:
-            raise TypeError(f"{self.name}() is missing arguments: {missing}")
-        return {a: params[a] for a in self.args}
+        """Map a call onto the api's arguments, with defaults and type checks."""
+        return bind_args(self.name, self.args, args, kwargs)
 
     def __call__(self, *args: Any, block: bool = True, **kwargs: Any):
         """Submit a job running this api's code with the given arguments.

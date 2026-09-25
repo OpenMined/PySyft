@@ -4,6 +4,8 @@ import shutil
 from collections.abc import Sequence
 from pathlib import Path
 
+from syft_rds.apis import ApiArg
+
 from syft_bg.api.results import AutoApproveResult, InstallationResult, StatusResult
 from syft_bg.api.utils import (
     confirm_no_peers,
@@ -320,7 +322,7 @@ def auto_approve(
     base_dir: Path | None = None,
     allow_any_peer: bool = False,
     api_store: ApiStore | None = None,
-    args: list[str] | None = None,
+    args: list[ApiArg | dict] | None = None,
 ) -> AutoApproveResult:
     """Create an auto-approval object (an "api") in SyftBox.
 
@@ -344,8 +346,9 @@ def auto_approve(
                   When set, FileEntry.relative_path stores the relative path.
         allow_any_peer: Allow no peers without the confirmation prompt.
         api_store: Where to store the api. Defaults to the datasite in config.yaml.
-        args: Argument names, the keys of the name-only params json, in the
-              order a caller passes them positionally.
+        args: Arguments of the name-only params json, in the order a caller
+              passes them positionally: ApiArg(name, type, default, required)
+              or the same as a dict.
 
     Returns:
         AutoApproveResult with the created object details.
@@ -367,7 +370,7 @@ def auto_approve(
             content_files,
             file_paths,
             peers,
-            args,
+            [ApiArg.model_validate(a) for a in args or []],
         )
     except (ApiExistsError, ValueError) as e:
         return AutoApproveResult(success=False, error=str(e))
@@ -388,6 +391,7 @@ def auto_approve_job(
     peers: list[str] | None = None,
     name: str | None = None,
     allow_any_peer: bool = False,
+    args: list[ApiArg | dict] | None = None,
 ) -> AutoApproveResult:
     """Create an auto-approval config from an existing job.
 
@@ -405,6 +409,8 @@ def auto_approve_job(
         peers: Peer emails to restrict to. If None, defaults to the job's submitter.
         name: Name for the auto-approval object. Defaults to job name.
         allow_any_peer: Allow an empty peers list without the prompt.
+        args: Arguments of the api. When None, names, types and defaults are
+              inferred from the job's params json.
 
     Returns:
         AutoApproveResult with the created object details.
@@ -429,7 +435,7 @@ def auto_approve_job(
         base_dir=job.job_submission_path,
         allow_any_peer=allow_any_peer,
         api_store=api_store_for_job(job),
-        args=read_job_args(job, name_only),
+        args=read_job_args(job, name_only) if args is None else args,
     )
 
 

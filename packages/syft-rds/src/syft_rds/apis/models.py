@@ -12,6 +12,8 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, Field
 
+from syft_rds.apis.args import ApiArg
+
 APIS_DIR = Path("app_data") / "apis"
 API_FILE_NAME = "api.yaml"
 FILES_DIR_NAME = "files"
@@ -41,7 +43,7 @@ class ApiDefinition(BaseModel):
     file_contents: list[FileEntry] = Field(default_factory=list)
     file_paths: list[str] = Field(default_factory=list)
     peers: list[str] = Field(default_factory=list)
-    args: list[str] = Field(default_factory=list)  # keys of the params json
+    args: list[ApiArg] = Field(default_factory=list)  # the params json keys
 
 
 def load_api_definition(api_dir: Path) -> ApiDefinition:

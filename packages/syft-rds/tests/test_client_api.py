@@ -12,7 +12,7 @@ from syft_bg.api import auto_approve_job
 from syft_bg.approve.handlers.job import JobApprovalHandler
 from syft_bg.common.config import get_default_paths
 from syft_rds import SyftRDSClient
-from syft_rds.apis import Api, ApiDefinition, FileEntry
+from syft_rds.apis import Api, ApiArg, ApiDefinition, FileEntry, infer_args
 from syft_rds.apis.api import callable_layout
 from syft_rds.client import FINISHED_JOB_STATUSES
 
@@ -77,17 +77,19 @@ def test_ds_renders_and_calls_api():
         # The DS sees the api in a table, with its args and call signature.
         table = ds_manager.api._repr_html_()
         assert "adder" in table and do_manager.email in table
-        assert ">a<" in table and ">b<" in table
+        assert "a: int = 1" in table and "b: int = 2" in table
         assert "client.api.adder(a, b)" in table
 
         # Accessing the api shows the code a call runs.
         api = ds_manager.api.adder
-        assert api.args == ["a", "b"]
+        # Names, types and defaults are inferred from the example params.json.
+        assert [a.describe() for a in api.args] == ["a: int = 1", "b: int = 2"]
         assert api.code == ADDER_CODE
-        assert ADDER_CODE in repr(api)
+        assert ADDER_CODE in repr(api) and "a: int = 1" in repr(api)
 
-        with pytest.raises(TypeError, match="missing"):
-            api(3)
+        # Calls are checked client side, before anything is submitted.
+        with pytest.raises(TypeError, match="'a' must be int, got str"):
+            api("3")
         with pytest.raises(TypeError, match="unexpected"):
             api(3, c=4)
 
@@ -117,6 +119,10 @@ def _definition(pinned: list[str], name_only: list[str], args=()) -> ApiDefiniti
     )
 
 
+A_REQUIRED_INT = ApiArg(name="a", type="int", required=True)
+B_FLOAT_DEFAULT = ApiArg(name="b", type="float", default=0.5)
+
+
 @pytest.mark.parametrize(
     "pinned,name_only,expected",
     [
@@ -135,15 +141,42 @@ def test_callable_layout(pinned, name_only, expected):
         assert layout.params_file == "code/params.json"
 
 
-def test_bind_args_positional_and_keyword():
-    api = Api(
-        "adder", "do@x.com", Path("/nonexistent"), _definition([], [], "ab"), None
-    )
+def test_bind_args_positional_keyword_and_defaults():
+    spec = [A_REQUIRED_INT, B_FLOAT_DEFAULT]
+    api = Api("adder", "do@x.com", Path("/x"), _definition([], [], spec), None)
     assert api.bind_args((1,), {"b": 2}) == {"a": 1, "b": 2}
+    assert api.bind_args((), {"a": 1}) == {"a": 1, "b": 0.5}
+    with pytest.raises(TypeError, match="missing"):
+        api.bind_args((), {})
     with pytest.raises(TypeError, match="takes 2"):
         api.bind_args((1, 2, 3), {})
     with pytest.raises(TypeError, match="multiple values"):
         api.bind_args((1,), {"a": 2})
+    with pytest.raises(TypeError, match="'a' must be int, got bool"):
+        api.bind_args((True,), {})
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [(True, "bool"), (1, "int"), (1.5, "float"), ("x", "str"), ([1], "list")]
+    + [({"k": 1}, "dict"), (None, "any")],
+)
+def test_infer_type(value, expected):
+    assert infer_args({"x": value}) == [ApiArg(name="x", type=expected, default=value)]
+
+
+@pytest.mark.parametrize(
+    "arg_type,value,ok",
+    [("float", 1, True), ("int", 1.0, False), ("list", (1, 2), True)]
+    + [("any", object(), True), ("dict", [], False), ("str", None, False)],
+)
+def test_arg_type_check(arg_type, value, ok):
+    assert ApiArg(name="x", type=arg_type).matches(value) is ok
+
+
+def test_describe():
+    assert A_REQUIRED_INT.describe() == "a: int"
+    assert B_FLOAT_DEFAULT.describe() == "b: float = 0.5"
 
 
 @pytest.mark.parametrize(
@@ -151,7 +184,9 @@ def test_bind_args_positional_and_keyword():
 )
 def test_call_blocks_by_default(kwargs, expected_block):
     definition = _definition(
-        ["run.sh", "code/main.py"], ["config.yaml", "code/params.json"], "a"
+        ["run.sh", "code/main.py"],
+        ["config.yaml", "code/params.json"],
+        [A_REQUIRED_INT],
     )
     client = MagicMock()
     api = Api("adder", "do@x.com", Path("/x"), definition, client)

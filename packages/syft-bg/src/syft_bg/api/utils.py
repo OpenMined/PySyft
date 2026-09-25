@@ -6,6 +6,8 @@ import shutil
 from collections.abc import Sequence
 from pathlib import Path, PurePosixPath
 
+from syft_rds.apis import ApiArg, infer_args
+
 from syft_bg.approve.api_store import ApiStore
 from syft_bg.approve.config import AutoApprovalObj
 from syft_bg.approve.criteria import RUN_SCRIPT_PATH, get_job_submission_files
@@ -252,9 +254,10 @@ def api_store_for_job(job) -> ApiStore:
     return ApiStore(job._client.config.syftbox_folder, job.datasite_owner_email)
 
 
-def read_job_args(job, name_only: list[str]) -> list[str]:
-    """Argument names of a job: the keys of its one name-only json in code/.
+def read_job_args(job, name_only: list[str]) -> list[ApiArg]:
+    """Arguments of a job, inferred from its one name-only json in code/.
 
+    Names, types and defaults come from the example values in that file.
     Returns [] when there is no such file, or it does not hold a JSON object.
     """
     params_files = [
@@ -266,7 +269,7 @@ def read_job_args(job, name_only: list[str]) -> list[str]:
         params = json.loads((job.job_submission_path / params_files[0]).read_text())
     except (OSError, ValueError):
         return []
-    return list(params) if isinstance(params, dict) else []
+    return infer_args(params) if isinstance(params, dict) else []
 
 
 def get_api_store() -> ApiStore:

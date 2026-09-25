@@ -53,7 +53,9 @@ _EMPTY_HTML = (
 def _args_html(api: Api) -> str:
     if not api.args:
         return '<span class="syftapi-muted">-</span>'
-    return "".join(f'<span class="syftapi-arg">{escape(a)}</span>' for a in api.args)
+    return "".join(
+        f'<span class="syftapi-arg">{escape(a.describe())}</span>' for a in api.args
+    )
 
 
 def _row_html(index: int, api: Api) -> str:
@@ -128,7 +130,8 @@ def _api_body_html(api: Api) -> str:
 
 
 def api_repr_str(api: Api) -> str:
-    header = f"Api '{api.name}' from {api.datasite}\nArgs: {', '.join(api.args) or '-'}"
+    args = ", ".join(a.describe() for a in api.args) or "-"
+    header = f"Api '{api.name}' from {api.datasite}\nArgs: {args}"
     if api.layout is None:
         return f"{header}\nThis api can't be called with arguments."
     return (
