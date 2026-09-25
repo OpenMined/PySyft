@@ -5,6 +5,7 @@ import json
 import os
 import random
 import tempfile
+import warnings
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,7 @@ import yaml
 
 os.environ["PRE_SYNC"] = "false"
 
+from syft_job.disclosures import LOGS_WARNING  # noqa: E402
 from syft_job.job import JobInfo  # noqa: E402
 from syft_job.models import JobState, JobStatus  # noqa: E402
 from syft_job.traceback_capture import FRAMES_FILENAME  # noqa: E402
@@ -76,6 +78,18 @@ def test_requested_set_narrows_result(tmp_path):
 
 def test_no_approval_file_grants_nothing(tmp_path):
     assert approved_disclosures(tmp_path) == set()
+
+
+def test_named_party_without_file_grants_nothing(tmp_path):
+    """A missing file must not leave the other grants standing alone."""
+    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True})
+    assert approved_disclosures(tmp_path) == {LOGS}
+    assert approved_disclosures(tmp_path, parties=["do1@x.com", "do2@x.com"]) == set()
+
+
+def test_no_named_party_grants_nothing(tmp_path):
+    write_approval(tmp_path, "do1@x.com", JobStatus.APPROVED, {LOGS: True})
+    assert approved_disclosures(tmp_path, parties=[]) == set()
 
 
 def test_unknown_item_never_survives(tmp_path):
@@ -489,3 +503,55 @@ def test_enclave_approve_refuses_items_as_reason():
 
     with pytest.raises(TypeError, match="disclosures="):
         do1.jobs["j"].approve([LOGS])
+
+
+# -- every required party, as the approval gate counts them ---------------------
+
+
+def test_deleted_approval_file_blocks_late_grant():
+    """The late-grant path must count every configured party, not the files."""
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
+    run_to_completion(enclave, do1, do2, ds, None)
+
+    do1.jobs["j"].update_disclosures([LOGS])
+    enclave.sync()
+    review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
+    (review / enclave_approval_file_name(do2.email)).unlink()
+    enclave.run_jobs()
+    enclave.distribute_results()
+    ds.sync()
+
+    assert enclave.granted_disclosures(enclave._rds.job_client.jobs["j"]) == set()
+    assert not (Path(ds.jobs["j"].job_review_path) / "stdout.txt").exists()
+
+
+def test_display_lists_party_without_file():
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
+    enclave.sync()
+    enclave.receive_jobs()
+    review = Path(enclave._rds.job_client.jobs["j"].job_review_path)
+    (review / enclave_approval_file_name(do2.email)).unlink()
+
+    rows = dict(enclave.jobs["j"].disclosure_rows())
+    assert rows[f"Granted by {do1.email}"] == "(pending)"
+    assert rows[f"Granted by {do2.email}"] == "(no approval file)"
+
+
+def test_job_reject_reaches_enclave():
+    """``job.reject`` on a job from ``jobs`` is pushed like an approval."""
+    enclave, do1, do2, ds = build_quad()
+    submit(ds, enclave, do1, do2, OK_CODE, [LOGS])
+    enclave.sync()
+    enclave.receive_jobs()
+    do1.sync()
+    do2.sync()
+    do1.jobs["j"].approve(disclosures=[LOGS])
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        do2.jobs["j"].reject("too much data")
+    enclave.sync()
+
+    assert enclave.jobs["j"].status == "rejected"
+    assert not [w for w in record if str(w.message) == LOGS_WARNING]

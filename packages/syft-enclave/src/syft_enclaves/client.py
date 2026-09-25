@@ -192,12 +192,25 @@ class SyftEnclaveClient:
     def jobs(self) -> JobsList:
         jobs_list = self._rds.jobs
         wrapped = [
-            EnclaveJobInfo.from_job_info(j, on_approval_change=self._push_approval_file)
-            if j.job_headers.get("job_type") == "enclave"
-            else j
+            self._as_enclave_job(j) if j.job_headers.get("job_type") == "enclave" else j
             for j in jobs_list
         ]
         return JobsList(wrapped, jobs_list._root_email)
+
+    def _as_enclave_job(self, job: JobInfo) -> EnclaveJobInfo:
+        """Wrap ``job``; on the enclave that runs it, every data owner must approve.
+
+        The configured data owners are the approvers, as when the job was
+        distributed, so the enclave never counts only the approval files that
+        happen to exist.
+        """
+        runs_here = job.datasite_owner_email == self.email
+        required = list(self.data_owners) if runs_here else None
+        return EnclaveJobInfo.from_job_info(
+            job,
+            required_approvers=required,
+            on_approval_change=self._push_approval_file,
+        )
 
     def submit_python_job(
         self,
@@ -260,7 +273,7 @@ class SyftEnclaveClient:
 
     def granted_disclosures(self, job: JobInfo) -> set[str]:
         """The items that every party released for this job."""
-        return EnclaveJobInfo.from_job_info(job).granted_disclosures
+        return self._as_enclave_job(job).granted_disclosures
 
     def _local_jobs(self) -> JobsList:
         """The job list read from disk, with no sync.
@@ -390,32 +403,42 @@ class SyftEnclaveClient:
             relative_path, process_now=True
         )
 
-    def _as_enclave_job(self, job: JobInfo) -> EnclaveJobInfo:
+    def _require_enclave_job(self, job: JobInfo) -> EnclaveJobInfo:
+        """Wrap ``job`` like ``self.jobs`` does, and refuse a job of another kind."""
         if not isinstance(job, EnclaveJobInfo):
             raise TypeError(
                 f"Job '{job.name}' is not an enclave job, so it carries no "
                 f"disclosures. Approve it through the datasite client."
             )
-        return EnclaveJobInfo.from_job_info(
-            job, on_approval_change=self._push_approval_file
-        )
+        return self._as_enclave_job(job)
 
     def approve_job(self, job: JobInfo, disclosures: DisclosuresArg = None) -> None:
         """Approve an enclave job and push the approval state file to the enclave.
 
         Same as ``job.approve(disclosures=...)`` on a job from ``self.jobs``.
         """
-        job = self._as_enclave_job(job)
+        job = self._require_enclave_job(job)
         if pre_sync_enabled():
             self._rds.sync()
         job.approve(disclosures=disclosures)
+
+    def reject_job(self, job: JobInfo, reason: Optional[str] = None) -> None:
+        """Reject an enclave job and push the approval state file to the enclave.
+
+        Same as ``job.reject(reason)`` on a job from ``self.jobs``. It also
+        withdraws an earlier approval.
+        """
+        job = self._require_enclave_job(job)
+        if pre_sync_enabled():
+            self._rds.sync()
+        job.reject(reason)
 
     def update_disclosures(self, job: JobInfo, disclosures: DisclosuresArg) -> dict:
         """Change the items this data owner releases, and push the new set.
 
         Same as ``job.update_disclosures(...)`` on a job from ``self.jobs``.
         """
-        job = self._as_enclave_job(job)
+        job = self._require_enclave_job(job)
         if pre_sync_enabled():
             self._rds.sync()
         return job.update_disclosures(disclosures)
