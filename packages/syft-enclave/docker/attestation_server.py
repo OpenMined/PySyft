@@ -162,7 +162,8 @@ def attestation(nonce: str | None = None):
 
     When running in Confidential Spaces:
       1. Validates the nonce (if supplied)
-      2. Builds an eat_nonce array (version hash + optional caller nonce)
+      2. Builds an eat_nonce array (version, the no-key placeholder in the
+         key fingerprint slot, then the optional caller nonce in slot 2)
       3. Requests an OIDC attestation token with eat_nonce
       4. Decodes the JWT claims
       5. Returns structured attestation data + the raw token
