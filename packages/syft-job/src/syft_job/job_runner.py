@@ -8,11 +8,11 @@ from typing import List, Set
 
 import psutil
 
-from .client import JobClient
-from .job import JobInfo
 from . import __version__
+from .client import JobClient
 from .config import SyftJobConfig
-from .job_storage import JobRef, JobStorage, JobStateNotFoundError
+from .job import JobInfo
+from .job_storage import JobRef, JobStateNotFoundError, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
 
 # Default timeout for job execution (10 minutes)
@@ -24,9 +24,21 @@ def get_job_timeout_seconds() -> int:
 
     Can be overridden by setting SYFT_DEFAULT_JOB_TIMEOUT_SECONDS environment variable.
     """
-    return int(
-        os.environ.get("SYFT_DEFAULT_JOB_TIMEOUT_SECONDS", DEFAULT_JOB_TIMEOUT_SECONDS)
-    )
+    value = os.environ.get("SYFT_DEFAULT_JOB_TIMEOUT_SECONDS")
+    if value is None:
+        return DEFAULT_JOB_TIMEOUT_SECONDS
+
+    try:
+        timeout = int(value)
+    except ValueError:
+        timeout = 0
+
+    if timeout <= 0:
+        raise ValueError(
+            "SYFT_DEFAULT_JOB_TIMEOUT_SECONDS must be a positive integer; "
+            f"got {value!r}"
+        )
+    return timeout
 
 
 IS_IN_JOB_ENV_VAR = "SYFT_IS_IN_JOB"
@@ -372,7 +384,7 @@ class SyftJobRunner:
         Args:
             ref: Ref of the job to execute.
             stream_output: If True (default), stream output in real-time.
-            timeout: Timeout in seconds. Defaults to 300 (5 minutes).
+            timeout: Timeout in seconds. Defaults to the configured value or 600.
 
         Returns:
             bool: True if execution was successful, False otherwise
@@ -527,7 +539,7 @@ class SyftJobRunner:
 
         Args:
             stream_output: If True (default), stream output in real-time.
-            timeout: Timeout in seconds per job. Defaults to 300 (5 minutes).
+            timeout: Timeout in seconds per job. Defaults to the configured value or 600.
             skip_job_names: Optional list of job names to skip.
             share_outputs_with_submitter: If True, grant read access on outputs to submitter.
             share_logs_with_submitter: If True, grant read access on logs to submitter.
