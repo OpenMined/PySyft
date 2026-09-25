@@ -283,6 +283,46 @@ def ensure_running(services: tuple[str, ...], restart: bool, install: bool):
     api_ensure_running(list(services), restart=restart, install=install)
 
 
+def _warn_unmatchable_object(file_contents: list[str]) -> None:
+    """Warn about content paths that no submitted job can match."""
+    from syft_bg.api.utils import (
+        PER_JOB_FILES,
+        RUN_SCRIPT_PATH,
+        SUBMISSION_ROOT_FILES,
+    )
+
+    content = set(file_contents)
+    if RUN_SCRIPT_PATH not in content:
+        click.echo(
+            f"\nWarning: nothing matches the content of '{RUN_SCRIPT_PATH}', the "
+            f"file the runner executes, so this object approves no job. Pass it "
+            f"in CONTENTS, or build the object from a job you have reviewed with "
+            f"syft_bg.auto_approve_job(job).",
+            err=True,
+        )
+    bare = sorted(
+        path
+        for path in content
+        if "/" not in path and path not in SUBMISSION_ROOT_FILES
+    )
+    if bare:
+        click.echo(
+            f"\nWarning: {bare} is stored under that name alone, and a job is "
+            f"matched on a path relative to its submission root, such as "
+            f"'code/main.py'. Pass -b <submission directory> and name the file "
+            f"by that path.",
+            err=True,
+        )
+    per_job = sorted(content & PER_JOB_FILES)
+    if per_job:
+        click.echo(
+            f"\nWarning: {per_job} is matched by content, and its bytes carry "
+            f"the job name and the time it was submitted, so this object "
+            f"approves one job and no other. Pass it with -f instead.",
+            err=True,
+        )
+
+
 @main.command("auto-approve")
 @click.argument("contents", nargs=-1, required=True, type=click.Path(exists=True))
 @click.option(
@@ -319,19 +359,36 @@ def auto_approve(
 ):
     """Create or update an auto-approval object.
 
-    Accepts file paths or directories as contents. These are files whose
-    content will be hashed and matched. Directories are expanded to all
-    files within them.
+    Accepts file paths as contents. These are files whose content will be
+    hashed and matched. Without -b, a directory is expanded to the files within
+    it, each stored relative to that directory, while a single file is stored
+    under its base name alone. With -b, name each file by the path a job is
+    matched on.
 
-    Examples:
+    A job is matched on paths relative to its submission root, so code sits
+    under "code/" and the script the runner executes is "run.sh". The rule must
+    name every file of the submission and pin the content of run.sh, or it
+    matches nothing. To build that from a job you have reviewed, use
+    syft_bg.auto_approve_job(job) instead of this command.
 
-      syft-bg auto-approve main.py -p alice@uni.edu -p bob@co.com
+    Name config.yaml with -f. Its bytes carry the job name and the time it was
+    submitted, so a rule that hashes it matches one job and no other. A
+    directory argument, which needs no -b, hashes every file it finds,
+    config.yaml included, so it has the same effect.
 
-      syft-bg auto-approve main.py utils.py -n my_analysis
+    A name is read from the current directory as well as from -b, so run this
+    from inside the submission.
 
-      syft-bg auto-approve ./src/ -p alice@uni.edu -f params.json
+    Examples, for a submission holding code/main.py, run.sh and config.yaml:
 
-      syft-bg auto-approve main.py -b ./project/ -f config.yaml
+      cd ./job
+      syft-bg auto-approve code/main.py run.sh -b . -f config.yaml -p alice@uni.edu
+
+      syft-bg auto-approve code/main.py run.sh -b . -f config.yaml -n my_analysis
+
+    And for one that also holds code/params.json:
+
+      syft-bg auto-approve code/main.py run.sh -b . -f code/params.json -f config.yaml
     """
     from pathlib import Path
 
@@ -360,6 +417,8 @@ def auto_approve(
     if result.file_paths:
         click.echo(f"Allowed files: {', '.join(result.file_paths)}")
 
+    _warn_unmatchable_object(result.file_contents or [])
+
 
 @main.command("remove-auto-approval")
 @click.argument("files", nargs=-1, required=True)
@@ -372,11 +431,14 @@ def auto_approve(
 def remove_auto_approval(files: tuple[str, ...], name: str):
     """Remove scripts from an auto-approval object.
 
+    A stored path is relative to the job submission root, so code sits under
+    "code/".
+
     Examples:
 
-      syft-bg remove-auto-approval utils.py -n my_analysis
+      syft-bg remove-auto-approval code/utils.py -n my_analysis
 
-      syft-bg remove-auto-approval main.py utils.py -n my_analysis
+      syft-bg remove-auto-approval code/main.py code/utils.py -n my_analysis
     """
     from syft_bg.common.syft_bg_config import SyftBgConfig
 

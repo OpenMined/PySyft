@@ -13,7 +13,7 @@ from google.oauth2.credentials import Credentials as GoogleCredentials
 from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload, build_http
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from syft_migration import MigrationError
 
 from syft.sync.checkpoints.checkpoint import (
@@ -116,12 +116,26 @@ class GdriveArchiveFolder(BaseModel):
         return f"syft_{self.sender_email}_to_{self.recipient_email}_archive"
 
 
+# An email part of a folder name goes into Drive queries and local paths. It has
+# one '@', a '.' in the domain, and no quote, slash, '#', whitespace or control
+# character. It is not RFC 5322.
+_EMAIL_PART = r"[^@\s'\"\\/#\x00-\x1f\x7f]+"
+_FOLDER_EMAIL_RE = re.compile(rf"{_EMAIL_PART}@{_EMAIL_PART}\.{_EMAIL_PART}")
+
+
 class GdriveP2PFolder(BaseModel):
     """Folder for peer communication: syft_datasite#version#datasite_email#inbox|outbox#peer_email"""
 
     datasite_email: str
     folder_type: str  # "inbox" or "outbox"
     peer_email: str
+
+    @field_validator("datasite_email", "peer_email")
+    @classmethod
+    def _check_email(cls, v: str) -> str:
+        if not _FOLDER_EMAIL_RE.fullmatch(v):
+            raise ValueError(f"Invalid email in P2P folder name: {v!r}")
+        return v
 
     def as_string(self) -> str:
         return f"{GDRIVE_P2P_FOLDER_DATASITE_PREFIX}#{SYFT_VERSION}#{self.datasite_email}#{self.folder_type}#{self.peer_email}"
@@ -618,7 +632,8 @@ class GDriveConnection(SyftboxPlatformConnection):
                 f"and name contains '#{self.email}#' "
                 f"and trashed=false "
                 f"and mimeType = '{GOOGLE_FOLDER_MIME_TYPE}' "
-                f"and not 'me' in owners"
+                f"and not 'me' in owners",
+                fields="files(id,name,owners)",
             )
         )
 
@@ -629,6 +644,15 @@ class GDriveConnection(SyftboxPlatformConnection):
             except ValueError:
                 # The query matches a name prefix, so a folder with another shape
                 # can appear here.
+                continue
+            # Any account can make a folder with this name. The request is from
+            # the owner, so the name must name the owner.
+            owners = f.get("owners", [])
+            if (
+                len(owners) != 1
+                or owners[0].get("emailAddress", "").casefold()
+                != folder.peer_email.casefold()
+            ):
                 continue
             if folder.datasite_email == self.email:
                 all_folder_peers.add(folder.peer_email)
