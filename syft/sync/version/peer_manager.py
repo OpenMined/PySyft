@@ -10,16 +10,20 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from googleapiclient.errors import HttpError
 from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
 from syft_migration import ProtocolSchema
 
 from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.connections.drive.gdrive_retry import RETRYABLE_TRANSPORT_ERRORS
 from syft.sync.peers.key_bundle import (
     InvalidPeerBundleError,
+    PeerFingerprintMismatchError,
     PeerKeyChangedError,
     bundle_fingerprint,
     format_fingerprint,
+    normalize_fingerprint,
 )
 from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore, datasite_crypto_keys_path
@@ -642,8 +646,9 @@ class PeerManager(BaseModel):
         except PeerKeyChangedError as e:
             if not explicit:
                 warnings.warn(
-                    f"{e}\nKeeping the pinned key. To trust the new key after "
-                    f"confirming it, run client.trust_peer_key({peer_email!r})."
+                    f"{e}\nKeeping the pinned key. To trust the new key, confirm "
+                    "its fingerprint with the peer and run "
+                    f"client.trust_peer_key({peer_email!r}, fingerprint)."
                 )
                 return None
             warnings.warn(
@@ -655,12 +660,21 @@ class PeerManager(BaseModel):
             return bundle
 
     def refresh_peer_bundle(
-        self, peer_email: str, trust_new_key: bool = False
+        self,
+        peer_email: str,
+        trust_new_key: bool = False,
+        expected_fingerprint: Optional[str] = None,
     ) -> Optional[str]:
         """Re-read the peer's published key bundle and compare it to the pin.
 
         Returns the fingerprint of the pinned key afterwards. A changed key is
         adopted only when ``trust_new_key`` is set.
+
+        Raises:
+            PeerFingerprintMismatchError: ``expected_fingerprint`` is given and
+                the published bundle carries another identity key.
+            InvalidPeerBundleError: ``expected_fingerprint`` is given and the
+                published bundle does not parse.
         """
         if not self.peer_store.use_encryption:
             raise ValueError("Encryption is not enabled")
@@ -670,6 +684,10 @@ class PeerManager(BaseModel):
         if raw_bundle is None:
             warnings.warn(f"{peer_email} has not published an encryption key for us")
             return self.peer_fingerprint(peer_email)
+        if expected_fingerprint is not None:
+            self._check_published_fingerprint(
+                peer_email, raw_bundle, expected_fingerprint
+            )
         adopted = self._adopt_peer_bundle(
             peer_email, raw_bundle, explicit=trust_new_key
         )
@@ -680,8 +698,27 @@ class PeerManager(BaseModel):
             )
         return self.peer_fingerprint(peer_email)
 
+    @staticmethod
+    def _check_published_fingerprint(
+        peer_email: str, bundle: dict, expected_fingerprint: str
+    ) -> None:
+        """Raise unless ``bundle`` carries the fingerprint the user confirmed.
+
+        The storage provider is not trusted, so the bundle it serves is adopted
+        only when it matches what the peer read out.
+        """
+        published = bundle_fingerprint(bundle)
+        expected = normalize_fingerprint(expected_fingerprint)
+        if published != expected:
+            raise PeerFingerprintMismatchError(peer_email, expected, published)
+
     def _read_single_peer_bundle(self, peer_email: str) -> tuple[str, dict | None]:
-        """Read one peer's published bundle on a private connection (thread-safe)."""
+        """Read one peer's published bundle on a private connection (thread-safe).
+
+        A failed Drive call, a network error or a bundle file that is not JSON
+        reads as "no bundle", so one unreachable peer does not stop the check
+        for the rest. Any other error is a bug, and it is raised.
+        """
         try:
             connection = self.connection_router.connection_for_version_read(
                 create_new=True
@@ -690,7 +727,7 @@ class PeerManager(BaseModel):
                 peer_email,
                 self._read_peer_encryption_bundle(peer_email, connection),
             )
-        except Exception as e:
+        except (HttpError, *RETRYABLE_TRANSPORT_ERRORS, ValueError) as e:
             logger.warning(f"Could not read the encryption key of {peer_email}: {e}")
             return (peer_email, None)
 
@@ -723,9 +760,10 @@ class PeerManager(BaseModel):
             f"The published encryption key of {peer_email} differs from the "
             f"pinned key.\n  pinned:    {format_fingerprint(current)}\n"
             f"  published: {format_fingerprint(published)}\n"
-            f"Keeping the pinned key. Messages from this peer will fail to verify "
-            f"until you confirm the new fingerprint with them and run "
-            f"client.trust_peer_key({peer_email!r})."
+            "Keeping the pinned key. Messages from this peer will fail to verify "
+            "until you confirm the new fingerprint with them and run "
+            f"client.trust_peer_key({peer_email!r}, fingerprint) with the "
+            "fingerprint they read out."
         )
 
     def _write_encryption_bundle_for_peer(self, peer_email: str) -> dict | None:
@@ -748,7 +786,15 @@ class PeerManager(BaseModel):
             bundle_json = connection.read_peer_encryption_bundle(peer_email)
         if not bundle_json:
             return None
-        return json.loads(bundle_json).get(BUNDLE_FILE_KEY)
+        payload = json.loads(bundle_json)
+        if not isinstance(payload, dict):
+            # Reported as ValueError, like JSON that does not parse, rather than
+            # the AttributeError that .get() on a list would raise.
+            raise ValueError(
+                f"The bundle file of {peer_email} holds a {type(payload).__name__}, "
+                "not a JSON object"
+            )
+        return payload.get(BUNDLE_FILE_KEY)
 
     def load_peers(self, force_download: bool = False):
         """Load peers: from JSON (accepted + requested_by_me) + new requests from folder scan.

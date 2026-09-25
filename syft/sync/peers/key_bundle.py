@@ -43,6 +43,25 @@ class PeerKeyChangedError(ValueError):
         )
 
 
+class PeerFingerprintMismatchError(ValueError):
+    """The bundle a peer publishes does not carry the fingerprint they confirmed."""
+
+    def __init__(
+        self, peer_email: str, expected_fingerprint: str, published_fingerprint: str
+    ) -> None:
+        self.peer_email = peer_email
+        self.expected_fingerprint = expected_fingerprint
+        self.published_fingerprint = published_fingerprint
+        super().__init__(
+            f"The key {peer_email} publishes does not match the fingerprint you "
+            "confirmed with them.\n"
+            f"  confirmed: {format_fingerprint(expected_fingerprint)}\n"
+            f"  published: {format_fingerprint(published_fingerprint)}\n"
+            "The published key was not trusted. Someone may be tampering with the "
+            "key exchange, or the peer published a newer key since you compared."
+        )
+
+
 def did_for_email(email: str) -> str:
     return f"{DID_PREFIX}{email}"
 
@@ -58,6 +77,11 @@ def format_fingerprint(fingerprint: Optional[str]) -> str:
     return " ".join(fingerprint[i : i + 4] for i in range(0, len(fingerprint), 4))
 
 
+def normalize_fingerprint(fingerprint: str) -> str:
+    """Undo :func:`format_fingerprint`, so a pasted fingerprint compares equal."""
+    return "".join(fingerprint.split()).lower()
+
+
 def bundle_fingerprint(bundle: dict) -> str:
     """Fingerprint of the identity key in ``bundle`` (no identity check)."""
     return _parse(bundle).identity_fingerprint()
@@ -68,9 +92,12 @@ def _parse(bundle: dict) -> syc.SyftPublicKeyBundle:
         raise InvalidPeerBundleError(
             f"Expected a DID document (dict), got {type(bundle).__name__}"
         )
+    # from_did_document raises ValueError for a document it cannot read. Any
+    # other error is a bug, and it must not pass as "invalid bundle": that makes
+    # load_keys drop every pin and the next sync trust whatever Drive serves.
     try:
         parsed = syc.SyftPublicKeyBundle.from_did_document(bundle)
-    except Exception as e:
+    except ValueError as e:
         raise InvalidPeerBundleError(f"Could not parse key bundle: {e}") from e
     if not parsed.verify_signatures():
         raise InvalidPeerBundleError("Key bundle signatures do not verify")

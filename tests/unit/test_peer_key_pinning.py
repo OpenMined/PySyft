@@ -7,13 +7,19 @@ SYFT_peers.json, and how a rotated key is reported and then trusted.
 """
 
 import json
+import threading
 import warnings
+from types import SimpleNamespace
 
 import pytest
+from googleapiclient.errors import HttpError
+from httplib2 import Response
 
 from syft.sync.connections.drive.gdrive_transport import SYFT_PEERS_FILE
+from syft.sync.peers import key_bundle
 from syft.sync.peers.key_bundle import (
     InvalidPeerBundleError,
+    PeerFingerprintMismatchError,
     PeerKeyChangedError,
     bundle_fingerprint,
     format_fingerprint,
@@ -21,6 +27,7 @@ from syft.sync.peers.key_bundle import (
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_store import PeerStore, datasite_crypto_keys_path
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.version.peer_manager import PeerManager
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
 
@@ -88,6 +95,25 @@ def test_bundle_with_swapped_key_material_is_refused():
     tampered["keyAgreement"] = mallory.get_public_bundle()["keyAgreement"]
     with pytest.raises(InvalidPeerBundleError, match="parse|signature"):
         alice.set_peer_bundle(BOB, tampered)
+
+
+def test_unexpected_parse_error_is_raised_not_reported_as_invalid(monkeypatch):
+    """A bug in parsing must fail loudly, not read as a bad bundle to drop."""
+    alice, bob = _store(ALICE), _store(BOB)
+    alice.add_peer(Peer(email=BOB))
+
+    def broken_parser(document):
+        raise RuntimeError("bug in the parser")
+
+    monkeypatch.setattr(
+        key_bundle,
+        "syc",
+        SimpleNamespace(
+            SyftPublicKeyBundle=SimpleNamespace(from_did_document=broken_parser)
+        ),
+    )
+    with pytest.raises(RuntimeError, match="bug in the parser"):
+        alice.set_peer_bundle(BOB, bob.get_public_bundle())
 
 
 def test_pinned_bundle_that_no_longer_validates_is_refused_at_use():
@@ -223,6 +249,111 @@ def test_key_trusted_by_another_process_is_adopted_without_warning(tmp_path):
     assert notebook.peer_fingerprint(BOB) == new_bob.my_fingerprint
 
 
+def test_pin_survives_sync_that_leaves_peer_out(tmp_path):
+    """A peer rejected for one sync drops out of memory; the key file keeps the pin."""
+    path = tmp_path / "crypto_keys.json"
+    alice = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    bob = _store(BOB)
+    alice.add_peer(Peer(email=BOB))
+    alice.set_peer_bundle(BOB, bob.get_public_bundle())
+    old_fp = alice.peer_fingerprint(BOB)
+
+    # One sync with Bob rejected: SYFT_peers.json lists nobody.
+    alice.set_peers([])
+    # The next sync has Bob accepted again, with another key in the Drive copy.
+    impostor = _store(BOB)
+    with pytest.warns(UserWarning, match="Ignoring a cached encryption key"):
+        alice.set_peers(
+            [Peer(email=BOB, public_encryption_bundle=impostor.get_public_bundle())]
+        )
+
+    assert alice.peer_fingerprint(BOB) == old_fp
+    on_disk = json.loads(path.read_text())["peer_bundles"]
+    assert bundle_fingerprint(on_disk[BOB]) == old_fp
+
+
+def test_pin_from_another_process_wins_over_first_use(tmp_path):
+    """Bob is in memory without a key while syft-bg already pinned him in the key file."""
+    path = tmp_path / "crypto_keys.json"
+    notebook = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    notebook.add_peer(Peer(email=BOB))
+
+    bob = _store(BOB)
+    daemon = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    daemon.add_peer(Peer(email=BOB))
+    daemon.set_peer_bundle(BOB, bob.get_public_bundle())
+
+    impostor = _store(BOB)
+    with pytest.warns(UserWarning, match="Ignoring a cached encryption key"):
+        notebook.set_peers(
+            [Peer(email=BOB, public_encryption_bundle=impostor.get_public_bundle())]
+        )
+    assert notebook.peer_fingerprint(BOB) == bob.my_fingerprint
+
+
+def test_set_peer_bundle_refuses_key_other_than_stored_pin(tmp_path):
+    path = tmp_path / "crypto_keys.json"
+    notebook = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    notebook.add_peer(Peer(email=BOB))
+
+    bob = _store(BOB)
+    daemon = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    daemon.add_peer(Peer(email=BOB))
+    daemon.set_peer_bundle(BOB, bob.get_public_bundle())
+
+    with pytest.raises(PeerKeyChangedError):
+        notebook.set_peer_bundle(BOB, _store(BOB).get_public_bundle())
+    stored = json.loads(path.read_text())["peer_bundles"][BOB]
+    assert bundle_fingerprint(stored) == bob.my_fingerprint
+
+
+def test_failed_key_file_write_leaves_old_file(tmp_path, monkeypatch):
+    path = tmp_path / "crypto_keys.json"
+    alice = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    alice.add_peer(Peer(email=BOB))
+    before = path.read_text()
+
+    def crash(src, dst):
+        raise OSError("disk full")
+
+    monkeypatch.setattr("syft.sync.peers.peer_store.os.replace", crash)
+    with pytest.raises(OSError, match="disk full"):
+        alice.set_peer_bundle(BOB, _store(BOB).get_public_bundle())
+    monkeypatch.undo()
+
+    assert path.read_text() == before
+    assert PeerStore.load_keys(path).email == ALICE
+    assert list(tmp_path.glob("*.tmp")) == []
+
+
+def test_concurrent_pins_from_two_stores_are_all_kept(tmp_path):
+    """The lock covers read, change and write, so no pin is lost between writers."""
+    path = tmp_path / "crypto_keys.json"
+    PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    stores = [
+        PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+        for _ in range(2)
+    ]
+    peers = [[_store(f"peer{s}-{i}@example.com") for i in range(5)] for s in range(2)]
+
+    def pin_all(store, owners):
+        for owner in owners:
+            store.add_peer(Peer(email=owner.email))
+            store.set_peer_bundle(owner.email, owner.get_public_bundle())
+
+    threads = [
+        threading.Thread(target=pin_all, args=(store, owners))
+        for store, owners in zip(stores, peers)
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    on_disk = json.loads(path.read_text())["peer_bundles"]
+    assert set(on_disk) == {owner.email for owners in peers for owner in owners}
+
+
 def test_corrupt_stored_pin_is_dropped_on_load(tmp_path):
     path = tmp_path / "crypto_keys.json"
     alice = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
@@ -315,12 +446,78 @@ def test_rotated_peer_key_is_reported_on_load_and_adopted_on_trust():
     assert do.peer_fingerprint(ds.email) == old_fp
 
     with pytest.warns(UserWarning, match="Trusting the new key"):
-        assert do.trust_peer_key(ds.email) == new_fp
+        assert do.trust_peer_key(ds.email, new_fp) == new_fp
     assert do.peer_fingerprint(ds.email) == new_fp
 
     # The Drive cache now carries the trusted key too.
     data = json.loads(_peers_json_file(do).content)
     assert bundle_fingerprint(data[ds.email]["public_encryption_bundle"]) == new_fp
+
+
+def _ds_reinstalls(ds: SyftboxManager, do: SyftboxManager) -> str:
+    """The DS regenerates keys and re-publishes its bundle; returns the new fingerprint."""
+    ds._init_encrypted_peer_store()
+    ds.peer_manager._write_encryption_bundle_for_peer(do.email)
+    return ds.encryption_fingerprint
+
+
+def test_trust_peer_key_refuses_published_key_with_other_fingerprint():
+    ds, do = SyftboxManager.pair_with_mock_drive_service_connection(encryption=True)
+    old_fp = do.peer_fingerprint(ds.email)
+    _ds_reinstalls(ds, do)
+    # The fingerprint the DS read out is not the one Drive serves.
+    confirmed = _store(ds.email).my_fingerprint
+
+    with pytest.raises(PeerFingerprintMismatchError) as info:
+        do.trust_peer_key(ds.email, confirmed)
+    assert info.value.expected_fingerprint == confirmed
+    assert do.peer_fingerprint(ds.email) == old_fp
+
+
+def test_trust_peer_key_accepts_fingerprint_as_read_out():
+    ds, do = SyftboxManager.pair_with_mock_drive_service_connection(encryption=True)
+    new_fp = _ds_reinstalls(ds, do)
+
+    read_out = format_fingerprint(new_fp).upper()
+    with pytest.warns(UserWarning, match="Trusting the new key"):
+        assert do.trust_peer_key(ds.email, read_out) == new_fp
+    assert do.peer_fingerprint(ds.email) == new_fp
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        HttpError(Response({"status": 403}), b"forbidden"),
+        ConnectionResetError("reset"),
+        json.JSONDecodeError("bad json", "", 0),
+    ],
+)
+def test_unreadable_published_bundle_reads_as_none(monkeypatch, error):
+    ds, do = SyftboxManager.pair_with_mock_drive_service_connection(encryption=True)
+
+    def fail(self, peer_email, connection=None):
+        raise error
+
+    monkeypatch.setattr(PeerManager, "_read_peer_encryption_bundle", fail)
+    assert do.peer_manager._read_single_peer_bundle(ds.email) == (ds.email, None)
+
+
+def test_unexpected_error_reading_published_bundle_is_raised(monkeypatch):
+    ds, do = SyftboxManager.pair_with_mock_drive_service_connection(encryption=True)
+
+    def fail(self, peer_email, connection=None):
+        raise RuntimeError("bug")
+
+    monkeypatch.setattr(PeerManager, "_read_peer_encryption_bundle", fail)
+    with pytest.raises(RuntimeError, match="bug"):
+        do.peer_manager._read_single_peer_bundle(ds.email)
+
+
+def test_bundle_file_holding_json_list_is_value_error():
+    ds, do = SyftboxManager.pair_with_mock_drive_service_connection(encryption=True)
+    connection = SimpleNamespace(read_peer_encryption_bundle=lambda email: "[]")
+    with pytest.raises(ValueError, match="not a JSON object"):
+        do.peer_manager._read_peer_encryption_bundle(ds.email, connection)
 
 
 def test_approving_peer_again_after_key_change_warns_and_adopts():
@@ -359,7 +556,7 @@ def test_pins_survive_new_manager_on_same_datasite():
     # Point the DO's store at a key file and pin through it, as a real login does.
     keys_path = datasite_crypto_keys_path(do.syftbox_folder, do.email)
     do._peer_store.save_keys(keys_path)
-    do.trust_peer_key(ds.email)
+    do.trust_peer_key(ds.email, ds.encryption_fingerprint)
 
     reloaded = PeerStore.create(
         email=do.email, use_encryption=True, keys_path=keys_path

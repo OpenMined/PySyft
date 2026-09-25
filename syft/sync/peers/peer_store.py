@@ -6,10 +6,14 @@ Shared between PeerManager and all ConnectionRouter instances.
 
 import json
 import logging
+import os
+import tempfile
 import warnings
+from contextlib import contextmanager
 from pathlib import Path
-from typing import List, Optional
+from typing import Iterator, List, Optional
 
+import portalocker
 import syft_crypto_python as syc
 from pydantic import BaseModel, PrivateAttr
 
@@ -162,8 +166,7 @@ class PeerStore(BaseModel):
         """
         if not self.use_encryption:
             return
-        cached = self.get_cached_peer(incoming.email)
-        pinned = cached.public_encryption_bundle if cached else None
+        pinned = self._current_pin(incoming.email)
         candidate = incoming.public_encryption_bundle
         if pinned is not None:
             if candidate is not None and candidate != pinned:
@@ -180,6 +183,20 @@ class PeerStore(BaseModel):
                 incoming.public_encryption_bundle = None
             else:
                 self._persist_peer_bundle(incoming.email, candidate)
+
+    def _current_pin(self, peer_email: str) -> dict | None:
+        """The pin for ``peer_email``: the one in memory, else the one in the key file.
+
+        The in-memory list is rebuilt on every sync, so a peer missing from one
+        sync (rejected for a while), or pinned by another process, has no pin in
+        memory. The key file still holds it, and it must win, or a first use
+        would write a Drive bundle over it.
+        """
+        cached = self.get_cached_peer(peer_email)
+        pinned = cached.public_encryption_bundle if cached else None
+        if pinned is None:
+            pinned = self._valid_stored_pin(peer_email)
+        return pinned
 
     @staticmethod
     def _warn_ignoring_cached_key(
@@ -286,13 +303,14 @@ class PeerStore(BaseModel):
         """
         peer = self._ensure_peer(peer_email)
         parsed = self.validate_peer_bundle(peer_email, bundle)
-        pinned = peer.public_encryption_bundle
+        pinned = self._current_pin(peer_email)
         if pinned is not None:
             old_fp = bundle_fingerprint(pinned)
             new_fp = parsed.identity_fingerprint()
             if old_fp != new_fp and not allow_key_change:
                 raise PeerKeyChangedError(peer_email, old_fp, new_fp)
             if pinned == bundle:
+                peer.public_encryption_bundle = bundle
                 return
         peer.public_encryption_bundle = bundle
         self._persist_peer_bundle(peer_email, bundle)
@@ -368,17 +386,21 @@ class PeerStore(BaseModel):
             if peer.public_encryption_bundle is not None
         }
 
-    def save_keys(self, path: Path) -> None:
+    def _key_file_data(self) -> dict:
+        """The key file as this store would write it from memory."""
         keys = self._ensure_private_keys()
-        data = {
+        return {
             "version": CRYPTO_KEYS_VERSION,
             "email": self.email,
             "keys_jwk": keys.to_jwks(),
             PEER_BUNDLES_KEY: self._pinned_bundles(),
         }
+
+    def save_keys(self, path: Path) -> None:
+        data = self._key_file_data()
         path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(data, indent=2))
+        with _locked_key_file(path):
+            _write_key_file(path, data)
         self._keys_path = path
 
     def _read_key_file(self) -> dict | None:
@@ -400,25 +422,31 @@ class PeerStore(BaseModel):
         pin = bundles.get(peer_email) if isinstance(bundles, dict) else None
         return pin if isinstance(pin, dict) else None
 
+    def _valid_stored_pin(self, peer_email: str) -> dict | None:
+        """The stored pin for ``peer_email``, or None when absent or no longer valid."""
+        pin = self._stored_pin(peer_email)
+        if pin is None:
+            return None
+        try:
+            parse_and_validate_bundle(peer_email, pin)
+        except InvalidPeerBundleError as e:
+            logger.warning(f"Ignoring stored key pin for {peer_email}: {e}")
+            return None
+        return pin
+
     def _persist_peer_bundle(self, peer_email: str, bundle: dict) -> None:
         """Record one pin in the key file, keeping pins other processes wrote.
 
         The file is re-read and only this peer's entry is replaced, so two
         processes on one datasite (a notebook and syft-bg) do not erase each
-        other's pins.
+        other's pins. The lock covers the read, the change and the write, so
+        neither process writes over a pin the other recorded in between.
         """
         if self._keys_path is None or self._private_keys is None:
             return
-        data = self._read_key_file()
-        if data is None:
-            self.save_keys(self._keys_path)
-            return
-        bundles = data.get(PEER_BUNDLES_KEY)
-        if not isinstance(bundles, dict):
-            bundles = {}
-        bundles[peer_email] = bundle
-        data[PEER_BUNDLES_KEY] = bundles
-        self._keys_path.write_text(json.dumps(data, indent=2))
+        with _locked_key_file(self._keys_path):
+            data = self._read_key_file() or self._key_file_data()
+            _write_key_file(self._keys_path, _with_pin(data, peer_email, bundle))
 
     @classmethod
     def load_keys(cls, path: Path) -> "PeerStore":
@@ -481,6 +509,51 @@ class PeerStore(BaseModel):
             store.generate_keys()
             store.save_keys(path)
             return store
+
+
+@contextmanager
+def _locked_key_file(path: Path) -> Iterator[None]:
+    """Hold an exclusive cross-process lock on the key file at ``path``.
+
+    The lock is on a sibling ``.lock`` file, as in ``PersistedDict``, so the
+    key file itself can be replaced while the lock is held.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path.with_suffix(f"{path.suffix}.lock"), "a") as f:
+        portalocker.lock(f, portalocker.LOCK_EX)
+        try:
+            yield
+        finally:
+            portalocker.unlock(f)
+
+
+def _with_pin(data: dict, peer_email: str, bundle: dict) -> dict:
+    """``data`` from the key file, with ``bundle`` recorded as the pin of ``peer_email``."""
+    bundles = data.get(PEER_BUNDLES_KEY)
+    if not isinstance(bundles, dict):
+        bundles = {}
+    bundles[peer_email] = bundle
+    data[PEER_BUNDLES_KEY] = bundles
+    return data
+
+
+def _write_key_file(path: Path, data: dict) -> None:
+    """Replace the key file at ``path`` with ``data`` in one step.
+
+    The key file holds the only copy of the private keys, so a write cut short
+    must leave the old file in place. The data goes to a temporary file in the
+    same folder, reaches the disk, and then takes the name of the key file.
+    ``mkstemp`` creates the temporary file readable by this user only.
+    """
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(json.dumps(data, indent=2))
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    finally:
+        Path(tmp).unlink(missing_ok=True)
 
 
 def _peers_from_stored_pins(bundles: dict[str, dict]) -> List[Peer]:
