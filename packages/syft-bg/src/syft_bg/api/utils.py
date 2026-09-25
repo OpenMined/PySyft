@@ -1,9 +1,12 @@
 """Utility functions used by the syft-bg API layer."""
 
+import json
 import os
 import shutil
 from collections.abc import Sequence
 from pathlib import Path, PurePosixPath
+
+from syft_rds.apis import ApiArg, infer_args
 
 from syft_bg.approve.api_store import ApiStore
 from syft_bg.approve.config import AutoApprovalObj
@@ -249,6 +252,24 @@ def load_auto_approvals_or_empty(
 def api_store_for_job(job) -> ApiStore:
     """ApiStore for the datasite the job was submitted to."""
     return ApiStore(job._client.config.syftbox_folder, job.datasite_owner_email)
+
+
+def read_job_args(job, name_only: list[str]) -> list[ApiArg]:
+    """Arguments of a job, inferred from its one name-only json in code/.
+
+    Names, types and defaults come from the example values in that file.
+    Returns [] when there is no such file, or it does not hold a JSON object.
+    """
+    params_files = [
+        p for p in name_only if p.startswith("code/") and p.endswith(".json")
+    ]
+    if len(params_files) != 1:
+        return []
+    try:
+        params = json.loads((job.job_submission_path / params_files[0]).read_text())
+    except (OSError, ValueError):
+        return []
+    return infer_args(params) if isinstance(params, dict) else []
 
 
 def get_api_store() -> ApiStore:

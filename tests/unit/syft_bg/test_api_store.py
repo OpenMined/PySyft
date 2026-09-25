@@ -1,12 +1,14 @@
 """Tests for storing auto-approval objects as apis in SyftBox."""
 
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
+from syft_bg.api.utils import read_job_args
 from syft_bg.approve.api_store import ApiStore
 from syft_permissions import PERMISSION_FILE_NAME, RuleSet
+from syft_rds.apis import ApiArg
 
 DO_EMAIL = "do@test.com"
 
@@ -73,3 +75,41 @@ def test_delete_removes_folder(store, script):
     assert store.delete("analysis") is True
     assert not store.api_dir("analysis").exists()
     assert store.delete("analysis") is False
+
+
+def test_create_stores_args(store, script):
+    args = [
+        ApiArg(name="a", type="int", default=1),
+        ApiArg(name="b", type="str", required=True),
+    ]
+    store.create("adder", [("run.sh", script)], [], ["a@x.com"], args=args)
+
+    assert store.get("adder").args == args
+    stored = yaml.safe_load((store.api_dir("adder") / "api.yaml").read_text())
+    assert stored["args"][0] == {
+        "name": "a",
+        "type": "int",
+        "default": 1,
+        "required": False,
+    }
+
+
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        (
+            '{"a": 1, "b": "x"}',
+            [
+                ApiArg(name="a", type="int", default=1),
+                ApiArg(name="b", type="str", default="x"),
+            ],
+        ),
+        ("[1, 2]", []),
+        ("not json", []),
+    ],
+)
+def test_read_job_args(temp_dir, params, expected):
+    (temp_dir / "code").mkdir()
+    (temp_dir / "code" / "params.json").write_text(params)
+    job = MagicMock(job_submission_path=temp_dir)
+    assert read_job_args(job, ["config.yaml", "code/params.json"]) == expected

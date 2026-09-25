@@ -167,24 +167,7 @@ class JobClient(BaseJobClient):
             job_name = f"Job - {random_id}"
         JobStorage.validate_job_name(job_name)
 
-        # Ensure user directory exists (create if it doesn't)
-        user_dir = self.config.get_user_dir(user)
-        if not user_dir.exists():
-            user_dir.mkdir(parents=True, exist_ok=True)
-            print(f"Created user directory: {user_dir}")
-
-        # Ensure inbox directory structure exists
-        self._ensure_my_submission_directory_exists(submitting_to_email)
-
-        # Create job directory under inbox/<ds_email>/[v<n>/]<job_name>/
-        ref = self.manager.new_submission_ref(submitting_to_email, job_name)
-        job_dir = self.manager.submission_dir(ref)
-
-        if job_dir.exists():
-            raise FileExistsError(
-                f"Job '{job_name}' already exists for user '{submitting_to_email}'"
-            )
-
+        ref, job_dir = self._new_submission_dir(submitting_to_email, job_name)
         self._write_bash_script(job_dir, script)
 
         # Write config.yaml in the version the datasite owner understands
@@ -198,6 +181,71 @@ class JobClient(BaseJobClient):
         )
         self.manager.write_submission(ref, config)
 
+        return job_dir
+
+    def _new_submission_dir(
+        self, submitting_to_email: str, job_name: str
+    ) -> tuple[JobRef, Path]:
+        """Resolve inbox/<ds_email>/[v<n>/]<job_name>/ for a new job.
+
+        Creates the parent folders, not the job dir itself.
+        """
+        user_dir = self.config.get_user_dir(submitting_to_email)
+        if not user_dir.exists():
+            user_dir.mkdir(parents=True, exist_ok=True)
+            print(f"Created user directory: {user_dir}")
+        self._ensure_my_submission_directory_exists(submitting_to_email)
+
+        ref = self.manager.new_submission_ref(submitting_to_email, job_name)
+        job_dir = self.manager.submission_dir(ref)
+        if job_dir.exists():
+            raise FileExistsError(
+                f"Job '{job_name}' already exists for user '{submitting_to_email}'"
+            )
+        return ref, job_dir
+
+    def submit_prepared_python_job(
+        self,
+        user: str,
+        job_name: str,
+        run_script: bytes,
+        code_files: dict[str, bytes],
+        entrypoint: str,
+    ) -> Path:
+        """Submit a Python job from exact file contents.
+
+        Unlike submit_python_job, run.sh is not generated, so the job is
+        byte-for-byte what the caller passes, e.g. the pinned files of an api.
+
+        Args:
+            user: Email address of the datasite owner to submit job to
+            job_name: Name of the job (directory name)
+            run_script: Content of run.sh
+            code_files: {path relative to code/: content}
+            entrypoint: The Python file run.sh executes, relative to code/
+
+        Returns:
+            Path to the created job directory in inbox/
+        """
+        JobStorage.validate_job_name(job_name)
+        ref, job_dir = self._new_submission_dir(user, job_name)
+        for rel_path, content in code_files.items():
+            dest = job_dir / "code" / rel_path
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(content)
+        (job_dir / "run.sh").write_bytes(run_script)
+        os.chmod(job_dir / "run.sh", 0o755)
+
+        config = JobSubmissionMetadata(
+            name=job_name,
+            type="python",
+            submitted_by=self.current_user_email,
+            datasite_email=user,
+            submitted_at=datetime.now(timezone.utc),
+            entrypoint=entrypoint,
+            files=sorted(code_files),
+        )
+        self.manager.write_submission(ref, config)
         return job_dir
 
     def _write_bash_script(self, job_dir: Path, script: str) -> None:
@@ -413,22 +461,7 @@ python {entrypoint_path}
             self._validate_code_path_and_entrypoint(code_path, entrypoint)
         )
 
-        # Ensure user directory exists (create if it doesn't)
-        user_dir = self.config.get_user_dir(user)
-        if not user_dir.exists():
-            user_dir.mkdir(parents=True, exist_ok=True)
-            print(f"Created user directory: {user_dir}")
-
-        # Ensure inbox directory structure exists
-        self._ensure_my_submission_directory_exists(submitting_to_email)
-
-        # Create job directory under inbox/<ds_email>/[v<n>/]<job_name>/
-        ref = self.manager.new_submission_ref(submitting_to_email, job_name)
-        job_dir = self.manager.submission_dir(ref)
-
-        if job_dir.exists():
-            raise FileExistsError(f"Job '{job_name}' already exists for user '{user}'")
-
+        ref, job_dir = self._new_submission_dir(submitting_to_email, job_name)
         job_dir.mkdir(parents=True)
 
         # Copy code into code/ subdirectory

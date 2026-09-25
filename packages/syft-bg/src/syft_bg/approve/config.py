@@ -5,37 +5,13 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from syft_rds.apis.models import ApiDefinition, FileEntry
+
 from syft_bg.common.config import get_default_paths
 
 
-class FileEntry(BaseModel):
-    """A file stored in the auto-approvals directory with its hash."""
-
-    relative_path: str  # e.g. "subdir/main.py"
-    # Absolute path of the stored copy, filled in by ApiStore on load, e.g.
-    # "<datasite>/app_data/apis/my_analysis/files/subdir/main.py"
-    path: str = Field(default="", exclude=True)
-    hash: str  # e.g. "sha256:abc123..."
-
-    @classmethod
-    def from_file(cls, relative_path: str, path: str | Path) -> "FileEntry":
-        """Create a FileEntry from an existing file, computing its hash."""
-        import hashlib
-
-        p = Path(path)
-        content = p.read_text(encoding="utf-8")
-        file_hash = "sha256:" + hashlib.sha256(content.encode("utf-8")).hexdigest()
-        return cls(relative_path=relative_path, path=str(p), hash=file_hash)
-
-
-class AutoApprovalObj(BaseModel):
-    """An auto-approval object bundling content-matched files, name-only files, and peers."""
-
-    file_contents: list[FileEntry] = Field(
-        default_factory=list
-    )  # files matched by content+hash
-    file_paths: list[str] = Field(default_factory=list)  # files matched by path only
-    peers: list[str] = Field(default_factory=list)  # peer emails
+# The api format is shared with the client, which reads it on the DS side.
+AutoApprovalObj = ApiDefinition
 
 
 class AutoApprovalsConfig(BaseModel):
