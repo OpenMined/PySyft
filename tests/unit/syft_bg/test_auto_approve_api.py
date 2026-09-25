@@ -7,9 +7,18 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-from syft_bg.api.api import auto_approve, list_auto_approvals, remove_auto_approve
-from syft_bg.api.utils import copy_and_hash_files
+from syft_bg.api.api import (
+    auto_approve,
+    auto_approve_job,
+    list_auto_approvals,
+    remove_auto_approve,
+)
+from syft_bg.api.utils import (
+    copy_and_hash_files,
+    get_job_user_files,
+    resolve_content_files,
+    resolve_job_file_args,
+)
 from syft_bg.approve.config import (
     AutoApprovalObj,
     AutoApprovalsConfig,
@@ -244,33 +253,42 @@ class TestAutoApproveLockScope:
 class TestHandlerReloadsConfig:
     """The approve service must pick up YAML changes without a restart."""
 
-    def _make_test_job(self, code_dir: Path, submitted_by: str = "alice@test.com"):
+    def _write_submission(self, base_dir: Path) -> Path:
+        """A submission tree: code/main.py plus the root files the runner reads."""
+        (base_dir / "code").mkdir(parents=True)
+        (base_dir / "code" / "main.py").write_text("print('hello')\n")
+        (base_dir / "run.sh").write_text("#!/bin/bash\npython code/main.py\n")
+        (base_dir / "config.yaml").write_text("name: test-job\n")
+        return base_dir
+
+    def _make_test_job(
+        self, submission_dir: Path, submitted_by: str = "alice@test.com"
+    ):
         job = MagicMock()
         job.name = "test-job"
         job.status = "pending"
         job.submitted_by = submitted_by
-        job.code_dir = code_dir
+        job.job_submission_path = submission_dir
+        job.code_dir = submission_dir / "code"
         job.files = []
         return job
 
     def _create_matching_autoapprove_obj_from_dir(
-        self, code_dir: Path, peer: str
+        self, submission_dir: Path, peer: str
     ) -> AutoApprovalObj:
         entries = [
-            FileEntry.from_file(str(f.relative_to(code_dir)), f)
-            for f in sorted(code_dir.rglob("*"))
+            FileEntry.from_file(f.relative_to(submission_dir).as_posix(), f)
+            for f in sorted(submission_dir.rglob("*"))
             if f.is_file()
         ]
         return AutoApprovalObj(file_contents=entries, peers=[peer])
 
     def test_picks_up_added_object(self, temp_dir):
-        code_dir = temp_dir / "code"
-        code_dir.mkdir()
-        (code_dir / "main.py").write_text("print('hello')\n")
+        submission = self._write_submission(temp_dir / "job")
         config_path = _seed_config(temp_dir, {})
 
         handler = JobApprovalHandler(client=MagicMock(), config_path=config_path)
-        job = self._make_test_job(code_dir)
+        job = self._make_test_job(submission)
 
         # No object yet — should not match.
         first = handler.evaluate_auto_approval(job)
@@ -282,7 +300,7 @@ class TestHandlerReloadsConfig:
                 auto_approvals=AutoApprovalsConfig(
                     objects={
                         "r1": self._create_matching_autoapprove_obj_from_dir(
-                            code_dir, "alice@test.com"
+                            submission, "alice@test.com"
                         )
                     }
                 )
@@ -294,21 +312,19 @@ class TestHandlerReloadsConfig:
         assert second.match is True
 
     def test_picks_up_removed_object(self, temp_dir):
-        code_dir = temp_dir / "code"
-        code_dir.mkdir()
-        (code_dir / "main.py").write_text("print('hello')\n")
+        submission = self._write_submission(temp_dir / "job")
 
         config_path = _seed_config(
             temp_dir,
             {
                 "r1": self._create_matching_autoapprove_obj_from_dir(
-                    code_dir, "alice@test.com"
+                    submission, "alice@test.com"
                 )
             },
         )
 
         handler = JobApprovalHandler(client=MagicMock(), config_path=config_path)
-        job = self._make_test_job(code_dir)
+        job = self._make_test_job(submission)
 
         first = handler.evaluate_auto_approval(job)
         assert first.match is True
@@ -355,3 +371,163 @@ class TestAutoApproveDisclosures:
             approve=AutoApproveConfig(default_disclosures=["logs", "return_code"])
         ).save(config_path)
         assert self._run(config_path)["disclosures"] == ["logs", "return_code"]
+
+
+class TestJobUserFiles:
+    """What an approval object is built from."""
+
+    FILES = (
+        "code/main.py",
+        "run.sh",
+        "config.yaml",
+        "code/outputs/result.json",
+        "code/.venv/bin/python",
+        "code/__pycache__/main.pyc",
+    )
+
+    def _submission(self, temp_dir: Path, status: str) -> MagicMock:
+        submission = temp_dir / status
+        for rel in self.FILES:
+            path = submission / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("x")
+        job = MagicMock()
+        job.job_submission_path = submission
+        job.status = status
+        return job
+
+    def test_pending_job_keeps_every_file(self, temp_dir):
+        """Nothing has run, so these are files the submitter shipped.
+
+        Every later job of that shape carries them too, and the matcher counts
+        them, so a rule that left them out could never match.
+        """
+        assert set(get_job_user_files(self._submission(temp_dir, "pending"))) == {
+            "code/main.py",
+            "run.sh",
+            "config.yaml",
+            "code/outputs/result.json",
+            "code/.venv/bin/python",
+            "code/__pycache__/main.pyc",
+        }
+
+    def test_ran_job_drops_run_created_dirs(self, temp_dir):
+        """`_prepare_outputs_dir` makes code/outputs/ and run.sh makes .venv/.
+
+        A pending job carries neither, so pinning them would match nothing.
+        """
+        assert set(get_job_user_files(self._submission(temp_dir, "done"))) == {
+            "code/main.py",
+            "run.sh",
+            "config.yaml",
+        }
+
+
+class TestAutoApproveJobUnreadableFiles:
+    """A pending job can ship files that are not UTF-8 text."""
+
+    def _pending_job(self, temp_dir: Path) -> MagicMock:
+        submission = temp_dir / "job"
+        (submission / "code" / "__pycache__").mkdir(parents=True)
+        (submission / "code" / "main.py").write_text("print(1)")
+        (submission / "code" / "__pycache__" / "main.pyc").write_bytes(
+            b"\xff\xfe\x00binary"
+        )
+        (submission / "run.sh").write_text("python code/main.py")
+        (submission / "config.yaml").write_text("name: job")
+        job = MagicMock()
+        job.job_submission_path = submission
+        job.status = "pending"
+        job.name = "job"
+        job.submitted_by = "alice@test.com"
+        return job
+
+    def test_returns_error_and_writes_nothing(self, temp_dir):
+        """The matcher cannot read the file either, so no rule could match."""
+        job = self._pending_job(temp_dir)
+        with _patched_paths(temp_dir) as paths:
+            result = auto_approve_job(job)
+
+            assert result.success is False
+            assert "code/__pycache__/main.pyc" in result.error
+            assert not paths.config.exists()
+            assert not any(paths.auto_approvals_dir.glob("*"))
+
+
+_USER_FILES = {
+    "run.sh": Path("/j/run.sh"),
+    "config.yaml": Path("/j/config.yaml"),
+    "code/main.py": Path("/j/code/main.py"),
+    "code/utils/helpers.py": Path("/j/code/utils/helpers.py"),
+    "code/a/helpers.py": Path("/j/code/a/helpers.py"),
+}
+
+
+class TestResolveJobFileArgs:
+    """Owner-typed names resolve against paths from the submission root."""
+
+    def test_exact_path_is_kept(self):
+        assert resolve_job_file_args(_USER_FILES, ["code/main.py"]) == (
+            ["code/main.py"],
+            None,
+        )
+
+    def test_bare_name_resolves(self):
+        assert resolve_job_file_args(_USER_FILES, ["main.py"]) == (
+            ["code/main.py"],
+            None,
+        )
+
+    def test_path_relative_to_code_resolves(self):
+        """The form the API took when paths were relative to code/."""
+        assert resolve_job_file_args(_USER_FILES, ["utils/helpers.py"]) == (
+            ["code/utils/helpers.py"],
+            None,
+        )
+
+    def test_dot_prefix_resolves(self):
+        assert resolve_job_file_args(_USER_FILES, ["./code/main.py"]) == (
+            ["code/main.py"],
+            None,
+        )
+
+    def test_ambiguous_name_is_an_error(self):
+        resolved, error = resolve_job_file_args(_USER_FILES, ["helpers.py"])
+        assert resolved == []
+        assert "several files" in error
+
+    def test_partial_component_does_not_match(self):
+        """A suffix matches whole path components only."""
+        resolved, error = resolve_job_file_args(_USER_FILES, ["ils/helpers.py"])
+        assert resolved == []
+        assert "not found" in error
+
+
+class TestResolveContentFilesBaseDir:
+    """With a base directory, the stored path is the one a job is matched on."""
+
+    def _submission(self, temp_dir: Path) -> Path:
+        submission = temp_dir / "job"
+        (submission / "code").mkdir(parents=True)
+        (submission / "code" / "main.py").write_text("print(1)")
+        (submission / "run.sh").write_text("python code/main.py")
+        return submission
+
+    def test_dot_prefix_is_normalized(self, temp_dir):
+        base = self._submission(temp_dir)
+        files, error = resolve_content_files(["./code/main.py", "./run.sh"], base)
+        assert error is None
+        assert [rel for rel, _ in files] == ["code/main.py", "run.sh"]
+
+    def test_absolute_path_inside_base_is_made_relative(self, temp_dir):
+        base = self._submission(temp_dir)
+        files, error = resolve_content_files([str(base / "code" / "main.py")], base)
+        assert error is None
+        assert [rel for rel, _ in files] == ["code/main.py"]
+
+    def test_path_outside_base_is_an_error(self, temp_dir):
+        base = self._submission(temp_dir)
+        (temp_dir / "outside.py").write_text("x")
+        files, error = resolve_content_files(["../outside.py"], base)
+        assert files == []
+        assert "outside" in error

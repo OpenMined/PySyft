@@ -17,6 +17,8 @@ from syft.sync.peers.peer_list import PeerList
 from syft.sync.version.peer_manager import CompatAction
 from syft_enclaves.attestation import (
     AppraisalPolicy,
+    AttestationError,
+    bundle_fingerprint,
     verify_attestation_token,
 )
 from syft_enclaves.enclave_job_client import EnclaveJobClient
@@ -101,6 +103,13 @@ class SyftEnclaveClient:
         from Drive. Returns None (with an info print) when no token is available;
         raises AttestationError only when verification of an existing token fails.
 
+        When this client encrypts, the token must also bind the enclave key
+        bundle this client holds: the enclave puts the fingerprint of its
+        identity key into the token's nonce, and the check fails when that
+        differs from the bundle received over Drive, or when the token carries
+        no fingerprint. The bundle arrives once the enclave accepts the peer
+        request, so call ``sync()`` (or ``load_peers()``) before attesting.
+
         Args:
             peer_email: the enclave peer to attest.
             expected_image_digest: a "sha256:..." container image digest you
@@ -130,7 +139,33 @@ class SyftEnclaveClient:
                 "(not running in a Confidential Space); skipping attestation."
             )
             return None
+        policy = self._pin_enclave_key(peer_email, policy or AppraisalPolicy())
         return verify_attestation_token(version_info.attestation_token, policy=policy)
+
+    def _pin_enclave_key(
+        self, peer_email: str, policy: AppraisalPolicy
+    ) -> AppraisalPolicy:
+        """Fill the policy's expected key fingerprint from the bundle held for the peer.
+
+        Uses the cached bundle, since that is the key ``PeerStore.encrypt``
+        uses. Left as is when the caller already set a fingerprint or this
+        client does not encrypt. Raises when no bundle is held yet: with
+        nothing to bind, a pass now would be mistaken for a full attestation.
+        """
+        peer_store = self._rds.peer_manager.peer_store
+        if policy.expected_key_fingerprint or not peer_store.use_encryption:
+            return policy
+        peer = peer_store.get_cached_peer(peer_email)
+        bundle = peer.public_encryption_bundle if peer else None
+        if bundle is None:
+            raise AttestationError(
+                f"No encryption key bundle held for {peer_email!r}, so the "
+                "attestation cannot be bound to a key. Run client.sync() once "
+                "the enclave has accepted the peer request, then attest again."
+            )
+        return policy.model_copy(
+            update={"expected_key_fingerprint": bundle_fingerprint(bundle)}
+        )
 
     def sync(self):
         self._rds.sync()

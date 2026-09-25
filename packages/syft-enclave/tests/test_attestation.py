@@ -4,6 +4,13 @@ from unittest.mock import patch
 
 import pytest
 
+import syft_crypto_python as syc
+from attestation_helpers import (
+    DEFAULT_TEST_POLICY,
+    EXPECTED_VERSION_NONCE,
+    FAKE_KEY_FINGERPRINT,
+    valid_claims as _valid_claims,
+)
 from syft.version import SYFT_VERSION
 
 from syft_enclaves.attestation import (
@@ -11,33 +18,9 @@ from syft_enclaves.attestation import (
     AppraisalPolicy,
     AttestationError,
     AttestationResult,
+    bundle_fingerprint,
     verify_attestation_token,
 )
-
-FAKE_IMAGE_DIGEST = "sha256:abc123"
-EXPECTED_VERSION_NONCE = f"syft-{SYFT_VERSION}"
-
-# The image digest is not shipped as a constant — it's supplied per-call via an
-# AppraisalPolicy. A policy pinning the fake token's digest is used by the
-# tests that need the image-digest check to pass.
-DEFAULT_TEST_POLICY = AppraisalPolicy(expected_image_digest=FAKE_IMAGE_DIGEST)
-
-
-def _valid_claims(**overrides):
-    """Build a valid claims dict, optionally overriding specific fields."""
-    claims = {
-        "secboot": True,
-        "dbgstat": "disabled-since-boot",
-        "eat_nonce": [EXPECTED_VERSION_NONCE],
-        "submods": {
-            "container": {
-                "image_digest": FAKE_IMAGE_DIGEST,
-                "image_reference": "docker.io/openmined/syft-enclave:latest",
-            }
-        },
-    }
-    claims.update(overrides)
-    return claims
 
 
 @pytest.fixture
@@ -62,7 +45,7 @@ class TestVerifyAttestationToken:
             "fake-token", policy=DEFAULT_TEST_POLICY, verbose=False
         )
         assert result.all_passed()
-        assert len(result.checks) == 5
+        assert len(result.checks) == 6
         assert all(c.passed for c in result.checks)
 
     def test_jwt_signature_failure(self, mock_verify):
@@ -156,6 +139,43 @@ class TestVerifyAttestationToken:
         assert image_check.passed
         assert "matches" in image_check.detail
 
+    def test_key_binding_matches(self, mock_verify):
+        result = verify_attestation_token(
+            "fake-token", policy=DEFAULT_TEST_POLICY, verbose=False
+        )
+        key_check = next(c for c in result.checks if c.name == "key_binding")
+        assert key_check.passed is True
+
+    def test_key_binding_mismatch(self, mock_verify):
+        """The token was minted by an enclave holding another key than the one
+        this client received over Drive: the bundle must not be trusted."""
+        policy = AppraisalPolicy(expected_key_fingerprint="cd" * 32)
+        with pytest.raises(AttestationError, match="key_binding"):
+            verify_attestation_token("fake-token", policy=policy, verbose=False)
+
+    def test_key_binding_fails_when_expected_but_missing_from_token(self, mock_verify):
+        """A token with only the version nonce (older enclave image) cannot bind
+        a key, so a client that holds one must reject it."""
+        mock_verify.return_value = _valid_claims(eat_nonce=[EXPECTED_VERSION_NONCE])
+        with pytest.raises(AttestationError, match="key_binding"):
+            verify_attestation_token(
+                "fake-token", policy=DEFAULT_TEST_POLICY, verbose=False
+            )
+
+    def test_key_binding_skipped_when_not_supplied(self, mock_verify):
+        result = verify_attestation_token(
+            "fake-token", policy=AppraisalPolicy(), verbose=False
+        )
+        key_check = next(c for c in result.checks if c.name == "key_binding")
+        assert key_check.passed is None
+
+    def test_bundle_fingerprint_equals_identity_fingerprint(self):
+        keys = syc.SyftRecoveryKey.generate().derive_keys()
+        public = keys.to_public_bundle()
+        bundle = public.to_did_document("did:syft:enclave@example.com")
+        assert bundle_fingerprint(bundle) == public.identity_fingerprint()
+        assert bundle_fingerprint(bundle) != FAKE_KEY_FINGERPRINT
+
     def test_error_carries_result(self, mock_verify):
         mock_verify.return_value = _valid_claims(secboot=False)
         with pytest.raises(AttestationError) as exc_info:
@@ -172,12 +192,13 @@ class TestVerifyAttestationToken:
         with pytest.raises(AttestationError) as exc_info:
             verify_attestation_token("fake-token", verbose=False)
         check_names = [c.name for c in exc_info.value.result.checks]
-        # All five checks should appear, even though secure_boot failed early.
+        # All six checks should appear, even though secure_boot failed early.
         assert check_names == [
             "jwt_signature",
             "secure_boot",
             "debug_disabled",
             "version_match",
+            "key_binding",
             "image_digest",
         ]
 
