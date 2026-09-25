@@ -12,7 +12,9 @@ class FileEntry(BaseModel):
     """A file stored in the auto-approvals directory with its hash."""
 
     relative_path: str  # e.g. "subdir/main.py"
-    path: str  # e.g. "~/.syft-bg/auto_approvals/my_analysis/main.py"
+    # Absolute path of the stored copy, filled in by ApiStore on load, e.g.
+    # "<datasite>/app_data/apis/my_analysis/files/subdir/main.py"
+    path: str = Field(default="", exclude=True)
     hash: str  # e.g. "sha256:abc123..."
 
     @classmethod
@@ -37,10 +39,12 @@ class AutoApprovalObj(BaseModel):
 
 
 class AutoApprovalsConfig(BaseModel):
-    """Configuration for auto-approval objects."""
+    """Configuration for auto-approval objects.
+
+    The objects themselves live in SyftBox, see syft_bg.approve.api_store.
+    """
 
     enabled: bool = True
-    objects: dict[str, AutoApprovalObj] = Field(default_factory=dict)
 
 
 class PeerApprovalConfig(BaseModel):

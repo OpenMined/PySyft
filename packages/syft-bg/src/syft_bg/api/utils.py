@@ -1,12 +1,12 @@
 """Utility functions used by the syft-bg API layer."""
 
-import hashlib
 import os
 import shutil
 from collections.abc import Sequence
 from pathlib import Path, PurePosixPath
 
-from syft_bg.approve.config import AutoApproveConfig, FileEntry
+from syft_bg.approve.api_store import ApiStore
+from syft_bg.approve.config import AutoApprovalObj
 from syft_bg.approve.criteria import RUN_SCRIPT_PATH, get_job_submission_files
 from syft_bg.common.config import get_default_paths, get_syftbg_dir
 from syft_bg.common.drive import is_colab
@@ -212,27 +212,53 @@ def save_gcp_project_id(credentials_path: Path) -> None:
         pass
 
 
-def generate_unique_name(
-    name: str | None,
-    content_files: list[tuple[str, Path]],
-    config: AutoApproveConfig,
-) -> str:
-    """Generate a unique name for an auto-approval object."""
-    if name is None:
-        if content_files:
-            first_rel = content_files[0][0]
-            name = Path(first_rel).stem if len(content_files) == 1 else "auto_approval"
-        else:
-            name = "auto_approval"
+def default_api_name(name: str | None, content_files: list[tuple[str, Path]]) -> str:
+    """Name for a new auto-approval object; ApiStore makes it unique."""
+    if name is not None:
+        return name
+    if len(content_files) == 1:
+        return Path(content_files[0][0]).stem
+    return "auto_approval"
 
-    if name in config.auto_approvals.objects:
-        base_name = name
-        counter = 1
-        while f"{base_name}_{counter}" in config.auto_approvals.objects:
-            counter += 1
-        name = f"{base_name}_{counter}"
 
-    return name
+NO_PEERS_WARNING = (
+    "Warning: no peers given. Any peer can run jobs matching this "
+    "auto-approval, and everyone can read its files."
+)
+
+
+def confirm_no_peers() -> bool:
+    """Warn that an api without peers is public and ask to continue."""
+    print(NO_PEERS_WARNING)
+    try:
+        answer = input("Continue? [y/N] ")
+    except EOFError:
+        return False
+    return answer.strip().lower() in ("y", "yes")
+
+
+def load_auto_approvals_or_empty(
+    config: SyftBgConfig,
+) -> dict[str, AutoApprovalObj]:
+    """Auto-approvals for status output; empty when syft-bg isn't set up."""
+    if not config.do_email or not config.syftbox_root:
+        return {}
+    return ApiStore(config.syftbox_root, config.do_email).load_all()
+
+
+def api_store_for_job(job) -> ApiStore:
+    """ApiStore for the datasite the job was submitted to."""
+    return ApiStore(job._client.config.syftbox_folder, job.datasite_owner_email)
+
+
+def get_api_store() -> ApiStore:
+    """ApiStore for the DO's datasite configured in config.yaml."""
+    config = SyftBgConfig.load().approve
+    if not config.do_email or not config.syftbox_root:
+        raise ValueError(
+            "syft-bg is not initialized: config needs do_email and syftbox_root"
+        )
+    return ApiStore(config.syftbox_root, config.do_email)
 
 
 def resolve_content_files(
@@ -274,26 +300,6 @@ def resolve_content_files(
             else:
                 content_files.append((p.name, p))
     return content_files, None
-
-
-def copy_and_hash_files(
-    content_files: list[tuple[str, Path]], name: str
-) -> list[FileEntry]:
-    """Copy files to the managed auto-approvals directory and compute hashes."""
-    obj_dir = get_default_paths().auto_approvals_dir / name
-    obj_dir.mkdir(parents=True, exist_ok=True)
-
-    entries: list[FileEntry] = []
-    for rel_path, abs_path in content_files:
-        dest = obj_dir / rel_path
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(abs_path, dest)
-        content = dest.read_text(encoding="utf-8")
-        file_hash = "sha256:" + hashlib.sha256(content.encode("utf-8")).hexdigest()
-        entries.append(
-            FileEntry(relative_path=rel_path, path=str(dest), hash=file_hash)
-        )
-    return entries
 
 
 def resolve_auto_approve_file_args(
