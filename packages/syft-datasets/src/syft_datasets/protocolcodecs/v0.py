@@ -74,10 +74,9 @@ class ProtocolCodecV0(ProtocolCodec):
         data.setdefault("version", "1")
         return data
 
-    def write(self, path: Path, obj: MigratableObject) -> None:
+    def _data_for_disk(self, obj: MigratableObject) -> dict:
         data = obj.disk_dict()
         # Byte-match the pre-versioning (<= 0.1.20) on-disk format.
         data.pop("canonical_name", None)
         data.pop("version", None)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(yaml.safe_dump(data, indent=2, sort_keys=False))
+        return data

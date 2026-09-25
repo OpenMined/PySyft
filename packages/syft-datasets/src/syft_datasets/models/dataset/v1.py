@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import ClassVar
 from uuid import UUID, uuid4
 
-import yaml
 from pydantic import Field, PrivateAttr
 from syft_migration import MigratableObject
 from syft_notebook_ui.formatter_mixin import (
@@ -23,7 +22,7 @@ from ...config import (
 from ...dataset_ref import DatasetRef
 from ...migrations import dataset_registry
 from ...url import SyftBoxURL
-from ..private_dataset_config.v1 import PrivateDatasetConfigV1
+from ..private_dataset_config import PrivateDatasetConfig
 
 
 def _utcnow() -> datetime:
@@ -99,25 +98,30 @@ class DatasetV1(MigratableObject, PydanticFormatterMixin, registry=dataset_regis
     def mock_dir(self) -> Path:
         return self._url_to_path(self.mock_url)
 
-    @property
-    def private_config_path(self) -> Path:
+    def _require_owner(self, what: str) -> None:
         if self.syftbox_config.email != self.owner:
             raise ValueError(
-                "Cannot access private config for a dataset owned by another user."
+                f"Cannot access {what} for a dataset owned by another user."
             )
+
+    @property
+    def private_config_path(self) -> Path:
+        self._require_owner("private config")
         return self._private_metadata_dir / PRIVATE_METADATA_FILENAME
 
     @cached_property
-    def private_config(self) -> PrivateDatasetConfigV1:
-        config_path = self.private_config_path
-        if not config_path.exists():
-            raise FileNotFoundError(
-                f"Private dataset config not found at {config_path}"
-            )
-        data = yaml.safe_load(config_path.read_text()) or {}
-        data.setdefault("canonical_name", "PrivateDatasetConfig")
-        data.setdefault("version", "1")
-        return PrivateDatasetConfigV1(**data)
+    def private_config(self) -> PrivateDatasetConfig:
+        """This dataset's private config, upgraded to the latest version.
+
+        Raises ValueError if another user owns the dataset, and
+        PrivateConfigNotFoundError if the file is absent.
+        """
+        # Local import: dataset_storage imports this module.
+        from ...dataset_storage import DatasetStorage
+
+        self._require_owner("private config")
+        storage = DatasetStorage(config=self.syftbox_config)
+        return storage.read_private_config(self._ref)
 
     @property
     def private_dir(self) -> Path:
@@ -136,10 +140,7 @@ class DatasetV1(MigratableObject, PydanticFormatterMixin, registry=dataset_regis
 
     @property
     def _private_metadata_dir(self) -> Path:
-        if self.syftbox_config.email != self.owner:
-            raise ValueError(
-                "Cannot access private data for a dataset owned by another user."
-            )
+        self._require_owner("private data")
         return self.private_dir
 
     @property
