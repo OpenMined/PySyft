@@ -94,7 +94,7 @@ def test_ds_incremental_sync_downloads_only_new_events():
     )
 
     # Add initial 3 events to DO's outbox for DS
-    initial_events = get_mock_events_messages(3)
+    initial_events = get_mock_events_messages(3, datasite_email=do_manager.email)
     for event in initial_events:
         do_manager._connection_router.owner_write_event_messages_to_outbox(
             ds_manager.email, event
@@ -114,7 +114,7 @@ def test_ds_incremental_sync_downloads_only_new_events():
 
     # Add 2 more events to outbox
     time.sleep(0.01)  # Ensure new events have later timestamps
-    additional_events = get_mock_events_messages(2)
+    additional_events = get_mock_events_messages(2, datasite_email=do_manager.email)
     for event in additional_events:
         do_manager._connection_router.owner_write_event_messages_to_outbox(
             ds_manager.email, event
