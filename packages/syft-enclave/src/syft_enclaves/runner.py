@@ -130,13 +130,28 @@ class EnclaveRunner:
             logger.warning("Running outside TEE — attestation unavailable")
 
     def _publish_attestation(self) -> None:
-        """Fetch attestation JWT from the TEE and write it into the version file."""
-        eat_nonce = build_eat_nonce()
+        """Fetch attestation JWT from the TEE and write it into the version file.
+
+        The token's nonce carries the fingerprint of the enclave's identity key,
+        so a peer can check that the key bundle it holds is the one attested.
+        The fingerprint is read from the live store on every call, so a later
+        refresh of the token binds the same keys.
+        """
+        key_fingerprint = self._own_key_fingerprint()
+        eat_nonce = build_eat_nonce(key_fingerprint=key_fingerprint)
         token = fetch_attestation_token(eat_nonce=eat_nonce)
         peer_manager = self.client._rds.peer_manager
         peer_manager.get_own_version().attestation_token = token
         peer_manager.write_own_version()
-        logger.info("Attestation token published to SYFT_version.json")
+        bound = "bound to encryption key" if key_fingerprint else "no encryption key"
+        logger.info(f"Attestation token published to SYFT_version.json ({bound})")
+
+    def _own_key_fingerprint(self) -> Optional[str]:
+        """Fingerprint of this enclave's identity key, or None when encryption is off."""
+        peer_store = self.client._rds.peer_manager.peer_store
+        if not peer_store.use_encryption:
+            return None
+        return peer_store.public_key.identity_fingerprint()
 
     def _on_peering(self) -> None:
         """Load peers and accept pending peer requests."""

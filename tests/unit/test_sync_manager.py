@@ -212,7 +212,7 @@ def test_sync_existing_datasite_state_ds():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False
     )
-    events_messages = get_mock_events_messages(2)
+    events_messages = get_mock_events_messages(2, datasite_email=do_manager.email)
     for message in events_messages:
         do_manager._connection_router.owner_write_event_messages_to_outbox(
             ds_manager.email, message
