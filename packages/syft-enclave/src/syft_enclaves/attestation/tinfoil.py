@@ -182,6 +182,7 @@ class _TinfoilVerifier:
         self._check_measurement_match()
         self._check_image_digest()
         self._check_version_match()
+        self._check_config_data_owners()
         return self._finish()
 
     # -- checks -----------------------------------------------------------
@@ -460,6 +461,35 @@ class _TinfoilVerifier:
             else f"version mismatch (enclave={actual!r}, expected={expected!r})"
         )
         self.result.add("version_match", "Version match", passed, detail)
+
+    def _check_config_data_owners(self) -> None:
+        """The measured config pins the data owners we expect, if it pins them.
+
+        Stronger than the claims check: a claim is the enclave's word, signed
+        with an attested key, while a pinned value is part of the measurement.
+        """
+        self._progress("Data owners in config")
+        expected = self.policy.expected_data_owners
+        pinned = self._config_env().get("SYFT_ENCLAVE_DATA_OWNERS")
+        if expected is None or not pinned:
+            reason = (
+                "no expected data owners" if expected is None else "config pins none"
+            )
+            self.result.add(
+                "config_data_owners",
+                "Data owners in config",
+                None,
+                f"{reason} (skipped)",
+            )
+            return
+        actual = sorted(e.strip() for e in str(pinned).split(",") if e.strip())
+        passed = actual == sorted(expected)
+        detail = (
+            f"measured config pins {actual}"
+            if passed
+            else f"mismatch (config={actual}, expected={sorted(expected)})"
+        )
+        self.result.add("config_data_owners", "Data owners in config", passed, detail)
 
     # -- reference values -------------------------------------------------
 

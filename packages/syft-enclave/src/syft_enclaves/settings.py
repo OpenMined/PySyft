@@ -142,6 +142,14 @@ class EnclaveSettings(AttestationSettings):
             "restarts (e.g., for stateful job continuation)."
         ),
     )
+    receipts: bool = Field(
+        default=False,
+        description=(
+            "Write a receipt signed with the enclave's identity key into each "
+            "job's outputs. Pinned in the measured Tinfoil config, so a data "
+            "owner can see from the release whether receipts are on."
+        ),
+    )
     use_encryption: bool = Field(
         default=True,
         description=(

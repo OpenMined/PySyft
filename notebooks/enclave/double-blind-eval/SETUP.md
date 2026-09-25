@@ -35,16 +35,25 @@ own state on every boot.
 
 ## 2. Deploy the published release
 
-Release `v0.1.14` of [`OpenMined/syft-enclave-tinfoil`](https://github.com/OpenMined/syft-enclave-tinfoil)
-is already published, so deploy it as it stands. Skip to step 5 only if you changed the enclave
-image or its config.
+Two releases of [`OpenMined/syft-enclave-tinfoil`](https://github.com/OpenMined/syft-enclave-tinfoil)
+are already published. They run the same image, and differ only in whether each job's outputs carry a
+signed receipt:
+
+| Release   | Config                        | Receipts |
+| --------- | ----------------------------- | -------- |
+| `v0.1.21` | `tinfoil-config.yml`          | off      |
+| `v0.1.22` | `tinfoil-config-receipts.yml` | on       |
+
+Deploy one of them as it stands. Skip to step 5 only if you changed the enclave image or its config.
 
 ```bash
-just tinfoil-deploy v0.1.14 enclave@openmined.org benchmark_owner@openmined.org,model_owner@openmined.org
+just tinfoil-deploy v0.1.22 enclave@openmined.org
 ```
 
-Both party emails have to appear in that comma-separated list. It becomes
-`SYFT_ENCLAVE_DATA_OWNERS`, which is what makes a job wait for two approvals instead of one.
+Both configs pin `benchmark_owner@openmined.org` and `model_owner@openmined.org` as
+`SYFT_ENCLAVE_DATA_OWNERS`, which is what makes a job wait for two approvals instead of one. The
+value is measured, so each party's attestation checks it against the release. Other parties need a
+config with their emails, and so a new release.
 
 ## 3. Check the enclave is attesting
 
@@ -61,7 +70,7 @@ covers the rest.
 Open both in Colab, one per account:
 
 - [`1. DO-benchmark-owner-dbe.ipynb`](1.%20DO-benchmark-owner-dbe.ipynb) — uploads the prompts,
-  submits the job, reads the results
+  submits the job, reads the results, and logs the receipt on Rekor
 - [`2. DO-model-owner-dbe.ipynb`](2.%20DO-model-owner-dbe.ipynb) — uploads the adapter, approves the
   job, sees no results
 
@@ -72,13 +81,13 @@ ENCLAVE_EMAIL         = "enclave@openmined.org"
 BENCHMARK_OWNER_EMAIL = "benchmark_owner@openmined.org"
 MODEL_OWNER_EMAIL     = "model_owner@openmined.org"
 TINFOIL_REPO = "OpenMined/syft-enclave-tinfoil"
-TINFOIL_TAG  = "v0.1.14"
-IMAGE_DIGEST = "sha256:d0bd57f22af80b9dcd0dc151fb68d89cca65b65fcbbd1d2e4586cdfa9d7daebc"
+TINFOIL_TAG  = "v0.1.22"
+IMAGE_DIGEST = "sha256:c0a492675e116429e2cc3241beaae84da8fb953a6980abdea4ee2df6cfc88fbc"
 ```
 
 `TINFOIL_TAG` and `IMAGE_DIGEST` are what the parties check the enclave against, so they must match
-the release you deployed. The digest above is the one `v0.1.14` pins; after a republish, use the one
-`just tinfoil-release` printed.
+the release you deployed. The digest above is the one both `v0.1.21` and `v0.1.22` pin; after a
+republish, use the one `just tinfoil-build` printed.
 
 Then run both notebooks top to bottom. They wait on each other four times, and a card in the
 notebook says so each time. Cells that wait print a 🟠 line and tell you to re-run them.
@@ -93,24 +102,21 @@ Everything in `tinfoil/tinfoil-config.yml` is measured, so any edit to it — or
 — needs a new release before it can be deployed.
 
 ```bash
-just tinfoil-build-info              # the latest tag, and a suggested next one
-just tinfoil-release v0.1.15         # build, push, pin the digest, open the config PR
+just tinfoil-build v0.1.23                                          # build, push, pin the digest in both configs
+just tinfoil-release v0.1.23                                        # receipts off
+just tinfoil-release v0.1.24 tinfoil/tinfoil-config-receipts.yml    # receipts on
+just tinfoil-deploy v0.1.24 enclave@openmined.org
 ```
 
-Merge that pull request, then publish and redeploy:
-
-```bash
-just tinfoil-publish v0.1.15         # about a minute to compute the measurement
-just tinfoil-deploy v0.1.15 enclave@openmined.org benchmark_owner@openmined.org,model_owner@openmined.org
-```
-
-Keep the digest `tinfoil-release` printed, and put it in both notebooks along with the new tag.
+Each `tinfoil-release` opens a pull request on the config repo and waits until you merge it. Then it
+publishes, which takes about a minute to compute the measurement. Keep the digest `tinfoil-build`
+printed, and put it in both notebooks along with the tag you deployed.
 
 A release is a signed GitHub release and a transparency-log entry, so it cannot be unpublished.
 Number versions with that in mind. To go back to an earlier one without moving "latest":
 
 ```bash
-just tinfoil-relaunch v0.1.14 --promote-release=false
+just tinfoil-relaunch v0.1.21 --promote-release=false
 ```
 
 ## Giving the model a GPU

@@ -24,7 +24,10 @@ from __future__ import annotations
 import base64
 import json
 import secrets
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 #: Domain separator, so a signature made here can never be replayed as a
 #: signature for some other syft protocol that also signs with the identity key.
@@ -65,14 +68,18 @@ def sign_challenge(
     Runs inside the enclave. Takes the JWKS rather than a ``PeerStore`` so the
     attestation HTTP server can sign without depending on the sync engine.
     """
+    message = challenge_message(nonce, claims)
+    return base64.b64encode(identity_private_key(private_jwks).sign(message)).decode()
+
+
+def identity_private_key(private_jwks: dict[str, Any]) -> "Ed25519PrivateKey":
+    """The Ed25519 identity key from a syft private JWKS."""
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
     identity = private_jwks["identity_key"]
     if identity.get("crv") != "Ed25519":
         raise ValueError(f"identity key is not Ed25519: {identity.get('crv')!r}")
-    private_key = Ed25519PrivateKey.from_private_bytes(_b64url_decode(identity["d"]))
-    message = challenge_message(nonce, claims)
-    return base64.b64encode(private_key.sign(message)).decode()
+    return Ed25519PrivateKey.from_private_bytes(_b64url_decode(identity["d"]))
 
 
 def verify_challenge(

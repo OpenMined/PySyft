@@ -7,7 +7,7 @@ Two repositories are in play:
 - **this one** builds and pushes the enclave image to Docker Hub;
 - **[`OpenMined/syft-enclave-tinfoil`](https://github.com/OpenMined/syft-enclave-tinfoil)** holds the measured `tinfoil-config.yml`, and its GitHub releases publish the expected launch measurement.
 
-The canonical copy of that config lives here at [`tinfoil/tinfoil-config.yml`](../tinfoil/tinfoil-config.yml), so the image and the config that pins it are reviewed together; `just tinfoil-release` syncs it over. The release workflows live only in the config repo — nothing in PySyft runs them.
+The canonical copy of that config lives here at [`tinfoil/tinfoil-config.yml`](../tinfoil/tinfoil-config.yml), so the image and the config that pins it are reviewed together; `just tinfoil-release` syncs it over. A second copy, [`tinfoil/tinfoil-config-receipts.yml`](../tinfoil/tinfoil-config-receipts.yml), differs only in turning signed receipts on (see [Receipts](#receipts)). The release workflows live only in the config repo — nothing in PySyft runs them.
 
 Run all commands from `packages/syft-enclave/`.
 
@@ -56,7 +56,7 @@ The key is needed for the control-plane operations: `container create`, `deploym
 
 [`tinfoil/tinfoil-config.yml`](../tinfoil/tinfoil-config.yml) declares everything inside the enclave. Two things about it matter more than the rest.
 
-**Everything in the file is measured.** Its sha256 goes into the CVM's kernel command line, so any edit changes the measurement and needs a new config release. That is why the enclave email and data owners are _not_ in it — see the table below.
+**Everything in the file is measured.** Its sha256 goes into the CVM's kernel command line, so any edit changes the measurement and needs a new config release. So the data owners are pinned in it, because they are the approval gate and a data owner must be able to check them. The enclave email is not pinned — see the table below.
 
 **Egress defaults to `closed`.** Without the `allowlist` the enclave cannot reach Google Drive at all and will sit there doing nothing. Only exact hostnames work — wildcards and IP literals are both rejected by the schema. The two the code actually needs are `www.googleapis.com` (Drive v3) and `oauth2.googleapis.com` (refreshing the OAuth token). `accounts.google.com` is deliberately absent so an accidental interactive OAuth flow fails loudly.
 
@@ -70,7 +70,8 @@ them may have egress other than `closed`.
 | `SYFT_ENCLAVE_ATTESTATION_PROVIDER`, `SYFT_BOOTSTRAP`     | measured config                       | yes                         |
 | CPU / memory / GPU shape                                  | measured config                       | yes                         |
 | Egress allowlist, exposed paths                           | measured config                       | yes                         |
-| `SYFT_ENCLAVE_EMAIL`, `SYFT_ENCLAVE_DATA_OWNERS`          | `--variable` at deploy                | **no**                      |
+| `SYFT_ENCLAVE_DATA_OWNERS`, `SYFT_ENCLAVE_RECEIPTS`       | measured config                       | yes                         |
+| `SYFT_ENCLAVE_EMAIL`                                      | `--variable` at deploy                | **no**                      |
 | `SYFT_ENCLAVE_REQUIRE_TEE`, `SYFT_ENCLAVE_USE_ENCRYPTION` | `--variable` at deploy                | **no**                      |
 | Drive OAuth token                                         | `--secret` (name measured, value not) | n/a                         |
 
@@ -89,15 +90,16 @@ uses, currently `0.14.7`. Its deprecation policy is not documented.
 ## Quickstart: production
 
 ```bash
-# 1. Build + push the image, pin its digest in the config, open the config PR.
-just tinfoil-release vX.Y.Z          # prints the digest — keep it
+# 1. Build + push the image and pin its digest in both configs.
+just tinfoil-build vX.Y.Z            # prints the digest — keep it
 
-# 2. Merge that PR, then publish the measured, signed release.
+# 2. Release a config: open its PR, wait for you to merge it, then publish.
 just tinfoil-build-info              # latest tag + suggested next version
-just tinfoil-publish vX.Y.Z          # ~1 min for the measurement to compute
+just tinfoil-release vX.Y.Z          # receipts off; ~1 min for the measurement
+just tinfoil-release vX.Y.Z+1 tinfoil/tinfoil-config-receipts.yml   # receipts on
 
-# 3. Deploy.
-just tinfoil-deploy vX.Y.Z enclave@openmined.org do1@openmined.org,do2@openmined.org
+# 3. Deploy one of those releases.
+just tinfoil-deploy vX.Y.Z enclave@openmined.org
 
 # 4. Check it is attesting at all.
 just tinfoil-attest syft-enclave.openmined.containers.tinfoil.dev
@@ -107,14 +109,13 @@ just tinfoil-verify syft-enclave.openmined.containers.tinfoil.dev \
   --expected-image-digest sha256:... --tag vX.Y.Z
 ```
 
-Steps 1 and 2 need no Tinfoil API key. If the Tinfoil GitHub App is not installed on the config
-repo, `tinfoil-publish` will not be able to dispatch — run the workflow directly instead, which
-only needs your GitHub auth:
+Steps 1 and 2 need no Tinfoil API key. `tinfoil-release` works on a local clone of the config repo
+(`~/workspace/syft-enclave-tinfoil`, or `SYFT_TINFOIL_REPO_DIR`) with `git` and `gh`, so it needs
+only your GitHub auth and not the Tinfoil GitHub App. It dispatches the release workflow, so check
+that both runs succeed:
 
 ```bash
-cd ~/workspace/syft-enclave-tinfoil
-gh workflow run tinfoil-release.yml -f version=vX.Y.Z
-gh run list --limit 2      # both "Release" and "Publish release" must succeed
+gh run list --repo OpenMined/syft-enclave-tinfoil --limit 2   # "Release" and "Publish release"
 ```
 
 Step 3 onwards is where the admin API key becomes mandatory.
@@ -130,7 +131,7 @@ do.attest_peer(
 )
 ```
 
-Pass the digest `tinfoil-release` printed. All three arguments are required: without them the attestation would prove a genuine enclave booted a signed config, but not that the config pinned the image you reviewed, which datasite the enclave runs as, or who has to approve a job. To skip them on purpose, pass a policy with `allow_unpinned=True`.
+Pass the digest `tinfoil-build` printed. All three arguments are required: without them the attestation would prove a genuine enclave booted a signed config, but not that the config pinned the image you reviewed, which datasite the enclave runs as, or who has to approve a job. To skip them on purpose, pass a policy with `allow_unpinned=True`.
 
 The whole data-owner side (peer, attest over Drive, upload a dataset) is scripted:
 
@@ -139,7 +140,7 @@ The whole data-owner side (peer, attest over Drive, upload a dataset) is scripte
 # folders at boot, so wiping state afterwards breaks peering.
 uv run python ../enclave-model-api-example/scripts/reset_state.py \
     model_owner@openmined.org=../../credentials/token_model_owner.json
-just tinfoil-deploy vX.Y.Z enclave@openmined.org model_owner@openmined.org
+just tinfoil-deploy vX.Y.Z enclave@openmined.org
 
 uv run --project ../.. python scripts/tinfoil_e2e_check.py \
     --enclave-email enclave@openmined.org \
@@ -153,6 +154,14 @@ That is the check that matters: `just tinfoil-verify` fetches the report over HT
 actually uses.
 
 Prefer `--tag` over the default "latest release" where you can. Unpinned, the release digest is fetched over the network, and a hostile source could substitute the digest of another _legitimately signed_ release of the same repo — a rollback. A pinned tag makes the signature policy require that exact tag.
+
+## Receipts
+
+A release of `tinfoil-config-receipts.yml` writes a signed `receipt.dsse.json` into every finished
+job's outputs. The receipt names the code, the dataset file hashes, who took part and approved, the outputs and
+the run, plus what the job itself claims about the model, the eval and its results. The enclave signs it with its attested identity key, and the submitter can log it on Rekor
+with `upload_to_rekor`. [`tinfoil/CLAUDE.md`](../tinfoil/CLAUDE.md) explains why the receipt can
+be trusted.
 
 ## Teardown
 
@@ -188,7 +197,7 @@ in debug mode. Delete and recreate:
 
 ```bash
 tinfoil container delete syft-enclave
-just tinfoil-deploy v0.1.8 enclave@openmined.org do1@x.org,do2@x.org
+just tinfoil-deploy v0.1.8 enclave@openmined.org
 ```
 
 `just tinfoil-why` is the first thing to run on any failure — `error_message` from the control
