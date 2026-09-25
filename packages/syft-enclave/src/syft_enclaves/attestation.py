@@ -11,11 +11,17 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
+import syft_crypto_python as syc
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from pydantic import BaseModel
 
 from syft.version import SYFT_VERSION
+from syft_enclaves.tee_token import (
+    KEY_FINGERPRINT_NONCE_SLOT,
+    NO_KEY_FINGERPRINT_NONCE,
+    VERSION_NONCE_SLOT,
+)
 
 ATTESTATION_AUDIENCE = "syft-attestation"
 CONFIDENTIAL_COMPUTING_CERTS_URL = (
@@ -51,6 +57,10 @@ class AppraisalPolicy(BaseModel):
     expected_image_digest: Optional[str] = None
     # By default, the enclave must run the same version of syft as the verifier.
     expected_syft_version: Optional[str] = SYFT_VERSION
+    # None → key-binding check skipped. Set to the fingerprint of the enclave
+    # key bundle this client holds (``attest_peer`` fills it in) to require
+    # that the token was minted by the enclave holding that key.
+    expected_key_fingerprint: Optional[str] = None
 
 
 class AttestationError(Exception):
@@ -93,6 +103,52 @@ class AttestationResult:
             else:
                 icon = "  ❌"
             print(f"{icon} {check.label:<20s} — {check.detail}")
+
+
+def bundle_fingerprint(bundle: dict) -> str:
+    """Fingerprint of the identity key in a peer's public key bundle.
+
+    The identity key signs the bundle's encryption keys (checked on parse), so
+    this one value stands for the whole bundle a client encrypts to.
+    """
+    return syc.SyftPublicKeyBundle.from_did_document(bundle).identity_fingerprint()
+
+
+def _check_key_binding(
+    result: AttestationResult, eat_nonce: list[str], expected: Optional[str]
+) -> None:
+    """Compare the token's key fingerprint nonce to the bundle the verifier holds."""
+    name, label = "key_binding", "Key binding"
+    if not expected:
+        result.add(name, label, None, "no expected key fingerprint supplied (skipped)")
+        return
+    if len(eat_nonce) <= KEY_FINGERPRINT_NONCE_SLOT:
+        result.add(
+            name,
+            label,
+            False,
+            "no key fingerprint in token — enclave image predates key binding "
+            "or runs without encryption",
+        )
+        return
+    actual = eat_nonce[KEY_FINGERPRINT_NONCE_SLOT]
+    if actual == NO_KEY_FINGERPRINT_NONCE:
+        result.add(
+            name,
+            label,
+            False,
+            "enclave bound no key into this token — it runs without encryption",
+        )
+        return
+    if actual == expected:
+        result.add(name, label, True, "token binds the enclave key this client holds")
+    else:
+        result.add(
+            name,
+            label,
+            False,
+            f"key fingerprint mismatch (token={actual}, held={expected})",
+        )
 
 
 def verify_attestation_token(
@@ -202,7 +258,7 @@ def verify_attestation_token(
     # Google returns a string for single nonce, array for multiple
     if isinstance(eat_nonce, str):
         eat_nonce = [eat_nonce]
-    actual_version_nonce = eat_nonce[0] if eat_nonce else None
+    actual_version_nonce = eat_nonce[VERSION_NONCE_SLOT] if eat_nonce else None
     # Must match the format produced by syft_enclaves.tee_token.build_eat_nonce.
     expected_version_nonce = f"syft-{expected_syft_version}"
     if not actual_version_nonce:
@@ -227,7 +283,13 @@ def verify_attestation_token(
             f"version mismatch (enclave={actual_version_nonce!r}, expected={expected_version_nonce!r})",
         )
 
-    # 5. Image digest. The expected digest is supplied by the data owner via the
+    # 5. Key binding. The expected fingerprint is that of the enclave key
+    # bundle this client holds; attest_peer supplies it. Skipped when unset.
+    if verbose:
+        print("  ⏳ Key binding ...")
+    _check_key_binding(result, eat_nonce, policy.expected_key_fingerprint)
+
+    # 6. Image digest. The expected digest is supplied by the data owner via the
     # AppraisalPolicy . When none is supplied the check is
     # SKIPPED (passed=None), not failed.
     if verbose:
