@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Any, List, Optional
 from pydantic import BaseModel, PrivateAttr
+from syft.sync.peers.key_bundle import bundle_fingerprint
 from syft.sync.platforms.base_platform import BasePlatform
 from syft.sync.version.version_info import VersionInfo
 
@@ -22,6 +23,20 @@ class Peer(BaseModel):
 
     # Set by SyftboxManager.peers when this Peer is handed out.
     _manager: Any = PrivateAttr(default=None)
+
+    @property
+    def fingerprint(self) -> Optional[str]:
+        """Fingerprint of the peer's pinned identity key, or None without a bundle.
+
+        Compare it with the peer out of band: the bundle arrives over Drive, and
+        only that comparison shows the key is theirs.
+        """
+        if self.public_encryption_bundle is None:
+            return None
+        try:
+            return bundle_fingerprint(self.public_encryption_bundle)
+        except ValueError:
+            return None
 
     @property
     def is_approved(self) -> bool:
