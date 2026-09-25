@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import pytest
 from attestation_helpers import valid_claims
+from syft.sync.peers.peer_store import PeerStore
 
 os.environ["PRE_SYNC"] = "false"
 
@@ -60,12 +61,27 @@ def test_attest_peer_verifies_enclave_key_binding():
     assert key_check.passed is True
 
 
+def _trust_forged_enclave_bundle(ds: SyftEnclaveClient, enclave_email: str) -> dict:
+    """Make the DS hold an attacker's bundle for the enclave; return it.
+
+    The bundle names the enclave's identity and is validly self-signed, so it
+    passes the checks at ingestion, but its keys are the attacker's. The DS
+    already pinned the real key, so ``allow_key_change`` stands in for a DS who
+    was talked into trusting the new one.
+    """
+    attacker = PeerStore(email=enclave_email, use_encryption=True)
+    attacker.generate_keys()
+    forged = attacker.get_public_bundle()
+    _store(ds).set_peer_bundle(enclave_email, forged, allow_key_change=True)
+    return forged
+
+
 def test_attest_peer_rejects_swapped_enclave_bundle():
-    """The DS was handed DO1's bundle under the enclave's name: the token does
+    """The DS holds an attacker's bundle under the enclave's name: the token does
     not bind that key, so attestation fails on key_binding."""
-    enclave, do1, _do2, ds = _quad()
+    enclave, _do1, _do2, ds = _quad()
     eat_nonce = _publish_token(enclave)
-    _store(ds).set_peer_bundle(enclave.email, _store(do1).get_public_bundle())
+    _trust_forged_enclave_bundle(ds, enclave.email)
 
     with pytest.raises(AttestationError, match="key_binding"):
         _attest(ds, enclave.email, eat_nonce)
@@ -94,10 +110,9 @@ def test_attest_peer_rejects_attacker_key_sent_as_caller_nonce():
     """The attacker swaps in their bundle, then asks the enclave's HTTP server for
     a token with their own fingerprint as the nonce. It lands in the caller slot,
     not the key slot, so the token binds nothing and attestation fails."""
-    enclave, do1, _do2, ds = _quad()
+    enclave, _do1, _do2, ds = _quad()
     _publish_token(enclave)
-    attacker_bundle = _store(do1).get_public_bundle()
-    _store(ds).set_peer_bundle(enclave.email, attacker_bundle)
+    attacker_bundle = _trust_forged_enclave_bundle(ds, enclave.email)
     eat_nonce = build_eat_nonce(caller_nonce=bundle_fingerprint(attacker_bundle))
 
     with pytest.raises(AttestationError, match="key_binding"):
