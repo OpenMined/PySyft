@@ -6,6 +6,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import yaml
 from pydantic import BaseModel, ConfigDict
@@ -22,6 +23,7 @@ from syft_job.job_runner import SyftJobRunner
 from syft_datasets.dataset_manager import SHARE_WITH_ANY, SyftDatasetManager
 from syft_datasets.dataset_ref import DatasetNotFoundError
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
+from syft_rds.apis import Api, ApiCollection
 from syft_rds.config import (
     DATASET_COLLECTION_SPECS,
     MOCK_DATASET_SPEC,
@@ -422,6 +424,39 @@ class SyftRDSClient(BaseModel):
         print("   Status : inbox (waiting for DO to review)")
         print(f"\n⏳ Next step: wait for {user} to approve and run it.")
         print("   Check progress with: client.jobs")
+
+    @property
+    def api(self) -> ApiCollection:
+        """Apis shared with you. Auto-syncs first unless PRE_SYNC=false."""
+        if self._pre_sync_enabled:
+            self.sync_engine.sync()
+        return ApiCollection(self)
+
+    def _submit_api_call(self, api: Api, params: dict[str, Any]) -> Any:
+        """Submit a job with an api's pinned files and params as its JSON."""
+        peer_emails = {p.email for p in self.sync_engine.peer_manager.syncable_peers}
+        if api.datasite not in peer_emails:
+            raise ValueError(f"{api.datasite} is not in your peer list")
+        compat = self.sync_engine.peer_manager.get_peer_compatibility_status(
+            api.datasite, action=CompatAction.SUBMIT
+        )
+        compat.raise_on_skip(operation="submit job")
+        compat.maybe_warn()
+
+        job_name = f"{api.name}-{uuid4().hex[:8]}"
+        job_dir = self.job_client.submit_prepared_python_job(
+            api.datasite,
+            job_name,
+            api.run_script,
+            api.job_code_files(params),
+            api.layout.entrypoint,
+        )
+        self.sync_engine.push_job_files(job_dir)
+        print(f"✅ Submitted job '{job_name}' to {api.datasite} via api '{api.name}'")
+        return self._find_job(job_name)
+
+    def _find_job(self, job_name: str) -> Any:
+        return next((j for j in self.job_client.jobs if j.name == job_name), None)
 
     @property
     def _pre_sync_enabled(self) -> bool:

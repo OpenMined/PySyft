@@ -1,12 +1,8 @@
 """Storage for auto-approval objects ("apis") inside the DO's SyftBox datasite.
 
-Layout, one folder per api, not partitioned by user because an api can be
-called by several peers:
-
-    <syftbox_root>/<do_email>/app_data/apis/<name>/
-        api.yaml        # AutoApprovalObj (file hashes, name-only paths, peers)
-        files/<path>    # pinned copies of the content-matched files
-        syft.pub.yaml   # read access for the peers that can call the api
+One folder per api, not partitioned by user because an api can be called by
+several peers. The format is defined in syft_rds.apis.models, so clients can
+read the apis shared with them.
 """
 
 import hashlib
@@ -16,14 +12,17 @@ from pathlib import Path
 
 import yaml
 from syft_permissions import PERMISSION_FILE_NAME, Access, Rule, RuleSet
+from syft_rds.apis.models import (
+    API_FILE_NAME,
+    APIS_DIR,
+    FILES_DIR_NAME,
+    load_api_definition,
+)
 
 from syft_bg.approve.config import AutoApprovalObj, FileEntry
 from syft_bg.common.config import get_syftbg_dir
 from syft_bg.common.locking import file_lock
 
-APIS_DIR = Path("app_data") / "apis"
-API_FILE_NAME = "api.yaml"
-FILES_DIR_NAME = "files"
 EVERYONE = "*"
 
 
@@ -55,13 +54,7 @@ class ApiStore:
 
     def get(self, name: str) -> AutoApprovalObj:
         """Load an api, pointing each FileEntry.path at its stored copy."""
-        api_file = self.api_dir(name) / API_FILE_NAME
-        data = yaml.safe_load(api_file.read_text()) or {}
-        obj = AutoApprovalObj.model_validate(data)
-        files_dir = self.api_dir(name) / FILES_DIR_NAME
-        for entry in obj.file_contents:
-            entry.path = str(files_dir / entry.relative_path)
-        return obj
+        return load_api_definition(self.api_dir(name))
 
     def exists(self, name: str) -> bool:
         return (self.api_dir(name) / API_FILE_NAME).exists()
@@ -72,6 +65,7 @@ class ApiStore:
         content_files: list[tuple[str, Path]],
         file_paths: list[str],
         peers: list[str],
+        args: list[str] | None = None,
     ) -> tuple[str, AutoApprovalObj]:
         """Store a new api. Returns the final (unique) name and the object.
 
@@ -83,7 +77,10 @@ class ApiStore:
         try:
             entries = _copy_and_hash_files(content_files, staging / FILES_DIR_NAME)
             obj = AutoApprovalObj(
-                file_contents=entries, file_paths=file_paths, peers=peers
+                file_contents=entries,
+                file_paths=file_paths,
+                peers=peers,
+                args=args or [],
             )
             _write_api_file(staging, obj)
             with file_lock(_lock_path()):

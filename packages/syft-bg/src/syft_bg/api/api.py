@@ -11,6 +11,7 @@ from syft_bg.api.utils import (
     default_api_name,
     api_store_for_job,
     get_api_store,
+    read_job_args,
     get_job_user_files,
     move_token_to_syftbg_dir,
     resolve_content_files,
@@ -319,6 +320,7 @@ def auto_approve(
     base_dir: Path | None = None,
     allow_any_peer: bool = False,
     api_store: ApiStore | None = None,
+    args: list[str] | None = None,
 ) -> AutoApproveResult:
     """Create an auto-approval object (an "api") in SyftBox.
 
@@ -342,6 +344,8 @@ def auto_approve(
                   When set, FileEntry.relative_path stores the relative path.
         allow_any_peer: Allow no peers without the confirmation prompt.
         api_store: Where to store the api. Defaults to the datasite in config.yaml.
+        args: Argument names, the keys of the name-only params json, in the
+              order a caller passes them positionally.
 
     Returns:
         AutoApproveResult with the created object details.
@@ -359,7 +363,11 @@ def auto_approve(
 
     try:
         name, obj = (api_store or get_api_store()).create(
-            default_api_name(name, content_files), content_files, file_paths, peers
+            default_api_name(name, content_files),
+            content_files,
+            file_paths,
+            peers,
+            args,
         )
     except (ApiExistsError, ValueError) as e:
         return AutoApproveResult(success=False, error=str(e))
@@ -421,6 +429,7 @@ def auto_approve_job(
         base_dir=job.job_submission_path,
         allow_any_peer=allow_any_peer,
         api_store=api_store_for_job(job),
+        args=read_job_args(job, name_only),
     )
 
 
