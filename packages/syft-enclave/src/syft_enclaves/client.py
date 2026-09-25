@@ -183,12 +183,21 @@ class SyftEnclaveClient:
     def jobs(self) -> JobsList:
         jobs_list = self._rds.jobs
         wrapped = [
-            EnclaveJobInfo.from_job_info(j)
-            if j.job_headers.get("job_type") == "enclave"
-            else j
+            self._as_enclave_job(j) if j.job_headers.get("job_type") == "enclave" else j
             for j in jobs_list
         ]
         return JobsList(wrapped, jobs_list._root_email)
+
+    def _as_enclave_job(self, job: JobInfo) -> EnclaveJobInfo:
+        """Wrap ``job``; on the enclave that runs it, every data owner must approve.
+
+        The configured data owners are the approvers, as when the job was
+        distributed, so the enclave never counts only the approval files that
+        happen to exist.
+        """
+        runs_here = job.datasite_owner_email == self.email
+        required = list(self.data_owners) if runs_here else None
+        return EnclaveJobInfo.from_job_info(job, required_approvers=required)
 
     def submit_python_job(
         self,
@@ -302,6 +311,27 @@ class SyftEnclaveClient:
             self._rds.sync()
 
         job.approve()
+        self._push_own_approval_file(job)
+
+    def reject_job(self, job: JobInfo, reason: Optional[str] = None) -> None:
+        """Reject an enclave job and push the approval state file to the enclave.
+
+        The rejection is written into this data owner's own approval file, so
+        the enclave reads it as a refusal. It also withdraws an earlier approval.
+        """
+        if not isinstance(job, EnclaveJobInfo):
+            raise TypeError(
+                f"Job '{job.name}' is not an enclave job. Reject it through the "
+                f"datasite client."
+            )
+        if os.environ.get("PRE_SYNC", "true").lower() == "true":
+            self._rds.sync()
+
+        job.reject(reason)
+        self._push_own_approval_file(job)
+
+    def _push_own_approval_file(self, job: JobInfo) -> None:
+        """Send this data owner's approval file for ``job`` to the enclave."""
         file_name = enclave_approval_file_name(self.email)
         approval_file = job.job_review_path / file_name
         if not approval_file.exists():
