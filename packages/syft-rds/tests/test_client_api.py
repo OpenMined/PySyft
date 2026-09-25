@@ -5,7 +5,7 @@ import tempfile
 from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from syft_bg.api import auto_approve_job
@@ -14,6 +14,7 @@ from syft_bg.common.config import get_default_paths
 from syft_rds import SyftRDSClient
 from syft_rds.apis import Api, ApiDefinition, FileEntry
 from syft_rds.apis.api import callable_layout
+from syft_rds.client import FINISHED_JOB_STATUSES
 
 ADDER_CODE = """import json
 with open("params.json") as f:
@@ -91,8 +92,9 @@ def test_ds_renders_and_calls_api():
             api(3, c=4)
 
         # Calling it submits a job the DO's auto-approval matches and runs.
-        called_job = api(3, b=4)
+        called_job = api(3, b=4, block=False)
         assert called_job is not None and called_job.name.startswith("adder-")
+        assert called_job.status not in FINISHED_JOB_STATUSES
         do_manager.sync()
         handler = JobApprovalHandler(
             client=do_manager, config_path=paths.config, verbose=False
@@ -102,7 +104,8 @@ def test_ds_renders_and_calls_api():
         assert approved == {called_job.name, job.name}
 
     do_manager.sync()
-    ds_manager.sync()
+    finished = ds_manager._wait_for_job(called_job.name, poll_interval=0)
+    assert finished.status == "done"
     assert _read_sum(ds_manager, called_job.name) == 7
 
 
@@ -141,6 +144,21 @@ def test_bind_args_positional_and_keyword():
         api.bind_args((1, 2, 3), {})
     with pytest.raises(TypeError, match="multiple values"):
         api.bind_args((1,), {"a": 2})
+
+
+@pytest.mark.parametrize(
+    "kwargs,expected_block", [({}, True), ({"block": False}, False)]
+)
+def test_call_blocks_by_default(kwargs, expected_block):
+    definition = _definition(
+        ["run.sh", "code/main.py"], ["config.yaml", "code/params.json"], "a"
+    )
+    client = MagicMock()
+    api = Api("adder", "do@x.com", Path("/x"), definition, client)
+
+    api(1, **kwargs)
+
+    client._submit_api_call.assert_called_once_with(api, {"a": 1}, block=expected_block)
 
 
 def test_non_callable_api_repr_and_call():

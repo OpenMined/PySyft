@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -35,6 +36,8 @@ from syft_rds.config import (
 logger = logging.getLogger(__name__)
 
 _ALREADY_PUBLISHED = f"already published at protocol {DATASET_PROTOCOL_VERSION}"
+
+FINISHED_JOB_STATUSES = frozenset({"done", "failed", "rejected"})
 
 
 class DatasetUpgrade(BaseModel):
@@ -432,8 +435,13 @@ class SyftRDSClient(BaseModel):
             self.sync_engine.sync()
         return ApiCollection(self)
 
-    def _submit_api_call(self, api: Api, params: dict[str, Any]) -> Any:
-        """Submit a job with an api's pinned files and params as its JSON."""
+    def _submit_api_call(
+        self, api: Api, params: dict[str, Any], block: bool = True
+    ) -> Any:
+        """Submit a job with an api's pinned files and params as its JSON.
+
+        With block=True, waits until the job has finished and returns it.
+        """
         peer_emails = {p.email for p in self.sync_engine.peer_manager.syncable_peers}
         if api.datasite not in peer_emails:
             raise ValueError(f"{api.datasite} is not in your peer list")
@@ -453,7 +461,20 @@ class SyftRDSClient(BaseModel):
         )
         self.sync_engine.push_job_files(job_dir)
         print(f"✅ Submitted job '{job_name}' to {api.datasite} via api '{api.name}'")
+        if block:
+            return self._wait_for_job(job_name)
         return self._find_job(job_name)
+
+    def _wait_for_job(self, job_name: str, poll_interval: float = 2.0) -> Any:
+        """Sync until the job is done, failed or rejected, then return it."""
+        print(f"⏳ Waiting for '{job_name}' to finish (interrupt to stop waiting)...")
+        while True:
+            self.sync_engine.sync()
+            job = self._find_job(job_name)
+            if job is not None and job.status in FINISHED_JOB_STATUSES:
+                print(f"Job '{job_name}' finished with status: {job.status}")
+                return job
+            time.sleep(poll_interval)
 
     def _find_job(self, job_name: str) -> Any:
         return next((j for j in self.job_client.jobs if j.name == job_name), None)

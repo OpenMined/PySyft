@@ -135,14 +135,20 @@ class Api:
             raise TypeError(f"{self.name}() is missing arguments: {missing}")
         return {a: params[a] for a in self.args}
 
-    def __call__(self, *args: Any, **kwargs: Any):
-        """Submit a job running this api's code with the given arguments."""
+    def __call__(self, *args: Any, block: bool = True, **kwargs: Any):
+        """Submit a job running this api's code with the given arguments.
+
+        With block=True (the default), waits for the job to finish and returns
+        it; with block=False, returns right after submitting. An api argument
+        named "block" can only be passed positionally.
+        """
         if not self.is_callable:
             raise TypeError(
                 f"Api '{self.name}' can't be called: it needs run.sh and one Python "
                 f"file pinned by content, and one JSON file matched by name."
             )
-        return self._client._submit_api_call(self, self.bind_args(args, kwargs))
+        params = self.bind_args(args, kwargs)
+        return self._client._submit_api_call(self, params, block=block)
 
     def __repr__(self) -> str:
         return api_repr_str(self)
