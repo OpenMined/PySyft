@@ -33,6 +33,23 @@ def _is_within_peer_datasite(event: FileChangeEvent, peer_email: str) -> bool:
     return not path.is_absolute() and ".." not in path.parts
 
 
+def _events_within_peer_datasite(
+    events: List[FileChangeEvent], peer_email: str
+) -> List[FileChangeEvent]:
+    """The events of ``events`` that target ``peer_email``'s datasite; log the rest."""
+    accepted = []
+    for event in events:
+        if _is_within_peer_datasite(event, peer_email):
+            accepted.append(event)
+        else:
+            logger.warning(
+                f"Dropping event from {peer_email} aimed at "
+                f"{event.path_in_syftbox}: a peer may only change files "
+                "under its own datasite"
+            )
+    return accepted
+
+
 SECONDS_BEFORE_SYNCING_DOWN = 0
 
 
@@ -264,18 +281,16 @@ class DataSiteWatcherCache(BaseModel):
         only change files under its own datasite, mirrored locally at
         ``<syftbox>/<peer_email>/``, so an event aimed anywhere else is dropped
         before it reaches the local file connection.
+
+        The saved copy of the message holds only the accepted events.
+        ``_load_file_hashes_from_events`` reads saved messages back on start,
+        and a saved message does not record its sender, so a dropped event
+        cannot be checked again there.
         """
-        self.events_connection.write_file(
-            event_message.message_filepath.as_string(), event_message
-        )
-        for event in event_message.events:
-            if not _is_within_peer_datasite(event, peer_email):
-                logger.warning(
-                    f"Dropping event from {peer_email} aimed at "
-                    f"{event.path_in_syftbox}: a peer may only change files "
-                    "under its own datasite"
-                )
-                continue
+        accepted = _events_within_peer_datasite(event_message.events, peer_email)
+        saved = event_message.model_copy(update={"events": accepted})
+        self.events_connection.write_file(saved.message_filepath.as_string(), saved)
+        for event in accepted:
             self._apply_event(event)
 
     def _apply_event(self, event: FileChangeEvent) -> None:

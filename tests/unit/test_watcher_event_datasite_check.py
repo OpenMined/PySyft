@@ -107,6 +107,37 @@ def test_email_comparison_ignores_case():
     assert _has(cache, f"{PEER.upper()}/file.txt")
 
 
+def test_saved_message_holds_only_accepted_events():
+    cache = _cache()
+    forged = _event(VICTIM, "syft.pub.yaml")
+    legitimate = _event(PEER, "data/file.txt")
+    message = FileChangeEventsMessage(events=[forged, legitimate])
+
+    cache.apply_event_message(message, PEER)
+
+    assert [e.id for e in cache.get_cached_events()] == [legitimate.id]
+    saved = cache.events_connection.get_latest()
+    assert saved.message_filepath == message.message_filepath
+
+
+def test_dropped_event_is_not_restored_after_restart(tmp_path):
+    """On start, the watcher rebuilds its state from saved messages, with no sender to check."""
+    config = DataSiteWatcherCacheConfig(
+        email=VICTIM, use_in_memory_cache=False, syftbox_folder=tmp_path / "SyftBox"
+    )
+    forged = _event(VICTIM, "syft.pub.yaml")
+    legitimate = _event(PEER, "data/file.txt")
+    DataSiteWatcherCache.from_config(config).apply_event_message(
+        FileChangeEventsMessage(events=[forged, legitimate]), PEER
+    )
+
+    restarted = DataSiteWatcherCache.from_config(config)
+
+    assert Path(f"{VICTIM}/syft.pub.yaml") not in restarted.file_hashes
+    assert VICTIM not in restarted.last_event_timestamp_per_peer
+    assert restarted.file_hashes[Path(f"{PEER}/data/file.txt")] == legitimate.new_hash
+
+
 def test_forged_outbox_message_cannot_rewrite_ds_root_permissions():
     """Over the mock Drive: a DO publishes an event aimed at the DS's own datasite."""
     ds, do = SyftboxManager.pair_with_mock_drive_service_connection(
