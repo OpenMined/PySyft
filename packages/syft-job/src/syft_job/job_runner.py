@@ -260,6 +260,11 @@ class SyftJobRunner:
                 env=env,
             )
 
+            # Selector readiness only guarantees that some bytes are available.
+            # Keep reads non-blocking so a partial line cannot stall timeout checks.
+            os.set_blocking(process.stdout.fileno(), False)
+            os.set_blocking(process.stderr.fileno(), False)
+
             sel = selectors.DefaultSelector()
             sel.register(process.stdout, selectors.EVENT_READ, data="stdout")
             sel.register(process.stderr, selectors.EVENT_READ, data="stderr")

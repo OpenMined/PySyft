@@ -252,3 +252,45 @@ def test_timeout_does_not_hang_runner(tmp_path: Path):
     # 3s job timeout + venv setup + tree-kill cleanup should fit well under 60s.
     assert elapsed < 60, f"process_approved_jobs took {elapsed:.1f}s — likely hung"
     assert do_client.jobs[0].status == "failed"
+
+
+PARTIAL_OUTPUT_PY = """\\
+import time
+
+print("working", end="", flush=True)
+time.sleep(10)
+"""
+
+
+def test_streaming_timeout_with_partial_line(tmp_path: Path):
+    syftbox = tmp_path / "SyftBox"
+    syftbox.mkdir()
+
+    code_file = tmp_path / "main.py"
+    code_file.write_text(PARTIAL_OUTPUT_PY)
+
+    do_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DO_EMAIL)
+    ds_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
+
+    ds_client = JobClient(config=ds_config)
+    do_client = JobClient(config=do_config)
+    do_runner = SyftJobRunner(config=do_config)
+
+    ds_client.submit_python_job(
+        user=DO_EMAIL, code_path=str(code_file), job_name="partial-output.job"
+    )
+    do_client.jobs[0].approve()
+
+    start = time.monotonic()
+    do_runner.process_approved_jobs(stream_output=True, timeout=1)
+    elapsed = time.monotonic() - start
+
+    assert elapsed < 8, f"streaming read blocked for {elapsed:.1f}s"
+    assert do_client.jobs[0].status == "failed"
+
+    review_path = do_config.get_review_job_dir(
+        DO_EMAIL, DS_EMAIL, "partial-output.job"
+    )
+    stdout = (review_path / "stdout.txt").read_text()
+    assert "working" in stdout
+    assert "--- PROCESS TIMED OUT ---" in stdout
