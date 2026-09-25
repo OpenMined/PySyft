@@ -17,7 +17,11 @@ from google.oauth2 import id_token
 from pydantic import BaseModel
 
 from syft.version import SYFT_VERSION
-from syft_enclaves.tee_token import KEY_FINGERPRINT_NONCE_SLOT, VERSION_NONCE_SLOT
+from syft_enclaves.tee_token import (
+    KEY_FINGERPRINT_NONCE_SLOT,
+    NO_KEY_FINGERPRINT_NONCE,
+    VERSION_NONCE_SLOT,
+)
 
 ATTESTATION_AUDIENCE = "syft-attestation"
 CONFIDENTIAL_COMPUTING_CERTS_URL = (
@@ -128,6 +132,14 @@ def _check_key_binding(
         )
         return
     actual = eat_nonce[KEY_FINGERPRINT_NONCE_SLOT]
+    if actual == NO_KEY_FINGERPRINT_NONCE:
+        result.add(
+            name,
+            label,
+            False,
+            "enclave bound no key into this token — it runs without encryption",
+        )
+        return
     if actual == expected:
         result.add(name, label, True, "token binds the enclave key this client holds")
     else:

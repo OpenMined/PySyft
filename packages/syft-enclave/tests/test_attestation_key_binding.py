@@ -17,6 +17,7 @@ os.environ["PRE_SYNC"] = "false"
 from syft_enclaves import SyftEnclaveClient
 from syft_enclaves.attestation import AttestationError, bundle_fingerprint
 from syft_enclaves.runner import EnclaveRunner
+from syft_enclaves.tee_token import NO_KEY_FINGERPRINT_NONCE, build_eat_nonce
 
 
 def _publish_token(enclave: SyftEnclaveClient) -> list[str]:
@@ -89,10 +90,32 @@ def test_attest_peer_requires_enclave_bundle():
         _attest(ds, enclave.email, eat_nonce)
 
 
+def test_attest_peer_rejects_attacker_key_sent_as_caller_nonce():
+    """The attacker swaps in their bundle, then asks the enclave's HTTP server for
+    a token with their own fingerprint as the nonce. It lands in the caller slot,
+    not the key slot, so the token binds nothing and attestation fails."""
+    enclave, do1, _do2, ds = _quad()
+    _publish_token(enclave)
+    attacker_bundle = _store(do1).get_public_bundle()
+    _store(ds).set_peer_bundle(enclave.email, attacker_bundle)
+    eat_nonce = build_eat_nonce(caller_nonce=bundle_fingerprint(attacker_bundle))
+
+    with pytest.raises(AttestationError, match="key_binding"):
+        _attest(ds, enclave.email, eat_nonce)
+
+
+def test_attest_peer_rejects_token_that_binds_no_key():
+    enclave, _do1, _do2, ds = _quad()
+    _publish_token(enclave)
+
+    with pytest.raises(AttestationError, match="key_binding"):
+        _attest(ds, enclave.email, build_eat_nonce())
+
+
 def test_attest_peer_skips_key_binding_without_encryption():
     enclave, _do1, _do2, ds = _quad(encryption=False)
     eat_nonce = _publish_token(enclave)
-    assert eat_nonce == eat_nonce[:1]
+    assert eat_nonce[1] == NO_KEY_FINGERPRINT_NONCE
 
     result = _attest(ds, enclave.email, eat_nonce)
 

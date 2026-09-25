@@ -7,7 +7,9 @@ import syft_crypto_python as syc
 from attestation_helpers import EXPECTED_VERSION_NONCE, FAKE_KEY_FINGERPRINT
 
 from syft_enclaves.tee_token import (
+    CALLER_NONCE_SLOT,
     KEY_FINGERPRINT_NONCE_SLOT,
+    NO_KEY_FINGERPRINT_NONCE,
     VERSION_NONCE_SLOT,
     build_eat_nonce,
     fetch_attestation_token,
@@ -15,8 +17,8 @@ from syft_enclaves.tee_token import (
 )
 
 
-def test_build_eat_nonce_version_only():
-    assert build_eat_nonce() == [EXPECTED_VERSION_NONCE]
+def test_build_eat_nonce_without_key_holds_placeholder():
+    assert build_eat_nonce() == [EXPECTED_VERSION_NONCE, NO_KEY_FINGERPRINT_NONCE]
 
 
 def test_build_eat_nonce_puts_key_fingerprint_in_its_slot():
@@ -32,12 +34,20 @@ def test_build_eat_nonce_caller_nonce_follows_key_fingerprint():
     assert nonces == [EXPECTED_VERSION_NONCE, FAKE_KEY_FINGERPRINT, "fresh-1234"]
 
 
-def test_build_eat_nonce_caller_nonce_without_key_takes_next_slot():
-    """The diagnostic HTTP server passes no key; its caller nonce lands in slot 1."""
-    assert build_eat_nonce(caller_nonce="fresh-1234") == [
-        EXPECTED_VERSION_NONCE,
-        "fresh-1234",
-    ]
+def test_caller_nonce_cannot_take_key_fingerprint_slot():
+    """The HTTP server passes any caller's nonce and no key.
+
+    A caller who sends a key fingerprint as the nonce must not see it in the
+    key slot, or they would hold a TEE-signed token binding their own key.
+    """
+    nonces = build_eat_nonce(caller_nonce=FAKE_KEY_FINGERPRINT)
+    assert nonces[KEY_FINGERPRINT_NONCE_SLOT] == NO_KEY_FINGERPRINT_NONCE
+    assert nonces[CALLER_NONCE_SLOT] == FAKE_KEY_FINGERPRINT
+
+
+def test_no_key_placeholder_is_valid_nonce():
+    assert validate_nonce(NO_KEY_FINGERPRINT_NONCE) is None
+    assert len(NO_KEY_FINGERPRINT_NONCE.encode()) >= 8
 
 
 def test_real_key_fingerprint_is_a_valid_nonce():

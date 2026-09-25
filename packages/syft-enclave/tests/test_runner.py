@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 from attestation_helpers import FAKE_KEY_FINGERPRINT
 
 from syft_enclaves.runner import EnclaveRunner
+from syft_enclaves.tee_token import NO_KEY_FINGERPRINT_NONCE
 
 
 def _make_client():
@@ -93,11 +94,11 @@ def test_publish_attestation_binds_own_key(monkeypatch):
     assert client._rds.peer_manager.get_own_version().attestation_token == "signed.jwt"
 
 
-def test_publish_attestation_without_encryption_sends_version_only(monkeypatch):
+def test_publish_attestation_without_encryption_sends_no_key_placeholder(monkeypatch):
     fetch = MagicMock(return_value="signed.jwt")
     monkeypatch.setattr("syft_enclaves.runner.fetch_attestation_token", fetch)
     client = _client_with_store(use_encryption=False)
 
     EnclaveRunner(client=client, fresh_state=False)._publish_attestation()
 
-    assert len(fetch.call_args.kwargs["eat_nonce"]) == 1
+    assert fetch.call_args.kwargs["eat_nonce"][1] == NO_KEY_FINGERPRINT_NONCE
