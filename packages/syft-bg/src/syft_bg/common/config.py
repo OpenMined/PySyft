@@ -36,7 +36,6 @@ class DefaultPaths:
     approve_state: Path
     approve_pid: Path
     approve_log: Path
-    auto_approvals_dir: Path
 
     # Email approve service paths
     email_approve_state: Path
@@ -72,7 +71,6 @@ def get_default_paths() -> DefaultPaths:
         approve_state=creds / "approve" / "state.json",
         approve_pid=creds / "approve" / "daemon.pid",
         approve_log=creds / "approve" / "daemon.log",
-        auto_approvals_dir=creds / "auto_approvals",
         # Email approve
         email_approve_state=creds / "email_approve" / "state.json",
         email_approve_pid=creds / "email_approve" / "daemon.pid",

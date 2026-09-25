@@ -323,6 +323,13 @@ def _warn_unmatchable_object(file_contents: list[str]) -> None:
         )
 
 
+def _confirm_no_peers() -> None:
+    from syft_bg.api.utils import NO_PEERS_WARNING
+
+    click.echo(NO_PEERS_WARNING, err=True)
+    click.confirm("Continue?", abort=True)
+
+
 @main.command("auto-approve")
 @click.argument("contents", nargs=-1, required=True, type=click.Path(exists=True))
 @click.option(
@@ -350,12 +357,18 @@ def _warn_unmatchable_object(file_contents: list[str]) -> None:
     type=click.Path(exists=True, file_okay=False),
     help="Base directory to resolve relative paths in contents against.",
 )
+@click.option(
+    "--allow-any-peer",
+    is_flag=True,
+    help="Allow an object without peers (any peer matches) without asking.",
+)
 def auto_approve(
     contents: tuple[str, ...],
     peers: tuple[str, ...],
     name: str | None,
     file_paths: tuple[str, ...],
     base_dir: str | None,
+    allow_any_peer: bool,
 ):
     """Create or update an auto-approval object.
 
@@ -394,12 +407,16 @@ def auto_approve(
 
     from syft_bg.api.api import auto_approve as api_auto_approve
 
+    if not peers and not allow_any_peer:
+        _confirm_no_peers()
+
     result = api_auto_approve(
         contents=list(contents),
         file_paths=list(file_paths) or None,
         peers=list(peers) or None,
         name=name,
         base_dir=Path(base_dir) if base_dir else None,
+        allow_any_peer=True,
     )
 
     if not result.success:
@@ -440,21 +457,18 @@ def remove_auto_approval(files: tuple[str, ...], name: str):
 
       syft-bg remove-auto-approval code/main.py code/utils.py -n my_analysis
     """
-    from syft_bg.common.syft_bg_config import SyftBgConfig
+    from syft_bg.api.utils import get_api_store
 
-    with SyftBgConfig.edit() as syft_bg_config:
-        config = syft_bg_config.approve
+    store = get_api_store()
+    if not store.exists(name):
+        click.echo(f"Auto-approval object '{name}' not found.", err=True)
+        raise SystemExit(1)
 
-        if name not in config.auto_approvals.objects:
-            click.echo(f"Auto-approval object '{name}' not found in config.", err=True)
-            raise SystemExit(1)
-
-        obj = config.auto_approvals.objects[name]
-        before = len(obj.file_contents)
-        obj.file_contents = [
-            s for s in obj.file_contents if s.relative_path not in files
-        ]
-        removed = before - len(obj.file_contents)
+    obj = store.get(name)
+    before = len(obj.file_contents)
+    obj.file_contents = [s for s in obj.file_contents if s.relative_path not in files]
+    removed = before - len(obj.file_contents)
+    store.save(name, obj)
 
     click.echo(f"Removed {removed} script(s) from '{name}'.")
 
@@ -467,8 +481,16 @@ def remove_auto_approval(files: tuple[str, ...], name: str):
     default=None,
     help="Remove peer from a specific object only. If not given, removes from all.",
 )
-def remove_peer(peer: str, name: str | None):
+@click.option(
+    "--allow-any-peer",
+    is_flag=True,
+    help="Allow leaving an object without peers (any peer matches) without asking.",
+)
+def remove_peer(peer: str, name: str | None, allow_any_peer: bool):
     """Remove a peer from auto-approval objects.
+
+    An object left without peers matches any peer and is readable by
+    everyone, so you are asked to confirm that unless --allow-any-peer is given.
 
     Examples:
 
@@ -476,31 +498,28 @@ def remove_peer(peer: str, name: str | None):
 
       syft-bg remove-peer alice@uni.edu -n my_analysis
     """
-    from syft_bg.common.syft_bg_config import SyftBgConfig
+    from syft_bg.api.utils import get_api_store
 
-    with SyftBgConfig.edit() as syft_bg_config:
-        config = syft_bg_config.approve
-        removed_from = 0
+    store = get_api_store()
+    if name and not store.exists(name):
+        click.echo(f"Auto-approval object '{name}' not found.", err=True)
+        raise SystemExit(1)
 
-        if name:
-            if name not in config.auto_approvals.objects:
-                click.echo(f"Auto-approval object '{name}' not found.", err=True)
-                raise SystemExit(1)
-            obj = config.auto_approvals.objects[name]
-            if peer in obj.peers:
-                obj.peers.remove(peer)
-                removed_from = 1
-        else:
-            for obj in config.auto_approvals.objects.values():
-                if peer in obj.peers:
-                    obj.peers.remove(peer)
-                    removed_from += 1
+    names = [name] if name else store.names()
+    objects = {n: store.get(n) for n in names}
+    objects = {n: obj for n, obj in objects.items() if peer in obj.peers}
+    if not objects:
+        click.echo(f"Peer {peer} not found in any auto-approval object.", err=True)
+        raise SystemExit(1)
 
-        if removed_from == 0:
-            click.echo(f"Peer {peer} not found in any auto-approval object.", err=True)
-            raise SystemExit(1)
+    if not allow_any_peer and any(obj.peers == [peer] for obj in objects.values()):
+        _confirm_no_peers()
 
-    click.echo(f"Removed peer {peer} from {removed_from} object(s).")
+    for obj_name, obj in objects.items():
+        obj.peers.remove(peer)
+        store.save(obj_name, obj)
+
+    click.echo(f"Removed peer {peer} from {len(objects)} object(s).")
 
 
 @main.command("list-auto-approvals")

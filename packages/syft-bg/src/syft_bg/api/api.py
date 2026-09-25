@@ -1,21 +1,24 @@
 """Pythonic API for syft-bg initialization and configuration."""
 
 import shutil
-import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 
 from syft_bg.api.results import AutoApproveResult, InstallationResult, StatusResult
 from syft_bg.api.utils import (
-    copy_and_hash_files,
-    generate_unique_name,
+    confirm_no_peers,
+    load_auto_approvals_or_empty,
+    default_api_name,
+    api_store_for_job,
+    get_api_store,
     get_job_user_files,
     move_token_to_syftbg_dir,
     resolve_content_files,
     resolve_job_approval_files,
     setup_orchestrator,
 )
-from syft_bg.approve.config import AutoApprovalObj, FileEntry
+from syft_bg.approve.api_store import ApiExistsError, ApiStore
+from syft_bg.approve.config import AutoApprovalObj
 from syft_bg.common.config import get_default_paths, get_syftbg_dir
 from syft_bg.common.drive import is_colab
 from syft_bg.common.syft_bg_config import SyftBgConfig
@@ -297,6 +300,7 @@ def status() -> StatusResult:
 
     return StatusResult(
         config=config,
+        auto_approvals=load_auto_approvals_or_empty(config),
         service_infos=manager.get_service_infos(),
         is_colab=is_colab(),
     )
@@ -307,27 +311,20 @@ def status() -> StatusResult:
 # ---------------------------------------------------------------------------
 
 
-class _AutoApprovalNotFound(Exception):
-    """Raised inside SyftBgConfig.edit() to skip its save()."""
-
-
-class _AutoApproveDirectoryConflict(Exception):
-    """Raised inside SyftBgConfig.edit() to skip its save() when the staging
-    directory can't be moved into place."""
-
-
 def auto_approve(
     contents: Sequence[str | Path],
     file_paths: list[str] | None = None,
     peers: list[str] | None = None,
     name: str | None = None,
     base_dir: Path | None = None,
+    allow_any_peer: bool = False,
+    api_store: ApiStore | None = None,
 ) -> AutoApproveResult:
-    """Create an auto-approval object.
+    """Create an auto-approval object (an "api") in SyftBox.
 
-    Copies files to a managed directory, computes hashes, and saves
-    the approval configuration. The approve service will use this to
-    automatically approve matching jobs.
+    Copies the files to <datasite>/app_data/apis/<name>/, computes hashes, and
+    grants read access to the peers that can call it. The approve service
+    uses this to automatically approve matching jobs.
 
     A job is matched on paths relative to its submission root, so an object
     must pin "run.sh" to approve anything. `auto_approve_job` builds that
@@ -338,83 +335,41 @@ def auto_approve(
                   these are relative paths resolved against it. Otherwise,
                   absolute paths or directories (expanded to all files within).
         file_paths: Relative paths to allow by name only (e.g. ["params.json"]).
-        peers: Peer emails to restrict to. If None or empty, any peer matches.
+        peers: Peer emails to restrict to. If None or empty, any peer matches
+               and everyone can read the api; you are asked to confirm this.
         name: Name for the auto-approval object. Auto-generated if not provided.
         base_dir: Base directory to resolve relative paths in contents against.
                   When set, FileEntry.relative_path stores the relative path.
+        allow_any_peer: Allow no peers without the confirmation prompt.
+        api_store: Where to store the api. Defaults to the datasite in config.yaml.
 
     Returns:
         AutoApproveResult with the created object details.
     """
-    if file_paths is None:
-        file_paths = []
-    if peers is None:
-        peers = []
+    file_paths = file_paths or []
+    peers = peers or []
 
     content_files, error = resolve_content_files(contents, base_dir)
     if error:
         return AutoApproveResult(success=False, error=error)
-
     if not content_files and not file_paths:
         return AutoApproveResult(success=False, error="No files to process")
+    if not peers and not allow_any_peer and not confirm_no_peers():
+        return AutoApproveResult(success=False, error="Aborted: no peers given")
 
-    # Copy/hash into a private staging directory (unique per call) unlocked,
-    # so the config lock in SyftBgConfig.edit() is held for the minimum time
-    # possible. Concurrent callers never share a directory before the lock
-    # resolves the final name, unlike copying straight into a name-derived
-    # directory. The staging dir lives inside auto_approvals_dir so the
-    # later rename into place is an atomic same-filesystem move.
-    #
-    auto_approvals_dir = get_default_paths().auto_approvals_dir
-    auto_approvals_dir.mkdir(parents=True, exist_ok=True)
-    current_dir = Path(
-        tempfile.mkdtemp(prefix=".auto_approve_staging_", dir=auto_approvals_dir)
-    )
-    succeeded = False
     try:
-        file_entries = copy_and_hash_files(content_files, current_dir.name)
-
-        with SyftBgConfig.edit() as syft_bg_config:
-            config = syft_bg_config.approve
-            name = generate_unique_name(name, content_files, config)
-            final_dir = auto_approvals_dir / name
-            try:
-                current_dir.rename(final_dir)
-            except OSError as e:
-                raise _AutoApproveDirectoryConflict(str(e)) from e
-            current_dir = final_dir
-
-            file_entries = [
-                FileEntry(
-                    relative_path=entry.relative_path,
-                    path=str(final_dir / entry.relative_path),
-                    hash=entry.hash,
-                )
-                for entry in file_entries
-            ]
-
-            obj = AutoApprovalObj(
-                file_contents=file_entries,
-                file_paths=file_paths,
-                peers=peers,
-            )
-            config.auto_approvals.objects[name] = obj
-        succeeded = True
-    except _AutoApproveDirectoryConflict as e:
-        return AutoApproveResult(
-            success=False,
-            error=f"Could not finalize auto-approval directory '{name}': {e}",
+        name, obj = (api_store or get_api_store()).create(
+            default_api_name(name, content_files), content_files, file_paths, peers
         )
-    finally:
-        if not succeeded:
-            shutil.rmtree(current_dir, ignore_errors=True)
+    except (ApiExistsError, ValueError) as e:
+        return AutoApproveResult(success=False, error=str(e))
 
     return AutoApproveResult(
         success=True,
         name=name,
-        file_contents=[e.relative_path for e in file_entries],
-        file_paths=file_paths,
-        peers=peers,
+        file_contents=[e.relative_path for e in obj.file_contents],
+        file_paths=obj.file_paths,
+        peers=obj.peers,
     )
 
 
@@ -424,6 +379,7 @@ def auto_approve_job(
     file_paths: list[str] | None = None,
     peers: list[str] | None = None,
     name: str | None = None,
+    allow_any_peer: bool = False,
 ) -> AutoApproveResult:
     """Create an auto-approval config from an existing job.
 
@@ -440,6 +396,7 @@ def auto_approve_job(
         file_paths: Filenames from the job to match by name only.
         peers: Peer emails to restrict to. If None, defaults to the job's submitter.
         name: Name for the auto-approval object. Defaults to job name.
+        allow_any_peer: Allow an empty peers list without the prompt.
 
     Returns:
         AutoApproveResult with the created object details.
@@ -462,24 +419,25 @@ def auto_approve_job(
         peers=peers,
         name=name,
         base_dir=job.job_submission_path,
+        allow_any_peer=allow_any_peer,
+        api_store=api_store_for_job(job),
     )
 
 
 def list_auto_approvals() -> dict[str, AutoApprovalObj]:
-    """Return all configured auto-approval objects.
+    """Return all auto-approval objects stored in SyftBox.
 
     Returns:
         Mapping of name → AutoApprovalObj.
     """
-    return SyftBgConfig.load().approve.auto_approvals.objects
+    return get_api_store().load_all()
 
 
 def remove_auto_approve(name: str) -> AutoApproveResult:
     """Remove an auto-approval object by name.
 
-    Deletes the object from config and removes its copied files from the
-    auto-approvals directory. The running approve service will pick up
-    the change on its next poll iteration (no restart required).
+    Deletes the api folder from SyftBox. The running approve service will
+    pick up the change on its next poll iteration (no restart required).
 
     Args:
         name: Name of the auto-approval object to remove.
@@ -487,22 +445,8 @@ def remove_auto_approve(name: str) -> AutoApproveResult:
     Returns:
         AutoApproveResult with success/error status.
     """
-    # `return` inside edit() is normal control flow and wouldn't skip its
-    # save() — raise instead so it's actually skipped.
-    try:
-        with SyftBgConfig.edit() as syft_bg_config:
-            config = syft_bg_config.approve
-            if name not in config.auto_approvals.objects:
-                raise _AutoApprovalNotFound(name)
-
-            del config.auto_approvals.objects[name]
-    except _AutoApprovalNotFound:
+    if not get_api_store().delete(name):
         return AutoApproveResult(
             success=False, error=f"Auto-approval object '{name}' not found"
         )
-
-    obj_dir = get_default_paths().auto_approvals_dir / name
-    if obj_dir.exists():
-        shutil.rmtree(obj_dir, ignore_errors=True)
-
     return AutoApproveResult(success=True, name=name)

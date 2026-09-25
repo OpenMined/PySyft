@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Callable, Optional, Protocol
 
 from syft_job.job import JobInfo
 
+from syft_bg.approve.api_store import ApiStore
 from syft_bg.approve.config import AutoApprovalObj, AutoApprovalsConfig
 from syft_bg.approve.criteria import (
     AutoApprovalValidationResult,
@@ -48,6 +49,10 @@ class JobApprovalHandler:
         """Always-fresh auto-approvals config, re-read from disk on every access."""
         return SyftBgConfig.load(self._config_path).approve.auto_approvals
 
+    @property
+    def api_store(self) -> ApiStore:
+        return ApiStore(self.client.syftbox_folder, self.client.email)
+
     def _get_approved_peers(self) -> list[str]:
         """Get list of approved peer emails."""
         self.client.load_peers(force_download=True)
@@ -65,7 +70,7 @@ class JobApprovalHandler:
             )
 
         candidate_objects: list[tuple[str, AutoApprovalObj]] = []
-        for name, obj in self.config.objects.items():
+        for name, obj in self.api_store.load_all().items():
             if not obj.peers or job.submitted_by in obj.peers:
                 candidate_objects.append((name, obj))
 
