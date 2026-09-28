@@ -62,8 +62,9 @@ func_a()
         ref = runner._find_jobref_from_name(job_name, user=ds_email)
         runner._execute_job(ref, stream_output=True, timeout=30)
 
-        stdout_content = (review_dir / "stdout.txt").read_text()
-        stderr_content = (review_dir / "stderr.txt").read_text()
+        staging_dir = config.get_staging_job_dir(email, ds_email, job_name)
+        stdout_content = (staging_dir / "stdout.txt").read_text()
+        stderr_content = (staging_dir / "stderr.txt").read_text()
 
         # Check stdout has all print statements
         assert "Starting job..." in stdout_content

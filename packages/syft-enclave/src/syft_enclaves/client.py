@@ -1,31 +1,35 @@
+import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
-import os
 
-from syft_rds import SyftRDSClient, SyftRDSClientConfig
-from syft.sync.version.peer_manager import CompatAction
-from syft.sync.peers.peer import Peer
-from syft.sync.peers.peer_list import PeerList
 from syft_datasets.dataset_manager import SyftDatasetManager
+from syft_job.disclosures import DisclosuresArg, gated_names
 from syft_job.job import JobInfo, JobsList
 from syft_job.job_storage import JobRef
 from syft_job.models import JobState, JobStatus
+from syft_perms.syftperm_context import SyftPermContext
+from syft_rds import SyftRDSClient, SyftRDSClientConfig
 
-from syft_enclaves.enclave_job_info import (
-    EnclaveJobInfo,
-    PartyApprovalStatus,
-    enclave_approval_file_name,
-)
+from syft.sync.peers.peer import Peer
+from syft.sync.peers.peer_list import PeerList
+from syft.sync.version.peer_manager import CompatAction
 from syft_enclaves.attestation import (
     AppraisalPolicy,
     AttestationError,
     bundle_fingerprint,
     verify_attestation_token,
 )
-from syft_perms.syftperm_context import SyftPermContext
-
 from syft_enclaves.enclave_job_client import EnclaveJobClient
+from syft_enclaves.enclave_job_info import (
+    EnclaveJobInfo,
+    PartyApprovalStatus,
+    enclave_approval_file_name,
+)
+from syft_enclaves.immutability import (
+    make_private_dataset_immutability_filter,
+)
 from syft_enclaves.utils import (
     create_clients,
     create_configs,
@@ -34,9 +38,14 @@ from syft_enclaves.utils import (
     wire_peers,
     write_versions,
 )
-from syft_enclaves.immutability import (
-    make_private_dataset_immutability_filter,
-)
+
+FORWARDED_RECORD = "forwarded_artifacts.json"
+RESULTS_SHARED_MARKER = "results_shared"
+
+
+def pre_sync_enabled() -> bool:
+    """Whether the client syncs on its own. ``PRE_SYNC=false`` turns it off."""
+    return os.environ.get("PRE_SYNC", "true").lower() == "true"
 
 
 class SyftEnclaveClient:
@@ -197,7 +206,11 @@ class SyftEnclaveClient:
         """
         runs_here = job.datasite_owner_email == self.email
         required = list(self.data_owners) if runs_here else None
-        return EnclaveJobInfo.from_job_info(job, required_approvers=required)
+        return EnclaveJobInfo.from_job_info(
+            job,
+            required_approvers=required,
+            on_approval_change=self._push_approval_file,
+        )
 
     def submit_python_job(
         self,
@@ -206,6 +219,7 @@ class SyftEnclaveClient:
         job_name: Optional[str] = "",
         datasets: Optional[dict[str, list[str]]] = None,
         share_results_with_do: bool = False,
+        request_disclosures: Optional[list[str]] = None,
         force_submission: bool = False,
         ignore_peer_version: bool = False,
         **kwargs,
@@ -231,6 +245,7 @@ class SyftEnclaveClient:
             job_name,
             datasets=datasets,
             share_results_with_do=share_results_with_do,
+            request_disclosures=request_disclosures,
             **kwargs,
         )
         self._rds.sync_engine.push_job_files(job_dir)
@@ -247,35 +262,105 @@ class SyftEnclaveClient:
                     state.status = JobStatus.APPROVED
                     state.save(job.job_review_path / "state.yaml")
 
+        # share_logs_with_submitter=False keeps the logs in staging. Only a
+        # grant from every party releases them.
         self._rds.process_approved_jobs(
             force_execution=True,
             share_outputs_with_submitter=True,
-            share_logs_with_submitter=True,
+            share_logs_with_submitter=False,
         )
+        self._apply_disclosure_policy()
+
+    def granted_disclosures(self, job: JobInfo) -> set[str]:
+        """The items that every party released for this job."""
+        return self._as_enclave_job(job).granted_disclosures
+
+    def _local_jobs(self) -> JobsList:
+        """The job list read from disk, with no sync.
+
+        ``self.jobs`` syncs first, therefore a caller that must act before a
+        push reads the list through this method.
+        """
+        return self._rds.job_client.jobs
+
+    def _apply_disclosure_policy(self) -> None:
+        """Move each granted artifact from the staging folder into review.
+
+        An artifact that no party released stays in the staging folder, where no
+        submitter holds a grant.
+        """
+        for job in self._local_jobs():
+            if job.status not in ("done", "failed"):
+                continue
+            job.release_artifacts(gated_names(self.granted_disclosures(job)))
 
     def distribute_results(self) -> None:
         """Distribute job results to DS (always) and optionally to DOs."""
         for job in self.jobs:
-            if job.status != "done":
+            if job.status not in ("done", "failed"):
                 continue
-            results_shared_marker = job.job_review_path / "results_shared"
-            if results_shared_marker.exists():
-                continue
-
-            # Always share results with the DS (submitter)
-            self._forward_results_to_recipients(job, [job.submitted_by])
-
-            # Optionally share with DOs
-            if job.job_headers.get("share_results_with_do"):
-                datasets = job.job_metadata.datasets
-                if datasets:
-                    do_emails = list(datasets.keys())
-                    job.share_outputs(do_emails)
-                    self._forward_results_to_recipients(job, do_emails)
-
-            results_shared_marker.write_text("shared")
+            self._share_results_once(job)
+            # A grant can arrive after the results went out, so a released
+            # artifact travels on its own schedule.
+            self._forward_new_releases(job)
 
         self._rds.sync()
+
+    def _share_results_once(self, job: JobInfo) -> None:
+        """Send the outputs and the state, the first time the job finishes."""
+        marker = job.job_review_path / RESULTS_SHARED_MARKER
+        if marker.exists():
+            return
+
+        # Always share results with the DS (submitter)
+        self._forward_results_to_recipients(job, [job.submitted_by])
+
+        # Optionally share with DOs
+        datasets = job.job_metadata.datasets
+        if job.job_headers.get("share_results_with_do") and datasets:
+            do_emails = list(datasets.keys())
+            job.share_outputs(do_emails)
+            self._forward_results_to_recipients(job, do_emails)
+
+        marker.write_text("shared")
+
+    def _forward_new_releases(self, job: JobInfo) -> list[str]:
+        """Send each released artifact that the parties do not hold yet.
+
+        A party that releases an item also receives it, so the data owners get
+        the same file as the submitter. The record names what already went out,
+        because a grant can arrive long after the results did.
+        """
+        review_dir = job.job_review_path
+        sent_path = review_dir / FORWARDED_RECORD
+        try:
+            sent = set(json.loads(sent_path.read_text()))
+        except (OSError, TypeError, json.JSONDecodeError):
+            sent = set()
+
+        pending = sorted(
+            name
+            for name in gated_names(self.granted_disclosures(job))
+            if name not in sent and (review_dir / name).is_file()
+        )
+        if not pending:
+            return []
+
+        datasite_dir = self._rds.syftbox_folder / self._rds.email
+        files = {
+            (review_dir / name).relative_to(datasite_dir): (
+                review_dir / name
+            ).read_bytes()
+            for name in pending
+        }
+        datasets = job.job_metadata.datasets or {}
+        recipients = list(
+            dict.fromkeys([job.submitted_by, *(e for e in datasets if e != self.email)])
+        )
+        self._push_files_to_recipients(files, recipients)
+
+        sent_path.write_text(json.dumps(sorted(sent.union(pending))))
+        return pending
 
     def _read_state_file(self, job: JobInfo) -> dict[Path, bytes]:
         """Read the job state.yaml as a {path_in_datasite: bytes} dict."""
@@ -289,10 +374,16 @@ class SyftEnclaveClient:
     def _forward_results_to_recipients(self, job: JobInfo, recipients: list[str]):
         """Forward job output files and state to recipients via event outbox."""
         outputs_dir = job.job_review_path / "outputs"
-        if not outputs_dir.exists():
-            return
-        files_by_datasite_path = self._get_files_in_dir(outputs_dir)
+        files_by_datasite_path = (
+            self._get_files_in_dir(outputs_dir) if outputs_dir.exists() else {}
+        )
         files_by_datasite_path.update(self._read_state_file(job))
+        self._push_files_to_recipients(files_by_datasite_path, recipients)
+
+    def _push_files_to_recipients(
+        self, files_by_datasite_path: dict, recipients: list[str]
+    ) -> None:
+        """Queue the files for the recipients through the event outbox."""
         if not files_by_datasite_path:
             return
         syncer = self._rds.sync_engine.datasite_owner_syncer
@@ -305,43 +396,52 @@ class SyftEnclaveClient:
         )
         syncer.process_syftbox_events_queue()
 
-    def approve_job(self, job: JobInfo) -> None:
-        """Approve an enclave job and push the approval state file to the enclave."""
-        if os.environ.get("PRE_SYNC", "true").lower() == "true":
-            self._rds.sync()
-
-        job.approve()
-        self._push_own_approval_file(job)
-
-    def reject_job(self, job: JobInfo, reason: Optional[str] = None) -> None:
-        """Reject an enclave job and push the approval state file to the enclave.
-
-        The rejection is written into this data owner's own approval file, so
-        the enclave reads it as a refusal. It also withdraws an earlier approval.
-        """
-        if not isinstance(job, EnclaveJobInfo):
-            raise TypeError(
-                f"Job '{job.name}' is not an enclave job. Reject it through the "
-                f"datasite client."
-            )
-        if os.environ.get("PRE_SYNC", "true").lower() == "true":
-            self._rds.sync()
-
-        job.reject(reason)
-        self._push_own_approval_file(job)
-
-    def _push_own_approval_file(self, job: JobInfo) -> None:
-        """Send this data owner's approval file for ``job`` to the enclave."""
-        file_name = enclave_approval_file_name(self.email)
-        approval_file = job.job_review_path / file_name
-        if not approval_file.exists():
-            print(
-                "🟠 Approval file does not exist yet. Kindly wait until enclave sends it."
-            )
+    def _push_approval_file(self, approval_file: Path) -> None:
+        """Push a changed approval file to the enclave."""
         relative_path = approval_file.relative_to(self._rds.syftbox_folder)
         self._rds.sync_engine.datasite_watcher_syncer.on_file_change(
             relative_path, process_now=True
         )
+
+    def _require_enclave_job(self, job: JobInfo) -> EnclaveJobInfo:
+        """Wrap ``job`` like ``self.jobs`` does, and refuse a job of another kind."""
+        if not isinstance(job, EnclaveJobInfo):
+            raise TypeError(
+                f"Job '{job.name}' is not an enclave job, so it carries no "
+                f"disclosures. Approve it through the datasite client."
+            )
+        return self._as_enclave_job(job)
+
+    def approve_job(self, job: JobInfo, disclosures: DisclosuresArg = None) -> None:
+        """Approve an enclave job and push the approval state file to the enclave.
+
+        Same as ``job.approve(disclosures=...)`` on a job from ``self.jobs``.
+        """
+        job = self._require_enclave_job(job)
+        if pre_sync_enabled():
+            self._rds.sync()
+        job.approve(disclosures=disclosures)
+
+    def reject_job(self, job: JobInfo, reason: Optional[str] = None) -> None:
+        """Reject an enclave job and push the approval state file to the enclave.
+
+        Same as ``job.reject(reason)`` on a job from ``self.jobs``. It also
+        withdraws an earlier approval.
+        """
+        job = self._require_enclave_job(job)
+        if pre_sync_enabled():
+            self._rds.sync()
+        job.reject(reason)
+
+    def update_disclosures(self, job: JobInfo, disclosures: DisclosuresArg) -> dict:
+        """Change the items this data owner releases, and push the new set.
+
+        Same as ``job.update_disclosures(...)`` on a job from ``self.jobs``.
+        """
+        job = self._require_enclave_job(job)
+        if pre_sync_enabled():
+            self._rds.sync()
+        return job.update_disclosures(disclosures)
 
     def receive_jobs(self):
         """Receive and distribute enclave jobs to relevant DOs.
