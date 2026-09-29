@@ -13,6 +13,7 @@ from syft_enclaves.attestation import (
     AttestationResult,
     verify_attestation_token,
 )
+from syft_enclaves.attestation.claims import build_claims, claims_digest
 
 FAKE_IMAGE_DIGEST = "sha256:abc123"
 EXPECTED_VERSION_NONCE = f"syft-{SYFT_VERSION}"
@@ -27,6 +28,10 @@ DEFAULT_TEST_POLICY = AppraisalPolicy(
 )
 # For checks that are not about pinning.
 UNPINNED = AppraisalPolicy(allow_unpinned=True)
+# The claims the fake token commits to, matching DEFAULT_TEST_POLICY.
+PUBLISHED_CLAIMS = build_claims(
+    "enclave@openmined.org", ["do@openmined.org"], SYFT_VERSION
+)
 
 
 def _valid_claims(**overrides):
@@ -34,7 +39,7 @@ def _valid_claims(**overrides):
     claims = {
         "secboot": True,
         "dbgstat": "disabled-since-boot",
-        "eat_nonce": [EXPECTED_VERSION_NONCE],
+        "eat_nonce": [EXPECTED_VERSION_NONCE, claims_digest(PUBLISHED_CLAIMS)],
         "submods": {
             "container": {
                 "image_digest": FAKE_IMAGE_DIGEST,
@@ -67,14 +72,13 @@ def mock_verify():
 class TestVerifyAttestationToken:
     def test_all_checks_pass(self, mock_verify):
         result = verify_attestation_token(
-            "fake-token", policy=DEFAULT_TEST_POLICY, verbose=False
+            "fake-token",
+            policy=DEFAULT_TEST_POLICY,
+            published_claims=PUBLISHED_CLAIMS,
+            verbose=False,
         )
-        assert result.all_passed()
-        assert len(result.checks) == 6
-        # claims_binding skips here: this fixture publishes no claims, so
-        # there is nothing for the token to be checked against.
-        assert [c.name for c in result.checks if c.passed is None] == ["claims_binding"]
-        assert all(c.passed is not False for c in result.checks)
+        assert len(result.checks) == 8
+        assert all(c.passed for c in result.checks)
 
     def test_jwt_signature_failure(self, mock_verify):
         mock_verify.side_effect = ValueError("bad signature")
@@ -163,7 +167,10 @@ class TestVerifyAttestationToken:
 
     def test_image_digest_matches(self, mock_verify):
         result = verify_attestation_token(
-            "fake-token", policy=DEFAULT_TEST_POLICY, verbose=False
+            "fake-token",
+            policy=DEFAULT_TEST_POLICY,
+            published_claims=PUBLISHED_CLAIMS,
+            verbose=False,
         )
         image_check = next(c for c in result.checks if c.name == "image_digest")
         assert image_check.passed

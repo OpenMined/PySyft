@@ -1,17 +1,16 @@
 """
 Syft Client Attestation Server
 
-Operator-facing view of the enclave's own attestation evidence, whichever
-deployment target it is running on. The evidence itself comes from
-``syft_enclaves.evidence``:
+Serves the enclave's own attestation evidence on Tinfoil: the hardware
+attestation document from the ``/tinfoil`` mount, plus the key bundle and
+claims, fetched by peers over a connection pinned to the attested TLS key (see
+``syft_enclaves.attestation.https``).
 
-  - Confidential Space: a signed JWT from the launcher socket, proving the
-    hardware TEE type, secure boot, debug status and container image digest.
-  - Tinfoil: the hardware attestation document from the ``/tinfoil`` mount.
+On Confidential Space ``/attestation`` is not served. The runner publishes the
+launcher's signed token to peers through ``SYFT_version.json``; serving it here
+as well would let a caller mint tokens carrying nonces of their choosing.
 
-This endpoint is for humans and for ``just attest`` / ``just tinfoil-attest``.
-Production publishes evidence to peers through ``SYFT_version.json``; nothing
-here is verified, and a relying party appraises the evidence itself (see
+Nothing here is verified; a relying party appraises the evidence itself (see
 ``syft_enclaves.attestation``).
 """
 
@@ -19,6 +18,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from syft_enclaves.attestation.envelope import AttestationKind
 from syft_enclaves.evidence import probed_locations, select_provider
 from syft_enclaves.evidence.key_bundle import (
     read_claims,
@@ -60,7 +60,7 @@ def index():
         "attestation_provider": provider.kind.value if provider else None,
         "endpoints": {
             "/": "This page",
-            "/attestation": "TEE attestation evidence (requires a TEE deployment)",
+            "/attestation": "TEE attestation evidence (Tinfoil only)",
             "/health": "Health check",
         },
     }
@@ -76,12 +76,12 @@ def attestation(nonce: str | None = None):
     """Show this enclave's own attestation evidence.
 
     Query params:
-      nonce — optional freshness nonce. Only Confidential Space can bind one
-              into the evidence (via ``eat_nonce``); Tinfoil rejects it,
-              because its report's user data is fully used by the shim's keys
-              and the attestation document is a static file.
+      nonce — optional freshness nonce, answered with a signature by the
+              enclave's own key. It never goes into the hardware report.
 
-    Outside a TEE, returns deployment instructions instead.
+    Not served on Confidential Space: peers read the token from
+    ``SYFT_version.json``, and minting tokens here would let a caller choose
+    what the TEE signs. Outside a TEE, returns deployment instructions instead.
     """
     if nonce is not None:
         error = validate_nonce(nonce)
@@ -92,16 +92,11 @@ def attestation(nonce: str | None = None):
     provider = _detect_provider()
     if provider is None:
         return _not_in_a_tee(version)
+    if provider.kind == AttestationKind.CONFIDENTIAL_SPACE:
+        return _not_served_on_confidential_space()
 
     try:
-        # Only some TEEs can bind a caller nonce into the report itself.
-        # Where they cannot, the nonce is still answered — signed with the
-        # enclave's own key below — so the caller gets freshness either way.
-        evidence = (
-            provider.collect(caller_nonce=nonce)
-            if nonce and provider.accepts_caller_nonce
-            else provider.collect()
-        )
+        evidence = provider.collect()
         return {
             "status": "running_in_tee",
             "provider": provider.kind.value,
@@ -116,7 +111,7 @@ def attestation(nonce: str | None = None):
             # The runtime facts this enclave asserts about itself — email,
             # data owners, key bundle. Untrusted on their own; the signature
             # below is what makes them trustworthy on Tinfoil, and on
-            # Confidential Space the token's nonce commits to them too.
+            # Confidential Space the token's nonce commits to them instead.
             "claims": read_claims(),
             # One signature over the caller's nonce AND the claims, by the
             # bundle's identity key: proof the enclave holds that key, that
@@ -134,6 +129,18 @@ def attestation(nonce: str | None = None):
                 "error": str(e),
             },
         )
+
+
+def _not_served_on_confidential_space() -> JSONResponse:
+    return JSONResponse(
+        status_code=404,
+        content={
+            "error": (
+                "/attestation is not served on Confidential Space. The "
+                "attestation token is published to SYFT_version.json."
+            )
+        },
+    )
 
 
 def _not_in_a_tee(version: str) -> dict:

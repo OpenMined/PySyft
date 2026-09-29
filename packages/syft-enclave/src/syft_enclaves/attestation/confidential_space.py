@@ -23,11 +23,16 @@ from syft_enclaves.attestation.claims import (
     ClaimsBindingError,
     Expectations,
     check_expected,
+    missing_claims_check,
     verify_claims_digest,
 )
 from syft_enclaves.attestation.result import (
     AttestationError,
     AttestationResult,
+)
+from syft_enclaves.evidence.tee_token import (
+    CLAIMS_DIGEST_NONCE_SLOT,
+    VERSION_NONCE_SLOT,
 )
 
 ATTESTATION_AUDIENCE = "syft-attestation"
@@ -78,17 +83,13 @@ def _check_claims_binding(
     if verbose:
         print("  ⏳ Claims binding ...")
     if published_claims is None:
-        result.add(
-            "claims_binding",
-            "Claims binding",
-            None,
-            "the enclave published no claims, so its email, data owners and "
-            "keys are unattested (skipped)",
-        )
+        result.add(*missing_claims_check(policy))
         return
 
     slots = _nonce_slots(claims)
-    digest = slots[1] if len(slots) > 1 else ""
+    digest = (
+        slots[CLAIMS_DIGEST_NONCE_SLOT] if len(slots) > CLAIMS_DIGEST_NONCE_SLOT else ""
+    )
     try:
         verify_claims_digest(published_claims, digest)
     except ClaimsBindingError as e:
@@ -240,7 +241,7 @@ def verify_attestation_token(
     # Google returns a string for single nonce, array for multiple
     if isinstance(eat_nonce, str):
         eat_nonce = [eat_nonce]
-    actual_version_nonce = eat_nonce[0] if eat_nonce else None
+    actual_version_nonce = eat_nonce[VERSION_NONCE_SLOT] if eat_nonce else None
     # Must match the format produced by syft_enclaves.evidence.tee_token.build_eat_nonce.
     expected_version_nonce = f"syft-{expected_syft_version}"
     if not actual_version_nonce:

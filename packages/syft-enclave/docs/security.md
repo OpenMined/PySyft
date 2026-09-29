@@ -143,7 +143,8 @@ Both targets appraise those facts the same way, once the document is trustworthy
 `AppraisalPolicy` for Confidential Spaces and `TinfoilAppraisalPolicy` for Tinfoil take the same
 expectations and run the same comparison. Each policy has to pin `expected_image_digest`,
 `expected_data_owners` and `expected_email`, or say `allow_unpinned=True`. Binding proves the
-enclave started with those values. Whether they are the right values is the verifier's call.
+enclave started with those values. Whether they are the right values is the verifier's call. An
+enclave that publishes no document fails a pinned policy, because then there is nothing to compare.
 
 Confidential Spaces and Tinfoil differ only in how each one makes the document trustworthy.
 
@@ -168,6 +169,10 @@ characters drawn from `[a-zA-Z0-9_.-]`. An email address does not fit, because `
 set, while a 64-character sha256 hash does. That is why the enclave binds one hash of one document,
 rather than one value per fact. The token carries the hash, so a verifier needs no connection to the
 enclave, which suits a transport built out of files.
+
+Only the enclave's own runner asks for tokens, and the `/attestation` endpoint is not served on
+Confidential Spaces. If a caller could ask for a token with a nonce of their choosing, they could
+put the hash of a made-up document in the spare slot and get Google to sign it.
 
 **Limitation: the enclave never asks for a new token, so a key can never be retired.** The enclave
 asks for one token at boot and writes it to `SYFT_version.json`. Google issues these tokens with a

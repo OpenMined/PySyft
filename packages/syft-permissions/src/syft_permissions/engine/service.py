@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePath
 
 from syft_permissions.engine.request import ACLRequest, AccessLevel
 from syft_permissions.engine.tree import ACLTree
@@ -30,8 +30,10 @@ class ACLService:
         if rule is None:
             return False
 
-        # Accessing a permission file itself requires ADMIN
-        if request.path.endswith(PERMISSION_FILE_NAME):
+        # Accessing a permission file itself requires ADMIN. Compare the last
+        # path part without case: macOS and Windows match a name without case,
+        # so a write to SYFT.PUB.YAML replaces syft.pub.yaml.
+        if PurePath(request.path).name.casefold() == PERMISSION_FILE_NAME:
             request = ACLRequest(
                 path=request.path,
                 level=AccessLevel.ADMIN,

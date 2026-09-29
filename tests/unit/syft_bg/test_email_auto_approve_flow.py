@@ -210,8 +210,10 @@ def test_email_auto_approve_creates_object_and_approves_future_jobs():
         config = SyftBgConfig.load().approve
         obj = config.auto_approvals.objects[job_name]
         content_names = {e.relative_path for e in obj.file_contents}
-        assert content_names == {"main.py"}
-        assert obj.file_paths == ["params.json"]
+        # run.sh is the file the runner executes, so an approval pins it.
+        # config.yaml is matched by name: it differs from job to job.
+        assert content_names == {"code/main.py", "run.sh"}
+        assert sorted(obj.file_paths) == ["code/params.json", "config.yaml"]
         assert obj.peers == [ds_manager.email]
 
         # -- Step 6: Submit second job with same main.py, different params --

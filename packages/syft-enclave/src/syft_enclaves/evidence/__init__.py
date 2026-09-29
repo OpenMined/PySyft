@@ -33,6 +33,8 @@ class EvidenceProvider(Protocol):
     kind: AttestationKind
     #: The file or socket whose presence means "we are on this TEE".
     probe_path: Path
+    #: Whether ``collect`` can commit to a claims document in the evidence.
+    binds_claims: bool
 
     @classmethod
     def detect(cls) -> bool:
@@ -46,7 +48,7 @@ class EvidenceProvider(Protocol):
         its configuration without the generic seam knowing about it.
         """
 
-    def collect(self, caller_nonce: Optional[str] = None) -> AttestationEvidence:
+    def collect(self, claims: Optional[dict] = None) -> AttestationEvidence:
         """Obtain fresh evidence, ready to publish to peers."""
 
     def describe(self, evidence: AttestationEvidence) -> dict[str, Any]:

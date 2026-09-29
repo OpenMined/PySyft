@@ -584,10 +584,23 @@ class TestSignedClaims:
         assert _check(excinfo.value.result, "nonce_freshness").passed is False
         assert _check(excinfo.value.result, "claims_binding").passed is False
 
-    def test_no_claims_is_skipped_not_failed(self, verify, pinned):
+    def test_no_claims_is_skipped_under_an_unpinned_policy(self, verify, pinned):
         pinned(claims=None)
         result = verify(install_pinned=False, expected_image_digest=IMAGE_DIGEST)
         assert _check(result, "claims_binding").passed is None
+
+    def test_no_claims_fails_a_pinned_policy(self, verify, pinned):
+        # Without claims the email and data-owner checks cannot run, so a
+        # policy that pins them must not pass.
+        pinned(claims=None)
+        with pytest.raises(AttestationError) as excinfo:
+            verify(
+                install_pinned=False,
+                expected_image_digest=IMAGE_DIGEST,
+                expected_email="enclave@openmined.org",
+                expected_data_owners=self.OWNERS,
+            )
+        assert _check(excinfo.value.result, "claims_binding").passed is False
 
     def test_expected_email_and_owners_are_enforced(self, verify, pinned):
         pinned(claims=self._claims())

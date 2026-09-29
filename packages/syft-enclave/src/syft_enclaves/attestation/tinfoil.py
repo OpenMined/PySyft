@@ -36,7 +36,11 @@ from typing import Any, NoReturn, Optional
 
 
 from syft_enclaves.attestation.result import AttestationError, AttestationResult
-from syft_enclaves.attestation.claims import Expectations, check_expected
+from syft_enclaves.attestation.claims import (
+    Expectations,
+    check_expected,
+    missing_claims_check,
+)
 from syft_enclaves.attestation.envelope import AttestationEvidence
 from syft_enclaves.attestation.https import (
     AttestationFetchError,
@@ -302,13 +306,7 @@ class _TinfoilVerifier:
         claims = self.payload.claims
         proven = _passed(self.result, "nonce_freshness")
         if not claims:
-            self.result.add(
-                "claims_binding",
-                "Claims binding",
-                None,
-                "the enclave asserted no claims, so its email and data owners "
-                "are unattested (skipped)",
-            )
+            self.result.add(*missing_claims_check(self.policy))
             return
         if not proven:
             # The signature covering them did not verify, so they are words.

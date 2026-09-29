@@ -128,23 +128,22 @@ def test_the_local_directory_of_a_collection_follows_its_protocol(pair):
 
 def test_a_dataset_for_a_protocol0_peer_arrives_flat_and_reads(pair):
     ds_manager, do_manager = pair
-    # The DS advertises dataset protocol 0, as an earlier client does.
-    do_manager.peer_manager.live_peer_schemas("syft-dataset")[ds_manager.email] = (
-        _dataset_schema("0")
-    )
-
+    # A dataset of an earlier release: the flat layout is the only one published,
+    # so it is the only one a peer can take.
     mock_path, private_path, readme_path = create_tmp_dataset_files()
-    do_manager.create_dataset(
+    created = do_manager.dataset_manager.create_all(
         name="skew dataset",
         mock_path=mock_path,
         private_path=private_path,
         readme_path=readme_path,
-        users=[ds_manager.email],
+        protocol_versions=["0"],
     )
+    do_manager._upload_dataset_to_collection(created["0"], users=[ds_manager.email])
     ds_manager.sync()
 
     dataset = ds_manager.datasets.get("skew dataset", datasite=do_manager.email)
-    # The owner wrote the layout that this peer reads, not its own newest.
+    # The flat copy carries the whole dataset, and the metadata points at files
+    # the peer actually got.
     assert dataset.protocol_version == "0"
     assert (
         dataset.mock_dir
@@ -158,6 +157,34 @@ def test_a_dataset_for_a_protocol0_peer_arrives_flat_and_reads(pair):
         assert path.exists(), (
             f"the metadata points to a file the peer does not get: {path}"
         )
+
+
+def test_a_create_for_a_protocol0_peer_publishes_both_layouts(pair):
+    # The create writes the current layout always, and the layout of each peer
+    # in the audience. A peer that reads only the older one still finds a copy,
+    # and a peer that reads both prefers the newest.
+    ds_manager, do_manager = pair
+    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
+        _dataset_schema("0")
+    )
+
+    mock_path, private_path, readme_path = create_tmp_dataset_files()
+    do_manager.create_dataset(
+        name="skew dataset",
+        mock_path=mock_path,
+        private_path=private_path,
+        readme_path=readme_path,
+        users=[ds_manager.email, OLD_PEER],
+    )
+
+    assert _collections_for(do_manager, "skew dataset") == {"0", "1"}
+
+    ds_manager.sync()
+    dataset = ds_manager.datasets.get("skew dataset", datasite=do_manager.email)
+    assert dataset.protocol_version == "1"
+    assert dataset.mock_files
+    for path in dataset.mock_files:
+        assert path.exists()
 
 
 def test_a_mixed_audience_gets_one_collection_for_each_protocol(pair):
@@ -490,3 +517,101 @@ def test_a_share_uploads_a_local_copy_that_has_no_collection(pair):
     do_manager.share_dataset("half done", [OLD_PEER], sync=False)
 
     assert _collections_for(do_manager, "half done") == {"0", "1"}
+
+
+def test_upgrade_publishes_the_current_layout_and_the_peer_prefers_it(pair):
+    # A dataset of an earlier release: the flat layout alone, on disk and on the
+    # transport. A current peer already reads it, because its floor is "0", so
+    # this proves the promote and the publish happened -- not that a read was
+    # broken.
+    ds_manager, do_manager = pair
+    mock_path, private_path, readme_path = create_tmp_dataset_files()
+    created = do_manager.dataset_manager.create_all(
+        name="from an earlier release",
+        mock_path=mock_path,
+        private_path=private_path,
+        readme_path=readme_path,
+        users=[ds_manager.email],
+        protocol_versions=["0"],
+    )
+    do_manager._upload_dataset_to_collection(created["0"], users=[ds_manager.email])
+    assert _collections_for(do_manager, "from an earlier release") == {"0"}
+
+    do_manager.upgrade(sync=False)
+
+    assert _collections_for(do_manager, "from an earlier release") == {"0", "1"}
+
+    ds_manager.sync()
+    dataset = ds_manager.datasets.get(
+        "from an earlier release", datasite=do_manager.email
+    )
+    assert dataset.protocol_version == "1"
+    assert dataset.mock_dir == (
+        ds_manager.syftbox_folder
+        / do_manager.email
+        / COLLECTION_SUBPATH
+        / "v1"
+        / "from an earlier release"
+    )
+    assert dataset.mock_files
+    for path in dataset.mock_files:
+        assert path.exists(), (
+            f"the metadata points to a file the peer does not get: {path}"
+        )
+
+
+def test_a_peer_approved_after_an_any_create_gets_a_layout_it_reads(pair):
+    # An "any" dataset holds the layouts its audience read at create time. A
+    # peer approved later may read none of them, so the approval materializes
+    # and publishes its layout before granting on the collection.
+    ds_manager, do_manager = pair
+    mock_path, private_path, readme_path = create_tmp_dataset_files()
+    created = do_manager.dataset_manager.create_all(
+        name="open dataset",
+        mock_path=mock_path,
+        private_path=private_path,
+        readme_path=readme_path,
+        users="any",
+        protocol_versions=["1"],
+    )
+    do_manager._upload_dataset_to_collection(created["1"], users="any")
+    assert _collections_for(do_manager, "open dataset") == {"1"}
+
+    # A protocol-0 peer arrives and is approved.
+    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
+        _dataset_schema("0")
+    )
+    do_manager._share_any_datasets_with_peer(OLD_PEER)
+
+    assert _collections_for(do_manager, "open dataset") == {"0", "1"}
+
+
+def test_a_backfilled_any_layout_is_marked_any_too(pair):
+    # The "any" bit lives on the collection. A layout added at approval time
+    # must carry it, or a later cache rebuild from has_any_permission loses it
+    # and the next peer never sees that layout.
+    ds_manager, do_manager = pair
+    mock_path, private_path, readme_path = create_tmp_dataset_files()
+    created = do_manager.dataset_manager.create_all(
+        name="open dataset",
+        mock_path=mock_path,
+        private_path=private_path,
+        readme_path=readme_path,
+        users="any",
+        protocol_versions=["1"],
+    )
+    do_manager._upload_dataset_to_collection(created["1"], users="any")
+
+    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
+        _dataset_schema("0")
+    )
+    do_manager._share_any_datasets_with_peer(OLD_PEER)
+
+    collections = do_manager._mock_collections_for("open dataset")
+    assert {do_manager._protocol_of(c) for c in collections} == {"0", "1"}
+    assert all(c.has_any_permission for c in collections)
+    # And the cache names every layout, so the next approval needs no listing.
+    cached = do_manager.sync_engine.datasite_owner_syncer.any_shared_collections
+    assert {hash_ for _, tag, hash_ in cached if tag == "open dataset"} == {
+        c.content_hash for c in collections
+    }

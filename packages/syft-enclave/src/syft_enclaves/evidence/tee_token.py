@@ -23,21 +23,28 @@ TOKEN_AUDIENCE = "syft-attestation"
 _NONCE_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]+$")
 _NONCE_MAX_LEN = 74
 
+# Positions in the ``eat_nonce`` claim. The launcher echoes the request's
+# ``nonces`` list verbatim, so a verifier reads each value by position.
+VERSION_NONCE_SLOT = 0
+CLAIMS_DIGEST_NONCE_SLOT = 1
+
 
 # -- eat_nonce helpers --------------------------------------------------------
 
 
-def build_eat_nonce(caller_nonce: str | None = None) -> list[str]:
+def build_eat_nonce(claims_digest: str | None = None) -> list[str]:
     """Build the nonces array for the attestation token request.
 
     Slot 0: namespaced syft version, built dynamically from
             ``syft.__version__``. The ``syft-`` prefix satisfies
             the CS attestation service's 8-byte minimum.
-    Slot 1: caller-supplied freshness nonce (if provided).
+    Slot 1: digest of the enclave's claims document (if provided). Only the
+            runner mints tokens, so nothing outside the enclave can choose
+            what goes here.
     """
     nonces = [f"syft-{syft.__version__}"]
-    if caller_nonce:
-        nonces.append(caller_nonce)
+    if claims_digest:
+        nonces.append(claims_digest)
     return nonces
 
 

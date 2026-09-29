@@ -437,19 +437,6 @@ status name=vm_default: _whoami
       --zone="$zone" \
       --format='get(status)'
 
-# Fetch the TEE attestation report from the running enclave via SSH
-# (debug image only — no inbound port is open on the enclave; production
-# publishes its attestation through the peer flow in SYFT_version.json)
-[group('inspect')]
-attest name=vm_default: _whoami
-    #!/bin/bash
-    set -e
-    {{load_settings}}
-    gcloud compute ssh {{name}} \
-      --project="$project_id" \
-      --zone="$zone" \
-      --command='curl -sS http://localhost:8080/attestation' | python3 -m json.tool
-
 # Tail the last 50 lines of the VM's serial port output
 [group('inspect')]
 logs name=vm_default n="100": _whoami
@@ -613,18 +600,6 @@ tf-redeploy dev="false" *args="":
 [group('terraform')]
 tf-output *args:
     terraform -chdir={{tf_dir}} output {{args}}
-
-# Fetch the attestation report from the terraform-managed VM via SSH
-# (dev deployments only — no inbound port is open on the enclave)
-[group('terraform')]
-tf-attest:
-    #!/bin/bash
-    set -e
-    gcloud compute ssh \
-      "$(terraform -chdir={{tf_dir}} output -raw vm_name)" \
-      --project="$(terraform -chdir={{tf_dir}} output -raw project_id)" \
-      --zone="$(terraform -chdir={{tf_dir}} output -raw zone)" \
-      --command='curl -sS http://localhost:8080/attestation' | python3 -m json.tool
 
 # Tail logs of the terraform-managed VM. Prefers SSH + journalctl (full
 # container logs; dev deployments only) — the serial console caps redirected

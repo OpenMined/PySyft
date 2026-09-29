@@ -145,9 +145,7 @@ class TestBindingThroughTheToken:
 
         assert _check(excinfo.value.result, "claims_binding").passed is False
 
-    def test_no_claims_at_all_is_skipped_not_failed(self, token_with):
-        # Older enclaves publish no claims; that is a missing guarantee, not a
-        # failed verification.
+    def test_no_claims_is_skipped_under_an_unpinned_policy(self, token_with):
         token_with()
         evidence = confidential_space_evidence("a.b.c", "syft-attestation")
 
@@ -157,6 +155,22 @@ class TestBindingThroughTheToken:
 
         assert _check(result, "claims_binding").passed is None
         assert result.all_passed()
+
+    def test_no_claims_fails_a_pinned_policy(self, token_with):
+        # Without claims the email and data-owner checks cannot run, so a
+        # policy that pins them must not pass.
+        token_with()
+        evidence = confidential_space_evidence("a.b.c", "syft-attestation")
+        policy = AppraisalPolicy(
+            expected_image_digest="sha256:abc",
+            expected_email=EMAIL,
+            expected_data_owners=["do@openmined.org"],
+        )
+
+        with pytest.raises(AttestationError) as excinfo:
+            verify_evidence(evidence, policy=policy, verbose=False)
+
+        assert _check(excinfo.value.result, "claims_binding").passed is False
 
 
 class TestExpectedValues:
@@ -230,12 +244,6 @@ class TestProviderBinding:
 
         assert fetch.call_args.kwargs["eat_nonce"][1] == claims_digest(claims)
         assert evidence.metadata["claims"] == claims
-
-    def test_one_slot_means_a_nonce_and_claims_are_exclusive(self):
-        from syft_enclaves.evidence.confidential_space import ConfidentialSpaceProvider
-
-        with pytest.raises(ValueError, match="one spare nonce slot"):
-            ConfidentialSpaceProvider().collect(caller_nonce="abc", claims=_claims())
 
     def test_tinfoil_cannot_bind_claims(self, tmp_path, monkeypatch):
         """Tinfoil cannot commit to claims in its report, so it refuses."""

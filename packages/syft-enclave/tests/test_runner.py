@@ -184,10 +184,10 @@ class TestAttestPhase:
 class TestClaimsBinding:
     """The runner commits runtime facts on targets that can commit to any."""
 
-    def _provider(self, monkeypatch, *, accepts_nonce):
+    def _provider(self, monkeypatch, *, binds_claims):
         provider = MagicMock()
         provider.kind = AttestationKind.CONFIDENTIAL_SPACE
-        provider.accepts_caller_nonce = accepts_nonce
+        provider.binds_claims = binds_claims
         provider.collect.return_value = tinfoil_evidence(TINFOIL_DOC)
         monkeypatch.setattr(
             "syft_enclaves.runner.select_provider", lambda name, settings: provider
@@ -211,7 +211,7 @@ class TestClaimsBinding:
         return client
 
     def test_the_email_and_data_owners_are_bound(self, monkeypatch):
-        provider = self._provider(monkeypatch, accepts_nonce=True)
+        provider = self._provider(monkeypatch, binds_claims=True)
         EnclaveRunner(client=self._client(), require_tee=True).init()
 
         claims = provider.collect.call_args.kwargs["claims"]
@@ -221,7 +221,7 @@ class TestClaimsBinding:
 
     def test_the_key_bundle_exists_before_the_token_is_minted(self, monkeypatch):
         # Ordering matters: the token commits to a digest covering the bundle.
-        provider = self._provider(monkeypatch, accepts_nonce=True)
+        provider = self._provider(monkeypatch, binds_claims=True)
         client = self._client()
         order = []
         client._rds.peer_manager.peer_store.save_keys.side_effect = (
@@ -239,6 +239,6 @@ class TestClaimsBinding:
     def test_a_target_without_a_nonce_channel_gets_no_token_binding(self, monkeypatch):
         # Tinfoil still asserts the same claims, but over its pinned channel —
         # nothing goes into the report, so collect() is given nothing.
-        provider = self._provider(monkeypatch, accepts_nonce=False)
+        provider = self._provider(monkeypatch, binds_claims=False)
         EnclaveRunner(client=self._client(), require_tee=True).init()
         assert provider.collect.call_args.kwargs == {}

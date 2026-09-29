@@ -11,10 +11,12 @@ from syft_perms.syftperm_context import SyftPermContext
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from .config import SyftJobConfig
+from .disclosures import normalize_disclosures
 from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .review_grants import grant_ds_review_read
 
 # Python version used when creating virtual environments for job execution
 RUN_SCRIPT_PYTHON_VERSION = "3.12"
@@ -131,11 +133,11 @@ class JobClient(BaseJobClient):
         inbox_rel_dir = ds_inbox_dir.relative_to(datasite)
         ctx.open(inbox_rel_dir).grant_write_access(ds_email)
 
-        # Create review folder for DS with read access
+        # Create review folder for DS. The DS reads only the named files there
+        # until a release grants more.
         ds_review_dir = self.config.get_review_dir(self.current_user_email) / ds_email
         ds_review_dir.mkdir(parents=True, exist_ok=True)
-        review_rel_dir = ds_review_dir.relative_to(datasite)
-        ctx.open(review_rel_dir).grant_read_access(ds_email)
+        grant_ds_review_read(ds_review_dir, ds_email)
 
         return ds_inbox_dir
 
@@ -380,6 +382,7 @@ python {entrypoint_path}
         job_name: Optional[str] = "",
         dependencies: Optional[List[str]] = None,
         entrypoint: Optional[str] = None,
+        request_disclosures: Optional[List[str]] = None,
     ) -> Path:
         """
         Submit a Python job for a user (supports both files and folders).
@@ -390,6 +393,8 @@ python {entrypoint_path}
             job_name: Name of the job (directory name). If empty, auto-generated.
             dependencies: List of Python packages to install
             entrypoint: Entry point file name (auto-detected if not provided)
+            request_disclosures: The items in ``DisclosureItem`` to ask the
+                data owner for. The data owner releases none, some, or all.
 
         Returns:
             Path to the created job directory in inbox/
@@ -478,6 +483,11 @@ python {entrypoint_path}
             files=files,
             is_folder_submission=is_folder_submission,
             code_path=str(code_path_resolved),
+            headers={
+                "requested_disclosures": sorted(
+                    normalize_disclosures(request_disclosures)
+                ),
+            },
         )
         self.manager.write_submission(ref, config)
 

@@ -94,12 +94,6 @@ class TestTinfoilProvider:
         provider = TinfoilProvider.from_settings(None)
         assert provider.repo is None and provider.release_tag is None
 
-    def test_a_caller_nonce_is_refused(self, tinfoil_mount):
-        # Accepting and ignoring it would imply a freshness guarantee that
-        # Tinfoil cannot provide.
-        with pytest.raises(ValueError, match="cannot carry a caller nonce"):
-            TinfoilProvider().collect(caller_nonce="abc123")
-
     def test_missing_document_explains_why(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
             "syft_enclaves.evidence.tinfoil.TINFOIL_ATTESTATION_PATH",
@@ -170,14 +164,6 @@ class TestConfidentialSpaceProvider:
         # The version nonce is still what the launcher is asked for.
         assert fetch.call_args.kwargs["eat_nonce"][0].startswith("syft-")
 
-    def test_collect_passes_a_caller_nonce_through(self):
-        with patch(
-            "syft_enclaves.evidence.confidential_space.fetch_attestation_token",
-            return_value="a.b.c",
-        ) as fetch:
-            ConfidentialSpaceProvider().collect(caller_nonce="freshness")
-        assert fetch.call_args.kwargs["eat_nonce"][1] == "freshness"
-
     def test_decode_jwt_payload_rejects_a_non_jwt(self):
         with pytest.raises(ValueError, match="expected 3 parts"):
             decode_jwt_payload("not-a-jwt")
@@ -237,6 +223,19 @@ class TestAttestationServerWiring:
             "repo": "OpenMined/example",
             "release_tag": "v9.9.9",
         }
+
+    def test_endpoint_is_not_served_on_confidential_space(self, monkeypatch):
+        # Serving it would let a caller mint tokens with nonces of their choosing.
+        server = self._app(monkeypatch)
+        monkeypatch.setattr(
+            server, "_detect_provider", lambda: ConfidentialSpaceProvider()
+        )
+        with patch(
+            "syft_enclaves.evidence.confidential_space.fetch_attestation_token"
+        ) as fetch:
+            response = server.attestation(nonce="attacker-chosen-nonce")
+        assert response.status_code == 404
+        fetch.assert_not_called()
 
     def test_endpoint_reports_no_provider_outside_a_tee(self, monkeypatch):
         monkeypatch.setenv("SYFT_ENCLAVE_ATTESTATION_PROVIDER", "none")

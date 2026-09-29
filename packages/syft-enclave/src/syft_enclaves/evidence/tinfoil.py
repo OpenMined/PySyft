@@ -32,7 +32,7 @@ class TinfoilProvider:
     kind = AttestationKind.TINFOIL
     probe_path = TINFOIL_ATTESTATION_PATH
     #: Tinfoil cannot: the report's user data is the shim's own keys.
-    accepts_caller_nonce = False
+    binds_claims = False
 
     def __init__(
         self,
@@ -59,11 +59,7 @@ class TinfoilProvider:
             host=getattr(settings, "tinfoil_host", None),
         )
 
-    def collect(
-        self,
-        caller_nonce: Optional[str] = None,
-        claims: Optional[dict] = None,
-    ) -> AttestationEvidence:
+    def collect(self, claims: Optional[dict] = None) -> AttestationEvidence:
         if claims is not None:
             raise ValueError(
                 "Tinfoil evidence cannot commit to claims. The report can "
@@ -71,14 +67,6 @@ class TinfoilProvider:
                 "the enclave cannot assert anything with it. The equivalent "
                 "guarantee comes from signing the claims over a pinned "
                 "connection instead (see attestation.https)."
-            )
-        if caller_nonce is not None:
-            raise ValueError(
-                "Tinfoil evidence cannot carry a caller nonce: the report's 64 "
-                "bytes of user data are fully used by the shim's TLS key "
-                "fingerprint and HPKE public key, and the attestation document "
-                "is a static file. Requesting a nonce here would silently give "
-                "no freshness guarantee at all."
             )
         return tinfoil_evidence(
             self._read_attestation_document(),

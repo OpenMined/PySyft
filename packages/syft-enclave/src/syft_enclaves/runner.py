@@ -154,7 +154,7 @@ class EnclaveRunner:
         self, provider: EvidenceProvider, claims: Optional[dict]
     ) -> None:
         """Write the provider's evidence into the peer-visible version file."""
-        binding = {"claims": claims} if claims and provider.accepts_caller_nonce else {}
+        binding = {"claims": claims} if claims and provider.binds_claims else {}
         evidence = provider.collect(**binding)
         peer_manager = self.client._rds.peer_manager
         evidence.publish_to(peer_manager.get_own_version())

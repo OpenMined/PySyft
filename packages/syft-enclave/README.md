@@ -92,8 +92,6 @@ just status [name]   # RUNNING / TERMINATED / etc.
 just get-ip [name]   # external IP
 
 # Debug only
-just attest [name]   # fetch TEE attestation report via SSH (no inbound port is open;
-                     # production publishes attestation through the peer flow instead)
 just ssh    [name]   # SSH into the VM (production image disables SSH)
 just logs   [name]   # last 50 lines of serial output (production only shows boot logs;
                      # debug redirects container logs to serial output)

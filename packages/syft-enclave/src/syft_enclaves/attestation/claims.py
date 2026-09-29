@@ -115,6 +115,24 @@ def check_expected(
     ]
 
 
+def missing_claims_check(
+    policy: "Expectations",
+) -> tuple[str, str, Optional[bool], str]:
+    """The claims-binding row for an enclave that published no claims.
+
+    A failure, because without claims the email and data-owner checks cannot
+    run at all, and a pinned policy would otherwise pass without them. Only
+    skipped when the verifier opted out of pinning.
+    """
+    detail = (
+        "the enclave published no claims, so its email, data owners and keys "
+        "are unattested"
+    )
+    if policy.allow_unpinned:
+        return ("claims_binding", "Claims binding", None, f"{detail} (skipped)")
+    return ("claims_binding", "Claims binding", False, detail)
+
+
 def _compare(
     name: str, label: str, expected: Any, actual: Any
 ) -> tuple[str, str, Optional[bool], str]:
