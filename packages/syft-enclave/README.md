@@ -30,7 +30,7 @@ All commands are defined in the [`Justfile`](./Justfile). Run them from this dir
 
 Prefer declarative deploys? The same stack can be managed with Terraform — see [Confidential Spaces Deployment](./docs/terraform_cs.md) (`just tf-apply` / `just tf-apply-dev`).
 
-Deploying without GCP? See [Tinfoil Deployment](./docs/tinfoil_deployment.md) (`just tinfoil-release` / `just tinfoil-deploy`), which needs the `tinfoil` CLI instead of `gcloud`.
+Deploying without GCP? See [Tinfoil Deployment](./docs/tinfoil_deployment.md) (`just tinfoil-build` / `just tinfoil-release` / `just tinfoil-deploy`), which needs the `tinfoil` CLI instead of `gcloud`. On Tinfoil the data owners are pinned in the measured config instead of set at `init`, and a second config turns on signed job receipts.
 
 ## One-time setup
 

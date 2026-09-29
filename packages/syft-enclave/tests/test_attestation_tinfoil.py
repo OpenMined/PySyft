@@ -45,10 +45,17 @@ SYFT_VERSION_IN_CONFIG = "9.9.9"
 RELEASE_TAG = "v0.0.1"
 
 
-def _config(image=IMAGE, name="syft-enclave", syft_version=SYFT_VERSION_IN_CONFIG):
+def _config(
+    image=IMAGE,
+    name="syft-enclave",
+    syft_version=SYFT_VERSION_IN_CONFIG,
+    data_owners=None,
+):
     env = [{"SYFT_ENCLAVE_ATTESTATION_PROVIDER": "tinfoil"}]
     if syft_version:
         env.append({"SYFT_VERSION": syft_version})
+    if data_owners:
+        env.append({"SYFT_ENCLAVE_DATA_OWNERS": data_owners})
     return {"containers": [{"name": name, "image": image, "env": env}]}
 
 
@@ -261,6 +268,7 @@ class TestHappyPath:
             "measurement_match",
             "image_digest",
             "version_match",
+            "config_data_owners",
         ]
 
     def test_unpinned_release_uses_the_latest(self, verify, sdk):
@@ -488,6 +496,29 @@ class TestConfigDerivedChecks:
         with pytest.raises(AttestationError) as excinfo:
             verify(expected_image_digest=IMAGE_DIGEST, expected_syft_version="0.0.1")
         assert _check(excinfo.value.result, "version_match").passed is False
+
+    def test_data_owners_pinned_in_config_are_checked(self, verify, sdk):
+        sdk.set_deployment(_deployment_bytes(_config(data_owners="b@x.org, a@x.org")))
+        result = verify(
+            expected_image_digest=IMAGE_DIGEST,
+            expected_data_owners=["a@x.org", "b@x.org"],
+            allow_unpinned=True,
+        )
+        assert _check(result, "config_data_owners").passed is True
+
+    def test_data_owners_mismatch_in_config_fails(self, verify, sdk):
+        sdk.set_deployment(_deployment_bytes(_config(data_owners="a@x.org")))
+        with pytest.raises(AttestationError) as excinfo:
+            verify(
+                expected_image_digest=IMAGE_DIGEST,
+                expected_data_owners=["a@x.org", "b@x.org"],
+                allow_unpinned=True,
+            )
+        assert _check(excinfo.value.result, "config_data_owners").passed is False
+
+    def test_data_owners_skipped_when_the_config_pins_none(self, verify):
+        result = verify(expected_image_digest=IMAGE_DIGEST)
+        assert _check(result, "config_data_owners").passed is None
 
 
 class TestChecklistBehaviour:

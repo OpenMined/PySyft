@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,6 +27,12 @@ from syft_enclaves.enclave_job_info import (
 from syft_enclaves.immutability import (
     make_private_dataset_immutability_filter,
 )
+from syft_enclaves.receipt.writer import (
+    ReceiptSettings,
+    mark_started,
+    write_receipt,
+    write_receipt_error,
+)
 from syft_enclaves.utils import (
     create_clients,
     create_configs,
@@ -50,12 +57,15 @@ if TYPE_CHECKING:
     from syft_enclaves.attestation import AppraisalPolicy
     from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
 
+logger = logging.getLogger(__name__)
+
 
 class SyftEnclaveClient:
     def __init__(
         self,
         rds: SyftRDSClient,
         data_owners: list[str] | None = None,
+        receipts: ReceiptSettings | None = None,
     ):
         # The Remote Data Science product client. It OWNS the job + dataset
         # surface (job_client / job_runner / dataset_manager) and composes the
@@ -64,6 +74,8 @@ class SyftEnclaveClient:
         # Data owners whose approval gates every job run on this enclave.
         # Fixed at launch/deploy time; stored in memory.
         self.data_owners = list(data_owners or [])
+        # When set, every finished job gets a signed receipt in its outputs.
+        self.receipts = receipts
 
     @property
     def email(self) -> str:
@@ -303,12 +315,16 @@ class SyftEnclaveClient:
                 if state.status != JobStatus.APPROVED:
                     state.status = JobStatus.APPROVED
                     state.save(job.job_review_path / "state.yaml")
+                mark_started(job.job_review_path)
 
         # share_logs_with_submitter=False keeps the logs in staging. Only a
-        # grant from every party releases them.
+        # grant from every party releases them. With receipts on, outputs
+        # reach the submitter only through distribute_results, after the
+        # receipt is written, so results and receipt arrive together instead
+        # of the receipt a sync later.
         self._rds.process_approved_jobs(
             force_execution=True,
-            share_outputs_with_submitter=True,
+            share_outputs_with_submitter=self.receipts is None,
             share_logs_with_submitter=False,
         )
         self._apply_disclosure_policy()
@@ -353,6 +369,9 @@ class SyftEnclaveClient:
         marker = job.job_review_path / RESULTS_SHARED_MARKER
         if marker.exists():
             return
+
+        if self.receipts is not None and job.status == "done":
+            self._try_write_receipt(job)
 
         # Always share results with the DS (submitter)
         self._forward_results_to_recipients(job, [job.submitted_by])
@@ -403,6 +422,18 @@ class SyftEnclaveClient:
 
         sent_path.write_text(json.dumps(sorted(sent.union(pending))))
         return pending
+
+    def _try_write_receipt(self, job: JobInfo) -> None:
+        """Sign a receipt into the job's outputs, so it ships with them.
+
+        A failure is not raised: the results still go out, with the error in
+        place of the receipt, rather than being held back on every tick.
+        """
+        try:
+            write_receipt(self, job, self.receipts)
+        except Exception:
+            logger.exception("Could not write a receipt for job %s", job.name)
+            write_receipt_error(job)
 
     def _read_state_file(self, job: JobInfo) -> dict[Path, bytes]:
         """Read the job state.yaml as a {path_in_datasite: bytes} dict."""

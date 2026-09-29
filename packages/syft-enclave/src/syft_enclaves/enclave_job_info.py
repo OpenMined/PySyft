@@ -183,6 +183,15 @@ class EnclaveJobInfo(JobInfo):
             return JobStatus.APPROVED.value
         return JobStatus.PENDING.value
 
+    @property
+    def can_approve(self) -> bool:
+        """Whether the enclave has sent us our approval file yet.
+
+        A submitter sees its own job as soon as it submits, before the enclave
+        has distributed it, so seeing the job is not enough to approve it.
+        """
+        return self._approval_file.exists()
+
     def _status_from_required_approvers(self, required: list[str]) -> str:
         """Approved only when every required party approved this exact submission.
 
@@ -297,6 +306,20 @@ def _approves(approval: PartyApprovalStatus | None, current_hash: str) -> bool:
         and approval.status == JobStatus.APPROVED
         and approval.submission_hash == current_hash
     )
+
+
+def submission_approvals(
+    review_dir: Path, submission_dir: Path, parties: Iterable[str]
+) -> list[PartyApprovalStatus]:
+    """The approvals from ``parties`` of the exact submission in ``submission_dir``.
+
+    An approval of an earlier version of the submission is left out, as it is
+    when the enclave decides whether to run the job.
+    """
+    current = submission_hash(submission_dir)
+    return [
+        a for _, a in _party_approvals(review_dir, parties) if _approves(a, current)
+    ]
 
 
 def _party_approvals(

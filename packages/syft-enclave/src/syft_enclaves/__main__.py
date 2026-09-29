@@ -10,6 +10,7 @@ import sys
 from pydantic import ValidationError
 
 from syft_enclaves.client import SyftEnclaveClient
+from syft_enclaves.receipt.writer import ReceiptSettings
 from syft_enclaves.runner import EnclaveRunner
 from syft_enclaves.settings import EnclaveSettings
 
@@ -43,7 +44,7 @@ def main() -> None:
         f"Enclave settings — email={settings.email} data_owners={settings.data_owners} "
         f"token_path={settings.token_path} poll_interval={settings.poll_interval}s "
         f"require_tee={settings.require_tee} fresh_state={settings.fresh_state} "
-        f"use_encryption={settings.use_encryption} "
+        f"use_encryption={settings.use_encryption} receipts={settings.receipts} "
         f"attestation_provider={settings.attestation_provider} "
         f"tinfoil_repo={settings.tinfoil_repo} "
         f"tinfoil_release_tag={settings.tinfoil_release_tag}"
@@ -56,6 +57,11 @@ def main() -> None:
         data_owners=settings.data_owners,
         encryption=settings.use_encryption,
     )
+    if settings.receipts:
+        client.receipts = ReceiptSettings(
+            tinfoil_repo=settings.tinfoil_repo,
+            tinfoil_release_tag=settings.tinfoil_release_tag,
+        )
     logger.info("SyftEnclaveClient ready")
 
     logger.info("Building EnclaveRunner...")
