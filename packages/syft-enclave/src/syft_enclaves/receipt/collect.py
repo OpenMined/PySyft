@@ -26,6 +26,7 @@ from syft_enclaves.evidence.tinfoil import (
 )
 from syft_enclaves.receipt.claims import CLAIMS_FILE_NAME
 from syft_enclaves.receipt.dsse import canonical_json
+from syft_enclaves.receipt.key_binding import key_binding
 
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 PREDICATE_TYPE = "https://openmined.org/syft-enclave/receipt/v2"
@@ -153,7 +154,7 @@ def execution_section(
     tinfoil_release_tag: Optional[str],
 ) -> dict[str, Any]:
     """Where and when it ran, and the key that signs the receipt."""
-    platform = _platform_section(tinfoil_repo, tinfoil_release_tag)
+    platform = _platform_section(tinfoil_repo, tinfoil_release_tag, run_public_key)
     return {
         **platform,
         "runId": uuid.uuid4().hex,
@@ -163,7 +164,9 @@ def execution_section(
     }
 
 
-def _platform_section(repo: Optional[str], tag: Optional[str]) -> dict[str, Any]:
+def _platform_section(
+    repo: Optional[str], tag: Optional[str], run_public_key: bytes
+) -> dict[str, Any]:
     if not TinfoilProvider.detect():
         return {"platform": "local", "attestation": None}
     config = TINFOIL_CONFIG_PATH.read_bytes()
@@ -173,7 +176,7 @@ def _platform_section(repo: Optional[str], tag: Optional[str]) -> dict[str, Any]
         "cvmVersion": parsed.get("cvm-version"),
         "configDigest": hashlib.sha256(config).hexdigest(),
         "runtimeImage": _image_digest(parsed),
-        "attestation": _attestation(repo, tag),
+        "attestation": _attestation(repo, tag, run_public_key),
     }
 
 
@@ -186,12 +189,14 @@ def _image_digest(config: dict[str, Any]) -> Optional[dict[str, str]]:
     return {"scheme": "oci/1", "digest": image.split("@", 1)[1]}
 
 
-def _attestation(repo: Optional[str], tag: Optional[str]) -> dict[str, Any]:
+def _attestation(
+    repo: Optional[str], tag: Optional[str], run_public_key: bytes
+) -> dict[str, Any]:
     """The hardware report as the enclave booted with it, and its reference.
 
-    The report does not name the run key: on Tinfoil its report data is the
-    shim's TLS key. The run key is tied to it by the claims the enclave signs
-    over a connection pinned to that TLS key (``attestation/https.py``).
+    The boot report does not name the run key: its report data is the shim's
+    TLS key. ``keyBinding`` is a second report that does, fetched once per boot
+    with the run key as its nonce (``receipt/key_binding.py``).
     """
     document = json.loads(TINFOIL_ATTESTATION_PATH.read_text())
     kind = str(document.get("format", ""))
@@ -199,6 +204,7 @@ def _attestation(repo: Optional[str], tag: Optional[str]) -> dict[str, Any]:
         "type": "tdx" if "tdx" in kind else "sev-snp",
         "format": document.get("format"),
         "quote": document.get("body"),
+        "keyBinding": key_binding(run_public_key),
         "referenceValue": {
             "source": "sigstore",
             "repo": f"github.com/{repo}" if repo else None,

@@ -3,8 +3,13 @@ import hashlib
 import io
 import json
 import os
+import socketserver
+import tempfile
+import threading
 import urllib.error
 from email.message import Message
+from http.server import BaseHTTPRequestHandler
+from pathlib import Path
 
 import pytest
 
@@ -24,6 +29,13 @@ from syft_enclaves.receipt import (
 from syft_enclaves.receipt.claims import read_job_claims
 from syft_enclaves.receipt.collect import policy_section
 from syft_enclaves.receipt.dsse import canonical_json
+from syft_enclaves.evidence.tinfoil import fetch_nonce_bound_document
+from syft_enclaves.receipt.key_binding import (
+    NONCE_SCHEME,
+    REPORT_DATA_V1,
+    key_binding,
+    run_key_nonce,
+)
 from syft_enclaves.receipt.writer import ReceiptSettings
 from test_enclave_jobs import (
     create_tmp_code_file,
@@ -256,6 +268,7 @@ def test_execution_on_tinfoil_records_the_config_and_report(tmp_path, monkeypatc
     monkeypatch.setattr(collect, "TINFOIL_CONFIG_PATH", config)
     monkeypatch.setattr(collect, "TINFOIL_ATTESTATION_PATH", report)
     monkeypatch.setattr(collect.TinfoilProvider, "detect", classmethod(lambda c: True))
+    monkeypatch.setattr(collect, "key_binding", lambda key: {"bound": key.hex()})
 
     execution = collect.execution_section(None, None, b"\x01", "Org/repo", "v1")
 
@@ -265,6 +278,7 @@ def test_execution_on_tinfoil_records_the_config_and_report(tmp_path, monkeypatc
     assert execution["runtimeImage"] == {"scheme": "oci/1", "digest": "sha256:abc"}
     assert execution["attestation"]["quote"] == "Zm9v"
     assert execution["attestation"]["referenceValue"]["repo"] == "github.com/Org/repo"
+    assert execution["attestation"]["keyBinding"] == {"bound": "01"}
 
 
 def test_a_failed_receipt_ships_the_error_instead(monkeypatch):
@@ -288,3 +302,96 @@ def test_results_do_not_arrive_ahead_of_the_receipt():
     _, _, _, ds, _, _ = _run_job_with_receipts(before_distribute=check)
     names = {p.name for p in ds.jobs["test_job"].output_paths}
     assert names == {"result.json", RECEIPT_FILE_NAME}
+
+
+def _v3_document(nonce_hex, crypto_material=b"{}", device_evidence=b"{}"):
+    """A v3 document whose report data is derived from *nonce_hex*, unsigned."""
+    digest = hashlib.sha256(REPORT_DATA_V1.encode())
+    digest.update(bytes.fromhex(nonce_hex))
+    digest.update(hashlib.sha256(crypto_material).digest())
+    digest.update(hashlib.sha256(device_evidence).digest())
+    return {
+        "format": "https://tinfoil.sh/predicate/attestation/v3",
+        "challenge": {
+            "nonce": nonce_hex,
+            "report_data": (digest.digest() + bytes(32)).hex(),
+            "report_data_algorithm": REPORT_DATA_V1,
+        },
+        "crypto_material": base64.b64encode(crypto_material).decode(),
+        "device_evidence": base64.b64encode(device_evidence).decode(),
+    }
+
+
+def _bound_receipt(bundle, document):
+    from syft_enclaves.attestation.nonce import identity_key_bytes
+
+    binding = {"nonceScheme": NONCE_SCHEME, "document": document}
+    execution = {
+        "runPublicKey": identity_key_bytes(bundle).hex(),
+        "attestation": {"keyBinding": binding},
+    }
+    return build_receipt({}, job={"name": "j"}, execution=execution)
+
+
+def test_key_binding_to_the_run_key_verifies_and_others_are_rejected():
+    from syft_enclaves.attestation.nonce import identity_key_bytes
+
+    jwks, bundle = _keys()
+    document = _v3_document(run_key_nonce(identity_key_bytes(bundle)))
+    assert verify_receipt(sign_receipt(_bound_receipt(bundle, document), jwks), bundle)
+
+    other_key = _v3_document(run_key_nonce(b"other key"))
+    with pytest.raises(ReceiptVerificationError, match="nonce"):
+        verify_receipt(sign_receipt(_bound_receipt(bundle, other_key), jwks), bundle)
+
+    document["challenge"]["report_data"] = "00" * 64
+    with pytest.raises(ReceiptVerificationError, match="report data"):
+        verify_receipt(sign_receipt(_bound_receipt(bundle, document), jwks), bundle)
+
+
+def _serve_attestation(socket_path, requests):
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            requests.append(self.path)
+            nonce = self.path.split("nonce=", 1)[1]
+            body = json.dumps(_v3_document(nonce)).encode()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    class Server(socketserver.UnixStreamServer):
+        def get_request(self):
+            request, _ = super().get_request()
+            return request, ("local", 0)
+
+    server = Server(str(socket_path), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
+
+
+def test_bound_document_is_fetched_from_the_local_socket_for_our_nonce():
+    # AF_UNIX paths are capped near 104 bytes, too short for macOS tmp_path.
+    socket_path = Path(tempfile.mkdtemp(dir="/tmp")) / "a.sock"
+    requests = []
+    server = _serve_attestation(socket_path, requests)
+    try:
+        nonce = run_key_nonce(b"run key")
+        document = fetch_nonce_bound_document(nonce, socket_path)
+    finally:
+        server.shutdown()
+        server.server_close()
+    assert requests == [f"/.well-known/tinfoil-attestation?nonce={nonce}"]
+    assert document["challenge"]["nonce"] == nonce
+
+
+def test_receipt_goes_out_unbound_when_the_socket_is_missing(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "syft_enclaves.evidence.tinfoil.TINFOIL_ATTESTATION_SOCKET",
+        tmp_path / "missing.sock",
+    )
+    key_binding.cache_clear()
+    assert key_binding(b"run key") is None

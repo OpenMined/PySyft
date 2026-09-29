@@ -83,9 +83,10 @@ The Drive token reaches the enclave as `--secret SYFT_ENCLAVE_TOKEN_CONTENT`; re
 
 Set `gpus:` in the config and publish a new release. Which shapes are available, and whether GPU changes the evidence format (NVIDIA confidential computing adds its own claims on Confidential Spaces), is not yet confirmed with Tinfoil — check before relying on it.
 
-`cvm-version` pins the CVM base image the measurement is computed against; we track the version
-[`tinfoilsh/tinfoil-containers-template`](https://github.com/tinfoilsh/tinfoil-containers-template)
-uses, currently `0.14.7`. Its deprecation policy is not documented.
+`cvm-version` pins the CVM base image the measurement is computed against. We use `0.14.12`, the
+first version that mounts `/tinfoil/attestation.sock` for containers with `attestation: true`,
+which receipts need to bind the run key (see `tinfoil/CLAUDE.md`). Its deprecation policy is not
+documented.
 
 ## Quickstart: production
 

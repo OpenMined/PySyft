@@ -20,6 +20,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from syft_enclaves.attestation.nonce import identity_key_bytes, identity_private_key
+from syft_enclaves.receipt.key_binding import KeyBindingError, check_key_binding
 
 #: The payload is an in-toto statement, so it carries in-toto's payload type.
 PAYLOAD_TYPE = "application/vnd.in-toto+json"
@@ -75,7 +76,19 @@ def verify_receipt(envelope: dict[str, Any], bundle: dict[str, Any]) -> dict:
     execution = receipt.get("predicate", {}).get("execution", {})
     if execution.get("runPublicKey") != public_key.hex():
         raise ReceiptVerificationError("runPublicKey does not match the signing key")
+    _check_key_binding(execution, public_key)
     return receipt
+
+
+def _check_key_binding(execution: dict[str, Any], public_key: bytes) -> None:
+    """A receipt without a binding passes; one with a wrong binding does not."""
+    binding = (execution.get("attestation") or {}).get("keyBinding")
+    if binding is None:
+        return
+    try:
+        check_key_binding(binding, public_key)
+    except KeyBindingError as e:
+        raise ReceiptVerificationError(f"key binding: {e}") from e
 
 
 def _verify_any_signature(signatures: list, public_key: bytes, payload: bytes) -> None:

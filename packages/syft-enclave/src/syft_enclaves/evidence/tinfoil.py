@@ -10,7 +10,9 @@ See https://docs.tinfoil.sh/containers/config-runtime.
 
 from __future__ import annotations
 
+import http.client
 import json
+import socket
 from pathlib import Path
 from typing import Any, Optional
 
@@ -24,6 +26,10 @@ TINFOIL_DIR = Path("/tinfoil")
 TINFOIL_ATTESTATION_PATH = TINFOIL_DIR / "attestation.json"
 TINFOIL_CONFIG_PATH = TINFOIL_DIR / "config.yml"
 TINFOIL_STATUS_PATH = TINFOIL_DIR / "container-status.json"
+#: Serves fresh v3 attestation for a nonce we pick. Only mounted into
+#: containers with ``attestation: true`` in the config (CVM image >= 0.14.12).
+TINFOIL_ATTESTATION_SOCKET = TINFOIL_DIR / "attestation.sock"
+LOCAL_ATTESTATION_TIMEOUT_SECONDS = 30
 
 
 class TinfoilProvider:
@@ -114,6 +120,39 @@ class TinfoilProvider:
                 f"{TINFOIL_ATTESTATION_PATH}: expected an object"
             )
         return document
+
+
+class _UnixHTTPConnection(http.client.HTTPConnection):
+    def __init__(self, socket_path: Path) -> None:
+        super().__init__("localhost", timeout=LOCAL_ATTESTATION_TIMEOUT_SECONDS)
+        self.socket_path = socket_path
+
+    def connect(self) -> None:
+        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.sock.settimeout(self.timeout)
+        self.sock.connect(str(self.socket_path))
+
+
+def fetch_nonce_bound_document(
+    nonce_hex: str, socket_path: Optional[Path] = None
+) -> dict[str, Any]:
+    """A fresh v3 attestation document whose report commits to *nonce_hex*.
+
+    Unlike ``attestation.json``, the enclave picks the nonce here, so it can
+    make the report name something of its own, such as its run key.
+    """
+    connection = _UnixHTTPConnection(socket_path or TINFOIL_ATTESTATION_SOCKET)
+    try:
+        connection.request("GET", f"/.well-known/tinfoil-attestation?nonce={nonce_hex}")
+        response = connection.getresponse()
+        body = response.read()
+    finally:
+        connection.close()
+    if response.status != 200:
+        raise RuntimeError(
+            f"Local attestation returned HTTP {response.status}: {body[:200]!r}"
+        )
+    return json.loads(body)
 
 
 def _read_text(path: Path) -> Optional[str]:
