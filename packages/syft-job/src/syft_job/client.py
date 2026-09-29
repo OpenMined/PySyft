@@ -16,6 +16,7 @@ from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .review_grants import grant_ds_review_read
 
 # Python version used when creating virtual environments for job execution
 RUN_SCRIPT_PYTHON_VERSION = "3.12"
@@ -132,11 +133,11 @@ class JobClient(BaseJobClient):
         inbox_rel_dir = ds_inbox_dir.relative_to(datasite)
         ctx.open(inbox_rel_dir).grant_write_access(ds_email)
 
-        # Create review folder for DS with read access
+        # Create review folder for DS. The DS reads only the named files there
+        # until a release grants more.
         ds_review_dir = self.config.get_review_dir(self.current_user_email) / ds_email
         ds_review_dir.mkdir(parents=True, exist_ok=True)
-        review_rel_dir = ds_review_dir.relative_to(datasite)
-        ctx.open(review_rel_dir).grant_read_access(ds_email)
+        grant_ds_review_read(ds_review_dir, ds_email)
 
         return ds_inbox_dir
 

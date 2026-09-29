@@ -40,7 +40,7 @@ def test_full_job_lifecycle(tmp_path: Path):
     do_client = JobClient(config=do_config)
     do_runner = SyftJobRunner(config=do_config)
 
-    # --- DO approves the DS as a peer, which grants read on review/<ds>/ ---
+    # --- DO approves the DS as a peer, which grants read on each state.yaml ---
     do_client.setup_ds_job_folder_as_do(DS_EMAIL)
 
     # --- DS submits a python job to DO ---
@@ -168,9 +168,8 @@ def test_ds_job_folder_permissions(tmp_path: Path):
     assert inbox_folder.has_write_access(DS_EMAIL)
     assert inbox_folder.has_read_access(DO_EMAIL)
 
-    # DS should have read access to their review folder
-    review_folder = ctx.open(f"app_data/job/review/{DS_EMAIL}/")
-    assert review_folder.has_read_access(DS_EMAIL)
+    # DS does not read its whole review folder, only named files in it
+    assert not ctx.open(f"app_data/job/review/{DS_EMAIL}/").has_read_access(DS_EMAIL)
 
     # Another user should NOT have write access
     other_email = "other@test.org"
