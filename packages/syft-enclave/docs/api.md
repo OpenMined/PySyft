@@ -2,12 +2,12 @@
 
 Once the container is running, the following endpoints are available at `http://EXTERNAL_IP:8080`:
 
-| Endpoint           | Description                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------------------- |
-| `GET /`            | Landing page with syft version and available endpoints                                               |
-| `GET /attestation` | TEE attestation report (Tinfoil only; Confidential Space publishes its token to `SYFT_version.json`) |
-| `GET /health`      | Health check                                                                                         |
-| `GET /docs`        | FastAPI auto-generated Swagger UI                                                                    |
+| Endpoint           | Description                                                                    |
+| ------------------ | ------------------------------------------------------------------------------ |
+| `GET /`            | Landing page with syft version and available endpoints                         |
+| `GET /attestation` | TEE attestation report, on Tinfoil only. On Confidential Spaces it returns 404 |
+| `GET /health`      | Health check                                                                   |
+| `GET /docs`        | FastAPI auto-generated Swagger UI                                              |
 
 ## Running the enclave runner
 
@@ -41,23 +41,22 @@ unless `SYFT_ENCLAVE_ATTESTATION_PROVIDER` says otherwise; see
 
 ## Example: Fetching the attestation report
 
-On Tinfoil:
+The enclave serves the attestation report on Tinfoil only:
 
 ```bash
 curl https://ENCLAVE_HOST/attestation | python3 -m json.tool
 ```
 
-On Confidential Space this endpoint returns 404. The runner publishes the
-signed token to `SYFT_version.json`, and `attest_peer` reads it from there.
-
 The response includes:
 
-- `provider` - which deployment target produced the evidence (`tinfoil`)
-- `evidence` - the provider-agnostic envelope, exactly as published to peers in
-  `SYFT_version.json`. `evidence.body` is the base64 hardware report, for
-  independent verification.
-- `attestation` - an unverified, display-only summary: the `document`
-  (`format` + `body`), the verified `config` the enclave booted with, and
-  `container_status`. The hardware measurements are not decoded here — a
-  relying party gets them by verifying the report, which is what
-  `attest_peer` does.
+- `provider` - the deployment target that produced the evidence, always `tinfoil`.
+- `evidence` - the evidence envelope, exactly as the enclave publishes it to peers in
+  `SYFT_version.json`. `evidence.body` is the base64 hardware report, so you can verify the report
+  yourself.
+- `attestation` - a summary for display. Nothing in the summary is verified. It holds the
+  `document` (`format` + `body`), the verified `config` the enclave booted with, and
+  `container_status`. The summary does not decode the hardware measurements. A relying party gets
+  those by verifying the report, which is what `attest_peer` does.
+
+On Confidential Spaces the endpoint returns 404. Instead, the enclave's runner writes the signed
+token to `SYFT_version.json`, and `attest_peer` reads the token from there.

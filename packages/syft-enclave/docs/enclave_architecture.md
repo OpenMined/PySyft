@@ -1,6 +1,6 @@
 # Syft Client Enclave - Confidential Spaces Deployment
 
-This directory contains a Docker image that packages `syft` with an HTTP attestation server. When deployed on Google Confidential Spaces, the enclave publishes a cryptographically signed TEE attestation token to `SYFT_version.json`; the `/attestation` endpoint is not served there.
+This directory contains a Docker image that packages `syft` with an HTTP attestation server. On Google Confidential Spaces, the enclave writes a cryptographically signed TEE attestation token to `SYFT_version.json`, where peers read it. The HTTP server does not serve `/attestation` on Confidential Spaces.
 
 ## Architecture
 
