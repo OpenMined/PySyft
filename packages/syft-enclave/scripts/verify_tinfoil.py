@@ -77,6 +77,9 @@ def main() -> int:
         expected_data_owners=args.expected_data_owners,
         expected_email=args.expected_enclave_email,
         container_name=args.container_name,
+        # The host is what the pinned fetch connects to. Without it the
+        # appraisal fails before it runs a single check.
+        host=args.host,
         # This script checks a live host, often before the digest and the
         # data-owner list are known, so it opts out rather than refusing to
         # build a policy.
@@ -86,10 +89,13 @@ def main() -> int:
             and args.expected_enclave_email
         ),
     )
+    evidence = tinfoil_evidence(fetch_document(args.host), host=args.host)
     try:
-        verify_tinfoil_evidence(tinfoil_evidence(fetch_document(args.host)), policy)
-    except AttestationError:
-        # verify_tinfoil_evidence already printed the full checklist.
+        verify_tinfoil_evidence(evidence, policy)
+    except AttestationError as exc:
+        # verify_tinfoil_evidence prints the checklist for a failed check, but
+        # it raises before printing anything when it cannot appraise at all.
+        print(f"❌ {exc}", file=sys.stderr)
         return 1
     return 0
 
