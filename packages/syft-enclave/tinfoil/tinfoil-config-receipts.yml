@@ -1,19 +1,10 @@
 # Tinfoil workload config for the syft enclave, with signed receipts on.
 #
-# Identical to tinfoil-config.yml apart from SYFT_ENCLAVE_RECEIPTS, and
-# released under its own tag:
-#   just tinfoil-release <version> tinfoil/tinfoil-config-receipts.yml
+# Identical to tinfoil-config.yml apart from SYFT_ENCLAVE_RECEIPTS.
 #
-# This is the canonical copy: `just tinfoil-build` pins the digest of the
-# image it just pushed into this file and tinfoil-config-receipts.yml, and
-# `just tinfoil-release` syncs one of them to the root of the public config
-# repo and publishes it as a signed GitHub release carrying the expected
-# launch measurement. Keeping it here means the image and the config that pins
-# it are reviewed together.
-#
-# The release workflows themselves live only in that repo
-# (OpenMined/syft-enclave-tinfoil), not here — nothing in PySyft runs or reads
-# them, and a second copy would just drift.
+# Working copy. Releases are published from OpenMined/syft-enclave-tinfoil,
+# which `just tinfoil-release` copies this file into; see "Where the configs
+# live" in docs/tinfoil_deployment.md.
 #
 # Everything in this file is MEASURED: its sha256 lands in the CVM's kernel
 # command line, so any change needs a new config release. Deployment-specific

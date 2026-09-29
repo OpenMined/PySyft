@@ -2,19 +2,23 @@
 
 An alternative to [Confidential Spaces](./terraform_cs.md) with no GCP involved. The enclave runs in an AMD SEV-SNP or Intel TDX confidential VM managed by [Tinfoil](https://docs.tinfoil.sh), and a data owner verifies it against a measurement published in a Sigstore-signed GitHub release.
 
-Two repositories are in play:
-
-- **this one** builds and pushes the enclave image to Docker Hub;
-- **[`OpenMined/syft-enclave-tinfoil`](https://github.com/OpenMined/syft-enclave-tinfoil)** holds the measured `tinfoil-config.yml`, and its GitHub releases publish the expected launch measurement.
-
-The canonical copy of that config lives here at [`tinfoil/tinfoil-config.yml`](../tinfoil/tinfoil-config.yml), so the image and the config that pins it are reviewed together; `just tinfoil-release` syncs it over. A second copy, [`tinfoil/tinfoil-config-receipts.yml`](../tinfoil/tinfoil-config-receipts.yml), differs only in turning signed receipts on (see [Receipts](#receipts)). The release workflows live only in the config repo — nothing in PySyft runs them.
-
 Run all commands from `packages/syft-enclave/`.
 
 When something fails, see [Tinfoil Troubleshooting](./tinfoil_troubleshooting.md). For what the
 attestation proves — and how Tinfoil's route to it differs from Confidential Spaces' — see
 [Security Overview §6](./security.md#6-what-attestation-proves-on-each-target). This doc covers the
 mechanics, not the guarantees.
+
+## Where the configs live
+
+Configs are released from **[`OpenMined/syft-enclave-tinfoil`](https://github.com/OpenMined/syft-enclave-tinfoil)**. Each of its GitHub releases measures the repo's `tinfoil-config.yml` and signs the result, and that release is what a data owner verifies against. The release workflows live only there.
+
+PySyft holds the working copies, so an image change and the config that pins it are reviewed in one PR:
+
+- [`tinfoil/tinfoil-config.yml`](../tinfoil/tinfoil-config.yml): receipts off.
+- [`tinfoil/tinfoil-config-receipts.yml`](../tinfoil/tinfoil-config-receipts.yml): the same, with signed receipts on (see [Receipts](#receipts)).
+
+`just tinfoil-build` pins the new image digest into both. `just tinfoil-release <tag> [file]` copies one of them over the config repo's `tinfoil-config.yml`, opens a PR there, and publishes once it is merged. The config repo holds one file, so each variant is its own release, and its `tinfoil-config.yml` is whichever was released last. Only a published release counts; the copies here are what the next release will be.
 
 ## Prerequisites
 
