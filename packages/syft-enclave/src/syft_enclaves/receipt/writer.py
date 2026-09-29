@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from syft_job.job import JobInfo
 from syft_job.models import JobState
 
-from syft_enclaves.enclave_job_info import submission_approvals
+from syft_enclaves.enclave_job_info import submission_approvals, submission_hash
 from syft_enclaves.receipt.claims import read_job_claims
 from syft_enclaves.receipt.collect import (
     RECEIPT_FILE_NAME,
@@ -35,6 +35,10 @@ logger = logging.getLogger(__name__)
 
 #: Written into the review dir when the enclave picks the job up to run it.
 STARTED_MARKER = "run_started_at"
+#: The submission hash when the run started. Running the job changes the
+#: submission folder (the runner creates its venv in code/), so approvals are
+#: checked against the submission as it was when it ran.
+STARTED_SUBMISSION_MARKER = "run_submission_hash"
 #: Shipped in place of the receipt when signing one fails, so the submitter
 #: sees why instead of a receipt that silently never arrives.
 RECEIPT_ERROR_FILE_NAME = "receipt_error.txt"
@@ -48,10 +52,14 @@ class ReceiptSettings:
     tinfoil_release_tag: Optional[str] = None
 
 
-def mark_started(review_dir: Path) -> None:
+def mark_started(review_dir: Path, submission_dir: Path) -> None:
+    """Record when the run started, and the hash of the submission it runs."""
     marker = review_dir / STARTED_MARKER
     if not marker.exists():
         marker.write_text(datetime.now(timezone.utc).isoformat())
+    hash_marker = review_dir / STARTED_SUBMISSION_MARKER
+    if not hash_marker.exists():
+        hash_marker.write_text(submission_hash(submission_dir))
 
 
 def write_receipt(
@@ -96,10 +104,14 @@ def _receipt(
 def _approvals(
     client: "SyftEnclaveClient", job: JobInfo
 ) -> dict[str, Optional[datetime]]:
-    """Each data owner who approved this exact submission, and when."""
-    approvals = submission_approvals(
-        job.job_review_path, job.job_submission_path, client.data_owners
+    """Each data owner who approved the submission that ran, and when."""
+    hash_marker = job.job_review_path / STARTED_SUBMISSION_MARKER
+    ran = (
+        hash_marker.read_text()
+        if hash_marker.exists()
+        else submission_hash(job.job_submission_path)
     )
+    approvals = submission_approvals(job.job_review_path, ran, client.data_owners)
     return {a.party: a.approved_at for a in approvals}
 
 

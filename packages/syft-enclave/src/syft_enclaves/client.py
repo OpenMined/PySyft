@@ -315,7 +315,7 @@ class SyftEnclaveClient:
                 if state.status != JobStatus.APPROVED:
                     state.status = JobStatus.APPROVED
                     state.save(job.job_review_path / "state.yaml")
-                mark_started(job.job_review_path)
+                mark_started(job.job_review_path, job.job_submission_path)
 
         # share_logs_with_submitter=False keeps the logs in staging. Only a
         # grant from every party releases them. With receipts on, outputs

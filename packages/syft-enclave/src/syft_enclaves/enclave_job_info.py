@@ -309,16 +309,17 @@ def _approves(approval: PartyApprovalStatus | None, current_hash: str) -> bool:
 
 
 def submission_approvals(
-    review_dir: Path, submission_dir: Path, parties: Iterable[str]
+    review_dir: Path, current_hash: str, parties: Iterable[str]
 ) -> list[PartyApprovalStatus]:
-    """The approvals from ``parties`` of the exact submission in ``submission_dir``.
+    """The approvals from ``parties`` of the submission with ``current_hash``.
 
-    An approval of an earlier version of the submission is left out, as it is
+    An approval of another version of the submission is left out, as it is
     when the enclave decides whether to run the job.
     """
-    current = submission_hash(submission_dir)
     return [
-        a for _, a in _party_approvals(review_dir, parties) if _approves(a, current)
+        a
+        for _, a in _party_approvals(review_dir, parties)
+        if _approves(a, current_hash)
     ]
 
 

@@ -16,6 +16,10 @@ import pytest
 os.environ["PRE_SYNC"] = "false"
 
 from syft_enclaves import SyftEnclaveClient
+from syft_enclaves.enclave_job_info import (
+    PartyApprovalStatus,
+    enclave_approval_file_name,
+)
 from syft_enclaves.receipt import (
     CLAIMS_FILE_NAME,
     RECEIPT_FILE_NAME,
@@ -291,6 +295,25 @@ def test_a_failed_receipt_ships_the_error_instead(monkeypatch):
     assert RECEIPT_FILE_NAME not in by_name
     assert "no key to sign with" in by_name["receipt_error.txt"].read_text()
     assert "result.json" in by_name
+
+
+def test_receipt_lists_only_approvals_of_the_submission_that_ran():
+    def mark_second_approval_stale(enclave, ds):
+        review_dir = enclave._local_jobs()["test_job"].job_review_path
+        path = review_dir / enclave_approval_file_name(enclave.data_owners[1])
+        approval = PartyApprovalStatus.load_json(path)
+        approval.submission_hash = "an-earlier-submission"
+        approval.save_json(path)
+
+    enclave, *_, ds, _, _ = _run_job_with_receipts(
+        before_distribute=mark_second_approval_stale
+    )
+    by_name = {p.name: p for p in ds.jobs["test_job"].output_paths}
+    bundle = enclave._rds.peer_manager.peer_store.get_public_bundle()
+    receipt = verify_receipt(json.loads(by_name[RECEIPT_FILE_NAME].read_text()), bundle)
+
+    approvals = receipt["predicate"]["consent"]["approvals"]
+    assert [a["party"] for a in approvals] == [enclave.data_owners[0]]
 
 
 def test_results_do_not_arrive_ahead_of_the_receipt():
