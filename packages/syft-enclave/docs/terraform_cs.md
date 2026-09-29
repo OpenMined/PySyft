@@ -1,4 +1,4 @@
-# Terraform Deployment
+# Confidential Spaces Deployment (Terraform)
 
 A declarative alternative to the gcloud-based Justfile recipes (`init` / `provision-secret-sa` / `start` / `start-debug`). Terraform manages the full stack in one `apply`:
 
@@ -107,7 +107,6 @@ Debug image — SSH enabled, container logs redirected to serial output, encrypt
 just tf-apply-dev
 just tf-logs        # full container logs via SSH + journalctl (falls back to serial)
 just tf-ssh         # SSH into the VM
-just tf-attest      # attestation report, fetched via SSH + localhost
 ```
 
 > `tf-logs` prefers SSH + `journalctl` because the serial console caps redirected container output — chatty containers go quiet in serial logs after ~1MB. On production deployments (no SSH) it falls back to serial output, which mainly shows boot/launcher logs.
