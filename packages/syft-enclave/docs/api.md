@@ -1,6 +1,13 @@
 ## API Endpoints
 
-Once the container is running, the following endpoints are available at `http://EXTERNAL_IP:8080`:
+The container serves these endpoints on port 8080. How you reach them depends on the deployment
+target:
+
+- On Tinfoil, you connect over HTTPS to the enclave's host name, `https://ENCLAVE_HOST`. The Tinfoil
+  shim passes on only `/`, `/health` and `/attestation`, and returns 404 for every other path.
+- On Confidential Spaces, the enclave opens no inbound port, so nothing outside the VM can reach
+  the endpoints. On the debug image you can SSH into the VM and reach them at
+  `http://localhost:8080`.
 
 | Endpoint           | Description                                                                    |
 | ------------------ | ------------------------------------------------------------------------------ |
