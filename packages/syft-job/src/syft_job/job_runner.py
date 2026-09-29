@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,6 +15,7 @@ from . import __version__
 from .config import SyftJobConfig
 from .job_storage import JobRef, JobStorage, JobStateNotFoundError
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .submission import InvalidSubmissionError, copy_submission, submission_hash
 from .traceback_capture import write_frames_record
 
 # Default timeout for job execution (10 minutes)
@@ -31,6 +33,16 @@ def get_job_timeout_seconds() -> int:
 
 
 IS_IN_JOB_ENV_VAR = "SYFT_IS_IN_JOB"
+
+# A job runs from a fresh copy of its approved submission in the system temp
+# folder, outside the SyftBox: sync never reads it, and no submitter writes it.
+RUN_DIR_PREFIX = "syft-job-run-"
+RUN_DIR_NAME = "job"
+
+NO_APPROVED_HASH_REASON = (
+    "approved without a record of the approved submission; review and approve it again"
+)
+CHANGED_SUBMISSION_REASON = "the submission changed after it was approved"
 
 
 def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
@@ -220,13 +232,12 @@ class SyftJobRunner:
             self.config.current_user_email, job_name, ds_email=user
         )
 
-    def _execute_job_streaming(self, ref: JobRef, timeout: int) -> int:
+    def _execute_job_streaming(self, ref: JobRef, timeout: int, run_dir: Path) -> int:
         """Execute job with real-time streaming output.
 
-        Reads run.sh from inbox/, writes stdout/stderr to staging/.
+        Runs run.sh from ``run_dir``, writes stdout/stderr to staging/.
         """
-        submission_dir = self.manager.submission_dir(ref)
-        run_script = submission_dir / "run.sh"
+        run_script = run_dir / "run.sh"
         job_name = ref.job_name
 
         # Log prefix for streaming output
@@ -255,7 +266,7 @@ class SyftJobRunner:
         ):
             process = subprocess.Popen(
                 ["bash", str(run_script)],
-                cwd=submission_dir,  # run.sh executes from inbox/ where code/ lives
+                cwd=run_dir,  # run.sh executes from the run copy where code/ lives
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -310,13 +321,12 @@ class SyftJobRunner:
 
         return returncode
 
-    def _execute_job_captured(self, ref: JobRef, timeout: int) -> int:
+    def _execute_job_captured(self, ref: JobRef, timeout: int, run_dir: Path) -> int:
         """Execute job with captured output (non-streaming).
 
-        Reads run.sh from inbox/, writes stdout/stderr to staging/.
+        Runs run.sh from ``run_dir``, writes stdout/stderr to staging/.
         """
-        submission_dir = self.manager.submission_dir(ref)
-        run_script = submission_dir / "run.sh"
+        run_script = run_dir / "run.sh"
         job_name = ref.job_name
 
         # Make run.sh executable
@@ -331,7 +341,7 @@ class SyftJobRunner:
 
         process = subprocess.Popen(
             ["bash", str(run_script)],
-            cwd=submission_dir,
+            cwd=run_dir,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -369,10 +379,12 @@ class SyftJobRunner:
         timeout: int | None = None,
     ) -> bool:
         """
-        Execute run.sh for an approved job.
+        Execute run.sh of the submission the owner approved.
 
-        Reads run.sh from inbox/. Outputs and state go to review/, logs and the
-        return code to staging/.
+        The inbox is copied into a fresh folder outside the SyftBox, and the
+        copy must match the approved hash before anything runs, so an edit of
+        the submitter's inbox never runs. Outputs and state go to review/, logs
+        and the return code to staging/.
 
         Args:
             ref: Ref of the job to execute.
@@ -380,24 +392,72 @@ class SyftJobRunner:
             timeout: Timeout in seconds. Defaults to 300 (5 minutes).
 
         Returns:
-            bool: True if execution was successful, False otherwise
+            bool: True if run.sh ran, whatever its exit code. False if the job
+            was not run: it has no approved hash, or the copy does not match it.
         """
         if timeout is None:
             timeout = get_job_timeout_seconds()
 
-        job_name = ref.job_name
-        submission_dir = self.manager.submission_dir(ref)
-        review_dir = self.manager.review_dir(ref)
-        run_script = submission_dir / "run.sh"
-
-        if not run_script.exists():
-            print(f" No run.sh found in {job_name}")
+        run_dir = self._approved_run_dir(ref)
+        if run_dir is None:
             return False
+        try:
+            self._run_approved_job(ref, run_dir, stream_output, timeout)
+        finally:
+            shutil.rmtree(run_dir.parent, ignore_errors=True)
+        return True
 
-        self._prepare_outputs_dir(ref)
+    def _approved_run_dir(self, ref: JobRef) -> Path | None:
+        """A fresh copy of the approved submission to run from, or None.
+
+        No approved hash: the job was approved before hashes were recorded, or
+        never approved (a deposited result that was rerun). It goes back to
+        pending, to be approved again. A copy that does not match the approved
+        hash fails the job.
+        """
+        record = self.manager.read_submission_record(ref)
+        if record is None or record.approved_hash is None:
+            self._return_to_pending(ref)
+            return None
+        run_dir = Path(tempfile.mkdtemp(prefix=RUN_DIR_PREFIX)) / RUN_DIR_NAME
+        try:
+            copy_submission(self.manager.submission_dir(ref), run_dir)
+            verified = submission_hash(run_dir) == record.approved_hash
+        except (OSError, InvalidSubmissionError):
+            verified = False
+        if not verified:
+            shutil.rmtree(run_dir.parent, ignore_errors=True)
+            self._fail_unverified(ref)
+            return None
+        return run_dir
+
+    def _return_to_pending(self, ref: JobRef) -> None:
+        state = self.manager.read_state(ref)
+        state.status = JobStatus.PENDING
+        state.approved_by = None
+        state.approved_at = None
+        state.approval_method = None
+        state.review_reason = NO_APPROVED_HASH_REASON
+        self.manager.write_state(ref, state)
+        print(f" Job {ref.job_name} not run: {NO_APPROVED_HASH_REASON}")
+
+    def _fail_unverified(self, ref: JobRef) -> None:
+        state = self.manager.read_state(ref)
+        state.status = JobStatus.FAILED
+        state.completed_at = datetime.now(timezone.utc)
+        state.review_reason = CHANGED_SUBMISSION_REASON
+        self.manager.write_state(ref, state)
+        print(f" Job {ref.job_name} not run: {CHANGED_SUBMISSION_REASON}")
+
+    def _run_approved_job(
+        self, ref: JobRef, run_dir: Path, stream_output: bool, timeout: int
+    ) -> None:
+        job_name = ref.job_name
+        review_dir = self.manager.review_dir(ref)
+        self._prepare_outputs_dir(ref, run_dir)
 
         print(f" Executing job: {job_name}")
-        print(f" Inbox: {submission_dir}")
+        print(f" Running from: {run_dir}")
 
         # Update state to RUNNING
         state = self.manager.read_state(ref)
@@ -406,14 +466,14 @@ class SyftJobRunner:
 
         try:
             if stream_output:
-                returncode = self._execute_job_streaming(ref, timeout)
+                returncode = self._execute_job_streaming(ref, timeout, run_dir)
             else:
-                returncode = self._execute_job_captured(ref, timeout)
+                returncode = self._execute_job_captured(ref, timeout, run_dir)
 
-            self._capture_traceback(ref, returncode)
+            self._capture_traceback(ref, returncode, run_dir / "code")
 
-            # Move outputs from inbox/ to review/
-            self._move_outputs_to_review(submission_dir, review_dir)
+            # Move outputs from the run copy to review/
+            self._move_outputs_to_review(run_dir, review_dir)
 
             self._finalize(ref, returncode)
 
@@ -433,18 +493,14 @@ class SyftJobRunner:
                 except OSError:
                     pass
 
-            return True
-
         except subprocess.TimeoutExpired:
             print(f" Job {job_name} timed out after {timeout // 60} minutes")
             self._finalize(ref, -1)
-            return False
         except Exception as e:
             print(f" Error executing job {job_name}: {e}")
             self._finalize(ref, -1)
-            return False
 
-    def _capture_traceback(self, ref: JobRef, returncode: int) -> None:
+    def _capture_traceback(self, ref: JobRef, returncode: int, code_root: Path) -> None:
         """Stage where the job failed, from the traceback it printed.
 
         A run that succeeds prints no traceback, so it leaves no record.
@@ -452,11 +508,7 @@ class SyftJobRunner:
         if returncode == 0:
             return
         staging_dir = self.manager.staging_dir(ref)
-        write_frames_record(
-            staging_dir / "stderr.txt",
-            staging_dir,
-            self.manager.submission_dir(ref) / "code",
-        )
+        write_frames_record(staging_dir / "stderr.txt", staging_dir, code_root)
 
     def _finalize(self, ref: JobRef, returncode: int) -> None:
         """Stage the exit code, and set the state to DONE or FAILED.
@@ -474,12 +526,12 @@ class SyftJobRunner:
         state.return_code = None
         self.manager.write_state(ref, state)
 
-    def _move_outputs_to_review(self, submission_dir: Path, review_dir: Path) -> None:
-        inbox_outputs = submission_dir / "code" / "outputs"
+    def _move_outputs_to_review(self, run_dir: Path, review_dir: Path) -> None:
+        run_outputs = run_dir / "code" / "outputs"
         review_outputs = review_dir / "outputs"
-        if inbox_outputs.exists() and inbox_outputs.is_dir():
+        if run_outputs.exists() and run_outputs.is_dir():
             # Merge into review/outputs (which was pre-created by _prepare_outputs_dir)
-            for item in inbox_outputs.iterdir():
+            for item in run_outputs.iterdir():
                 dest = review_outputs / item.name
                 if item.is_file():
                     shutil.copy2(str(item), str(dest))
@@ -487,15 +539,16 @@ class SyftJobRunner:
                     if dest.exists():
                         shutil.rmtree(dest)
                     shutil.copytree(str(item), str(dest))
-            # Clean up inbox outputs
-            shutil.rmtree(inbox_outputs)
+            shutil.rmtree(run_outputs)
 
-    def _prepare_outputs_dir(self, ref: JobRef) -> None:
-        """Clear and recreate outputs dir in both inbox/ (for job cwd) and review/ (for final results)."""
+    def _prepare_outputs_dir(self, ref: JobRef, run_dir: Path) -> None:
+        """Create outputs/ in the run copy (for the job) and review/ (for results).
+
+        The job writes its outputs in the run copy, outside the SyftBox, so no
+        sync can send them to the submitter before they are released.
+        """
         # Create outputs/ inside code/ dir so job scripts can write there (cwd is code/)
-        submission_dir = self.manager.submission_dir(ref)
-        inbox_outputs = submission_dir / "code" / "outputs"
-        inbox_outputs.mkdir(parents=True, exist_ok=True)
+        (run_dir / "code" / "outputs").mkdir(parents=True, exist_ok=True)
 
         # Create outputs/ in review dir with owner-only read permissions
         review_dir = self.manager.review_dir(ref)
@@ -578,10 +631,10 @@ class SyftJobRunner:
 
         for ref in approved_jobs:
             print(f"\n{'=' * 50}")
-            self._execute_job(ref, stream_output=stream_output, timeout=timeout)
-            self._share_job_results(
-                ref, share_outputs_with_submitter, share_logs_with_submitter
-            )
+            if self._execute_job(ref, stream_output=stream_output, timeout=timeout):
+                self._share_job_results(
+                    ref, share_outputs_with_submitter, share_logs_with_submitter
+                )
             print(f"{'=' * 50}")
 
         if approved_jobs:

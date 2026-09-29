@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
@@ -39,8 +40,12 @@ from syft_enclaves.utils import (
     write_versions,
 )
 
+logger = logging.getLogger(__name__)
+
 FORWARDED_RECORD = "forwarded_artifacts.json"
 RESULTS_SHARED_MARKER = "results_shared"
+# How the enclave records an approval: every data owner approved the same job.
+ENCLAVE_APPROVAL_METHOD = "enclave"
 
 
 def pre_sync_enabled() -> bool:
@@ -251,12 +256,22 @@ class SyftEnclaveClient:
         self._rds.sync_engine.push_job_files(job_dir)
 
     def run_jobs(self) -> None:
-        """Run approved enclave jobs."""
+        """Run approved enclave jobs.
+
+        A job counts as approved when every data owner approved this same
+        submission. The enclave records it as approved, and the runner executes
+        a fresh copy only while it still matches.
+        """
         for job in self.jobs:
             if (
                 job.status == "approved"
                 and job.job_headers.get("job_type") == "enclave"
             ):
+                try:
+                    job.record_approval(approval_method=ENCLAVE_APPROVAL_METHOD)
+                except ValueError as e:
+                    logger.warning(f"Not running enclave job '{job.name}': {e}")
+                    continue
                 state = JobState.load(job.job_review_path / "state.yaml")
                 if state.status != JobStatus.APPROVED:
                     state.status = JobStatus.APPROVED
@@ -457,8 +472,15 @@ class SyftEnclaveClient:
             self._try_distribute_job(ref)
 
     def _try_distribute_job(self, ref: JobRef):
-        """Distribute a single enclave job to relevant DOs if not yet distributed."""
+        """Distribute a single enclave job to relevant DOs if not yet distributed.
+
+        Only a received job is distributed: one whose files all arrived and
+        whose hash the enclave recorded. A job still arriving, or one rejected
+        at receipt, is not.
+        """
         job_manager = self._rds.job_client.manager
+        if job_manager.read_submission_record(ref) is None:
+            return
         job_dir = job_manager.submission_dir(ref)
         config = job_manager.read_submission(ref)
         if config.job_type != "enclave" or not config.datasets:
