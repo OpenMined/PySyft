@@ -5,6 +5,7 @@ import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+from datetime import timedelta
 from pathlib import Path
 from typing import List, Optional, cast
 
@@ -24,7 +25,7 @@ from syft.sync.events.file_change_event import (
 )
 from syft.sync.file_writer import FileWriter
 from syft.sync.job_file_change_handler import JobFileChangeHandler
-from syft.sync.peers.peer import Peer
+from syft.sync.peers.peer import Peer, PeerNotReadyError
 from syft.sync.peers.peer_list import PeerList
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.platforms.base_platform import BasePlatform
@@ -50,6 +51,8 @@ from syft.sync.utils.syftbox_utils import (
     random_syftbox_folder_for_testing,
 )
 from syft.sync.version.peer_manager import (
+    DEFAULT_PEER_LOGIN_MAX_AGE,
+    DEFAULT_PEER_POLL_INTERVAL,
     PeerManager,
     PeerManagerConfig,
 )
@@ -462,6 +465,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         "load_peers",
         "approve_peer_request",
         "reject_peer_request",
+        "validate_peer",
         "sync",
         "create_checkpoint",
         "should_create_checkpoint",
@@ -1008,6 +1012,57 @@ class SyftboxManager(BaseModelCallbackMixin):
     def reject_peer_request(self, email_or_peer: str | Peer):
         """Reject a pending peer request. Delegates to PeerManager."""
         self.peer_manager.reject_peer_request(email_or_peer)
+
+    def validate_peer(
+        self,
+        peer_email: str,
+        max_age: timedelta = DEFAULT_PEER_LOGIN_MAX_AGE,
+        timeout: float = 0,
+        poll_interval: float = DEFAULT_PEER_POLL_INTERVAL,
+    ) -> Peer:
+        """Load the peers, then return ``peer_email`` if it is a live connection.
+
+        Use it after peering, before the rest of a notebook runs. The rules are
+        in ``PeerManager.validate_peer``. With ``timeout`` (seconds), wait for
+        the peer to approve or log in. Each poll, every ``poll_interval``
+        seconds, is one Drive request; the peers load again only when that
+        request shows a change. A peer that cannot become valid by waiting
+        fails at once.
+
+        Raises:
+            PeerSetupError: ``peer_email`` is not a live connection.
+        """
+        deadline = time.monotonic() + timeout
+        self.load_peers()
+        while True:
+            try:
+                return self.peer_manager.validate_peer(peer_email, max_age=max_age)
+            except PeerNotReadyError as e:
+                self._wait_until_peer_may_be_valid(
+                    peer_email, max_age, deadline, poll_interval, e
+                )
+            self.load_peers()
+
+    def _wait_until_peer_may_be_valid(
+        self,
+        peer_email: str,
+        max_age: timedelta,
+        deadline: float,
+        poll_interval: float,
+        error: PeerNotReadyError,
+    ) -> None:
+        """Poll until ``peer_may_be_valid`` is True; raise ``error`` at ``deadline``.
+
+        The last sleep is cut to end at ``deadline``.
+        """
+        if deadline - time.monotonic() <= 0:
+            raise error
+        print(f"Waiting for {peer_email}: {error}")
+        while (remaining := deadline - time.monotonic()) > 0:
+            time.sleep(min(poll_interval, remaining))
+            if self.peer_manager.peer_may_be_valid(peer_email, max_age=max_age):
+                return
+        raise error
 
     # ========== Encryption key fingerprints ==========
 
