@@ -6,6 +6,7 @@ import json
 import logging
 import warnings
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -25,7 +26,7 @@ from syft.sync.peers.key_bundle import (
     format_fingerprint,
     normalize_fingerprint,
 )
-from syft.sync.peers.peer import Peer, PeerState
+from syft.sync.peers.peer import Peer, PeerNotReadyError, PeerSetupError, PeerState
 from syft.sync.peers.peer_store import PeerStore, datasite_crypto_keys_path
 from syft.sync.utils.print_utils import (
     print_peer_already_connected,
@@ -42,6 +43,21 @@ from syft.sync.version.exceptions import (
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 
 logger = logging.getLogger(__name__)
+
+# How recent a peer login must be for validate_peer() to accept a connection
+# that was already approved at start. It covers a demo day; connections left
+# over from earlier runs are usually older.
+DEFAULT_PEER_LOGIN_MAX_AGE = timedelta(hours=12)
+
+# Seconds between polls when validate_peer() waits. Each poll is one Drive
+# request; a peer approval takes longer than this anyway.
+DEFAULT_PEER_POLL_INTERVAL = 15
+
+
+def _is_within(moment: Optional[datetime], max_age: timedelta) -> bool:
+    """True when ``moment`` is known and not older than ``max_age``."""
+    return moment is not None and moment >= datetime.now(timezone.utc) - max_age
+
 
 # Key wrapping the DID document inside a published encryption bundle file.
 BUNDLE_FILE_KEY = "public_encryption_bundle"
@@ -173,6 +189,9 @@ class PeerManager(BaseModel):
     _loaded_peer_versions: Dict[str, Optional[VersionInfo]] = PrivateAttr(
         default_factory=dict
     )
+    # Emails of the peers that were approved at the first load_peers(). None
+    # until that load.
+    _approved_at_start: Optional[set[str]] = PrivateAttr(default=None)
 
     # ========== Peer List Properties ==========
 
@@ -843,6 +862,11 @@ class PeerManager(BaseModel):
                         email, PeerState.ACCEPTED.value
                     )
 
+        if self._approved_at_start is None:
+            self._approved_at_start = {
+                p.email for p in peers if p.state == PeerState.ACCEPTED
+            }
+
         # set_peers keeps the locally pinned bundle over whatever the Drive
         # copy of SYFT_peers.json holds, and validates any bundle it adopts.
         self.peer_store.set_peers(peers)
@@ -872,6 +896,87 @@ class PeerManager(BaseModel):
                 self.connection_router.update_peer_state(
                     peer.email, peer.state.value, public_encryption_bundle=adopted
                 )
+
+    def validate_peer(
+        self, peer_email: str, max_age: timedelta = DEFAULT_PEER_LOGIN_MAX_AGE
+    ) -> Peer:
+        """Return the peer ``peer_email`` if it is a live connection, else raise.
+
+        A peer is valid when it is approved, and one of these is true:
+        - It was not approved yet at the first ``load_peers()`` of this client.
+        - It logged in within ``max_age``. The Drive modified time of its
+          version file gives the time.
+
+        A connection that was approved at start can be left over from an
+        earlier run, with an account that is not in use now. Thus it does not
+        show that ``peer_email`` is the correct peer. This is a setup check,
+        not authentication.
+
+        Raises:
+            PeerNotReadyError: the peer did not approve the request yet, or it
+                was approved at start and did not log in within ``max_age``.
+            PeerSetupError: the peer is unknown, rejected, or waits for this
+                client to approve its request.
+        """
+        peer = self.get_cached_peer(peer_email)
+        if peer is None:
+            raise PeerSetupError(
+                f"{peer_email} is not a peer. Check the email, or add it with "
+                f"client.add_peer({peer_email!r})."
+            )
+        if peer.is_requested_by_peer:
+            raise PeerSetupError(
+                f"{peer_email} is not approved yet: approve it with "
+                f"client.approve_peer_request({peer_email!r})."
+            )
+        if peer.is_requested_by_me:
+            raise PeerNotReadyError(
+                f"{peer_email} has not approved the request yet. Check the email, "
+                "and make sure that the peer approved the request."
+            )
+        if not peer.is_approved:
+            raise PeerSetupError(
+                f"{peer_email} is not approved (state: {peer.state.value})."
+            )
+        if peer_email in (self._approved_at_start or set()):
+            self._require_recent_login(peer_email, max_age)
+        return peer
+
+    def _require_recent_login(self, peer_email: str, max_age: timedelta) -> None:
+        """Raise ``PeerNotReadyError`` unless ``peer_email`` logged in within ``max_age``."""
+        last_login = self.connection_router.read_peer_version_file_modified_time(
+            peer_email
+        )
+        if _is_within(last_login, max_age):
+            return
+        raise PeerNotReadyError(
+            f"{peer_email} was already connected when this client started, and "
+            f"did not log in within {max_age} (last login: {last_login or 'unknown'}). "
+            "The connection can be left over from an earlier run. Check the "
+            "email, and make sure that the peer is logged in."
+        )
+
+    def peer_may_be_valid(
+        self, peer_email: str, max_age: timedelta = DEFAULT_PEER_LOGIN_MAX_AGE
+    ) -> bool:
+        """Tell if ``validate_peer`` can pass after the next ``load_peers()``.
+
+        Use it between polls, after ``validate_peer`` raised
+        ``PeerNotReadyError``. It makes one Drive request and does not load
+        the peers. It is True when the peer created its folders for this
+        datasite (it approved our request), or when it logged in within
+        ``max_age``.
+        """
+        peer = self.get_cached_peer(peer_email)
+        if peer is not None and peer.is_requested_by_me:
+            return any(
+                p.email == peer_email
+                for p in self.connection_router.get_peer_requests()
+            )
+        last_login = self.connection_router.read_peer_version_file_modified_time(
+            peer_email
+        )
+        return _is_within(last_login, max_age)
 
     def check_peer_request_exists(self, email: str) -> bool:
         """Check if a peer request exists for the given email."""
