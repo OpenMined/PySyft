@@ -15,6 +15,7 @@ from . import __version__
 from .config import SyftJobConfig
 from .job_storage import JobRef, JobStorage, JobStateNotFoundError
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .review_grants import replace_ds_folder_read
 from .submission import InvalidSubmissionError, copy_submission, submission_hash
 from .traceback_capture import write_frames_record
 
@@ -568,6 +569,18 @@ class SyftJobRunner:
         folder = ctx.open(rel_path)
         folder.grant_read_access(self.config.current_user_email)
 
+    def _replace_ds_folder_reads(self) -> None:
+        """Replace the read grant on a whole DS review folder with the named files.
+
+        Earlier versions wrote that grant. A job can write any file into its
+        review directory, so this runs before any job does.
+        """
+        review_root = self.config.get_review_dir(self.config.current_user_email)
+        if not review_root.is_dir():
+            return
+        for ds_dir in sorted(p for p in review_root.iterdir() if p.is_dir()):
+            replace_ds_folder_read(ds_dir, ds_dir.name)
+
     def _get_job_metadata(self, ref: JobRef) -> JobSubmissionMetadata | None:
         try:
             return self.manager.read_submission(ref)
@@ -617,6 +630,7 @@ class SyftJobRunner:
                 and the approval granted. The rest stays in staging, where only
                 the datasite owner reads it.
         """
+        self._replace_ds_folder_reads()
         approved_jobs = self._get_jobs_in_approved()
 
         if not approved_jobs:

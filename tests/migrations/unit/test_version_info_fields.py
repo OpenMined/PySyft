@@ -29,7 +29,7 @@ V1_FIELDS = {
     "attestation_token",
 }
 
-V2_ADDS = {"protocol_schemas"}
+V2_ADDS = {"protocol_schemas", "extra"}
 
 
 def test_v1_fields_are_frozen():
@@ -72,3 +72,34 @@ def test_a_file_without_the_v2_fields_still_parses():
 
     loaded = VersionInfoV2.model_validate(written_by_an_older_client)
     assert loaded.protocol_schemas == {}
+    assert loaded.extra == {}
+
+
+def test_extra_is_opaque_to_syft():
+    # syft carries whatever another package puts here and never interprets it,
+    # so any JSON round-trips under any key.
+    payload = {
+        "attestation": {"kind": "made-up", "body": "anything"},
+        "some-other-package": {"nested": [1, 2]},
+    }
+    info = VersionInfoV2(
+        syft_client_version="0.1.117",
+        min_supported_syft_client_version="0.1.93",
+        protocol_version="1.0.0",
+        min_supported_protocol_version="1.0.0",
+        extra=payload,
+    )
+    reloaded = VersionInfoV2.model_validate_json(info.model_dump_json())
+    assert reloaded.extra == payload
+
+
+def test_syft_defines_no_feature_specific_payload_field():
+    """The point of the generic bag.
+
+    Another package adding a payload to the bootstrap channel — a new TEE
+    provider, say — must not need a field here. ``attestation_token`` is the
+    one exception: protocol-0 froze it into V1, so it cannot be removed, and
+    it is deprecated and never written.
+    """
+    generic = set(V1_FIELDS - {"attestation_token"}) | V2_ADDS
+    assert set(VersionInfoV2.model_fields) - {"attestation_token"} == generic

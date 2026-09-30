@@ -3,7 +3,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from syft_datasets.dataset_manager import SyftDatasetManager
 from syft_job.disclosures import DisclosuresArg, gated_names
@@ -16,12 +16,8 @@ from syft_rds import SyftRDSClient, SyftRDSClientConfig
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_list import PeerList
 from syft.sync.version.peer_manager import CompatAction
-from syft_enclaves.attestation import (
-    AppraisalPolicy,
-    AttestationError,
-    bundle_fingerprint,
-    verify_attestation_token,
-)
+from syft_enclaves.attestation.dispatch import policy_for, verify_evidence
+from syft_enclaves.attestation.envelope import AttestationEvidence
 from syft_enclaves.enclave_job_client import EnclaveJobClient
 from syft_enclaves.enclave_job_info import (
     EnclaveJobInfo,
@@ -31,6 +27,12 @@ from syft_enclaves.enclave_job_info import (
 from syft_enclaves.immutability import (
     make_private_dataset_immutability_filter,
 )
+from syft_enclaves.receipt.writer import (
+    ReceiptSettings,
+    mark_started,
+    write_receipt,
+    write_receipt_error,
+)
 from syft_enclaves.utils import (
     create_clients,
     create_configs,
@@ -39,8 +41,6 @@ from syft_enclaves.utils import (
     wire_peers,
     write_versions,
 )
-
-logger = logging.getLogger(__name__)
 
 FORWARDED_RECORD = "forwarded_artifacts.json"
 RESULTS_SHARED_MARKER = "results_shared"
@@ -53,11 +53,21 @@ def pre_sync_enabled() -> bool:
     return os.environ.get("PRE_SYNC", "true").lower() == "true"
 
 
+if TYPE_CHECKING:
+    # Only for the attest_peer annotation: importing the tinfoil policy at
+    # runtime would drag the optional SDK onto the always-imported path.
+    from syft_enclaves.attestation import AppraisalPolicy
+    from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
+
+logger = logging.getLogger(__name__)
+
+
 class SyftEnclaveClient:
     def __init__(
         self,
         rds: SyftRDSClient,
         data_owners: list[str] | None = None,
+        receipts: ReceiptSettings | None = None,
     ):
         # The Remote Data Science product client. It OWNS the job + dataset
         # surface (job_client / job_runner / dataset_manager) and composes the
@@ -66,6 +76,8 @@ class SyftEnclaveClient:
         # Data owners whose approval gates every job run on this enclave.
         # Fixed at launch/deploy time; stored in memory.
         self.data_owners = list(data_owners or [])
+        # When set, every finished job gets a signed receipt in its outputs.
+        self.receipts = receipts
 
     @property
     def email(self) -> str:
@@ -102,34 +114,96 @@ class SyftEnclaveClient:
         self,
         peer_email: str,
         expected_image_digest: str | None = None,
-        policy: "AppraisalPolicy | None" = None,
+        expected_data_owners: list[str] | None = None,
+        expected_email: str | None = None,
+        policy: "AppraisalPolicy | TinfoilAppraisalPolicy | None" = None,
     ):
         """Verify an enclave peer's attestation by re-reading SYFT_version.json
-        from Drive. Returns None (with an info print) when no token is available;
-        raises AttestationError only when verification of an existing token fails.
+        from Drive. Returns None (with an info print) when the peer published no
+        evidence; raises AttestationError when verification of existing evidence
+        fails.
 
-        When this client encrypts, the token must also bind the enclave key
-        bundle this client holds: the enclave puts the fingerprint of its
-        identity key into the token's nonce, and the check fails when that
-        differs from the bundle received over Drive, or when the token carries
-        no fingerprint. The bundle arrives once the enclave accepts the peer
-        request, so call ``sync()`` (or ``load_peers()``) before attesting.
+        The peer's evidence says which TEE produced it, and it is routed to that
+        target's verifier (Confidential Space or Tinfoil). Verifying Tinfoil
+        evidence needs the optional ``tinfoil`` package; see
+        ``docs/tinfoil_deployment.md``.
+
+        A policy has to pin an image digest, a data-owner list and the enclave's
+        email, so pass all three shorthands or build a policy yourself. Without
+        them the attestation would prove that some genuine enclave exists, but
+        not which code it runs, which datasite it runs as, or who approves a
+        job on it. To accept that on purpose, pass a policy with
+        ``allow_unpinned=True``.
 
         Args:
             peer_email: the enclave peer to attest.
             expected_image_digest: a "sha256:..." container image digest you
-                trust — . When set, the attestation
-                is appraised against it.
-            policy: a full ``AppraisalPolicy`` for finer control (image digest
-                *and* syft version). Mutually exclusive with
-                ``expected_image_digest``.
+                trust.
+            expected_data_owners: the emails whose approval must gate a job on
+                this enclave.
+            expected_email: the datasite the enclave should be running as.
+            policy: a full appraisal policy for finer control — an
+                ``AppraisalPolicy`` for Confidential Space or a
+                ``TinfoilAppraisalPolicy`` for Tinfoil. Mutually exclusive with
+                the shorthands.
         """
 
-        if expected_image_digest is not None and policy is not None:
-            raise ValueError("Pass either expected_image_digest or policy, not both.")
-        if expected_image_digest is not None:
-            policy = AppraisalPolicy(expected_image_digest=expected_image_digest)
+        shorthands = {
+            "expected_image_digest": expected_image_digest,
+            "expected_data_owners": expected_data_owners,
+            "expected_email": expected_email,
+        }
+        given = {name: value for name, value in shorthands.items() if value is not None}
+        if given and policy is not None:
+            raise ValueError(
+                f"Pass either {' / '.join(shorthands)} or policy, not both."
+            )
 
+        evidence = self._peer_evidence(peer_email)
+        if evidence is None:
+            return None
+        if given:
+            policy = policy_for(evidence.kind, **given)
+        result = verify_evidence(evidence, policy=policy)
+        self._adopt_verified_key_bundle(peer_email, result)
+        return result
+
+    def _adopt_verified_key_bundle(self, peer_email: str, result) -> None:
+        """Trust the peer's keys when attestation bound them to its report.
+
+        Only a bundle delivered over a channel pinned to the attested TLS key
+        gets here — see ``attestation.https``. The copy the peer publishes to
+        Drive is unsigned, so a mismatch means the Drive copy was tampered
+        with; the bound one wins and we say so rather than failing, since the
+        bound one is exactly what we should be using.
+        """
+        bundle = getattr(result, "verified_key_bundle", None)
+        if not bundle:
+            return
+        peer_store = self._rds.peer_manager.peer_store
+        previous = None
+        if peer_store.has_peer_bundle(peer_email):
+            previous = peer_store.get_cached_peer(peer_email).public_encryption_bundle
+        if previous and previous != bundle:
+            print(
+                f"⚠️  {peer_email!r} published a different key bundle to Drive than "
+                "the one its attestation binds; using the attested one."
+            )
+        peer_store.set_peer_bundle(peer_email, bundle)
+        self._persist_peer_bundle(peer_email, bundle)
+        print(f"🔑 Set {peer_email!r} encryption keys from its attestation.")
+
+    def _persist_peer_bundle(self, peer_email: str, bundle: dict) -> None:
+        """Write the bundle alongside the peer's state, as load_peers does."""
+        peer = self._rds.peer_manager.peer_store.get_cached_peer(peer_email)
+        if peer is None:
+            return
+        self._rds.peer_manager.connection_router.update_peer_state(
+            peer_email, peer.state.value, public_encryption_bundle=bundle
+        )
+
+    def _peer_evidence(self, peer_email: str) -> "AttestationEvidence | None":
+        """The peer's published attestation evidence, or None if it has none."""
         version_info = self._rds.peer_manager.connection_router.read_peer_version_file(
             peer_email
         )
@@ -138,39 +212,16 @@ class SyftEnclaveClient:
                 f"ℹ️  No version file available for peer {peer_email!r}; skipping attestation."
             )
             return None
-        if not version_info.attestation_token:
+        # A malformed envelope raises rather than skipping: a peer that
+        # published something unparseable is not the same as one that
+        # published nothing.
+        evidence = AttestationEvidence.read_from(version_info)
+        if evidence is None:
             print(
-                f"ℹ️  Peer {peer_email!r} has no attestation token "
-                "(not running in a Confidential Space); skipping attestation."
+                f"ℹ️  Peer {peer_email!r} published no attestation evidence "
+                "(not running in an attested enclave); skipping attestation."
             )
-            return None
-        policy = self._pin_enclave_key(peer_email, policy or AppraisalPolicy())
-        return verify_attestation_token(version_info.attestation_token, policy=policy)
-
-    def _pin_enclave_key(
-        self, peer_email: str, policy: AppraisalPolicy
-    ) -> AppraisalPolicy:
-        """Fill the policy's expected key fingerprint from the bundle held for the peer.
-
-        Uses the cached bundle, since that is the key ``PeerStore.encrypt``
-        uses. Left as is when the caller already set a fingerprint or this
-        client does not encrypt. Raises when no bundle is held yet: with
-        nothing to bind, a pass now would be mistaken for a full attestation.
-        """
-        peer_store = self._rds.peer_manager.peer_store
-        if policy.expected_key_fingerprint or not peer_store.use_encryption:
-            return policy
-        peer = peer_store.get_cached_peer(peer_email)
-        bundle = peer.public_encryption_bundle if peer else None
-        if bundle is None:
-            raise AttestationError(
-                f"No encryption key bundle held for {peer_email!r}, so the "
-                "attestation cannot be bound to a key. Run client.sync() once "
-                "the enclave has accepted the peer request, then attest again."
-            )
-        return policy.model_copy(
-            update={"expected_key_fingerprint": bundle_fingerprint(bundle)}
-        )
+        return evidence
 
     def sync(self):
         self._rds.sync()
@@ -276,12 +327,16 @@ class SyftEnclaveClient:
                 if state.status != JobStatus.APPROVED:
                     state.status = JobStatus.APPROVED
                     state.save(job.job_review_path / "state.yaml")
+                mark_started(job.job_review_path, job.job_submission_path)
 
         # share_logs_with_submitter=False keeps the logs in staging. Only a
-        # grant from every party releases them.
+        # grant from every party releases them. With receipts on, outputs
+        # reach the submitter only through distribute_results, after the
+        # receipt is written, so results and receipt arrive together instead
+        # of the receipt a sync later.
         self._rds.process_approved_jobs(
             force_execution=True,
-            share_outputs_with_submitter=True,
+            share_outputs_with_submitter=self.receipts is None,
             share_logs_with_submitter=False,
         )
         self._apply_disclosure_policy()
@@ -326,6 +381,9 @@ class SyftEnclaveClient:
         marker = job.job_review_path / RESULTS_SHARED_MARKER
         if marker.exists():
             return
+
+        if self.receipts is not None and job.status == "done":
+            self._try_write_receipt(job)
 
         # Always share results with the DS (submitter)
         self._forward_results_to_recipients(job, [job.submitted_by])
@@ -376,6 +434,18 @@ class SyftEnclaveClient:
 
         sent_path.write_text(json.dumps(sorted(sent.union(pending))))
         return pending
+
+    def _try_write_receipt(self, job: JobInfo) -> None:
+        """Sign a receipt into the job's outputs, so it ships with them.
+
+        A failure is not raised: the results still go out, with the error in
+        place of the receipt, rather than being held back on every tick.
+        """
+        try:
+            write_receipt(self, job, self.receipts)
+        except Exception:
+            logger.exception("Could not write a receipt for job %s", job.name)
+            write_receipt_error(job)
 
     def _read_state_file(self, job: JobInfo) -> dict[Path, bytes]:
         """Read the job state.yaml as a {path_in_datasite: bytes} dict."""

@@ -10,7 +10,9 @@ import pytest
 def temp_dir():
     """Create a temporary directory for tests."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        yield Path(tmpdir)
+        # Resolved, since the code under test resolves paths: on macOS the
+        # temp folder lives under /var, a symlink to /private/var.
+        yield Path(tmpdir).resolve()
 
 
 @pytest.fixture
