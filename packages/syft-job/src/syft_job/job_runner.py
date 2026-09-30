@@ -458,11 +458,7 @@ class SyftJobRunner:
 
         print(f" Executing job: {job_name}")
         print(f" Running from: {run_dir}")
-
-        # Update state to RUNNING
-        state = self.manager.read_state(ref)
-        state.status = JobStatus.RUNNING
-        self.manager.write_state(ref, state)
+        self._mark_running(ref)
 
         try:
             if stream_output:
@@ -476,22 +472,7 @@ class SyftJobRunner:
             self._move_outputs_to_review(run_dir, review_dir)
 
             self._finalize(ref, returncode)
-
-            staging_dir = self.manager.staging_dir(ref)
-            stdout_file = staging_dir / "stdout.txt"
-            stderr_file = staging_dir / "stderr.txt"
-
-            if returncode == 0:
-                print(f" Job {job_name} completed successfully")
-                print(f" Output written to {stdout_file}")
-            else:
-                print(f" Job {job_name} completed with return code {returncode}")
-                print(f" Output written to {stdout_file}")
-                try:
-                    if stderr_file.exists() and stderr_file.stat().st_size > 0:
-                        print(f" Error output written to {stderr_file}")
-                except OSError:
-                    pass
+            self._report_result(ref, returncode)
 
         except subprocess.TimeoutExpired:
             print(f" Job {job_name} timed out after {timeout // 60} minutes")
@@ -499,6 +480,28 @@ class SyftJobRunner:
         except Exception as e:
             print(f" Error executing job {job_name}: {e}")
             self._finalize(ref, -1)
+
+    def _mark_running(self, ref: JobRef) -> None:
+        state = self.manager.read_state(ref)
+        state.status = JobStatus.RUNNING
+        self.manager.write_state(ref, state)
+
+    def _report_result(self, ref: JobRef, returncode: int) -> None:
+        """Print how the job ended and where its logs are."""
+        staging_dir = self.manager.staging_dir(ref)
+        stdout_file = staging_dir / "stdout.txt"
+        stderr_file = staging_dir / "stderr.txt"
+        if returncode == 0:
+            print(f" Job {ref.job_name} completed successfully")
+            print(f" Output written to {stdout_file}")
+            return
+        print(f" Job {ref.job_name} completed with return code {returncode}")
+        print(f" Output written to {stdout_file}")
+        try:
+            if stderr_file.exists() and stderr_file.stat().st_size > 0:
+                print(f" Error output written to {stderr_file}")
+        except OSError:
+            pass
 
     def _capture_traceback(self, ref: JobRef, returncode: int, code_root: Path) -> None:
         """Stage where the job failed, from the traceback it printed.

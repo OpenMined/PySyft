@@ -18,7 +18,10 @@ from syft_job.disclosures import (  # noqa: F401 (re-exported)
 )
 from syft_job.job import JobInfo
 from syft_job.models import JobStatus
-from syft_job.submission import submission_hash  # noqa: F401 (re-exported)
+from syft_job.submission import (  # noqa: F401 (submission_hash re-exported)
+    check_expected_digest,
+    submission_hash,
+)
 
 
 class PartyApprovalStatus(BaseModel):
@@ -231,11 +234,7 @@ class EnclaveJobInfo(JobInfo):
         check_approval_reason(reason)
         approval = self._load_own_approval()
         current = submission_hash(self.job_submission_path)
-        if expected_digest is not None and expected_digest != current:
-            raise ValueError(
-                f"Job '{self.name}' does not match the submission that was checked "
-                f"(expected {expected_digest}, found {current})."
-            )
+        check_expected_digest(self.name, expected_digest, current)
         if approval.status == JobStatus.REJECTED or _approves(approval, current):
             raise ValueError(f"Already in status: {approval.status.value}")
         approval.status = JobStatus.APPROVED

@@ -120,6 +120,19 @@ def submission_hash(submission_dir: Path) -> str:
     return _digest(submission_dir, None, as_sent=False)
 
 
+def check_expected_digest(job_name: str, expected: Optional[str], found: str) -> None:
+    """Raise unless ``expected`` is None or equals ``found``.
+
+    An automated approver passes the hash of the submission it checked, so a
+    job that changed after the check is not approved.
+    """
+    if expected is not None and expected != found:
+        raise ValueError(
+            f"Job '{job_name}' does not match the submission that was checked "
+            f"(expected {expected}, found {found})."
+        )
+
+
 def validate_submission(submission_dir: Path) -> tuple[bool, str]:
     """Check the strict schema: only code/ + run.sh + config.yaml, and no symlinks.
 

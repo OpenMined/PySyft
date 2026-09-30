@@ -21,6 +21,7 @@ from .models import JobState, JobStatus, JobSubmissionMetadata
 from .submission import (
     SUBMISSION_ENTRIES,
     SUBMISSION_HASH_HEADER,
+    InvalidSubmissionError,
     SubmissionRecord,
     code_hash,
     has_listed_files,
@@ -542,29 +543,45 @@ python {entrypoint_path}
             when another process received the job first.
         """
         ref = JobRef(self.current_user_email, ds_email, job_name, protocol_version)
-        now = datetime.now(timezone.utc)
+        # A record without a state means an earlier receipt stopped half-way;
+        # it is finished below, with the hash it recorded.
         record = self.manager.read_submission_record(ref)
         if record is None:
-            # A record without a state means an earlier receipt stopped
-            # half-way; it is finished below, with the hash it recorded.
-            if not self._has_all_files(ref):
-                return None
-            submission_dir = self.manager.submission_dir(ref)
-            valid, reason = self.validate_submission(submission_dir)
-            if not valid:
-                state = self._rejected_state(now, reason)
+            try:
+                record = self._claim_receipt(ref)
+            except InvalidSubmissionError as e:
+                state = self._rejected_state(datetime.now(timezone.utc), str(e))
                 self.manager.write_state(ref, state)
                 return state
-            record = SubmissionRecord(
-                received_hash=submission_hash(submission_dir), received_at=now
-            )
-            if not self.manager.claim_submission_record(ref, record):
+            if record is None:
                 return None
 
         self._lock_submission(ref)
         state = JobState(status=JobStatus.PENDING, received_at=record.received_at)
         self.manager.write_state(ref, state)
         return state
+
+    def _claim_receipt(self, ref: JobRef) -> Optional[SubmissionRecord]:
+        """Record the received hash once every file arrived, and return the record.
+
+        Returns None while files are still arriving, or when another process
+        claimed the receipt first.
+
+        Raises:
+            InvalidSubmissionError: every file arrived, but the submission is
+                outside the schema or holds a symlink.
+        """
+        if not self._has_all_files(ref):
+            return None
+        submission_dir = self.manager.submission_dir(ref)
+        valid, reason = self.validate_submission(submission_dir)
+        if not valid:
+            raise InvalidSubmissionError(reason)
+        record = SubmissionRecord(
+            received_hash=submission_hash(submission_dir),
+            received_at=datetime.now(timezone.utc),
+        )
+        return record if self.manager.claim_submission_record(ref, record) else None
 
     def _has_all_files(self, ref: JobRef) -> bool:
         """Whether every file of the job arrived.
@@ -615,11 +632,11 @@ python {entrypoint_path}
         """
         for ref in self.manager.iter_submission_refs(self.current_user_email):
             if (self.manager.review_dir(ref) / "state.yaml").exists():
-                self._record_pending_job(ref)
+                self._record_received_hash(ref)
                 continue
             self.receive_job(ref.ds_email, ref.job_name, ref.protocol_version)
 
-    def _record_pending_job(self, ref: JobRef) -> None:
+    def _record_received_hash(self, ref: JobRef) -> None:
         """Record the received hash of a pending job that has no record yet."""
         if self.manager.submission_record_path(ref).exists():
             return

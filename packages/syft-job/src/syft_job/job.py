@@ -29,7 +29,7 @@ from .job_repr import (
 from .job_stdout import StdoutViewer
 from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
-from .submission import SubmissionRecord, submission_hash
+from .submission import SubmissionRecord, check_expected_digest, submission_hash
 
 # The files that ``share_logs_with_submitter`` releases.
 STAGED_LOG_FILES = tuple(
@@ -423,11 +423,7 @@ class JobInfo:
                 f"Job '{self.name}' changed after it was received, so it is not "
                 f"approved. Reject it, or ask the submitter to submit it again."
             )
-        if expected_digest is not None and expected_digest != current:
-            raise ValueError(
-                f"Job '{self.name}' does not match the submission that was checked "
-                f"(expected {expected_digest}, found {current})."
-            )
+        check_expected_digest(self.name, expected_digest, current)
         record.approved_hash = current
         record.approved_by = self.current_user_email
         record.approved_at = datetime.now(timezone.utc)
