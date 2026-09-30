@@ -1,9 +1,9 @@
 """Tests for SyftDatasetManager and JobsList repr and indexing."""
 
 import pytest
-
 from syft_rds import SyftRDSClient
 from syft_job.job import JobInfo, JobsList
+
 from dataset_test_utils import create_tmp_dataset_files
 
 
