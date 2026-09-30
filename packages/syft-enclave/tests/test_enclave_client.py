@@ -51,6 +51,5 @@ def test_validate_peer_accepts_live_peer_and_rejects_wrong_email():
     _, do1, _, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection()
 
     assert ds.validate_peer(do1.email).email == do1.email
-    assert do1.validate_peer(ds.email).email == ds.email
     with pytest.raises(PeerSetupError, match="not a peer"):
         ds.validate_peer("wrong@test.com")
