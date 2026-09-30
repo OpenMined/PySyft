@@ -11,6 +11,8 @@ import yaml
 from pydantic import BaseModel, ConfigDict
 
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.peers.peer import Peer
+from syft.sync.utils.waiting import DEFAULT_POLL_INTERVAL, DEFAULT_WAIT_TIMEOUT
 from syft_datasets.dataset_manager import (
     DATASET_COLLECTION_PREFIX,
     PRIVATE_DATASET_COLLECTION_PREFIX,
@@ -22,6 +24,7 @@ from syft_job.job_runner import SyftJobRunner
 from syft_datasets.dataset_manager import SHARE_WITH_ANY, SyftDatasetManager
 from syft_datasets.dataset_ref import DatasetNotFoundError
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
+from syft_rds.waiting import JobCheck, JobStatusArg, wait_for_dataset, wait_for_job
 from syft_rds.config import (
     DATASET_COLLECTION_SPECS,
     MOCK_DATASET_SPEC,
@@ -439,6 +442,84 @@ class SyftRDSClient(BaseModel):
         if self._pre_sync_enabled:
             self.sync_engine.sync()
         return self.job_client.jobs
+
+    # ------------------------------------------------------------------ #
+    # waits for another party (notebook "run all" without re-run cells)
+    # ------------------------------------------------------------------ #
+    def wait_until_peered(
+        self,
+        peer_email: str,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> Peer:
+        """Wait until ``peer_email`` is a live connection, as ``validate_peer`` checks.
+
+        Raises:
+            TimeoutError: the peer did not approve within ``timeout`` seconds.
+            PeerSetupError: waiting cannot help, e.g. the email is not a peer.
+        """
+        return self.sync_engine.wait_until_peered(
+            peer_email, timeout=timeout, poll_interval=poll_interval
+        )
+
+    def wait_until_has_dataset(
+        self,
+        name: str,
+        datasite: str | None = None,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> Any:
+        """Sync until the dataset ``name`` is here, and return it.
+
+        ``datasite`` is the owner; it is needed only when more than one owner
+        has a dataset called ``name``.
+
+        Raises:
+            TimeoutError: the dataset did not arrive within ``timeout`` seconds.
+            ValueError: more than one owner has a dataset called ``name``.
+        """
+        return wait_for_dataset(
+            self.sync,
+            self.dataset_manager.get_all,
+            name,
+            datasite,
+            timeout,
+            poll_interval,
+        )
+
+    def wait_until_has_job(
+        self,
+        job_name: str,
+        user_name: str | None = None,
+        status: JobStatusArg = None,
+        where: JobCheck | None = None,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> Any:
+        """Sync until the job ``job_name`` is here with ``status``, and return it.
+
+        ``user_name`` matches the submitter or the datasite owner; it is needed
+        only when more than one job has the name. ``status`` is one status or
+        several; None accepts any. A job that is done counts for any status
+        before it, because a poll can miss a short status. ``where`` is an
+        extra condition on the job, for example
+        ``lambda job: bool(job.output_paths)``.
+
+        Raises:
+            TimeoutError: the job did not match within ``timeout`` seconds.
+            JobEndedError: the job ended with a final status not in ``status``.
+            ValueError: more than one job matches, or ``status`` is not valid.
+        """
+        return wait_for_job(
+            self.sync,
+            lambda: self.job_client.jobs,
+            job_name,
+            user_name,
+            status,
+            where,
+            timeout,
+            poll_interval,
+        )
 
     def process_approved_jobs(
         self,
