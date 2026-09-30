@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 from pydantic import BaseModel, PrivateAttr
@@ -430,13 +429,6 @@ class ConnectionRouter(BaseModel):
         """Read version file from a peer's SyftBox folder."""
         connection = self.connection_for_datasite_watcher()
         return connection.read_peer_version_file(peer_email)
-
-    def read_peer_version_file_modified_time(
-        self, peer_email: str
-    ) -> Optional[datetime]:
-        """Drive's last-modified time of a peer's version file, or None."""
-        connection = self.connection_for_datasite_watcher()
-        return connection.read_peer_version_file_modified_time(peer_email)
 
     def share_version_file_with_peer(self, peer_email: str) -> None:
         """Share version file with a peer so they can read it."""

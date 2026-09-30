@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -15,11 +15,7 @@ from syft_rds import SyftRDSClient, SyftRDSClientConfig
 
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_list import PeerList
-from syft.sync.version.peer_manager import (
-    DEFAULT_PEER_LOGIN_MAX_AGE,
-    DEFAULT_PEER_POLL_INTERVAL,
-    CompatAction,
-)
+from syft.sync.version.peer_manager import DEFAULT_PEER_POLL_INTERVAL, CompatAction
 from syft_enclaves.attestation.dispatch import policy_for, verify_evidence
 from syft_enclaves.attestation.envelope import AttestationEvidence
 from syft_enclaves.enclave_job_client import EnclaveJobClient
@@ -117,12 +113,11 @@ class SyftEnclaveClient:
     def validate_peer(
         self,
         peer_email: str,
-        max_age: timedelta = DEFAULT_PEER_LOGIN_MAX_AGE,
         timeout: float = 0,
         poll_interval: float = DEFAULT_PEER_POLL_INTERVAL,
     ) -> Peer:
         return self._rds.validate_peer(
-            peer_email, max_age=max_age, timeout=timeout, poll_interval=poll_interval
+            peer_email, timeout=timeout, poll_interval=poll_interval
         )
 
     def attest_peer(

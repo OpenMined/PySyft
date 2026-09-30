@@ -5,7 +5,6 @@ import json
 import logging
 import pickle
 import re
-from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
@@ -320,11 +319,6 @@ def _partition_by_version(
         return [(fid, name) for *_, fid, name in sorted(entries)]
 
     return _ordered(compatible), _ordered(older), _ordered(newer)
-
-
-def _peer_version_file_query(peer_email: str) -> str:
-    """Drive query for the version file that ``peer_email`` owns."""
-    return f"name='{SYFT_VERSION_FILE}' and trashed=false and '{peer_email}' in owners"
 
 
 class GDriveConnection(SyftboxPlatformConnection):
@@ -1898,7 +1892,9 @@ class GDriveConnection(SyftboxPlatformConnection):
     def _get_peer_version_file_id(self, peer_email: str) -> Optional[str]:
         """Find SYFT_version.json file in a peer's /SyftBox folder"""
         # Find the peer's SyftBox folder
-        query = _peer_version_file_query(peer_email)
+        query = (
+            f"name='{SYFT_VERSION_FILE}' and trashed=false and '{peer_email}' in owners"
+        )
         results = execute_with_retries(
             self.drive_service.files().list(q=query, fields="files(id)")
         )
@@ -1942,24 +1938,6 @@ class GDriveConnection(SyftboxPlatformConnection):
         except (ValueError, MigrationError) as e:
             print(f"Warning: could not read the version file of {peer_email}: {e}")
             return None
-
-    def read_peer_version_file_modified_time(
-        self, peer_email: str
-    ) -> Optional[datetime]:
-        """Drive's last-modified time of a peer's version file, or None without one.
-
-        The peer writes the file at each login. Drive sets this time, not the
-        peer's clock.
-        """
-        query = _peer_version_file_query(peer_email)
-        results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id,modifiedTime)")
-        )
-        items = results.get("files", [])
-        if not items:
-            return None
-        # Python 3.10 fromisoformat() does not accept the "Z" suffix.
-        return datetime.fromisoformat(items[0]["modifiedTime"].replace("Z", "+00:00"))
 
     def share_version_file_with_peer(self, peer_email: str) -> None:
         """Share the version file with a peer so they can read it."""
