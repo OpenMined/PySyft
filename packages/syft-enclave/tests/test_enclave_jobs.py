@@ -2,6 +2,8 @@ import json
 import os
 import random
 import tempfile
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -10,6 +12,7 @@ os.environ["PRE_SYNC"] = "false"
 
 from syft_enclaves import SyftEnclaveClient
 from syft_enclaves.enclave_job_info import (
+    EnclaveJobInfo,
     PartyApprovalStatus,
     enclave_approval_file_name,
 )
@@ -497,3 +500,128 @@ def test_rejection_rejects_job_and_withdraws_approval():
     assert enclave.jobs["test_job"].status == "rejected"
     stored = PartyApprovalStatus.load_json(_approval_file(enclave, do2.email))
     assert stored.reason == "uses more data than agreed"
+
+
+def test_enclave_waits_until_every_data_owner_approves(monkeypatch):
+    """The wait reads the enclave's own job status, derived from the approval
+    files, not the raw job state, which stays pending."""
+    enclave, do1, do2 = _job_distributed_to_both_data_owners()
+    sleeps = []
+
+    def approve_on_first_sleep(seconds):
+        sleeps.append(seconds)
+        if len(sleeps) == 1:
+            do1.approve_job(do1.jobs["test_job"])
+            do2.approve_job(do2.jobs["test_job"])
+
+    monkeypatch.setattr(time, "sleep", approve_on_first_sleep)
+
+    job = enclave.wait_until_has_job("test_job", status="approved")
+    assert isinstance(job, EnclaveJobInfo)
+    assert job.status == "approved"
+    assert enclave._local_jobs()["test_job"].status == "pending"
+    assert sleeps == [15]
+
+
+def _serialize_mock_drive(monkeypatch):
+    """Run one mock Drive request at a time; the in-memory store is not thread-safe."""
+    from syft.sync.connections.drive import mock_drive_service
+
+    lock = threading.RLock()
+    for name in dir(mock_drive_service):
+        request_class = getattr(mock_drive_service, name)
+        if isinstance(request_class, type) and "execute" in vars(request_class):
+
+            def execute(self, *args, _original=request_class.execute, **kwargs):
+                with lock:
+                    return _original(self, *args, **kwargs)
+
+            monkeypatch.setattr(request_class, "execute", execute)
+
+
+def test_parties_run_concurrently_and_meet_through_waits(monkeypatch):
+    """Each party runs its cells in its own thread, as in a notebook "run all".
+
+    Nothing orders the threads: only the wait_until_* helpers make each party
+    wait for the others.
+    """
+    _serialize_mock_drive(monkeypatch)
+    enclave, do1, do2, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    wait = {"timeout": 120, "poll_interval": 0.05}
+    done = threading.Event()
+    errors = []
+    results = {}
+
+    def data_owner(do, name, prefix):
+        mock, private = create_tmp_dataset_files(prefix)
+        do.create_dataset(
+            name=name,
+            mock_path=mock,
+            private_path=private,
+            summary=name,
+            users=[ds.email, enclave.email],
+            upload_private=True,
+            sync=False,
+        )
+        do.share_private_dataset(name, enclave.email)
+        do.sync()
+        job = do.wait_until_has_job("test_job", where=lambda j: j.can_approve, **wait)
+        do.approve_job(job)
+        results[do.email] = do.wait_until_has_job(
+            "test_job", status="done", where=lambda j: bool(j.output_paths), **wait
+        )
+
+    def data_scientist():
+        ds.wait_until_has_dataset("dataset1", datasite=do1.email, **wait)
+        ds.wait_until_has_dataset("dataset2", datasite=do2.email, **wait)
+        ds.submit_python_job(
+            enclave.email,
+            create_tmp_code_file(make_job_code(do1.email, do2.email)),
+            "test_job",
+            datasets={do1.email: ["dataset1"], do2.email: ["dataset2"]},
+            share_results_with_do=True,
+        )
+        results[ds.email] = ds.wait_until_has_job(
+            "test_job", status="done", where=lambda j: bool(j.output_paths), **wait
+        )
+
+    def run_enclave():
+        while not done.is_set():
+            enclave.sync()
+            enclave.receive_jobs()
+            enclave.run_jobs()
+            enclave.distribute_results()
+            done.wait(0.05)
+
+    def guarded(target, *args):
+        def run():
+            try:
+                target(*args)
+            except BaseException as e:  # reported to the main thread below
+                errors.append(e)
+                done.set()
+
+        return threading.Thread(target=run, daemon=True)
+
+    enclave_thread = guarded(run_enclave)
+    parties = [
+        guarded(data_owner, do1, "dataset1", "do1"),
+        guarded(data_owner, do2, "dataset2", "do2"),
+        guarded(data_scientist),
+    ]
+    enclave_thread.start()
+    for thread in parties:
+        thread.start()
+    for thread in parties:
+        thread.join(timeout=180)
+    done.set()
+    enclave_thread.join(timeout=30)
+
+    if errors:
+        raise errors[0]
+    assert not any(t.is_alive() for t in parties)
+    for email in (ds.email, do1.email, do2.email):
+        assert results[email].status == "done"
+        assert results[email].output_paths
