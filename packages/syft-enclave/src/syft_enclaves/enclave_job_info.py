@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,7 +18,10 @@ from syft_job.disclosures import (  # noqa: F401 (re-exported)
 )
 from syft_job.job import JobInfo
 from syft_job.models import JobStatus
-from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
+from syft_job.submission import (  # noqa: F401 (submission_hash re-exported)
+    check_expected_digest,
+    submission_hash,
+)
 
 
 class PartyApprovalStatus(BaseModel):
@@ -75,23 +77,6 @@ def load_party_approval(review_dir: Path, party: str) -> PartyApprovalStatus | N
     if approval.party.casefold() != party.casefold():
         return None
     return approval
-
-
-def submission_hash(submission_dir: Path) -> str:
-    """SHA-256 over every file of a job submission: code/, run.sh and config.yaml.
-
-    config.yaml carries the job name, the submission time and the datasets, so
-    one digest pins the job, its code and its dataset set. Permission files are
-    left out: the enclave writes them after the data owners got their copy.
-    """
-    digest = hashlib.sha256()
-    for path in sorted(p for p in submission_dir.rglob("*") if p.is_file()):
-        if path.name == PERMISSION_FILE_NAME:
-            continue
-        digest.update(path.relative_to(submission_dir).as_posix().encode())
-        digest.update(b"\0")
-        digest.update(hashlib.sha256(path.read_bytes()).digest())
-    return digest.hexdigest()
 
 
 class EnclaveJobInfo(JobInfo):
@@ -237,8 +222,12 @@ class EnclaveJobInfo(JobInfo):
         reason: Optional[str] = None,
         approval_method: str = "manual",
         disclosures: DisclosuresArg = None,
+        expected_digest: Optional[str] = None,
     ) -> None:
         """Approve this submission in the DO's own approval file.
+
+        ``expected_digest`` is the submission hash an automated approver
+        checked; the approval is refused unless the submission still has it.
 
         ``disclosures`` names the items in ``DisclosureItem`` that this party
         releases to the other parties. The enclave releases an item only when
@@ -254,6 +243,7 @@ class EnclaveJobInfo(JobInfo):
         check_approval_reason(reason)
         approval = self._load_own_approval()
         current = submission_hash(self.job_submission_path)
+        check_expected_digest(self.name, expected_digest, current)
         if approval.status == JobStatus.REJECTED or _approves(approval, current):
             raise ValueError(f"Already in status: {approval.status.value}")
         approval.status = JobStatus.APPROVED

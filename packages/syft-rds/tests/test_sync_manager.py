@@ -927,10 +927,9 @@ def test_pyproject_folder_job_flow_with_dataset():
         job.approve()
         do_manager.job_runner.process_approved_jobs()
 
-        # Verify .venv was created inside the code folder (by uv sync)
-        assert (job_dir / "code" / ".venv").exists(), (
-            ".venv should be created inside code/ folder by uv sync"
-        )
+        # The job ran from a temporary copy, so uv sync left no .venv in the
+        # submitter's inbox folder.
+        assert not (job_dir / "code" / ".venv").exists()
 
         # Before sharing: DS should not see outputs
         do_manager.sync()
