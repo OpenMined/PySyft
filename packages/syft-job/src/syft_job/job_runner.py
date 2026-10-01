@@ -34,6 +34,15 @@ def get_job_timeout_seconds() -> int:
     )
 
 
+def format_timeout(timeout: float) -> str:
+    """Render a timeout in seconds for humans: whole minutes when exact, else seconds."""
+    if timeout >= 60 and timeout % 60 == 0:
+        minutes = int(timeout // 60)
+        return f"{minutes} minute" if minutes == 1 else f"{minutes} minutes"
+    seconds = f"{timeout:g}"
+    return f"{seconds} second" if seconds == "1" else f"{seconds} seconds"
+
+
 IS_IN_JOB_ENV_VAR = "SYFT_IS_IN_JOB"
 
 # A job runs from a fresh copy of its approved submission in the system temp
@@ -296,7 +305,7 @@ class SyftJobRunner:
                     _kill_process_tree(process.pid)
                     process.wait()
                     timed_out = True
-                    print(f" Job {job_name} timed out after {timeout // 60} minutes")
+                    print(f" Job {job_name} timed out after {format_timeout(timeout)}")
                     stdout_f.write("\n--- PROCESS TIMED OUT ---\n")
                     stderr_f.write("\n--- PROCESS TIMED OUT ---\n")
                     break
@@ -367,7 +376,7 @@ class SyftJobRunner:
             returncode = -1
             stdout = (stdout or "") + "\n--- PROCESS TIMED OUT ---\n"
             stderr = (stderr or "") + "\n--- PROCESS TIMED OUT ---\n"
-            print(f" Job {job_name} timed out after {timeout // 60} minutes")
+            print(f" Job {job_name} timed out after {format_timeout(timeout)}")
 
         staging_dir = self.manager.staging_dir(ref)
         staging_dir.mkdir(parents=True, exist_ok=True)
@@ -503,7 +512,7 @@ class SyftJobRunner:
             self._report_result(ref, returncode)
 
         except subprocess.TimeoutExpired:
-            print(f" Job {job_name} timed out after {timeout // 60} minutes")
+            print(f" Job {job_name} timed out after {format_timeout(timeout)}")
             self._finalize(ref, -1)
         except Exception as e:
             print(f" Error executing job {job_name}: {e}")
