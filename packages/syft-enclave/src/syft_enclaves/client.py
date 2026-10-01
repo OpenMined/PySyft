@@ -15,7 +15,7 @@ from syft_rds import SyftRDSClient, SyftRDSClientConfig
 
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_list import PeerList
-from syft.sync.version.peer_manager import DEFAULT_PEER_POLL_INTERVAL, CompatAction
+from syft.sync.version.peer_manager import CompatAction
 from syft_enclaves.attestation.dispatch import policy_for, verify_evidence
 from syft_enclaves.attestation.envelope import AttestationEvidence
 from syft_enclaves.enclave_job_client import EnclaveJobClient
@@ -110,15 +110,8 @@ class SyftEnclaveClient:
     def reject_peer_request(self, email_or_peer: str | Peer):
         self._rds.reject_peer_request(email_or_peer)
 
-    def validate_peer(
-        self,
-        peer_email: str,
-        timeout: float = 0,
-        poll_interval: float = DEFAULT_PEER_POLL_INTERVAL,
-    ) -> Peer:
-        return self._rds.validate_peer(
-            peer_email, timeout=timeout, poll_interval=poll_interval
-        )
+    def validate_peer(self, peer_email: str) -> Peer:
+        return self._rds.validate_peer(peer_email)
 
     def attest_peer(
         self,
