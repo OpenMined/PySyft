@@ -3,11 +3,19 @@
 import tempfile
 from pathlib import Path
 
+from syft_job.submission import SYNC_EXCLUDED_NAMES
+
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.utils.path_filters import (
+    EXCLUDE_PATTERNS,
     is_excluded_path,
     is_normal_syncable_path,
 )
+
+
+def test_job_submission_hash_skips_what_sync_skips():
+    """syft-job mirrors the list: a job's hash covers exactly what sync carries."""
+    assert SYNC_EXCLUDED_NAMES == EXCLUDE_PATTERNS
 
 
 def test_is_normal_syncable_path_excludes_hidden():

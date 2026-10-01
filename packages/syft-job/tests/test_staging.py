@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 from syft_perms import SyftPermContext
 
 from syft_job.client import JobClient
@@ -14,6 +15,7 @@ from syft_job.disclosures import LOGS_WARNING, DisclosureItem
 from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
 from syft_job.models import JobState, JobStatus
+from syft_job.submission import SUBMISSION_HASH_HEADER, SUBMISSION_RECORD_FILENAME
 from syft_job.traceback_capture import FRAMES_FILENAME
 
 DO_EMAIL = "do@test.org"
@@ -50,22 +52,34 @@ def do_config_for(tmp_path: Path) -> SyftJobConfig:
     )
 
 
-def submit_only(
+def submit_as_ds(
     tmp_path: Path, requested: list[str] | None = None, code: str = OK_PY
-) -> JobInfo:
-    """Submit one job and return it as the DO sees it, still pending."""
+) -> Path:
+    """Submit one job as the DS and return its inbox folder; the DO has not seen it."""
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir(exist_ok=True)
     code_file = tmp_path / "main.py"
     code_file.write_text(code)
     ds_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
-    JobClient(config=ds_config).submit_python_job(
+    return JobClient(config=ds_config).submit_python_job(
         user=DO_EMAIL,
         code_path=str(code_file),
         job_name="test.job",
         request_disclosures=requested,
     )
+
+
+def reload_job(tmp_path: Path) -> JobInfo:
+    """The job as the DO lists it now."""
     return JobClient(config=do_config_for(tmp_path)).jobs[0]
+
+
+def submit_only(
+    tmp_path: Path, requested: list[str] | None = None, code: str = OK_PY
+) -> JobInfo:
+    """Submit one job and return it as the DO sees it, still pending."""
+    submit_as_ds(tmp_path, requested, code)
+    return reload_job(tmp_path)
 
 
 def run_approved(tmp_path: Path, share_logs: bool | None = None) -> None:
@@ -376,3 +390,134 @@ def test_approve_refuses_items_as_reason(tmp_path):
     with pytest.raises(TypeError, match="disclosures="):
         job.approve([LOGS])
     assert job.status == "pending"
+
+
+# -- the submission is DS-writable: received complete, approved and run by hash --
+
+ATTACK_RUN_SH = "echo attacker ran\n"
+
+
+def drop_declared_hash(inbox: Path) -> None:
+    """Remove the submission hash from config.yaml, as a DS client before it did."""
+    config = inbox / "config.yaml"
+    data = yaml.safe_load(config.read_text())
+    del data["headers"][SUBMISSION_HASH_HEADER]
+    config.write_text(yaml.safe_dump(data))
+
+
+def test_edit_after_approval_fails_run(tmp_path):
+    job = submit_only(tmp_path)
+    job.approve()
+    (job.job_submission_path / "run.sh").write_text(ATTACK_RUN_SH)
+
+    run_approved(tmp_path)
+
+    job = reload_job(tmp_path)
+    assert job.status == "failed"
+    assert not (job.job_staging_path / "stdout.txt").exists()
+
+
+@pytest.mark.parametrize(
+    "change, error",
+    [
+        ("inbox_edited", "changed after it was received"),
+        ("other_digest_checked", "does not match the submission that was checked"),
+    ],
+)
+def test_approve_refuses_changed_submission(tmp_path, change, error):
+    job = submit_only(tmp_path)
+    expected_digest = None
+    if change == "inbox_edited":
+        (job.job_submission_path / "run.sh").write_text(ATTACK_RUN_SH)
+    else:
+        expected_digest = "0" * 64
+
+    with pytest.raises(ValueError, match=error):
+        job.approve(expected_digest=expected_digest)
+    assert reload_job(tmp_path).status == "pending"
+
+
+@pytest.mark.parametrize("origin", ["deposit_then_rerun", "approved_before_hashes"])
+def test_job_without_approved_hash_goes_back_to_pending(tmp_path, origin):
+    job = submit_only(tmp_path)
+    if origin == "deposit_then_rerun":
+        result = tmp_path / "result.txt"
+        result.write_text("result")
+        job.accept_by_depositing_result(str(result))
+        reload_job(tmp_path).rerun()
+    else:
+        job.approve()
+        (job.job_staging_path / SUBMISSION_RECORD_FILENAME).unlink()
+
+    run_approved(tmp_path)
+
+    job = reload_job(tmp_path)
+    assert job.status == "pending"
+    assert not (job.job_staging_path / "stdout.txt").exists()
+
+
+@pytest.mark.parametrize("client", ["declares_hash", "declares_no_hash"])
+def test_job_is_received_only_when_complete(tmp_path, client):
+    """Sync delivers a job in batches: a job missing a file is not received yet."""
+    inbox = submit_as_ds(tmp_path)
+    if client == "declares_no_hash":
+        drop_declared_hash(inbox)
+    main_py = inbox / "code" / "main.py"
+    main_py.unlink()
+
+    assert reload_job(tmp_path).status == "received"
+
+    main_py.write_text(OK_PY)
+    assert reload_job(tmp_path).status == "pending"
+
+
+def test_symlink_is_rejected_at_receipt(tmp_path):
+    inbox = submit_as_ds(tmp_path)
+    drop_declared_hash(inbox)
+    secret = tmp_path / "secret.txt"
+    secret.write_text("private")
+    (inbox / "code" / "link.txt").symlink_to(secret)
+
+    job = reload_job(tmp_path)
+    assert job.status == "rejected"
+    assert "symlink" in job.review_reason
+
+
+def test_inbox_is_read_only_for_submitter_after_receipt(tmp_path):
+    job = submit_only(tmp_path)
+    JobClient(config=do_config_for(tmp_path)).setup_ds_job_folder_as_do(DS_EMAIL)
+    datasite = tmp_path / "SyftBox" / DO_EMAIL
+    ctx = SyftPermContext(datasite=datasite)
+    received = job.job_submission_path.relative_to(datasite)
+    not_yet_submitted = received.parent / "next.job"
+
+    assert not ctx.open(f"{received}/run.sh").has_write_access(DS_EMAIL)
+    assert ctx.open(f"{received}/run.sh").has_read_access(DS_EMAIL)
+    assert ctx.open(f"{not_yet_submitted}/run.sh").has_write_access(DS_EMAIL)
+
+
+def test_local_copy_error_leaves_job_approved(tmp_path, monkeypatch, caplog):
+    """A disk or permission error is not a changed submission: retry next cycle."""
+    submit_only(tmp_path).approve()
+
+    def disk_full(source, target):
+        raise OSError("disk full")
+
+    monkeypatch.setattr("syft_job.job_runner.copy_submission", disk_full)
+    run_approved(tmp_path)
+
+    job = reload_job(tmp_path)
+    assert job.status == "approved"
+    assert not (job.job_staging_path / "stdout.txt").exists()
+    assert "disk full" in caplog.text
+
+
+def test_pending_job_from_before_hashes_gets_record_and_lock(tmp_path):
+    job = submit_only(tmp_path)
+    (job.job_staging_path / SUBMISSION_RECORD_FILENAME).unlink()
+    (job.job_submission_path / PERMISSION_FILE_NAME).unlink()
+
+    job = reload_job(tmp_path)
+
+    assert (job.job_staging_path / SUBMISSION_RECORD_FILENAME).exists()
+    assert (job.job_submission_path / PERMISSION_FILE_NAME).exists()

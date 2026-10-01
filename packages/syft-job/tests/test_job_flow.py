@@ -203,23 +203,23 @@ def test_job_reject(tmp_path: Path):
 
 
 def test_submission_validation(tmp_path: Path):
-    """Test that invalid submissions are auto-rejected during scan_inbox."""
+    """A complete submission with an entry outside the schema is rejected at receipt.
+
+    A missing entry may still be arriving, so only an extra one is final.
+    """
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
+    code_file = tmp_path / "main.py"
+    code_file.write_text(MAIN_PY)
 
     do_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DO_EMAIL)
-    do_client = JobClient(config=do_config)
-
-    # Manually create an invalid submission (missing code/ directory)
-    submission_path = do_config.get_job_submission_dir(DO_EMAIL, DS_EMAIL, "bad.job")
-    submission_path.mkdir(parents=True)
-    (submission_path / "config.yaml").write_text(
-        "name: bad.job\ntype: python\nsubmitted_by: ds@test.org\nsubmitted_at: '2025-01-01T00:00:00+00:00'\n"
+    ds_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
+    submission_path = JobClient(config=ds_config).submit_python_job(
+        user=DO_EMAIL, code_path=str(code_file), job_name="bad.job"
     )
-    (submission_path / "run.sh").write_text("#!/bin/bash\necho hi")
-    # Missing code/ directory — should fail validation
+    (submission_path / "extra.txt").write_text("not part of the schema")
 
-    do_client.scan_inbox()
+    JobClient(config=do_config).scan_inbox()
 
     review_state = (
         do_config.get_review_job_dir(DO_EMAIL, DS_EMAIL, "bad.job") / "state.yaml"

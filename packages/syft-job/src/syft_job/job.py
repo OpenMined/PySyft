@@ -29,6 +29,7 @@ from .job_repr import (
 from .job_stdout import StdoutViewer
 from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .submission import SubmissionRecord, check_expected_digest, submission_hash
 
 # The files that ``share_logs_with_submitter`` releases.
 STAGED_LOG_FILES = tuple(
@@ -340,10 +341,15 @@ class JobInfo:
         reason: Optional[str] = None,
         approval_method: str = "manual",
         disclosures: DisclosuresArg = None,
+        expected_digest: Optional[str] = None,
     ) -> None:
         """
         Approve a job by updating state.yaml in review/.
         Only the datasite owner can approve jobs.
+
+        The approval covers the submission as it was received, and records its
+        hash. The runner executes only a copy that matches it, so a later edit
+        of the submitter's inbox never runs.
 
         Args:
             reason: Optional reason for approval (recorded as review_reason).
@@ -352,9 +358,12 @@ class JobInfo:
                 releases. Only the items that the submitter requested are
                 stored, so a later edit of the request cannot add items.
                 Omit the argument to release nothing.
+            expected_digest: The submission hash an automated approver checked.
+                The approval is refused unless the submission still has it.
 
         Raises:
-            ValueError: If job is not in pending status
+            ValueError: If job is not in pending status, was not fully
+                received, or changed after it was received or was checked
             PermissionError: If the current user is not authorized to approve
             TypeError: If reason is not a string
         """
@@ -370,11 +379,13 @@ class JobInfo:
                 f"Current job is in {self.datasite_owner_email}'s folder."
             )
 
-        # The grant goes first, so the runner never sees an approval without it.
+        # The approved hash and the grant go first, so the runner never sees an
+        # approved state without them. The hash check runs before any write.
+        record = self._record_approved_hash(approval_method, expected_digest)
         self._write_disclosures(disclosures)
         self._state.status = JobStatus.APPROVED
         self._state.approved_by = self.current_user_email
-        self._state.approved_at = datetime.now(timezone.utc)
+        self._state.approved_at = record.approved_at
         self._state.approval_method = approval_method
         self._state.review_reason = reason
         self._client.manager.write_state(self._ref, self._state)
@@ -382,6 +393,43 @@ class JobInfo:
         print("   Status    : approved → will run on next process cycle")
         print("\n⏳ Next step: run process_approved_jobs() to execute it.")
         print("   client.process_approved_jobs(share_outputs_with_submitter=True)")
+
+    def record_approval(self, approval_method: str) -> None:
+        """Record the received submission as approved, without changing the state.
+
+        For an owner whose approval is decided elsewhere, such as an enclave,
+        which runs a job once every data owner approved this same submission.
+        The runner executes a job only with this record.
+
+        Raises:
+            ValueError: If the job was not fully received, or changed after.
+        """
+        self._record_approved_hash(approval_method, expected_digest=None)
+
+    def _record_approved_hash(
+        self, approval_method: str, expected_digest: Optional[str]
+    ) -> SubmissionRecord:
+        """Check the submission is the one received, and record it as approved."""
+        manager = self._client.manager
+        record = manager.read_submission_record(self._ref)
+        if record is None:
+            raise ValueError(
+                f"Job '{self.name}' was not fully received yet. List the jobs "
+                f"again once all its files arrived, then approve."
+            )
+        current = submission_hash(self.job_submission_path)
+        if current != record.received_hash:
+            raise ValueError(
+                f"Job '{self.name}' changed after it was received, so it is not "
+                f"approved. Reject it, or ask the submitter to submit it again."
+            )
+        check_expected_digest(self.name, expected_digest, current)
+        record.approved_hash = current
+        record.approved_by = self.current_user_email
+        record.approved_at = datetime.now(timezone.utc)
+        record.approval_method = approval_method
+        manager.write_submission_record(self._ref, record)
+        return record
 
     def reject(self, reason: Optional[str] = None) -> None:
         """
@@ -467,6 +515,10 @@ class JobInfo:
     def rerun(self) -> None:
         """
         Rerun a job by cleaning up review/ artifacts and resetting to approved.
+
+        The runner executes a fresh copy that must still match the approved
+        hash. A job that was never approved, for example one accepted by
+        depositing a result, is sent back to pending by the runner instead.
 
         Raises:
             ValueError: If job is not in done or failed status
