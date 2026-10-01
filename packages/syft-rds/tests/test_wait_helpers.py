@@ -4,6 +4,7 @@ import time
 from types import SimpleNamespace
 
 import pytest
+from dataset_test_utils import create_tmp_dataset_files
 from syft_rds import SyftRDSClient
 from syft_rds.waiting import JobEndedError, describe_job, find_dataset, find_job
 
@@ -192,8 +193,6 @@ def test_ds_waits_until_job_is_done(tmp_path, clock):
 
 
 def test_ds_waits_until_dataset_is_shared(clock):
-    from dataset_test_utils import create_tmp_dataset_files
-
     ds, do = _pair()
     mock_path, private_path, readme_path = create_tmp_dataset_files()
 

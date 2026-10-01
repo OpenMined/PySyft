@@ -69,7 +69,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _attest_options(
+def _given_shorthands(
     expected_image_digest: str | None,
     expected_data_owners: list[str] | None,
     expected_email: str | None,
@@ -180,7 +180,7 @@ class SyftEnclaveClient:
                 the shorthands.
         """
 
-        given = _attest_options(
+        given = _given_shorthands(
             expected_image_digest, expected_data_owners, expected_email, policy
         )
         evidence = self._peer_evidence(peer_email)
@@ -246,7 +246,7 @@ class SyftEnclaveClient:
             TimeoutError: no evidence was published within ``timeout`` seconds.
             AttestationError: the evidence fails verification.
         """
-        _attest_options(
+        _given_shorthands(
             expected_image_digest, expected_data_owners, expected_email, policy
         )
         wait_for(
