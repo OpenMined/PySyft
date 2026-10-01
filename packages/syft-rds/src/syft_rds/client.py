@@ -501,7 +501,9 @@ class SyftRDSClient(BaseModel):
         ``user_name`` matches the submitter or the datasite owner; it is needed
         only when more than one job has the name. ``status`` is one status or
         several; None accepts any. A job that is done counts for any status
-        before it, because a poll can miss a short status. ``where`` is an
+        before it, because a poll can miss a short status. To wait for a
+        status before ``done``, also pass the statuses after it, for example
+        ``("approved", "running")``. ``where`` is an
         extra condition on the job, for example
         ``lambda job: bool(job.output_paths)``.
 
