@@ -10,6 +10,7 @@ import pytest
 
 os.environ["PRE_SYNC"] = "false"
 
+from syft.sync.connections.drive import mock_drive_service
 from syft_enclaves import SyftEnclaveClient
 from syft_enclaves.enclave_job_info import (
     EnclaveJobInfo,
@@ -525,8 +526,6 @@ def test_enclave_waits_until_every_data_owner_approves(monkeypatch):
 
 def _serialize_mock_drive(monkeypatch):
     """Run one mock Drive request at a time; the in-memory store is not thread-safe."""
-    from syft.sync.connections.drive import mock_drive_service
-
     lock = threading.RLock()
     for name in dir(mock_drive_service):
         request_class = getattr(mock_drive_service, name)
