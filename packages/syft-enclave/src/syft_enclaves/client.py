@@ -110,6 +110,9 @@ class SyftEnclaveClient:
     def reject_peer_request(self, email_or_peer: str | Peer):
         self._rds.reject_peer_request(email_or_peer)
 
+    def validate_peer(self, peer_email: str) -> Peer:
+        return self._rds.validate_peer(peer_email)
+
     def attest_peer(
         self,
         peer_email: str,
