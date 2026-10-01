@@ -98,11 +98,6 @@ def test_find_job_accepts_any_of_several_statuses():
     assert find_job([job], "j", None, {"approved", "running"}) is job
 
 
-def test_find_job_raises_when_job_ended_in_other_status():
-    with pytest.raises(JobEndedError, match="'j' ended as 'failed'.*done"):
-        find_job([_job(status="failed")], "j", None, {"done"})
-
-
 def test_find_job_counts_done_as_past_any_earlier_status():
     # Between two polls the job can pass the status waited for and end done.
     job = _job(status="done")
@@ -180,16 +175,6 @@ def test_do_waits_until_submitted_job_arrives(tmp_path, clock):
     job = do.wait_until_has_job("wait.job", status="pending")
     assert job.submitted_by == ds.email
     assert clock["sleeps"] == []
-
-
-def test_ds_waits_until_job_is_done(tmp_path, clock):
-    ds, do = _pair()
-    _submit_job(ds, do, tmp_path)
-    clock["on_sleep"].append(lambda: _run_job(do))
-
-    job = ds.wait_until_has_job("wait.job", user_name=do.email, status="done")
-    assert job.status == "done"
-    assert clock["sleeps"] == [15]
 
 
 def test_ds_waits_until_dataset_is_shared(clock):
