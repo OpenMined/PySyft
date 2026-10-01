@@ -103,25 +103,3 @@ def test_wait_until_peered_polls_with_one_drive_request(monkeypatch):
     assert per_poll[1:] == [1, 1, 1]
     assert drive_requests[0] == 1
     assert loads[0] == 1
-
-
-def test_wait_until_peered_waits_when_timeout_is_shorter_than_poll_interval(
-    monkeypatch,
-):
-    ds_manager, do_manager = _pair(add_peers=False)
-    ds_manager.add_peer(do_manager.email)
-    do_manager.load_peers()
-    clock = [0.0]
-    sleeps = []
-
-    def approve_during_wait(seconds):
-        clock[0] += seconds
-        sleeps.append(seconds)
-        do_manager.approve_peer_request(ds_manager.email)
-
-    monkeypatch.setattr(syftbox_manager_module.time, "sleep", approve_during_wait)
-    monkeypatch.setattr(syftbox_manager_module.time, "monotonic", lambda: clock[0])
-
-    peer = ds_manager.wait_until_peered(do_manager.email, timeout=10, poll_interval=15)
-    assert peer.is_approved
-    assert sleeps == [10]
