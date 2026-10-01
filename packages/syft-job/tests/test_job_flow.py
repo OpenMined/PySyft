@@ -237,7 +237,7 @@ while True:
 """
 
 
-def test_timeout_does_not_hang_runner(tmp_path: Path):
+def test_timeout_does_not_hang_runner(tmp_path: Path, capsys):
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
 
@@ -263,3 +263,4 @@ def test_timeout_does_not_hang_runner(tmp_path: Path):
     # 3s job timeout + venv setup + tree-kill cleanup should fit well under 60s.
     assert elapsed < 60, f"process_approved_jobs took {elapsed:.1f}s — likely hung"
     assert do_client.jobs[0].status == "failed"
+    assert "timed out after 3 seconds" in capsys.readouterr().out
