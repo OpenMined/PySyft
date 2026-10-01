@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import subprocess
@@ -44,6 +45,14 @@ NO_APPROVED_HASH_REASON = (
     "approved without a record of the approved submission; review and approve it again"
 )
 CHANGED_SUBMISSION_REASON = "the submission changed after it was approved"
+
+logger = logging.getLogger(__name__)
+
+
+def _remove_run_dir(run_dir: Path | None) -> None:
+    """Remove a run copy and its temp folder; None is a no-op."""
+    if run_dir is not None:
+        shutil.rmtree(run_dir.parent, ignore_errors=True)
 
 
 def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
@@ -405,7 +414,7 @@ class SyftJobRunner:
         try:
             self._run_approved_job(ref, run_dir, stream_output, timeout)
         finally:
-            shutil.rmtree(run_dir.parent, ignore_errors=True)
+            _remove_run_dir(run_dir)
         return True
 
     def _approved_run_dir(self, ref: JobRef) -> Path | None:
@@ -414,22 +423,40 @@ class SyftJobRunner:
         No approved hash: the job was approved before hashes were recorded, or
         never approved (a deposited result that was rerun). It goes back to
         pending, to be approved again. A copy that does not match the approved
-        hash fails the job.
+        hash fails the job. A local error while copying (disk, permissions,
+        temp folder) leaves the job approved, so the next cycle retries it.
         """
         record = self.manager.read_submission_record(ref)
         if record is None or record.approved_hash is None:
             self._return_to_pending(ref)
             return None
+        run_dir = None
+        try:
+            run_dir = self._copy_to_run_dir(ref)
+            verified = submission_hash(run_dir) == record.approved_hash
+        except InvalidSubmissionError:
+            verified = False
+        except OSError as e:
+            _remove_run_dir(run_dir)
+            logger.warning(f"Job {ref.job_name} not run, it stays approved: {e}")
+            return None
+        if not verified:
+            _remove_run_dir(run_dir)
+            self._fail_unverified(ref)
+            return None
+        return run_dir
+
+    def _copy_to_run_dir(self, ref: JobRef) -> Path:
+        """Copy the job's inbox into a fresh folder outside the SyftBox.
+
+        The folder is removed when the copy fails, before the error is raised.
+        """
         run_dir = Path(tempfile.mkdtemp(prefix=RUN_DIR_PREFIX)) / RUN_DIR_NAME
         try:
             copy_submission(self.manager.submission_dir(ref), run_dir)
-            verified = submission_hash(run_dir) == record.approved_hash
-        except (OSError, InvalidSubmissionError):
-            verified = False
-        if not verified:
-            shutil.rmtree(run_dir.parent, ignore_errors=True)
-            self._fail_unverified(ref)
-            return None
+        except BaseException:
+            _remove_run_dir(run_dir)
+            raise
         return run_dir
 
     def _return_to_pending(self, ref: JobRef) -> None:

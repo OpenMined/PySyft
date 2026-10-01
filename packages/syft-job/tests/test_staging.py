@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 from syft_perms import SyftPermContext
 
 from syft_job.client import JobClient
@@ -493,3 +494,30 @@ def test_inbox_is_read_only_for_submitter_after_receipt(tmp_path):
     assert not ctx.open(f"{received}/run.sh").has_write_access(DS_EMAIL)
     assert ctx.open(f"{received}/run.sh").has_read_access(DS_EMAIL)
     assert ctx.open(f"{not_yet_submitted}/run.sh").has_write_access(DS_EMAIL)
+
+
+def test_local_copy_error_leaves_job_approved(tmp_path, monkeypatch, caplog):
+    """A disk or permission error is not a changed submission: retry next cycle."""
+    submit_only(tmp_path).approve()
+
+    def disk_full(source, target):
+        raise OSError("disk full")
+
+    monkeypatch.setattr("syft_job.job_runner.copy_submission", disk_full)
+    run_approved(tmp_path)
+
+    job = reload_job(tmp_path)
+    assert job.status == "approved"
+    assert not (job.job_staging_path / "stdout.txt").exists()
+    assert "disk full" in caplog.text
+
+
+def test_pending_job_from_before_hashes_gets_record_and_lock(tmp_path):
+    job = submit_only(tmp_path)
+    (job.job_staging_path / SUBMISSION_RECORD_FILENAME).unlink()
+    (job.job_submission_path / PERMISSION_FILE_NAME).unlink()
+
+    job = reload_job(tmp_path)
+
+    assert (job.job_staging_path / SUBMISSION_RECORD_FILENAME).exists()
+    assert (job.job_submission_path / PERMISSION_FILE_NAME).exists()

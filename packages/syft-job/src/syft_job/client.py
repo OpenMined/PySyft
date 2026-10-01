@@ -638,7 +638,13 @@ python {entrypoint_path}
             self.receive_job(ref.ds_email, ref.job_name, ref.protocol_version)
 
     def _record_received_hash(self, ref: JobRef) -> None:
-        """Record the received hash of a pending job that has no record yet."""
+        """Record the received hash of a pending job that has no record yet.
+
+        Such a job was received before submission hashes existed, or was sent
+        back to pending because it was approved before them. It gets the lock
+        a new job gets at receipt, once: only the process that creates the
+        record writes it.
+        """
         if self.manager.submission_record_path(ref).exists():
             return
         state = self.manager.read_state(ref)
@@ -648,7 +654,8 @@ python {entrypoint_path}
             received_hash=submission_hash(self.manager.submission_dir(ref)),
             received_at=state.received_at or datetime.now(timezone.utc),
         )
-        self.manager.claim_submission_record(ref, record)
+        if self.manager.claim_submission_record(ref, record):
+            self._lock_submission(ref)
 
     # ──────────────────────────────────────────────
     # Listing
