@@ -43,10 +43,6 @@ from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 
 logger = logging.getLogger(__name__)
 
-# Seconds between polls when validate_peer() waits. Each poll is one Drive
-# request; a peer approval takes longer than this anyway.
-DEFAULT_PEER_POLL_INTERVAL = 15
-
 
 # Key wrapping the DID document inside a published encryption bundle file.
 BUNDLE_FILE_KEY = "public_encryption_bundle"
@@ -946,18 +942,6 @@ class PeerManager(BaseModel):
         again from nothing, so ``validate_peer`` does not warn about them.
         """
         self._states_at_start = {}
-
-    def peer_may_be_valid(self, peer_email: str) -> bool:
-        """Tell if ``validate_peer`` can pass after the next ``load_peers()``.
-
-        Use it between polls, after ``validate_peer`` raised
-        ``PeerNotReadyError``. It makes one Drive request and does not load
-        the peers. It is True when the peer created its folders for this
-        datasite, which it does when it approves our request.
-        """
-        return any(
-            p.email == peer_email for p in self.connection_router.get_peer_requests()
-        )
 
     def check_peer_request_exists(self, email: str) -> bool:
         """Check if a peer request exists for the given email."""
