@@ -104,6 +104,9 @@ def structure_claims(claims: dict[str, Any]) -> dict[str, Any]:
             "image_reference": container.get("image_reference"),
             "restart_policy": container.get("restart_policy"),
             "env": container.get("env"),
+            # The tee-env-* values the operator set, which is what the
+            # verifier reads the enclave's email and data owners from.
+            "env_override": container.get("env_override"),
         },
         "gce": {
             "project_id": gce.get("project_id"),
