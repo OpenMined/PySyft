@@ -23,7 +23,7 @@ from syft_enclaves.evidence.tinfoil import (
     TINFOIL_ATTESTATION_PATH,
     TINFOIL_CONFIG_PATH,
 )
-from syft_enclaves.receipt.claims import CLAIMS_FILE_NAME
+from syft_enclaves.receipt.claims import CLAIMS_FILE_NAME, JOB_CLAIM_KEYS
 from syft_enclaves.receipt.dsse import canonical_json
 from syft_enclaves.receipt.key_binding import key_binding
 
@@ -39,7 +39,8 @@ def build_receipt(claims: dict[str, Any], **sections: Any) -> dict[str, Any]:
 
     The enclave's sections go last, so a claim can never replace one of them.
     """
-    predicate = {k: claims[k] for k in ("model", "eval", "results") if k in claims}
+    predicate = {k: v for k, v in claims.items() if k in JOB_CLAIM_KEYS}
+    predicate.pop("subject", None)
     predicate.update(sections)
     return {
         "_type": STATEMENT_TYPE,

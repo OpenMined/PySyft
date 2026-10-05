@@ -118,12 +118,21 @@ def test_upload_to_rekor_returns_the_existing_entry_on_conflict(monkeypatch):
 
 CLAIMS = {
     "subject": [{"name": "base + adapter", "digest": {"sha256": "ab" * 32}}],
-    "model": {
-        "base": {"name": "base"},
-        "adapter": {"name": "dataset1"},
-        "sampling": {"temperature": 0.8},
+    "evalPipeline": {
+        "models": [
+            {"id": "base", "role": "base", "name": "base"},
+            {"id": "adapter", "role": "adapter", "appliesTo": ["base"]},
+        ],
+        "config": [
+            {
+                "id": "sampling",
+                "kind": "sampling",
+                "appliesTo": ["base", "adapter"],
+                "params": {"temperature": 0.8},
+            }
+        ],
     },
-    "eval": {"evalSet": {"name": "dataset2"}},
+    "evalDataset": {"name": "dataset2"},
     "results": {"counts": {"submitted": 1, "completed": 1, "failed": 0}},
 }
 
@@ -229,7 +238,7 @@ def test_finished_job_ships_a_signed_receipt(mock_tinfoil):
     assert receipt["_type"] == "https://in-toto.io/Statement/v1"
     assert receipt["subject"] == CLAIMS["subject"]
     predicate = receipt["predicate"]
-    for key in ("model", "eval", "results"):
+    for key in ("evalPipeline", "evalDataset", "results"):
         assert predicate[key] == CLAIMS[key]
 
     assert predicate["job"]["code"][0]["content"] == code
