@@ -194,9 +194,9 @@ def _attestation(
 ) -> dict[str, Any]:
     """The hardware report as the enclave booted with it, and its reference.
 
-    The boot report does not name the run key: its report data is the shim's
-    TLS key. ``keyBinding`` is a second report that does, fetched once per boot
-    with the run key as its nonce (``receipt/key_binding.py``).
+    The boot report does not name the receipt key. ``keyBinding`` is a second
+    report that does, fetched once per boot: it lists the attested key that
+    signs receipts (``receipt/key_binding.py``).
     """
     document = json.loads(TINFOIL_ATTESTATION_PATH.read_text())
     kind = str(document.get("format", ""))

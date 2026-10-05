@@ -12,10 +12,13 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
 import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 os.environ["PRE_SYNC"] = "false"
 
 from syft_enclaves import SyftEnclaveClient
+from syft_enclaves.attestation.nonce import identity_key_bytes, identity_private_key
 from syft_enclaves.enclave_job_info import (
     PartyApprovalStatus,
     enclave_approval_file_name,
@@ -35,11 +38,14 @@ from syft_enclaves.receipt.collect import policy_section
 from syft_enclaves.receipt.dsse import canonical_json
 from syft_enclaves.evidence.tinfoil import fetch_nonce_bound_document
 from syft_enclaves.receipt.key_binding import (
+    CRYPTO_MATERIAL_V1,
+    KEY_SPKI_V1,
     NONCE_SCHEME,
     REPORT_DATA_V1,
     key_binding,
     run_key_nonce,
 )
+from syft_enclaves.receipt.signing_key import ATTESTED_KEY_ID, receipt_signing_key
 from syft_enclaves.receipt.writer import ReceiptSettings
 from test_enclave_jobs import (
     create_tmp_code_file,
@@ -57,15 +63,13 @@ def _keys():
 
 
 def _receipt_for(bundle):
-    from syft_enclaves.attestation.nonce import identity_key_bytes
-
     public_key = identity_key_bytes(bundle).hex()
     return build_receipt({}, job={"name": "j"}, execution={"runPublicKey": public_key})
 
 
 def test_signed_receipt_verifies_and_rejects_tampering():
     jwks, bundle = _keys()
-    envelope = sign_receipt(_receipt_for(bundle), jwks)
+    envelope = sign_receipt(_receipt_for(bundle), identity_private_key(jwks))
     assert envelope["payloadType"] == "application/vnd.in-toto+json"
     assert verify_receipt(envelope, bundle)["predicate"]["job"]["name"] == "j"
 
@@ -79,7 +83,7 @@ def test_signed_receipt_verifies_and_rejects_tampering():
 def test_receipt_from_another_key_is_rejected():
     jwks, bundle = _keys()
     _, other_bundle = _keys()
-    envelope = sign_receipt(_receipt_for(bundle), jwks)
+    envelope = sign_receipt(_receipt_for(bundle), identity_private_key(jwks))
     with pytest.raises(ReceiptVerificationError):
         verify_receipt(envelope, other_bundle)
 
@@ -94,7 +98,7 @@ class _Response(io.BytesIO):
 
 def test_upload_to_rekor_sends_a_dsse_entry(monkeypatch):
     jwks, bundle = _keys()
-    envelope = sign_receipt(_receipt_for(bundle), jwks)
+    envelope = sign_receipt(_receipt_for(bundle), identity_private_key(jwks))
     sent = {}
 
     def urlopen(request, timeout):
@@ -102,7 +106,7 @@ def test_upload_to_rekor_sends_a_dsse_entry(monkeypatch):
         return _Response(json.dumps({"abc": {"logIndex": 7}}).encode())
 
     monkeypatch.setattr("urllib.request.urlopen", urlopen)
-    entry = upload_to_rekor(envelope, bundle)
+    entry = upload_to_rekor(envelope)
 
     assert entry["uuid"] == "abc" and entry["logIndex"] == 7
     content = sent["body"]["spec"]["proposedContent"]
@@ -113,7 +117,7 @@ def test_upload_to_rekor_sends_a_dsse_entry(monkeypatch):
 
 def test_upload_to_rekor_returns_the_existing_entry_on_conflict(monkeypatch):
     jwks, bundle = _keys()
-    envelope = sign_receipt(_receipt_for(bundle), jwks)
+    envelope = sign_receipt(_receipt_for(bundle), identity_private_key(jwks))
     headers = Message()
     headers["Location"] = "/api/v1/log/entries/abc"
 
@@ -123,7 +127,7 @@ def test_upload_to_rekor_returns_the_existing_entry_on_conflict(monkeypatch):
         raise urllib.error.HTTPError("u", 409, "conflict", headers, io.BytesIO())
 
     monkeypatch.setattr("urllib.request.urlopen", urlopen)
-    assert upload_to_rekor(envelope, bundle)["logIndex"] == 7
+    assert upload_to_rekor(envelope)["logIndex"] == 7
 
 
 CLAIMS = {
@@ -327,6 +331,17 @@ def test_results_do_not_arrive_ahead_of_the_receipt():
     assert names == {"result.json", RECEIPT_FILE_NAME}
 
 
+def _spki_hex(public_key):
+    return public_key.public_bytes(
+        serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
+    ).hex()
+
+
+def _crypto_material(public_key, key_id=ATTESTED_KEY_ID):
+    item = {"id": key_id, "format": KEY_SPKI_V1, "data": _spki_hex(public_key)}
+    return canonical_json({"format": CRYPTO_MATERIAL_V1, "items": [item]})
+
+
 def _v3_document(nonce_hex, crypto_material=b"{}", device_evidence=b"{}"):
     """A v3 document whose report data is derived from *nonce_hex*, unsigned."""
     digest = hashlib.sha256(REPORT_DATA_V1.encode())
@@ -345,39 +360,94 @@ def _v3_document(nonce_hex, crypto_material=b"{}", device_evidence=b"{}"):
     }
 
 
-def _bound_receipt(bundle, document):
-    from syft_enclaves.attestation.nonce import identity_key_bytes
+def _attested_document(listed_key, nonce_key=None):
+    """A document listing *listed_key*, with the nonce of *nonce_key* (or it)."""
+    raw = (nonce_key or listed_key).public_bytes_raw()
+    return _v3_document(run_key_nonce(raw), _crypto_material(listed_key))
 
-    binding = {"nonceScheme": NONCE_SCHEME, "document": document}
+
+def _bound_receipt(public_key, document):
+    binding = {
+        "nonceScheme": NONCE_SCHEME,
+        "keyId": ATTESTED_KEY_ID,
+        "document": document,
+    }
     execution = {
-        "runPublicKey": identity_key_bytes(bundle).hex(),
+        "runPublicKey": public_key.public_bytes_raw().hex(),
         "attestation": {"keyBinding": binding},
     }
     return build_receipt({}, job={"name": "j"}, execution=execution)
 
 
-def test_key_binding_to_the_run_key_verifies_and_others_are_rejected():
-    from syft_enclaves.attestation.nonce import identity_key_bytes
+def test_receipt_signed_with_the_attested_key_verifies_without_a_bundle():
+    key = Ed25519PrivateKey.generate()
+    document = _attested_document(key.public_key())
+    envelope = sign_receipt(_bound_receipt(key.public_key(), document), key)
+    assert verify_receipt(envelope)["predicate"]["job"]["name"] == "j"
 
-    jwks, bundle = _keys()
-    document = _v3_document(run_key_nonce(identity_key_bytes(bundle)))
-    assert verify_receipt(sign_receipt(_bound_receipt(bundle, document), jwks), bundle)
+    forger = Ed25519PrivateKey.generate()
+    forged = sign_receipt(_bound_receipt(key.public_key(), document), forger)
+    with pytest.raises(ReceiptVerificationError, match="no signature"):
+        verify_receipt(forged)
 
-    other_key = _v3_document(run_key_nonce(b"other key"))
+
+def test_key_binding_that_does_not_list_the_receipt_key_is_rejected():
+    key = Ed25519PrivateKey.generate()
+    other = Ed25519PrivateKey.generate().public_key()
+
+    lists_other = _attested_document(other, nonce_key=key.public_key())
+    with pytest.raises(ReceiptVerificationError, match="does not list"):
+        verify_receipt(sign_receipt(_bound_receipt(key.public_key(), lists_other), key))
+
+    wrong_nonce = _attested_document(key.public_key(), nonce_key=other)
     with pytest.raises(ReceiptVerificationError, match="nonce"):
-        verify_receipt(sign_receipt(_bound_receipt(bundle, other_key), jwks), bundle)
+        verify_receipt(sign_receipt(_bound_receipt(key.public_key(), wrong_nonce), key))
 
-    document["challenge"]["report_data"] = "00" * 64
+    tampered = _attested_document(key.public_key())
+    tampered["challenge"]["report_data"] = "00" * 64
     with pytest.raises(ReceiptVerificationError, match="report data"):
-        verify_receipt(sign_receipt(_bound_receipt(bundle, document), jwks), bundle)
+        verify_receipt(sign_receipt(_bound_receipt(key.public_key(), tampered), key))
 
 
-def _serve_attestation(socket_path, requests):
+def test_unbound_receipt_needs_the_bundle():
+    jwks, bundle = _keys()
+    envelope = sign_receipt(_receipt_for(bundle), identity_private_key(jwks))
+    with pytest.raises(ReceiptVerificationError, match="no key binding"):
+        verify_receipt(envelope)
+
+
+def test_on_tinfoil_receipts_are_signed_with_the_attested_key(tmp_path, monkeypatch):
+    from syft_enclaves.receipt import signing_key
+
+    jwks, _ = _keys()
+    monkeypatch.setattr(signing_key, "ATTESTED_KEY_DIR", tmp_path)
+    monkeypatch.setattr(
+        signing_key.TinfoilProvider, "detect", classmethod(lambda c: True)
+    )
+    with pytest.raises(RuntimeError, match="No attested key"):
+        receipt_signing_key(jwks)
+
+    key = Ed25519PrivateKey.generate()
+    (tmp_path / "private_key.pem").write_bytes(
+        key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+    )
+    signing = receipt_signing_key(jwks)
+    assert (
+        signing.public_key().public_bytes_raw() == key.public_key().public_bytes_raw()
+    )
+
+
+def _serve_attestation(socket_path, requests, listed_key=None):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
             requests.append(self.path)
             nonce = self.path.split("nonce=", 1)[1]
-            body = json.dumps(_v3_document(nonce)).encode()
+            material = _crypto_material(listed_key) if listed_key else b"{}"
+            body = json.dumps(_v3_document(nonce, material)).encode()
             self.send_response(200)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
@@ -396,9 +466,13 @@ def _serve_attestation(socket_path, requests):
     return server
 
 
-def test_bound_document_is_fetched_from_the_local_socket_for_our_nonce():
+def _socket_path():
     # AF_UNIX paths are capped near 104 bytes, too short for macOS tmp_path.
-    socket_path = Path(tempfile.mkdtemp(dir="/tmp")) / "a.sock"
+    return Path(tempfile.mkdtemp(dir="/tmp")) / "a.sock"
+
+
+def test_bound_document_is_fetched_from_the_local_socket_for_our_nonce():
+    socket_path = _socket_path()
     requests = []
     server = _serve_attestation(socket_path, requests)
     try:
@@ -411,10 +485,27 @@ def test_bound_document_is_fetched_from_the_local_socket_for_our_nonce():
     assert document["challenge"]["nonce"] == nonce
 
 
-def test_receipt_goes_out_unbound_when_the_socket_is_missing(monkeypatch, tmp_path):
+def test_key_binding_names_the_attested_key(monkeypatch):
+    key = Ed25519PrivateKey.generate().public_key()
+    socket_path = _socket_path()
+    monkeypatch.setattr(
+        "syft_enclaves.evidence.tinfoil.TINFOIL_ATTESTATION_SOCKET", socket_path
+    )
+    server = _serve_attestation(socket_path, [], listed_key=key)
+    key_binding.cache_clear()
+    try:
+        binding = key_binding(key.public_bytes_raw())
+    finally:
+        server.shutdown()
+        server.server_close()
+    assert binding["keyId"] == ATTESTED_KEY_ID
+
+
+def test_receipt_is_not_signed_when_the_socket_is_missing(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "syft_enclaves.evidence.tinfoil.TINFOIL_ATTESTATION_SOCKET",
         tmp_path / "missing.sock",
     )
     key_binding.cache_clear()
-    assert key_binding(b"run key") is None
+    with pytest.raises(RuntimeError, match="key binding report"):
+        key_binding(b"run key")

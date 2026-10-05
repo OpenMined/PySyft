@@ -1,11 +1,10 @@
-"""Signing a receipt as a DSSE envelope, with the enclave's identity key.
+"""Signing a receipt as a DSSE envelope.
 
 DSSE (Dead Simple Signing Envelope) is the envelope Sigstore's Rekor log
 accepts with a key of your own, and Rekor checks the signature itself before it
-logs the entry. The key is the Ed25519 identity key from the enclave's syft
-bundle — the one the attestation already binds (see ``attestation/nonce.py``),
-so a verifier who attested the enclave already holds the key that checks the
-receipt.
+logs the entry. On Tinfoil the key is the enclave's attested key, which the
+report in the receipt's ``keyBinding`` lists (``receipt/key_binding.py``).
+Elsewhere it is the Ed25519 identity key from the enclave's syft bundle.
 """
 
 from __future__ import annotations
@@ -13,13 +12,16 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from typing import Any
+from typing import Any, Optional
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
 
-from syft_enclaves.attestation.nonce import identity_key_bytes, identity_private_key
+from syft_enclaves.attestation.nonce import identity_key_bytes
 from syft_enclaves.receipt.key_binding import KeyBindingError, check_key_binding
 
 #: The payload is an in-toto statement, so it carries in-toto's payload type.
@@ -44,9 +46,8 @@ def key_id(public_key: bytes) -> str:
     return hashlib.sha256(public_key).hexdigest()
 
 
-def sign_receipt(receipt: dict[str, Any], private_jwks: dict[str, Any]) -> dict:
-    """Wrap *receipt* in a DSSE envelope signed with the identity key."""
-    private_key = identity_private_key(private_jwks)
+def sign_receipt(receipt: dict[str, Any], private_key: Ed25519PrivateKey) -> dict:
+    """Wrap *receipt* in a DSSE envelope signed with *private_key*."""
     public_key = private_key.public_key().public_bytes_raw()
     payload = canonical_json(receipt)
     signature = private_key.sign(pae(PAYLOAD_TYPE, payload))
@@ -59,36 +60,53 @@ def sign_receipt(receipt: dict[str, Any], private_jwks: dict[str, Any]) -> dict:
     }
 
 
-def verify_receipt(envelope: dict[str, Any], bundle: dict[str, Any]) -> dict:
-    """Check *envelope* was signed by *bundle*'s identity key; return the receipt.
+def verify_receipt(
+    envelope: dict[str, Any], bundle: Optional[dict[str, Any]] = None
+) -> dict:
+    """Check *envelope* was signed by the enclave's receipt key; return the receipt.
 
-    Pass the bundle attestation verified (``result.verified_key_bundle``): that
-    is what makes a valid signature mean "this enclave wrote it".
+    A receipt from Tinfoil names its key through the report in its
+    ``keyBinding``, so it needs no *bundle*. One without a binding was signed
+    with the identity key, and needs the bundle attestation verified
+    (``result.verified_key_bundle``) to check it against.
     """
     if envelope.get("payloadType") != PAYLOAD_TYPE:
         raise ReceiptVerificationError(
             f"not a receipt: {envelope.get('payloadType')!r}"
         )
-    public_key = identity_key_bytes(bundle)
     payload = base64.b64decode(envelope["payload"])
-    _verify_any_signature(envelope.get("signatures") or [], public_key, payload)
     receipt = json.loads(payload)
-    execution = receipt.get("predicate", {}).get("execution", {})
-    if execution.get("runPublicKey") != public_key.hex():
-        raise ReceiptVerificationError("runPublicKey does not match the signing key")
-    _check_key_binding(execution, public_key)
+    public_key = _signing_key(receipt, bundle)
+    _verify_any_signature(envelope.get("signatures") or [], public_key, payload)
     return receipt
 
 
-def _check_key_binding(execution: dict[str, Any], public_key: bytes) -> None:
-    """A receipt without a binding passes; one with a wrong binding does not."""
-    binding = (execution.get("attestation") or {}).get("keyBinding")
-    if binding is None:
-        return
+def run_public_key(receipt: dict[str, Any]) -> bytes:
+    execution = receipt.get("predicate", {}).get("execution", {})
     try:
-        check_key_binding(binding, public_key)
-    except KeyBindingError as e:
-        raise ReceiptVerificationError(f"key binding: {e}") from e
+        return bytes.fromhex(execution["runPublicKey"])
+    except (KeyError, TypeError, ValueError) as e:
+        raise ReceiptVerificationError("the receipt names no runPublicKey") from e
+
+
+def _signing_key(receipt: dict[str, Any], bundle: Optional[dict[str, Any]]) -> bytes:
+    """The key the receipt must be signed with, once it is tied to the enclave."""
+    public_key = run_public_key(receipt)
+    execution = receipt["predicate"]["execution"]
+    binding = (execution.get("attestation") or {}).get("keyBinding")
+    if binding is not None:
+        try:
+            check_key_binding(binding, public_key)
+        except KeyBindingError as e:
+            raise ReceiptVerificationError(f"key binding: {e}") from e
+        return public_key
+    if bundle is None:
+        raise ReceiptVerificationError(
+            "the receipt has no key binding; pass the attested key bundle"
+        )
+    if public_key != identity_key_bytes(bundle):
+        raise ReceiptVerificationError("runPublicKey does not match the signing key")
+    return public_key
 
 
 def _verify_any_signature(signatures: list, public_key: bytes, payload: bytes) -> None:
@@ -100,12 +118,11 @@ def _verify_any_signature(signatures: list, public_key: bytes, payload: bytes) -
             return
         except (InvalidSignature, KeyError, ValueError):
             continue
-    raise ReceiptVerificationError("no signature matches the enclave's identity key")
+    raise ReceiptVerificationError("no signature matches the receipt key")
 
 
-def public_key_pem(bundle: dict[str, Any]) -> bytes:
-    """The identity key as PEM, the form Rekor wants for a verifier."""
-    public_key = Ed25519PublicKey.from_public_bytes(identity_key_bytes(bundle))
-    return public_key.public_bytes(
+def public_key_pem(public_key: bytes) -> bytes:
+    """A raw Ed25519 key as PEM, the form Rekor wants for a verifier."""
+    return Ed25519PublicKey.from_public_bytes(public_key).public_bytes(
         serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
     )
