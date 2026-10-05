@@ -15,7 +15,7 @@
 # containers with `attestation: true` (see below).
 cvm-version: 0.14.12
 cpus: 2
-memory: 8192
+memory: 16384
 gpus: 0
 
 # Keys Tinfoil makes inside the enclave at boot; the private half never leaves
@@ -31,7 +31,7 @@ containers:
     # Must be pinned by digest: this is what the attestation commits to and
     # what a data owner verifies. `just tinfoil-release` fills it in from the
     # image it just pushed.
-    image: docker.io/openminedreleasebot/syft-enclave@sha256:c0a492675e116429e2cc3241beaae84da8fb953a6980abdea4ee2df6cfc88fbc
+    image: docker.io/openminedreleasebot/syft-enclave@sha256:ea890c9b82dbf3c80c703d717dabe2c3db0c48b53bd269801984807732446864
     restart: always
     networks: [egress]
     # Tinfoil runs containers with a read-only root filesystem, but syft needs
