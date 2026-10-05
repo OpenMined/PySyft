@@ -189,7 +189,56 @@ def _run_job_with_receipts(before_distribute=None, extra_code=""):
     return enclave, do1, do2, ds, code, privates
 
 
-def test_finished_job_ships_a_signed_receipt():
+class _OnTinfoil:
+    @staticmethod
+    def detect():
+        return True
+
+
+def _write_private_pem(path, key):
+    path.write_bytes(
+        key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+    )
+
+
+def _write_tinfoil_files(tmp_path):
+    config = tmp_path / "config.yml"
+    config.write_text("cvm-version: 0.14.12\ncontainers:\n  - image: x/y@sha256:abc\n")
+    report = tmp_path / "attestation.json"
+    report.write_text(json.dumps({"format": "x/sev-snp-guest/v2", "body": "Zm9v"}))
+    return config, report
+
+
+@pytest.fixture
+def mock_tinfoil(tmp_path, monkeypatch):
+    """Run as if on Tinfoil: an attested key, its config, report and socket."""
+    from syft_enclaves.receipt import collect, signing_key
+
+    key = Ed25519PrivateKey.generate()
+    _write_private_pem(tmp_path / "private_key.pem", key)
+    config, report = _write_tinfoil_files(tmp_path)
+    socket_path = _socket_path()
+    monkeypatch.setattr(signing_key, "ATTESTED_KEY_DIR", tmp_path)
+    monkeypatch.setattr(signing_key, "TinfoilProvider", _OnTinfoil)
+    monkeypatch.setattr(collect, "TinfoilProvider", _OnTinfoil)
+    monkeypatch.setattr(collect, "TINFOIL_CONFIG_PATH", config)
+    monkeypatch.setattr(collect, "TINFOIL_ATTESTATION_PATH", report)
+    monkeypatch.setattr(
+        "syft_enclaves.evidence.tinfoil.TINFOIL_ATTESTATION_SOCKET", socket_path
+    )
+    server = _serve_attestation(socket_path, [], listed_key=key.public_key())
+    key_binding.cache_clear()
+    yield key
+    server.shutdown()
+    server.server_close()
+    key_binding.cache_clear()
+
+
+def test_finished_job_ships_a_signed_receipt(mock_tinfoil):
     enclave, do1, do2, ds, code, privates = _run_job_with_receipts(
         extra_code=CLAIMS_CODE
     )
@@ -197,8 +246,7 @@ def test_finished_job_ships_a_signed_receipt():
     by_name = {p.name: p for p in job.output_paths}
     assert RECEIPT_FILE_NAME in by_name
 
-    bundle = enclave._rds.peer_manager.peer_store.get_public_bundle()
-    receipt = verify_receipt(json.loads(by_name[RECEIPT_FILE_NAME].read_text()), bundle)
+    receipt = verify_receipt(json.loads(by_name[RECEIPT_FILE_NAME].read_text()))
 
     assert receipt["_type"] == "https://in-toto.io/Statement/v1"
     assert receipt["subject"] == CLAIMS["subject"]
@@ -214,7 +262,10 @@ def test_finished_job_ships_a_signed_receipt():
     assert outputs == {"result.json": by_name["result.json"].read_text()}
 
     execution = predicate["execution"]
-    assert execution["platform"] == "local"
+    assert execution["platform"] == "tinfoil-containers"
+    attested = mock_tinfoil.public_key().public_bytes_raw()
+    assert execution["runPublicKey"] == attested.hex()
+    assert execution["attestation"]["keyBinding"]["keyId"] == ATTESTED_KEY_ID
     assert execution["startedAt"] and execution["finishedAt"]
 
     assert predicate["parties"] == [
@@ -289,7 +340,7 @@ def test_execution_on_tinfoil_records_the_config_and_report(tmp_path, monkeypatc
     assert execution["attestation"]["keyBinding"] == {"bound": "01"}
 
 
-def test_a_failed_receipt_ships_the_error_instead(monkeypatch):
+def test_a_failed_receipt_ships_the_error_instead(monkeypatch, mock_tinfoil):
     def fail(*args, **kwargs):
         raise RuntimeError("no key to sign with")
 
@@ -301,7 +352,7 @@ def test_a_failed_receipt_ships_the_error_instead(monkeypatch):
     assert "result.json" in by_name
 
 
-def test_receipt_lists_only_approvals_of_the_submission_that_ran():
+def test_receipt_lists_only_approvals_of_the_submission_that_ran(mock_tinfoil):
     def mark_second_approval_stale(enclave, ds):
         review_dir = enclave._local_jobs()["test_job"].job_review_path
         path = review_dir / enclave_approval_file_name(enclave.data_owners[1])
@@ -313,14 +364,13 @@ def test_receipt_lists_only_approvals_of_the_submission_that_ran():
         before_distribute=mark_second_approval_stale
     )
     by_name = {p.name: p for p in ds.jobs["test_job"].output_paths}
-    bundle = enclave._rds.peer_manager.peer_store.get_public_bundle()
-    receipt = verify_receipt(json.loads(by_name[RECEIPT_FILE_NAME].read_text()), bundle)
+    receipt = verify_receipt(json.loads(by_name[RECEIPT_FILE_NAME].read_text()))
 
     approvals = receipt["predicate"]["consent"]["approvals"]
     assert [a["party"] for a in approvals] == [enclave.data_owners[0]]
 
 
-def test_results_do_not_arrive_ahead_of_the_receipt():
+def test_results_do_not_arrive_ahead_of_the_receipt(mock_tinfoil):
     def check(enclave, ds):
         enclave.sync()
         ds.sync()
@@ -428,13 +478,7 @@ def test_on_tinfoil_receipts_are_signed_with_the_attested_key(tmp_path, monkeypa
         receipt_signing_key(jwks)
 
     key = Ed25519PrivateKey.generate()
-    (tmp_path / "private_key.pem").write_bytes(
-        key.private_bytes(
-            serialization.Encoding.PEM,
-            serialization.PrivateFormat.PKCS8,
-            serialization.NoEncryption(),
-        )
-    )
+    _write_private_pem(tmp_path / "private_key.pem", key)
     signing = receipt_signing_key(jwks)
     assert (
         signing.public_key().public_bytes_raw() == key.public_key().public_bytes_raw()
