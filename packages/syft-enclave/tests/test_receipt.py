@@ -18,7 +18,6 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 os.environ["PRE_SYNC"] = "false"
 
 from syft_enclaves import SyftEnclaveClient
-from syft_enclaves.attestation.nonce import identity_key_bytes, identity_private_key
 from syft_enclaves.enclave_job_info import (
     PartyApprovalStatus,
     enclave_approval_file_name,
@@ -40,10 +39,9 @@ from syft_enclaves.evidence.tinfoil import fetch_nonce_bound_document
 from syft_enclaves.receipt.key_binding import (
     CRYPTO_MATERIAL_V1,
     KEY_SPKI_V1,
-    NONCE_SCHEME,
     REPORT_DATA_V1,
+    bound_key,
     key_binding,
-    run_key_nonce,
 )
 from syft_enclaves.receipt.signing_key import ATTESTED_KEY_ID, receipt_signing_key
 from syft_enclaves.receipt.writer import ReceiptSettings
@@ -54,38 +52,28 @@ from test_enclave_jobs import (
 )
 
 
-def _keys():
-    import syft_crypto_python as syc
-
-    keys = syc.SyftRecoveryKey.generate().derive_keys()
-    bundle = keys.to_public_bundle().to_did_document("did:syft:enclave@openmined.org")
-    return keys.to_jwks(), bundle
-
-
-def _receipt_for(bundle):
-    public_key = identity_key_bytes(bundle).hex()
-    return build_receipt({}, job={"name": "j"}, execution={"runPublicKey": public_key})
+def _signed_receipt(key=None):
+    key = key or Ed25519PrivateKey.generate()
+    return sign_receipt(_bound_receipt(_attested_document(key.public_key())), key)
 
 
 def test_signed_receipt_verifies_and_rejects_tampering():
-    jwks, bundle = _keys()
-    envelope = sign_receipt(_receipt_for(bundle), identity_private_key(jwks))
+    envelope = _signed_receipt()
     assert envelope["payloadType"] == "application/vnd.in-toto+json"
-    assert verify_receipt(envelope, bundle)["predicate"]["job"]["name"] == "j"
+    assert verify_receipt(envelope)["predicate"]["job"]["name"] == "j"
 
     tampered = json.loads(base64.b64decode(envelope["payload"]))
     tampered["predicate"]["job"]["name"] = "other"
     envelope["payload"] = base64.b64encode(json.dumps(tampered).encode()).decode()
     with pytest.raises(ReceiptVerificationError):
-        verify_receipt(envelope, bundle)
+        verify_receipt(envelope)
 
 
-def test_receipt_from_another_key_is_rejected():
-    jwks, bundle = _keys()
-    _, other_bundle = _keys()
-    envelope = sign_receipt(_receipt_for(bundle), identity_private_key(jwks))
-    with pytest.raises(ReceiptVerificationError):
-        verify_receipt(envelope, other_bundle)
+def test_receipt_without_a_key_binding_is_rejected():
+    key = Ed25519PrivateKey.generate()
+    envelope = sign_receipt(build_receipt({}, job={"name": "j"}), key)
+    with pytest.raises(ReceiptVerificationError, match="no key binding"):
+        verify_receipt(envelope)
 
 
 class _Response(io.BytesIO):
@@ -97,8 +85,7 @@ class _Response(io.BytesIO):
 
 
 def test_upload_to_rekor_sends_a_dsse_entry(monkeypatch):
-    jwks, bundle = _keys()
-    envelope = sign_receipt(_receipt_for(bundle), identity_private_key(jwks))
+    envelope = _signed_receipt()
     sent = {}
 
     def urlopen(request, timeout):
@@ -116,8 +103,7 @@ def test_upload_to_rekor_sends_a_dsse_entry(monkeypatch):
 
 
 def test_upload_to_rekor_returns_the_existing_entry_on_conflict(monkeypatch):
-    jwks, bundle = _keys()
-    envelope = sign_receipt(_receipt_for(bundle), identity_private_key(jwks))
+    envelope = _signed_receipt()
     headers = Message()
     headers["Location"] = "/api/v1/log/entries/abc"
 
@@ -189,12 +175,6 @@ def _run_job_with_receipts(before_distribute=None, extra_code=""):
     return enclave, do1, do2, ds, code, privates
 
 
-class _OnTinfoil:
-    @staticmethod
-    def detect():
-        return True
-
-
 def _write_private_pem(path, key):
     path.write_bytes(
         key.private_bytes(
@@ -223,8 +203,6 @@ def mock_tinfoil(tmp_path, monkeypatch):
     config, report = _write_tinfoil_files(tmp_path)
     socket_path = _socket_path()
     monkeypatch.setattr(signing_key, "ATTESTED_KEY_DIR", tmp_path)
-    monkeypatch.setattr(signing_key, "TinfoilProvider", _OnTinfoil)
-    monkeypatch.setattr(collect, "TinfoilProvider", _OnTinfoil)
     monkeypatch.setattr(collect, "TINFOIL_CONFIG_PATH", config)
     monkeypatch.setattr(collect, "TINFOIL_ATTESTATION_PATH", report)
     monkeypatch.setattr(
@@ -264,8 +242,7 @@ def test_finished_job_ships_a_signed_receipt(mock_tinfoil):
     execution = predicate["execution"]
     assert execution["platform"] == "tinfoil-containers"
     attested = mock_tinfoil.public_key().public_bytes_raw()
-    assert execution["runPublicKey"] == attested.hex()
-    assert execution["attestation"]["keyBinding"]["keyId"] == ATTESTED_KEY_ID
+    assert bound_key(execution["attestation"]["keyBinding"]) == attested
     assert execution["startedAt"] and execution["finishedAt"]
 
     assert predicate["parties"] == [
@@ -326,7 +303,6 @@ def test_execution_on_tinfoil_records_the_config_and_report(tmp_path, monkeypatc
     report.write_text(json.dumps({"format": "x/sev-snp-guest/v2", "body": "Zm9v"}))
     monkeypatch.setattr(collect, "TINFOIL_CONFIG_PATH", config)
     monkeypatch.setattr(collect, "TINFOIL_ATTESTATION_PATH", report)
-    monkeypatch.setattr(collect.TinfoilProvider, "detect", classmethod(lambda c: True))
     monkeypatch.setattr(collect, "key_binding", lambda key: {"bound": key.hex()})
 
     execution = collect.execution_section(None, None, b"\x01", "Org/repo", "v1")
@@ -410,76 +386,46 @@ def _v3_document(nonce_hex, crypto_material=b"{}", device_evidence=b"{}"):
     }
 
 
-def _attested_document(listed_key, nonce_key=None):
-    """A document listing *listed_key*, with the nonce of *nonce_key* (or it)."""
-    raw = (nonce_key or listed_key).public_bytes_raw()
-    return _v3_document(run_key_nonce(raw), _crypto_material(listed_key))
+def _attested_document(listed_key, key_id=ATTESTED_KEY_ID):
+    return _v3_document("ab" * 32, _crypto_material(listed_key, key_id))
 
 
-def _bound_receipt(public_key, document):
-    binding = {
-        "nonceScheme": NONCE_SCHEME,
-        "keyId": ATTESTED_KEY_ID,
-        "document": document,
-    }
-    execution = {
-        "runPublicKey": public_key.public_bytes_raw().hex(),
-        "attestation": {"keyBinding": binding},
-    }
+def _bound_receipt(document):
+    execution = {"attestation": {"keyBinding": document}}
     return build_receipt({}, job={"name": "j"}, execution=execution)
 
 
-def test_receipt_signed_with_the_attested_key_verifies_without_a_bundle():
+def test_receipt_signed_by_another_key_is_rejected():
     key = Ed25519PrivateKey.generate()
     document = _attested_document(key.public_key())
-    envelope = sign_receipt(_bound_receipt(key.public_key(), document), key)
-    assert verify_receipt(envelope)["predicate"]["job"]["name"] == "j"
-
     forger = Ed25519PrivateKey.generate()
-    forged = sign_receipt(_bound_receipt(key.public_key(), document), forger)
     with pytest.raises(ReceiptVerificationError, match="no signature"):
-        verify_receipt(forged)
+        verify_receipt(sign_receipt(_bound_receipt(document), forger))
 
 
 def test_key_binding_that_does_not_list_the_receipt_key_is_rejected():
     key = Ed25519PrivateKey.generate()
-    other = Ed25519PrivateKey.generate().public_key()
 
-    lists_other = _attested_document(other, nonce_key=key.public_key())
-    with pytest.raises(ReceiptVerificationError, match="does not list"):
-        verify_receipt(sign_receipt(_bound_receipt(key.public_key(), lists_other), key))
-
-    wrong_nonce = _attested_document(key.public_key(), nonce_key=other)
-    with pytest.raises(ReceiptVerificationError, match="nonce"):
-        verify_receipt(sign_receipt(_bound_receipt(key.public_key(), wrong_nonce), key))
+    other_id = _attested_document(key.public_key(), key_id="other-key")
+    with pytest.raises(ReceiptVerificationError, match="no attested key"):
+        verify_receipt(sign_receipt(_bound_receipt(other_id), key))
 
     tampered = _attested_document(key.public_key())
     tampered["challenge"]["report_data"] = "00" * 64
     with pytest.raises(ReceiptVerificationError, match="report data"):
-        verify_receipt(sign_receipt(_bound_receipt(key.public_key(), tampered), key))
+        verify_receipt(sign_receipt(_bound_receipt(tampered), key))
 
 
-def test_unbound_receipt_needs_the_bundle():
-    jwks, bundle = _keys()
-    envelope = sign_receipt(_receipt_for(bundle), identity_private_key(jwks))
-    with pytest.raises(ReceiptVerificationError, match="no key binding"):
-        verify_receipt(envelope)
-
-
-def test_on_tinfoil_receipts_are_signed_with_the_attested_key(tmp_path, monkeypatch):
+def test_receipts_are_signed_with_the_attested_key(tmp_path, monkeypatch):
     from syft_enclaves.receipt import signing_key
 
-    jwks, _ = _keys()
     monkeypatch.setattr(signing_key, "ATTESTED_KEY_DIR", tmp_path)
-    monkeypatch.setattr(
-        signing_key.TinfoilProvider, "detect", classmethod(lambda c: True)
-    )
     with pytest.raises(RuntimeError, match="No attested key"):
-        receipt_signing_key(jwks)
+        receipt_signing_key()
 
     key = Ed25519PrivateKey.generate()
     _write_private_pem(tmp_path / "private_key.pem", key)
-    signing = receipt_signing_key(jwks)
+    signing = receipt_signing_key()
     assert (
         signing.public_key().public_bytes_raw() == key.public_key().public_bytes_raw()
     )
@@ -520,7 +466,7 @@ def test_bound_document_is_fetched_from_the_local_socket_for_our_nonce():
     requests = []
     server = _serve_attestation(socket_path, requests)
     try:
-        nonce = run_key_nonce(b"run key")
+        nonce = "ab" * 32
         document = fetch_nonce_bound_document(nonce, socket_path)
     finally:
         server.shutdown()
@@ -538,11 +484,13 @@ def test_key_binding_names_the_attested_key(monkeypatch):
     server = _serve_attestation(socket_path, [], listed_key=key)
     key_binding.cache_clear()
     try:
-        binding = key_binding(key.public_bytes_raw())
+        document = key_binding(key.public_bytes_raw())
+        with pytest.raises(RuntimeError, match="does not list"):
+            key_binding(b"\x00" * 32)
     finally:
         server.shutdown()
         server.server_close()
-    assert binding["keyId"] == ATTESTED_KEY_ID
+    assert bound_key(document) == key.public_bytes_raw()
 
 
 def test_receipt_is_not_signed_when_the_socket_is_missing(monkeypatch, tmp_path):

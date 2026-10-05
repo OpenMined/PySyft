@@ -14,18 +14,17 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from syft_enclaves.receipt.dsse import public_key_pem, run_public_key
+from syft_enclaves.receipt.dsse import public_key_pem, signing_key
 
 REKOR_URL = "https://rekor.sigstore.dev"
 SEARCH_URL = "https://search.sigstore.dev/?logIndex={}"
 
 
 def upload_to_rekor(envelope: dict[str, Any], rekor_url: str = REKOR_URL) -> dict:
-    """Log *envelope*, signed by the key it names. Returns the entry.
+    """Log *envelope*, signed by the key its report lists. Returns the entry.
 
     Check the receipt with ``verify_receipt`` first: Rekor only checks the
-    signature matches the key the receipt names, not that the key is the
-    enclave's.
+    signature matches that key.
 
     Uploading the same envelope twice is not an error: Rekor answers 409 with
     the existing entry, and that entry is returned.
@@ -49,7 +48,7 @@ def upload_to_rekor(envelope: dict[str, Any], rekor_url: str = REKOR_URL) -> dic
 
 def _dsse_entry(envelope: dict[str, Any]) -> dict:
     receipt = json.loads(base64.b64decode(envelope["payload"]))
-    verifier = base64.b64encode(public_key_pem(run_public_key(receipt))).decode()
+    verifier = base64.b64encode(public_key_pem(signing_key(receipt))).decode()
     return {
         "apiVersion": "0.0.1",
         "kind": "dsse",

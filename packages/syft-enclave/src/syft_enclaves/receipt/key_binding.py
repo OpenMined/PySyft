@@ -2,13 +2,13 @@
 
 The receipt key is a Tinfoil attested key (``receipt/signing_key.py``), and
 every v3 report lists it in its ``crypto_material``. The enclave asks Tinfoil
-for one such report, with the sha256 of the key as its nonce, and puts it in
-each receipt. That report says "this key was made inside an enclave running the
-measured config", and the key signs every receipt of this boot, so one report
-covers all of them.
+for one such report and puts it in each receipt. That report says "this key was
+made inside an enclave running the measured config", and the key signs every
+receipt of this boot, so one report covers all of them. The report is the only
+place the receipt names its key.
 
-The verifier here checks that the document lists the receipt's key under our
-key id, and that its report data is derived from the nonce and those sections.
+The verifier here reads the key the document lists under our key id, after
+checking the report data is derived from the nonce and those sections.
 It does not check the hardware signature on the report: the tinfoil Python SDK
 cannot appraise v3 documents yet, only tinfoil-go can.
 """
@@ -20,6 +20,7 @@ import binascii
 import functools
 import hashlib
 import json
+import secrets
 from typing import Any
 
 from cryptography.hazmat.primitives import serialization
@@ -28,19 +29,13 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from syft_enclaves.evidence.tinfoil import fetch_nonce_bound_document
 from syft_enclaves.receipt.signing_key import ATTESTED_KEY_ID
 
-#: How the nonce is derived from the receipt key.
-NONCE_SCHEME = "sha256-run-public-key/1"
 REPORT_DATA_V1 = "https://tinfoil.sh/report-data/v1"
 CRYPTO_MATERIAL_V1 = "https://tinfoil.sh/crypto-material/v1"
 KEY_SPKI_V1 = "https://tinfoil.sh/key/spki/v1"
 
 
 class KeyBindingError(Exception):
-    """The key binding does not name the receipt's key."""
-
-
-def run_key_nonce(run_public_key: bytes) -> str:
-    return hashlib.sha256(run_public_key).hexdigest()
+    """The key binding report is malformed or lists no receipt key."""
 
 
 @functools.lru_cache(maxsize=1)
@@ -49,33 +44,24 @@ def key_binding(run_public_key: bytes) -> dict[str, Any]:
 
     Cached, so it is fetched once per key, which is once per boot. Raises when
     Tinfoil cannot give one: a receipt nobody can tie to the enclave is no
-    receipt, so the job ships ``receipt_error.txt`` instead.
+    receipt, so the job ships ``receipt_error.txt`` instead. The nonce is
+    random: the report only has to list the key, not answer a challenge.
     """
     try:
-        document = fetch_nonce_bound_document(run_key_nonce(run_public_key))
+        document = fetch_nonce_bound_document(secrets.token_hex(32))
     except (OSError, ValueError) as e:
         raise RuntimeError(f"Could not fetch the key binding report: {e}") from e
-    binding = {
-        "nonceScheme": NONCE_SCHEME,
-        "keyId": ATTESTED_KEY_ID,
-        "document": document,
-    }
-    check_key_binding(binding, run_public_key)
-    return binding
+    if bound_key(document) != run_public_key:
+        raise RuntimeError("Tinfoil's report does not list the receipt key")
+    return document
 
 
-def check_key_binding(binding: dict[str, Any], run_public_key: bytes) -> None:
-    """Raise unless *binding*'s document lists *run_public_key* and is intact."""
-    if binding.get("nonceScheme") != NONCE_SCHEME:
-        raise KeyBindingError(f"unknown nonce scheme {binding.get('nonceScheme')!r}")
-    document = binding.get("document") or {}
+def bound_key(document: dict[str, Any]) -> bytes:
+    """The receipt key *document* lists, once its report data checks out."""
     challenge = document.get("challenge") or {}
-    if challenge.get("nonce") != run_key_nonce(run_public_key):
-        raise KeyBindingError("the report's nonce does not name the receipt key")
     if challenge.get("report_data") != _expected_report_data(document):
         raise KeyBindingError("the report data is not derived from the nonce")
-    if attested_key(document, binding.get("keyId")) != run_public_key:
-        raise KeyBindingError("the report does not list the receipt key")
+    return attested_key(document, ATTESTED_KEY_ID)
 
 
 def attested_key(document: dict[str, Any], key_id: Any) -> bytes:
@@ -108,7 +94,7 @@ def _raw_ed25519(spki_hex: str) -> bytes:
 
 def _expected_report_data(document: dict[str, Any]) -> str:
     """REPORT_DATA per report-data/v1: sha256 over the label, nonce and sections."""
-    challenge = document["challenge"]
+    challenge = document.get("challenge") or {}
     if challenge.get("report_data_algorithm") != REPORT_DATA_V1:
         raise KeyBindingError(
             f"unknown report data algorithm {challenge.get('report_data_algorithm')!r}"

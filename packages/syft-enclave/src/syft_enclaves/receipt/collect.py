@@ -22,14 +22,13 @@ import yaml
 from syft_enclaves.evidence.tinfoil import (
     TINFOIL_ATTESTATION_PATH,
     TINFOIL_CONFIG_PATH,
-    TinfoilProvider,
 )
 from syft_enclaves.receipt.claims import CLAIMS_FILE_NAME
 from syft_enclaves.receipt.dsse import canonical_json
 from syft_enclaves.receipt.key_binding import key_binding
 
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
-PREDICATE_TYPE = "https://openmined.org/syft-enclave/receipt/v2"
+PREDICATE_TYPE = "https://openmined.org/syft-enclave/receipt/v3"
 RECEIPT_FILE_NAME = "receipt.dsse.json"
 #: Everything a party can be sent: the job's output files, and this receipt.
 ALL_GRANTS = ["results", "receipt"]
@@ -153,22 +152,19 @@ def execution_section(
     tinfoil_repo: Optional[str],
     tinfoil_release_tag: Optional[str],
 ) -> dict[str, Any]:
-    """Where and when it ran, and the key that signs the receipt."""
+    """Where and when it ran. On Tinfoil the report names the receipt key."""
     platform = _platform_section(tinfoil_repo, tinfoil_release_tag, run_public_key)
     return {
         **platform,
         "runId": uuid.uuid4().hex,
         "startedAt": _iso(started_at),
         "finishedAt": _iso(finished_at),
-        "runPublicKey": run_public_key.hex(),
     }
 
 
 def _platform_section(
     repo: Optional[str], tag: Optional[str], run_public_key: bytes
 ) -> dict[str, Any]:
-    if not TinfoilProvider.detect():
-        return {"platform": "local", "attestation": None}
     config = TINFOIL_CONFIG_PATH.read_bytes()
     parsed = yaml.safe_load(config) or {}
     return {

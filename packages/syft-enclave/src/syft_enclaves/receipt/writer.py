@@ -67,8 +67,7 @@ def write_receipt(
     client: "SyftEnclaveClient", job: JobInfo, settings: ReceiptSettings
 ) -> Path:
     """Sign a receipt for *job* and save it beside the job's outputs."""
-    private_jwks = client._rds.peer_manager.peer_store._ensure_private_keys().to_jwks()
-    signing_key = receipt_signing_key(private_jwks)
+    signing_key = receipt_signing_key()
     public_key = signing_key.public_key().public_bytes_raw()
     receipt = _receipt(client, job, settings, public_key)
     envelope = sign_receipt(receipt, signing_key)

@@ -2,9 +2,8 @@
 
 DSSE (Dead Simple Signing Envelope) is the envelope Sigstore's Rekor log
 accepts with a key of your own, and Rekor checks the signature itself before it
-logs the entry. On Tinfoil the key is the enclave's attested key, which the
-report in the receipt's ``keyBinding`` lists (``receipt/key_binding.py``).
-Elsewhere it is the Ed25519 identity key from the enclave's syft bundle.
+logs the entry. The key is the enclave's attested key, which the report in the
+receipt's ``keyBinding`` lists (``receipt/key_binding.py``).
 """
 
 from __future__ import annotations
@@ -12,7 +11,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-from typing import Any, Optional
+from typing import Any
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
@@ -21,8 +20,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 
-from syft_enclaves.attestation.nonce import identity_key_bytes
-from syft_enclaves.receipt.key_binding import KeyBindingError, check_key_binding
+from syft_enclaves.receipt.key_binding import KeyBindingError, bound_key
 
 #: The payload is an in-toto statement, so it carries in-toto's payload type.
 PAYLOAD_TYPE = "application/vnd.in-toto+json"
@@ -60,53 +58,29 @@ def sign_receipt(receipt: dict[str, Any], private_key: Ed25519PrivateKey) -> dic
     }
 
 
-def verify_receipt(
-    envelope: dict[str, Any], bundle: Optional[dict[str, Any]] = None
-) -> dict:
-    """Check *envelope* was signed by the enclave's receipt key; return the receipt.
-
-    A receipt from Tinfoil names its key through the report in its
-    ``keyBinding``, so it needs no *bundle*. One without a binding was signed
-    with the identity key, and needs the bundle attestation verified
-    (``result.verified_key_bundle``) to check it against.
-    """
+def verify_receipt(envelope: dict[str, Any]) -> dict:
+    """Check *envelope* was signed by the key its report lists; return the receipt."""
     if envelope.get("payloadType") != PAYLOAD_TYPE:
         raise ReceiptVerificationError(
             f"not a receipt: {envelope.get('payloadType')!r}"
         )
     payload = base64.b64decode(envelope["payload"])
     receipt = json.loads(payload)
-    public_key = _signing_key(receipt, bundle)
+    public_key = signing_key(receipt)
     _verify_any_signature(envelope.get("signatures") or [], public_key, payload)
     return receipt
 
 
-def run_public_key(receipt: dict[str, Any]) -> bytes:
-    execution = receipt.get("predicate", {}).get("execution", {})
-    try:
-        return bytes.fromhex(execution["runPublicKey"])
-    except (KeyError, TypeError, ValueError) as e:
-        raise ReceiptVerificationError("the receipt names no runPublicKey") from e
-
-
-def _signing_key(receipt: dict[str, Any], bundle: Optional[dict[str, Any]]) -> bytes:
-    """The key the receipt must be signed with, once it is tied to the enclave."""
-    public_key = run_public_key(receipt)
-    execution = receipt["predicate"]["execution"]
+def signing_key(receipt: dict[str, Any]) -> bytes:
+    """The key *receipt* must be signed with: the one its report lists."""
+    execution = receipt.get("predicate", {}).get("execution") or {}
     binding = (execution.get("attestation") or {}).get("keyBinding")
-    if binding is not None:
-        try:
-            check_key_binding(binding, public_key)
-        except KeyBindingError as e:
-            raise ReceiptVerificationError(f"key binding: {e}") from e
-        return public_key
-    if bundle is None:
-        raise ReceiptVerificationError(
-            "the receipt has no key binding; pass the attested key bundle"
-        )
-    if public_key != identity_key_bytes(bundle):
-        raise ReceiptVerificationError("runPublicKey does not match the signing key")
-    return public_key
+    if binding is None:
+        raise ReceiptVerificationError("the receipt has no key binding")
+    try:
+        return bound_key(binding)
+    except KeyBindingError as e:
+        raise ReceiptVerificationError(f"key binding: {e}") from e
 
 
 def _verify_any_signature(signatures: list, public_key: bytes, payload: bytes) -> None:
