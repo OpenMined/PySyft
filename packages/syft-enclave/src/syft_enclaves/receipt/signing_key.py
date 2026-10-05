@@ -21,7 +21,7 @@ from syft_enclaves.attestation.nonce import identity_private_key
 from syft_enclaves.evidence.tinfoil import TinfoilProvider
 
 #: The ``attested-keys`` id in tinfoil-config-receipts.yml.
-ATTESTED_KEY_ID = "receipt-signing"
+ATTESTED_KEY_ID = "enclave-signing-key"
 ATTESTED_KEY_DIR = Path("/run/tinfoil/keys") / ATTESTED_KEY_ID
 
 

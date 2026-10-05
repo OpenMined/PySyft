@@ -25,7 +25,7 @@ gpus: 0
 # cvm-version 0.14.10 or later.
 # See https://docs.tinfoil.sh/containers/attested-keys
 attested-keys:
-  - id: receipt-signing
+  - id: enclave-signing-key
     key: ed25519
 
 containers:
@@ -49,8 +49,8 @@ containers:
     # report. Every v3 report lists the attested keys, so that report names the
     # key that signs receipts (receipt/key_binding.py). Off by default in Tinfoil.
     attestation: true
-    # Mounts the receipt-signing key below at /run/tinfoil/keys/receipt-signing.
-    keys: [receipt-signing]
+    # Mounts the attested key below at /run/tinfoil/keys/enclave-signing-key.
+    keys: [enclave-signing-key]
     env:
       # Key AND value pinned here, so both are measured and verifiable.
       - SYFT_ENCLAVE_ATTESTATION_PROVIDER: 'tinfoil'
