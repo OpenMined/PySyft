@@ -18,6 +18,14 @@ cpus: 2
 memory: 8192
 gpus: 0
 
+# Keys Tinfoil makes inside the enclave at boot; the private half never leaves
+# it. Receipts are signed with this one (receipt/signing_key.py). Needs
+# cvm-version 0.14.10 or later.
+# See https://docs.tinfoil.sh/containers/attested-keys
+attested-keys:
+  - id: enclave-signing-key
+    key: ed25519
+
 containers:
   - name: syft-enclave
     # Must be pinned by digest: this is what the attestation commits to and
@@ -35,10 +43,12 @@ containers:
     # volume to encrypt — Tinfoil Containers have none, and state is lost on
     # restart. That suits us: SYFT_ENCLAVE_FRESH_STATE wipes it at boot anyway.
     read_only: false
-    # Mounts /tinfoil/attestation.sock, where the enclave gets a report whose
-    # nonce is its run key, so the report names the key that signs receipts
-    # (receipt/key_binding.py). Off by default in Tinfoil.
+    # Mounts /tinfoil/attestation.sock, where the enclave gets a fresh v3
+    # report. Every v3 report lists the attested keys, so that report names the
+    # key that signs receipts (receipt/key_binding.py). Off by default in Tinfoil.
     attestation: true
+    # Mounts the attested key below at /run/tinfoil/keys/enclave-signing-key.
+    keys: [enclave-signing-key]
     env:
       # Key AND value pinned here, so both are measured and verifiable.
       - SYFT_ENCLAVE_ATTESTATION_PROVIDER: 'tinfoil'

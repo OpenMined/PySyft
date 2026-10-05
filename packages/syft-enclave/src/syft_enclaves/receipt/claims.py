@@ -14,7 +14,7 @@ from typing import Any
 CLAIMS_FILE_NAME = "receipt_claims.json"
 #: The only top-level keys a job may write. Everything else in the receipt is
 #: written by the enclave, and a job must not be able to overwrite it.
-JOB_CLAIM_KEYS = ("subject", "model", "eval", "results")
+JOB_CLAIM_KEYS = ("subject", "evalPipeline", "evalDataset", "results")
 
 
 class ReceiptClaimsError(Exception):

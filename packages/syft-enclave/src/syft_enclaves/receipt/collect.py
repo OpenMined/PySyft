@@ -22,14 +22,13 @@ import yaml
 from syft_enclaves.evidence.tinfoil import (
     TINFOIL_ATTESTATION_PATH,
     TINFOIL_CONFIG_PATH,
-    TinfoilProvider,
 )
-from syft_enclaves.receipt.claims import CLAIMS_FILE_NAME
+from syft_enclaves.receipt.claims import CLAIMS_FILE_NAME, JOB_CLAIM_KEYS
 from syft_enclaves.receipt.dsse import canonical_json
 from syft_enclaves.receipt.key_binding import key_binding
 
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
-PREDICATE_TYPE = "https://openmined.org/syft-enclave/receipt/v2"
+PREDICATE_TYPE = "https://openmined.org/syft-enclave/receipt/v3"
 RECEIPT_FILE_NAME = "receipt.dsse.json"
 #: Everything a party can be sent: the job's output files, and this receipt.
 ALL_GRANTS = ["results", "receipt"]
@@ -40,7 +39,8 @@ def build_receipt(claims: dict[str, Any], **sections: Any) -> dict[str, Any]:
 
     The enclave's sections go last, so a claim can never replace one of them.
     """
-    predicate = {k: claims[k] for k in ("model", "eval", "results") if k in claims}
+    predicate = {k: v for k, v in claims.items() if k in JOB_CLAIM_KEYS}
+    predicate.pop("subject", None)
     predicate.update(sections)
     return {
         "_type": STATEMENT_TYPE,
@@ -153,22 +153,19 @@ def execution_section(
     tinfoil_repo: Optional[str],
     tinfoil_release_tag: Optional[str],
 ) -> dict[str, Any]:
-    """Where and when it ran, and the key that signs the receipt."""
+    """Where and when it ran. On Tinfoil the report names the receipt key."""
     platform = _platform_section(tinfoil_repo, tinfoil_release_tag, run_public_key)
     return {
         **platform,
         "runId": uuid.uuid4().hex,
         "startedAt": _iso(started_at),
         "finishedAt": _iso(finished_at),
-        "runPublicKey": run_public_key.hex(),
     }
 
 
 def _platform_section(
     repo: Optional[str], tag: Optional[str], run_public_key: bytes
 ) -> dict[str, Any]:
-    if not TinfoilProvider.detect():
-        return {"platform": "local", "attestation": None}
     config = TINFOIL_CONFIG_PATH.read_bytes()
     parsed = yaml.safe_load(config) or {}
     return {
@@ -194,9 +191,9 @@ def _attestation(
 ) -> dict[str, Any]:
     """The hardware report as the enclave booted with it, and its reference.
 
-    The boot report does not name the run key: its report data is the shim's
-    TLS key. ``keyBinding`` is a second report that does, fetched once per boot
-    with the run key as its nonce (``receipt/key_binding.py``).
+    The boot report does not name the receipt key. ``keyBinding`` is a second
+    report that does, fetched once per boot: it lists the attested key that
+    signs receipts (``receipt/key_binding.py``).
     """
     document = json.loads(TINFOIL_ATTESTATION_PATH.read_text())
     kind = str(document.get("format", ""))
