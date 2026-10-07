@@ -27,6 +27,7 @@ from syft_enclaves.receipt.collect import (
     policy_section,
 )
 from syft_enclaves.receipt.dsse import sign_receipt
+from syft_enclaves.receipt.signing_key import receipt_signing_key
 
 if TYPE_CHECKING:
     from syft_enclaves.client import SyftEnclaveClient
@@ -66,8 +67,10 @@ def write_receipt(
     client: "SyftEnclaveClient", job: JobInfo, settings: ReceiptSettings
 ) -> Path:
     """Sign a receipt for *job* and save it beside the job's outputs."""
-    private_jwks = client._rds.peer_manager.peer_store._ensure_private_keys().to_jwks()
-    envelope = sign_receipt(_receipt(client, job, settings), private_jwks)
+    signing_key = receipt_signing_key()
+    public_key = signing_key.public_key().public_bytes_raw()
+    receipt = _receipt(client, job, settings, public_key)
+    envelope = sign_receipt(receipt, signing_key)
     path = job.job_review_path / "outputs" / RECEIPT_FILE_NAME
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(envelope, indent=2))
@@ -83,7 +86,10 @@ def write_receipt_error(job: JobInfo) -> None:
 
 
 def _receipt(
-    client: "SyftEnclaveClient", job: JobInfo, settings: ReceiptSettings
+    client: "SyftEnclaveClient",
+    job: JobInfo,
+    settings: ReceiptSettings,
+    run_public_key: bytes,
 ) -> dict[str, Any]:
     outputs_dir = job.job_review_path / "outputs"
     job_entry = _job(job)
@@ -94,7 +100,7 @@ def _receipt(
         job=job_entry,
         datasets=_datasets(client, job),
         outputs=outputs_section(outputs_dir),
-        execution=_execution(client, job, settings),
+        execution=_execution(job, settings, run_public_key),
         parties=parties_section(job.submitted_by, owners),
         consent=consent_section(job_entry["code"], _approvals(client, job)),
         policy=policy_section(job.submitted_by, list(owners), shared),
@@ -138,14 +144,13 @@ def _datasets(client: "SyftEnclaveClient", job: JobInfo) -> list[dict[str, Any]]
 
 
 def _execution(
-    client: "SyftEnclaveClient", job: JobInfo, settings: ReceiptSettings
+    job: JobInfo, settings: ReceiptSettings, run_public_key: bytes
 ) -> dict[str, Any]:
     review_dir = job.job_review_path
-    public_key = client._rds.peer_manager.peer_store.public_key.identity_key_bytes
     return execution_section(
         started_at=_read_started(review_dir),
         finished_at=JobState.load(review_dir / "state.yaml").completed_at,
-        run_public_key=public_key() if callable(public_key) else public_key,
+        run_public_key=run_public_key,
         tinfoil_repo=settings.tinfoil_repo,
         tinfoil_release_tag=settings.tinfoil_release_tag,
     )

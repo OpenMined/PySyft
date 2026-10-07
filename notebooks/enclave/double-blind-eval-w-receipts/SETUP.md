@@ -41,13 +41,13 @@ signed receipt:
 
 | Release   | Config                        | Receipts |
 | --------- | ----------------------------- | -------- |
-| `v0.1.21` | `tinfoil-config.yml`          | off      |
-| `v0.1.22` | `tinfoil-config-receipts.yml` | on       |
+| `v0.1.27` | `tinfoil-config.yml`          | off      |
+| `v0.1.28` | `tinfoil-config-receipts.yml` | on       |
 
 Deploy one of them as it stands. Skip to step 5 only if you changed the enclave image or its config.
 
 ```bash
-just tinfoil-deploy v0.1.22 enclave@openmined.org
+just tinfoil-deploy v0.1.28 enclave@openmined.org
 ```
 
 Both configs pin `benchmark_owner@openmined.org` and `model_owner@openmined.org` as
@@ -81,18 +81,18 @@ ENCLAVE_EMAIL         = "enclave@openmined.org"
 BENCHMARK_OWNER_EMAIL = "benchmark_owner@openmined.org"
 MODEL_OWNER_EMAIL     = "model_owner@openmined.org"
 TINFOIL_REPO = "OpenMined/syft-enclave-tinfoil"
-TINFOIL_TAG  = "v0.1.22"
-IMAGE_DIGEST = "sha256:c0a492675e116429e2cc3241beaae84da8fb953a6980abdea4ee2df6cfc88fbc"
+TINFOIL_TAG  = "v0.1.28"
+IMAGE_DIGEST = "sha256:ea890c9b82dbf3c80c703d717dabe2c3db0c48b53bd269801984807732446864"
 ```
 
 `TINFOIL_TAG` and `IMAGE_DIGEST` are what the parties check the enclave against, so they must match
-the release you deployed. The digest above is the one both `v0.1.21` and `v0.1.22` pin; after a
+the release you deployed. The digest above is the one both `v0.1.27` and `v0.1.28` pin; after a
 republish, use the one `just tinfoil-build` printed.
 
 Then run both notebooks top to bottom. They wait on each other four times, and a card in the
 notebook says so each time. Cells that wait print a 🟠 line and tell you to re-run them.
 
-The evaluation takes a little over two minutes, measured on a run against this release: the enclave
+The evaluation takes about three minutes, measured on a run against this release: the enclave
 installs PyTorch, downloads the base model, and generates on two CPUs. A job is killed at 600
 seconds, so there is room to spare.
 
