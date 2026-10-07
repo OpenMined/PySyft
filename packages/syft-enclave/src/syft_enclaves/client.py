@@ -811,6 +811,7 @@ class SyftEnclaveClient:
         token_path: Path | str | None = None,
         data_owners: list[str] | None = None,
         encryption: bool = False,
+        persist_owner_state: bool = False,
     ) -> "SyftEnclaveClient":
         """Build an enclave client backed by a real Google Drive connection.
         Args:
@@ -818,6 +819,10 @@ class SyftEnclaveClient:
             token_path: Path to a pre-authorized Google Drive OAuth token.
             data_owners: Emails whose approval gates every job on this enclave.
             encryption: Enable end-to-end drive encryption.
+            persist_owner_state: Keep the owner-only state used to restore
+                this datasite later (event log, rolling state, checkpoints).
+                Off by default - an enclave gets ephemeral keys and wipes its
+                state on boot, so there is never anything to restore.
         """
         config = SyftRDSClientConfig.for_jupyter(
             email=email,
@@ -825,6 +830,7 @@ class SyftEnclaveClient:
             has_do_role=True,
             token_path=Path(token_path) if token_path is not None else None,
             encryption=encryption,
+            persist_owner_state=persist_owner_state,
         )
 
         # Note: We do not currently provide the ability to load encryption keys passed during creation of enclave.
@@ -841,6 +847,7 @@ class SyftEnclaveClient:
         ds_email: str | None = None,
         use_in_memory_cache: bool = True,
         encryption: bool = False,
+        enclave_persist_owner_state: bool = False,
     ) -> tuple[
         "SyftEnclaveClient",
         "SyftEnclaveClient",
@@ -857,11 +864,18 @@ class SyftEnclaveClient:
 
         Args:
             encryption: Enable end-to-end drive encryption on all four clients.
+            enclave_persist_owner_state: Whether the enclave keeps restorable
+                owner state. Off by default, as in production.
         Returns:
             Tuple of (enclave, do1, do2, ds)
         """
         configs = create_configs(
-            enclave_email, do1_email, do2_email, ds_email, use_in_memory_cache
+            enclave_email,
+            do1_email,
+            do2_email,
+            ds_email,
+            use_in_memory_cache,
+            enclave_persist_owner_state,
         )
         clients = create_clients(configs)
         enclave, do1, do2, ds = clients
