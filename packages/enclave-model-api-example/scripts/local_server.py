@@ -13,7 +13,11 @@ os.environ.setdefault("PRE_SYNC", "false")
 import uvicorn
 from syft_enclaves.settings import EnclaveSettings
 
-from enclave_model_api.paths import default_syftbox_folder, private_dataset_dir
+from enclave_model_api.paths import (
+    default_syftbox_folder,
+    private_dataset_dir,
+    resolve_weights_dir,
+)
 from enclave_model_api.server import create_app
 from enclave_model_api.service import InferenceService
 from enclave_model_api.settings import InferenceSettings
@@ -33,7 +37,11 @@ folder = default_syftbox_folder(settings.email)
 service = InferenceService(
     backend=backend,
     model_size=inf.model_size,
-    weights_dir=private_dataset_dir(folder, inf.model_owner, inf.model_dataset),
+    # Resolved on each poll: the model owner writes the layout its own release
+    # decided, and this process starts before the weights arrive.
+    weights_dir=lambda: resolve_weights_dir(folder, inf.model_owner, inf.model_dataset),
+    # The enclave owns its logs dataset and writes it, so the current layout is
+    # the right answer while it is absent.
     logs_dir=private_dataset_dir(folder, settings.email, inf.logs_dataset),
 )
 service.start_polling()

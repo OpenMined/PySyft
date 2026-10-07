@@ -32,9 +32,18 @@ def get_mock_event(path: str = "email@email.com/test.job") -> FileChangeEvent:
     )
 
 
-def get_mock_events_messages(n_events: int = 2) -> List[FileChangeEventsMessage]:
+def get_mock_events_messages(
+    n_events: int = 2, datasite_email: str = "email@email.com"
+) -> List[FileChangeEventsMessage]:
+    """``n_events`` messages of one event each, under ``datasite_email``.
+
+    A watcher drops an event a peer publishes for another datasite, so pass the
+    publishing peer's email when the messages go through its outbox.
+    """
     return [
-        FileChangeEventsMessage(events=[get_mock_event(f"email@email.com/test{i}.job")])
+        FileChangeEventsMessage(
+            events=[get_mock_event(f"{datasite_email}/test{i}.job")]
+        )
         for i in range(n_events)
     ]
 

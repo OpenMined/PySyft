@@ -1,19 +1,21 @@
-"""TEE attestation token client.
+"""Confidential Space launcher client.
 
-Talks directly to the Confidential Spaces launcher via Unix socket
-to fetch signed attestation JWTs.  Shared by the attestation HTTP
-server (``docker/attestation_server.py``) and the enclave runner.
+Talks directly to the Confidential Spaces launcher over a Unix socket to fetch
+signed attestation JWTs. Lives here because it is one half of *producing*
+evidence on that target: ``evidence/confidential_space.py`` is what the
+provider seam sees, and this is how it reaches the launcher. The attestation
+HTTP server also borrows ``validate_nonce`` from it.
 """
 
 from __future__ import annotations
 
 import json
 import re
-import socket
-from http.client import HTTPConnection
 from pathlib import Path
 
 import syft
+
+from syft_enclaves._unix_socket import UnixSocketConnection
 
 TEE_SOCKET_PATH = Path("/run/container_launcher/teeserver.sock")
 TOKEN_AUDIENCE = "syft-attestation"
@@ -21,21 +23,28 @@ TOKEN_AUDIENCE = "syft-attestation"
 _NONCE_PATTERN = re.compile(r"^[a-zA-Z0-9_.-]+$")
 _NONCE_MAX_LEN = 74
 
+# Positions in the ``eat_nonce`` claim. The launcher echoes the request's
+# ``nonces`` list verbatim, so a verifier reads each value by position.
+VERSION_NONCE_SLOT = 0
+CLAIMS_DIGEST_NONCE_SLOT = 1
+
 
 # -- eat_nonce helpers --------------------------------------------------------
 
 
-def build_eat_nonce(caller_nonce: str | None = None) -> list[str]:
+def build_eat_nonce(claims_digest: str | None = None) -> list[str]:
     """Build the nonces array for the attestation token request.
 
     Slot 0: namespaced syft version, built dynamically from
             ``syft.__version__``. The ``syft-`` prefix satisfies
             the CS attestation service's 8-byte minimum.
-    Slot 1: caller-supplied freshness nonce (if provided).
+    Slot 1: digest of the enclave's claims document (if provided). Only the
+            runner mints tokens, so nothing outside the enclave can choose
+            what goes here.
     """
     nonces = [f"syft-{syft.__version__}"]
-    if caller_nonce:
-        nonces.append(caller_nonce)
+    if claims_digest:
+        nonces.append(claims_digest)
     return nonces
 
 
@@ -53,25 +62,13 @@ def validate_nonce(nonce: str) -> str | None:
 # -- token fetching -----------------------------------------------------------
 
 
-class _UnixSocketConnection(HTTPConnection):
-    """HTTPConnection subclass that connects over a Unix domain socket."""
-
-    def __init__(self, socket_path: str):
-        super().__init__("localhost")
-        self._socket_path = socket_path
-
-    def connect(self):
-        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self.sock.connect(self._socket_path)
-
-
 def fetch_attestation_token(eat_nonce: list[str] | None = None) -> str:
     """Fetch an OIDC attestation token from the Confidential Spaces launcher.
 
     Sends a POST to ``/v1/token`` over the Unix domain socket exposed by the
     Confidential Space launcher.  Returns the raw signed JWT string.
     """
-    conn = _UnixSocketConnection(str(TEE_SOCKET_PATH))
+    conn = UnixSocketConnection(str(TEE_SOCKET_PATH))
     payload: dict = {
         "audience": TOKEN_AUDIENCE,
         "token_type": "OIDC",
