@@ -1,7 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-TEE_SOCKET="/run/container_launcher/teeserver.sock"
+# Marker paths for the two supported deployment targets; kept in step with
+# the providers in src/syft_enclaves/providers/.
+CS_TEE_SOCKET="/run/container_launcher/teeserver.sock"
+TINFOIL_ATTESTATION="/tinfoil/attestation.json"
 
 echo "=== Syft Enclave Server ==="
 echo "syft version: $(python -c 'from syft import __version__; print(__version__)' 2>/dev/null || echo 'unknown')"
@@ -12,12 +15,14 @@ echo "syft version: $(python -c 'from syft import __version__; print(__version__
 export SYFT_ENCLAVE_TOKEN_PATH
 python -m syft_enclaves.bootstrap
 
-if [ -S "$TEE_SOCKET" ]; then
-    echo "Confidential Spaces detected: TEE socket found at $TEE_SOCKET"
+if [ -S "$CS_TEE_SOCKET" ]; then
+    echo "Confidential Space detected: launcher socket at $CS_TEE_SOCKET"
+elif [ -f "$TINFOIL_ATTESTATION" ]; then
+    echo "Tinfoil detected: attestation document at $TINFOIL_ATTESTATION"
 else
-    echo "WARNING: TEE socket not found at $TEE_SOCKET"
-    echo "Attestation endpoint will return instructions instead of real attestation data."
-    echo "To enable attestation, deploy this container on a GCP Confidential VM with Confidential Spaces."
+    echo "WARNING: no TEE detected (looked for $CS_TEE_SOCKET and $TINFOIL_ATTESTATION)"
+    echo "The attestation endpoint will return deployment instructions instead of real evidence."
+    echo "See docs/terraform.md (Confidential Spaces) or docs/tinfoil.md (Tinfoil)."
 fi
 
 # Attestation server (background) — configured via PORT.

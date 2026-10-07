@@ -1,3 +1,4 @@
+from syft.sync.peers.key_bundle import format_fingerprint
 from syft.sync.peers.peer import Peer
 from syft.sync.utils.syftbox_utils import check_env
 from syft.sync.environments.environment import Environment
@@ -19,6 +20,11 @@ def print_client_connected(client: "SyftboxManager"):
     print("\n✅ Logged in successfully!")
     print(f"   SyftBox folder : {client.syftbox_folder}")
     print(f"   Version        : {SYFT_VERSION}")
+
+    fingerprint = client.peer_manager.my_fingerprint()
+    if fingerprint:
+        print(f"   Key fingerprint: {format_fingerprint(fingerprint)}")
+        print("   Share it with your peers so they can confirm your key.")
 
     peers = client.peer_manager.approved_peers
     if peers:
@@ -63,8 +69,14 @@ def print_peer_request_sent(peer_email: str) -> None:
     print("   Once approved, run client.sync() to confirm the connection.")
 
 
-def print_peer_connection_established(peer_email: str) -> None:
+def print_peer_connection_established(
+    peer_email: str, fingerprint: str | None = None
+) -> None:
     print(f"\n✅ Connection with {peer_email} established!")
+    if fingerprint:
+        print(f"   🔐 Their key fingerprint: {format_fingerprint(fingerprint)}")
+        print("   Confirm it with them out of band (a call or a message on")
+        print("   another channel) before sharing anything sensitive.")
     print("   Run client.sync() to start syncing.")
 
 

@@ -18,21 +18,56 @@ def default_syftbox_folder(email: str) -> Path:
     return get_jupyter_default_syftbox_folder(email)
 
 
-def resolve_private_dataset_dir(storage: DatasetStorage, owner: str, name: str) -> Path:
-    """Private dir at the dataset's actual on-disk protocol layout.
+def candidate_private_dataset_dirs(
+    storage: DatasetStorage, owner: str, name: str
+) -> list[Path]:
+    """The private dirs a dataset could occupy, newest layout first.
 
-    A dataset may live at protocol 0 (flat) or under a ``v<n>`` segment; the
-    written layout depends on what the audience can read, not the current
-    default. Datasets not yet on disk (e.g. weights still syncing) fall back to
-    the widest-compatible protocol — where a peer running any current release
-    writes them for us.
+    One entry, the layout on disk, once the dataset is there. While it is
+    absent, one entry for each protocol layout this client reads: the owner
+    writes the layout its own release and audience decided, and a dataset that
+    has not arrived cannot tell us which that is. A reader that waits must
+    therefore watch them all.
     """
     try:
         ref = storage.find_dataset_ref(owner, name)
     except DatasetNotFoundError:
-        (widest,) = storage.target_protocol_versions_for_peers(None)
-        ref = DatasetRef(owner=owner, name=name, protocol_version=widest)
-    return storage.private_dataset_dir(ref)
+        return [
+            storage.private_dataset_dir(
+                DatasetRef(owner=owner, name=name, protocol_version=protocol_version)
+            )
+            for protocol_version in storage.supported_protocol_versions
+        ]
+    return [storage.private_dataset_dir(ref)]
+
+
+def resolve_private_dataset_dir(storage: DatasetStorage, owner: str, name: str) -> Path:
+    """Private dir at the dataset's on-disk protocol layout.
+
+    The current layout while the dataset is absent, which is the layout this
+    client writes for a dataset of its own. A reader waiting for a dataset that
+    another datasite writes must use ``candidate_private_dataset_dirs``, because
+    that owner may write an older layout.
+    """
+    return candidate_private_dataset_dirs(storage, owner, name)[0]
+
+
+def resolve_weights_dir(
+    syftbox_folder: Path | str, datasite: str, dataset_name: str
+) -> Path:
+    """The layout that holds the synced weights, or the newest candidate so far.
+
+    Re-resolved on each poll, not fixed at startup: the weights arrive in the
+    layout their owner writes, and an owner on an earlier release writes the
+    flat one.
+    """
+    config = SyftBoxConfig(syftbox_folder=Path(syftbox_folder), email=datasite)
+    storage = DatasetStorage(config=config)
+    candidates = candidate_private_dataset_dirs(storage, datasite, dataset_name)
+    for path in candidates:
+        if weights_ready(path):
+            return path
+    return candidates[0]
 
 
 def private_dataset_dir(

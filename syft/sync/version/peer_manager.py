@@ -10,12 +10,22 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from googleapiclient.errors import HttpError
 from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
 from syft_migration import ProtocolSchema
 
 from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.peers.peer import Peer, PeerState
+from syft.sync.connections.drive.gdrive_retry import RETRYABLE_TRANSPORT_ERRORS
+from syft.sync.peers.key_bundle import (
+    InvalidPeerBundleError,
+    PeerFingerprintMismatchError,
+    PeerKeyChangedError,
+    bundle_fingerprint,
+    format_fingerprint,
+    normalize_fingerprint,
+)
+from syft.sync.peers.peer import Peer, PeerNotReadyError, PeerSetupError, PeerState
 from syft.sync.peers.peer_store import PeerStore, datasite_crypto_keys_path
 from syft.sync.utils.print_utils import (
     print_peer_already_connected,
@@ -32,6 +42,10 @@ from syft.sync.version.exceptions import (
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 
 logger = logging.getLogger(__name__)
+
+
+# Key wrapping the DID document inside a published encryption bundle file.
+BUNDLE_FILE_KEY = "public_encryption_bundle"
 
 
 class CompatAction(str, Enum):
@@ -160,6 +174,9 @@ class PeerManager(BaseModel):
     _loaded_peer_versions: Dict[str, Optional[VersionInfo]] = PrivateAttr(
         default_factory=dict
     )
+    # Peer email -> state at the first load_peers(), for accepted peers and
+    # waiting requests. None until that load.
+    _states_at_start: Optional[Dict[str, PeerState]] = PrivateAttr(default=None)
 
     # ========== Peer List Properties ==========
 
@@ -551,9 +568,18 @@ class PeerManager(BaseModel):
         if self.peer_store.use_encryption:
             self._write_encryption_bundle_for_peer(peer_email)
 
+        # Accepting a request or re-adding an accepted peer with force is an
+        # explicit user decision, so a changed key is adopted with a warning.
+        re_adding_accepted = bool(
+            force
+            and existing_peer_obj
+            and existing_peer_obj.state == PeerState.ACCEPTED
+        )
         peer_bundle = None
-        if self.peer_store.use_encryption and is_accepting:
-            peer_bundle = self._read_peer_encryption_bundle(peer_email)
+        if self.peer_store.use_encryption and (is_accepting or re_adding_accepted):
+            peer_bundle = self._pin_published_bundle(
+                peer_email, new_peer_obj, explicit=True
+            )
 
         self.connection_router.update_peer_state(
             peer_email, new_state.value, public_encryption_bundle=peer_bundle
@@ -563,33 +589,216 @@ class PeerManager(BaseModel):
         self._update_peer_schemas(peer_email, version_info)
 
         new_peer_obj.version = version_info
-        new_peer_obj.public_encryption_bundle = peer_bundle
+        if peer_bundle is not None:
+            new_peer_obj.public_encryption_bundle = peer_bundle
         new_peer_obj.state = new_state
         self.peer_store.set_peer(new_peer_obj)
 
         if verbose:
             if is_accepting:
-                print_peer_connection_established(peer_email)
+                print_peer_connection_established(
+                    peer_email, fingerprint=self.peer_fingerprint(peer_email)
+                )
             else:
                 print_peer_request_sent(peer_email)
+
+    # ========== Peer key pinning ==========
+
+    def my_fingerprint(self) -> Optional[str]:
+        """Fingerprint of our own encryption identity key (None when off)."""
+        if not self.peer_store.use_encryption or not self.peer_store.has_my_keys():
+            return None
+        return self.peer_store.my_fingerprint
+
+    def peer_fingerprint(self, peer_email: str) -> Optional[str]:
+        """Fingerprint of the pinned encryption key of ``peer_email``, or None."""
+        if not self.peer_store.use_encryption:
+            return None
+        return self.peer_store.peer_fingerprint(peer_email)
+
+    def _pin_published_bundle(
+        self, peer_email: str, peer: Peer, explicit: bool
+    ) -> dict | None:
+        """Read the bundle ``peer_email`` published for us and pin it.
+
+        Returns the pinned bundle, or None when nothing was published or the
+        bundle was refused (see ``_adopt_peer_bundle``).
+        """
+        # The peer must be in the store for the pin to be recorded.
+        if self.peer_store.get_cached_peer(peer_email) is None:
+            self.peer_store.add_peer(peer)
+        raw_bundle = self._read_peer_encryption_bundle(peer_email)
+        if raw_bundle is None:
+            return None
+        return self._adopt_peer_bundle(peer_email, raw_bundle, explicit=explicit)
+
+    def _adopt_peer_bundle(
+        self, peer_email: str, bundle: dict, explicit: bool
+    ) -> dict | None:
+        """Validate ``bundle`` and pin it; return it, or None when refused.
+
+        An invalid bundle is always refused. A bundle whose key differs from
+        the pin is adopted only when ``explicit`` is set (the user approved
+        the peer or called ``trust_peer_key``), else refused with a warning.
+        """
+        try:
+            self.peer_store.set_peer_bundle(peer_email, bundle)
+            return bundle
+        except InvalidPeerBundleError as e:
+            warnings.warn(f"Refusing the encryption key of {peer_email}: {e}")
+            return None
+        except PeerKeyChangedError as e:
+            if not explicit:
+                warnings.warn(
+                    f"{e}\nKeeping the pinned key. To trust the new key, confirm "
+                    "its fingerprint with the peer and run "
+                    f"client.trust_peer_key({peer_email!r}, fingerprint)."
+                )
+                return None
+            warnings.warn(
+                f"{e}\nTrusting the new key because you approved this peer. "
+                "If you did not expect a key change, stop syncing and confirm "
+                "the fingerprint with the peer."
+            )
+            self.peer_store.set_peer_bundle(peer_email, bundle, allow_key_change=True)
+            return bundle
+
+    def refresh_peer_bundle(
+        self,
+        peer_email: str,
+        trust_new_key: bool = False,
+        expected_fingerprint: Optional[str] = None,
+    ) -> Optional[str]:
+        """Re-read the peer's published key bundle and compare it to the pin.
+
+        Returns the fingerprint of the pinned key afterwards. A changed key is
+        adopted only when ``trust_new_key`` is set.
+
+        Raises:
+            PeerFingerprintMismatchError: ``expected_fingerprint`` is given and
+                the published bundle carries another identity key.
+            InvalidPeerBundleError: ``expected_fingerprint`` is given and the
+                published bundle does not parse.
+        """
+        if not self.peer_store.use_encryption:
+            raise ValueError("Encryption is not enabled")
+        if self.peer_store.get_cached_peer(peer_email) is None:
+            raise ValueError(f"Unknown peer {peer_email}; run client.load_peers()")
+        raw_bundle = self._read_peer_encryption_bundle(peer_email)
+        if raw_bundle is None:
+            warnings.warn(f"{peer_email} has not published an encryption key for us")
+            return self.peer_fingerprint(peer_email)
+        if expected_fingerprint is not None:
+            self._check_published_fingerprint(
+                peer_email, raw_bundle, expected_fingerprint
+            )
+        adopted = self._adopt_peer_bundle(
+            peer_email, raw_bundle, explicit=trust_new_key
+        )
+        if adopted is not None:
+            peer = self.peer_store.get_cached_peer(peer_email)
+            self.connection_router.update_peer_state(
+                peer_email, peer.state.value, public_encryption_bundle=adopted
+            )
+        return self.peer_fingerprint(peer_email)
+
+    @staticmethod
+    def _check_published_fingerprint(
+        peer_email: str, bundle: dict, expected_fingerprint: str
+    ) -> None:
+        """Raise unless ``bundle`` carries the fingerprint the user confirmed.
+
+        The storage provider is not trusted, so the bundle it serves is adopted
+        only when it matches what the peer read out.
+        """
+        published = bundle_fingerprint(bundle)
+        expected = normalize_fingerprint(expected_fingerprint)
+        if published != expected:
+            raise PeerFingerprintMismatchError(peer_email, expected, published)
+
+    def _read_single_peer_bundle(self, peer_email: str) -> tuple[str, dict | None]:
+        """Read one peer's published bundle on a private connection (thread-safe).
+
+        A failed Drive call, a network error or a bundle file that is not JSON
+        reads as "no bundle", so one unreachable peer does not stop the check
+        for the rest. Any other error is a bug, and it is raised.
+        """
+        try:
+            connection = self.connection_router.connection_for_version_read(
+                create_new=True
+            )
+            return (
+                peer_email,
+                self._read_peer_encryption_bundle(peer_email, connection),
+            )
+        except (HttpError, *RETRYABLE_TRANSPORT_ERRORS, ValueError) as e:
+            logger.warning(f"Could not read the encryption key of {peer_email}: {e}")
+            return (peer_email, None)
+
+    def _check_peer_key_rotations(self, peer_emails: List[str]) -> None:
+        """Warn when a pinned peer now publishes a different key.
+
+        Never adopts the new key: that takes ``trust_peer_key``. Without this
+        check a rotated peer key shows up only as signature failures on every
+        message, with nothing pointing at the cause.
+        """
+        pinned = [e for e in peer_emails if self.peer_store.has_peer_bundle(e)]
+        if not pinned:
+            return
+        for peer_email, bundle in self._executor.map(
+            self._read_single_peer_bundle, pinned
+        ):
+            if bundle is not None:
+                self._warn_if_key_rotated(peer_email, bundle)
+
+    def _warn_if_key_rotated(self, peer_email: str, published_bundle: dict) -> None:
+        """Warn when ``published_bundle`` carries another identity key than the pin."""
+        current = self.peer_store.peer_fingerprint(peer_email)
+        try:
+            published = bundle_fingerprint(published_bundle)
+        except ValueError:
+            return
+        if published == current:
+            return
+        warnings.warn(
+            f"The published encryption key of {peer_email} differs from the "
+            f"pinned key.\n  pinned:    {format_fingerprint(current)}\n"
+            f"  published: {format_fingerprint(published)}\n"
+            "Keeping the pinned key. Messages from this peer will fail to verify "
+            "until you confirm the new fingerprint with them and run "
+            f"client.trust_peer_key({peer_email!r}, fingerprint) with the "
+            "fingerprint they read out."
+        )
 
     def _write_encryption_bundle_for_peer(self, peer_email: str) -> dict | None:
         """Write own encryption bundle for a peer if encryption is enabled."""
         if not self.peer_store.use_encryption:
             raise ValueError("Encryption is not enabled")
         bundle = self.peer_store.get_public_bundle()
-        bundle_json = json.dumps({"public_encryption_bundle": bundle})
+        bundle_json = json.dumps({BUNDLE_FILE_KEY: bundle})
         self.connection_router.write_encryption_bundle(peer_email, bundle_json)
         self.connection_router.share_encryption_bundles_folder(peer_email)
         return bundle
 
-    def _read_peer_encryption_bundle(self, peer_email: str) -> dict | None:
-        """Read a peer's encryption bundle if available."""
-        bundle_json = self.connection_router.read_peer_encryption_bundle(peer_email)
+    def _read_peer_encryption_bundle(
+        self, peer_email: str, connection=None
+    ) -> dict | None:
+        """Read the bundle a peer published for us, on ``connection`` when given."""
+        if connection is None:
+            bundle_json = self.connection_router.read_peer_encryption_bundle(peer_email)
+        else:
+            bundle_json = connection.read_peer_encryption_bundle(peer_email)
         if not bundle_json:
             return None
-        data = json.loads(bundle_json)
-        return data.get("public_encryption_bundle")
+        payload = json.loads(bundle_json)
+        if not isinstance(payload, dict):
+            # Reported as ValueError, like JSON that does not parse, rather than
+            # the AttributeError that .get() on a list would raise.
+            raise ValueError(
+                f"The bundle file of {peer_email} holds a {type(payload).__name__}, "
+                "not a JSON object"
+            )
+        return payload.get(BUNDLE_FILE_KEY)
 
     def load_peers(self, force_download: bool = False):
         """Load peers: from JSON (accepted + requested_by_me) + new requests from folder scan.
@@ -638,23 +847,113 @@ class PeerManager(BaseModel):
                         email, PeerState.ACCEPTED.value
                     )
 
+        if self._states_at_start is None:
+            self._states_at_start = {
+                p.email: p.state
+                for p in peers
+                if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_PEER)
+            }
+
+        # set_peers keeps the locally pinned bundle over whatever the Drive
+        # copy of SYFT_peers.json holds, and validates any bundle it adopts.
         self.peer_store.set_peers(peers)
 
-        # Try to read encryption bundles from GDrive for peers missing bundles
         if self.peer_store.use_encryption:
-            for peer in peers:
-                if peer.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_ME):
-                    if not self.peer_store.has_peer_bundle(peer.email):
-                        bundle = self._read_peer_encryption_bundle(peer.email)
-                        if bundle:
-                            self.peer_store.set_peer_bundle(peer.email, bundle)
-                            self.connection_router.update_peer_state(
-                                peer.email,
-                                peer.state.value,
-                                public_encryption_bundle=bundle,
-                            )
+            active = [
+                p
+                for p in peers
+                if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_ME)
+            ]
+            self._pin_missing_peer_bundles(active)
+            self._check_peer_key_rotations([p.email for p in active])
 
         self.load_peer_versions_parallel([peer.email for peer in peers])
+
+    def _pin_missing_peer_bundles(self, peers: List[Peer]) -> None:
+        """Pin the published bundle of every peer we hold none for (trust on first use).
+
+        A peer that already has a pin is never re-pinned here; a changed key
+        is only reported by ``_check_peer_key_rotations``.
+        """
+        for peer in peers:
+            if self.peer_store.has_peer_bundle(peer.email):
+                continue
+            adopted = self._pin_published_bundle(peer.email, peer, explicit=False)
+            if adopted is not None:
+                self.connection_router.update_peer_state(
+                    peer.email, peer.state.value, public_encryption_bundle=adopted
+                )
+
+    def validate_peer(self, peer_email: str) -> Peer:
+        """Return the peer ``peer_email`` if it is approved, else raise.
+
+        If the peer was already approved, or already waiting for our approval,
+        at the first ``load_peers()`` of this client, warn: the connection can
+        be left over from an earlier run, with an account that is not in use
+        now. This is a setup check for demos, not authentication.
+
+        Raises:
+            PeerNotReadyError: the peer did not approve the request yet.
+            PeerSetupError: the peer is unknown or rejected, or waits for
+                this client to approve its request.
+        """
+        peer = self.get_cached_peer(peer_email)
+        if peer is None:
+            raise PeerSetupError(
+                f"{peer_email} is not a peer. Check the email, or add it with "
+                f"client.add_peer({peer_email!r})."
+            )
+        if peer.is_requested_by_peer:
+            raise PeerSetupError(
+                f"{peer_email} is not approved yet: approve it with "
+                f"client.approve_peer_request({peer_email!r})."
+            )
+        if peer.is_requested_by_me:
+            raise PeerNotReadyError(
+                f"{peer_email} has not approved the request yet. Check the email, "
+                "and make sure that the peer approved the request."
+            )
+        if not peer.is_approved:
+            raise PeerSetupError(
+                f"{peer_email} is not approved (state: {peer.state.value})."
+            )
+        self._warn_if_known_at_start(peer_email)
+        return peer
+
+    def _warn_if_known_at_start(self, peer_email: str) -> None:
+        """Warn if ``peer_email`` was connected, or waiting, at the first load."""
+        state = (self._states_at_start or {}).get(peer_email)
+        if state is None:
+            return
+        found = (
+            "was already connected"
+            if state == PeerState.ACCEPTED
+            else "sent its request"
+        )
+        warnings.warn(
+            f"{peer_email} {found} before this client started. If this email "
+            "is wrong, the connection can be left over from an earlier run."
+        )
+
+    def forget_states_at_start(self) -> None:
+        """Count no peer as there at start, for the rest of this session.
+
+        Call it after this client deletes its state. Its peers then connect
+        again from nothing, so ``validate_peer`` does not warn about them.
+        """
+        self._states_at_start = {}
+
+    def peer_may_be_valid(self, peer_email: str) -> bool:
+        """Tell if ``validate_peer`` can pass after the next ``load_peers()``.
+
+        Use it between polls, after ``validate_peer`` raised
+        ``PeerNotReadyError``. It makes one Drive request and does not load
+        the peers. It is True when the peer created its folders for this
+        datasite, which it does when it approves our request.
+        """
+        return any(
+            p.email == peer_email for p in self.connection_router.get_peer_requests()
+        )
 
     def check_peer_request_exists(self, email: str) -> bool:
         """Check if a peer request exists for the given email."""
