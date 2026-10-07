@@ -144,7 +144,12 @@ class TestAttestPhase:
         # moments earlier, so the file the endpoint signs with is gone.
         store.save_keys.assert_called_once_with(written["keys_path"])
 
-    def test_no_key_bundle_is_published_without_encryption(self, monkeypatch):
+    def test_optional_enclave_binds_keys_it_makes_at_boot(self, monkeypatch):
+        """A peer can require encryption from an optional enclave later.
+
+        The keys it then uses must be bound to the report too, so the enclave
+        makes them before it attests.
+        """
         provider = MagicMock()
         provider.kind = AttestationKind.TINFOIL
         provider.collect.return_value = tinfoil_evidence(TINFOIL_DOC)
@@ -159,11 +164,16 @@ class TestAttestPhase:
 
         client = _make_client()
         client._rds.peer_manager.syftbox_folder = Path("/tmp/SyftBox_enclave")
-        client._rds.peer_manager.peer_store.use_encryption = False
+        store = client._rds.peer_manager.peer_store
+        store.email = "enclave@openmined.org"
+        store.use_encryption = False
+        store.has_my_keys.return_value = True
+        store.get_public_bundle.return_value = {"identity": "enclave@openmined.org"}
 
         EnclaveRunner(client=client, require_tee=True).init()
 
-        assert calls == []
+        store.ensure_keys.assert_called_once()
+        assert calls == [{"identity": "enclave@openmined.org"}]
 
     def test_provider_gets_the_settings_object(self, monkeypatch):
         seen = {}

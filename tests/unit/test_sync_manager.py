@@ -5,10 +5,13 @@ import yaml
 
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.encryption_policy import EncryptionPolicy
+from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.messages.proposed_filechange import ProposedFileChange
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.version.version_info import VersionInfo
 from syft.sync.sync.caches.datasite_owner_cache import (
     ProposedEventFileOutdatedException,
 )
@@ -434,6 +437,13 @@ def test_collection_files_excluded_from_outbox_sync():
     )
 
 
+def _add_known_peer(do_manager, email: str) -> None:
+    """Make ``email`` a peer of the DO with a known version, as peering does."""
+    version = VersionInfo.current()
+    version.encryption_policy = EncryptionPolicy.OPTIONAL
+    do_manager.peer_manager.peer_store.add_peer(Peer(email=email, version=version))
+
+
 def test_job_files_sync_to_submitter_only():
     """Test that job files only sync to the peer who submitted the job.
 
@@ -487,6 +497,7 @@ def test_job_files_sync_to_submitter_only():
         submitter_email, ds_manager._connection_router.connections[0].drive_service
     )
     submitter_conn.add_peer(do_manager.email)
+    _add_known_peer(do_manager, submitter_email)
     submitter_router = ConnectionRouter(
         connections=[submitter_conn],
         peer_store=PeerStore(email=submitter_email),
@@ -689,6 +700,7 @@ def test_permission_change_triggers_resend():
         peer_b_email, ds_manager._connection_router.connections[0].drive_service
     )
     peer_b_conn.add_peer(do_manager.email)
+    _add_known_peer(do_manager, peer_b_email)
     peer_b_router = ConnectionRouter(
         connections=[peer_b_conn],
         peer_store=PeerStore(email=peer_b_email),

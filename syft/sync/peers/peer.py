@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Any, List, Optional
 from pydantic import BaseModel, PrivateAttr
+from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.key_bundle import bundle_fingerprint
 from syft.sync.platforms.base_platform import BasePlatform
 from syft.sync.version.version_info import VersionInfo
@@ -27,10 +28,33 @@ class Peer(BaseModel):
     state: PeerState = PeerState.ACCEPTED  # Default for backward compatibility
     version: Optional[VersionInfo] = None
     public_encryption_bundle: Optional[dict] = None
-    use_encryption: bool = False
 
     # Set by SyftboxManager.peers when this Peer is handed out.
     _manager: Any = PrivateAttr(default=None)
+    # The policy of an earlier client, whose version file does not say.
+    _legacy_policy: Optional[EncryptionPolicy] = PrivateAttr(default=None)
+
+    @property
+    def encryption_policy(self) -> Optional[EncryptionPolicy]:
+        """The policy of the peer, or None while it is not known.
+
+        It is not known before the version file is read, and for an earlier
+        client until ``set_legacy_policy``.
+        """
+        if self.version is None:
+            return None
+        if self.version.encryption_policy is not None:
+            return self.version.encryption_policy
+        return self._legacy_policy
+
+    @property
+    def needs_legacy_policy(self) -> bool:
+        """Whether the version file is read and does not say the policy."""
+        return self.version is not None and self.version.encryption_policy is None
+
+    def set_legacy_policy(self, policy: EncryptionPolicy) -> None:
+        """Set the policy of an earlier client, whose version file does not say."""
+        self._legacy_policy = policy
 
     @property
     def fingerprint(self) -> Optional[str]:

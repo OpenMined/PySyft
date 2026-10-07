@@ -115,28 +115,6 @@ def test_save_and_load_keys():
     path.unlink()
 
 
-def test_peer_use_encryption_inherited():
-    """Peers added to PeerStore inherit its use_encryption flag."""
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
-    peer = Peer(email="bob@example.com")
-    assert not peer.use_encryption
-    ps.add_peer(peer)
-    assert peer.use_encryption
-
-    ps2 = PeerStore(email="alice@example.com", use_encryption=False)
-    peer2 = Peer(email="bob@example.com", use_encryption=True)
-    ps2.add_peer(peer2)
-    assert not peer2.use_encryption
-
-
-def test_set_peers_inherits_encryption():
-    """set_peers propagates use_encryption to all peers."""
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
-    peers = [Peer(email="bob@example.com"), Peer(email="carol@example.com")]
-    ps.set_peers(peers)
-    assert all(p.use_encryption for p in peers)
-
-
 # =========================================================================
 # Full DS→DO→DS flow with encryption via mock drive
 # =========================================================================
@@ -214,8 +192,8 @@ def test_no_encryption_backward_compat():
 
     grant_job_inbox_access(do_manager, ds_manager.email)
 
-    assert ds_manager._peer_store is None
-    assert do_manager._peer_store is None
+    assert not ds_manager._peer_store.has_my_keys()
+    assert not do_manager._peer_store.has_my_keys()
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "hello unencrypted")

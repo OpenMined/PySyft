@@ -153,8 +153,9 @@ class EnclaveSettings(AttestationSettings):
     use_encryption: bool = Field(
         default=True,
         description=(
-            "End-to-end drive encryption for all enclave peer communication. "
-            "Enabled by default; set false to disable."
+            "Require end-to-end drive encryption with every peer. Enabled by "
+            "default. When false, the enclave encrypts with each peer that "
+            "requires it. Clients read this policy and need no setting."
         ),
     )
     persist_owner_state: bool = Field(

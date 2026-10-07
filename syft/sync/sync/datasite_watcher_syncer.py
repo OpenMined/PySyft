@@ -1,22 +1,31 @@
+import logging
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
-from typing import List
+from typing import Dict, List
 
 from pydantic import BaseModel, Field, PrivateAttr
 
 from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.callback_mixin import BaseModelCallbackMixin
+from syft.sync.encryption_policy import (
+    EncryptionPolicyConflictError,
+    PeerEncryptionPendingError,
+)
 from syft.sync.events.file_change_event import FileChangeEventsMessage
 from syft.sync.messages.proposed_filechange import (
     ProposedFileChange,
     ProposedFileChangesMessage,
 )
+from syft.sync.sync.constants import CACHE_DIR, HELD_PROPOSALS_FILENAME
+from syft.sync.sync.held_messages import HeldMessages
 from syft.sync.sync.caches.datasite_watcher_cache import (
     DataSiteWatcherCache,
     DataSiteWatcherCacheConfig,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class DatasiteWatcherSyncerConfig(BaseModel):
@@ -65,7 +74,13 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         if datasite_email is None:
             datasite_email = self.email
         cache_key = Path(datasite_email) / relative_path
-        old_hash = self.datasite_watcher_cache.current_hash_for_file(cache_key)
+        # The cache holds only sent changes. A held change to the same file
+        # gives the next change its old hash.
+        held_hashes = self._held_hashes()
+        if cache_key in held_hashes:
+            old_hash = held_hashes[cache_key]
+        else:
+            old_hash = self.datasite_watcher_cache.current_hash_for_file(cache_key)
         return ProposedFileChange(
             datasite_email=datasite_email,
             path_in_datasite=relative_path,
@@ -74,7 +89,8 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         )
 
     def process_file_changes_queue(self):
-        file_changes = []
+        # One message per datasite: each change goes to the owner of its path.
+        changes_by_recipient: Dict[str, List[ProposedFileChange]] = {}
         while not self.queue.empty():
             relative_path, content = self.queue.get()
 
@@ -97,22 +113,128 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             file_change = self.get_proposed_file_change_object(
                 path_in_datasite, content, datasite_email=recipient
             )
-            file_changes.append(file_change)
+            changes_by_recipient.setdefault(recipient, []).append(file_change)
 
-        message = ProposedFileChangesMessage(
-            sender_email=self.email, proposed_file_changes=file_changes
-        )
-        self.connection_router.watcher_send_proposed_file_changes_message(
-            recipient, message
-        )
+        conflict = None
+        for recipient, file_changes in changes_by_recipient.items():
+            message = ProposedFileChangesMessage(
+                sender_email=self.email, proposed_file_changes=file_changes
+            )
+            try:
+                sent = self._send_or_hold(recipient, message)
+            except EncryptionPolicyConflictError as e:
+                # The other recipients still get their changes.
+                conflict = conflict or e
+                continue
+            if sent:
+                self._record_sent_hashes(message)
+        if conflict is not None:
+            raise conflict
 
-        # Update local cache with new hashes
-        for fc in file_changes:
+    def _record_sent_hashes(self, message: ProposedFileChangesMessage) -> None:
+        hashes = self.datasite_watcher_cache.file_hashes
+        for fc in message.proposed_file_changes:
             path_key = Path(fc.datasite_email) / fc.path_in_datasite
             if fc.is_deleted:
-                self.datasite_watcher_cache.file_hashes.pop(path_key, None)
+                hashes.pop(path_key, None)
             else:
-                self.datasite_watcher_cache.file_hashes[path_key] = fc.new_hash
+                hashes[path_key] = fc.new_hash
+
+    @property
+    def _held_messages(self) -> HeldMessages:
+        return HeldMessages(self.syftbox_folder / CACHE_DIR / HELD_PROPOSALS_FILENAME)
+
+    def _held_hashes(self) -> Dict[Path, int | None]:
+        """The new hash of each file that a held change touches."""
+        with self._held_messages.edit() as held:
+            messages = [
+                ProposedFileChangesMessage.from_compressed_data(d) for _, d in held
+            ]
+        hashes: Dict[Path, int | None] = {}
+        for message in messages:
+            for fc in message.proposed_file_changes:
+                path_key = Path(fc.datasite_email) / fc.path_in_datasite
+                hashes[path_key] = None if fc.is_deleted else fc.new_hash
+        return hashes
+
+    def _send_or_hold(
+        self, recipient: str, message: ProposedFileChangesMessage
+    ) -> bool:
+        """Send ``message``, or hold it while encryption with the recipient is pending.
+
+        Encryption is pending while the recipient policy is unknown, or while
+        the pair encrypts and the keys or the peer bundle are missing. A held
+        message is kept on disk. Messages to one recipient keep their order.
+        Returns True when sent.
+
+        Raises:
+            PeerEncryptionPolicyUnknownError: when ``recipient`` is not a peer.
+                It never gets a policy, so a held message would never go.
+            EncryptionPolicyConflictError: when the policies of the pair conflict.
+        """
+        with self._held_messages.edit() as held:
+            if not any(r == recipient for r, _ in held):
+                try:
+                    self.connection_router.watcher_send_proposed_file_changes_message(
+                        recipient, message
+                    )
+                    return True
+                except PeerEncryptionPendingError as e:
+                    peer_store = self.connection_router.peer_store
+                    if peer_store.get_cached_peer(recipient) is None:
+                        raise
+                    print(f"Held a message for {recipient}: {e}")
+            held.append((recipient, message.as_compressed_data()))
+            return False
+
+    @property
+    def pending_message_count(self) -> int:
+        return len(self._held_messages)
+
+    def send_pending_messages(self) -> None:
+        """Send the held messages whose recipient policy is now known.
+
+        Messages for a recipient that is no longer a peer (the peer request
+        was rejected), or whose policy conflicts, are dropped with a warning.
+        """
+        peer_store = self.connection_router.peer_store
+        with self._held_messages.edit() as held:
+            pending = list(held)
+            held.clear()
+            for recipient, data in pending:
+                if any(r == recipient for r, _ in held):
+                    held.append((recipient, data))
+                    continue
+                if peer_store.get_cached_peer(recipient) is None:
+                    logger.warning(
+                        f"Dropped a held message for {recipient}: it is not a peer."
+                    )
+                    continue
+                message = ProposedFileChangesMessage.from_compressed_data(data)
+                try:
+                    self.connection_router.watcher_send_proposed_file_changes_message(
+                        recipient, message
+                    )
+                except PeerEncryptionPendingError:
+                    held.append((recipient, data))
+                    continue
+                except EncryptionPolicyConflictError as e:
+                    print(f"Dropped a held message for {recipient}: {e}")
+                    continue
+                self._record_sent_hashes(message)
+
+    def resend_rejected_messages(self, peer_emails: list[str]) -> None:
+        """Resend, encrypted, the plaintext messages that peers rejected.
+
+        A peer rejects plaintext when it requires encryption and this client
+        sent with an outdated view of its policy.
+        """
+        for peer_email in peer_emails:
+            count = self.connection_router.watcher_resend_rejected_inbox_messages(
+                peer_email
+            )
+            if count:
+                logger.info(f"Resent {count} rejected message(s) to {peer_email}")
 
     def on_file_change(
         self, relative_path: Path | str, content: str | None = None, process_now=True
@@ -126,14 +248,16 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
     def download_events_message_with_new_connection(
         self, file_id: str, peer_email: str
-    ) -> FileChangeEventsMessage:
-        """Download from outbox using a new connection (thread-safe)."""
+    ) -> FileChangeEventsMessage | None:
+        """Download from outbox using a new connection (thread-safe).
+
+        Returns None when the message was rejected, or when it cannot be
+        read yet (see ``ConnectionRouter.watcher_read_events_message``).
+        """
         connection = self.connection_router.connection_for_parallel_download()
-        raw = connection.download_file(file_id)
-        raw = self.connection_router.peer_store.decrypt_and_verify_if_needed(
-            peer_email, raw
+        return self.connection_router.watcher_read_events_message(
+            connection, peer_email, file_id
         )
-        return FileChangeEventsMessage.from_compressed_data(raw)
 
     def download_collection_file_with_new_connection(
         self, file_id: str, owner_email: str

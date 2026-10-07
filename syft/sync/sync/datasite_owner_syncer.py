@@ -20,6 +20,10 @@ from syft.sync.sync.caches.datasite_owner_cache import (
     DataSiteOwnerEventCacheConfig,
 )
 from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.encryption_policy import (
+    EncryptionPolicyConflictError,
+    PeerEncryptionPendingError,
+)
 from syft.sync.sync.caches.datasite_owner_cache import DataSiteOwnerEventCache
 from syft.sync.sync.collection_spec import CollectionSyncSpec
 from syft.sync.callback_mixin import BaseModelCallbackMixin
@@ -37,7 +41,12 @@ from syft.sync.checkpoints.rolling_state import (
     raise_for_later_version,
 )
 from syft_perms import SyftPermContext
-from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
+from syft.sync.sync.constants import (
+    CACHE_DIR,
+    HELD_OUTBOX_FILENAME,
+    ROLLING_STATE_FILENAME,
+)
+from syft.sync.sync.held_messages import HeldMessages
 
 logger = logging.getLogger(__name__)
 
@@ -192,11 +201,17 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         tmp.rename(path)
 
     def sync(self, peer_emails: list[str], recompute_hashes: bool = True):
+        if self.connection_router.peer_store.needs_at_rest_encryption():
+            self.connection_router.owner_encrypt_files_at_rest()
         if self.persist_owner_state:
             self._load_rolling_state()
         try:
             if not self.initial_sync_done:
                 self.pull_initial_state()
+
+            # Rejected messages go first: the reader waits for them.
+            for peer_email in peer_emails:
+                self.connection_router.owner_resend_rejected_outbox_messages(peer_email)
 
             if recompute_hashes:
                 self.process_local_changes(recipients=peer_emails)
@@ -796,11 +811,53 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.connection_router.owner_write_events_message_to_syftbox(
                 file_change_events_message
             )
-        while not self.outbox_queue.empty():
-            recipient, file_change_events_message = self.outbox_queue.get()
-            self.connection_router.owner_write_event_messages_to_outbox(
-                recipient, file_change_events_message
-            )
+        # The event is already in the event log, so a held outbox message is
+        # kept on disk until encryption with its recipient is set up.
+        with self._held_outbox.edit() as held:
+            pending = [
+                (r, FileChangeEventsMessage.from_compressed_data(d)) for r, d in held
+            ]
+            held.clear()
+            while not self.outbox_queue.empty():
+                pending.append(self.outbox_queue.get())
+            for recipient, file_change_events_message in pending:
+                if any(r == recipient for r, _ in held):
+                    # Keep the order of the messages to one recipient.
+                    held.append(
+                        (recipient, file_change_events_message.as_compressed_data())
+                    )
+                    continue
+                try:
+                    self.connection_router.owner_write_event_messages_to_outbox(
+                        recipient, file_change_events_message
+                    )
+                except PeerEncryptionPendingError:
+                    if (
+                        self.connection_router.peer_store.get_cached_peer(recipient)
+                        is None
+                    ):
+                        # Not a peer any more: it never gets a policy.
+                        logger.warning(f"Dropped an outbox message for {recipient}")
+                        continue
+                    held.append(
+                        (recipient, file_change_events_message.as_compressed_data())
+                    )
+                except EncryptionPolicyConflictError as e:
+                    logger.warning(f"Dropped an outbox message: {e}")
+            if held:
+                logger.info(
+                    f"Held {len(held)} outbox message(s) for peers whose "
+                    "encryption is not set up yet"
+                )
+
+    @property
+    def _held_outbox(self) -> HeldMessages:
+        return HeldMessages(self.syftbox_folder / CACHE_DIR / HELD_OUTBOX_FILENAME)
+
+    @property
+    def held_message_count(self) -> int:
+        """The number of outbox messages held until encryption is set up."""
+        return len(self._held_outbox)
 
     def _download_outbox_message_with_new_connection(
         self, file_id: str
@@ -821,10 +878,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         deletes the originals.
 
         Returns the number of source messages compacted (0 if below threshold,
-        if no outbox folder, or if peer encryption is on — DO can't read
-        peer-encrypted bytes back to merge).
+        if no outbox folder, or if peer encryption is on or the peer policy is
+        not known — DO can't read peer-encrypted bytes back to merge).
         """
-        if self.connection_router.peer_store.peer_uses_encryption(recipient_email):
+        peer_store = self.connection_router.peer_store
+        if not peer_store.peer_policy_known(
+            recipient_email
+        ) or peer_store.peer_uses_encryption(recipient_email):
             logger.debug(
                 f"outbox compaction for {recipient_email} skipped — "
                 f"peer encryption is not supported yet"

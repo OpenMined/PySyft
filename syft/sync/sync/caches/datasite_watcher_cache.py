@@ -241,9 +241,14 @@ class DataSiteWatcherCache(BaseModel):
         self,
         peer_email: str,
         executor: ThreadPoolExecutor,
-        download_fn: Callable[[str], FileChangeEventsMessage],
+        download_fn: Callable[[str], FileChangeEventsMessage | None],
     ) -> int:
-        """Sync with parallel file downloads. Returns the number of events applied."""
+        """Sync with parallel file downloads. Returns the number of events applied.
+
+        ``download_fn`` returns None for a message that was rejected or cannot
+        be read yet. Messages from its timestamp on are not applied, and the
+        cursor stays before it, so they apply in order when it can be read.
+        """
         peer_timestamp = self.last_event_timestamp_per_peer.get(peer_email)
 
         # Get file metadata (no download yet)
@@ -261,9 +266,14 @@ class DataSiteWatcherCache(BaseModel):
         file_ids = [m["file_id"] for m in file_metadatas]
         downloaded_messages = list(executor.map(download_fn, file_ids))
 
-        # Apply in timestamp order
+        # Apply in timestamp order, up to the first rejected message
         event_count = 0
-        for event_message in sorted(downloaded_messages, key=lambda x: x.timestamp):
+        by_timestamp = sorted(
+            zip(file_metadatas, downloaded_messages), key=lambda x: x[0]["timestamp"]
+        )
+        for _, event_message in by_timestamp:
+            if event_message is None:
+                break
             self.apply_event_message(event_message, peer_email)
             self.last_event_timestamp_per_peer[peer_email] = event_message.timestamp
             event_count += len(event_message.events)

@@ -28,6 +28,7 @@ from syft.sync.checkpoints.rolling_state import (
 )
 from syft.sync.connections.base_connection import (
     FileCollection,
+    RejectedMessage,
     SyftboxPlatformConnection,
 )
 from syft.sync.connections.drive.gdrive_retry import (
@@ -67,6 +68,18 @@ SCOPES = ["https://www.googleapis.com/auth/drive"]
 
 
 logging.getLogger("google_auth_httplib2").setLevel(logging.ERROR)
+logger = logging.getLogger(__name__)
+
+
+def _waits_for_rejected_message(file_metadatas: list[dict], folder: str) -> bool:
+    """Whether a message folder holds a rejected message the sender must resend.
+
+    Later messages can depend on the rejected one, so they wait until then.
+    """
+    if not any(m["name"].endswith(REJECTED_MESSAGE_SUFFIX) for m in file_metadatas):
+        return False
+    logger.warning(f"The {folder} waits for the sender to resend a rejected message.")
+    return True
 
 
 def build_drive_service(
@@ -94,6 +107,10 @@ def build_drive_service(
 
 
 LEGACY_GDRIVE_OUTBOX_INBOX_FOLDER_PREFIX = "syft_outbox_inbox"  # legacy prefix
+# Suffix the recipient adds to a plaintext inbox or outbox message when the
+# pair encrypts. The sender then resends the message encrypted, under the
+# original name.
+REJECTED_MESSAGE_SUFFIX = ".rejected"
 GDRIVE_P2P_FOLDER_DATASITE_PREFIX = "syft_datasite"
 SYFT_PEERS_FILE = "SYFT_peers.json"
 
@@ -715,6 +732,8 @@ class GDriveConnection(SyftboxPlatformConnection):
         file_metadatas = self.get_file_metadatas_from_folder(
             folder_id, since_timestamp=since_timestamp
         )
+        if _waits_for_rejected_message(file_metadatas, f"outbox of {peer_email}"):
+            return []
         valid_fname_objs = self._get_valid_events_from_file_metadatas(file_metadatas)
         name_to_id = {f["name"]: f["id"] for f in file_metadatas}
 
@@ -753,6 +772,24 @@ class GDriveConnection(SyftboxPlatformConnection):
     def owner_download_raw_bytes_by_id(self, file_id: str) -> bytes:
         """Download raw bytes by file ID."""
         return self.download_file(file_id)
+
+    def owner_overwrite_raw_bytes_by_id(self, file_id: str, data: bytes) -> None:
+        payload, _ = self.create_file_payload(data)
+        execute_with_retries(
+            self.drive_service.files().update(fileId=file_id, media_body=payload)
+        )
+
+    def owner_get_checkpoint_and_state_file_ids(self) -> list[str]:
+        folder_ids = [
+            self._get_checkpoints_folder_id(),
+            self._get_rolling_state_folder_id(),
+        ]
+        return [
+            m["id"]
+            for folder_id in folder_ids
+            if folder_id is not None
+            for m in self.get_file_metadatas_from_folder(folder_id)
+        ]
 
     def owner_get_all_accepted_event_file_ids(
         self, since_timestamp: float | None = None
@@ -1086,6 +1123,8 @@ class GDriveConnection(SyftboxPlatformConnection):
         res = []
         for file_metadata in file_metadatas:
             fname = file_metadata["name"]
+            if fname.endswith(REJECTED_MESSAGE_SUFFIX):
+                continue
             try:
                 message_filename = FileChangeEventsMessageFileName.from_string(fname)
             except ValueError:
@@ -1100,6 +1139,8 @@ class GDriveConnection(SyftboxPlatformConnection):
     ) -> list[MessageFileName]:
         res = []
         for file_metadata in file_metadatas:
+            if file_metadata["name"].endswith(REJECTED_MESSAGE_SUFFIX):
+                continue
             try:
                 message_filename = MessageFileName.from_string(file_metadata["name"])
                 res.append(message_filename)
@@ -1114,6 +1155,8 @@ class GDriveConnection(SyftboxPlatformConnection):
         if inbox_folder_id is None:
             raise ValueError(f"Inbox folder for {sender_email} not found")
         file_metadatas = self.get_file_metadatas_from_folder(inbox_folder_id)
+        if _waits_for_rejected_message(file_metadatas, f"inbox of {sender_email}"):
+            return None
         valid_file_names = self._get_valid_messages_from_file_metadatas(file_metadatas)
         if len(valid_file_names) == 0:
             return None
@@ -1125,6 +1168,66 @@ class GDriveConnection(SyftboxPlatformConnection):
         ][0]["id"]
         raw_data = self.download_file(first_file_id)
         return raw_data, first_file_id
+
+    def owner_get_inbox_message_ids(self, sender_email: str) -> list[str]:
+        inbox_folder_id = self._get_own_datasite_inbox_id(sender_email)
+        if inbox_folder_id is None:
+            return []
+        file_metadatas = self.get_file_metadatas_from_folder(inbox_folder_id)
+        name_to_id = {m["name"]: m["id"] for m in file_metadatas}
+        valid_file_names = self._get_valid_messages_from_file_metadatas(file_metadatas)
+        return [
+            name_to_id[f.as_string()]
+            for f in sorted(valid_file_names, key=lambda x: x.submitted_timestamp)
+        ]
+
+    def mark_message_rejected(self, file_id: str) -> None:
+        """Rename message file ``file_id`` with the rejected suffix, in place.
+
+        Two readers on one datasite (a notebook and syft-bg) can reject the
+        same file; the second finds the suffix and leaves the name.
+        """
+        file_info = execute_with_retries(
+            self.drive_service.files().get(fileId=file_id, fields="name")
+        )
+        if file_info["name"].endswith(REJECTED_MESSAGE_SUFFIX):
+            return
+        execute_with_retries(
+            self.drive_service.files().update(
+                fileId=file_id,
+                body={"name": file_info["name"] + REJECTED_MESSAGE_SUFFIX},
+                fields="id, name",
+                supportsAllDrives=True,
+            )
+        )
+
+    def watcher_get_rejected_inbox_messages(
+        self, recipient: str
+    ) -> list[RejectedMessage]:
+        return self._rejected_messages_in_folder(
+            self._get_peer_datasite_inbox_id(recipient)
+        )
+
+    def owner_get_rejected_outbox_messages(
+        self, recipient: str
+    ) -> list[RejectedMessage]:
+        return self._rejected_messages_in_folder(
+            self._get_own_datasite_outbox_id(recipient)
+        )
+
+    def _rejected_messages_in_folder(
+        self, folder_id: str | None
+    ) -> list[RejectedMessage]:
+        if folder_id is None:
+            return []
+        metadatas = self.get_file_metadatas_from_folder(folder_id)
+        names = {m["name"] for m in metadatas}
+        res = []
+        for m in metadatas:
+            if m["name"].endswith(REJECTED_MESSAGE_SUFFIX):
+                original = m["name"].removesuffix(REJECTED_MESSAGE_SUFFIX)
+                res.append(RejectedMessage(m["id"], original, original in names))
+        return res
 
     def owner_get_next_proposed_filechange_message(
         self, sender_email: str
@@ -1939,14 +2042,21 @@ class GDriveConnection(SyftboxPlatformConnection):
             print(f"Warning: could not read the version file of {peer_email}: {e}")
             return None
 
-    def share_version_file_with_peer(self, peer_email: str) -> None:
-        """Share the version file with a peer so they can read it."""
+    def share_version_file_with_peer(
+        self, peer_email: str, version_info: Optional["VersionInfo"] = None
+    ) -> None:
+        """Share the version file with a peer so they can read it.
+
+        A missing file is created from ``version_info``, the version of this
+        client. Without it, the file says only what any client of this release
+        says, and not the encryption policy of this client.
+        """
         file_id = self._get_version_file_id()
         if file_id is None:
             # Version file doesn't exist yet, create it first
             from syft.sync.version.version_info import VersionInfo
 
-            self.write_version_file(VersionInfo.current())
+            self.write_version_file(version_info or VersionInfo.current())
             file_id = self._get_version_file_id()
 
         if file_id:

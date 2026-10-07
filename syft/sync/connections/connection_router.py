@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, PrivateAttr
 from syft_migration import MigratableObject, ProtocolSchema
@@ -14,7 +14,13 @@ from syft.sync.checkpoints.rolling_state import RollingState
 from syft.sync.connections.base_connection import (
     ConnectionConfig,
     FileCollection,
+    RejectedMessage,
     SyftboxPlatformConnection,
+)
+from syft.sync.encryption_policy import (
+    EncryptionPolicyConflictError,
+    PeerEncryptionPendingError,
+    UnencryptedMessageError,
 )
 from syft.sync.connections.drive.gdrive_transport import (
     PEERS_META_KEY,
@@ -140,6 +146,31 @@ class ConnectionRouter(BaseModel):
             target = client_registry.schema_for_protocol_version(protocol_version)
         return client_migration_service.migrate_to_schema(message, target)
 
+    def _encrypt_for_peer(self, peer_email: str, data: bytes) -> bytes:
+        """Encrypt ``data`` for ``peer_email`` when the pair encrypts.
+
+        When the peer policy is not known, the peer version file is read once
+        more first, at most once per peer load: the peer can have accepted
+        since the last load.
+
+        Raises:
+            PeerEncryptionPolicyUnknownError: when the policy is still not known.
+        """
+        if not self.peer_store.peer_policy_known(peer_email):
+            peer = self.peer_store.get_cached_peer(peer_email)
+            if peer is not None and self.peer_store.take_policy_reread(peer_email):
+                peer.version = self.read_peer_version_file(peer_email)
+                self.resolve_legacy_policy(peer)
+        return self.peer_store.encrypt_if_needed(peer_email, data)
+
+    def resolve_legacy_policy(self, peer: Peer) -> None:
+        """Set the policy of ``peer`` when its version file does not say it."""
+        if peer.needs_legacy_policy:
+            policy = self.peer_store.legacy_policy(
+                peer.email, lambda: bool(self.read_peer_encryption_bundle(peer.email))
+            )
+            peer.set_legacy_policy(policy)
+
     def watcher_send_proposed_file_changes_message(
         self, recipient: str, proposed_file_changes_message: ProposedFileChangesMessage
     ):
@@ -147,7 +178,7 @@ class ConnectionRouter(BaseModel):
             proposed_file_changes_message, recipient
         )
         data = proposed_file_changes_message.as_compressed_data()
-        data = self.peer_store.encrypt_if_needed(recipient, data)
+        data = self._encrypt_for_peer(recipient, data)
         filename = proposed_file_changes_message.message_filename.as_string()
         self.connection_for_send_message().watcher_send_raw_bytes_to_inbox(
             recipient, filename, data
@@ -163,17 +194,90 @@ class ConnectionRouter(BaseModel):
         if result is None:
             return None
         raw_data, file_id = result
-        raw_data = self.peer_store.decrypt_and_verify_if_needed(sender_email, raw_data)
+        raw_data = self._decrypt_or_reject(
+            connection,
+            sender_email,
+            raw_data,
+            file_id,
+            on_reject=lambda: self._reject_plaintext_inbox_messages(
+                connection, sender_email
+            ),
+        )
+        if raw_data is None:
+            return None
         msg = ProposedFileChangesMessage.from_compressed_data(raw_data)
         msg.platform_id = file_id
         return msg
+
+    def _reject_plaintext_inbox_messages(
+        self, connection: SyftboxPlatformConnection, sender_email: str
+    ) -> None:
+        """Reject every other plaintext message from ``sender_email`` at once.
+
+        The sender then resends them all on one sync, not one per round. It
+        encrypts all messages after the first envelope, so the scan stops there.
+        """
+        for file_id in connection.owner_get_inbox_message_ids(sender_email):
+            if self.peer_store.is_envelope(connection.download_file(file_id)):
+                break
+            connection.mark_message_rejected(file_id)
+
+    def owner_resend_rejected_outbox_messages(self, recipient: str) -> int:
+        """Resend, encrypted, the plaintext outbox messages ``recipient`` rejected.
+
+        Returns the number of messages resent.
+        """
+        connection = self.connection_for_outbox()
+        return self._resend_rejected(
+            recipient,
+            connection,
+            connection.owner_get_rejected_outbox_messages,
+            connection.owner_write_raw_bytes_to_outbox,
+        )
+
+    def watcher_resend_rejected_inbox_messages(self, recipient: str) -> int:
+        """Resend, encrypted, the plaintext messages ``recipient`` rejected.
+
+        Returns the number of messages resent.
+        """
+        connection = self.connection_for_send_message()
+        return self._resend_rejected(
+            recipient,
+            connection,
+            connection.watcher_get_rejected_inbox_messages,
+            connection.watcher_send_raw_bytes_to_inbox,
+        )
+
+    def _resend_rejected(
+        self,
+        recipient: str,
+        connection: SyftboxPlatformConnection,
+        list_rejected: Callable[[str], list[RejectedMessage]],
+        write: Callable[[str, str, bytes], None],
+    ) -> int:
+        # Only a pair that encrypts rejects plaintext; skip the listing otherwise.
+        if not self.peer_store.peer_uses_encryption(recipient):
+            return 0
+        if not self.peer_store.encryption_ready(recipient):
+            logger.info(f"Resend to {recipient} waits for the keys and the pin")
+            return 0
+        rejected = list_rejected(recipient)
+        for file_id, filename, resent in rejected:
+            # A resend whose delete failed is not uploaded a second time.
+            if not resent:
+                plaintext = connection.download_file(file_id)
+                write(
+                    recipient, filename, self.peer_store.encrypt(recipient, plaintext)
+                )
+            connection.delete_file_by_id(file_id, raise_on_error=True)
+        return len(rejected)
 
     def owner_write_event_messages_to_outbox(
         self, recipient_email: str, events_message: FileChangeEventsMessage
     ):
         events_message = self._downgrade_for_peer(events_message, recipient_email)
         data = events_message.as_compressed_data()
-        data = self.peer_store.encrypt_if_needed(recipient_email, data)
+        data = self._encrypt_for_peer(recipient_email, data)
         fname = events_message.message_filepath.as_string()
         self.connection_for_outbox().owner_write_raw_bytes_to_outbox(
             recipient_email, fname, data
@@ -183,15 +287,62 @@ class ConnectionRouter(BaseModel):
         self, peer_email: str, since_timestamp: float | None
     ) -> List[FileChangeEventsMessage]:
         connection = self.connection_for_datasite_watcher()
-        raw_list = connection.watcher_download_raw_events_from_outbox(
+        messages = []
+        waiting = False
+        for meta in connection.watcher_get_outbox_file_metadatas(
             peer_email, since_timestamp
-        )
-        return [
-            FileChangeEventsMessage.from_compressed_data(
-                self.peer_store.decrypt_and_verify_if_needed(peer_email, raw)
+        ):
+            # After one message that cannot be read, later ones are not applied,
+            # but each is still read, so all plaintext ones are rejected at once.
+            message = self.watcher_read_events_message(
+                connection, peer_email, meta["file_id"]
             )
-            for raw in raw_list
-        ]
+            waiting = waiting or message is None
+            if not waiting:
+                messages.append(message)
+        return messages
+
+    def watcher_read_events_message(
+        self, connection: SyftboxPlatformConnection, peer_email: str, file_id: str
+    ) -> FileChangeEventsMessage | None:
+        """Download, verify and decrypt one outbox events message.
+
+        Returns None when the message cannot be read yet (see
+        ``_decrypt_or_reject``).
+        """
+        raw = self._decrypt_or_reject(
+            connection, peer_email, connection.download_file(file_id), file_id
+        )
+        if raw is None:
+            return None
+        return FileChangeEventsMessage.from_compressed_data(raw)
+
+    def _decrypt_or_reject(
+        self,
+        connection: SyftboxPlatformConnection,
+        peer_email: str,
+        raw: bytes,
+        file_id: str,
+        on_reject: Callable[[], None] | None = None,
+    ) -> bytes | None:
+        """Verify and decrypt an inbox or outbox message from ``peer_email``.
+
+        Returns None when the message cannot be read yet; the messages of this
+        peer then wait, so they keep their order. A plaintext message to a pair
+        that encrypts is also marked rejected, and the sender resends it
+        encrypted on its next sync.
+        """
+        try:
+            return self.peer_store.decrypt_and_verify_if_needed(peer_email, raw)
+        except UnencryptedMessageError as e:
+            logger.warning(f"Rejected message file {file_id}: {e}")
+            connection.mark_message_rejected(file_id)
+            if on_reject is not None:
+                on_reject()
+        except (PeerEncryptionPendingError, EncryptionPolicyConflictError) as e:
+            # A conflict found here is new since the peer filter of this sync.
+            logger.info(f"Messages from {peer_email} wait: {e}")
+        return None
 
     def watcher_get_outbox_file_metadatas(
         self, peer_email: str, since_timestamp: float | None
@@ -224,6 +375,27 @@ class ConnectionRouter(BaseModel):
             )
             for raw in raw_list
         ]
+
+    def owner_encrypt_files_at_rest(self) -> None:
+        """Encrypt the plaintext files at rest once, after a switch to required.
+
+        Files written while this client was optional (event log, checkpoints,
+        rolling state) are plaintext. Each one is encrypted in place, so its
+        name and id stay, and reads verify them as usual.
+        """
+        connection = self.connection_for_eventlog()
+
+        def encrypt_files() -> None:
+            file_ids = connection.owner_get_all_accepted_event_file_ids()
+            file_ids += connection.owner_get_checkpoint_and_state_file_ids()
+            for file_id in file_ids:
+                raw = connection.owner_download_raw_bytes_by_id(file_id)
+                if not self.peer_store.is_envelope(raw):
+                    connection.owner_overwrite_raw_bytes_by_id(
+                        file_id, self.peer_store.encrypt_for_self(raw)
+                    )
+
+        self.peer_store.encrypt_files_at_rest_once(encrypt_files)
 
     def download_events_message_by_id(
         self, events_message_id: str
@@ -367,7 +539,7 @@ class ConnectionRouter(BaseModel):
         """Upload collection files, encrypting each file if encryption is enabled."""
         if recipient_email and self.peer_store:
             files = {
-                name: self.peer_store.encrypt_if_needed(recipient_email, data)
+                name: self._encrypt_for_peer(recipient_email, data)
                 for name, data in files.items()
             }
         connection = self.connection_for_send_message()
@@ -430,10 +602,12 @@ class ConnectionRouter(BaseModel):
         connection = self.connection_for_datasite_watcher()
         return connection.read_peer_version_file(peer_email)
 
-    def share_version_file_with_peer(self, peer_email: str) -> None:
+    def share_version_file_with_peer(
+        self, peer_email: str, version_info: Optional["VersionInfo"] = None
+    ) -> None:
         """Share version file with a peer so they can read it."""
         connection = self.connection_for_own_syftbox()
-        connection.share_version_file_with_peer(peer_email)
+        connection.share_version_file_with_peer(peer_email, version_info)
 
     def watcher_get_collection_file_metadatas(
         self, prefix: str, tag: str, content_hash: str, owner_email: str
