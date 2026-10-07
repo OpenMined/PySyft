@@ -25,7 +25,7 @@ from syft.sync.peers.key_bundle import (
     format_fingerprint,
     normalize_fingerprint,
 )
-from syft.sync.peers.peer import Peer, PeerState
+from syft.sync.peers.peer import Peer, PeerNotReadyError, PeerSetupError, PeerState
 from syft.sync.peers.peer_store import PeerStore, datasite_crypto_keys_path
 from syft.sync.utils.print_utils import (
     print_peer_already_connected,
@@ -42,6 +42,7 @@ from syft.sync.version.exceptions import (
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 
 logger = logging.getLogger(__name__)
+
 
 # Key wrapping the DID document inside a published encryption bundle file.
 BUNDLE_FILE_KEY = "public_encryption_bundle"
@@ -173,6 +174,9 @@ class PeerManager(BaseModel):
     _loaded_peer_versions: Dict[str, Optional[VersionInfo]] = PrivateAttr(
         default_factory=dict
     )
+    # Peer email -> state at the first load_peers(), for accepted peers and
+    # waiting requests. None until that load.
+    _states_at_start: Optional[Dict[str, PeerState]] = PrivateAttr(default=None)
 
     # ========== Peer List Properties ==========
 
@@ -843,6 +847,13 @@ class PeerManager(BaseModel):
                         email, PeerState.ACCEPTED.value
                     )
 
+        if self._states_at_start is None:
+            self._states_at_start = {
+                p.email: p.state
+                for p in peers
+                if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_PEER)
+            }
+
         # set_peers keeps the locally pinned bundle over whatever the Drive
         # copy of SYFT_peers.json holds, and validates any bundle it adopts.
         self.peer_store.set_peers(peers)
@@ -872,6 +883,65 @@ class PeerManager(BaseModel):
                 self.connection_router.update_peer_state(
                     peer.email, peer.state.value, public_encryption_bundle=adopted
                 )
+
+    def validate_peer(self, peer_email: str) -> Peer:
+        """Return the peer ``peer_email`` if it is approved, else raise.
+
+        If the peer was already approved, or already waiting for our approval,
+        at the first ``load_peers()`` of this client, warn: the connection can
+        be left over from an earlier run, with an account that is not in use
+        now. This is a setup check for demos, not authentication.
+
+        Raises:
+            PeerNotReadyError: the peer did not approve the request yet.
+            PeerSetupError: the peer is unknown or rejected, or waits for
+                this client to approve its request.
+        """
+        peer = self.get_cached_peer(peer_email)
+        if peer is None:
+            raise PeerSetupError(
+                f"{peer_email} is not a peer. Check the email, or add it with "
+                f"client.add_peer({peer_email!r})."
+            )
+        if peer.is_requested_by_peer:
+            raise PeerSetupError(
+                f"{peer_email} is not approved yet: approve it with "
+                f"client.approve_peer_request({peer_email!r})."
+            )
+        if peer.is_requested_by_me:
+            raise PeerNotReadyError(
+                f"{peer_email} has not approved the request yet. Check the email, "
+                "and make sure that the peer approved the request."
+            )
+        if not peer.is_approved:
+            raise PeerSetupError(
+                f"{peer_email} is not approved (state: {peer.state.value})."
+            )
+        self._warn_if_known_at_start(peer_email)
+        return peer
+
+    def _warn_if_known_at_start(self, peer_email: str) -> None:
+        """Warn if ``peer_email`` was connected, or waiting, at the first load."""
+        state = (self._states_at_start or {}).get(peer_email)
+        if state is None:
+            return
+        found = (
+            "was already connected"
+            if state == PeerState.ACCEPTED
+            else "sent its request"
+        )
+        warnings.warn(
+            f"{peer_email} {found} before this client started. If this email "
+            "is wrong, the connection can be left over from an earlier run."
+        )
+
+    def forget_states_at_start(self) -> None:
+        """Count no peer as there at start, for the rest of this session.
+
+        Call it after this client deletes its state. Its peers then connect
+        again from nothing, so ``validate_peer`` does not warn about them.
+        """
+        self._states_at_start = {}
 
     def check_peer_request_exists(self, email: str) -> bool:
         """Check if a peer request exists for the given email."""

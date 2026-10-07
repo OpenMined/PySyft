@@ -1,0 +1,119 @@
+# Tinfoil workload config for the syft enclave.
+#
+# Working copy. Releases are published from OpenMined/syft-enclave-tinfoil,
+# which `just tinfoil-release` copies this file into; see "Where the configs
+# live" in docs/tinfoil_deployment.md.
+#
+# Everything in this file is MEASURED: its sha256 lands in the CVM's kernel
+# command line, so any change needs a new config release. Deployment-specific
+# values are therefore passed at deploy time with `--variable` instead (see
+# `just tinfoil-deploy`), which also means they are NOT verifiable — same
+# position as `tee-env-*` metadata on Confidential Spaces.
+#
+# Field reference: https://docs.tinfoil.sh/containers/configuration
+# 0.14.12 or later: the first image that mounts /tinfoil/attestation.sock for
+# containers with `attestation: true` (see below).
+cvm-version: 0.14.12
+cpus: 2
+memory: 16384
+gpus: 0
+
+# Keys Tinfoil makes inside the enclave at boot; the private half never leaves
+# it. Receipts are signed with this one (receipt/signing_key.py). Needs
+# cvm-version 0.14.10 or later.
+# See https://docs.tinfoil.sh/containers/attested-keys
+attested-keys:
+  - id: enclave-signing-key
+    key: ed25519
+
+containers:
+  - name: syft-enclave
+    # Must be pinned by digest: this is what the attestation commits to and
+    # what a data owner verifies. `just tinfoil-release` fills it in from the
+    # image it just pushed.
+    image: docker.io/openminedreleasebot/syft-enclave@sha256:ea890c9b82dbf3c80c703d717dabe2c3db0c48b53bd269801984807732446864
+    restart: always
+    networks: [egress]
+    # Tinfoil runs containers with a read-only root filesystem, but syft needs
+    # a writable /tmp before it can even import: portalocker calls
+    # tempfile.gettempdir() at import time and raises without one.
+    #
+    # Writable here means the CVM's ramdisk, which SEV-SNP encrypts in
+    # hardware and which never touches a host disk. There is no persistent
+    # volume to encrypt — Tinfoil Containers have none, and state is lost on
+    # restart. That suits us: SYFT_ENCLAVE_FRESH_STATE wipes it at boot anyway.
+    read_only: false
+    # Mounts /tinfoil/attestation.sock, where the enclave gets a fresh v3
+    # report. Every v3 report lists the attested keys, so that report names the
+    # key that signs receipts (receipt/key_binding.py). Off by default in Tinfoil.
+    attestation: true
+    # Mounts the attested key below at /run/tinfoil/keys/enclave-signing-key.
+    keys: [enclave-signing-key]
+    env:
+      # Key AND value pinned here, so both are measured and verifiable.
+      - SYFT_ENCLAVE_ATTESTATION_PROVIDER: 'tinfoil'
+      - SYFT_ENCLAVE_TINFOIL_REPO: 'OpenMined/syft-enclave-tinfoil'
+      # The approval gate: a job runs only once every one of these approves.
+      # Pinned so it is measured, which lets a data owner check it against the
+      # release rather than taking the enclave's word for it.
+      - SYFT_ENCLAVE_DATA_OWNERS: 'benchmark_owner@openmined.org,model_owner@openmined.org'
+      # Whether each job's outputs carry a signed receipt. The only line that
+      # differs between tinfoil-config.yml and tinfoil-config-receipts.yml.
+      - SYFT_ENCLAVE_RECEIPTS: 'false'
+      # Tinfoil has no Secret Manager equivalent; the Drive token arrives as a
+      # deploy-time secret and this provider writes it to disk (0600).
+      - SYFT_BOOTSTRAP: 'tinfoil'
+      # Declared as bare names: the key is measured, the VALUE comes from
+      # `--variable` at deploy time and is therefore NOT measured — a data
+      # owner cannot verify it. Declaring is mandatory even so: the shim
+      # silently drops a --variable whose key the config does not declare.
+      - SYFT_ENCLAVE_EMAIL
+      - SYFT_ENCLAVE_REQUIRE_TEE
+      - SYFT_ENCLAVE_USE_ENCRYPTION
+      - SYFT_ENCLAVE_TINFOIL_RELEASE_TAG
+      # Where peers fetch the report over a connection pinned to the key the
+      # report commits to. Untrusted: a wrong host either fails the pin or is
+      # this enclave.
+      - SYFT_ENCLAVE_TINFOIL_HOST
+    secrets:
+      # Value supplied by `tinfoil container create --secret`; only the NAME is
+      # measured, never the value.
+      - SYFT_ENCLAVE_TOKEN_CONTENT
+
+shim:
+  # Required — the config is rejected without it.
+  upstream-port: 8080
+  upstream-container: syft-enclave
+  # Only these paths are reachable; everything else 404s. The shim serves
+  # /.well-known/tinfoil-attestation regardless of this list.
+  paths:
+    - /
+    - /health
+    - /attestation
+  publish-attestation: true
+  dummy-attestation: false
+
+# Keyed by network name (the schema is a map, not a list). Do NOT call a
+# network "default" — Docker predefines that name and the firewall setup fails
+# at deploy time with "operation is not permitted on predefined default
+# network". The canonical schema only reserves "shim-net", so this passes
+# validation and fails on the host.
+networks:
+  egress:
+    # `open` allows any public address; RFC1918 and other private ranges stay
+    # blocked. `closed` (the default) would leave the enclave unable to reach
+    # Google Drive at all.
+    #
+    # Why not `allowlist`? It was tried and does not work for Google. The
+    # firewall resolves allowlisted hostnames to IPs once, at boot, and Google
+    # rotates them: with both www.googleapis.com and oauth2.googleapis.com
+    # listed, www stayed reachable while oauth2's current address
+    # (172.217.78.95) timed out, so every OAuth token refresh hung. Wildcards
+    # and IP literals are rejected by the schema, so there is no way to express
+    # a stable rule for these endpoints.
+    #
+    # The enclave's confidentiality does not rest on this: that comes from the
+    # measurement and the hardware. Egress filtering was defence-in-depth
+    # against a misbehaving workload, and it is the one property we give up
+    # here. Revisit if Tinfoil starts re-resolving allowlist entries.
+    egress: open

@@ -10,20 +10,16 @@ import pytest
 def temp_dir():
     """Create a temporary directory for tests."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        yield Path(tmpdir)
+        # Resolved, since the code under test resolves paths: on macOS the
+        # temp folder lives under /var, a symlink to /private/var.
+        yield Path(tmpdir).resolve()
 
 
 @pytest.fixture
 def sample_config(temp_dir):
-    """Create a sample config file with the AutoApprovalObj model."""
+    """Create a sample config file."""
     config_path = temp_dir / "config.yaml"
-    # Create a stored copy for content matching
-    approvals_dir = temp_dir / "auto_approvals" / "analysis"
-    approvals_dir.mkdir(parents=True)
-    stored_script = approvals_dir / "main.py"
-    stored_script.write_text('print("hello")\n')
-
-    config_path.write_text(f"""
+    config_path.write_text("""
 do_email: test@example.com
 syftbox_root: /tmp/syftbox
 
@@ -36,16 +32,6 @@ approve:
   interval: 5
   auto_approvals:
     enabled: true
-    objects:
-      analysis:
-        file_contents:
-          - relative_path: main.py
-            path: "{stored_script}"
-            hash: "sha256:abc123"
-        file_paths: []
-        peers:
-          - alice@uni.edu
-          - bob@co.com
   peers:
     enabled: false
     approved_domains: []
