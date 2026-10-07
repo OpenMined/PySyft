@@ -1,9 +1,11 @@
 """Tests for binding an enclave's runtime facts into its Confidential Space token.
 
-The point of the binding: the enclave's email, its configured data owners and
-its key bundle are runtime values outside the measurement. Only code inside the
-measured container can get the launcher to sign a digest of them, so the digest
-is what turns them from the enclave's unsigned word into attested facts.
+The point of the binding: the enclave's key bundle is made inside the container
+at boot, outside the measurement. Only code inside the container can get the
+launcher to sign a digest of it, so the digest is what turns it from the
+enclave's unsigned word into an attested fact. The email and data owners are
+read from the token's env_override instead, which the fixture below records as
+the operator deployed them.
 """
 
 from unittest.mock import MagicMock, patch
@@ -83,7 +85,15 @@ def token_with(monkeypatch):
             "secboot": True,
             "dbgstat": "disabled-since-boot",
             "eat_nonce": nonces,
-            "submods": {"container": {"image_digest": "sha256:abc"}},
+            "submods": {
+                "container": {
+                    "image_digest": "sha256:abc",
+                    "env_override": {
+                        "SYFT_ENCLAVE_EMAIL": EMAIL,
+                        "SYFT_ENCLAVE_DATA_OWNERS": ",".join(OWNERS),
+                    },
+                }
+            },
         }
         monkeypatch.setattr(
             "syft_enclaves.attestation.confidential_space.id_token.verify_token",
