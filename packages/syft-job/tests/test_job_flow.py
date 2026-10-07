@@ -282,19 +282,18 @@ def test_streaming_timeout_with_partial_line(tmp_path: Path):
     ref = JobRef(DO_EMAIL, DS_EMAIL, "partial-output.job", JOB_PROTOCOL_VERSION)
 
     # Run main.py with the test's own Python, skipping the venv setup of a real job.
-    submission_dir = runner.manager.submission_dir(ref)
-    review_dir = runner.manager.review_dir(ref)
-    submission_dir.mkdir(parents=True)
-    review_dir.mkdir(parents=True)
-    (submission_dir / "main.py").write_text(PARTIAL_OUTPUT_PY)
-    (submission_dir / "run.sh").write_text(f'#!/bin/bash\n"{sys.executable}" main.py\n')
+    run_dir = tmp_path / "run"
+    staging_dir = runner.manager.staging_dir(ref)
+    run_dir.mkdir()
+    (run_dir / "main.py").write_text(PARTIAL_OUTPUT_PY)
+    (run_dir / "run.sh").write_text(f'#!/bin/bash\n"{sys.executable}" main.py\n')
 
     start = time.monotonic()
-    returncode = runner._execute_job_streaming(ref, timeout=1)
+    returncode = runner._execute_job_streaming(ref, timeout=1, run_dir=run_dir)
     elapsed = time.monotonic() - start
 
     assert elapsed < 5, f"streaming read blocked for {elapsed:.1f}s"
     assert returncode == -1
-    stdout = (review_dir / "stdout.txt").read_text()
+    stdout = (staging_dir / "stdout.txt").read_text()
     assert "working" in stdout
     assert "--- PROCESS TIMED OUT ---" in stdout
