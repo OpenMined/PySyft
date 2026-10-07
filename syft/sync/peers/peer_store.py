@@ -279,6 +279,10 @@ class PeerStore(BaseModel):
         first_missed = self._bundle_missing_since.setdefault(email, self._load_count)
         return EncryptionPolicy.OFF if self._load_count > first_missed else None
 
+    def legacy_policy_found(self, email: str) -> bool:
+        """Whether the earlier client ``email`` is known to encrypt, without a read."""
+        return email in self._legacy_policies
+
     def take_policy_reread(self, email: str) -> bool:
         """True once per peer load: the caller may read the version file again."""
         if email in self._policy_rereads:

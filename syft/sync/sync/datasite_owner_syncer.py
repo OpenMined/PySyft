@@ -50,6 +50,11 @@ from syft.sync.sync.held_messages import HeldMessages
 
 logger = logging.getLogger(__name__)
 
+
+def _compressed(message: "FileChangeEventsMessage | bytes") -> bytes:
+    return message if isinstance(message, bytes) else message.as_compressed_data()
+
+
 # Default threshold for creating incremental checkpoint from rolling state
 DEFAULT_CHECKPOINT_EVENT_THRESHOLD = 50
 
@@ -805,6 +810,10 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.outbox_queue.put((recipient, file_change_events_message))
 
     def process_syftbox_events_queue(self):
+        # syft-rds and the enclave client call this outside sync(). Another
+        # process can have made the datasite required, and its files at rest
+        # encrypted, since this process last read the key file.
+        self.connection_router.peer_store.reload_policy_from_key_file()
         # TODO: make this atomic
         while not self.syftbox_events_queue.empty():
             file_change_events_message = self.syftbox_events_queue.get()
@@ -813,41 +822,40 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             )
         # The event is already in the event log, so a held outbox message is
         # kept on disk until encryption with its recipient is set up.
-        store = self._held_outbox
-        with store.edit() as held:
-            # On disk before any send, so an error part way loses nothing.
-            while not self.outbox_queue.empty():
-                recipient, message = self.outbox_queue.get()
-                held.append((recipient, message.as_compressed_data()))
-            store.save(held)
-            waiting: set[str] = set()
-            for item in list(held):
-                recipient, data = item
-                if recipient in waiting:
-                    # Keep the order of the messages to one recipient.
-                    continue
-                try:
-                    self.connection_router.owner_write_event_messages_to_outbox(
-                        recipient, FileChangeEventsMessage.from_compressed_data(data)
-                    )
-                except PeerEncryptionPendingError:
-                    peer_store = self.connection_router.peer_store
-                    if not peer_store.peers_loaded or peer_store.get_cached_peer(
-                        recipient
-                    ):
-                        waiting.add(recipient)
-                        continue
-                    # Not a peer any more: it never gets a policy.
-                    logger.warning(f"Dropped an outbox message for {recipient}")
-                except EncryptionPolicyConflictError as e:
-                    logger.warning(f"Dropped an outbox message: {e}")
-                held.remove(item)
-                store.save(held)
-            if held:
-                logger.info(
-                    f"Held {len(held)} outbox message(s) for peers whose "
-                    "encryption is not set up yet"
-                )
+        queued = []
+        while not self.outbox_queue.empty():
+            queued.append(self.outbox_queue.get())
+        # A message waits in the held file only while encryption with its
+        # recipient is pending. The event is already in the event log, so the
+        # held file keeps it over a restart.
+        held_count = self._held_outbox.send_all(
+            self._send_outbox_message, queued, encode=_compressed
+        )
+        if held_count:
+            logger.info(
+                f"Held {held_count} outbox message(s) for peers whose encryption "
+                "is not set up yet"
+            )
+
+    def _send_outbox_message(
+        self, recipient: str, message: "FileChangeEventsMessage | bytes"
+    ) -> bool:
+        """Write one outbox message. False while encryption is pending."""
+        if isinstance(message, bytes):
+            message = FileChangeEventsMessage.from_compressed_data(message)
+        try:
+            self.connection_router.owner_write_event_messages_to_outbox(
+                recipient, message
+            )
+        except PeerEncryptionPendingError:
+            peer_store = self.connection_router.peer_store
+            if not peer_store.peers_loaded or peer_store.get_cached_peer(recipient):
+                return False
+            # Not a peer any more: it never gets a policy.
+            logger.warning(f"Dropped an outbox message for {recipient}")
+        except EncryptionPolicyConflictError as e:
+            logger.warning(f"Dropped an outbox message: {e}")
+        return True
 
     @property
     def _held_outbox(self) -> HeldMessages:

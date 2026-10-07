@@ -378,19 +378,30 @@ class PeerManager(BaseModel):
 
     def _load_single_peer_version(
         self, peer_email: str
-    ) -> tuple[str, Optional[VersionInfo]]:
-        """Load version for a single peer. Used by parallel loader."""
+    ) -> tuple[str, Optional[VersionInfo], bool]:
+        """Load version for a single peer. Used by parallel loader.
+
+        For an earlier client, whose version file does not say its policy, it
+        also reads whether the peer published a bundle for us, so that these
+        Drive reads run in parallel too.
+        """
         try:
             # Create new connection for thread safety
             connection = self.connection_router.connection_for_version_read(
                 create_new=True
             )
             version_info = connection.read_peer_version_file(peer_email)
-            return (peer_email, version_info)
+            published = (
+                version_info is not None
+                and version_info.encryption_policy is None
+                and not self.peer_store.legacy_policy_found(peer_email)
+                and bool(connection.read_peer_encryption_bundle(peer_email))
+            )
+            return (peer_email, version_info, published)
         except Exception as e:
             if not self.suppress_version_warnings:
                 warnings.warn(f"Failed to load version for {peer_email}: {e}")
-            return (peer_email, None)
+            return (peer_email, None, False)
 
     def load_peer_versions_parallel(
         self, peer_emails: List[str], force: bool = False
@@ -404,14 +415,17 @@ class PeerManager(BaseModel):
         results = list(self._executor.map(self._load_single_peer_version, peer_emails))
 
         # Update peer version fields and return
-        for email, version in results:
+        for email, version, published in results:
             peer = self.get_cached_peer(email)
             if peer:
                 peer.version = version
-                self.connection_router.resolve_legacy_policy(peer)
+                if peer.needs_legacy_policy:
+                    peer.set_legacy_policy(
+                        self.peer_store.legacy_policy(email, lambda p=published: p)
+                    )
             self._update_peer_schemas(email, version)
 
-        return {email: version for email, version in results}
+        return {email: version for email, version, _ in results}
 
     def get_peer_version(self, peer_email: str) -> Optional[VersionInfo]:
         """Get cached version for peer, None if not loaded or not available."""

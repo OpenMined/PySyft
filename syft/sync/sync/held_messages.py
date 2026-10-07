@@ -13,7 +13,7 @@ import os
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
+from typing import Any, Callable, Iterable, Iterator
 
 import portalocker
 
@@ -56,13 +56,46 @@ class HeldMessages:
             finally:
                 portalocker.unlock(lock_file)
 
-    def save(self, messages: list[HeldMessage]) -> None:
-        """Write ``messages`` now. Call it only inside ``edit``.
+    def send_all(
+        self,
+        send: Callable[[str, Any], bool],
+        queued: Iterable[tuple[str, Any]] = (),
+        encode: Callable[[Any], bytes] = lambda message: message,
+    ) -> int:
+        """Send the held messages, then ``queued``, in order for each recipient.
 
-        A flush saves after each message it sends, so an error part way
-        leaves exactly the messages that were not sent.
+        ``send(recipient, message)`` gets the held bytes, or a queued message.
+        It returns False while encryption with the recipient is pending: that
+        message, and later ones to the same recipient, stay held (``encode``
+        gives the bytes of a queued message). True means sent, or dropped on
+        purpose. When ``send`` raises, the messages not handled yet stay held,
+        so none is lost and none is sent twice.
+
+        Returns the number of messages held after the call.
         """
-        self._write(messages)
+        with self.edit() as held:
+            items = list(held) + list(queued)
+            remaining: list[tuple[str, Any]] = []
+            waiting: set[str] = set()
+            done = 0
+            try:
+                for recipient, message in items:
+                    if recipient in waiting or not send(recipient, message):
+                        waiting.add(recipient)
+                        remaining.append((recipient, message))
+                    done += 1
+            finally:
+                held[:] = [(r, encode(m)) for r, m in remaining + items[done:]]
+                self._write(held)
+            return len(held)
+
+    def stamp(self) -> tuple[int, int] | None:
+        """Changes when the file changes: (mtime in ns, size), or None without a file."""
+        try:
+            stat = self._path.stat()
+        except FileNotFoundError:
+            return None
+        return (stat.st_mtime_ns, stat.st_size)
 
     def __len__(self) -> int:
         return len(self.read())

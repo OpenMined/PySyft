@@ -4,6 +4,7 @@ A client is ``optional`` (encrypt only when the peer requires it) or
 ``required``. A pair encrypts when either side requires it.
 """
 
+import inspect
 import json
 import threading
 import warnings
@@ -21,9 +22,11 @@ from syft.sync.encryption_policy import (
     PeerKeysNotReadyError,
 )
 from syft.sync.events.file_change_event import FileChangeEventsMessage
+from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.sync.datasite_watcher_syncer import DatasiteWatcherSyncer
+from syft.sync.sync.held_messages import HeldMessages
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.version.version_info import VersionInfo
 from tests.unit.test_sync_manager import path_for_job
@@ -242,13 +245,16 @@ def test_legacy_required_policy_is_read_once_per_peer(monkeypatch):
     )
     _advertise_as_legacy_client(do_manager)
     reads = []
-    original = ConnectionRouter.read_peer_encryption_bundle
+    original = GDriveConnection.read_peer_encryption_bundle
 
     def spy(self, email):
-        reads.append(email)
+        # Count the reads of the version load; pinning and the key rotation
+        # check read the bundle too.
+        if any(f.function == "_load_single_peer_version" for f in inspect.stack()):
+            reads.append(email)
         return original(self, email)
 
-    monkeypatch.setattr(ConnectionRouter, "read_peer_encryption_bundle", spy)
+    monkeypatch.setattr(GDriveConnection, "read_peer_encryption_bundle", spy)
     ds_manager.load_peers()
     ds_manager.load_peers()
     assert reads == [do_manager.email]
@@ -260,7 +266,7 @@ def test_legacy_peer_without_bundle_is_checked_again(monkeypatch):
         do_encryption_policy=REQUIRED,
     )
     _advertise_as_legacy_client(do_manager)
-    original = ConnectionRouter.read_peer_encryption_bundle
+    original = GDriveConnection.read_peer_encryption_bundle
     calls = []
 
     def first_read_finds_nothing(self, email):
@@ -268,7 +274,7 @@ def test_legacy_peer_without_bundle_is_checked_again(monkeypatch):
         return None if len(calls) == 1 else original(self, email)
 
     monkeypatch.setattr(
-        ConnectionRouter, "read_peer_encryption_bundle", first_read_finds_nothing
+        GDriveConnection, "read_peer_encryption_bundle", first_read_finds_nothing
     )
     ds_manager.load_peers()
     ds_manager.load_peers()
@@ -773,6 +779,20 @@ def test_switch_is_advertised_by_process_that_never_wrote_version():
     assert advertised.encryption_policy == REQUIRED
 
 
+def test_direct_event_write_takes_policy_recorded_by_another_process():
+    """syft-rds and the enclave client write events outside sync()."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    keys_path = do_manager.peer_manager.peer_store._keys_path
+    with pytest.warns(UserWarning):
+        PeerStore.create(
+            email=do_manager.email, encryption_policy=REQUIRED, keys_path=keys_path
+        )
+    syncer = do_manager.datasite_owner_syncer
+    syncer.queue_event_for_syftbox([], FileChangeEventsMessage(events=[]))
+    syncer.process_syftbox_events_queue()
+    assert all(_is_envelope(raw) for raw in _raw_event_log(do_manager))
+
+
 def _raw_event_log(do_manager) -> list[bytes]:
     connection = (
         do_manager.datasite_owner_syncer.connection_router.connection_for_eventlog()
@@ -1135,6 +1155,64 @@ def test_non_peer_recipient_still_sends_to_the_other(monkeypatch):
     with pytest.raises(PeerEncryptionPolicyUnknownError):
         watcher.process_file_changes_queue()
     assert sent == [do_manager.email]
+
+
+def test_keys_not_ready_for_one_recipient_still_sends_to_the_other(monkeypatch):
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    sent = []
+
+    def send_or_hold(self, recipient, message):
+        if recipient == "stranger@example.com":
+            raise PeerKeysNotReadyError(recipient)
+        sent.append(recipient)
+        return True
+
+    monkeypatch.setattr(DatasiteWatcherSyncer, "_send_or_hold", send_or_hold)
+    watcher = ds_manager.datasite_watcher_syncer
+    watcher.on_file_change("stranger@example.com/a.txt", "a", process_now=False)
+    watcher.on_file_change(f"{do_manager.email}/b.txt", "b", process_now=False)
+    with pytest.raises(PeerKeysNotReadyError):
+        watcher.process_file_changes_queue()
+    assert sent == [do_manager.email]
+
+
+def test_owner_flush_writes_no_held_file_when_nothing_waits(monkeypatch):
+    """Messages that go out at once do not pass through the held file."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    written = []
+    original = HeldMessages._write
+    monkeypatch.setattr(
+        HeldMessages,
+        "_write",
+        lambda self, messages: written.append(len(messages))
+        or original(self, messages),
+    )
+    syncer = do_manager.datasite_owner_syncer
+    for _ in range(3):
+        syncer.outbox_queue.put((ds_manager.email, FileChangeEventsMessage(events=[])))
+    syncer.process_syftbox_events_queue()
+    assert all(n == 0 for n in written)
+
+
+def test_held_hashes_are_decoded_again_only_after_a_change(monkeypatch):
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        add_peers=False,
+    )
+    ds_manager.add_peer(do_manager.email, sync=False)
+    file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
+    ds_manager._send_file_change(file_path, "held")
+
+    decodes = []
+    original = ProposedFileChangesMessage.from_compressed_data.__func__
+    monkeypatch.setattr(
+        ProposedFileChangesMessage,
+        "from_compressed_data",
+        classmethod(lambda cls, data: decodes.append(1) or original(cls, data)),
+    )
+    watcher = ds_manager.datasite_watcher_syncer
+    watcher._held_hashes()
+    watcher._held_hashes()
+    assert len(decodes) == 1
 
 
 def test_owner_drops_outbox_message_for_former_peer():

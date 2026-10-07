@@ -48,6 +48,24 @@ Syft uses Google Drive as its file-based transport layer. All peer-to-peer commu
 
 ---
 
+## Encryption Policy
+
+Each client advertises an encryption policy in `SYFT_version.json`:
+
+| Policy     | Set with                       | Effect                                       |
+| ---------- | ------------------------------ | -------------------------------------------- |
+| `optional` | default, `encryption=False`    | encrypt only with a peer that requires it    |
+| `required` | `encryption=True`              | encrypt with every peer; refuse plaintext    |
+| `off`      | `encryption="off"`             | never encrypt                                |
+
+A pair encrypts when one side is `required`. An `off` and a `required` client conflict: each side skips the other with a warning.
+
+A pair that encrypts refuses plaintext. The receiver renames a plaintext message to `<name>.rejected`, and waits for that peer. The sender resends the message encrypted on its next sync.
+
+An earlier client writes no policy in its version file. It is `required` when it published a bundle for us, else `off`.
+
+**Known limit.** An earlier client that encrypted once and then turned encryption off still has its old bundle on Drive, so it reads as `required`. Its plaintext is rejected, and an earlier client does not resend rejected messages, so the pair stops syncing. To fix it, upgrade that client, or delete its file `encryption_bundle_{owner}_for_{peer}.json` in `syft_encryption_bundles#{owner}/`.
+
 ## Peer Requests
 
 DS creates inbox/outbox folders on their own drive and grants the DO write access. The DO discovers these folders by searching for `syft_datasite#{my_email}#` folders they don't own.
