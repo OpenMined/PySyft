@@ -5,9 +5,10 @@ to that base model plus a model owner's private LoRA adapter. Both approve the j
 it, and only the probe owner reads the results: one verdict per prompt, and a signed receipt. The
 probe owner never sees the adapter, and the model owner never sees the probe or the prompts.
 
-This is a variant of [`double-blind-eval-w-receipts`](../double-blind-eval-w-receipts/SETUP.md):
-the same enclave, release and flow, with a job that reads the model's hidden state and applies a
-probe instead of generating completions and sending them to a safety classifier. The notebooks in
+This is a variant of [`double-blind-eval-w-receipts`](../double-blind-eval-w-receipts/SETUP.md),
+which carries out the [tinfoilsh/double-blind-eval](https://github.com/tinfoilsh/double-blind-eval)
+flow over PySyft: the same enclave, release and flow, with a job that reads the model's hidden state
+and applies a probe instead of generating completions and sending them to a safety classifier. The notebooks in
 this folder are the two parties; everything else on this page is the operator's job, done once
 before either party opens one.
 
@@ -89,8 +90,9 @@ covers the rest.
 
 The probe owner runs [`0. probe-owner-train-on-base.ipynb`](0.%20probe-owner-train-on-base.ipynb)
 first, on their own machine or in Colab. It needs no account and never touches the enclave. It
-downloads the AILuminate demo prompt set, leaves out the ten prompts the evaluation uses, reads the
-open base model's hidden state on the rest, and fits a logistic-regression probe. It writes three
+downloads the [MLCommons AILuminate](https://github.com/mlcommons/ailuminate) demo prompt set,
+leaves out the ten prompts the evaluation uses, reads the open base model's hidden state on a sample
+of the rest, and fits a logistic-regression probe. It writes three
 files next to itself:
 
 - `probe.json` — the probe. This is the private half: it goes to the enclave and nowhere else. The
@@ -109,11 +111,12 @@ The concept the probe tracks is a placeholder: a _specialised-advice request_, w
 `CONCEPT`, `POSITIVE_HAZARDS` and the download in notebook 0.
 
 Notebook 0 runs the base model in bfloat16 on CPU, as the enclave does: one forward pass per
-prompt, over up to 1,200 prompts. On an Apple-silicon laptop that took about 1.5 seconds per prompt,
-so about half an hour for the full sample; Colab's two CPUs are slower. The notebook times the first
-five prompts and prints an estimate before starting the rest. Set `MAX_PROMPTS` for a quicker run on
-a stratified subsample: 40 prompts took about a minute. The dry run in notebook 1 loads the same
-2.2 GB base model and took about 9 seconds for its five prompts.
+prompt. The demo set has 100 `spc_*` prompts, 97 once the evaluation prompts are left out, so the
+default sample is those 97 and three negatives for each: 388 prompts. On an Apple-silicon laptop
+they took about 12 minutes, 1.9 seconds each; Colab's two CPUs are slower. The notebook times the
+first five prompts and prints an estimate before starting the rest. Set `MAX_PROMPTS` for a quicker
+run on a stratified subsample. The dry run in notebook 1 loads the same 2.2 GB base model and took
+about 13 seconds for its five prompts.
 
 ## 5. Run the two party notebooks
 
@@ -123,7 +126,8 @@ Open both in Colab, one per account:
   runs the probe on the base model, submits the job, reads the verdicts, compares them with the dry
   run, and logs the receipt on Rekor
 - [`2. DO-model-owner-probe.ipynb`](2.%20DO-model-owner-probe.ipynb) — uploads the adapter, reviews
-  and approves the job, sees no results
+  the job and the probe's public card (concept, layer, position, threshold; no weights), approves,
+  sees no results
 
 Set the same constants in both, in the cell under **Setup**:
 
@@ -156,7 +160,8 @@ seconds from start to finish, by its receipt's timestamps. About 58 of those wer
 other 44 installed PyTorch, downloaded, hashed and loaded the base model, and called the safety
 classifier. This job keeps all of that but the classifier, and replaces generation with one forward
 pass per prompt, which costs about what the time to first token measured there: 20 seconds for the
-five private prompts. So we expect about 65 seconds, well inside the 600-second limit.
+five private prompts (on the laptop above, the job's readout of the same five took 13). So we expect
+about 65 seconds, well inside the 600-second limit.
 
 ## 6. Republish, after changing the image or config
 
