@@ -47,7 +47,8 @@ def main() -> None:
         f"use_encryption={settings.use_encryption} receipts={settings.receipts} "
         f"attestation_provider={settings.attestation_provider} "
         f"tinfoil_repo={settings.tinfoil_repo} "
-        f"tinfoil_release_tag={settings.tinfoil_release_tag}"
+        f"tinfoil_release_tag={settings.tinfoil_release_tag} "
+        f"persist_owner_state={settings.persist_owner_state}"
     )
 
     logger.info("Building SyftEnclaveClient...")
@@ -56,6 +57,7 @@ def main() -> None:
         token_path=settings.token_path,
         data_owners=settings.data_owners,
         encryption=settings.use_encryption,
+        persist_owner_state=settings.persist_owner_state,
     )
     if settings.receipts:
         client.receipts = ReceiptSettings(
