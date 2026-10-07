@@ -462,6 +462,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         "load_peers",
         "approve_peer_request",
         "reject_peer_request",
+        "validate_peer",
         "sync",
         "create_checkpoint",
         "should_create_checkpoint",
@@ -1009,6 +1010,18 @@ class SyftboxManager(BaseModelCallbackMixin):
         """Reject a pending peer request. Delegates to PeerManager."""
         self.peer_manager.reject_peer_request(email_or_peer)
 
+    def validate_peer(self, peer_email: str) -> Peer:
+        """Load the peers, then return ``peer_email`` if it is approved.
+
+        Use it after peering, before the rest of a notebook runs. The rules are
+        in ``PeerManager.validate_peer``.
+
+        Raises:
+            PeerSetupError: ``peer_email`` is not approved.
+        """
+        self.load_peers()
+        return self.peer_manager.validate_peer(peer_email)
+
     # ========== Encryption key fingerprints ==========
 
     @property
@@ -1193,6 +1206,7 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         # Clear in-memory caches and filesystem cache contents
         self._clear_caches()
+        self.peer_manager.forget_states_at_start()
         self.reset_all_connection_caches()
 
         # Delete local syftbox folder and cache directories

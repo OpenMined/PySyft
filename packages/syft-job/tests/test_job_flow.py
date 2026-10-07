@@ -15,6 +15,7 @@ from syft_job.models import JobState
 
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
+LOG_FILES = ("stdout.txt", "stderr.txt", "returncode.txt")
 
 MAIN_PY = """\
 import os
@@ -41,6 +42,9 @@ def test_full_job_lifecycle(tmp_path: Path):
     ds_client = JobClient(config=ds_config)
     do_client = JobClient(config=do_config)
     do_runner = SyftJobRunner(config=do_config)
+
+    # --- DO approves the DS as a peer, which grants read on each state.yaml ---
+    do_client.setup_ds_job_folder_as_do(DS_EMAIL)
 
     # --- DS submits a python job to DO ---
     job_dir = ds_client.submit_python_job(
@@ -73,7 +77,7 @@ def test_full_job_lifecycle(tmp_path: Path):
     job.approve()
     assert job.status == "approved"
 
-    # --- DO runs approved jobs ---
+    # --- DO runs approved jobs. By default the logs stay in staging/ ---
     do_runner.process_approved_jobs(stream_output=False, timeout=120)
 
     # Re-fetch to get updated status
@@ -87,36 +91,44 @@ def test_full_job_lifecycle(tmp_path: Path):
     result_file = next(p for p in job.output_paths if p.name == "result.txt")
     assert result_file.read_text().strip() == "done"
 
-    # --- Check stdout / stderr (now in review/) ---
-    stdout_path = review_path / "stdout.txt"
-    stderr_path = review_path / "stderr.txt"
+    # --- Check stdout / stderr (staged until released) ---
+    staging_path = do_config.get_staging_job_dir(DO_EMAIL, DS_EMAIL, "test.job")
+    stdout_path = staging_path / "stdout.txt"
+    stderr_path = staging_path / "stderr.txt"
     assert stdout_path.exists()
     assert stderr_path.exists()
     assert "hello from job" in stdout_path.read_text()
-
-    # --- Check returncode (now in review/) ---
-    returncode_path = review_path / "returncode.txt"
-    assert returncode_path.exists()
+    returncode_path = staging_path / "returncode.txt"
     assert returncode_path.read_text().strip() == "0"
+    # Nothing readable sits in review/ before the release.
+    for name in LOG_FILES:
+        assert not (review_path / name).exists()
+    # The viewer finds the staged file, because the DO reads both directories.
+    assert "hello from job" in str(job.stdout)
 
     # --- Before sharing, DS should NOT have read access ---
     ctx = SyftPermContext(datasite=syftbox / DO_EMAIL)
+    # The DS polls state.yaml through the peer grant.
+    assert ctx.open(
+        f"app_data/job/review/{DS_EMAIL}/v1/test.job/state.yaml"
+    ).has_read_access(DS_EMAIL)
     assert not ctx.open(
         f"app_data/job/review/{DS_EMAIL}/v1/test.job/outputs/"
     ).has_read_access(DS_EMAIL)
-    assert not ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/v1/test.job/stdout.txt"
-    ).has_read_access(DS_EMAIL)
-    assert not ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/v1/test.job/stderr.txt"
-    ).has_read_access(DS_EMAIL)
-    assert not ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/v1/test.job/returncode.txt"
-    ).has_read_access(DS_EMAIL)
+    for name in LOG_FILES:
+        assert not ctx.open(
+            f"app_data/job/staging/{DS_EMAIL}/v1/test.job/{name}"
+        ).has_read_access(DS_EMAIL)
 
-    # --- Share outputs and logs with DS ---
+    # --- Release the logs, then share outputs and logs with DS ---
     job.share_outputs([DS_EMAIL])
+    assert sorted(job.release_logs()) == sorted(LOG_FILES)
     job.share_logs([DS_EMAIL])
+
+    # The release moved the files into review/, which is the disclosure.
+    for name in LOG_FILES:
+        assert (review_path / name).exists()
+        assert not (staging_path / name).exists()
 
     # --- Verify DS has read access via SyftPermContext ---
     ctx = SyftPermContext(datasite=syftbox / DO_EMAIL)
@@ -159,9 +171,8 @@ def test_ds_job_folder_permissions(tmp_path: Path):
     assert inbox_folder.has_write_access(DS_EMAIL)
     assert inbox_folder.has_read_access(DO_EMAIL)
 
-    # DS should have read access to their review folder
-    review_folder = ctx.open(f"app_data/job/review/{DS_EMAIL}/")
-    assert review_folder.has_read_access(DS_EMAIL)
+    # DS does not read its whole review folder, only named files in it
+    assert not ctx.open(f"app_data/job/review/{DS_EMAIL}/").has_read_access(DS_EMAIL)
 
     # Another user should NOT have write access
     other_email = "other@test.org"
@@ -195,23 +206,23 @@ def test_job_reject(tmp_path: Path):
 
 
 def test_submission_validation(tmp_path: Path):
-    """Test that invalid submissions are auto-rejected during scan_inbox."""
+    """A complete submission with an entry outside the schema is rejected at receipt.
+
+    A missing entry may still be arriving, so only an extra one is final.
+    """
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
+    code_file = tmp_path / "main.py"
+    code_file.write_text(MAIN_PY)
 
     do_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DO_EMAIL)
-    do_client = JobClient(config=do_config)
-
-    # Manually create an invalid submission (missing code/ directory)
-    submission_path = do_config.get_job_submission_dir(DO_EMAIL, DS_EMAIL, "bad.job")
-    submission_path.mkdir(parents=True)
-    (submission_path / "config.yaml").write_text(
-        "name: bad.job\ntype: python\nsubmitted_by: ds@test.org\nsubmitted_at: '2025-01-01T00:00:00+00:00'\n"
+    ds_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
+    submission_path = JobClient(config=ds_config).submit_python_job(
+        user=DO_EMAIL, code_path=str(code_file), job_name="bad.job"
     )
-    (submission_path / "run.sh").write_text("#!/bin/bash\necho hi")
-    # Missing code/ directory — should fail validation
+    (submission_path / "extra.txt").write_text("not part of the schema")
 
-    do_client.scan_inbox()
+    JobClient(config=do_config).scan_inbox()
 
     review_state = (
         do_config.get_review_job_dir(DO_EMAIL, DS_EMAIL, "bad.job") / "state.yaml"
