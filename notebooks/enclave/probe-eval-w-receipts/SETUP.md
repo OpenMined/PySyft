@@ -8,9 +8,9 @@ probe owner never sees the adapter, and the model owner never sees the probe or 
 This is a variant of [`double-blind-eval-w-receipts`](../double-blind-eval-w-receipts/SETUP.md),
 which carries out the [tinfoilsh/double-blind-eval](https://github.com/tinfoilsh/double-blind-eval)
 flow over PySyft: the same enclave, release and flow, with a job that reads the model's hidden state
-and applies a probe instead of generating completions and sending them to a safety classifier. The notebooks in
-this folder are the two parties; everything else on this page is the operator's job, done once
-before either party opens one.
+and applies a probe instead of generating completions and sending them to a safety classifier. The
+notebooks in this folder are the two parties; everything else on this page is the operator's job,
+done once before either party opens one.
 
 | Notebook                             | Run by      | Where                                           |
 | ------------------------------------ | ----------- | ----------------------------------------------- |
@@ -92,8 +92,9 @@ The probe owner runs [`0. probe-owner-train-on-base.ipynb`](0.%20probe-owner-tra
 first, on their own machine or in Colab. It needs no account and never touches the enclave. It
 downloads the [MLCommons AILuminate](https://github.com/mlcommons/ailuminate) demo prompt set,
 leaves out the ten prompts the evaluation uses, reads the open base model's hidden state on a sample
-of the rest, and fits a logistic-regression probe. It writes three
-files next to itself:
+of the rest, and fits a logistic-regression probe. It picks the layer and the threshold on its
+training split alone: the layer with the best cross-validated AUROC, and the score that flags 10% of
+the training negatives out of fold. It writes three files next to itself:
 
 - `probe.json` — the probe. This is the private half: it goes to the enclave and nowhere else. The
   folder's `.gitignore` keeps it out of git.
@@ -106,6 +107,18 @@ Notebook 1 reads all three from the folder it runs in. Run both notebooks in the
 there is nothing to do; in Colab, each notebook has a commented cell to download the files from
 notebook 0 and upload them to notebook 1.
 
+Notebook 0 downloads from pinned commits and checks every file's sha256 before training on it;
+notebook 1 downloads the evaluation prompts from the same bench commit.
+
+| File                                                  | Source                                           | sha256                                                             |
+| ----------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------ |
+| `airr_official_1.0_demo_en_us_prompt_set_release.csv` | `mlcommons/ailuminate` at `769cc2be`             | `63e2b654325c5405096fabf28ef5f057b0ad674904b1839fd1f52b523e324d02` |
+| `bench/dbe_prompts.csv`                               | `OpenMined/double-blind-eval-bench` at `f0050a5` | `3e1abebd6dbf673bf11027e4c0aec0fce9fa55a5c82cabba715ae3c90b9c6d38` |
+| `bench/dbe_prompts_mock.csv`                          | `OpenMined/double-blind-eval-bench` at `f0050a5` | `5c4c831ef7c614ae8dba9940858833e0d23c37ef0f358b6e1ea60d4a24bf5cee` |
+
+The full commits are `769cc2be9d20c8d4fb26ce53b68865ed41dfb8e2` and
+`f0050a5e0b1a361d525139be5ce53a503483648c`, the `main` of each repo on 2026-10-07.
+
 The concept the probe tracks is a placeholder: a _specialised-advice request_, with the AILuminate
 `spc_*` hazards as positives. A real probe owner brings their own concept and prompts by changing
 `CONCEPT`, `POSITIVE_HAZARDS` and the download in notebook 0.
@@ -113,10 +126,10 @@ The concept the probe tracks is a placeholder: a _specialised-advice request_, w
 Notebook 0 runs the base model in bfloat16 on CPU, as the enclave does: one forward pass per
 prompt. The demo set has 100 `spc_*` prompts, 97 once the evaluation prompts are left out, so the
 default sample is those 97 and three negatives for each: 388 prompts. On an Apple-silicon laptop
-they took about 12 minutes, 1.9 seconds each; Colab's two CPUs are slower. The notebook times the
+they took about 13 minutes, 2 seconds each; Colab's two CPUs are slower. The notebook times the
 first five prompts and prints an estimate before starting the rest. Set `MAX_PROMPTS` for a quicker
 run on a stratified subsample. The dry run in notebook 1 loads the same 2.2 GB base model and took
-about 13 seconds for its five prompts.
+about 14 seconds for its five prompts.
 
 ## 5. Run the two party notebooks
 
@@ -160,8 +173,8 @@ seconds from start to finish, by its receipt's timestamps. About 58 of those wer
 other 44 installed PyTorch, downloaded, hashed and loaded the base model, and called the safety
 classifier. This job keeps all of that but the classifier, and replaces generation with one forward
 pass per prompt, which costs about what the time to first token measured there: 20 seconds for the
-five private prompts (on the laptop above, the job's readout of the same five took 13). So we expect
-about 65 seconds, well inside the 600-second limit.
+five private prompts (on the laptop above, the job's readout of the same five took about 15). So we
+expect about 65 seconds, well inside the 600-second limit.
 
 ## 6. Republish, after changing the image or config
 
