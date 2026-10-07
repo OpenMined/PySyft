@@ -1,11 +1,14 @@
 """End-to-end unit test for the syft-job package lifecycle."""
 
+import sys
 import time
 from pathlib import Path
 
 from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
+from syft_job.job_ref import JobRef
 from syft_job.job_runner import SyftJobRunner
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_perms import SyftPermContext
 from syft_job.models import JobState
 
@@ -263,3 +266,34 @@ def test_timeout_does_not_hang_runner(tmp_path: Path):
     # 3s job timeout + venv setup + tree-kill cleanup should fit well under 60s.
     assert elapsed < 60, f"process_approved_jobs took {elapsed:.1f}s — likely hung"
     assert do_client.jobs[0].status == "failed"
+
+
+PARTIAL_OUTPUT_PY = """\
+import time
+
+print("working", end="", flush=True)
+time.sleep(10)
+"""
+
+
+def test_streaming_timeout_with_partial_line(tmp_path: Path):
+    config = SyftJobConfig(syftbox_folder=tmp_path, current_user_email=DO_EMAIL)
+    runner = SyftJobRunner(config=config)
+    ref = JobRef(DO_EMAIL, DS_EMAIL, "partial-output.job", JOB_PROTOCOL_VERSION)
+
+    # Run main.py with the test's own Python, skipping the venv setup of a real job.
+    run_dir = tmp_path / "run"
+    staging_dir = runner.manager.staging_dir(ref)
+    run_dir.mkdir()
+    (run_dir / "main.py").write_text(PARTIAL_OUTPUT_PY)
+    (run_dir / "run.sh").write_text(f'#!/bin/bash\n"{sys.executable}" main.py\n')
+
+    start = time.monotonic()
+    returncode = runner._execute_job_streaming(ref, timeout=1, run_dir=run_dir)
+    elapsed = time.monotonic() - start
+
+    assert elapsed < 5, f"streaming read blocked for {elapsed:.1f}s"
+    assert returncode == -1
+    stdout = (staging_dir / "stdout.txt").read_text()
+    assert "working" in stdout
+    assert "--- PROCESS TIMED OUT ---" in stdout

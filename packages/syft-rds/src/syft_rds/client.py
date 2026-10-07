@@ -265,6 +265,9 @@ class SyftRDSClient(BaseModel):
     def load_peers(self, *args: Any, **kwargs: Any) -> Any:
         return self.sync_engine.load_peers(*args, **kwargs)
 
+    def validate_peer(self, *args: Any, **kwargs: Any) -> Any:
+        return self.sync_engine.validate_peer(*args, **kwargs)
+
     def delete_syftbox(self, *args: Any, **kwargs: Any) -> Any:
         return self.sync_engine.delete_syftbox(*args, **kwargs)
 
