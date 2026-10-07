@@ -20,6 +20,7 @@ from syft_bg.api.utils import (
 )
 from syft_bg.approve import api_store as api_store_module
 from syft_bg.approve.api_store import ApiStore
+from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.approve.handlers.job import JobApprovalHandler
 from syft_bg.common.config import get_default_paths
 from syft_bg.common.syft_bg_config import SyftBgConfig
@@ -257,6 +258,40 @@ class TestHandlerReloadsApis:
 
         store.delete("r1")
         assert handler.evaluate_auto_approval(job).match is False
+
+
+class TestAutoApproveDisclosures:
+    """The DS reads a log only after the DO releases it."""
+
+    def _run(self, config_path):
+        client = MagicMock()
+        job = MagicMock()
+        job.name = "j1"
+        job.submitted_by = "alice@test.com"
+        client.jobs = [job]
+        handler = JobApprovalHandler(
+            client=client, config_path=config_path, verbose=False
+        )
+        with patch.object(
+            JobApprovalHandler,
+            "evaluate_auto_approval",
+            return_value=MagicMock(match=True),
+        ):
+            handler.check_and_approve()
+        assert "share_logs_with_submitter" not in (
+            client.process_approved_jobs.call_args.kwargs
+        )
+        return job.approve.call_args.kwargs
+
+    def test_approval_releases_nothing_by_default(self, temp_dir):
+        assert self._run(temp_dir / "config.yaml")["disclosures"] == []
+
+    def test_config_sets_released_items(self, temp_dir):
+        config_path = temp_dir / "config.yaml"
+        SyftBgConfig(
+            approve=AutoApproveConfig(default_disclosures=["logs", "return_code"])
+        ).save(config_path)
+        assert self._run(config_path)["disclosures"] == ["logs", "return_code"]
 
 
 class TestJobUserFiles:

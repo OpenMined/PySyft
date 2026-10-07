@@ -37,12 +37,14 @@ def test_ds_perms_cover_v1_subfolder(tmp_path: Path):
     v1_job_dir = do_config.get_job_submission_dir(DO_EMAIL, DS_EMAIL, "some.job")
     v1_job_dir.mkdir(parents=True)
 
-    # The grant on inbox/<ds>/ covers the v1/<job> subfolder.
+    # The grants on inbox/<ds>/ and review/<ds>/ cover the v1/<job> subfolder.
     ctx = SyftPermContext(datasite=syftbox / DO_EMAIL)
     assert ctx.open(f"app_data/job/inbox/{DS_EMAIL}/v1/some.job/").has_write_access(
         DS_EMAIL
     )
-    assert ctx.open(f"app_data/job/review/{DS_EMAIL}/v1/").has_read_access(DS_EMAIL)
+    assert ctx.open(
+        f"app_data/job/review/{DS_EMAIL}/v1/some.job/state.yaml"
+    ).has_read_access(DS_EMAIL)
 
 
 def test_negotiated_protocol_version_for_peer_raises_on_unknown(tmp_path: Path):

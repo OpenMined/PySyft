@@ -53,6 +53,11 @@ class JobApprovalHandler:
     def api_store(self) -> ApiStore:
         return ApiStore(self.client.syftbox_folder, self.client.email)
 
+    @property
+    def default_disclosures(self) -> list[str]:
+        """Re-read from disk on every access, like ``config``."""
+        return SyftBgConfig.load(self._config_path).approve.default_disclosures
+
     def _get_approved_peers(self) -> list[str]:
         """Get list of approved peer emails."""
         self.client.load_peers(force_download=True)
@@ -110,7 +115,9 @@ class JobApprovalHandler:
                 continue
 
             try:
-                job.approve(approval_method="auto")
+                job.approve(
+                    approval_method="auto", disclosures=self.default_disclosures
+                )
                 approved_jobs.append(job)
 
                 if self.state:
@@ -130,7 +137,6 @@ class JobApprovalHandler:
             self.client.process_approved_jobs(
                 stream_output=self.verbose,
                 share_outputs_with_submitter=True,
-                share_logs_with_submitter=True,
             )
 
         return approved_jobs

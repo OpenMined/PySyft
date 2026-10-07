@@ -67,7 +67,7 @@ class StdoutViewer:
         if self.job_info.status != "done":
             return "No stdout available - job not completed yet"
 
-        stdout_file = self.job_info.job_review_path / "stdout.txt"
+        stdout_file = self.job_info.artifact_path("stdout.txt")
 
         if not stdout_file.exists():
             return "No stdout file found"
@@ -97,7 +97,7 @@ class StdoutViewer:
         if self.job_info.status != "done":
             error_msg = "No stdout available - job not completed yet"
         else:
-            stdout_file = self.job_info.job_review_path / "stdout.txt"
+            stdout_file = self.job_info.artifact_path("stdout.txt")
 
             if not stdout_file.exists():
                 error_msg = "No stdout file found"
