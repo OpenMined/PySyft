@@ -304,11 +304,13 @@ class ConnectionRouter(BaseModel):
         connection._update_peer_state(peer_email, state, public_encryption_bundle)
 
     def owner_remove_proposed_filechange_from_inbox(
-        self, proposed_filechange_message: ProposedFileChangesMessage
+        self,
+        proposed_filechange_message: ProposedFileChangesMessage,
+        sender_email: str,
     ):
         connection = self.connection_for_receive_message()
         connection.owner_remove_proposed_filechange_message_from_inbox(
-            proposed_filechange_message
+            proposed_filechange_message, sender_email
         )
 
     # =========================================================================

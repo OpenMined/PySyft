@@ -53,11 +53,34 @@ def test_target_protocol_versions_for_peers(tmp_path: Path):
         tmp_path, peer_schemas={"old@test.org": schema0, "new@test.org": schema1}
     )
 
-    # No audience -> widest-compatible (oldest) protocol.
-    assert storage.target_protocol_versions_for_peers() == {"0"}
-    # Unknown peer -> also widest-compatible.
+    # No audience -> nothing beyond the current layout.
+    assert storage.target_protocol_versions_for_peers() == set()
+    # A named peer of unknown version -> the floor, which it can read.
     assert storage.target_protocol_versions_for_peers(["stranger@test.org"]) == {"0"}
     # Mixed audience -> a copy per distinct version.
     assert storage.target_protocol_versions_for_peers(
         ["old@test.org", "new@test.org"]
     ) == {"0", "1"}
+
+
+def test_create_protocol_versions(tmp_path: Path):
+    schema0 = dataset_registry.schema_for_protocol_version("0")
+    storage = _storage(tmp_path, peer_schemas={"old@test.org": schema0})
+
+    # No audience -> the current layout alone.
+    assert storage.create_protocol_versions() == [DATASET_PROTOCOL_VERSION]
+    # An older peer in the audience -> its layout as well as the current one.
+    assert storage.create_protocol_versions(["old@test.org"]) == [
+        "0",
+        DATASET_PROTOCOL_VERSION,
+    ]
+
+
+def test_the_floor_is_what_we_support_not_what_we_can_read(tmp_path: Path):
+    # A codec may still read a layout the floor has retired. The backfill target
+    # follows the floor, so no new copy lands in a retired layout.
+    storage = _storage(tmp_path)
+    assert storage._floor_protocol_version == (
+        dataset_registry.min_supported_protocol_version
+    )
+    assert "0" in storage._codec_by_protocol_version
