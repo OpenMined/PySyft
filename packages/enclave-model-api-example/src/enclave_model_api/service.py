@@ -9,6 +9,7 @@ import logging
 import threading
 import time
 from pathlib import Path
+from typing import Callable
 
 from enclave_model_api.log_writer import append_log_record, build_log_record
 from enclave_model_api.paths import weights_ready
@@ -21,15 +22,24 @@ class InferenceService:
         self,
         backend,
         model_size: str,
-        weights_dir: Path | str,
+        weights_dir: Path | str | Callable[[], Path],
         logs_dir: Path | str,
     ):
         self.backend = backend
         self.model_size = model_size
-        self.weights_dir = Path(weights_dir)
+        # A callable is re-resolved on each read. The weights arrive in the
+        # layout their owner writes, so a path fixed at startup can watch a
+        # layout the owner never writes, and the poll then never ends.
+        self._weights_dir = (
+            weights_dir if callable(weights_dir) else (lambda: Path(weights_dir))
+        )
         self.logs_dir = Path(logs_dir)
         self._loaded = None
         self._lock = threading.Lock()
+
+    @property
+    def weights_dir(self) -> Path:
+        return Path(self._weights_dir())
 
     @property
     def loaded(self) -> bool:
