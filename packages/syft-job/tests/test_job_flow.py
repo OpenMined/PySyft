@@ -1,11 +1,14 @@
 """End-to-end unit test for the syft-job package lifecycle."""
 
+import sys
 import time
 from pathlib import Path
 
 from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
+from syft_job.job_ref import JobRef
 from syft_job.job_runner import SyftJobRunner
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_perms import SyftPermContext
 from syft_job.models import JobState
 
@@ -254,7 +257,7 @@ def test_timeout_does_not_hang_runner(tmp_path: Path):
     assert do_client.jobs[0].status == "failed"
 
 
-PARTIAL_OUTPUT_PY = """\\
+PARTIAL_OUTPUT_PY = """\
 import time
 
 print("working", end="", flush=True)
@@ -263,34 +266,24 @@ time.sleep(10)
 
 
 def test_streaming_timeout_with_partial_line(tmp_path: Path):
-    syftbox = tmp_path / "SyftBox"
-    syftbox.mkdir()
+    config = SyftJobConfig(syftbox_folder=tmp_path, current_user_email=DO_EMAIL)
+    runner = SyftJobRunner(config=config)
+    ref = JobRef(DO_EMAIL, DS_EMAIL, "partial-output.job", JOB_PROTOCOL_VERSION)
 
-    code_file = tmp_path / "main.py"
-    code_file.write_text(PARTIAL_OUTPUT_PY)
-
-    do_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DO_EMAIL)
-    ds_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
-
-    ds_client = JobClient(config=ds_config)
-    do_client = JobClient(config=do_config)
-    do_runner = SyftJobRunner(config=do_config)
-
-    ds_client.submit_python_job(
-        user=DO_EMAIL, code_path=str(code_file), job_name="partial-output.job"
-    )
-    do_client.jobs[0].approve()
+    # Run main.py with the test's own Python, skipping the venv setup of a real job.
+    submission_dir = runner.manager.submission_dir(ref)
+    review_dir = runner.manager.review_dir(ref)
+    submission_dir.mkdir(parents=True)
+    review_dir.mkdir(parents=True)
+    (submission_dir / "main.py").write_text(PARTIAL_OUTPUT_PY)
+    (submission_dir / "run.sh").write_text(f'#!/bin/bash\n"{sys.executable}" main.py\n')
 
     start = time.monotonic()
-    do_runner.process_approved_jobs(stream_output=True, timeout=1)
+    returncode = runner._execute_job_streaming(ref, timeout=1)
     elapsed = time.monotonic() - start
 
-    assert elapsed < 8, f"streaming read blocked for {elapsed:.1f}s"
-    assert do_client.jobs[0].status == "failed"
-
-    review_path = do_config.get_review_job_dir(
-        DO_EMAIL, DS_EMAIL, "partial-output.job"
-    )
-    stdout = (review_path / "stdout.txt").read_text()
+    assert elapsed < 5, f"streaming read blocked for {elapsed:.1f}s"
+    assert returncode == -1
+    stdout = (review_dir / "stdout.txt").read_text()
     assert "working" in stdout
     assert "--- PROCESS TIMED OUT ---" in stdout
