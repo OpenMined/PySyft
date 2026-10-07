@@ -41,6 +41,8 @@ PySyft lets data scientists submit computations which are run by data owners on 
 
 ## Quick Start
 
+**Before you start:** this quick start assumes Google Colab, where login is a browser pop-up and works out of the box. On a local machine or in Jupyter you first need a Google Cloud OAuth token: follow [docs/auth.md](https://github.com/OpenMined/PySyft/blob/dev/docs/auth.md) (about 15 minutes the first time), then pass it as `token_path` to `login_do` / `login_ds`. Each role needs its own Google account.
+
 We assume two parties here, a Data Owner (DO) and a Data Scientist (DS), the DS wants to do an analysis on private data of the DO. For brevity we use code blocks, but in practice these would be distributed: each party executes their code on their own machine.
 
 ```bash
@@ -56,9 +58,10 @@ from syft_rds import login_do, login_ds    # datasets + jobs (the Remote Data Sc
 ```
 
 ```python
-# Login (colab auth, for non-colab pass token_path)
-do = login_do(email="do@org.com") # use your own email
-ds = login_ds(email="ds@org.com") # use another email here
+# Colab: login is a browser pop-up, nothing to set up
+# Local / Jupyter: create a token first, see docs/auth.md
+do = login_do(email="do@org.com")  # local: add token_path="token_do.json"
+ds = login_ds(email="ds@org.com")  # second account; local: token_path="token_ds.json"
 
 # Peer request & approve
 ds.add_peer("do@org.com")

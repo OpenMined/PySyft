@@ -24,7 +24,7 @@ from syft.sync.events.file_change_event import (
 )
 from syft.sync.file_writer import FileWriter
 from syft.sync.job_file_change_handler import JobFileChangeHandler
-from syft.sync.peers.peer import Peer
+from syft.sync.peers.peer import Peer, PeerNotReadyError
 from syft.sync.peers.peer_list import PeerList
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.platforms.base_platform import BasePlatform
@@ -45,6 +45,11 @@ from syft.sync.sync.datasite_watcher_syncer import (
     DatasiteWatcherSyncerConfig,
 )
 from syft.sync.utils.path_filters import is_normal_syncable_path
+from syft.sync.utils.waiting import (
+    DEFAULT_POLL_INTERVAL,
+    DEFAULT_WAIT_TIMEOUT,
+    poll_until,
+)
 from syft.sync.utils.syftbox_utils import (
     random_email,
     random_syftbox_folder_for_testing,
@@ -113,6 +118,10 @@ class SyftboxManagerConfig(BaseModel):
     has_ds_role: bool = False
     has_do_role: bool = False
     use_in_memory_cache: bool = True
+    # Keep the owner-only state used to restore this datasite later: event
+    # log, rolling state, checkpoints. Off for datasites that can never
+    # restore (see syft-enclave's EnclaveSettings).
+    persist_owner_state: bool = True
 
     datasite_owner_syncer_config: DatasiteOwnerSyncerConfig
     peer_manager_config: PeerManagerConfig
@@ -126,6 +135,7 @@ class SyftboxManagerConfig(BaseModel):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         encryption: bool = False,
+        persist_owner_state: bool = True,
         crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -150,6 +160,7 @@ class SyftboxManagerConfig(BaseModel):
         connection_configs = [GdriveConnectionConfig(email=email, token_path=None)]
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
+            persist_owner_state=persist_owner_state,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
             collection_specs=collection_specs,
@@ -192,6 +203,7 @@ class SyftboxManagerConfig(BaseModel):
             has_do_role=has_do_role,
             connection_configs=connection_configs,
             use_in_memory_cache=False,
+            persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
             datasite_watcher_syncer_config=datasite_watcher_syncer_config,
             peer_manager_config=peer_manager_config,
@@ -205,6 +217,7 @@ class SyftboxManagerConfig(BaseModel):
         has_do_role: bool = False,
         token_path: Path | None = None,
         encryption: bool = False,
+        persist_owner_state: bool = True,
         crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -232,6 +245,7 @@ class SyftboxManagerConfig(BaseModel):
         ]
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
+            persist_owner_state=persist_owner_state,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
             collection_specs=collection_specs,
@@ -274,6 +288,7 @@ class SyftboxManagerConfig(BaseModel):
             has_ds_role=has_ds_role,
             has_do_role=has_do_role,
             use_in_memory_cache=False,
+            persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
             datasite_watcher_syncer_config=datasite_watcher_syncer_config,
             peer_manager_config=peer_manager_config,
@@ -288,6 +303,7 @@ class SyftboxManagerConfig(BaseModel):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         use_in_memory_cache: bool = True,
+        persist_owner_state: bool = True,
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
@@ -306,6 +322,7 @@ class SyftboxManagerConfig(BaseModel):
 
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
+            persist_owner_state=persist_owner_state,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
             collection_specs=collection_specs,
@@ -346,6 +363,7 @@ class SyftboxManagerConfig(BaseModel):
             has_ds_role=has_ds_role,
             has_do_role=has_do_role,
             use_in_memory_cache=use_in_memory_cache,
+            persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
             datasite_watcher_syncer_config=datasite_watcher_syncer_config,
             peer_manager_config=peer_manager_config,
@@ -361,6 +379,7 @@ class SyftboxManagerConfig(BaseModel):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         use_in_memory_cache: bool = True,
+        persist_owner_state: bool = True,
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
     ):
@@ -381,6 +400,7 @@ class SyftboxManagerConfig(BaseModel):
         ]
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
+            persist_owner_state=persist_owner_state,
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
             collection_specs=collection_specs,
@@ -418,6 +438,7 @@ class SyftboxManagerConfig(BaseModel):
             email=email,
             syftbox_folder=syftbox_folder,
             write_files=write_files,
+            persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
             datasite_watcher_syncer_config=datasite_watcher_syncer_config,
             has_ds_role=has_ds_role,
@@ -462,6 +483,8 @@ class SyftboxManager(BaseModelCallbackMixin):
         "load_peers",
         "approve_peer_request",
         "reject_peer_request",
+        "validate_peer",
+        "wait_until_peered",
         "sync",
         "create_checkpoint",
         "should_create_checkpoint",
@@ -587,6 +610,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         encryption: bool = False,
+        persist_owner_state: bool = True,
         crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -599,6 +623,7 @@ class SyftboxManager(BaseModelCallbackMixin):
                 has_ds_role=has_ds_role,
                 has_do_role=has_do_role,
                 encryption=encryption,
+                persist_owner_state=persist_owner_state,
                 crypto_keys_path=crypto_keys_path,
                 skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=force_ignore_peer_version,
@@ -614,6 +639,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         has_do_role: bool = False,
         token_path: Path | None = None,
         encryption: bool = False,
+        persist_owner_state: bool = True,
         crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -629,6 +655,7 @@ class SyftboxManager(BaseModelCallbackMixin):
                 has_do_role=has_do_role,
                 token_path=token_path,
                 encryption=encryption,
+                persist_owner_state=persist_owner_state,
                 crypto_keys_path=crypto_keys_path,
                 skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=force_ignore_peer_version,
@@ -648,6 +675,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         add_peers: bool = True,
         load_peers: bool = False,
         use_in_memory_cache: bool = True,
+        persist_owner_state: bool = True,
         clear_caches: bool = True,
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
@@ -656,6 +684,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             email=do_email,
             syftbox_folder=base_path1,
             use_in_memory_cache=use_in_memory_cache,
+            persist_owner_state=persist_owner_state,
             token_path=do_token_path,
             has_ds_role=False,
             has_do_role=True,
@@ -669,6 +698,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             email=ds_email,
             syftbox_folder=base_path2,
             use_in_memory_cache=use_in_memory_cache,
+            persist_owner_state=persist_owner_state,
             token_path=ds_token_path,
             has_ds_role=True,
             has_do_role=False,
@@ -732,6 +762,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         sync_automatically: bool = False,
         add_peers: bool = True,
         use_in_memory_cache: bool = True,
+        persist_owner_state: bool = True,
         check_versions: bool = False,
         encryption: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
@@ -750,6 +781,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             sync_automatically: Whether to sync when DS sends changes
             add_peers: Whether to automatically add and approve peers
             use_in_memory_cache: Whether to use in-memory caches
+            persist_owner_state: Whether the DO keeps restorable owner state
             check_versions: Whether to check protocol/client versions
 
         Returns:
@@ -762,6 +794,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             has_ds_role=False,
             has_do_role=True,
             use_in_memory_cache=use_in_memory_cache,
+            persist_owner_state=persist_owner_state,
             check_versions=check_versions,
             collection_specs=collection_specs,
         )
@@ -772,6 +805,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             has_ds_role=True,
             has_do_role=False,
             use_in_memory_cache=use_in_memory_cache,
+            persist_owner_state=persist_owner_state,
             check_versions=check_versions,
             collection_specs=collection_specs,
         )
@@ -933,7 +967,10 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         Args:
             auto_checkpoint: If True, automatically create checkpoint when
-                            event count exceeds threshold (DO only).
+                            event count exceeds threshold (DO only). Has no
+                            effect when this manager was built with
+                            persist_owner_state=False, which keeps no
+                            checkpoints at all.
             checkpoint_threshold: Create checkpoint when events >= this value.
             auto_compact: If True, after each DO sync, compact each peer's
                           outbox if it holds at least `compact_threshold`
@@ -961,7 +998,7 @@ class SyftboxManager(BaseModelCallbackMixin):
                         self.datasite_owner_syncer.compact_outbox_if_needed(
                             peer_email, min_messages=compact_threshold
                         )
-                if auto_checkpoint:
+                if auto_checkpoint and self.datasite_owner_syncer.persist_owner_state:
                     self.try_create_checkpoint(checkpoint_threshold)
 
             if self.has_ds_role:
@@ -1008,6 +1045,91 @@ class SyftboxManager(BaseModelCallbackMixin):
     def reject_peer_request(self, email_or_peer: str | Peer):
         """Reject a pending peer request. Delegates to PeerManager."""
         self.peer_manager.reject_peer_request(email_or_peer)
+
+    def validate_peer(self, peer_email: str) -> Peer:
+        """Load the peers, then return ``peer_email`` if it is approved.
+
+        Use it after peering, before the rest of a notebook runs. The rules are
+        in ``PeerManager.validate_peer``.
+
+        Raises:
+            PeerSetupError: ``peer_email`` is not approved.
+        """
+        self.load_peers()
+        return self.peer_manager.validate_peer(peer_email)
+
+    def wait_until_peered(
+        self,
+        peer_email: str,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> Peer:
+        """Wait until ``validate_peer`` passes for ``peer_email``, and return the peer.
+
+        Each poll, every ``poll_interval`` seconds, is one Drive request; the
+        peers load again only when that request shows a change.
+
+        Raises:
+            TimeoutError: the peer did not approve within ``timeout`` seconds.
+            PeerSetupError: waiting cannot help, e.g. the email is not a peer.
+        """
+        deadline = time.monotonic() + timeout
+        while True:
+            try:
+                return self.validate_peer(peer_email)
+            except PeerNotReadyError as e:
+                error = e
+            if deadline - time.monotonic() <= 0:
+                break
+            print(f"Waiting for {peer_email}: {error}")
+            approved = poll_until(
+                lambda: self.peer_manager.peer_may_be_valid(peer_email) or None,
+                deadline,
+                poll_interval,
+            )
+            if approved is None:
+                break
+        raise TimeoutError(
+            f"Timed out after {timeout:g}s waiting for peer {peer_email}: {error}"
+        ) from error
+
+    # ========== Encryption key fingerprints ==========
+
+    @property
+    def encryption_fingerprint(self) -> str | None:
+        """Fingerprint of our own encryption key, to give peers out of band.
+
+        None when encryption is off.
+        """
+        return self.peer_manager.my_fingerprint()
+
+    def peer_fingerprint(self, peer_email: str) -> str | None:
+        """Fingerprint of the encryption key pinned for ``peer_email``.
+
+        Compare it with the fingerprint the peer reads out from their own
+        ``client.encryption_fingerprint``. The key arrived over Drive, and only
+        that comparison shows it is theirs. None when no key is pinned.
+        """
+        return self.peer_manager.peer_fingerprint(peer_email)
+
+    def trust_peer_key(self, peer_email: str, fingerprint: str) -> str | None:
+        """Adopt the key ``peer_email`` publishes, if it carries ``fingerprint``.
+
+        Run this after a peer reinstalled or regenerated their keys. Ask them
+        for their new ``client.encryption_fingerprint`` out of band and pass it
+        here: the storage provider is not trusted, so the published key is
+        adopted only when it matches. Spaces and case in ``fingerprint`` are
+        ignored. Returns the fingerprint now pinned.
+
+        Raises:
+            PeerFingerprintMismatchError: the published key carries another
+                fingerprint. The pin is left unchanged.
+        """
+        pinned_fingerprint = self.peer_manager.refresh_peer_bundle(
+            peer_email, trust_new_key=True, expected_fingerprint=fingerprint
+        )
+        self._emit_peers_loaded()
+        return pinned_fingerprint
 
     def _add_connection(self, connection: SyftboxPlatformConnection):
         if not (
@@ -1155,6 +1277,7 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         # Clear in-memory caches and filesystem cache contents
         self._clear_caches()
+        self.peer_manager.forget_states_at_start()
         self.reset_all_connection_caches()
 
         # Delete local syftbox folder and cache directories

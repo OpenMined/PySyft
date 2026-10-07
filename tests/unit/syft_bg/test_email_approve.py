@@ -129,7 +129,7 @@ class TestStripQuotedReply:
 
 
 class TestEmailApproveHandler:
-    def _make_handler(self, tmp_path):
+    def _make_handler(self, tmp_path, **kwargs):
         state = JsonStateManager(state_file=tmp_path / "email_approve_state.json")
         notify_state = JsonStateManager(state_file=tmp_path / "notify_state.json")
         job_client = MagicMock()
@@ -140,12 +140,18 @@ class TestEmailApproveHandler:
             state=state,
             notify_state=notify_state,
             do_email="do@example.com",
+            **kwargs,
         )
         return handler, job_client, job_runner, state, notify_state
 
-    def test_approve_job(self, tmp_path):
+    @pytest.mark.parametrize(
+        "kwargs, disclosures",
+        [({}, []), ({"default_disclosures": ["logs"]}, ["logs"])],
+        ids=["default", "configured"],
+    )
+    def test_approve_job(self, tmp_path, kwargs, disclosures):
         handler, job_client, job_runner, state, notify_state = self._make_handler(
-            tmp_path
+            tmp_path, **kwargs
         )
 
         notify_state.store_thread_id("test.job", "thread123")
@@ -157,10 +163,11 @@ class TestEmailApproveHandler:
 
         handler.handle_reply(thread_id="thread123", reply_text="approve")
 
-        mock_job.approve.assert_called_once()
+        mock_job.approve.assert_called_once_with(
+            approval_method="manual", disclosures=disclosures
+        )
         job_runner.process_approved_jobs.assert_called_once_with(
-            share_outputs_with_submitter=True,
-            share_logs_with_submitter=True,
+            share_outputs_with_submitter=True
         )
 
     def test_deny_job(self, tmp_path):
@@ -269,3 +276,16 @@ class TestStateReverseLookup:
         assert state.get_job_name_by_thread_id("thread_1") == "job_a"
         assert state.get_job_name_by_thread_id("thread_2") == "job_b"
         assert state.get_job_name_by_thread_id("thread_unknown") is None
+
+
+def test_email_config_loads_default_disclosures(tmp_path):
+    from syft_bg.email_approve.config import EmailApproveConfig
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        "do_email: do@example.com\n"
+        "email_approve:\n"
+        "  default_disclosures: [logs, traceback_frames]\n"
+    )
+    config = EmailApproveConfig.load(config_path)
+    assert config.default_disclosures == ["logs", "traceback_frames"]

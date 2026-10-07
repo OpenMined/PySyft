@@ -1,13 +1,26 @@
 from __future__ import annotations
 
+import json
 import shutil
 import warnings
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Iterable, List, Optional
 
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
+from .disclosures import (
+    DISCLOSURE_ITEMS,
+    DISCLOSURES_FILENAME,
+    DisclosureItem,
+    DisclosuresArg,
+    check_approval_reason,
+    format_items,
+    gated_names,
+    normalize_disclosures,
+    restrict_to_request,
+    warn_on_logs_release,
+)
 from .job_repr import (
     StderrViewer,
     job_info_repr_html,
@@ -17,6 +30,12 @@ from .job_repr import (
 from .job_stdout import StdoutViewer
 from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .submission import SubmissionRecord, check_expected_digest, submission_hash
+
+# The files that ``share_logs_with_submitter`` releases.
+STAGED_LOG_FILES = tuple(
+    gated_names([DisclosureItem.LOGS.value, DisclosureItem.RETURN_CODE.value])
+)
 
 if TYPE_CHECKING:
     from .client import JobClient
@@ -53,6 +72,132 @@ class JobInfo:
     @property
     def job_review_path(self) -> Path:
         return self._client.manager.review_dir(self._ref)
+
+    @property
+    def job_staging_path(self) -> Path:
+        """Where an artifact waits until a party releases it."""
+        return self._client.manager.staging_dir(self._ref)
+
+    def artifact_path(self, filename: str) -> Path:
+        """Return where ``filename`` is now: released, or still staged.
+
+        A released artifact sits in the review directory. Every other artifact
+        sits in the staging directory. The datasite owner reads both, so a
+        viewer on the owner side finds the file either way.
+        """
+        released = self.job_review_path / filename
+        if released.exists():
+            return released
+        return self.job_staging_path / filename
+
+    def release_logs(self) -> list[str]:
+        """Release the logs and the exit code to the submitter.
+
+        Returns the names moved. A copy that already reached another party does
+        not come back.
+        """
+        return self._release_to_submitter(STAGED_LOG_FILES)
+
+    def _release_to_submitter(self, filenames: Iterable[str]) -> list[str]:
+        """Move the named staged files into review/, and grant the submitter read.
+
+        The move discloses a file to a reader with the review folder grant. The
+        file grant covers a reader that holds no folder grant.
+        """
+        moved = self.release_artifacts(filenames)
+        self._grant_read(moved, [self.submitted_by])
+        return moved
+
+    def release_artifacts(self, filenames: Iterable[str]) -> list[str]:
+        """Move the named staged artifacts into the review directory.
+
+        Returns the names it moved. A name that is absent from staging, or that
+        a release already moved, is skipped.
+        """
+        moved = []
+        for filename in filenames:
+            staged = self.job_staging_path / filename
+            if not staged.exists():
+                continue
+            target = self.job_review_path / filename
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(staged), str(target))
+            moved.append(filename)
+        return moved
+
+    # ──────────────────────────────────────────────
+    # Disclosures
+    # ──────────────────────────────────────────────
+
+    @property
+    def requested_disclosures(self) -> list[str]:
+        """The items the submitter asked for, as recorded at submission."""
+        requested = self.job_headers.get("requested_disclosures")
+        if not isinstance(requested, list):
+            return []
+        return sorted(normalize_disclosures(requested))
+
+    @property
+    def disclosures(self) -> dict[str, bool]:
+        """The items the data owner released, as recorded at approval."""
+        try:
+            text = (self.job_review_path / DISCLOSURES_FILENAME).read_text()
+        except FileNotFoundError:
+            return {}
+        return normalize_disclosures(json.loads(text))
+
+    @property
+    def granted_disclosures(self) -> set[str]:
+        """The items that go to the submitter: requested and released."""
+        return set(self.disclosures) & set(self.requested_disclosures)
+
+    def _write_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
+        granted = restrict_to_request(disclosures, self.requested_disclosures)
+        # Up to the public caller: approve() or update_disclosures().
+        warn_on_logs_release(granted, self.requested_disclosures, stacklevel=4)
+        path = self.job_review_path / DISCLOSURES_FILENAME
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(granted))
+        return granted
+
+    def disclosure_rows(self) -> list[tuple[str, str]]:
+        """The disclosure state as (label, value) rows, for display."""
+        return [
+            ("Requested", format_items(self.requested_disclosures)),
+            ("Granted", format_items(self.disclosures)),
+            ("To submitter", format_items(self.granted_disclosures)),
+        ]
+
+    def update_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
+        """Replace the items the data owner releases, and return the new map.
+
+        Only the items that the submitter requested are stored. A job that
+        finished releases the newly granted items at once.
+
+        Raises:
+            ValueError: If the job was not approved
+            PermissionError: If the current user is not the datasite owner
+        """
+        if self.datasite_owner_email != self.current_user_email:
+            raise PermissionError(
+                f"Only the admin user ({self.datasite_owner_email}) can change "
+                f"the disclosures of a job."
+            )
+        self._state = self._client.manager.read_state(self._ref)
+        if self._state.status in (
+            JobStatus.RECEIVED,
+            JobStatus.PENDING,
+            JobStatus.REJECTED,
+        ):
+            raise ValueError(f"Approve the job first (current: {self.status}).")
+        granted = self._write_disclosures(disclosures)
+        if self._state.status in (JobStatus.DONE, JobStatus.FAILED):
+            self.release_disclosures()
+        return granted
+
+    def release_disclosures(self) -> list[str]:
+        """Release the granted items to the submitter, and return the names moved."""
+        return self._release_to_submitter(gated_names(self.granted_disclosures))
 
     # ──────────────────────────────────────────────
     # Properties from config (inbox/)
@@ -193,20 +338,37 @@ class JobInfo:
         return self._state.review_reason
 
     def approve(
-        self, reason: Optional[str] = None, approval_method: str = "manual"
+        self,
+        reason: Optional[str] = None,
+        approval_method: str = "manual",
+        disclosures: DisclosuresArg = None,
+        expected_digest: Optional[str] = None,
     ) -> None:
         """
         Approve a job by updating state.yaml in review/.
         Only the datasite owner can approve jobs.
 
+        The approval covers the submission as it was received, and records its
+        hash. The runner executes only a copy that matches it, so a later edit
+        of the submitter's inbox never runs.
+
         Args:
             reason: Optional reason for approval (recorded as review_reason).
             approval_method: How the job was approved ("manual" or "auto")
+            disclosures: The items in ``DisclosureItem`` that the data owner
+                releases. Only the items that the submitter requested are
+                stored, so a later edit of the request cannot add items.
+                Omit the argument to release nothing.
+            expected_digest: The submission hash an automated approver checked.
+                The approval is refused unless the submission still has it.
 
         Raises:
-            ValueError: If job is not in pending status
+            ValueError: If job is not in pending status, was not fully
+                received, or changed after it was received or was checked
             PermissionError: If the current user is not authorized to approve
+            TypeError: If reason is not a string
         """
+        check_approval_reason(reason)
         if self._state.status != JobStatus.PENDING:
             raise ValueError(
                 f"Job '{self.name}' is not in pending status (current: {self.status})"
@@ -220,9 +382,13 @@ class JobInfo:
                 f'first: jobs["{self.current_user_email}"]["<name>"].'
             )
 
+        # The approved hash and the grant go first, so the runner never sees an
+        # approved state without them. The hash check runs before any write.
+        record = self._record_approved_hash(approval_method, expected_digest)
+        self._write_disclosures(disclosures)
         self._state.status = JobStatus.APPROVED
         self._state.approved_by = self.current_user_email
-        self._state.approved_at = datetime.now(timezone.utc)
+        self._state.approved_at = record.approved_at
         self._state.approval_method = approval_method
         self._state.review_reason = reason
         self._client.manager.write_state(self._ref, self._state)
@@ -230,6 +396,43 @@ class JobInfo:
         print("   Status    : approved → will run on next process cycle")
         print("\n⏳ Next step: run process_approved_jobs() to execute it.")
         print("   client.process_approved_jobs(share_outputs_with_submitter=True)")
+
+    def record_approval(self, approval_method: str) -> None:
+        """Record the received submission as approved, without changing the state.
+
+        For an owner whose approval is decided elsewhere, such as an enclave,
+        which runs a job once every data owner approved this same submission.
+        The runner executes a job only with this record.
+
+        Raises:
+            ValueError: If the job was not fully received, or changed after.
+        """
+        self._record_approved_hash(approval_method, expected_digest=None)
+
+    def _record_approved_hash(
+        self, approval_method: str, expected_digest: Optional[str]
+    ) -> SubmissionRecord:
+        """Check the submission is the one received, and record it as approved."""
+        manager = self._client.manager
+        record = manager.read_submission_record(self._ref)
+        if record is None:
+            raise ValueError(
+                f"Job '{self.name}' was not fully received yet. List the jobs "
+                f"again once all its files arrived, then approve."
+            )
+        current = submission_hash(self.job_submission_path)
+        if current != record.received_hash:
+            raise ValueError(
+                f"Job '{self.name}' changed after it was received, so it is not "
+                f"approved. Reject it, or ask the submitter to submit it again."
+            )
+        check_expected_digest(self.name, expected_digest, current)
+        record.approved_hash = current
+        record.approved_by = self.current_user_email
+        record.approved_at = datetime.now(timezone.utc)
+        record.approval_method = approval_method
+        manager.write_submission_record(self._ref, record)
+        return record
 
     def reject(self, reason: Optional[str] = None) -> None:
         """
@@ -317,6 +520,10 @@ class JobInfo:
         """
         Rerun a job by cleaning up review/ artifacts and resetting to approved.
 
+        The runner executes a fresh copy that must still match the approved
+        hash. A job that was never approved, for example one accepted by
+        depositing a result, is sent back to pending by the runner instead.
+
         Raises:
             ValueError: If job is not in done or failed status
         """
@@ -328,12 +535,16 @@ class JobInfo:
 
         changes_made = []
 
-        # Clean up review/ artifacts
-        for filename in ("stdout.txt", "stderr.txt", "returncode.txt"):
-            f = self.job_review_path / filename
-            if f.exists():
-                f.unlink()
-                changes_made.append(filename)
+        # Clean up the artifacts of the previous run. A staged copy must go
+        # too, or a later release sends a log that belongs to the old run.
+        for filename in gated_names(DISCLOSURE_ITEMS):
+            for f in (
+                self.job_review_path / filename,
+                self.job_staging_path / filename,
+            ):
+                if f.exists():
+                    f.unlink()
+                    changes_made.append(filename)
 
         outputs_dir = self.job_review_path / "outputs"
         if outputs_dir.exists() and outputs_dir.is_dir():
@@ -380,10 +591,13 @@ class JobInfo:
 
     def share_logs(self, users: list[str]) -> None:
         """Grant read access to log files (stdout, stderr, returncode) for given users."""
+        self._grant_read(STAGED_LOG_FILES, users)
+
+    def _grant_read(self, filenames: Iterable[str], users: list[str]) -> None:
+        """Grant read access to the named review/ files for the given users."""
         ctx = self._get_perm_context()
-        for filename in ("stdout.txt", "stderr.txt", "returncode.txt"):
-            file_rel = self._relative_review_path(filename)
-            f = ctx.open(file_rel)
+        for filename in filenames:
+            f = ctx.open(self._relative_review_path(filename))
             for user in users:
                 f.grant_read_access(user)
 
@@ -408,7 +622,8 @@ class JobInfo:
         base = f"{emoji} {self.name} ({self.status}{approval_info}) -> {self.datasite_owner_email}"
         if self.review_reason:
             base += f" | Review reason: {self.review_reason}"
-        return base
+        rows = "; ".join(f"{label}: {value}" for label, value in self.disclosure_rows())
+        return f"{base} | Disclosures: {rows}"
 
     def __repr__(self) -> str:
         parts = [

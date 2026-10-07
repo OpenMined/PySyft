@@ -212,7 +212,7 @@ def test_sync_existing_datasite_state_ds():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False
     )
-    events_messages = get_mock_events_messages(2)
+    events_messages = get_mock_events_messages(2, datasite_email=do_manager.email)
     for message in events_messages:
         do_manager._connection_router.owner_write_event_messages_to_outbox(
             ds_manager.email, message
@@ -528,6 +528,61 @@ def test_job_files_sync_to_submitter_only():
     assert any("shared.txt" in p for p in paths_for_non_submitter), (
         "Regular files should be sent to non-submitter peers"
     )
+
+
+def test_job_file_beside_outputs_does_not_sync_to_submitter():
+    """A job that writes beside outputs/ does not reach the submitter.
+
+    The submitter receives the job state and the released outputs only.
+    """
+    from syft_job.client import JobClient
+    from syft_job.config import SyftJobConfig
+    from syft_job.job_runner import SyftJobRunner
+
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    ds_email = ds_manager.email
+    do_config = SyftJobConfig(
+        syftbox_folder=do_manager.syftbox_folder, current_user_email=do_manager.email
+    )
+    # The submission as it lands in the DO's datasite after the sync.
+    ds_on_do_config = SyftJobConfig(
+        syftbox_folder=do_manager.syftbox_folder, current_user_email=ds_email
+    )
+    do_client = JobClient(config=do_config)
+    do_client.setup_ds_job_folder_as_do(ds_email)
+
+    job_name = "exfil.job"
+    review_dir = do_config.get_review_job_dir(do_manager.email, ds_email, job_name)
+    script = (
+        f"echo private > '{review_dir}/exfil.txt'\n"
+        # run.sh runs in the submission dir; the runner moves code/outputs/.
+        "mkdir -p code/outputs && echo done > code/outputs/result.txt\n"
+    )
+    JobClient(config=ds_on_do_config).submit_bash_job(
+        do_manager.email, script, job_name
+    )
+    do_client.jobs[0].approve()
+    SyftJobRunner(config=do_config).process_approved_jobs(
+        stream_output=False, share_outputs_with_submitter=True
+    )
+    assert (review_dir / "exfil.txt").exists()
+    assert (review_dir / "outputs" / "result.txt").exists()
+    review_rel = review_dir.relative_to(do_manager.syftbox_folder / do_manager.email)
+
+    do_manager.datasite_owner_syncer.process_local_changes([ds_email])
+
+    paths = [
+        str(event.path_in_datasite)
+        for msg in ds_manager._connection_router.watcher_get_events_messages(
+            do_manager.email, None
+        )
+        for event in msg.events
+    ]
+    assert str(review_rel / "state.yaml") in paths
+    assert str(review_rel / "outputs" / "result.txt") in paths
+    assert not any(p.endswith("exfil.txt") for p in paths)
 
 
 def test_in_memory_connection_syncing():

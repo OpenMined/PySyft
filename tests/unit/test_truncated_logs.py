@@ -1,10 +1,12 @@
 """Test for truncated logs when jobs have exceptions."""
 
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from syft_job.job_runner import SyftJobRunner
 from syft_job.config import SyftJobConfig
 from syft_job.models import JobState, JobStatus
+from syft_job.submission import SubmissionRecord, submission_hash
 
 
 def test_exception_logs_not_truncated():
@@ -60,10 +62,21 @@ func_a()
 
         runner = SyftJobRunner(config)
         ref = runner._find_jobref_from_name(job_name, user=ds_email)
+        # The runner executes only a submission with an approved hash.
+        digest = submission_hash(inbox_dir)
+        runner.manager.write_submission_record(
+            ref,
+            SubmissionRecord(
+                received_hash=digest,
+                received_at=datetime.now(timezone.utc),
+                approved_hash=digest,
+            ),
+        )
         runner._execute_job(ref, stream_output=True, timeout=30)
 
-        stdout_content = (review_dir / "stdout.txt").read_text()
-        stderr_content = (review_dir / "stderr.txt").read_text()
+        staging_dir = config.get_staging_job_dir(email, ds_email, job_name)
+        stdout_content = (staging_dir / "stdout.txt").read_text()
+        stderr_content = (staging_dir / "stderr.txt").read_text()
 
         # Check stdout has all print statements
         assert "Starting job..." in stdout_content

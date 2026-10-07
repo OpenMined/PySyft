@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
+from syft_bg.approve.api_store import ApiStore
 from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.approve.monitors.job import JobMonitor
 from syft_bg.approve.monitors.peer import PeerMonitor
@@ -103,7 +104,8 @@ class ApprovalOrchestrator(BaseOrchestrator):
     def _collect_auto_approve_emails(self) -> set[str]:
         """Collect peer emails from all auto-approval objects."""
         emails: set[str] = set()
-        for obj in self.config.auto_approvals.objects.values():
+        store = ApiStore(self.client.syftbox_folder, self.client.email)
+        for obj in store.load_all().values():
             emails.update(obj.peers)
         return emails
 
