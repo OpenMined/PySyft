@@ -4889,6 +4889,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "syft-job" },
+    { name = "syft-permissions" },
     { name = "syft-rds" },
     { name = "textual" },
 ]
@@ -4904,6 +4905,7 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "syft-job", editable = "packages/syft-job" },
+    { name = "syft-permissions", editable = "packages/syft-permissions" },
     { name = "syft-rds", editable = "packages/syft-rds" },
     { name = "textual", specifier = ">=0.40.0" },
 ]
