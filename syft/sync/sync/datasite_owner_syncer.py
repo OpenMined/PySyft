@@ -613,8 +613,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if file_change_events_message is None:
             return
 
-        self.syftbox_events_queue.put(file_change_events_message)
-
         perm_events, data_events = self._split_events(file_change_events_message.events)
         events_by_recipient: dict[str, list[FileChangeEvent]] = {
             r: [] for r in recipients
@@ -628,9 +626,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             perm_events, recipients, events_by_recipient, data_event_sent_to
         )
         self._queue_events_for_outbox(events_by_recipient)
-        # Feed local events into rolling state so they flow through
-        # incremental/full checkpoints.
-        self._add_events_to_rolling_state(file_change_events_message)
+        if self.persist_owner_state:
+            # Record local events in the owner's log and feed them into rolling
+            # state so they flow through incremental/full checkpoints.
+            self.syftbox_events_queue.put(file_change_events_message)
+            self._add_events_to_rolling_state(file_change_events_message)
         self.process_syftbox_events_queue()
 
     def _split_events(
@@ -774,8 +774,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 recipients=[sender_email],
                 file_change_events_message=accepted_events_message,
             )
-            # Add to rolling state after processing
-            self._add_events_to_rolling_state(accepted_events_message)
+            if self.persist_owner_state:
+                self._add_events_to_rolling_state(accepted_events_message)
 
     def queue_event_for_syftbox(
         self, recipients: list[str], file_change_events_message: FileChangeEventsMessage
@@ -927,7 +927,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             events_message: The events to add.
             upload_threshold: Upload to GDrive after this many events added.
         """
-        if not self.persist_owner_state or self._rolling_state is None:
+        if self._rolling_state is None:
             return
 
         self._rolling_state.add_events_message(events_message)
@@ -939,8 +939,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     def _upload_rolling_state(self) -> None:
         """Upload the in-memory rolling state to GDrive."""
-        if not self.persist_owner_state:
-            return
         if self._rolling_state is None or self._rolling_state.event_count == 0:
             return
 
@@ -950,6 +948,14 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     # =========================================================================
     # CHECKPOINT METHODS
     # =========================================================================
+
+    def _require_owner_state(self) -> None:
+        """Refuse checkpoint work on a client that keeps no owner state."""
+        if not self.persist_owner_state:
+            raise ValueError(
+                "Checkpoints are disabled: this client was built with "
+                "persist_owner_state=False"
+            )
 
     def create_incremental_checkpoint(self) -> IncrementalCheckpoint:
         """
@@ -962,6 +968,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Returns:
             The created IncrementalCheckpoint object.
         """
+        self._require_owner_state()
         if self._rolling_state is None or self._rolling_state.event_count == 0:
             raise ValueError("No rolling state to create checkpoint from")
 
@@ -1018,6 +1025,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Returns:
             The created Checkpoint object.
         """
+        self._require_owner_state()
         self._load_rolling_state()
         try:
             last_event_timestamp = self.event_cache.get_latest_event_timestamp()
@@ -1087,6 +1095,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Returns:
             The compacted Checkpoint object.
         """
+        self._require_owner_state()
         print("Compacting incremental checkpoints...")
 
         # Download existing full checkpoint (if exists)
@@ -1186,12 +1195,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             compacting_threshold: Compact if >= this many incremental checkpoints.
 
         Returns:
-            The created checkpoint (incremental or compacted), or None. Always
-            None when this client keeps no owner state.
+            The created checkpoint (incremental or compacted), or None.
         """
-        if not self.persist_owner_state:
-            return None
-
+        self._require_owner_state()
         self._load_rolling_state()
         try:
             result = None

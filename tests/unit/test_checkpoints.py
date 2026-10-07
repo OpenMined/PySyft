@@ -10,6 +10,8 @@ import time
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
+
 from syft.sync.checkpoints.checkpoint import (
     Checkpoint,
     IncrementalCheckpoint,
@@ -614,7 +616,7 @@ def test_no_owner_state_written_when_disabled():
     peer still has to see every change.
     """
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        use_in_memory_cache=True,
+        use_in_memory_cache=False,
         persist_owner_state=False,
     )
     do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
@@ -622,6 +624,11 @@ def test_no_owner_state_written_when_disabled():
     )
 
     do_email = do_manager.email
+
+    # The DO's own local changes take a separate path into the event log.
+    local_file = do_manager.syftbox_folder / do_email / "local.txt"
+    local_file.parent.mkdir(parents=True, exist_ok=True)
+    local_file.write_text("local content")
 
     # Sync well past both thresholds, on the same code path a real client takes.
     for i in range(6):
@@ -643,13 +650,17 @@ def test_no_owner_state_written_when_disabled():
     )
     assert not rolling_state_path.exists()
 
-    # The automatic checkpoint path stays silent rather than raising.
-    assert do_manager.try_create_checkpoint(threshold=1) is None
+    # Asking for a checkpoint by hand fails loudly rather than writing one.
+    with pytest.raises(ValueError, match="persist_owner_state"):
+        do_manager.create_checkpoint()
+    with pytest.raises(ValueError, match="persist_owner_state"):
+        do_manager.try_create_checkpoint(threshold=1)
 
     # Sync still works: the DO holds every file and the DS receives them back
     # through the outbox, which is peer-facing and so unaffected.
     do_cache = do_manager.datasite_owner_syncer.event_cache
-    assert len(do_cache.file_hashes) == 6
+    do_paths = {str(path) for path in do_cache.file_hashes}
+    assert {"local.txt"} | {f"test{i}.txt" for i in range(6)} <= do_paths
 
     ds_manager.sync()
     ds_cache = ds_manager.datasite_watcher_syncer.datasite_watcher_cache

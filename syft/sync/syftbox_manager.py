@@ -991,7 +991,7 @@ class SyftboxManager(BaseModelCallbackMixin):
                         self.datasite_owner_syncer.compact_outbox_if_needed(
                             peer_email, min_messages=compact_threshold
                         )
-                if auto_checkpoint:
+                if auto_checkpoint and self.datasite_owner_syncer.persist_owner_state:
                     self.try_create_checkpoint(checkpoint_threshold)
 
             if self.has_ds_role:

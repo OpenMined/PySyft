@@ -728,6 +728,7 @@ class SyftEnclaveClient:
         ds_email: str | None = None,
         use_in_memory_cache: bool = True,
         encryption: bool = False,
+        enclave_persist_owner_state: bool = False,
     ) -> tuple[
         "SyftEnclaveClient",
         "SyftEnclaveClient",
@@ -744,11 +745,18 @@ class SyftEnclaveClient:
 
         Args:
             encryption: Enable end-to-end drive encryption on all four clients.
+            enclave_persist_owner_state: Whether the enclave keeps restorable
+                owner state. Off by default, as in production.
         Returns:
             Tuple of (enclave, do1, do2, ds)
         """
         configs = create_configs(
-            enclave_email, do1_email, do2_email, ds_email, use_in_memory_cache
+            enclave_email,
+            do1_email,
+            do2_email,
+            ds_email,
+            use_in_memory_cache,
+            enclave_persist_owner_state,
         )
         clients = create_clients(configs)
         enclave, do1, do2, ds = clients

@@ -310,11 +310,17 @@ with open("outputs/result.json", "w") as f:
     assert json_content["result"] == 1
 
 
-def test_jobs_with_dataset():
-    """Test job execution with dataset access using syft:// protocol."""
+@pytest.mark.parametrize("persist_owner_state", [True, False])
+def test_jobs_with_dataset(persist_owner_state):
+    """Test job execution with dataset access using syft:// protocol.
+
+    Also run without owner state, as an enclave does: the dataset, the job and
+    its results still travel through the inbox and outbox.
+    """
     ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
+        persist_owner_state=persist_owner_state,
     )
 
     mock_dset_path, private_dset_path, readme_path = create_tmp_dataset_files()
@@ -385,6 +391,12 @@ with open("outputs/result.json", "w") as f:
         private_data_length = len(f.read())
 
     assert json_content["result"] == private_data_length
+
+    if not persist_owner_state:
+        router = do_manager.sync_engine._connection_router
+        assert router.owner_get_all_accepted_event_file_ids() == []
+        assert router.get_rolling_state() is None
+        assert router.get_all_incremental_checkpoints() == []
 
 
 def test_single_file_job_submission_without_pyproject():
