@@ -88,9 +88,9 @@ The Drive token reaches the enclave as `--secret SYFT_ENCLAVE_TOKEN_CONTENT`; re
 Set `gpus:` in the config and publish a new release. Which shapes are available, and whether GPU changes the evidence format (NVIDIA confidential computing adds its own claims on Confidential Spaces), is not yet confirmed with Tinfoil — check before relying on it.
 
 `cvm-version` pins the CVM base image the measurement is computed against. We use `0.14.12`, the
-first version that mounts `/tinfoil/attestation.sock` for containers with `attestation: true`,
-which receipts need to bind the run key (see `tinfoil/CLAUDE.md`). Its deprecation policy is not
-documented.
+first version that mounts `/tinfoil/attestation.sock` for containers with `attestation: true`.
+Receipts need it, and the `attested-keys` the receipt key comes from (0.14.10 or later; see
+`tinfoil/CLAUDE.md`). Its deprecation policy is not documented.
 
 ## Quickstart: production
 
@@ -164,7 +164,7 @@ Prefer `--tag` over the default "latest release" where you can. Unpinned, the re
 
 A release of `tinfoil-config-receipts.yml` writes a signed `receipt.dsse.json` into every finished
 job's outputs. The receipt names the code, the dataset file hashes, who took part and approved, the outputs and
-the run, plus what the job itself claims about the model, the eval and its results. The enclave signs it with its attested identity key, and the submitter can log it on Rekor
+the run, plus what the job itself claims about the model, the eval and its results. The enclave signs it with a Tinfoil attested key, and the submitter can log it on Rekor
 with `upload_to_rekor`. [`tinfoil/CLAUDE.md`](../tinfoil/CLAUDE.md) explains why the receipt can
 be trusted.
 
