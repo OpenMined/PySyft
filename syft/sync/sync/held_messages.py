@@ -46,9 +46,26 @@ class HeldMessages:
             finally:
                 portalocker.unlock(lock_file)
 
+    def read(self) -> list[HeldMessage]:
+        """The held messages, read under the lock, without a write."""
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self._path.with_suffix(".lock"), "a") as lock_file:
+            portalocker.lock(lock_file, portalocker.LOCK_EX)
+            try:
+                return self._read()
+            finally:
+                portalocker.unlock(lock_file)
+
+    def save(self, messages: list[HeldMessage]) -> None:
+        """Write ``messages`` now. Call it only inside ``edit``.
+
+        A flush saves after each message it sends, so an error part way
+        leaves exactly the messages that were not sent.
+        """
+        self._write(messages)
+
     def __len__(self) -> int:
-        with self.edit() as messages:
-            return len(messages)
+        return len(self.read())
 
     def _read(self) -> list[HeldMessage]:
         if not self._path.exists():

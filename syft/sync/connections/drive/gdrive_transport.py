@@ -2560,6 +2560,19 @@ class GDriveConnection(SyftboxPlatformConnection):
         folder_id = self._get_or_create_encryption_bundles_folder_id()
         self.add_permission(folder_id, peer_email, write=False)
 
+    def read_own_encryption_bundle(self, peer_email: str) -> str | None:
+        """Read the bundle this client published for ``peer_email``, or None."""
+        folder_id = self._get_or_create_encryption_bundles_folder_id()
+        filename = self._encryption_bundle_filename(self.email, peer_email)
+        query = f"name='{filename}' and '{folder_id}' in parents and trashed=false"
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(id)")
+        )
+        items = results.get("files", [])
+        if not items:
+            return None
+        return self.download_file(items[0]["id"]).decode("utf-8")
+
     def read_peer_encryption_bundle(self, peer_email: str) -> str | None:
         """Read encryption bundle that peer wrote for us.
 

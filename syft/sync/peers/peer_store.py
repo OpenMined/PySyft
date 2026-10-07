@@ -92,9 +92,13 @@ class PeerStore(BaseModel):
     _keys_path: Path | None = PrivateAttr(default=None)
     # Peers whose version file was read again since the last ``set_peers``.
     _policy_rereads: set[str] = PrivateAttr(default_factory=set)
-    # Policies of earlier clients, by email. Their version file does not say,
-    # so the policy comes from a Drive read, once per process.
+    # Earlier clients known to encrypt. Their version file does not say, so
+    # the policy comes from a Drive read; a found bundle is read once.
     _legacy_policies: dict[str, EncryptionPolicy] = PrivateAttr(default_factory=dict)
+    # Number of peer loads (``set_peers``) so far.
+    _load_count: int = PrivateAttr(default=0)
+    # Earlier clients without a found bundle: the load at which none was found.
+    _bundle_missing_since: dict[str, int] = PrivateAttr(default_factory=dict)
     # Whether the files at rest are known to be encrypted.
     _at_rest_encrypted: bool = PrivateAttr(default=False)
 
@@ -248,22 +252,32 @@ class PeerStore(BaseModel):
             self._keep_pinned_bundle(p)
         self._peers = peers
         self._policy_rereads.clear()
+        self._load_count += 1
+
+    @property
+    def peers_loaded(self) -> bool:
+        """Whether a peer load ran. Before it, no recipient is known to be a peer."""
+        return self._load_count > 0
 
     def legacy_policy(
         self, email: str, published_bundle: Callable[[], bool]
-    ) -> EncryptionPolicy:
-        """The policy of the earlier client ``email``, read once per process.
+    ) -> Optional[EncryptionPolicy]:
+        """The policy of the earlier client ``email``, or None while not known.
 
         Such a client publishes a bundle for us only when it encrypts. One
-        that does not has no keys and cannot decrypt, so it is off.
+        that does not has no keys and cannot decrypt, so it is off. A bundle
+        can be not yet visible on Drive, so a client without one is unknown
+        during the peer load that first misses it, and off from the next.
+        A found bundle is kept for the process.
         """
-        if email not in self._legacy_policies:
-            self._legacy_policies[email] = (
-                EncryptionPolicy.REQUIRED
-                if published_bundle()
-                else EncryptionPolicy.OFF
-            )
-        return self._legacy_policies[email]
+        if email in self._legacy_policies:
+            return self._legacy_policies[email]
+        if published_bundle():
+            self._legacy_policies[email] = EncryptionPolicy.REQUIRED
+            self._bundle_missing_since.pop(email, None)
+            return EncryptionPolicy.REQUIRED
+        first_missed = self._bundle_missing_since.setdefault(email, self._load_count)
+        return EncryptionPolicy.OFF if self._load_count > first_missed else None
 
     def take_policy_reread(self, email: str) -> bool:
         """True once per peer load: the caller may read the version file again."""
@@ -391,15 +405,28 @@ class PeerStore(BaseModel):
         if self._keys_path is None:
             self.generate_keys()
             return
+        unsaved_pins: list[tuple[str, dict]] = []
         with _locked_key_file(self._keys_path):
             if self._keys_path.exists():
-                self._adopt_key_file(self.load_keys(self._keys_path))
-                return
-            self.generate_keys()
-            _write_key_file(self._keys_path, self._key_file_data())
+                unsaved_pins = self._take_key_file(self.load_keys(self._keys_path))
+            else:
+                self.generate_keys()
+                _write_key_file(self._keys_path, self._key_file_data())
+        # Saving a pin takes the lock again, so it waits until here.
+        for email, bundle in unsaved_pins:
+            self._persist_peer_bundle(email, bundle)
 
     def _adopt_key_file(self, loaded: "PeerStore") -> None:
         """Take the keys, pins and recorded policy of ``loaded``, a store read from our key file."""
+        for email, bundle in self._take_key_file(loaded):
+            self._persist_peer_bundle(email, bundle)
+
+    def _take_key_file(self, loaded: "PeerStore") -> list[tuple[str, dict]]:
+        """Like ``_adopt_key_file``, but return the pins to save, without file I/O.
+
+        These are pins set in memory before there were keys, e.g. from
+        attestation, that the key file does not hold yet.
+        """
         if loaded.email != self.email:
             raise ValueError(
                 f"Encryption key file {self._keys_path} belongs to "
@@ -411,15 +438,16 @@ class PeerStore(BaseModel):
             self.encryption_policy = EncryptionPolicy.REQUIRED
         if not self._peers:
             self._peers = loaded._peers
-            return
+            return []
         stored = {p.email: p.public_encryption_bundle for p in loaded._peers}
+        unsaved_pins = []
         for peer in self._peers:
             if peer.email in stored:
                 # The pin in the key file wins.
                 peer.public_encryption_bundle = stored[peer.email]
             elif peer.public_encryption_bundle is not None:
-                # Set in memory before there were keys, e.g. from attestation.
-                self._persist_peer_bundle(peer.email, peer.public_encryption_bundle)
+                unsaved_pins.append((peer.email, peer.public_encryption_bundle))
+        return unsaved_pins
 
     def has_my_keys(self) -> bool:
         return self._private_keys is not None
@@ -576,11 +604,16 @@ class PeerStore(BaseModel):
         """
         if self.use_encryption or self._keys_path is None:
             return
-        if not self._keys_path.exists():
+        # Most syncs find no change: read the policy before the keys.
+        data = self._read_key_file()
+        recorded = (
+            data.get(ENCRYPTION_POLICY_KEY, EncryptionPolicy.REQUIRED.value)
+            if data
+            else None
+        )
+        if recorded != EncryptionPolicy.REQUIRED.value:
             return
         loaded = self.load_keys(self._keys_path)
-        if not loaded.use_encryption:
-            return
         if self.encryption_policy == EncryptionPolicy.OFF:
             raise _off_refused_error(self._keys_path)
         self._adopt_key_file(loaded)

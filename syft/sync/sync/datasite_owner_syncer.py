@@ -813,37 +813,36 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             )
         # The event is already in the event log, so a held outbox message is
         # kept on disk until encryption with its recipient is set up.
-        with self._held_outbox.edit() as held:
-            pending = [
-                (r, FileChangeEventsMessage.from_compressed_data(d)) for r, d in held
-            ]
-            held.clear()
+        store = self._held_outbox
+        with store.edit() as held:
+            # On disk before any send, so an error part way loses nothing.
             while not self.outbox_queue.empty():
-                pending.append(self.outbox_queue.get())
-            for recipient, file_change_events_message in pending:
-                if any(r == recipient for r, _ in held):
+                recipient, message = self.outbox_queue.get()
+                held.append((recipient, message.as_compressed_data()))
+            store.save(held)
+            waiting: set[str] = set()
+            for item in list(held):
+                recipient, data = item
+                if recipient in waiting:
                     # Keep the order of the messages to one recipient.
-                    held.append(
-                        (recipient, file_change_events_message.as_compressed_data())
-                    )
                     continue
                 try:
                     self.connection_router.owner_write_event_messages_to_outbox(
-                        recipient, file_change_events_message
+                        recipient, FileChangeEventsMessage.from_compressed_data(data)
                     )
                 except PeerEncryptionPendingError:
-                    if (
-                        self.connection_router.peer_store.get_cached_peer(recipient)
-                        is None
+                    peer_store = self.connection_router.peer_store
+                    if not peer_store.peers_loaded or peer_store.get_cached_peer(
+                        recipient
                     ):
-                        # Not a peer any more: it never gets a policy.
-                        logger.warning(f"Dropped an outbox message for {recipient}")
+                        waiting.add(recipient)
                         continue
-                    held.append(
-                        (recipient, file_change_events_message.as_compressed_data())
-                    )
+                    # Not a peer any more: it never gets a policy.
+                    logger.warning(f"Dropped an outbox message for {recipient}")
                 except EncryptionPolicyConflictError as e:
                     logger.warning(f"Dropped an outbox message: {e}")
+                held.remove(item)
+                store.save(held)
             if held:
                 logger.info(
                     f"Held {len(held)} outbox message(s) for peers whose "

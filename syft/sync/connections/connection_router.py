@@ -54,6 +54,13 @@ class ConnectionRouter(BaseModel):
     # live map here (updated in place as peer version files load), so outgoing
     # messages downgrade to what each peer reads.
     _peer_schemas: Dict[str, ProtocolSchema] = PrivateAttr(default_factory=dict)
+    # Reads the version file of a peer and updates what depends on it (the
+    # peer, its policy, the protocol map). Set by SyftboxManager to
+    # ``PeerManager.load_peer_version``.
+    _version_loader: Optional[Callable[[str], object]] = PrivateAttr(default=None)
+
+    def set_version_loader(self, version_loader: Callable[[str], object]) -> None:
+        self._version_loader = version_loader
 
     def set_peer_schemas(self, peer_schemas: Dict[str, ProtocolSchema]) -> None:
         """Adopt the live {peer email -> syft ProtocolSchema} map."""
@@ -146,22 +153,22 @@ class ConnectionRouter(BaseModel):
             target = client_registry.schema_for_protocol_version(protocol_version)
         return client_migration_service.migrate_to_schema(message, target)
 
-    def _encrypt_for_peer(self, peer_email: str, data: bytes) -> bytes:
-        """Encrypt ``data`` for ``peer_email`` when the pair encrypts.
+    def _refresh_unknown_peer(self, peer_email: str) -> None:
+        """Read the version file of ``peer_email`` again when its policy is not known.
 
-        When the peer policy is not known, the peer version file is read once
-        more first, at most once per peer load: the peer can have accepted
-        since the last load.
-
-        Raises:
-            PeerEncryptionPolicyUnknownError: when the policy is still not known.
+        The peer can have accepted since the last load. It runs at most once
+        per peer load, and before a message is converted for the peer.
         """
-        if not self.peer_store.peer_policy_known(peer_email):
-            peer = self.peer_store.get_cached_peer(peer_email)
-            if peer is not None and self.peer_store.take_policy_reread(peer_email):
-                peer.version = self.read_peer_version_file(peer_email)
-                self.resolve_legacy_policy(peer)
-        return self.peer_store.encrypt_if_needed(peer_email, data)
+        if self.peer_store.peer_policy_known(peer_email):
+            return
+        peer = self.peer_store.get_cached_peer(peer_email)
+        if peer is None or not self.peer_store.take_policy_reread(peer_email):
+            return
+        if self._version_loader is not None:
+            self._version_loader(peer_email)
+        else:
+            peer.version = self.read_peer_version_file(peer_email)
+            self.resolve_legacy_policy(peer)
 
     def resolve_legacy_policy(self, peer: Peer) -> None:
         """Set the policy of ``peer`` when its version file does not say it."""
@@ -174,11 +181,12 @@ class ConnectionRouter(BaseModel):
     def watcher_send_proposed_file_changes_message(
         self, recipient: str, proposed_file_changes_message: ProposedFileChangesMessage
     ):
+        self._refresh_unknown_peer(recipient)
         proposed_file_changes_message = self._downgrade_for_peer(
             proposed_file_changes_message, recipient
         )
         data = proposed_file_changes_message.as_compressed_data()
-        data = self._encrypt_for_peer(recipient, data)
+        data = self.peer_store.encrypt_if_needed(recipient, data)
         filename = proposed_file_changes_message.message_filename.as_string()
         self.connection_for_send_message().watcher_send_raw_bytes_to_inbox(
             recipient, filename, data
@@ -275,9 +283,10 @@ class ConnectionRouter(BaseModel):
     def owner_write_event_messages_to_outbox(
         self, recipient_email: str, events_message: FileChangeEventsMessage
     ):
+        self._refresh_unknown_peer(recipient_email)
         events_message = self._downgrade_for_peer(events_message, recipient_email)
         data = events_message.as_compressed_data()
-        data = self._encrypt_for_peer(recipient_email, data)
+        data = self.peer_store.encrypt_if_needed(recipient_email, data)
         fname = events_message.message_filepath.as_string()
         self.connection_for_outbox().owner_write_raw_bytes_to_outbox(
             recipient_email, fname, data
@@ -489,6 +498,11 @@ class ConnectionRouter(BaseModel):
     # ENCRYPTION BUNDLE EXCHANGE
     # =========================================================================
 
+    def read_own_encryption_bundle(self, peer_email: str) -> str | None:
+        """Read the bundle this client published for ``peer_email``."""
+        connection = self.connection_for_own_syftbox()
+        return connection.read_own_encryption_bundle(peer_email)
+
     def write_encryption_bundle(self, peer_email: str, bundle_json: str) -> None:
         """Write own encryption bundle for a peer."""
         connection = self.connection_for_own_syftbox()
@@ -538,8 +552,9 @@ class ConnectionRouter(BaseModel):
     ) -> None:
         """Upload collection files, encrypting each file if encryption is enabled."""
         if recipient_email and self.peer_store:
+            self._refresh_unknown_peer(recipient_email)
             files = {
-                name: self._encrypt_for_peer(recipient_email, data)
+                name: self.peer_store.encrypt_if_needed(recipient_email, data)
                 for name, data in files.items()
             }
         connection = self.connection_for_send_message()

@@ -341,9 +341,19 @@ class PeerManager(BaseModel):
         """Write the version file again when the policy changed in memory.
 
         Loading a key file marked required makes this client required. Peers
-        must see that, or they send plaintext that this client rejects.
+        must see that, or they send plaintext that this client rejects. A
+        process that never wrote the version file (syft-bg) compares with the
+        file on Drive, once.
         """
-        if self._advertised_policy not in (None, self.peer_store.encryption_policy):
+        if self._advertised_policy is None:
+            published = self.connection_router.read_own_version_file()
+            if published is None or (
+                published.encryption_policy != self.peer_store.encryption_policy
+            ):
+                self.write_own_version()
+            else:
+                self._advertised_policy = published.encryption_policy
+        elif self._advertised_policy != self.peer_store.encryption_policy:
             self.write_own_version()
 
     def share_version_with_peer(self, peer_email: str) -> None:
@@ -949,8 +959,27 @@ class PeerManager(BaseModel):
         this client becomes required after peering.
         """
         for peer in peers:
-            if peer.email not in self._bundle_published_for:
-                self._write_encryption_bundle_for_peer(peer.email)
+            if peer.email in self._bundle_published_for:
+                continue
+            try:
+                if self._own_bundle_is_published(peer.email):
+                    self._bundle_published_for.add(peer.email)
+                else:
+                    self._write_encryption_bundle_for_peer(peer.email)
+            except (HttpError, *RETRYABLE_TRANSPORT_ERRORS) as e:
+                warnings.warn(
+                    f"Could not publish the encryption key for {peer.email}: {e}. "
+                    "The next peer load tries again."
+                )
+
+    def _own_bundle_is_published(self, peer_email: str) -> bool:
+        """Whether the bundle published for ``peer_email`` is our current one."""
+        self.peer_store.ensure_keys()
+        published = self.connection_router.read_own_encryption_bundle(peer_email)
+        if published is None:
+            return False
+        bundle = json.loads(published).get(BUNDLE_FILE_KEY)
+        return bundle == self.peer_store.get_public_bundle()
 
     def _pin_missing_peer_bundles(self, peers: List[Peer]) -> None:
         """Pin the published bundle of every peer we hold none for (trust on first use).

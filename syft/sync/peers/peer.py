@@ -52,8 +52,11 @@ class Peer(BaseModel):
         """Whether the version file is read and does not say the policy."""
         return self.version is not None and self.version.encryption_policy is None
 
-    def set_legacy_policy(self, policy: EncryptionPolicy) -> None:
-        """Set the policy of an earlier client, whose version file does not say."""
+    def set_legacy_policy(self, policy: Optional[EncryptionPolicy]) -> None:
+        """Set the policy of an earlier client, whose version file does not say.
+
+        None keeps it unknown.
+        """
         self._legacy_policy = policy
 
     @property
