@@ -16,3 +16,7 @@ class SyftPeerNotReadyError(ValueError):
         self.cause = cause
         self.remedy = remedy
         super().__init__(f"{cause} {remedy}")
+
+    def __reduce__(self):
+        # BaseException rebuilds from self.args, which holds only the message.
+        return (type(self), (self.peer_email, self.cause, self.remedy))

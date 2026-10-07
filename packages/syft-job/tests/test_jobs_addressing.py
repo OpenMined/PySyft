@@ -257,6 +257,55 @@ def test_email_key_resolves_name_shared_by_two_datasites(tmp_path: Path):
         assert job.datasite_owner_email == owner
 
 
+def _apply_suggestions(jobs, error: ValueError) -> list:
+    """Apply each subscript chain the error suggests to the list that raised."""
+    reached = []
+    for chain in re.findall(r'((?:\["[^"]+"\])+)', str(error)):
+        target = jobs
+        for key in re.findall(r'\["([^"]+)"\]', chain):
+            target = target[key]
+        reached.append(target)
+    return reached
+
+
+def test_ambiguous_name_suggests_chains_that_resolve(tmp_path: Path):
+    """Each chain the error suggests must reach one job, on the list that raised.
+
+    An email key keeps jobs on either side, so the datasite email of one job
+    can be the submitter email of the other. Here SHARED owns one 'an' and
+    submitted the other: jobs[SHARED]["an"] still holds both, and suggesting
+    it sends the caller back to the same error.
+    """
+    shared, other_ds, other_do = "shared@test.org", "c@test.org", "d@test.org"
+    syftbox = tmp_path / "SyftBox"
+    syftbox.mkdir()
+    code_file = tmp_path / "main.py"
+    code_file.write_text(MAIN_PY)
+
+    def client(email):
+        return JobClient(
+            config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=email)
+        )
+
+    client(other_ds).submit_python_job(
+        user=shared, code_path=str(code_file), job_name="an"
+    )
+    client(shared).scan_inbox()
+    client(shared).submit_python_job(
+        user=other_do, code_path=str(code_file), job_name="an"
+    )
+    client(other_do).scan_inbox()
+
+    jobs = client(shared).jobs
+    for candidates in (jobs, jobs[shared]):
+        with pytest.raises(ValueError, match="Multiple jobs are named 'an'") as exc:
+            candidates["an"]
+        reached = _apply_suggestions(candidates, exc.value)
+        assert len(reached) == 2, str(exc.value)
+        assert all(not hasattr(job, "__len__") for job in reached), str(exc.value)
+        assert {job.datasite_owner_email for job in reached} == {shared, other_do}
+
+
 def test_email_key_names_emails_it_has(tmp_path: Path):
     """An email with no jobs on it is a typo the message has to help with."""
     syftbox = tmp_path / "SyftBox"

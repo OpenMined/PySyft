@@ -1,3 +1,5 @@
+import copy
+import pickle
 import tempfile
 from pathlib import Path
 
@@ -100,6 +102,17 @@ def test_encrypt_without_peer_bundle_names_the_cause(state, cause, remedy):
 def test_peer_not_ready_error_is_a_value_error():
     """Callers that catch ValueError keep working."""
     assert issubclass(SyftPeerNotReadyError, ValueError)
+
+
+def test_peer_not_ready_error_survives_pickle_and_copy():
+    error = SyftPeerNotReadyError("p@test.org", cause="Cause.", remedy="Remedy.")
+    for clone in (pickle.loads(pickle.dumps(error)), copy.copy(error)):
+        assert (clone.peer_email, clone.cause, clone.remedy) == (
+            "p@test.org",
+            "Cause.",
+            "Remedy.",
+        )
+        assert str(clone) == "Cause. Remedy."
 
 
 def test_try_decrypt_no_keys():

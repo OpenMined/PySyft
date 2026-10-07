@@ -223,10 +223,13 @@ def test_jobs_list_getitem_str_ambiguous():
         jobs["analysis"]
 
     message = str(exc.value)
-    assert "[0] on test@test.com from ds1@test.com" in message
-    assert "[1] on test@test.com from ds2@test.com" in message
     # One datasite holds both, so the submitter is what separates them.
-    assert 'jobs["<submitter email>"]["analysis"]' in message
+    assert (
+        '["ds1@test.com"]["analysis"] — on test@test.com from ds1@test.com' in message
+    )
+    assert (
+        '["ds2@test.com"]["analysis"] — on test@test.com from ds2@test.com' in message
+    )
 
 
 def test_jobs_list_getitem_str_ambiguous_names_the_datasite():
@@ -246,11 +249,9 @@ def test_jobs_list_getitem_str_ambiguous_names_the_datasite():
         jobs["analysis"]
 
     message = str(exc.value)
-    assert "[0] on do1@test.com" in message
-    assert "[1] on do2@test.com" in message
-    assert 'jobs["<datasite email>"]["analysis"]' in message, (
-        "the datasite narrows this"
-    )
+    # One submitter sent both, so the datasite is what separates them.
+    assert '["do1@test.com"]["analysis"] — on do1@test.com' in message
+    assert '["do2@test.com"]["analysis"] — on do2@test.com' in message
 
 
 def test_jobs_list_getitem_email_selects_datasite():
@@ -398,9 +399,9 @@ def test_ambiguous_name_offers_position_when_no_email_narrows():
         jobs["analysis"]
 
     message = str(exc.value)
-    assert "by position" in message
-    assert "Select the submitter" not in message, "the submitter does not narrow this"
-    assert "Select the datasite" not in message
+    assert "[0] — on test@test.com from ds1@test.com" in message
+    assert "[1] — on test@test.com from ds1@test.com" in message
+    assert '["' not in message, "no email narrows this"
 
 
 def test_no_hint_when_no_owned_job_is_pending():

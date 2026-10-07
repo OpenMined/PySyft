@@ -733,27 +733,35 @@ class JobsList:
         return matches[0]
 
     def _ambiguous_name_message(self, name: str, matches: List[JobInfo]) -> str:
-        """Why the name did not resolve, and the narrower subscript to use.
+        """Why the name did not resolve, and a subscript chain for each job.
 
-        A name is unique per datasite and submitter, not across the list, so
-        the remedy names whichever of the two separates these candidates. One
-        submitter holding a name twice across protocol layouts shares both, and
-        naming either would send the caller back to this same error, so the
-        position is the only thing left to offer.
+        An email key keeps jobs on either side, so one email can be the
+        datasite of one candidate and the submitter of another. Each chain is
+        measured with ``_reaches_only`` before it is offered. One submitter
+        holding a name twice across protocol layouts defeats every chain, so
+        such a job gets its position in this list.
         """
-        locations = ", ".join(
-            f"[{i}] on {job.datasite_owner_email} from {job.submitted_by}"
-            for i, job in enumerate(self._jobs)
-            if job.name == name
+        lines = [
+            f"  {self._accessor_for(job)} — on {job.datasite_owner_email} "
+            f"from {job.submitted_by}"
+            for job in matches
+        ]
+        return (
+            f"Multiple jobs are named '{name}'. Select one by subscripting this "
+            "list with:\n" + "\n".join(lines)
         )
-        if len({job.datasite_owner_email for job in matches}) > 1:
-            remedy = f'Select the datasite first: jobs["<datasite email>"]["{name}"].'
-        elif len({job.submitted_by for job in matches}) > 1:
-            remedy = f'Select the submitter first: jobs["<submitter email>"]["{name}"].'
-        else:
-            remedy = "One datasite and one submitter hold both, so no email "
-            remedy += "narrows them: select one by position."
-        return f"Multiple jobs are named '{name}': {locations}. {remedy}"
+
+    def _accessor_for(self, job: JobInfo) -> str:
+        """The shortest subscript chain that reaches ``job`` alone, or its position."""
+        chains = (
+            (job.datasite_owner_email, job.name),
+            (job.submitted_by, job.name),
+            (job.datasite_owner_email, job.submitted_by, job.name),
+        )
+        for keys in chains:
+            if self._reaches_only(keys, job):
+                return "".join(f'["{key}"]' for key in keys)
+        return f"[{self._jobs.index(job)}]"
 
     def hint_accessor(self) -> str | None:
         """The subscript chain the jobs table tells a data owner to type.
