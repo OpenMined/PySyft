@@ -6,21 +6,35 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from syft_migration import ProtocolSchema
+import yaml
+from syft_migration import MigrationError, ProtocolSchema
 from syft_perms.syftperm_context import SyftPermContext
+from syft_permissions import Access, Rule, RuleSet
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from .config import SyftJobConfig
+from .disclosures import normalize_disclosures
 from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .review_grants import grant_ds_review_read
+from .submission import (
+    SUBMISSION_ENTRIES,
+    SUBMISSION_HASH_HEADER,
+    InvalidSubmissionError,
+    SubmissionRecord,
+    code_hash,
+    has_listed_files,
+    submission_hash,
+)
+from .submission import validate_submission as validate_submission_dir
 
 # Python version used when creating virtual environments for job execution
 RUN_SCRIPT_PYTHON_VERSION = "3.12"
 
 # Strict schema: only these entries are allowed in a job submission
-VALID_SUBMISSION_ENTRIES = {"code", "run.sh", "config.yaml"}
+VALID_SUBMISSION_ENTRIES = SUBMISSION_ENTRIES
 
 
 class BaseJobClient(ABC):
@@ -131,11 +145,11 @@ class JobClient(BaseJobClient):
         inbox_rel_dir = ds_inbox_dir.relative_to(datasite)
         ctx.open(inbox_rel_dir).grant_write_access(ds_email)
 
-        # Create review folder for DS with read access
+        # Create review folder for DS. The DS reads only the named files there
+        # until a release grants more.
         ds_review_dir = self.config.get_review_dir(self.current_user_email) / ds_email
         ds_review_dir.mkdir(parents=True, exist_ok=True)
-        review_rel_dir = ds_review_dir.relative_to(datasite)
-        ctx.open(review_rel_dir).grant_read_access(ds_email)
+        grant_ds_review_read(ds_review_dir, ds_email)
 
         return ds_inbox_dir
 
@@ -167,24 +181,7 @@ class JobClient(BaseJobClient):
             job_name = f"Job - {random_id}"
         JobStorage.validate_job_name(job_name)
 
-        # Ensure user directory exists (create if it doesn't)
-        user_dir = self.config.get_user_dir(user)
-        if not user_dir.exists():
-            user_dir.mkdir(parents=True, exist_ok=True)
-            print(f"Created user directory: {user_dir}")
-
-        # Ensure inbox directory structure exists
-        self._ensure_my_submission_directory_exists(submitting_to_email)
-
-        # Create job directory under inbox/<ds_email>/[v<n>/]<job_name>/
-        ref = self.manager.new_submission_ref(submitting_to_email, job_name)
-        job_dir = self.manager.submission_dir(ref)
-
-        if job_dir.exists():
-            raise FileExistsError(
-                f"Job '{job_name}' already exists for user '{submitting_to_email}'"
-            )
-
+        ref, job_dir = self._new_submission_dir(submitting_to_email, job_name)
         self._write_bash_script(job_dir, script)
 
         # Write config.yaml in the version the datasite owner understands
@@ -195,9 +192,75 @@ class JobClient(BaseJobClient):
             datasite_email=submitting_to_email,
             submitted_at=datetime.now(timezone.utc),
             files=["script.sh"],
+            headers={SUBMISSION_HASH_HEADER: code_hash(job_dir, as_sent=True)},
         )
         self.manager.write_submission(ref, config)
 
+        return job_dir
+
+    def _new_submission_dir(
+        self, submitting_to_email: str, job_name: str
+    ) -> tuple[JobRef, Path]:
+        """Resolve inbox/<ds_email>/[v<n>/]<job_name>/ for a new job.
+
+        Creates the parent folders, not the job dir itself.
+        """
+        user_dir = self.config.get_user_dir(submitting_to_email)
+        if not user_dir.exists():
+            user_dir.mkdir(parents=True, exist_ok=True)
+            print(f"Created user directory: {user_dir}")
+        self._ensure_my_submission_directory_exists(submitting_to_email)
+
+        ref = self.manager.new_submission_ref(submitting_to_email, job_name)
+        job_dir = self.manager.submission_dir(ref)
+        if job_dir.exists():
+            raise FileExistsError(
+                f"Job '{job_name}' already exists for user '{submitting_to_email}'"
+            )
+        return ref, job_dir
+
+    def submit_prepared_python_job(
+        self,
+        user: str,
+        job_name: str,
+        run_script: bytes,
+        code_files: dict[str, bytes],
+        entrypoint: str,
+    ) -> Path:
+        """Submit a Python job from exact file contents.
+
+        Unlike submit_python_job, run.sh is not generated, so the job is
+        byte-for-byte what the caller passes, e.g. the pinned files of an api.
+
+        Args:
+            user: Email address of the datasite owner to submit job to
+            job_name: Name of the job (directory name)
+            run_script: Content of run.sh
+            code_files: {path relative to code/: content}
+            entrypoint: The Python file run.sh executes, relative to code/
+
+        Returns:
+            Path to the created job directory in inbox/
+        """
+        JobStorage.validate_job_name(job_name)
+        ref, job_dir = self._new_submission_dir(user, job_name)
+        for rel_path, content in code_files.items():
+            dest = job_dir / "code" / rel_path
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(content)
+        (job_dir / "run.sh").write_bytes(run_script)
+        os.chmod(job_dir / "run.sh", 0o755)
+
+        config = JobSubmissionMetadata(
+            name=job_name,
+            type="python",
+            submitted_by=self.current_user_email,
+            datasite_email=user,
+            submitted_at=datetime.now(timezone.utc),
+            entrypoint=entrypoint,
+            files=sorted(code_files),
+        )
+        self.manager.write_submission(ref, config)
         return job_dir
 
     def _write_bash_script(self, job_dir: Path, script: str) -> None:
@@ -380,6 +443,7 @@ python {entrypoint_path}
         job_name: Optional[str] = "",
         dependencies: Optional[List[str]] = None,
         entrypoint: Optional[str] = None,
+        request_disclosures: Optional[List[str]] = None,
     ) -> Path:
         """
         Submit a Python job for a user (supports both files and folders).
@@ -390,6 +454,8 @@ python {entrypoint_path}
             job_name: Name of the job (directory name). If empty, auto-generated.
             dependencies: List of Python packages to install
             entrypoint: Entry point file name (auto-detected if not provided)
+            request_disclosures: The items in ``DisclosureItem`` to ask the
+                data owner for. The data owner releases none, some, or all.
 
         Returns:
             Path to the created job directory in inbox/
@@ -413,22 +479,7 @@ python {entrypoint_path}
             self._validate_code_path_and_entrypoint(code_path, entrypoint)
         )
 
-        # Ensure user directory exists (create if it doesn't)
-        user_dir = self.config.get_user_dir(user)
-        if not user_dir.exists():
-            user_dir.mkdir(parents=True, exist_ok=True)
-            print(f"Created user directory: {user_dir}")
-
-        # Ensure inbox directory structure exists
-        self._ensure_my_submission_directory_exists(submitting_to_email)
-
-        # Create job directory under inbox/<ds_email>/[v<n>/]<job_name>/
-        ref = self.manager.new_submission_ref(submitting_to_email, job_name)
-        job_dir = self.manager.submission_dir(ref)
-
-        if job_dir.exists():
-            raise FileExistsError(f"Job '{job_name}' already exists for user '{user}'")
-
+        ref, job_dir = self._new_submission_dir(submitting_to_email, job_name)
         job_dir.mkdir(parents=True)
 
         # Copy code into code/ subdirectory
@@ -478,6 +529,12 @@ python {entrypoint_path}
             files=files,
             is_folder_submission=is_folder_submission,
             code_path=str(code_path_resolved),
+            headers={
+                "requested_disclosures": sorted(
+                    normalize_disclosures(request_disclosures)
+                ),
+                SUBMISSION_HASH_HEADER: code_hash(job_dir, as_sent=True),
+            },
         )
         self.manager.write_submission(ref, config)
 
@@ -488,34 +545,27 @@ python {entrypoint_path}
     # ──────────────────────────────────────────────
 
     def validate_submission(self, inbox_job_path: Path) -> tuple[bool, str]:
-        """Check strict schema: only code/ + run.sh + config.yaml allowed.
+        """Check strict schema: only code/ + run.sh + config.yaml, no symlinks.
 
         Returns:
             Tuple of (is_valid, reason_if_invalid)
         """
-        entries = {
-            e.name for e in inbox_job_path.iterdir() if e.name != PERMISSION_FILE_NAME
-        }
-        if entries != VALID_SUBMISSION_ENTRIES:
-            return False, f"Expected {VALID_SUBMISSION_ENTRIES}, got {entries}"
-        if not (inbox_job_path / "code").is_dir():
-            return False, "'code' must be a directory"
-        if not (inbox_job_path / "run.sh").is_file():
-            return False, "'run.sh' must be a file"
-        if not (inbox_job_path / "config.yaml").is_file():
-            return False, "'config.yaml' must be a file"
-        return True, ""
+        return validate_submission_dir(inbox_job_path)
 
     def receive_job(
         self,
         ds_email: str,
         job_name: str,
         protocol_version: str,
-    ) -> JobState:
-        """Validate an incoming job and create initial state in review/.
+    ) -> Optional[JobState]:
+        """Receive a job once all its files arrived, and create its state in review/.
 
-        Called by scan_inbox() when a new job is detected. The state is written
-        in the layout/version of the protocol the job was submitted with.
+        Called by scan_inbox() for a job with no state yet. Sync delivers a job
+        in any number of batches, so a job counts as received only when its
+        files hash to the value the submitter declared. The owner then records
+        the hash of what it received, makes the job's inbox folder read-only
+        for the submitter, and marks the job pending. The state is written in
+        the layout/version of the protocol the job was submitted with.
 
         Args:
             ds_email: Email of the data scientist who submitted the job.
@@ -523,39 +573,122 @@ python {entrypoint_path}
             protocol_version: Protocol layout the job was submitted with.
 
         Returns:
-            The created JobState.
+            The created JobState, or None while files are still arriving or
+            when another process received the job first.
         """
         ref = JobRef(self.current_user_email, ds_email, job_name, protocol_version)
-        submission_path = self.manager.submission_dir(ref)
+        # A record without a state means an earlier receipt stopped half-way;
+        # it is finished below, with the hash it recorded.
+        record = self.manager.read_submission_record(ref)
+        if record is None:
+            try:
+                record = self._claim_receipt(ref)
+            except InvalidSubmissionError as e:
+                state = self._rejected_state(datetime.now(timezone.utc), str(e))
+                self.manager.write_state(ref, state)
+                return state
+            if record is None:
+                return None
 
-        now = datetime.now(timezone.utc)
-        valid, reason = self.validate_submission(submission_path)
-
-        if not valid:
-            state = JobState(
-                status=JobStatus.REJECTED,
-                received_at=now,
-                rejected_by=self.current_user_email,
-                rejected_at=now,
-                review_reason=reason,
-            )
-        else:
-            state = JobState(status=JobStatus.PENDING, received_at=now)
-
+        self._lock_submission(ref)
+        state = JobState(status=JobStatus.PENDING, received_at=record.received_at)
         self.manager.write_state(ref, state)
         return state
+
+    def _claim_receipt(self, ref: JobRef) -> Optional[SubmissionRecord]:
+        """Record the received hash once every file arrived, and return the record.
+
+        Returns None while files are still arriving, or when another process
+        claimed the receipt first.
+
+        Raises:
+            InvalidSubmissionError: every file arrived, but the submission is
+                outside the schema or holds a symlink.
+        """
+        if not self._has_all_files(ref):
+            return None
+        submission_dir = self.manager.submission_dir(ref)
+        valid, reason = self.validate_submission(submission_dir)
+        if not valid:
+            raise InvalidSubmissionError(reason)
+        record = SubmissionRecord(
+            received_hash=submission_hash(submission_dir),
+            received_at=datetime.now(timezone.utc),
+        )
+        return record if self.manager.claim_submission_record(ref, record) else None
+
+    def _has_all_files(self, ref: JobRef) -> bool:
+        """Whether every file of the job arrived.
+
+        The submitter declares the hash of run.sh and code/ in config.yaml. A
+        submitter from before that header is checked against the file manifest.
+        """
+        try:
+            metadata = self.manager.read_submission(ref)
+        except (OSError, ValueError, yaml.YAMLError, MigrationError):
+            return False  # config.yaml is still arriving
+        submission_dir = self.manager.submission_dir(ref)
+        declared = metadata.headers.get(SUBMISSION_HASH_HEADER)
+        if declared:
+            return code_hash(submission_dir) == declared
+        return has_listed_files(submission_dir, metadata.files)
+
+    def _lock_submission(self, ref: JobRef) -> None:
+        """Make the job's inbox folder read-only for its submitter.
+
+        The permission file in the job folder is the nearest one for every
+        file below it, so it replaces the submitter's write on inbox/<ds>/ for
+        this job only. The job name is never part of a pattern, so a name with
+        glob characters cannot escape the lock.
+        """
+        path = self.manager.submission_dir(ref) / PERMISSION_FILE_NAME
+        ruleset = RuleSet(
+            rules=[Rule(pattern="**", access=Access(read=[ref.ds_email]))]
+        )
+        ruleset.save(path)
+
+    def _rejected_state(self, now: datetime, reason: str) -> JobState:
+        return JobState(
+            status=JobStatus.REJECTED,
+            received_at=now,
+            rejected_by=self.current_user_email,
+            rejected_at=now,
+            review_reason=reason,
+        )
 
     def scan_inbox(self) -> None:
         """Scan inbox/ for new unprocessed jobs and receive them.
 
         For each job in inbox/ (any protocol layout) that doesn't have a
-        corresponding state.yaml in review/, validates the submission and
-        creates the initial state.
+        corresponding state.yaml in review/, receives it once all its files
+        arrived. A pending job received before submission hashes existed gets
+        its record here, once.
         """
         for ref in self.manager.iter_submission_refs(self.current_user_email):
             if (self.manager.review_dir(ref) / "state.yaml").exists():
+                self._record_received_hash(ref)
                 continue
             self.receive_job(ref.ds_email, ref.job_name, ref.protocol_version)
+
+    def _record_received_hash(self, ref: JobRef) -> None:
+        """Record the received hash of a pending job that has no record yet.
+
+        Such a job was received before submission hashes existed, or was sent
+        back to pending because it was approved before them. It gets the lock
+        a new job gets at receipt, once: only the process that creates the
+        record writes it.
+        """
+        if self.manager.submission_record_path(ref).exists():
+            return
+        state = self.manager.read_state(ref)
+        if state.status != JobStatus.PENDING:
+            return
+        record = SubmissionRecord(
+            received_hash=submission_hash(self.manager.submission_dir(ref)),
+            received_at=state.received_at or datetime.now(timezone.utc),
+        )
+        if self.manager.claim_submission_record(ref, record):
+            self._lock_submission(ref)
 
     # ──────────────────────────────────────────────
     # Listing
