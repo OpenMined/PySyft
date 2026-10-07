@@ -7,6 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from syft_enclaves import EnclaveSettings
+from syft_rds.config import SyftRDSClientConfig
 
 
 @pytest.fixture
@@ -121,7 +122,7 @@ def test_persist_owner_state_can_be_enabled_via_env(required_env):
     assert settings.persist_owner_state is True
 
 
-def test_persist_owner_state_reaches_the_do_syncer_config():
+def test_persist_owner_state_reaches_do_syncer_config():
     """Guard the `**kw` hole between for_enclave and the sync engine.
 
     ``SyftRDSClientConfig.for_jupyter`` forwards unknown kwargs straight to
@@ -129,8 +130,6 @@ def test_persist_owner_state_reaches_the_do_syncer_config():
     rename on either side would silently give an enclave back the owner state
     it is not supposed to keep.
     """
-    from syft_rds.config import SyftRDSClientConfig
-
     config = SyftRDSClientConfig.for_jupyter(
         email="enclave@openmined.org",
         has_do_role=True,
