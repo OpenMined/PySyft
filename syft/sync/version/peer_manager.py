@@ -188,10 +188,6 @@ class PeerManager(BaseModel):
     _states_at_start: Optional[Dict[str, PeerState]] = PrivateAttr(default=None)
     # Peers this process published its encryption bundle for.
     _bundle_published_for: Set[str] = PrivateAttr(default_factory=set)
-    # The policy in the version file this process last wrote.
-    _advertised_policy: Optional[EncryptionPolicy] = PrivateAttr(default=None)
-    # Peers already warned about an advertised downgrade, in this process.
-    _downgrade_warned: Set[str] = PrivateAttr(default_factory=set)
 
     # ========== Peer List Properties ==========
 
@@ -317,31 +313,6 @@ class PeerManager(BaseModel):
         version_info = self.get_own_version()
         self.connection_router.write_version_file(version_info)
         write_local_version(self.syftbox_folder)
-        self._advertised_policy = version_info.encryption_policy
-
-    def reload_policy(self) -> None:
-        """Take a policy another process recorded in the key file, and advertise it."""
-        self.peer_store.reload_policy_from_key_file()
-        self._republish_version_if_policy_changed()
-
-    def _republish_version_if_policy_changed(self) -> None:
-        """Write the version file again when the policy changed in memory.
-
-        Loading a key file marked required makes this client required. Peers
-        must see that, or they send plaintext that this client rejects. A
-        process that never wrote the version file (syft-bg) compares with the
-        file on Drive, once.
-        """
-        if self._advertised_policy is None:
-            published = self.connection_router.read_own_version_file()
-            if published is None or (
-                published.encryption_policy != self.peer_store.encryption_policy
-            ):
-                self.write_own_version()
-            else:
-                self._advertised_policy = published.encryption_policy
-        elif self._advertised_policy != self.peer_store.encryption_policy:
-            self.write_own_version()
 
     def share_version_with_peer(self, peer_email: str) -> None:
         """Share version file with a peer so they can read it."""
@@ -359,7 +330,6 @@ class PeerManager(BaseModel):
         cached_peer = self.get_cached_peer(peer_email)
         if cached_peer:
             cached_peer.version = version_info
-            self._note_peer_policy(cached_peer)
         self._update_peer_schemas(peer_email, version_info)
         return version_info
 
@@ -395,33 +365,9 @@ class PeerManager(BaseModel):
             peer = self.get_cached_peer(email)
             if peer:
                 peer.version = version
-                self._note_peer_policy(peer)
             self._update_peer_schemas(email, version)
 
         return {email: version for email, version in results}
-
-    def _note_peer_policy(self, peer: Peer) -> None:
-        """Remember a peer that requires encryption; warn when it seems to stop.
-
-        The version file is not signed, so the storage provider could write a
-        downgrade into it. The peer stays required until the user trusts a new
-        key for it.
-        """
-        advertised = peer.encryption_policy
-        if advertised == EncryptionPolicy.REQUIRED:
-            self.peer_store.remember_required_peer(peer.email)
-        elif (
-            advertised is not None
-            and self.peer_store.is_remembered_required(peer.email)
-            and peer.email not in self._downgrade_warned
-        ):
-            self._downgrade_warned.add(peer.email)
-            warnings.warn(
-                f"{peer.email} advertises encryption {advertised.value}, but it "
-                "required encryption before, so encryption stays on. If the peer "
-                "reset its keys, compare its new key fingerprint with it and run "
-                f"client.trust_peer_key({peer.email!r}, fingerprint)."
-            )
 
     def get_peer_version(self, peer_email: str) -> Optional[VersionInfo]:
         """Get cached version for peer, None if not loaded or not available."""
@@ -655,7 +601,6 @@ class PeerManager(BaseModel):
         # load_peers publishes and pins when the policy becomes known.
         version_info = self.connection_router.read_peer_version_file(peer_email)
         new_peer_obj.version = version_info
-        self._note_peer_policy(new_peer_obj)
         encrypted = pair_uses_encryption(
             self.peer_store.encryption_policy,
             self.peer_store.policy_of(new_peer_obj),
@@ -871,7 +816,6 @@ class PeerManager(BaseModel):
     def _write_encryption_bundle_for_peer(self, peer_email: str) -> dict | None:
         """Write own encryption bundle for a peer, making keys first when needed."""
         self.peer_store.ensure_keys()
-        self._republish_version_if_policy_changed()
         bundle = self.peer_store.get_public_bundle()
         bundle_json = json.dumps({BUNDLE_FILE_KEY: bundle})
         self.connection_router.write_encryption_bundle(peer_email, bundle_json)

@@ -6,7 +6,6 @@ A client is ``optional`` (encrypt only when the peer requires it) or
 
 import json
 import threading
-import time
 import warnings
 from pathlib import Path
 
@@ -14,7 +13,6 @@ import pytest
 
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
     EncryptionPolicyConflictError,
@@ -24,12 +22,10 @@ from syft.sync.encryption_policy import (
 )
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
-    FileChangeEventsMessageFileName,
 )
 from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.sync.datasite_watcher_syncer import DatasiteWatcherSyncer
-from syft.sync.sync.held_messages import HeldMessages
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.version.version_info import VersionInfo
 from tests.unit.test_sync_manager import path_for_job
@@ -76,19 +72,8 @@ def _keyed_pair(
     return alice, bob
 
 
-def _held_proposals(manager) -> int:
-    """The number of proposed-change messages ``manager`` holds."""
-    return len(HeldMessages(manager.syftbox_folder / ".cache" / "held_proposals.json"))
-
-
-def _held_outbox(manager) -> int:
-    """The number of outbox messages ``manager`` holds."""
-    return len(HeldMessages(manager.syftbox_folder / ".cache" / "held_outbox.json"))
-
-
 def _forget(store: PeerStore, email: str) -> None:
     """Make ``store`` forget what it knew of ``email``'s policy, as a new client."""
-    store.forget_required_peer(email)
     store._last_known_policies.pop(email, None)
 
 
@@ -217,87 +202,6 @@ def test_missing_version_file_created_with_own_policy():
     )
     a_conn.share_version_file_with_peer("b@example.com", _version_with_policy(REQUIRED))
     assert b_conn.read_peer_version_file("a@example.com").encryption_policy == REQUIRED
-
-
-def test_policy_change_in_memory_republished():
-    """A key file marked required makes this client required: peers must see it."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        add_peers=False,
-        do_encryption_policy=REQUIRED,
-    )
-    ds_manager.add_peer(do_manager.email, sync=False)
-    do_manager.load_peers()
-    do_manager.approve_peer_request(ds_manager.email)
-
-    # Another process on the DS datasite wrote a required key file.
-    keys_path = ds_manager.peer_manager.peer_store._keys_path
-    PeerStore.create(
-        email=ds_manager.email, encryption_policy=REQUIRED, keys_path=keys_path
-    )
-    ds_manager.load_peers()
-
-    assert ds_manager.peer_manager.peer_store.encryption_policy == REQUIRED
-    advertised = do_manager.peer_manager.load_peer_version(ds_manager.email)
-    assert advertised.encryption_policy == REQUIRED
-
-
-def _advertise_policy(manager, policy) -> None:
-    """Write the version file of ``manager`` with ``policy``, as a tamperer could."""
-    version = manager.peer_manager.get_own_version().model_copy()
-    version.encryption_policy = policy
-    manager.peer_manager.connection_router.write_version_file(version)
-
-
-def test_advertised_downgrade_of_required_peer_ignored():
-    """The version file is not signed, so a required peer stays required."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        ds_encryption_policy=OPTIONAL,
-        do_encryption_policy=REQUIRED,
-    )
-    grant_job_inbox_access(do_manager, ds_manager.email)
-    ds_manager.load_peers()
-    do_manager.load_peers()
-
-    _advertise_policy(do_manager, OPTIONAL)
-    with pytest.warns(UserWarning, match="required encryption before"):
-        ds_manager.load_peers()
-    ds_store = ds_manager.peer_manager.peer_store
-    assert ds_store.peer_policy(do_manager.email) == REQUIRED
-
-    file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    ds_manager._send_file_change(file_path, "content")
-    assert _is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
-
-
-def test_required_peer_remembered_in_key_file(tmp_path):
-    keys_path = tmp_path / "crypto_keys.json"
-    store = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    store.ensure_keys()
-    store.add_peer(
-        Peer(email="bob@example.com", version=_version_with_policy(REQUIRED))
-    )
-    store.remember_required_peer("bob@example.com")
-
-    later = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    later.add_peer(
-        Peer(email="bob@example.com", version=_version_with_policy(OPTIONAL))
-    )
-    assert later.peer_policy("bob@example.com") == REQUIRED
-
-
-def test_trusted_key_change_clears_remembered_required_peer():
-    """A peer can drop required only with a new key file, so a new identity key."""
-    alice, bob = _keyed_pair(OPTIONAL, REQUIRED)
-    alice.remember_required_peer("bob@example.com")
-    alice.get_cached_peer("bob@example.com").version = _version_with_policy(OPTIONAL)
-    assert alice.peer_policy("bob@example.com") == REQUIRED
-
-    reset_bob = PeerStore(email="bob@example.com")
-    reset_bob.generate_keys()
-    alice.set_peer_bundle(
-        "bob@example.com", reset_bob.get_public_bundle(), allow_key_change=True
-    )
-    assert alice.peer_policy("bob@example.com") == OPTIONAL
 
 
 def _write_garbage_own_bundle(ds_manager, do_manager, monkeypatch) -> None:
@@ -434,7 +338,7 @@ def test_store_not_requiring_encryption_creates_no_key_file(tmp_path, policy):
 
 
 def test_off_refused_when_key_file_requires_encryption(tmp_path):
-    """The files at rest of such a datasite are encrypted; off cannot read them."""
+    """Files at rest of such a datasite are encrypted; off cannot read them."""
     keys_path = tmp_path / "crypto_keys.json"
     with pytest.warns(UserWarning):
         PeerStore.create(
@@ -516,44 +420,6 @@ def test_required_client_records_policy_in_existing_key_file(tmp_path):
     assert store.encryption_policy == REQUIRED
 
 
-def test_new_required_key_file_checks_files_at_rest_once(tmp_path):
-    """An optional client before it wrote plaintext at rest without a key file."""
-    keys_path = tmp_path / "crypto_keys.json"
-    PeerStore.create(
-        email="alice@example.com", encryption_policy=REQUIRED, keys_path=keys_path
-    )
-    store = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    assert store.needs_at_rest_encryption()
-
-
-def test_switch_to_required_needs_at_rest_encryption_until_marked(tmp_path):
-    keys_path = tmp_path / "crypto_keys.json"
-    PeerStore.create(email="alice@example.com", keys_path=keys_path).ensure_keys()
-    store = PeerStore.create(
-        email="alice@example.com", encryption_policy=REQUIRED, keys_path=keys_path
-    )
-    assert store.needs_at_rest_encryption()
-
-    store.encrypt_files_at_rest_once(lambda: None)
-    reloaded = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    assert not reloaded.needs_at_rest_encryption()
-
-
-def test_key_file_without_policy_checks_files_at_rest_once(tmp_path):
-    """An earlier client without encryption can have written plaintext at rest."""
-    keys_path = tmp_path / "crypto_keys.json"
-    PeerStore.create(
-        email="alice@example.com", encryption_policy=REQUIRED, keys_path=keys_path
-    )
-    data = json.loads(keys_path.read_text())
-    del data["encryption_policy"]
-    data.pop("at_rest_encrypted_at", None)
-    keys_path.write_text(json.dumps(data))
-
-    store = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    assert store.needs_at_rest_encryption()
-
-
 def _create(keys_path, policy=OPTIONAL) -> PeerStore:
     return PeerStore.create(
         email="alice@example.com", encryption_policy=policy, keys_path=keys_path
@@ -614,148 +480,6 @@ def test_keys_from_other_process_keep_pin_held_in_memory(tmp_path):
     thread.join(timeout=10)
     assert not thread.is_alive(), "ensure_keys did not finish"
     assert PeerStore.load_keys(keys_path).has_peer_bundle("bob@example.com")
-
-
-def test_reload_reads_keys_only_for_a_required_key_file(tmp_path, monkeypatch):
-    keys_path = tmp_path / "crypto_keys.json"
-    store = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    store.ensure_keys()
-    loads = []
-    original = PeerStore.load_keys.__func__
-    monkeypatch.setattr(
-        PeerStore,
-        "load_keys",
-        classmethod(lambda cls, path: loads.append(path) or original(cls, path)),
-    )
-    store.reload_policy_from_key_file()
-    assert loads == []
-
-
-def test_at_rest_pass_leaves_key_file_lock_free(tmp_path):
-    """A notebook can pin keys while syft-bg encrypts the files at rest."""
-    from syft.sync.utils.locked_files import locked_file
-
-    keys_path = tmp_path / "crypto_keys.json"
-    store = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    store.ensure_keys()
-    store.encryption_policy = REQUIRED
-    took_lock = []
-
-    def encrypt_files():
-        def other_process():
-            with locked_file(keys_path):
-                took_lock.append(True)
-
-        thread = threading.Thread(target=other_process, daemon=True)
-        thread.start()
-        thread.join(timeout=5)
-
-    store.encrypt_files_at_rest_once(encrypt_files)
-    assert took_lock == [True]
-
-
-def test_write_at_rest_takes_required_policy_from_other_process(tmp_path):
-    """Every write at rest reads the key file, so none goes out as plaintext."""
-    keys_path = tmp_path / "crypto_keys.json"
-    notebook = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    notebook.ensure_keys()
-    with pytest.warns(UserWarning):
-        PeerStore.create(
-            email="alice@example.com", encryption_policy=REQUIRED, keys_path=keys_path
-        )
-    assert _is_envelope(notebook.encrypt_for_self_if_needed(b"rolling state"))
-
-
-def _plaintext_event_at_rest(manager, timestamp: float) -> None:
-    message = FileChangeEventsMessage(
-        events=[],
-        message_filepath=FileChangeEventsMessageFileName(timestamp=timestamp),
-    )
-    manager.datasite_owner_syncer.connection_router.connection_for_eventlog().owner_write_raw_bytes_to_syftbox(
-        message.message_filepath.as_string(), message.as_compressed_data()
-    )
-
-
-def test_plaintext_at_rest_accepted_only_if_written_before_files_were_encrypted():
-    """A process can write plaintext while another one encrypts the files at rest."""
-    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        do_encryption_policy=REQUIRED,
-    )
-    written_during_pass = time.time()
-    do_manager.sync()
-    router = do_manager.datasite_owner_syncer.connection_router
-    _plaintext_event_at_rest(do_manager, written_during_pass)
-    router.owner_get_all_accepted_events_messages()
-
-    _plaintext_event_at_rest(do_manager, time.time() + 1)
-    with pytest.raises(ValueError, match="not encrypted"):
-        router.owner_get_all_accepted_events_messages()
-
-
-def test_key_file_read_once_for_batch_of_files_at_rest(monkeypatch):
-    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        do_encryption_policy=REQUIRED,
-    )
-    router = do_manager.datasite_owner_syncer.connection_router
-    for _ in range(3):
-        router.owner_write_events_message_to_syftbox(FileChangeEventsMessage(events=[]))
-    reloads = []
-    original = PeerStore.reload_policy_from_key_file
-    monkeypatch.setattr(
-        PeerStore,
-        "reload_policy_from_key_file",
-        lambda self: reloads.append(1) or original(self),
-    )
-    router.owner_get_all_accepted_events_messages()
-    assert len(reloads) == 1
-    reloads.clear()
-    do_manager.datasite_owner_syncer.get_all_accepted_events_messages()
-    assert len(reloads) == 1
-
-
-def test_keyless_process_takes_remembered_peers_from_key_file(tmp_path):
-    keys_path = tmp_path / "crypto_keys.json"
-    notebook = _create(keys_path)
-    daemon = _create(keys_path)
-    daemon.ensure_keys()
-    notebook.reload_policy_from_key_file()
-    daemon.remember_required_peer("bob@example.com")
-    notebook.reload_policy_from_key_file()
-    assert notebook.is_remembered_required("bob@example.com")
-
-
-def test_trusted_peer_stays_forgotten_in_other_process(tmp_path):
-    """syft-bg must not write back a peer that trust_peer_key cleared."""
-    keys_path = tmp_path / "crypto_keys.json"
-    with pytest.warns(UserWarning):
-        notebook = _create(keys_path, REQUIRED)
-    daemon = _create(keys_path)
-    notebook.remember_required_peer("bob@example.com")
-    daemon.reload_policy_from_key_file()
-    assert daemon.is_remembered_required("bob@example.com")
-
-    notebook.forget_required_peer("bob@example.com")
-    daemon.remember_required_peer("carol@example.com")
-    stored = json.loads(keys_path.read_text())["required_peers"]
-    assert stored == ["carol@example.com"]
-    daemon.reload_policy_from_key_file()
-    assert not daemon.is_remembered_required("bob@example.com")
-
-
-def test_key_file_read_again_only_after_it_changes(tmp_path, monkeypatch):
-    keys_path = tmp_path / "crypto_keys.json"
-    store = _create(keys_path)
-    store.ensure_keys()
-    reads = []
-    original = PeerStore._read_key_file
-    monkeypatch.setattr(
-        PeerStore,
-        "_read_key_file",
-        lambda self: reads.append(1) or original(self),
-    )
-    for _ in range(3):
-        store.encrypt_for_self_if_needed(b"data")
-    assert len(reads) == 1
 
 
 def test_concurrent_processes_make_one_key_pair(tmp_path):
@@ -944,63 +668,6 @@ def test_client_required_after_peering_publishes_bundle():
     assert any("after switch" in c for c in _accepted_contents(do_manager))
 
 
-def test_policy_from_other_process_taken_at_next_sync():
-    """syft-bg starts required next to a notebook that started optional."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-    grant_job_inbox_access(do_manager, ds_manager.email)
-    file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    ds_manager._send_file_change(file_path, "written while optional")
-    do_manager.sync()
-
-    keys_path = do_manager.peer_manager.peer_store._keys_path
-    with pytest.warns(UserWarning):
-        PeerStore.create(
-            email=do_manager.email, encryption_policy=REQUIRED, keys_path=keys_path
-        )
-    do_manager.sync()
-
-    do_store = do_manager.peer_manager.peer_store
-    assert do_store.encryption_policy == REQUIRED
-    assert all(_is_envelope(raw) for raw in _raw_event_log(do_manager))
-    assert any("written while optional" in c for c in _accepted_contents(do_manager))
-    advertised = ds_manager.peer_manager.load_peer_version(do_manager.email)
-    assert advertised.encryption_policy == REQUIRED
-
-
-def test_switch_advertised_by_process_that_never_wrote_version():
-    """syft-bg does not write the version file, but must advertise required."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-    do_manager.peer_manager._advertised_policy = None  # as a fresh syft-bg
-
-    keys_path = do_manager.peer_manager.peer_store._keys_path
-    with pytest.warns(UserWarning):
-        PeerStore.create(
-            email=do_manager.email, encryption_policy=REQUIRED, keys_path=keys_path
-        )
-    do_manager.sync()
-    advertised = ds_manager.peer_manager.load_peer_version(do_manager.email)
-    assert advertised.encryption_policy == REQUIRED
-
-
-def test_direct_event_write_encrypts_earlier_files_at_rest():
-    """Files written while optional are encrypted before a direct write reads them."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-    grant_job_inbox_access(do_manager, ds_manager.email)
-    file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    ds_manager._send_file_change(file_path, "written while optional")
-    do_manager.sync()
-
-    keys_path = do_manager.peer_manager.peer_store._keys_path
-    with pytest.warns(UserWarning):
-        PeerStore.create(
-            email=do_manager.email, encryption_policy=REQUIRED, keys_path=keys_path
-        )
-    syncer = do_manager.datasite_owner_syncer
-    syncer.queue_event_for_syftbox([], FileChangeEventsMessage(events=[]))
-    syncer.process_syftbox_events_queue()
-    assert all(_is_envelope(raw) for raw in _raw_event_log(do_manager))
-
-
 def _raw_event_log(do_manager) -> list[bytes]:
     connection = (
         do_manager.datasite_owner_syncer.connection_router.connection_for_eventlog()
@@ -1008,22 +675,31 @@ def _raw_event_log(do_manager) -> list[bytes]:
     return connection.owner_download_all_raw_events_from_syftbox()
 
 
-def test_owner_switching_to_required_encrypts_files_at_rest():
-    """Plaintext written while optional is encrypted once, then read as usual."""
+def test_owner_switching_to_required_encrypts_new_files_at_rest():
+    """Files written while optional stay plaintext, and are read as usual."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
     grant_job_inbox_access(do_manager, ds_manager.email)
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "before switch")
     do_manager.sync()
     do_manager.create_checkpoint()
-    assert not any(_is_envelope(raw) for raw in _raw_event_log(do_manager))
+    before = len(_raw_event_log(do_manager))
 
+    # A later login of the DO requires encryption.
     do_manager.peer_manager.peer_store.encryption_policy = REQUIRED
-    do_manager.peer_manager.peer_store.ensure_keys()
+    do_manager.peer_manager.write_own_version()
+    do_manager.load_peers()
+    ds_manager.load_peers()
+    do_manager.load_peers()
+    ds_manager._send_file_change(file_path, "after switch")
     do_manager.sync()
 
-    assert all(_is_envelope(raw) for raw in _raw_event_log(do_manager))
-    assert any("before switch" in c for c in _accepted_contents(do_manager))
+    envelopes = [_is_envelope(raw) for raw in _raw_event_log(do_manager)]
+    assert envelopes.count(False) == before
+    assert envelopes.count(True) == len(envelopes) - before > 0
+    contents = _accepted_contents(do_manager)
+    assert any("before switch" in c for c in contents)
+    assert any("after switch" in c for c in contents)
     router = do_manager.datasite_owner_syncer.connection_router
     assert router.get_latest_checkpoint() is not None
 
@@ -1076,7 +752,7 @@ def test_owner_drops_outbox_message_it_cannot_send(ds_policy, recipient):
     message = FileChangeEventsMessage(events=[])
     syncer.outbox_queue.put((recipient or ds_manager.email, message))
     syncer.process_syftbox_events_queue()
-    assert _held_outbox(do_manager) == 0
+    assert syncer.outbox_queue.empty()
 
 
 def test_conflict_found_on_read_makes_peer_wait():
@@ -1134,47 +810,6 @@ def test_drive_error_while_publishing_bundle_does_not_stop_sync(monkeypatch):
     assert do_manager.email not in ds_manager.peer_manager._bundle_published_for
 
 
-def test_add_peer_publishes_bundle_for_remembered_required_peer(monkeypatch):
-    """add_peer follows the same policy as other paths, not the raw version file."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        ds_encryption_policy=OPTIONAL,
-        do_encryption_policy=REQUIRED,
-    )
-    ds_manager.load_peers()
-    _advertise_policy(do_manager, OPTIONAL)
-    writes = []
-    original = ConnectionRouter.write_encryption_bundle
-    monkeypatch.setattr(
-        ConnectionRouter,
-        "write_encryption_bundle",
-        lambda self, peer_email, bundle_json: writes.append(peer_email)
-        or original(self, peer_email, bundle_json),
-    )
-    with pytest.warns(UserWarning, match="required encryption before"):
-        ds_manager.add_peer(do_manager.email, force=True, sync=False)
-    assert writes == [do_manager.email]
-
-
-def test_outbox_history_from_before_switch_stays_readable():
-    """A client that turns required accepts plaintext written before it did."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-    grant_job_inbox_access(do_manager, ds_manager.email)
-    file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    ds_manager._send_file_change(file_path, "history")
-    do_manager.sync()
-
-    keys_path = ds_manager.peer_manager.peer_store._keys_path
-    with pytest.warns(UserWarning):
-        PeerStore.create(
-            email=ds_manager.email, encryption_policy=REQUIRED, keys_path=keys_path
-        )
-    ds_manager.sync()
-
-    outbox = do_manager.datasite_owner_syncer.connection_router.connection_for_outbox()
-    assert outbox.owner_get_rejected_outbox_messages(ds_manager.email) == []
-    assert any("history" in c for c in _ds_cached_contents(ds_manager))
-
-
 def test_owner_waits_on_envelope_from_unpinned_peer():
     """The sync goes on; the message stays in the inbox until the pin exists."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
@@ -1196,7 +831,7 @@ def test_owner_waits_on_envelope_from_unpinned_peer():
 
 
 # =========================================================================
-# Held sends
+# Sends while encryption is pending
 # =========================================================================
 
 
@@ -1219,8 +854,12 @@ def test_send_reread_updates_peer_manager():
     assert _is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
 
 
-def test_send_before_peer_accepts_held_until_sync(capsys):
-    """Before the owner accepts, its policy is unknown, so the send waits."""
+def _queued_changes(manager) -> int:
+    return manager.datasite_watcher_syncer.queue.qsize()
+
+
+def test_send_before_peer_accepts_waits_until_sync(capsys):
+    """Before the owner accepts, its policy is unknown, so the change waits."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         add_peers=False,
         do_encryption_policy=REQUIRED,
@@ -1228,12 +867,9 @@ def test_send_before_peer_accepts_held_until_sync(capsys):
     ds_manager.add_peer(do_manager.email, sync=False)
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    ds_manager._send_file_change(file_path, "held content")
-    assert _held_proposals(ds_manager) == 1
-    assert "Held a message" in capsys.readouterr().out
-    # The held message is on disk, so a restart keeps it, and the hash cache
-    # records only what the owner received.
-    assert (ds_manager.syftbox_folder / ".cache" / "held_proposals.json").exists()
+    ds_manager._send_file_change(file_path, "early content")
+    assert _queued_changes(ds_manager) == 1
+    assert "next sync" in capsys.readouterr().out
     cache = ds_manager.datasite_watcher_syncer.datasite_watcher_cache
     assert Path(file_path) not in cache.file_hashes
 
@@ -1241,15 +877,14 @@ def test_send_before_peer_accepts_held_until_sync(capsys):
     do_manager.approve_peer_request(ds_manager.email)
     grant_job_inbox_access(do_manager, ds_manager.email)
     ds_manager.sync()
-    assert _held_proposals(ds_manager) == 0
+    assert _queued_changes(ds_manager) == 0
     assert _is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
-
     do_manager.sync()
-    assert any("held content" in c for c in _accepted_contents(do_manager))
+    assert any("early content" in c for c in _accepted_contents(do_manager))
 
 
-def test_send_after_accept_before_peer_load_held():
-    """The owner accepted, but the scientist has no keys or pin yet: hold, then send."""
+def test_send_after_accept_before_peer_load_waits_until_sync():
+    """The owner accepted, but the scientist has no keys or pin yet."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         add_peers=False,
         do_encryption_policy=REQUIRED,
@@ -1261,58 +896,21 @@ def test_send_after_accept_before_peer_load_held():
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "after accept")
-    assert _held_proposals(ds_manager) == 1
+    assert _queued_changes(ds_manager) == 1
 
     ds_manager.sync()
     do_manager.sync()
     assert any("after accept" in c for c in _accepted_contents(do_manager))
 
 
-def test_two_held_changes_to_one_file_apply_in_order():
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        add_peers=False,
-    )
-    ds_manager.add_peer(do_manager.email, sync=False)
-    file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    ds_manager._send_file_change(file_path, "first")
-    ds_manager._send_file_change(file_path, "second")
-    assert _held_proposals(ds_manager) == 2
-
-    do_manager.load_peers()
-    do_manager.approve_peer_request(ds_manager.email)
-    grant_job_inbox_access(do_manager, ds_manager.email)
-    ds_manager.sync()
-    do_manager.sync()
-    assert any("second" in c for c in _accepted_contents(do_manager))
-
-
-def test_held_hashes_read_once_per_queue_flush(monkeypatch):
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-    reads = []
-    original = DatasiteWatcherSyncer._held_hashes
-    monkeypatch.setattr(
-        DatasiteWatcherSyncer,
-        "_held_hashes",
-        lambda self: reads.append(1) or original(self),
-    )
-    grant_job_inbox_access(do_manager, ds_manager.email)
-    watcher = ds_manager.datasite_watcher_syncer
-    for name in ("a.job", "b.job", "c.job"):
-        file_path = path_for_job(do_manager.email, ds_manager.email, name)
-        watcher.on_file_change(file_path, name, process_now=False)
-    watcher.process_file_changes_queue()
-    assert len(reads) == 1
-
-
 def test_send_to_non_peer_raises():
-    """A recipient that is not a peer never gets a policy, so holding would be forever."""
+    """A recipient that is not a peer never gets a policy."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         add_peers=False,
     )
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     with pytest.raises(PeerEncryptionPolicyUnknownError):
         ds_manager._send_file_change(file_path, "content")
-    assert _held_proposals(ds_manager) == 0
 
 
 def test_changes_for_two_datasites_go_to_each(monkeypatch):
@@ -1320,7 +918,7 @@ def test_changes_for_two_datasites_go_to_each(monkeypatch):
     sent = []
     monkeypatch.setattr(
         DatasiteWatcherSyncer,
-        "_send_or_hold",
+        "_send_message",
         lambda self, recipient, message: sent.append(
             (recipient, {fc.datasite_email for fc in message.proposed_file_changes})
         )
@@ -1351,53 +949,19 @@ def test_failure_for_one_recipient_still_sends_to_other(monkeypatch, error):
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
     sent = []
 
-    def send_or_hold(self, recipient, message):
+    def send_message(self, recipient, message):
         if recipient == "other@example.com":
             raise error(recipient)
         sent.append(recipient)
         return True
 
-    monkeypatch.setattr(DatasiteWatcherSyncer, "_send_or_hold", send_or_hold)
+    monkeypatch.setattr(DatasiteWatcherSyncer, "_send_message", send_message)
     watcher = ds_manager.datasite_watcher_syncer
     watcher.on_file_change("other@example.com/a.txt", "a", process_now=False)
     watcher.on_file_change(f"{do_manager.email}/b.txt", "b", process_now=False)
     with pytest.raises(error):
         watcher.process_file_changes_queue()
     assert sent == [do_manager.email]
-
-
-def test_owner_flush_writes_no_held_file_when_nothing_waits(monkeypatch):
-    """Messages that go out at once do not pass through the held file."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-    written = []
-    original = HeldMessages._write
-    monkeypatch.setattr(
-        HeldMessages,
-        "_write",
-        lambda self, messages: written.append(len(messages))
-        or original(self, messages),
-    )
-    syncer = do_manager.datasite_owner_syncer
-    for _ in range(3):
-        syncer.outbox_queue.put((ds_manager.email, FileChangeEventsMessage(events=[])))
-    syncer.process_syftbox_events_queue()
-    assert all(n == 0 for n in written)
-
-
-def test_drive_error_while_sending_changes_holds_unsent(monkeypatch):
-    """The queue is already empty, so unsent changes go to the held file."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-
-    def fail(self, recipient, message):
-        raise RuntimeError("Drive error")
-
-    monkeypatch.setattr(DatasiteWatcherSyncer, "_send_or_hold", fail)
-    watcher = ds_manager.datasite_watcher_syncer
-    watcher.on_file_change(f"{do_manager.email}/a.txt", "a", process_now=False)
-    watcher.on_file_change("other@example.com/b.txt", "b", process_now=False)
-    with pytest.raises(RuntimeError):
-        watcher.process_file_changes_queue()
-    assert _held_proposals(ds_manager) == 2
 
 
 def test_policy_reread_once_per_peer_load(monkeypatch):
@@ -1435,65 +999,6 @@ def test_compaction_skips_peer_with_unknown_policy(monkeypatch):
     assert syncer.compact_outbox_if_needed(ds_manager.email, min_messages=1) == 0
 
 
-def test_owner_flush_keeps_only_unsent_messages_on_error(monkeypatch):
-    """A Drive error mid-flush neither loses queued messages nor resends sent ones."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-    syncer = do_manager.datasite_owner_syncer
-    sent = []
-
-    def write_once_then_fail(self, recipient, message):
-        if sent:
-            raise RuntimeError("Drive error")
-        sent.append(recipient)
-
-    monkeypatch.setattr(
-        ConnectionRouter, "owner_write_event_messages_to_outbox", write_once_then_fail
-    )
-    for _ in range(2):
-        syncer.outbox_queue.put((ds_manager.email, FileChangeEventsMessage(events=[])))
-    with pytest.raises(RuntimeError):
-        syncer.process_syftbox_events_queue()
-    assert sent == [ds_manager.email]
-    assert _held_outbox(do_manager) == 1
-
-    monkeypatch.undo()
-    syncer.process_syftbox_events_queue()
-    assert _held_outbox(do_manager) == 0
-
-
-def test_held_send_flush_keeps_only_unsent_messages_on_error(monkeypatch):
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        add_peers=False,
-    )
-    ds_manager.add_peer(do_manager.email, sync=False)
-    for name in ("a.job", "b.job"):
-        file_path = path_for_job(do_manager.email, ds_manager.email, name)
-        ds_manager._send_file_change(file_path, name)
-    watcher = ds_manager.datasite_watcher_syncer
-    assert _held_proposals(ds_manager) == 2
-
-    do_manager.load_peers()
-    do_manager.approve_peer_request(ds_manager.email)
-    ds_manager.load_peers()
-    original = ConnectionRouter.watcher_send_proposed_file_changes_message
-    sent = []
-
-    def send_once_then_fail(self, recipient, message):
-        if sent:
-            raise RuntimeError("Drive error")
-        sent.append(recipient)
-        return original(self, recipient, message)
-
-    monkeypatch.setattr(
-        ConnectionRouter,
-        "watcher_send_proposed_file_changes_message",
-        send_once_then_fail,
-    )
-    with pytest.raises(RuntimeError):
-        watcher.send_pending_messages()
-    assert _held_proposals(ds_manager) == 1
-
-
 def _unknown_policy(ds_manager, do_manager, monkeypatch):
     """Make the DS policy unknown to the DO; return a function that undoes it."""
     peer = do_manager.peer_manager.get_cached_peer(ds_manager.email)
@@ -1526,186 +1031,61 @@ def _unpinned_bundle(ds_manager, do_manager, monkeypatch):
 @pytest.mark.parametrize(
     "make_pending", [_unknown_policy, _unpinned_bundle], ids=["policy", "pin"]
 )
-def test_owner_holds_outbox_message_until_encryption_set_up(make_pending, monkeypatch):
+def test_owner_sends_outbox_message_once_encryption_set_up(make_pending, monkeypatch):
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         ds_encryption_policy=REQUIRED,
     )
     syncer = do_manager.datasite_owner_syncer
     restore = make_pending(ds_manager, do_manager, monkeypatch)
+    written = []
+    original = ConnectionRouter.owner_write_event_messages_to_outbox
 
+    def write(self, recipient, message):
+        original(self, recipient, message)
+        written.append(recipient)
+
+    monkeypatch.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", write)
     syncer.outbox_queue.put((ds_manager.email, FileChangeEventsMessage(events=[])))
     syncer.process_syftbox_events_queue()
-    assert _held_outbox(do_manager) == 1
-    # The held message is on disk, so a restart keeps it.
-    assert (do_manager.syftbox_folder / ".cache" / "held_outbox.json").exists()
+    assert written == []
 
     restore()
+    monkeypatch.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", write)
     syncer.process_syftbox_events_queue()
-    assert _held_outbox(do_manager) == 0
+    assert written == [ds_manager.email]
 
 
 # =========================================================================
-# Rejected messages
+# Plaintext refused
 # =========================================================================
 
 
-def test_rejected_inbox_message_resent_in_order():
-    """A newer encrypted change waits until the rejected one is resent encrypted."""
-    ds_manager, do_manager = _pair_with_stale_sender_view()
-    file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    ds_manager._send_file_change(file_path, "first")
-    do_manager.sync()
-
-    # The sender learns the policy and sends a newer change before it resends.
-    ds_manager.load_peers()
-    ds_manager._send_file_change(file_path, "second")
-    do_manager.sync()
-    assert not any("second" in c for c in _accepted_contents(do_manager))
-
-    ds_manager.sync()
-    assert _is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
-    do_manager.sync()
-    contents = _accepted_contents(do_manager)
-    assert any("first" in c for c in contents)
-    assert any("second" in c for c in contents)
-
-
-def test_rejected_outbox_message_resent_in_order(monkeypatch):
-    ds_manager, do_manager = _required_ds_pair()
-    _owner_sends_with_stale_view(ds_manager, do_manager, "first")
-    ds_manager.sync()
-    assert not any("first" in c for c in _ds_cached_contents(ds_manager))
-
-    # The owner refreshes its view and answers a newer proposal, but has not
-    # resent the rejected message yet.
-    do_manager.load_peers()
-    with monkeypatch.context() as m:
-        m.setattr(
-            ConnectionRouter,
-            "owner_resend_rejected_outbox_messages",
-            lambda self, recipient: 0,
-        )
-        file_path = path_for_job(do_manager.email, ds_manager.email, "other.job")
-        ds_manager._send_file_change(file_path, "second")
-        do_manager.datasite_owner_syncer.sync([ds_manager.email])
-    ds_manager.sync()
-    assert not any("second" in c for c in _ds_cached_contents(ds_manager))
-
-    do_manager.sync()
-    ds_manager.sync()
-    contents = _ds_cached_contents(ds_manager)
-    assert any("first" in c for c in contents)
-    assert any("second" in c for c in contents)
-
-
-def test_all_plaintext_inbox_messages_rejected_in_one_pass():
-    ds_manager, do_manager = _pair_with_stale_sender_view()
-    for name in ("a.job", "b.job", "c.job"):
-        file_path = path_for_job(do_manager.email, ds_manager.email, name)
-        ds_manager._send_file_change(file_path, f"content {name}")
-    do_manager.sync()
-
-    ds_manager.sync()
-    do_manager.sync()
-    contents = _accepted_contents(do_manager)
-    for name in ("a.job", "b.job", "c.job"):
-        assert any(f"content {name}" in c for c in contents)
-
-
-def test_message_rejected_twice_keeps_one_suffix():
-    """A notebook and syft-bg can both reject one message."""
-    ds_manager, do_manager = _pair_with_stale_sender_view()
-    file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    ds_manager._send_file_change(file_path, "rejected twice")
-    do_manager.sync()
-
-    ds_conn = ds_manager.datasite_watcher_syncer.connection_router.connection_for_send_message()
-    [(file_id, _, _)] = ds_conn.watcher_get_rejected_inbox_messages(do_manager.email)
-    do_conn = do_manager.datasite_owner_syncer.connection_router.connection_for_receive_message()
-    do_conn.mark_message_rejected(file_id)
-
-    ds_manager.sync()
-    do_manager.sync()
-    assert any("rejected twice" in c for c in _accepted_contents(do_manager))
-
-
-def test_optional_pair_skips_rejected_message_lookup(monkeypatch):
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-    calls = []
-    original = GDriveConnection.watcher_get_rejected_inbox_messages
-
-    def spy(self, recipient):
-        calls.append(recipient)
-        return original(self, recipient)
-
-    monkeypatch.setattr(GDriveConnection, "watcher_get_rejected_inbox_messages", spy)
-    ds_manager.sync()
-    assert calls == []
-
-
-def test_rejected_message_lookup_does_not_list_whole_folder(monkeypatch):
-    ds_manager, do_manager = _required_ds_pair()
-    calls = []
-    original = GDriveConnection.get_file_metadatas_from_folder
-    monkeypatch.setattr(
-        GDriveConnection,
-        "get_file_metadatas_from_folder",
-        lambda self, *a, **k: calls.append(a) or original(self, *a, **k),
-    )
-    router = do_manager.datasite_owner_syncer.connection_router
-    router.owner_resend_rejected_outbox_messages(ds_manager.email)
-    assert calls == []
-
-
-def _outbox_with_files(names):
-    """The owner's outbox connection, with files ``names`` in its folder for the DS."""
-    ds_manager, do_manager = _required_ds_pair()
-    outbox = do_manager.datasite_owner_syncer.connection_router.connection_for_outbox()
-    folder_id = outbox._get_own_datasite_outbox_id(ds_manager.email)
-    for name in names:
-        outbox.drive_service.files().create(
-            body={"name": name, "parents": [folder_id]}
-        ).execute()
-    return outbox, ds_manager.email
-
-
-def test_rejected_lookup_handles_quotes_in_names():
-    outbox, ds_email = _outbox_with_files(["a'b", "rejected_a'b", "rejected_c\\d"])
-    rejected = outbox.owner_get_rejected_outbox_messages(ds_email)
-    assert {(r.filename, r.resent) for r in rejected} == {
-        ("a'b", True),
-        ("c\\d", False),
-    }
-
-
-def test_rejected_lookup_reads_every_page():
-    names = [f"rejected_msgv2_{i}_x.tar.gz" for i in range(101)]
-    outbox, ds_email = _outbox_with_files(names)
-    assert len(outbox.owner_get_rejected_outbox_messages(ds_email)) == 101
-
-
-def test_rejected_lookup_checks_resent_names_in_one_query(monkeypatch):
-    names = [f"rejected_msgv2_{i}_x.tar.gz" for i in range(3)]
-    outbox, ds_email = _outbox_with_files(names)
-    lists = []
-    original = mock_drive_service.MockListRequest.execute
-    monkeypatch.setattr(
-        mock_drive_service.MockListRequest,
-        "execute",
-        lambda self: lists.append(self._q) or original(self),
-    )
-    outbox.owner_get_rejected_outbox_messages(ds_email)
-    assert len(lists) == 2
-
-
-def test_resend_waits_while_peer_bundle_not_pinned():
+def test_plaintext_inbox_message_dropped_and_later_ones_read():
     ds_manager, do_manager = _pair_with_stale_sender_view()
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "plain content")
-    do_manager.sync()
 
-    peer = ds_manager.peer_manager.get_cached_peer(do_manager.email)
-    peer.version = _version_with_policy(REQUIRED)
-    peer.public_encryption_bundle = None
-    router = ds_manager.datasite_watcher_syncer.connection_router
-    assert router.watcher_resend_rejected_inbox_messages(do_manager.email) == 0
+    ds_manager.load_peers()
+    # The owner never applies the dropped change, so this one is to another file.
+    other_path = path_for_job(do_manager.email, ds_manager.email, "other.job")
+    ds_manager._send_file_change(other_path, "encrypted content")
+    with pytest.warns(UserWarning, match="not encrypted"):
+        do_manager.sync()
+    contents = _accepted_contents(do_manager)
+    assert not any("plain content" in c for c in contents)
+    assert any("encrypted content" in c for c in contents)
+
+
+def test_plaintext_outbox_message_skipped_and_later_ones_read():
+    ds_manager, do_manager = _required_ds_pair()
+    _owner_sends_with_stale_view(ds_manager, do_manager, "plain content")
+
+    do_manager.load_peers()
+    file_path = path_for_job(do_manager.email, ds_manager.email, "other.job")
+    ds_manager._send_file_change(file_path, "encrypted content")
+    do_manager.datasite_owner_syncer.sync([ds_manager.email])
+    with pytest.warns(UserWarning, match="not encrypted"):
+        ds_manager.sync()
+    contents = _ds_cached_contents(ds_manager)
+    assert not any("plain content" in c for c in contents)
+    assert any("encrypted content" in c for c in contents)

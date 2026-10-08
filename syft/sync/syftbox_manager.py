@@ -1016,7 +1016,6 @@ class SyftboxManager(BaseModelCallbackMixin):
                           separate process may have updated the file.
         """
         with self.sync_file_lock():
-            self.peer_manager.reload_policy()
             self.load_peers(force_download=force_download_peer_state)
             if self.has_do_role:
                 peer_emails = [peer.email for peer in self.peer_manager.approved_peers]
@@ -1044,8 +1043,8 @@ class SyftboxManager(BaseModelCallbackMixin):
                 peer_emails = self.peer_manager.without_encryption_conflicts(
                     peer_emails
                 )
-                self.datasite_watcher_syncer.resend_rejected_messages(peer_emails)
-                self.datasite_watcher_syncer.send_pending_messages()
+                # Changes that waited for encryption with their recipient.
+                self.datasite_watcher_syncer.process_file_changes_queue()
                 self.datasite_watcher_syncer.sync_down(peer_emails)
 
     def load_peers(self, force_download: bool = False):

@@ -1,16 +1,6 @@
-from typing import ClassVar, NamedTuple, Type
+from typing import ClassVar, Type
 from pydantic import BaseModel
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
-
-
-class RejectedMessage(NamedTuple):
-    """A message file that the recipient renamed with the rejected prefix."""
-
-    file_id: str
-    # The file name without the prefix.
-    filename: str
-    # True when a file with the original name is in the folder again.
-    resent: bool
 
 
 class FileCollection(BaseModel):
@@ -118,26 +108,6 @@ class SyftboxPlatformConnection(BaseModel):
         """Download next message from inbox as raw bytes. Returns (data, file_id) or None."""
         raise NotImplementedError()
 
-    def owner_get_inbox_message_ids(self, sender_email: str) -> list[str]:
-        """The ids of the messages in the inbox of ``sender_email``, oldest first."""
-        raise NotImplementedError()
-
-    def mark_message_rejected(self, file_id: str) -> None:
-        """Mark an inbox or outbox message as rejected, so the sender resends it."""
-        raise NotImplementedError()
-
-    def watcher_get_rejected_inbox_messages(
-        self, recipient: str
-    ) -> list[RejectedMessage]:
-        """The inbox messages ``recipient`` rejected."""
-        raise NotImplementedError()
-
-    def owner_get_rejected_outbox_messages(
-        self, recipient: str
-    ) -> list[RejectedMessage]:
-        """The outbox messages ``recipient`` rejected."""
-        raise NotImplementedError()
-
     def owner_write_raw_bytes_to_outbox(
         self, recipient: str, filename: str, data: bytes
     ) -> None:
@@ -156,14 +126,6 @@ class SyftboxPlatformConnection(BaseModel):
         raise NotImplementedError()
 
     def owner_download_raw_bytes_by_id(self, file_id: str) -> bytes:
-        raise NotImplementedError()
-
-    def owner_overwrite_raw_bytes_by_id(self, file_id: str, data: bytes) -> None:
-        """Replace the content of file ``file_id``, keeping its name and place."""
-        raise NotImplementedError()
-
-    def owner_get_checkpoint_and_state_file_ids(self) -> list[str]:
-        """The ids of all checkpoint and rolling state files."""
         raise NotImplementedError()
 
     def owner_download_all_raw_events_from_syftbox(self) -> list[bytes]:

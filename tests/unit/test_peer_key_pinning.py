@@ -339,7 +339,7 @@ def test_failed_key_file_write_leaves_old_file(tmp_path, monkeypatch):
     def crash(src, dst):
         raise OSError("disk full")
 
-    monkeypatch.setattr("syft.sync.utils.locked_files.os.replace", crash)
+    monkeypatch.setattr("syft.sync.peers.peer_store.os.replace", crash)
     with pytest.raises(OSError, match="disk full"):
         alice.set_peer_bundle(BOB, _store(BOB).get_public_bundle())
     monkeypatch.undo()

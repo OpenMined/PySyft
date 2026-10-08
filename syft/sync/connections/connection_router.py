@@ -1,6 +1,6 @@
 import logging
-
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, TypeVar
+import warnings
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, PrivateAttr
 from syft_migration import MigratableObject, ProtocolSchema
@@ -15,7 +15,6 @@ from syft.sync.checkpoints.rolling_state import RollingState
 from syft.sync.connections.base_connection import (
     ConnectionConfig,
     FileCollection,
-    RejectedMessage,
     SyftboxPlatformConnection,
 )
 from syft.sync.encryption_policy import (
@@ -29,6 +28,7 @@ from syft.sync.connections.drive.gdrive_transport import (
 )
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
+    FileChangeEventsMessageFileName,
 )
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.peers.peer import Peer, PeerState
@@ -44,10 +44,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-
-# A file at rest, decoded: it has a ``timestamp``.
-AtRest = TypeVar("AtRest")
 
 
 class ConnectionRouter(BaseModel):
@@ -191,91 +187,35 @@ class ConnectionRouter(BaseModel):
     def owner_get_next_proposed_filechange_message(
         self, sender_email: str
     ) -> ProposedFileChangesMessage | None:
+        """The next message from ``sender_email`` that can be read, or None.
+
+        A plaintext message to a pair that encrypts is archived unread, with a
+        warning. None also means the messages of this peer wait (see
+        ``_decrypt_or_wait``).
+        """
         connection = self.connection_for_receive_message()
-        result = connection.owner_download_next_raw_proposed_message_from_inbox(
-            sender_email
-        )
-        if result is None:
-            return None
-        raw_data, file_id = result
-        raw_data = self._decrypt_or_reject(
-            connection,
-            sender_email,
-            raw_data,
-            file_id,
-            on_reject=lambda: self._reject_plaintext_inbox_messages(
-                connection, sender_email
-            ),
-        )
-        if raw_data is None:
-            return None
-        msg = ProposedFileChangesMessage.from_compressed_data(raw_data)
-        msg.platform_id = file_id
-        return msg
-
-    def _reject_plaintext_inbox_messages(
-        self, connection: SyftboxPlatformConnection, sender_email: str
-    ) -> None:
-        """Reject every other plaintext message from ``sender_email`` at once.
-
-        The sender then resends them all on one sync, not one per round. It
-        encrypts all messages after the first envelope, so the scan stops
-        there.
-        """
-        for file_id in connection.owner_get_inbox_message_ids(sender_email):
-            if self.peer_store.is_envelope(connection.download_file(file_id)):
-                return
-            connection.mark_message_rejected(file_id)
-
-    def owner_resend_rejected_outbox_messages(self, recipient: str) -> int:
-        """Resend, encrypted, the plaintext outbox messages ``recipient`` rejected.
-
-        Returns the number of messages resent.
-        """
-        connection = self.connection_for_outbox()
-        return self._resend_rejected(
-            recipient,
-            connection,
-            connection.owner_get_rejected_outbox_messages,
-            connection.owner_write_raw_bytes_to_outbox,
-        )
-
-    def watcher_resend_rejected_inbox_messages(self, recipient: str) -> int:
-        """Resend, encrypted, the plaintext messages ``recipient`` rejected.
-
-        Returns the number of messages resent.
-        """
-        connection = self.connection_for_send_message()
-        return self._resend_rejected(
-            recipient,
-            connection,
-            connection.watcher_get_rejected_inbox_messages,
-            connection.watcher_send_raw_bytes_to_inbox,
-        )
-
-    def _resend_rejected(
-        self,
-        recipient: str,
-        connection: SyftboxPlatformConnection,
-        list_rejected: Callable[[str], list[RejectedMessage]],
-        write: Callable[[str, str, bytes], None],
-    ) -> int:
-        # Only a pair that encrypts rejects plaintext; skip the listing otherwise.
-        if not self.peer_store.peer_uses_encryption(recipient):
-            return 0
-        if not self.peer_store.encryption_ready(recipient):
-            logger.info(f"Resend to {recipient} waits for the keys and the pin")
-            return 0
-        rejected = list_rejected(recipient)
-        for file_id, filename, resent in rejected:
-            # A resend whose delete failed is not uploaded a second time.
-            if not resent:
-                plaintext = connection.download_file(file_id)
-                write(
-                    recipient, filename, self.peer_store.encrypt(recipient, plaintext)
+        while True:
+            result = connection.owner_download_next_raw_proposed_message_from_inbox(
+                sender_email
+            )
+            if result is None:
+                return None
+            raw_data, file_id = result
+            try:
+                decrypted = self._decrypt_or_wait(sender_email, raw_data)
+            except UnencryptedMessageError as e:
+                warnings.warn(f"Archived message file {file_id} unread: {e}")
+                msg = ProposedFileChangesMessage.from_compressed_data(raw_data)
+                msg.platform_id = file_id
+                connection.owner_remove_proposed_filechange_message_from_inbox(
+                    msg, sender_email
                 )
-            connection.delete_file_by_id(file_id, raise_on_error=True)
-        return len(rejected)
+                continue
+            if decrypted is None:
+                return None
+            msg = ProposedFileChangesMessage.from_compressed_data(decrypted)
+            msg.platform_id = file_id
+            return msg
 
     def owner_write_event_messages_to_outbox(
         self, recipient_email: str, events_message: FileChangeEventsMessage
@@ -292,70 +232,58 @@ class ConnectionRouter(BaseModel):
     def watcher_get_events_messages(
         self, peer_email: str, since_timestamp: float | None
     ) -> List[FileChangeEventsMessage]:
+        """The outbox messages of ``peer_email``, up to the first that cannot be read yet."""
         connection = self.connection_for_datasite_watcher()
         messages = []
-        waiting = False
         for meta in connection.watcher_get_outbox_file_metadatas(
             peer_email, since_timestamp
         ):
-            # After one message that cannot be read, later ones are not applied,
-            # but each is still read, so all plaintext ones are rejected at once.
-            message = self.watcher_read_events_message(
-                connection, peer_email, meta["file_id"], meta["timestamp"]
-            )
-            waiting = waiting or message is None
-            if not waiting:
-                messages.append(message)
+            message = self.watcher_read_events_message(connection, peer_email, meta)
+            if message is None:
+                break
+            messages.append(message)
         return messages
 
     def watcher_read_events_message(
         self,
         connection: SyftboxPlatformConnection,
         peer_email: str,
-        file_id: str,
-        sent_at: float | None = None,
+        file_meta: dict,
     ) -> FileChangeEventsMessage | None:
         """Download, verify and decrypt one outbox events message.
 
-        ``sent_at`` is the timestamp in its file name. Returns None when the
-        message cannot be read yet (see ``_decrypt_or_reject``).
+        ``file_meta`` holds its ``file_id`` and ``file_name``. Returns None
+        when the message cannot be read yet (see ``_decrypt_or_wait``). A
+        plaintext message to a pair that encrypts is skipped with a warning:
+        an empty message takes its place, so later messages apply.
         """
-        raw = self._decrypt_or_reject(
-            connection,
-            peer_email,
-            connection.download_file(file_id),
-            file_id,
-            sent_at=sent_at,
-        )
+        raw = connection.download_file(file_meta["file_id"])
+        try:
+            raw = self._decrypt_or_wait(peer_email, raw)
+        except UnencryptedMessageError as e:
+            warnings.warn(f"Skipped outbox message {file_meta['file_name']}: {e}")
+            return FileChangeEventsMessage(
+                events=[],
+                message_filepath=FileChangeEventsMessageFileName.from_string(
+                    file_meta["file_name"]
+                ),
+            )
         if raw is None:
             return None
         return FileChangeEventsMessage.from_compressed_data(raw)
 
-    def _decrypt_or_reject(
-        self,
-        connection: SyftboxPlatformConnection,
-        peer_email: str,
-        raw: bytes,
-        file_id: str,
-        on_reject: Callable[[], None] | None = None,
-        sent_at: float | None = None,
-    ) -> bytes | None:
+    def _decrypt_or_wait(self, peer_email: str, raw: bytes) -> bytes | None:
         """Verify and decrypt an inbox or outbox message from ``peer_email``.
 
         Returns None when the message cannot be read yet; the messages of this
-        peer then wait, so they keep their order. A plaintext message to a pair
-        that encrypts is also marked rejected, and the sender resends it
-        encrypted on its next sync.
+        peer then wait, so they keep their order.
+
+        Raises:
+            UnencryptedMessageError: when the pair encrypts and ``raw`` is
+                plaintext.
         """
         try:
-            return self.peer_store.decrypt_and_verify_if_needed(
-                peer_email, raw, sent_at
-            )
-        except UnencryptedMessageError as e:
-            logger.warning(f"Rejected message file {file_id}: {e}")
-            connection.mark_message_rejected(file_id)
-            if on_reject is not None:
-                on_reject()
+            return self.peer_store.decrypt_and_verify_if_needed(peer_email, raw)
         except (PeerEncryptionPendingError, EncryptionPolicyConflictError) as e:
             # A conflict found here is new since the peer filter of this sync.
             logger.info(f"Messages from {peer_email} wait: {e}")
@@ -386,47 +314,12 @@ class ConnectionRouter(BaseModel):
     def owner_get_all_accepted_events_messages(self) -> List[FileChangeEventsMessage]:
         connection = self.connection_for_eventlog()
         raw_list = connection.owner_download_all_raw_events_from_syftbox()
-        self.peer_store.reload_policy_from_key_file()
         return [
-            self.decode_at_rest(raw, FileChangeEventsMessage.from_compressed_data)
+            FileChangeEventsMessage.from_compressed_data(
+                self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
+            )
             for raw in raw_list
         ]
-
-    def decode_at_rest(
-        self, raw: bytes, decode: Callable[[bytes], "AtRest"]
-    ) -> "AtRest":
-        """Verify, decrypt and decode one file at rest with ``decode``.
-
-        The caller reads the key file first (``reload_policy_from_key_file``),
-        once for a batch of files. Plaintext is checked by the time it was
-        written (see ``PeerStore.check_plaintext_at_rest``).
-        """
-        if self.peer_store.is_envelope(raw):
-            return decode(self.peer_store.decrypt_and_verify_for_self_if_needed(raw))
-        item = decode(raw)
-        self.peer_store.check_plaintext_at_rest(item.timestamp)
-        return item
-
-    def owner_encrypt_files_at_rest(self) -> None:
-        """Encrypt the plaintext files at rest once, after a switch to required.
-
-        Files written while this client was optional (event log, checkpoints,
-        rolling state) are plaintext. Each one is encrypted in place, so its
-        name and id stay, and reads verify them as usual.
-        """
-        connection = self.connection_for_eventlog()
-
-        def encrypt_files() -> None:
-            file_ids = connection.owner_get_all_accepted_event_file_ids()
-            file_ids += connection.owner_get_checkpoint_and_state_file_ids()
-            for file_id in file_ids:
-                raw = connection.owner_download_raw_bytes_by_id(file_id)
-                if not self.peer_store.is_envelope(raw):
-                    connection.owner_overwrite_raw_bytes_by_id(
-                        file_id, self.peer_store.encrypt_for_self(raw)
-                    )
-
-        self.peer_store.encrypt_files_at_rest_once(encrypt_files)
 
     def download_events_message_by_id(
         self, events_message_id: str
@@ -434,8 +327,8 @@ class ConnectionRouter(BaseModel):
         """Download and decrypt a single events message (thread-safe)."""
         connection = self.connection_for_eventlog(create_new=True)
         raw = connection.owner_download_raw_bytes_by_id(events_message_id)
-        self.peer_store.reload_policy_from_key_file()
-        return self.decode_at_rest(raw, FileChangeEventsMessage.from_compressed_data)
+        raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
+        return FileChangeEventsMessage.from_compressed_data(raw)
 
     # =========================================================================
     # PEER MANAGEMENT
@@ -718,8 +611,8 @@ class ConnectionRouter(BaseModel):
         if raw is None:
             return None
         try:
-            self.peer_store.reload_policy_from_key_file()
-            return self.decode_at_rest(raw, Checkpoint.from_compressed_data)
+            raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
+            return Checkpoint.from_compressed_data(raw)
         except Exception as e:
             print(f"Warning: Failed to load checkpoint: {e}")
             return None
@@ -737,9 +630,10 @@ class ConnectionRouter(BaseModel):
         """Download, decrypt, and deserialize events since a timestamp."""
         connection = self.connection_for_eventlog()
         raw_list = connection.download_raw_events_since_timestamp(since_timestamp)
-        self.peer_store.reload_policy_from_key_file()
         return [
-            self.decode_at_rest(raw, FileChangeEventsMessage.from_compressed_data)
+            FileChangeEventsMessage.from_compressed_data(
+                self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
+            )
             for raw in raw_list
         ]
 
@@ -758,13 +652,11 @@ class ConnectionRouter(BaseModel):
         """Download, decrypt, and deserialize all incremental checkpoints."""
         connection = self.connection_for_own_syftbox()
         raw_list = connection.download_all_raw_incremental_checkpoints()
-        self.peer_store.reload_policy_from_key_file()
         checkpoints = []
         for raw in raw_list:
             try:
-                cp = self.decode_at_rest(
-                    raw, IncrementalCheckpoint.from_compressed_data
-                )
+                raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
+                cp = IncrementalCheckpoint.from_compressed_data(raw)
                 checkpoints.append(cp)
             except Exception as e:
                 print(f"Warning: Failed to load incremental checkpoint: {e}")
@@ -804,8 +696,8 @@ class ConnectionRouter(BaseModel):
         if raw is None:
             return None
         try:
-            self.peer_store.reload_policy_from_key_file()
-            return self.decode_at_rest(raw, RollingState.from_compressed_data)
+            raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
+            return RollingState.from_compressed_data(raw)
         except Exception as e:
             print(f"Warning: Failed to load rolling state: {e}")
             return None

@@ -41,18 +41,9 @@ from syft.sync.checkpoints.rolling_state import (
     raise_for_later_version,
 )
 from syft_perms import SyftPermContext
-from syft.sync.sync.constants import (
-    CACHE_DIR,
-    HELD_OUTBOX_FILENAME,
-    ROLLING_STATE_FILENAME,
-)
-from syft.sync.sync.held_messages import HeldMessages
+from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
 
 logger = logging.getLogger(__name__)
-
-
-def _compressed(message: "FileChangeEventsMessage | bytes") -> bytes:
-    return message if isinstance(message, bytes) else message.as_compressed_data()
 
 
 # Default threshold for creating incremental checkpoint from rolling state
@@ -206,16 +197,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         tmp.rename(path)
 
     def sync(self, peer_emails: list[str], recompute_hashes: bool = True):
-        self._encrypt_files_at_rest_if_needed()
         if self.persist_owner_state:
             self._load_rolling_state()
         try:
             if not self.initial_sync_done:
                 self.pull_initial_state()
-
-            # Rejected messages go first: the reader waits for them.
-            for peer_email in peer_emails:
-                self.connection_router.owner_resend_rejected_outbox_messages(peer_email)
 
             if recompute_hashes:
                 self.process_local_changes(recipients=peer_emails)
@@ -247,9 +233,10 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         # we need a new connection object because gdrive connections are not thread safe
         connection = self.connection_router.connection_for_eventlog(create_new=True)
         raw = connection.owner_download_raw_bytes_by_id(events_message_id)
-        return self.connection_router.decode_at_rest(
-            raw, FileChangeEventsMessage.from_compressed_data
+        raw = self.connection_router.peer_store.decrypt_and_verify_for_self_if_needed(
+            raw
         )
+        return FileChangeEventsMessage.from_compressed_data(raw)
 
     def get_all_accepted_events_messages(
         self, since_timestamp: float | None = None
@@ -257,8 +244,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         message_ids = self.connection_router.owner_get_all_accepted_event_file_ids(
             since_timestamp=since_timestamp
         )
-        # Once for the batch: the downloads run in threads.
-        self.connection_router.peer_store.reload_policy_from_key_file()
         result_messages = self._executor.map(
             self.download_events_message_by_id_with_connection, message_ids
         )
@@ -810,43 +795,30 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.outbox_queue.put((recipient, file_change_events_message))
 
     def process_syftbox_events_queue(self):
-        # syft-rds and the enclave client call this outside sync(). Another
-        # process can have made the datasite required since this process last
-        # read the key file.
-        self.connection_router.peer_store.reload_policy_from_key_file()
-        self._encrypt_files_at_rest_if_needed()
         # TODO: make this atomic
         while not self.syftbox_events_queue.empty():
             file_change_events_message = self.syftbox_events_queue.get()
             self.connection_router.owner_write_events_message_to_syftbox(
                 file_change_events_message
             )
-        queued = []
+        # A message waits in the queue while encryption with its recipient is
+        # pending, and later messages to that recipient wait behind it.
+        waiting = []
+        waiting_for = set()
         while not self.outbox_queue.empty():
-            queued.append(self.outbox_queue.get())
-        # A message waits in the held file only while encryption with its
-        # recipient is pending. The event is already in the event log, so the
-        # held file keeps it over a restart.
-        held_count = self._held_outbox.send_all(
-            self._send_outbox_message, queued, encode=_compressed
-        )
-        if held_count:
-            logger.info(
-                f"Held {held_count} outbox message(s) for peers whose encryption "
-                "is not set up yet"
-            )
-
-    def _encrypt_files_at_rest_if_needed(self) -> None:
-        """Encrypt plaintext files at rest once, before they are read or written."""
-        if self.connection_router.peer_store.needs_at_rest_encryption():
-            self.connection_router.owner_encrypt_files_at_rest()
+            recipient, message = self.outbox_queue.get()
+            if recipient in waiting_for or not self._send_outbox_message(
+                recipient, message
+            ):
+                waiting_for.add(recipient)
+                waiting.append((recipient, message))
+        for item in waiting:
+            self.outbox_queue.put(item)
 
     def _send_outbox_message(
-        self, recipient: str, message: "FileChangeEventsMessage | bytes"
+        self, recipient: str, message: FileChangeEventsMessage
     ) -> bool:
         """Write one outbox message. False while encryption is pending."""
-        if isinstance(message, bytes):
-            message = FileChangeEventsMessage.from_compressed_data(message)
         try:
             self.connection_router.owner_write_event_messages_to_outbox(
                 recipient, message
@@ -858,10 +830,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         except EncryptionPolicyConflictError as e:
             logger.warning(f"Dropped an outbox message: {e}")
         return True
-
-    @property
-    def _held_outbox(self) -> HeldMessages:
-        return HeldMessages(self.syftbox_folder / CACHE_DIR / HELD_OUTBOX_FILENAME)
 
     def _download_outbox_message_with_new_connection(
         self, file_id: str

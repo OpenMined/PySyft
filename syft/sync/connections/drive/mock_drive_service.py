@@ -133,14 +133,6 @@ class MockDriveBackingStore(BaseModel):
         ]
 
 
-def _name_equals_value(clause: str) -> str | None:
-    """The name in a "name = 'X'" clause, unescaped, or None for another clause."""
-    match = re.match(r"name\s*=\s*'((?:[^'\\]|\\.)*)'", clause, re.IGNORECASE)
-    if match is None:
-        return None
-    return re.sub(r"\\(.)", r"\1", match.group(1))
-
-
 def parse_gdrive_query(
     query: str, current_user: str
 ) -> Callable[[MockDriveFile], bool]:
@@ -155,10 +147,7 @@ def parse_gdrive_query(
     - 'me' in owners - Current user is owner
     - not 'me' in owners - Current user is NOT owner
     - trashed=false - Not trashed
-    - (name = 'X' or name = 'Y') - Any of these names
     - Combinations with 'and'
-
-    A quoted name can hold ``\\'`` and ``\\\\`` escapes.
     """
     if not query or not query.strip():
         return lambda f: True
@@ -168,19 +157,6 @@ def parse_gdrive_query(
 
     for part in parts:
         part = part.strip()
-
-        # Handle "(name = 'X' or name = 'Y')"
-        if part.startswith("(") and part.endswith(")"):
-            names = {
-                _name_equals_value(p)
-                for p in re.split(r"\s+or\s+", part[1:-1], flags=re.IGNORECASE)
-            }
-
-            def name_in(f, ns=names):
-                return f.name in ns
-
-            conditions.append(name_in)
-            continue
 
         # Handle "not 'me' in owners"
         if re.match(r"not\s+['\"]me['\"]\s+in\s+owners", part, re.IGNORECASE):
@@ -232,8 +208,9 @@ def parse_gdrive_query(
             continue
 
         # Handle "name='X'" or "name = 'X'"
-        name_val = _name_equals_value(part)
-        if name_val is not None:
+        match = re.match(r"name\s*=\s*['\"]([^'\"]+)['\"]", part, re.IGNORECASE)
+        if match:
+            name_val = match.group(1)
 
             def name_equals(f, n=name_val):
                 return f.name == n

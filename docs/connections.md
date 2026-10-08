@@ -60,9 +60,11 @@ Each client advertises an encryption policy in `SYFT_version.json`:
 
 A pair encrypts when one side is `required`. An `off` and a `required` client conflict: each side skips the other with a warning.
 
-The version file is not signed. So a client keeps a peer that it saw as `required` as `required` (in its key file), and warns when the peer seems to advertise less. Trusting a new key for that peer (`client.trust_peer_key`) clears this. An `off` client has no key file, so it keeps no such record: a forged downgrade can only make it send what its user chose not to encrypt.
+A client takes its policy at login. The key file records a `required` policy, so later logins (and syft-bg) stay `required`; restart syft-bg after a change. Files at rest written before the switch stay plaintext; new ones are encrypted.
 
-A pair that encrypts refuses plaintext. The receiver renames a plaintext message to `rejected_<name>`, and waits for that peer. The sender resends the message encrypted on its next sync.
+While a peer's policy or keys are not known yet, a change for it waits in memory, and the next sync sends it.
+
+A pair that encrypts refuses plaintext. The receiver drops a plaintext message with a warning: the owner archives it unread, and a scientist skips it.
 
 A peer whose version file has no policy runs an outdated syft. It is skipped with a warning to upgrade, and a send to it raises.
 

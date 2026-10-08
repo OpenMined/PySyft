@@ -245,10 +245,10 @@ class DataSiteWatcherCache(BaseModel):
     ) -> int:
         """Sync with parallel file downloads. Returns the number of events applied.
 
-        ``download_fn`` gets the metadata of one file (``file_id`` and
-        ``timestamp``). It returns None for a message that was rejected or cannot
-        be read yet. Messages from its timestamp on are not applied, and the
-        cursor stays before it, so they apply in order when it can be read.
+        ``download_fn`` gets the metadata of one file. It returns None for a
+        message that cannot be read yet. Messages from its timestamp on are not
+        applied, and the cursor stays before it, so they apply in order when it
+        can be read.
         """
         peer_timestamp = self.last_event_timestamp_per_peer.get(peer_email)
 
@@ -266,7 +266,7 @@ class DataSiteWatcherCache(BaseModel):
         # Download all files in parallel
         downloaded_messages = list(executor.map(download_fn, file_metadatas))
 
-        # Apply in timestamp order, up to the first rejected message
+        # Apply in timestamp order, up to the first message that cannot be read
         event_count = 0
         by_timestamp = sorted(
             zip(file_metadatas, downloaded_messages), key=lambda x: x[0]["timestamp"]

@@ -18,8 +18,6 @@ from syft.sync.messages.proposed_filechange import (
     ProposedFileChange,
     ProposedFileChangesMessage,
 )
-from syft.sync.sync.constants import CACHE_DIR, HELD_PROPOSALS_FILENAME
-from syft.sync.sync.held_messages import HeldMessages
 from syft.sync.sync.caches.datasite_watcher_cache import (
     DataSiteWatcherCache,
     DataSiteWatcherCacheConfig,
@@ -69,23 +67,12 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     # --- Pushing proposed file changes ---
 
     def get_proposed_file_change_object(
-        self,
-        relative_path: Path,
-        content: str,
-        datasite_email: str | None = None,
-        held_hashes: Dict[Path, int | None] | None = None,
+        self, relative_path: Path, content: str, datasite_email: str | None = None
     ) -> ProposedFileChange:
         if datasite_email is None:
             datasite_email = self.email
         cache_key = Path(datasite_email) / relative_path
-        # The cache holds only sent changes. A held change to the same file
-        # gives the next change its old hash.
-        if held_hashes is None:
-            held_hashes = self._held_hashes()
-        if cache_key in held_hashes:
-            old_hash = held_hashes[cache_key]
-        else:
-            old_hash = self.datasite_watcher_cache.current_hash_for_file(cache_key)
+        old_hash = self.datasite_watcher_cache.current_hash_for_file(cache_key)
         return ProposedFileChange(
             datasite_email=datasite_email,
             path_in_datasite=relative_path,
@@ -96,7 +83,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     def process_file_changes_queue(self):
         # One message per datasite: each change goes to the owner of its path.
         changes_by_recipient: Dict[str, List[ProposedFileChange]] = {}
-        held_hashes: Dict[Path, int | None] | None = None
+        items_by_recipient: Dict[str, list] = {}
         while not self.queue.empty():
             relative_path, content = self.queue.get()
 
@@ -116,45 +103,32 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             recipient = datasite_email
             path_in_datasite = path_in_datasite
 
-            if held_hashes is None:
-                held_hashes = self._held_hashes()
             file_change = self.get_proposed_file_change_object(
-                path_in_datasite,
-                content,
-                datasite_email=recipient,
-                held_hashes=held_hashes,
+                path_in_datasite, content, datasite_email=recipient
             )
             changes_by_recipient.setdefault(recipient, []).append(file_change)
-
-        messages = [
-            (
-                r,
-                ProposedFileChangesMessage(
-                    sender_email=self.email, proposed_file_changes=c
-                ),
+            items_by_recipient.setdefault(recipient, []).append(
+                (relative_path, content)
             )
-            for r, c in changes_by_recipient.items()
-        ]
+
         error = None
-        done = 0
-        try:
-            for recipient, message in messages:
-                try:
-                    sent = self._send_or_hold(recipient, message)
-                except (EncryptionPolicyConflictError, PeerEncryptionPendingError) as e:
-                    # The other recipients still get their changes.
+        for recipient, changes in changes_by_recipient.items():
+            message = ProposedFileChangesMessage(
+                sender_email=self.email, proposed_file_changes=changes
+            )
+            try:
+                self._send_message(recipient, message)
+            except PeerEncryptionPendingError as e:
+                if not self.connection_router.peer_store.should_hold(recipient):
                     error = error or e
-                    done += 1
                     continue
-                if sent:
-                    self._record_sent_hashes(message)
-                done += 1
-        finally:
-            # The queue is already empty: on another error, the messages not
-            # sent go to the held file, and the next sync sends them.
-            if done < len(messages):
-                with self._held_messages.edit() as held:
-                    held.extend((r, m.as_compressed_data()) for r, m in messages[done:])
+                # The changes wait in the queue; the next sync sends them.
+                print(f"Changes for {recipient} wait for the next sync: {e}")
+                for item in items_by_recipient[recipient]:
+                    self.queue.put(item)
+            except EncryptionPolicyConflictError as e:
+                # The other recipients still get their changes.
+                error = error or e
         if error is not None:
             raise error
 
@@ -167,87 +141,21 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             else:
                 hashes[path_key] = fc.new_hash
 
-    @property
-    def _held_messages(self) -> HeldMessages:
-        return HeldMessages(self.syftbox_folder / CACHE_DIR / HELD_PROPOSALS_FILENAME)
-
-    def _held_hashes(self) -> Dict[Path, int | None]:
-        """The new hash of each file that a held change touches."""
-        hashes: Dict[Path, int | None] = {}
-        for _, data in self._held_messages.read():
-            message = ProposedFileChangesMessage.from_compressed_data(data)
-            for fc in message.proposed_file_changes:
-                path_key = Path(fc.datasite_email) / fc.path_in_datasite
-                hashes[path_key] = None if fc.is_deleted else fc.new_hash
-        return hashes
-
-    def _send_or_hold(
+    def _send_message(
         self, recipient: str, message: ProposedFileChangesMessage
-    ) -> bool:
-        """Send ``message``, or hold it while encryption with the recipient is pending.
-
-        Encryption is pending while the recipient policy is unknown, or while
-        the pair encrypts and the keys or the peer bundle are missing. A held
-        message is kept on disk. Messages to one recipient keep their order.
-        Returns True when sent.
+    ) -> None:
+        """Send ``message`` and record the hashes it sent.
 
         Raises:
-            PeerEncryptionPolicyUnknownError: when ``recipient`` is not a peer.
-                It never gets a policy, so a held message would never go.
+            PeerEncryptionPendingError: while encryption with ``recipient`` is
+                pending: its policy is unknown, or the pair encrypts and the
+                keys or the peer bundle are missing.
             EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
-        with self._held_messages.edit() as held:
-            if not any(r == recipient for r, _ in held):
-                try:
-                    self.connection_router.watcher_send_proposed_file_changes_message(
-                        recipient, message
-                    )
-                    return True
-                except PeerEncryptionPendingError as e:
-                    if not self.connection_router.peer_store.should_hold(recipient):
-                        raise
-                    print(f"Held a message for {recipient}: {e}")
-            held.append((recipient, message.as_compressed_data()))
-            return False
-
-    def send_pending_messages(self) -> None:
-        """Send the held messages whose recipient policy is now known.
-
-        Messages for a recipient that is no longer a peer (the peer request
-        was rejected), or whose policy conflicts, are dropped with a warning.
-        """
-        self._held_messages.send_all(self._send_held_message)
-
-    def _send_held_message(self, recipient: str, data: bytes) -> bool:
-        """Send one held message. False while encryption is pending."""
-        if not self.connection_router.peer_store.should_hold(recipient):
-            logger.warning(f"Dropped a held message for {recipient}: it is not a peer.")
-            return True
-        message = ProposedFileChangesMessage.from_compressed_data(data)
-        try:
-            self.connection_router.watcher_send_proposed_file_changes_message(
-                recipient, message
-            )
-        except PeerEncryptionPendingError:
-            return False
-        except EncryptionPolicyConflictError as e:
-            print(f"Dropped a held message for {recipient}: {e}")
-            return True
+        self.connection_router.watcher_send_proposed_file_changes_message(
+            recipient, message
+        )
         self._record_sent_hashes(message)
-        return True
-
-    def resend_rejected_messages(self, peer_emails: list[str]) -> None:
-        """Resend, encrypted, the plaintext messages that peers rejected.
-
-        A peer rejects plaintext when it requires encryption and this client
-        sent with an outdated view of its policy.
-        """
-        for peer_email in peer_emails:
-            count = self.connection_router.watcher_resend_rejected_inbox_messages(
-                peer_email
-            )
-            if count:
-                logger.info(f"Resent {count} rejected message(s) to {peer_email}")
 
     def on_file_change(
         self, relative_path: Path | str, content: str | None = None, process_now=True
@@ -260,16 +168,16 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     # --- Pulling from datasite outboxes ---
 
     def download_events_message_with_new_connection(
-        self, file_id: str, peer_email: str, sent_at: float | None = None
+        self, file_meta: dict, peer_email: str
     ) -> FileChangeEventsMessage | None:
         """Download from outbox using a new connection (thread-safe).
 
-        Returns None when the message was rejected, or when it cannot be
-        read yet (see ``ConnectionRouter.watcher_read_events_message``).
+        Returns None when the message cannot be read yet (see
+        ``ConnectionRouter.watcher_read_events_message``).
         """
         connection = self.connection_router.connection_for_parallel_download()
         return self.connection_router.watcher_read_events_message(
-            connection, peer_email, file_id, sent_at
+            connection, peer_email, file_meta
         )
 
     def download_collection_file_with_new_connection(
@@ -291,7 +199,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
                 self._executor,
                 lambda meta,
                 pe=peer_email: self.download_events_message_with_new_connection(
-                    meta["file_id"], pe, meta["timestamp"]
+                    meta, pe
                 ),
             )
             if event_count:
