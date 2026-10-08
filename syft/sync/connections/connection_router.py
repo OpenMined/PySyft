@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, PrivateAttr
@@ -43,6 +44,9 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+# Downloads in flight at once when the router reads many files.
+PARALLEL_DOWNLOADS = 10
 
 
 class ConnectionRouter(BaseModel):
@@ -223,12 +227,25 @@ class ConnectionRouter(BaseModel):
         """Reject every other plaintext message from ``sender_email`` at once.
 
         The sender then resends them all on one sync, not one per round. It
-        encrypts all messages after the first envelope, so the scan stops there.
+        encrypts all messages after the first envelope, so the scan stops
+        there. Files download in parallel batches.
         """
-        for file_id in connection.owner_get_inbox_message_ids(sender_email):
-            if self.peer_store.is_envelope(connection.download_file(file_id)):
-                break
-            connection.mark_message_rejected(file_id)
+        file_ids = connection.owner_get_inbox_message_ids(sender_email)
+        for start in range(0, len(file_ids), PARALLEL_DOWNLOADS):
+            batch = file_ids[start : start + PARALLEL_DOWNLOADS]
+            for file_id, raw in zip(batch, self._download_parallel(batch)):
+                if self.peer_store.is_envelope(raw):
+                    return
+                connection.mark_message_rejected(file_id)
+
+    def _download_parallel(self, file_ids: List[str]) -> List[bytes]:
+        """Download ``file_ids`` in parallel, each on its own connection."""
+
+        def download(file_id: str) -> bytes:
+            return self.connection_for_parallel_download().download_file(file_id)
+
+        with ThreadPoolExecutor(max_workers=PARALLEL_DOWNLOADS) as executor:
+            return list(executor.map(download, file_ids))
 
     def owner_resend_rejected_outbox_messages(self, recipient: str) -> int:
         """Resend, encrypted, the plaintext outbox messages ``recipient`` rejected.
@@ -397,8 +414,7 @@ class ConnectionRouter(BaseModel):
         def encrypt_files() -> None:
             file_ids = connection.owner_get_all_accepted_event_file_ids()
             file_ids += connection.owner_get_checkpoint_and_state_file_ids()
-            for file_id in file_ids:
-                raw = connection.owner_download_raw_bytes_by_id(file_id)
+            for file_id, raw in zip(file_ids, self._download_parallel(file_ids)):
                 if not self.peer_store.is_envelope(raw):
                     connection.owner_overwrite_raw_bytes_by_id(
                         file_id, self.peer_store.encrypt_for_self(raw)

@@ -206,8 +206,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         tmp.rename(path)
 
     def sync(self, peer_emails: list[str], recompute_hashes: bool = True):
-        if self.connection_router.peer_store.needs_at_rest_encryption():
-            self.connection_router.owner_encrypt_files_at_rest()
+        self._encrypt_files_at_rest_if_needed()
         if self.persist_owner_state:
             self._load_rolling_state()
         try:
@@ -811,17 +810,16 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     def process_syftbox_events_queue(self):
         # syft-rds and the enclave client call this outside sync(). Another
-        # process can have made the datasite required, and its files at rest
-        # encrypted, since this process last read the key file.
+        # process can have made the datasite required since this process last
+        # read the key file.
         self.connection_router.peer_store.reload_policy_from_key_file()
+        self._encrypt_files_at_rest_if_needed()
         # TODO: make this atomic
         while not self.syftbox_events_queue.empty():
             file_change_events_message = self.syftbox_events_queue.get()
             self.connection_router.owner_write_events_message_to_syftbox(
                 file_change_events_message
             )
-        # The event is already in the event log, so a held outbox message is
-        # kept on disk until encryption with its recipient is set up.
         queued = []
         while not self.outbox_queue.empty():
             queued.append(self.outbox_queue.get())
@@ -836,6 +834,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 f"Held {held_count} outbox message(s) for peers whose encryption "
                 "is not set up yet"
             )
+
+    def _encrypt_files_at_rest_if_needed(self) -> None:
+        """Encrypt plaintext files at rest once, before they are read or written."""
+        if self.connection_router.peer_store.needs_at_rest_encryption():
+            self.connection_router.owner_encrypt_files_at_rest()
 
     def _send_outbox_message(
         self, recipient: str, message: "FileChangeEventsMessage | bytes"

@@ -60,6 +60,8 @@ Each client advertises an encryption policy in `SYFT_version.json`:
 
 A pair encrypts when one side is `required`. An `off` and a `required` client conflict: each side skips the other with a warning.
 
+The version file is not signed. So a client keeps a peer that it saw as `required` as `required` (in its key file), and warns when the peer seems to advertise less. Trusting a new key for that peer (`client.trust_peer_key`) clears this.
+
 A pair that encrypts refuses plaintext. The receiver renames a plaintext message to `<name>.rejected`, and waits for that peer. The sender resends the message encrypted on its next sync.
 
 An earlier client writes no policy in its version file. It is `required` when it published a bundle for us, else `off`.

@@ -8,6 +8,7 @@ twice.
 """
 
 import base64
+import hashlib
 import json
 import os
 import tempfile
@@ -89,13 +90,15 @@ class HeldMessages:
                 self._write(held)
             return len(held)
 
-    def stamp(self) -> tuple[int, int] | None:
-        """Changes when the file changes: (mtime in ns, size), or None without a file."""
+    def stamp(self) -> str | None:
+        """Changes when the content changes: a hash of the file, or None without one.
+
+        Not the modification time: some mounts keep it only to the second.
+        """
         try:
-            stat = self._path.stat()
+            return hashlib.sha256(self._path.read_bytes()).hexdigest()
         except FileNotFoundError:
             return None
-        return (stat.st_mtime_ns, stat.st_size)
 
     def __len__(self) -> int:
         return len(self.read())

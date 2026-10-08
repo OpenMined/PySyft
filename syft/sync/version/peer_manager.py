@@ -205,6 +205,8 @@ class PeerManager(BaseModel):
     _bundle_published_for: Set[str] = PrivateAttr(default_factory=set)
     # The policy in the version file this process last wrote.
     _advertised_policy: Optional[EncryptionPolicy] = PrivateAttr(default=None)
+    # Peers already warned about an advertised downgrade, in this process.
+    _downgrade_warned: Set[str] = PrivateAttr(default_factory=set)
 
     # ========== Peer List Properties ==========
 
@@ -373,6 +375,7 @@ class PeerManager(BaseModel):
         if cached_peer:
             cached_peer.version = version_info
             self.connection_router.resolve_legacy_policy(cached_peer)
+            self._note_peer_policy(cached_peer)
         self._update_peer_schemas(peer_email, version_info)
         return version_info
 
@@ -394,7 +397,7 @@ class PeerManager(BaseModel):
             published = (
                 version_info is not None
                 and version_info.encryption_policy is None
-                and not self.peer_store.legacy_policy_found(peer_email)
+                and self.peer_store.legacy_bundle_needs_read(peer_email)
                 and bool(connection.read_peer_encryption_bundle(peer_email))
             )
             return (peer_email, version_info, published)
@@ -423,9 +426,33 @@ class PeerManager(BaseModel):
                     peer.set_legacy_policy(
                         self.peer_store.legacy_policy(email, lambda p=published: p)
                     )
+                self._note_peer_policy(peer)
             self._update_peer_schemas(email, version)
 
         return {email: version for email, version, _ in results}
+
+    def _note_peer_policy(self, peer: Peer) -> None:
+        """Remember a peer that requires encryption; warn when it seems to stop.
+
+        The version file is not signed, so the storage provider could write a
+        downgrade into it. The peer stays required until the user trusts a new
+        key for it.
+        """
+        advertised = peer.encryption_policy
+        if advertised == EncryptionPolicy.REQUIRED:
+            self.peer_store.remember_required_peer(peer.email)
+        elif (
+            advertised is not None
+            and self.peer_store.is_remembered_required(peer.email)
+            and peer.email not in self._downgrade_warned
+        ):
+            self._downgrade_warned.add(peer.email)
+            warnings.warn(
+                f"{peer.email} advertises encryption {advertised.value}, but it "
+                "required encryption before, so encryption stays on. If the peer "
+                "reset its keys, compare its new key fingerprint with it and run "
+                f"client.trust_peer_key({peer.email!r}, fingerprint)."
+            )
 
     def get_peer_version(self, peer_email: str) -> Optional[VersionInfo]:
         """Get cached version for peer, None if not loaded or not available."""
@@ -656,6 +683,7 @@ class PeerManager(BaseModel):
         version_info = self.connection_router.read_peer_version_file(peer_email)
         new_peer_obj.version = version_info
         self.connection_router.resolve_legacy_policy(new_peer_obj)
+        self._note_peer_policy(new_peer_obj)
         encrypted = pair_uses_encryption(
             self.peer_store.encryption_policy, new_peer_obj.encryption_policy
         )
