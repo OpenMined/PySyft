@@ -64,9 +64,7 @@ The version file is not signed. So a client keeps a peer that it saw as `require
 
 A pair that encrypts refuses plaintext. The receiver renames a plaintext message to `<name>.rejected`, and waits for that peer. The sender resends the message encrypted on its next sync.
 
-An earlier client writes no policy in its version file. It is `required` when it published a bundle for us, else `off`.
-
-**Known limit.** An earlier client that encrypted once and then turned encryption off still has its old bundle on Drive, so it reads as `required`. Its plaintext is rejected, and an earlier client does not resend rejected messages, so the pair stops syncing. To fix it, upgrade that client, or delete its file `encryption_bundle_{owner}_for_{peer}.json` in `syft_encryption_bundles#{owner}/`.
+A peer whose version file has no policy runs an outdated syft. It is skipped with a warning to upgrade, and a send to it raises.
 
 ## Peer Requests
 

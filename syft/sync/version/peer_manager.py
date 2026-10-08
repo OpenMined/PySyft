@@ -8,7 +8,7 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from googleapiclient.errors import HttpError
 from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
@@ -21,10 +21,8 @@ from syft.sync.encryption_policy import (
     EncryptionPolicy,
     pair_conflicts,
     pair_uses_encryption,
-    policy_from_use_encryption,
 )
 from syft.sync.peers.key_bundle import (
-    BUNDLE_FILE_KEY,
     InvalidPeerBundleError,
     PeerFingerprintMismatchError,
     PeerKeyChangedError,
@@ -65,6 +63,17 @@ def _conflict_skip_message(peer_email: str) -> str:
         "on the other. Set the same policy on both sides, or use optional on "
         "one of them."
     )
+
+
+def _outdated_skip_message(peer_email: str) -> str:
+    return (
+        f"{peer_email} is skipped: it runs an outdated syft, which does not "
+        "advertise an encryption policy. Ask them to upgrade syft."
+    )
+
+
+# Key wrapping the DID document inside a published encryption bundle file.
+BUNDLE_FILE_KEY = "public_encryption_bundle"
 
 
 class PeerCompatibilityResult(BaseModel):
@@ -138,11 +147,6 @@ class PeerManagerConfig(BaseModel):
     skip_peer_on_patch_version_diff: Optional[bool] = (
         None  # None: value is determined by the role (resolves to has_do_role)
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def _policy_from_use_encryption(cls, data: Any) -> Any:
-        return policy_from_use_encryption(data)
 
     @property
     def use_encryption(self) -> bool:
@@ -371,20 +375,14 @@ class PeerManager(BaseModel):
         cached_peer = self.get_cached_peer(peer_email)
         if cached_peer:
             cached_peer.version = version_info
-            self.connection_router.resolve_legacy_policy(cached_peer)
             self._note_peer_policy(cached_peer)
         self._update_peer_schemas(peer_email, version_info)
         return version_info
 
     def _load_single_peer_version(
         self, peer_email: str
-    ) -> tuple[str, Optional[VersionInfo], Optional[bool]]:
-        """Load version for a single peer. Used by parallel loader.
-
-        For an earlier client, whose version file does not say its policy, it
-        also checks whether the peer published a bundle for us, so that these
-        Drive calls run in parallel too: None when that check failed.
-        """
+    ) -> tuple[str, Optional[VersionInfo]]:
+        """Load version for a single peer. Used by parallel loader."""
         try:
             # Create new connection for thread safety
             connection = self.connection_router.connection_for_version_read(
@@ -394,18 +392,8 @@ class PeerManager(BaseModel):
         except Exception as e:
             if not self.suppress_version_warnings:
                 warnings.warn(f"Failed to load version for {peer_email}: {e}")
-            return (peer_email, None, False)
-        published: Optional[bool] = False
-        if (
-            version_info is not None
-            and version_info.encryption_policy is None
-            and self.peer_store.legacy_bundle_needs_read(peer_email)
-        ):
-            # Its own check: a failure here keeps the version that was read.
-            published = self.connection_router.legacy_bundle_published(
-                peer_email, connection
-            )
-        return (peer_email, version_info, published)
+            return (peer_email, None)
+        return (peer_email, version_info)
 
     def load_peer_versions_parallel(
         self, peer_emails: List[str], force: bool = False
@@ -419,20 +407,14 @@ class PeerManager(BaseModel):
         results = list(self._executor.map(self._load_single_peer_version, peer_emails))
 
         # Update peer version fields and return
-        for email, version, published in results:
+        for email, version in results:
             peer = self.get_cached_peer(email)
             if peer:
                 peer.version = version
-                if peer.needs_legacy_policy:
-                    peer.set_legacy_policy(
-                        self.peer_store.legacy_policy(
-                            email, lambda p=published: p, record_miss=True
-                        )
-                    )
                 self._note_peer_policy(peer)
             self._update_peer_schemas(email, version)
 
-        return {email: version for email, version, _ in results}
+        return {email: version for email, version in results}
 
     def _note_peer_policy(self, peer: Peer) -> None:
         """Remember a peer that requires encryption; warn when it seems to stop.
@@ -598,11 +580,16 @@ class PeerManager(BaseModel):
         """``peer_emails`` without the peers whose encryption policy conflicts.
 
         Such a pair cannot exchange messages, so it is skipped with a warning.
+        A peer that runs an outdated syft is skipped too, with a warning to
+        upgrade.
         ``ignore_peer_version`` does not apply: it is not a version question.
         """
         result = []
         for email in peer_emails:
-            if self.peer_store.peer_conflicts(email):
+            peer = self.peer_store.get_cached_peer(email)
+            if peer is not None and peer.is_outdated:
+                warnings.warn(_outdated_skip_message(email))
+            elif self.peer_store.peer_conflicts(email):
                 warnings.warn(_conflict_skip_message(email))
             else:
                 result.append(email)
@@ -685,14 +672,15 @@ class PeerManager(BaseModel):
         # load_peers publishes and pins when the policy becomes known.
         version_info = self.connection_router.read_peer_version_file(peer_email)
         new_peer_obj.version = version_info
-        self.connection_router.resolve_legacy_policy(new_peer_obj)
         self._note_peer_policy(new_peer_obj)
         encrypted = pair_uses_encryption(
             self.peer_store.encryption_policy, new_peer_obj.encryption_policy
         )
         if encrypted:
             self._write_encryption_bundle_for_peer(peer_email)
-        if pair_conflicts(
+        if new_peer_obj.is_outdated:
+            warnings.warn(_outdated_skip_message(peer_email))
+        elif pair_conflicts(
             self.peer_store.encryption_policy, new_peer_obj.encryption_policy
         ):
             warnings.warn(_conflict_skip_message(peer_email))

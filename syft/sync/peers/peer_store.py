@@ -11,21 +11,21 @@ import tempfile
 import warnings
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Iterator, List, Optional
+from typing import Callable, Iterator, List, Optional
 
 import portalocker
 import syft_crypto_python as syc
-from pydantic import BaseModel, PrivateAttr, model_validator
+from pydantic import BaseModel, PrivateAttr
 
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
     EncryptionPolicyConflictError,
     PeerEncryptionPolicyUnknownError,
+    PeerOutdatedError,
     PeerKeysNotReadyError,
     UnencryptedMessageError,
     pair_conflicts,
     pair_uses_encryption,
-    policy_from_use_encryption,
 )
 
 from syft.sync.peers.key_bundle import (
@@ -66,9 +66,6 @@ AT_REST_ENCRYPTED_KEY = "at_rest_encrypted"
 # The version file that advertises a policy is not signed, so such a peer
 # stays required here until the user trusts a new key for it.
 REQUIRED_PEERS_KEY = "required_peers"
-# An earlier client without a bundle for us is read again on the load after
-# the first miss, then once every this many peer loads.
-LEGACY_BUNDLE_RECHECK_LOADS = 10
 
 
 def datasite_crypto_keys_path(syftbox_folder: Path | str, email: str) -> Path:
@@ -99,13 +96,6 @@ class PeerStore(BaseModel):
     _keys_path: Path | None = PrivateAttr(default=None)
     # Peers whose version file was read again since the last ``set_peers``.
     _policy_rereads: set[str] = PrivateAttr(default_factory=set)
-    # Earlier clients known to encrypt. Their version file does not say, so
-    # the policy comes from a Drive read; a found bundle is read once.
-    _legacy_policies: dict[str, EncryptionPolicy] = PrivateAttr(default_factory=dict)
-    # Number of peer loads (``set_peers``) so far.
-    _load_count: int = PrivateAttr(default=0)
-    # Earlier clients without a found bundle: the load at which none was found.
-    _bundle_missing_since: dict[str, int] = PrivateAttr(default_factory=dict)
     # Peers seen to require encryption (see REQUIRED_PEERS_KEY).
     _required_peers: set[str] = PrivateAttr(default_factory=set)
     # The last policy known of each peer in this process (see peer_policy).
@@ -115,19 +105,10 @@ class PeerStore(BaseModel):
     # Whether the files at rest are known to be encrypted.
     _at_rest_encrypted: bool = PrivateAttr(default=False)
 
-    @model_validator(mode="before")
-    @classmethod
-    def _policy_from_use_encryption(cls, data: Any) -> Any:
-        return policy_from_use_encryption(data)
-
     @property
     def use_encryption(self) -> bool:
         """True when this client requires encryption with every peer and at rest."""
         return self.encryption_policy == EncryptionPolicy.REQUIRED
-
-    @use_encryption.setter
-    def use_encryption(self, value: bool) -> None:
-        self.encryption_policy = EncryptionPolicy.coerce(value)
 
     # ========== Peer list methods ==========
 
@@ -167,10 +148,10 @@ class PeerStore(BaseModel):
                 pinned peer bundle are missing.
             EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
+        if self.peer_conflicts(email):
+            raise self._conflict_error(email)
         if not self.peer_policy_known(email):
             raise PeerEncryptionPolicyUnknownError(email)
-        if self.peer_conflicts(email):
-            raise EncryptionPolicyConflictError(email)
         if not self.peer_uses_encryption(email):
             return data
         if not self.encryption_ready(email):
@@ -196,7 +177,7 @@ class PeerStore(BaseModel):
             EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
         if self.peer_conflicts(email):
-            raise EncryptionPolicyConflictError(email)
+            raise self._conflict_error(email)
         if not self.is_envelope(data):
             if not self.peer_policy_known(email):
                 raise PeerEncryptionPolicyUnknownError(email)
@@ -243,7 +224,7 @@ class PeerStore(BaseModel):
         if email in self._required_peers:
             return EncryptionPolicy.REQUIRED
         policy = peer.encryption_policy
-        if policy is None:
+        if policy is None and not peer.is_outdated:
             return self._last_known_policies.get(email)
         self._last_known_policies[email] = policy
         return policy
@@ -286,8 +267,21 @@ class PeerStore(BaseModel):
         return self.has_my_keys() and self.has_peer_bundle(email)
 
     def peer_conflicts(self, email: str) -> bool:
-        """Whether this client has encryption off and ``email`` requires it, or the reverse."""
+        """Whether this pair cannot exchange messages.
+
+        That is when one side has encryption off and the other requires it,
+        or when the peer runs an outdated syft.
+        """
+        peer = self.get_cached_peer(email)
+        if peer is not None and peer.is_outdated:
+            return True
         return pair_conflicts(self.encryption_policy, self.peer_policy(email))
+
+    def _conflict_error(self, email: str) -> EncryptionPolicyConflictError:
+        peer = self.get_cached_peer(email)
+        if peer is not None and peer.is_outdated:
+            return PeerOutdatedError(email)
+        return EncryptionPolicyConflictError(email)
 
     def peer_uses_encryption(self, email: str) -> bool:
         """Whether the pair with ``email`` encrypts. False when the peer policy is not known."""
@@ -310,61 +304,14 @@ class PeerStore(BaseModel):
             self._keep_pinned_bundle(p)
         self._peers = peers
         self._policy_rereads.clear()
-        self._load_count += 1
 
-    @property
-    def peers_loaded(self) -> bool:
-        """Whether a peer load ran. Before it, no recipient is known to be a peer."""
-        return self._load_count > 0
+    def should_hold(self, recipient: str) -> bool:
+        """Whether a message to ``recipient`` waits while encryption is pending.
 
-    def legacy_policy(
-        self,
-        email: str,
-        published_bundle: Callable[[], Optional[bool]],
-        record_miss: bool = False,
-    ) -> Optional[EncryptionPolicy]:
-        """The policy of the earlier client ``email``, or None while not known.
-
-        Such a client publishes a bundle for us only when it encrypts. One
-        that does not has no keys and cannot decrypt, so it is off. A bundle
-        can be not yet visible on Drive, so a client without one is unknown
-        during the first peer load that misses it, and off from the next.
-        ``published_bundle`` returns None when the check failed: the policy
-        then stays unknown. A found bundle is kept for the process.
-
-        Only a peer load records a miss (``record_miss``): a check outside one
-        (add_peer, a re-read on send) must not start the grace, or the load
-        that follows would already make the peer off.
+        Only a peer waits. Any other recipient never gets a policy, so a
+        message to it would wait forever.
         """
-        if email in self._legacy_policies:
-            return self._legacy_policies[email]
-        published = published_bundle()
-        if published is None:
-            return None
-        if published:
-            self._legacy_policies[email] = EncryptionPolicy.REQUIRED
-            self._bundle_missing_since.pop(email, None)
-            return EncryptionPolicy.REQUIRED
-        if record_miss:
-            self._bundle_missing_since.setdefault(email, self._load_count)
-        first_missed = self._bundle_missing_since.get(email)
-        if first_missed is None or self._load_count <= first_missed:
-            return None
-        return EncryptionPolicy.OFF
-
-    def legacy_bundle_needs_read(self, email: str) -> bool:
-        """Whether to read again if the earlier client ``email`` published a bundle.
-
-        Not once one was found. After a miss: on the next load, then once
-        every LEGACY_BUNDLE_RECHECK_LOADS loads.
-        """
-        if email in self._legacy_policies:
-            return False
-        first_missed = self._bundle_missing_since.get(email)
-        if first_missed is None:
-            return True
-        loads = self._load_count - first_missed
-        return loads <= 1 or loads % LEGACY_BUNDLE_RECHECK_LOADS == 0
+        return self.get_cached_peer(recipient) is not None
 
     def take_policy_reread(self, email: str) -> bool:
         """True once per peer load: the caller may read the version file again."""
@@ -830,7 +777,6 @@ class PeerStore(BaseModel):
         email: str,
         encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL,
         keys_path: Path | str | None = None,
-        use_encryption: bool | None = None,
     ) -> "PeerStore":
         """Build a PeerStore for ``email`` with its per-datasite key file.
 
@@ -843,8 +789,6 @@ class PeerStore(BaseModel):
         Without a file, a required store generates keys and saves them. An
         optional store has no keys until :meth:`ensure_keys`.
 
-        ``use_encryption`` is the earlier bool form of ``encryption_policy``.
-
         Scoping keys to a per-datasite file lets several identities run on one
         machine (e.g. two data owners in the same notebook) without colliding, and
         ties key lifetime to the datasite folder.
@@ -853,8 +797,6 @@ class PeerStore(BaseModel):
             ValueError: if the policy is required but ``keys_path`` is missing,
                 or the existing key file belongs to a different identity.
         """
-        if use_encryption is not None:
-            encryption_policy = EncryptionPolicy.coerce(use_encryption)
         store = cls(email=email, encryption_policy=encryption_policy)
         if keys_path is None:
             if store.use_encryption:

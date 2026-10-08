@@ -2573,15 +2573,6 @@ class GDriveConnection(SyftboxPlatformConnection):
             return None
         return self.download_file(items[0]["id"]).decode("utf-8")
 
-    def peer_encryption_bundle_exists(self, peer_email: str) -> bool:
-        """Whether ``peer_email`` published a bundle for us. Errors propagate."""
-        filename = self._encryption_bundle_filename(peer_email, self.email)
-        query = f"name='{filename}' and trashed=false and '{peer_email}' in owners"
-        results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id)")
-        )
-        return bool(results.get("files", []))
-
     def read_peer_encryption_bundle(self, peer_email: str) -> str | None:
         """Read encryption bundle that peer wrote for us.
 

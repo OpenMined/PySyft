@@ -1,7 +1,6 @@
 """Encryption policy that a client advertises to its peers."""
 
 from enum import Enum
-from typing import Any
 
 
 class EncryptionPolicy(str, Enum):
@@ -29,17 +28,6 @@ class EncryptionPolicy(str, Enum):
         if isinstance(value, bool):
             return cls.REQUIRED if value else cls.OPTIONAL
         return cls(value)
-
-
-def policy_from_use_encryption(data: Any) -> Any:
-    """Model input with the earlier ``use_encryption`` bool as ``encryption_policy``.
-
-    For a ``model_validator(mode="before")`` of a model that took the bool.
-    """
-    if isinstance(data, dict) and "use_encryption" in data:
-        data = dict(data)
-        data["encryption_policy"] = EncryptionPolicy.coerce(data.pop("use_encryption"))
-    return data
 
 
 class PeerEncryptionPendingError(ValueError):
@@ -80,6 +68,18 @@ class EncryptionPolicyConflictError(ValueError):
             f"Encryption with {peer_email} is off on one side and required on "
             "the other, so this pair cannot exchange messages. Set the same "
             "policy on both sides, or use optional on one of them."
+        )
+        self.peer_email = peer_email
+
+
+class PeerOutdatedError(EncryptionPolicyConflictError):
+    """The peer runs a syft that predates encryption negotiation."""
+
+    def __init__(self, peer_email: str):
+        ValueError.__init__(
+            self,
+            f"{peer_email} runs an outdated syft: its version file has no "
+            "encryption policy. Ask them to upgrade syft.",
         )
         self.peer_email = peer_email
 

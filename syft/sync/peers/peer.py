@@ -31,33 +31,18 @@ class Peer(BaseModel):
 
     # Set by SyftboxManager.peers when this Peer is handed out.
     _manager: Any = PrivateAttr(default=None)
-    # The policy of an earlier client, whose version file does not say.
-    _legacy_policy: Optional[EncryptionPolicy] = PrivateAttr(default=None)
 
     @property
     def encryption_policy(self) -> Optional[EncryptionPolicy]:
-        """The policy of the peer, or None while it is not known.
-
-        It is not known before the version file is read, and for an earlier
-        client until ``set_legacy_policy``.
-        """
+        """The policy the peer advertises, or None before its version file is read."""
         if self.version is None:
             return None
-        if self.version.encryption_policy is not None:
-            return self.version.encryption_policy
-        return self._legacy_policy
+        return self.version.encryption_policy
 
     @property
-    def needs_legacy_policy(self) -> bool:
-        """Whether the version file is read and does not say the policy."""
+    def is_outdated(self) -> bool:
+        """Whether the peer runs a syft that predates encryption negotiation."""
         return self.version is not None and self.version.encryption_policy is None
-
-    def set_legacy_policy(self, policy: Optional[EncryptionPolicy]) -> None:
-        """Set the policy of an earlier client, whose version file does not say.
-
-        None keeps it unknown.
-        """
-        self._legacy_policy = policy
 
     @property
     def fingerprint(self) -> Optional[str]:

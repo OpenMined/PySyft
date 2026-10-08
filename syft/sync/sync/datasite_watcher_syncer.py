@@ -52,10 +52,6 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     _executor: ThreadPoolExecutor = PrivateAttr(
         default_factory=lambda: ThreadPoolExecutor(max_workers=10)
     )
-    # (held file stamp, held hashes): decoded again only when the file changes.
-    _held_hashes_cache: tuple[object, Dict[Path, int | None]] | None = PrivateAttr(
-        default=None
-    )
 
     @classmethod
     def from_config(cls, config: DatasiteWatcherSyncerConfig):
@@ -177,19 +173,12 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
     def _held_hashes(self) -> Dict[Path, int | None]:
         """The new hash of each file that a held change touches."""
-        store = self._held_messages
-        stamp = store.stamp()
-        if stamp is None:
-            return {}
-        if self._held_hashes_cache is not None and self._held_hashes_cache[0] == stamp:
-            return self._held_hashes_cache[1]
         hashes: Dict[Path, int | None] = {}
-        for _, data in store.read():
+        for _, data in self._held_messages.read():
             message = ProposedFileChangesMessage.from_compressed_data(data)
             for fc in message.proposed_file_changes:
                 path_key = Path(fc.datasite_email) / fc.path_in_datasite
                 hashes[path_key] = None if fc.is_deleted else fc.new_hash
-        self._held_hashes_cache = (stamp, hashes)
         return hashes
 
     def _send_or_hold(
@@ -215,18 +204,11 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
                     )
                     return True
                 except PeerEncryptionPendingError as e:
-                    peer_store = self.connection_router.peer_store
-                    if peer_store.peers_loaded and not peer_store.get_cached_peer(
-                        recipient
-                    ):
+                    if not self.connection_router.peer_store.should_hold(recipient):
                         raise
                     print(f"Held a message for {recipient}: {e}")
             held.append((recipient, message.as_compressed_data()))
             return False
-
-    @property
-    def pending_message_count(self) -> int:
-        return len(self._held_messages)
 
     def send_pending_messages(self) -> None:
         """Send the held messages whose recipient policy is now known.
@@ -238,10 +220,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
     def _send_held_message(self, recipient: str, data: bytes) -> bool:
         """Send one held message. False while encryption is pending."""
-        peer_store = self.connection_router.peer_store
-        if not peer_store.peers_loaded:
-            return False
-        if peer_store.get_cached_peer(recipient) is None:
+        if not self.connection_router.peer_store.should_hold(recipient):
             logger.warning(f"Dropped a held message for {recipient}: it is not a peer.")
             return True
         message = ProposedFileChangesMessage.from_compressed_data(data)

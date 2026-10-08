@@ -1,9 +1,5 @@
-import json
 import logging
-import warnings
 
-from googleapiclient.errors import HttpError
-from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, PrivateAttr
@@ -21,12 +17,6 @@ from syft.sync.connections.base_connection import (
     FileCollection,
     RejectedMessage,
     SyftboxPlatformConnection,
-)
-from syft.sync.connections.drive.gdrive_retry import RETRYABLE_TRANSPORT_ERRORS
-from syft.sync.peers.key_bundle import (
-    BUNDLE_FILE_KEY,
-    InvalidPeerBundleError,
-    parse_and_validate_bundle,
 )
 from syft.sync.encryption_policy import (
     EncryptionPolicyConflictError,
@@ -54,9 +44,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-# Downloads in flight at once when the router reads many files.
-PARALLEL_DOWNLOADS = 10
 
 
 class ConnectionRouter(BaseModel):
@@ -182,47 +169,6 @@ class ConnectionRouter(BaseModel):
             self._version_loader(peer_email)
         else:
             peer.version = self.read_peer_version_file(peer_email)
-            self.resolve_legacy_policy(peer)
-
-    def resolve_legacy_policy(self, peer: Peer) -> None:
-        """Set the policy of ``peer`` when its version file does not say it."""
-        if peer.needs_legacy_policy:
-            policy = self.peer_store.legacy_policy(
-                peer.email, lambda: self.legacy_bundle_published(peer.email)
-            )
-            peer.set_legacy_policy(policy)
-
-    def legacy_bundle_published(
-        self,
-        peer_email: str,
-        connection: SyftboxPlatformConnection | None = None,
-    ) -> Optional[bool]:
-        """Whether the earlier client ``peer_email`` published a valid bundle for us.
-
-        None when the check failed, or the file there is not a valid bundle:
-        neither shows that the peer does not encrypt, so the policy stays
-        unknown and the next load checks again.
-        """
-        if connection is None:
-            connection = self.connection_for_datasite_watcher()
-        try:
-            if not connection.peer_encryption_bundle_exists(peer_email):
-                return False
-            raw = connection.read_peer_encryption_bundle(peer_email)
-        except (HttpError, *RETRYABLE_TRANSPORT_ERRORS) as e:
-            logger.warning(f"Could not check the bundle of {peer_email}: {e}")
-            return None
-        if raw is None:
-            return None
-        try:
-            payload = json.loads(raw)
-            if not isinstance(payload, dict):
-                raise InvalidPeerBundleError(f"not a JSON object: {raw[:40]!r}")
-            parse_and_validate_bundle(peer_email, payload.get(BUNDLE_FILE_KEY))
-        except ValueError as e:
-            warnings.warn(f"Ignoring the encryption bundle of {peer_email}: {e}")
-            return None
-        return True
 
     def watcher_send_proposed_file_changes_message(
         self, recipient: str, proposed_file_changes_message: ProposedFileChangesMessage
@@ -270,24 +216,12 @@ class ConnectionRouter(BaseModel):
 
         The sender then resends them all on one sync, not one per round. It
         encrypts all messages after the first envelope, so the scan stops
-        there. Files download in parallel batches.
+        there.
         """
-        file_ids = connection.owner_get_inbox_message_ids(sender_email)
-        for start in range(0, len(file_ids), PARALLEL_DOWNLOADS):
-            batch = file_ids[start : start + PARALLEL_DOWNLOADS]
-            for file_id, raw in zip(batch, self._download_parallel(batch)):
-                if self.peer_store.is_envelope(raw):
-                    return
-                connection.mark_message_rejected(file_id)
-
-    def _download_parallel(self, file_ids: List[str]) -> List[bytes]:
-        """Download ``file_ids`` in parallel, each on its own connection."""
-
-        def download(file_id: str) -> bytes:
-            return self.connection_for_parallel_download().download_file(file_id)
-
-        with ThreadPoolExecutor(max_workers=PARALLEL_DOWNLOADS) as executor:
-            return list(executor.map(download, file_ids))
+        for file_id in connection.owner_get_inbox_message_ids(sender_email):
+            if self.peer_store.is_envelope(connection.download_file(file_id)):
+                return
+            connection.mark_message_rejected(file_id)
 
     def owner_resend_rejected_outbox_messages(self, recipient: str) -> int:
         """Resend, encrypted, the plaintext outbox messages ``recipient`` rejected.
@@ -456,7 +390,8 @@ class ConnectionRouter(BaseModel):
         def encrypt_files() -> None:
             file_ids = connection.owner_get_all_accepted_event_file_ids()
             file_ids += connection.owner_get_checkpoint_and_state_file_ids()
-            for file_id, raw in zip(file_ids, self._download_parallel(file_ids)):
+            for file_id in file_ids:
+                raw = connection.owner_download_raw_bytes_by_id(file_id)
                 if not self.peer_store.is_envelope(raw):
                     connection.owner_overwrite_raw_bytes_by_id(
                         file_id, self.peer_store.encrypt_for_self(raw)

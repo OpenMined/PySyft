@@ -215,8 +215,8 @@ class VersionInfoV2(VersionInfoV1):
     # pydantic's own ``extra`` config, which governs unknown *fields*.
     extra: dict[str, Any] = Field(default_factory=dict)
 
-    # Peers read it to select encryption for the pair. None in a file from an
-    # earlier client, which does not say; see ``Peer.encryption_policy``.
+    # Peers read it to select encryption for the pair. None in a file from a
+    # syft that predates it: such a peer is outdated and must upgrade.
     encryption_policy: Optional[EncryptionPolicy] = None
 
     @classmethod

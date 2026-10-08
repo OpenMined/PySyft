@@ -851,11 +851,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 recipient, message
             )
         except PeerEncryptionPendingError:
-            peer_store = self.connection_router.peer_store
-            if not peer_store.peers_loaded or peer_store.get_cached_peer(recipient):
+            if self.connection_router.peer_store.should_hold(recipient):
                 return False
-            # Not a peer any more: it never gets a policy.
-            logger.warning(f"Dropped an outbox message for {recipient}")
+            logger.warning(f"Dropped an outbox message for {recipient}: not a peer")
         except EncryptionPolicyConflictError as e:
             logger.warning(f"Dropped an outbox message: {e}")
         return True
@@ -863,11 +861,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     @property
     def _held_outbox(self) -> HeldMessages:
         return HeldMessages(self.syftbox_folder / CACHE_DIR / HELD_OUTBOX_FILENAME)
-
-    @property
-    def held_message_count(self) -> int:
-        """The number of outbox messages held until encryption is set up."""
-        return len(self._held_outbox)
 
     def _download_outbox_message_with_new_connection(
         self, file_id: str

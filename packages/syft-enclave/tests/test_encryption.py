@@ -70,7 +70,7 @@ def test_encrypted_message_to_enclave_roundtrips():
     assert "simple_job" in [j.name for j in enclave.jobs]
 
 
-def test_quad_builder_applies_off_to_the_enclave():
+def test_quad_builder_applies_off_to_enclave():
     from syft.sync.encryption_policy import EncryptionPolicy
 
     enclave, *_ = SyftEnclaveClient.quad_with_mock_drive_service_connection(
