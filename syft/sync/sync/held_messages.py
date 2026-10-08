@@ -9,13 +9,11 @@ twice.
 
 import base64
 import json
-import os
-import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator
 
-import portalocker
+from syft.sync.utils.locked_files import locked_file, write_json_atomically
 
 # Format of the file: {"version": N, "messages": [...]}. Raise it when the
 # layout of a message entry changes.
@@ -36,25 +34,15 @@ class HeldMessages:
 
         When the block raises, the file stays as it was.
         """
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self._path.with_suffix(".lock"), "a") as lock_file:
-            portalocker.lock(lock_file, portalocker.LOCK_EX)
-            try:
-                messages = self._read()
-                yield messages
-                self._write(messages)
-            finally:
-                portalocker.unlock(lock_file)
+        with locked_file(self._path):
+            messages = self._read()
+            yield messages
+            self._write(messages)
 
     def read(self) -> list[HeldMessage]:
         """The held messages, read under the lock, without a write."""
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self._path.with_suffix(".lock"), "a") as lock_file:
-            portalocker.lock(lock_file, portalocker.LOCK_EX)
-            try:
-                return self._read()
-            finally:
-                portalocker.unlock(lock_file)
+        with locked_file(self._path):
+            return self._read()
 
     def send_all(
         self,
@@ -117,10 +105,4 @@ class HeldMessages:
                 for r, d in messages
             ],
         }
-        fd, tmp = tempfile.mkstemp(dir=self._path.parent, suffix=".tmp")
-        try:
-            with os.fdopen(fd, "w") as f:
-                f.write(json.dumps(data))
-            os.replace(tmp, self._path)
-        finally:
-            Path(tmp).unlink(missing_ok=True)
+        write_json_atomically(self._path, data)

@@ -368,7 +368,8 @@ def test_peer_encryption_resolved_from_both_policies(mine, theirs, encrypted):
 def test_off_and_required_conflict(mine, theirs):
     """Neither side gives way, so the pair cannot exchange messages."""
     alice, bob = _keyed_pair(mine, theirs)
-    assert alice.peer_conflicts("bob@example.com")
+    peer = alice.get_cached_peer("bob@example.com")
+    assert isinstance(alice.conflict_error(peer), EncryptionPolicyConflictError)
     with pytest.raises(EncryptionPolicyConflictError):
         alice.encrypt_if_needed("bob@example.com", b"data")
     with pytest.raises(EncryptionPolicyConflictError):
@@ -628,7 +629,7 @@ def test_reload_reads_keys_only_for_a_required_key_file(tmp_path, monkeypatch):
 
 def test_at_rest_pass_leaves_key_file_lock_free(tmp_path):
     """A notebook can pin keys while syft-bg encrypts the files at rest."""
-    from syft.sync.peers.peer_store import _locked_key_file
+    from syft.sync.utils.locked_files import locked_file
 
     keys_path = tmp_path / "crypto_keys.json"
     store = PeerStore.create(email="alice@example.com", keys_path=keys_path)
@@ -638,7 +639,7 @@ def test_at_rest_pass_leaves_key_file_lock_free(tmp_path):
 
     def encrypt_files():
         def other_process():
-            with _locked_key_file(keys_path):
+            with locked_file(keys_path):
                 took_lock.append(True)
 
         thread = threading.Thread(target=other_process, daemon=True)
@@ -659,6 +660,58 @@ def test_write_at_rest_takes_required_policy_from_other_process(tmp_path):
             email="alice@example.com", encryption_policy=REQUIRED, keys_path=keys_path
         )
     assert _is_envelope(notebook.encrypt_for_self_if_needed(b"rolling state"))
+
+
+def test_read_at_rest_accepts_plaintext_only_until_files_are_encrypted(tmp_path):
+    """Another process made the datasite required; its one-time pass is pending."""
+    keys_path = tmp_path / "crypto_keys.json"
+    notebook = _create(keys_path)
+    notebook.ensure_keys()
+    with pytest.warns(UserWarning):
+        _create(keys_path, REQUIRED)
+    assert notebook.decrypt_and_verify_for_self_if_needed(b"plain") == b"plain"
+
+    daemon = PeerStore.load_keys(keys_path)
+    envelope = daemon.encrypt_for_self(b"secret")
+    assert notebook.decrypt_and_verify_for_self_if_needed(envelope) == b"secret"
+
+    daemon.encrypt_files_at_rest_once(lambda: None)
+    with pytest.raises(ValueError, match="not encrypted"):
+        notebook.decrypt_and_verify_for_self_if_needed(b"plain")
+
+
+def test_trusted_peer_stays_forgotten_in_other_process(tmp_path):
+    """syft-bg must not write back a peer that trust_peer_key cleared."""
+    keys_path = tmp_path / "crypto_keys.json"
+    with pytest.warns(UserWarning):
+        notebook = _create(keys_path, REQUIRED)
+    daemon = _create(keys_path)
+    notebook.remember_required_peer("bob@example.com")
+    daemon.reload_policy_from_key_file()
+    assert daemon.is_remembered_required("bob@example.com")
+
+    notebook.forget_required_peer("bob@example.com")
+    daemon.remember_required_peer("carol@example.com")
+    stored = json.loads(keys_path.read_text())["required_peers"]
+    assert stored == ["carol@example.com"]
+    daemon.reload_policy_from_key_file()
+    assert not daemon.is_remembered_required("bob@example.com")
+
+
+def test_key_file_read_again_only_after_it_changes(tmp_path, monkeypatch):
+    keys_path = tmp_path / "crypto_keys.json"
+    store = _create(keys_path)
+    store.ensure_keys()
+    reads = []
+    original = PeerStore._read_key_file
+    monkeypatch.setattr(
+        PeerStore,
+        "_read_key_file",
+        lambda self: reads.append(1) or original(self),
+    )
+    for _ in range(3):
+        store.encrypt_for_self_if_needed(b"data")
+    assert len(reads) == 1
 
 
 def test_concurrent_processes_make_one_key_pair(tmp_path):
@@ -1035,6 +1088,47 @@ def test_drive_error_while_publishing_bundle_does_not_stop_sync(monkeypatch):
     with pytest.warns(UserWarning, match="publish"):
         ds_manager.load_peers()
     assert do_manager.email not in ds_manager.peer_manager._bundle_published_for
+
+
+def test_add_peer_publishes_bundle_for_remembered_required_peer(monkeypatch):
+    """add_peer follows the same policy as other paths, not the raw version file."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        ds_encryption_policy=OPTIONAL,
+        do_encryption_policy=REQUIRED,
+    )
+    ds_manager.load_peers()
+    _advertise_policy(do_manager, OPTIONAL)
+    writes = []
+    original = ConnectionRouter.write_encryption_bundle
+    monkeypatch.setattr(
+        ConnectionRouter,
+        "write_encryption_bundle",
+        lambda self, peer_email, bundle_json: writes.append(peer_email)
+        or original(self, peer_email, bundle_json),
+    )
+    with pytest.warns(UserWarning, match="required encryption before"):
+        ds_manager.add_peer(do_manager.email, force=True, sync=False)
+    assert writes == [do_manager.email]
+
+
+def test_outbox_history_from_before_switch_stays_readable():
+    """A client that turns required accepts plaintext written before it did."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    grant_job_inbox_access(do_manager, ds_manager.email)
+    file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
+    ds_manager._send_file_change(file_path, "history")
+    do_manager.sync()
+
+    keys_path = ds_manager.peer_manager.peer_store._keys_path
+    with pytest.warns(UserWarning):
+        PeerStore.create(
+            email=ds_manager.email, encryption_policy=REQUIRED, keys_path=keys_path
+        )
+    ds_manager.sync()
+
+    outbox = do_manager.datasite_owner_syncer.connection_router.connection_for_outbox()
+    assert outbox.owner_get_rejected_outbox_messages(ds_manager.email) == []
+    assert any("history" in c for c in _ds_cached_contents(ds_manager))
 
 
 def test_owner_waits_on_envelope_from_unpinned_peer():
@@ -1502,6 +1596,20 @@ def test_optional_pair_skips_rejected_message_lookup(monkeypatch):
 
     monkeypatch.setattr(GDriveConnection, "watcher_get_rejected_inbox_messages", spy)
     ds_manager.sync()
+    assert calls == []
+
+
+def test_rejected_message_lookup_does_not_list_whole_folder(monkeypatch):
+    ds_manager, do_manager = _required_ds_pair()
+    calls = []
+    original = GDriveConnection.get_file_metadatas_from_folder
+    monkeypatch.setattr(
+        GDriveConnection,
+        "get_file_metadatas_from_folder",
+        lambda self, *a, **k: calls.append(a) or original(self, *a, **k),
+    )
+    router = do_manager.datasite_owner_syncer.connection_router
+    router.owner_resend_rejected_outbox_messages(ds_manager.email)
     assert calls == []
 
 

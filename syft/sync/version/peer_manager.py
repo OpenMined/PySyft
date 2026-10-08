@@ -19,7 +19,6 @@ from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.gdrive_retry import RETRYABLE_TRANSPORT_ERRORS
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
-    pair_conflicts,
     pair_uses_encryption,
 )
 from syft.sync.peers.key_bundle import (
@@ -55,21 +54,6 @@ class CompatAction(str, Enum):
     SYNC = "sync"
     SUBMIT = "submit"
     EXECUTE = "execute"
-
-
-def _conflict_skip_message(peer_email: str) -> str:
-    return (
-        f"{peer_email} is skipped: encryption is off on one side and required "
-        "on the other. Set the same policy on both sides, or use optional on "
-        "one of them."
-    )
-
-
-def _outdated_skip_message(peer_email: str) -> str:
-    return (
-        f"{peer_email} is skipped: it runs an outdated syft, which does not "
-        "advertise an encryption policy. Ask them to upgrade syft."
-    )
 
 
 # Key wrapping the DID document inside a published encryption bundle file.
@@ -587,12 +571,11 @@ class PeerManager(BaseModel):
         result = []
         for email in peer_emails:
             peer = self.peer_store.get_cached_peer(email)
-            if peer is not None and peer.is_outdated:
-                warnings.warn(_outdated_skip_message(email))
-            elif self.peer_store.peer_conflicts(email):
-                warnings.warn(_conflict_skip_message(email))
-            else:
+            error = None if peer is None else self.peer_store.conflict_error(peer)
+            if error is None:
                 result.append(email)
+            else:
+                warnings.warn(f"{email} is skipped: {error}")
         return result
 
     def warn_if_all_peers_incompatible(self, peer_emails: List[str]) -> None:
@@ -674,16 +657,14 @@ class PeerManager(BaseModel):
         new_peer_obj.version = version_info
         self._note_peer_policy(new_peer_obj)
         encrypted = pair_uses_encryption(
-            self.peer_store.encryption_policy, new_peer_obj.encryption_policy
+            self.peer_store.encryption_policy,
+            self.peer_store.policy_of(new_peer_obj),
         )
         if encrypted:
             self._write_encryption_bundle_for_peer(peer_email)
-        if new_peer_obj.is_outdated:
-            warnings.warn(_outdated_skip_message(peer_email))
-        elif pair_conflicts(
-            self.peer_store.encryption_policy, new_peer_obj.encryption_policy
-        ):
-            warnings.warn(_conflict_skip_message(peer_email))
+        error = self.peer_store.conflict_error(new_peer_obj)
+        if error is not None:
+            warnings.warn(f"{peer_email} is skipped: {error}")
 
         # Accepting a request or re-adding an accepted peer with force is an
         # explicit user decision, so a changed key is adopted with a warning.

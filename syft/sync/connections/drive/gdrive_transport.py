@@ -76,7 +76,7 @@ def _waits_for_rejected_message(file_metadatas: list[dict], folder: str) -> bool
 
     Later messages can depend on the rejected one, so they wait until then.
     """
-    if not any(m["name"].endswith(REJECTED_MESSAGE_SUFFIX) for m in file_metadatas):
+    if not any(m["name"].startswith(REJECTED_MESSAGE_PREFIX) for m in file_metadatas):
         return False
     logger.warning(f"The {folder} waits for the sender to resend a rejected message.")
     return True
@@ -107,10 +107,11 @@ def build_drive_service(
 
 
 LEGACY_GDRIVE_OUTBOX_INBOX_FOLDER_PREFIX = "syft_outbox_inbox"  # legacy prefix
-# Suffix the recipient adds to a plaintext inbox or outbox message when the
+# Prefix the recipient adds to a plaintext inbox or outbox message when the
 # pair encrypts. The sender then resends the message encrypted, under the
-# original name.
-REJECTED_MESSAGE_SUFFIX = ".rejected"
+# original name. It is a prefix because Drive's ``name contains`` matches
+# only the start of a name term.
+REJECTED_MESSAGE_PREFIX = "rejected_"
 GDRIVE_P2P_FOLDER_DATASITE_PREFIX = "syft_datasite"
 SYFT_PEERS_FILE = "SYFT_peers.json"
 
@@ -1123,7 +1124,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         res = []
         for file_metadata in file_metadatas:
             fname = file_metadata["name"]
-            if fname.endswith(REJECTED_MESSAGE_SUFFIX):
+            if fname.startswith(REJECTED_MESSAGE_PREFIX):
                 continue
             try:
                 message_filename = FileChangeEventsMessageFileName.from_string(fname)
@@ -1139,7 +1140,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     ) -> list[MessageFileName]:
         res = []
         for file_metadata in file_metadatas:
-            if file_metadata["name"].endswith(REJECTED_MESSAGE_SUFFIX):
+            if file_metadata["name"].startswith(REJECTED_MESSAGE_PREFIX):
                 continue
             try:
                 message_filename = MessageFileName.from_string(file_metadata["name"])
@@ -1182,20 +1183,20 @@ class GDriveConnection(SyftboxPlatformConnection):
         ]
 
     def mark_message_rejected(self, file_id: str) -> None:
-        """Rename message file ``file_id`` with the rejected suffix, in place.
+        """Rename message file ``file_id`` with the rejected prefix, in place.
 
         Two readers on one datasite (a notebook and syft-bg) can reject the
-        same file; the second finds the suffix and leaves the name.
+        same file; the second finds the prefix and leaves the name.
         """
         file_info = execute_with_retries(
             self.drive_service.files().get(fileId=file_id, fields="name")
         )
-        if file_info["name"].endswith(REJECTED_MESSAGE_SUFFIX):
+        if file_info["name"].startswith(REJECTED_MESSAGE_PREFIX):
             return
         execute_with_retries(
             self.drive_service.files().update(
                 fileId=file_id,
-                body={"name": file_info["name"] + REJECTED_MESSAGE_SUFFIX},
+                body={"name": REJECTED_MESSAGE_PREFIX + file_info["name"]},
                 fields="id, name",
                 supportsAllDrives=True,
             )
@@ -1218,16 +1219,29 @@ class GDriveConnection(SyftboxPlatformConnection):
     def _rejected_messages_in_folder(
         self, folder_id: str | None
     ) -> list[RejectedMessage]:
+        """The rejected messages in ``folder_id``, without a listing of the whole folder."""
         if folder_id is None:
             return []
-        metadatas = self.get_file_metadatas_from_folder(folder_id)
-        names = {m["name"] for m in metadatas}
         res = []
-        for m in metadatas:
-            if m["name"].endswith(REJECTED_MESSAGE_SUFFIX):
-                original = m["name"].removesuffix(REJECTED_MESSAGE_SUFFIX)
-                res.append(RejectedMessage(m["id"], original, original in names))
+        for m in self._files_in_folder_named(
+            folder_id, f"name contains '{REJECTED_MESSAGE_PREFIX}'"
+        ):
+            # ``name contains`` is not exact: check the name here.
+            if m["name"].startswith(REJECTED_MESSAGE_PREFIX):
+                original = m["name"].removeprefix(REJECTED_MESSAGE_PREFIX)
+                resent = bool(
+                    self._files_in_folder_named(folder_id, f"name = '{original}'")
+                )
+                res.append(RejectedMessage(m["id"], original, resent))
         return res
+
+    def _files_in_folder_named(self, folder_id: str, name_query: str) -> list[dict]:
+        """The files in ``folder_id`` that match ``name_query``, a Drive name clause."""
+        query = f"'{folder_id}' in parents and {name_query} and trashed=false"
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(id, name)")
+        )
+        return results.get("files", [])
 
     def owner_get_next_proposed_filechange_message(
         self, sender_email: str

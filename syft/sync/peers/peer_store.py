@@ -6,14 +6,11 @@ Shared between PeerManager and all ConnectionRouter instances.
 
 import json
 import logging
-import os
-import tempfile
+import time
 import warnings
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Callable, Iterator, List, Optional
+from typing import Callable, List, Optional
 
-import portalocker
 import syft_crypto_python as syc
 from pydantic import BaseModel, PrivateAttr
 
@@ -37,6 +34,7 @@ from syft.sync.peers.key_bundle import (
     parse_and_validate_bundle,
 )
 from syft.sync.peers.peer import Peer
+from syft.sync.utils.locked_files import locked_file, write_json_atomically
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +64,10 @@ AT_REST_ENCRYPTED_KEY = "at_rest_encrypted"
 # The version file that advertises a policy is not signed, so such a peer
 # stays required here until the user trusts a new key for it.
 REQUIRED_PEERS_KEY = "required_peers"
+# Key in the crypto key file that records when this datasite started to
+# require encryption (seconds since the epoch). A peer can have written
+# plaintext to its outbox before then.
+REQUIRED_SINCE_KEY = "required_since"
 
 
 def datasite_crypto_keys_path(syftbox_folder: Path | str, email: str) -> Path:
@@ -98,6 +100,12 @@ class PeerStore(BaseModel):
     _policy_rereads: set[str] = PrivateAttr(default_factory=set)
     # Peers seen to require encryption (see REQUIRED_PEERS_KEY).
     _required_peers: set[str] = PrivateAttr(default_factory=set)
+    # Remembered peers not in the key file yet: there were no keys then.
+    _unsaved_required_peers: set[str] = PrivateAttr(default_factory=set)
+    # When this datasite started to require encryption (see REQUIRED_SINCE_KEY).
+    _required_since: float | None = PrivateAttr(default=None)
+    # The (mtime, inode, size) of the key file at the last reload.
+    _key_file_stamp: tuple[int, int, int] | None = PrivateAttr(default=None)
     # The last policy known of each peer in this process (see peer_policy).
     _last_known_policies: dict[str, EncryptionPolicy] = PrivateAttr(
         default_factory=dict
@@ -148,8 +156,9 @@ class PeerStore(BaseModel):
                 pinned peer bundle are missing.
             EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
-        if self.peer_conflicts(email):
-            raise self._conflict_error(email)
+        error = self._cached_conflict_error(email)
+        if error is not None:
+            raise error
         if not self.peer_policy_known(email):
             raise PeerEncryptionPolicyUnknownError(email)
         if not self.peer_uses_encryption(email):
@@ -158,7 +167,9 @@ class PeerStore(BaseModel):
             raise PeerKeysNotReadyError(email)
         return self.encrypt(email, data)
 
-    def decrypt_and_verify_if_needed(self, email: str, data: bytes) -> bytes:
+    def decrypt_and_verify_if_needed(
+        self, email: str, data: bytes, sent_at: float | None = None
+    ) -> bytes:
         """Verify and decrypt an envelope from ``email``; pass plaintext through.
 
         When the pair encrypts, plaintext is refused, so that a peer or the
@@ -166,6 +177,10 @@ class PeerStore(BaseModel):
         not known, plaintext waits, as a send does. When the pair does not
         encrypt, an envelope is still accepted: the peer can have started to
         require encryption after the last load.
+
+        ``sent_at`` is the time a message was written. Plaintext written
+        before this datasite started to require encryption is accepted,
+        unless the peer requires encryption itself.
 
         Raises:
             PeerEncryptionPolicyUnknownError: when ``data`` is plaintext and
@@ -176,18 +191,30 @@ class PeerStore(BaseModel):
                 or the pinned peer bundle are missing.
             EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
-        if self.peer_conflicts(email):
-            raise self._conflict_error(email)
+        error = self._cached_conflict_error(email)
+        if error is not None:
+            raise error
         if not self.is_envelope(data):
             if not self.peer_policy_known(email):
                 raise PeerEncryptionPolicyUnknownError(email)
-            if self.peer_uses_encryption(email):
+            if self.peer_uses_encryption(email) and not self._sent_before_required(
+                email, sent_at
+            ):
                 raise UnencryptedMessageError(email)
             return data
         if not self.encryption_ready(email):
             raise PeerKeysNotReadyError(email)
         self.verify_message(email, data)
         return self.decrypt(email, data)
+
+    def _sent_before_required(self, email: str, sent_at: float | None) -> bool:
+        """Whether plaintext from ``email`` sent at ``sent_at`` predates our switch."""
+        return (
+            sent_at is not None
+            and self._required_since is not None
+            and sent_at < self._required_since
+            and self.peer_policy(email) != EncryptionPolicy.REQUIRED
+        )
 
     @staticmethod
     def is_envelope(data: bytes) -> bool:
@@ -211,22 +238,24 @@ class PeerStore(BaseModel):
         return self.decrypt(owner_email, data)
 
     def peer_policy(self, email: str) -> Optional[EncryptionPolicy]:
-        """The policy of ``email``, or None when not known.
+        """The policy of the cached peer ``email``, or None when not known."""
+        peer = self.get_cached_peer(email)
+        return None if peer is None else self.policy_of(peer)
+
+    def policy_of(self, peer: Peer) -> Optional[EncryptionPolicy]:
+        """The policy of ``peer``, or None when not known.
 
         A peer seen to require encryption stays required, whatever its
         version file says now (see ``remember_required_peer``). When the
         version file can no longer be read (the peer deleted its SyftBox, or
         a read failed), the last policy known in this process applies.
         """
-        peer = self.get_cached_peer(email)
-        if peer is None:
-            return None
-        if email in self._required_peers:
+        if peer.email in self._required_peers:
             return EncryptionPolicy.REQUIRED
         policy = peer.encryption_policy
         if policy is None and not peer.is_outdated:
-            return self._last_known_policies.get(email)
-        self._last_known_policies[email] = policy
+            return self._last_known_policies.get(peer.email)
+        self._last_known_policies[peer.email] = policy
         return policy
 
     def is_remembered_required(self, email: str) -> bool:
@@ -235,25 +264,40 @@ class PeerStore(BaseModel):
     def remember_required_peer(self, email: str) -> None:
         """Keep ``email`` required, in memory and in the key file."""
         if email not in self._required_peers:
-            self._required_peers.add(email)
-            self._persist_required_peers()
+            self._update_required_peers(added={email})
 
     def forget_required_peer(self, email: str) -> None:
         """Stop keeping ``email`` required. For a trusted key change only."""
         if email in self._required_peers:
-            self._required_peers.discard(email)
-            self._persist_required_peers(removed=email)
+            self._update_required_peers(removed={email})
 
-    def _persist_required_peers(self, removed: str | None = None) -> None:
-        """Record the remembered peers in the key file, with those of other processes."""
+    def _update_required_peers(
+        self, added: set[str] = frozenset(), removed: set[str] = frozenset()
+    ) -> None:
+        """Apply a change to the remembered peers, in the key file and in memory.
+
+        Only the change is written, and memory then follows the file. So a
+        peer that another process forgot is not written back. Without keys,
+        the change stays in memory until ``_save_unsaved_required_peers``.
+        """
+        self._required_peers = (self._required_peers | added) - removed
         if self._keys_path is None or self._private_keys is None:
+            self._unsaved_required_peers = (
+                self._unsaved_required_peers | added
+            ) - removed
             return
-        with _locked_key_file(self._keys_path):
+        with locked_file(self._keys_path):
             data = self._read_key_file() or self._key_file_data()
-            stored = set(data.get(REQUIRED_PEERS_KEY, [])) - {removed}
-            self._required_peers |= stored
-            data = {**data, REQUIRED_PEERS_KEY: sorted(self._required_peers)}
+            stored = (set(data.get(REQUIRED_PEERS_KEY, [])) | added) - removed
+            data = {**data, REQUIRED_PEERS_KEY: sorted(stored)}
             _write_key_file(self._keys_path, data)
+        self._required_peers = stored
+
+    def _save_unsaved_required_peers(self) -> None:
+        """Record the peers remembered while there were no keys."""
+        unsaved, self._unsaved_required_peers = self._unsaved_required_peers, set()
+        if unsaved:
+            self._update_required_peers(added=unsaved)
 
     def peer_policy_known(self, email: str) -> bool:
         """Whether this client can select the format for ``email``.
@@ -266,22 +310,23 @@ class PeerStore(BaseModel):
         """Whether our keys and the pinned bundle of ``email`` exist."""
         return self.has_my_keys() and self.has_peer_bundle(email)
 
-    def peer_conflicts(self, email: str) -> bool:
-        """Whether this pair cannot exchange messages.
+    def conflict_error(self, peer: Peer) -> EncryptionPolicyConflictError | None:
+        """Why this client and ``peer`` cannot exchange messages, or None when they can.
 
         That is when one side has encryption off and the other requires it,
         or when the peer runs an outdated syft.
         """
-        peer = self.get_cached_peer(email)
-        if peer is not None and peer.is_outdated:
-            return True
-        return pair_conflicts(self.encryption_policy, self.peer_policy(email))
+        if peer.is_outdated:
+            return PeerOutdatedError(peer.email)
+        if pair_conflicts(self.encryption_policy, self.policy_of(peer)):
+            return EncryptionPolicyConflictError(peer.email)
+        return None
 
-    def _conflict_error(self, email: str) -> EncryptionPolicyConflictError:
+    def _cached_conflict_error(
+        self, email: str
+    ) -> EncryptionPolicyConflictError | None:
         peer = self.get_cached_peer(email)
-        if peer is not None and peer.is_outdated:
-            return PeerOutdatedError(email)
-        return EncryptionPolicyConflictError(email)
+        return None if peer is None else self.conflict_error(peer)
 
     def peer_uses_encryption(self, email: str) -> bool:
         """Whether the pair with ``email`` encrypts. False when the peer policy is not known."""
@@ -440,7 +485,7 @@ class PeerStore(BaseModel):
             self.generate_keys()
             return
         unsaved_pins: list[tuple[str, dict]] = []
-        with _locked_key_file(self._keys_path):
+        with locked_file(self._keys_path):
             if self._keys_path.exists():
                 unsaved_pins = self._take_key_file(self.load_keys(self._keys_path))
             else:
@@ -449,13 +494,13 @@ class PeerStore(BaseModel):
         # Saving a pin takes the lock again, so it waits until here.
         for email, bundle in unsaved_pins:
             self._persist_peer_bundle(email, bundle)
-        self._persist_required_peers()
+        self._save_unsaved_required_peers()
 
     def _adopt_key_file(self, loaded: "PeerStore") -> None:
         """Take the keys, pins and recorded policy of ``loaded``, a store read from our key file."""
         for email, bundle in self._take_key_file(loaded):
             self._persist_peer_bundle(email, bundle)
-        self._persist_required_peers()
+        self._save_unsaved_required_peers()
 
     def _take_key_file(self, loaded: "PeerStore") -> list[tuple[str, dict]]:
         """Like ``_adopt_key_file``, but return the pins to save, without file I/O.
@@ -470,7 +515,8 @@ class PeerStore(BaseModel):
             )
         self._private_keys = loaded._private_keys
         self._at_rest_encrypted = loaded._at_rest_encrypted
-        self._required_peers |= loaded._required_peers
+        self._required_since = loaded._required_since
+        self._required_peers = loaded._required_peers | self._unsaved_required_peers
         if loaded.use_encryption:
             self.encryption_policy = EncryptionPolicy.REQUIRED
         if not self._peers:
@@ -611,10 +657,25 @@ class PeerStore(BaseModel):
         return data
 
     def decrypt_and_verify_for_self_if_needed(self, data: bytes) -> bytes:
-        """Verify and decrypt self-encrypted data if encryption is enabled and keys are available."""
-        if self.use_encryption and self.has_my_keys():
+        """Verify and decrypt an envelope this client wrote for itself; pass plaintext through.
+
+        Plaintext is refused once this client requires encryption and its
+        files at rest are encrypted. Until then, they can hold plaintext. It
+        reads the key file first, as ``encrypt_for_self_if_needed`` does.
+
+        Raises:
+            ValueError: when ``data`` is plaintext, and the files at rest
+                must be encrypted.
+        """
+        self.reload_policy_from_key_file()
+        if self.is_envelope(data):
             self.verify_message_from_self(data)
             return self.decrypt_for_self(data)
+        if self.use_encryption and self._at_rest_encrypted:
+            raise ValueError(
+                f"A file of {self.email} at rest is not encrypted, and the "
+                "datasite requires encryption."
+            )
         return data
 
     # ========== Persistence ==========
@@ -637,32 +698,41 @@ class PeerStore(BaseModel):
             ENCRYPTION_POLICY_KEY: self.encryption_policy.value,
             AT_REST_ENCRYPTED_KEY: self._at_rest_encrypted,
             REQUIRED_PEERS_KEY: sorted(self._required_peers),
+            REQUIRED_SINCE_KEY: self._required_since,
         }
 
     def reload_policy_from_key_file(self) -> None:
-        """Take a required policy that another process recorded in the key file.
+        """Take what other processes on this datasite recorded in the key file.
 
-        A notebook that started optional must not write plaintext at rest once
-        syft-bg made the datasite required.
+        That is a required policy, the remembered peers, and the encryption
+        of the files at rest. A notebook that started optional must not write
+        plaintext at rest once syft-bg made the datasite required. The file
+        is read again only after it changes.
 
         Raises:
             ValueError: when this client has encryption off.
         """
-        if self.use_encryption or self._keys_path is None:
+        if self._keys_path is None:
             return
-        # Most syncs find no change: read the policy before the keys.
+        stamp = _file_stamp(self._keys_path)
+        if stamp is None or stamp == self._key_file_stamp:
+            return
         data = self._read_key_file()
-        recorded = (
-            data.get(ENCRYPTION_POLICY_KEY, EncryptionPolicy.REQUIRED.value)
-            if data
-            else None
-        )
-        if recorded != EncryptionPolicy.REQUIRED.value:
+        if data is None:
             return
-        loaded = self.load_keys(self._keys_path)
-        if self.encryption_policy == EncryptionPolicy.OFF:
-            raise _off_refused_error(self._keys_path)
-        self._adopt_key_file(loaded)
+        recorded = data.get(ENCRYPTION_POLICY_KEY, EncryptionPolicy.REQUIRED.value)
+        if not self.use_encryption and recorded == EncryptionPolicy.REQUIRED.value:
+            loaded = self.load_keys(self._keys_path)
+            if self.encryption_policy == EncryptionPolicy.OFF:
+                raise _off_refused_error(self._keys_path)
+            self._adopt_key_file(loaded)
+        elif self.has_my_keys():
+            self._required_peers = (
+                set(data.get(REQUIRED_PEERS_KEY, [])) | self._unsaved_required_peers
+            )
+            self._at_rest_encrypted |= bool(data.get(AT_REST_ENCRYPTED_KEY))
+            self._required_since = data.get(REQUIRED_SINCE_KEY, self._required_since)
+        self._key_file_stamp = stamp
 
     def needs_at_rest_encryption(self) -> bool:
         """Whether this client is required, but its files at rest can be plaintext."""
@@ -680,11 +750,11 @@ class PeerStore(BaseModel):
             encrypt_files()
         else:
             at_rest_lock = self._keys_path.with_name(self._keys_path.name + ".at_rest")
-            with _locked_key_file(at_rest_lock):
+            with locked_file(at_rest_lock):
                 data = self._read_key_file() or {}
                 if not data.get(AT_REST_ENCRYPTED_KEY):
                     encrypt_files()
-                    with _locked_key_file(self._keys_path):
+                    with locked_file(self._keys_path):
                         data = self._read_key_file() or self._key_file_data()
                         data = {**data, AT_REST_ENCRYPTED_KEY: True}
                         _write_key_file(self._keys_path, data)
@@ -694,18 +764,23 @@ class PeerStore(BaseModel):
         """Record a required policy in the key file, keeping what else it holds."""
         if self._keys_path is None or not self.use_encryption:
             return
-        with _locked_key_file(self._keys_path):
+        with locked_file(self._keys_path):
             data = self._read_key_file() or self._key_file_data()
             if data.get(ENCRYPTION_POLICY_KEY) == EncryptionPolicy.REQUIRED.value:
                 return
-            data = {**data, ENCRYPTION_POLICY_KEY: EncryptionPolicy.REQUIRED.value}
+            self._required_since = time.time()
+            data = {
+                **data,
+                ENCRYPTION_POLICY_KEY: EncryptionPolicy.REQUIRED.value,
+                REQUIRED_SINCE_KEY: self._required_since,
+            }
             _write_key_file(self._keys_path, data)
         _warn_key_file_holds_data(self._keys_path)
 
     def save_keys(self, path: Path) -> None:
         data = self._key_file_data()
         path = Path(path)
-        with _locked_key_file(path):
+        with locked_file(path):
             _write_key_file(path, data)
         self._keys_path = path
 
@@ -750,7 +825,7 @@ class PeerStore(BaseModel):
         """
         if self._keys_path is None or self._private_keys is None:
             return
-        with _locked_key_file(self._keys_path):
+        with locked_file(self._keys_path):
             data = self._read_key_file() or self._key_file_data()
             _write_key_file(self._keys_path, _with_pin(data, peer_email, bundle))
 
@@ -771,6 +846,7 @@ class PeerStore(BaseModel):
         store = cls(email=data["email"], encryption_policy=EncryptionPolicy(policy))
         store._at_rest_encrypted = bool(data.get(AT_REST_ENCRYPTED_KEY))
         store._required_peers = set(data.get(REQUIRED_PEERS_KEY, []))
+        store._required_since = data.get(REQUIRED_SINCE_KEY)
         store._private_keys = syc.SyftPrivateKeys.from_jwks(data["keys_jwk"])
         store._keys_path = Path(path)
         store._peers = _peers_from_stored_pins(data.get(PEER_BUNDLES_KEY, {}))
@@ -816,6 +892,7 @@ class PeerStore(BaseModel):
             store._record_required_policy()
         elif store.use_encryption:
             store.generate_keys()
+            store._required_since = time.time()
             store.save_keys(store._keys_path)
             _warn_key_file_holds_data(store._keys_path)
         return store
@@ -839,22 +916,6 @@ def _warn_key_file_holds_data(keys_path: Path) -> None:
     )
 
 
-@contextmanager
-def _locked_key_file(path: Path) -> Iterator[None]:
-    """Hold an exclusive cross-process lock on the key file at ``path``.
-
-    The lock is on a sibling ``.lock`` file, as in ``PersistedDict``, so the
-    key file itself can be replaced while the lock is held.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path.with_suffix(f"{path.suffix}.lock"), "a") as f:
-        portalocker.lock(f, portalocker.LOCK_EX)
-        try:
-            yield
-        finally:
-            portalocker.unlock(f)
-
-
 def _with_pin(data: dict, peer_email: str, bundle: dict) -> dict:
     """``data`` from the key file, with ``bundle`` recorded as the pin of ``peer_email``."""
     bundles = data.get(PEER_BUNDLES_KEY)
@@ -866,22 +927,17 @@ def _with_pin(data: dict, peer_email: str, bundle: dict) -> dict:
 
 
 def _write_key_file(path: Path, data: dict) -> None:
-    """Replace the key file at ``path`` with ``data`` in one step.
+    """Replace the key file at ``path`` with ``data``. It holds the only copy of the private keys."""
+    write_json_atomically(path, data, indent=2)
 
-    The key file holds the only copy of the private keys, so a write cut short
-    must leave the old file in place. The data goes to a temporary file in the
-    same folder, reaches the disk, and then takes the name of the key file.
-    ``mkstemp`` creates the temporary file readable by this user only.
-    """
-    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+
+def _file_stamp(path: Path) -> tuple[int, int, int] | None:
+    """(mtime, inode, size) of the file at ``path``, or None when it is missing."""
     try:
-        with os.fdopen(fd, "w") as f:
-            f.write(json.dumps(data, indent=2))
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, path)
-    finally:
-        Path(tmp).unlink(missing_ok=True)
+        st = path.stat()
+    except FileNotFoundError:
+        return None
+    return (st.st_mtime_ns, st.st_ino, st.st_size)
 
 
 def _peers_from_stored_pins(bundles: dict[str, dict]) -> List[Peer]:

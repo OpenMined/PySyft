@@ -260,7 +260,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     # --- Pulling from datasite outboxes ---
 
     def download_events_message_with_new_connection(
-        self, file_id: str, peer_email: str
+        self, file_id: str, peer_email: str, sent_at: float | None = None
     ) -> FileChangeEventsMessage | None:
         """Download from outbox using a new connection (thread-safe).
 
@@ -269,7 +269,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         """
         connection = self.connection_router.connection_for_parallel_download()
         return self.connection_router.watcher_read_events_message(
-            connection, peer_email, file_id
+            connection, peer_email, file_id, sent_at
         )
 
     def download_collection_file_with_new_connection(
@@ -289,9 +289,9 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             event_count = self.datasite_watcher_cache.sync_down_parallel(
                 peer_email,
                 self._executor,
-                lambda fid,
+                lambda meta,
                 pe=peer_email: self.download_events_message_with_new_connection(
-                    fid, pe
+                    meta["file_id"], pe, meta["timestamp"]
                 ),
             )
             if event_count:

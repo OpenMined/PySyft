@@ -297,7 +297,7 @@ class ConnectionRouter(BaseModel):
             # After one message that cannot be read, later ones are not applied,
             # but each is still read, so all plaintext ones are rejected at once.
             message = self.watcher_read_events_message(
-                connection, peer_email, meta["file_id"]
+                connection, peer_email, meta["file_id"], meta["timestamp"]
             )
             waiting = waiting or message is None
             if not waiting:
@@ -305,15 +305,23 @@ class ConnectionRouter(BaseModel):
         return messages
 
     def watcher_read_events_message(
-        self, connection: SyftboxPlatformConnection, peer_email: str, file_id: str
+        self,
+        connection: SyftboxPlatformConnection,
+        peer_email: str,
+        file_id: str,
+        sent_at: float | None = None,
     ) -> FileChangeEventsMessage | None:
         """Download, verify and decrypt one outbox events message.
 
-        Returns None when the message cannot be read yet (see
-        ``_decrypt_or_reject``).
+        ``sent_at`` is the timestamp in its file name. Returns None when the
+        message cannot be read yet (see ``_decrypt_or_reject``).
         """
         raw = self._decrypt_or_reject(
-            connection, peer_email, connection.download_file(file_id), file_id
+            connection,
+            peer_email,
+            connection.download_file(file_id),
+            file_id,
+            sent_at=sent_at,
         )
         if raw is None:
             return None
@@ -326,6 +334,7 @@ class ConnectionRouter(BaseModel):
         raw: bytes,
         file_id: str,
         on_reject: Callable[[], None] | None = None,
+        sent_at: float | None = None,
     ) -> bytes | None:
         """Verify and decrypt an inbox or outbox message from ``peer_email``.
 
@@ -335,7 +344,9 @@ class ConnectionRouter(BaseModel):
         encrypted on its next sync.
         """
         try:
-            return self.peer_store.decrypt_and_verify_if_needed(peer_email, raw)
+            return self.peer_store.decrypt_and_verify_if_needed(
+                peer_email, raw, sent_at
+            )
         except UnencryptedMessageError as e:
             logger.warning(f"Rejected message file {file_id}: {e}")
             connection.mark_message_rejected(file_id)

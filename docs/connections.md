@@ -62,7 +62,7 @@ A pair encrypts when one side is `required`. An `off` and a `required` client co
 
 The version file is not signed. So a client keeps a peer that it saw as `required` as `required` (in its key file), and warns when the peer seems to advertise less. Trusting a new key for that peer (`client.trust_peer_key`) clears this. An `off` client has no key file, so it keeps no such record: a forged downgrade can only make it send what its user chose not to encrypt.
 
-A pair that encrypts refuses plaintext. The receiver renames a plaintext message to `<name>.rejected`, and waits for that peer. The sender resends the message encrypted on its next sync.
+A pair that encrypts refuses plaintext. The receiver renames a plaintext message to `rejected_<name>`, and waits for that peer. The sender resends the message encrypted on its next sync.
 
 A peer whose version file has no policy runs an outdated syft. It is skipped with a warning to upgrade, and a send to it raises.
 

@@ -63,9 +63,10 @@ class PeerKeysNotReadyError(PeerEncryptionPendingError):
 class EncryptionPolicyConflictError(ValueError):
     """One side of the pair has encryption off and the other requires it."""
 
-    def __init__(self, peer_email: str):
+    def __init__(self, peer_email: str, message: str | None = None):
         super().__init__(
-            f"Encryption with {peer_email} is off on one side and required on "
+            message
+            or f"Encryption with {peer_email} is off on one side and required on "
             "the other, so this pair cannot exchange messages. Set the same "
             "policy on both sides, or use optional on one of them."
         )
@@ -76,12 +77,11 @@ class PeerOutdatedError(EncryptionPolicyConflictError):
     """The peer runs a syft that predates encryption negotiation."""
 
     def __init__(self, peer_email: str):
-        ValueError.__init__(
-            self,
+        super().__init__(
+            peer_email,
             f"{peer_email} runs an outdated syft: its version file has no "
             "encryption policy. Ask them to upgrade syft.",
         )
-        self.peer_email = peer_email
 
 
 class UnencryptedMessageError(ValueError):
