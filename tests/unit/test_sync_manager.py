@@ -437,6 +437,15 @@ def test_collection_files_excluded_from_outbox_sync():
     )
 
 
+def _store_knowing(email: str, peer_email: str) -> PeerStore:
+    """A store for ``email`` that knows ``peer_email`` as an optional peer."""
+    version = VersionInfo.current()
+    version.encryption_policy = EncryptionPolicy.OPTIONAL
+    store = PeerStore(email=email)
+    store.add_peer(Peer(email=peer_email, version=version))
+    return store
+
+
 def _add_known_peer(do_manager, email: str) -> None:
     """Make ``email`` a peer of the DO with a known version, as peering does."""
     version = VersionInfo.current()
@@ -500,7 +509,7 @@ def test_job_files_sync_to_submitter_only():
     _add_known_peer(do_manager, submitter_email)
     submitter_router = ConnectionRouter(
         connections=[submitter_conn],
-        peer_store=PeerStore(email=submitter_email),
+        peer_store=_store_knowing(submitter_email, do_manager.email),
     )
     do_manager.datasite_owner_syncer.process_local_changes(recipients)
 
@@ -703,7 +712,7 @@ def test_permission_change_triggers_resend():
     _add_known_peer(do_manager, peer_b_email)
     peer_b_router = ConnectionRouter(
         connections=[peer_b_conn],
-        peer_store=PeerStore(email=peer_b_email),
+        peer_store=_store_knowing(peer_b_email, do_manager.email),
     )
 
     # Grant only peer A read access to project/

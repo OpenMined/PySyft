@@ -1,4 +1,8 @@
+import json
 import logging
+import warnings
+
+from googleapiclient.errors import HttpError
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
@@ -17,6 +21,12 @@ from syft.sync.connections.base_connection import (
     FileCollection,
     RejectedMessage,
     SyftboxPlatformConnection,
+)
+from syft.sync.connections.drive.gdrive_retry import RETRYABLE_TRANSPORT_ERRORS
+from syft.sync.peers.key_bundle import (
+    BUNDLE_FILE_KEY,
+    InvalidPeerBundleError,
+    parse_and_validate_bundle,
 )
 from syft.sync.encryption_policy import (
     EncryptionPolicyConflictError,
@@ -178,9 +188,41 @@ class ConnectionRouter(BaseModel):
         """Set the policy of ``peer`` when its version file does not say it."""
         if peer.needs_legacy_policy:
             policy = self.peer_store.legacy_policy(
-                peer.email, lambda: bool(self.read_peer_encryption_bundle(peer.email))
+                peer.email, lambda: self.legacy_bundle_published(peer.email)
             )
             peer.set_legacy_policy(policy)
+
+    def legacy_bundle_published(
+        self,
+        peer_email: str,
+        connection: SyftboxPlatformConnection | None = None,
+    ) -> Optional[bool]:
+        """Whether the earlier client ``peer_email`` published a valid bundle for us.
+
+        None when the check failed, or the file there is not a valid bundle:
+        neither shows that the peer does not encrypt, so the policy stays
+        unknown and the next load checks again.
+        """
+        if connection is None:
+            connection = self.connection_for_datasite_watcher()
+        try:
+            if not connection.peer_encryption_bundle_exists(peer_email):
+                return False
+            raw = connection.read_peer_encryption_bundle(peer_email)
+        except (HttpError, *RETRYABLE_TRANSPORT_ERRORS) as e:
+            logger.warning(f"Could not check the bundle of {peer_email}: {e}")
+            return None
+        if raw is None:
+            return None
+        try:
+            payload = json.loads(raw)
+            if not isinstance(payload, dict):
+                raise InvalidPeerBundleError(f"not a JSON object: {raw[:40]!r}")
+            parse_and_validate_bundle(peer_email, payload.get(BUNDLE_FILE_KEY))
+        except ValueError as e:
+            warnings.warn(f"Ignoring the encryption bundle of {peer_email}: {e}")
+            return None
+        return True
 
     def watcher_send_proposed_file_changes_message(
         self, recipient: str, proposed_file_changes_message: ProposedFileChangesMessage

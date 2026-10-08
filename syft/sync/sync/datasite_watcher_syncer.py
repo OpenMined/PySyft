@@ -130,19 +130,35 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             )
             changes_by_recipient.setdefault(recipient, []).append(file_change)
 
-        error = None
-        for recipient, file_changes in changes_by_recipient.items():
-            message = ProposedFileChangesMessage(
-                sender_email=self.email, proposed_file_changes=file_changes
+        messages = [
+            (
+                r,
+                ProposedFileChangesMessage(
+                    sender_email=self.email, proposed_file_changes=c
+                ),
             )
-            try:
-                sent = self._send_or_hold(recipient, message)
-            except (EncryptionPolicyConflictError, PeerEncryptionPendingError) as e:
-                # The other recipients still get their changes.
-                error = error or e
-                continue
-            if sent:
-                self._record_sent_hashes(message)
+            for r, c in changes_by_recipient.items()
+        ]
+        error = None
+        done = 0
+        try:
+            for recipient, message in messages:
+                try:
+                    sent = self._send_or_hold(recipient, message)
+                except (EncryptionPolicyConflictError, PeerEncryptionPendingError) as e:
+                    # The other recipients still get their changes.
+                    error = error or e
+                    done += 1
+                    continue
+                if sent:
+                    self._record_sent_hashes(message)
+                done += 1
+        finally:
+            # The queue is already empty: on another error, the messages not
+            # sent go to the held file, and the next sync sends them.
+            if done < len(messages):
+                with self._held_messages.edit() as held:
+                    held.extend((r, m.as_compressed_data()) for r, m in messages[done:])
         if error is not None:
             raise error
 

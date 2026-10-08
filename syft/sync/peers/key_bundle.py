@@ -20,6 +20,10 @@ import syft_crypto_python as syc
 DID_PREFIX = "did:syft:"
 
 
+# Key wrapping the DID document inside a published encryption bundle file.
+BUNDLE_FILE_KEY = "public_encryption_bundle"
+
+
 class InvalidPeerBundleError(ValueError):
     """The bundle does not parse, its signatures fail, or it names another identity."""
 
