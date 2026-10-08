@@ -649,6 +649,18 @@ def test_at_rest_pass_leaves_key_file_lock_free(tmp_path):
     assert took_lock == [True]
 
 
+def test_write_at_rest_takes_required_policy_from_other_process(tmp_path):
+    """Every write at rest reads the key file, so none goes out as plaintext."""
+    keys_path = tmp_path / "crypto_keys.json"
+    notebook = PeerStore.create(email="alice@example.com", keys_path=keys_path)
+    notebook.ensure_keys()
+    with pytest.warns(UserWarning):
+        PeerStore.create(
+            email="alice@example.com", encryption_policy=REQUIRED, keys_path=keys_path
+        )
+    assert _is_envelope(notebook.encrypt_for_self_if_needed(b"rolling state"))
+
+
 def test_concurrent_processes_make_one_key_pair(tmp_path):
     """A notebook and syft-bg that need keys at once must end with the same keys."""
     keys_path = tmp_path / "crypto_keys.json"

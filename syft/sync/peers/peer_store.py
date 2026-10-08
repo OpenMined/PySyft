@@ -600,7 +600,12 @@ class PeerStore(BaseModel):
         return syc.decrypt_message(self.email, keys, own_bundle, parsed)
 
     def encrypt_for_self_if_needed(self, data: bytes) -> bytes:
-        """Encrypt for self if encryption is enabled and keys are available."""
+        """Encrypt for self if encryption is enabled and keys are available.
+
+        It reads the key file first: another process on this datasite can
+        have made it required since this process last did.
+        """
+        self.reload_policy_from_key_file()
         if self.use_encryption and self.has_my_keys():
             return self.encrypt_for_self(data)
         return data
