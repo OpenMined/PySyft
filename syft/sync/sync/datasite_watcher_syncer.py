@@ -1,4 +1,4 @@
-import logging
+import warnings
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
@@ -22,8 +22,6 @@ from syft.sync.sync.caches.datasite_watcher_cache import (
     DataSiteWatcherCache,
     DataSiteWatcherCacheConfig,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class DatasiteWatcherSyncerConfig(BaseModel):
@@ -123,7 +121,10 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
                     error = error or e
                     continue
                 # The changes wait in the queue; the next sync sends them.
-                print(f"Changes for {recipient} wait for the next sync: {e}")
+                warnings.warn(
+                    f"Changes for {recipient} wait for the next sync: {e} They "
+                    "are held in memory, and lost if this process exits."
+                )
                 for item in items_by_recipient[recipient]:
                     self.queue.put(item)
             except EncryptionPolicyConflictError as e:

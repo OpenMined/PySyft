@@ -1,4 +1,5 @@
 import logging
+import warnings
 from pathlib import Path
 from uuid import uuid4
 from functools import partial
@@ -823,12 +824,16 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.connection_router.owner_write_event_messages_to_outbox(
                 recipient, message
             )
-        except PeerEncryptionPendingError:
+        except PeerEncryptionPendingError as e:
             if self.connection_router.peer_store.should_hold(recipient):
+                warnings.warn(
+                    f"An outbox message for {recipient} waits for the next sync: "
+                    f"{e} It is held in memory, and lost if this process exits."
+                )
                 return False
-            logger.warning(f"Dropped an outbox message for {recipient}: not a peer")
+            warnings.warn(f"Dropped an outbox message for {recipient}: not a peer")
         except EncryptionPolicyConflictError as e:
-            logger.warning(f"Dropped an outbox message: {e}")
+            warnings.warn(f"Dropped an outbox message: {e}")
         return True
 
     def _download_outbox_message_with_new_connection(

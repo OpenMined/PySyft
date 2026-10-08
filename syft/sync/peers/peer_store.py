@@ -413,6 +413,30 @@ class PeerStore(BaseModel):
         for email, bundle in unsaved_pins:
             self._persist_peer_bundle(email, bundle)
 
+    def check_key_file_policy(self) -> None:
+        """Raise when the key file requires encryption and this process does not.
+
+        The policy is read at startup only. Another process (a new login) can
+        make the datasite required later; this process must not go on
+        without encryption.
+
+        Raises:
+            ValueError: when the key file records a required policy, and this
+                client is optional or off.
+        """
+        if self.use_encryption or self._keys_path is None:
+            return
+        data = self._read_key_file()
+        if data is None:
+            return
+        recorded = data.get(ENCRYPTION_POLICY_KEY, EncryptionPolicy.REQUIRED.value)
+        if recorded == EncryptionPolicy.REQUIRED.value:
+            raise ValueError(
+                f"The key file {self._keys_path} requires encryption, but this "
+                f"process started with encryption {self.encryption_policy.value}. "
+                "Restart it (for example syft-bg) to use the new policy."
+            )
+
     def _adopt_key_file(self, loaded: "PeerStore") -> None:
         """Take the keys, pins and recorded policy of ``loaded``, a store read from our key file."""
         for email, bundle in self._take_key_file(loaded):

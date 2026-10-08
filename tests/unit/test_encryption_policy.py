@@ -337,6 +337,21 @@ def test_store_not_requiring_encryption_creates_no_key_file(tmp_path, policy):
     assert not keys_path.exists()
 
 
+@pytest.mark.parametrize("policy", [OPTIONAL, OFF])
+def test_sync_refuses_key_file_made_required_after_start(policy):
+    """The policy is read at startup; a running process must not go on without it."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        do_encryption_policy=policy,
+    )
+    keys_path = do_manager.peer_manager.peer_store._keys_path
+    with pytest.warns(UserWarning):
+        PeerStore.create(
+            email=do_manager.email, encryption_policy=REQUIRED, keys_path=keys_path
+        )
+    with pytest.raises(ValueError, match="Restart"):
+        do_manager.sync()
+
+
 def test_off_refused_when_key_file_requires_encryption(tmp_path):
     """Files at rest of such a datasite are encrypted; off cannot read them."""
     keys_path = tmp_path / "crypto_keys.json"
@@ -751,7 +766,8 @@ def test_owner_drops_outbox_message_it_cannot_send(ds_policy, recipient):
     syncer = do_manager.datasite_owner_syncer
     message = FileChangeEventsMessage(events=[])
     syncer.outbox_queue.put((recipient or ds_manager.email, message))
-    syncer.process_syftbox_events_queue()
+    with pytest.warns(UserWarning, match="Dropped an outbox message"):
+        syncer.process_syftbox_events_queue()
     assert syncer.outbox_queue.empty()
 
 
@@ -767,12 +783,11 @@ def test_conflict_found_on_read_makes_peer_wait():
     # The owner now requires encryption, after the message was sent.
     do_manager.peer_manager.peer_store.encryption_policy = REQUIRED
     syncer = do_manager.datasite_owner_syncer
-    assert (
-        syncer.pull_and_process_next_proposed_filechange(
+    with pytest.warns(UserWarning, match=f"Messages from {ds_manager.email} wait"):
+        message = syncer.pull_and_process_next_proposed_filechange(
             ds_manager.email, raise_on_none=False
         )
-        is None
-    )
+    assert message is None
 
 
 def test_current_published_bundle_not_written_again(monkeypatch):
@@ -823,7 +838,8 @@ def test_owner_waits_on_envelope_from_unpinned_peer():
 
     peer = do_manager.peer_manager.peer_store.get_cached_peer(ds_manager.email)
     peer.public_encryption_bundle = None
-    do_manager.datasite_owner_syncer.sync([ds_manager.email])
+    with pytest.warns(UserWarning, match="wait"):
+        do_manager.datasite_owner_syncer.sync([ds_manager.email])
     assert not any("pinned later" in c for c in _accepted_contents(do_manager))
 
     do_manager.sync()
@@ -858,7 +874,7 @@ def _queued_changes(manager) -> int:
     return manager.datasite_watcher_syncer.queue.qsize()
 
 
-def test_send_before_peer_accepts_waits_until_sync(capsys):
+def test_send_before_peer_accepts_waits_until_sync():
     """Before the owner accepts, its policy is unknown, so the change waits."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         add_peers=False,
@@ -867,9 +883,9 @@ def test_send_before_peer_accepts_waits_until_sync(capsys):
     ds_manager.add_peer(do_manager.email, sync=False)
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    ds_manager._send_file_change(file_path, "early content")
+    with pytest.warns(UserWarning, match="lost if this process exits"):
+        ds_manager._send_file_change(file_path, "early content")
     assert _queued_changes(ds_manager) == 1
-    assert "next sync" in capsys.readouterr().out
     cache = ds_manager.datasite_watcher_syncer.datasite_watcher_cache
     assert Path(file_path) not in cache.file_hashes
 
@@ -1046,7 +1062,8 @@ def test_owner_sends_outbox_message_once_encryption_set_up(make_pending, monkeyp
 
     monkeypatch.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", write)
     syncer.outbox_queue.put((ds_manager.email, FileChangeEventsMessage(events=[])))
-    syncer.process_syftbox_events_queue()
+    with pytest.warns(UserWarning, match="lost if this process exits"):
+        syncer.process_syftbox_events_queue()
     assert written == []
 
     restore()

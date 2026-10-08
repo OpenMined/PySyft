@@ -286,7 +286,7 @@ class ConnectionRouter(BaseModel):
             return self.peer_store.decrypt_and_verify_if_needed(peer_email, raw)
         except (PeerEncryptionPendingError, EncryptionPolicyConflictError) as e:
             # A conflict found here is new since the peer filter of this sync.
-            logger.info(f"Messages from {peer_email} wait: {e}")
+            warnings.warn(f"Messages from {peer_email} wait: {e}")
         return None
 
     def watcher_get_outbox_file_metadatas(
