@@ -108,7 +108,22 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             items_by_recipient.setdefault(recipient, []).append(
                 (relative_path, content)
             )
+        self._send_by_recipient(changes_by_recipient, items_by_recipient)
 
+    def _send_by_recipient(
+        self,
+        changes_by_recipient: Dict[str, List[ProposedFileChange]],
+        items_by_recipient: Dict[str, list],
+    ) -> None:
+        """Send one message to each recipient; put pending ones back in the queue.
+
+        ``items_by_recipient`` holds the queue items each message was built
+        from. The other recipients still get their changes when one fails.
+
+        Raises:
+            PeerEncryptionPendingError: when a recipient is not a peer.
+            EncryptionPolicyConflictError: when the policies of a pair conflict.
+        """
         error = None
         for recipient, changes in changes_by_recipient.items():
             message = ProposedFileChangesMessage(
@@ -128,7 +143,6 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
                 for item in items_by_recipient[recipient]:
                     self.queue.put(item)
             except EncryptionPolicyConflictError as e:
-                # The other recipients still get their changes.
                 error = error or e
         if error is not None:
             raise error

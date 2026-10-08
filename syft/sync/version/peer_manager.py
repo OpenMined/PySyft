@@ -48,16 +48,16 @@ from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 logger = logging.getLogger(__name__)
 
 
+# Key wrapping the DID document inside a published encryption bundle file.
+BUNDLE_FILE_KEY = "public_encryption_bundle"
+
+
 class CompatAction(str, Enum):
     """What the caller is doing — used to phrase warning messages."""
 
     SYNC = "sync"
     SUBMIT = "submit"
     EXECUTE = "execute"
-
-
-# Key wrapping the DID document inside a published encryption bundle file.
-BUNDLE_FILE_KEY = "public_encryption_bundle"
 
 
 class PeerCompatibilityResult(BaseModel):
@@ -131,11 +131,6 @@ class PeerManagerConfig(BaseModel):
     skip_peer_on_patch_version_diff: Optional[bool] = (
         None  # None: value is determined by the role (resolves to has_do_role)
     )
-
-    @property
-    def use_encryption(self) -> bool:
-        """True when the policy is required."""
-        return self.encryption_policy == EncryptionPolicy.REQUIRED
 
     @property
     def default_crypto_keys_path(self) -> Path:

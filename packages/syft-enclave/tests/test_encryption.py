@@ -9,6 +9,8 @@ os.environ["PRE_SYNC"] = "false"
 
 from syft_enclaves import SyftEnclaveClient
 
+from syft.sync.encryption_policy import EncryptionPolicy
+
 
 def _simple_job_code() -> str:
     return (
@@ -71,8 +73,6 @@ def test_encrypted_message_to_enclave_roundtrips():
 
 
 def test_quad_builder_applies_off_to_enclave():
-    from syft.sync.encryption_policy import EncryptionPolicy
-
     enclave, *_ = SyftEnclaveClient.quad_with_mock_drive_service_connection(
         enclave_encryption_policy=EncryptionPolicy.OFF
     )

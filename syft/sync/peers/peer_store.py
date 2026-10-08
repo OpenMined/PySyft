@@ -438,7 +438,7 @@ class PeerStore(BaseModel):
             )
 
     def _adopt_key_file(self, loaded: "PeerStore") -> None:
-        """Take the keys, pins and recorded policy of ``loaded``, a store read from our key file."""
+        """Take the keys and pins of ``loaded``, a store read from our key file."""
         for email, bundle in self._take_key_file(loaded):
             self._persist_peer_bundle(email, bundle)
 
@@ -778,6 +778,16 @@ def _locked_key_file(path: Path) -> Iterator[None]:
             portalocker.unlock(f)
 
 
+def _with_pin(data: dict, peer_email: str, bundle: dict) -> dict:
+    """``data`` from the key file, with ``bundle`` recorded as the pin of ``peer_email``."""
+    bundles = data.get(PEER_BUNDLES_KEY)
+    if not isinstance(bundles, dict):
+        bundles = {}
+    bundles[peer_email] = bundle
+    data[PEER_BUNDLES_KEY] = bundles
+    return data
+
+
 def _write_key_file(path: Path, data: dict) -> None:
     """Replace the key file at ``path`` with ``data`` in one step.
 
@@ -795,16 +805,6 @@ def _write_key_file(path: Path, data: dict) -> None:
         os.replace(tmp, path)
     finally:
         Path(tmp).unlink(missing_ok=True)
-
-
-def _with_pin(data: dict, peer_email: str, bundle: dict) -> dict:
-    """``data`` from the key file, with ``bundle`` recorded as the pin of ``peer_email``."""
-    bundles = data.get(PEER_BUNDLES_KEY)
-    if not isinstance(bundles, dict):
-        bundles = {}
-    bundles[peer_email] = bundle
-    data[PEER_BUNDLES_KEY] = bundles
-    return data
 
 
 def _peers_from_stored_pins(bundles: dict[str, dict]) -> List[Peer]:

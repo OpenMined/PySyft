@@ -144,7 +144,7 @@ class TestAttestPhase:
         # moments earlier, so the file the endpoint signs with is gone.
         store.save_keys.assert_called_once_with(written["keys_path"])
 
-    def test_optional_enclave_binds_keys_it_makes_at_boot(self, monkeypatch):
+    def test_optional_enclave_binds_keys_made_at_boot(self, monkeypatch):
         """A peer can require encryption from an optional enclave later.
 
         The keys it then uses must be bound to the report too, so the enclave

@@ -284,7 +284,7 @@ def test_off_and_required_conflict(mine, theirs):
         alice.decrypt_and_verify_if_needed("bob@example.com", b"plain")
 
 
-def test_resolution_follows_a_changed_peer_policy():
+def test_resolution_follows_changed_peer_policy():
     """An enclave that reboots with another setting is picked up on the next load."""
     store = _store_with_peer(OPTIONAL, OPTIONAL)
     assert not store.peer_uses_encryption("bob@example.com")
@@ -365,7 +365,7 @@ def test_off_refused_when_key_file_requires_encryption(tmp_path):
         )
 
 
-def test_off_keeps_its_policy_over_optional_key_file(tmp_path):
+def test_off_policy_wins_over_optional_key_file(tmp_path):
     keys_path = tmp_path / "crypto_keys.json"
     PeerStore.create(email="alice@example.com", keys_path=keys_path).ensure_keys()
     store = PeerStore.create(
@@ -758,7 +758,7 @@ def test_off_and_required_peers_skip_each_other():
     [(OPTIONAL, "former@example.com"), (OFF, None)],
     ids=["former peer", "conflicting peer"],
 )
-def test_owner_drops_outbox_message_it_cannot_send(ds_policy, recipient):
+def test_owner_drops_unsendable_outbox_message(ds_policy, recipient):
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         ds_encryption_policy=ds_policy,
         do_encryption_policy=REQUIRED,
