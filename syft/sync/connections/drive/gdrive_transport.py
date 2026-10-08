@@ -71,6 +71,11 @@ logging.getLogger("google_auth_httplib2").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
+def _query_string(value: str) -> str:
+    """``value`` escaped for a quoted string in a Drive query."""
+    return value.replace("\\", "\\\\").replace("'", "\\'")
+
+
 def _waits_for_rejected_message(file_metadatas: list[dict], folder: str) -> bool:
     """Whether a message folder holds a rejected message the sender must resend.
 
@@ -112,6 +117,8 @@ LEGACY_GDRIVE_OUTBOX_INBOX_FOLDER_PREFIX = "syft_outbox_inbox"  # legacy prefix
 # original name. It is a prefix because Drive's ``name contains`` matches
 # only the start of a name term.
 REJECTED_MESSAGE_PREFIX = "rejected_"
+# Names in one Drive query that checks which names a folder has.
+NAMES_PER_QUERY = 50
 GDRIVE_P2P_FOLDER_DATASITE_PREFIX = "syft_datasite"
 SYFT_PEERS_FILE = "SYFT_peers.json"
 
@@ -1222,26 +1229,50 @@ class GDriveConnection(SyftboxPlatformConnection):
         """The rejected messages in ``folder_id``, without a listing of the whole folder."""
         if folder_id is None:
             return []
-        res = []
-        for m in self._files_in_folder_named(
-            folder_id, f"name contains '{REJECTED_MESSAGE_PREFIX}'"
-        ):
-            # ``name contains`` is not exact: check the name here.
-            if m["name"].startswith(REJECTED_MESSAGE_PREFIX):
-                original = m["name"].removeprefix(REJECTED_MESSAGE_PREFIX)
-                resent = bool(
-                    self._files_in_folder_named(folder_id, f"name = '{original}'")
-                )
-                res.append(RejectedMessage(m["id"], original, resent))
-        return res
+        # ``name contains`` is not exact: check the name here.
+        rejected = [
+            m
+            for m in self._files_in_folder_named(
+                folder_id, f"name contains '{REJECTED_MESSAGE_PREFIX}'"
+            )
+            if m["name"].startswith(REJECTED_MESSAGE_PREFIX)
+        ]
+        originals = [m["name"].removeprefix(REJECTED_MESSAGE_PREFIX) for m in rejected]
+        present = self._names_in_folder(folder_id, originals)
+        return [
+            RejectedMessage(m["id"], original, original in present)
+            for m, original in zip(rejected, originals)
+        ]
+
+    def _names_in_folder(self, folder_id: str, names: list[str]) -> set[str]:
+        """The names of ``names`` that a file in ``folder_id`` has, with one query per batch."""
+        present: set[str] = set()
+        for i in range(0, len(names), NAMES_PER_QUERY):
+            clause = " or ".join(
+                f"name = '{_query_string(name)}'"
+                for name in names[i : i + NAMES_PER_QUERY]
+            )
+            files = self._files_in_folder_named(folder_id, f"({clause})")
+            present |= {m["name"] for m in files}
+        return present
 
     def _files_in_folder_named(self, folder_id: str, name_query: str) -> list[dict]:
-        """The files in ``folder_id`` that match ``name_query``, a Drive name clause."""
+        """All files in ``folder_id`` that match ``name_query``, a Drive name clause."""
         query = f"'{folder_id}' in parents and {name_query} and trashed=false"
-        results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id, name)")
-        )
-        return results.get("files", [])
+        files: list[dict] = []
+        page_token = None
+        while True:
+            results = execute_with_retries(
+                self.drive_service.files().list(
+                    q=query,
+                    fields="files(id, name), nextPageToken",
+                    pageToken=page_token,
+                )
+            )
+            files += results.get("files", [])
+            page_token = results.get("nextPageToken")
+            if not page_token:
+                return files
 
     def owner_get_next_proposed_filechange_message(
         self, sender_email: str

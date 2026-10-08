@@ -1,6 +1,6 @@
 import logging
 
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, TypeVar
 
 from pydantic import BaseModel, PrivateAttr
 from syft_migration import MigratableObject, ProtocolSchema
@@ -44,6 +44,10 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+# A file at rest, decoded: it has a ``timestamp``.
+AtRest = TypeVar("AtRest")
 
 
 class ConnectionRouter(BaseModel):
@@ -382,12 +386,26 @@ class ConnectionRouter(BaseModel):
     def owner_get_all_accepted_events_messages(self) -> List[FileChangeEventsMessage]:
         connection = self.connection_for_eventlog()
         raw_list = connection.owner_download_all_raw_events_from_syftbox()
+        self.peer_store.reload_policy_from_key_file()
         return [
-            FileChangeEventsMessage.from_compressed_data(
-                self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
-            )
+            self.decode_at_rest(raw, FileChangeEventsMessage.from_compressed_data)
             for raw in raw_list
         ]
+
+    def decode_at_rest(
+        self, raw: bytes, decode: Callable[[bytes], "AtRest"]
+    ) -> "AtRest":
+        """Verify, decrypt and decode one file at rest with ``decode``.
+
+        The caller reads the key file first (``reload_policy_from_key_file``),
+        once for a batch of files. Plaintext is checked by the time it was
+        written (see ``PeerStore.check_plaintext_at_rest``).
+        """
+        if self.peer_store.is_envelope(raw):
+            return decode(self.peer_store.decrypt_and_verify_for_self_if_needed(raw))
+        item = decode(raw)
+        self.peer_store.check_plaintext_at_rest(item.timestamp)
+        return item
 
     def owner_encrypt_files_at_rest(self) -> None:
         """Encrypt the plaintext files at rest once, after a switch to required.
@@ -416,8 +434,8 @@ class ConnectionRouter(BaseModel):
         """Download and decrypt a single events message (thread-safe)."""
         connection = self.connection_for_eventlog(create_new=True)
         raw = connection.owner_download_raw_bytes_by_id(events_message_id)
-        raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
-        return FileChangeEventsMessage.from_compressed_data(raw)
+        self.peer_store.reload_policy_from_key_file()
+        return self.decode_at_rest(raw, FileChangeEventsMessage.from_compressed_data)
 
     # =========================================================================
     # PEER MANAGEMENT
@@ -700,8 +718,8 @@ class ConnectionRouter(BaseModel):
         if raw is None:
             return None
         try:
-            raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
-            return Checkpoint.from_compressed_data(raw)
+            self.peer_store.reload_policy_from_key_file()
+            return self.decode_at_rest(raw, Checkpoint.from_compressed_data)
         except Exception as e:
             print(f"Warning: Failed to load checkpoint: {e}")
             return None
@@ -719,10 +737,9 @@ class ConnectionRouter(BaseModel):
         """Download, decrypt, and deserialize events since a timestamp."""
         connection = self.connection_for_eventlog()
         raw_list = connection.download_raw_events_since_timestamp(since_timestamp)
+        self.peer_store.reload_policy_from_key_file()
         return [
-            FileChangeEventsMessage.from_compressed_data(
-                self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
-            )
+            self.decode_at_rest(raw, FileChangeEventsMessage.from_compressed_data)
             for raw in raw_list
         ]
 
@@ -741,11 +758,13 @@ class ConnectionRouter(BaseModel):
         """Download, decrypt, and deserialize all incremental checkpoints."""
         connection = self.connection_for_own_syftbox()
         raw_list = connection.download_all_raw_incremental_checkpoints()
+        self.peer_store.reload_policy_from_key_file()
         checkpoints = []
         for raw in raw_list:
             try:
-                raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
-                cp = IncrementalCheckpoint.from_compressed_data(raw)
+                cp = self.decode_at_rest(
+                    raw, IncrementalCheckpoint.from_compressed_data
+                )
                 checkpoints.append(cp)
             except Exception as e:
                 print(f"Warning: Failed to load incremental checkpoint: {e}")
@@ -785,8 +804,8 @@ class ConnectionRouter(BaseModel):
         if raw is None:
             return None
         try:
-            raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
-            return RollingState.from_compressed_data(raw)
+            self.peer_store.reload_policy_from_key_file()
+            return self.decode_at_rest(raw, RollingState.from_compressed_data)
         except Exception as e:
             print(f"Warning: Failed to load rolling state: {e}")
             return None

@@ -6,6 +6,7 @@ A client is ``optional`` (encrypt only when the peer requires it) or
 
 import json
 import threading
+import time
 import warnings
 from pathlib import Path
 
@@ -21,7 +22,10 @@ from syft.sync.encryption_policy import (
     PeerEncryptionPolicyUnknownError,
     PeerKeysNotReadyError,
 )
-from syft.sync.events.file_change_event import FileChangeEventsMessage
+from syft.sync.events.file_change_event import (
+    FileChangeEventsMessage,
+    FileChangeEventsMessageFileName,
+)
 from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.sync.datasite_watcher_syncer import DatasiteWatcherSyncer
@@ -543,7 +547,7 @@ def test_key_file_without_policy_checks_files_at_rest_once(tmp_path):
     )
     data = json.loads(keys_path.read_text())
     del data["encryption_policy"]
-    data.pop("at_rest_encrypted", None)
+    data.pop("at_rest_encrypted_at", None)
     keys_path.write_text(json.dumps(data))
 
     store = PeerStore.create(email="alice@example.com", keys_path=keys_path)
@@ -662,22 +666,62 @@ def test_write_at_rest_takes_required_policy_from_other_process(tmp_path):
     assert _is_envelope(notebook.encrypt_for_self_if_needed(b"rolling state"))
 
 
-def test_read_at_rest_accepts_plaintext_only_until_files_are_encrypted(tmp_path):
-    """Another process made the datasite required; its one-time pass is pending."""
+def _plaintext_event_at_rest(manager, timestamp: float) -> None:
+    message = FileChangeEventsMessage(
+        events=[],
+        message_filepath=FileChangeEventsMessageFileName(timestamp=timestamp),
+    )
+    manager.datasite_owner_syncer.connection_router.connection_for_eventlog().owner_write_raw_bytes_to_syftbox(
+        message.message_filepath.as_string(), message.as_compressed_data()
+    )
+
+
+def test_plaintext_at_rest_accepted_only_if_written_before_files_were_encrypted():
+    """A process can write plaintext while another one encrypts the files at rest."""
+    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        do_encryption_policy=REQUIRED,
+    )
+    written_during_pass = time.time()
+    do_manager.sync()
+    router = do_manager.datasite_owner_syncer.connection_router
+    _plaintext_event_at_rest(do_manager, written_during_pass)
+    router.owner_get_all_accepted_events_messages()
+
+    _plaintext_event_at_rest(do_manager, time.time() + 1)
+    with pytest.raises(ValueError, match="not encrypted"):
+        router.owner_get_all_accepted_events_messages()
+
+
+def test_key_file_read_once_for_batch_of_files_at_rest(monkeypatch):
+    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        do_encryption_policy=REQUIRED,
+    )
+    router = do_manager.datasite_owner_syncer.connection_router
+    for _ in range(3):
+        router.owner_write_events_message_to_syftbox(FileChangeEventsMessage(events=[]))
+    reloads = []
+    original = PeerStore.reload_policy_from_key_file
+    monkeypatch.setattr(
+        PeerStore,
+        "reload_policy_from_key_file",
+        lambda self: reloads.append(1) or original(self),
+    )
+    router.owner_get_all_accepted_events_messages()
+    assert len(reloads) == 1
+    reloads.clear()
+    do_manager.datasite_owner_syncer.get_all_accepted_events_messages()
+    assert len(reloads) == 1
+
+
+def test_keyless_process_takes_remembered_peers_from_key_file(tmp_path):
     keys_path = tmp_path / "crypto_keys.json"
     notebook = _create(keys_path)
-    notebook.ensure_keys()
-    with pytest.warns(UserWarning):
-        _create(keys_path, REQUIRED)
-    assert notebook.decrypt_and_verify_for_self_if_needed(b"plain") == b"plain"
-
-    daemon = PeerStore.load_keys(keys_path)
-    envelope = daemon.encrypt_for_self(b"secret")
-    assert notebook.decrypt_and_verify_for_self_if_needed(envelope) == b"secret"
-
-    daemon.encrypt_files_at_rest_once(lambda: None)
-    with pytest.raises(ValueError, match="not encrypted"):
-        notebook.decrypt_and_verify_for_self_if_needed(b"plain")
+    daemon = _create(keys_path)
+    daemon.ensure_keys()
+    notebook.reload_policy_from_key_file()
+    daemon.remember_required_peer("bob@example.com")
+    notebook.reload_policy_from_key_file()
+    assert notebook.is_remembered_required("bob@example.com")
 
 
 def test_trusted_peer_stays_forgotten_in_other_process(tmp_path):
@@ -1611,6 +1655,47 @@ def test_rejected_message_lookup_does_not_list_whole_folder(monkeypatch):
     router = do_manager.datasite_owner_syncer.connection_router
     router.owner_resend_rejected_outbox_messages(ds_manager.email)
     assert calls == []
+
+
+def _outbox_with_files(names):
+    """The owner's outbox connection, with files ``names`` in its folder for the DS."""
+    ds_manager, do_manager = _required_ds_pair()
+    outbox = do_manager.datasite_owner_syncer.connection_router.connection_for_outbox()
+    folder_id = outbox._get_own_datasite_outbox_id(ds_manager.email)
+    for name in names:
+        outbox.drive_service.files().create(
+            body={"name": name, "parents": [folder_id]}
+        ).execute()
+    return outbox, ds_manager.email
+
+
+def test_rejected_lookup_handles_quotes_in_names():
+    outbox, ds_email = _outbox_with_files(["a'b", "rejected_a'b", "rejected_c\\d"])
+    rejected = outbox.owner_get_rejected_outbox_messages(ds_email)
+    assert {(r.filename, r.resent) for r in rejected} == {
+        ("a'b", True),
+        ("c\\d", False),
+    }
+
+
+def test_rejected_lookup_reads_every_page():
+    names = [f"rejected_msgv2_{i}_x.tar.gz" for i in range(101)]
+    outbox, ds_email = _outbox_with_files(names)
+    assert len(outbox.owner_get_rejected_outbox_messages(ds_email)) == 101
+
+
+def test_rejected_lookup_checks_resent_names_in_one_query(monkeypatch):
+    names = [f"rejected_msgv2_{i}_x.tar.gz" for i in range(3)]
+    outbox, ds_email = _outbox_with_files(names)
+    lists = []
+    original = mock_drive_service.MockListRequest.execute
+    monkeypatch.setattr(
+        mock_drive_service.MockListRequest,
+        "execute",
+        lambda self: lists.append(self._q) or original(self),
+    )
+    outbox.owner_get_rejected_outbox_messages(ds_email)
+    assert len(lists) == 2
 
 
 def test_resend_waits_while_peer_bundle_not_pinned():

@@ -247,10 +247,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         # we need a new connection object because gdrive connections are not thread safe
         connection = self.connection_router.connection_for_eventlog(create_new=True)
         raw = connection.owner_download_raw_bytes_by_id(events_message_id)
-        raw = self.connection_router.peer_store.decrypt_and_verify_for_self_if_needed(
-            raw
+        return self.connection_router.decode_at_rest(
+            raw, FileChangeEventsMessage.from_compressed_data
         )
-        return FileChangeEventsMessage.from_compressed_data(raw)
 
     def get_all_accepted_events_messages(
         self, since_timestamp: float | None = None
@@ -258,6 +257,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         message_ids = self.connection_router.owner_get_all_accepted_event_file_ids(
             since_timestamp=since_timestamp
         )
+        # Once for the batch: the downloads run in threads.
+        self.connection_router.peer_store.reload_policy_from_key_file()
         result_messages = self._executor.map(
             self.download_events_message_by_id_with_connection, message_ids
         )

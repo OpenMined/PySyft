@@ -4,10 +4,10 @@ from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 
 
 class RejectedMessage(NamedTuple):
-    """A message file that the recipient renamed with the rejected suffix."""
+    """A message file that the recipient renamed with the rejected prefix."""
 
     file_id: str
-    # The file name before the suffix.
+    # The file name without the prefix.
     filename: str
     # True when a file with the original name is in the folder again.
     resent: bool
