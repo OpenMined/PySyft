@@ -1,9 +1,12 @@
 """Version gating on the RDS job submission and execution paths."""
 
+from unittest.mock import patch
+
 import pytest
 
 from syft.sync.version.exceptions import VersionUnknownError
-from syft.sync.version.version_info import VersionInfo
+from syft.sync.version.peer_manager import PeerCompatibilityResult, PeerManager
+from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 from syft_rds import SyftRDSClient
 
 
@@ -113,9 +116,9 @@ class TestVersionMismatchBehavior:
         executed_jobs = []
 
         def mock_process_approved_jobs(
-            stream_output=True, timeout=None, skip_job_names=None, **kwargs
+            stream_output=True, timeout=None, skip_jobs=None, **kwargs
         ):
-            executed_jobs.append(skip_job_names)
+            executed_jobs.append(skip_jobs)
 
         do.job_runner.process_approved_jobs = mock_process_approved_jobs
 
@@ -123,3 +126,44 @@ class TestVersionMismatchBehavior:
 
         assert len(executed_jobs) == 1
         assert executed_jobs[0] is None  # No jobs skipped when force=True
+
+
+class TestSkippedJobsAreReported:
+    """process_approved_jobs must say which approved jobs it did not run.
+
+    maybe_warn() logs the peer, not the job, so on its own it leaves the data
+    owner with a job stuck at 'approved' and nothing naming it.
+    """
+
+    def test_skipped_job_name_and_reason_reach_stdout(self, tmp_path, capfd):
+        ds, do = SyftRDSClient.pair_with_mock_drive_service_connection(
+            use_in_memory_cache=False,
+            sync_automatically=False,
+        )
+
+        code_path = tmp_path / "skipped.py"
+        code_path.write_text('print("hello")')
+        ds.submit_python_job(
+            user=do.email, code_path=str(code_path), job_name="skipped.job"
+        )
+        do.sync()
+        do.jobs["skipped.job"].approve()
+
+        skip = PeerCompatibilityResult(
+            peer_email=ds.email,
+            status=CompatibilityStatus.INCOMPATIBLE,
+            should_skip=True,
+            explanation_skip=f"Skipping peer {ds.email}: incompatible version.",
+        )
+        capfd.readouterr()
+        with patch.object(
+            PeerManager, "get_peer_compatibility_status", return_value=skip
+        ):
+            do.process_approved_jobs()
+        out, _ = capfd.readouterr()
+
+        assert "skipped.job" in out
+        assert ds.email in out
+        assert "incompatible version" in out
+        assert "ignore_peer_version=True" in out
+        assert do.jobs["skipped.job"].status == "approved"
