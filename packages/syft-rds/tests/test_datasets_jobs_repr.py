@@ -365,6 +365,26 @@ def test_hint_chain_reaches_job_it_names():
     assert reached.datasite_owner_email == "do@test.com"
 
 
+def test_hint_orders_datasite_before_submitter():
+    """The hint's three-key chain must reach the DO's own job, not the one sent out."""
+    jobs = JobsList(
+        [
+            _make_job_info(
+                "analysis", owner_email="me@test.com", ds_email="peer@test.com"
+            ),
+            _make_job_info(
+                "analysis", owner_email="peer@test.com", ds_email="me@test.com"
+            ),
+        ],
+        root_email="me@test.com",
+        has_do_role=True,
+    )
+    assert jobs.hint_accessor() == '["me@test.com"]["peer@test.com"]["analysis"]'
+    assert jobs["me@test.com"]["peer@test.com"]["analysis"].datasite_owner_email == (
+        "me@test.com"
+    )
+
+
 def test_hint_gives_position_when_no_chain_resolves():
     """One submitter can hold a name twice across protocol layouts.
 

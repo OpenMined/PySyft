@@ -258,12 +258,12 @@ def test_email_key_resolves_name_shared_by_two_datasites(tmp_path: Path):
 
 
 def _apply_suggestions(jobs, error: ValueError) -> list:
-    """Apply each subscript chain the error suggests to the list that raised."""
+    """Apply each subscript the error suggests, chain or position, to the list that raised."""
     reached = []
-    for chain in re.findall(r'((?:\["[^"]+"\])+)', str(error)):
+    for accessor in re.findall(r"^  (\S+) — on ", str(error), flags=re.MULTILINE):
         target = jobs
-        for key in re.findall(r'\["([^"]+)"\]', chain):
-            target = target[key]
+        for key, position in re.findall(r'\["([^"]+)"\]|\[(\d+)\]', accessor):
+            target = target[key] if key else target[int(position)]
         reached.append(target)
     return reached
 
@@ -274,7 +274,9 @@ def test_ambiguous_name_suggests_chains_that_resolve(tmp_path: Path):
     An email key keeps jobs on either side, so the datasite email of one job
     can be the submitter email of the other. Here SHARED owns one 'an' and
     submitted the other: jobs[SHARED]["an"] still holds both, and suggesting
-    it sends the caller back to the same error.
+    it sends the caller back to the same error. In jobs[SHARED] a second email
+    names the submitter of a job on SHARED's datasite, so the job SHARED
+    submitted elsewhere gets its position there.
     """
     shared, other_ds, other_do = "shared@test.org", "c@test.org", "d@test.org"
     syftbox = tmp_path / "SyftBox"
@@ -385,3 +387,45 @@ def test_job_name_cannot_contain_at_sign(tmp_path: Path):
         ds_client.submit_python_job(
             user=DO_EMAIL, code_path=str(code_file), job_name="ds@test.org"
         )
+
+
+def test_chained_emails_read_as_datasite_then_submitter(tmp_path: Path):
+    """Two people with both roles can send each other jobs of one name.
+
+    Each email is a party to both jobs, so only the order of the two emails
+    separates them: the first names the datasite, the second the submitter.
+    """
+    syftbox = tmp_path / "SyftBox"
+    syftbox.mkdir()
+    code_file = tmp_path / "main.py"
+    code_file.write_text(MAIN_PY)
+
+    do_client = JobClient(
+        config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=DO_EMAIL)
+    )
+    peer_client = JobClient(
+        config=SyftJobConfig(syftbox_folder=syftbox, current_user_email=PEER_EMAIL)
+    )
+    peer_client.submit_python_job(
+        user=DO_EMAIL, code_path=str(code_file), job_name="analysis"
+    )
+    do_client.scan_inbox()
+    do_client.submit_python_job(
+        user=PEER_EMAIL, code_path=str(code_file), job_name="analysis"
+    )
+    peer_client.scan_inbox()
+
+    jobs = do_client.jobs
+    mine = jobs[DO_EMAIL][PEER_EMAIL]["analysis"]
+    assert (mine.datasite_owner_email, mine.submitted_by) == (DO_EMAIL, PEER_EMAIL)
+    theirs = jobs[PEER_EMAIL][DO_EMAIL]["analysis"]
+    assert (theirs.datasite_owner_email, theirs.submitted_by) == (PEER_EMAIL, DO_EMAIL)
+
+    with pytest.raises(ValueError, match="Multiple jobs are named 'analysis'") as exc:
+        jobs["analysis"]
+    assert not re.search(r"\[\d+\]", str(exc.value)), "an email chain separates them"
+    reached = _apply_suggestions(jobs, exc.value)
+    assert {(job.datasite_owner_email, job.submitted_by) for job in reached} == {
+        (DO_EMAIL, PEER_EMAIL),
+        (PEER_EMAIL, DO_EMAIL),
+    }

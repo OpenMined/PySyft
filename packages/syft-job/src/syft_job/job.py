@@ -652,34 +652,61 @@ def _with_name(jobs: List[JobInfo], name: str) -> List[JobInfo]:
     return [j for j in jobs if j.name == name]
 
 
-def _keep(jobs: List[JobInfo], key: str) -> List[JobInfo]:
+def _with_submission(
+    jobs: List[JobInfo], datasite: str, submitter: str
+) -> List[JobInfo]:
+    """The jobs on ``datasite`` submitted by ``submitter``."""
+    return [
+        j
+        for j in jobs
+        if j.datasite_owner_email == datasite and j.submitted_by == submitter
+    ]
+
+
+def _keep(jobs: List[JobInfo], key: str, first_email: str | None) -> List[JobInfo]:
     """The jobs one subscript key keeps, read the way ``__getitem__`` reads it.
 
+    ``first_email`` is the email an earlier key in the chain gave, or None.
     The '@' tells the two kinds of key apart, so the usage hint can measure a
     chain before offering it. A deprecated job name holding an '@' reads here
     as an email and keeps nothing, where ``__getitem__`` falls back to the
     name; the hint then offers a position, which is the safe direction to err.
     """
-    return _with_party(jobs, key) if "@" in key else _with_name(jobs, key)
+    if "@" not in key:
+        return _with_name(jobs, key)
+    if first_email is None:
+        return _with_party(jobs, key)
+    return _with_submission(jobs, first_email, key)
 
 
 class JobsList:
     """A list-like container for JobInfo objects with nice display."""
 
-    def __init__(self, jobs: List[JobInfo], root_email: str, has_do_role: bool = False):
+    def __init__(
+        self,
+        jobs: List[JobInfo],
+        root_email: str,
+        has_do_role: bool = False,
+        first_email: str | None = None,
+    ):
         self._jobs = jobs
         self._root_email = root_email
         self._has_do_role = has_do_role
+        # The email that selected this list, which a second email key reads as
+        # the datasite. None for a list no email has selected.
+        self._first_email = first_email
 
     def __getitem__(self, index: int | str) -> "JobInfo | JobsList":
         """A job by position or name, or the jobs of one party by email.
 
-        An email keeps the jobs it is a party to, on either side. That is
+        A first email keeps the jobs it is a party to, on either side. That is
         usually the other party — a data scientist names the data owner, a data
         owner names the submitter — but naming yourself keeps your own. So
-        ``jobs["do@x.org"]["analysis"]`` reads as one job, and chaining both —
-        ``jobs["do@x.org"]["ds@y.org"]["analysis"]`` — pins the datasite and the
-        submitter, the pair a job name is unique under. A bare name searches
+        ``jobs["do@x.org"]["analysis"]`` reads as one job. A second email names
+        the submitter, and the first one is then the datasite:
+        ``jobs["do@x.org"]["ds@y.org"]["analysis"]`` pins the pair a job name is
+        unique under, even when the two people sent each other a job of that
+        name. A bare name searches
         every datasite at once and raises when more than one job answers to it.
         Job names cannot contain ``@``, so the two kinds of key never collide.
         """
@@ -693,19 +720,26 @@ class JobsList:
             raise TypeError(f"Invalid index type: {type(index)}")
 
     def _by_email(self, email: str) -> "JobInfo | JobsList":
-        """The jobs this email is a party to: on its datasite, or submitted by it.
+        """The jobs this email is a party to, or, after a first email, submitted.
 
-        One key covers both roles because which one narrows depends on who is
-        asking. A data scientist names the data owner's datasite; a data owner
-        names the submitter. Chaining the two pins the pair.
+        A first email covers both roles because which one narrows depends on
+        who is asking. A data scientist names the data owner's datasite; a data
+        owner names the submitter. A second email has to fix the roles, because
+        two people with both roles can each hold a job of one name that the
+        other submitted, and each email is a party to both.
 
         A job submitted before names could not hold an '@' answers to no party,
         and reading it is the one thing this key must not take away, so a key
         that names no party falls back to the name.
         """
-        matches = _with_party(self._jobs, email)
+        matches = _keep(self._jobs, email, self._first_email)
         if matches:
-            return JobsList(matches, self._root_email, self._has_do_role)
+            return JobsList(
+                matches,
+                self._root_email,
+                self._has_do_role,
+                first_email=self._first_email or email,
+            )
 
         if any(job.name == email for job in self._jobs):
             warnings.warn(
@@ -802,9 +836,11 @@ class JobsList:
 
     def _reaches_only(self, keys: tuple[str, ...], job: JobInfo) -> bool:
         """Whether subscripting by ``keys`` in turn reaches ``job`` and nothing else."""
-        reached = self._jobs
+        reached, first_email = self._jobs, self._first_email
         for key in keys:
-            reached = _keep(reached, key)
+            reached = _keep(reached, key, first_email)
+            if "@" in key and first_email is None:
+                first_email = key
         return len(reached) == 1 and reached[0] is job
 
     def __len__(self) -> int:

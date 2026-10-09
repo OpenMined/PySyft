@@ -71,18 +71,24 @@ client.jobs["do@org.com"]["analysis"].output_paths
 client.jobs["ds@org.com"]["analysis"].approve()
 ```
 
-**An email keeps the jobs it is a party to**, on either side: the datasite they
+**A single email keeps the jobs it is a party to**, on either side: the datasite they
 sit on, or the person who submitted them. Usually that is the other party — a
 data scientist names the data owner, a data owner names the submitter — but
 naming yourself works and keeps your own, which is what a `PermissionError` on
 someone else's job suggests. Job names cannot contain `@`, so the two kinds of
 key never collide.
 
-Chain both emails when one submitter sent the same name to two datasites:
+Two emails select the jobs on one datasite from one submitter. Give the email
+of the datasite owner first and the email of the submitter second:
 
 ```python
 client.jobs["do@org.com"]["ds@org.com"]["analysis"].approve()
 ```
+
+Use two emails when one email and a name select more than one job:
+
+- One submitter sent jobs with the same name to two datasites.
+- Two people each sent the other a job with the same name.
 
 A bare name (`client.jobs["analysis"]`) searches every datasite at once. It
 still works, but it raises when more than one job answers to it, and the message
