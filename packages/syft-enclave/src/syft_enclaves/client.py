@@ -322,7 +322,7 @@ class SyftEnclaveClient:
             self._as_enclave_job(j) if j.job_headers.get("job_type") == "enclave" else j
             for j in jobs_list
         ]
-        return JobsList(wrapped, jobs_list._root_email)
+        return jobs_list.copy_with(wrapped)
 
     def wait_until_peered(
         self,
