@@ -11,10 +11,16 @@ alone is enough, with no dependence on `syft` being imported first.
 
 import subprocess
 import sys
+from importlib.metadata import requires
 
 import pytest
+from packaging.requirements import Requirement
+from packaging.version import Version
 
 PACKAGES = ["syft", "syft_job", "syft_rds", "syft_enclaves", "syft_bg"]
+
+# The last syft-job release without logging_config.
+SYFT_JOB_WITHOUT_LOGGING_CONFIG = Version("0.1.40")
 
 PROBE = """
 import importlib, logging, sys
@@ -88,3 +94,19 @@ def test_enclave_log_level_applies_to_package_loggers(level, shown, hidden):
             assert result.stderr.count(f"{kind}-{name}") == 1, result.stderr
         for kind in hidden:
             assert f"{kind}-{name}" not in result.stderr, result.stderr
+
+
+@pytest.mark.parametrize("distribution", ["syft-rds", "syft-bg", "syft-enclave"])
+def test_dependents_require_syft_job_with_logging_config(distribution):
+    """A package that imports syft_job.logging_config must not accept an older syft-job.
+
+    The workspace resolves syft-job from the local source, so the import tests
+    above pass whatever the pin says. A released wheel installs from PyPI, where
+    an older syft-job has no logging_config and the import fails.
+    """
+    syft_job = next(
+        Requirement(line)
+        for line in requires(distribution) or []
+        if Requirement(line).name == "syft-job"
+    )
+    assert SYFT_JOB_WITHOUT_LOGGING_CONFIG not in syft_job.specifier, str(syft_job)
