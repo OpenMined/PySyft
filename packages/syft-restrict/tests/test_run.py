@@ -9,7 +9,6 @@ from syft_restrict.runner import _run
 from verify.helpers import normalize_source
 
 FIXTURES = Path(__file__).parent / "fixtures"
-EXAMPLE_CATALOG = Path(__file__).parent.parent / "examples" / "catalog"
 ALLOW_FUNCTIONS = ["jax.*", "flax.linen.*"]
 ALLOW_OPERATORS = ["arithmetic", "indexing", "comparison"]
 
@@ -63,27 +62,27 @@ def test_run_audit_attached_on_verification_failure(tmp_path):
     result = _run(
         src,
         obfuscate=[[1, 2]],
-        allow_functions=["jax.numpy.einsum"],
+        allow_functions=ALLOW_FUNCTIONS,
         allow_operators=ALLOW_OPERATORS,
         strict=False,
-        catalog_dir=EXAMPLE_CATALOG,
     )
     assert not result.ok  # verification failed
     assert result.audit is not None  # the audit is still attached
-    assert any(e.path == "jax.numpy.einsum" for e in result.audit.safe)
+    assert result.audit.unsafe  # the globs are flagged unsafe
 
 
 def test_run_survives_a_broken_catalog_dir(tmp_path):
     # The advisory audit must never fail the run: a malformed catalog degrades, it does not raise.
     src = tmp_path / "model.py"
     shutil.copy(FIXTURES / "compliant_model.py", src)
-    bad = tmp_path / "cat" / "jax" / "0.11"
+    bad = tmp_path / "cat" / "_common" / "default"
     bad.mkdir(parents=True)
     (bad / "catalog.json").write_text("{ broken json")
     result = _run(
         src,
         obfuscate=_private(src.read_text()),
-        allow_functions=ALLOW_FUNCTIONS,
+        # Globs skip the catalog; a non-glob entry makes the audit read the broken file.
+        allow_functions=[*ALLOW_FUNCTIONS, "jax.numpy.einsum"],
         allow_operators=ALLOW_OPERATORS,
         catalog_dir=tmp_path / "cat",
     )
