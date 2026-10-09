@@ -15,6 +15,14 @@ serialized objects to a version the other side understands.
   the current + historical protocol schemas.
 - `MigrationService` — upgrades/downgrades objects, including to the version a peer's
   package version supports.
+- `coverage` — checks a package runs against its own registry: `unregistered_objects`
+  finds a versioned object filed into another package's registry, and
+  `missing_upgrade_paths` / `missing_downgrade_paths` find a version that cannot reach
+  latest or cannot reach a lower version. Each returns findings, so empty means covered.
+
+## Docs
+
+- [Object Versions](docs/object-versions.md) — how to add a version to a versioned object, and which migrations the new version needs.
 
 ## Dev
 

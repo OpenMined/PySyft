@@ -1,10 +1,5 @@
 """Every versioned syft-dataset object is known to the package registry."""
 
-import importlib
-import pkgutil
-
-from syft_migration import MigratableObject
-
 import syft_datasets
 from syft_datasets.migrations import dataset_registry
 from syft_datasets.models import (
@@ -13,6 +8,7 @@ from syft_datasets.models import (
     PrivateDatasetConfig,
     PrivateDatasetConfigV1,
 )
+from syft_migration import unregistered_objects, versioned_objects
 
 
 def test_versioned_objects_registered_and_aliased():
@@ -31,28 +27,8 @@ def test_versioned_objects_registered_and_aliased():
     assert schema.current_schema(canonical_name="PrivateDatasetConfig")
 
 
-def _all_subclasses(cls: type) -> set[type]:
-    subclasses = set(cls.__subclasses__())
-    for sub in cls.__subclasses__():
-        subclasses |= _all_subclasses(sub)
-    return subclasses
-
-
 def test_all_migratable_objects_in_package_are_registered():
-    # Import every syft_datasets module so all MigratableObject subclasses are defined.
-    for module_info in pkgutil.walk_packages(
-        syft_datasets.__path__, prefix="syft_datasets."
-    ):
-        importlib.import_module(module_info.name)
-
-    package_objects = [
-        cls
-        for cls in _all_subclasses(MigratableObject)
-        if cls.__module__.startswith("syft_datasets.")
-    ]
-    assert len(package_objects) >= 2  # the scan actually found the dataset objects
-
-    for cls in package_objects:
-        canonical_name = cls.model_fields["canonical_name"].default
-        version = cls.model_fields["version"].default
-        assert dataset_registry.get_class(canonical_name, version) is cls
+    # The scan imports every syft_datasets module, so it sees objects that
+    # nothing else imports.
+    assert len(versioned_objects(syft_datasets)) >= 2
+    assert unregistered_objects(dataset_registry, syft_datasets) == []
