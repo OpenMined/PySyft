@@ -279,7 +279,13 @@ def test_private_files_wire_private_metadata_in_protocol_format(tmp_path: Path):
     mock, private, readme = _create_dataset_files(tmp_path)
     mgr = _dataset_manager(tmp_path)
 
-    mgr.create(name="flat", mock_path=mock, private_path=private, readme_path=readme)
+    mgr.create(
+        name="flat",
+        mock_path=mock,
+        private_path=private,
+        readme_path=readme,
+        protocol_versions=["0"],
+    )
     raw0 = _wire_private_metadata(mgr, "flat", "0")
     assert "canonical_name" not in raw0 and "version" not in raw0
     assert "uid" in raw0
