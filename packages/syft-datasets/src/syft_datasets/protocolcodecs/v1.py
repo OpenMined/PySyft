@@ -98,7 +98,6 @@ class ProtocolCodecV1(ProtocolCodec):
         # Files already carry canonical_name/version on disk.
         return yaml.safe_load(path.read_text()) or {}
 
-    def write(self, path: Path, obj: MigratableObject) -> None:
-        data = obj.disk_dict()
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(yaml.safe_dump(data, indent=2, sort_keys=False))
+    def _data_for_disk(self, obj: MigratableObject) -> dict:
+        # This layout keeps the identity fields on disk.
+        return obj.disk_dict()
