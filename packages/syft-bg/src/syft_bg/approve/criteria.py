@@ -4,6 +4,7 @@ import hashlib
 from pathlib import Path
 
 from syft_job.job import JobInfo
+from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from pydantic import BaseModel
 
@@ -15,7 +16,7 @@ class AutoApprovalValidationResult(BaseModel):
     reason: str
 
 
-JOB_METADATA_FILES = {"config.yaml", "run.sh"}
+RUN_SCRIPT_PATH = "run.sh"
 
 
 def _compute_file_hash(file_path: Path) -> str | None:
@@ -28,12 +29,16 @@ def _compute_file_hash(file_path: Path) -> str | None:
 
 
 def _hash_matches(actual_hash: str, expected_hash: str) -> bool:
-    """Check if actual hash matches expected (supports sha256: prefix and short hashes)."""
+    """Compare a file digest against a configured one.
+
+    The compare is over the whole digest. A prefix compare let an empty or
+    truncated configured hash match any file.
+    """
     if expected_hash.startswith("sha256:"):
         expected = expected_hash[7:]
     else:
         expected = expected_hash
-    return actual_hash[: len(expected)] == expected
+    return bool(expected) and actual_hash == expected
 
 
 def _content_matches(job_file: Path, stored_path: str) -> bool:
@@ -49,14 +54,21 @@ def _content_matches(job_file: Path, stored_path: str) -> bool:
         return False
 
 
-def _get_all_job_code_files(job: JobInfo) -> dict[str, Path]:
-    """Get all user files from a job as {relative_path: abs_path} (excluding metadata)."""
-    code_dir = job.code_dir
+def get_job_submission_files(job: JobInfo) -> dict[str, Path]:
+    """Every file in a job as {path relative to the submission root: abs_path}.
+
+    The root holds `code/`, `run.sh` and `config.yaml`. `run.sh` is the only
+    file the runner executes, so it must be in this set. The exact name
+    `syft.pub.yaml` is left out, because the permission layer writes it. Any
+    other spelling stays in, and is refused as an extra file: an exclusion from
+    this inventory is a file nobody reviews, so keep it as narrow as the writer.
+    """
+    root = job.job_submission_path
     files: dict[str, Path] = {}
-    if code_dir.exists():
-        for f in code_dir.rglob("*"):
-            if f.is_file() and f.name not in JOB_METADATA_FILES:
-                files[str(f.relative_to(code_dir))] = f
+    if root.exists():
+        for f in root.rglob("*"):
+            if f.is_file() and f.name != PERMISSION_FILE_NAME:
+                files[f.relative_to(root).as_posix()] = f
     return files
 
 
@@ -79,10 +91,23 @@ def _validate_job_against_object(
     expected_contents = {entry.relative_path: entry for entry in obj.file_contents}
     expected_names = set(obj.file_paths)
     all_expected_paths = set(expected_contents.keys()) | expected_names
-    job_code_files = _get_all_job_code_files(job)
+    job_files = get_job_submission_files(job)
+
+    # run.sh is the only file that executes, so a name in the allowlist is not
+    # enough for it. An object written before run.sh was validated pins nothing
+    # for it and is refused here.
+    if RUN_SCRIPT_PATH not in expected_contents:
+        return AutoApprovalValidationResult(
+            match=False,
+            reason=(
+                f"approval object pins no content for {RUN_SCRIPT_PATH}, the file "
+                f"the runner executes. Recreate it from a job you have reviewed "
+                f"with syft_bg.auto_approve_job(job)."
+            ),
+        )
 
     # Job files must exactly match the approval object's expected files
-    actual_paths = set(job_code_files.keys())
+    actual_paths = set(job_files.keys())
     if actual_paths != all_expected_paths:
         missing = all_expected_paths - actual_paths
         extra = actual_paths - all_expected_paths
@@ -97,7 +122,7 @@ def _validate_job_against_object(
         )
 
     for rel_path, file_entry in expected_contents.items():
-        job_file = job_code_files.get(rel_path)
+        job_file = job_files.get(rel_path)
         expected_hash = file_entry.hash
         expected_path = file_entry.path
         submitted_hash = _compute_file_hash(job_file)

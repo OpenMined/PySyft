@@ -1,8 +1,11 @@
 """Integration tests for CLI commands."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
+import pytest
 from click.testing import CliRunner
+
+from syft_bg.approve.api_store import ApiStore
 
 from syft_bg.cli.commands import (
     auto_approve,
@@ -310,54 +313,76 @@ class TestAutoApproveCommand:
         )
 
         runner = CliRunner()
-        result = runner.invoke(auto_approve, [str(sample_script)])
+        result = runner.invoke(
+            auto_approve, [str(sample_script), "-p", "alice@test.com"]
+        )
 
         assert result.exit_code == 1
         assert "No files to process" in result.output
+
+    @patch("syft_bg.api.api.auto_approve")
+    def test_no_peers_declined_aborts(self, mock_api, sample_script):
+        """Without peers the user is warned and asked; 'n' aborts."""
+        runner = CliRunner()
+        result = runner.invoke(auto_approve, [str(sample_script)], input="n\n")
+
+        assert result.exit_code == 1
+        assert "no peers given" in result.output
+        mock_api.assert_not_called()
+
+    @patch("syft_bg.api.api.auto_approve")
+    def test_no_peers_with_allow_any_peer_skips_prompt(self, mock_api, sample_script):
+        from syft_bg.api.results import AutoApproveResult
+
+        mock_api.return_value = AutoApproveResult(success=True, name="main")
+
+        runner = CliRunner()
+        result = runner.invoke(auto_approve, [str(sample_script), "--allow-any-peer"])
+
+        assert result.exit_code == 0
+        assert "no peers given" not in result.output
+        assert mock_api.call_args[1]["allow_any_peer"] is True
+
+
+@pytest.fixture
+def api_store(temp_dir):
+    """A real ApiStore in temp_dir, used by the CLI instead of config.yaml."""
+    store = ApiStore(temp_dir / "syftbox", "do@test.com")
+    with (
+        patch("syft_bg.api.utils.get_api_store", return_value=store),
+        patch("syft_bg.approve.api_store.get_syftbg_dir", return_value=temp_dir),
+    ):
+        yield store
+
+
+def _create_api(store, temp_dir, name, files, peers):
+    content_files = []
+    for rel in files:
+        path = temp_dir / rel
+        path.write_text(f"# {rel}\n")
+        content_files.append((rel, path))
+    store.create(name, content_files, [], peers)
 
 
 class TestRemoveAutoApprovalCommand:
     """Tests for the remove-auto-approval command."""
 
-    @patch("syft_bg.common.syft_bg_config.SyftBgConfig.edit")
-    def test_remove_auto_approval(self, mock_edit):
+    def test_remove_auto_approval(self, api_store, temp_dir):
         """Should remove scripts by filename from an auto-approval object."""
-        from syft_bg.approve.config import AutoApprovalObj, FileEntry
-
-        obj = AutoApprovalObj(
-            file_contents=[
-                FileEntry(
-                    relative_path="main.py",
-                    path="/tmp/auto_approvals/my_analysis/main.py",
-                    hash="sha256:aaa",
-                ),
-                FileEntry(
-                    relative_path="utils.py",
-                    path="/tmp/auto_approvals/my_analysis/utils.py",
-                    hash="sha256:bbb",
-                ),
-            ],
-            peers=["alice@test.com"],
+        _create_api(
+            api_store, temp_dir, "my_analysis", ["main.py", "utils.py"], ["a@x.com"]
         )
-        mock_config = MagicMock()
-        mock_config.approve.auto_approvals.objects = {"my_analysis": obj}
-        mock_edit.return_value.__enter__.return_value = mock_config
 
         runner = CliRunner()
         result = runner.invoke(remove_auto_approval, ["utils.py", "-n", "my_analysis"])
 
         assert result.exit_code == 0
         assert "Removed 1" in result.output
-        assert len(obj.file_contents) == 1
-        assert obj.file_contents[0].relative_path == "main.py"
+        obj = api_store.get("my_analysis")
+        assert [e.relative_path for e in obj.file_contents] == ["main.py"]
 
-    @patch("syft_bg.common.syft_bg_config.SyftBgConfig.edit")
-    def test_remove_auto_approval_unknown_object(self, mock_edit):
+    def test_remove_auto_approval_unknown_object(self, api_store):
         """Should error when object name not found."""
-        mock_config = MagicMock()
-        mock_config.approve.auto_approvals.objects = {}
-        mock_edit.return_value.__enter__.return_value = mock_config
-
         runner = CliRunner()
         result = runner.invoke(remove_auto_approval, ["main.py", "-n", "nonexistent"])
 
@@ -367,34 +392,34 @@ class TestRemoveAutoApprovalCommand:
 class TestRemovePeerCommand:
     """Tests for the remove-peer command."""
 
-    @patch("syft_bg.common.syft_bg_config.SyftBgConfig.edit")
-    def test_remove_peer(self, mock_edit):
+    def test_remove_peer(self, api_store, temp_dir):
         """Should remove peer from auto-approval objects."""
-        from syft_bg.approve.config import AutoApprovalObj
-
-        mock_config = MagicMock()
-        mock_config.approve.auto_approvals.objects = {
-            "my_analysis": AutoApprovalObj(peers=["alice@test.com"])
-        }
-        mock_edit.return_value.__enter__.return_value = mock_config
+        _create_api(
+            api_store, temp_dir, "my_analysis", ["main.py"], ["a@x.com", "b@x.com"]
+        )
 
         runner = CliRunner()
-        result = runner.invoke(remove_peer, ["alice@test.com"])
+        result = runner.invoke(remove_peer, ["a@x.com"])
 
         assert result.exit_code == 0
         assert "Removed peer" in result.output
-        assert (
-            "alice@test.com"
-            not in mock_config.approve.auto_approvals.objects["my_analysis"].peers
-        )
+        assert api_store.get("my_analysis").peers == ["b@x.com"]
 
-    @patch("syft_bg.common.syft_bg_config.SyftBgConfig.edit")
-    def test_remove_peer_not_found(self, mock_edit):
+    def test_removing_last_peer_asks_for_confirmation(self, api_store, temp_dir):
+        """An object left without peers matches anyone, so ask first."""
+        _create_api(api_store, temp_dir, "my_analysis", ["main.py"], ["a@x.com"])
+
+        runner = CliRunner()
+        result = runner.invoke(remove_peer, ["a@x.com"], input="n\n")
+        assert result.exit_code == 1
+        assert api_store.get("my_analysis").peers == ["a@x.com"]
+
+        result = runner.invoke(remove_peer, ["a@x.com", "--allow-any-peer"])
+        assert result.exit_code == 0
+        assert api_store.get("my_analysis").peers == []
+
+    def test_remove_peer_not_found(self, api_store):
         """Should error if peer not found."""
-        mock_config = MagicMock()
-        mock_config.approve.auto_approvals.objects = {}
-        mock_edit.return_value.__enter__.return_value = mock_config
-
         runner = CliRunner()
         result = runner.invoke(remove_peer, ["unknown@test.com"])
 

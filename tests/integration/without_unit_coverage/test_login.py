@@ -178,7 +178,7 @@ def test_login_ds_missing_token_path_raises(monkeypatch):
     """Test that login_ds raises error when token_path is missing in Jupyter env."""
     # Unset the env var so the test can verify the error is raised
     monkeypatch.delenv("SYFT_TOKEN_PATH", raising=False)
-    with pytest.raises(NotImplementedError, match="token path"):
+    with pytest.raises(NotImplementedError, match="token_path"):
         sy.login_ds(
             email="test@test.com",
             token_path=None,
@@ -192,7 +192,7 @@ def test_login_do_missing_token_path_raises(monkeypatch):
     """Test that login_do raises error when token_path is missing in Jupyter env."""
     # Unset the env var so the test can verify the error is raised
     monkeypatch.delenv("SYFT_TOKEN_PATH", raising=False)
-    with pytest.raises(NotImplementedError, match="token path"):
+    with pytest.raises(NotImplementedError, match="token_path"):
         sy.login_do(
             email="test@test.com",
             token_path=None,

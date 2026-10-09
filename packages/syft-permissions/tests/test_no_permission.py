@@ -84,3 +84,42 @@ def test_remove_ruleset_then_deny():
     assert service.can_access(_req("file.txt", AccessLevel.READ, "user@test.com"))
     service.remove_ruleset("")
     assert not service.can_access(_req("file.txt", AccessLevel.READ, "user@test.com"))
+
+
+def test_permission_file_gate_ignores_case():
+    """A mis-cased name still needs ADMIN.
+
+    macOS and Windows keep the case of a name but match it without case. A
+    write to SYFT.PUB.YAML there replaces the content of syft.pub.yaml, so the
+    gate must not read the case.
+    """
+    service = _service()
+    service.add_ruleset(
+        RuleSet(
+            rules=[
+                Rule(
+                    pattern="**",
+                    access=Access(admin=["admin@test.com"], write=["user@test.com"]),
+                )
+            ],
+            path="",
+        )
+    )
+    for path in ("SYFT.PUB.YAML", "sub/Syft.Pub.Yaml"):
+        # The level is raised to ADMIN, not refused: an admin keeps the write.
+        assert not service.can_access(_req(path, AccessLevel.WRITE, "user@test.com"))
+        assert service.can_access(_req(path, AccessLevel.WRITE, "admin@test.com"))
+
+
+def test_permission_file_gate_matches_last_path_part_only():
+    """A name that ends with the constant is not a permission file."""
+    service = _service()
+    service.add_ruleset(
+        RuleSet(
+            rules=[Rule(pattern="**", access=Access(write=["user@test.com"]))],
+            path="",
+        )
+    )
+    assert service.can_access(
+        _req("notsyft.pub.yaml", AccessLevel.WRITE, "user@test.com")
+    )

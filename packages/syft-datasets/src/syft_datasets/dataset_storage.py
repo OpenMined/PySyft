@@ -87,9 +87,9 @@ class DatasetStorage:
     version for new datasets). The last codec is the current protocol.
 
     Unlike jobs (each copy targets one peer), a public dataset is a single copy
-    read by the whole audience, so new datasets are written at the version(s) the
-    audience can read (see ``target_protocol_versions_for_peers``), defaulting to
-    the widest-compatible (oldest) protocol when no peers are known.
+    read by the whole audience. A new dataset is therefore written at the current
+    protocol, plus one layout for each older version its audience reads (see
+    ``create_protocol_versions``).
     """
 
     def __init__(
@@ -102,9 +102,9 @@ class DatasetStorage:
         self.registry = registry
         self.service = MigrationService(registry=registry)
         # peer email -> dataset ProtocolSchema; syft passes PeerManager's
-        # live map here (updated in place as peer version files load). Peers
-        # without an entry cannot be assumed to read the current layout, so
-        # they resolve to the widest-compatible (oldest) protocol.
+        # live map here (updated in place as peer version files load). A named
+        # peer without an entry cannot be assumed to read the current layout, so
+        # it resolves to the floor.
         # `is not None`, not `or`: the live dict starts empty and `or {}` would
         # drop the shared reference, freezing negotiation at construction time.
         self.peer_schemas: dict[str, ProtocolSchema] = (
@@ -130,9 +130,30 @@ class DatasetStorage:
         return codec
 
     @property
-    def _widest_protocol_version(self) -> str:
-        """The oldest protocol version any current client can read (widest compat)."""
-        return min(self._codec_by_protocol_version, key=int)
+    def _floor_protocol_version(self) -> str:
+        """The oldest dataset protocol this client still supports.
+
+        The backfill target for a named peer whose version we have not read. It
+        is the floor and not ``min(codec versions)``: a codec that still reads a
+        layout we no longer support must not pull a new copy into that layout.
+        Raising the floor therefore retires a layout in one place.
+        """
+        return self.registry.min_supported_protocol_version
+
+    @property
+    def supported_protocol_versions(self) -> list[str]:
+        """Every protocol layout this client reads, newest first.
+
+        The layout an owner wrote depends on that owner's release and audience,
+        so a reader that has not yet received a dataset cannot know which one it
+        will arrive in. It looks in each of these.
+        """
+        floor = self._floor_protocol_version
+        return sorted(
+            (v for v in self._codec_by_protocol_version if int(v) >= int(floor)),
+            key=int,
+            reverse=True,
+        )
 
     # -- peers / protocol ----------------------------------------------------
     def negotiated_protocol_version_for_peer(
@@ -169,29 +190,45 @@ class DatasetStorage:
     def target_protocol_versions_for_peers(
         self, peer_emails: Optional[list[str]] = None
     ) -> set[str]:
-        """The set of protocol versions to write so every peer can read a copy.
+        """The older layouts an audience needs, beyond the current protocol.
 
-        A dataset is written once per distinct version in the audience. A known
-        peer contributes ``min(ours, theirs)``; an unknown peer (or no audience)
-        contributes the widest-compatible protocol, since we cannot assume it
-        can read a newer layout.
+        A known peer contributes ``min(ours, theirs)``. A named peer with no
+        known schema contributes the floor, because we cannot assume it reads a
+        newer layout. An empty audience contributes nothing: with no peer to
+        serve, a create writes the current layout alone, and a peer that arrives
+        later gets its layout from the backfill.
 
         The two unknown-peer answers differ on purpose. This method serves an
-        audience. An unknown peer therefore takes the widest protocol, and every
-        reader can read a copy. ``negotiated_protocol_version_for_peer`` serves
-        one peer, so an unknown peer takes the current protocol. The caller of
-        that method accepts the risk when it passes ``raise_on_unknown=False``.
+        audience, so a named peer of unknown version takes the floor and can
+        read its copy. ``negotiated_protocol_version_for_peer`` serves one peer,
+        so an unknown peer takes the current protocol. The caller of that method
+        accepts the risk when it passes ``raise_on_unknown=False``.
         """
         if not peer_emails:
-            return {self._widest_protocol_version}
+            return set()
         versions: set[str] = set()
         for email in peer_emails:
             schema = self.peer_schemas.get(email)
             if schema is not None:
                 versions.add(min(DATASET_PROTOCOL_VERSION, schema.version, key=int))
             else:
-                versions.add(self._widest_protocol_version)
+                versions.add(self._floor_protocol_version)
         return versions
+
+    def create_protocol_versions(
+        self, peer_emails: Optional[list[str]] = None
+    ) -> list[str]:
+        """The layouts a create writes: the current one, plus what the audience reads.
+
+        The current layout is always written, so a fresh dataset never lands in a
+        layout the installed client has moved past, and ``upgrade()`` stays a
+        one-off for each release instead of recurring maintenance.
+        """
+        return sorted(
+            {DATASET_PROTOCOL_VERSION}
+            | self.target_protocol_versions_for_peers(peer_emails),
+            key=int,
+        )
 
     def new_dataset_ref(self, name: str, protocol_version: str) -> DatasetRef:
         """A ref for a new dataset owned by the current user."""
@@ -217,9 +254,9 @@ class DatasetStorage:
         Copies the source files into each version's on-disk layout and writes the
         metadata/private config. Returns {protocol_version: written Dataset}.
 
-        By default the versions are inferred from ``peer_emails`` (no/unknown peers
-        => the widest-compatible protocol). Pass ``protocol_versions`` to write
-        exactly those versions instead, skipping inference.
+        By default the versions are the current protocol plus one layout for each
+        older version the audience reads (``create_protocol_versions``). Pass
+        ``protocol_versions`` to write exactly those versions instead.
         """
         self.validate_dataset_name(name)
         if source.mock.is_dir() and (source.mock / METADATA_FILENAME).exists():
@@ -228,9 +265,7 @@ class DatasetStorage:
                 f"{METADATA_FILENAME}. Please rename it and try again."
             )
         if protocol_versions is None:
-            protocol_versions = list(
-                self.target_protocol_versions_for_peers(peer_emails)
-            )
+            protocol_versions = self.create_protocol_versions(peer_emails)
         now = _utcnow()
         fields = _DatasetFields(
             uid=uid or uuid4(),
@@ -253,9 +288,20 @@ class DatasetStorage:
         Copies the source layout's files into the target layout and writes the
         metadata/private config there, preserving identity (uid/timestamps).
         Does not delete the source copy. Owner-only.
+
+        Idempotent and resumable: a complete target layout is returned as it is,
+        and the debris of an interrupted copy is removed before the copy runs
+        again. A migrate to the layout the ref already holds reads it back.
         """
         if ref.owner != self.config.email:
             raise ValueError("Can only migrate datasets you own.")
+        if ref.protocol_version == target_protocol_version:
+            # Nothing to copy, and the source must never be cleared as debris.
+            return self.read_dataset(ref)
+        target_ref = self.new_dataset_ref(ref.name, target_protocol_version)
+        complete = self._reuse_or_clear_target(target_ref)
+        if complete is not None:
+            return complete
         old = self.read_dataset(ref)
         source = DatasetSourceFiles(
             mock=self.public_dataset_dir(ref),
@@ -271,10 +317,31 @@ class DatasetStorage:
             location=old.location,
             tags=old.tags,
         )
-        target_ref = self.new_dataset_ref(ref.name, target_protocol_version)
         return self._materialize_version(
             target_ref, fields, source, exclude_names=_NON_PAYLOAD_FILES
         )
+
+    def _reuse_or_clear_target(self, target_ref: DatasetRef) -> Optional[Dataset]:
+        """The dataset already complete at ``target_ref``, else None once cleared.
+
+        ``_materialize_version`` copies the payload first and writes both metadata
+        files last, so a target that holds them is a finished copy. A target
+        without them is the debris of an interrupted run, which no scan can see
+        (``iter_dataset_refs`` needs ``dataset.yaml``) and which would make
+        ``_copy_mock_data`` raise. It is removed so the copy can run again.
+        """
+        if (
+            self.metadata_path(target_ref).exists()
+            and self.private_metadata_path(target_ref).exists()
+        ):
+            return self.read_dataset(target_ref)
+        for directory in (
+            self.public_dataset_dir(target_ref),
+            self.private_dataset_dir(target_ref),
+        ):
+            if directory.exists():
+                shutil.rmtree(directory)
+        return None
 
     def _materialize_version(
         self,

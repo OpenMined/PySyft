@@ -10,7 +10,10 @@ import time
 from pathlib import Path
 
 from syft_rds import login_do
-from syft_rds.job_auto_approval import auto_approve_and_run_jobs
+from syft_rds.job_auto_approval import (
+    auto_approve_and_run_jobs,
+    validate_criteria_paths,
+)
 
 # Configuration - edit these values
 EMAIL = "your-email@example.com"
@@ -23,11 +26,22 @@ EXPECTED_SCRIPT = """
 print("hello")
 """
 
-# Script filename to match
-SCRIPT_FILENAME = "main.py"
+# Script path to match, relative to the job submission root
+SCRIPT_PATH = "code/main.py"
+
+# The script the runner executes. Take it from a job you have reviewed:
+# `client.jobs[0].run_script`. A job with any other run.sh is not approved.
+EXPECTED_RUN_SCRIPT = """
+# The reviewed run.sh content here
+"""
 
 # Required files - job must contain exactly these files (include the script file)
-REQUIRED_FILENAMES = ["main.py", "data.json"]
+REQUIRED_FILE_PATHS = ["code/main.py", "code/data.json", "run.sh", "config.yaml"]
+
+REQUIRED_FILE_CONTENTS = {
+    SCRIPT_PATH: EXPECTED_SCRIPT,
+    "run.sh": EXPECTED_RUN_SCRIPT,
+}
 
 # Optional: list of allowed user emails (None = allow all)
 ALLOWED_USERS = None
@@ -37,6 +51,10 @@ PEERS_ONLY = False
 
 
 def main():
+    # Criteria that approve nothing would do so on every poll, so say it now
+    # rather than once a job arrives.
+    validate_criteria_paths(REQUIRED_FILE_CONTENTS, REQUIRED_FILE_PATHS)
+
     client = login_do(
         email=EMAIL,
         token_path=TOKEN_PATH,
@@ -46,16 +64,18 @@ def main():
         try:
             auto_approve_and_run_jobs(
                 client,
-                required_file_contents={SCRIPT_FILENAME: EXPECTED_SCRIPT},
-                required_file_paths=REQUIRED_FILENAMES,
+                required_file_contents=REQUIRED_FILE_CONTENTS,
+                required_file_paths=REQUIRED_FILE_PATHS,
                 allowed_users=ALLOWED_USERS,
                 peers_only=PEERS_ONLY,
                 verbose=False,
             )
         except KeyboardInterrupt:
             sys.exit(0)
-        except Exception:
-            pass
+        except Exception as exc:
+            # A poll can fail on a transient fault, so keep polling. The
+            # criteria themselves were checked once, before the loop.
+            print(f"poll failed: {exc}", file=sys.stderr)
 
         time.sleep(POLL_INTERVAL)
 

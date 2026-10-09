@@ -25,6 +25,11 @@ class ProtocolCodecV0(ProtocolCodec):
             ref.datasite_email, ref.ds_email, ref.job_name, ref.protocol_version
         )
 
+    def staging_dir(self, ref: JobRef) -> Path:
+        return self.config.get_staging_job_dir(
+            ref.datasite_email, ref.ds_email, ref.job_name, ref.protocol_version
+        )
+
     def submission_metadata_path(self, ref: JobRef) -> Path:
         return self.submission_dir(ref) / self.submission_marker
 

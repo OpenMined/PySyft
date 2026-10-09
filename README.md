@@ -7,8 +7,8 @@
 
 > **`syft` 0.10+ is the successor of `syft-client`.** `syft` is the sync engine (`import syft as sy`); datasets and jobs live in `syft-rds` (`from syft_rds import login_do, login_ds`). If you depend on the legacy PySyft ≤0.9 API, pin `syft<0.10`.
 
-[![Unit Tests](https://github.com/OpenMined/pysyft/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/OpenMined/PySyft/actions/workflows/unit-tests.yml)
-[![Integration Tests](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml)
+[![Unit Tests](https://github.com/OpenMined/pysyft/actions/workflows/unit-tests.yml/badge.svg?branch=dev)](https://github.com/OpenMined/PySyft/actions/workflows/unit-tests.yml?query=branch%3Adev)
+[![Integration Tests](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml/badge.svg?branch=dev)](https://github.com/OpenMined/pysyft/actions/workflows/integration-tests.yml?query=branch%3Adev)
 [![PyPI](https://img.shields.io/pypi/v/syft)](https://pypi.org/project/syft/)
 [![Python 3.10+](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2Fpysyft%2Fdev%2Fpyproject.toml)](https://github.com/OpenMined/pysyft)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/OpenMined/pysyft/blob/main/pyproject.toml)
@@ -41,6 +41,8 @@ PySyft lets data scientists submit computations which are run by data owners on 
 
 ## Quick Start
 
+**Before you start:** this quick start assumes Google Colab, where login is a browser pop-up and works out of the box. On a local machine or in Jupyter you first need a Google Cloud OAuth token: follow [docs/auth.md](https://github.com/OpenMined/PySyft/blob/dev/docs/auth.md) (about 15 minutes the first time), then pass it as `token_path` to `login_do` / `login_ds`. Each role needs its own Google account.
+
 We assume two parties here, a Data Owner (DO) and a Data Scientist (DS), the DS wants to do an analysis on private data of the DO. For brevity we use code blocks, but in practice these would be distributed: each party executes their code on their own machine.
 
 ```bash
@@ -56,9 +58,10 @@ from syft_rds import login_do, login_ds    # datasets + jobs (the Remote Data Sc
 ```
 
 ```python
-# Login (colab auth, for non-colab pass token_path)
-do = login_do(email="do@org.com") # use your own email
-ds = login_ds(email="ds@org.com") # use another email here
+# Colab: login is a browser pop-up, nothing to set up
+# Local / Jupyter: create a token first, see docs/auth.md
+do = login_do(email="do@org.com")  # local: add token_path="token_do.json"
+ds = login_ds(email="ds@org.com")  # second account; local: token_path="token_ds.json"
 
 # Peer request & approve
 ds.add_peer("do@org.com")

@@ -6,7 +6,7 @@ from functools import partial
 from pydantic import ConfigDict, Field, BaseModel, PrivateAttr
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
-from typing import List, Tuple
+from typing import List, NamedTuple, Tuple
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
     FileChangeEventsMessageFileName,
@@ -52,10 +52,45 @@ DEFAULT_ROLLING_STATE_UPLOAD_THRESHOLD = 1
 MIN_MESSAGES_COMPACT = 20
 
 
+class _CheckpointRestore(NamedTuple):
+    """What restoring from checkpoints recovered.
+
+    ``found_checkpoint`` is not the same as ``events_since_timestamp is not
+    None``: a full checkpoint may carry no event cursor, and in that case we
+    must NOT fall back to downloading every event.
+    """
+
+    events_since_timestamp: float | None
+    events: List[FileChangeEvent]
+    found_checkpoint: bool
+
+
+def _later_timestamp(current: float | None, candidate: float | None) -> float | None:
+    """The later of two event timestamps, either of which may be missing."""
+    if candidate is None:
+        return current
+    if current is None or candidate > current:
+        return candidate
+    return current
+
+
+def same_email(left: str | None, right: str | None) -> bool:
+    """True if both name the same address. A mail address has no case."""
+    if left is None or right is None:
+        return False
+    return left.casefold() == right.casefold()
+
+
 class DatasiteOwnerSyncerConfig(BaseModel):
     email: str
     syftbox_folder: Path
     write_files: bool = True
+    # Whether to keep the owner-only state that exists solely to restore this
+    # datasite later: the append-only event log, the rolling state and the
+    # checkpoints. Off for a datasite that can never restore - an enclave gets
+    # ephemeral keys and wipes its state each boot - so those writes are pure
+    # cost. Peer-facing state (outbox, collections, peers) is unaffected.
+    persist_owner_state: bool = True
     # Full path to collections folder - must be provided explicitly
     collections_folder: Path | None = None
     # Collection sync specs (public prefix + local subpath). Empty for a bare
@@ -75,6 +110,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         default_factory=lambda: DataSiteOwnerEventCache()
     )
     write_files: bool = True
+    persist_owner_state: bool = True
     connection_router: ConnectionRouter
     initial_sync_done: bool = False
     email: str
@@ -115,6 +151,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         return cls(
             event_cache=DataSiteOwnerEventCache.from_config(config.cache_config),
             write_files=config.write_files,
+            persist_owner_state=config.persist_owner_state,
             connection_router=ConnectionRouter.from_configs(
                 config.email, config.connection_configs
             ),
@@ -155,7 +192,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         tmp.rename(path)
 
     def sync(self, peer_emails: list[str], recompute_hashes: bool = True):
-        self._load_rolling_state()
+        if self.persist_owner_state:
+            self._load_rolling_state()
         try:
             if not self.initial_sync_done:
                 self.pull_initial_state()
@@ -181,7 +219,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                     )
                 self.process_syftbox_events_queue()
         finally:
-            self._save_rolling_state()
+            if self.persist_owner_state:
+                self._save_rolling_state()
 
     def download_events_message_by_id_with_connection(
         self, events_message_id: str
@@ -209,101 +248,15 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """
         Pull initial state from Google Drive.
 
-        Flow:
-        1. Check for full (compacted) checkpoint → apply it
-        2. Check for incremental checkpoints → apply them in order
-        3. Check for rolling state → apply if valid
-        4. Download any remaining events since last timestamp
-        5. Ensure events_messages_connection is populated for get_cached_events()
+        Two halves:
+        1. The owner's own state - checkpoints, rolling state, and the events
+           newer than those. Skipped entirely when `persist_owner_state` is
+           off: nothing was ever written, so there is nothing to read back.
+        2. The owner's collections, which are shared with peers rather than
+           owner-only, so they are restored either way.
         """
-        events_since_timestamp: float | None = None
-        restored_events: list[FileChangeEvent] = []
-
-        # Step 1: Check for full (compacted) checkpoint
-        full_checkpoint = self.connection_router.get_latest_checkpoint()
-        if full_checkpoint is not None:
-            print(
-                f"Found full checkpoint with {len(full_checkpoint.files)} files, "
-                "restoring..."
-            )
-            self.event_cache.apply_checkpoint(
-                full_checkpoint, write_files=self.write_files
-            )
-            events_since_timestamp = full_checkpoint.last_event_timestamp
-
-        # Step 2: Check for incremental checkpoints
-        incremental_cps = self.connection_router.get_all_incremental_checkpoints()
-        if incremental_cps:
-            print(f"Found {len(incremental_cps)} incremental checkpoints, applying...")
-            for inc_cp in incremental_cps:
-                self._apply_incremental_checkpoint_to_cache(inc_cp)
-                restored_events.extend(inc_cp.events)
-                # Update timestamp to the latest event in this checkpoint
-                for event in inc_cp.events:
-                    if event.timestamp is not None:
-                        if (
-                            events_since_timestamp is None
-                            or event.timestamp > events_since_timestamp
-                        ):
-                            events_since_timestamp = event.timestamp
-
-        # Step 3: Check for rolling state
-        rolling_state = self.connection_router.get_rolling_state()
-        if rolling_state is not None and rolling_state.event_count > 0:
-            print(
-                f"Found rolling state with {rolling_state.event_count} events, "
-                "applying..."
-            )
-            self._apply_rolling_state_to_cache(rolling_state)
-            self._rolling_state = rolling_state
-            restored_events.extend(rolling_state.events)
-
-            # Update timestamp from rolling state
-            if rolling_state.last_event_timestamp is not None:
-                if (
-                    events_since_timestamp is None
-                    or rolling_state.last_event_timestamp > events_since_timestamp
-                ):
-                    events_since_timestamp = rolling_state.last_event_timestamp
-        else:
-            # Initialize empty rolling state
-            base_timestamp = events_since_timestamp or 0.0
-            self._rolling_state = RollingState(
-                email=self.email,
-                base_checkpoint_timestamp=base_timestamp,
-            )
-
-        # Step 4: Download any remaining events since last timestamp
-        if events_since_timestamp is not None:
-            events_messages = (
-                self.connection_router.get_events_messages_since_timestamp(
-                    events_since_timestamp
-                )
-            )
-            if events_messages:
-                print(
-                    f"Downloading {len(events_messages)} events since "
-                    "checkpoint/rolling state..."
-                )
-                for events_message in events_messages:
-                    self.event_cache.add_events_message_to_local_cache(events_message)
-                    self._add_events_to_rolling_state(events_message)
-        elif full_checkpoint is None and not incremental_cps:
-            # No checkpoints at all - download all events (fallback)
-            print("No checkpoints found, downloading all events...")
-            since_timestamp = self.event_cache.latest_cached_timestamp
-            events_messages_list: list[FileChangeEventsMessage] = (
-                self.get_all_accepted_events_messages(since_timestamp=since_timestamp)
-            )
-            for events_message in events_messages_list:
-                self.event_cache.add_events_message_to_local_cache(events_message)
-
-        # Step 5: Ensure events from checkpoints/rolling state are in
-        # events_messages_connection. Steps 1-3 only populate file_hashes
-        # and file_connection but not events_messages_connection, which
-        # get_cached_events() reads from.
-        if restored_events and not self.event_cache.get_cached_events():
-            self._write_events_to_messages_cache(restored_events)
+        if self.persist_owner_state:
+            self._restore_owner_state()
 
         # Restore ALL registered collections (public + private) generically. Each
         # spec's flags decide the behaviour: `immutable` picks mirror vs restore-only;
@@ -311,6 +264,112 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         self._pull_collections_for_initial_sync()
 
         self.initial_sync_done = True
+
+    def _restore_owner_state(self) -> None:
+        """Rebuild the cache from the owner's persisted state on the backend."""
+        restore = self._restore_from_checkpoints()
+
+        if restore.events_since_timestamp is not None:
+            self._download_events_since(restore.events_since_timestamp)
+        elif not restore.found_checkpoint:
+            print("No checkpoints found, downloading all events...")
+            self._download_all_events()
+
+        # The restore above only populates file_hashes and file_connection, not
+        # events_messages_connection, which get_cached_events() reads from.
+        if restore.events and not self.event_cache.get_cached_events():
+            self._write_events_to_messages_cache(restore.events)
+
+    def _restore_from_checkpoints(self) -> _CheckpointRestore:
+        """Apply the full checkpoint, then the incrementals, then the rolling state.
+
+        Each step restores cache state and moves the event cursor forward.
+        """
+        full_checkpoint = self.connection_router.get_latest_checkpoint()
+        since = self._apply_full_checkpoint(full_checkpoint)
+
+        incremental_cps = self.connection_router.get_all_incremental_checkpoints()
+        since, events = self._apply_incremental_checkpoints(incremental_cps, since)
+
+        since, rolling_events = self._apply_rolling_state(since)
+        return _CheckpointRestore(
+            events_since_timestamp=since,
+            events=events + rolling_events,
+            found_checkpoint=full_checkpoint is not None or bool(incremental_cps),
+        )
+
+    def _apply_full_checkpoint(self, checkpoint: Checkpoint | None) -> float | None:
+        """Restore a full snapshot. Returns the event cursor it carries."""
+        if checkpoint is None:
+            return None
+        print(f"Found full checkpoint with {len(checkpoint.files)} files, restoring...")
+        self.event_cache.apply_checkpoint(checkpoint, write_files=self.write_files)
+        return checkpoint.last_event_timestamp
+
+    def _apply_incremental_checkpoints(
+        self,
+        checkpoints: List[IncrementalCheckpoint],
+        since: float | None,
+    ) -> Tuple[float | None, List[FileChangeEvent]]:
+        """Apply incrementals in order, advancing the cursor past their events."""
+        if not checkpoints:
+            return since, []
+
+        print(f"Found {len(checkpoints)} incremental checkpoints, applying...")
+        events: List[FileChangeEvent] = []
+        for inc_cp in checkpoints:
+            self._apply_incremental_checkpoint_to_cache(inc_cp)
+            events.extend(inc_cp.events)
+            for event in inc_cp.events:
+                since = _later_timestamp(since, event.timestamp)
+        return since, events
+
+    def _apply_rolling_state(
+        self, since: float | None
+    ) -> Tuple[float | None, List[FileChangeEvent]]:
+        """Apply the rolling state, or start an empty one when there is none."""
+        rolling_state = self.connection_router.get_rolling_state()
+        if rolling_state is None or rolling_state.event_count == 0:
+            self._rolling_state = RollingState(
+                email=self.email,
+                base_checkpoint_timestamp=since or 0.0,
+            )
+            return since, []
+
+        print(
+            f"Found rolling state with {rolling_state.event_count} events, applying..."
+        )
+        self._apply_rolling_state_to_cache(rolling_state)
+        self._rolling_state = rolling_state
+        return (
+            _later_timestamp(since, rolling_state.last_event_timestamp),
+            rolling_state.events,
+        )
+
+    def _download_events_since(self, timestamp: float) -> None:
+        """Download and cache every events message newer than `timestamp`."""
+        events_messages = self.connection_router.get_events_messages_since_timestamp(
+            timestamp
+        )
+        if not events_messages:
+            return
+
+        print(
+            f"Downloading {len(events_messages)} events since "
+            "checkpoint/rolling state..."
+        )
+        for events_message in events_messages:
+            self.event_cache.add_events_message_to_local_cache(events_message)
+            self._add_events_to_rolling_state(events_message)
+
+    def _download_all_events(self) -> None:
+        """Download every accepted events message - the no-checkpoint path."""
+        since_timestamp = self.event_cache.latest_cached_timestamp
+        events_messages_list: List[FileChangeEventsMessage] = (
+            self.get_all_accepted_events_messages(since_timestamp=since_timestamp)
+        )
+        for events_message in events_messages_list:
+            self.event_cache.add_events_message_to_local_cache(events_message)
 
     def _apply_incremental_checkpoint_to_cache(
         self, checkpoint: IncrementalCheckpoint
@@ -554,8 +613,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if file_change_events_message is None:
             return
 
-        self.syftbox_events_queue.put(file_change_events_message)
-
         perm_events, data_events = self._split_events(file_change_events_message.events)
         events_by_recipient: dict[str, list[FileChangeEvent]] = {
             r: [] for r in recipients
@@ -569,9 +626,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             perm_events, recipients, events_by_recipient, data_event_sent_to
         )
         self._queue_events_for_outbox(events_by_recipient)
-        # Feed local events into rolling state so they flow through
-        # incremental/full checkpoints.
-        self._add_events_to_rolling_state(file_change_events_message)
+        if self.persist_owner_state:
+            # Record local events in the owner's log and feed them into rolling
+            # state so they flow through incremental/full checkpoints.
+            self.syftbox_events_queue.put(file_change_events_message)
+            self._add_events_to_rolling_state(file_change_events_message)
         self.process_syftbox_events_queue()
 
     def _split_events(
@@ -583,7 +642,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         perm_events = []
         data_events = []
         for event in events:
-            if str(event.path_in_datasite).endswith(PERMISSION_FILE_NAME):
+            # Compare the last path part without case, as the ACL gate does.
+            if event.path_in_datasite.name.casefold() == PERMISSION_FILE_NAME:
                 perm_events.append(event)
             else:
                 data_events.append(event)
@@ -653,11 +713,22 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             sender_email=sender_email
         )
         if message is not None:
-            sender_email = message.sender_email
-            self.handle_proposed_filechange_events_message(sender_email, message)
+            # The sender is the peer whose inbox held the message. The transport
+            # read the message from that peer's folder and checked the signature
+            # against that peer's key. The body is sender-supplied, so a claim
+            # there that disagrees is a spoof attempt.
+            if same_email(message.sender_email, sender_email):
+                self.handle_proposed_filechange_events_message(sender_email, message)
+            else:
+                logger.warning(
+                    f"Dropped a proposed change from {sender_email}: the message "
+                    f"claims sender {message.sender_email!r}."
+                )
 
             # delete the message once we are done
-            self.connection_router.owner_remove_proposed_filechange_from_inbox(message)
+            self.connection_router.owner_remove_proposed_filechange_from_inbox(
+                message, sender_email
+            )
             return message
         elif raise_on_none:
             raise ValueError("No proposed file change to process")
@@ -691,7 +762,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             return
 
         filtered_message = ProposedFileChangesMessage(
-            sender_email=proposed_events_message.sender_email,
+            sender_email=sender_email,
             proposed_file_changes=allowed_changes,
         )
 
@@ -703,13 +774,17 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 recipients=[sender_email],
                 file_change_events_message=accepted_events_message,
             )
-            # Add to rolling state after processing
-            self._add_events_to_rolling_state(accepted_events_message)
+            if self.persist_owner_state:
+                self._add_events_to_rolling_state(accepted_events_message)
 
     def queue_event_for_syftbox(
         self, recipients: list[str], file_change_events_message: FileChangeEventsMessage
     ):
-        self.syftbox_events_queue.put(file_change_events_message)
+        # The syftbox queue is the owner's own append-only log, read back only
+        # to restore this datasite. The outbox is how peers get the change, so
+        # it is queued either way.
+        if self.persist_owner_state:
+            self.syftbox_events_queue.put(file_change_events_message)
 
         for recipient in recipients:
             self.outbox_queue.put((recipient, file_change_events_message))
@@ -874,6 +949,14 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     # CHECKPOINT METHODS
     # =========================================================================
 
+    def _require_owner_state(self) -> None:
+        """Refuse checkpoint work on a client that keeps no owner state."""
+        if not self.persist_owner_state:
+            raise ValueError(
+                "Checkpoints are disabled: this client was built with "
+                "persist_owner_state=False"
+            )
+
     def create_incremental_checkpoint(self) -> IncrementalCheckpoint:
         """
         Create an incremental checkpoint from the current rolling state.
@@ -885,6 +968,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Returns:
             The created IncrementalCheckpoint object.
         """
+        self._require_owner_state()
         if self._rolling_state is None or self._rolling_state.event_count == 0:
             raise ValueError("No rolling state to create checkpoint from")
 
@@ -941,6 +1025,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Returns:
             The created Checkpoint object.
         """
+        self._require_owner_state()
         self._load_rolling_state()
         try:
             last_event_timestamp = self.event_cache.get_latest_event_timestamp()
@@ -1010,6 +1095,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Returns:
             The compacted Checkpoint object.
         """
+        self._require_owner_state()
         print("Compacting incremental checkpoints...")
 
         # Download existing full checkpoint (if exists)
@@ -1111,6 +1197,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Returns:
             The created checkpoint (incremental or compacted), or None.
         """
+        self._require_owner_state()
         self._load_rolling_state()
         try:
             result = None
