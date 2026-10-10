@@ -9,6 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from .astutil import normalize_ranges, scan_file
+from .auditor import AuditReport, audit_allow_functions
 from .errors import PolicyViolation
 from .markers import parse_markers
 from .obfuscator import obfuscate as _obfuscate
@@ -23,6 +24,9 @@ class RunResult(BaseModel):
     violations: list[Violation] = Field(default_factory=list)
     obfuscated_path: str | None = None
     certificate: dict | None = None
+    # Advisory audit of ``allow_functions`` (see auditor.py). Never affects ``ok`` -- the verifier
+    # decides pass/fail; this only flags what the allow-list grants.
+    audit: AuditReport | None = None
 
 
 def run(
@@ -34,6 +38,7 @@ def run(
     allow_base_class_attributes: bool = True,
     out: str | Path | None = None,
     strict: bool = True,
+    catalog_dir: str | Path | None = None,
 ) -> RunResult:
     """Verify the private region, then (on success) write a display copy.
 
@@ -58,6 +63,9 @@ def run(
         out: where to write the obfuscated file (default ``<stem>.obfuscated.py`` next to the source).
         strict: if True (default), raise ``PolicyViolation`` when verification fails; otherwise return
             a ``RunResult`` with ``ok=False`` and no output written.
+        catalog_dir: risk catalog root for the advisory audit (see auditor.py). None ships with the
+            package, so without it the audit reports every path as ``review``. Does not affect
+            verification.
     """
     path = Path(path)
     # Read the source exactly once and hand it to _run, so marker resolution, verification, and
@@ -76,6 +84,7 @@ def run(
         out=out,
         strict=strict,
         source=source,
+        catalog_dir=catalog_dir,
     )
 
 
@@ -91,6 +100,7 @@ def _run(
     out: str | Path | None = None,
     strict: bool = True,
     source: str | None = None,
+    catalog_dir: str | Path | None = None,
 ) -> RunResult:
     """Verify and obfuscate using explicit 1-based line ranges (no marker scanning).
 
@@ -115,6 +125,8 @@ def _run(
         allow_local_assignments,
         allow_base_class_attributes,
     )
+    # Advisory only: classify the allow-list, but never let it change pass/fail.
+    audit = audit_allow_functions(allow_functions, catalog_dir=catalog_dir)
 
     obfuscate_ranges = obfuscate or []
     hide_ranges = hide or []
@@ -124,7 +136,7 @@ def _run(
     if not result.ok:
         if strict:
             raise PolicyViolation(result.violations)
-        return RunResult(ok=False, violations=result.violations)
+        return RunResult(ok=False, violations=result.violations, audit=audit)
 
     scan = scan_file(ast.parse(source), normalize_ranges(private))
     obfuscated = _obfuscate(source, obfuscate_ranges, hide_ranges, scan)
@@ -146,6 +158,7 @@ def _run(
         violations=[],
         obfuscated_path=str(out_path),
         certificate=certificate,
+        audit=audit,
     )
 
 

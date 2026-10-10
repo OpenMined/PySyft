@@ -1,0 +1,10 @@
+{
+  "_about": "Library-agnostic risk rules, merged into every path's audit regardless of library or version. Patterns are dotted-path globs (fnmatch); 'unsafe' = disk/network/host-callback. Also holds blanket rules for libraries whose import root cannot be version-keyed (e.g. orbax: the 'orbax' import root is a namespace package with no __version__; the distribution is orbax-checkpoint). This is advisory, not a proof.",
+  "unsafe": {
+    "*.fromfile": "Reads raw bytes from a file on disk.",
+    "*.io_callback": "Runs a host Python callback with side effects (I/O).",
+    "*.memmap": "Memory-maps a file on disk.",
+    "*.tofile": "Writes raw array bytes to a file on disk.",
+    "orbax.*": "Orbax checkpointing — writes to disk and cloud storage (gs://, s3://). Blanket rule: orbax has no safe compute surface and its import root is not version-keyable."
+  }
+}
