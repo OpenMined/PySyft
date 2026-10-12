@@ -47,6 +47,27 @@ def get_job_timeout_seconds() -> int:
     return timeout
 
 
+def format_timeout_duration(seconds: int) -> str:
+    """Format a job timeout duration for console messages.
+
+    Sub-minute timeouts are reported in seconds so that values like a
+    30 second limit do not read as "0 minutes". Durations of a minute or
+    longer keep the original minutes phrasing.
+
+    Args:
+        seconds: Timeout duration in seconds.
+
+    Returns:
+        Human-readable duration, e.g. "30 seconds" or "10 minutes".
+    """
+    if seconds < 60:
+        unit = "second" if seconds == 1 else "seconds"
+        return f"{seconds} {unit}"
+    minutes = seconds // 60
+    unit = "minute" if minutes == 1 else "minutes"
+    return f"{minutes} {unit}"
+
+
 IS_IN_JOB_ENV_VAR = "SYFT_IS_IN_JOB"
 
 # A job runs from a fresh copy of its approved submission in the system temp
@@ -314,7 +335,9 @@ class SyftJobRunner:
                     _kill_process_tree(process.pid)
                     process.wait()
                     timed_out = True
-                    print(f" Job {job_name} timed out after {timeout // 60} minutes")
+                    print(
+                        f" Job {job_name} timed out after {format_timeout_duration(timeout)}"
+                    )
                     stdout_f.write("\n--- PROCESS TIMED OUT ---\n")
                     stderr_f.write("\n--- PROCESS TIMED OUT ---\n")
                     break
@@ -385,7 +408,7 @@ class SyftJobRunner:
             returncode = -1
             stdout = (stdout or "") + "\n--- PROCESS TIMED OUT ---\n"
             stderr = (stderr or "") + "\n--- PROCESS TIMED OUT ---\n"
-            print(f" Job {job_name} timed out after {timeout // 60} minutes")
+            print(f" Job {job_name} timed out after {format_timeout_duration(timeout)}")
 
         staging_dir = self.manager.staging_dir(ref)
         staging_dir.mkdir(parents=True, exist_ok=True)
@@ -521,7 +544,7 @@ class SyftJobRunner:
             self._report_result(ref, returncode)
 
         except subprocess.TimeoutExpired:
-            print(f" Job {job_name} timed out after {timeout // 60} minutes")
+            print(f" Job {job_name} timed out after {format_timeout_duration(timeout)}")
             self._finalize(ref, -1)
         except Exception as e:
             print(f" Error executing job {job_name}: {e}")
