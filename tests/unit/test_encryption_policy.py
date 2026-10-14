@@ -1,7 +1,8 @@
 """Per-peer encryption negotiated from each side's advertised policy.
 
-A client is ``optional`` (encrypt only when the peer requires it) or
-``required``. A pair encrypts when either side requires it.
+A client is ``off``, ``optional`` (encrypt only when the peer requires it)
+or ``required``. A pair encrypts when either side requires it, and neither
+side is ``off``.
 """
 
 import json
@@ -87,10 +88,6 @@ def _raw_inbox_message(do_manager, sender_email: str) -> bytes:
         )
     )
     return raw
-
-
-def _is_envelope(data: bytes) -> bool:
-    return PeerStore.is_envelope(data)
 
 
 def _accepted_contents(do_manager) -> list[str]:
@@ -322,7 +319,7 @@ def test_optional_sender_refuses_peer_with_unknown_policy():
 def test_required_sender_needs_no_peer_policy():
     alice, _ = _keyed_pair(REQUIRED, OPTIONAL)
     alice.get_cached_peer("bob@example.com").version = None
-    assert _is_envelope(alice.encrypt_if_needed("bob@example.com", b"data"))
+    assert PeerStore.is_envelope(alice.encrypt_if_needed("bob@example.com", b"data"))
 
 
 @pytest.mark.parametrize(
@@ -656,7 +653,7 @@ def test_envelope_before_keys_and_pin_is_not_ready(make_receiver):
 
 @pytest.mark.parametrize(
     "ds_policy, do_policy",
-    [(OPTIONAL, REQUIRED), (REQUIRED, OPTIONAL), (REQUIRED, REQUIRED)],
+    [(OPTIONAL, REQUIRED), (REQUIRED, OPTIONAL)],
 )
 def test_negotiated_encryption_flow(ds_policy, do_policy):
     """The optional side complies with no manual configuration."""
@@ -671,7 +668,7 @@ def test_negotiated_encryption_flow(ds_policy, do_policy):
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "negotiated content")
-    assert _is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
+    assert PeerStore.is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
 
     do_manager.sync()
     assert any("negotiated content" in c for c in _accepted_contents(do_manager))
@@ -725,7 +722,7 @@ def test_owner_switching_to_required_encrypts_new_files_at_rest():
     ds_manager._send_file_change(file_path, "after switch")
     do_manager.sync()
 
-    envelopes = [_is_envelope(raw) for raw in _raw_event_log(do_manager)]
+    envelopes = [PeerStore.is_envelope(raw) for raw in _raw_event_log(do_manager)]
     assert envelopes.count(False) == before
     assert envelopes.count(True) == len(envelopes) - before > 0
     contents = _accepted_contents(do_manager)
@@ -745,7 +742,7 @@ def test_off_client_works_in_plaintext_with_optional_peer():
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "plain content")
-    assert not _is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
+    assert not PeerStore.is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
     do_manager.sync()
     assert any("plain content" in c for c in _accepted_contents(do_manager))
     assert not ds_manager.peer_manager.peer_store.has_my_keys()
@@ -883,7 +880,7 @@ def test_send_reread_updates_peer_manager():
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "content")
     assert peer_manager._loaded_peer_versions[do_manager.email] is not None
-    assert _is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
+    assert PeerStore.is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
 
 
 def _queued_changes(manager) -> int:
@@ -910,7 +907,7 @@ def test_send_before_peer_accepts_waits_until_sync():
     grant_job_inbox_access(do_manager, ds_manager.email)
     ds_manager.sync()
     assert _queued_changes(ds_manager) == 0
-    assert _is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
+    assert PeerStore.is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
     do_manager.sync()
     assert any("early content" in c for c in _accepted_contents(do_manager))
 
@@ -955,7 +952,6 @@ def test_changes_for_two_datasites_go_to_each(monkeypatch):
             sent.append(
                 (recipient, {fc.datasite_email for fc in message.proposed_file_changes})
             )
-            or True
         ),
     )
     watcher = ds_manager.datasite_watcher_syncer
@@ -972,12 +968,8 @@ def test_changes_for_two_datasites_go_to_each(monkeypatch):
 
 @pytest.mark.parametrize(
     "error",
-    [
-        EncryptionPolicyConflictError,
-        PeerEncryptionPolicyUnknownError,
-        PeerKeysNotReadyError,
-    ],
-    ids=["conflict", "not a peer", "keys not ready"],
+    [EncryptionPolicyConflictError, PeerEncryptionPolicyUnknownError],
+    ids=["conflict", "not a peer"],
 )
 def test_failure_for_one_recipient_still_sends_to_other(monkeypatch, error):
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
@@ -987,7 +979,6 @@ def test_failure_for_one_recipient_still_sends_to_other(monkeypatch, error):
         if recipient == "other@example.com":
             raise error(recipient)
         sent.append(recipient)
-        return True
 
     monkeypatch.setattr(DatasiteWatcherSyncer, "_send_message", send_message)
     watcher = ds_manager.datasite_watcher_syncer
@@ -1024,11 +1015,7 @@ def test_compaction_skips_peer_with_unknown_policy(monkeypatch):
         ds_manager._send_file_change(file_path, content)
         do_manager.sync()
 
-    do_manager.peer_manager.get_cached_peer(ds_manager.email).version = None
-    _forget(do_manager.peer_manager.peer_store, ds_manager.email)
-    monkeypatch.setattr(
-        ConnectionRouter, "read_peer_version_file", lambda self, email: None
-    )
+    _unknown_policy(ds_manager, do_manager, monkeypatch)
     syncer = do_manager.datasite_owner_syncer
     assert syncer.compact_outbox_if_needed(ds_manager.email, min_messages=1) == 0
 

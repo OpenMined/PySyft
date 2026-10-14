@@ -131,7 +131,6 @@ class TestAttestPhase:
         client._rds.peer_manager.syftbox_folder = Path("/tmp/SyftBox_enclave")
         store = client._rds.peer_manager.peer_store
         store.email = "enclave@openmined.org"
-        store.use_encryption = True
         store.has_my_keys.return_value = True
         store.get_public_bundle.return_value = {"identity": "enclave@openmined.org"}
 
@@ -143,37 +142,8 @@ class TestAttestPhase:
         # And the keys must be back on disk: fresh_state wiped the folder
         # moments earlier, so the file the endpoint signs with is gone.
         store.save_keys.assert_called_once_with(written["keys_path"])
-
-    def test_optional_enclave_binds_keys_made_at_boot(self, monkeypatch):
-        """A peer can require encryption from an optional enclave later.
-
-        The keys it then uses must be bound to the report too, so the enclave
-        makes them before it attests.
-        """
-        provider = MagicMock()
-        provider.kind = AttestationKind.TINFOIL
-        provider.collect.return_value = tinfoil_evidence(TINFOIL_DOC)
-        monkeypatch.setattr(
-            "syft_enclaves.runner.select_provider", lambda name, settings: provider
-        )
-        calls = []
-        monkeypatch.setattr(
-            "syft_enclaves.runner.write_public_bundle",
-            lambda bundle, keys_path, claims=None: calls.append(bundle),
-        )
-
-        client = _make_client()
-        client._rds.peer_manager.syftbox_folder = Path("/tmp/SyftBox_enclave")
-        store = client._rds.peer_manager.peer_store
-        store.email = "enclave@openmined.org"
-        store.use_encryption = False
-        store.has_my_keys.return_value = True
-        store.get_public_bundle.return_value = {"identity": "enclave@openmined.org"}
-
-        EnclaveRunner(client=client, require_tee=True).init()
-
-        store.ensure_keys.assert_called_once()
-        assert calls == [{"identity": "enclave@openmined.org"}]
+        # An optional enclave makes keys at boot too, so they are bound to the report.
+        store.ensure_keys.assert_called_once_with()
 
     def test_provider_gets_the_settings_object(self, monkeypatch):
         seen = {}
@@ -215,7 +185,6 @@ class TestClaimsBinding:
         client.data_owners = ["b@openmined.org", "a@openmined.org"]
         store = client._rds.peer_manager.peer_store
         store.email = "enclave@openmined.org"
-        store.use_encryption = True
         store.has_my_keys.return_value = True
         store.get_public_bundle.return_value = {"identity": "enclave@openmined.org"}
         return client
