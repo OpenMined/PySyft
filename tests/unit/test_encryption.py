@@ -1,10 +1,13 @@
+import copy
+import pickle
 import tempfile
 from pathlib import Path
 
 import pytest
 
-from syft.sync.peers.peer import Peer
 from syft.sync.encryption_policy import EncryptionPolicy
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
+from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
@@ -58,18 +61,69 @@ def test_encrypt_without_keys_raises():
         email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
     )
     ps.add_peer(Peer(email="bob@example.com"))
-    with pytest.raises(ValueError, match="No private keys"):
+    with pytest.raises(ValueError, match="Keys are created at login"):
         ps.encrypt("bob@example.com", b"data")
 
 
-def test_encrypt_without_peer_bundle_raises():
+@pytest.mark.parametrize(
+    "state, cause, remedy",
+    [
+        (
+            PeerState.ACCEPTED,
+            "accepted peer, but you do not have their public",
+            "Run client.sync()",
+        ),
+        (
+            PeerState.REQUESTED_BY_ME,
+            "they have not accepted yet",
+            "Wait for them to accept",
+        ),
+        (
+            PeerState.REQUESTED_BY_PEER,
+            "you have not accepted yet",
+            "client.approve_peer_request('bob@example.com')",
+        ),
+        (
+            PeerState.REJECTED,
+            "You rejected bob@example.com",
+            "client.add_peer('bob@example.com')",
+        ),
+    ],
+)
+def test_encrypt_without_peer_bundle_names_the_cause(state, cause, remedy):
+    """A missing bundle means one of four things; the message must say which.
+
+    Naming neither the cause nor the remedy is what left data owners stuck on
+    this error with nothing to act on.
+    """
     ps = PeerStore(
         email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
     )
     ps.generate_keys()
-    ps.add_peer(Peer(email="bob@example.com"))
-    with pytest.raises(ValueError, match="No public encryption bundle"):
+    ps.add_peer(Peer(email="bob@example.com", state=state))
+
+    with pytest.raises(SyftPeerNotReadyError) as exc:
         ps.encrypt("bob@example.com", b"data")
+
+    assert cause in exc.value.cause
+    assert remedy in exc.value.remedy
+    assert str(exc.value) == f"{exc.value.cause} {exc.value.remedy}"
+
+
+def test_peer_not_ready_error_is_a_value_error():
+    """Callers that catch ValueError keep working."""
+    assert issubclass(SyftPeerNotReadyError, ValueError)
+
+
+def test_peer_not_ready_error_survives_pickle_and_copy():
+    error = SyftPeerNotReadyError("p@test.org", cause="Cause.", remedy="Remedy.")
+    for clone in (pickle.loads(pickle.dumps(error)), copy.copy(error)):
+        assert (clone.peer_email, clone.cause, clone.remedy) == (
+            "p@test.org",
+            "Cause.",
+            "Remedy.",
+        )
+        assert str(clone) == "Cause. Remedy."
 
 
 def test_try_decrypt_no_keys():
@@ -77,7 +131,7 @@ def test_try_decrypt_no_keys():
         email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
     )
     data = b"some unencrypted data"
-    with pytest.raises(ValueError, match="No private keys"):
+    with pytest.raises(ValueError, match="Keys are created at login"):
         ps.decrypt("bob@example.com", data) == data
 
 
@@ -87,8 +141,10 @@ def test_try_decrypt_no_peer_bundle():
     )
     ps.generate_keys()
     data = b"some unencrypted data"
-    with pytest.raises(ValueError, match="No cached peer for"):
-        ps.decrypt("bob@example.com", data) == data
+    with pytest.raises(SyftPeerNotReadyError) as exc:
+        ps.decrypt("bob@example.com", data)
+    assert "No cached peer for bob@example.com" in exc.value.cause
+    assert "client.add_peer('bob@example.com')" in exc.value.remedy
 
 
 def test_try_decrypt_invalid_envelope():
