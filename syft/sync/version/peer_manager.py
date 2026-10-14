@@ -114,6 +114,8 @@ class PeerCompatibilityResult(BaseModel):
 class PeerManagerConfig(BaseModel):
     """Configuration for PeerManager."""
 
+    model_config = ConfigDict(extra="forbid")
+
     syftbox_folder: Path
     email: str = ""
     connection_configs: List[ConnectionConfig] = []

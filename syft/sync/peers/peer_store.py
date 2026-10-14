@@ -21,8 +21,8 @@ from syft.sync.encryption_policy import (
     EncryptionPolicy,
     EncryptionPolicyConflictError,
     PeerEncryptionPolicyUnknownError,
-    PeerOutdatedError,
     PeerKeysNotReadyError,
+    PeerOutdatedError,
     UnencryptedMessageError,
     pair_conflicts,
     pair_uses_encryption,
@@ -75,7 +75,7 @@ class PeerStore(BaseModel):
     the key we encrypt to.
     """
 
-    model_config = {"arbitrary_types_allowed": True}
+    model_config = {"arbitrary_types_allowed": True, "extra": "forbid"}
 
     email: str
     encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL

@@ -10,23 +10,25 @@ import warnings
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
     EncryptionPolicyConflictError,
-    PeerOutdatedError,
     PeerEncryptionPolicyUnknownError,
     PeerKeysNotReadyError,
+    PeerOutdatedError,
 )
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
 )
 from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore
-from syft.sync.sync.datasite_watcher_syncer import DatasiteWatcherSyncer
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.sync.datasite_watcher_syncer import DatasiteWatcherSyncer
+from syft.sync.version.peer_manager import PeerManagerConfig
 from syft.sync.version.version_info import VersionInfo
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
@@ -147,6 +149,20 @@ def _owner_sends_with_stale_view(ds_manager, do_manager, content: str) -> None:
 
 def test_policy_defaults_to_optional():
     assert PeerStore(email="alice@example.com").encryption_policy == OPTIONAL
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: PeerStore(email="alice@example.com", use_encryption=True),
+        lambda: PeerManagerConfig(syftbox_folder=Path("/tmp"), use_encryption=True),
+    ],
+    ids=["PeerStore", "PeerManagerConfig"],
+)
+def test_removed_use_encryption_keyword_raises(build):
+    """The keyword gave a store without encryption when it was ignored."""
+    with pytest.raises(ValidationError, match="use_encryption"):
+        build()
 
 
 @pytest.mark.parametrize(
@@ -935,10 +951,12 @@ def test_changes_for_two_datasites_go_to_each(monkeypatch):
     monkeypatch.setattr(
         DatasiteWatcherSyncer,
         "_send_message",
-        lambda self, recipient, message: sent.append(
-            (recipient, {fc.datasite_email for fc in message.proposed_file_changes})
-        )
-        or True,
+        lambda self, recipient, message: (
+            sent.append(
+                (recipient, {fc.datasite_email for fc in message.proposed_file_changes})
+            )
+            or True
+        ),
     )
     watcher = ds_manager.datasite_watcher_syncer
     watcher.on_file_change(f"{do_manager.email}/a.txt", "a", process_now=False)
