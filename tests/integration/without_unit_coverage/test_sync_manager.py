@@ -40,7 +40,7 @@ def test_peer_request_blocks_sync_until_approved():
     2. DS submits a job
     3. DO syncs - nothing should sync (peer not approved)
     4. DO approves peer request
-    5. DO syncs - job should now sync
+    5. DS syncs (sends the held job), DO syncs - job should now sync
     """
     # Create managers with Google Drive connection, no auto-add peers
     ds_manager, do_manager = SyftboxManager._pair_with_google_drive_testing_connection(
@@ -91,7 +91,9 @@ def test_peer_request_blocks_sync_until_approved():
     assert len(do_manager.peer_manager.approved_peers) == 1
     assert do_manager.peer_manager.approved_peers[0].email == ds_manager.email
 
-    # Step 5: DO syncs again - now it should work
+    # Step 5: DS syncs, which sends the job it held while the DO policy was
+    # unknown. DO syncs again - now it should work
+    ds_manager.sync()
     do_manager.sync()
 
     # Verify: File synced and in cache

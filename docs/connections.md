@@ -52,11 +52,11 @@ Syft uses Google Drive as its file-based transport layer. All peer-to-peer commu
 
 Each client advertises an encryption policy in `SYFT_version.json`:
 
-| Policy     | Set with                       | Effect                                       |
-| ---------- | ------------------------------ | -------------------------------------------- |
-| `optional` | default, `encryption=False`    | encrypt only with a peer that requires it    |
-| `required` | `encryption=True`              | encrypt with every peer; refuse plaintext    |
-| `off`      | `encryption="off"`             | never encrypt                                |
+| Policy     | Set with                    | Effect                                    |
+| ---------- | --------------------------- | ----------------------------------------- |
+| `optional` | default, `encryption=False` | encrypt only with a peer that requires it |
+| `required` | `encryption=True`           | encrypt with every peer; refuse plaintext |
+| `off`      | `encryption="off"`          | never encrypt                             |
 
 A pair encrypts when one side is `required`. An `off` and a `required` client conflict: each side skips the other with a warning.
 
