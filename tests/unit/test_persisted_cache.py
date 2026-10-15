@@ -3,6 +3,9 @@
 If the cache persistence feature is removed or broken, these tests fail.
 """
 
+import pytest
+
+from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.constants import (
     CACHE_DIR,
@@ -115,3 +118,83 @@ def test_rolling_state_not_overwritten_across_processes():
         "file2.txt lost! B overwrote A's rolling state instead of building on it."
     )
     assert "file3.txt" in paths_in_rs, "file3.txt missing from rolling state."
+
+
+def _pair_with_unsent_do_file():
+    """Pair a DO and a DS that share a disk cache, and write one unsent DO file."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False, check_versions=True
+    )
+    do_manager.datasite_owner_syncer.perm_context.open(".").grant_read_access(
+        ds_manager.email
+    )
+    do_manager.sync(auto_checkpoint=False)
+    api_file = do_manager.syftbox_folder / do_manager.email / "app_data/apis/x/a.py"
+    api_file.parent.mkdir(parents=True, exist_ok=True)
+    api_file.write_text("print('api')")
+    return ds_manager, do_manager
+
+
+def _assert_ds_receives_after_notebook_sync(ds_manager, do_manager):
+    do_manager.sync(auto_checkpoint=False)
+    ds_manager.sync()
+    received = ds_manager.syftbox_folder / do_manager.email / "app_data/apis/x/a.py"
+    assert received.exists(), "The DS never received the DO file."
+
+
+def test_peer_gets_file_when_other_process_cannot_read_peer_version(monkeypatch):
+    """A process that skips a peer must not mark the file as sent to that peer."""
+    ds_manager, do_manager = _pair_with_unsent_do_file()
+
+    # Process B (syft-bg) cannot read the peer version file, so it skips the DS.
+    do_manager_b = do_manager._copy()
+    monkeypatch.setattr(
+        do_manager_b.peer_manager,
+        "_load_single_peer_version",
+        lambda email: (email, None),
+    )
+    do_manager_b.sync(auto_checkpoint=False)
+
+    _assert_ds_receives_after_notebook_sync(ds_manager, do_manager)
+
+
+def test_peer_gets_file_when_other_process_fails_outbox_upload(monkeypatch):
+    """A failed outbox upload must not mark the file as sent."""
+    ds_manager, do_manager = _pair_with_unsent_do_file()
+
+    do_manager_b = do_manager._copy()
+
+    def fail_upload(*args, **kwargs):
+        raise ConnectionError("upload failed")
+
+    # ConnectionRouter is a pydantic model, so patch the class for B's sync only.
+    with monkeypatch.context() as m:
+        m.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", fail_upload)
+        with pytest.raises(ConnectionError):
+            do_manager_b.sync(auto_checkpoint=False)
+
+    _assert_ds_receives_after_notebook_sync(ds_manager, do_manager)
+
+
+def test_peer_loses_file_deleted_while_other_process_skipped_it(monkeypatch):
+    """A deletion that a process defers for a skipped peer reaches the peer later."""
+    ds_manager, do_manager = _pair_with_unsent_do_file()
+    do_manager.sync(auto_checkpoint=False)
+    ds_manager.sync()
+    received = ds_manager.syftbox_folder / do_manager.email / "app_data/apis/x/a.py"
+    assert received.exists()
+
+    # Process B (syft-bg) is already running when the DO deletes the file.
+    do_manager_b = do_manager._copy()
+    monkeypatch.setattr(
+        do_manager_b.peer_manager,
+        "_load_single_peer_version",
+        lambda email: (email, None),
+    )
+    do_manager_b.sync(auto_checkpoint=False)
+    (do_manager.syftbox_folder / do_manager.email / "app_data/apis/x/a.py").unlink()
+    do_manager_b.sync(auto_checkpoint=False)
+
+    do_manager.sync(auto_checkpoint=False)
+    ds_manager.sync()
+    assert not received.exists(), "The DS kept a file that the DO deleted."

@@ -252,3 +252,17 @@ class PersistedDict(dict):
         with self.exclusive_lock():
             super().clear()
             self._write_to_file()
+
+    def update_entry(self, key: Any, update: Callable[[Any], Any]) -> None:
+        """Set ``key`` to ``update(old value or None)`` under one exclusive lock.
+
+        A None result deletes the key.
+        """
+        with self.exclusive_lock():
+            self._read_from_file()
+            value = update(super().get(key))
+            if value is None:
+                super().pop(key, None)
+            else:
+                super().__setitem__(key, value)
+            self._write_to_file()
