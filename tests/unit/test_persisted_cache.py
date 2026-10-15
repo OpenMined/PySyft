@@ -6,6 +6,7 @@ If the cache persistence feature is removed or broken, these tests fail.
 import pytest
 
 from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.sync.caches.cache_file_writer_connection import FSFileConnection
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.constants import (
     CACHE_DIR,
@@ -198,3 +199,40 @@ def test_peer_loses_file_deleted_while_other_process_skipped_it(monkeypatch):
     do_manager.sync(auto_checkpoint=False)
     ds_manager.sync()
     assert not received.exists(), "The DS kept a file that the DO deleted."
+
+
+def test_read_error_on_pending_file_raises_and_keeps_peer_copy(monkeypatch):
+    """A pending file that cannot be read must not reach the peer as a deletion."""
+    ds_manager, do_manager = _pair_with_unsent_do_file()
+    do_manager.sync(auto_checkpoint=False)
+    ds_manager.sync()
+    received = ds_manager.syftbox_folder / do_manager.email / "app_data/apis/x/a.py"
+    assert received.exists()
+
+    do_manager_b = do_manager._copy()
+    monkeypatch.setattr(
+        do_manager_b.peer_manager,
+        "_load_single_peer_version",
+        lambda email: (email, None),
+    )
+    do_manager_b.sync(auto_checkpoint=False)
+    api_file = do_manager.syftbox_folder / do_manager.email / "app_data/apis/x/a.py"
+    api_file.write_text("print('api v2')")
+    do_manager_b.sync(auto_checkpoint=False)
+
+    # The first read is the resend of the pending path.
+    read_file = FSFileConnection.read_file
+    calls = []
+
+    def fail_first_read(self, path):
+        calls.append(path)
+        if len(calls) == 1:
+            raise PermissionError(path)
+        return read_file(self, path)
+
+    with monkeypatch.context() as m:
+        m.setattr(FSFileConnection, "read_file", fail_first_read)
+        with pytest.raises(PermissionError):
+            do_manager.sync(auto_checkpoint=False)
+    ds_manager.sync()
+    assert received.exists(), "A read error reached the DS as a deletion."

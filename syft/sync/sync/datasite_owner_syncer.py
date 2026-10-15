@@ -38,7 +38,10 @@ from syft.sync.checkpoints.rolling_state import (
 )
 from syft_perms import SyftPermContext
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
-from syft.sync.utils.syftbox_utils import create_event_timestamp
+from syft.sync.utils.syftbox_utils import (
+    create_event_timestamp,
+    get_event_hash_from_content,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -629,19 +632,23 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         )
 
     def _create_current_state_event(self, path: str) -> FileChangeEvent:
-        """An event that sets ``path`` on a peer to its current local state."""
-        event = self._create_resend_event(path)
-        if event is not None:
-            return event
+        """An event that sets ``path`` on a peer to its current local state.
+
+        A missing file gives a deletion. A read error raises.
+        """
+        content = None
+        if (self.syftbox_folder / self.email / path).exists():
+            content = self.event_cache.file_connection.read_file(path)
         timestamp = create_event_timestamp()
         return FileChangeEvent(
             id=uuid4(),
             path_in_datasite=Path(path),
-            content=None,
+            content=content,
+            new_hash=None if content is None else get_event_hash_from_content(content),
             submitted_timestamp=timestamp,
             timestamp=timestamp,
             datasite_email=self.email,
-            is_deleted=True,
+            is_deleted=content is None,
         )
 
     def _queue_pending_deliveries(self, peer_emails: list[str]) -> None:
