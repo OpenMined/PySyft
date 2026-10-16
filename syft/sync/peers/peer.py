@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Any, List, Optional
 from pydantic import BaseModel, PrivateAttr
+from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.key_bundle import bundle_fingerprint
 from syft.sync.platforms.base_platform import BasePlatform
 from syft.sync.version.version_info import VersionInfo
@@ -27,10 +28,21 @@ class Peer(BaseModel):
     state: PeerState = PeerState.ACCEPTED  # Default for backward compatibility
     version: Optional[VersionInfo] = None
     public_encryption_bundle: Optional[dict] = None
-    use_encryption: bool = False
 
     # Set by SyftboxManager.peers when this Peer is handed out.
     _manager: Any = PrivateAttr(default=None)
+
+    @property
+    def encryption_policy(self) -> Optional[EncryptionPolicy]:
+        """The policy the peer advertises, or None before its version file is read."""
+        if self.version is None:
+            return None
+        return self.version.encryption_policy
+
+    @property
+    def is_outdated(self) -> bool:
+        """Whether the peer runs a syft that predates encryption negotiation."""
+        return self.version is not None and self.version.encryption_policy is None
 
     @property
     def fingerprint(self) -> Optional[str]:

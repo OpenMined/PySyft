@@ -8,11 +8,14 @@ read it wrong and lose the keys.
 import json
 
 import pytest
+from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.peer_store import CRYPTO_KEYS_VERSION, PeerStore
 
 
 def _saved(tmp_path):
-    store = PeerStore(email="alice@example.com", use_encryption=True)
+    store = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     store.generate_keys()
     path = tmp_path / "crypto_keys.json"
     store.save_keys(path)

@@ -31,6 +31,7 @@ def _login(
     skip_peer_on_patch_version_diff: bool | None,
     has_do_role: bool,
     has_ds_role: bool,
+    encryption: bool | str = False,
 ) -> SyftRDSClient:
     """Shared RDS login.
 
@@ -47,6 +48,7 @@ def _login(
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+            encryption=encryption,
         )
     else:
         config = SyftRDSClientConfig.for_jupyter(
@@ -55,6 +57,7 @@ def _login(
             has_ds_role=has_ds_role,
             token_path=Path(token_path) if token_path is not None else None,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+            encryption=encryption,
         )
 
     client = SyftRDSClient.from_config(config)
@@ -74,6 +77,7 @@ def login_do(
     sync: bool = True,
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
+    encryption: bool | str = False,
 ) -> SyftRDSClient:
     """Log in as a Data Owner and return a self-contained RDS client."""
     return _login(
@@ -82,6 +86,7 @@ def login_do(
         sync=sync,
         load_peers=load_peers,
         skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+        encryption=encryption,
         has_do_role=True,
         has_ds_role=False,
     )
@@ -94,6 +99,7 @@ def login_ds(
     sync: bool = True,
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
+    encryption: bool | str = False,
 ) -> SyftRDSClient:
     """Log in as a Data Scientist and return a self-contained RDS client."""
     return _login(
@@ -102,6 +108,7 @@ def login_ds(
         sync=sync,
         load_peers=load_peers,
         skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+        encryption=encryption,
         has_do_role=False,
         has_ds_role=True,
     )

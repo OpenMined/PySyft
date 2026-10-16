@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 import pytest
+from syft.sync.encryption_policy import EncryptionPolicy
 
 os.environ["PRE_SYNC"] = "false"
 
@@ -73,12 +74,21 @@ def create_tmp_code_file(code: str):
     return str(code_path)
 
 
-@pytest.mark.parametrize("encryption", [False, True])
-def test_enclave_job_distribution(encryption):
+@pytest.mark.parametrize(
+    "encryption_kwargs",
+    [
+        {"encryption": False},
+        {"encryption": True},
+        # Only the enclave requires encryption; the other clients comply.
+        {"enclave_encryption_policy": EncryptionPolicy.REQUIRED},
+    ],
+    ids=["plaintext", "encrypted", "negotiated"],
+)
+def test_enclave_job_distribution(encryption_kwargs):
     """Test full flow: DS submits job to enclave, enclave distributes to DOs."""
     enclave, do1, do2, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection(
         use_in_memory_cache=False,
-        encryption=encryption,
+        **encryption_kwargs,
     )
 
     # DO1 creates dataset1

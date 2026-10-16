@@ -8,7 +8,7 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from googleapiclient.errors import HttpError
 from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
@@ -17,6 +17,10 @@ from syft_migration import ProtocolSchema
 from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.gdrive_retry import RETRYABLE_TRANSPORT_ERRORS
+from syft.sync.encryption_policy import (
+    EncryptionPolicy,
+    pair_uses_encryption,
+)
 from syft.sync.peers.key_bundle import (
     InvalidPeerBundleError,
     PeerFingerprintMismatchError,
@@ -110,6 +114,8 @@ class PeerCompatibilityResult(BaseModel):
 class PeerManagerConfig(BaseModel):
     """Configuration for PeerManager."""
 
+    model_config = ConfigDict(extra="forbid")
+
     syftbox_folder: Path
     email: str = ""
     connection_configs: List[ConnectionConfig] = []
@@ -120,7 +126,7 @@ class PeerManagerConfig(BaseModel):
     n_threads: int = 10
     has_do_role: bool = False
     has_ds_role: bool = False
-    use_encryption: bool = False
+    encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL
     # Explicit override for the encryption key file. When None, falls back to
     # ``default_crypto_keys_path`` (the per-datasite location).
     crypto_keys_path: Path | None = None
@@ -177,6 +183,8 @@ class PeerManager(BaseModel):
     # Peer email -> state at the first load_peers(), for accepted peers and
     # waiting requests. None until that load.
     _states_at_start: Optional[Dict[str, PeerState]] = PrivateAttr(default=None)
+    # Peers this process published its encryption bundle for.
+    _bundle_published_for: Set[str] = PrivateAttr(default_factory=set)
 
     # ========== Peer List Properties ==========
 
@@ -214,10 +222,8 @@ class PeerManager(BaseModel):
         resolved_email = config.email or email
         peer_store = PeerStore.create(
             email=resolved_email,
-            use_encryption=config.use_encryption,
-            keys_path=config.resolved_crypto_keys_path
-            if config.use_encryption
-            else None,
+            encryption_policy=config.encryption_policy,
+            keys_path=config.resolved_crypto_keys_path,
         )
         connection_router = ConnectionRouter.from_configs(
             resolved_email, config.connection_configs
@@ -292,6 +298,9 @@ class PeerManager(BaseModel):
         """Get current client's version info."""
         if self._own_version is None:
             self._own_version = VersionInfo.current()
+        # The store can change after the first call: tests and the enclave
+        # replace it, and a key file can make it required.
+        self._own_version.encryption_policy = self.peer_store.encryption_policy
         return self._own_version
 
     def write_own_version(self) -> None:
@@ -304,7 +313,9 @@ class PeerManager(BaseModel):
 
     def share_version_with_peer(self, peer_email: str) -> None:
         """Share version file with a peer so they can read it."""
-        self.connection_router.share_version_file_with_peer(peer_email)
+        self.connection_router.share_version_file_with_peer(
+            peer_email, self.get_own_version()
+        )
 
     def get_cached_peer(self, email: str) -> Optional[Peer]:
         """Get a peer by email, or None if not found."""
@@ -329,11 +340,11 @@ class PeerManager(BaseModel):
                 create_new=True
             )
             version_info = connection.read_peer_version_file(peer_email)
-            return (peer_email, version_info)
         except Exception as e:
             if not self.suppress_version_warnings:
                 warnings.warn(f"Failed to load version for {peer_email}: {e}")
             return (peer_email, None)
+        return (peer_email, version_info)
 
     def load_peer_versions_parallel(
         self, peer_emails: List[str], force: bool = False
@@ -492,6 +503,24 @@ class PeerManager(BaseModel):
                 compatible.append(email)
         return compatible
 
+    def without_encryption_conflicts(self, peer_emails: List[str]) -> List[str]:
+        """``peer_emails`` without the peers whose encryption policy conflicts.
+
+        Such a pair cannot exchange messages, so it is skipped with a warning.
+        A peer that runs an outdated syft is skipped too, with a warning to
+        upgrade.
+        ``ignore_peer_version`` does not apply: it is not a version question.
+        """
+        result = []
+        for email in peer_emails:
+            peer = self.peer_store.get_cached_peer(email)
+            error = None if peer is None else self.peer_store.conflict_error(peer)
+            if error is None:
+                result.append(email)
+            else:
+                warnings.warn(f"{email} is skipped: {error}")
+        return result
+
     def warn_if_all_peers_incompatible(self, peer_emails: List[str]) -> None:
         """Warn if all connected peers are incompatible (used by DS during sync)."""
         if self.suppress_version_warnings:
@@ -564,9 +593,20 @@ class PeerManager(BaseModel):
         if existing_peer_obj:
             new_peer_obj = existing_peer_obj
 
-        # Exchange encryption bundles if key_manager is set
-        if self.peer_store.use_encryption:
+        # The peer policy selects encryption for the pair. Before the peer
+        # accepts, its version file is not shared and the policy is unknown;
+        # load_peers publishes and pins when the policy becomes known.
+        version_info = self.connection_router.read_peer_version_file(peer_email)
+        new_peer_obj.version = version_info
+        encrypted = pair_uses_encryption(
+            self.peer_store.encryption_policy,
+            self.peer_store.policy_of(new_peer_obj),
+        )
+        if encrypted:
             self._write_encryption_bundle_for_peer(peer_email)
+        error = self.peer_store.conflict_error(new_peer_obj)
+        if error is not None:
+            warnings.warn(f"{peer_email} is skipped: {error}")
 
         # Accepting a request or re-adding an accepted peer with force is an
         # explicit user decision, so a changed key is adopted with a warning.
@@ -576,7 +616,7 @@ class PeerManager(BaseModel):
             and existing_peer_obj.state == PeerState.ACCEPTED
         )
         peer_bundle = None
-        if self.peer_store.use_encryption and (is_accepting or re_adding_accepted):
+        if encrypted and (is_accepting or re_adding_accepted):
             peer_bundle = self._pin_published_bundle(
                 peer_email, new_peer_obj, explicit=True
             )
@@ -585,10 +625,8 @@ class PeerManager(BaseModel):
             peer_email, new_state.value, public_encryption_bundle=peer_bundle
         )
         self.share_version_with_peer(peer_email)
-        version_info = self.connection_router.read_peer_version_file(peer_email)
         self._update_peer_schemas(peer_email, version_info)
 
-        new_peer_obj.version = version_info
         if peer_bundle is not None:
             new_peer_obj.public_encryption_bundle = peer_bundle
         new_peer_obj.state = new_state
@@ -605,15 +643,13 @@ class PeerManager(BaseModel):
     # ========== Peer key pinning ==========
 
     def my_fingerprint(self) -> Optional[str]:
-        """Fingerprint of our own encryption identity key (None when off)."""
-        if not self.peer_store.use_encryption or not self.peer_store.has_my_keys():
+        """Fingerprint of our own encryption identity key (None without keys)."""
+        if not self.peer_store.has_my_keys():
             return None
         return self.peer_store.my_fingerprint
 
     def peer_fingerprint(self, peer_email: str) -> Optional[str]:
         """Fingerprint of the pinned encryption key of ``peer_email``, or None."""
-        if not self.peer_store.use_encryption:
-            return None
         return self.peer_store.peer_fingerprint(peer_email)
 
     def _pin_published_bundle(
@@ -627,7 +663,11 @@ class PeerManager(BaseModel):
         # The peer must be in the store for the pin to be recorded.
         if self.peer_store.get_cached_peer(peer_email) is None:
             self.peer_store.add_peer(peer)
-        raw_bundle = self._read_peer_encryption_bundle(peer_email)
+        try:
+            raw_bundle = self._read_peer_encryption_bundle(peer_email)
+        except ValueError as e:
+            warnings.warn(f"Refusing the encryption key of {peer_email}: {e}")
+            return None
         if raw_bundle is None:
             return None
         return self._adopt_peer_bundle(peer_email, raw_bundle, explicit=explicit)
@@ -680,10 +720,10 @@ class PeerManager(BaseModel):
             InvalidPeerBundleError: ``expected_fingerprint`` is given and the
                 published bundle does not parse.
         """
-        if not self.peer_store.use_encryption:
-            raise ValueError("Encryption is not enabled")
         if self.peer_store.get_cached_peer(peer_email) is None:
             raise ValueError(f"Unknown peer {peer_email}; run client.load_peers()")
+        if not self.peer_store.peer_uses_encryption(peer_email):
+            raise ValueError(f"Encryption is not in use with {peer_email}")
         raw_bundle = self._read_peer_encryption_bundle(peer_email)
         if raw_bundle is None:
             warnings.warn(f"{peer_email} has not published an encryption key for us")
@@ -771,13 +811,13 @@ class PeerManager(BaseModel):
         )
 
     def _write_encryption_bundle_for_peer(self, peer_email: str) -> dict | None:
-        """Write own encryption bundle for a peer if encryption is enabled."""
-        if not self.peer_store.use_encryption:
-            raise ValueError("Encryption is not enabled")
+        """Write own encryption bundle for a peer, making keys first when needed."""
+        self.peer_store.ensure_keys()
         bundle = self.peer_store.get_public_bundle()
         bundle_json = json.dumps({BUNDLE_FILE_KEY: bundle})
         self.connection_router.write_encryption_bundle(peer_email, bundle_json)
         self.connection_router.share_encryption_bundles_folder(peer_email)
+        self._bundle_published_for.add(peer_email)
         return bundle
 
     def _read_peer_encryption_bundle(
@@ -857,17 +897,54 @@ class PeerManager(BaseModel):
         # set_peers keeps the locally pinned bundle over whatever the Drive
         # copy of SYFT_peers.json holds, and validates any bundle it adopts.
         self.peer_store.set_peers(peers)
-
-        if self.peer_store.use_encryption:
-            active = [
-                p
-                for p in peers
-                if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_ME)
-            ]
-            self._pin_missing_peer_bundles(active)
-            self._check_peer_key_rotations([p.email for p in active])
-
         self.load_peer_versions_parallel([peer.email for peer in peers])
+
+        # Peer policies are known only after the versions load.
+        encrypted = [
+            p
+            for p in peers
+            if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_ME)
+            and self.peer_store.peer_uses_encryption(p.email)
+        ]
+        self._publish_bundle_to_new_encrypted_peers(encrypted)
+        self._pin_missing_peer_bundles(encrypted)
+        self._check_peer_key_rotations([p.email for p in encrypted])
+
+    def _publish_bundle_to_new_encrypted_peers(self, peers: List[Peer]) -> None:
+        """Publish our bundle to each peer the pair encrypts with, once per process.
+
+        ``add_peer`` publishes when the pair encrypts at peering. A pair can
+        start to encrypt later: an optional client learns the peer policy, or
+        this client becomes required after peering.
+        """
+        for peer in peers:
+            if peer.email in self._bundle_published_for:
+                continue
+            try:
+                if self._own_bundle_is_published(peer.email):
+                    self._bundle_published_for.add(peer.email)
+                else:
+                    self._write_encryption_bundle_for_peer(peer.email)
+            except (HttpError, *RETRYABLE_TRANSPORT_ERRORS) as e:
+                warnings.warn(
+                    f"Could not publish the encryption key for {peer.email}: {e}. "
+                    "The next peer load tries again."
+                )
+
+    def _own_bundle_is_published(self, peer_email: str) -> bool:
+        """Whether the bundle published for ``peer_email`` is our current one."""
+        self.peer_store.ensure_keys()
+        try:
+            published = self.connection_router.read_own_encryption_bundle(peer_email)
+            if published is None:
+                return False
+            payload = json.loads(published)
+        except ValueError:
+            # Not valid UTF-8 or JSON, so not ours as written: write it again.
+            return False
+        if not isinstance(payload, dict):
+            return False
+        return payload.get(BUNDLE_FILE_KEY) == self.peer_store.get_public_bundle()
 
     def _pin_missing_peer_bundles(self, peers: List[Peer]) -> None:
         """Pin the published bundle of every peer we hold none for (trust on first use).

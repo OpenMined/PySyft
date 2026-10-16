@@ -1939,14 +1939,21 @@ class GDriveConnection(SyftboxPlatformConnection):
             print(f"Warning: could not read the version file of {peer_email}: {e}")
             return None
 
-    def share_version_file_with_peer(self, peer_email: str) -> None:
-        """Share the version file with a peer so they can read it."""
+    def share_version_file_with_peer(
+        self, peer_email: str, version_info: Optional["VersionInfo"] = None
+    ) -> None:
+        """Share the version file with a peer so they can read it.
+
+        A missing file is created from ``version_info``, the version of this
+        client. Without it, the file says only what any client of this release
+        says, and not the encryption policy of this client.
+        """
         file_id = self._get_version_file_id()
         if file_id is None:
             # Version file doesn't exist yet, create it first
             from syft.sync.version.version_info import VersionInfo
 
-            self.write_version_file(VersionInfo.current())
+            self.write_version_file(version_info or VersionInfo.current())
             file_id = self._get_version_file_id()
 
         if file_id:
@@ -2449,6 +2456,19 @@ class GDriveConnection(SyftboxPlatformConnection):
         """Share the bundles folder with a peer so they can read bundles."""
         folder_id = self._get_or_create_encryption_bundles_folder_id()
         self.add_permission(folder_id, peer_email, write=False)
+
+    def read_own_encryption_bundle(self, peer_email: str) -> str | None:
+        """Read the bundle this client published for ``peer_email``, or None."""
+        folder_id = self._get_or_create_encryption_bundles_folder_id()
+        filename = self._encryption_bundle_filename(self.email, peer_email)
+        query = f"name='{filename}' and '{folder_id}' in parents and trashed=false"
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(id)")
+        )
+        items = results.get("files", [])
+        if not items:
+            return None
+        return self.download_file(items[0]["id"]).decode("utf-8")
 
     def read_peer_encryption_bundle(self, peer_email: str) -> str | None:
         """Read encryption bundle that peer wrote for us.

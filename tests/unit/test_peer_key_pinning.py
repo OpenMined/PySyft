@@ -25,6 +25,7 @@ from syft.sync.peers.key_bundle import (
     format_fingerprint,
 )
 from syft.sync.peers.peer import Peer
+from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.peer_store import PeerStore, datasite_crypto_keys_path
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.version.peer_manager import PeerManager
@@ -37,7 +38,7 @@ MALLORY = "mallory@example.com"
 
 
 def _store(email: str) -> PeerStore:
-    store = PeerStore(email=email, use_encryption=True)
+    store = PeerStore(email=email, encryption_policy=EncryptionPolicy.REQUIRED)
     store.generate_keys()
     return store
 
@@ -199,7 +200,9 @@ def test_set_peers_drops_invalid_cached_bundle():
 
 def test_pins_persist_in_private_key_file(tmp_path):
     path = tmp_path / "crypto_keys.json"
-    alice = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    alice = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     bob = _store(BOB)
     alice.add_peer(Peer(email=BOB))
     alice.set_peer_bundle(BOB, bob.get_public_bundle())
@@ -207,13 +210,17 @@ def test_pins_persist_in_private_key_file(tmp_path):
     on_disk = json.loads(path.read_text())["peer_bundles"]
     assert bundle_fingerprint(on_disk[BOB]) == bob.my_fingerprint
 
-    reloaded = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    reloaded = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     assert reloaded.peer_fingerprint(BOB) == bob.my_fingerprint
 
 
 def test_persisting_pin_keeps_pins_written_by_another_process(tmp_path):
     path = tmp_path / "crypto_keys.json"
-    alice = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    alice = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     bob, carol = _store(BOB), _store("carol@example.com")
 
     # Another process (syft-bg) pinned Carol meanwhile.
@@ -231,13 +238,17 @@ def test_persisting_pin_keeps_pins_written_by_another_process(tmp_path):
 def test_key_trusted_by_another_process_is_adopted_without_warning(tmp_path):
     """A notebook and syft-bg share one key file; whichever trusted a new key wins."""
     path = tmp_path / "crypto_keys.json"
-    notebook = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    notebook = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     bob = _store(BOB)
     notebook.add_peer(Peer(email=BOB))
     notebook.set_peer_bundle(BOB, bob.get_public_bundle())
 
     new_bob = _store(BOB)
-    daemon = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    daemon = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     daemon.set_peer_bundle(BOB, new_bob.get_public_bundle(), allow_key_change=True)
 
     # The notebook reloads peers from SYFT_peers.json, which the daemon updated.
@@ -252,7 +263,9 @@ def test_key_trusted_by_another_process_is_adopted_without_warning(tmp_path):
 def test_pin_survives_sync_that_leaves_peer_out(tmp_path):
     """A peer rejected for one sync drops out of memory; the key file keeps the pin."""
     path = tmp_path / "crypto_keys.json"
-    alice = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    alice = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     bob = _store(BOB)
     alice.add_peer(Peer(email=BOB))
     alice.set_peer_bundle(BOB, bob.get_public_bundle())
@@ -275,11 +288,15 @@ def test_pin_survives_sync_that_leaves_peer_out(tmp_path):
 def test_pin_from_another_process_wins_over_first_use(tmp_path):
     """Bob is in memory without a key while syft-bg already pinned him in the key file."""
     path = tmp_path / "crypto_keys.json"
-    notebook = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    notebook = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     notebook.add_peer(Peer(email=BOB))
 
     bob = _store(BOB)
-    daemon = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    daemon = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     daemon.add_peer(Peer(email=BOB))
     daemon.set_peer_bundle(BOB, bob.get_public_bundle())
 
@@ -293,11 +310,15 @@ def test_pin_from_another_process_wins_over_first_use(tmp_path):
 
 def test_set_peer_bundle_refuses_key_other_than_stored_pin(tmp_path):
     path = tmp_path / "crypto_keys.json"
-    notebook = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    notebook = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     notebook.add_peer(Peer(email=BOB))
 
     bob = _store(BOB)
-    daemon = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    daemon = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     daemon.add_peer(Peer(email=BOB))
     daemon.set_peer_bundle(BOB, bob.get_public_bundle())
 
@@ -309,7 +330,9 @@ def test_set_peer_bundle_refuses_key_other_than_stored_pin(tmp_path):
 
 def test_failed_key_file_write_leaves_old_file(tmp_path, monkeypatch):
     path = tmp_path / "crypto_keys.json"
-    alice = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    alice = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     alice.add_peer(Peer(email=BOB))
     before = path.read_text()
 
@@ -329,9 +352,13 @@ def test_failed_key_file_write_leaves_old_file(tmp_path, monkeypatch):
 def test_concurrent_pins_from_two_stores_are_all_kept(tmp_path):
     """The lock covers read, change and write, so no pin is lost between writers."""
     path = tmp_path / "crypto_keys.json"
-    PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     stores = [
-        PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+        PeerStore.create(
+            email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+        )
         for _ in range(2)
     ]
     peers = [[_store(f"peer{s}-{i}@example.com") for i in range(5)] for s in range(2)]
@@ -356,7 +383,9 @@ def test_concurrent_pins_from_two_stores_are_all_kept(tmp_path):
 
 def test_corrupt_stored_pin_is_dropped_on_load(tmp_path):
     path = tmp_path / "crypto_keys.json"
-    alice = PeerStore.create(email=ALICE, use_encryption=True, keys_path=path)
+    alice = PeerStore.create(
+        email=ALICE, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=path
+    )
     bob = _store(BOB)
     alice.add_peer(Peer(email=BOB))
     alice.set_peer_bundle(BOB, bob.get_public_bundle())
@@ -559,7 +588,7 @@ def test_pins_survive_new_manager_on_same_datasite():
     do.trust_peer_key(ds.email, ds.encryption_fingerprint)
 
     reloaded = PeerStore.create(
-        email=do.email, use_encryption=True, keys_path=keys_path
+        email=do.email, encryption_policy=EncryptionPolicy.REQUIRED, keys_path=keys_path
     )
     assert reloaded.peer_fingerprint(ds.email) == ds.encryption_fingerprint
 

@@ -144,6 +144,9 @@ class EnclaveRunner:
         logger.info(
             "TEE detected (%s) — collecting attestation evidence", provider.kind.value
         )
+        # An optional enclave makes keys too: a peer that requires encryption
+        # later uses them, and only keys that exist now are bound to the report.
+        self.client._rds.peer_manager.peer_store.ensure_keys()
         # The key bundle and claims first: on a target that commits to them in
         # the token, the digest has to exist before minting.
         claims = self._build_claims()
@@ -175,11 +178,7 @@ class EnclaveRunner:
         report already binds and serves it over the pinned connection.
         """
         peer_store = self.client._rds.peer_manager.peer_store
-        bundle = (
-            peer_store.get_public_bundle()
-            if peer_store.use_encryption and peer_store.has_my_keys()
-            else None
-        )
+        bundle = peer_store.get_public_bundle() if peer_store.has_my_keys() else None
         claims = build_claims(
             email=self.client.email,
             data_owners=self.client.data_owners,
@@ -199,11 +198,11 @@ class EnclaveRunner:
 
         A peer fetching the report over a pinned connection gets the bundle
         from the same channel, which binds it to the hardware report. Skipped
-        when encryption is off, since then there is no bundle.
+        when there are no keys, since then there is no bundle.
         """
         peer_store = self.client._rds.peer_manager.peer_store
-        if not peer_store.use_encryption or not peer_store.has_my_keys():
-            logger.info("Encryption disabled — no key bundle to publish")
+        if not peer_store.has_my_keys():
+            logger.info("No keys — no key bundle to publish")
             return
         peer_manager = self.client._rds.peer_manager
         # The per-datasite default location; the enclave never overrides
