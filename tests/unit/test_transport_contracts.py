@@ -9,7 +9,12 @@ import pytest
 from pydantic import ValidationError
 
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
-from syft.sync.sync.delivery_tracker import DeliveryTracker
+from syft.sync.sync.delivery_tracker import (
+    DELIVERY_STATE_VERSION,
+    DeliveryState,
+    DeliveryStateStore,
+    DeliveryTracker,
+)
 from syft.sync.transport import (
     Collections,
     MessageKind,
@@ -118,6 +123,18 @@ def test_message_names_carry_their_send_time(name, expected):
 
 
 def test_delivery_tracker_is_a_stub_until_implemented():
-    tracker = DeliveryTracker(path=None)
+    tracker = DeliveryTracker(store=Mock(spec=DeliveryStateStore))
     with pytest.raises(NotImplementedError):
         tracker.has_view("ds@example.com")
+
+
+def test_a_delivery_state_store_needs_a_backend():
+    with pytest.raises(TypeError):
+        DeliveryStateStore()
+
+
+def test_an_empty_delivery_state_is_versioned():
+    state = DeliveryState()
+    assert state.version == DELIVERY_STATE_VERSION
+    assert state.views == {}
+    assert state.queued == {}
