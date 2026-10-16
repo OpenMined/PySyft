@@ -1,5 +1,7 @@
 """syft-rds: Remote Data Science product composed on top of syft."""
 
+from syft_job.logging_config import configure_package_logger
+
 from syft_rds.client import DatasetUpgrade, SyftRDSClient, UpgradeReport
 from syft_rds.config import SyftRDSClientConfig
 from syft_rds.job_auto_approval import auto_approve_and_run_jobs, job_matches_criteria
@@ -27,3 +29,6 @@ __all__ = [
     "Environment",
     "check_env",
 ]
+
+# Last, so the imports stay at the top. Nothing here logs at import time.
+configure_package_logger(__name__)
