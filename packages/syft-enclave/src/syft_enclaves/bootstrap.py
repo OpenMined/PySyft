@@ -29,6 +29,7 @@ import sys
 from pathlib import Path
 
 import requests
+from syft_job.logging_config import defer_to_root_logging
 
 from syft_enclaves._unix_socket import UnixSocketConnection
 from syft_enclaves.evidence.tinfoil import TINFOIL_ATTESTATION_PATH
@@ -205,6 +206,7 @@ def run() -> None:
         level="INFO",
         format="%(asctime)s [%(levelname)s] bootstrap: %(message)s",
     )
+    defer_to_root_logging()
 
     token_path = Path(
         os.environ.get("SYFT_ENCLAVE_TOKEN_PATH", str(DEFAULT_TOKEN_PATH))
