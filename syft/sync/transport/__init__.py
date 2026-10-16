@@ -2,23 +2,22 @@
 
 from syft.sync.transport.protocols import (
     Collections,
+    OwnerStore,
     P2PConnection,
-    PeerState,
-    PrivateStore,
+    Peering,
     Transport,
+    WatcherStore,
 )
-from syft.sync.transport.storage import OwnerStorage, WatcherStorage
 from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
 
 __all__ = [
     "Collections",
     "MessageKind",
-    "OwnerStorage",
+    "OwnerStore",
     "P2PConnection",
-    "PeerState",
-    "PrivateStore",
+    "Peering",
     "RawMessage",
     "SendStatus",
     "Transport",
-    "WatcherStorage",
+    "WatcherStore",
 ]

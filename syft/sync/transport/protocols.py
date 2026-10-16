@@ -1,12 +1,14 @@
-"""The four jobs a transport backend does, one abstract class each.
+"""The jobs a transport backend does, one abstract class each.
 
-A backend implements the classes it can. The sync layer above never sees
-backend ids: it passes back the messages and handles a backend returns.
+``P2PConnection`` carries messages between peers, ``OwnerStore`` and
+``WatcherStore`` hold each role's own storage, ``Collections`` shares datasets,
+and ``Peering`` finds and trusts peers. A backend implements the classes it
+can. The sync layer above never sees backend ids: it passes back the messages
+and handles a backend returns.
 
-These are the version-1 contracts. They name today's operations in
-backend-neutral terms so the sync layer can depend on them while the Drive
-code moves behind them. Later versions narrow them to generic storage
-primitives once syft's naming rules have moved into ``naming.py``.
+Each class keeps its abstract methods to the few a backend must write. Methods
+that only combine those are ordinary methods on the base class, which a
+backend may override when it can do them faster.
 """
 
 from __future__ import annotations
@@ -66,33 +68,37 @@ class P2PConnection(ABC):
         again."""
 
 
-class PrivateStore(ABC):
-    """My own storage: only I write it, only I read it, it is never shared."""
+class OwnerStore(ABC):
+    """The data owner's own storage: event log, checkpoints, rolling state.
+
+    Only the owner writes and reads it, and it is never shared.
+    """
 
     # -- event log -------------------------------------------------------------
     @abstractmethod
     def append_event(self, name: str, data: bytes) -> str:
-        """Append one events message to my event log; return its handle."""
+        """Append one events message to the event log; return its handle."""
+
+    @abstractmethod
+    def list_event_handles(self, since_timestamp: float | None = None) -> list[str]:
+        """Handles of the events messages sent after ``since_timestamp``, oldest
+        first; every message when it is None."""
 
     @abstractmethod
     def fetch(self, handle: str) -> bytes:
         """The bytes stored under ``handle``."""
 
-    @abstractmethod
-    def list_event_handles(self, since_timestamp: float | None = None) -> list[str]:
-        """Handles of my events messages sent after ``since_timestamp``."""
+    def fetch_events_since(self, since_timestamp: float | None) -> list[bytes]:
+        """The events messages sent after ``since_timestamp``, oldest first."""
+        return [self.fetch(h) for h in self.list_event_handles(since_timestamp)]
 
-    @abstractmethod
     def fetch_all_events(self) -> list[bytes]:
-        """Every events message in my event log."""
+        """Every events message in the event log, oldest first."""
+        return self.fetch_events_since(None)
 
-    @abstractmethod
-    def fetch_events_since(self, since_timestamp: float) -> list[bytes]:
-        """My events messages sent after ``since_timestamp``."""
-
-    @abstractmethod
     def count_events_since(self, since_timestamp: float | None) -> int:
         """How many events messages were sent after ``since_timestamp``."""
+        return len(self.list_event_handles(since_timestamp))
 
     # -- checkpoints -----------------------------------------------------------
     @abstractmethod
@@ -113,7 +119,7 @@ class PrivateStore(ABC):
 
     @abstractmethod
     def incremental_count(self) -> int:
-        """How many incremental checkpoints are stored."""
+        """How many incremental checkpoints are stored, without fetching them."""
 
     @abstractmethod
     def next_incremental_sequence(self) -> int:
@@ -136,42 +142,36 @@ class PrivateStore(ABC):
     def delete_rolling_state(self) -> None:
         """Remove the rolling state."""
 
-    # -- peer registry (SYFT_peers.json) ---------------------------------------
-    @abstractmethod
-    def read_peer_registry(self, force_download: bool = False) -> dict:
-        """My record of every peer and its state, keyed by email."""
+
+class WatcherStore(ABC):
+    """The data scientist's memory of what each owner sent it.
+
+    One area per owner, in the scientist's own storage, never shared, so it
+    survives a lost local disk such as a Colab runtime reset.
+    """
 
     @abstractmethod
-    def update_peer_registry(
-        self, peer: str, state: str, public_encryption_bundle: dict | None = None
-    ) -> None:
-        """Record ``peer``'s state, and its key bundle when given."""
-
-    # -- watcher area: the data scientist's memory, one area per peer ------------
-    # Placeholders until watcher storage lands (PR 3). A backend that does not
-    # override them has no watcher storage yet.
-
-    def put_watcher_checkpoint(self, peer: str, name: str, data: bytes) -> str:
+    def put_checkpoint(self, peer: str, name: str, data: bytes) -> str:
         """Store a snapshot of every file received from ``peer``; it replaces
         the previous one."""
-        raise NotImplementedError("Watcher storage is not implemented yet")
 
-    def latest_watcher_checkpoint(self, peer: str) -> bytes | None:
+    @abstractmethod
+    def latest_checkpoint(self, peer: str) -> bytes | None:
         """The newest snapshot of files received from ``peer``, or None."""
-        raise NotImplementedError("Watcher storage is not implemented yet")
 
-    def put_watcher_rolling_state(self, peer: str, name: str, data: bytes) -> str:
+    @abstractmethod
+    def put_rolling_state(self, peer: str, name: str, data: bytes) -> str:
         """Store the changes received from ``peer`` since the snapshot, and the
-        ids of messages already processed."""
-        raise NotImplementedError("Watcher storage is not implemented yet")
+        ids of the messages already processed."""
 
-    def get_watcher_rolling_state(self, peer: str) -> bytes | None:
+    @abstractmethod
+    def get_rolling_state(self, peer: str) -> bytes | None:
         """The rolling state for ``peer``, or None."""
-        raise NotImplementedError("Watcher storage is not implemented yet")
 
-    def delete_watcher_state(self, peer: str) -> None:
-        """Forget everything received from ``peer``, e.g. before a full resend."""
-        raise NotImplementedError("Watcher storage is not implemented yet")
+    @abstractmethod
+    def reset(self, peer: str) -> None:
+        """Forget everything received from ``peer``, before asking it to send
+        everything again."""
 
 
 class Collections(ABC):
@@ -198,12 +198,13 @@ class Collections(ABC):
         """Store ``files`` in the collection."""
 
     @abstractmethod
-    def list_mine(self, prefix: str) -> list[str]:
-        """Names of the collections I published under ``prefix``."""
-
-    @abstractmethod
     def list_mine_with_permissions(self, prefix: str) -> list[FileCollection]:
         """The collections I published under ``prefix``, with their flags."""
+
+    def list_mine(self, prefix: str) -> list[str]:
+        """The tags of the collections I published under ``prefix``, each once."""
+        tags = (c.tag for c in self.list_mine_with_permissions(prefix))
+        return list(dict.fromkeys(tags))
 
     @abstractmethod
     def delete(self, prefix: str, tag: str) -> None:
@@ -215,12 +216,6 @@ class Collections(ABC):
         content_hash and variant."""
 
     @abstractmethod
-    def download(
-        self, prefix: str, tag: str, content_hash: str, owner_email: str
-    ) -> dict[str, bytes]:
-        """Every file of one collection a peer shared with me."""
-
-    @abstractmethod
     def list_files(
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> list[dict]:
@@ -230,13 +225,17 @@ class Collections(ABC):
     def fetch_file(self, handle: str) -> bytes:
         """The bytes of one collection file."""
 
+    def download(
+        self, prefix: str, tag: str, content_hash: str, owner_email: str
+    ) -> dict[str, bytes]:
+        """Every file of one collection a peer shared with me, by file name."""
+        files = self.list_files(prefix, tag, content_hash, owner_email)
+        return {f["file_name"]: self.fetch_file(f["file_id"]) for f in files}
 
-class PeerState(ABC):
-    """Finding and trusting a peer: identity, channels, published documents.
 
-    Not to be confused with ``syft.sync.peers.peer.PeerState``, the enum of
-    handshake states.
-    """
+class Peering(ABC):
+    """Finding and trusting a peer: identity, channels, peer list, published
+    documents."""
 
     @abstractmethod
     def whoami(self) -> str:
@@ -244,12 +243,24 @@ class PeerState(ABC):
 
     @abstractmethod
     def open_channels(self, peer: str) -> None:
-        """Create both mailbox channels with ``peer`` and let them write."""
+        """Create the message channels with ``peer`` and let it write to them."""
 
     @abstractmethod
     def incoming_requests(self) -> list[str]:
         """Emails of peers who opened channels towards me."""
 
+    # -- peer list (SYFT_peers.json) -------------------------------------------
+    @abstractmethod
+    def read_peer_registry(self, force_download: bool = False) -> dict:
+        """My record of every peer and its state, keyed by email."""
+
+    @abstractmethod
+    def update_peer_registry(
+        self, peer: str, state: str, public_encryption_bundle: dict | None = None
+    ) -> None:
+        """Record ``peer``'s state, and its key bundle when given."""
+
+    # -- key bundles -----------------------------------------------------------
     @abstractmethod
     def publish_key_bundle(self, peer: str, bundle_json: str) -> None:
         """Publish my public key bundle for ``peer``."""
@@ -259,9 +270,14 @@ class PeerState(ABC):
         """Let ``peer`` read the key bundles I publish."""
 
     @abstractmethod
+    def read_own_key_bundle(self, peer: str) -> str | None:
+        """The key bundle I published for ``peer``, or None."""
+
+    @abstractmethod
     def read_peer_key_bundle(self, peer: str) -> str | None:
         """The key bundle ``peer`` published for me, or None."""
 
+    # -- version documents -----------------------------------------------------
     @abstractmethod
     def publish_version(self, version_info: VersionInfo) -> None:
         """Publish my version document."""
@@ -280,13 +296,15 @@ class PeerState(ABC):
 
 
 class Transport(BaseModel):
-    """One backend's implementation of the four jobs."""
+    """One implementation of each job. The parts may come from different
+    backends, though a peer's ``p2p`` and ``peering`` go together."""
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
     p2p: P2PConnection
-    private_store: PrivateStore
+    owner_store: OwnerStore
+    watcher_store: WatcherStore
     collections: Collections
-    peer_state: PeerState
+    peering: Peering
     # Recorded on each Peer so a peer list says which backend reaches it.
     platform: BasePlatform

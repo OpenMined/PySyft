@@ -1,6 +1,8 @@
-"""The transport contracts: the abstract jobs, the role wrappers, the naming
-rules and the DeliveryTracker stub. No backend implements them yet."""
+"""The transport contracts: the abstract jobs, their helper methods, the
+message types, the naming rules and the DeliveryTracker stub. No backend
+implements them yet."""
 
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -11,75 +13,73 @@ from syft.sync.sync.delivery_tracker import DeliveryTracker
 from syft.sync.transport import (
     Collections,
     MessageKind,
+    OwnerStore,
     P2PConnection,
+    Peering,
     RawMessage,
-    OwnerStorage,
-    PeerState,
-    PrivateStore,
     Transport,
-    WatcherStorage,
+    WatcherStore,
 )
 from syft.sync.transport.naming import timestamp_from_message_name
 
+JOBS = [P2PConnection, OwnerStore, WatcherStore, Collections, Peering]
 
-@pytest.mark.parametrize("job", [P2PConnection, PrivateStore, Collections, PeerState])
+
+@pytest.mark.parametrize("job", JOBS)
 def test_a_job_cannot_be_used_without_a_backend(job):
     with pytest.raises(TypeError):
         job()
 
 
-def test_owner_storage_forwards_to_the_private_store():
-    store = Mock(spec=PrivateStore)
-    store.get_rolling_state.return_value = b"state"
-    owner = OwnerStorage(store)
-    owner.put_rolling_state("rolling_state_1.0.tar.gz", b"state")
-    store.put_rolling_state.assert_called_once_with(
-        "rolling_state_1.0.tar.gz", b"state"
-    )
-    assert owner.get_rolling_state() == b"state"
+def test_owner_store_helpers_are_built_from_list_and_fetch():
+    store = Mock(spec=OwnerStore)
+    store.list_event_handles.return_value = ["h1", "h2"]
+    store.fetch.side_effect = lambda handle: f"bytes of {handle}".encode()
+
+    assert OwnerStore.fetch_events_since(store, 5.0) == [b"bytes of h1", b"bytes of h2"]
+    store.list_event_handles.assert_called_with(5.0)
+    assert OwnerStore.count_events_since(store, 5.0) == 2
 
 
-def test_watcher_storage_names_its_peer_on_every_call():
-    store = Mock(spec=PrivateStore)
-    watcher = WatcherStorage(store, "do@example.com")
-    watcher.put_checkpoint("checkpoint_1.0.tar.gz", b"snapshot")
-    watcher.reset()
-    store.put_watcher_checkpoint.assert_called_once_with(
-        "do@example.com", "checkpoint_1.0.tar.gz", b"snapshot"
-    )
-    store.delete_watcher_state.assert_called_once_with("do@example.com")
+def test_fetching_all_events_lists_from_the_beginning():
+    store = Mock(spec=OwnerStore)
+    store.fetch_events_since.return_value = [b"all"]
+    assert OwnerStore.fetch_all_events(store) == [b"all"]
+    store.fetch_events_since.assert_called_once_with(None)
 
 
-def test_watcher_area_is_not_implemented_by_default():
-    with pytest.raises(NotImplementedError):
-        PrivateStore.latest_watcher_checkpoint(object(), "do@example.com")
+def test_list_mine_returns_each_tag_once_in_order():
+    collections = Mock(spec=Collections)
+    collections.list_mine_with_permissions.return_value = [
+        SimpleNamespace(tag="census"),
+        SimpleNamespace(tag="census"),  # the same dataset in a second layout
+        SimpleNamespace(tag="sales"),
+    ]
+    assert Collections.list_mine(collections, "syft_datasetcollection") == [
+        "census",
+        "sales",
+    ]
 
 
-@pytest.mark.parametrize(
-    "name, expected",
-    [
-        ("syfteventsmessagev3_1759800000.95_abc.tar.gz", 1759800000.95),
-        ("msgv2_12.5_abc.tar.gz", 12.5),
-        ("checkpoint_12.5.tar.gz", None),
-        ("msgv2_notanumber_abc.tar.gz", None),
-    ],
-)
-def test_message_names_carry_their_send_time(name, expected):
-    assert timestamp_from_message_name(name) == expected
+def test_download_fetches_every_listed_file_by_name():
+    collections = Mock(spec=Collections)
+    collections.list_files.return_value = [
+        {"file_id": "id-1", "file_name": "mock.csv"},
+        {"file_id": "id-2", "file_name": "readme.md"},
+    ]
+    collections.fetch_file.side_effect = lambda handle: handle.encode()
+
+    files = Collections.download(collections, "prefix", "census", "abc", "do@x.org")
+    assert files == {"mock.csv": b"id-1", "readme.md": b"id-2"}
 
 
-def test_delivery_tracker_is_a_stub_until_implemented():
-    tracker = DeliveryTracker(path=None)
-    with pytest.raises(NotImplementedError):
-        tracker.has_view("ds@example.com")
-
-
-def test_a_transport_bundles_the_four_jobs_and_cannot_be_changed():
+def test_a_transport_bundles_one_of_each_job_and_cannot_be_changed():
     transport = Transport(
         p2p=Mock(spec=P2PConnection),
-        private_store=Mock(spec=PrivateStore),
+        owner_store=Mock(spec=OwnerStore),
+        watcher_store=Mock(spec=WatcherStore),
         collections=Mock(spec=Collections),
-        peer_state=Mock(spec=PeerState),
+        peering=Mock(spec=Peering),
         platform=GdriveFilesPlatform(),
     )
     with pytest.raises(ValidationError):
@@ -102,3 +102,22 @@ def test_the_old_raw_message_import_path_still_works():
     from syft.sync.messages.raw_message import RawMessage as OldPathRawMessage
 
     assert OldPathRawMessage is RawMessage
+
+
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        ("syfteventsmessagev3_1759800000.95_abc.tar.gz", 1759800000.95),
+        ("msgv2_12.5_abc.tar.gz", 12.5),
+        ("checkpoint_12.5.tar.gz", None),
+        ("msgv2_notanumber_abc.tar.gz", None),
+    ],
+)
+def test_message_names_carry_their_send_time(name, expected):
+    assert timestamp_from_message_name(name) == expected
+
+
+def test_delivery_tracker_is_a_stub_until_implemented():
+    tracker = DeliveryTracker(path=None)
+    with pytest.raises(NotImplementedError):
+        tracker.has_view("ds@example.com")
