@@ -1,8 +1,7 @@
 """The four jobs a transport backend does, one abstract class each.
 
 A backend implements the classes it can. The sync layer above never sees
-backend ids: it passes back the ``Entry`` objects and handles a backend
-returns.
+backend ids: it passes back the messages and handles a backend returns.
 
 These are the version-1 contracts. They name today's operations in
 backend-neutral terms so the sync layer can depend on them while the Drive
@@ -18,46 +17,53 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, ConfigDict
 
 from syft.sync.platforms.base_platform import BasePlatform
-from syft.sync.transport.types import Entry, Lane
+from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
 
 if TYPE_CHECKING:
     from syft.sync.connections.base_connection import FileCollection
     from syft.sync.version.version_info import VersionInfo
 
 
-class Mailbox(ABC):
-    """Messages between two peers, kept until the recipient processes them."""
+class P2PConnection(ABC):
+    """Messages between peers, kept until the recipient acknowledges them.
+
+    One rule for every message, whatever its kind: ``receive`` returns the
+    messages not acknowledged yet, and ``ack`` finishes one. On Drive a written
+    message is ``DELIVERED`` and ``ack`` removes it. On a live link such as
+    WebRTC a message is ``QUEUED`` until the peer acknowledges it, which
+    ``delivered()`` then reports.
+    """
 
     @abstractmethod
-    def send(self, lane: Lane, peer: str, name: str, data: bytes) -> None:
-        """Store ``data`` as ``name`` in the ``lane`` channel towards ``peer``.
+    def send(
+        self, peer: str, msg_id: str, data: bytes, kind: MessageKind
+    ) -> SendStatus:
+        """Send ``data`` to ``peer`` under ``msg_id``.
 
-        Raises when the channel does not exist, so a send never vanishes.
+        ``msg_id`` is chosen by the sender and stays the same if the message is
+        sent again. ``kind`` lets a connection keep the two kinds apart, as
+        Drive does with an inbox and an outbox.
         """
 
     @abstractmethod
-    def list(
-        self, lane: Lane, peer: str, since_timestamp: float | None = None
-    ) -> list[Entry]:
-        """The messages from ``peer`` in ``lane``, oldest first.
+    def delivered(self) -> list[str]:
+        """The ``msg_id`` of each queued message the peer acknowledged since
+        the last call. A connection that only returns ``DELIVERED`` returns
+        nothing."""
 
-        PROPOSALS lists every unacknowledged message, and raises when the
-        channel does not exist. EVENTS lists the messages sent after
-        ``since_timestamp``, and returns nothing when the channel does not
-        exist yet.
+    @abstractmethod
+    def receive(self, max_messages: int | None = None) -> list[RawMessage]:
+        """Messages from every peer that are not acknowledged yet, oldest first
+        per sender, at most ``max_messages`` of them.
+
+        A peer whose channel does not exist yet has no messages. The connection
+        sets each ``RawMessage.sender`` from where the message came from.
         """
 
     @abstractmethod
-    def fetch(self, entry: Entry) -> bytes:
-        """The bytes of one listed message."""
-
-    @abstractmethod
-    def ack(self, lane: Lane, peer: str, entry: Entry) -> None:
-        """Record that ``entry`` from ``peer`` was processed.
-
-        An acknowledged PROPOSALS message never appears in ``list`` again. For
-        EVENTS this does nothing yet: the reader tracks its own position.
-        """
+    def ack(self, message: RawMessage) -> None:
+        """Record that ``message`` was processed; ``receive`` never returns it
+        again."""
 
 
 class PrivateStore(ABC):
@@ -278,7 +284,7 @@ class Transport(BaseModel):
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    mailbox: Mailbox
+    p2p: P2PConnection
     private_store: PrivateStore
     collections: Collections
     peer_state: PeerState

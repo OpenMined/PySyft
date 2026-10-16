@@ -5,29 +5,36 @@ from enum import Enum
 from pydantic import BaseModel, ConfigDict
 
 
-class Lane(str, Enum):
-    """The two message streams between a pair of peers.
-
-    The two streams run in opposite directions and live in different places,
-    and a dual-role pair runs both at once, so a mailbox call always names its
-    lane.
-    """
+class MessageKind(str, Enum):
+    """What a message carries. Both kinds can travel between the same two peers."""
 
     # Data scientist -> data owner: proposed file changes (job submissions).
-    PROPOSALS = "proposals"
+    PROPOSED_CHANGES = "proposed_changes"
     # Data owner -> data scientist: accepted file change events (results).
-    EVENTS = "events"
+    FILE_EVENTS = "file_events"
 
 
-class Entry(BaseModel):
-    """One stored message or file, as a backend lists it.
+class SendStatus(str, Enum):
+    """What ``P2PConnection.send`` achieved."""
 
-    ``name`` is the syft file name. ``handle`` is whatever the backend needs to
-    fetch or acknowledge the entry again; callers only pass it back. It is None
-    when the entry is known by name only.
+    # Stored where the peer will find it, even while it is offline.
+    DELIVERED = "delivered"
+    # Not stored yet; confirmed later through ``P2PConnection.delivered()``.
+    QUEUED = "queued"
+
+
+class RawMessage(BaseModel):
+    """One received message, as bytes, before decoding or decryption.
+
+    ``sender`` is set by the connection from where the message came from,
+    never from its contents. ``handle`` is opaque: only the connection that
+    returned the message reads it, to acknowledge it.
     """
 
     model_config = ConfigDict(frozen=True)
 
-    name: str
+    sender: str
+    msg_id: str
+    kind: MessageKind
+    data: bytes
     handle: str | None = None
