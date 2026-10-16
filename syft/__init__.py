@@ -20,6 +20,7 @@ if not _logger.handlers:
 
 from syft.version import SYFT_VERSION as __version__  # noqa: F401, E402
 from syft.sync.login import login_do, login_ds, login  # noqa: F401, E402
+from syft.sync.peers.exceptions import SyftPeerNotReadyError  # noqa: F401, E402
 from syft.utils import (  # noqa: F401, E402
     resolve_path,
     resolve_dataset_file_path,
