@@ -8,6 +8,7 @@ from dataclasses import replace
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from syft_bg.approve.api_store import ApiStore
 from syft_bg.approve.orchestrator import ApprovalOrchestrator
 from syft_bg.common.config import get_default_paths
 from syft_bg.common.state import JsonStateManager
@@ -27,14 +28,13 @@ FAKE_THREAD_ID = "thread_auto_approve_123"
 
 @contextmanager
 def _temp_config_paths():
-    """Redirect config and auto_approvals_dir to a temp directory."""
+    """Redirect config to a temp directory."""
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         original = get_default_paths()
         patched = replace(
             original,
             config=tmp_path / "config.yaml",
-            auto_approvals_dir=tmp_path / "auto_approvals",
         )
         with (
             patch("syft_bg.common.config.get_default_paths", return_value=patched),
@@ -207,8 +207,7 @@ def test_email_auto_approve_creates_object_and_approves_future_jobs():
         assert result["params"]["run"] == 1
 
         # -- Step 5: Verify auto-approve object was created correctly --
-        config = SyftBgConfig.load().approve
-        obj = config.auto_approvals.objects[job_name]
+        obj = ApiStore(do_manager.syftbox_folder, do_manager.email).get(job_name)
         content_names = {e.relative_path for e in obj.file_contents}
         # run.sh is the file the runner executes, so an approval pins it.
         # config.yaml is matched by name: it differs from job to job.

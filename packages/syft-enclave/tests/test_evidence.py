@@ -175,7 +175,10 @@ class TestConfidentialSpaceProvider:
                 "dbgstat": "disabled-since-boot",
                 "eat_nonce": ["syft-0.1.0"],
                 "submods": {
-                    "container": {"image_digest": "sha256:abc"},
+                    "container": {
+                        "image_digest": "sha256:abc",
+                        "env_override": {"SYFT_ENCLAVE_EMAIL": "e@openmined.org"},
+                    },
                     "confidential_space": {"support_attributes": ["X"]},
                 },
                 "nvidia_gpu": {"mode": "on"},
@@ -183,6 +186,9 @@ class TestConfidentialSpaceProvider:
         )
         assert structured["hardware"]["secboot"] is True
         assert structured["container"]["image_digest"] == "sha256:abc"
+        assert structured["container"]["env_override"] == {
+            "SYFT_ENCLAVE_EMAIL": "e@openmined.org"
+        }
         assert structured["gpu"] == {"mode": "on"}
         assert structured["confidential_space"]
         assert structured["eat_nonce"] == ["syft-0.1.0"]

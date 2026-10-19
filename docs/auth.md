@@ -6,16 +6,18 @@
 
 To use Syft Client outside of Google Colab, you need to set up a Google Cloud project with OAuth credentials.
 
+Allow about 15 minutes the first time. You need one Google account per role you want to run.
+
 ## Step 1: Create a Google Cloud Project
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Click **Click a project** in the top navigation bar
+2. Click **Select a project** in the top navigation bar
 3. Click **New Project** in the dialog that appears
 4. Enter a project name (e.g., "Syft Client")
 5. Click **Create**
 6. Wait for the project to be created, then select it
 
-## Step 2: Enable the API's
+## Step 2: Enable the APIs
 
 1. In your project, go to **APIs & Services** > **Library**
 2. Search for "Google Drive API"
@@ -48,7 +50,7 @@ To use Syft Client outside of Google Colab, you need to set up a Google Cloud pr
      - Scroll down and click **Save**
 8. On the **Audience** section for the oauth consent screen under **Test users**:
    - Click **Add Users**
-   - Add you email adress
+   - Add your email address
    - Click **Save and Continue**
 
 ## Step 4: Create OAuth Client Credentials
@@ -63,7 +65,7 @@ To use Syft Client outside of Google Colab, you need to set up a Google Cloud pr
 
 ## Step 5: Publish the App
 
-**If your app is Interal (see step 3.4) you can skip this step. **If your app is external and not published (i.e., remains in "Testing" mode), OAuth tokens expire every 7 days and users will need to re-authenticate. Publishing the app removes this limitation.
+**If your app is Internal (see step 3.4) you can skip this step.** If your app is external and not published (i.e., remains in "Testing" mode), OAuth tokens expire every 7 days and users will need to re-authenticate. Publishing the app removes this limitation.
 
 1. Go to **APIs & Services** > **OAuth consent screen**
 2. navigate to the **Audience** section
@@ -76,8 +78,29 @@ To use Syft Client outside of Google Colab, you need to set up a Google Cloud pr
 
 Once you've completed the Google Cloud Console setup, generate a token and log in:
 
-```bash
+```python
+import syft as sy
+
+credentials_path = "credentials.json"  # the file you downloaded in Step 4
 token_path = sy.credentials_to_token(credentials_path)
 from syft_rds import login_do  # or login_ds
-do_client = login_do(email="your@email.com", token_path=token_path)
+# the email must match the Google account that generated the token
+do_client = login_do(email="<your@email.com>", token_path=token_path)
+```
+
+Token files are credentials: keep them out of version control.
+
+## Running two roles on one machine
+
+Each role needs its own Google account and its own token. By default `credentials_to_token` writes `token.json` next to the credentials file, so pass a different `output_path` for each role or the second token overwrites the first. When the second `credentials_to_token` call prints its sign-in link, open it in a private browser window signed in as the second account. While the app is in Testing mode, the second account must be listed as a test user in Step 3, item 8, or Google will refuse the sign-in.
+
+```python
+import syft as sy
+from syft_rds import login_do, login_ds
+
+credentials_path = "credentials.json"  # the file you downloaded in Step 4
+token_do = sy.credentials_to_token(credentials_path, output_path="token_do.json")
+token_ds = sy.credentials_to_token(credentials_path, output_path="token_ds.json")
+do_client = login_do(email="<do@email.com>", token_path=token_do)
+ds_client = login_ds(email="<ds@email.com>", token_path=token_ds)
 ```

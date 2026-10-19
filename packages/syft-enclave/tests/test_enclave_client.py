@@ -3,6 +3,9 @@ import os
 
 os.environ["PRE_SYNC"] = "false"
 
+import pytest
+
+from syft.sync.peers.peer import PeerSetupError
 from syft_enclaves import SyftEnclaveClient
 
 
@@ -42,3 +45,11 @@ def test_quad_initialization():
 
     # DS: all peers are accepted (both sides created folders)
     assert approved_emails(ds) == {do1.email, do2.email, enclave.email}
+
+
+def test_validate_peer_accepts_live_peer_and_rejects_wrong_email():
+    _, do1, _, ds = SyftEnclaveClient.quad_with_mock_drive_service_connection()
+
+    assert ds.validate_peer(do1.email).email == do1.email
+    with pytest.raises(PeerSetupError, match="not a peer"):
+        ds.validate_peer("wrong@test.com")

@@ -1,14 +1,19 @@
 """What a Confidential Space enclave commits to in its attestation token.
 
 Confidential Space lets a workload put bytes of its choosing into the
-Google-signed token, via ``eat_nonce``. Only code running inside the measured
-container can do that, and the signature is unforgeable — so anything the
-enclave commits to there is as trustworthy as the measurement itself.
+Google-signed token, via ``eat_nonce``. Only code running inside the container
+can do that, and the signature is unforgeable. But *any* code running there can,
+the jobs the enclave runs included, so a commitment in ``eat_nonce`` is only as
+trustworthy as the separation between the enclave and those jobs.
 
-That is the one channel for binding *runtime* facts to the report. The enclave's
-email, its configured data owners and its public key bundle are all deploy-time
-or runtime values, outside the measurement, and until they are bound a verifier
-has only the enclave's unsigned word for them.
+That makes ``eat_nonce`` the channel for facts that exist only at runtime: the
+enclave's public key bundle, made inside the container at boot. Deploy-time
+facts take a stronger route on Confidential Space. The operator sets the
+enclave's email and data owners as ``tee-env-*`` VM metadata, and the launcher
+records them in the token's ``submods.container.env_override`` before the
+container starts, so the verifier reads them from there (see
+``attestation.confidential_space``). The claims document still carries them,
+and the verifier refuses a document that disagrees with the token.
 
 There is room for exactly one digest: slot 0 carries the syft version in plain
 text, and a nonce is capped at 74 characters matching ``[a-zA-Z0-9_.-]``, which
@@ -95,14 +100,15 @@ def check_expected(
 ) -> list[tuple[str, str, Optional[bool], str]]:
     """Compare attested facts against what the verifier expected.
 
-    Binding proves the enclave really was started with these values; only the
-    caller knows whether they are the right ones. Returns
+    The caller proves the enclave really was started with these values; only
+    the caller knows whether they are the right ones. Returns
     ``(name, label, passed, detail)`` rows for the caller's checklist —
     ``passed=None`` where nothing was pinned, so an unpinned value is reported
     rather than demanded.
 
-    Shared by both targets: they bind the document differently, but once it is
-    trustworthy the appraisal is identical.
+    Shared by both targets: Confidential Space passes the values its token
+    records, Tinfoil the ones in its signed claims document, and from there
+    the appraisal is identical.
     """
     return [
         _compare("enclave_email", "Enclave email", expected_email, claims.get("email")),

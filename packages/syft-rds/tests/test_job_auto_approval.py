@@ -8,22 +8,21 @@ from pathlib import Path
 from unittest.mock import patch
 
 from syft_bg.api import auto_approve_job
+from syft_bg.approve.api_store import ApiStore
 from syft_bg.common.config import get_default_paths
-from syft_bg.common.syft_bg_config import SyftBgConfig
 from syft_rds import SyftRDSClient
 from syft_rds.job_auto_approval import auto_approve_and_run_jobs
 
 
 @contextmanager
 def _temp_config_paths():
-    """Redirect config and auto_approvals_dir to a temp directory."""
+    """Redirect config to a temp directory."""
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
         original = get_default_paths()
         patched = replace(
             original,
             config=tmp_path / "config.yaml",
-            auto_approvals_dir=tmp_path / "auto_approvals",
         )
         with (
             patch("syft_bg.common.config.get_default_paths", return_value=patched),
@@ -35,6 +34,10 @@ def _temp_config_paths():
             ),
         ):
             yield patched
+
+
+def _api_store(do_manager: SyftRDSClient) -> ApiStore:
+    return ApiStore(do_manager.syftbox_folder, do_manager.email)
 
 
 def test_auto_approve_and_run_jobs():
@@ -170,8 +173,7 @@ def test_auto_approve_job_default_all_content_matched():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = SyftBgConfig.load().approve
-        obj = config.auto_approvals.objects[job.name]
+        obj = _api_store(do_manager).get(job.name)
         content_names = {e.relative_path for e in obj.file_contents}
         # run.sh is pinned: it is the file the runner executes. config.yaml is
         # name-only, because it carries per-job metadata.
@@ -194,8 +196,7 @@ def test_auto_approve_job_file_paths_only():
         result = auto_approve_job(job, file_paths=["data.json"])
         assert result.success is True
 
-        config = SyftBgConfig.load().approve
-        obj = config.auto_approvals.objects[job.name]
+        obj = _api_store(do_manager).get(job.name)
         # config.yaml is name-only in every branch: its bytes carry the job
         # name and the submission time, so pinning them matches one job.
         assert sorted(e.relative_path for e in obj.file_contents) == [
@@ -218,7 +219,7 @@ def test_auto_approve_job_contents_only_refuses_without_run_sh():
         result = auto_approve_job(job, contents=["main.py"])
         assert result.success is False
         assert "run.sh" in result.error
-        assert job.name not in SyftBgConfig.load().approve.auto_approvals.objects
+        assert not _api_store(do_manager).exists(job.name)
 
         # Naming run.sh is not enough on its own: a file the caller places in
         # neither bucket would leave the object matching nothing.
@@ -249,8 +250,7 @@ def test_auto_approve_job_both_contents_and_file_paths():
         )
         assert result.success is True
 
-        config = SyftBgConfig.load().approve
-        obj = config.auto_approvals.objects[job.name]
+        obj = _api_store(do_manager).get(job.name)
         assert sorted(e.relative_path for e in obj.file_contents) == [
             "code/main.py",
             "run.sh",
@@ -305,8 +305,7 @@ def test_auto_approve_job_nested_directory():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = SyftBgConfig.load().approve
-        obj = config.auto_approvals.objects[job.name]
+        obj = _api_store(do_manager).get(job.name)
         entries = {e.relative_path: e for e in obj.file_contents}
         assert set(entries.keys()) == {
             "code/main.py",
@@ -337,8 +336,7 @@ def test_auto_approve_job_default_no_special_treatment_for_non_params_json():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = SyftBgConfig.load().approve
-        obj = config.auto_approvals.objects[job.name]
+        obj = _api_store(do_manager).get(job.name)
         content_names = {e.relative_path for e in obj.file_contents}
         assert content_names == {"code/main.py", "code/somefile.json", "run.sh"}
         assert obj.file_paths == ["config.yaml"]
@@ -359,8 +357,28 @@ def test_auto_approve_job_default_params_json_is_name_only():
         result = auto_approve_job(job)
         assert result.success is True
 
-        config = SyftBgConfig.load().approve
-        obj = config.auto_approvals.objects[job.name]
+        obj = _api_store(do_manager).get(job.name)
         content_names = {e.relative_path for e in obj.file_contents}
         assert content_names == {"code/main.py", "run.sh"}
         assert sorted(obj.file_paths) == ["code/params.json", "config.yaml"]
+
+
+def test_auto_approve_job_api_syncs_to_submitter_only():
+    """The api lands in the DO's app_data/apis and syncs to its peers only."""
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+        sync_automatically=False,
+    )
+    job = _submit_job_and_sync(ds_manager, do_manager, _create_project_dir())
+
+    with _temp_config_paths():
+        assert auto_approve_job(job).success is True
+        assert auto_approve_job(job, peers=["other@test.com"], name="other").success
+
+    do_manager.sync()
+    ds_manager.sync()
+
+    ds_apis_dir = Path(ds_manager.syftbox_folder) / do_manager.email / "app_data/apis"
+    assert (ds_apis_dir / job.name / "api.yaml").exists()
+    assert (ds_apis_dir / job.name / "files" / "run.sh").exists()
+    assert not (ds_apis_dir / "other").exists()

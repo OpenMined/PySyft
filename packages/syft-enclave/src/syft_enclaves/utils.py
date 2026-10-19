@@ -7,13 +7,19 @@ from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
 
 def create_configs(
-    enclave_email, do1_email, do2_email, ds_email, use_in_memory_cache
+    enclave_email,
+    do1_email,
+    do2_email,
+    ds_email,
+    use_in_memory_cache,
+    enclave_persist_owner_state=False,
 ) -> tuple:
     enclave_config = SyftRDSClientConfig._base_config_for_testing(
         email=enclave_email,
         has_do_role=True,
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
+        persist_owner_state=enclave_persist_owner_state,
     )
     do1_config = SyftRDSClientConfig._base_config_for_testing(
         email=do1_email,

@@ -1,14 +1,24 @@
 """Appraising Confidential Space evidence.
 
 The enclave publishes a Google-signed JWT from the Confidential Space launcher.
-This module verifies that token, checks the hardware and container claims
-inside it, and checks the **claims binding**: the enclave commits to a digest of
-its own runtime facts — email, configured data owners, key bundle — in the
-token's spare nonce slot, which is the only thing that makes those facts
-trustworthy rather than self-asserted. See ``attestation.claims``.
+This module verifies that token and checks the hardware and container claims
+inside it.
 
-Whether those facts are the ones the verifier wanted is a separate question,
-answered by ``AppraisalPolicy.expected_email`` and ``expected_data_owners``.
+The enclave's email and data owners are read out of the token as well. The
+operator sets them as ``tee-env-*`` VM metadata, and the launcher records them
+in ``submods.container.env_override`` before the container starts, so no code
+running inside it, a job included, can change them afterwards.
+
+The enclave's key bundle is made inside the container at boot, so the launcher
+cannot know it. The enclave commits to it through the **claims binding**: a
+digest of its claims document in the token's spare nonce slot. Any code in the
+container can ask the launcher for a token, so that binding is only as strong
+as the separation between the enclave and the jobs it runs. See
+``attestation.claims``.
+
+Whether the email and data owners are the ones the verifier wanted is a
+separate question, answered by ``AppraisalPolicy.expected_email`` and
+``expected_data_owners``.
 """
 
 from __future__ import annotations
@@ -36,6 +46,11 @@ from syft_enclaves.evidence.tee_token import (
 )
 
 ATTESTATION_AUDIENCE = "syft-attestation"
+
+# Set by the operator as tee-env-* VM metadata, and recorded by the launcher in
+# submods.container.env_override before the container starts.
+EMAIL_ENV = "SYFT_ENCLAVE_EMAIL"
+DATA_OWNERS_ENV = "SYFT_ENCLAVE_DATA_OWNERS"
 CONFIDENTIAL_COMPUTING_CERTS_URL = (
     "https://www.googleapis.com/service_accounts/v1/metadata/jwk/"
     "signer@confidentialspace-sign.iam.gserviceaccount.com"
@@ -67,18 +82,44 @@ def _nonce_slots(claims: dict) -> list[str]:
     return [nonce] if isinstance(nonce, str) else list(nonce)
 
 
+def _deployed_facts(claims: dict) -> dict:
+    """The email and data owners the operator deployed, read from the token.
+
+    Only ``env_override`` counts. ``env`` also holds the image's own ``ENV``
+    defaults, so a value there may come from the image rather than the
+    operator. A fact the token does not record is None.
+    """
+    env = claims.get("submods", {}).get("container", {}).get("env_override")
+    if not isinstance(env, dict):
+        env = {}
+    email = env.get(EMAIL_ENV)
+    owners = env.get(DATA_OWNERS_ENV)
+    return {
+        "email": email if isinstance(email, str) else None,
+        # Split like EnclaveSettings, sorted like build_claims.
+        "data_owners": (
+            sorted(e.strip() for e in owners.split(",") if e.strip())
+            if isinstance(owners, str)
+            else None
+        ),
+    }
+
+
 def _check_claims_binding(
     result: AttestationResult,
     claims: dict,
     published_claims: Optional[dict],
+    deployed: dict,
     policy: AppraisalPolicy,
     verbose: bool,
 ) -> None:
-    """Check the published runtime facts are the ones the token commits to.
+    """Check the published claims document is the one the token commits to.
 
-    This is what turns the enclave's email, its data owners and its key bundle
-    from unsigned assertions into attested ones: only code inside the measured
-    container can get the launcher to sign a digest of them.
+    This is what turns the enclave's key bundle from an unsigned assertion
+    into an attested one. The launcher signs whatever digest it is asked to,
+    so the document must also agree with what the operator deployed: the
+    runner builds it from those same values, so a document that disagrees was
+    written by something else in the container.
     """
     if verbose:
         print("  ⏳ Claims binding ...")
@@ -95,37 +136,70 @@ def _check_claims_binding(
     except ClaimsBindingError as e:
         result.add("claims_binding", "Claims binding", False, str(e))
         return
+    disagreement = _disagreement_with_deployment(published_claims, deployed)
+    if disagreement:
+        result.add("claims_binding", "Claims binding", False, disagreement)
+        return
 
-    owners = published_claims.get("data_owners") or []
+    key_bundle = published_claims.get("key_bundle")
     result.add(
         "claims_binding",
         "Claims binding",
         True,
-        f"token commits to email={published_claims.get('email')!r} and "
-        f"{len(owners)} data owner(s)",
+        f"token commits to the claims of {published_claims.get('email')!r}, "
+        f"key bundle {'included' if key_bundle else 'absent'}",
     )
-    if published_claims.get("key_bundle"):
-        result.verified_key_bundle = published_claims["key_bundle"]
-    _check_expected_claims(result, published_claims, policy, verbose)
+    if key_bundle:
+        result.verified_key_bundle = key_bundle
 
 
-def _check_expected_claims(
+def _disagreement_with_deployment(
+    published_claims: dict, deployed: dict
+) -> Optional[str]:
+    """Why the claims document cannot be the enclave's, or None if it can be.
+
+    Only a fact the token records is compared. One it does not record is
+    reported by ``_check_deployed_facts`` instead.
+    """
+    for field, env_name in (("email", EMAIL_ENV), ("data_owners", DATA_OWNERS_ENV)):
+        expected = deployed[field]
+        published = published_claims.get(field)
+        if expected is not None and published != expected:
+            return (
+                f"the claims document has {field}={published!r}, but the operator "
+                f"deployed {env_name}={expected!r}, so the enclave as deployed did "
+                "not write it"
+            )
+    return None
+
+
+def _check_deployed_facts(
     result: AttestationResult,
-    published_claims: dict,
+    deployed: dict,
     policy: AppraisalPolicy,
     verbose: bool,
 ) -> None:
-    """Compare the now-attested facts against what the verifier expected.
+    """Compare the deployed email and data owners against what the verifier expected.
 
-    Delegates to ``attestation.claims.check_expected``, shared with Tinfoil:
-    the two targets bind the document differently, but once it is trustworthy
-    the appraisal is identical.
+    Delegates to ``attestation.claims.check_expected``, shared with Tinfoil.
+    A pinned value the token records nothing for fails rather than skips, so
+    the check never falls back to the enclave's own word for it.
     """
+    env_names = {
+        "enclave_email": ("email", EMAIL_ENV),
+        "data_owners": ("data_owners", DATA_OWNERS_ENV),
+    }
     for name, label, passed, detail in check_expected(
-        published_claims, policy.expected_email, policy.expected_data_owners
+        deployed, policy.expected_email, policy.expected_data_owners
     ):
         if verbose:
             print(f"  ⏳ {label} ...")
+        field, env_name = env_names[name]
+        if passed is False and deployed[field] is None:
+            detail = (
+                f"the token records no {env_name} override, so the deployed "
+                "value cannot be checked"
+            )
         result.add(name, label, passed, detail)
 
 
@@ -200,9 +274,10 @@ def verify_attestation_token(
             )
         raise AttestationError("JWT signature verification failed", result) from e
 
-    # 2. Claims binding — the enclave's runtime facts, committed to in the
+    # 2. Claims binding — the enclave's key bundle, committed to in the
     # token's spare nonce slot. Skipped when the enclave published none.
-    _check_claims_binding(result, claims, published_claims, policy, verbose)
+    deployed = _deployed_facts(claims)
+    _check_claims_binding(result, claims, published_claims, deployed, policy, verbose)
 
     # 3. Secure boot
     if verbose:
@@ -302,6 +377,9 @@ def verify_attestation_token(
             False,
             f"digest mismatch (got {image_digest}, expected {expected_image_digest})",
         )
+
+    # 6. Email and data owners, as the operator deployed them.
+    _check_deployed_facts(result, deployed, policy, verbose)
 
     # Finalize — print full checklist, then raise once if anything failed
     if verbose:

@@ -13,14 +13,18 @@ constructs in a **private** region, typically the model logic that must be kept 
 - **Public** — every other line outside the marked ranges: imports, data loading, wrappers. It is
   never checked or obfuscated. The recipient of the obfuscated file can read it directly.
 
-Given that split, `syft-restrict` executes the following two steps:
+Given that split, `syft-restrict` executes the following three steps:
 
+- **The auditor** checks the allow-list of library calls and operators against a
+  catalog of known safe/dual-use/unsafe paths, and warns on any uncatalogued
+  paths.
 - **The verifier** statically walks the private region and analyzes it against a default-deny
   policy. Every construct must be explicitly allowed, or verification fails
   and reports each offending line.
-- **The obfuscator** runs after a clean verify. It creates an obfuscated copy by rewriting the private
-  region — renaming identifiers, blanking constants, replacing lines with `■■■■■■■■` — so the logic can't be read
-  back out, while the public region is copied through untouched.
+- **The obfuscator** runs after a clean verify. It creates an obfuscated copy by
+  rewriting the private region — renaming identifiers, blanking constants,
+  replacing lines with `■■■■■■■■` — so the logic can't be read back out, while
+  the public region is copied through untouched.
 
 The **verifier** is inspired by
 [**RestrictedPython**](https://github.com/zopefoundation/RestrictedPython), but
@@ -74,12 +78,26 @@ result = restrict.run(
 # If the file has no `# syft-restrict: ...` markers: raises MarkerError.
 ```
 
+The **auditor** warns on any `allow_functions` that are categorized as dual-use
+or unsafe, whether they are used or not, but the verifier fails only on actual
+violations in the private region. The auditor is **advisory only**, and does not
+block verification. See [docs/audit.md](docs/audit.md) for instructions on how
+to build the catalog for the specific libraries in use.
+
 > [!IMPORTANT]
-> List the **specific** paths your model calls, as above — this is the default-deny posture the
-> tool is built for: everything not named is denied. Avoid broad globs like `jax.*`: they pull in
-> JAX's own host-callback and disk-IO functions (`jax.numpy.save`, `jax.debug.callback`,
-> `jax.experimental.io_callback`, …) that the private region could call to exfiltrate data. If you
-> must use a broad glob, pair it with a `disallow_functions` floor — see
+>
+> List the **specific** paths your model calls, as above. This is the
+> default-deny posture the tool is built for: everything not named is denied, so
+> no `disallow_functions` is needed.
+>
+> **Avoid broad globs like `jax.*`/`flax.*`**: a glob silently pulls in the
+> library's host-callback, disk-IO, and network surface (`jax.numpy.save`,
+> `jax.debug.callback`, `jax.profiler.start_server`,
+> `jax.distributed.initialize`, …) that can be abused.
+>
+> A glob can be paired with a `disallow_functions` floor, but that is a **leaky
+> backstop** — it only blocks what you remembered to list — not a substitute for
+> a tight allow. See
 > [docs/blacklist.md](docs/blacklist.md#optional-disallow_functions).
 
 The private region is designated **only** by `# syft-restrict: ...` comment markers in the
@@ -108,4 +126,5 @@ instead of an exception.
 
 - [docs/verify.md](docs/verify.md) — how verification works and what private code may do (allow side).
 - [docs/blacklist.md](docs/blacklist.md) — default-deny catalog and violation codes (deny side).
+- [docs/audit.md](docs/audit.md) — advisory allow-list audit and the risk catalog.
 - [docs/code-layout.md](docs/code-layout.md) — source modules and test layout.
