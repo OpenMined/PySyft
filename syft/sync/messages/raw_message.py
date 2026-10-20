@@ -1,13 +1,5 @@
-from pydantic import BaseModel
+"""``RawMessage`` lives with the other transport types; this path keeps working."""
 
+from syft.sync.transport.types import RawMessage
 
-class RawMessage(BaseModel):
-    """Generic container for downloaded bytes + metadata.
-
-    Transport returns this — no deserialization, no encryption awareness.
-    """
-
-    data: bytes
-    sender_email: str | None = None
-    platform_id: str | None = None
-    filename: str | None = None
+__all__ = ["RawMessage"]

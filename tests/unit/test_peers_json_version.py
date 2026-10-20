@@ -33,7 +33,7 @@ def _conn(peers_data):
 
 def _router(conn):
     router = Mock()
-    router.connection_for_send_message = Mock(return_value=conn)
+    router.transport = conn.as_transport()
     from syft.sync.connections.connection_router import ConnectionRouter
 
     return ConnectionRouter.get_all_peers_from_json.__get__(router, ConnectionRouter)
