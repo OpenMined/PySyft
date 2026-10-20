@@ -231,13 +231,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     def download_events_message_by_id_with_connection(
         self, events_message_id: str
     ) -> FileChangeEventsMessage:
-        # we need a new connection object because gdrive connections are not thread safe
-        connection = self.connection_router.connection_for_eventlog(create_new=True)
-        raw = connection.owner_download_raw_bytes_by_id(events_message_id)
-        raw = self.connection_router.peer_store.decrypt_and_verify_for_self_if_needed(
-            raw
-        )
-        return FileChangeEventsMessage.from_compressed_data(raw)
+        """One event-log message, on its own connection (safe to run in parallel)."""
+        return self.connection_router.download_events_message_by_id(events_message_id)
 
     def get_all_accepted_events_messages(
         self, since_timestamp: float | None = None

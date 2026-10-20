@@ -22,10 +22,6 @@ from syft.sync.encryption_policy import (
     PeerEncryptionPendingError,
     UnencryptedMessageError,
 )
-from syft.sync.connections.drive.gdrive_transport import (
-    PEERS_META_KEY,
-    GDriveConnection,
-)
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
     FileChangeEventsMessageFileName,
@@ -33,7 +29,9 @@ from syft.sync.events.file_change_event import (
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore
-from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
+from syft.sync.transport.naming import PEERS_META_KEY
+from syft.sync.transport.protocols import Transport
+from syft.sync.transport.types import MessageKind
 from syft.sync.utils.print_utils import (
     print_peer_added_to_platform,
     print_peer_adding_to_platform,
@@ -62,6 +60,19 @@ class ConnectionRouter(BaseModel):
 
     def set_version_loader(self, version_loader: Callable[[str], object]) -> None:
         self._version_loader = version_loader
+
+    # The transport jobs over connections[0], rebuilt if that connection is
+    # replaced (tests swap in a mock connection with add_connection).
+    _transport: Optional[Transport] = PrivateAttr(default=None)
+    _transport_source: Optional[SyftboxPlatformConnection] = PrivateAttr(default=None)
+
+    @property
+    def transport(self) -> Transport:
+        connection = self.connections[0]
+        if self._transport is None or self._transport_source is not connection:
+            self._transport = connection.as_transport()
+            self._transport_source = connection
+        return self._transport
 
     def set_peer_schemas(self, peer_schemas: Dict[str, ProtocolSchema]) -> None:
         """Adopt the live {peer email -> syft ProtocolSchema} map."""
@@ -92,10 +103,7 @@ class ConnectionRouter(BaseModel):
     def copy_connection(
         self, connection: SyftboxPlatformConnection
     ) -> SyftboxPlatformConnection:
-        if isinstance(connection, GDriveConnection):
-            return connection.copy()
-        else:
-            return connection
+        return connection.clone_for_thread()
 
     def connection_for_eventlog(
         self, create_new: bool = False
@@ -180,9 +188,7 @@ class ConnectionRouter(BaseModel):
         data = proposed_file_changes_message.as_compressed_data()
         data = self.peer_store.encrypt_if_needed(recipient, data)
         filename = proposed_file_changes_message.message_filename.as_string()
-        self.connection_for_send_message().watcher_send_raw_bytes_to_inbox(
-            recipient, filename, data
-        )
+        self.transport.p2p.send(recipient, filename, data, MessageKind.PROPOSED_CHANGES)
 
     def owner_get_next_proposed_filechange_message(
         self, sender_email: str
@@ -225,9 +231,7 @@ class ConnectionRouter(BaseModel):
         data = events_message.as_compressed_data()
         data = self.peer_store.encrypt_if_needed(recipient_email, data)
         fname = events_message.message_filepath.as_string()
-        self.connection_for_outbox().owner_write_raw_bytes_to_outbox(
-            recipient_email, fname, data
-        )
+        self.transport.p2p.send(recipient_email, fname, data, MessageKind.FILE_EVENTS)
 
     def watcher_get_events_messages(
         self, peer_email: str, since_timestamp: float | None
@@ -309,11 +313,10 @@ class ConnectionRouter(BaseModel):
         data = events_message.as_compressed_data()
         data = self.peer_store.encrypt_for_self_if_needed(data)
         filename = events_message.message_filepath.as_string()
-        self.connection_for_eventlog().owner_write_raw_bytes_to_syftbox(filename, data)
+        self.transport.owner_store.append_event(filename, data)
 
     def owner_get_all_accepted_events_messages(self) -> List[FileChangeEventsMessage]:
-        connection = self.connection_for_eventlog()
-        raw_list = connection.owner_download_all_raw_events_from_syftbox()
+        raw_list = self.transport.owner_store.fetch_all_events()
         return [
             FileChangeEventsMessage.from_compressed_data(
                 self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
@@ -326,7 +329,7 @@ class ConnectionRouter(BaseModel):
     ) -> FileChangeEventsMessage:
         """Download and decrypt a single events message (thread-safe)."""
         connection = self.connection_for_eventlog(create_new=True)
-        raw = connection.owner_download_raw_bytes_by_id(events_message_id)
+        raw = connection.as_transport().owner_store.fetch(events_message_id)
         raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
         return FileChangeEventsMessage.from_compressed_data(raw)
 
@@ -335,13 +338,12 @@ class ConnectionRouter(BaseModel):
     # =========================================================================
 
     def add_peer(self, peer_email: str, verbose: bool = True) -> Peer:
-        connection = self.connection_for_receive_message()
-        platform = GdriveFilesPlatform()
+        platform = self.transport.platform
 
         if verbose:
             print_peer_adding_to_platform(peer_email, platform.module_path)
 
-        connection.add_peer(peer_email=peer_email)
+        self.transport.peering.open_channels(peer_email)
 
         if verbose:
             print_peer_added_to_platform(peer_email, platform.module_path)
@@ -349,8 +351,9 @@ class ConnectionRouter(BaseModel):
 
     def get_all_peers_from_json(self, force_download: bool = False) -> List[Peer]:
         """Get all peers from SYFT_peers.json with their stored state."""
-        connection = self.connection_for_send_message()
-        peers_data = connection._get_peers_json(force_download=force_download)
+        peers_data = self.transport.peering.read_peer_registry(
+            force_download=force_download
+        )
         peers = []
         for email, data in peers_data.items():
             if email == PEERS_META_KEY:
@@ -369,7 +372,7 @@ class ConnectionRouter(BaseModel):
                 continue
             peer = Peer(
                 email=email,
-                platforms=[GdriveFilesPlatform()],
+                platforms=[self.transport.platform],
                 state=state,
                 public_encryption_bundle=data.get("public_encryption_bundle"),
             )
@@ -378,12 +381,11 @@ class ConnectionRouter(BaseModel):
 
     def get_peer_requests(self) -> List[Peer]:
         """Get pending peer requests"""
-        connection = self.connection_for_send_message()
-        peer_emails = connection.get_peer_requests()
+        peer_emails = self.transport.peering.incoming_requests()
         return [
             Peer(
                 email=peer_email,
-                platforms=[GdriveFilesPlatform()],
+                platforms=[self.transport.platform],
                 state=PeerState.REQUESTED_BY_PEER,
             )
             for peer_email in peer_emails
@@ -396,8 +398,9 @@ class ConnectionRouter(BaseModel):
         public_encryption_bundle: dict | None = None,
     ):
         """Update peer state in storage"""
-        connection = self.connection_for_send_message()
-        connection._update_peer_state(peer_email, state, public_encryption_bundle)
+        self.transport.peering.update_peer_registry(
+            peer_email, state, public_encryption_bundle
+        )
 
     def owner_remove_proposed_filechange_from_inbox(
         self,
@@ -415,23 +418,19 @@ class ConnectionRouter(BaseModel):
 
     def read_own_encryption_bundle(self, peer_email: str) -> str | None:
         """Read the bundle this client published for ``peer_email``."""
-        connection = self.connection_for_own_syftbox()
-        return connection.read_own_encryption_bundle(peer_email)
+        return self.transport.peering.read_own_key_bundle(peer_email)
 
     def write_encryption_bundle(self, peer_email: str, bundle_json: str) -> None:
         """Write own encryption bundle for a peer."""
-        connection = self.connection_for_own_syftbox()
-        connection.write_encryption_bundle(peer_email, bundle_json)
+        self.transport.peering.publish_key_bundle(peer_email, bundle_json)
 
     def share_encryption_bundles_folder(self, peer_email: str) -> None:
         """Share the bundles folder with a peer."""
-        connection = self.connection_for_own_syftbox()
-        connection.share_encryption_bundles_folder(peer_email)
+        self.transport.peering.grant_key_bundle_read(peer_email)
 
     def read_peer_encryption_bundle(self, peer_email: str) -> str | None:
         """Read encryption bundle that peer wrote for us."""
-        connection = self.connection_for_datasite_watcher()
-        return connection.read_peer_encryption_bundle(peer_email)
+        return self.transport.peering.read_peer_key_bundle(peer_email)
 
     # =========================================================================
     # GENERIC PREFIX-PARAMETERIZED COLLECTION METHODS (with encryption)
@@ -440,22 +439,17 @@ class ConnectionRouter(BaseModel):
     def owner_create_collection_folder(
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> str:
-        connection = self.connection_for_send_message()
-        return connection.owner_create_collection_folder(
-            prefix, tag, content_hash, owner_email
-        )
+        return self.transport.collections.create(prefix, tag, content_hash, owner_email)
 
     def owner_tag_collection_as_any(
         self, prefix: str, tag: str, content_hash: str
     ) -> None:
-        connection = self.connection_for_send_message()
-        connection.owner_tag_collection_as_any(prefix, tag, content_hash)
+        self.transport.collections.mark_shared_with_any(prefix, tag, content_hash)
 
     def owner_share_collection(
         self, prefix: str, tag: str, content_hash: str, users: list[str]
     ) -> None:
-        connection = self.connection_for_send_message()
-        connection.owner_share_collection(prefix, tag, content_hash, users)
+        self.transport.collections.grant_read(prefix, tag, content_hash, users)
 
     def owner_upload_collection_files(
         self,
@@ -472,32 +466,26 @@ class ConnectionRouter(BaseModel):
                 name: self.peer_store.encrypt_if_needed(recipient_email, data)
                 for name, data in files.items()
             }
-        connection = self.connection_for_send_message()
-        connection.owner_upload_collection_files(prefix, tag, content_hash, files)
+        self.transport.collections.upload(prefix, tag, content_hash, files)
 
     def owner_list_collections(self, prefix: str) -> list[str]:
-        connection = self.connection_for_send_message()
-        return connection.owner_list_collections(prefix)
+        return self.transport.collections.list_mine(prefix)
 
     def owner_list_all_collections_with_permissions(
         self, prefix: str
     ) -> list[FileCollection]:
-        connection = self.connection_for_send_message()
-        return connection.owner_list_all_collections_with_permissions(prefix)
+        return self.transport.collections.list_mine_with_permissions(prefix)
 
     def owner_delete_collection(self, prefix: str, tag: str) -> None:
-        connection = self.connection_for_send_message()
-        connection.owner_delete_collection(prefix, tag)
+        self.transport.collections.delete(prefix, tag)
 
     def watcher_list_collections(self, prefix: str) -> list[dict]:
-        connection = self.connection_for_receive_message()
-        return connection.watcher_list_collections(prefix)
+        return self.transport.collections.list_shared_with_me(prefix)
 
     def watcher_download_collection(
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> dict[str, bytes]:
-        connection = self.connection_for_datasite_watcher()
-        files = connection.watcher_download_collection(
+        files = self.transport.collections.download(
             prefix, tag, content_hash, owner_email
         )
         if self.peer_store and owner_email:
@@ -519,37 +507,31 @@ class ConnectionRouter(BaseModel):
 
     def write_version_file(self, version_info: "VersionInfo") -> None:
         """Write version file to own SyftBox folder."""
-        connection = self.connection_for_own_syftbox()
-        connection.write_version_file(version_info)
+        self.transport.peering.publish_version(version_info)
 
     def read_own_version_file(self) -> Optional["VersionInfo"]:
         """Read version file from own SyftBox folder."""
-        connection = self.connection_for_own_syftbox()
-        return connection.read_own_version_file()
+        return self.transport.peering.read_own_version()
 
     def read_peer_version_file(self, peer_email: str) -> Optional["VersionInfo"]:
         """Read version file from a peer's SyftBox folder."""
-        connection = self.connection_for_datasite_watcher()
-        return connection.read_peer_version_file(peer_email)
+        return self.transport.peering.read_peer_version(peer_email)
 
     def share_version_file_with_peer(
         self, peer_email: str, version_info: Optional["VersionInfo"] = None
     ) -> None:
         """Share version file with a peer so they can read it."""
-        connection = self.connection_for_own_syftbox()
-        connection.share_version_file_with_peer(peer_email, version_info)
+        self.transport.peering.grant_version_read(peer_email, version_info)
 
     def watcher_get_collection_file_metadatas(
         self, prefix: str, tag: str, content_hash: str, owner_email: str
     ) -> List[dict]:
-        connection = self.connection_for_datasite_watcher()
-        return connection.watcher_get_collection_file_metadatas(
+        return self.transport.collections.list_files(
             prefix, tag, content_hash, owner_email
         )
 
     def watcher_download_collection_file(self, file_id: str, owner_email: str) -> bytes:
-        connection = self.connection_for_datasite_watcher()
-        data = connection.watcher_download_collection_file(file_id)
+        data = self.transport.collections.fetch_file(file_id)
         data = self.peer_store.decrypt_dataset_if_needed(owner_email, data)
         return data
 
@@ -573,8 +555,7 @@ class ConnectionRouter(BaseModel):
     def owner_get_all_accepted_event_file_ids(
         self, since_timestamp: float | None = None
     ) -> List[str]:
-        connection = self.connection_for_eventlog()
-        return connection.owner_get_all_accepted_event_file_ids(since_timestamp)
+        return self.transport.owner_store.list_event_handles(since_timestamp)
 
     def gather_all_file_and_folder_ids(self) -> List[str]:
         connection = self.connection_for_own_syftbox()
@@ -601,13 +582,11 @@ class ConnectionRouter(BaseModel):
         """Serialize, encrypt, and upload a checkpoint."""
         data = checkpoint.as_compressed_data()
         data = self.peer_store.encrypt_for_self_if_needed(data)
-        connection = self.connection_for_own_syftbox()
-        return connection.upload_raw_checkpoint(checkpoint.filename, data)
+        return self.transport.owner_store.put_checkpoint(checkpoint.filename, data)
 
     def get_latest_checkpoint(self) -> Checkpoint | None:
         """Download, decrypt, and deserialize the latest checkpoint."""
-        connection = self.connection_for_own_syftbox()
-        raw = connection.download_raw_latest_checkpoint()
+        raw = self.transport.owner_store.latest_checkpoint()
         if raw is None:
             return None
         try:
@@ -621,15 +600,13 @@ class ConnectionRouter(BaseModel):
         self, checkpoint_timestamp: float | None
     ) -> int:
         """Count events created after the checkpoint timestamp."""
-        connection = self.connection_for_eventlog()
-        return connection.get_events_count_since_checkpoint(checkpoint_timestamp)
+        return self.transport.owner_store.count_events_since(checkpoint_timestamp)
 
     def get_events_messages_since_timestamp(
         self, since_timestamp: float
     ) -> List[FileChangeEventsMessage]:
         """Download, decrypt, and deserialize events since a timestamp."""
-        connection = self.connection_for_eventlog()
-        raw_list = connection.download_raw_events_since_timestamp(since_timestamp)
+        raw_list = self.transport.owner_store.fetch_events_since(since_timestamp)
         return [
             FileChangeEventsMessage.from_compressed_data(
                 self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
@@ -645,13 +622,11 @@ class ConnectionRouter(BaseModel):
         """Serialize, encrypt, and upload an incremental checkpoint."""
         data = checkpoint.as_compressed_data()
         data = self.peer_store.encrypt_for_self_if_needed(data)
-        connection = self.connection_for_own_syftbox()
-        return connection.upload_raw_incremental_checkpoint(checkpoint.filename, data)
+        return self.transport.owner_store.put_incremental(checkpoint.filename, data)
 
     def get_all_incremental_checkpoints(self) -> List[IncrementalCheckpoint]:
         """Download, decrypt, and deserialize all incremental checkpoints."""
-        connection = self.connection_for_own_syftbox()
-        raw_list = connection.download_all_raw_incremental_checkpoints()
+        raw_list = self.transport.owner_store.all_incrementals()
         checkpoints = []
         for raw in raw_list:
             try:
@@ -665,18 +640,15 @@ class ConnectionRouter(BaseModel):
 
     def get_incremental_checkpoint_count(self) -> int:
         """Get the number of incremental checkpoints."""
-        connection = self.connection_for_own_syftbox()
-        return connection.get_incremental_checkpoint_count()
+        return self.transport.owner_store.incremental_count()
 
     def get_next_incremental_sequence_number(self) -> int:
         """Get the next sequence number for incremental checkpoints."""
-        connection = self.connection_for_own_syftbox()
-        return connection.get_next_incremental_sequence_number()
+        return self.transport.owner_store.next_incremental_sequence()
 
     def delete_all_incremental_checkpoints(self) -> None:
         """Delete all incremental checkpoints from the storage backend."""
-        connection = self.connection_for_own_syftbox()
-        connection.delete_all_incremental_checkpoints()
+        self.transport.owner_store.delete_incrementals()
 
     # =========================================================================
     # ROLLING STATE METHODS
@@ -686,13 +658,13 @@ class ConnectionRouter(BaseModel):
         """Serialize, encrypt, and upload rolling state."""
         data = rolling_state.as_compressed_data()
         data = self.peer_store.encrypt_for_self_if_needed(data)
-        connection = self.connection_for_own_syftbox()
-        return connection.upload_raw_rolling_state(rolling_state.filename, data)
+        return self.transport.owner_store.put_rolling_state(
+            rolling_state.filename, data
+        )
 
     def get_rolling_state(self) -> RollingState | None:
         """Download, decrypt, and deserialize rolling state."""
-        connection = self.connection_for_own_syftbox()
-        raw = connection.download_raw_rolling_state()
+        raw = self.transport.owner_store.get_rolling_state()
         if raw is None:
             return None
         try:
@@ -704,5 +676,4 @@ class ConnectionRouter(BaseModel):
 
     def delete_rolling_state(self) -> None:
         """Delete rolling state from the storage backend."""
-        connection = self.connection_for_own_syftbox()
-        connection.delete_rolling_state()
+        self.transport.owner_store.delete_rolling_state()
