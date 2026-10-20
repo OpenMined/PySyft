@@ -31,6 +31,10 @@ from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.datasite_watcher_syncer import DatasiteWatcherSyncer
 from syft.sync.version.peer_manager import PeerManagerConfig
 from syft.sync.version.version_info import VersionInfo
+from tests.unit.test_persisted_cache import (
+    _assert_ds_receives_after_notebook_sync,
+    _pair_with_unsent_do_file,
+)
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
 
@@ -766,19 +770,13 @@ def test_off_and_required_peers_skip_each_other():
         ds_manager.sync()
 
 
-@pytest.mark.parametrize(
-    "ds_policy, recipient",
-    [(OPTIONAL, "former@example.com"), (OFF, None)],
-    ids=["former peer", "conflicting peer"],
-)
-def test_owner_drops_unsendable_outbox_message(ds_policy, recipient):
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        ds_encryption_policy=ds_policy,
+def test_owner_drops_outbox_message_to_non_peer():
+    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         do_encryption_policy=REQUIRED,
     )
     syncer = do_manager.datasite_owner_syncer
     message = FileChangeEventsMessage(events=[])
-    syncer.outbox_queue.put((recipient or ds_manager.email, message))
+    syncer.outbox_queue.put(("former@example.com", message))
     with pytest.warns(UserWarning, match="Dropped an outbox message"):
         syncer.process_syftbox_events_queue()
     assert syncer.outbox_queue.empty()
@@ -1020,61 +1018,38 @@ def test_compaction_skips_peer_with_unknown_policy(monkeypatch):
     assert syncer.compact_outbox_if_needed(ds_manager.email, min_messages=1) == 0
 
 
-def _unknown_policy(ds_manager, do_manager, monkeypatch):
-    """Make the DS policy unknown to the DO; return a function that undoes it."""
-    peer = do_manager.peer_manager.get_cached_peer(ds_manager.email)
-    version = peer.version
-    peer.version = None
+def _unknown_policy(ds_manager, do_manager, monkeypatch) -> None:
+    """Make the DS policy unknown to the DO."""
+    do_manager.peer_manager.get_cached_peer(ds_manager.email).version = None
     _forget(do_manager.peer_manager.peer_store, ds_manager.email)
     monkeypatch.setattr(
         ConnectionRouter, "read_peer_version_file", lambda self, email: None
     )
 
-    def restore():
-        monkeypatch.undo()
-        peer.version = version
-
-    return restore
-
-
-def _unpinned_bundle(ds_manager, do_manager, monkeypatch):
-    """Drop the DO pin of the DS bundle; return a function that undoes it."""
-    peer = do_manager.peer_manager.get_cached_peer(ds_manager.email)
-    bundle = peer.public_encryption_bundle
-    peer.public_encryption_bundle = None
-
-    def restore():
-        peer.public_encryption_bundle = bundle
-
-    return restore
-
 
 @pytest.mark.parametrize(
-    "make_pending", [_unknown_policy, _unpinned_bundle], ids=["policy", "pin"]
+    "error",
+    [
+        PeerEncryptionPolicyUnknownError,
+        PeerKeysNotReadyError,
+        EncryptionPolicyConflictError,
+    ],
+    ids=["policy", "keys", "conflict"],
 )
-def test_owner_sends_outbox_message_once_encryption_set_up(make_pending, monkeypatch):
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        ds_encryption_policy=REQUIRED,
-    )
-    syncer = do_manager.datasite_owner_syncer
-    restore = make_pending(ds_manager, do_manager, monkeypatch)
-    written = []
-    original = ConnectionRouter.owner_write_event_messages_to_outbox
+def test_waiting_outbox_message_survives_process_exit(monkeypatch, error):
+    """The paths stay pending on disk, so the next process sends them."""
+    ds_manager, do_manager = _pair_with_unsent_do_file()
+    do_manager_b = do_manager._copy()
 
-    def write(self, recipient, message):
-        original(self, recipient, message)
-        written.append(recipient)
+    def wait(self, recipient, message):
+        raise error(recipient)
 
-    monkeypatch.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", write)
-    syncer.outbox_queue.put((ds_manager.email, FileChangeEventsMessage(events=[])))
-    with pytest.warns(UserWarning, match="lost if this process exits"):
-        syncer.process_syftbox_events_queue()
-    assert written == []
+    with monkeypatch.context() as m:
+        m.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", wait)
+        with pytest.warns(UserWarning, match="wait for a later sync"):
+            do_manager_b.sync(auto_checkpoint=False)
 
-    restore()
-    monkeypatch.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", write)
-    syncer.process_syftbox_events_queue()
-    assert written == [ds_manager.email]
+    _assert_ds_receives_after_notebook_sync(ds_manager, do_manager)
 
 
 # =========================================================================
