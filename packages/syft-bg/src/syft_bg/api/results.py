@@ -3,16 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
-
 from pydantic import BaseModel, Field, computed_field
 
+from syft_bg.approve.config import AutoApprovalObj
 from syft_bg.common.syft_bg_config import SyftBgConfig
 from syft_bg.services.base import ServiceInfo, ServiceStatus
 from typing import Optional
-
-if TYPE_CHECKING:
-    from syft_bg.approve.config import AutoApprovalObj
 
 
 class InitResult(BaseModel):
@@ -155,6 +151,7 @@ class StatusResult(BaseModel):
 
     config: "SyftBgConfig"
     service_infos: dict[str, ServiceInfo] = Field(default_factory=dict)
+    auto_approvals: dict[str, AutoApprovalObj] = Field(default_factory=dict)
     is_colab: bool = False
 
     @property
@@ -164,10 +161,6 @@ class StatusResult(BaseModel):
     @property
     def syftbox_root(self) -> str | None:
         return self.config.syftbox_root
-
-    @property
-    def auto_approvals(self) -> dict[str, "AutoApprovalObj"]:
-        return self.config.approve.auto_approvals.objects
 
     @property
     def approved_domains(self) -> list[str]:

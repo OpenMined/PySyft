@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
+from syft_datasets import Dataset
 from syft_datasets.dataset_manager import SyftDatasetManager
 from syft_job.disclosures import DisclosuresArg, gated_names
 from syft_job.job import JobInfo, JobsList
@@ -12,9 +13,15 @@ from syft_job.job_storage import JobRef
 from syft_job.models import JobState, JobStatus
 from syft_perms.syftperm_context import SyftPermContext
 from syft_rds import SyftRDSClient, SyftRDSClientConfig
+from syft_rds.waiting import JobCheck, JobStatusArg, wait_for_job
 
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_list import PeerList
+from syft.sync.utils.waiting import (
+    DEFAULT_POLL_INTERVAL,
+    DEFAULT_WAIT_TIMEOUT,
+    wait_for,
+)
 from syft.sync.version.peer_manager import CompatAction
 from syft_enclaves.attestation.dispatch import policy_for, verify_evidence
 from syft_enclaves.attestation.envelope import AttestationEvidence
@@ -60,6 +67,28 @@ if TYPE_CHECKING:
     from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
 
 logger = logging.getLogger(__name__)
+
+
+def _given_shorthands(
+    expected_image_digest: str | None,
+    expected_data_owners: list[str] | None,
+    expected_email: str | None,
+    policy: "AppraisalPolicy | TinfoilAppraisalPolicy | None",
+) -> dict:
+    """The shorthand arguments of ``attest_peer`` that were given.
+
+    Raises:
+        ValueError: a shorthand and ``policy`` were both given.
+    """
+    shorthands = {
+        "expected_image_digest": expected_image_digest,
+        "expected_data_owners": expected_data_owners,
+        "expected_email": expected_email,
+    }
+    given = {name: value for name, value in shorthands.items() if value is not None}
+    if given and policy is not None:
+        raise ValueError(f"Pass either {' / '.join(shorthands)} or policy, not both.")
+    return given
 
 
 class SyftEnclaveClient:
@@ -110,6 +139,9 @@ class SyftEnclaveClient:
     def reject_peer_request(self, email_or_peer: str | Peer):
         self._rds.reject_peer_request(email_or_peer)
 
+    def validate_peer(self, peer_email: str) -> Peer:
+        return self._rds.validate_peer(peer_email)
+
     def attest_peer(
         self,
         peer_email: str,
@@ -148,17 +180,9 @@ class SyftEnclaveClient:
                 the shorthands.
         """
 
-        shorthands = {
-            "expected_image_digest": expected_image_digest,
-            "expected_data_owners": expected_data_owners,
-            "expected_email": expected_email,
-        }
-        given = {name: value for name, value in shorthands.items() if value is not None}
-        if given and policy is not None:
-            raise ValueError(
-                f"Pass either {' / '.join(shorthands)} or policy, not both."
-            )
-
+        given = _given_shorthands(
+            expected_image_digest, expected_data_owners, expected_email, policy
+        )
         evidence = self._peer_evidence(peer_email)
         if evidence is None:
             return None
@@ -202,21 +226,65 @@ class SyftEnclaveClient:
             peer_email, peer.state.value, public_encryption_bundle=bundle
         )
 
-    def _peer_evidence(self, peer_email: str) -> "AttestationEvidence | None":
-        """The peer's published attestation evidence, or None if it has none."""
+    def wait_until_attested(
+        self,
+        peer_email: str,
+        expected_image_digest: str | None = None,
+        expected_data_owners: list[str] | None = None,
+        expected_email: str | None = None,
+        policy: "AppraisalPolicy | TinfoilAppraisalPolicy | None" = None,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ):
+        """Wait until ``peer_email`` publishes attestation evidence, then verify it.
+
+        The arguments and the result are those of ``attest_peer``. Use it only
+        for an enclave that runs in a TEE: an enclave outside a TEE never
+        publishes evidence, so the wait ends in ``TimeoutError``.
+
+        Raises:
+            TimeoutError: no evidence was published within ``timeout`` seconds.
+            AttestationError: the evidence fails verification.
+        """
+        _given_shorthands(
+            expected_image_digest, expected_data_owners, expected_email, policy
+        )
+        wait_for(
+            lambda: self._peer_evidence(peer_email, quiet=True),
+            f"the attestation of {peer_email}",
+            lambda: "no attestation evidence published yet",
+            timeout,
+            poll_interval,
+        )
+        return self.attest_peer(
+            peer_email,
+            expected_image_digest=expected_image_digest,
+            expected_data_owners=expected_data_owners,
+            expected_email=expected_email,
+            policy=policy,
+        )
+
+    def _peer_evidence(
+        self, peer_email: str, quiet: bool = False
+    ) -> "AttestationEvidence | None":
+        """The peer's published attestation evidence, or None if it has none.
+
+        Prints why there is none, unless ``quiet`` is set.
+        """
         version_info = self._rds.peer_manager.connection_router.read_peer_version_file(
             peer_email
         )
         if version_info is None:
-            print(
-                f"ℹ️  No version file available for peer {peer_email!r}; skipping attestation."
-            )
+            if not quiet:
+                print(
+                    f"ℹ️  No version file available for peer {peer_email!r}; skipping attestation."
+                )
             return None
         # A malformed envelope raises rather than skipping: a peer that
         # published something unparseable is not the same as one that
         # published nothing.
         evidence = AttestationEvidence.read_from(version_info)
-        if evidence is None:
+        if evidence is None and not quiet:
             print(
                 f"ℹ️  Peer {peer_email!r} published no attestation evidence "
                 "(not running in an attested enclave); skipping attestation."
@@ -246,12 +314,63 @@ class SyftEnclaveClient:
 
     @property
     def jobs(self) -> JobsList:
-        jobs_list = self._rds.jobs
+        return self._wrap_enclave_jobs(self._rds.jobs)
+
+    def _wrap_enclave_jobs(self, jobs_list: JobsList) -> JobsList:
+        """``jobs_list`` with every enclave job wrapped by ``_as_enclave_job``."""
         wrapped = [
             self._as_enclave_job(j) if j.job_headers.get("job_type") == "enclave" else j
             for j in jobs_list
         ]
-        return JobsList(wrapped, jobs_list._root_email)
+        return JobsList(wrapped, jobs_list._root_email, jobs_list._has_do_role)
+
+    def wait_until_peered(
+        self,
+        peer_email: str,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> Peer:
+        """Same as ``SyftRDSClient.wait_until_peered``."""
+        return self._rds.wait_until_peered(
+            peer_email, timeout=timeout, poll_interval=poll_interval
+        )
+
+    def wait_until_has_dataset(
+        self,
+        name: str,
+        datasite: str | None = None,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> Dataset:
+        """Same as ``SyftRDSClient.wait_until_has_dataset``."""
+        return self._rds.wait_until_has_dataset(
+            name, datasite=datasite, timeout=timeout, poll_interval=poll_interval
+        )
+
+    def wait_until_has_job(
+        self,
+        job_name: str,
+        user_name: str | None = None,
+        status: JobStatusArg = None,
+        where: JobCheck | None = None,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> JobInfo:
+        """Like ``SyftRDSClient.wait_until_has_job``, with enclave job statuses.
+
+        An enclave job is read as in ``self.jobs``, so its status comes from
+        the approval files of the data owners.
+        """
+        return wait_for_job(
+            self.sync,
+            lambda: self._wrap_enclave_jobs(self._local_jobs()),
+            job_name,
+            user_name,
+            status,
+            where,
+            timeout,
+            poll_interval,
+        )
 
     def _as_enclave_job(self, job: JobInfo) -> EnclaveJobInfo:
         """Wrap ``job``; on the enclave that runs it, every data owner must approve.
@@ -692,6 +811,7 @@ class SyftEnclaveClient:
         token_path: Path | str | None = None,
         data_owners: list[str] | None = None,
         encryption: bool = False,
+        persist_owner_state: bool = False,
     ) -> "SyftEnclaveClient":
         """Build an enclave client backed by a real Google Drive connection.
         Args:
@@ -699,6 +819,10 @@ class SyftEnclaveClient:
             token_path: Path to a pre-authorized Google Drive OAuth token.
             data_owners: Emails whose approval gates every job on this enclave.
             encryption: Enable end-to-end drive encryption.
+            persist_owner_state: Keep the owner-only state used to restore
+                this datasite later (event log, rolling state, checkpoints).
+                Off by default - an enclave gets ephemeral keys and wipes its
+                state on boot, so there is never anything to restore.
         """
         config = SyftRDSClientConfig.for_jupyter(
             email=email,
@@ -706,6 +830,7 @@ class SyftEnclaveClient:
             has_do_role=True,
             token_path=Path(token_path) if token_path is not None else None,
             encryption=encryption,
+            persist_owner_state=persist_owner_state,
         )
 
         # Note: We do not currently provide the ability to load encryption keys passed during creation of enclave.
@@ -722,6 +847,7 @@ class SyftEnclaveClient:
         ds_email: str | None = None,
         use_in_memory_cache: bool = True,
         encryption: bool = False,
+        enclave_persist_owner_state: bool = False,
     ) -> tuple[
         "SyftEnclaveClient",
         "SyftEnclaveClient",
@@ -738,11 +864,18 @@ class SyftEnclaveClient:
 
         Args:
             encryption: Enable end-to-end drive encryption on all four clients.
+            enclave_persist_owner_state: Whether the enclave keeps restorable
+                owner state. Off by default, as in production.
         Returns:
             Tuple of (enclave, do1, do2, ds)
         """
         configs = create_configs(
-            enclave_email, do1_email, do2_email, ds_email, use_in_memory_cache
+            enclave_email,
+            do1_email,
+            do2_email,
+            ds_email,
+            use_in_memory_cache,
+            enclave_persist_owner_state,
         )
         clients = create_clients(configs)
         enclave, do1, do2, ds = clients

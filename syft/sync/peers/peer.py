@@ -6,6 +6,14 @@ from syft.sync.platforms.base_platform import BasePlatform
 from syft.sync.version.version_info import VersionInfo
 
 
+class PeerSetupError(ValueError):
+    """A peer is unknown, not approved, or not shown to be a live connection."""
+
+
+class PeerNotReadyError(PeerSetupError):
+    """The peer can still become valid: it did not approve yet, or log in recently."""
+
+
 class PeerState(str, Enum):
     ACCEPTED = "accepted"
     REQUESTED_BY_PEER = "requested_by_peer"

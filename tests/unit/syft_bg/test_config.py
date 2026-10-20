@@ -32,12 +32,9 @@ class TestFileEntry:
         entry = FileEntry(
             relative_path="main.py", path="/tmp/main.py", hash="sha256:bbb"
         )
-        d = entry.model_dump()
-        assert d == {
-            "relative_path": "main.py",
-            "path": "/tmp/main.py",
-            "hash": "sha256:bbb",
-        }
+        # path points at the stored copy on this machine, so it is filled in
+        # on load and never written to api.yaml.
+        assert entry.model_dump() == {"relative_path": "main.py", "hash": "sha256:bbb"}
 
 
 class TestAutoApprovalObj:
@@ -93,7 +90,6 @@ class TestAutoApproveConfig:
         assert config.syftbox_root is None
         assert config.interval == 5
         assert config.auto_approvals.enabled is True
-        assert config.auto_approvals.objects == {}
         assert config.peers.enabled is False
 
     def test_load_from_file(self, sample_config):
@@ -102,13 +98,6 @@ class TestAutoApproveConfig:
         assert config.syftbox_root == Path("/tmp/syftbox")
         assert config.interval == 5
         assert config.auto_approvals.enabled is True
-        assert "analysis" in config.auto_approvals.objects
-        obj = config.auto_approvals.objects["analysis"]
-        assert len(obj.file_contents) == 1
-        assert obj.file_contents[0].relative_path == "main.py"
-        assert obj.file_contents[0].hash == "sha256:abc123"
-        assert "alice@uni.edu" in obj.peers
-        assert "bob@co.com" in obj.peers
 
     def test_load_nonexistent_returns_defaults(self, temp_dir):
         config = SyftBgConfig.load(temp_dir / "nonexistent.yaml").approve
@@ -123,58 +112,30 @@ class TestAutoApproveConfig:
             interval=10,
         )
         approve_config.auto_approvals.enabled = False
-        approve_config.auto_approvals.objects["test_obj"] = AutoApprovalObj(
-            file_contents=[
-                FileEntry(
-                    relative_path="main.py", path="/tmp/main.py", hash="sha256:xyz"
-                )
-            ],
-            peers=["alice@test.com"],
-        )
         SyftBgConfig(approve=approve_config).save(config_path)
 
         loaded = SyftBgConfig.from_path(config_path).approve
         assert loaded.do_email == "save@example.com"
         assert loaded.interval == 10
         assert loaded.auto_approvals.enabled is False
-        assert "test_obj" in loaded.auto_approvals.objects
-        obj = loaded.auto_approvals.objects["test_obj"]
-        assert obj.file_contents[0].hash == "sha256:xyz"
-        assert obj.peers == ["alice@test.com"]
 
-    def test_save_reload_multi_script_roundtrip(self, temp_dir):
-        config_path = temp_dir / "config.yaml"
-        approve_config = AutoApproveConfig(do_email="rt@test.com")
-        approve_config.auto_approvals.objects["multi"] = AutoApprovalObj(
-            file_contents=[
-                FileEntry(
-                    relative_path="main.py", path="/tmp/main.py", hash="sha256:aaa"
-                ),
-                FileEntry(
-                    relative_path="utils.py", path="/tmp/utils.py", hash="sha256:bbb"
-                ),
-            ],
-            peers=["ds@test.com"],
-        )
-        SyftBgConfig(approve=approve_config).save(config_path)
-
-        loaded = SyftBgConfig.from_path(config_path).approve
-        obj = loaded.auto_approvals.objects["multi"]
-        assert len(obj.file_contents) == 2
-        assert obj.file_contents[0].relative_path == "main.py"
-        assert obj.file_contents[1].relative_path == "utils.py"
-
-    def test_load_empty_objects(self, temp_dir):
+    def test_legacy_objects_are_ignored(self, temp_dir):
+        """Auto-approvals moved to SyftBox; old config entries are dropped."""
         config_path = temp_dir / "config.yaml"
         config_path.write_text("""
 do_email: test@example.com
 approve:
   auto_approvals:
     enabled: true
-    objects: {}
+    objects:
+      old:
+        file_contents: []
+        peers: [alice@test.com]
 """)
-        config = SyftBgConfig.from_path(config_path).approve
-        assert config.auto_approvals.objects == {}
+        config = SyftBgConfig.from_path(config_path)
+        assert config.approve.auto_approvals.enabled is True
+        config.save(config_path)
+        assert "objects" not in config_path.read_text()
 
     def test_gmail_token_path_propagates_from_top_level(self, temp_dir):
         """Regression test: AutoApproveConfig.load() used to never read
@@ -277,33 +238,9 @@ approve:
 class TestAutoApprovalsConfig:
     """Tests for AutoApprovalsConfig."""
 
-    def test_from_dict_with_objects(self):
-        config = AutoApprovalsConfig.model_validate(
-            {
-                "enabled": True,
-                "objects": {
-                    "my_analysis": {
-                        "file_contents": [
-                            {
-                                "relative_path": "main.py",
-                                "path": "/tmp/main.py",
-                                "hash": "sha256:abc",
-                            }
-                        ],
-                        "file_paths": [],
-                        "peers": ["alice@test.com"],
-                    },
-                },
-            }
-        )
-        assert config.enabled is True
-        assert "my_analysis" in config.objects
-        assert config.objects["my_analysis"].file_contents[0].relative_path == "main.py"
-
     def test_defaults(self):
         config = AutoApprovalsConfig()
         assert config.enabled is True
-        assert config.objects == {}
 
 
 class TestPeerApprovalConfig:

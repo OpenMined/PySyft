@@ -157,3 +157,16 @@ class EnclaveSettings(AttestationSettings):
             "Enabled by default; set false to disable."
         ),
     )
+    persist_owner_state: bool = Field(
+        default=False,
+        description=(
+            "Keep the owner-only state that exists solely to restore this "
+            "datasite later: the append-only event log, the rolling state and "
+            "the checkpoints. Off by default because an enclave can never "
+            "restore — it gets an ephemeral keypair each boot and wipes its "
+            "state under fresh_state — so those writes only spend Drive API "
+            "calls inside the poll loop. Peer-facing state (outbox, "
+            "collections, peers) is unaffected. Set true only for a stateful "
+            "enclave (fresh_state=false)."
+        ),
+    )

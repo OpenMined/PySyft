@@ -82,7 +82,8 @@ def _resolve_login_params(
         token_path = token_path or settings.token_path
         if not token_path:
             raise NotImplementedError(
-                "Jupyter login is only supported with a token path"
+                "Running outside Colab: pass token_path=... to login_do()/login_ds(). "
+                "See docs/auth.md to create a token (about 15 minutes)."
             )
         if email is None:
             raise ValueError("Email is required for Jupyter login")

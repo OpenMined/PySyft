@@ -44,6 +44,11 @@ def _valid_claims(**overrides):
             "container": {
                 "image_digest": FAKE_IMAGE_DIGEST,
                 "image_reference": "docker.io/openmined/syft-enclave:latest",
+                # What the operator set as tee-env-* metadata.
+                "env_override": {
+                    "SYFT_ENCLAVE_EMAIL": "enclave@openmined.org",
+                    "SYFT_ENCLAVE_DATA_OWNERS": "do@openmined.org",
+                },
             }
         },
     }
@@ -200,6 +205,8 @@ class TestVerifyAttestationToken:
             "debug_disabled",
             "version_match",
             "image_digest",
+            "enclave_email",
+            "data_owners",
         ]
 
     def test_multiple_failures_listed(self, mock_verify):
@@ -230,6 +237,133 @@ class TestVerifyAttestationToken:
         # Only the JWT check ran; nothing downstream could inspect claims.
         check_names = [c.name for c in exc_info.value.result.checks]
         assert check_names == ["jwt_signature"]
+
+
+ATTACKER = "attacker@evil.com"
+BUNDLE = {"identity": "enclave@openmined.org"}
+
+
+def _token_with_env(env, published=PUBLISHED_CLAIMS, key="env_override"):
+    """A token committing to *published*, recording *env* under *key*."""
+    claims = _valid_claims(eat_nonce=[EXPECTED_VERSION_NONCE, claims_digest(published)])
+    container = claims["submods"]["container"]
+    del container["env_override"]
+    if env is not None:
+        container[key] = env
+    return claims
+
+
+def _check(result, name):
+    return next(c for c in result.checks if c.name == name)
+
+
+class TestDeployedFacts:
+    """The email and data owners come from the launcher, not the enclave.
+
+    Any code in the container, a job included, can get the launcher to sign
+    a digest of a claims document of its choosing. Only env_override, which
+    the launcher measures before the container starts, says what the operator
+    deployed.
+    """
+
+    def test_owners_come_from_the_token_not_the_claims_document(self, mock_verify):
+        # The regression: a job mints a token over a document naming the
+        # owners the verifier expects, while the operator deployed others.
+        mock_verify.return_value = _token_with_env(
+            {
+                "SYFT_ENCLAVE_EMAIL": "enclave@openmined.org",
+                "SYFT_ENCLAVE_DATA_OWNERS": ATTACKER,
+            }
+        )
+        with pytest.raises(AttestationError) as excinfo:
+            verify_attestation_token(
+                "fake-token",
+                policy=DEFAULT_TEST_POLICY,
+                published_claims=PUBLISHED_CLAIMS,
+                verbose=False,
+            )
+        result = excinfo.value.result
+        assert _check(result, "data_owners").passed is False
+        assert ATTACKER in _check(result, "data_owners").detail
+
+    def test_a_document_that_disagrees_with_the_token_binds_no_key(self, mock_verify):
+        # The deployed values are right, but the document carrying the key
+        # names other owners, so the enclave as deployed did not write it.
+        forged = build_claims(
+            "enclave@openmined.org", [ATTACKER], SYFT_VERSION, key_bundle=BUNDLE
+        )
+        mock_verify.return_value = _token_with_env(
+            _valid_claims()["submods"]["container"]["env_override"], published=forged
+        )
+        with pytest.raises(AttestationError) as excinfo:
+            verify_attestation_token(
+                "fake-token",
+                policy=DEFAULT_TEST_POLICY,
+                published_claims=forged,
+                verbose=False,
+            )
+        result = excinfo.value.result
+        assert _check(result, "claims_binding").passed is False
+        assert _check(result, "data_owners").passed is True
+        assert result.verified_key_bundle is None
+
+    @pytest.mark.parametrize(
+        "env, key",
+        [
+            (None, "env_override"),
+            # An image ENV default lands in env too, so env is never read.
+            (_valid_claims()["submods"]["container"]["env_override"], "env"),
+        ],
+        ids=["no_override", "only_in_env"],
+    )
+    def test_a_pinned_value_the_token_does_not_record_fails(
+        self, mock_verify, env, key
+    ):
+        mock_verify.return_value = _token_with_env(env, key=key)
+        with pytest.raises(AttestationError) as excinfo:
+            verify_attestation_token(
+                "fake-token",
+                policy=DEFAULT_TEST_POLICY,
+                published_claims=PUBLISHED_CLAIMS,
+                verbose=False,
+            )
+        result = excinfo.value.result
+        for name in ("enclave_email", "data_owners"):
+            assert _check(result, name).passed is False
+            assert "records no" in _check(result, name).detail
+
+    def test_an_unpinned_policy_skips_a_value_the_token_does_not_record(
+        self, mock_verify
+    ):
+        mock_verify.return_value = _token_with_env(None)
+        result = verify_attestation_token(
+            "fake-token",
+            policy=UNPINNED,
+            published_claims=PUBLISHED_CLAIMS,
+            verbose=False,
+        )
+        assert _check(result, "enclave_email").passed is None
+        assert _check(result, "data_owners").passed is None
+
+    def test_owner_spacing_and_order_do_not_matter(self, mock_verify):
+        owners = ["a@openmined.org", "b@openmined.org"]
+        published = build_claims("enclave@openmined.org", owners, SYFT_VERSION)
+        mock_verify.return_value = _token_with_env(
+            {
+                "SYFT_ENCLAVE_EMAIL": "enclave@openmined.org",
+                "SYFT_ENCLAVE_DATA_OWNERS": " b@openmined.org , a@openmined.org,",
+            },
+            published=published,
+        )
+        policy = AppraisalPolicy(
+            expected_image_digest=FAKE_IMAGE_DIGEST,
+            expected_data_owners=owners,
+            expected_email="enclave@openmined.org",
+        )
+        result = verify_attestation_token(
+            "fake-token", policy=policy, published_claims=published, verbose=False
+        )
+        assert result.all_passed()
 
 
 class TestAttestationResult:

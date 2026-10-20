@@ -117,8 +117,11 @@ class EnclaveJobInfo(JobInfo):
     def _load_own_approval(self) -> PartyApprovalStatus:
         if not self._approval_file.exists():
             raise PermissionError(
-                f"No approval file found for {self.current_user_email}. "
-                f"You may not be a designated party for this job."
+                f"No approval file for {self.current_user_email} on job "
+                f"'{self.name}'. The enclave writes one per designated party "
+                f"when it distributes the job, so either it has not distributed "
+                f"this job yet — run client.sync() and retry — or you are not a "
+                f"party to it."
             )
         return PartyApprovalStatus.load_json(self._approval_file)
 

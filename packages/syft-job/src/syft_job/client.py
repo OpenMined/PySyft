@@ -181,24 +181,7 @@ class JobClient(BaseJobClient):
             job_name = f"Job - {random_id}"
         JobStorage.validate_job_name(job_name)
 
-        # Ensure user directory exists (create if it doesn't)
-        user_dir = self.config.get_user_dir(user)
-        if not user_dir.exists():
-            user_dir.mkdir(parents=True, exist_ok=True)
-            print(f"Created user directory: {user_dir}")
-
-        # Ensure inbox directory structure exists
-        self._ensure_my_submission_directory_exists(submitting_to_email)
-
-        # Create job directory under inbox/<ds_email>/[v<n>/]<job_name>/
-        ref = self.manager.new_submission_ref(submitting_to_email, job_name)
-        job_dir = self.manager.submission_dir(ref)
-
-        if job_dir.exists():
-            raise FileExistsError(
-                f"Job '{job_name}' already exists for user '{submitting_to_email}'"
-            )
-
+        ref, job_dir = self._new_submission_dir(submitting_to_email, job_name)
         self._write_bash_script(job_dir, script)
 
         # Write config.yaml in the version the datasite owner understands
@@ -213,6 +196,71 @@ class JobClient(BaseJobClient):
         )
         self.manager.write_submission(ref, config)
 
+        return job_dir
+
+    def _new_submission_dir(
+        self, submitting_to_email: str, job_name: str
+    ) -> tuple[JobRef, Path]:
+        """Resolve inbox/<ds_email>/[v<n>/]<job_name>/ for a new job.
+
+        Creates the parent folders, not the job dir itself.
+        """
+        user_dir = self.config.get_user_dir(submitting_to_email)
+        if not user_dir.exists():
+            user_dir.mkdir(parents=True, exist_ok=True)
+            print(f"Created user directory: {user_dir}")
+        self._ensure_my_submission_directory_exists(submitting_to_email)
+
+        ref = self.manager.new_submission_ref(submitting_to_email, job_name)
+        job_dir = self.manager.submission_dir(ref)
+        if job_dir.exists():
+            raise FileExistsError(
+                f"Job '{job_name}' already exists for user '{submitting_to_email}'"
+            )
+        return ref, job_dir
+
+    def submit_prepared_python_job(
+        self,
+        user: str,
+        job_name: str,
+        run_script: bytes,
+        code_files: dict[str, bytes],
+        entrypoint: str,
+    ) -> Path:
+        """Submit a Python job from exact file contents.
+
+        Unlike submit_python_job, run.sh is not generated, so the job is
+        byte-for-byte what the caller passes, e.g. the pinned files of an api.
+
+        Args:
+            user: Email address of the datasite owner to submit job to
+            job_name: Name of the job (directory name)
+            run_script: Content of run.sh
+            code_files: {path relative to code/: content}
+            entrypoint: The Python file run.sh executes, relative to code/
+
+        Returns:
+            Path to the created job directory in inbox/
+        """
+        JobStorage.validate_job_name(job_name)
+        ref, job_dir = self._new_submission_dir(user, job_name)
+        for rel_path, content in code_files.items():
+            dest = job_dir / "code" / rel_path
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(content)
+        (job_dir / "run.sh").write_bytes(run_script)
+        os.chmod(job_dir / "run.sh", 0o755)
+
+        config = JobSubmissionMetadata(
+            name=job_name,
+            type="python",
+            submitted_by=self.current_user_email,
+            datasite_email=user,
+            submitted_at=datetime.now(timezone.utc),
+            entrypoint=entrypoint,
+            files=sorted(code_files),
+        )
+        self.manager.write_submission(ref, config)
         return job_dir
 
     def _write_bash_script(self, job_dir: Path, script: str) -> None:
@@ -431,22 +479,7 @@ python {entrypoint_path}
             self._validate_code_path_and_entrypoint(code_path, entrypoint)
         )
 
-        # Ensure user directory exists (create if it doesn't)
-        user_dir = self.config.get_user_dir(user)
-        if not user_dir.exists():
-            user_dir.mkdir(parents=True, exist_ok=True)
-            print(f"Created user directory: {user_dir}")
-
-        # Ensure inbox directory structure exists
-        self._ensure_my_submission_directory_exists(submitting_to_email)
-
-        # Create job directory under inbox/<ds_email>/[v<n>/]<job_name>/
-        ref = self.manager.new_submission_ref(submitting_to_email, job_name)
-        job_dir = self.manager.submission_dir(ref)
-
-        if job_dir.exists():
-            raise FileExistsError(f"Job '{job_name}' already exists for user '{user}'")
-
+        ref, job_dir = self._new_submission_dir(submitting_to_email, job_name)
         job_dir.mkdir(parents=True)
 
         # Copy code into code/ subdirectory
@@ -708,8 +741,18 @@ python {entrypoint_path}
         """
         Get all jobs from all peer directories as an indexable list grouped by user.
 
+        Order is the same as the jobs table: jobs on your own datasite first,
+        then the other datasites alphabetically, newest-first within each one.
+        ``jobs[N]`` is the row labelled ``[N]``. Prefer an email and a name
+        (``jobs["do@org.com"]["analysis"]``); both parts stay the same as jobs
+        are added, and the email is what makes the name resolve to one job.
+
         Returns a JobsList object that can be:
-        - Indexed: jobs[0], jobs[1], etc.
+        - Indexed by email, then name (preferred): jobs["do@org.com"]["analysis"]
+        - Indexed by datasite and submitter, for a name they share:
+          jobs["do@org.com"]["ds@org.com"]["analysis"]
+        - Indexed by name across every datasite: jobs["analysis"]
+        - Indexed by position: jobs[0], jobs[1] — matches the table Index column
         - Iterated: for job in jobs
         - Displayed: print(jobs) shows separate tables for each user
         - HTML display: in Jupyter, shows separate tables for each user with jobs
@@ -722,25 +765,18 @@ python {entrypoint_path}
 
         current_jobs = self._get_all_jobs()
 
-        # Sort jobs by recent submissions first (newest first), then by user/status
         def job_sort_key(job):
-            # Parse submitted_at timestamp for sorting (most recent first)
+            # Root owner first, then peers, newest-first within each owner.
+            # This list is the authority for both jobs[N] and the table's [N].
             try:
                 if job.submitted_at:
-                    from datetime import datetime as dt
-
-                    # Parse ISO format timestamp
-                    ts = dt.fromisoformat(job.submitted_at.replace("Z", "+00:00"))
-                    # Use negative timestamp for reverse chronological order (newest first)
+                    ts = datetime.fromisoformat(job.submitted_at.replace("Z", "+00:00"))
                     time_priority = -ts.timestamp()
                 else:
-                    # Jobs without submitted_at go to the end
                     time_priority = float("inf")
             except Exception:
-                # Invalid timestamps go to the end
                 time_priority = float("inf")
 
-            # Secondary sorting: user priority (root first), then user name, then status
             user_priority = (
                 0 if job.datasite_owner_email == self.current_user_email else 1
             )
@@ -756,9 +792,9 @@ python {entrypoint_path}
             status_priority = status_order.get(job.status, 7)
 
             return (
-                time_priority,
                 user_priority,
                 job.datasite_owner_email,
+                time_priority,
                 status_priority,
                 job.name.lower(),
             )
