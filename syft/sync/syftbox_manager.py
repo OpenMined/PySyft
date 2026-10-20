@@ -24,7 +24,7 @@ from syft.sync.events.file_change_event import (
 )
 from syft.sync.file_writer import FileWriter
 from syft.sync.job_file_change_handler import JobFileChangeHandler
-from syft.sync.peers.peer import Peer
+from syft.sync.peers.peer import Peer, PeerNotReadyError
 from syft.sync.peers.peer_list import PeerList
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.platforms.base_platform import BasePlatform
@@ -45,6 +45,11 @@ from syft.sync.sync.datasite_watcher_syncer import (
     DatasiteWatcherSyncerConfig,
 )
 from syft.sync.utils.path_filters import is_normal_syncable_path
+from syft.sync.utils.waiting import (
+    DEFAULT_POLL_INTERVAL,
+    DEFAULT_WAIT_TIMEOUT,
+    poll_until,
+)
 from syft.sync.utils.syftbox_utils import (
     random_email,
     random_syftbox_folder_for_testing,
@@ -479,6 +484,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         "approve_peer_request",
         "reject_peer_request",
         "validate_peer",
+        "wait_until_peered",
         "sync",
         "create_checkpoint",
         "should_create_checkpoint",
@@ -1051,6 +1057,41 @@ class SyftboxManager(BaseModelCallbackMixin):
         """
         self.load_peers()
         return self.peer_manager.validate_peer(peer_email)
+
+    def wait_until_peered(
+        self,
+        peer_email: str,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> Peer:
+        """Wait until ``validate_peer`` passes for ``peer_email``, and return the peer.
+
+        Each poll, every ``poll_interval`` seconds, is one Drive request; the
+        peers load again only when that request shows a change.
+
+        Raises:
+            TimeoutError: the peer did not approve within ``timeout`` seconds.
+            PeerSetupError: waiting cannot help, e.g. the email is not a peer.
+        """
+        deadline = time.monotonic() + timeout
+        while True:
+            try:
+                return self.validate_peer(peer_email)
+            except PeerNotReadyError as e:
+                error = e
+            if deadline - time.monotonic() <= 0:
+                break
+            print(f"Waiting for {peer_email}: {error}")
+            approved = poll_until(
+                lambda: self.peer_manager.peer_may_be_valid(peer_email) or None,
+                deadline,
+                poll_interval,
+            )
+            if approved is None:
+                break
+        raise TimeoutError(
+            f"Timed out after {timeout:g}s waiting for peer {peer_email}: {error}"
+        ) from error
 
     # ========== Encryption key fingerprints ==========
 

@@ -8,6 +8,7 @@ import logging
 import sys
 
 from pydantic import ValidationError
+from syft_job.logging_config import defer_to_root_logging
 
 from syft_enclaves.client import SyftEnclaveClient
 from syft_enclaves.receipt.writer import ReceiptSettings
@@ -23,6 +24,7 @@ def _configure_logging(log_level: str) -> None:
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    defer_to_root_logging()
 
 
 def _load_settings() -> EnclaveSettings:

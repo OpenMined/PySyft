@@ -13,6 +13,8 @@ import yaml
 from pydantic import BaseModel, ConfigDict
 
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.peers.peer import Peer
+from syft.sync.utils.waiting import DEFAULT_POLL_INTERVAL, DEFAULT_WAIT_TIMEOUT
 from syft_datasets.dataset_manager import (
     DATASET_COLLECTION_PREFIX,
     PRIVATE_DATASET_COLLECTION_PREFIX,
@@ -24,6 +26,7 @@ from syft_job.job_runner import SyftJobRunner
 from syft_datasets.dataset_manager import SHARE_WITH_ANY, SyftDatasetManager
 from syft_datasets.dataset_ref import DatasetNotFoundError
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
+from syft_rds.waiting import JobCheck, JobStatusArg, wait_for_dataset, wait_for_job
 from syft_rds.apis import Api, ApiCollection
 from syft_rds.config import (
     DATASET_COLLECTION_SPECS,
@@ -94,6 +97,14 @@ class UpgradeReport(BaseModel):
     def _repr_html_(self) -> str:
         rows = "".join(f"<tr><td>{d}</td></tr>" for d in self.datasets)
         return f"<b>{self}</b><table>{rows}</table>" if rows else f"<b>{self}</b>"
+
+
+def _print_skipped_jobs(skipped: list[tuple[str, str, str]]) -> None:
+    """Report the approved jobs that did not run, and why."""
+    print(f"\n⏭️  {len(skipped)} approved job(s) did not run:")
+    for job_name, peer_email, reason in skipped:
+        print(f"   • {job_name} (submitted by {peer_email}): {reason}")
+    print("   Pass ignore_peer_version=True to run them anyway.")
 
 
 class SyftRDSClient(BaseModel):
@@ -496,6 +507,86 @@ class SyftRDSClient(BaseModel):
             self.sync_engine.sync()
         return self.job_client.jobs
 
+    # ------------------------------------------------------------------ #
+    # waits for another party (notebook "run all" without re-run cells)
+    # ------------------------------------------------------------------ #
+    def wait_until_peered(
+        self,
+        peer_email: str,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> Peer:
+        """Wait until ``peer_email`` is a live connection, as ``validate_peer`` checks.
+
+        Raises:
+            TimeoutError: the peer did not approve within ``timeout`` seconds.
+            PeerSetupError: waiting cannot help, e.g. the email is not a peer.
+        """
+        return self.sync_engine.wait_until_peered(
+            peer_email, timeout=timeout, poll_interval=poll_interval
+        )
+
+    def wait_until_has_dataset(
+        self,
+        name: str,
+        datasite: str | None = None,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> Any:
+        """Sync until the dataset ``name`` is here, and return it.
+
+        ``datasite`` is the owner; it is needed only when more than one owner
+        has a dataset called ``name``.
+
+        Raises:
+            TimeoutError: the dataset did not arrive within ``timeout`` seconds.
+            ValueError: more than one owner has a dataset called ``name``.
+        """
+        return wait_for_dataset(
+            self.sync,
+            self.dataset_manager.get_all,
+            name,
+            datasite,
+            timeout,
+            poll_interval,
+        )
+
+    def wait_until_has_job(
+        self,
+        job_name: str,
+        user_name: str | None = None,
+        status: JobStatusArg = None,
+        where: JobCheck | None = None,
+        timeout: float = DEFAULT_WAIT_TIMEOUT,
+        poll_interval: float = DEFAULT_POLL_INTERVAL,
+    ) -> Any:
+        """Sync until the job ``job_name`` is here with ``status``, and return it.
+
+        ``user_name`` matches the submitter or the datasite owner; it is needed
+        only when more than one job has the name. ``status`` is one status or
+        several; None accepts any. A job that is done counts for any status
+        before it, because a poll can miss a short status. To wait for a
+        status before ``done``, also pass the statuses after it, for example
+        ``("approved", "running")``. ``where`` is an
+        extra condition on the job, for example
+        ``lambda job: bool(job.output_paths)``.
+
+        Raises:
+            TimeoutError: the job did not match within ``timeout`` seconds.
+            JobEndedError: the job ended with a final status not in ``status``.
+            ValueError: more than one job matches, or ``status`` is not valid.
+        """
+        return wait_for_job(
+            self.sync,
+            lambda: self.job_client.jobs,
+            job_name,
+            user_name,
+            status,
+            where,
+            timeout,
+            poll_interval,
+        )
+
     def process_approved_jobs(
         self,
         stream_output: bool = True,
@@ -511,11 +602,18 @@ class SyftRDSClient(BaseModel):
         if self.job_runner is None:
             raise ValueError("Job runner is not configured for this client")
 
-        skip_job_names = []
+        skipped: list[tuple[str, str, str]] = []
 
         if not force_execution:
+            # Only jobs on this client's own datasite: job_client.jobs spans
+            # every datasite in the folder, but the runner never runs a job on
+            # a peer's. Reporting those as skipped would offer a remedy that
+            # cannot help.
             approved_jobs = [
-                job for job in self.job_client.jobs if job.status == "approved"
+                job
+                for job in self.job_client.jobs
+                if job.status == "approved"
+                and job.datasite_owner_email == self.job_client.current_user_email
             ]
             for job in approved_jobs:
                 result = self.sync_engine.peer_manager.get_peer_compatibility_status(
@@ -525,15 +623,25 @@ class SyftRDSClient(BaseModel):
                 )
                 result.maybe_warn()
                 if result.should_skip:
-                    skip_job_names.append(job.name)
+                    skipped.append(
+                        (
+                            job.name,
+                            job.submitted_by,
+                            result.explanation_skip or "peer version is not compatible",
+                        )
+                    )
 
         self.job_runner.process_approved_jobs(
             stream_output=stream_output,
             timeout=timeout,
-            skip_job_names=skip_job_names if skip_job_names else None,
+            skip_jobs=[(name, peer) for name, peer, _ in skipped] or None,
             share_outputs_with_submitter=share_outputs_with_submitter,
             share_logs_with_submitter=share_logs_with_submitter,
         )
+
+        # maybe_warn() above logs the peer, never the job.
+        if skipped:
+            _print_skipped_jobs(skipped)
 
         if self._pre_sync_enabled:
             self.sync_engine.sync()

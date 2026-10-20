@@ -943,6 +943,18 @@ class PeerManager(BaseModel):
         """
         self._states_at_start = {}
 
+    def peer_may_be_valid(self, peer_email: str) -> bool:
+        """Tell if ``validate_peer`` can pass after the next ``load_peers()``.
+
+        Use it between polls, after ``validate_peer`` raised
+        ``PeerNotReadyError``. It makes one Drive request and does not load
+        the peers. It is True when the peer created its folders for this
+        datasite, which it does when it approves our request.
+        """
+        return any(
+            p.email == peer_email for p in self.connection_router.get_peer_requests()
+        )
+
     def check_peer_request_exists(self, email: str) -> bool:
         """Check if a peer request exists for the given email."""
         return any(p.email == email for p in self.requested_by_peer_peers)
