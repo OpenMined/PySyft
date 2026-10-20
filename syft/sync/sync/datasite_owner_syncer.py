@@ -38,6 +38,10 @@ from syft.sync.checkpoints.rolling_state import (
 )
 from syft_perms import SyftPermContext
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
+from syft.sync.utils.syftbox_utils import (
+    create_event_timestamp,
+    get_event_hash_from_content,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +137,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     _any_shared_collections: List[tuple] = PrivateAttr(default_factory=list)
     # Cache of read permissions per file path → frozenset of peer emails
     _read_perm_cache: dict[str, frozenset[str]] = PrivateAttr(default_factory=dict)
+    # Approved peers that fail the version gate in this sync. Their messages
+    # stay pending and are not uploaded.
+    _deferred_peer_emails: frozenset[str] = PrivateAttr(default_factory=frozenset)
 
     # In-memory rolling state for tracking events since last checkpoint
     _rolling_state: RollingState | None = PrivateAttr(default=None)
@@ -191,15 +198,30 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         tmp.write_text(self._rolling_state.model_dump_json())
         tmp.rename(path)
 
-    def sync(self, peer_emails: list[str], recompute_hashes: bool = True):
+    def sync(
+        self,
+        peer_emails: list[str],
+        recompute_hashes: bool = True,
+        deferred_peer_emails: tuple[str, ...] | list[str] = (),
+    ):
+        """Push local changes and pull proposed changes from ``peer_emails``.
+
+        ``deferred_peer_emails`` are approved peers that fail the version gate.
+        Changes they can read stay pending, and go out in a later sync where
+        the peer is in ``peer_emails``.
+        """
         if self.persist_owner_state:
             self._load_rolling_state()
+        self._deferred_peer_emails = frozenset(deferred_peer_emails)
         try:
             if not self.initial_sync_done:
                 self.pull_initial_state()
 
+            self._queue_pending_deliveries(peer_emails)
             if recompute_hashes:
-                self.process_local_changes(recipients=peer_emails)
+                self.process_local_changes(
+                    recipients=[*peer_emails, *deferred_peer_emails]
+                )
 
             # first, pull existing state
             for peer_email in peer_emails:
@@ -219,6 +241,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                     )
                 self.process_syftbox_events_queue()
         finally:
+            self._deferred_peer_emails = frozenset()
             if self.persist_owner_state:
                 self._save_rolling_state()
 
@@ -603,6 +626,67 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             is_deleted=False,
         )
 
+    def _create_current_state_event(self, path: str) -> FileChangeEvent:
+        """An event that sets ``path`` on a peer to its current local state.
+
+        A missing file gives a deletion. A read error raises.
+        """
+        content = None
+        if (self.syftbox_folder / self.email / path).exists():
+            content = self.event_cache.file_connection.read_file(path)
+        timestamp = create_event_timestamp()
+        return FileChangeEvent(
+            id=uuid4(),
+            path_in_datasite=Path(path),
+            content=content,
+            new_hash=None if content is None else get_event_hash_from_content(content),
+            submitted_timestamp=timestamp,
+            timestamp=timestamp,
+            datasite_email=self.email,
+            is_deleted=content is None,
+        )
+
+    def _queue_pending_deliveries(self, peer_emails: list[str]) -> None:
+        """Queue the current state of each pending path for each peer."""
+        pending = self.event_cache.pending_deliveries
+        for peer_email in peer_emails:
+            paths = [
+                path
+                for path in pending.get(peer_email) or {}
+                if self.check_read_permissions(peer_email, path)
+            ]
+            if paths:
+                msg = FileChangeEventsMessage(
+                    events=[self._create_current_state_event(p) for p in paths]
+                )
+                self._queue_for_outbox(peer_email, msg)
+                name = msg.message_filepath.as_string()
+            else:
+                name = None
+            # Drop the paths that this resend does not hold. The peer can no
+            # longer read them.
+            pending.update_entry(
+                peer_email,
+                lambda old: {p: m for p, m in (old or {}).items() if m == name} or None,
+            )
+
+    def _queue_for_outbox(self, recipient: str, msg: FileChangeEventsMessage) -> None:
+        """Queue ``msg`` for ``recipient``. Its paths stay pending until the upload succeeds."""
+        name = msg.message_filepath.as_string()
+        paths = {str(e.path_in_datasite): name for e in msg.events}
+        self.event_cache.pending_deliveries.update_entry(
+            recipient, lambda old: {**(old or {}), **paths}
+        )
+        self.outbox_queue.put((recipient, msg))
+
+    def _clear_delivered(self, recipient: str, msg: FileChangeEventsMessage) -> None:
+        """Remove the paths that ``msg`` delivered, unless a later message holds them."""
+        name = msg.message_filepath.as_string()
+        self.event_cache.pending_deliveries.update_entry(
+            recipient,
+            lambda old: {p: m for p, m in (old or {}).items() if m != name} or None,
+        )
+
     def process_local_changes(self, recipients: list[str]):
         file_change_events_message = self.event_cache.process_local_file_changes()
         if file_change_events_message is None:
@@ -698,7 +782,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         for recipient, events in events_by_recipient.items():
             if events:
                 msg = FileChangeEventsMessage(events=events)
-                self.outbox_queue.put((recipient, msg))
+                self._queue_for_outbox(recipient, msg)
 
     def pull_and_process_next_proposed_filechange(
         self, sender_email: str, raise_on_none=True
@@ -782,7 +866,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.syftbox_events_queue.put(file_change_events_message)
 
         for recipient in recipients:
-            self.outbox_queue.put((recipient, file_change_events_message))
+            self._queue_for_outbox(recipient, file_change_events_message)
 
     def process_syftbox_events_queue(self):
         # TODO: make this atomic
@@ -793,9 +877,12 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             )
         while not self.outbox_queue.empty():
             recipient, file_change_events_message = self.outbox_queue.get()
+            if recipient in self._deferred_peer_emails:
+                continue
             self.connection_router.owner_write_event_messages_to_outbox(
                 recipient, file_change_events_message
             )
+            self._clear_delivered(recipient, file_change_events_message)
 
     def _download_outbox_message_with_new_connection(
         self, file_id: str

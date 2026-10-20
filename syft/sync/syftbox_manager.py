@@ -992,7 +992,12 @@ class SyftboxManager(BaseModelCallbackMixin):
                         ignore_peer_version=ignore_peer_version,
                     )
                 )
-                self.datasite_owner_syncer.sync(compatible_emails)
+                self.datasite_owner_syncer.sync(
+                    compatible_emails,
+                    deferred_peer_emails=[
+                        e for e in peer_emails if e not in compatible_emails
+                    ],
+                )
                 if auto_compact:
                     for peer_email in compatible_emails:
                         self.datasite_owner_syncer.compact_outbox_if_needed(
