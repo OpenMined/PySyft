@@ -38,6 +38,7 @@ from syft.sync.connections.drive.gdrive_retry import (
 from syft.sync.connections.drive.gdrive_utils import (
     gather_all_file_and_folder_ids_recursive,
 )
+from syft.sync.connections.drive.drive_connections import drive_transport
 from syft.sync.environments.environment import Environment
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
@@ -47,6 +48,11 @@ from syft.sync.messages.proposed_filechange import (
     FileNameParseError,
     MessageFileName,
     ProposedFileChangesMessage,
+)
+from syft.sync.transport.naming import (  # noqa: F401 (re-exported)
+    PEERS_META_KEY,
+    SYFT_PEERS_VERSION,
+    timestamp_from_message_name,
 )
 from syft.sync.utils.syftbox_utils import check_env
 from syft.sync.version.version_info import _parse_semver
@@ -97,14 +103,6 @@ LEGACY_GDRIVE_OUTBOX_INBOX_FOLDER_PREFIX = "syft_outbox_inbox"  # legacy prefix
 GDRIVE_P2P_FOLDER_DATASITE_PREFIX = "syft_datasite"
 SYFT_PEERS_FILE = "SYFT_peers.json"
 
-# SYFT_peers.json is a flat map of peer email to entry, so a version at the top
-# level would look like a peer email. The version goes under this reserved key.
-# A client written before the key reads a peer state from that entry and fails.
-# The key therefore never appears as a peer.
-PEERS_META_KEY = "_meta"
-# Shape of one entry in SYFT_peers.json. Raise this when an entry changes. A file
-# with no reserved entry was written before the version, and is version 0.
-SYFT_PEERS_VERSION = 1
 SYFT_VERSION_FILE = "SYFT_version.json"
 
 
@@ -441,6 +439,14 @@ class GDriveConnection(SyftboxPlatformConnection):
             self.get_personal_syftbox_folder_id()
         self._is_setup = True
 
+    def as_transport(self):
+        """This connection as the transport jobs. See ``drive_connections.py``."""
+        return drive_transport(self)
+
+    def clone_for_thread(self) -> "GDriveConnection":
+        """A connection safe to use from another thread: the Drive client is not."""
+        return self.copy()
+
     def copy(self) -> "GDriveConnection":
         # if is mock
         from syft.sync.connections.drive.mock_drive_service import (
@@ -762,7 +768,13 @@ class GDriveConnection(SyftboxPlatformConnection):
             personal_syftbox_folder_id, since_timestamp=since_timestamp
         )
         valid_fname_objs = self._filter_valid_file_metadatas(file_metadatas)
-        return [f["id"] for f in valid_fname_objs]
+        oldest_first = sorted(
+            valid_fname_objs,
+            key=lambda f: FileChangeEventsMessageFileName.from_string(
+                f["name"]
+            ).timestamp,
+        )
+        return [f["id"] for f in oldest_first]
 
     def owner_download_all_raw_events_from_syftbox(self) -> list[bytes]:
         """Download all event files from /SyftBox/myemail as raw bytes."""
@@ -771,7 +783,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         valid_fname_objs = self._get_valid_events_from_file_metadatas(file_metadatas)
 
         result = []
-        for fname_obj in valid_fname_objs:
+        for fname_obj in sorted(valid_fname_objs, key=lambda x: x.timestamp):
             gdrive_id = [
                 f for f in file_metadatas if f["name"] == fname_obj.as_string()
             ][0]["id"]
@@ -965,35 +977,8 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     @staticmethod
     def _extract_timestamp_from_filename(filename: str) -> float | None:
-        """
-        Extract timestamp from filename.
-
-        Supports multiple filename formats:
-        - Event files: syfteventsmessagev3_<timestamp>_<uuid>.tar.gz
-        - Job files: msgv2_<timestamp>_<uid>.tar.gz
-
-        Args:
-            filename: The filename to parse
-
-        Returns:
-            Timestamp as float, or None if can't parse
-        """
-        try:
-            # Try event file format first
-            if filename.startswith("syfteventsmessagev3_"):
-                parts = filename.split("_")
-                if len(parts) >= 2:
-                    return float(parts[1])
-
-            # Try job file format
-            if filename.startswith("msgv2_"):
-                parts = filename.split("_")
-                if len(parts) >= 2:
-                    return float(parts[1])
-
-            return None
-        except (ValueError, IndexError):
-            return None
+        """The send time in a message file name. See ``naming.py``."""
+        return timestamp_from_message_name(filename)
 
     def get_file_metadatas_from_folder(
         self,
@@ -2232,7 +2217,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         valid_fname_objs = self._get_valid_events_from_file_metadatas(file_metadatas)
 
         result = []
-        for fname_obj in valid_fname_objs:
+        for fname_obj in sorted(valid_fname_objs, key=lambda x: x.timestamp):
             if fname_obj.timestamp <= since_timestamp:
                 continue
 
@@ -2449,6 +2434,19 @@ class GDriveConnection(SyftboxPlatformConnection):
         """Share the bundles folder with a peer so they can read bundles."""
         folder_id = self._get_or_create_encryption_bundles_folder_id()
         self.add_permission(folder_id, peer_email, write=False)
+
+    def read_own_encryption_bundle(self, peer_email: str) -> str | None:
+        """Read the bundle this client published for ``peer_email``, or None."""
+        folder_id = self._get_or_create_encryption_bundles_folder_id()
+        filename = self._encryption_bundle_filename(self.email, peer_email)
+        query = f"name='{filename}' and '{folder_id}' in parents and trashed=false"
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(id)")
+        )
+        items = results.get("files", [])
+        if not items:
+            return None
+        return self.download_file(items[0]["id"]).decode("utf-8")
 
     def read_peer_encryption_bundle(self, peer_email: str) -> str | None:
         """Read encryption bundle that peer wrote for us.

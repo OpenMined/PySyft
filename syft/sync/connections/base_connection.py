@@ -1,6 +1,9 @@
-from typing import ClassVar, Type
+from typing import TYPE_CHECKING, ClassVar, Type
 from pydantic import BaseModel
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
+
+if TYPE_CHECKING:
+    from syft.sync.transport.protocols import Transport
 
 
 class FileCollection(BaseModel):
@@ -35,6 +38,18 @@ class SyftboxPlatformConnection(BaseModel):
     @classmethod
     def from_config(cls, config: ConnectionConfig):
         return config.connection_type.from_config(config)
+
+    def as_transport(self) -> "Transport":
+        """This connection as the transport jobs: P2P messages, owner and
+        watcher storage, collections and peering."""
+        raise NotImplementedError()
+
+    def clone_for_thread(self) -> "SyftboxPlatformConnection":
+        """A connection that another thread may use.
+
+        This one, unless the backend's client cannot be shared across threads.
+        """
+        return self
 
     # =========================================================================
     # GENERIC PREFIX-PARAMETERIZED COLLECTION METHODS

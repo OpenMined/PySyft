@@ -827,14 +827,10 @@ class PeerManager(BaseModel):
         }
         for email in peer_request_emails:
             if email not in known_emails:
-                from syft.sync.platforms.gdrive_files_platform import (
-                    GdriveFilesPlatform,
-                )
-
                 peers.append(
                     Peer(
                         email=email,
-                        platforms=[GdriveFilesPlatform()],
+                        platforms=[self.connection_router.transport.platform],
                         state=PeerState.REQUESTED_BY_PEER,
                     )
                 )
