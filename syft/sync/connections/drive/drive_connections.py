@@ -50,8 +50,10 @@ class DriveP2PConnection(P2PConnection):
     ) -> SendStatus:
         if kind is MessageKind.PROPOSED_CHANGES:
             self._conn.watcher_send_raw_bytes_to_inbox(peer, msg_id, data)
-        else:
+        elif kind is MessageKind.FILE_EVENTS:
             self._conn.owner_write_raw_bytes_to_outbox(peer, msg_id, data)
+        else:
+            raise ValueError(f"Drive has no folder for messages of kind {kind!r}")
         return SendStatus.DELIVERED
 
     def delivered(self) -> list[str]:
@@ -94,9 +96,6 @@ class DriveOwnerStore(OwnerStore):
 
     def fetch_all_events(self) -> list[bytes]:
         return self._conn.owner_download_all_raw_events_from_syftbox()
-
-    def count_events_since(self, since_timestamp: float | None) -> int:
-        return self._conn.get_events_count_since_checkpoint(since_timestamp)
 
     def put_checkpoint(self, name: str, data: bytes) -> str:
         return self._conn.upload_raw_checkpoint(name, data)

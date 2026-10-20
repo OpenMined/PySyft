@@ -92,6 +92,12 @@ def test_file_events_sent_through_p2p_reach_the_scientist_outbox(pair):
     assert [m["file_name"] for m in listed] == [name]
 
 
+def test_an_unknown_message_kind_is_refused(pair):
+    do_conn, _ = pair
+    with pytest.raises(ValueError):
+        do_conn.as_transport().p2p.send(DS, _events_name(1.0), b"x", "unknown-kind")
+
+
 def test_drive_never_has_sends_waiting_for_confirmation(pair):
     do_conn, _ = pair
     assert do_conn.as_transport().p2p.delivered() == []
@@ -126,6 +132,15 @@ def test_owner_event_log_is_read_oldest_first(pair):
     assert store.fetch(first) == b"first"
     assert store.count_events_since(None) == 2
     assert store.count_events_since(1.5) == 1
+
+
+def test_owner_event_count_matches_the_listed_handles(pair):
+    do_conn, _ = pair
+    store = do_conn.as_transport().owner_store
+    store.append_event(_events_name(1.0), b"event")
+    store.append_event("syfteventsmessagev3_not-a-valid-name.tar.gz", b"junk")
+
+    assert store.count_events_since(None) == len(store.list_event_handles()) == 1
 
 
 def test_owner_store_keeps_the_newest_full_checkpoint(pair):
