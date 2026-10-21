@@ -14,6 +14,8 @@ from syft_bg.approve.config import AutoApprovalObj
 class AutoApprovalValidationResult(BaseModel):
     match: bool
     reason: str
+    # The api that matched; its policies run around the job.
+    api_name: str | None = None
 
 
 RUN_SCRIPT_PATH = "run.sh"

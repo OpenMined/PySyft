@@ -30,6 +30,12 @@ from .job_repr import (
 from .job_stdout import StdoutViewer
 from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .policies import (
+    OUTPUTS_WITHHELD_FILENAME,
+    POLICY_ERROR_FILENAME,
+    JobPolicies,
+    PolicyResolutionError,
+)
 from .submission import SubmissionRecord, check_expected_digest, submission_hash
 
 # The files that ``share_logs_with_submitter`` releases.
@@ -337,12 +343,45 @@ class JobInfo:
         """Reason recorded at review time (approval or rejection)."""
         return self._state.review_reason
 
+    @property
+    def api_name(self) -> Optional[str]:
+        """The api the job matched at approval, on the data owner's side."""
+        record = self._client.manager.read_submission_record(self._ref)
+        return record.api_name if record else None
+
+    @property
+    def policies(self) -> Optional[JobPolicies]:
+        """The policies of the job's api, when this client can load them."""
+        api_name = self.api_name
+        resolver = self._client.policy_resolver
+        if api_name is None or resolver is None:
+            return None
+        try:
+            return resolver(api_name)
+        except PolicyResolutionError:
+            return None
+
+    @property
+    def policy_error(self) -> Optional[str]:
+        """Why a policy denied the job, as the submitter sees it."""
+        path = self.artifact_path(POLICY_ERROR_FILENAME)
+        try:
+            return path.read_text().strip() or None
+        except OSError:
+            return None
+
+    @property
+    def outputs_withheld(self) -> bool:
+        """True when the output policy kept the outputs from the submitter."""
+        return self.artifact_path(OUTPUTS_WITHHELD_FILENAME).exists()
+
     def approve(
         self,
         reason: Optional[str] = None,
         approval_method: str = "manual",
         disclosures: DisclosuresArg = None,
         expected_digest: Optional[str] = None,
+        api_name: Optional[str] = None,
     ) -> None:
         """
         Approve a job by updating state.yaml in review/.
@@ -361,6 +400,8 @@ class JobInfo:
                 Omit the argument to release nothing.
             expected_digest: The submission hash an automated approver checked.
                 The approval is refused unless the submission still has it.
+            api_name: The api the job matched. Its input and output policies
+                run around the job. None runs no policies.
 
         Raises:
             ValueError: If job is not in pending status, was not fully
@@ -384,7 +425,7 @@ class JobInfo:
 
         # The approved hash and the grant go first, so the runner never sees an
         # approved state without them. The hash check runs before any write.
-        record = self._record_approved_hash(approval_method, expected_digest)
+        record = self._record_approved_hash(approval_method, expected_digest, api_name)
         self._write_disclosures(disclosures)
         self._state.status = JobStatus.APPROVED
         self._state.approved_by = self.current_user_email
@@ -410,7 +451,10 @@ class JobInfo:
         self._record_approved_hash(approval_method, expected_digest=None)
 
     def _record_approved_hash(
-        self, approval_method: str, expected_digest: Optional[str]
+        self,
+        approval_method: str,
+        expected_digest: Optional[str],
+        api_name: Optional[str] = None,
     ) -> SubmissionRecord:
         """Check the submission is the one received, and record it as approved."""
         manager = self._client.manager
@@ -431,6 +475,7 @@ class JobInfo:
         record.approved_by = self.current_user_email
         record.approved_at = datetime.now(timezone.utc)
         record.approval_method = approval_method
+        record.api_name = api_name
         manager.write_submission_record(self._ref, record)
         return record
 

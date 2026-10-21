@@ -9,6 +9,8 @@ from syft_bg.api.api import (
     remove_auto_approve as remove_auto_approve,
     reset as reset,
     restart as restart,
+    run_policy as run_policy,
+    set_policies as set_policies,
     start as start,
     status as status,
     stop as stop,

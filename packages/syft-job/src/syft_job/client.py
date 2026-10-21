@@ -18,6 +18,7 @@ from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .policies import PolicyResolver
 from .review_grants import grant_ds_review_read
 from .submission import (
     SUBMISSION_ENTRIES,
@@ -84,6 +85,8 @@ class JobClient(BaseJobClient):
             target_datasite_owner_email or config.current_user_email
         )  # The email of the datasite owner of the jobs
         self.has_do_role = config.has_do_role
+        # Loads the policies of a job's api, to show them with the job.
+        self.policy_resolver: Optional[PolicyResolver] = None
         self.peer_install_sources: dict[
             str, str
         ] = {}  # do_email -> syft install source (local path, git URL, or "syft==X.Y.Z") advertised by that DO in their VersionInfo

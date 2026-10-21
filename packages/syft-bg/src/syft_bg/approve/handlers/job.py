@@ -64,10 +64,11 @@ class JobApprovalHandler:
         return [p.email for p in self.client.peer_manager.approved_peers]
 
     def evaluate_auto_approval(self, job: JobInfo) -> AutoApprovalValidationResult:
-        """Find matching auto-approval objects for a job and validate.
+        """Find the auto-approval object (api) that matches a job.
 
-        Searches all objects where the peer is listed (or peers is empty = any peer).
-        Any matching object wins.
+        Searches all objects where the peer is listed (or peers is empty = any
+        peer). Exactly one must match: the match decides which policies run, so
+        a job that matches several stays pending.
         """
         if job.status != "pending":
             return AutoApprovalValidationResult(
@@ -85,13 +86,23 @@ class JobApprovalHandler:
                 reason=f"no auto-approval objects match peer: {job.submitted_by}",
             )
 
+        matches: list[str] = []
         last_reason = ""
         for name, obj in candidate_objects:
             result = _validate_job_against_object(job, obj)
             if result.match:
-                return AutoApprovalValidationResult(match=True, reason="ok")
-            last_reason = f"[{name}] {result.reason}"
+                matches.append(name)
+            else:
+                last_reason = f"[{name}] {result.reason}"
 
+        if len(matches) > 1:
+            return AutoApprovalValidationResult(
+                match=False, reason=f"matches several apis: {matches}"
+            )
+        if matches:
+            return AutoApprovalValidationResult(
+                match=True, reason="ok", api_name=matches[0]
+            )
         return AutoApprovalValidationResult(match=False, reason=last_reason)
 
     def check_and_approve(self) -> list[JobInfo]:
@@ -116,7 +127,9 @@ class JobApprovalHandler:
 
             try:
                 job.approve(
-                    approval_method="auto", disclosures=self.default_disclosures
+                    approval_method="auto",
+                    disclosures=self.default_disclosures,
+                    api_name=result.api_name,
                 )
                 approved_jobs.append(job)
 

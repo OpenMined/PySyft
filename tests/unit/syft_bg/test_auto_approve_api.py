@@ -45,7 +45,7 @@ def _patched_paths(tmp: Path):
 
 def _seed(store: ApiStore, tmp: Path, name: str, peer: str = "alice@test.com"):
     script = tmp / f"{name}_main.py"
-    script.write_text("print('hi')\n")
+    script.write_text(f"print('{name}')\n")
     store.create(name, [("main.py", script)], [], [peer])
 
 
@@ -258,6 +258,35 @@ class TestHandlerReloadsApis:
 
         store.delete("r1")
         assert handler.evaluate_auto_approval(job).match is False
+
+    def test_match_names_api(self, temp_dir):
+        submission = self._write_submission(temp_dir / "job")
+        handler, store = self._make_handler(temp_dir)
+        self._create_matching_api(store, submission)
+
+        result = handler.evaluate_auto_approval(self._make_test_job(submission))
+
+        assert result.match is True and result.api_name == "r1"
+
+    def test_several_matching_apis_stay_pending(self, temp_dir):
+        submission = self._write_submission(temp_dir / "job")
+        handler, store = self._make_handler(temp_dir)
+        self._create_matching_api(store, submission)
+        # The same files for another peer, later widened to alice: the
+        # duplicate check at create can't see that.
+        content_files = [
+            (f.relative_to(submission).as_posix(), f)
+            for f in sorted(submission.rglob("*"))
+            if f.is_file()
+        ]
+        name, obj = store.create("r2", content_files, [], ["bob@test.com"])
+        obj.peers = ["alice@test.com"]
+        store.save(name, obj)
+
+        result = handler.evaluate_auto_approval(self._make_test_job(submission))
+
+        assert result.match is False
+        assert "several apis" in result.reason
 
 
 class TestAutoApproveDisclosures:

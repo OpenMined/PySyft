@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from syft_rds.apis.args import ApiArg, bind_args
-from syft_rds.apis.models import FILES_DIR_NAME, ApiDefinition
+from syft_job.policies import PolicyScript
+
+from syft_rds.apis.models import FILES_DIR_NAME, ApiDefinition, policy_dir
 from syft_rds.apis.repr import api_repr_html, api_repr_str
 
 if TYPE_CHECKING:
@@ -100,6 +102,21 @@ class Api:
         if layout is None:
             return None
         return self._stored_file(layout.python_file).read_text(encoding="utf-8")
+
+    @property
+    def input_policy_code(self) -> str | None:
+        """The code of the input policy, or None if the api has none."""
+        return self._policy_code("input", self.definition.input_policy)
+
+    @property
+    def output_policy_code(self) -> str | None:
+        """The code of the output policy, or None if the api has none."""
+        return self._policy_code("output", self.definition.output_policy)
+
+    def _policy_code(self, kind: str, entries: list) -> str | None:
+        if not entries:
+            return None
+        return PolicyScript(policy_dir(self.api_dir, kind)).code
 
     @property
     def call_signature(self) -> str:

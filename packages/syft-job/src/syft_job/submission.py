@@ -60,6 +60,9 @@ class SubmissionRecord(BaseModel):
     approved_by: Optional[str] = None
     approved_at: Optional[datetime] = None
     approval_method: Optional[str] = None
+    # The api the approval matched. Its policies run around the job. Kept
+    # here, on the owner side, so a submitter can't pick or drop the policies.
+    api_name: Optional[str] = None
 
 
 def _is_skipped(relative: Path) -> bool:

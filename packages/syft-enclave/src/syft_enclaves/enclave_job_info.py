@@ -226,6 +226,7 @@ class EnclaveJobInfo(JobInfo):
         approval_method: str = "manual",
         disclosures: DisclosuresArg = None,
         expected_digest: Optional[str] = None,
+        api_name: Optional[str] = None,
     ) -> None:
         """Approve this submission in the DO's own approval file.
 
@@ -242,7 +243,15 @@ class EnclaveJobInfo(JobInfo):
         runs the job only while it still matches. A DO may approve again after
         the submission changed. The approval file does not record ``reason`` or
         ``approval_method``.
+
+        ``api_name`` is refused: an api's policies run on the DO's machine, and
+        an enclave job runs on the enclave, so it would run without them.
         """
+        if api_name is not None:
+            raise ValueError(
+                f"Job '{self.name}' runs on an enclave, where the policies of "
+                f"api '{api_name}' can't run. Approve it by hand."
+            )
         check_approval_reason(reason)
         approval = self._load_own_approval()
         current = submission_hash(self.job_submission_path)

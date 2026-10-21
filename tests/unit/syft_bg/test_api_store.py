@@ -6,7 +6,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 from syft_bg.api.utils import read_job_args
-from syft_bg.approve.api_store import ApiStore
+from syft_bg.approve.api_store import ApiStore, DuplicateApiError
+from syft_bg.approve.policy_resolver import api_policy_resolver
+from syft_job.policies import PolicyResolutionError, python_run_script
+from syft_perms import SyftPermContext
 from syft_permissions import PERMISSION_FILE_NAME, RuleSet
 from syft_rds.apis import ApiArg
 
@@ -63,9 +66,11 @@ def test_save_revokes_removed_peers(store, script):
     assert _readers(store, "analysis") == ["b@x.com"]
 
 
-def test_name_collision_gets_suffix(store, script):
+def test_name_collision_gets_suffix(store, script, temp_dir):
+    other = temp_dir / "other.py"
+    other.write_text("print('other')\n")
     store.create("analysis", [("run.sh", script)], [], ["a@x.com"])
-    name, _ = store.create("analysis", [("run.sh", script)], [], ["a@x.com"])
+    name, _ = store.create("analysis", [("run.sh", other)], [], ["a@x.com"])
     assert name == "analysis_1"
     assert store.names() == ["analysis", "analysis_1"]
 
@@ -113,3 +118,80 @@ def test_read_job_args(temp_dir, params, expected):
     (temp_dir / "code" / "params.json").write_text(params)
     job = MagicMock(job_submission_path=temp_dir)
     assert read_job_args(job, ["config.yaml", "code/params.json"]) == expected
+
+
+INPUT_POLICY = "raise SystemExit('denied')\n"
+
+
+@pytest.fixture
+def policy(temp_dir) -> Path:
+    path = temp_dir / "rate_limit.py"
+    path.write_text(INPUT_POLICY)
+    return path
+
+
+def test_python_policy_gets_generated_run_sh(store, script, policy):
+    _, obj = store.create(
+        "api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy
+    )
+
+    folder = store.api_dir("api") / "policies" / "input"
+    assert (folder / "policy.py").read_text() == INPUT_POLICY
+    assert (folder / "run.sh").read_text() == python_run_script()
+    assert [e.relative_path for e in obj.input_policy] == [
+        "policies/input/policy.py",
+        "policies/input/run.sh",
+    ]
+    assert obj.output_policy == []
+
+
+def test_policy_state_readable_by_owner_only(store, script, temp_dir):
+    store.create("api", [("run.sh", script)], [], ["a@x.com"])
+
+    ctx = SyftPermContext(datasite=temp_dir / "syftbox" / DO_EMAIL)
+    api_rel = "app_data/apis/api"
+    assert ctx.open(f"{api_rel}/api.yaml").has_read_access("a@x.com")
+    assert not ctx.open(f"{api_rel}/policy_state/state.json").has_read_access("a@x.com")
+    assert (store.api_dir("api") / "policy_state" / "state.json").read_text() == "{}"
+
+
+def test_duplicate_api_refused_for_overlapping_peers(store, script):
+    store.create("first", [("run.sh", script)], [], ["a@x.com"])
+
+    with pytest.raises(DuplicateApiError, match="'first'"):
+        store.create("second", [("run.sh", script)], [], ["a@x.com", "b@x.com"])
+    with pytest.raises(DuplicateApiError):
+        store.create("second", [("run.sh", script)], [], [])
+    name, _ = store.create("second", [("run.sh", script)], [], ["b@x.com"])
+    assert name == "second"
+
+
+def test_set_policies_replaces_removes_and_keeps_state(store, script, policy):
+    store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
+    state_file = store.api_dir("api") / "policy_state" / "state.json"
+    state_file.write_text('{"calls": 3}')
+    sh_policy = policy.with_suffix(".sh")
+    sh_policy.write_text("exit 0\n")
+
+    obj = store.set_policies("api", output_policy=sh_policy)
+    assert [e.relative_path for e in obj.output_policy] == ["policies/output/run.sh"]
+    assert obj.input_policy  # left out, so kept
+    assert state_file.read_text() == '{"calls": 3}'
+
+    obj = store.set_policies("api", input_policy=None, reset_state=True)
+    assert obj.input_policy == []
+    assert not (store.api_dir("api") / "policies" / "input").exists()
+    assert state_file.read_text() == "{}"
+
+
+def test_resolver_refuses_changed_policy_and_deleted_api(store, script, policy):
+    store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
+    resolver = api_policy_resolver(store)
+    assert resolver("api").input.folder == store.api_dir("api") / "policies" / "input"
+
+    (store.api_dir("api") / "policies" / "input" / "policy.py").write_text("pass\n")
+    with pytest.raises(PolicyResolutionError, match="changed"):
+        resolver("api")
+    store.delete("api")
+    with pytest.raises(PolicyResolutionError, match="no longer exists"):
+        resolver("api")

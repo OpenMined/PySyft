@@ -11,24 +11,44 @@ import tempfile
 from pathlib import Path
 
 import yaml
+from syft_job.policies import (
+    PYTHON_POLICY_NAME,
+    RUN_SCRIPT_NAME,
+    PolicyKind,
+    PolicyState,
+    python_run_script,
+)
+from syft_job.policies.locking import file_lock
 from syft_permissions import PERMISSION_FILE_NAME, Access, Rule, RuleSet
 from syft_rds.apis import ApiArg
 from syft_rds.apis.models import (
     API_FILE_NAME,
     APIS_DIR,
     FILES_DIR_NAME,
+    POLICY_STATE_DIR_NAME,
     load_api_definition,
+    policy_dir,
 )
 
 from syft_bg.approve.config import AutoApprovalObj, FileEntry
 from syft_bg.common.config import get_syftbg_dir
-from syft_bg.common.locking import file_lock
 
 EVERYONE = "*"
+
+# Passed to set_policies for a policy that stays as it is.
+UNCHANGED = object()
 
 
 class ApiExistsError(Exception):
     """Raised when an api folder can't be moved into place."""
+
+
+class DuplicateApiError(ApiExistsError):
+    """Raised when a new api matches the same jobs as an existing one."""
+
+
+class ApiNotFoundError(KeyError):
+    """Raised when no api has the given name."""
 
 
 class ApiStore:
@@ -47,7 +67,10 @@ class ApiStore:
         return sorted(
             d.name
             for d in self.apis_dir.iterdir()
-            if d.is_dir() and (d / API_FILE_NAME).exists()
+            # Staging folders (".staging_*") hold an api.yaml before the rename.
+            if d.is_dir()
+            and not d.name.startswith(".")
+            and (d / API_FILE_NAME).exists()
         )
 
     def load_all(self) -> dict[str, AutoApprovalObj]:
@@ -67,31 +90,88 @@ class ApiStore:
         file_paths: list[str],
         peers: list[str],
         args: list[ApiArg] | None = None,
+        input_policy: Path | None = None,
+        output_policy: Path | None = None,
     ) -> tuple[str, AutoApprovalObj]:
         """Store a new api. Returns the final (unique) name and the object.
 
         Files are copied into a staging dir first, outside the lock, so the
-        lock only covers picking a free name and the rename into place.
+        lock only covers the duplicate check, picking a free name and the
+        rename into place. A policy is a .sh file (stored as run.sh) or a .py
+        file (stored as policy.py next to a generated run.sh).
+
+        Raises DuplicateApiError when an api with the same pinned and
+        name-only files exists: a job could then match both.
         """
         self.apis_dir.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=".staging_", dir=self.apis_dir))
         try:
-            entries = _copy_and_hash_files(content_files, staging / FILES_DIR_NAME)
             obj = AutoApprovalObj(
-                file_contents=entries,
+                file_contents=_copy_and_hash_files(
+                    content_files, staging / FILES_DIR_NAME
+                ),
                 file_paths=file_paths,
                 peers=peers,
                 args=args or [],
+                input_policy=store_policy(staging, PolicyKind.INPUT, input_policy),
+                output_policy=store_policy(staging, PolicyKind.OUTPUT, output_policy),
             )
             _write_api_file(staging, obj)
             with file_lock(_lock_path()):
+                self._refuse_duplicate(obj)
                 name = unique_name(name, set(self.names()))
                 _move_into_place(staging, self.api_dir(name))
         except BaseException:
             shutil.rmtree(staging, ignore_errors=True)
             raise
         self._write_permissions(name, peers)
+        self._create_policy_state(name)
         return name, self.get(name)
+
+    def set_policies(
+        self,
+        name: str,
+        input_policy: Path | None | object = UNCHANGED,
+        output_policy: Path | None | object = UNCHANGED,
+        reset_state: bool = False,
+    ) -> AutoApprovalObj:
+        """Add, replace or remove (None) the policies of an existing api.
+
+        The state is kept unless reset_state is True.
+        """
+        if not self.exists(name):
+            raise ApiNotFoundError(f"No api named '{name}'")
+        api_dir = self.api_dir(name)
+        obj = self.get(name)
+        with file_lock(_lock_path()):
+            if input_policy is not UNCHANGED:
+                obj.input_policy = store_policy(api_dir, PolicyKind.INPUT, input_policy)
+            if output_policy is not UNCHANGED:
+                obj.output_policy = store_policy(
+                    api_dir, PolicyKind.OUTPUT, output_policy
+                )
+            _write_api_file(api_dir, obj)
+        if reset_state:
+            shutil.rmtree(api_dir / POLICY_STATE_DIR_NAME, ignore_errors=True)
+        self._create_policy_state(name)
+        return self.get(name)
+
+    def _refuse_duplicate(self, obj: AutoApprovalObj) -> None:
+        """Refuse an api that could match the same job as an existing one."""
+        signature = _match_signature(obj)
+        for existing in self.names():
+            other = self.get(existing)
+            if _match_signature(other) == signature and _peers_overlap(obj, other):
+                raise DuplicateApiError(
+                    f"Api '{existing}' already matches these files. Use "
+                    f"syft_bg.set_policies('{existing}', ...) to change its "
+                    f"policies instead."
+                )
+
+    def _create_policy_state(self, name: str) -> None:
+        state = PolicyState(self.api_dir(name) / POLICY_STATE_DIR_NAME)
+        state.ensure()
+        state.restrict_to_owner()
 
     def save(self, name: str, obj: AutoApprovalObj) -> None:
         """Overwrite an existing api's metadata and permissions."""
@@ -142,6 +222,40 @@ def _move_into_place(staging: Path, final_dir: Path) -> None:
 def _write_api_file(api_dir: Path, obj: AutoApprovalObj) -> None:
     data = obj.model_dump(mode="json")
     (api_dir / API_FILE_NAME).write_text(yaml.safe_dump(data, sort_keys=False))
+
+
+def _match_signature(obj: AutoApprovalObj) -> tuple[frozenset, frozenset]:
+    """What decides which jobs an api matches: its pinned and name-only files."""
+    pinned = frozenset((e.relative_path, e.hash) for e in obj.file_contents)
+    return pinned, frozenset(obj.file_paths)
+
+
+def _peers_overlap(a: AutoApprovalObj, b: AutoApprovalObj) -> bool:
+    """Whether some peer can call both; no peers means any peer."""
+    return not a.peers or not b.peers or bool(set(a.peers) & set(b.peers))
+
+
+def store_policy(
+    api_dir: Path, kind: PolicyKind, source: Path | None
+) -> list[FileEntry]:
+    """Replace the kind's policy folder with source; None removes it."""
+    folder = policy_dir(api_dir, kind.value)
+    shutil.rmtree(folder, ignore_errors=True)
+    if source is None:
+        return []
+    source = Path(source).expanduser()
+    folder.mkdir(parents=True)
+    if source.suffix == ".py":
+        shutil.copy2(source, folder / PYTHON_POLICY_NAME)
+        (folder / RUN_SCRIPT_NAME).write_text(python_run_script())
+    elif source.suffix == ".sh":
+        shutil.copy2(source, folder / RUN_SCRIPT_NAME)
+    else:
+        raise ValueError(f"A policy must be a .py or .sh file, got {source}")
+    return [
+        FileEntry.from_file(f.relative_to(api_dir).as_posix(), f)
+        for f in sorted(folder.iterdir())
+    ]
 
 
 def _copy_and_hash_files(

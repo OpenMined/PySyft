@@ -3,6 +3,9 @@
 <syftbox>/<do_email>/app_data/apis/<name>/
     api.yaml        # ApiDefinition
     files/<path>    # pinned copies of the content-matched files
+    policies/input/run.sh (+ policy.py)    # optional input policy
+    policies/output/run.sh (+ policy.py)   # optional output policy
+    policy_state/   # what the policies keep between runs, data owner only
     syft.pub.yaml   # read access for the peers that can call the api
 """
 
@@ -17,6 +20,8 @@ from syft_rds.apis.args import ApiArg
 APIS_DIR = Path("app_data") / "apis"
 API_FILE_NAME = "api.yaml"
 FILES_DIR_NAME = "files"
+POLICIES_DIR_NAME = "policies"
+POLICY_STATE_DIR_NAME = "policy_state"
 
 
 class FileEntry(BaseModel):
@@ -44,6 +49,9 @@ class ApiDefinition(BaseModel):
     file_paths: list[str] = Field(default_factory=list)
     peers: list[str] = Field(default_factory=list)
     args: list[ApiArg] = Field(default_factory=list)  # the params json keys
+    # Every file of each policy folder, e.g. "policies/input/run.sh", hashed.
+    input_policy: list[FileEntry] = Field(default_factory=list)
+    output_policy: list[FileEntry] = Field(default_factory=list)
 
 
 def load_api_definition(api_dir: Path) -> ApiDefinition:
@@ -52,4 +60,11 @@ def load_api_definition(api_dir: Path) -> ApiDefinition:
     definition = ApiDefinition.model_validate(data)
     for entry in definition.file_contents:
         entry.path = str(api_dir / FILES_DIR_NAME / entry.relative_path)
+    for entry in definition.input_policy + definition.output_policy:
+        entry.path = str(api_dir / entry.relative_path)
     return definition
+
+
+def policy_dir(api_dir: Path, kind: str) -> Path:
+    """Where the "input" or "output" policy of an api lives."""
+    return api_dir / POLICIES_DIR_NAME / kind

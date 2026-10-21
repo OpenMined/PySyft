@@ -28,6 +28,8 @@ from syft_datasets.dataset_ref import DatasetNotFoundError
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
 from syft_rds.waiting import JobCheck, JobStatusArg, wait_for_dataset, wait_for_job
 from syft_rds.apis import Api, ApiCollection
+from syft_rds.apis.models import APIS_DIR
+from syft_rds.apis.policies import ApiPolicyResolver
 from syft_rds.config import (
     DATASET_COLLECTION_SPECS,
     MOCK_DATASET_SPEC,
@@ -121,6 +123,16 @@ class SyftRDSClient(BaseModel):
     dataset_manager: SyftDatasetManager
 
     def model_post_init(self, __context: Any) -> None:
+        # Jobs approved through an api run with that api's policies, and show
+        # them.
+        if self.job_runner is not None:
+            resolver = ApiPolicyResolver(
+                Path(self.syftbox_folder) / self.email / APIS_DIR
+            )
+            self.job_runner.policy_resolver = (
+                self.job_runner.policy_resolver or resolver
+            )
+            self.job_client.policy_resolver = resolver
         # React to sync-engine peer lifecycle events with RDS-owned logic.
         self.sync_engine.on("peer_approved", self._on_peer_approved)
         self.sync_engine.on("peers_loaded", self._on_peers_loaded)
@@ -637,6 +649,7 @@ class SyftRDSClient(BaseModel):
             skip_jobs=[(name, peer) for name, peer, _ in skipped] or None,
             share_outputs_with_submitter=share_outputs_with_submitter,
             share_logs_with_submitter=share_logs_with_submitter,
+            approved_peers=[p.email for p in self.peer_manager.approved_peers],
         )
 
         # maybe_warn() above logs the peer, never the job.

@@ -3,12 +3,21 @@
 import json
 import os
 import shutil
+import tempfile
 from collections.abc import Sequence
 from pathlib import Path, PurePosixPath
 
+from syft_job.policies import (
+    PolicyInputs,
+    PolicyKind,
+    PolicyResolutionError,
+    PolicyScript,
+)
 from syft_rds.apis import ApiArg, infer_args
+from syft_rds.apis.models import POLICY_STATE_DIR_NAME, policy_dir
+from syft_rds.apis.policies import load_job_policies
 
-from syft_bg.approve.api_store import ApiStore
+from syft_bg.approve.api_store import ApiStore, store_policy
 from syft_bg.approve.config import AutoApprovalObj
 from syft_bg.approve.criteria import RUN_SCRIPT_PATH, get_job_submission_files
 from syft_bg.common.config import get_default_paths, get_syftbg_dir
@@ -605,3 +614,94 @@ def get_job_user_files(job) -> dict[str, Path]:
 #         gmail_ok=gmail_ok,
 #         drive_ok=drive_ok,
 #     )
+
+
+# ---------------------------------------------------------------------------
+# run_policy
+# ---------------------------------------------------------------------------
+
+CANDIDATES_DIR_NAME = "output_candidates"
+
+
+def policy_kind_for_test(
+    kind: str | None, outputs_dir: Path | None, candidates_dir: Path | None
+) -> PolicyKind:
+    """The kind asked for, else output when sample outputs are given."""
+    if kind is not None:
+        return PolicyKind(kind)
+    if outputs_dir is not None or candidates_dir is not None:
+        return PolicyKind.OUTPUT
+    return PolicyKind.INPUT
+
+
+def policy_under_test(
+    work_dir: Path,
+    kind: PolicyKind,
+    script: str | Path | None,
+    api: str | None,
+    api_store: ApiStore | None,
+) -> tuple[PolicyScript, str, Path | None]:
+    """The script to run, the api name it sees, and the real state to copy.
+
+    A script on disk is stored in work_dir the way an api stores it, so a
+    Python file gets the same generated run.sh.
+    """
+    if (script is None) == (api is None):
+        raise ValueError("Pass either a policy script or api=<name>")
+    if script is not None:
+        store_policy(work_dir, kind, Path(script))
+        return PolicyScript(policy_dir(work_dir, kind.value)), "test_api", None
+    store = api_store or get_api_store()
+    policies = load_job_policies(api, store.api_dir(api))
+    policy = policies.script(kind)
+    if policy is None:
+        raise PolicyResolutionError(f"api '{api}' has no {kind.value} policy")
+    return policy, api, store.api_dir(api) / POLICY_STATE_DIR_NAME
+
+
+def policy_test_state_dir(
+    work_dir: Path, state_dir: str | Path | None, real_state: Path | None
+) -> Path:
+    """state_dir when given, else a copy of the api's state, else a new folder."""
+    if state_dir is not None:
+        return Path(state_dir).expanduser()
+    copy = work_dir / POLICY_STATE_DIR_NAME
+    if real_state is not None and real_state.exists():
+        shutil.copytree(real_state, copy)
+    return copy
+
+
+def policy_test_inputs(
+    work_dir: Path,
+    kind: PolicyKind,
+    api_name: str,
+    submitter: str,
+    params: dict | None,
+    outputs_dir: str | Path | None,
+    candidates_dir: str | Path | None,
+) -> PolicyInputs:
+    """What the policy sees: copies of the sample outputs and candidates."""
+    inputs = PolicyInputs(
+        api_name=api_name,
+        submitter=submitter,
+        params=json.dumps(params or {}).encode(),
+    )
+    if kind == PolicyKind.OUTPUT:
+        job_dir = work_dir / "job"
+        inputs.outputs_dir = _copy_or_create(outputs_dir, job_dir / "outputs")
+        _copy_or_create(candidates_dir, job_dir / CANDIDATES_DIR_NAME)
+        inputs.recipients = [submitter]
+    return inputs
+
+
+def new_policy_work_dir() -> Path:
+    """Kept after the run, so the outputs a policy wrote can be looked at."""
+    return Path(tempfile.mkdtemp(prefix="syft-run-policy-"))
+
+
+def _copy_or_create(source: str | Path | None, dest: Path) -> Path:
+    if source is None:
+        dest.mkdir(parents=True)
+    else:
+        shutil.copytree(Path(source).expanduser(), dest)
+    return dest

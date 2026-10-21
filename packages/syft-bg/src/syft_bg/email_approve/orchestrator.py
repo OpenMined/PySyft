@@ -8,6 +8,8 @@ from syft_job import SyftJobConfig
 from syft_job.client import JobClient
 from syft_job.job_runner import SyftJobRunner
 
+from syft_bg.approve.api_store import ApiStore
+from syft_bg.approve.policy_resolver import api_policy_resolver
 from syft_bg.common.orchestrator import BaseOrchestrator
 from syft_bg.common.state import JsonStateManager
 from syft_bg.email_approve.config import EmailApproveConfig
@@ -69,6 +71,9 @@ class EmailApproveOrchestrator(BaseOrchestrator):
         )
         job_client = JobClient.from_config(job_config)
         job_runner = SyftJobRunner.from_config(job_config)
+        job_runner.policy_resolver = api_policy_resolver(
+            ApiStore(config.syftbox_root, config.do_email)
+        )
 
         credentials = GmailAuth().load_credentials(config.gmail_token_path)
 

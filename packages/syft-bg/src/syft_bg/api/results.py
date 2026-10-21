@@ -296,7 +296,20 @@ class AutoApproveResult(BaseModel):
     file_contents: list[str] = Field(default_factory=list)
     file_paths: list[str] = Field(default_factory=list)
     peers: list[str] = Field(default_factory=list)
+    policies: list[str] = Field(default_factory=list)  # e.g. ["input", "output"]
     error: str | None = None
+
+    @classmethod
+    def from_api(cls, name: str, obj: AutoApprovalObj) -> AutoApproveResult:
+        policies = [k for k in ("input", "output") if getattr(obj, f"{k}_policy")]
+        return cls(
+            success=True,
+            name=name,
+            file_contents=[e.relative_path for e in obj.file_contents],
+            file_paths=obj.file_paths,
+            peers=obj.peers,
+            policies=policies,
+        )
 
     def __repr__(self) -> str:
         lines = []
@@ -312,6 +325,8 @@ class AutoApproveResult(BaseModel):
                 lines.append(f"  peers: {', '.join(self.peers)}")
             else:
                 lines.append("  peers: (any)")
+            if self.policies:
+                lines.append(f"  policies: {', '.join(self.policies)}")
         else:
             lines.append("AutoApproveResult: FAILED")
             if self.error:

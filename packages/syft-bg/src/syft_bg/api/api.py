@@ -4,6 +4,12 @@ import shutil
 from collections.abc import Sequence
 from pathlib import Path
 
+from syft_job.policies import (
+    PolicyResolutionError,
+    PolicyResult,
+    PolicyRunner,
+    PolicyState,
+)
 from syft_rds.apis import ApiArg
 
 from syft_bg.api.results import AutoApproveResult, InstallationResult, StatusResult
@@ -13,6 +19,11 @@ from syft_bg.api.utils import (
     default_api_name,
     api_store_for_job,
     get_api_store,
+    new_policy_work_dir,
+    policy_kind_for_test,
+    policy_test_inputs,
+    policy_test_state_dir,
+    policy_under_test,
     read_job_args,
     get_job_user_files,
     move_token_to_syftbg_dir,
@@ -20,7 +31,12 @@ from syft_bg.api.utils import (
     resolve_job_approval_files,
     setup_orchestrator,
 )
-from syft_bg.approve.api_store import ApiExistsError, ApiStore
+from syft_bg.approve.api_store import (
+    UNCHANGED,
+    ApiExistsError,
+    ApiNotFoundError,
+    ApiStore,
+)
 from syft_bg.approve.config import AutoApprovalObj
 from syft_bg.common.config import get_default_paths, get_syftbg_dir
 from syft_bg.common.drive import is_colab
@@ -323,6 +339,8 @@ def auto_approve(
     allow_any_peer: bool = False,
     api_store: ApiStore | None = None,
     args: list[ApiArg | dict] | None = None,
+    input_policy: str | Path | None = None,
+    output_policy: str | Path | None = None,
 ) -> AutoApproveResult:
     """Create an auto-approval object (an "api") in SyftBox.
 
@@ -349,6 +367,11 @@ def auto_approve(
         args: Arguments of the name-only params json, in the order a caller
               passes them positionally: ApiArg(name, type, default, required)
               or the same as a dict.
+        input_policy: A .py or .sh script that runs before each call's job.
+              A non-zero exit stops the job. See syft_job/policies/env.py
+              for what a policy gets and the conventions it follows.
+        output_policy: A .py or .sh script that runs after each call's job
+              and decides what is shared and with whom. See env.py too.
 
     Returns:
         AutoApproveResult with the created object details.
@@ -361,6 +384,9 @@ def auto_approve(
         return AutoApproveResult(success=False, error=error)
     if not content_files and not file_paths:
         return AutoApproveResult(success=False, error="No files to process")
+    for policy in (input_policy, output_policy):
+        if policy is not None and not Path(policy).expanduser().is_file():
+            return AutoApproveResult(success=False, error=f"No policy at {policy}")
     if not peers and not allow_any_peer and not confirm_no_peers():
         return AutoApproveResult(success=False, error="Aborted: no peers given")
 
@@ -371,17 +397,13 @@ def auto_approve(
             file_paths,
             peers,
             [ApiArg.model_validate(a) for a in args or []],
+            input_policy=Path(input_policy) if input_policy else None,
+            output_policy=Path(output_policy) if output_policy else None,
         )
     except (ApiExistsError, ValueError) as e:
         return AutoApproveResult(success=False, error=str(e))
 
-    return AutoApproveResult(
-        success=True,
-        name=name,
-        file_contents=[e.relative_path for e in obj.file_contents],
-        file_paths=obj.file_paths,
-        peers=obj.peers,
-    )
+    return AutoApproveResult.from_api(name, obj)
 
 
 def auto_approve_job(
@@ -392,6 +414,8 @@ def auto_approve_job(
     name: str | None = None,
     allow_any_peer: bool = False,
     args: list[ApiArg | dict] | None = None,
+    input_policy: str | Path | None = None,
+    output_policy: str | Path | None = None,
 ) -> AutoApproveResult:
     """Create an auto-approval config from an existing job.
 
@@ -411,6 +435,10 @@ def auto_approve_job(
         allow_any_peer: Allow an empty peers list without the prompt.
         args: Arguments of the api. When None, names, types and defaults are
               inferred from the job's params json.
+        input_policy: A .py or .sh script that runs before each call's job.
+        output_policy: A .py or .sh script that runs after each call's job.
+              See auto_approve, and syft_job/policies/env.py for what a
+              policy gets and the conventions it follows.
 
     Returns:
         AutoApproveResult with the created object details.
@@ -436,7 +464,95 @@ def auto_approve_job(
         allow_any_peer=allow_any_peer,
         api_store=api_store_for_job(job),
         args=read_job_args(job, name_only) if args is None else args,
+        input_policy=input_policy,
+        output_policy=output_policy,
     )
+
+
+def set_policies(
+    name: str,
+    input_policy: str | Path | None = UNCHANGED,
+    output_policy: str | Path | None = UNCHANGED,
+    reset_state: bool = False,
+    api_store: ApiStore | None = None,
+) -> AutoApproveResult:
+    """Add, replace or remove the policies of an existing api.
+
+    Leave a policy out to keep it, pass None to remove it. Replacing a policy
+    keeps the api's state; pass reset_state=True to clear it. See
+    syft_job/policies/env.py for what a policy gets and the conventions it
+    follows.
+    """
+    for policy in (input_policy, output_policy):
+        if isinstance(policy, (str, Path)) and not Path(policy).expanduser().is_file():
+            return AutoApproveResult(success=False, error=f"No policy at {policy}")
+    try:
+        obj = (api_store or get_api_store()).set_policies(
+            name,
+            input_policy=_as_path(input_policy),
+            output_policy=_as_path(output_policy),
+            reset_state=reset_state,
+        )
+    except (ApiNotFoundError, ValueError) as e:
+        return AutoApproveResult(success=False, error=str(e))
+    return AutoApproveResult.from_api(name, obj)
+
+
+def run_policy(
+    script: str | Path | None = None,
+    api: str | None = None,
+    kind: str | None = None,
+    params: dict | None = None,
+    submitter: str = "ds@example.com",
+    state_dir: str | Path | None = None,
+    outputs_dir: str | Path | None = None,
+    candidates_dir: str | Path | None = None,
+    api_store: ApiStore | None = None,
+) -> PolicyResult:
+    """Run a policy on its own, the way the job runner runs it.
+
+    No job, peer or sync is needed. Pass a script on disk, or api=<name> and
+    kind ("input" or "output") to run an existing api's policy against a copy
+    of its real state, so the real state is not changed.
+
+    Args:
+        script: A .py or .sh policy file.
+        api: Name of an existing api, instead of a script.
+        kind: "input" or "output". Defaults to "output" when sample outputs
+              or candidates are given, else "input".
+        params: The call's params, as the policy reads them.
+        submitter: The data scientist's email the policy sees.
+        state_dir: A state folder to use and keep, e.g. to run a rate limit
+              several times. Defaults to a throwaway copy.
+        outputs_dir: Sample outputs (output policy). A copy is used.
+        candidates_dir: Sample output_candidates/ next to outputs/.
+
+    Returns:
+        PolicyResult: passed, error (what the data scientist would see), state
+        (state.json after the run), recipients and outputs_dir (output policy).
+
+    See syft_job/policies/env.py for what a policy gets and the conventions it
+    follows.
+    """
+    policy_kind = policy_kind_for_test(kind, outputs_dir, candidates_dir)
+    work_dir = new_policy_work_dir()
+    try:
+        policy, api_name, real_state = policy_under_test(
+            work_dir, policy_kind, script, api, api_store
+        )
+    except PolicyResolutionError as e:
+        return PolicyResult(passed=False, error=str(e))
+    state = PolicyState(policy_test_state_dir(work_dir, state_dir, real_state))
+    inputs = policy_test_inputs(
+        work_dir, policy_kind, api_name, submitter, params, outputs_dir, candidates_dir
+    )
+    result = PolicyRunner().run(policy, state, inputs)
+    result.outputs_dir = inputs.outputs_dir
+    return result
+
+
+def _as_path(policy: str | Path | None | object) -> Path | None | object:
+    return Path(policy) if isinstance(policy, str) else policy
 
 
 def list_auto_approvals() -> dict[str, AutoApprovalObj]:

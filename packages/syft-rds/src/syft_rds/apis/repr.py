@@ -110,6 +110,7 @@ def api_repr_html(api: Api) -> str:
     </div>
     <p><b>Args:</b> {_args_html(api)}</p>
     {_api_body_html(api)}
+    {_policies_html(api)}
 </div>
 """
 
@@ -129,12 +130,29 @@ def _api_body_html(api: Api) -> str:
     )
 
 
+def _policies(api: Api) -> list[tuple[str, str]]:
+    """(label, code) of each policy the api has."""
+    policies = [("Input policy", api.input_policy_code)]
+    policies.append(("Output policy", api.output_policy_code))
+    return [(label, code) for label, code in policies if code is not None]
+
+
+def _policies_html(api: Api) -> str:
+    return "".join(
+        f'<p><b>{label}:</b></p><div class="syftapi-pre">{escape(code)}</div>'
+        for label, code in _policies(api)
+    )
+
+
 def api_repr_str(api: Api) -> str:
     args = ", ".join(a.describe() for a in api.args) or "-"
     header = f"Api '{api.name}' from {api.datasite}\nArgs: {args}"
     if api.layout is None:
-        return f"{header}\nThis api can't be called with arguments."
-    return (
-        f"{header}\nCall: {api.call_signature}\n"
-        f"Runs {api.layout.python_file}:\n\n{api.code}"
-    )
+        body = f"{header}\nThis api can't be called with arguments."
+    else:
+        body = (
+            f"{header}\nCall: {api.call_signature}\n"
+            f"Runs {api.layout.python_file}:\n\n{api.code}"
+        )
+    policies = "".join(f"\n\n{label}:\n\n{code}" for label, code in _policies(api))
+    return body + policies
