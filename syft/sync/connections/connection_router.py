@@ -31,7 +31,7 @@ from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.transport.naming import PEERS_META_KEY
 from syft.sync.transport.protocols import Transport
-from syft.sync.transport.types import MessageKind
+from syft.sync.transport.types import MessageKind, SendStatus
 from syft.sync.utils.print_utils import (
     print_peer_added_to_platform,
     print_peer_adding_to_platform,
@@ -225,13 +225,15 @@ class ConnectionRouter(BaseModel):
 
     def owner_write_event_messages_to_outbox(
         self, recipient_email: str, events_message: FileChangeEventsMessage
-    ):
+    ) -> SendStatus:
         self._refresh_unknown_peer(recipient_email)
         events_message = self._downgrade_for_peer(events_message, recipient_email)
         data = events_message.as_compressed_data()
         data = self.peer_store.encrypt_if_needed(recipient_email, data)
         fname = events_message.message_filepath.as_string()
-        self.transport.p2p.send(recipient_email, fname, data, MessageKind.FILE_EVENTS)
+        return self.transport.p2p.send(
+            recipient_email, fname, data, MessageKind.FILE_EVENTS
+        )
 
     def watcher_get_events_messages(
         self, peer_email: str, since_timestamp: float | None

@@ -1,7 +1,5 @@
 """What each peer holds, so the data owner can resend, delete and catch up.
 
-STUB: the names and contracts are agreed; the bodies are to be written.
-
 The tracker knows nothing about the transport or where its record is kept. It
 works on paths and content hashes, takes the outcome of each send as a
 ``SendStatus``, and keeps its record through a ``DeliveryStateStore``.
@@ -16,8 +14,8 @@ peer may read now:
     in the view, but no longer readable           -> delete
     in the view, but the file is gone             -> delete
 
-A peer with no view, because it is new or its record was lost, gets a
-``PeerReset``: its view starts empty, so it is sent every file it may read.
+A peer with no view, because it is new or its record was lost, starts with an
+empty view (a ``PeerReset``), so it is sent every file it may read.
 
 Recording a send
 ----------------
@@ -28,36 +26,19 @@ Recording a send
   only when ``P2PConnection.delivered()`` reports that ``msg_id`` and
   ``confirm`` is called. A receipt is not enough; only the peer's ack counts.
 
-A view therefore never changes before a delivery is confirmed.
-
-Pending deliveries
-------------------
-Changes queued for a peer but not yet sent, for example because the upload
-failed or the peer was skipped by the version gate, are kept per peer by the
-owner cache's pending deliveries (PR #9563). The tracker does not duplicate
-them.
-
-Storage
--------
-``DeliveryState`` is the whole record, versioned. A ``DeliveryStateStore``
-loads and saves it: a local file next to the owner's file hashes, and with
-``persist_owner_state`` also Drive, inside the rolling state and checkpoints,
-so an enclave that wipes its local state at every boot does not reset every
-peer.
-
-Sends not routed by permission, such as the echo of a submitter's own change
-or a private dataset shared with an enclave, are recorded only where the
-recipient may read the file, so a later permission change never deletes them.
-
-Open decisions:
-- A peer rejected, then approved again: reset its view and resend (proposed).
-- Accepted job submissions: echo only to the submitter, as today (proposed), or
-  also send to every peer who may read the file.
+A view therefore never changes before a delivery is confirmed. A change that is
+not sent, because the upload failed, the peer was skipped, or a process
+stopped before the send, stays in the plan of the next sync.
 """
 
+import os
 from abc import ABC, abstractmethod
-from typing import Iterable, Mapping
+from contextlib import contextmanager, nullcontext
+from pathlib import Path
+from typing import ContextManager, Iterable, Mapping
+from uuid import uuid4
 
+import portalocker
 from pydantic import BaseModel, ConfigDict, Field
 
 from syft.sync.transport.types import SendStatus
@@ -102,38 +83,117 @@ class DeliveryStateStore(ABC):
 
     @abstractmethod
     def load(self) -> DeliveryState:
-        """The stored state, or an empty one."""
+        """The stored state, or an empty one.
+
+        Raises:
+            ValueError: when a later client wrote the state.
+        """
 
     @abstractmethod
     def save(self, state: DeliveryState) -> None:
         """Store ``state``, replacing what was there."""
 
+    def locked(self) -> ContextManager[None]:
+        """Keep other writers out from a ``load`` to the ``save`` that follows."""
+        return nullcontext()
+
+
+class MemoryDeliveryStateStore(DeliveryStateStore):
+    """A state kept in this process only."""
+
+    def __init__(self):
+        self._state = DeliveryState()
+
+    def load(self) -> DeliveryState:
+        return self._state.model_copy(deep=True)
+
+    def save(self, state: DeliveryState) -> None:
+        self._state = state.model_copy(deep=True)
+
+
+class LocalDeliveryStateStore(DeliveryStateStore):
+    """A state kept in a JSON file, shared by the processes of one datasite."""
+
+    def __init__(self, path: Path):
+        self.path = path
+
+    def load(self) -> DeliveryState:
+        if not self.path.exists():
+            return DeliveryState()
+        state = DeliveryState.model_validate_json(self.path.read_text())
+        if state.version > DELIVERY_STATE_VERSION:
+            raise ValueError(
+                f"{self.path} has version {state.version}, and this client reads "
+                f"up to version {DELIVERY_STATE_VERSION}."
+            )
+        return state
+
+    @contextmanager
+    def locked(self):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.path.with_suffix(self.path.suffix + ".lock"), "a") as f:
+            portalocker.lock(f, portalocker.LOCK_EX)
+            try:
+                yield
+            finally:
+                portalocker.unlock(f)
+
+    def save(self, state: DeliveryState) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.path.with_suffix(f".tmp.{os.getpid()}.{uuid4().hex}")
+        try:
+            tmp.write_text(state.model_dump_json())
+            tmp.replace(self.path)
+        finally:
+            tmp.unlink(missing_ok=True)
+
+
+def _apply(view: dict[str, str], changes: Mapping[str, str | None]) -> None:
+    for path, new_hash in changes.items():
+        if new_hash is None:
+            view.pop(path, None)
+        else:
+            view[path] = new_hash
+
 
 class DeliveryTracker:
-    """Per-peer views of confirmed file versions, for the data owner."""
+    """Per-peer views of confirmed file versions, for the data owner.
+
+    Each call reads the state from the store. Each change reads and writes it
+    back under the store lock, so the processes of one datasite see the same
+    views and do not lose each other's changes.
+    """
 
     def __init__(self, store: DeliveryStateStore):
         self.store = store
 
     def has_view(self, peer: str) -> bool:
         """Whether ``peer`` has a view. False means a ``PeerReset`` is due."""
-        raise NotImplementedError
+        return peer in self.store.load().views
 
     def reset(self, peer: str) -> None:
         """Start ``peer``'s view empty (a ``PeerReset``), so the next plan sends
         it every file it may read."""
-        raise NotImplementedError
+        with self.store.locked():
+            state = self.store.load()
+            state.views[peer] = {}
+            self.store.save(state)
 
-    def plan(
-        self, peer: str, readable: Mapping[str, str], paths: Iterable[str]
-    ) -> DeliveryPlan:
-        """What to send and delete for ``peer`` among ``paths``.
+    def clear(self) -> None:
+        """Forget every view and every queued send."""
+        with self.store.locked():
+            self.store.save(DeliveryState())
+
+    def plan(self, peer: str, readable: Mapping[str, str]) -> DeliveryPlan:
+        """What to send and delete for ``peer``.
 
         ``readable`` maps every path ``peer`` may read now to its current hash.
-        ``paths`` are the dirty paths; for a peer with no view, every readable
-        path.
         """
-        raise NotImplementedError
+        view = self.store.load().views.get(peer, {})
+        return DeliveryPlan(
+            send=sorted(p for p, h in readable.items() if view.get(p) != h),
+            delete=sorted(p for p in view if p not in readable),
+        )
 
     def sent(
         self,
@@ -146,8 +206,23 @@ class DeliveryTracker:
 
         ``DELIVERED`` updates the view now; ``QUEUED`` waits for ``confirm``.
         """
-        raise NotImplementedError
+        with self.store.locked():
+            state = self.store.load()
+            if status is SendStatus.DELIVERED:
+                _apply(state.views.setdefault(peer, {}), changes)
+            else:
+                assert status is SendStatus.QUEUED, status
+                state.queued[msg_id] = QueuedSend(peer=peer, changes=dict(changes))
+            self.store.save(state)
 
     def confirm(self, msg_ids: Iterable[str]) -> None:
         """Apply the queued sends that ``P2PConnection.delivered()`` reported."""
-        raise NotImplementedError
+        msg_ids = list(msg_ids)
+        if not msg_ids:
+            return
+        with self.store.locked():
+            state = self.store.load()
+            for msg_id in msg_ids:
+                queued = state.queued.pop(msg_id)
+                _apply(state.views.setdefault(queued.peer, {}), queued.changes)
+            self.store.save(state)

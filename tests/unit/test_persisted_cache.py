@@ -201,8 +201,8 @@ def test_peer_loses_file_deleted_while_other_process_skipped_it(monkeypatch):
     assert not received.exists(), "The DS kept a file that the DO deleted."
 
 
-def test_read_error_on_pending_file_raises_and_keeps_peer_copy(monkeypatch):
-    """A pending file that cannot be read must not reach the peer as a deletion."""
+def test_read_error_on_unsent_file_raises_and_keeps_peer_copy(monkeypatch):
+    """A changed file that cannot be read must not reach the peer as a deletion."""
     ds_manager, do_manager = _pair_with_unsent_do_file()
     do_manager.sync(auto_checkpoint=False)
     ds_manager.sync()
@@ -220,7 +220,7 @@ def test_read_error_on_pending_file_raises_and_keeps_peer_copy(monkeypatch):
     api_file.write_text("print('api v2')")
     do_manager_b.sync(auto_checkpoint=False)
 
-    # The first read is the resend of the pending path.
+    # The first read is the send of the changed file.
     read_file = FSFileConnection.read_file
     calls = []
 
