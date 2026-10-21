@@ -72,7 +72,19 @@ import syft_bg as sbg
 sbg.auto_approve_job(job, name="word_count", peers=["ds@example.com"])
 ```
 
-The arguments come from the job's `params.json`. Their names, types and defaults are read from the example values in that file. `auto_approve` creates an API from files on disk instead of from a job.
+By convention, the arguments come from the job's `code/params.json`. `auto_approve_job` matches that file by name only, so each call can send its own values. It reads the argument names, types and defaults from the example values in the file.
+
+Both parts can be configured. `file_paths` chooses which file is matched by name only. Any single JSON file in `code/` that is matched by name only holds the arguments. `args` sets the arguments directly, and then nothing is read from the file:
+
+```python
+sbg.auto_approve_job(
+    job,
+    file_paths=["config.yaml", "code/settings.json"],
+    args=[{"name": "word", "type": "str", "required": True}],
+)
+```
+
+`auto_approve` creates an API from files on disk instead of from a job.
 
 ### Calling an API (DS)
 
