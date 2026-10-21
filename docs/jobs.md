@@ -118,14 +118,16 @@ sbg.set_policies("word_count", input_policy=None)   # remove it
 
 Replacing a policy keeps the API's state. `reset_state=True` clears the state.
 
-### Every policy is a bash script
+### The entrypoint of a policy is a bash script
 
-The runner runs `bash run.sh` for every policy, as it does for jobs. A policy is a `.sh` file, which is stored as `run.sh`. A `.py` file is stored as `policy.py` next to a generated `run.sh`:
+The entrypoint of every policy is a bash script, `run.sh`, and the runner runs `bash run.sh`, as it does for jobs. The bash script can forward to Python. When you pass a `.py` file, the forwarding is done for you: the file is stored as `policy.py`, next to a generated `run.sh` that calls it:
 
 ```bash
 #!/bin/bash
 exec python3 "$(dirname "$0")/policy.py"
 ```
+
+When you pass a `.sh` file, it is stored as `run.sh` as it is. Only that one file is stored, so a Python policy should be passed as the `.py` file.
 
 The policy files are stored in the API folder and hashed. When a stored file no longer matches its hash, the job fails and does not run.
 
