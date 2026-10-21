@@ -77,6 +77,7 @@ class PolicyResult:
     outputs_dir: Optional[Path] = None
 
 
-# Turns the api name recorded at approval into the api's policies. Raises
-# PolicyResolutionError when the api is gone or a policy file changed.
-PolicyResolver = Callable[[str], JobPolicies]
+# Turns the api name recorded at approval, and the job's submission folder,
+# into the api's policies. Raises PolicyResolutionError when the api is gone,
+# the job no longer matches it, or a policy file changed.
+PolicyResolver = Callable[[str, Path], JobPolicies]

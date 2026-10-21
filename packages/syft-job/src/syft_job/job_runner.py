@@ -460,7 +460,7 @@ class SyftJobRunner:
         if run_dir is None:
             return False
         try:
-            resolved, policies = self._resolve_policies(ref)
+            resolved, policies = self._resolve_policies(ref, run_dir)
             if resolved:
                 self._run_approved_job(ref, run_dir, stream_output, timeout, policies)
         finally:
@@ -530,10 +530,13 @@ class SyftJobRunner:
         self.manager.write_state(ref, state)
         print(f" Job {ref.job_name} not run: {reason}")
 
-    def _resolve_policies(self, ref: JobRef) -> tuple[bool, JobPolicies | None]:
+    def _resolve_policies(
+        self, ref: JobRef, run_dir: Path
+    ) -> tuple[bool, JobPolicies | None]:
         """The policies of the api the job matched at approval.
 
-        Returns (False, None) and fails the job when they can't be loaded, so a
+        The resolver checks the run copy still matches that api. Returns
+        (False, None) and fails the job when the policies can't be loaded, so a
         job never runs without the policies of its api.
         """
         record = self.manager.read_submission_record(ref)
@@ -543,7 +546,7 @@ class SyftJobRunner:
         try:
             if self.policy_resolver is None:
                 raise PolicyResolutionError("no policy resolver is configured")
-            return True, self.policy_resolver(api_name)
+            return True, self.policy_resolver(api_name, run_dir)
         except PolicyResolutionError as e:
             self._fail_job(ref, f"policies of api '{api_name}' not loaded: {e}")
             return False, None

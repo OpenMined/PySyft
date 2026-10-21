@@ -184,14 +184,38 @@ def test_set_policies_replaces_removes_and_keeps_state(store, script, policy):
     assert state_file.read_text() == "{}"
 
 
-def test_resolver_refuses_changed_policy_and_deleted_api(store, script, policy):
+def _submission(temp_dir: Path, run_sh: str) -> Path:
+    root = temp_dir / "submission"
+    root.mkdir(exist_ok=True)
+    (root / "run.sh").write_text(run_sh)
+    return root
+
+
+def test_resolver_refuses_changed_policy_and_deleted_api(
+    store, script, policy, temp_dir
+):
     store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
     resolver = api_policy_resolver(store)
-    assert resolver("api").input.folder == store.api_dir("api") / "policies" / "input"
+    job = _submission(temp_dir, script.read_text())
+    policies = resolver("api", job)
+    assert policies.input.folder == store.api_dir("api") / "policies" / "input"
 
     (store.api_dir("api") / "policies" / "input" / "policy.py").write_text("pass\n")
     with pytest.raises(PolicyResolutionError, match="changed"):
-        resolver("api")
+        resolver("api", job)
     store.delete("api")
     with pytest.raises(PolicyResolutionError, match="no longer exists"):
-        resolver("api")
+        resolver("api", job)
+
+
+def test_resolver_refuses_job_that_no_longer_matches(store, script, policy, temp_dir):
+    """An api deleted and created again under its name, with other files."""
+    job = _submission(temp_dir, script.read_text())
+    store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
+    store.delete("api")
+    other = temp_dir / "other.sh"
+    other.write_text("echo other\n")
+    store.create("api", [("run.sh", other)], [], ["a@x.com"], input_policy=policy)
+
+    with pytest.raises(PolicyResolutionError, match="no longer matches api 'api'"):
+        api_policy_resolver(store)("api", job)

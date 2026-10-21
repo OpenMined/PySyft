@@ -94,7 +94,7 @@ class Env:
         self.output_code: str | None = None
         self.runner = SyftJobRunner(config=self.do_config, policy_resolver=self.resolve)
 
-    def resolve(self, api_name: str) -> JobPolicies:
+    def resolve(self, api_name: str, submission_root: Path) -> JobPolicies:
         return JobPolicies(
             api_name=api_name,
             state_dir=self.state_dir,
@@ -207,7 +207,7 @@ def test_empty_recipients_hold_outputs_back(env):
 
 
 def test_job_fails_when_policies_cannot_load(env):
-    def gone(api_name: str) -> JobPolicies:
+    def gone(api_name: str, submission_root: Path) -> JobPolicies:
         raise PolicyResolutionError(f"api '{api_name}' no longer exists")
 
     env.runner.policy_resolver = gone

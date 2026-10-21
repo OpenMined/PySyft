@@ -357,7 +357,7 @@ class JobInfo:
         if api_name is None or resolver is None:
             return None
         try:
-            return resolver(api_name)
+            return resolver(api_name, self.job_submission_path)
         except PolicyResolutionError:
             return None
 
