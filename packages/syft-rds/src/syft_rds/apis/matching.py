@@ -9,7 +9,12 @@ from pathlib import Path
 
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
-from syft_rds.apis.models import ApiDefinition, FileEntry
+from syft_rds.apis.models import (
+    ApiDefinition,
+    FileEntry,
+    list_api_names,
+    load_api_definition,
+)
 
 RUN_SCRIPT_PATH = "run.sh"
 
@@ -98,6 +103,26 @@ def match_submission(root: Path, definition: ApiDefinition) -> tuple[bool, str]:
         if reason:
             return False, reason
     return True, "ok"
+
+
+def matching_apis(apis_dir: Path, root: Path, submitter: str) -> tuple[list[str], str]:
+    """The apis shared with submitter that the submission at root matches.
+
+    Returns their names, and why the last api that didn't match failed. An api
+    with no peers is shared with every peer.
+    """
+    matches: list[str] = []
+    last_reason = f"no auto-approval objects match peer: {submitter}"
+    for name in list_api_names(apis_dir):
+        definition = load_api_definition(apis_dir / name)
+        if definition.peers and submitter not in definition.peers:
+            continue
+        match, reason = match_submission(root, definition)
+        if match:
+            matches.append(name)
+        else:
+            last_reason = f"[{name}] {reason}"
+    return matches, last_reason
 
 
 def _names_mismatch(actual: set[str], expected: set[str]) -> str | None:

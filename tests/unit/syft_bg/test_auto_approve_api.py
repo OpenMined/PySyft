@@ -310,7 +310,7 @@ class TestAutoApproveDisclosures:
         assert "share_logs_with_submitter" not in (
             client.process_approved_jobs.call_args.kwargs
         )
-        return job.approve.call_args.kwargs
+        return job.approve_for_api.call_args.kwargs
 
     def test_approval_releases_nothing_by_default(self, temp_dir):
         assert self._run(temp_dir / "config.yaml")["disclosures"] == []

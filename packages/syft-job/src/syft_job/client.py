@@ -24,7 +24,7 @@ from .submission import (
     SUBMISSION_ENTRIES,
     SUBMISSION_HASH_HEADER,
     InvalidSubmissionError,
-    SubmissionRecord,
+    OwnerJobRecord,
     code_hash,
     has_listed_files,
     submission_hash,
@@ -582,7 +582,7 @@ python {entrypoint_path}
         ref = JobRef(self.current_user_email, ds_email, job_name, protocol_version)
         # A record without a state means an earlier receipt stopped half-way;
         # it is finished below, with the hash it recorded.
-        record = self.manager.read_submission_record(ref)
+        record = self.manager.read_owner_record(ref)
         if record is None:
             try:
                 record = self._claim_receipt(ref)
@@ -598,7 +598,7 @@ python {entrypoint_path}
         self.manager.write_state(ref, state)
         return state
 
-    def _claim_receipt(self, ref: JobRef) -> Optional[SubmissionRecord]:
+    def _claim_receipt(self, ref: JobRef) -> Optional[OwnerJobRecord]:
         """Record the received hash once every file arrived, and return the record.
 
         Returns None while files are still arriving, or when another process
@@ -614,11 +614,11 @@ python {entrypoint_path}
         valid, reason = self.validate_submission(submission_dir)
         if not valid:
             raise InvalidSubmissionError(reason)
-        record = SubmissionRecord(
+        record = OwnerJobRecord(
             received_hash=submission_hash(submission_dir),
             received_at=datetime.now(timezone.utc),
         )
-        return record if self.manager.claim_submission_record(ref, record) else None
+        return record if self.manager.claim_owner_record(ref, record) else None
 
     def _has_all_files(self, ref: JobRef) -> bool:
         """Whether every file of the job arrived.
@@ -681,16 +681,16 @@ python {entrypoint_path}
         a new job gets at receipt, once: only the process that creates the
         record writes it.
         """
-        if self.manager.submission_record_path(ref).exists():
+        if self.manager.owner_record_path(ref).exists():
             return
         state = self.manager.read_state(ref)
         if state.status != JobStatus.PENDING:
             return
-        record = SubmissionRecord(
+        record = OwnerJobRecord(
             received_hash=submission_hash(self.manager.submission_dir(ref)),
             received_at=state.received_at or datetime.now(timezone.utc),
         )
-        if self.manager.claim_submission_record(ref, record):
+        if self.manager.claim_owner_record(ref, record):
             self._lock_submission(ref)
 
     # ──────────────────────────────────────────────

@@ -94,9 +94,9 @@ class Env:
         self.output_code: str | None = None
         self.runner = SyftJobRunner(config=self.do_config, policy_resolver=self.resolve)
 
-    def resolve(self, api_name: str, submission_root: Path) -> JobPolicies:
+    def resolve(self, submission_root: Path, submitter: str) -> JobPolicies:
         return JobPolicies(
-            api_name=api_name,
+            api_name=API_NAME,
             state_dir=self.state_dir,
             input=self._script("input", self.input_code),
             output=self._script("output", self.output_code),
@@ -115,7 +115,7 @@ class Env:
         """Submit a bash job as the DS, approve it via the api, and run it."""
         self.ds_client.submit_bash_job(DO_EMAIL, script, job_name)
         job = next(j for j in self.do_client.jobs if j.name == job_name)
-        job.approve(api_name=API_NAME)
+        job.approve_for_api()
         self.runner.process_approved_jobs(
             stream_output=False, share_outputs_with_submitter=True, **process_kwargs
         )
@@ -206,15 +206,15 @@ def test_empty_recipients_hold_outputs_back(env):
     assert not job.outputs_withheld
 
 
-def test_job_fails_when_policies_cannot_load(env):
-    def gone(api_name: str, submission_root: Path) -> JobPolicies:
-        raise PolicyResolutionError(f"api '{api_name}' no longer exists")
+def test_api_job_fails_when_it_matches_no_api(env):
+    def no_match(submission_root: Path, submitter: str) -> JobPolicies:
+        raise PolicyResolutionError("it matches no api")
 
-    env.runner.policy_resolver = gone
+    env.runner.policy_resolver = no_match
     job = env.call("echo hi > code/outputs/out.txt")
 
     assert job.status == "failed"
-    assert "no longer exists" in job.review_reason
+    assert job.review_reason == "approved through an api, but it matches no api"
     assert not (job.job_review_path / "outputs" / "out.txt").exists()
 
 

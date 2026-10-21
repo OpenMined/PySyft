@@ -65,6 +65,21 @@ def load_api_definition(api_dir: Path) -> ApiDefinition:
     return definition
 
 
+def list_api_names(apis_dir: Path) -> list[str]:
+    """Names of the apis in apis_dir, sorted.
+
+    A folder counts once it holds api.yaml. Staging folders (".staging_*")
+    hold one before they are renamed into place, so hidden folders are skipped.
+    """
+    if not apis_dir.exists():
+        return []
+    return sorted(
+        d.name
+        for d in apis_dir.iterdir()
+        if d.is_dir() and not d.name.startswith(".") and (d / API_FILE_NAME).exists()
+    )
+
+
 def policy_dir(api_dir: Path, kind: str) -> Path:
     """Where the "input" or "output" policy of an api lives."""
     return api_dir / POLICIES_DIR_NAME / kind

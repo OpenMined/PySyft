@@ -16,11 +16,13 @@ from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata
 from .protocolcodecs import CODECS, ProtocolCodec
 from .submission import (
-    SUBMISSION_RECORD_FILENAME,
-    SubmissionRecord,
-    claim_submission_record,
-    read_submission_record,
-    write_submission_record,
+    LEGACY_OWNER_RECORD_FILENAME,
+    OWNER_RECORD_FILENAME,
+    OwnerJobRecord,
+    claim_owner_record,
+    move_legacy_owner_record,
+    read_owner_record,
+    write_owner_record,
 )
 
 logger = logging.getLogger(__name__)
@@ -131,18 +133,21 @@ class JobStorage:
     def staging_dir(self, ref: JobRef) -> Path:
         return self._codec_for(ref.protocol_version).staging_dir(ref)
 
-    # -- submission record (owner side, in staging/) -------------------------------
-    def submission_record_path(self, ref: JobRef) -> Path:
-        return self.staging_dir(ref) / SUBMISSION_RECORD_FILENAME
+    # -- owner record (owner side, in staging/) ------------------------------------
+    def owner_record_path(self, ref: JobRef) -> Path:
+        """Where the owner record is, after moving one from its old name."""
+        path = self.staging_dir(ref) / OWNER_RECORD_FILENAME
+        move_legacy_owner_record(path.with_name(LEGACY_OWNER_RECORD_FILENAME), path)
+        return path
 
-    def read_submission_record(self, ref: JobRef) -> Optional[SubmissionRecord]:
-        return read_submission_record(self.submission_record_path(ref))
+    def read_owner_record(self, ref: JobRef) -> Optional[OwnerJobRecord]:
+        return read_owner_record(self.owner_record_path(ref))
 
-    def claim_submission_record(self, ref: JobRef, record: SubmissionRecord) -> bool:
-        return claim_submission_record(self.submission_record_path(ref), record)
+    def claim_owner_record(self, ref: JobRef, record: OwnerJobRecord) -> bool:
+        return claim_owner_record(self.owner_record_path(ref), record)
 
-    def write_submission_record(self, ref: JobRef, record: SubmissionRecord) -> None:
-        write_submission_record(self.submission_record_path(ref), record)
+    def write_owner_record(self, ref: JobRef, record: OwnerJobRecord) -> None:
+        write_owner_record(self.owner_record_path(ref), record)
 
     def new_submission_ref(self, do_email: str, job_name: str) -> JobRef:
         """A ref for submitting a new job to ``do_email``."""

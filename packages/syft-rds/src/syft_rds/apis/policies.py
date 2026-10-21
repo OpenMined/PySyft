@@ -10,7 +10,7 @@ from syft_job.policies import (
 )
 
 from syft_rds.apis.api import callable_layout
-from syft_rds.apis.matching import match_submission
+from syft_rds.apis.matching import matching_apis
 from syft_rds.apis.models import (
     API_FILE_NAME,
     POLICY_STATE_DIR_NAME,
@@ -21,24 +21,18 @@ from syft_rds.apis.models import (
 
 
 class ApiPolicyResolver:
-    """Loads the policies of the api a job was approved through.
-
-    The job must still match that api, so an api deleted and created again
-    under the same name, with other files, never lends a job its policies.
-    """
+    """Finds the one api a job matches, and loads that api's policies."""
 
     def __init__(self, apis_dir: Path):
         self.apis_dir = Path(apis_dir)
 
-    def __call__(self, api_name: str, submission_root: Path) -> JobPolicies:
-        api_dir = self.apis_dir / api_name
-        policies = load_job_policies(api_name, api_dir)
-        match, reason = match_submission(submission_root, load_api_definition(api_dir))
-        if not match:
-            raise PolicyResolutionError(
-                f"job no longer matches api '{api_name}': {reason}"
-            )
-        return policies
+    def __call__(self, submission_root: Path, submitter: str) -> JobPolicies:
+        matches, reason = matching_apis(self.apis_dir, submission_root, submitter)
+        if not matches:
+            raise PolicyResolutionError(f"it matches no api: {reason}")
+        if len(matches) > 1:
+            raise PolicyResolutionError(f"it matches several apis: {matches}")
+        return load_job_policies(matches[0], self.apis_dir / matches[0])
 
 
 def load_job_policies(api_name: str, api_dir: Path) -> JobPolicies:

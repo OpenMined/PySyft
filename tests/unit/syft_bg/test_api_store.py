@@ -191,31 +191,33 @@ def _submission(temp_dir: Path, run_sh: str) -> Path:
     return root
 
 
-def test_resolver_refuses_changed_policy_and_deleted_api(
+def test_resolver_finds_matching_api_and_checks_policy_hash(
     store, script, policy, temp_dir
 ):
     store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
     resolver = api_policy_resolver(store)
     job = _submission(temp_dir, script.read_text())
-    policies = resolver("api", job)
+
+    policies = resolver(job, "a@x.com")
+    assert policies.api_name == "api"
     assert policies.input.folder == store.api_dir("api") / "policies" / "input"
 
     (store.api_dir("api") / "policies" / "input" / "policy.py").write_text("pass\n")
     with pytest.raises(PolicyResolutionError, match="changed"):
-        resolver("api", job)
-    store.delete("api")
-    with pytest.raises(PolicyResolutionError, match="no longer exists"):
-        resolver("api", job)
+        resolver(job, "a@x.com")
 
 
-def test_resolver_refuses_job_that_no_longer_matches(store, script, policy, temp_dir):
-    """An api deleted and created again under its name, with other files."""
+@pytest.mark.parametrize("change", ["api_deleted", "other_peer", "other_files"])
+def test_resolver_refuses_job_that_matches_no_api(
+    store, script, policy, temp_dir, change
+):
     job = _submission(temp_dir, script.read_text())
     store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
-    store.delete("api")
-    other = temp_dir / "other.sh"
-    other.write_text("echo other\n")
-    store.create("api", [("run.sh", other)], [], ["a@x.com"], input_policy=policy)
+    submitter = "b@x.com" if change == "other_peer" else "a@x.com"
+    if change == "api_deleted":
+        store.delete("api")
+    if change == "other_files":
+        (job / "run.sh").write_text("echo other\n")
 
-    with pytest.raises(PolicyResolutionError, match="no longer matches api 'api'"):
-        api_policy_resolver(store)("api", job)
+    with pytest.raises(PolicyResolutionError, match="matches no api"):
+        api_policy_resolver(store)(job, submitter)

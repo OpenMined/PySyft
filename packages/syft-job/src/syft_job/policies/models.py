@@ -13,6 +13,10 @@ POLICY_ERROR_FILENAME = "policy_error.txt"
 OUTPUTS_WITHHELD_FILENAME = "outputs_withheld.txt"
 OUTPUT_RECIPIENTS_FILENAME = "output_recipients.json"
 
+# The approval method of a job approved because it matches an api. The runner
+# runs such a job only with the policies of the api it matches.
+API_APPROVAL_METHOD = "api"
+
 
 def policy_stderr_filename(kind: "PolicyKind") -> str:
     return f"{kind.value}_policy_stderr.txt"
@@ -77,7 +81,7 @@ class PolicyResult:
     outputs_dir: Optional[Path] = None
 
 
-# Turns the api name recorded at approval, and the job's submission folder,
-# into the api's policies. Raises PolicyResolutionError when the api is gone,
-# the job no longer matches it, or a policy file changed.
-PolicyResolver = Callable[[str, Path], JobPolicies]
+# Finds the policies of the one api that a job matches, from the job's
+# submission folder and its submitter. Raises PolicyResolutionError when no
+# api or several apis match, or a policy file changed.
+PolicyResolver = Callable[[Path, str], JobPolicies]

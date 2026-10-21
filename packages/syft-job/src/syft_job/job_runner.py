@@ -19,6 +19,7 @@ from .job import JobInfo
 from .job_storage import JobRef, JobStateNotFoundError, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
 from .policies import (
+    API_APPROVAL_METHOD,
     OUTPUT_RECIPIENTS_FILENAME,
     OUTPUTS_WITHHELD_FILENAME,
     POLICY_ERROR_FILENAME,
@@ -476,7 +477,7 @@ class SyftJobRunner:
         hash fails the job. A local error while copying (disk, permissions,
         temp folder) leaves the job approved, so the next cycle retries it.
         """
-        record = self.manager.read_submission_record(ref)
+        record = self.manager.read_owner_record(ref)
         if record is None or record.approved_hash is None:
             self._return_to_pending(ref)
             return None
@@ -533,22 +534,21 @@ class SyftJobRunner:
     def _resolve_policies(
         self, ref: JobRef, run_dir: Path
     ) -> tuple[bool, JobPolicies | None]:
-        """The policies of the api the job matched at approval.
+        """The policies of the api a job approved through an api matches now.
 
-        The resolver checks the run copy still matches that api. Returns
-        (False, None) and fails the job when the policies can't be loaded, so a
-        job never runs without the policies of its api.
+        The run copy is matched, so the policies are those of the code that
+        runs. Returns (False, None) and fails the job when they can't be found,
+        so such a job never runs without policies.
         """
-        record = self.manager.read_submission_record(ref)
-        api_name = record.api_name if record else None
-        if api_name is None:
+        record = self.manager.read_owner_record(ref)
+        if record is None or record.approval_method != API_APPROVAL_METHOD:
             return True, None
         try:
             if self.policy_resolver is None:
                 raise PolicyResolutionError("no policy resolver is configured")
-            return True, self.policy_resolver(api_name, run_dir)
+            return True, self.policy_resolver(run_dir, ref.ds_email)
         except PolicyResolutionError as e:
-            self._fail_job(ref, f"policies of api '{api_name}' not loaded: {e}")
+            self._fail_job(ref, f"approved through an api, but {e}")
             return False, None
 
     def _run_approved_job(

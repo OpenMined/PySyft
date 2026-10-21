@@ -6,13 +6,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Protocol
 
 from syft_job.job import JobInfo
+from syft_rds.apis.matching import matching_apis
 
 from syft_bg.approve.api_store import ApiStore
-from syft_bg.approve.config import AutoApprovalObj, AutoApprovalsConfig
-from syft_bg.approve.criteria import (
-    AutoApprovalValidationResult,
-    _validate_job_against_object,
-)
+from syft_bg.approve.config import AutoApprovalsConfig
+from syft_bg.approve.criteria import AutoApprovalValidationResult
 from syft_bg.common.syft_bg_config import SyftBgConfig
 
 if TYPE_CHECKING:
@@ -75,26 +73,9 @@ class JobApprovalHandler:
                 match=False, reason=f"status is {job.status}, not pending"
             )
 
-        candidate_objects: list[tuple[str, AutoApprovalObj]] = []
-        for name, obj in self.api_store.load_all().items():
-            if not obj.peers or job.submitted_by in obj.peers:
-                candidate_objects.append((name, obj))
-
-        if not candidate_objects:
-            return AutoApprovalValidationResult(
-                match=False,
-                reason=f"no auto-approval objects match peer: {job.submitted_by}",
-            )
-
-        matches: list[str] = []
-        last_reason = ""
-        for name, obj in candidate_objects:
-            result = _validate_job_against_object(job, obj)
-            if result.match:
-                matches.append(name)
-            else:
-                last_reason = f"[{name}] {result.reason}"
-
+        matches, last_reason = matching_apis(
+            self.api_store.apis_dir, job.job_submission_path, job.submitted_by
+        )
         if len(matches) > 1:
             return AutoApprovalValidationResult(
                 match=False, reason=f"matches several apis: {matches}"
@@ -126,11 +107,7 @@ class JobApprovalHandler:
                 continue
 
             try:
-                job.approve(
-                    approval_method="auto",
-                    disclosures=self.default_disclosures,
-                    api_name=result.api_name,
-                )
+                job.approve_for_api(disclosures=self.default_disclosures)
                 approved_jobs.append(job)
 
                 if self.state:

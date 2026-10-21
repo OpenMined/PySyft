@@ -18,10 +18,7 @@ from syft_job.disclosures import (  # noqa: F401 (re-exported)
 )
 from syft_job.job import JobInfo
 from syft_job.models import JobStatus
-from syft_job.submission import (  # noqa: F401 (submission_hash re-exported)
-    check_expected_digest,
-    submission_hash,
-)
+from syft_job.submission import submission_hash  # noqa: F401 (re-exported)
 
 
 class PartyApprovalStatus(BaseModel):
@@ -225,13 +222,8 @@ class EnclaveJobInfo(JobInfo):
         reason: Optional[str] = None,
         approval_method: str = "manual",
         disclosures: DisclosuresArg = None,
-        expected_digest: Optional[str] = None,
-        api_name: Optional[str] = None,
     ) -> None:
         """Approve this submission in the DO's own approval file.
-
-        ``expected_digest`` is the submission hash an automated approver
-        checked; the approval is refused unless the submission still has it.
 
         ``disclosures`` names the items in ``DisclosureItem`` that this party
         releases to the other parties. The enclave releases an item only when
@@ -243,19 +235,10 @@ class EnclaveJobInfo(JobInfo):
         runs the job only while it still matches. A DO may approve again after
         the submission changed. The approval file does not record ``reason`` or
         ``approval_method``.
-
-        ``api_name`` is refused: an api's policies run on the DO's machine, and
-        an enclave job runs on the enclave, so it would run without them.
         """
-        if api_name is not None:
-            raise ValueError(
-                f"Job '{self.name}' runs on an enclave, where the policies of "
-                f"api '{api_name}' can't run. Approve it by hand."
-            )
         check_approval_reason(reason)
         approval = self._load_own_approval()
         current = submission_hash(self.job_submission_path)
-        check_expected_digest(self.name, expected_digest, current)
         if approval.status == JobStatus.REJECTED or _approves(approval, current):
             raise ValueError(f"Already in status: {approval.status.value}")
         approval.status = JobStatus.APPROVED
@@ -267,6 +250,17 @@ class EnclaveJobInfo(JobInfo):
         warn_on_logs_release(approval.disclosures, self.requested_disclosures)
         self._save_own_approval(approval)
         print(f"Job '{self.name}' approved by {self.current_user_email}!")
+
+    def approve_for_api(self, disclosures: DisclosuresArg = None) -> None:
+        """Refused: an enclave job can't be approved through an api.
+
+        An api's policies run on the DO's machine, and an enclave job runs on
+        the enclave, so it would run without them.
+        """
+        raise ValueError(
+            f"Job '{self.name}' runs on an enclave, where an api's policies "
+            f"can't run. Approve it by hand."
+        )
 
     def update_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
         """Replace the items this party releases, and return the new map.

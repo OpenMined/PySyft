@@ -44,25 +44,30 @@ SYNC_EXCLUDED_NAMES = frozenset(
 # config.yaml header where the submitter declares code_hash() of its job.
 SUBMISSION_HASH_HEADER = "submission_hash"
 
-SUBMISSION_RECORD_FILENAME = "submission.json"
+# The data owner's record of a job, in staging/. Releases before the rename
+# wrote it as submission.json; JobStorage moves that file on first access.
+OWNER_RECORD_FILENAME = "owner_record.json"
+LEGACY_OWNER_RECORD_FILENAME = "submission.json"
 
 
 class InvalidSubmissionError(ValueError):
     """The submission holds a symlink, or not the expected entries."""
 
 
-class SubmissionRecord(BaseModel):
-    """What the data owner received, and later approved, as hashes."""
+class OwnerJobRecord(BaseModel):
+    """The data owner's own record of a job: what it received and approved.
+
+    Only the data owner writes it, so the submitter can't change it.
+    """
 
     received_hash: str
     received_at: datetime
     approved_hash: Optional[str] = None
     approved_by: Optional[str] = None
     approved_at: Optional[datetime] = None
+    # "api" means the job may only run with the policies of an api it matches.
+    # Kept here, on the owner side, so a submitter can't drop the policies.
     approval_method: Optional[str] = None
-    # The api the approval matched. Its policies run around the job. Kept
-    # here, on the owner side, so a submitter can't pick or drop the policies.
-    api_name: Optional[str] = None
 
 
 def _is_skipped(relative: Path) -> bool:
@@ -121,19 +126,6 @@ def submission_hash(submission_dir: Path) -> str:
     names that sync never carries are left out.
     """
     return _digest(submission_dir, None, as_sent=False)
-
-
-def check_expected_digest(job_name: str, expected: Optional[str], found: str) -> None:
-    """Raise unless ``expected`` is None or equals ``found``.
-
-    An automated approver passes the hash of the submission it checked, so a
-    job that changed after the check is not approved.
-    """
-    if expected is not None and expected != found:
-        raise ValueError(
-            f"Job '{job_name}' does not match the submission that was checked "
-            f"(expected {expected}, found {found})."
-        )
 
 
 def validate_submission(submission_dir: Path) -> tuple[bool, str]:
@@ -199,15 +191,15 @@ def copy_submission(source: Path, target: Path) -> None:
             shutil.copy2(path, destination)
 
 
-def read_submission_record(path: Path) -> Optional[SubmissionRecord]:
+def read_owner_record(path: Path) -> Optional[OwnerJobRecord]:
     """The record at ``path``, or None when absent or unreadable."""
     try:
-        return SubmissionRecord.model_validate_json(path.read_text())
+        return OwnerJobRecord.model_validate_json(path.read_text())
     except (OSError, ValueError):
         return None
 
 
-def claim_submission_record(path: Path, record: SubmissionRecord) -> bool:
+def claim_owner_record(path: Path, record: OwnerJobRecord) -> bool:
     """Create the record only if there is none; True when this call created it.
 
     Two data owner processes can receive the same job at once. Only the one
@@ -225,7 +217,7 @@ def claim_submission_record(path: Path, record: SubmissionRecord) -> bool:
     return True
 
 
-def write_submission_record(path: Path, record: SubmissionRecord) -> None:
+def write_owner_record(path: Path, record: OwnerJobRecord) -> None:
     """Replace the record in one step, so a reader never sees half of it."""
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
@@ -234,3 +226,19 @@ def write_submission_record(path: Path, record: SubmissionRecord) -> None:
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def move_legacy_owner_record(legacy: Path, path: Path) -> None:
+    """Rename a record written under its old name, unless the new one exists.
+
+    A hard link never replaces an existing file, so a record that another
+    process just created is kept. A process that loses the race finds the old
+    file gone, or the new one there.
+    """
+    if not legacy.exists():
+        return
+    try:
+        os.link(legacy, path)
+    except (FileExistsError, FileNotFoundError):
+        pass
+    legacy.unlink(missing_ok=True)

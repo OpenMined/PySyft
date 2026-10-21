@@ -15,7 +15,11 @@ from syft_job.disclosures import LOGS_WARNING, DisclosureItem
 from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
 from syft_job.models import JobState, JobStatus
-from syft_job.submission import SUBMISSION_HASH_HEADER, SUBMISSION_RECORD_FILENAME
+from syft_job.submission import (
+    LEGACY_OWNER_RECORD_FILENAME,
+    OWNER_RECORD_FILENAME,
+    SUBMISSION_HASH_HEADER,
+)
 from syft_job.traceback_capture import FRAMES_FILENAME
 
 DO_EMAIL = "do@test.org"
@@ -417,23 +421,12 @@ def test_edit_after_approval_fails_run(tmp_path):
     assert not (job.job_staging_path / "stdout.txt").exists()
 
 
-@pytest.mark.parametrize(
-    "change, error",
-    [
-        ("inbox_edited", "changed after it was received"),
-        ("other_digest_checked", "does not match the submission that was checked"),
-    ],
-)
-def test_approve_refuses_changed_submission(tmp_path, change, error):
+def test_approve_refuses_changed_submission(tmp_path):
     job = submit_only(tmp_path)
-    expected_digest = None
-    if change == "inbox_edited":
-        (job.job_submission_path / "run.sh").write_text(ATTACK_RUN_SH)
-    else:
-        expected_digest = "0" * 64
+    (job.job_submission_path / "run.sh").write_text(ATTACK_RUN_SH)
 
-    with pytest.raises(ValueError, match=error):
-        job.approve(expected_digest=expected_digest)
+    with pytest.raises(ValueError, match="changed after it was received"):
+        job.approve()
     assert reload_job(tmp_path).status == "pending"
 
 
@@ -447,7 +440,7 @@ def test_job_without_approved_hash_goes_back_to_pending(tmp_path, origin):
         reload_job(tmp_path).rerun()
     else:
         job.approve()
-        (job.job_staging_path / SUBMISSION_RECORD_FILENAME).unlink()
+        (job.job_staging_path / OWNER_RECORD_FILENAME).unlink()
 
     run_approved(tmp_path)
 
@@ -514,10 +507,23 @@ def test_local_copy_error_leaves_job_approved(tmp_path, monkeypatch, caplog):
 
 def test_pending_job_from_before_hashes_gets_record_and_lock(tmp_path):
     job = submit_only(tmp_path)
-    (job.job_staging_path / SUBMISSION_RECORD_FILENAME).unlink()
+    (job.job_staging_path / OWNER_RECORD_FILENAME).unlink()
     (job.job_submission_path / PERMISSION_FILE_NAME).unlink()
 
     job = reload_job(tmp_path)
 
-    assert (job.job_staging_path / SUBMISSION_RECORD_FILENAME).exists()
+    assert (job.job_staging_path / OWNER_RECORD_FILENAME).exists()
     assert (job.job_submission_path / PERMISSION_FILE_NAME).exists()
+
+
+def test_record_under_old_name_is_moved_and_used(tmp_path):
+    job = submit_only(tmp_path)
+    staging = job.job_staging_path
+    (staging / OWNER_RECORD_FILENAME).rename(staging / LEGACY_OWNER_RECORD_FILENAME)
+
+    reload_job(tmp_path).approve()
+    run_approved(tmp_path)
+
+    assert reload_job(tmp_path).status == "done"
+    assert (staging / OWNER_RECORD_FILENAME).exists()
+    assert not (staging / LEGACY_OWNER_RECORD_FILENAME).exists()

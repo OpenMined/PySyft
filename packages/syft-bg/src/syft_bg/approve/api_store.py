@@ -26,6 +26,7 @@ from syft_rds.apis.models import (
     APIS_DIR,
     FILES_DIR_NAME,
     POLICY_STATE_DIR_NAME,
+    list_api_names,
     load_api_definition,
     policy_dir,
 )
@@ -62,16 +63,7 @@ class ApiStore:
         return self.apis_dir / name
 
     def names(self) -> list[str]:
-        if not self.apis_dir.exists():
-            return []
-        return sorted(
-            d.name
-            for d in self.apis_dir.iterdir()
-            # Staging folders (".staging_*") hold an api.yaml before the rename.
-            if d.is_dir()
-            and not d.name.startswith(".")
-            and (d / API_FILE_NAME).exists()
-        )
+        return list_api_names(self.apis_dir)
 
     def load_all(self) -> dict[str, AutoApprovalObj]:
         return {name: self.get(name) for name in self.names()}
