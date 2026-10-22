@@ -8,13 +8,13 @@ import yaml
 
 from syft_bg.approve.config import (
     AutoApproveConfig,
-    AutoApprovalObj,
     AutoApprovalsConfig,
     PeerApprovalConfig,
     FileEntry,
 )
 from syft_bg.common.syft_bg_config import SyftBgConfig
 from syft_bg.notify.config import NotifyConfig
+from syft_rds.apis.models import ApiDefinition
 
 
 class TestFileEntry:
@@ -37,11 +37,11 @@ class TestFileEntry:
         assert entry.model_dump() == {"relative_path": "main.py", "hash": "sha256:bbb"}
 
 
-class TestAutoApprovalObj:
-    """Tests for AutoApprovalObj."""
+class TestApiDefinition:
+    """Tests for ApiDefinition."""
 
     def test_from_dict(self):
-        obj = AutoApprovalObj.model_validate(
+        obj = ApiDefinition.model_validate(
             {
                 "file_contents": [
                     {
@@ -60,13 +60,13 @@ class TestAutoApprovalObj:
         assert obj.peers == ["alice@test.com"]
 
     def test_defaults(self):
-        obj = AutoApprovalObj()
+        obj = ApiDefinition()
         assert obj.file_contents == []
         assert obj.file_paths == []
         assert obj.peers == []
 
     def test_multiple_scripts(self):
-        obj = AutoApprovalObj(
+        obj = ApiDefinition(
             file_contents=[
                 FileEntry(
                     relative_path="main.py", path="/tmp/main.py", hash="sha256:aaa"

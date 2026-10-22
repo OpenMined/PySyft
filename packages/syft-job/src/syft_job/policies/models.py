@@ -85,6 +85,8 @@ class ResolvedApi:
     # The api's pinned files, laid out as in a job: run.sh, code/...
     files_dir: Path
     policies: JobPolicies
+    # The items a call's approval releases to the caller, e.g. "logs".
+    disclosures: list[str] = field(default_factory=list)
 
 
 class ApiResolver(Protocol):

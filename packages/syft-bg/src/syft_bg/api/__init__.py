@@ -1,12 +1,12 @@
 from syft_bg.api.api import (
-    auto_approve as auto_approve,
-    auto_approve_job as auto_approve_job,
+    create_api as create_api,
+    create_api_from_job as create_api_from_job,
     ensure_running as ensure_running,
     init as init,
     install as install,
-    list_auto_approvals as list_auto_approvals,
+    list_apis as list_apis,
     logs as logs,
-    remove_auto_approve as remove_auto_approve,
+    remove_api as remove_api,
     reset as reset,
     restart as restart,
     run_policy as run_policy,
@@ -18,7 +18,7 @@ from syft_bg.api.api import (
 )
 from syft_bg.api.results import (
     AuthResult as AuthResult,
-    AutoApproveResult as AutoApproveResult,
+    ApiResult as ApiResult,
     InitResult as InitResult,
     InstallationResult as InstallationResult,
     StatusResult as StatusResult,

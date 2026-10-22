@@ -36,10 +36,14 @@ class ApiResolver:
     def __call__(self, api_name: str) -> ResolvedApi:
         api_dir = self._api_dir(api_name)
         policies = load_job_policies(api_name, api_dir)
-        for entry in load_api_definition(api_dir).file_contents:
+        definition = load_api_definition(api_dir)
+        for entry in definition.file_contents:
             _check_hash(api_dir / FILES_DIR_NAME, entry)
         return ResolvedApi(
-            name=api_name, files_dir=api_dir / FILES_DIR_NAME, policies=policies
+            name=api_name,
+            files_dir=api_dir / FILES_DIR_NAME,
+            policies=policies,
+            disclosures=definition.disclosures,
         )
 
     def check_request(self, api_name: str, request_dir: Path, submitter: str) -> None:

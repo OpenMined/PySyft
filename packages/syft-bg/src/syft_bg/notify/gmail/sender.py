@@ -424,14 +424,14 @@ If you believe this is an error, please contact the data owner.
         ds_email: str,
         thread_id: Optional[str] = None,
     ) -> SendResult:
-        """Notify DO that a job was auto-approved."""
+        """Notify DO that a call of one of its apis was approved."""
         subject = f"Re: Job: {job_name}"
         body_text = f"""Job auto-approved!
 
 Job: {job_name}
 From: {ds_email}
 
-This job matched your approval criteria and is now running.
+This job is a call of one of your apis, and is now running.
 """
         body_html = None
         if self.use_html and self.renderer:

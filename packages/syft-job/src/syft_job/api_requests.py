@@ -54,7 +54,7 @@ def receive_request(client: JobClient, ref: JobRef) -> None:
         return
     job_ref = replace(ref, is_request=False)
     if _create_job(client, job_ref, ref, api):
-        _approve(client, job_ref, api.name)
+        _approve(client, job_ref, api)
         shutil.rmtree(request_dir, ignore_errors=True)
 
 
@@ -127,13 +127,14 @@ def _create_job(
     return True
 
 
-def _approve(client: JobClient, job_ref: JobRef, api_name: str) -> None:
-    """Record the job as received from the api, and approve it."""
+def _approve(client: JobClient, job_ref: JobRef, api: ResolvedApi) -> None:
+    """Record the job as received from the api, and approve it with the
+    api's disclosures."""
     now = datetime.now(timezone.utc)
     record = OwnerJobRecord(
         received_hash=submission_hash(client.manager.submission_dir(job_ref)),
         received_at=now,
-        api_name=api_name,
+        api_name=api.name,
     )
     if not client.manager.claim_owner_record(job_ref, record):
         return
@@ -146,4 +147,4 @@ def _approve(client: JobClient, job_ref: JobRef, api_name: str) -> None:
         client=client,
         ref=job_ref,
     )
-    job.approve(approval_method=API_APPROVAL_METHOD)
+    job.approve(approval_method=API_APPROVAL_METHOD, disclosures=api.disclosures)

@@ -7,8 +7,8 @@ from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
-from syft_bg.api import auto_approve_job
-from syft_bg.approve.handlers.job import JobApprovalHandler
+from syft_bg.api import create_api_from_job
+from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.config import get_default_paths
 from syft_rds import SyftRDSClient
 
@@ -76,14 +76,15 @@ def _submit_adder_job(ds_manager, do_manager, params: dict):
     return do_manager.jobs[-1]
 
 
-def _approve_and_run(do_manager, config_path: Path) -> set[str]:
+def _run_calls(do_manager, config_path: Path) -> set[str]:
+    """Run the approve service once; return the names of the jobs it ran."""
     do_manager.sync()
-    handler = JobApprovalHandler(
+    handler = ApprovedJobHandler(
         client=do_manager, config_path=config_path, verbose=False
     )
-    approved = {j.name for j in handler.check_and_approve()}
+    ran = {j.name for j in handler.run_approved_jobs()}
     do_manager.sync()
-    return approved
+    return ran
 
 
 def _ds_job(ds_manager, name: str):
@@ -99,15 +100,12 @@ def test_api_policies_allow_block_and_show():
     job = _submit_adder_job(ds_manager, do_manager, {"a": 1, "b": 2})
 
     with _temp_config_paths() as (paths, tmp):
-        result = auto_approve_job(
+        result = create_api_from_job(
             job,
             input_policy=_write(tmp / "rate_limit.py", RATE_LIMIT_POLICY),
             output_policy=_write(tmp / "block_large.py", BLOCK_LARGE_SUM_POLICY),
         )
         assert result.success and result.policies == ["input", "output"]
-        # The same api again is refused, naming the existing one.
-        again = auto_approve_job(job, name="copy")
-        assert not again.success and "'adder'" in again.error
 
         do_manager.sync()
         ds_manager.sync()
@@ -116,17 +114,17 @@ def test_api_policies_allow_block_and_show():
         assert "Sum too large to share" in api._repr_html_()
 
         # A call is a request: it carries the params, not the api's code. The
-        # DO's client turns it into an approved job, so the approve service
-        # approves nothing itself: the job the api was built from is a whole
-        # job, which never runs under policies, so it stays pending. A call
-        # over 100 passes the input policy and is blocked on output.
+        # DO's client turns it into an approved job, which the approve service
+        # runs. The job the api was built from is a whole job, which nothing
+        # approves. A call over 100 passes the input policy and is blocked on
+        # output.
         large = api(100, b=1, block=False)
         assert large.is_request
         code_files = sorted(
             p.name for p in (large.job_submission_path / "code").iterdir()
         )
         assert code_files == ["params.json"]
-        assert _approve_and_run(do_manager, paths.config) == set()
+        assert _run_calls(do_manager, paths.config) == {large.name}
         blocked = _ds_job(ds_manager, large.name)
         assert blocked.status == "failed"
         assert blocked.policy_error == "ValueError: Sum too large to share"
@@ -134,7 +132,7 @@ def test_api_policies_allow_block_and_show():
 
         # The rate limit of one call is used up.
         second = api(1, b=2, block=False)
-        _approve_and_run(do_manager, paths.config)
+        _run_calls(do_manager, paths.config)
         limited = _ds_job(ds_manager, second.name)
         assert limited.status == "failed"
         assert limited.policy_error == "ValueError: Rate limit reached: 1 call"

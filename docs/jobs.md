@@ -69,22 +69,22 @@ The DO creates an API from a job they reviewed:
 ```python
 import syft_bg as sbg
 
-sbg.auto_approve_job(job, name="word_count", peers=["ds@example.com"])
+sbg.create_api_from_job(job, name="word_count", peers=["ds@example.com"])
 ```
 
-By convention, the arguments come from the job's `code/params.json`. `auto_approve_job` matches that file by name only, so each call can send its own values. It reads the argument names, types and defaults from the example values in the file.
+By convention, the arguments come from the job's `code/params.json`. `create_api_from_job` matches that file by name only, so each call can send its own values. It reads the argument names, types and defaults from the example values in the file.
 
 Both parts can be configured. `file_paths` chooses which file is matched by name only. Any single JSON file in `code/` that is matched by name only holds the arguments. `args` sets the arguments directly, and then nothing is read from the file:
 
 ```python
-sbg.auto_approve_job(
+sbg.create_api_from_job(
     job,
     file_paths=["config.yaml", "code/settings.json"],
     args=[{"name": "word", "type": "str", "required": True}],
 )
 ```
 
-`auto_approve` creates an API from files on disk instead of from a job.
+`create_api` creates an API from files on disk instead of from a job.
 
 ### Calling an API (DS)
 
@@ -107,11 +107,7 @@ If a check fails, the request is rejected, and the DS sees the reason. If every 
 
 From then on the call is a job like any other. The DS follows it in `ds_client.jobs` under the name the call returned. The runner runs the API's policies around it, and the job keeps the code it ran, even when the DO changes the API later.
 
-A whole job that matches an API with policies is not approved automatically: a whole job never runs under policies, so it waits for the DO. A whole job that matches an API without policies is approved, as before.
-
-### Duplicate APIs are refused
-
-A new API is refused when an existing API pins the same files and some peer can call both. The error names the existing API. The refusal exists because a whole job must match one API at most. If more than one API still matches a whole job, the job is not approved and stays pending.
+A whole job that a DS submits to `inbox/` always waits for the DO, even when its code is an API's code. Only a call of an API runs without the DO.
 
 ## Input policies
 
@@ -122,7 +118,7 @@ An input policy runs before each call's job. It decides whether the call may run
 ### Adding an input policy
 
 ```python
-sbg.auto_approve_job(job, name="word_count", input_policy="policies/rate_limit.py")
+sbg.create_api_from_job(job, name="word_count", input_policy="policies/rate_limit.py")
 
 # Add, replace or remove a policy of an existing API:
 sbg.set_policies("word_count", input_policy="policies/rate_limit_v2.py")

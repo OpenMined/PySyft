@@ -17,9 +17,11 @@ from syft_rds.apis import ApiArg, infer_args
 from syft_rds.apis.models import POLICY_STATE_DIR_NAME, policy_dir
 from syft_rds.apis.policies import load_job_policies
 
+from syft_rds.apis.matching import RUN_SCRIPT_PATH, submission_files
+from syft_rds.apis.api import callable_layout
+from syft_rds.apis.models import ApiDefinition, FileEntry
+
 from syft_bg.approve.api_store import ApiStore, store_policy
-from syft_bg.approve.config import AutoApprovalObj
-from syft_bg.approve.criteria import RUN_SCRIPT_PATH, get_job_submission_files
 from syft_bg.common.config import get_default_paths, get_syftbg_dir
 from syft_bg.common.drive import is_colab
 from syft_bg.common.syft_bg_config import SyftBgConfig
@@ -225,17 +227,17 @@ def save_gcp_project_id(credentials_path: Path) -> None:
 
 
 def default_api_name(name: str | None, content_files: list[tuple[str, Path]]) -> str:
-    """Name for a new auto-approval object; ApiStore makes it unique."""
+    """Name for a new api; ApiStore makes it unique."""
     if name is not None:
         return name
     if len(content_files) == 1:
         return Path(content_files[0][0]).stem
-    return "auto_approval"
+    return "api"
 
 
 NO_PEERS_WARNING = (
-    "Warning: no peers given. Any peer can run jobs matching this "
-    "auto-approval, and everyone can read its files."
+    "Warning: no peers given. Any peer can call this api, and everyone can "
+    "read its files."
 )
 
 
@@ -249,10 +251,10 @@ def confirm_no_peers() -> bool:
     return answer.strip().lower() in ("y", "yes")
 
 
-def load_auto_approvals_or_empty(
+def load_apis_or_empty(
     config: SyftBgConfig,
-) -> dict[str, AutoApprovalObj]:
-    """Auto-approvals for status output; empty when syft-bg isn't set up."""
+) -> dict[str, ApiDefinition]:
+    """Apis for status output; empty when syft-bg isn't set up."""
     if not config.do_email or not config.syftbox_root:
         return {}
     return ApiStore(config.syftbox_root, config.do_email).load_all()
@@ -332,7 +334,7 @@ def resolve_content_files(
     return content_files, None
 
 
-def resolve_auto_approve_file_args(
+def resolve_api_file_args(
     user_files: dict[str, Path],
     contents: list[str] | None,
     file_paths: list[str] | None,
@@ -348,7 +350,7 @@ def resolve_auto_approve_file_args(
     all_files = set(user_files.keys())
 
     if contents is not None:
-        # The caller placed the files itself. auto_approve_job reports one that
+        # The caller placed the files itself. create_api_from_job reports one that
         # neither bucket names, rather than guessing where it belongs.
         return list(contents), list(file_paths or [])
 
@@ -395,12 +397,12 @@ def resolve_job_file_args(
     return resolved, None
 
 
-def validate_auto_approve_job_inputs(
+def validate_api_job_inputs(
     user_files: dict[str, Path],
     contents: list[str] | None,
     file_paths: list[str] | None,
 ) -> str | None:
-    """Validate inputs for auto_approve_job. Returns error string or None."""
+    """Validate inputs for create_api_from_job. Returns error string or None."""
     if not user_files:
         return "No user files found in job"
     if contents is not None:
@@ -418,7 +420,7 @@ def validate_auto_approve_job_inputs(
     return None
 
 
-def validate_auto_approve_object_covers_job(
+def validate_api_covers_job(
     user_files: dict[str, Path], content_rel_paths: list[str], name_only: list[str]
 ) -> str | None:
     """Check that the object being built can approve a job like this one.
@@ -508,16 +510,14 @@ def resolve_job_approval_files(
     if error:
         return [], [], error
 
-    error = validate_auto_approve_job_inputs(user_files, contents, file_paths)
+    error = validate_api_job_inputs(user_files, contents, file_paths)
     if error:
         return [], [], error
 
-    content_rel_paths, name_only = resolve_auto_approve_file_args(
+    content_rel_paths, name_only = resolve_api_file_args(
         user_files, contents, file_paths
     )
-    error = validate_auto_approve_object_covers_job(
-        user_files, content_rel_paths, name_only
-    )
+    error = validate_api_covers_job(user_files, content_rel_paths, name_only)
     if error:
         return [], [], error
     error = validate_content_files_are_text(user_files, content_rel_paths)
@@ -539,7 +539,7 @@ def get_job_user_files(job) -> dict[str, Path]:
     leaving it out would write a rule that the matcher, which counts every
     file, can never satisfy.
     """
-    user_files = get_job_submission_files(job)
+    user_files = submission_files(job.job_submission_path)
     if str(getattr(job, "status", "")) in NOT_RUN_STATUSES:
         return user_files
     return {
@@ -705,3 +705,36 @@ def _copy_or_create(source: str | Path | None, dest: Path) -> Path:
     else:
         shutil.copytree(Path(source).expanduser(), dest)
     return dest
+
+
+# ---------------------------------------------------------------------------
+# create_api
+# ---------------------------------------------------------------------------
+
+NOT_CALLABLE_ERROR = (
+    "An api pins run.sh and one Python file under code/ by content, and takes "
+    "config.yaml and one JSON file under code/ by name"
+)
+
+
+def api_input_error(
+    content_files: list[tuple[str, Path]],
+    file_paths: list[str],
+    policies: list[str | Path | None],
+) -> str | None:
+    """Why these files and policies can't make an api, or None."""
+    for policy in policies:
+        if policy is not None and not Path(policy).expanduser().is_file():
+            return f"No policy at {policy}"
+    shape = ApiDefinition(
+        file_contents=[
+            FileEntry(relative_path=rel, hash="") for rel, _ in content_files
+        ],
+        file_paths=file_paths,
+    )
+    return None if callable_layout(shape) else NOT_CALLABLE_ERROR
+
+
+def default_disclosures() -> list[str]:
+    """default_disclosures from config.yaml; none when syft-bg isn't set up."""
+    return SyftBgConfig.load().approve.default_disclosures

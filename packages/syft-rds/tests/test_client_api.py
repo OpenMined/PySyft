@@ -8,8 +8,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from syft_bg.api import auto_approve_job
-from syft_bg.approve.handlers.job import JobApprovalHandler
+from syft_bg.api import create_api_from_job
+from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.config import get_default_paths
 from syft_rds import SyftRDSClient
 from syft_rds.apis import Api, ApiArg, ApiDefinition, FileEntry, infer_args
@@ -69,7 +69,7 @@ def test_ds_renders_and_calls_api():
     job = _submit_adder_job(ds_manager, do_manager, {"a": 1, "b": 2})
 
     with _temp_config_paths() as paths:
-        result = auto_approve_job(job)
+        result = create_api_from_job(job)
         assert result.success is True
         do_manager.sync()
         ds_manager.sync()
@@ -93,19 +93,18 @@ def test_ds_renders_and_calls_api():
         with pytest.raises(TypeError, match="unexpected"):
             api(3, c=4)
 
-        # Calling it submits a job the DO's auto-approval matches and runs.
+        # Calling it sends a request, which the DO's client turns into an
+        # approved job; the approve service runs it.
         called_job = api(3, b=4, block=False)
         assert called_job is not None and called_job.name.startswith("adder-")
         assert called_job.status not in FINISHED_JOB_STATUSES
         do_manager.sync()
-        handler = JobApprovalHandler(
+        handler = ApprovedJobHandler(
             client=do_manager, config_path=paths.config, verbose=False
         )
-        # The call arrives as a request, which the DO's client turns into an
-        # approved job. The approve service approves the original whole job:
-        # the api was built from it, and has no policies.
-        approved = {j.name for j in handler.check_and_approve()}
-        assert approved == {job.name}
+        ran = {j.name for j in handler.run_approved_jobs()}
+        # The job the api was built from is a whole job: nothing approves it.
+        assert ran == {called_job.name}
 
     do_manager.sync()
     finished = ds_manager._wait_for_job(called_job.name, poll_interval=0)

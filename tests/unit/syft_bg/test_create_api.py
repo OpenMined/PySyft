@@ -1,4 +1,4 @@
-"""Tests for the auto-approve Python API and live-reload behavior."""
+"""Creating, listing and removing apis, and running the calls they get."""
 
 import fcntl
 from contextlib import contextmanager
@@ -8,12 +8,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from syft_bg.api.api import (
-    auto_approve,
-    auto_approve_job,
-    list_auto_approvals,
-    remove_auto_approve,
+    create_api,
+    create_api_from_job,
+    list_apis,
+    remove_api,
 )
 from syft_bg.api.utils import (
+    NOT_CALLABLE_ERROR,
     get_job_user_files,
     resolve_content_files,
     resolve_job_file_args,
@@ -21,11 +22,13 @@ from syft_bg.api.utils import (
 from syft_bg.approve import api_store as api_store_module
 from syft_bg.approve.api_store import ApiStore
 from syft_bg.approve.config import AutoApproveConfig
-from syft_bg.approve.handlers.job import JobApprovalHandler
+from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.config import get_default_paths
 from syft_bg.common.syft_bg_config import SyftBgConfig
 
 DO_EMAIL = "do@test.com"
+PINNED = ["run.sh", "code/main.py"]
+NAME_ONLY = ["config.yaml", "code/params.json"]
 
 
 @contextmanager
@@ -43,76 +46,106 @@ def _patched_paths(tmp: Path):
         yield ApiStore(tmp / "syftbox", DO_EMAIL)
 
 
+def _write_project(tmp: Path, main: str = "print('hi')\n") -> Path:
+    """A submission folder an api can be made from."""
+    project = tmp / "project"
+    (project / "code").mkdir(parents=True, exist_ok=True)
+    (project / "run.sh").write_text("python code/main.py\n")
+    (project / "code" / "main.py").write_text(main)
+    (project / "code" / "params.json").write_text('{"a": 1}')
+    (project / "config.yaml").write_text("name: job\n")
+    return project
+
+
+def _create(project: Path, name: str = "main", **kwargs):
+    return create_api(
+        contents=PINNED, file_paths=NAME_ONLY, base_dir=project, name=name, **kwargs
+    )
+
+
 def _seed(store: ApiStore, tmp: Path, name: str, peer: str = "alice@test.com"):
-    script = tmp / f"{name}_main.py"
-    script.write_text(f"print('{name}')\n")
-    store.create(name, [("main.py", script)], [], [peer])
+    script = tmp / f"{name}_run.sh"
+    script.write_text(f"echo {name}\n")
+    store.create(name, [("run.sh", script)], [], [peer])
 
 
-def _write_script(tmp: Path) -> Path:
-    content_dir = tmp / "project"
-    content_dir.mkdir()
-    script = content_dir / "main.py"
-    script.write_text("print('hi')\n")
-    return script
-
-
-class TestListAutoApprovals:
-    def test_returns_objects(self, temp_dir):
+class TestListApis:
+    def test_returns_apis(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             _seed(store, temp_dir, "r1")
             _seed(store, temp_dir, "r2", "bob@test.com")
-            result = list_auto_approvals()
+            result = list_apis()
             assert set(result.keys()) == {"r1", "r2"}
             assert result["r1"].peers == ["alice@test.com"]
             assert result["r2"].peers == ["bob@test.com"]
 
     def test_empty(self, temp_dir):
         with _patched_paths(temp_dir):
-            assert list_auto_approvals() == {}
+            assert list_apis() == {}
 
 
-class TestRemoveAutoApprove:
+class TestRemoveApi:
     def test_deletes_api_folder(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             _seed(store, temp_dir, "r1")
             _seed(store, temp_dir, "r2")
 
-            result = remove_auto_approve("r1")
+            result = remove_api("r1")
 
             assert result.success is True
             assert result.name == "r1"
             assert not store.api_dir("r1").exists()
-            assert set(list_auto_approvals().keys()) == {"r2"}
+            assert set(list_apis().keys()) == {"r2"}
 
     def test_unknown_returns_error(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             _seed(store, temp_dir, "r1")
-            result = remove_auto_approve("does_not_exist")
+            result = remove_api("does_not_exist")
             assert result.success is False
             assert "not found" in (result.error or "")
-            assert set(list_auto_approvals().keys()) == {"r1"}
+            assert set(list_apis().keys()) == {"r1"}
 
 
-class TestAutoApprove:
+class TestCreateApi:
     def test_stores_api_in_syftbox(self, temp_dir):
         with _patched_paths(temp_dir) as store:
-            script = _write_script(temp_dir)
-            result = auto_approve(contents=[str(script)], peers=["alice@test.com"])
+            result = _create(_write_project(temp_dir), peers=["alice@test.com"])
 
             assert result.success is True
             api_dir = temp_dir / "syftbox" / DO_EMAIL / "app_data" / "apis" / "main"
             assert (api_dir / "api.yaml").exists()
-            assert (api_dir / "files" / "main.py").read_text() == "print('hi')\n"
+            assert (
+                api_dir / "files" / "code" / "main.py"
+            ).read_text() == "print('hi')\n"
             assert "objects" not in (temp_dir / "config.yaml").read_text()
             assert store.get("main").peers == ["alice@test.com"]
+
+    @pytest.mark.parametrize(
+        "pinned, name_only",
+        [
+            (["code/main.py"], NAME_ONLY),
+            (PINNED, ["config.yaml"]),
+            (PINNED + ["code/params.json"], ["config.yaml"]),
+        ],
+    )
+    def test_refuses_files_that_make_no_api(self, temp_dir, pinned, name_only):
+        with _patched_paths(temp_dir) as store:
+            result = create_api(
+                contents=pinned,
+                file_paths=name_only,
+                base_dir=_write_project(temp_dir),
+                allow_any_peer=True,
+            )
+            assert result.success is False
+            assert result.error == NOT_CALLABLE_ERROR
+            assert store.names() == []
 
     @pytest.mark.parametrize("answer,created", [("n", False), ("y", True)])
     def test_no_peers_asks_for_confirmation(self, temp_dir, answer, created):
         with _patched_paths(temp_dir) as store:
-            script = _write_script(temp_dir)
+            project = _write_project(temp_dir)
             with patch("builtins.input", return_value=answer) as mock_input:
-                result = auto_approve(contents=[str(script)])
+                result = _create(project)
 
             mock_input.assert_called_once()
             assert result.success is created
@@ -120,24 +153,24 @@ class TestAutoApprove:
 
     def test_no_peers_without_terminal_aborts(self, temp_dir):
         with _patched_paths(temp_dir) as store:
-            script = _write_script(temp_dir)
+            project = _write_project(temp_dir)
             with patch("builtins.input", side_effect=EOFError):
-                result = auto_approve(contents=[str(script)])
+                result = _create(project)
             assert result.success is False
             assert store.names() == []
 
     def test_allow_any_peer_skips_prompt(self, temp_dir):
         with _patched_paths(temp_dir) as store:
-            script = _write_script(temp_dir)
+            project = _write_project(temp_dir)
             with patch("builtins.input") as mock_input:
-                result = auto_approve(contents=[str(script)], allow_any_peer=True)
+                result = _create(project, allow_any_peer=True)
             mock_input.assert_not_called()
             assert result.success is True
             assert store.get("main").peers == []
 
     def test_lock_not_held_during_file_io(self, temp_dir):
         with _patched_paths(temp_dir):
-            script = _write_script(temp_dir)
+            project = _write_project(temp_dir)
             lock_path = temp_dir / "apis.lock"
             observed = {}
             original_copy = api_store_module._copy_and_hash_files
@@ -158,24 +191,28 @@ class TestAutoApprove:
                 "_copy_and_hash_files",
                 side_effect=_check_lock_then_copy,
             ):
-                result = auto_approve(contents=[str(script)], allow_any_peer=True)
+                result = _create(project, allow_any_peer=True)
 
             assert result.success is True
             assert observed["lock_was_free"] is True
 
     def test_name_collision_picks_next_available_name(self, temp_dir):
         with _patched_paths(temp_dir) as store:
-            script = _write_script(temp_dir)
+            project = _write_project(temp_dir)
             _seed(store, temp_dir, "main", "racer@test.com")
 
-            result = auto_approve(contents=[str(script)], allow_any_peer=True)
+            result = _create(project, allow_any_peer=True)
 
             assert result.success is True
             assert result.name == "main_1"
-            objects = list_auto_approvals()
-            assert set(objects.keys()) == {"main", "main_1"}
-            assert objects["main"].peers == ["racer@test.com"]
-            entry = objects["main_1"].file_contents[0]
+            apis = list_apis()
+            assert set(apis.keys()) == {"main", "main_1"}
+            assert apis["main"].peers == ["racer@test.com"]
+            entry = next(
+                e
+                for e in apis["main_1"].file_contents
+                if e.relative_path == "code/main.py"
+            )
             assert "main_1" in entry.path
             assert Path(entry.path).read_text() == "print('hi')\n"
 
@@ -183,173 +220,85 @@ class TestAutoApprove:
         """A stale, non-empty folder without api.yaml at the resolved name must
         give a clean failure, and the staging dir must not leak."""
         with _patched_paths(temp_dir) as store:
-            script = _write_script(temp_dir)
+            project = _write_project(temp_dir)
             orphan_dir = store.api_dir("main")
             orphan_dir.mkdir(parents=True)
             (orphan_dir / "leftover.txt").write_text("stale")
 
-            result = auto_approve(contents=[str(script)], allow_any_peer=True)
+            result = _create(project, allow_any_peer=True)
 
             assert result.success is False
             assert "main" in (result.error or "")
-            assert list_auto_approvals() == {}
+            assert list_apis() == {}
             assert [p.name for p in store.apis_dir.iterdir()] == ["main"]
 
     def test_staging_dir_cleaned_up_when_copy_and_hash_fails(self, temp_dir):
         with _patched_paths(temp_dir) as store:
-            script = _write_script(temp_dir)
+            project = _write_project(temp_dir)
             with patch.object(
                 api_store_module,
                 "_copy_and_hash_files",
                 side_effect=UnicodeDecodeError("utf-8", b"\xff", 0, 1, "bad byte"),
             ):
-                result = auto_approve(contents=[str(script)], allow_any_peer=True)
+                result = _create(project, allow_any_peer=True)
 
             assert result.success is False
             assert list(store.apis_dir.iterdir()) == []
 
 
-class TestHandlerReloadsApis:
-    """The approve service must pick up api changes without a restart."""
+class TestApiDisclosures:
+    """A call's approval releases what its api says, set when it was made."""
 
-    def _write_submission(self, base_dir: Path) -> Path:
-        """A submission tree: code/main.py plus the root files the runner reads."""
-        (base_dir / "code").mkdir(parents=True)
-        (base_dir / "code" / "main.py").write_text("print('hello')\n")
-        (base_dir / "run.sh").write_text("#!/bin/bash\npython code/main.py\n")
-        (base_dir / "config.yaml").write_text("name: test-job\n")
-        return base_dir
+    def test_api_releases_nothing_by_default(self, temp_dir):
+        with _patched_paths(temp_dir) as store:
+            _create(_write_project(temp_dir), allow_any_peer=True)
+            assert store.get("main").disclosures == []
 
-    def _make_test_job(
-        self, submission_dir: Path, submitted_by: str = "alice@test.com"
-    ):
-        job = MagicMock()
-        job.name = "test-job"
-        job.status = "pending"
-        job.submitted_by = submitted_by
-        job.job_submission_path = submission_dir
-        job.code_dir = submission_dir / "code"
-        job.files = []
-        job.is_request = False
-        return job
+    def test_config_sets_released_items(self, temp_dir):
+        with _patched_paths(temp_dir) as store:
+            SyftBgConfig(
+                do_email=DO_EMAIL,
+                syftbox_root=temp_dir / "syftbox",
+                approve=AutoApproveConfig(default_disclosures=["logs", "return_code"]),
+            ).save()
+            _create(_write_project(temp_dir), allow_any_peer=True)
+            assert store.get("main").disclosures == ["logs", "return_code"]
 
-    def _create_matching_api(self, store: ApiStore, submission_dir: Path) -> None:
-        content_files = [
-            (f.relative_to(submission_dir).as_posix(), f)
-            for f in sorted(submission_dir.rglob("*"))
-            if f.is_file()
-        ]
-        store.create("r1", content_files, [], ["alice@test.com"])
-
-    def _make_handler(self, temp_dir: Path) -> tuple[JobApprovalHandler, ApiStore]:
-        syftbox_root = temp_dir / "syftbox"
-        client = MagicMock(syftbox_folder=syftbox_root, email=DO_EMAIL)
-        handler = JobApprovalHandler(client=client, config_path=temp_dir / "c.yaml")
-        return handler, ApiStore(syftbox_root, DO_EMAIL)
-
-    def test_picks_up_added_and_removed_api(self, temp_dir):
-        submission = self._write_submission(temp_dir / "job")
-        handler, store = self._make_handler(temp_dir)
-        job = self._make_test_job(submission)
-
-        assert handler.evaluate_auto_approval(job).match is False
-
-        self._create_matching_api(store, submission)
-        assert handler.evaluate_auto_approval(job).match is True
-
-        store.delete("r1")
-        assert handler.evaluate_auto_approval(job).match is False
-
-    def test_match_names_api(self, temp_dir):
-        submission = self._write_submission(temp_dir / "job")
-        handler, store = self._make_handler(temp_dir)
-        self._create_matching_api(store, submission)
-
-        result = handler.evaluate_auto_approval(self._make_test_job(submission))
-
-        assert result.match is True and result.api_name == "r1"
-
-    def test_several_matching_apis_stay_pending(self, temp_dir):
-        submission = self._write_submission(temp_dir / "job")
-        handler, store = self._make_handler(temp_dir)
-        self._create_matching_api(store, submission)
-        # The same files for another peer, later widened to alice: the
-        # duplicate check at create can't see that.
-        content_files = [
-            (f.relative_to(submission).as_posix(), f)
-            for f in sorted(submission.rglob("*"))
-            if f.is_file()
-        ]
-        name, obj = store.create("r2", content_files, [], ["bob@test.com"])
-        obj.peers = ["alice@test.com"]
-        store.save(name, obj)
-
-        result = handler.evaluate_auto_approval(self._make_test_job(submission))
-
-        assert result.match is False
-        assert "several apis" in result.reason
-
-    def test_whole_job_matching_api_with_policies_stays_pending(self, temp_dir):
-        submission = self._write_submission(temp_dir / "job")
-        handler, store = self._make_handler(temp_dir)
-        policy = temp_dir / "limit.sh"
-        policy.write_text("exit 0\n")
-        content_files = [
-            (f.relative_to(submission).as_posix(), f)
-            for f in sorted(submission.rglob("*"))
-            if f.is_file()
-        ]
-        store.create("r1", content_files, [], ["alice@test.com"], input_policy=policy)
-
-        result = handler.evaluate_auto_approval(self._make_test_job(submission))
-
-        assert result.match is False
-        assert "call it through client.api" in result.reason
+    def test_argument_overrides_config(self, temp_dir):
+        with _patched_paths(temp_dir) as store:
+            _create(_write_project(temp_dir), allow_any_peer=True, disclosures=["logs"])
+            assert store.get("main").disclosures == ["logs"]
 
 
-class TestAutoApproveDisclosures:
-    """The DS reads a log only after the DO releases it."""
+class TestApprovedJobHandler:
+    """The approve service runs what is approved; calls arrive approved."""
 
-    def _run(self, config_path):
-        client = MagicMock()
-        job = MagicMock()
-        job.name = "j1"
-        job.submitted_by = "alice@test.com"
-        client.jobs = [job]
-        handler = JobApprovalHandler(
-            client=client, config_path=config_path, verbose=False
+    def _handler(
+        self, temp_dir: Path, jobs: list
+    ) -> tuple[ApprovedJobHandler, MagicMock]:
+        client = MagicMock(email=DO_EMAIL, jobs=jobs)
+        handler = ApprovedJobHandler(
+            client=client, config_path=temp_dir / "config.yaml", verbose=False
         )
-        with patch.object(
-            JobApprovalHandler,
-            "evaluate_auto_approval",
-            return_value=MagicMock(match=True),
-        ):
-            handler.check_and_approve()
+        return handler, client
+
+    def test_runs_approved_jobs_on_own_datasite(self, temp_dir):
+        call = MagicMock(status="approved", datasite_owner_email=DO_EMAIL)
+        handler, client = self._handler(temp_dir, [call])
+
+        assert handler.run_approved_jobs() == [call]
+        client.process_approved_jobs.assert_called_once()
         assert "share_logs_with_submitter" not in (
             client.process_approved_jobs.call_args.kwargs
         )
-        return job.approve.call_args.kwargs
 
-    def test_runs_api_calls_that_arrived_approved(self, temp_dir):
-        client = MagicMock(email=DO_EMAIL, jobs=[])
-        call = MagicMock(status="approved", datasite_owner_email=DO_EMAIL)
-        client.job_client.jobs = [call]
-        handler = JobApprovalHandler(
-            client=client, config_path=temp_dir / "config.yaml", verbose=False
-        )
+    def test_runs_nothing_without_approved_jobs(self, temp_dir):
+        pending = MagicMock(status="pending", datasite_owner_email=DO_EMAIL)
+        elsewhere = MagicMock(status="approved", datasite_owner_email="other@test.com")
+        handler, client = self._handler(temp_dir, [pending, elsewhere])
 
-        assert handler.check_and_approve() == []
-        client.process_approved_jobs.assert_called_once()
-
-    def test_approval_releases_nothing_by_default(self, temp_dir):
-        assert self._run(temp_dir / "config.yaml")["disclosures"] == []
-
-    def test_config_sets_released_items(self, temp_dir):
-        config_path = temp_dir / "config.yaml"
-        SyftBgConfig(
-            approve=AutoApproveConfig(default_disclosures=["logs", "return_code"])
-        ).save(config_path)
-        assert self._run(config_path)["disclosures"] == ["logs", "return_code"]
+        assert handler.run_approved_jobs() == []
+        client.process_approved_jobs.assert_not_called()
 
 
 class TestJobUserFiles:
@@ -427,7 +376,7 @@ class TestAutoApproveJobUnreadableFiles:
         """The matcher cannot read the file either, so no rule could match."""
         job = self._pending_job(temp_dir)
         with _patched_paths(temp_dir) as store:
-            result = auto_approve_job(job)
+            result = create_api_from_job(job)
 
             assert result.success is False
             assert "code/__pycache__/main.pyc" in result.error

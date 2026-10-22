@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 from syft_bg.api.utils import read_job_args
-from syft_bg.approve.api_store import ApiStore, DuplicateApiError
+from syft_bg.approve.api_store import ApiStore
 from syft_bg.approve.api_resolver import api_resolver
 from syft_job.policies import PolicyResolutionError, python_run_script
 from syft_perms import SyftPermContext
@@ -155,15 +155,11 @@ def test_policy_state_readable_by_owner_only(store, script, temp_dir):
     assert (store.api_dir("api") / "policy_state" / "state.json").read_text() == "{}"
 
 
-def test_duplicate_api_refused_for_overlapping_peers(store, script):
+def test_same_files_make_two_apis(store, script):
+    """A call names its api, so two apis may share their files."""
     store.create("first", [("run.sh", script)], [], ["a@x.com"])
-
-    with pytest.raises(DuplicateApiError, match="'first'"):
-        store.create("second", [("run.sh", script)], [], ["a@x.com", "b@x.com"])
-    with pytest.raises(DuplicateApiError):
-        store.create("second", [("run.sh", script)], [], [])
-    name, _ = store.create("second", [("run.sh", script)], [], ["b@x.com"])
-    assert name == "second"
+    name, _ = store.create("second", [("run.sh", script)], [], ["a@x.com"])
+    assert store.names() == ["first", "second"] and name == "second"
 
 
 def test_set_policies_replaces_removes_and_keeps_state(store, script, policy):

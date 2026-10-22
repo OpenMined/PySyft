@@ -22,8 +22,8 @@ import time
 import json
 from time import sleep
 import pytest
-from syft_bg.api import auto_approve_job
-from syft_bg.approve.handlers.job import JobApprovalHandler
+from syft_bg.api import create_api_from_job
+from syft_bg.approve.handlers.job import ApprovedJobHandler
 from tests.unit.utils import create_tmp_dataset_files, grant_job_inbox_access
 from tests.integration.with_unit_coverage.utils import (
     create_rds_test_pair,
@@ -321,8 +321,8 @@ def test_api_policies(tmp_path, monkeypatch):
     do_manager.sync()
     policy = tmp_path / "rate_limit.py"
     policy.write_text(RATE_LIMIT_POLICY)
-    assert auto_approve_job(do_manager.jobs[-1], input_policy=policy).success
-    handler = JobApprovalHandler(
+    assert create_api_from_job(do_manager.jobs[-1], input_policy=policy).success
+    handler = ApprovedJobHandler(
         client=do_manager, config_path=tmp_path / "config.yaml", verbose=False
     )
 
@@ -333,7 +333,7 @@ def test_api_policies(tmp_path, monkeypatch):
     first = ds_manager.api.adder(2, block=False)
     second = ds_manager.api.adder(3, block=False)
     do_manager.sync()
-    handler.check_and_approve()
+    handler.run_approved_jobs()
     do_manager.sync()
     ds_manager.sync()
 

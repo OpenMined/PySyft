@@ -8,12 +8,12 @@ from click.testing import CliRunner
 from syft_bg.approve.api_store import ApiStore
 
 from syft_bg.cli.commands import (
-    auto_approve,
+    create_api,
     init,
     install,
-    list_auto_approvals,
+    list_apis,
     main,
-    remove_auto_approval,
+    remove_api,
     remove_peer,
     status,
     uninstall,
@@ -99,12 +99,12 @@ class TestMainCommand:
         assert "init" in result.output
         assert "tui" in result.output
         assert "run" in result.output
-        assert "auto-approve" in result.output
+        assert "create-api" in result.output
         assert "install" in result.output
         assert "uninstall" in result.output
-        assert "remove-auto-approval" in result.output
+        assert "remove-api" in result.output
         assert "remove-peer" in result.output
-        assert "list-auto-approvals" in result.output
+        assert "list-apis" in result.output
 
 
 class TestInstallCommand:
@@ -213,15 +213,15 @@ class TestUninstallCommand:
         assert "systemctl not found" in result.output
 
 
-class TestAutoApproveCommand:
-    """Tests for the auto-approve command."""
+class TestCreateApiCommand:
+    """Tests for the create-api command."""
 
-    @patch("syft_bg.api.api.auto_approve")
-    def test_auto_approve_basic(self, mock_api, sample_script):
+    @patch("syft_bg.api.api.create_api")
+    def test_create_api_basic(self, mock_api, sample_script):
         """Should accept a .py file and a single peer."""
-        from syft_bg.api.results import AutoApproveResult
+        from syft_bg.api.results import ApiResult
 
-        mock_api.return_value = AutoApproveResult(
+        mock_api.return_value = ApiResult(
             success=True,
             name="main",
             file_contents=["main.py"],
@@ -230,18 +230,18 @@ class TestAutoApproveCommand:
 
         runner = CliRunner()
         result = runner.invoke(
-            auto_approve, [str(sample_script), "--peers", "alice@test.com"]
+            create_api, [str(sample_script), "--peers", "alice@test.com"]
         )
 
         assert result.exit_code == 0
         mock_api.assert_called_once()
 
-    @patch("syft_bg.api.api.auto_approve")
-    def test_auto_approve_multiple_peers(self, mock_api, sample_script):
+    @patch("syft_bg.api.api.create_api")
+    def test_create_api_multiple_peers(self, mock_api, sample_script):
         """Should accept multiple peers via -p flags."""
-        from syft_bg.api.results import AutoApproveResult
+        from syft_bg.api.results import ApiResult
 
-        mock_api.return_value = AutoApproveResult(
+        mock_api.return_value = ApiResult(
             success=True,
             name="main",
             file_contents=["main.py"],
@@ -250,7 +250,7 @@ class TestAutoApproveCommand:
 
         runner = CliRunner()
         result = runner.invoke(
-            auto_approve,
+            create_api,
             [str(sample_script), "-p", "alice@test.com", "-p", "bob@test.com"],
         )
 
@@ -259,85 +259,81 @@ class TestAutoApproveCommand:
         assert "alice@test.com" in call_kwargs["peers"]
         assert "bob@test.com" in call_kwargs["peers"]
 
-    @patch("syft_bg.api.api.auto_approve")
-    def test_auto_approve_multiple_files(self, mock_api, sample_scripts):
+    @patch("syft_bg.api.api.create_api")
+    def test_create_api_multiple_files(self, mock_api, sample_scripts):
         """Should accept multiple files."""
-        from syft_bg.api.results import AutoApproveResult
+        from syft_bg.api.results import ApiResult
 
-        mock_api.return_value = AutoApproveResult(
+        mock_api.return_value = ApiResult(
             success=True,
-            name="auto_approval",
+            name="api",
             file_contents=["main.py", "utils.py"],
             peers=["alice@test.com"],
         )
 
         runner = CliRunner()
         result = runner.invoke(
-            auto_approve,
+            create_api,
             [str(sample_scripts[0]), str(sample_scripts[1]), "-p", "alice@test.com"],
         )
 
         assert result.exit_code == 0
         mock_api.assert_called_once()
 
-    @patch("syft_bg.api.api.auto_approve")
-    def test_auto_approve_directory(self, mock_api, temp_dir):
+    @patch("syft_bg.api.api.create_api")
+    def test_create_api_directory(self, mock_api, temp_dir):
         """Should accept a directory as contents."""
-        from syft_bg.api.results import AutoApproveResult
+        from syft_bg.api.results import ApiResult
 
         subdir = temp_dir / "src"
         subdir.mkdir()
         (subdir / "main.py").write_text('print("a")\n')
         (subdir / "utils.py").write_text('print("b")\n')
 
-        mock_api.return_value = AutoApproveResult(
+        mock_api.return_value = ApiResult(
             success=True,
-            name="auto_approval",
+            name="api",
             file_contents=["main.py", "utils.py"],
             peers=["alice@test.com"],
         )
 
         runner = CliRunner()
-        result = runner.invoke(auto_approve, [str(subdir), "-p", "alice@test.com"])
+        result = runner.invoke(create_api, [str(subdir), "-p", "alice@test.com"])
 
         assert result.exit_code == 0
         mock_api.assert_called_once()
 
-    @patch("syft_bg.api.api.auto_approve")
-    def test_auto_approve_error(self, mock_api, sample_script):
+    @patch("syft_bg.api.api.create_api")
+    def test_create_api_error(self, mock_api, sample_script):
         """Should exit 1 on API error."""
-        from syft_bg.api.results import AutoApproveResult
+        from syft_bg.api.results import ApiResult
 
-        mock_api.return_value = AutoApproveResult(
-            success=False, error="No files to process"
-        )
+        mock_api.return_value = ApiResult(success=False, error="No files to process")
 
         runner = CliRunner()
-        result = runner.invoke(
-            auto_approve, [str(sample_script), "-p", "alice@test.com"]
-        )
+        result = runner.invoke(create_api, [str(sample_script), "-p", "alice@test.com"])
 
         assert result.exit_code == 1
         assert "No files to process" in result.output
 
-    @patch("syft_bg.api.api.auto_approve")
+    @patch("syft_bg.api.api.create_api")
     def test_no_peers_declined_aborts(self, mock_api, sample_script):
         """Without peers the user is warned and asked; 'n' aborts."""
         runner = CliRunner()
-        result = runner.invoke(auto_approve, [str(sample_script)], input="n\n")
+        result = runner.invoke(create_api, [str(sample_script)], input="n\n")
 
         assert result.exit_code == 1
         assert "no peers given" in result.output
         mock_api.assert_not_called()
 
-    @patch("syft_bg.api.api.auto_approve")
+    @patch("syft_bg.api.api.create_api")
     def test_no_peers_with_allow_any_peer_skips_prompt(self, mock_api, sample_script):
-        from syft_bg.api.results import AutoApproveResult
+        from syft_bg.api.results import ApiResult
 
-        mock_api.return_value = AutoApproveResult(success=True, name="main")
+        mock_api.return_value = ApiResult(success=True, name="main")
 
         runner = CliRunner()
-        result = runner.invoke(auto_approve, [str(sample_script), "--allow-any-peer"])
+        result = runner.invoke(create_api, [str(sample_script), "--allow-any-peer"])
 
         assert result.exit_code == 0
         assert "no peers given" not in result.output
@@ -350,6 +346,7 @@ def api_store(temp_dir):
     store = ApiStore(temp_dir / "syftbox", "do@test.com")
     with (
         patch("syft_bg.api.utils.get_api_store", return_value=store),
+        patch("syft_bg.api.api.get_api_store", return_value=store),
         patch("syft_bg.approve.api_store.get_syftbg_dir", return_value=temp_dir),
     ):
         yield store
@@ -364,36 +361,30 @@ def _create_api(store, temp_dir, name, files, peers):
     store.create(name, content_files, [], peers)
 
 
-class TestRemoveAutoApprovalCommand:
-    """Tests for the remove-auto-approval command."""
+class TestRemoveApiCommand:
+    """Tests for the remove-api command."""
 
-    def test_remove_auto_approval(self, api_store, temp_dir):
-        """Should remove scripts by filename from an auto-approval object."""
-        _create_api(
-            api_store, temp_dir, "my_analysis", ["main.py", "utils.py"], ["a@x.com"]
-        )
+    def test_remove_api(self, api_store, temp_dir):
+        _create_api(api_store, temp_dir, "my_analysis", ["run.sh"], ["a@x.com"])
 
-        runner = CliRunner()
-        result = runner.invoke(remove_auto_approval, ["utils.py", "-n", "my_analysis"])
+        result = CliRunner().invoke(remove_api, ["my_analysis"])
 
         assert result.exit_code == 0
-        assert "Removed 1" in result.output
-        obj = api_store.get("my_analysis")
-        assert [e.relative_path for e in obj.file_contents] == ["main.py"]
+        assert "Removed api 'my_analysis'" in result.output
+        assert not api_store.exists("my_analysis")
 
-    def test_remove_auto_approval_unknown_object(self, api_store):
-        """Should error when object name not found."""
-        runner = CliRunner()
-        result = runner.invoke(remove_auto_approval, ["main.py", "-n", "nonexistent"])
+    def test_remove_api_unknown(self, api_store):
+        result = CliRunner().invoke(remove_api, ["nonexistent"])
 
         assert result.exit_code == 1
+        assert "not found" in result.output
 
 
 class TestRemovePeerCommand:
     """Tests for the remove-peer command."""
 
     def test_remove_peer(self, api_store, temp_dir):
-        """Should remove peer from auto-approval objects."""
+        """Should remove peer from apis."""
         _create_api(
             api_store, temp_dir, "my_analysis", ["main.py"], ["a@x.com", "b@x.com"]
         )
@@ -426,30 +417,30 @@ class TestRemovePeerCommand:
         assert result.exit_code != 0
 
 
-class TestListAutoApprovalsCommand:
-    """Tests for the list-auto-approvals command."""
+class TestListApisCommand:
+    """Tests for the list-apis command."""
 
-    @patch("syft_bg.api.api.list_auto_approvals")
-    def test_list_auto_approvals(self, mock_list):
-        """Should list all auto-approval objects and their scripts."""
-        from syft_bg.approve.config import AutoApprovalObj, FileEntry
+    @patch("syft_bg.api.api.list_apis")
+    def test_list_apis(self, mock_list):
+        """Should list all apis and their files."""
+        from syft_rds.apis.models import ApiDefinition, FileEntry
 
         mock_list.return_value = {
-            "analysis_a": AutoApprovalObj(
+            "analysis_a": ApiDefinition(
                 file_contents=[
                     FileEntry(
                         relative_path="main.py",
-                        path="/tmp/auto_approvals/analysis_a/main.py",
+                        path="/tmp/apis/analysis_a/main.py",
                         hash="sha256:aaa",
                     )
                 ],
                 peers=["alice@test.com"],
             ),
-            "analysis_b": AutoApprovalObj(
+            "analysis_b": ApiDefinition(
                 file_contents=[
                     FileEntry(
                         relative_path="train.py",
-                        path="/tmp/auto_approvals/analysis_b/train.py",
+                        path="/tmp/apis/analysis_b/train.py",
                         hash="sha256:bbb",
                     )
                 ],
@@ -458,7 +449,7 @@ class TestListAutoApprovalsCommand:
         }
 
         runner = CliRunner()
-        result = runner.invoke(list_auto_approvals)
+        result = runner.invoke(list_apis)
 
         assert result.exit_code == 0
         assert "alice@test.com" in result.output
@@ -466,27 +457,27 @@ class TestListAutoApprovalsCommand:
         assert "bob@test.com" in result.output
         assert "train.py" in result.output
 
-    @patch("syft_bg.api.api.list_auto_approvals")
-    def test_list_auto_approvals_single_object(self, mock_list):
-        """Should filter to a specific auto-approval object."""
-        from syft_bg.approve.config import AutoApprovalObj, FileEntry
+    @patch("syft_bg.api.api.list_apis")
+    def test_list_apis_single_object(self, mock_list):
+        """Should filter to a specific api."""
+        from syft_rds.apis.models import ApiDefinition, FileEntry
 
         mock_list.return_value = {
-            "analysis_a": AutoApprovalObj(
+            "analysis_a": ApiDefinition(
                 file_contents=[
                     FileEntry(
                         relative_path="main.py",
-                        path="/tmp/auto_approvals/analysis_a/main.py",
+                        path="/tmp/apis/analysis_a/main.py",
                         hash="sha256:aaa",
                     )
                 ],
                 peers=["alice@test.com"],
             ),
-            "analysis_b": AutoApprovalObj(
+            "analysis_b": ApiDefinition(
                 file_contents=[
                     FileEntry(
                         relative_path="train.py",
-                        path="/tmp/auto_approvals/analysis_b/train.py",
+                        path="/tmp/apis/analysis_b/train.py",
                         hash="sha256:bbb",
                     )
                 ],
@@ -495,19 +486,19 @@ class TestListAutoApprovalsCommand:
         }
 
         runner = CliRunner()
-        result = runner.invoke(list_auto_approvals, ["-n", "analysis_a"])
+        result = runner.invoke(list_apis, ["-n", "analysis_a"])
 
         assert result.exit_code == 0
         assert "analysis_a" in result.output
         assert "analysis_b" not in result.output
 
-    @patch("syft_bg.api.api.list_auto_approvals")
-    def test_list_auto_approvals_empty(self, mock_list):
-        """Should show message when no auto-approval objects configured."""
+    @patch("syft_bg.api.api.list_apis")
+    def test_list_apis_empty(self, mock_list):
+        """Should show a message when there are no apis."""
         mock_list.return_value = {}
 
         runner = CliRunner()
-        result = runner.invoke(list_auto_approvals)
+        result = runner.invoke(list_apis)
 
         assert result.exit_code == 0
-        assert "No auto-approval objects configured" in result.output
+        assert "No apis created" in result.output
