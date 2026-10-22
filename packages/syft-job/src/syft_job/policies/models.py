@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Optional, Protocol
 
 from .bash_wrapper import PYTHON_POLICY_NAME, RUN_SCRIPT_NAME
 
@@ -24,7 +24,7 @@ class PolicyKind(str, Enum):
 
 
 class PolicyResolutionError(Exception):
-    """The api a request calls can't be loaded, so the request must not run."""
+    """An api can't be loaded, or a request may not call it."""
 
 
 @dataclass(frozen=True)
@@ -79,16 +79,25 @@ class PolicyResult:
 
 @dataclass(frozen=True)
 class ResolvedApi:
-    """What a request needs from the api it calls: its code and policies."""
+    """An api, as a request and its job need it: its code and its policies."""
 
     name: str
-    # Hash of the api's code and policies, recorded when a request is approved.
-    code_hash: str
     # The api's pinned files, laid out as in a job: run.sh, code/...
     files_dir: Path
     policies: JobPolicies
 
 
-# Loads an api by name, checking every file against its hash. Raises
-# PolicyResolutionError when the api is gone or a file changed.
-ApiResolver = Callable[[str], ResolvedApi]
+class ApiResolver(Protocol):
+    """Loads the DO's apis, for the client and the runner. syft-job knows no
+    api format; syft-rds provides the implementation."""
+
+    def __call__(self, api_name: str) -> ResolvedApi:
+        """The api, with every file checked against its hash.
+
+        Raises PolicyResolutionError when there is no such api, or a file changed.
+        """
+        ...
+
+    def check_request(self, api_name: str, request_dir: Path, submitter: str) -> None:
+        """Raise PolicyResolutionError unless the request may call the api."""
+        ...

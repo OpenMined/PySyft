@@ -184,14 +184,13 @@ def test_set_policies_replaces_removes_and_keeps_state(store, script, policy):
     assert state_file.read_text() == "{}"
 
 
-def test_resolver_returns_code_policies_and_hash(store, script, policy):
+def test_resolver_returns_code_and_policies(store, script, policy):
     store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
 
     api = api_resolver(store)("api")
 
     assert (api.files_dir / "run.sh").read_text() == script.read_text()
     assert api.policies.input.folder == store.api_dir("api") / "policies" / "input"
-    assert api.code_hash == store.get("api").code_hash()
 
 
 @pytest.mark.parametrize("changed", ["policies/input/policy.py", "files/run.sh"])
@@ -210,3 +209,48 @@ def test_resolver_refuses_name_that_is_no_api(store, script, name):
 
     with pytest.raises(PolicyResolutionError, match="no api named"):
         api_resolver(store)(name)
+
+
+def _callable_api(store: ApiStore, temp_dir: Path) -> None:
+    """An api with code/main.py and arguments read from code/params.json."""
+    run_sh = temp_dir / "run.sh"
+    run_sh.write_text("python code/main.py\n")
+    main = temp_dir / "main.py"
+    main.write_text("print('hi')\n")
+    store.create(
+        "adder",
+        [("run.sh", run_sh), ("code/main.py", main)],
+        ["config.yaml", "code/params.json"],
+        ["a@x.com"],
+        args=[ApiArg(name="a", type="int", required=True)],
+    )
+
+
+def _request(temp_dir: Path, files: dict[str, str]) -> Path:
+    root = temp_dir / "request"
+    for rel_path, content in {"config.yaml": "name: call\n", **files}.items():
+        (root / rel_path).parent.mkdir(parents=True, exist_ok=True)
+        (root / rel_path).write_text(content)
+    return root
+
+
+@pytest.mark.parametrize(
+    "api_name, submitter, files, reason",
+    [
+        ("adder", "a@x.com", {"code/params.json": '{"a": 1}'}, None),
+        ("adder", "a@x.com", {"code/params.json": '{"a": "x"}'}, "params don't fit"),
+        ("adder", "b@x.com", {"code/params.json": '{"a": 1}'}, "not shared with"),
+        ("adder", "a@x.com", {"code/main.py": "evil"}, "files the api doesn't take"),
+        ("../adder", "a@x.com", {"code/params.json": '{"a": 1}'}, "no api named"),
+    ],
+)
+def test_resolver_checks_request(store, temp_dir, api_name, submitter, files, reason):
+    _callable_api(store, temp_dir)
+    request = _request(temp_dir, files)
+    resolver = api_resolver(store)
+
+    if reason is None:
+        resolver.check_request(api_name, request, submitter)
+        return
+    with pytest.raises(PolicyResolutionError, match=reason):
+        resolver.check_request(api_name, request, submitter)

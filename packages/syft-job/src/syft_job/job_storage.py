@@ -1,5 +1,4 @@
 import logging
-from dataclasses import replace
 from pathlib import Path
 from typing import Iterator, Optional
 
@@ -185,15 +184,9 @@ class JobStorage:
             yield from codec.iter_submission_refs(datasite_email)
 
     def iter_review_refs(self, datasite_email: str) -> Iterator[JobRef]:
-        """Yield a ref per job under app_data/job/review/, across all codecs.
-
-        review/ is shared by jobs and requests, so whether a ref is a request
-        comes from the owner record, written at receipt.
-        """
+        """Yield a ref per job under app_data/job/review/, across all codecs."""
         for codec in self.codecs:
-            for ref in codec.iter_review_refs(datasite_email):
-                record = self.read_owner_record(ref)
-                yield replace(ref, is_request=bool(record and record.is_request))
+            yield from codec.iter_review_refs(datasite_email)
 
     def find_submission_ref(
         self, datasite_email: str, job_name: str, ds_email: Optional[str] = None

@@ -10,8 +10,6 @@ from typing import List, Optional, Tuple
 import yaml
 from syft_migration import MigrationError, ProtocolSchema
 from syft_perms.syftperm_context import SyftPermContext
-from syft_permissions import Access, Rule, RuleSet
-from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from .config import SyftJobConfig
 from .disclosures import normalize_disclosures
@@ -19,6 +17,7 @@ from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .api_requests import receive_request
 from .policies import ApiResolver
 from .review_grants import grant_ds_review_read
 from .submission import (
@@ -29,6 +28,7 @@ from .submission import (
     OwnerJobRecord,
     code_hash,
     has_listed_files,
+    lock_for_submitter,
     submission_hash,
 )
 from .submission import validate_submission as validate_submission_dir
@@ -312,8 +312,10 @@ class JobClient(BaseJobClient):
         JobStorage.validate_job_name(job_name)
         ref = self.manager.new_submission_ref(user, job_name, is_request=True)
         job_dir = self.manager.submission_dir(ref)
-        if job_dir.exists():
-            raise FileExistsError(f"Request '{job_name}' already exists for '{user}'")
+        # The call becomes a job of the same name in inbox/.
+        job_ref = self.manager.new_submission_ref(user, job_name)
+        if job_dir.exists() or self.manager.submission_dir(job_ref).exists():
+            raise FileExistsError(f"Job '{job_name}' already exists for '{user}'")
         for rel_path, content in code_files.items():
             dest = job_dir / "code" / rel_path
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -629,7 +631,6 @@ python {entrypoint_path}
         ds_email: str,
         job_name: str,
         protocol_version: str,
-        is_request: bool = False,
     ) -> Optional[JobState]:
         """Receive a job once all its files arrived, and create its state in review/.
 
@@ -649,15 +650,7 @@ python {entrypoint_path}
             The created JobState, or None while files are still arriving or
             when another process received the job first.
         """
-        ref = JobRef(
-            self.current_user_email, ds_email, job_name, protocol_version, is_request
-        )
-        if is_request and self._name_is_a_job(ref):
-            logger.warning(
-                f"Request '{job_name}' from {ds_email} not received: a job in "
-                f"inbox/ has the same name"
-            )
-            return None
+        ref = JobRef(self.current_user_email, ds_email, job_name, protocol_version)
         # A record without a state means an earlier receipt stopped half-way;
         # it is finished below, with the hash it recorded.
         record = self.manager.read_owner_record(ref)
@@ -689,26 +682,14 @@ python {entrypoint_path}
         if not self._has_all_files(ref):
             return None
         submission_dir = self.manager.submission_dir(ref)
-        valid, reason = self.validate_submission(submission_dir, ref.is_request)
+        valid, reason = self.validate_submission(submission_dir)
         if not valid:
             raise InvalidSubmissionError(reason)
         record = OwnerJobRecord(
             received_hash=submission_hash(submission_dir),
             received_at=datetime.now(timezone.utc),
-            is_request=ref.is_request,
         )
         return record if self.manager.claim_owner_record(ref, record) else None
-
-    def _name_is_a_job(self, ref: JobRef) -> bool:
-        """Whether inbox/ holds a job with the request's name.
-
-        A job and a request share review/ and staging/, keyed on the name, so
-        the job keeps the name.
-        """
-        job_ref = JobRef(
-            ref.datasite_email, ref.ds_email, ref.job_name, ref.protocol_version
-        )
-        return self.manager.submission_dir(job_ref).exists()
 
     def _has_all_files(self, ref: JobRef) -> bool:
         """Whether every file of the job arrived.
@@ -734,11 +715,7 @@ python {entrypoint_path}
         this job only. The job name is never part of a pattern, so a name with
         glob characters cannot escape the lock.
         """
-        path = self.manager.submission_dir(ref) / PERMISSION_FILE_NAME
-        ruleset = RuleSet(
-            rules=[Rule(pattern="**", access=Access(read=[ref.ds_email]))]
-        )
-        ruleset.save(path)
+        lock_for_submitter(self.manager.submission_dir(ref), ref.ds_email)
 
     def _rejected_state(self, now: datetime, reason: str) -> JobState:
         return JobState(
@@ -750,20 +727,21 @@ python {entrypoint_path}
         )
 
     def scan_inbox(self) -> None:
-        """Scan inbox/ for new unprocessed jobs and receive them.
+        """Scan inbox/ and requests/ for new submissions and receive them.
 
         For each job in inbox/ (any protocol layout) that doesn't have a
         corresponding state.yaml in review/, receives it once all its files
         arrived. A pending job received before submission hashes existed gets
-        its record here, once.
+        its record here, once. A request (an api call) becomes an approved job
+        in inbox/, or is rejected.
         """
         for ref in self.manager.iter_submission_refs(self.current_user_email):
-            if (self.manager.review_dir(ref) / "state.yaml").exists():
+            if ref.is_request:
+                receive_request(self, ref)
+            elif (self.manager.review_dir(ref) / "state.yaml").exists():
                 self._record_received_hash(ref)
-                continue
-            self.receive_job(
-                ref.ds_email, ref.job_name, ref.protocol_version, ref.is_request
-            )
+            else:
+                self.receive_job(ref.ds_email, ref.job_name, ref.protocol_version)
 
     def _record_received_hash(self, ref: JobRef) -> None:
         """Record the received hash of a pending job that has no record yet.

@@ -101,9 +101,11 @@ def test_ds_renders_and_calls_api():
         handler = JobApprovalHandler(
             client=do_manager, config_path=paths.config, verbose=False
         )
-        # The original job matches too: the api was built from it.
+        # The call arrives as a request, which the DO's client turns into an
+        # approved job. The approve service approves the original whole job:
+        # the api was built from it, and has no policies.
         approved = {j.name for j in handler.check_and_approve()}
-        assert approved == {called_job.name, job.name}
+        assert approved == {job.name}
 
     do_manager.sync()
     finished = ds_manager._wait_for_job(called_job.name, poll_interval=0)

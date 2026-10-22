@@ -96,16 +96,16 @@ ds_client.api.word_count("privacy", block=False)
 
 Each call sends a request, not a whole job. A request is a folder in the DO's datasite, under `app_data/job/requests/<ds_email>/`, next to the `inbox/` that holds whole jobs. It names the API and holds only the call's arguments, in `code/params.json`. It holds no code.
 
-When the request arrives, the DO's client locks the folder, so the DS can't change it, the same as a whole job. The DO's approve service then checks four things:
+When the request arrives, the DO's client checks it:
 
-- the API the request names exists;
+- the API the request names is one of the DO's APIs;
 - the DS is one of the API's peers;
 - the request holds only files the API takes by name;
 - the arguments fit the API's arguments.
 
-The approve service then approves the request. When the request runs, the runner copies it to a temporary folder, adds the API's code, and runs the API's policies around the job. A request is a job from then on: the DS follows it in `ds_client.jobs`, under the name the call returned.
+If a check fails, the request is rejected, and the DS sees the reason. If every check passes, the DO's client turns the request into an ordinary job in `inbox/`, under the same name: the API's code, plus the call's arguments. The job is approved straight away, because creating the API was the DO's approval in advance. The DO's client then removes the request folder.
 
-The approval records a hash of the API's code and policies. When the DO changes the API before the request runs, the request fails and doesn't run.
+From then on the call is a job like any other. The DS follows it in `ds_client.jobs` under the name the call returned. The runner runs the API's policies around it, and the job keeps the code it ran, even when the DO changes the API later.
 
 A whole job that matches an API with policies is not approved automatically: a whole job never runs under policies, so it waits for the DO. A whole job that matches an API without policies is approved, as before.
 

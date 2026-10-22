@@ -24,7 +24,6 @@ from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.approve.handlers.job import JobApprovalHandler
 from syft_bg.common.config import get_default_paths
 from syft_bg.common.syft_bg_config import SyftBgConfig
-from syft_rds.apis import ApiArg
 
 DO_EMAIL = "do@test.com"
 
@@ -307,46 +306,6 @@ class TestHandlerReloadsApis:
         assert result.match is False
         assert "call it through client.api" in result.reason
 
-    def _write_request(self, base_dir: Path, params: str) -> Path:
-        (base_dir / "code").mkdir(parents=True)
-        (base_dir / "code" / "params.json").write_text(params)
-        (base_dir / "config.yaml").write_text("name: call\n")
-        return base_dir
-
-    def _create_callable_api(self, store: ApiStore, temp_dir: Path) -> None:
-        submission = self._write_submission(temp_dir / "api_job")
-        store.create(
-            "adder",
-            [
-                ("run.sh", submission / "run.sh"),
-                ("code/main.py", submission / "code" / "main.py"),
-            ],
-            ["config.yaml", "code/params.json"],
-            ["alice@test.com"],
-            args=[ApiArg(name="a", type="int", required=True)],
-        )
-
-    @pytest.mark.parametrize(
-        "api_name, params, reason",
-        [
-            ("adder", '{"a": 1}', None),
-            ("adder", '{"a": "x"}', "params don't fit the api"),
-            ("../adder", '{"a": 1}', "calls no api of yours"),
-        ],
-    )
-    def test_request_checked_against_named_api(
-        self, temp_dir, api_name, params, reason
-    ):
-        handler, store = self._make_handler(temp_dir)
-        self._create_callable_api(store, temp_dir)
-        job = self._make_test_job(self._write_request(temp_dir / "req", params))
-        job.is_request, job.api_name = True, api_name
-
-        result = handler.evaluate_auto_approval(job)
-
-        assert result.match is (reason is None)
-        assert reason is None or reason in result.reason
-
 
 class TestAutoApproveDisclosures:
     """The DS reads a log only after the DO releases it."""
@@ -370,6 +329,17 @@ class TestAutoApproveDisclosures:
             client.process_approved_jobs.call_args.kwargs
         )
         return job.approve.call_args.kwargs
+
+    def test_runs_api_calls_that_arrived_approved(self, temp_dir):
+        client = MagicMock(email=DO_EMAIL, jobs=[])
+        call = MagicMock(status="approved", datasite_owner_email=DO_EMAIL)
+        client.job_client.jobs = [call]
+        handler = JobApprovalHandler(
+            client=client, config_path=temp_dir / "config.yaml", verbose=False
+        )
+
+        assert handler.check_and_approve() == []
+        client.process_approved_jobs.assert_called_once()
 
     def test_approval_releases_nothing_by_default(self, temp_dir):
         assert self._run(temp_dir / "config.yaml")["disclosures"] == []

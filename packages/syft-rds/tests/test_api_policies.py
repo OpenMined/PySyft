@@ -115,17 +115,18 @@ def test_api_policies_allow_block_and_show():
         assert "Rate limit reached" in repr(api)
         assert "Sum too large to share" in api._repr_html_()
 
-        # A call is a request: it carries the params, not the api's code. A
-        # call over 100 passes the input policy and is blocked on output. The
-        # job the api was built from is a whole job, which never runs under
-        # policies, so it stays pending.
+        # A call is a request: it carries the params, not the api's code. The
+        # DO's client turns it into an approved job, so the approve service
+        # approves nothing itself: the job the api was built from is a whole
+        # job, which never runs under policies, so it stays pending. A call
+        # over 100 passes the input policy and is blocked on output.
         large = api(100, b=1, block=False)
         assert large.is_request
         code_files = sorted(
             p.name for p in (large.job_submission_path / "code").iterdir()
         )
         assert code_files == ["params.json"]
-        assert _approve_and_run(do_manager, paths.config) == {large.name}
+        assert _approve_and_run(do_manager, paths.config) == set()
         blocked = _ds_job(ds_manager, large.name)
         assert blocked.status == "failed"
         assert blocked.policy_error == "ValueError: Sum too large to share"

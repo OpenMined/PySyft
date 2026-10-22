@@ -77,35 +77,21 @@ def _recipients_policy(recipients: list[str]) -> str:
     )
 
 
-class Env:
-    """A DO and a DS sharing one SyftBox, and a fake api the resolver returns.
-
-    The api's run.sh is the script each test calls; the DS sends a request.
-    """
+class FakeApis:
+    """One api, word_count, whose run.sh each test sets."""
 
     def __init__(self, tmp_path: Path):
-        self.syftbox = tmp_path / "SyftBox"
-        self.syftbox.mkdir()
-        self.api_files = tmp_path / "api_files"
+        self.files_dir = tmp_path / "api_files"
+        self.files_dir.mkdir()
         self.policies_dir = tmp_path / "policies"
         self.state_dir = tmp_path / "state"
-        self.do_config = SyftJobConfig(
-            syftbox_folder=self.syftbox, current_user_email=DO_EMAIL
-        )
-        ds_config = SyftJobConfig(
-            syftbox_folder=self.syftbox, current_user_email=DS_EMAIL
-        )
-        self.do_client = JobClient(config=self.do_config)
-        self.ds_client = JobClient(config=ds_config)
-        self.do_client.setup_ds_job_folder_as_do(DS_EMAIL)
-        self.do_client.api_resolver = self.resolve
         self.input_code: str | None = None
         self.output_code: str | None = None
-        self.code_hash = "sha256:v1"
-        self.runner = SyftJobRunner(config=self.do_config, api_resolver=self.resolve)
+        self.refused: str | None = None  # a reason check_request raises
+        self.gone = False
 
-    def resolve(self, api_name: str) -> ResolvedApi:
-        if api_name != API_NAME:
+    def __call__(self, api_name: str) -> ResolvedApi:
+        if api_name != API_NAME or self.gone:
             raise PolicyResolutionError(f"no api named {api_name!r}")
         policies = JobPolicies(
             api_name=api_name,
@@ -113,7 +99,12 @@ class Env:
             input=self._script("input", self.input_code),
             output=self._script("output", self.output_code),
         )
-        return ResolvedApi(api_name, self.code_hash, self.api_files, policies)
+        return ResolvedApi(api_name, self.files_dir, policies)
+
+    def check_request(self, api_name: str, request_dir: Path, submitter: str) -> None:
+        if self.refused:
+            raise PolicyResolutionError(self.refused)
+        self(api_name)
 
     def _script(self, kind: str, code: str | None) -> PolicyScript | None:
         if code is None:
@@ -124,15 +115,41 @@ class Env:
         (folder / "run.sh").write_text(python_run_script())
         return PolicyScript(folder)
 
+
+class Env:
+    """A DO and a DS sharing one SyftBox; the DS calls the fake api."""
+
+    def __init__(self, tmp_path: Path):
+        self.syftbox = tmp_path / "SyftBox"
+        self.syftbox.mkdir()
+        self.apis = FakeApis(tmp_path)
+        self.do_config = SyftJobConfig(
+            syftbox_folder=self.syftbox, current_user_email=DO_EMAIL
+        )
+        ds_config = SyftJobConfig(
+            syftbox_folder=self.syftbox, current_user_email=DS_EMAIL
+        )
+        self.do_client = JobClient(config=self.do_config)
+        self.ds_client = JobClient(config=ds_config)
+        self.do_client.setup_ds_job_folder_as_do(DS_EMAIL)
+        self.do_client.api_resolver = self.apis
+        self.runner = SyftJobRunner(config=self.do_config, api_resolver=self.apis)
+
+    @property
+    def state_dir(self) -> Path:
+        return self.apis.state_dir
+
     def submit(self, script: str, job_name: str = "call.job"):
-        """Make script the api's run.sh, send a request as the DS, approve it."""
-        self.api_files.mkdir(exist_ok=True)
-        (self.api_files / "run.sh").write_text(script)
+        """Make script the api's run.sh, and send a request as the DS.
+
+        The DO's client turns it into an approved job when it lists jobs.
+        """
+        (self.apis.files_dir / "run.sh").write_text(script)
         self.ds_client.submit_api_request(DO_EMAIL, job_name, API_NAME, PARAMS)
-        self.do_job(job_name).approve()
+        return self.do_job(job_name)
 
     def call(self, script: str, job_name: str = "call.job", **process_kwargs):
-        """Submit and approve a request, run it, and return the DO's job."""
+        """Send a request, run it, and return the DO's job."""
         self.submit(script, job_name)
         self.run(**process_kwargs)
         return self.do_job(job_name)
@@ -157,7 +174,7 @@ def env(tmp_path: Path) -> Env:
 
 
 def test_input_policy_allows_then_blocks_on_rate_limit(env):
-    env.input_code = RATE_LIMIT_POLICY
+    env.apis.input_code = RATE_LIMIT_POLICY
 
     for name in ("call1.job", "call2.job"):
         assert env.call("echo hi > code/outputs/out.txt", name).status == "done"
@@ -174,7 +191,7 @@ def test_input_policy_allows_then_blocks_on_rate_limit(env):
 
 
 def test_output_policy_blocks_word_and_keeps_outputs_with_do(env):
-    env.output_code = BLOCK_WORD_POLICY
+    env.apis.output_code = BLOCK_WORD_POLICY
 
     job = env.call("echo SECRET > code/outputs/out.txt")
 
@@ -186,7 +203,7 @@ def test_output_policy_blocks_word_and_keeps_outputs_with_do(env):
 
 
 def test_output_policy_redacts_csv_from_candidates(env):
-    env.output_code = REDACT_CSV_POLICY
+    env.apis.output_code = REDACT_CSV_POLICY
 
     job = env.call(CSV_JOB)
 
@@ -204,7 +221,7 @@ def test_output_policy_redacts_csv_from_candidates(env):
 
 
 def test_recipients_add_approved_peer_and_skip_stranger(env):
-    env.output_code = _recipients_policy([DS_EMAIL, PEER_EMAIL, "stranger@x.org"])
+    env.apis.output_code = _recipients_policy([DS_EMAIL, PEER_EMAIL, "stranger@x.org"])
 
     job = env.call("echo hi > code/outputs/out.txt", approved_peers=[PEER_EMAIL])
 
@@ -216,7 +233,7 @@ def test_recipients_add_approved_peer_and_skip_stranger(env):
 
 
 def test_empty_recipients_hold_outputs_back(env):
-    env.output_code = _recipients_policy([])
+    env.apis.output_code = _recipients_policy([])
 
     job = env.call("echo hi > code/outputs/out.txt")
 
@@ -230,28 +247,27 @@ def test_empty_recipients_hold_outputs_back(env):
     assert not job.outputs_withheld
 
 
-def test_request_runs_api_code_with_its_params(env):
+def test_request_becomes_approved_job_with_api_code(env):
     job = env.call("cp code/params.json code/outputs/params.json")
 
     assert job.status == "done"
-    assert job.is_request and job.api_name == API_NAME
+    assert not job.is_request and job.api_name == API_NAME
+    assert job.approval_method == "api"
     outputs = job.job_review_path / "outputs"
     assert json.loads((outputs / "params.json").read_text()) == {"word": "privacy"}
-    # The request folder holds only what the DS sent; the code never lands there.
-    assert sorted(p.name for p in job.job_submission_path.iterdir()) == [
-        "code",
-        "config.yaml",
-        "syft.pub.yaml",
-    ]
+    # The job holds the api's code with the call's params; the request is gone.
+    assert (job.job_submission_path / "run.sh").exists()
+    assert (
+        not env.do_client.config.get_requests_dir(DO_EMAIL)
+        .joinpath(DS_EMAIL, "v1", "call.job")
+        .exists()
+    )
 
 
-def test_request_fails_when_api_cannot_load(env):
+def test_job_fails_when_api_is_gone_at_run_time(env):
     env.submit("echo hi > code/outputs/out.txt")
+    env.apis.gone = True
 
-    def gone(api_name: str) -> ResolvedApi:
-        raise PolicyResolutionError(f"no api named {api_name!r}")
-
-    env.runner.api_resolver = gone
     env.run()
 
     job = env.do_job("call.job")
@@ -260,19 +276,18 @@ def test_request_fails_when_api_cannot_load(env):
     assert not (job.job_review_path / "outputs" / "out.txt").exists()
 
 
-def test_request_fails_when_api_changed_since_approval(env):
-    env.submit("echo hi > code/outputs/out.txt")
-    env.code_hash = "sha256:v2"
+def test_job_runs_its_own_code_after_api_changes(env):
+    env.submit("echo first > code/outputs/out.txt")
+    (env.apis.files_dir / "run.sh").write_text("echo second > code/outputs/out.txt")
 
     env.run()
 
     job = env.do_job("call.job")
-    assert job.status == "failed"
-    assert "changed since the request was approved" in job.review_reason
+    assert (job.job_review_path / "outputs" / "out.txt").read_text() == "first\n"
 
 
 def test_whole_job_runs_without_policies(env):
-    env.input_code = "raise SystemExit(1)\n"
+    env.apis.input_code = "raise SystemExit(1)\n"
     env.ds_client.submit_bash_job(DO_EMAIL, "echo hi > code/outputs/out.txt", "a.job")
     env.do_client.jobs[0].approve()
 

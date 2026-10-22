@@ -347,21 +347,24 @@ class JobInfo:
 
     @property
     def is_request(self) -> bool:
-        """Whether the job is a call of an api, submitted to requests/."""
+        """Whether this is an api call not yet turned into a job (requests/)."""
         return self._ref.is_request
 
     @property
     def api_name(self) -> Optional[str]:
-        """The api a request calls; None for a whole job."""
-        return self.job_headers.get(API_HEADER) if self.is_request else None
+        """The api this job calls.
+
+        On the DO's side it comes from the owner record, which only the DO
+        writes. Elsewhere it is the name the caller put in config.yaml.
+        """
+        record = self._client.manager.read_owner_record(self._ref)
+        if record is not None:
+            return record.api_name
+        return self.job_headers.get(API_HEADER)
 
     @property
     def policies(self) -> Optional[JobPolicies]:
-        """The policies of the api a request calls.
-
-        None for a whole job, or when this client can't load the api (the DS's
-        client, or an api that changed).
-        """
+        """The policies of the api this job calls, when this client loads apis."""
         resolver = self._client.api_resolver
         if self.api_name is None or resolver is None:
             return None
@@ -423,8 +426,7 @@ class JobInfo:
         # the state, so the runner never sees an approved state without them.
         record = self._read_owner_record()
         self._check_unchanged(record)
-        api_code_hash = self._api_code_hash() if self.is_request else None
-        self._record_approval(record, approval_method, api_code_hash)
+        self._record_approval(record, approval_method)
         # Up to the caller of approve(), through _approve().
         self._write_disclosures(disclosures, stacklevel=5)
         self._state.status = JobStatus.APPROVED
@@ -437,22 +439,6 @@ class JobInfo:
         print("   Status    : approved → will run on next process cycle")
         print("\n⏳ Next step: run process_approved_jobs() to execute it.")
         print("   client.process_approved_jobs(share_outputs_with_submitter=True)")
-
-    def _api_code_hash(self) -> str:
-        """The hash of the code and policies of the api this request calls.
-
-        The runner runs the request only while the api still has this hash.
-        """
-        resolver = self._client.api_resolver
-        if resolver is None:
-            raise ValueError(
-                f"Job '{self.name}' calls api '{self.api_name}', and this client "
-                f"can't load apis. Approve it from your SyftRDSClient."
-            )
-        try:
-            return resolver(self.api_name).code_hash
-        except PolicyResolutionError as e:
-            raise ValueError(f"Job '{self.name}' is not approved: {e}") from e
 
     def _check_can_approve(self) -> None:
         if self._state.status != JobStatus.PENDING:
@@ -503,18 +489,12 @@ class JobInfo:
                 f"approved. Reject it, or ask the submitter to submit it again."
             )
 
-    def _record_approval(
-        self,
-        record: OwnerJobRecord,
-        approval_method: str,
-        api_code_hash: Optional[str] = None,
-    ) -> None:
+    def _record_approval(self, record: OwnerJobRecord, approval_method: str) -> None:
         """Record the received submission as approved, and how, in one write."""
         record.approved_hash = record.received_hash
         record.approved_by = self.current_user_email
         record.approved_at = datetime.now(timezone.utc)
         record.approval_method = approval_method
-        record.api_code_hash = api_code_hash
         self._client.manager.write_owner_record(self._ref, record)
 
     def reject(self, reason: Optional[str] = None) -> None:

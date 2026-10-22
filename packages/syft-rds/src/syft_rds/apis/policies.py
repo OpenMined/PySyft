@@ -11,6 +11,7 @@ from syft_job.policies import (
 )
 
 from syft_rds.apis.api import callable_layout
+from syft_rds.apis.matching import check_request
 from syft_rds.apis.models import (
     API_FILE_NAME,
     FILES_DIR_NAME,
@@ -23,29 +24,34 @@ from syft_rds.apis.models import (
 
 
 class ApiResolver:
-    """Loads an api by name, for a request that calls it.
+    """Loads the DO's apis by name, and checks a request against one.
 
     Every pinned file and policy file is checked against its hash in api.yaml.
+    A name comes from a request, so it must be one of the apis.
     """
 
     def __init__(self, apis_dir: Path):
         self.apis_dir = Path(apis_dir)
 
     def __call__(self, api_name: str) -> ResolvedApi:
-        # A request names the api, so the name must be one of the apis.
-        if api_name not in list_api_names(self.apis_dir):
-            raise PolicyResolutionError(f"no api named {api_name!r}")
-        api_dir = self.apis_dir / api_name
+        api_dir = self._api_dir(api_name)
         policies = load_job_policies(api_name, api_dir)
-        definition = load_api_definition(api_dir)
-        for entry in definition.file_contents:
+        for entry in load_api_definition(api_dir).file_contents:
             _check_hash(api_dir / FILES_DIR_NAME, entry)
         return ResolvedApi(
-            name=api_name,
-            code_hash=definition.code_hash(),
-            files_dir=api_dir / FILES_DIR_NAME,
-            policies=policies,
+            name=api_name, files_dir=api_dir / FILES_DIR_NAME, policies=policies
         )
+
+    def check_request(self, api_name: str, request_dir: Path, submitter: str) -> None:
+        definition = load_api_definition(self._api_dir(api_name))
+        ok, reason = check_request(request_dir, definition, submitter)
+        if not ok:
+            raise PolicyResolutionError(reason)
+
+    def _api_dir(self, api_name: str) -> Path:
+        if api_name not in list_api_names(self.apis_dir):
+            raise PolicyResolutionError(f"no api named {api_name!r}")
+        return self.apis_dir / api_name
 
 
 def load_job_policies(api_name: str, api_dir: Path) -> JobPolicies:

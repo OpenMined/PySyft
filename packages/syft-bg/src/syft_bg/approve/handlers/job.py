@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Protocol
 
 from syft_job.job import JobInfo
-from syft_rds.apis.matching import check_request, matching_apis
+from syft_rds.apis.matching import matching_apis
 
 from syft_bg.approve.api_store import ApiStore
 from syft_bg.approve.config import AutoApprovalsConfig
@@ -62,32 +62,17 @@ class JobApprovalHandler:
         return [p.email for p in self.client.peer_manager.approved_peers]
 
     def evaluate_auto_approval(self, job: JobInfo) -> AutoApprovalValidationResult:
-        """Whether a job may be approved automatically, and through which api.
+        """Whether a whole job may be approved automatically, and through which api.
 
-        A request is checked against the api it names. A whole job must match
-        exactly one api, among those shared with its submitter.
+        An api call needs nothing here: the DO's client turns it into a job
+        and approves it when it arrives. A whole job must match exactly one
+        api, among those shared with its submitter.
         """
         if job.status != "pending":
             return AutoApprovalValidationResult(
                 match=False, reason=f"status is {job.status}, not pending"
             )
-        if job.is_request:
-            return self._evaluate_request(job)
         return self._evaluate_whole_job(job)
-
-    def _evaluate_request(self, job: JobInfo) -> AutoApprovalValidationResult:
-        # The name comes from the submitter, so it must be one of the apis.
-        if job.api_name not in self.api_store.names():
-            return AutoApprovalValidationResult(
-                match=False, reason=f"calls no api of yours: {job.api_name!r}"
-            )
-        definition = self.api_store.get(job.api_name)
-        ok, reason = check_request(
-            job.job_submission_path, definition, job.submitted_by
-        )
-        return AutoApprovalValidationResult(
-            match=ok, reason=reason, api_name=job.api_name if ok else None
-        )
 
     def _evaluate_whole_job(self, job: JobInfo) -> AutoApprovalValidationResult:
         """A whole job never runs under policies, so it can't match an api with
@@ -150,10 +135,18 @@ class JobApprovalHandler:
                 if self.verbose:
                     print(f"Failed to approve {job.name}: {e}")
 
-        if approved_jobs:
+        # Api calls arrive approved, so run whatever is approved, not only the
+        # jobs approved above.
+        if approved_jobs or self._has_approved_jobs():
             self.client.process_approved_jobs(
                 stream_output=self.verbose,
                 share_outputs_with_submitter=True,
             )
 
         return approved_jobs
+
+    def _has_approved_jobs(self) -> bool:
+        return any(
+            job.status == "approved" and job.datasite_owner_email == self.client.email
+            for job in self.client.job_client.jobs
+        )

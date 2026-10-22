@@ -17,6 +17,7 @@ from typing import Iterable, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel
+from syft_permissions import Access, Rule, RuleSet
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 # Strict schema: only these entries are allowed in a job submission.
@@ -72,12 +73,9 @@ class OwnerJobRecord(BaseModel):
     approved_by: Optional[str] = None
     approved_at: Optional[datetime] = None
     approval_method: Optional[str] = None
-    # Set at receipt: the job came from requests/, so it calls an api. The
-    # runner adds the api's code and runs the api's policies.
-    is_request: bool = False
-    # Set at approval of a request: the hash of the api's code and policies.
-    # The runner fails the job when the api changed since.
-    api_code_hash: Optional[str] = None
+    # Set when the DO turned an api call (a request) into this job. The runner
+    # runs the job with that api's policies. Only the DO writes it.
+    api_name: Optional[str] = None
 
 
 def _is_skipped(relative: Path) -> bool:
@@ -256,3 +254,13 @@ def move_legacy_owner_record(legacy: Path, path: Path) -> None:
     except (FileExistsError, FileNotFoundError):
         pass
     legacy.unlink(missing_ok=True)
+
+
+def lock_for_submitter(folder: Path, ds_email: str) -> None:
+    """Make folder read-only for its submitter.
+
+    The permission file is the nearest one for every file below it, so it
+    replaces the submitter's write on the folder above.
+    """
+    ruleset = RuleSet(rules=[Rule(pattern="**", access=Access(read=[ds_email]))])
+    ruleset.save(folder / PERMISSION_FILE_NAME)
