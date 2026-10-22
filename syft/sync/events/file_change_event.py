@@ -127,6 +127,7 @@ class FileChangeEventV1(BaseModel):
             submitted_timestamp=proposed_filechange.submitted_timestamp,
             timestamp=create_event_timestamp(),
             datasite_email=proposed_filechange.datasite_email,
+            is_deleted=proposed_filechange.is_deleted,
         )
 
     def __hash__(self) -> int:

@@ -95,3 +95,15 @@ def test_from_proposed_filechange_carries_identity_free_items():
     assert event.new_hash == proposed.new_hash
     # Items carry no identity fields on the wire; only envelopes do.
     assert "canonical_name" not in json.loads(event.model_dump_json())
+
+
+def test_from_proposed_filechange_keeps_delete():
+    proposed = ProposedFileChange(
+        path_in_datasite="data/file.txt",
+        old_hash="h1",
+        datasite_email="do@test.org",
+        is_deleted=True,
+    )
+    event = FileChangeEvent.from_proposed_filechange(proposed)
+    assert event.is_deleted
+    assert event.content is None
