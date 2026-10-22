@@ -136,7 +136,7 @@ sbg.set_policies("word_count", input_policy="policies/rate_limit_v2.py")
 sbg.set_policies("word_count", input_policy=None)   # remove it
 ```
 
-Replacing a policy keeps the API's state. `reset_state=True` clears the state.
+Changing the policies clears the API's state, because it was kept for the old policies. `reset_state=False` keeps it.
 
 ### The entrypoint of a policy is a bash script
 

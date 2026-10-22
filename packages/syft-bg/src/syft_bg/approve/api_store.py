@@ -121,11 +121,12 @@ class ApiStore:
         name: str,
         input_policy: Path | None | object = UNCHANGED,
         output_policy: Path | None | object = UNCHANGED,
-        reset_state: bool = False,
+        reset_state: bool = True,
     ) -> ApiDefinition:
         """Add, replace or remove (None) the policies of an existing api.
 
-        The state is kept unless reset_state is True.
+        The state is cleared, since it was kept for the old policies, unless
+        reset_state is False.
         """
         if not self.exists(name):
             raise ApiNotFoundError(f"No api named '{name}'")

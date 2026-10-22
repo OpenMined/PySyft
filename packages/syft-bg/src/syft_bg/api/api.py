@@ -493,13 +493,14 @@ def set_policies(
     name: str,
     input_policy: str | Path | None = UNCHANGED,
     output_policy: str | Path | None = UNCHANGED,
-    reset_state: bool = False,
+    reset_state: bool = True,
     api_store: ApiStore | None = None,
 ) -> ApiResult:
     """Add, replace or remove the policies of an existing api.
 
-    Leave a policy out to keep it, pass None to remove it. Replacing a policy
-    keeps the api's state; pass reset_state=True to clear it. See
+    Leave a policy out to keep it, pass None to remove it. The api's state is
+    cleared, since it was kept for the old policies; pass reset_state=False
+    to keep it. See
     syft_job/policies/env.py for what a policy gets and the conventions it
     follows.
     """

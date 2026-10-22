@@ -162,19 +162,19 @@ def test_same_files_make_two_apis(store, script):
     assert store.names() == ["first", "second"] and name == "second"
 
 
-def test_set_policies_replaces_removes_and_keeps_state(store, script, policy):
+def test_set_policies_clears_state_unless_asked_to_keep(store, script, policy):
     store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
     state_file = store.api_dir("api") / "policy_state" / "state.json"
     state_file.write_text('{"calls": 3}')
     sh_policy = policy.with_suffix(".sh")
     sh_policy.write_text("exit 0\n")
 
-    obj = store.set_policies("api", output_policy=sh_policy)
+    obj = store.set_policies("api", output_policy=sh_policy, reset_state=False)
     assert [e.relative_path for e in obj.output_policy] == ["policies/output/run.sh"]
     assert obj.input_policy  # left out, so kept
     assert state_file.read_text() == '{"calls": 3}'
 
-    obj = store.set_policies("api", input_policy=None, reset_state=True)
+    obj = store.set_policies("api", input_policy=None)
     assert obj.input_policy == []
     assert not (store.api_dir("api") / "policies" / "input").exists()
     assert state_file.read_text() == "{}"
