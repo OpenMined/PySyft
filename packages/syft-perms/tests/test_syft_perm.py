@@ -161,7 +161,7 @@ def test_no_permission_denies(sp):
     assert not file.has_admin_access(USER)
 
 
-def test_can_read_matches_has_read_access(sp):
+def test_can_read_follows_grants(sp):
     sp.open("shared/").grant_read_access(USER)
     assert sp.can_read("shared/data.csv", USER)
     assert not sp.can_read("shared/data.csv", USER2)

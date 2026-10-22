@@ -453,6 +453,18 @@ def _add_known_peer(do_manager, email: str) -> None:
     do_manager.peer_manager.peer_store.add_peer(Peer(email=email, version=version))
 
 
+def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:
+    """Make ``email`` a second peer of the DO, and return its router."""
+    conn = GDriveConnection.from_service(
+        email, ds_manager._connection_router.connections[0].drive_service
+    )
+    conn.add_peer(do_manager.email)
+    _add_known_peer(do_manager, email)
+    return ConnectionRouter(
+        connections=[conn], peer_store=_store_knowing(email, do_manager.email)
+    )
+
+
 def test_job_files_sync_to_submitter_only():
     """Test that job files only sync to the peer who submitted the job.
 
@@ -502,16 +514,8 @@ def test_job_files_sync_to_submitter_only():
 
     # Process local changes with both recipients
     recipients = [submitter_email, non_submitter_email]
-    submitter_conn = GDriveConnection.from_service(
-        submitter_email, ds_manager._connection_router.connections[0].drive_service
-    )
-    submitter_conn.add_peer(do_manager.email)
-    _add_known_peer(do_manager, submitter_email)
-    submitter_router = ConnectionRouter(
-        connections=[submitter_conn],
-        peer_store=_store_knowing(submitter_email, do_manager.email),
-    )
-    do_manager.datasite_owner_syncer.process_local_changes(recipients)
+    submitter_router = _peer_router(ds_manager, do_manager, submitter_email)
+    do_manager.datasite_owner_syncer.sync(recipients)
 
     messages_for_non_submitter = (
         ds_manager._connection_router.watcher_get_events_messages(
@@ -591,7 +595,7 @@ def test_job_file_beside_outputs_does_not_sync_to_submitter():
     assert (review_dir / "outputs" / "result.txt").exists()
     review_rel = review_dir.relative_to(do_manager.syftbox_folder / do_manager.email)
 
-    do_manager.datasite_owner_syncer.process_local_changes([ds_email])
+    do_manager.datasite_owner_syncer.sync([ds_email])
 
     paths = [
         str(event.path_in_datasite)
@@ -704,16 +708,7 @@ def test_permission_change_triggers_resend():
 
     datasite_dir_do = do_manager.syftbox_folder / do_manager.email
 
-    # Set up a second peer connection router for peer B
-    peer_b_conn = GDriveConnection.from_service(
-        peer_b_email, ds_manager._connection_router.connections[0].drive_service
-    )
-    peer_b_conn.add_peer(do_manager.email)
-    _add_known_peer(do_manager, peer_b_email)
-    peer_b_router = ConnectionRouter(
-        connections=[peer_b_conn],
-        peer_store=_store_knowing(peer_b_email, do_manager.email),
-    )
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
 
     # Grant only peer A read access to project/
     ctx = do_manager.datasite_owner_syncer.perm_context
@@ -726,7 +721,7 @@ def test_permission_change_triggers_resend():
 
     # First sync: only peer A should receive the file
     recipients = [peer_a_email, peer_b_email]
-    do_manager.datasite_owner_syncer.process_local_changes(recipients)
+    do_manager.datasite_owner_syncer.sync(recipients)
 
     messages_for_a = ds_manager._connection_router.watcher_get_events_messages(
         do_manager.email, None
@@ -749,7 +744,7 @@ def test_permission_change_triggers_resend():
     ctx.open("project/").grant_read_access(peer_b_email)
 
     # Second sync: peer B should receive data.txt via resend
-    do_manager.datasite_owner_syncer.process_local_changes(recipients)
+    do_manager.datasite_owner_syncer.sync(recipients)
 
     messages_for_b_after = peer_b_router.watcher_get_events_messages(
         do_manager.email, None
@@ -761,6 +756,28 @@ def test_permission_change_triggers_resend():
     assert any("data.txt" in p for p in paths_for_b_after), (
         "Peer B should receive data.txt after permission change"
     )
+
+
+def test_accepted_change_reaches_other_readers():
+    """A change that the DO accepts from peer A also goes to peer B, who may read it."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    peer_b_email = "peer_b@example.com"
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
+    shared = do_manager.datasite_owner_syncer.perm_context.open("shared/")
+    shared.grant_write_access(ds_manager.email)
+    shared.grant_read_access(peer_b_email)
+
+    ds_manager._send_file_change(f"{do_manager.email}/shared/proposal.txt", "from A")
+    do_manager.datasite_owner_syncer.sync([ds_manager.email, peer_b_email])
+
+    paths_for_b = [
+        str(e.path_in_datasite)
+        for m in peer_b_router.watcher_get_events_messages(do_manager.email, None)
+        for e in m.events
+    ]
+    assert "shared/proposal.txt" in paths_for_b
 
 
 def test_default_collections_folder_picks_shareable_spec_regardless_of_order():

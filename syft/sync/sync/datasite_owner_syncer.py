@@ -579,20 +579,19 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         except (KeyError, FileNotFoundError):
             # The in-memory cache raises KeyError, the filesystem cache
             # FileNotFoundError.
-            content = None
+            return self._deletion_event(path)
         timestamp = create_event_timestamp()
         return FileChangeEvent(
             id=uuid4(),
             path_in_datasite=Path(path),
             content=content,
-            new_hash=None if content is None else get_event_hash_from_content(content),
+            new_hash=get_event_hash_from_content(content),
             submitted_timestamp=timestamp,
             timestamp=timestamp,
             datasite_email=self.email,
-            is_deleted=content is None,
         )
 
-    def _delete_event(self, path: str) -> FileChangeEvent:
+    def _deletion_event(self, path: str) -> FileChangeEvent:
         """An event that removes ``path`` from a peer."""
         timestamp = create_event_timestamp()
         return FileChangeEvent(
@@ -607,21 +606,16 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         )
 
     def _record_local_changes(self) -> None:
-        """Find the local file changes and add them to the owner's event log."""
+        """Update the file hashes from the local files. With
+        ``persist_owner_state``, also write the changes to the owner's event log."""
         file_change_events_message = self.event_cache.process_local_file_changes()
-        if file_change_events_message is None:
+        if file_change_events_message is None or not self.persist_owner_state:
             return
-        if self.persist_owner_state:
-            # Record local events in the owner's log and feed them into rolling
-            # state so they flow through incremental/full checkpoints.
-            self.syftbox_events_queue.put(file_change_events_message)
-            self._add_events_to_rolling_state(file_change_events_message)
+        # Feed the events into rolling state so they flow through
+        # incremental/full checkpoints.
+        self.syftbox_events_queue.put(file_change_events_message)
+        self._add_events_to_rolling_state(file_change_events_message)
         self.process_syftbox_events_queue()
-
-    def process_local_changes(self, recipients: list[str]):
-        """Record the local file changes, then deliver to ``recipients``."""
-        self._record_local_changes()
-        self.deliver(recipients)
 
     def _syncable_hashes(self) -> dict[str, str]:
         """The current hash of every file that a peer can get, by path."""
@@ -632,10 +626,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             if is_normal_syncable_path(str(path), collections_path=collections_rel)
         }
 
-    def _may_read(self, peer: str, path: str) -> bool:
-        """``check_read_permissions`` without a reload: the caller reloads once."""
-        return self.perm_context.can_read(path, peer)
-
     def deliver(self, peer_emails: list[str]) -> None:
         """Send each peer the files its view lacks, and deletes for the files it
         may no longer have."""
@@ -643,15 +633,19 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         deliveries.confirm(self.connection_router.transport.p2p.delivered())
         self.perm_context._reload()
         hashes = self._syncable_hashes()
-        plans = deliveries.plan_all(
+        plans = deliveries.plan(
             {
-                peer: {p: h for p, h in hashes.items() if self._may_read(peer, p)}
+                peer: {
+                    p: h
+                    for p, h in hashes.items()
+                    if self.perm_context.can_read(p, peer)
+                }
                 for peer in peer_emails
             }
         )
         for peer, plan in plans.items():
             events = [self._create_current_state_event(p) for p in plan.send]
-            events += [self._delete_event(p) for p in plan.delete]
+            events += [self._deletion_event(p) for p in plan.delete]
             if events:
                 self.outbox_queue.put((peer, FileChangeEventsMessage(events=events)))
         self.process_syftbox_events_queue()
@@ -690,11 +684,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """Check if sender has write access to the given path."""
         self.perm_context._reload()
         return self.perm_context.open(path).has_write_access(sender_email)
-
-    def check_read_permissions(self, recipient_email: str, path: str) -> bool:
-        """Check if recipient has read access to the given path."""
-        self.perm_context._reload()
-        return self.perm_context.open(path).has_read_access(recipient_email)
 
     def handle_proposed_filechange_events_message(
         self, sender_email: str, proposed_events_message: ProposedFileChangesMessage
@@ -791,7 +780,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 changes[path] = None
             elif is_normal_syncable_path(
                 path, collections_path=collections_rel
-            ) and self._may_read(recipient, path):
+            ) and self.perm_context.can_read(path, recipient):
                 changes[path] = event.new_hash
         self.event_cache.deliveries.sent(
             recipient, message.message_filepath.as_string(), status, changes

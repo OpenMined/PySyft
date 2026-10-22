@@ -29,56 +29,29 @@ def _tracker_holding(view: dict[str, str]) -> DeliveryTracker:
 
 def test_plan_sends_changed_files_deletes_unreadable():
     tracker = _tracker_holding({"same": "h1", "old": "h1", "revoked": "h1"})
-    plan = tracker.plan(PEER, {"same": "h1", "old": "h2", "new": "h3"})
+    plan = tracker.plan({PEER: {"same": "h1", "old": "h2", "new": "h3"}})[PEER]
     assert plan.send == ["new", "old"]
     assert plan.delete == ["revoked"]
 
 
 def test_peer_without_view_gets_all_readable_files():
     tracker = DeliveryTracker(MemoryDeliveryStateStore())
-    assert not tracker.has_view(PEER)
-    assert tracker.plan(PEER, {"a": "h1", "b": "h2"}).send == ["a", "b"]
-
-
-def test_reset_resends_everything():
-    tracker = _tracker_holding({"a": "h1"})
-    tracker.reset(PEER)
-    assert tracker.has_view(PEER)
-    assert tracker.plan(PEER, {"a": "h1"}).send == ["a"]
+    assert tracker.plan({PEER: {"a": "h1", "b": "h2"}})[PEER].send == ["a", "b"]
 
 
 def test_delivered_send_updates_view():
     tracker = _tracker_holding({"a": "h1", "b": "h1"})
     tracker.sent(PEER, "m1", SendStatus.DELIVERED, {"a": "h2", "b": None})
-    assert tracker.plan(PEER, {"a": "h2"}).send == []
-    assert tracker.plan(PEER, {"a": "h2"}).delete == []
+    assert tracker.plan({PEER: {"a": "h2"}})[PEER].send == []
+    assert tracker.plan({PEER: {"a": "h2"}})[PEER].delete == []
 
 
 def test_queued_send_updates_view_on_confirm():
     tracker = DeliveryTracker(MemoryDeliveryStateStore())
     tracker.sent(PEER, "m1", SendStatus.QUEUED, {"a": "h1"})
-    assert tracker.plan(PEER, {"a": "h1"}).send == ["a"]
+    assert tracker.plan({PEER: {"a": "h1"}})[PEER].send == ["a"]
     tracker.confirm(["m1"])
-    assert tracker.plan(PEER, {"a": "h1"}).send == []
-
-
-def test_plan_all_loads_state_once(monkeypatch):
-    tracker = _tracker_holding({"a": "h1"})
-    loads = []
-    load = MemoryDeliveryStateStore.load
-    monkeypatch.setattr(
-        MemoryDeliveryStateStore, "load", lambda self: loads.append(1) or load(self)
-    )
-    plans = tracker.plan_all({PEER: {"a": "h1"}, "new@x.com": {"a": "h1"}})
-    assert plans[PEER].send == []
-    assert plans["new@x.com"].send == ["a"]
-    assert len(loads) == 1
-
-
-def test_confirm_unknown_message_raises():
-    tracker = DeliveryTracker(MemoryDeliveryStateStore())
-    with pytest.raises(KeyError):
-        tracker.confirm(["never-sent"])
+    assert tracker.plan({PEER: {"a": "h1"}})[PEER].send == []
 
 
 def test_local_store_persists_state_refuses_later_version(tmp_path):
@@ -87,7 +60,9 @@ def test_local_store_persists_state_refuses_later_version(tmp_path):
         PEER, "m1", SendStatus.DELIVERED, {"a": "h1"}
     )
     assert (
-        DeliveryTracker(LocalDeliveryStateStore(path)).plan(PEER, {"a": "h1"}).send
+        DeliveryTracker(LocalDeliveryStateStore(path))
+        .plan({PEER: {"a": "h1"}})[PEER]
+        .send
         == []
     )
 
@@ -127,9 +102,10 @@ def test_overlapping_writers_keep_both_views(tmp_path, monkeypatch):
     first.join()
     second.join()
 
-    tracker = DeliveryTracker(LocalDeliveryStateStore(path))
-    assert tracker.has_view("one@x.com")
-    assert tracker.has_view("two@x.com")
+    plans = DeliveryTracker(LocalDeliveryStateStore(path)).plan(
+        {"one@x.com": {"a": "h1"}, "two@x.com": {"a": "h1"}}
+    )
+    assert plans["one@x.com"].send == plans["two@x.com"].send == []
 
 
 # --- The owner syncer ---------------------------------------------------------

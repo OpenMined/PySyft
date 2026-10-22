@@ -14,8 +14,11 @@ peer may read now:
     in the view, but no longer readable           -> delete
     in the view, but the file is gone             -> delete
 
+Every readable file counts, whoever wrote it. Thus a change that the owner
+accepts from one peer also goes to every other peer that may read it.
+
 A peer with no view, because it is new or its record was lost, starts with an
-empty view (a ``PeerReset``), so it is sent every file it may read.
+empty view, so it is sent every file it may read.
 
 Recording a send
 ----------------
@@ -29,6 +32,12 @@ Recording a send
 A view therefore never changes before a delivery is confirmed. A change that is
 not sent, because the upload failed, the peer was skipped, or a process
 stopped before the send, stays in the plan of the next sync.
+
+Storage
+-------
+The views are kept on the owner's local disk only, also with
+``persist_owner_state``. An owner that loses its local state sends every peer
+every file it may read once again.
 """
 
 import os
@@ -131,7 +140,7 @@ class LocalDeliveryStateStore(DeliveryStateStore):
     @contextmanager
     def locked(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.path.with_suffix(self.path.suffix + ".lock"), "a") as f:
+        with open(self.path.with_suffix(f"{self.path.suffix}.lock"), "a") as f:
             portalocker.lock(f, portalocker.LOCK_EX)
             try:
                 yield
@@ -167,34 +176,19 @@ class DeliveryTracker:
     def __init__(self, store: DeliveryStateStore):
         self.store = store
 
-    def has_view(self, peer: str) -> bool:
-        """Whether ``peer`` has a view. False means a ``PeerReset`` is due."""
-        return peer in self.store.load().views
-
-    def reset(self, peer: str) -> None:
-        """Start ``peer``'s view empty (a ``PeerReset``), so the next plan sends
-        it every file it may read."""
-        with self.store.locked():
-            state = self.store.load()
-            state.views[peer] = {}
-            self.store.save(state)
-
     def clear(self) -> None:
         """Forget every view and every queued send."""
         with self.store.locked():
             self.store.save(DeliveryState())
 
-    def plan(self, peer: str, readable: Mapping[str, str]) -> DeliveryPlan:
-        """What to send and delete for ``peer``.
-
-        ``readable`` maps every path ``peer`` may read now to its current hash.
-        """
-        return self.plan_all({peer: readable})[peer]
-
-    def plan_all(
+    def plan(
         self, readable_by_peer: Mapping[str, Mapping[str, str]]
     ) -> dict[str, DeliveryPlan]:
-        """``plan`` for each peer in ``readable_by_peer``, from one load."""
+        """What to send and delete for each peer in ``readable_by_peer``.
+
+        ``readable_by_peer`` maps each peer to every path it may read now, with
+        the path's current hash.
+        """
         views = self.store.load().views
         plans = {}
         for peer, readable in readable_by_peer.items():
