@@ -10,10 +10,7 @@ from .bash_wrapper import PYTHON_POLICY_NAME, RUN_SCRIPT_NAME
 # Job artifacts. policy_error.txt and outputs_withheld.txt are released to the
 # submitter; the rest stays in staging, with the data owner.
 POLICY_ERROR_FILENAME = "policy_error.txt"
-# An empty marker file: that it exists is the message. It tells the submitter's
-# client that the output policy held the outputs back, so the job shows
-# "Outputs not shared with you" instead of looking like it wrote no outputs.
-# A manual share_job_results() deletes it.
+# An empty marker file; see SyftJobRunner._share_job_results().
 OUTPUTS_WITHHELD_FILENAME = "outputs_withheld.txt"
 OUTPUT_RECIPIENTS_FILENAME = "output_recipients.json"
 

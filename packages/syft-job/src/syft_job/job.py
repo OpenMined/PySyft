@@ -390,7 +390,11 @@ class JobInfo:
 
     @property
     def outputs_withheld(self) -> bool:
-        """True when the output policy kept the outputs from the submitter."""
+        """True when the output policy kept the outputs from the submitter.
+
+        The runner releases an empty marker file to the submitter for this;
+        only whether it exists matters.
+        """
         return self.artifact_path(OUTPUTS_WITHHELD_FILENAME).exists()
 
     def approve(

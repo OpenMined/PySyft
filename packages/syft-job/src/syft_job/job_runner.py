@@ -905,6 +905,8 @@ class SyftJobRunner:
         """
         ref = self._find_jobref_from_name(job_name, user)
         if share_outputs:
+            # The outputs reach the submitter now, so drop the marker that
+            # said they were held back.
             (self.manager.review_dir(ref) / OUTPUTS_WITHHELD_FILENAME).unlink(
                 missing_ok=True
             )
@@ -918,6 +920,9 @@ class SyftJobRunner:
         if share_outputs:
             job_info.share_outputs(recipients)
             if ref.ds_email not in recipients:
+                # An empty marker: that the submitter can read this file is
+                # the message. Their job then shows "Outputs not shared with
+                # you" instead of looking like it wrote no outputs.
                 self._write_staged(ref, OUTPUTS_WITHHELD_FILENAME, "")
                 job_info._release_to_submitter([OUTPUTS_WITHHELD_FILENAME])
         if share_logs:
