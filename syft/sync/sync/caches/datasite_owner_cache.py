@@ -466,9 +466,10 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
         self.file_hashes.clear()
 
         # Restore from checkpoint
-        # Always write to file_connection to maintain consistent state for
-        # process_local_changes comparison. This is needed even when write_files=False
-        # because file_connection may be in-memory and serves as the source of truth.
+        # Always write to file_connection to maintain consistent state for the
+        # comparison in process_local_file_changes. This is needed even when
+        # write_files=False, because file_connection may be in-memory and serves
+        # as the source of truth.
         for file_entry in checkpoint.files:
             path = Path(file_entry.path)
             self.file_hashes[path] = file_entry.hash

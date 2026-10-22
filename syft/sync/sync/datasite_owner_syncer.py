@@ -43,7 +43,7 @@ from syft.sync.checkpoints.rolling_state import (
 )
 from syft_perms import SyftPermContext
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
-from syft.sync.sync.delivery_tracker import UNSENT_HASH
+from syft.sync.sync.delivery_tracker import UNSENT_HASH, DeliveryPlan
 from syft.sync.transport.types import SendStatus
 from syft.sync.utils.syftbox_utils import (
     create_event_timestamp,
@@ -684,32 +684,30 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     def _seed_views_if_missing(self, peer_emails: list[str]) -> None:
         """Seed the views one time, for an owner whose state was never seeded.
 
-        Each approved peer, and each peer in ``peer_emails``, is taken to hold
-        every file it may read now. A syncable path that an earlier client
-        still had to send gets ``UNSENT_HASH``, so the next plan sends or
-        deletes it. Other pending paths, such as a private dataset share, stay
-        out of the view: a plan never sends them, so it must not delete them.
+        The seed covers each approved peer, and each peer in ``peer_emails``.
         """
         deliveries = self.event_cache.deliveries
         if deliveries.is_seeded():
             return
         self.perm_context._reload()
         approved = [p.email for p in self.connection_router.peer_store.approved_peers]
+        deliveries.seed(self._held_before_seed(sorted({*approved, *peer_emails})))
+
+    def _held_before_seed(self, peers: list[str]) -> dict[str, dict[str, str]]:
+        """What each of ``peers`` is taken to hold when the views are seeded.
+
+        Each peer holds every file it may read now. A syncable path that an
+        earlier client still had to send gets ``UNSENT_HASH``, so the next plan
+        sends or deletes it. Other pending paths, such as a private dataset
+        share, stay out of the view: a plan never sends them, so it must not
+        delete them. The caller reloads the permissions first.
+        """
         pending = self.event_cache.legacy_pending_paths()
-        readable = self._readable_hashes(sorted({*approved, *peer_emails}))
-        deliveries.seed(
-            {
-                peer: {
-                    **files,
-                    **{
-                        p: UNSENT_HASH
-                        for p in pending.get(peer, ())
-                        if self._is_syncable(p)
-                    },
-                }
-                for peer, files in readable.items()
-            }
-        )
+        held = self._readable_hashes(peers)
+        for peer, files in held.items():
+            unsent = [p for p in pending.get(peer, ()) if self._is_syncable(p)]
+            files.update(dict.fromkeys(unsent, UNSENT_HASH))
+        return held
 
     def deliver(self, peer_emails: list[str]) -> None:
         """Send each peer the files its view lacks, and deletes for the files it
@@ -718,14 +716,24 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         deliveries.confirm(self.connection_router.transport.p2p.delivered())
         self.perm_context._reload()
         plans = deliveries.plan(self._readable_hashes(peer_emails))
-        for peer, plan in plans.items():
-            events = [self._create_current_state_event(p) for p in plan.send]
-            events += [self._deletion_event(p) for p in plan.delete]
-            for batch in _batches_by_content_size(events, MAX_DELIVERY_MESSAGE_CONTENT):
-                message = FileChangeEventsMessage(events=batch)
-                self._planned_message_names.add(message.message_filepath.as_string())
-                self.outbox_queue.put((peer, message))
+        # Build every message before the first one is queued, so a read error
+        # leaves no message of this plan in the queue.
+        messages = [
+            (peer, FileChangeEventsMessage(events=batch))
+            for peer, plan in plans.items()
+            for batch in _batches_by_content_size(
+                self._plan_events(plan), MAX_DELIVERY_MESSAGE_CONTENT
+            )
+        ]
+        for peer, message in messages:
+            self._planned_message_names.add(message.message_filepath.as_string())
+            self.outbox_queue.put((peer, message))
         self.process_syftbox_events_queue()
+
+    def _plan_events(self, plan: DeliveryPlan) -> list[FileChangeEvent]:
+        """The events that carry out ``plan``: its sends, then its deletes."""
+        events = [self._create_current_state_event(p) for p in plan.send]
+        return events + [self._deletion_event(p) for p in plan.delete]
 
     def pull_and_process_next_proposed_filechange(
         self, sender_email: str, raise_on_none=True
@@ -910,10 +918,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         recipient_email: str,
         min_messages: int = MIN_MESSAGES_COMPACT,
     ) -> int:
-        """Merge accumulated event-message files in a recipient's outbox into one.
+        """Merge accumulated event-message files in a recipient's outbox into fewer.
 
-        Compaction downloads them, concatenates their events into one fresh message, and
-        deletes the originals.
+        Compaction downloads them, concatenates their events, writes them again
+        as messages of at most ``MAX_DELIVERY_MESSAGE_CONTENT`` of file content,
+        and deletes the originals.
 
         Returns the number of source messages compacted (0 if below threshold,
         if no outbox folder, or if peer encryption is on or the peer policy is

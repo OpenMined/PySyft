@@ -50,16 +50,14 @@ included, sends every peer every file it may read once again. With
 starts the views from them.
 """
 
-import os
 from abc import ABC, abstractmethod
-from contextlib import contextmanager, nullcontext
+from contextlib import nullcontext
 from pathlib import Path
 from typing import ContextManager, Iterable, Mapping
-from uuid import uuid4
 
-import portalocker
 from pydantic import BaseModel, ConfigDict, Field
 
+from syft.sync.sync.caches.persisted_dict import locked_file, write_text_atomic
 from syft.sync.transport.types import SendStatus
 
 DELIVERY_VIEWS_FILENAME = "owner_delivery_views.json"
@@ -103,7 +101,7 @@ class DeliveryPlan(BaseModel):
 
 
 class DeliveryStateStore(ABC):
-    """Where a ``DeliveryState`` is kept: a local file, Drive, or memory."""
+    """Where a ``DeliveryState`` is kept: a local file or memory."""
 
     @abstractmethod
     def load(self) -> DeliveryState:
@@ -152,24 +150,11 @@ class LocalDeliveryStateStore(DeliveryStateStore):
             )
         return state
 
-    @contextmanager
-    def locked(self):
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.path.with_suffix(f"{self.path.suffix}.lock"), "a") as f:
-            portalocker.lock(f, portalocker.LOCK_EX)
-            try:
-                yield
-            finally:
-                portalocker.unlock(f)
+    def locked(self) -> ContextManager[None]:
+        return locked_file(self.path)
 
     def save(self, state: DeliveryState) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_suffix(f".tmp.{os.getpid()}.{uuid4().hex}")
-        try:
-            tmp.write_text(state.model_dump_json())
-            tmp.replace(self.path)
-        finally:
-            tmp.unlink(missing_ok=True)
+        write_text_atomic(self.path, state.model_dump_json())
 
 
 def _apply_changes_to_view(

@@ -9,11 +9,9 @@ import logging
 import os
 import tempfile
 import warnings
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator, List, Optional
+from typing import List, Optional
 
-import portalocker
 import syft_crypto_python as syc
 from pydantic import BaseModel, PrivateAttr
 
@@ -37,6 +35,7 @@ from syft.sync.peers.key_bundle import (
     parse_and_validate_bundle,
 )
 from syft.sync.peers.peer import Peer, PeerState
+from syft.sync.sync.caches.persisted_dict import locked_file
 
 logger = logging.getLogger(__name__)
 
@@ -447,7 +446,7 @@ class PeerStore(BaseModel):
             self.generate_keys()
             return
         unsaved_pins: list[tuple[str, dict]] = []
-        with _locked_key_file(self._keys_path):
+        with locked_file(self._keys_path):
             if self._keys_path.exists():
                 unsaved_pins = self._take_key_file(self.load_keys(self._keys_path))
             else:
@@ -661,7 +660,7 @@ class PeerStore(BaseModel):
         """Record a required policy in the key file, keeping what else it holds."""
         if self._keys_path is None or not self.use_encryption:
             return
-        with _locked_key_file(self._keys_path):
+        with locked_file(self._keys_path):
             data = self._read_key_file() or self._key_file_data()
             if data.get(ENCRYPTION_POLICY_KEY) == EncryptionPolicy.REQUIRED.value:
                 return
@@ -672,7 +671,7 @@ class PeerStore(BaseModel):
     def save_keys(self, path: Path) -> None:
         data = self._key_file_data()
         path = Path(path)
-        with _locked_key_file(path):
+        with locked_file(path):
             _write_key_file(path, data)
         self._keys_path = path
 
@@ -717,7 +716,7 @@ class PeerStore(BaseModel):
         """
         if self._keys_path is None or self._private_keys is None:
             return
-        with _locked_key_file(self._keys_path):
+        with locked_file(self._keys_path):
             data = self._read_key_file() or self._key_file_data()
             _write_key_file(self._keys_path, _with_pin(data, peer_email, bundle))
 
@@ -804,22 +803,6 @@ def _warn_key_file_holds_data(keys_path: Path) -> None:
         f"{keys_path}. Without that file, they cannot be read again: keep a "
         "copy in a safe place."
     )
-
-
-@contextmanager
-def _locked_key_file(path: Path) -> Iterator[None]:
-    """Hold an exclusive cross-process lock on the key file at ``path``.
-
-    The lock is on a sibling ``.lock`` file, as in ``PersistedDict``, so the
-    key file itself can be replaced while the lock is held.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path.with_suffix(f"{path.suffix}.lock"), "a") as f:
-        portalocker.lock(f, portalocker.LOCK_EX)
-        try:
-            yield
-        finally:
-            portalocker.unlock(f)
 
 
 def _with_pin(data: dict, peer_email: str, bundle: dict) -> dict:

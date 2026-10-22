@@ -402,6 +402,35 @@ def test_failed_send_drops_rest_of_plan(monkeypatch):
     assert _outbox_paths(ds_manager, do_manager) == []
 
 
+def test_read_error_leaves_no_planned_message(monkeypatch):
+    ds_manager, do_manager = _pair()
+    syncer = do_manager.datasite_owner_syncer
+    shared = syncer.perm_context.open("shared/")
+    shared.grant_read_access(ds_manager.email)
+    shared.grant_read_access("peer_b@example.com")
+    _write(do_manager, "shared/data.txt", "one")
+    syncer._record_local_changes()
+
+    # The plan reads the file once per peer. The read for the second peer fails.
+    reads = []
+    create_event = datasite_owner_syncer.DatasiteOwnerSyncer._create_current_state_event
+
+    def fail_second_read(self, path):
+        reads.append(path)
+        if len(reads) == 2:
+            raise PermissionError(path)
+        return create_event(self, path)
+
+    monkeypatch.setattr(
+        datasite_owner_syncer.DatasiteOwnerSyncer,
+        "_create_current_state_event",
+        fail_second_read,
+    )
+    with pytest.raises(PermissionError):
+        syncer.deliver([ds_manager.email, "peer_b@example.com"])
+    assert syncer.outbox_queue.empty()
+
+
 def test_compaction_keeps_message_size_cap(monkeypatch):
     monkeypatch.setattr(datasite_owner_syncer, "MAX_DELIVERY_MESSAGE_CONTENT", 3)
     ds_manager, do_manager = _pair()
