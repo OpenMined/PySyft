@@ -251,17 +251,6 @@ class EnclaveJobInfo(JobInfo):
         self._save_own_approval(approval)
         print(f"Job '{self.name}' approved by {self.current_user_email}!")
 
-    def approve_for_api(self, disclosures: DisclosuresArg = None) -> None:
-        """Refused: an enclave job can't be approved through an api.
-
-        An api's policies run on the DO's machine, and an enclave job runs on
-        the enclave, so it would run without them.
-        """
-        raise ValueError(
-            f"Job '{self.name}' runs on an enclave, where an api's policies "
-            f"can't run. Approve it by hand."
-        )
-
     def update_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
         """Replace the items this party releases, and return the new map.
 

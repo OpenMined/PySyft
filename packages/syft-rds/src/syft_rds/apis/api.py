@@ -136,6 +136,11 @@ class Api:
             layout.params_file.removeprefix(CODE_PREFIX): json.dumps(params).encode(),
         }
 
+    def request_code_files(self, params: dict[str, Any]) -> dict[str, bytes]:
+        """The files of a request's code/ folder: only the params json."""
+        params_rel = self.layout.params_file.removeprefix(CODE_PREFIX)
+        return {params_rel: json.dumps(params).encode()}
+
     def _stored_file(self, rel_path: str) -> Path:
         return self.api_dir / FILES_DIR_NAME / rel_path
 

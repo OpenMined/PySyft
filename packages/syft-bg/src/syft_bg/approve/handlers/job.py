@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Protocol
 
 from syft_job.job import JobInfo
-from syft_rds.apis.matching import matching_apis
+from syft_rds.apis.matching import check_request, matching_apis
 
 from syft_bg.approve.api_store import ApiStore
 from syft_bg.approve.config import AutoApprovalsConfig
@@ -62,17 +62,36 @@ class JobApprovalHandler:
         return [p.email for p in self.client.peer_manager.approved_peers]
 
     def evaluate_auto_approval(self, job: JobInfo) -> AutoApprovalValidationResult:
-        """Find the auto-approval object (api) that matches a job.
+        """Whether a job may be approved automatically, and through which api.
 
-        Searches all objects where the peer is listed (or peers is empty = any
-        peer). Exactly one must match: the match decides which policies run, so
-        a job that matches several stays pending.
+        A request is checked against the api it names. A whole job must match
+        exactly one api, among those shared with its submitter.
         """
         if job.status != "pending":
             return AutoApprovalValidationResult(
                 match=False, reason=f"status is {job.status}, not pending"
             )
+        if job.is_request:
+            return self._evaluate_request(job)
+        return self._evaluate_whole_job(job)
 
+    def _evaluate_request(self, job: JobInfo) -> AutoApprovalValidationResult:
+        # The name comes from the submitter, so it must be one of the apis.
+        if job.api_name not in self.api_store.names():
+            return AutoApprovalValidationResult(
+                match=False, reason=f"calls no api of yours: {job.api_name!r}"
+            )
+        definition = self.api_store.get(job.api_name)
+        ok, reason = check_request(
+            job.job_submission_path, definition, job.submitted_by
+        )
+        return AutoApprovalValidationResult(
+            match=ok, reason=reason, api_name=job.api_name if ok else None
+        )
+
+    def _evaluate_whole_job(self, job: JobInfo) -> AutoApprovalValidationResult:
+        """A whole job never runs under policies, so it can't match an api with
+        policies: that api is called through a request instead."""
         matches, last_reason = matching_apis(
             self.api_store.apis_dir, job.job_submission_path, job.submitted_by
         )
@@ -80,11 +99,17 @@ class JobApprovalHandler:
             return AutoApprovalValidationResult(
                 match=False, reason=f"matches several apis: {matches}"
             )
-        if matches:
+        if not matches:
+            return AutoApprovalValidationResult(match=False, reason=last_reason)
+        obj = self.api_store.get(matches[0])
+        if obj.input_policy or obj.output_policy:
             return AutoApprovalValidationResult(
-                match=True, reason="ok", api_name=matches[0]
+                match=False,
+                reason=f"api '{matches[0]}' has policies; call it through client.api",
             )
-        return AutoApprovalValidationResult(match=False, reason=last_reason)
+        return AutoApprovalValidationResult(
+            match=True, reason="ok", api_name=matches[0]
+        )
 
     def check_and_approve(self) -> list[JobInfo]:
         """Check all jobs and approve those matching criteria."""
@@ -107,7 +132,9 @@ class JobApprovalHandler:
                 continue
 
             try:
-                job.approve_for_api(disclosures=self.default_disclosures)
+                job.approve(
+                    approval_method="auto", disclosures=self.default_disclosures
+                )
                 approved_jobs.append(job)
 
                 if self.state:

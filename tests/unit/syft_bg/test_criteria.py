@@ -65,6 +65,7 @@ def create_mock_job(
     job.job_submission_path = submission_dir or Path("/nonexistent")
     job.code_dir = job.job_submission_path / "code"
     job.files = files or []
+    job.is_request = False
     return job
 
 

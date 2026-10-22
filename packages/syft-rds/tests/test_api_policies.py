@@ -19,13 +19,13 @@ with open("outputs/result.json", "w") as f:
     json.dump({"sum": params["a"] + params["b"]}, f)
 """
 
-# Two calls in total: the job the api was built from, and one more.
+# One call in total.
 RATE_LIMIT_POLICY = """import json, os
 from pathlib import Path
 path = Path(os.environ["SYFT_POLICY_DEFAULT_STATE_PATH"])
 state = json.loads(path.read_text())
-if state.get("calls", 0) >= 2:
-    raise ValueError("Rate limit reached: 2 calls")
+if state.get("calls", 0) >= 1:
+    raise ValueError("Rate limit reached: 1 call")
 state["calls"] = state.get("calls", 0) + 1
 path.write_text(json.dumps(state))
 """
@@ -115,20 +115,28 @@ def test_api_policies_allow_block_and_show():
         assert "Rate limit reached" in repr(api)
         assert "Sum too large to share" in api._repr_html_()
 
-        # A call over 100 passes the input policy and is blocked on output.
+        # A call is a request: it carries the params, not the api's code. A
+        # call over 100 passes the input policy and is blocked on output. The
+        # job the api was built from is a whole job, which never runs under
+        # policies, so it stays pending.
         large = api(100, b=1, block=False)
-        assert _approve_and_run(do_manager, paths.config) == {job.name, large.name}
+        assert large.is_request
+        code_files = sorted(
+            p.name for p in (large.job_submission_path / "code").iterdir()
+        )
+        assert code_files == ["params.json"]
+        assert _approve_and_run(do_manager, paths.config) == {large.name}
         blocked = _ds_job(ds_manager, large.name)
         assert blocked.status == "failed"
         assert blocked.policy_error == "ValueError: Sum too large to share"
         assert blocked.output_paths == []
 
-        # The rate limit is used up: the original job and the large call.
-        third = api(1, b=2, block=False)
+        # The rate limit of one call is used up.
+        second = api(1, b=2, block=False)
         _approve_and_run(do_manager, paths.config)
-        limited = _ds_job(ds_manager, third.name)
+        limited = _ds_job(ds_manager, second.name)
         assert limited.status == "failed"
-        assert limited.policy_error == "ValueError: Rate limit reached: 2 calls"
+        assert limited.policy_error == "ValueError: Rate limit reached: 1 call"
 
     # The DO's view of a call shows the api and its policies.
     do_job = next(j for j in do_manager.jobs if j.name == large.name)
@@ -136,4 +144,4 @@ def test_api_policies_allow_block_and_show():
     html = do_job._repr_html_()
     assert "adder" in html and "Input policy" in html and "Output policy" in html
     original = next(j for j in do_manager.jobs if j.name == job.name)
-    assert original.status == "done"
+    assert original.status == "pending"

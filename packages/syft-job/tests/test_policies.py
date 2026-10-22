@@ -1,4 +1,4 @@
-"""Input and output policies around a job, run by SyftJobRunner."""
+"""Api calls (requests), and the input and output policies run around them."""
 
 import json
 from pathlib import Path
@@ -13,6 +13,7 @@ from syft_job.policies import (
     JobPolicies,
     PolicyResolutionError,
     PolicyScript,
+    ResolvedApi,
     python_run_script,
 )
 
@@ -20,6 +21,7 @@ DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
 PEER_EMAIL = "peer@test.org"
 API_NAME = "word_count"
+PARAMS = {"params.json": b'{"word": "privacy"}'}
 
 RATE_LIMIT_POLICY = """import json, os
 from pathlib import Path
@@ -76,9 +78,15 @@ def _recipients_policy(recipients: list[str]) -> str:
 
 
 class Env:
+    """A DO and a DS sharing one SyftBox, and a fake api the resolver returns.
+
+    The api's run.sh is the script each test calls; the DS sends a request.
+    """
+
     def __init__(self, tmp_path: Path):
         self.syftbox = tmp_path / "SyftBox"
         self.syftbox.mkdir()
+        self.api_files = tmp_path / "api_files"
         self.policies_dir = tmp_path / "policies"
         self.state_dir = tmp_path / "state"
         self.do_config = SyftJobConfig(
@@ -90,17 +98,22 @@ class Env:
         self.do_client = JobClient(config=self.do_config)
         self.ds_client = JobClient(config=ds_config)
         self.do_client.setup_ds_job_folder_as_do(DS_EMAIL)
+        self.do_client.api_resolver = self.resolve
         self.input_code: str | None = None
         self.output_code: str | None = None
-        self.runner = SyftJobRunner(config=self.do_config, policy_resolver=self.resolve)
+        self.code_hash = "sha256:v1"
+        self.runner = SyftJobRunner(config=self.do_config, api_resolver=self.resolve)
 
-    def resolve(self, submission_root: Path, submitter: str) -> JobPolicies:
-        return JobPolicies(
-            api_name=API_NAME,
+    def resolve(self, api_name: str) -> ResolvedApi:
+        if api_name != API_NAME:
+            raise PolicyResolutionError(f"no api named {api_name!r}")
+        policies = JobPolicies(
+            api_name=api_name,
             state_dir=self.state_dir,
             input=self._script("input", self.input_code),
             output=self._script("output", self.output_code),
         )
+        return ResolvedApi(api_name, self.code_hash, self.api_files, policies)
 
     def _script(self, kind: str, code: str | None) -> PolicyScript | None:
         if code is None:
@@ -111,14 +124,25 @@ class Env:
         (folder / "run.sh").write_text(python_run_script())
         return PolicyScript(folder)
 
+    def submit(self, script: str, job_name: str = "call.job"):
+        """Make script the api's run.sh, send a request as the DS, approve it."""
+        self.api_files.mkdir(exist_ok=True)
+        (self.api_files / "run.sh").write_text(script)
+        self.ds_client.submit_api_request(DO_EMAIL, job_name, API_NAME, PARAMS)
+        self.do_job(job_name).approve()
+
     def call(self, script: str, job_name: str = "call.job", **process_kwargs):
-        """Submit a bash job as the DS, approve it via the api, and run it."""
-        self.ds_client.submit_bash_job(DO_EMAIL, script, job_name)
-        job = next(j for j in self.do_client.jobs if j.name == job_name)
-        job.approve_for_api()
+        """Submit and approve a request, run it, and return the DO's job."""
+        self.submit(script, job_name)
+        self.run(**process_kwargs)
+        return self.do_job(job_name)
+
+    def run(self, **process_kwargs) -> None:
         self.runner.process_approved_jobs(
             stream_output=False, share_outputs_with_submitter=True, **process_kwargs
         )
+
+    def do_job(self, job_name: str):
         return next(j for j in self.do_client.jobs if j.name == job_name)
 
     def reads(self, user: str, job_name: str, rel_path: str) -> bool:
@@ -206,19 +230,48 @@ def test_empty_recipients_hold_outputs_back(env):
     assert not job.outputs_withheld
 
 
-def test_api_job_fails_when_it_matches_no_api(env):
-    def no_match(submission_root: Path, submitter: str) -> JobPolicies:
-        raise PolicyResolutionError("it matches no api")
+def test_request_runs_api_code_with_its_params(env):
+    job = env.call("cp code/params.json code/outputs/params.json")
 
-    env.runner.policy_resolver = no_match
-    job = env.call("echo hi > code/outputs/out.txt")
+    assert job.status == "done"
+    assert job.is_request and job.api_name == API_NAME
+    outputs = job.job_review_path / "outputs"
+    assert json.loads((outputs / "params.json").read_text()) == {"word": "privacy"}
+    # The request folder holds only what the DS sent; the code never lands there.
+    assert sorted(p.name for p in job.job_submission_path.iterdir()) == [
+        "code",
+        "config.yaml",
+        "syft.pub.yaml",
+    ]
 
+
+def test_request_fails_when_api_cannot_load(env):
+    env.submit("echo hi > code/outputs/out.txt")
+
+    def gone(api_name: str) -> ResolvedApi:
+        raise PolicyResolutionError(f"no api named {api_name!r}")
+
+    env.runner.api_resolver = gone
+    env.run()
+
+    job = env.do_job("call.job")
     assert job.status == "failed"
-    assert job.review_reason == "approved through an api, but it matches no api"
+    assert job.review_reason == "api call not run: no api named 'word_count'"
     assert not (job.job_review_path / "outputs" / "out.txt").exists()
 
 
-def test_job_without_api_runs_without_policies(env):
+def test_request_fails_when_api_changed_since_approval(env):
+    env.submit("echo hi > code/outputs/out.txt")
+    env.code_hash = "sha256:v2"
+
+    env.run()
+
+    job = env.do_job("call.job")
+    assert job.status == "failed"
+    assert "changed since the request was approved" in job.review_reason
+
+
+def test_whole_job_runs_without_policies(env):
     env.input_code = "raise SystemExit(1)\n"
     env.ds_client.submit_bash_job(DO_EMAIL, "echo hi > code/outputs/out.txt", "a.job")
     env.do_client.jobs[0].approve()

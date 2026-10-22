@@ -24,6 +24,7 @@ from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.approve.handlers.job import JobApprovalHandler
 from syft_bg.common.config import get_default_paths
 from syft_bg.common.syft_bg_config import SyftBgConfig
+from syft_rds.apis import ApiArg
 
 DO_EMAIL = "do@test.com"
 
@@ -230,6 +231,7 @@ class TestHandlerReloadsApis:
         job.job_submission_path = submission_dir
         job.code_dir = submission_dir / "code"
         job.files = []
+        job.is_request = False
         return job
 
     def _create_matching_api(self, store: ApiStore, submission_dir: Path) -> None:
@@ -288,6 +290,63 @@ class TestHandlerReloadsApis:
         assert result.match is False
         assert "several apis" in result.reason
 
+    def test_whole_job_matching_api_with_policies_stays_pending(self, temp_dir):
+        submission = self._write_submission(temp_dir / "job")
+        handler, store = self._make_handler(temp_dir)
+        policy = temp_dir / "limit.sh"
+        policy.write_text("exit 0\n")
+        content_files = [
+            (f.relative_to(submission).as_posix(), f)
+            for f in sorted(submission.rglob("*"))
+            if f.is_file()
+        ]
+        store.create("r1", content_files, [], ["alice@test.com"], input_policy=policy)
+
+        result = handler.evaluate_auto_approval(self._make_test_job(submission))
+
+        assert result.match is False
+        assert "call it through client.api" in result.reason
+
+    def _write_request(self, base_dir: Path, params: str) -> Path:
+        (base_dir / "code").mkdir(parents=True)
+        (base_dir / "code" / "params.json").write_text(params)
+        (base_dir / "config.yaml").write_text("name: call\n")
+        return base_dir
+
+    def _create_callable_api(self, store: ApiStore, temp_dir: Path) -> None:
+        submission = self._write_submission(temp_dir / "api_job")
+        store.create(
+            "adder",
+            [
+                ("run.sh", submission / "run.sh"),
+                ("code/main.py", submission / "code" / "main.py"),
+            ],
+            ["config.yaml", "code/params.json"],
+            ["alice@test.com"],
+            args=[ApiArg(name="a", type="int", required=True)],
+        )
+
+    @pytest.mark.parametrize(
+        "api_name, params, reason",
+        [
+            ("adder", '{"a": 1}', None),
+            ("adder", '{"a": "x"}', "params don't fit the api"),
+            ("../adder", '{"a": 1}', "calls no api of yours"),
+        ],
+    )
+    def test_request_checked_against_named_api(
+        self, temp_dir, api_name, params, reason
+    ):
+        handler, store = self._make_handler(temp_dir)
+        self._create_callable_api(store, temp_dir)
+        job = self._make_test_job(self._write_request(temp_dir / "req", params))
+        job.is_request, job.api_name = True, api_name
+
+        result = handler.evaluate_auto_approval(job)
+
+        assert result.match is (reason is None)
+        assert reason is None or reason in result.reason
+
 
 class TestAutoApproveDisclosures:
     """The DS reads a log only after the DO releases it."""
@@ -310,7 +369,7 @@ class TestAutoApproveDisclosures:
         assert "share_logs_with_submitter" not in (
             client.process_approved_jobs.call_args.kwargs
         )
-        return job.approve_for_api.call_args.kwargs
+        return job.approve.call_args.kwargs
 
     def test_approval_releases_nothing_by_default(self, temp_dir):
         assert self._run(temp_dir / "config.yaml")["disclosures"] == []

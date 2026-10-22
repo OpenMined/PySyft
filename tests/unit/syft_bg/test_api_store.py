@@ -7,7 +7,7 @@ import pytest
 import yaml
 from syft_bg.api.utils import read_job_args
 from syft_bg.approve.api_store import ApiStore, DuplicateApiError
-from syft_bg.approve.policy_resolver import api_policy_resolver
+from syft_bg.approve.api_resolver import api_resolver
 from syft_job.policies import PolicyResolutionError, python_run_script
 from syft_perms import SyftPermContext
 from syft_permissions import PERMISSION_FILE_NAME, RuleSet
@@ -184,40 +184,29 @@ def test_set_policies_replaces_removes_and_keeps_state(store, script, policy):
     assert state_file.read_text() == "{}"
 
 
-def _submission(temp_dir: Path, run_sh: str) -> Path:
-    root = temp_dir / "submission"
-    root.mkdir(exist_ok=True)
-    (root / "run.sh").write_text(run_sh)
-    return root
-
-
-def test_resolver_finds_matching_api_and_checks_policy_hash(
-    store, script, policy, temp_dir
-):
+def test_resolver_returns_code_policies_and_hash(store, script, policy):
     store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
-    resolver = api_policy_resolver(store)
-    job = _submission(temp_dir, script.read_text())
 
-    policies = resolver(job, "a@x.com")
-    assert policies.api_name == "api"
-    assert policies.input.folder == store.api_dir("api") / "policies" / "input"
+    api = api_resolver(store)("api")
 
-    (store.api_dir("api") / "policies" / "input" / "policy.py").write_text("pass\n")
+    assert (api.files_dir / "run.sh").read_text() == script.read_text()
+    assert api.policies.input.folder == store.api_dir("api") / "policies" / "input"
+    assert api.code_hash == store.get("api").code_hash()
+
+
+@pytest.mark.parametrize("changed", ["policies/input/policy.py", "files/run.sh"])
+def test_resolver_refuses_changed_file(store, script, policy, changed):
+    store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
+    (store.api_dir("api") / changed).write_text("pass\n")
+
     with pytest.raises(PolicyResolutionError, match="changed"):
-        resolver(job, "a@x.com")
+        api_resolver(store)("api")
 
 
-@pytest.mark.parametrize("change", ["api_deleted", "other_peer", "other_files"])
-def test_resolver_refuses_job_that_matches_no_api(
-    store, script, policy, temp_dir, change
-):
-    job = _submission(temp_dir, script.read_text())
-    store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
-    submitter = "b@x.com" if change == "other_peer" else "a@x.com"
-    if change == "api_deleted":
-        store.delete("api")
-    if change == "other_files":
-        (job / "run.sh").write_text("echo other\n")
+@pytest.mark.parametrize("name", ["deleted", "../deleted", ".staging_x"])
+def test_resolver_refuses_name_that_is_no_api(store, script, name):
+    store.create("deleted", [("run.sh", script)], [], ["a@x.com"])
+    store.delete("deleted")
 
-    with pytest.raises(PolicyResolutionError, match="matches no api"):
-        api_policy_resolver(store)(job, submitter)
+    with pytest.raises(PolicyResolutionError, match="no api named"):
+        api_resolver(store)(name)

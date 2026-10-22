@@ -16,7 +16,12 @@ class ProtocolCodecV1(ProtocolCodec):
     protocol_versions = ["1"]
 
     def submission_dir(self, ref: JobRef) -> Path:
-        return self.config.get_job_submission_dir(
+        get_dir = (
+            self.config.get_request_job_dir
+            if ref.is_request
+            else self.config.get_job_submission_dir
+        )
+        return get_dir(
             ref.datasite_email, ref.ds_email, ref.job_name, ref.protocol_version
         )
 
@@ -37,14 +42,21 @@ class ProtocolCodecV1(ProtocolCodec):
         return self.review_dir(ref) / self.state_marker
 
     def iter_submission_refs(self, datasite_email: str) -> Iterator[JobRef]:
+        """Jobs in inbox/, then api calls in requests/."""
         root = self.config.get_all_submissions_dir(datasite_email)
         yield from self._scan(root, datasite_email, self.submission_marker)
+        requests_root = self.config.get_requests_dir(datasite_email)
+        yield from self._scan(
+            requests_root, datasite_email, self.submission_marker, is_request=True
+        )
 
     def iter_review_refs(self, datasite_email: str) -> Iterator[JobRef]:
         root = self.config.get_review_dir(datasite_email)
         yield from self._scan(root, datasite_email, self.state_marker)
 
-    def _scan(self, root: Path, datasite_email: str, marker: str) -> Iterator[JobRef]:
+    def _scan(
+        self, root: Path, datasite_email: str, marker: str, is_request: bool = False
+    ) -> Iterator[JobRef]:
         if not root.exists():
             return
         for ds_dir in sorted(p for p in root.iterdir() if p.is_dir()):
@@ -55,7 +67,11 @@ class ProtocolCodecV1(ProtocolCodec):
                 for job_dir in sorted(p for p in version_dir.iterdir() if p.is_dir()):
                     if (job_dir / marker).exists():
                         yield JobRef(
-                            datasite_email, ds_dir.name, job_dir.name, protocol_version
+                            datasite_email,
+                            ds_dir.name,
+                            job_dir.name,
+                            protocol_version,
+                            is_request,
                         )
 
     def read(self, path: Path, canonical_name: str) -> dict:

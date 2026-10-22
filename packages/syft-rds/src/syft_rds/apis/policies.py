@@ -7,32 +7,45 @@ from syft_job.policies import (
     PolicyKind,
     PolicyResolutionError,
     PolicyScript,
+    ResolvedApi,
 )
 
 from syft_rds.apis.api import callable_layout
-from syft_rds.apis.matching import matching_apis
 from syft_rds.apis.models import (
     API_FILE_NAME,
+    FILES_DIR_NAME,
     POLICY_STATE_DIR_NAME,
     FileEntry,
+    list_api_names,
     load_api_definition,
     policy_dir,
 )
 
 
-class ApiPolicyResolver:
-    """Finds the one api a job matches, and loads that api's policies."""
+class ApiResolver:
+    """Loads an api by name, for a request that calls it.
+
+    Every pinned file and policy file is checked against its hash in api.yaml.
+    """
 
     def __init__(self, apis_dir: Path):
         self.apis_dir = Path(apis_dir)
 
-    def __call__(self, submission_root: Path, submitter: str) -> JobPolicies:
-        matches, reason = matching_apis(self.apis_dir, submission_root, submitter)
-        if not matches:
-            raise PolicyResolutionError(f"it matches no api: {reason}")
-        if len(matches) > 1:
-            raise PolicyResolutionError(f"it matches several apis: {matches}")
-        return load_job_policies(matches[0], self.apis_dir / matches[0])
+    def __call__(self, api_name: str) -> ResolvedApi:
+        # A request names the api, so the name must be one of the apis.
+        if api_name not in list_api_names(self.apis_dir):
+            raise PolicyResolutionError(f"no api named {api_name!r}")
+        api_dir = self.apis_dir / api_name
+        policies = load_job_policies(api_name, api_dir)
+        definition = load_api_definition(api_dir)
+        for entry in definition.file_contents:
+            _check_hash(api_dir / FILES_DIR_NAME, entry)
+        return ResolvedApi(
+            name=api_name,
+            code_hash=definition.code_hash(),
+            files_dir=api_dir / FILES_DIR_NAME,
+            policies=policies,
+        )
 
 
 def load_job_policies(api_name: str, api_dir: Path) -> JobPolicies:
@@ -64,13 +77,14 @@ def _checked_script(
     return PolicyScript(policy_dir(api_dir, kind.value))
 
 
-def _check_hash(api_dir: Path, entry: FileEntry) -> None:
-    path = api_dir / entry.relative_path
+def _check_hash(base_dir: Path, entry: FileEntry) -> None:
+    """Raise unless the file at base_dir/<relative_path> has the entry's hash."""
+    path = base_dir / entry.relative_path
     try:
         actual = FileEntry.from_file(entry.relative_path, path).hash
     except (OSError, ValueError):
         actual = None
     if actual != entry.hash:
         raise PolicyResolutionError(
-            f"policy file {entry.relative_path} changed since it was stored"
+            f"file {entry.relative_path} changed since it was stored"
         )

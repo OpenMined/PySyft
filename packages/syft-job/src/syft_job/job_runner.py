@@ -19,22 +19,27 @@ from .job import JobInfo
 from .job_storage import JobRef, JobStateNotFoundError, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
 from .policies import (
-    API_APPROVAL_METHOD,
     OUTPUT_RECIPIENTS_FILENAME,
     OUTPUTS_WITHHELD_FILENAME,
     POLICY_ERROR_FILENAME,
     JobPolicies,
     PolicyInputs,
     PolicyKind,
+    ApiResolver,
     PolicyResolutionError,
-    PolicyResolver,
     PolicyResult,
     PolicyRunner,
     PolicyState,
+    ResolvedApi,
     policy_stderr_filename,
 )
 from .review_grants import replace_ds_folder_read
-from .submission import InvalidSubmissionError, copy_submission, submission_hash
+from .submission import (
+    API_HEADER,
+    InvalidSubmissionError,
+    copy_submission,
+    submission_hash,
+)
 from .traceback_capture import write_frames_record
 
 # Default timeout for job execution (10 minutes)
@@ -117,7 +122,7 @@ class SyftJobRunner:
         self,
         config: SyftJobConfig,
         poll_interval: int = 5,
-        policy_resolver: PolicyResolver | None = None,
+        api_resolver: ApiResolver | None = None,
     ):
         """
         Initialize the job runner.
@@ -125,12 +130,12 @@ class SyftJobRunner:
         Args:
             config: SyftJobConfig instance
             poll_interval: How often to check for new jobs (in seconds)
-            policy_resolver: Loads the policies of the api a job matched at
-                approval. A job with an api and no resolver fails.
+            api_resolver: Loads the api a request calls: its code and its
+                policies. A request fails when there is no resolver.
         """
         self.config = config
         self.poll_interval = poll_interval
-        self.policy_resolver = policy_resolver
+        self.api_resolver = api_resolver
         self.policy_runner = PolicyRunner()
         self.manager = JobStorage(config=config)
         self.known_jobs: Set[JobRef] = set()
@@ -461,7 +466,7 @@ class SyftJobRunner:
         if run_dir is None:
             return False
         try:
-            resolved, policies = self._resolve_policies(ref, run_dir)
+            resolved, policies = self._prepare_request(ref, run_dir)
             if resolved:
                 self._run_approved_job(ref, run_dir, stream_output, timeout, policies)
         finally:
@@ -531,25 +536,39 @@ class SyftJobRunner:
         self.manager.write_state(ref, state)
         print(f" Job {ref.job_name} not run: {reason}")
 
-    def _resolve_policies(
+    def _prepare_request(
         self, ref: JobRef, run_dir: Path
     ) -> tuple[bool, JobPolicies | None]:
-        """The policies of the api a job approved through an api matches now.
+        """For a request, add the api's code to the run copy; return its policies.
 
-        The run copy is matched, so the policies are those of the code that
-        runs. Returns (False, None) and fails the job when they can't be found,
-        so such a job never runs without policies.
+        A whole job needs nothing, and runs with no policies. A request whose
+        api can't be loaded, or changed since approval, fails, and returns
+        (False, None): a request never runs without its api's policies.
         """
-        record = self.manager.read_owner_record(ref)
-        if record is None or record.approval_method != API_APPROVAL_METHOD:
+        if not ref.is_request:
             return True, None
         try:
-            if self.policy_resolver is None:
-                raise PolicyResolutionError("no policy resolver is configured")
-            return True, self.policy_resolver(run_dir, ref.ds_email)
+            api = self._resolve_api(ref)
         except PolicyResolutionError as e:
-            self._fail_job(ref, f"approved through an api, but {e}")
+            self._fail_job(ref, f"api call not run: {e}")
             return False, None
+        shutil.copytree(api.files_dir, run_dir, dirs_exist_ok=True)
+        return True, api.policies
+
+    def _resolve_api(self, ref: JobRef) -> ResolvedApi:
+        """The api a request names, as it was when the request was approved."""
+        if self.api_resolver is None:
+            raise PolicyResolutionError("no api resolver is configured")
+        api_name = self.manager.read_submission(ref).headers.get(API_HEADER)
+        if not api_name:
+            raise PolicyResolutionError("the request names no api")
+        api = self.api_resolver(api_name)
+        record = self.manager.read_owner_record(ref)
+        if record is None or api.code_hash != record.api_code_hash:
+            raise PolicyResolutionError(
+                f"api '{api_name}' changed since the request was approved"
+            )
+        return api
 
     def _run_approved_job(
         self,

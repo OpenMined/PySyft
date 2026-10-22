@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import warnings
@@ -18,10 +19,11 @@ from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
-from .policies import PolicyResolver
+from .policies import ApiResolver
 from .review_grants import grant_ds_review_read
 from .submission import (
     SUBMISSION_ENTRIES,
+    API_HEADER,
     SUBMISSION_HASH_HEADER,
     InvalidSubmissionError,
     OwnerJobRecord,
@@ -36,6 +38,9 @@ RUN_SCRIPT_PYTHON_VERSION = "3.12"
 
 # Strict schema: only these entries are allowed in a job submission
 VALID_SUBMISSION_ENTRIES = SUBMISSION_ENTRIES
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseJobClient(ABC):
@@ -85,8 +90,9 @@ class JobClient(BaseJobClient):
             target_datasite_owner_email or config.current_user_email
         )  # The email of the datasite owner of the jobs
         self.has_do_role = config.has_do_role
-        # Loads the policies of a job's api, to show them with the job.
-        self.policy_resolver: Optional[PolicyResolver] = None
+        # Loads the api a request calls: to record its hash at approval, and to
+        # show its policies with the job.
+        self.api_resolver: Optional[ApiResolver] = None
         self.peer_install_sources: dict[
             str, str
         ] = {}  # do_email -> syft install source (local path, git URL, or "syft==X.Y.Z") advertised by that DO in their VersionInfo
@@ -147,6 +153,7 @@ class JobClient(BaseJobClient):
         ctx = SyftPermContext(datasite=datasite)
         inbox_rel_dir = ds_inbox_dir.relative_to(datasite)
         ctx.open(inbox_rel_dir).grant_write_access(ds_email)
+        self.setup_ds_request_folder_as_do(ds_email)
 
         # Create review folder for DS. The DS reads only the named files there
         # until a release grants more.
@@ -155,6 +162,21 @@ class JobClient(BaseJobClient):
         grant_ds_review_read(ds_review_dir, ds_email)
 
         return ds_inbox_dir
+
+    def setup_ds_request_folder_as_do(self, ds_email: str) -> Path:
+        """Create requests/<ds_email>/ and let the DS write api calls there.
+
+        Safe to call again: a peer approved before requests existed gets the
+        folder when its peers load.
+        """
+        datasite = self.config.syftbox_folder / self.current_user_email
+        ds_requests_dir = (
+            self.config.get_requests_dir(self.current_user_email) / ds_email
+        )
+        ds_requests_dir.mkdir(parents=True, exist_ok=True)
+        ctx = SyftPermContext(datasite=datasite)
+        ctx.open(ds_requests_dir.relative_to(datasite)).grant_write_access(ds_email)
+        return ds_requests_dir
 
     # ──────────────────────────────────────────────
     # Submission (DS side)
@@ -262,6 +284,51 @@ class JobClient(BaseJobClient):
             submitted_at=datetime.now(timezone.utc),
             entrypoint=entrypoint,
             files=sorted(code_files),
+        )
+        self.manager.write_submission(ref, config)
+        return job_dir
+
+    def submit_api_request(
+        self,
+        user: str,
+        job_name: str,
+        api_name: str,
+        code_files: dict[str, bytes],
+    ) -> Path:
+        """Call an api of ``user``: write a request to their requests/ folder.
+
+        The request holds no code. The data owner's runner adds the api's code
+        when it runs the request.
+
+        Args:
+            user: Email address of the datasite owner
+            job_name: Name of the job the call becomes
+            api_name: The api to call
+            code_files: {path relative to code/: content}, e.g. the params json
+
+        Returns:
+            Path to the created request directory
+        """
+        JobStorage.validate_job_name(job_name)
+        ref = self.manager.new_submission_ref(user, job_name, is_request=True)
+        job_dir = self.manager.submission_dir(ref)
+        if job_dir.exists():
+            raise FileExistsError(f"Request '{job_name}' already exists for '{user}'")
+        for rel_path, content in code_files.items():
+            dest = job_dir / "code" / rel_path
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(content)
+        config = JobSubmissionMetadata(
+            name=job_name,
+            type="python",
+            submitted_by=self.current_user_email,
+            datasite_email=user,
+            submitted_at=datetime.now(timezone.utc),
+            files=sorted(code_files),
+            headers={
+                API_HEADER: api_name,
+                SUBMISSION_HASH_HEADER: code_hash(job_dir, as_sent=True),
+            },
         )
         self.manager.write_submission(ref, config)
         return job_dir
@@ -547,19 +614,22 @@ python {entrypoint_path}
     # Validation and reception (DO side)
     # ──────────────────────────────────────────────
 
-    def validate_submission(self, inbox_job_path: Path) -> tuple[bool, str]:
-        """Check strict schema: only code/ + run.sh + config.yaml, no symlinks.
+    def validate_submission(
+        self, inbox_job_path: Path, is_request: bool = False
+    ) -> tuple[bool, str]:
+        """Check strict schema and no symlinks; a request has no run.sh.
 
         Returns:
             Tuple of (is_valid, reason_if_invalid)
         """
-        return validate_submission_dir(inbox_job_path)
+        return validate_submission_dir(inbox_job_path, is_request)
 
     def receive_job(
         self,
         ds_email: str,
         job_name: str,
         protocol_version: str,
+        is_request: bool = False,
     ) -> Optional[JobState]:
         """Receive a job once all its files arrived, and create its state in review/.
 
@@ -579,7 +649,15 @@ python {entrypoint_path}
             The created JobState, or None while files are still arriving or
             when another process received the job first.
         """
-        ref = JobRef(self.current_user_email, ds_email, job_name, protocol_version)
+        ref = JobRef(
+            self.current_user_email, ds_email, job_name, protocol_version, is_request
+        )
+        if is_request and self._name_is_a_job(ref):
+            logger.warning(
+                f"Request '{job_name}' from {ds_email} not received: a job in "
+                f"inbox/ has the same name"
+            )
+            return None
         # A record without a state means an earlier receipt stopped half-way;
         # it is finished below, with the hash it recorded.
         record = self.manager.read_owner_record(ref)
@@ -611,14 +689,26 @@ python {entrypoint_path}
         if not self._has_all_files(ref):
             return None
         submission_dir = self.manager.submission_dir(ref)
-        valid, reason = self.validate_submission(submission_dir)
+        valid, reason = self.validate_submission(submission_dir, ref.is_request)
         if not valid:
             raise InvalidSubmissionError(reason)
         record = OwnerJobRecord(
             received_hash=submission_hash(submission_dir),
             received_at=datetime.now(timezone.utc),
+            is_request=ref.is_request,
         )
         return record if self.manager.claim_owner_record(ref, record) else None
+
+    def _name_is_a_job(self, ref: JobRef) -> bool:
+        """Whether inbox/ holds a job with the request's name.
+
+        A job and a request share review/ and staging/, keyed on the name, so
+        the job keeps the name.
+        """
+        job_ref = JobRef(
+            ref.datasite_email, ref.ds_email, ref.job_name, ref.protocol_version
+        )
+        return self.manager.submission_dir(job_ref).exists()
 
     def _has_all_files(self, ref: JobRef) -> bool:
         """Whether every file of the job arrived.
@@ -671,7 +761,9 @@ python {entrypoint_path}
             if (self.manager.review_dir(ref) / "state.yaml").exists():
                 self._record_received_hash(ref)
                 continue
-            self.receive_job(ref.ds_email, ref.job_name, ref.protocol_version)
+            self.receive_job(
+                ref.ds_email, ref.job_name, ref.protocol_version, ref.is_request
+            )
 
     def _record_received_hash(self, ref: JobRef) -> None:
         """Record the received hash of a pending job that has no record yet.

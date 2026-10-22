@@ -31,13 +31,12 @@ from .job_stdout import StdoutViewer
 from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
 from .policies import (
-    API_APPROVAL_METHOD,
     OUTPUTS_WITHHELD_FILENAME,
     POLICY_ERROR_FILENAME,
     JobPolicies,
     PolicyResolutionError,
 )
-from .submission import OwnerJobRecord, submission_hash
+from .submission import API_HEADER, OwnerJobRecord, submission_hash
 
 # The files that ``share_logs_with_submitter`` releases.
 STAGED_LOG_FILES = tuple(
@@ -347,25 +346,29 @@ class JobInfo:
         return self._state.review_reason
 
     @property
-    def policies(self) -> Optional[JobPolicies]:
-        """The policies of the api the job was approved through.
-
-        None for a job approved another way, or when this client can't load
-        them (the DS's client, or an api that no longer matches).
-        """
-        resolver = self._client.policy_resolver
-        if self.approval_method != API_APPROVAL_METHOD or resolver is None:
-            return None
-        try:
-            return resolver(self.job_submission_path, self.submitted_by)
-        except PolicyResolutionError:
-            return None
+    def is_request(self) -> bool:
+        """Whether the job is a call of an api, submitted to requests/."""
+        return self._ref.is_request
 
     @property
     def api_name(self) -> Optional[str]:
-        """The api the job matches, when it was approved through one."""
-        policies = self.policies
-        return policies.api_name if policies else None
+        """The api a request calls; None for a whole job."""
+        return self.job_headers.get(API_HEADER) if self.is_request else None
+
+    @property
+    def policies(self) -> Optional[JobPolicies]:
+        """The policies of the api a request calls.
+
+        None for a whole job, or when this client can't load the api (the DS's
+        client, or an api that changed).
+        """
+        resolver = self._client.api_resolver
+        if self.api_name is None or resolver is None:
+            return None
+        try:
+            return resolver(self.api_name).policies
+        except PolicyResolutionError:
+            return None
 
     @property
     def policy_error(self) -> Optional[str]:
@@ -412,14 +415,6 @@ class JobInfo:
         check_approval_reason(reason)
         self._approve(reason, approval_method, disclosures)
 
-    def approve_for_api(self, disclosures: DisclosuresArg = None) -> None:
-        """Approve a job because it matches an api, for an automated approver.
-
-        The runner then runs the job only with the policies of the api it
-        matches when it runs, and fails it when it matches none.
-        """
-        self._approve(None, API_APPROVAL_METHOD, disclosures)
-
     def _approve(
         self, reason: Optional[str], approval_method: str, disclosures: DisclosuresArg
     ) -> None:
@@ -428,8 +423,9 @@ class JobInfo:
         # the state, so the runner never sees an approved state without them.
         record = self._read_owner_record()
         self._check_unchanged(record)
-        self._record_approval(record, approval_method)
-        # Up to the caller of approve() or approve_for_api(), through _approve().
+        api_code_hash = self._api_code_hash() if self.is_request else None
+        self._record_approval(record, approval_method, api_code_hash)
+        # Up to the caller of approve(), through _approve().
         self._write_disclosures(disclosures, stacklevel=5)
         self._state.status = JobStatus.APPROVED
         self._state.approved_by = self.current_user_email
@@ -441,6 +437,22 @@ class JobInfo:
         print("   Status    : approved → will run on next process cycle")
         print("\n⏳ Next step: run process_approved_jobs() to execute it.")
         print("   client.process_approved_jobs(share_outputs_with_submitter=True)")
+
+    def _api_code_hash(self) -> str:
+        """The hash of the code and policies of the api this request calls.
+
+        The runner runs the request only while the api still has this hash.
+        """
+        resolver = self._client.api_resolver
+        if resolver is None:
+            raise ValueError(
+                f"Job '{self.name}' calls api '{self.api_name}', and this client "
+                f"can't load apis. Approve it from your SyftRDSClient."
+            )
+        try:
+            return resolver(self.api_name).code_hash
+        except PolicyResolutionError as e:
+            raise ValueError(f"Job '{self.name}' is not approved: {e}") from e
 
     def _check_can_approve(self) -> None:
         if self._state.status != JobStatus.PENDING:
@@ -491,12 +503,18 @@ class JobInfo:
                 f"approved. Reject it, or ask the submitter to submit it again."
             )
 
-    def _record_approval(self, record: OwnerJobRecord, approval_method: str) -> None:
+    def _record_approval(
+        self,
+        record: OwnerJobRecord,
+        approval_method: str,
+        api_code_hash: Optional[str] = None,
+    ) -> None:
         """Record the received submission as approved, and how, in one write."""
         record.approved_hash = record.received_hash
         record.approved_by = self.current_user_email
         record.approved_at = datetime.now(timezone.utc)
         record.approval_method = approval_method
+        record.api_code_hash = api_code_hash
         self._client.manager.write_owner_record(self._ref, record)
 
     def reject(self, reason: Optional[str] = None) -> None:

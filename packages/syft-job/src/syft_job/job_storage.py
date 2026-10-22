@@ -1,4 +1,5 @@
 import logging
+from dataclasses import replace
 from pathlib import Path
 from typing import Iterator, Optional
 
@@ -149,8 +150,10 @@ class JobStorage:
     def write_owner_record(self, ref: JobRef, record: OwnerJobRecord) -> None:
         write_owner_record(self.owner_record_path(ref), record)
 
-    def new_submission_ref(self, do_email: str, job_name: str) -> JobRef:
-        """A ref for submitting a new job to ``do_email``."""
+    def new_submission_ref(
+        self, do_email: str, job_name: str, is_request: bool = False
+    ) -> JobRef:
+        """A ref for submitting a new job, or a request, to ``do_email``."""
         return JobRef(
             datasite_email=do_email,
             ds_email=self.config.current_user_email,
@@ -160,6 +163,7 @@ class JobStorage:
             protocol_version=self.negotiated_protocol_version_for_peer(
                 do_email, raise_on_unknown=False
             ),
+            is_request=is_request,
         )
 
     # -- naming ------------------------------------------------------------------
@@ -181,9 +185,15 @@ class JobStorage:
             yield from codec.iter_submission_refs(datasite_email)
 
     def iter_review_refs(self, datasite_email: str) -> Iterator[JobRef]:
-        """Yield a ref per job under app_data/job/review/, across all codecs."""
+        """Yield a ref per job under app_data/job/review/, across all codecs.
+
+        review/ is shared by jobs and requests, so whether a ref is a request
+        comes from the owner record, written at receipt.
+        """
         for codec in self.codecs:
-            yield from codec.iter_review_refs(datasite_email)
+            for ref in codec.iter_review_refs(datasite_email):
+                record = self.read_owner_record(ref)
+                yield replace(ref, is_request=bool(record and record.is_request))
 
     def find_submission_ref(
         self, datasite_email: str, job_name: str, ds_email: Optional[str] = None

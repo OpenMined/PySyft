@@ -29,7 +29,7 @@ from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
 from syft_rds.waiting import JobCheck, JobStatusArg, wait_for_dataset, wait_for_job
 from syft_rds.apis import Api, ApiCollection
 from syft_rds.apis.models import APIS_DIR
-from syft_rds.apis.policies import ApiPolicyResolver
+from syft_rds.apis.policies import ApiResolver
 from syft_rds.config import (
     DATASET_COLLECTION_SPECS,
     MOCK_DATASET_SPEC,
@@ -123,16 +123,11 @@ class SyftRDSClient(BaseModel):
     dataset_manager: SyftDatasetManager
 
     def model_post_init(self, __context: Any) -> None:
-        # Jobs approved through an api run with that api's policies, and show
-        # them.
+        # A request (an api call) runs with its api's code and policies.
         if self.job_runner is not None:
-            resolver = ApiPolicyResolver(
-                Path(self.syftbox_folder) / self.email / APIS_DIR
-            )
-            self.job_runner.policy_resolver = (
-                self.job_runner.policy_resolver or resolver
-            )
-            self.job_client.policy_resolver = resolver
+            resolver = ApiResolver(Path(self.syftbox_folder) / self.email / APIS_DIR)
+            self.job_runner.api_resolver = self.job_runner.api_resolver or resolver
+            self.job_client.api_resolver = resolver
         # React to sync-engine peer lifecycle events with RDS-owned logic.
         self.sync_engine.on("peer_approved", self._on_peer_approved)
         self.sync_engine.on("peers_loaded", self._on_peers_loaded)
@@ -329,12 +324,19 @@ class SyftRDSClient(BaseModel):
 
     def _on_peers_loaded(self, *args: Any, **kwargs: Any) -> None:
         """Peers were (re)loaded: copy each peer's advertised install source
-        into our owned job client so submitted run.sh references the DO's path."""
+        into our owned job client so submitted run.sh references the DO's path.
+
+        As a DO, also give every approved peer a requests/ folder, so a peer
+        approved before api requests existed can call apis.
+        """
         for peer in self.sync_engine.peer_manager.syncable_peers:
             if peer.version:
                 self.job_client.peer_install_sources[peer.email] = (
                     peer.version.syft_client_install_source
                 )
+        if self.has_do_role:
+            for peer in self.sync_engine.peer_manager.approved_peers:
+                self.job_client.setup_ds_request_folder_as_do(peer.email)
 
     def _share_any_datasets_with_peer(self, peer_email: str) -> None:
         """Share all datasets tagged 'any' with a specific peer.
@@ -480,18 +482,29 @@ class SyftRDSClient(BaseModel):
         compat.maybe_warn()
 
         job_name = f"{api.name}-{uuid4().hex[:8]}"
-        job_dir = self.job_client.submit_prepared_python_job(
+        job_dir = self._submit_call(api, job_name, params)
+        self.sync_engine.push_job_files(job_dir)
+        print(f"✅ Submitted job '{job_name}' to {api.datasite} via api '{api.name}'")
+        if block:
+            return self._wait_for_job(job_name)
+        return self._find_job(job_name)
+
+    def _submit_call(self, api: Api, job_name: str, params: dict[str, Any]) -> Path:
+        """Write the call: a request when the api takes them, else a whole job.
+
+        An api written by an older syft-bg takes whole jobs only.
+        """
+        if api.definition.accepts_requests:
+            return self.job_client.submit_api_request(
+                api.datasite, job_name, api.name, api.request_code_files(params)
+            )
+        return self.job_client.submit_prepared_python_job(
             api.datasite,
             job_name,
             api.run_script,
             api.job_code_files(params),
             api.layout.entrypoint,
         )
-        self.sync_engine.push_job_files(job_dir)
-        print(f"✅ Submitted job '{job_name}' to {api.datasite} via api '{api.name}'")
-        if block:
-            return self._wait_for_job(job_name)
-        return self._find_job(job_name)
 
     def _wait_for_job(self, job_name: str, poll_interval: float = 2.0) -> Any:
         """Sync until the job is done, failed or rejected, then return it."""

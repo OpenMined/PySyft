@@ -52,6 +52,18 @@ class ApiDefinition(BaseModel):
     # Every file of each policy folder, e.g. "policies/input/run.sh", hashed.
     input_policy: list[FileEntry] = Field(default_factory=list)
     output_policy: list[FileEntry] = Field(default_factory=list)
+    # The DO's syft-bg can run a call sent as a request (params only). A DS
+    # client sends a whole job to an api written by an older syft-bg.
+    accepts_requests: bool = False
+
+    def code_hash(self) -> str:
+        """A hash over the api's pinned files and its policies.
+
+        A request records it at approval, and runs only while it is unchanged.
+        """
+        entries = self.file_contents + self.input_policy + self.output_policy
+        lines = sorted(f"{e.relative_path}\0{e.hash}" for e in entries)
+        return "sha256:" + hashlib.sha256("\n".join(lines).encode()).hexdigest()
 
 
 def load_api_definition(api_dir: Path) -> ApiDefinition:

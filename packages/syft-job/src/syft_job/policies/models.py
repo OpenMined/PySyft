@@ -13,10 +13,6 @@ POLICY_ERROR_FILENAME = "policy_error.txt"
 OUTPUTS_WITHHELD_FILENAME = "outputs_withheld.txt"
 OUTPUT_RECIPIENTS_FILENAME = "output_recipients.json"
 
-# The approval method of a job approved because it matches an api. The runner
-# runs such a job only with the policies of the api it matches.
-API_APPROVAL_METHOD = "api"
-
 
 def policy_stderr_filename(kind: "PolicyKind") -> str:
     return f"{kind.value}_policy_stderr.txt"
@@ -28,7 +24,7 @@ class PolicyKind(str, Enum):
 
 
 class PolicyResolutionError(Exception):
-    """The policies of a job's api can't be loaded, so the job must not run."""
+    """The api a request calls can't be loaded, so the request must not run."""
 
 
 @dataclass(frozen=True)
@@ -81,7 +77,18 @@ class PolicyResult:
     outputs_dir: Optional[Path] = None
 
 
-# Finds the policies of the one api that a job matches, from the job's
-# submission folder and its submitter. Raises PolicyResolutionError when no
-# api or several apis match, or a policy file changed.
-PolicyResolver = Callable[[Path, str], JobPolicies]
+@dataclass(frozen=True)
+class ResolvedApi:
+    """What a request needs from the api it calls: its code and policies."""
+
+    name: str
+    # Hash of the api's code and policies, recorded when a request is approved.
+    code_hash: str
+    # The api's pinned files, laid out as in a job: run.sh, code/...
+    files_dir: Path
+    policies: JobPolicies
+
+
+# Loads an api by name, checking every file against its hash. Raises
+# PolicyResolutionError when the api is gone or a file changed.
+ApiResolver = Callable[[str], ResolvedApi]

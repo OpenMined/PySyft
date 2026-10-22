@@ -5,10 +5,13 @@ it again before the api's policies run, so both read one definition of a match.
 """
 
 import hashlib
+import json
 from pathlib import Path
 
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
+from syft_rds.apis.api import callable_layout
+from syft_rds.apis.args import bind_args
 from syft_rds.apis.models import (
     ApiDefinition,
     FileEntry,
@@ -17,6 +20,7 @@ from syft_rds.apis.models import (
 )
 
 RUN_SCRIPT_PATH = "run.sh"
+REQUEST_CONFIG_PATH = "config.yaml"
 
 
 def compute_file_hash(file_path: Path) -> str | None:
@@ -123,6 +127,39 @@ def matching_apis(apis_dir: Path, root: Path, submitter: str) -> tuple[list[str]
         else:
             last_reason = f"[{name}] {reason}"
     return matches, last_reason
+
+
+def check_request(
+    root: Path, definition: ApiDefinition, submitter: str
+) -> tuple[bool, str]:
+    """Whether the request at root may call the api. Returns (ok, reason).
+
+    A request holds no code, so nothing is matched by content. It may hold only
+    the api's name-only files, its params must fit the api's arguments, and
+    the submitter must be one of the api's peers.
+    """
+    if definition.peers and submitter not in definition.peers:
+        return False, f"the api is not shared with {submitter}"
+    if not definition.accepts_requests:
+        return False, "the api takes no requests"
+    sent = set(submission_files(root)) - {REQUEST_CONFIG_PATH}
+    not_allowed = sent - set(definition.file_paths)
+    if not_allowed:
+        return False, f"files the api doesn't take: {sorted(not_allowed)}"
+    return _check_params(root, definition)
+
+
+def _check_params(root: Path, definition: ApiDefinition) -> tuple[bool, str]:
+    """Whether the request's params json binds to the api's arguments."""
+    layout = callable_layout(definition)
+    if layout is None:
+        return False, "the api can't be called with arguments"
+    try:
+        params = json.loads((root / layout.params_file).read_text())
+        bind_args("api", definition.args, (), params)
+    except (OSError, ValueError, TypeError) as e:
+        return False, f"params don't fit the api: {e}"
+    return True, "ok"
 
 
 def _names_mismatch(actual: set[str], expected: set[str]) -> str | None:

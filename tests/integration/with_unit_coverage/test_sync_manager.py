@@ -289,8 +289,8 @@ RATE_LIMIT_POLICY = """import json, os
 from pathlib import Path
 path = Path(os.environ["SYFT_POLICY_DEFAULT_STATE_PATH"])
 state = json.loads(path.read_text())
-if state.get("calls", 0) >= 2:
-    raise ValueError("Rate limit reached: 2 calls")
+if state.get("calls", 0) >= 1:
+    raise ValueError("Rate limit reached: 1 call")
 state["calls"] = state.get("calls", 0) + 1
 path.write_text(json.dumps(state))
 """
@@ -326,7 +326,8 @@ def test_api_policies(tmp_path, monkeypatch):
         client=do_manager, config_path=tmp_path / "config.yaml", verbose=False
     )
 
-    # The original job and the first call pass, the second call is blocked.
+    # Calls are requests. The first passes, the second is blocked; the job the
+    # api was built from is a whole job, so it stays pending.
     do_manager.sync()
     ds_manager.sync()
     first = ds_manager.api.adder(2, block=False)
@@ -342,7 +343,7 @@ def test_api_policies(tmp_path, monkeypatch):
         "failed",
     ]
     blocked = next(j for j in jobs.values() if j.status == "failed")
-    assert blocked.policy_error == "ValueError: Rate limit reached: 2 calls"
+    assert blocked.policy_error == "ValueError: Rate limit reached: 1 call"
 
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)

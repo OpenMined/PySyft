@@ -22,6 +22,12 @@ from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 # Strict schema: only these entries are allowed in a job submission.
 SUBMISSION_ENTRIES = frozenset({"code", "run.sh", "config.yaml"})
 
+# A request (an api call) holds no code: the api supplies run.sh.
+REQUEST_ENTRIES = frozenset({"code", "config.yaml"})
+
+# The header of a request's config.yaml that names the api it calls.
+API_HEADER = "api"
+
 # The entries the submitter's hash covers. config.yaml carries that hash, so it
 # cannot be part of it.
 CODE_ENTRIES = frozenset({"code", "run.sh"})
@@ -65,9 +71,13 @@ class OwnerJobRecord(BaseModel):
     approved_hash: Optional[str] = None
     approved_by: Optional[str] = None
     approved_at: Optional[datetime] = None
-    # "api" means the job may only run with the policies of an api it matches.
-    # Kept here, on the owner side, so a submitter can't drop the policies.
     approval_method: Optional[str] = None
+    # Set at receipt: the job came from requests/, so it calls an api. The
+    # runner adds the api's code and runs the api's policies.
+    is_request: bool = False
+    # Set at approval of a request: the hash of the api's code and policies.
+    # The runner fails the job when the api changed since.
+    api_code_hash: Optional[str] = None
 
 
 def _is_skipped(relative: Path) -> bool:
@@ -128,22 +138,26 @@ def submission_hash(submission_dir: Path) -> str:
     return _digest(submission_dir, None, as_sent=False)
 
 
-def validate_submission(submission_dir: Path) -> tuple[bool, str]:
-    """Check the strict schema: only code/ + run.sh + config.yaml, and no symlinks.
+def validate_submission(
+    submission_dir: Path, is_request: bool = False
+) -> tuple[bool, str]:
+    """Check the strict schema, and that nothing is a symlink.
 
-    A symlink could point at any file on the data owner's machine.
+    A job holds only code/ + run.sh + config.yaml. A request holds only code/ +
+    config.yaml. A symlink could point at any file on the data owner's machine.
 
     Returns:
         Tuple of (is_valid, reason_if_invalid)
     """
+    expected = REQUEST_ENTRIES if is_request else SUBMISSION_ENTRIES
     entries = {
         e.name for e in submission_dir.iterdir() if e.name != PERMISSION_FILE_NAME
     }
-    if entries != SUBMISSION_ENTRIES:
-        return False, f"Expected {set(SUBMISSION_ENTRIES)}, got {entries}"
+    if entries != expected:
+        return False, f"Expected {set(expected)}, got {entries}"
     if not (submission_dir / "code").is_dir():
         return False, "'code' must be a directory"
-    if not (submission_dir / "run.sh").is_file():
+    if not is_request and not (submission_dir / "run.sh").is_file():
         return False, "'run.sh' must be a file"
     if not (submission_dir / "config.yaml").is_file():
         return False, "'config.yaml' must be a file"

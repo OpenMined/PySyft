@@ -13,3 +13,5 @@ class JobRef:
     ds_email: str  # submitter
     job_name: str
     protocol_version: str  # "0" (no path segment) or "1"+ (v<n> segment)
+    # True for a call of an api, submitted to requests/ instead of inbox/.
+    is_request: bool = False

@@ -94,11 +94,24 @@ ds_client.api.word_count(word="privacy")      # waits for the job to finish
 ds_client.api.word_count("privacy", block=False)
 ```
 
-Each call submits a job. The DO's approve service matches the job to the API, approves it and runs it.
+Each call sends a request, not a whole job. A request is a folder in the DO's datasite, under `app_data/job/requests/<ds_email>/`, next to the `inbox/` that holds whole jobs. It names the API and holds only the call's arguments, in `code/params.json`. It holds no code.
+
+When the request arrives, the DO's client locks the folder, so the DS can't change it, the same as a whole job. The DO's approve service then checks four things:
+
+- the API the request names exists;
+- the DS is one of the API's peers;
+- the request holds only files the API takes by name;
+- the arguments fit the API's arguments.
+
+The approve service then approves the request. When the request runs, the runner copies it to a temporary folder, adds the API's code, and runs the API's policies around the job. A request is a job from then on: the DS follows it in `ds_client.jobs`, under the name the call returned.
+
+The approval records a hash of the API's code and policies. When the DO changes the API before the request runs, the request fails and doesn't run.
+
+A whole job that matches an API with policies is not approved automatically: a whole job never runs under policies, so it waits for the DO. A whole job that matches an API without policies is approved, as before.
 
 ### Duplicate APIs are refused
 
-A new API is refused when an existing API pins the same files and some peer can call both. The error names the existing API. The refusal exists because a job must match one API at most: that API decides which policies run. If more than one API still matches a job, the job is not approved and stays pending.
+A new API is refused when an existing API pins the same files and some peer can call both. The error names the existing API. The refusal exists because a whole job must match one API at most. If more than one API still matches a whole job, the job is not approved and stays pending.
 
 ## Input policies
 
