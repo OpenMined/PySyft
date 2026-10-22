@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.encryption_policy import PeerEncryptionPendingError
 from syft.sync.sync import datasite_owner_syncer
 from syft.sync.sync.caches.persisted_dict import PersistedDict
 from syft.sync.sync.constants import CACHE_DIR, OWNER_PENDING_DELIVERIES_FILENAME
@@ -299,6 +300,37 @@ def test_upgrade_seeds_peer_skipped_in_first_sync():
     do_manager.datasite_owner_syncer.sync([])
     do_manager.sync(auto_checkpoint=False)
     assert _outbox_paths(ds_manager, do_manager).count("shared/held.txt") == 1
+
+
+def test_upgrade_keeps_pending_private_share():
+    ds_manager, do_manager = _pair()
+    _push_private_file(do_manager, ds_manager)
+    do_manager.sync(auto_checkpoint=False)
+    _simulate_earlier_client(do_manager, {ds_manager.email: ["private/data.csv"]})
+
+    do_manager.sync(auto_checkpoint=False)
+    assert _sent_events(ds_manager, do_manager, "private/data.csv") == [
+        (False, b"rows")
+    ]
+
+
+def test_held_send_outside_plan_goes_out_later(monkeypatch):
+    ds_manager, do_manager = _pair()
+
+    def encryption_pending(*args, **kwargs):
+        raise PeerEncryptionPendingError("keys not known yet")
+
+    with monkeypatch.context() as m:
+        m.setattr(
+            ConnectionRouter, "owner_write_event_messages_to_outbox", encryption_pending
+        )
+        with pytest.warns(UserWarning, match="wait for a later sync"):
+            _push_private_file(do_manager, ds_manager)
+
+    do_manager.datasite_owner_syncer.process_syftbox_events_queue()
+    assert _sent_events(ds_manager, do_manager, "private/data.csv") == [
+        (False, b"rows")
+    ]
 
 
 def test_private_dataset_sent_to_peer_never_revoked():

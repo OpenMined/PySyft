@@ -650,13 +650,17 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         self._add_events_to_rolling_state(file_change_events_message)
         self.process_syftbox_events_queue()
 
+    def _is_syncable(self, path: str) -> bool:
+        """Whether a peer can get ``path`` by a delivery plan."""
+        collections_rel = self.event_cache.collections_relative_path()
+        return is_normal_syncable_path(path, collections_path=collections_rel)
+
     def _syncable_hashes(self) -> dict[str, str]:
         """The current hash of every file that a peer can get, by path."""
-        collections_rel = self.event_cache.collections_relative_path()
         return {
             str(path): file_hash
             for path, file_hash in self.event_cache.file_hashes.items()
-            if is_normal_syncable_path(str(path), collections_path=collections_rel)
+            if self._is_syncable(str(path))
         }
 
     def _readable_hashes(self, peer_emails: list[str]) -> dict[str, dict[str, str]]:
@@ -681,8 +685,10 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """Seed the views one time, for an owner whose state was never seeded.
 
         Each approved peer, and each peer in ``peer_emails``, is taken to hold
-        every file it may read now. A path that an earlier client still had to
-        send gets ``UNSENT_HASH``, so the next plan sends or deletes it.
+        every file it may read now. A syncable path that an earlier client
+        still had to send gets ``UNSENT_HASH``, so the next plan sends or
+        deletes it. Other pending paths, such as a private dataset share, stay
+        out of the view: a plan never sends them, so it must not delete them.
         """
         deliveries = self.event_cache.deliveries
         if deliveries.is_seeded():
@@ -693,7 +699,14 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         readable = self._readable_hashes(sorted({*approved, *peer_emails}))
         deliveries.seed(
             {
-                peer: {**files, **dict.fromkeys(pending.get(peer, ()), UNSENT_HASH)}
+                peer: {
+                    **files,
+                    **{
+                        p: UNSENT_HASH
+                        for p in pending.get(peer, ())
+                        if self._is_syncable(p)
+                    },
+                }
                 for peer, files in readable.items()
             }
         )
@@ -812,10 +825,12 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """
         self.perm_context._reload()
         waiting_for = set()
+        held = []
         try:
             while not self.outbox_queue.empty():
                 recipient, message = self.outbox_queue.get()
                 if recipient in waiting_for:
+                    held.append((recipient, message))
                     continue
                 try:
                     status = (
@@ -826,25 +841,26 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 except (PeerEncryptionPendingError, EncryptionPolicyConflictError) as e:
                     if self._warn_and_should_hold(recipient, e):
                         waiting_for.add(recipient)
+                        held.append((recipient, message))
                 else:
                     self._record_sent(recipient, message, status)
         finally:
-            self._drop_planned_messages()
+            self._requeue_unplanned_messages(held)
 
-    def _drop_planned_messages(self) -> None:
-        """Remove from the outbox queue the messages that ``deliver`` queued.
+    def _requeue_unplanned_messages(self, held: list) -> None:
+        """Put back the unsent messages that ``deliver`` did not queue.
 
-        A send that raised leaves later messages in the queue. A later send of
-        them would not check the views or the permissions again. ``deliver``
-        plans them again from the views instead.
+        The ``held`` messages go first, so each peer keeps its order. A
+        message that ``deliver`` queued is dropped: a later send would not
+        check the views or the permissions again, so ``deliver`` plans it
+        again from the views instead.
         """
-        kept = []
+        unsent = [*held]
         while not self.outbox_queue.empty():
-            recipient, message = self.outbox_queue.get()
+            unsent.append(self.outbox_queue.get())
+        for recipient, message in unsent:
             if message.message_filepath.as_string() not in self._planned_message_names:
-                kept.append((recipient, message))
-        for item in kept:
-            self.outbox_queue.put(item)
+                self.outbox_queue.put((recipient, message))
         self._planned_message_names.clear()
 
     def _warn_and_should_hold(self, recipient: str, error: Exception) -> bool:
