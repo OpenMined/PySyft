@@ -7,6 +7,9 @@ import pytest
 
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.sync.constants import CACHE_DIR
+from syft.sync.sync.caches.datasite_owner_cache import (
+    ProposedEventFileOutdatedException,
+)
 from syft.sync.sync.delivery_tracker import (
     DELIVERY_STATE_VERSION,
     DELIVERY_VIEWS_FILENAME,
@@ -215,6 +218,26 @@ def test_lost_views_resend_everything():
 
     do_manager.sync(auto_checkpoint=False)
     assert _outbox_paths(ds_manager, do_manager).count("shared/data.txt") == 2
+
+
+def test_outdated_proposal_does_not_block_owner_changes():
+    ds_manager, do_manager = _pair()
+    shared = do_manager.datasite_owner_syncer.perm_context.open("shared/")
+    shared.grant_write_access(ds_manager.email)
+    _write(do_manager, "shared/a.txt", "v1")
+    do_manager.sync(auto_checkpoint=False)
+    ds_manager.sync()
+
+    # The DS edits a.txt from v1 while the DO edits it too, so the
+    # proposal is outdated and its handling raises on every sync.
+    ds_manager._send_file_change(f"{do_manager.email}/shared/a.txt", "ds edit")
+    _write(do_manager, "shared/a.txt", "do edit")
+    _write(do_manager, "shared/b.txt", "new")
+    with pytest.raises(ProposedEventFileOutdatedException):
+        do_manager.sync(auto_checkpoint=False)
+
+    ds_manager.sync()
+    assert _received(ds_manager, do_manager, "shared/b.txt").read_text() == "new"
 
 
 def test_failed_outbox_write_resent_next_sync(monkeypatch):

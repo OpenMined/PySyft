@@ -759,7 +759,8 @@ def test_permission_change_triggers_resend():
 
 
 def test_accepted_change_reaches_other_readers():
-    """A change that the DO accepts from peer A also goes to peer B, who may read it."""
+    """A change that the DO accepts from peer A goes to peer B, who may read it,
+    in the next DO sync."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
     )
@@ -770,6 +771,9 @@ def test_accepted_change_reaches_other_readers():
     shared.grant_read_access(peer_b_email)
 
     ds_manager._send_file_change(f"{do_manager.email}/shared/proposal.txt", "from A")
+    # The first sync accepts the change. The second one sends it to peer B,
+    # because a sync sends before it pulls.
+    do_manager.datasite_owner_syncer.sync([ds_manager.email, peer_b_email])
     do_manager.datasite_owner_syncer.sync([ds_manager.email, peer_b_email])
 
     paths_for_b = [

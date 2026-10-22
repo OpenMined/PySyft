@@ -201,8 +201,12 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         tmp.rename(path)
 
     def sync(self, peer_emails: list[str], recompute_hashes: bool = True):
-        """Pull proposed changes from ``peer_emails``, then send each of them
-        what it does not hold yet."""
+        """Send each of ``peer_emails`` what it does not hold yet, then pull
+        their proposed changes.
+
+        The send comes first, so a proposal that fails does not hold back the
+        owner's own changes.
+        """
         if self.persist_owner_state:
             self._load_rolling_state()
         try:
@@ -211,6 +215,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
             if recompute_hashes:
                 self._record_local_changes()
+            self.deliver(peer_emails)
 
             for peer_email in peer_emails:
                 proposed_count = 0
@@ -228,7 +233,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                         f"from {peer_email}"
                     )
                 self.process_syftbox_events_queue()
-            self.deliver(peer_emails)
         finally:
             if self.persist_owner_state:
                 self._save_rolling_state()
