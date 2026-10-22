@@ -43,7 +43,11 @@ from syft.sync.checkpoints.rolling_state import (
 )
 from syft_perms import SyftPermContext
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
-from syft.sync.sync.delivery_tracker import UNSENT_HASH, DeliveryPlan
+from syft.sync.sync.delivery_tracker import (
+    UNSENT_HASH,
+    AcceptedChange,
+    DeliveryPlan,
+)
 from syft.sync.transport.types import SendStatus
 from syft.sync.utils.syftbox_utils import (
     create_event_timestamp,
@@ -716,6 +720,12 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         deliveries.confirm(self.connection_router.transport.p2p.delivered())
         self.perm_context._reload()
         plans = deliveries.plan(self._readable_hashes(peer_emails))
+        accepted = deliveries.accepted_changes()
+        syncable = self._syncable_hashes()
+        plans = {
+            peer: self._skip_accepted_from_others(peer, plan, accepted, syncable)
+            for peer, plan in plans.items()
+        }
         # Build every message before the first one is queued, so a read error
         # leaves no message of this plan in the queue.
         messages = [
@@ -729,6 +739,38 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self._planned_message_names.add(message.message_filepath.as_string())
             self.outbox_queue.put((peer, message))
         self.process_syftbox_events_queue()
+
+    def _skip_accepted_from_others(
+        self,
+        peer: str,
+        plan: DeliveryPlan,
+        accepted: Mapping[str, AcceptedChange],
+        syncable: Mapping[str, str],
+    ) -> DeliveryPlan:
+        """``plan`` without the changes that the owner accepted from another peer.
+
+        An accepted file goes only to its submitter while ``syncable`` still has
+        the hash that the change gave it. An accepted delete goes only to its
+        submitter while the file stays gone. A delete after a revoke still goes
+        out.
+        """
+
+        def from_other(path: str) -> bool:
+            change = accepted.get(path)
+            return (
+                change is not None
+                and change.peer != peer
+                and change.hash == syncable.get(path)
+            )
+
+        return DeliveryPlan(
+            send=[p for p in plan.send if not from_other(p)],
+            delete=[
+                p
+                for p in plan.delete
+                if not (from_other(p) and accepted[p].hash is None)
+            ],
+        )
 
     def _plan_events(self, plan: DeliveryPlan) -> list[FileChangeEvent]:
         """The events that carry out ``plan``: its sends, then its deletes."""
@@ -795,6 +837,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             filtered_message
         )
         if accepted_events_message is not None:
+            self.event_cache.deliveries.accept(
+                sender_email,
+                {
+                    str(e.path_in_datasite): None if e.is_deleted else e.new_hash
+                    for e in accepted_events_message.events
+                },
+            )
             self.queue_event_for_syftbox(
                 recipients=[sender_email],
                 file_change_events_message=accepted_events_message,

@@ -14,12 +14,14 @@ peer may read now:
     in the view, but no longer readable           -> delete
     in the view, but the file is gone             -> delete
 
-Every readable file counts, whoever wrote it. Thus a change that the owner
-accepts from one peer also goes to every other peer that may read it.
+A change that the owner accepts from a peer goes only to that peer.
+``accepted`` records it, and the owner leaves it out of the plan of every other
+peer while the file stays in that state. When the owner changes the file
+again, every peer that may read it gets it.
 
-A new peer starts with an empty view, so it is sent every file it may read. A
-peer that the owner rejects and then approves again keeps its view, and gets
-only what changed.
+A new peer starts with an empty view, so it is sent every file it may read.
+When the owner rejects a peer, ``reset`` drops its view. Thus a peer that the
+owner rejects and then approves again is sent every file it may read.
 
 An owner whose state was never seeded, because it ran an earlier client or
 lost its views file, has file hashes but no views. ``seed`` then starts the
@@ -79,6 +81,16 @@ class QueuedSend(BaseModel):
     changes: dict[str, str | None]
 
 
+class AcceptedChange(BaseModel):
+    """A change that the owner accepted from ``peer``.
+
+    ``hash`` is the new hash of the file, or None for a delete.
+    """
+
+    peer: str
+    hash: str | None
+
+
 class DeliveryState(BaseModel):
     """Everything the tracker keeps: views, and sends awaiting confirmation."""
 
@@ -89,6 +101,8 @@ class DeliveryState(BaseModel):
     queued: dict[str, QueuedSend] = Field(default_factory=dict)
     # Whether ``DeliveryTracker.seed`` ran on this state.
     seeded: bool = False
+    # path -> the last change that the owner accepted from a peer for it
+    accepted: dict[str, AcceptedChange] = Field(default_factory=dict)
 
 
 class DeliveryPlan(BaseModel):
@@ -182,6 +196,26 @@ class DeliveryTracker:
         """Forget every view and every queued send."""
         with self.store.locked():
             self.store.save(DeliveryState())
+
+    def reset(self, peer: str) -> None:
+        """Drop ``peer``'s view, so the next plan sends it every file it may read."""
+        with self.store.locked():
+            state = self.store.load()
+            state.views.pop(peer, None)
+            self.store.save(state)
+
+    def accept(self, peer: str, changes: Mapping[str, str | None]) -> None:
+        """Record ``changes`` (path -> new hash, None for a delete) as accepted
+        from ``peer``."""
+        with self.store.locked():
+            state = self.store.load()
+            for path, new_hash in changes.items():
+                state.accepted[path] = AcceptedChange(peer=peer, hash=new_hash)
+            self.store.save(state)
+
+    def accepted_changes(self) -> dict[str, AcceptedChange]:
+        """The last change that the owner accepted from a peer, by path."""
+        return self.store.load().accepted
 
     def is_seeded(self) -> bool:
         """Whether ``seed`` ran on the stored state."""

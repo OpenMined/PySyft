@@ -1085,8 +1085,17 @@ class SyftboxManager(BaseModelCallbackMixin):
         self._emit("peers_loaded")
 
     def reject_peer_request(self, email_or_peer: str | Peer):
-        """Reject a pending peer request. Delegates to PeerManager."""
+        """Reject a pending peer request. Delegates to PeerManager.
+
+        The DO drops the peer's delivery view, so a later approval sends the
+        peer every file it may read.
+        """
         self.peer_manager.reject_peer_request(email_or_peer)
+        if self.has_do_role:
+            peer_email = (
+                email_or_peer if isinstance(email_or_peer, str) else email_or_peer.email
+            )
+            self.datasite_owner_syncer.event_cache.deliveries.reset(peer_email)
 
     def validate_peer(self, peer_email: str) -> Peer:
         """Load the peers, then return ``peer_email`` if it is approved.

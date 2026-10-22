@@ -8,6 +8,7 @@ import pytest
 
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.encryption_policy import PeerEncryptionPendingError
+from syft.sync.peers.peer import PeerState
 from syft.sync.sync import datasite_owner_syncer
 from syft.sync.sync.caches.persisted_dict import PersistedDict
 from syft.sync.sync.constants import CACHE_DIR, OWNER_PENDING_DELIVERIES_FILENAME
@@ -53,6 +54,12 @@ def test_seed_runs_once_and_keeps_recorded_views():
     tracker.seed({PEER: {"a": "h1", "b": "h1"}})
     tracker.seed({PEER: {}})
     assert tracker.plan({PEER: {"a": "h1", "b": "h9"}})[PEER].send == []
+
+
+def test_reset_drops_view():
+    tracker = _tracker_holding({"a": "h1"})
+    tracker.reset(PEER)
+    assert tracker.plan({PEER: {"a": "h1"}})[PEER].send == ["a"]
 
 
 def test_queued_send_updates_view_on_confirm():
@@ -222,6 +229,25 @@ def test_revoked_peer_gets_content_then_delete(
         (False, "secret"),
         (True, None),
     ]
+
+
+def test_rejected_then_approved_peer_gets_every_file():
+    ds_manager, do_manager = _pair()
+    do_manager.datasite_owner_syncer.perm_context.open("shared/").grant_read_access(
+        ds_manager.email
+    )
+    _write(do_manager, "shared/data.txt", "one")
+    do_manager.sync(auto_checkpoint=False)
+
+    # The DS asks again. The DO rejects it, and then approves a later request.
+    peer = do_manager.peer_manager.get_cached_peer(ds_manager.email)
+    peer.state = PeerState.REQUESTED_BY_PEER
+    do_manager.reject_peer_request(ds_manager.email)
+    peer.state = PeerState.REQUESTED_BY_PEER
+    do_manager.approve_peer_request(ds_manager.email)
+
+    do_manager.sync(auto_checkpoint=False)
+    assert _outbox_paths(ds_manager, do_manager).count("shared/data.txt") == 2
 
 
 def test_restarted_owner_sends_nothing_new():

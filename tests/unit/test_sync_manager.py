@@ -758,9 +758,18 @@ def test_permission_change_triggers_resend():
     )
 
 
-def test_accepted_change_reaches_other_readers():
-    """A change that the DO accepts from peer A goes to peer B, who may read it,
-    in the next DO sync."""
+def _events_for(router: ConnectionRouter, do_manager) -> list[tuple[str, bool]]:
+    """(path, is_deleted) of each event in the DO's outbox for ``router``'s peer."""
+    return [
+        (str(e.path_in_datasite), e.is_deleted)
+        for m in router.watcher_get_events_messages(do_manager.email, None)
+        for e in m.events
+    ]
+
+
+def test_accepted_change_goes_only_to_submitter():
+    """A change that the DO accepts from peer A goes only to peer A. Peer B, who
+    may read the file, gets it when the DO changes the file."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
     )
@@ -769,19 +778,87 @@ def test_accepted_change_reaches_other_readers():
     shared = do_manager.datasite_owner_syncer.perm_context.open("shared/")
     shared.grant_write_access(ds_manager.email)
     shared.grant_read_access(peer_b_email)
+    peers = [ds_manager.email, peer_b_email]
 
     ds_manager._send_file_change(f"{do_manager.email}/shared/proposal.txt", "from A")
-    # The first sync accepts the change. The second one sends it to peer B,
-    # because a sync sends before it pulls.
-    do_manager.datasite_owner_syncer.sync([ds_manager.email, peer_b_email])
-    do_manager.datasite_owner_syncer.sync([ds_manager.email, peer_b_email])
+    do_manager.datasite_owner_syncer.sync(peers)
+    do_manager.datasite_owner_syncer.sync(peers)
+    assert ("shared/proposal.txt", False) in _events_for(
+        ds_manager._connection_router, do_manager
+    )
+    assert ("shared/proposal.txt", False) not in _events_for(peer_b_router, do_manager)
 
-    paths_for_b = [
-        str(e.path_in_datasite)
-        for m in peer_b_router.watcher_get_events_messages(do_manager.email, None)
-        for e in m.events
+    proposal = do_manager.syftbox_folder / do_manager.email / "shared/proposal.txt"
+    proposal.write_text("from the DO")
+    do_manager.datasite_owner_syncer.sync(peers)
+    assert ("shared/proposal.txt", False) in _events_for(peer_b_router, do_manager)
+
+
+def test_revoke_after_accepted_change_sends_delete():
+    """Peer B holds the DO's version of a file. After the DO accepts peer A's
+    change to it and peer B loses read access, peer B gets a delete."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    peer_b_email = "peer_b@example.com"
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
+    syncer = do_manager.datasite_owner_syncer
+    shared = syncer.perm_context.open("shared/")
+    shared.grant_write_access(ds_manager.email)
+    shared.grant_read_access(peer_b_email)
+    peers = [ds_manager.email, peer_b_email]
+    data = do_manager.syftbox_folder / do_manager.email / "shared/data.txt"
+    data.parent.mkdir(parents=True, exist_ok=True)
+    data.write_text("one")
+    syncer.sync(peers)
+    ds_manager.sync()
+
+    ds_manager._send_file_change(f"{do_manager.email}/shared/data.txt", "from A")
+    syncer.sync(peers)
+    shared.revoke_read_access(peer_b_email)
+    syncer.sync(peers)
+    assert _events_for(peer_b_router, do_manager) == [
+        ("shared/data.txt", False),
+        ("shared/data.txt", True),
     ]
-    assert "shared/proposal.txt" in paths_for_b
+
+
+def test_accepted_delete_goes_only_to_submitter():
+    """A delete that the DO accepts from peer A goes only to peer A. Peer B keeps
+    its copy."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    peer_b_email = "peer_b@example.com"
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
+    syncer = do_manager.datasite_owner_syncer
+    shared = syncer.perm_context.open("shared/")
+    shared.grant_write_access(ds_manager.email)
+    shared.grant_read_access(peer_b_email)
+    peers = [ds_manager.email, peer_b_email]
+    data = do_manager.syftbox_folder / do_manager.email / "shared/data.txt"
+    data.parent.mkdir(parents=True, exist_ok=True)
+    data.write_text("one")
+    syncer.sync(peers)
+
+    proposal = ProposedFileChangesMessage(
+        sender_email=ds_manager.email,
+        proposed_file_changes=[
+            ProposedFileChange(
+                path_in_datasite="shared/data.txt",
+                old_hash=syncer.event_cache.file_hashes[Path("shared/data.txt")],
+                datasite_email=do_manager.email,
+                is_deleted=True,
+            )
+        ],
+    )
+    syncer.handle_proposed_filechange_events_message(ds_manager.email, proposal)
+    syncer.process_syftbox_events_queue()
+    syncer.sync(peers)
+    assert ("shared/data.txt", True) in _events_for(
+        ds_manager._connection_router, do_manager
+    )
+    assert _events_for(peer_b_router, do_manager) == [("shared/data.txt", False)]
 
 
 def test_default_collections_folder_picks_shareable_spec_regardless_of_order():
