@@ -14,7 +14,6 @@ from syft_bg.api.api import (
     remove_api,
 )
 from syft_bg.api.utils import (
-    NOT_CALLABLE_ERROR,
     get_job_user_files,
     resolve_content_files,
     resolve_job_file_args,
@@ -121,24 +120,44 @@ class TestCreateApi:
             assert store.get("main").peers == ["alice@test.com"]
 
     @pytest.mark.parametrize(
-        "pinned, name_only",
+        "pinned, name_only, args, error",
         [
-            (["code/main.py"], NAME_ONLY),
-            (PINNED, ["config.yaml"]),
-            (PINNED + ["code/params.json"], ["config.yaml"]),
+            (["code/main.py"], NAME_ONLY, None, "pins run.sh"),
+            (PINNED, ["code/params.json"], None, "takes config.yaml"),
+            (PINNED + ["code/params.json"], NAME_ONLY, None, "pinned and taken"),
+            (PINNED, ["config.yaml"], [{"name": "a", "type": "int"}], "params file"),
         ],
     )
-    def test_refuses_files_that_make_no_api(self, temp_dir, pinned, name_only):
+    def test_refuses_files_that_make_no_api(
+        self, temp_dir, pinned, name_only, args, error
+    ):
         with _patched_paths(temp_dir) as store:
             result = create_api(
                 contents=pinned,
                 file_paths=name_only,
                 base_dir=_write_project(temp_dir),
                 allow_any_peer=True,
+                args=args,
             )
             assert result.success is False
-            assert result.error == NOT_CALLABLE_ERROR
+            assert error in result.error
             assert store.names() == []
+
+    def test_takes_more_files_and_infers_params_file(self, temp_dir):
+        with _patched_paths(temp_dir) as store:
+            project = _write_project(temp_dir)
+            (project / "data.csv").write_text("x\n")
+            result = create_api(
+                contents=PINNED,
+                file_paths=NAME_ONLY + ["data.csv"],
+                base_dir=project,
+                name="main",
+                allow_any_peer=True,
+            )
+            assert result.success is True
+            api = store.get("main")
+            assert api.params_file == "code/params.json"
+            assert api.call_files == ["code/params.json", "data.csv"]
 
     @pytest.mark.parametrize("answer,created", [("n", False), ("y", True)])
     def test_no_peers_asks_for_confirmation(self, temp_dir, answer, created):

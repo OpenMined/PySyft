@@ -81,6 +81,7 @@ class ApiStore:
         input_policy: Path | None = None,
         output_policy: Path | None = None,
         disclosures: list[str] | None = None,
+        params_file: str | None = None,
     ) -> tuple[str, ApiDefinition]:
         """Store a new api. Returns the final (unique) name and the object.
 
@@ -102,6 +103,7 @@ class ApiStore:
                 input_policy=store_policy(staging, PolicyKind.INPUT, input_policy),
                 output_policy=store_policy(staging, PolicyKind.OUTPUT, output_policy),
                 disclosures=disclosures or [],
+                params_file=params_file,
             )
             _write_api_file(staging, obj)
             with file_lock(_lock_path()):

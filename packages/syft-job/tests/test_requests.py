@@ -10,12 +10,16 @@ from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
 from syft_job.models import JobSubmissionMetadata
 from syft_job.policies import JobPolicies, PolicyResolutionError, ResolvedApi
-from syft_job.submission import API_HEADER, SUBMISSION_HASH_HEADER, code_hash
+from syft_job.submission import (
+    API_HEADER,
+    SUBMISSION_HASH_HEADER,
+    request_hash,
+)
 
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
 API_NAME = "word_count"
-PARAMS = {"params.json": b'{"word": "privacy"}'}
+PARAMS = {"code/params.json": b'{"word": "privacy"}'}
 REQUESTS_REL = f"app_data/job/requests/{DS_EMAIL}/v1"
 INBOX_REL = f"app_data/job/inbox/{DS_EMAIL}/v1"
 
@@ -92,22 +96,28 @@ def test_request_becomes_approved_locked_job(env):
     assert not _ds_writes(do, f"{INBOX_REL}/call.job/run.sh")
 
 
-def test_request_with_code_is_rejected_and_kept(env):
-    """A submitter that adds run.sh to a request, and declares its hash."""
+def test_request_with_symlink_is_rejected_and_kept(env):
+    """A symlink in a request could point at any file on the DO's machine."""
     do, ds, _ = env
     request_dir = ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, PARAMS)
-    (request_dir / "run.sh").write_text("echo injected\n")
+    (request_dir / "code" / "link.txt").symlink_to("/etc/hosts")
     [ref] = list(ds.manager.iter_submission_refs(DO_EMAIL))
     config = ds.manager.read_submission(ref)
-    config.headers[SUBMISSION_HASH_HEADER] = code_hash(request_dir, as_sent=True)
+    config.headers[SUBMISSION_HASH_HEADER] = request_hash(request_dir, as_sent=True)
     ds.manager.write_submission(ref, config)
 
     [job] = do.jobs
 
     assert job.is_request and job.status == "rejected"
-    assert "Expected" in job.review_reason
+    assert "symlink" in job.review_reason
     assert not (_datasite(do) / INBOX_REL / "call.job").exists()
-    assert not _ds_writes(do, f"{REQUESTS_REL}/call.job/run.sh")
+    assert not _ds_writes(do, f"{REQUESTS_REL}/call.job/config.yaml")
+
+
+def test_request_may_not_send_config(env):
+    _, ds, _ = env
+    with pytest.raises(ValueError, match="config.yaml"):
+        ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, {"config.yaml": b""})
 
 
 def test_request_refused_by_api_is_rejected(env):
@@ -134,10 +144,10 @@ def _write_request_by_hand(ds: JobClient, job_name: str) -> None:
     ref = ds.manager.new_submission_ref(DO_EMAIL, job_name, is_request=True)
     request_dir = ds.manager.submission_dir(ref)
     (request_dir / "code").mkdir(parents=True)
-    (request_dir / "code" / "params.json").write_bytes(PARAMS["params.json"])
+    (request_dir / "code" / "params.json").write_bytes(PARAMS["code/params.json"])
     headers = {
         API_HEADER: API_NAME,
-        SUBMISSION_HASH_HEADER: code_hash(request_dir, as_sent=True),
+        SUBMISSION_HASH_HEADER: request_hash(request_dir, as_sent=True),
     }
     config = JobSubmissionMetadata(
         name=job_name,

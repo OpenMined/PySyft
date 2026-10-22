@@ -19,6 +19,7 @@ from syft_bg.api.utils import (
     api_input_error,
     default_api_name,
     default_disclosures,
+    infer_params_file,
     api_store_for_job,
     get_api_store,
     new_policy_work_dir,
@@ -344,23 +345,26 @@ def create_api(
     input_policy: str | Path | None = None,
     output_policy: str | Path | None = None,
     disclosures: list[str] | None = None,
+    params_file: str | None = None,
 ) -> ApiResult:
     """Create an api in SyftBox, which peers call with client.api.<name>(...).
 
     Copies the files to <datasite>/app_data/apis/<name>/, computes hashes, and
-    grants read access to the peers that can call it. A call sends only its
-    arguments; the DO's client adds this code and approves the call.
+    grants read access to the peers that can call it. A call sends exactly the
+    files the api takes by name; the DO's client adds the pinned files and
+    approves the call.
 
-    An api pins run.sh and one Python file under code/ by content, and takes
-    config.yaml and one JSON file under code/ (the arguments) by name.
+    An api pins run.sh (and the rest of its code) by content, and takes
+    config.yaml and any other files a call sends by name. No file is both.
     `create_api_from_job` builds that shape from a reviewed job.
 
     Args:
         contents: List of file paths to pin by content. When base_dir is set,
                   these are relative paths resolved against it. Otherwise,
                   absolute paths or directories (expanded to all files within).
-        file_paths: Relative paths a call sends, taken by name only
-                  (e.g. ["config.yaml", "code/params.json"]).
+        file_paths: Relative paths a call sends, taken by name only, e.g.
+                  ["config.yaml", "code/params.json", "code/data.csv"]. A call
+                  must send every one of them, and nothing else.
         peers: Peer emails that may call the api. If None or empty, any peer
                may, and everyone can read the api; you are asked to confirm.
         name: Name for the api. Auto-generated if not provided.
@@ -368,9 +372,9 @@ def create_api(
                   When set, FileEntry.relative_path stores the relative path.
         allow_any_peer: Allow no peers without the confirmation prompt.
         api_store: Where to store the api. Defaults to the datasite in config.yaml.
-        args: Arguments of the name-only params json, in the order a caller
-              passes them positionally: ApiArg(name, type, default, required)
-              or the same as a dict.
+        args: Arguments of the params file, in the order a caller passes them
+              positionally: ApiArg(name, type, default, required) or the
+              same as a dict.
         input_policy: A .py or .sh script that runs before each call's job.
               A non-zero exit stops the job. See syft_job/policies/env.py
               for what a policy gets and the conventions it follows.
@@ -379,15 +383,23 @@ def create_api(
         disclosures: The items in DisclosureItem that a call's approval
               releases, e.g. ["logs"]. Defaults to default_disclosures in
               config.yaml.
+        params_file: The file in file_paths that client.api builds from a
+              call's arguments. Defaults to the one JSON file under code/ in
+              file_paths, if there is exactly one.
 
     Returns:
         ApiResult with the created api's details.
     """
     file_paths = file_paths or []
     peers = peers or []
+    shape = ApiDefinition(
+        file_paths=file_paths,
+        args=[ApiArg.model_validate(a) for a in args or []],
+        params_file=params_file or infer_params_file(file_paths),
+    )
     content_files, error = resolve_content_files(contents, base_dir)
     error = error or api_input_error(
-        content_files, file_paths, [input_policy, output_policy]
+        content_files, shape, [input_policy, output_policy]
     )
     if error:
         return ApiResult(success=False, error=error)
@@ -399,10 +411,11 @@ def create_api(
             content_files,
             file_paths,
             peers,
-            [ApiArg.model_validate(a) for a in args or []],
+            shape.args,
             input_policy=Path(input_policy) if input_policy else None,
             output_policy=Path(output_policy) if output_policy else None,
             disclosures=default_disclosures() if disclosures is None else disclosures,
+            params_file=shape.params_file,
         )
     except (ApiExistsError, ValueError) as e:
         return ApiResult(success=False, error=str(e))

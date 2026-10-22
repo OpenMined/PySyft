@@ -59,8 +59,8 @@ def _args_html(api: Api) -> str:
 
 
 def _row_html(index: int, api: Api) -> str:
-    call = escape(api.call_signature) if api.is_callable else "not callable"
-    code = escape(api.layout.python_file) if api.layout else "-"
+    call = escape(api.call_signature)
+    code = escape(api.python_file or "-")
     return (
         "<tr>"
         f'<td class="syftapi-td syftapi-code">{index}</td>'
@@ -96,7 +96,7 @@ def api_collection_repr_str(apis: Sequence[Api]) -> str:
         return "No apis found. Apis shared with you show up after client.sync()."
     lines = [f"Apis ({len(apis)}):"]
     for i, api in enumerate(apis):
-        call = api.call_signature if api.is_callable else "not callable"
+        call = api.call_signature
         lines.append(f"  [{i}] {api.name} (from {api.datasite}) -> {call}")
     return "\n".join(lines)
 
@@ -116,18 +116,18 @@ def api_repr_html(api: Api) -> str:
 
 
 def _api_body_html(api: Api) -> str:
-    if api.layout is None:
-        files = ", ".join(e.relative_path for e in api.definition.file_contents)
-        return (
-            f"<p><b>Files:</b> {escape(files)}</p>"
-            '<p class="syftapi-muted">This api can\'t be called with arguments.</p>'
-        )
-    return (
+    body = (
         f'<p><b>Call:</b> <span class="syftapi-code">'
         f"{escape(api.call_signature)}</span></p>"
-        f"<p><b>Runs</b> {escape(api.layout.python_file)}:</p>"
-        f'<div class="syftapi-pre">{escape(api.code or "")}</div>'
     )
+    if api.sent_files:
+        body += f"<p><b>Sends:</b> {escape(', '.join(api.sent_files))}</p>"
+    if api.code is not None:
+        body += (
+            f"<p><b>Runs</b> {escape(api.python_file)}:</p>"
+            f'<div class="syftapi-pre">{escape(api.code)}</div>'
+        )
+    return body
 
 
 def _policies(api: Api) -> list[tuple[str, str]]:
@@ -147,12 +147,10 @@ def _policies_html(api: Api) -> str:
 def api_repr_str(api: Api) -> str:
     args = ", ".join(a.describe() for a in api.args) or "-"
     header = f"Api '{api.name}' from {api.datasite}\nArgs: {args}"
-    if api.layout is None:
-        body = f"{header}\nThis api can't be called with arguments."
-    else:
-        body = (
-            f"{header}\nCall: {api.call_signature}\n"
-            f"Runs {api.layout.python_file}:\n\n{api.code}"
-        )
+    body = f"{header}\nCall: {api.call_signature}"
+    if api.sent_files:
+        body += f"\nSends: {', '.join(api.sent_files)}"
+    if api.code is not None:
+        body += f"\nRuns {api.python_file}:\n\n{api.code}"
     policies = "".join(f"\n\n{label}:\n\n{code}" for label, code in _policies(api))
     return body + policies

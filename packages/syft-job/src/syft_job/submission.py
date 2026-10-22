@@ -23,8 +23,9 @@ from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 # Strict schema: only these entries are allowed in a job submission.
 SUBMISSION_ENTRIES = frozenset({"code", "run.sh", "config.yaml"})
 
-# A request (an api call) holds no code: the api supplies run.sh.
-REQUEST_ENTRIES = frozenset({"code", "config.yaml"})
+# A request (an api call) holds config.yaml plus the files the api takes by
+# name; which files those are is the api's to say.
+REQUEST_CONFIG = "config.yaml"
 
 # The header of a request's config.yaml that names the api it calls.
 API_HEADER = "api"
@@ -99,7 +100,10 @@ def _as_sent(path: Path) -> bytes:
 
 
 def _digest(
-    submission_dir: Path, entries: Optional[frozenset[str]], as_sent: bool
+    submission_dir: Path,
+    entries: Optional[frozenset[str]],
+    as_sent: bool,
+    skip: frozenset[str] = frozenset(),
 ) -> str:
     digest = hashlib.sha256()
     files = sorted(
@@ -108,6 +112,7 @@ def _digest(
         if path.is_file()
         and not _is_skipped(relative := path.relative_to(submission_dir))
         and (entries is None or relative.parts[0] in entries)
+        and relative.as_posix() not in skip
     )
     for path in files:
         content = _as_sent(path) if as_sent else path.read_bytes()
@@ -126,6 +131,11 @@ def code_hash(submission_dir: Path, as_sent: bool = False) -> str:
     return _digest(submission_dir, CODE_ENTRIES, as_sent)
 
 
+def request_hash(request_dir: Path, as_sent: bool = False) -> str:
+    """SHA-256 over every file of a request but config.yaml, which carries it."""
+    return _digest(request_dir, None, as_sent, skip=frozenset({REQUEST_CONFIG}))
+
+
 def submission_hash(submission_dir: Path) -> str:
     """SHA-256 over every file of a submission: code/, run.sh and config.yaml.
 
@@ -136,35 +146,42 @@ def submission_hash(submission_dir: Path) -> str:
     return _digest(submission_dir, None, as_sent=False)
 
 
-def validate_submission(
-    submission_dir: Path, is_request: bool = False
-) -> tuple[bool, str]:
-    """Check the strict schema, and that nothing is a symlink.
+def validate_submission(submission_dir: Path) -> tuple[bool, str]:
+    """Check the strict schema: only code/ + run.sh + config.yaml, and no symlinks.
 
-    A job holds only code/ + run.sh + config.yaml. A request holds only code/ +
-    config.yaml. A symlink could point at any file on the data owner's machine.
+    A symlink could point at any file on the data owner's machine.
 
     Returns:
         Tuple of (is_valid, reason_if_invalid)
     """
-    expected = REQUEST_ENTRIES if is_request else SUBMISSION_ENTRIES
     entries = {
         e.name for e in submission_dir.iterdir() if e.name != PERMISSION_FILE_NAME
     }
-    if entries != expected:
-        return False, f"Expected {set(expected)}, got {entries}"
+    if entries != SUBMISSION_ENTRIES:
+        return False, f"Expected {set(SUBMISSION_ENTRIES)}, got {entries}"
     if not (submission_dir / "code").is_dir():
         return False, "'code' must be a directory"
-    if not is_request and not (submission_dir / "run.sh").is_file():
+    if not (submission_dir / "run.sh").is_file():
         return False, "'run.sh' must be a file"
     if not (submission_dir / "config.yaml").is_file():
         return False, "'config.yaml' must be a file"
-    for path in submission_dir.rglob("*"):
+    return _no_symlinks(submission_dir)
+
+
+def validate_request(request_dir: Path) -> tuple[bool, str]:
+    """Check a request has config.yaml and no symlinks.
+
+    Which other files it may hold is the api's to say, checked against it.
+    """
+    if not (request_dir / REQUEST_CONFIG).is_file():
+        return False, f"'{REQUEST_CONFIG}' must be a file"
+    return _no_symlinks(request_dir)
+
+
+def _no_symlinks(folder: Path) -> tuple[bool, str]:
+    for path in folder.rglob("*"):
         if path.is_symlink():
-            return (
-                False,
-                f"'{path.relative_to(submission_dir).as_posix()}' is a symlink",
-            )
+            return False, f"'{path.relative_to(folder).as_posix()}' is a symlink"
     return True, ""
 
 

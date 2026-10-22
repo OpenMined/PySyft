@@ -56,6 +56,8 @@ class JobPolicies:
     # The call's params JSON, relative to the job's submission root,
     # e.g. "code/params.json". None when the api takes no params.
     params_file: Optional[str] = None
+    # Every file a call sends, relative to the job's submission root.
+    call_files: tuple[str, ...] = ()
 
     def script(self, kind: PolicyKind) -> Optional[PolicyScript]:
         return self.input if kind == PolicyKind.INPUT else self.output

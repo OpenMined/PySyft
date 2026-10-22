@@ -13,6 +13,8 @@ import hashlib
 from pathlib import Path
 
 import yaml
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from syft_rds.apis.args import ApiArg
@@ -20,6 +22,8 @@ from syft_rds.apis.args import ApiArg
 APIS_DIR = Path("app_data") / "apis"
 API_FILE_NAME = "api.yaml"
 FILES_DIR_NAME = "files"
+RUN_SCRIPT_PATH = "run.sh"
+CALL_CONFIG_PATH = "config.yaml"
 POLICIES_DIR_NAME = "policies"
 POLICY_STATE_DIR_NAME = "policy_state"
 
@@ -54,6 +58,41 @@ class ApiDefinition(BaseModel):
     output_policy: list[FileEntry] = Field(default_factory=list)
     # The items in DisclosureItem that a call's approval releases, e.g. "logs".
     disclosures: list[str] = Field(default_factory=list)
+    # The name-only JSON file that client.api builds from a call's arguments,
+    # e.g. "code/params.json". None when the api takes no arguments.
+    params_file: Optional[str] = None
+
+    @property
+    def call_files(self) -> list[str]:
+        """Every file a call sends, besides config.yaml: the name-only files."""
+        return [f for f in self.file_paths if f != CALL_CONFIG_PATH]
+
+
+def api_shape_error(definition: ApiDefinition) -> Optional[str]:
+    """Why the definition makes no api, or None.
+
+    An api pins run.sh by content and takes config.yaml by name. A call sends
+    exactly the files the api takes by name, so no file is both. The params
+    file, when there is one, is a JSON file the api takes by name.
+    """
+    pinned = {e.relative_path for e in definition.file_contents}
+    listed = set(definition.file_paths)
+    if RUN_SCRIPT_PATH not in pinned:
+        return f"An api pins {RUN_SCRIPT_PATH} by content"
+    if CALL_CONFIG_PATH not in listed:
+        return f"An api takes {CALL_CONFIG_PATH} by name"
+    if pinned & listed:
+        return f"A file can't be pinned and taken by name: {sorted(pinned & listed)}"
+    return _params_file_error(definition)
+
+
+def _params_file_error(definition: ApiDefinition) -> Optional[str]:
+    params_file = definition.params_file
+    if params_file is None:
+        return "An api with arguments needs a params file" if definition.args else None
+    if params_file not in definition.file_paths or not params_file.endswith(".json"):
+        return "The params file must be a JSON file the api takes by name"
+    return None
 
 
 def load_api_definition(api_dir: Path) -> ApiDefinition:

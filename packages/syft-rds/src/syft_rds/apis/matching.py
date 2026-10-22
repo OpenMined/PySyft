@@ -10,14 +10,8 @@ from pathlib import Path
 
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
-from syft_rds.apis.api import callable_layout
 from syft_rds.apis.args import bind_args
-from syft_rds.apis.models import (
-    ApiDefinition,
-)
-
-RUN_SCRIPT_PATH = "run.sh"
-REQUEST_CONFIG_PATH = "config.yaml"
+from syft_rds.apis.models import CALL_CONFIG_PATH, ApiDefinition
 
 
 def submission_files(root: Path) -> dict[str, Path]:
@@ -42,26 +36,27 @@ def check_request(
 ) -> tuple[bool, str]:
     """Whether the request at root may call the api. Returns (ok, reason).
 
-    A request holds no code, so nothing is matched by content. It may hold only
-    the api's name-only files, its params must fit the api's arguments, and
-    the submitter must be one of the api's peers.
+    A call sends exactly the files the api takes by name: one it doesn't take
+    is refused, and one it takes must be sent. The params must fit the api's
+    arguments, and the submitter must be one of the api's peers.
     """
     if definition.peers and submitter not in definition.peers:
         return False, f"the api is not shared with {submitter}"
-    sent = set(submission_files(root)) - {REQUEST_CONFIG_PATH}
-    not_allowed = sent - set(definition.file_paths)
-    if not_allowed:
-        return False, f"files the api doesn't take: {sorted(not_allowed)}"
+    sent = set(submission_files(root)) - {CALL_CONFIG_PATH}
+    expected = set(definition.call_files)
+    if sent - expected:
+        return False, f"files the api doesn't take: {sorted(sent - expected)}"
+    if expected - sent:
+        return False, f"files the api needs: {sorted(expected - sent)}"
     return _check_params(root, definition)
 
 
 def _check_params(root: Path, definition: ApiDefinition) -> tuple[bool, str]:
     """Whether the request's params json binds to the api's arguments."""
-    layout = callable_layout(definition)
-    if layout is None:
-        return False, "the api can't be called with arguments"
+    if definition.params_file is None:
+        return True, "ok"
     try:
-        params = json.loads((root / layout.params_file).read_text())
+        params = json.loads((root / definition.params_file).read_text())
         bind_args("api", definition.args, (), params)
     except (OSError, ValueError, TypeError) as e:
         return False, f"params don't fit the api: {e}"

@@ -466,9 +466,9 @@ class SyftRDSClient(BaseModel):
         return ApiCollection(self)
 
     def _submit_api_call(
-        self, api: Api, params: dict[str, Any], block: bool = True
+        self, api: Api, files: dict[str, bytes], block: bool = True
     ) -> Any:
-        """Submit a job with an api's pinned files and params as its JSON.
+        """Send a call of an api as a request holding files.
 
         With block=True, waits until the job has finished and returns it.
         """
@@ -483,7 +483,7 @@ class SyftRDSClient(BaseModel):
 
         job_name = f"{api.name}-{uuid4().hex[:8]}"
         job_dir = self.job_client.submit_api_request(
-            api.datasite, job_name, api.name, api.request_code_files(params)
+            api.datasite, job_name, api.name, files
         )
         self.sync_engine.push_job_files(job_dir)
         print(f"✅ Submitted job '{job_name}' to {api.datasite} via api '{api.name}'")

@@ -86,22 +86,33 @@ sbg.create_api_from_job(
 
 `create_api` creates an API from files on disk instead of from a job.
 
+### What a call sends
+
+An API has two lists of files. The files it pins by content, such as `run.sh` and `code/main.py`, are the API's code: a call can't change them. The files it takes by name (`file_paths`), such as `config.yaml` and `code/params.json`, are what a call sends. A call must send every file the API takes by name, and nothing else. No file is in both lists.
+
+An API can take any number of files by name, anywhere in the job, for example a data file next to the params. One of them, the params file, is where `client.api` puts the call's arguments. By default it is the one JSON file in `code/` that the API takes by name.
+
 ### Calling an API (DS)
 
 ```python
 ds_client.api                                 # the APIs shared with you
 ds_client.api.word_count(word="privacy")      # waits for the job to finish
 ds_client.api.word_count("privacy", block=False)
+
+# An API that also takes code/stopwords.txt by name:
+ds_client.api.word_count("privacy", files={"code/stopwords.txt": "stopwords.txt"})
 ```
 
-Each call sends a request, not a whole job. A request is a folder in the DO's datasite, under `app_data/job/requests/<ds_email>/`, next to the `inbox/` that holds whole jobs. It names the API and holds only the call's arguments, in `code/params.json`. It holds no code.
+`files=` maps each file the API takes by name, other than the params file, to its content (bytes) or a path to read it from. The call checks that it sends exactly the files the API takes.
+
+Each call sends a request, not a whole job. A request is a folder in the DO's datasite, under `app_data/job/requests/<ds_email>/`, next to the `inbox/` that holds whole jobs. It names the API in its `config.yaml` and holds the files the call sends. `client.api` is a convenience: a DS can write any request with `JobClient.submit_api_request()`, and the DO's checks decide.
 
 When the request arrives, the DO's client checks it:
 
 - the API the request names is one of the DO's APIs;
 - the DS is one of the API's peers;
-- the request holds only files the API takes by name;
-- the arguments fit the API's arguments.
+- the request holds exactly the files the API takes by name: one it doesn't take, or one missing, rejects it;
+- the arguments in the params file fit the API's arguments.
 
 If a check fails, the request is rejected, and the DS sees the reason. If every check passes, the DO's client turns the request into an ordinary job in `inbox/`, under the same name: the API's code, plus the call's arguments. The job is approved straight away, because creating the API was the DO's approval in advance. The DO's client then removes the request folder.
 
@@ -144,13 +155,14 @@ The policy files are stored in the API folder and hashed. When a stored file no 
 
 The runner gives each policy these environment variables:
 
-| Variable                         | Contents                                                |
-| -------------------------------- | ------------------------------------------------------- |
-| `SYFT_POLICY_PARAMS_PATH`        | The call's params JSON, read-only                       |
-| `SYFT_POLICY_SUBMITTER`          | The DS's email                                          |
-| `SYFT_POLICY_API_NAME`           | The API's name                                          |
-| `SYFT_POLICY_STATE_DIR`          | The API's state folder, kept between runs               |
-| `SYFT_POLICY_DEFAULT_STATE_PATH` | `state.json` in the state folder, `{}` on the first run |
+| Variable                         | Contents                                                   |
+| -------------------------------- | ---------------------------------------------------------- |
+| `SYFT_POLICY_PARAMS_PATH`        | The call's params JSON, read-only                          |
+| `SYFT_POLICY_CALL_DIR`           | A copy of every file the call sent, laid out as in the job |
+| `SYFT_POLICY_SUBMITTER`          | The DS's email                                             |
+| `SYFT_POLICY_API_NAME`           | The API's name                                             |
+| `SYFT_POLICY_STATE_DIR`          | The API's state folder, kept between runs                  |
+| `SYFT_POLICY_DEFAULT_STATE_PATH` | `state.json` in the state folder, `{}` on the first run    |
 
 The module docstring of `syft_job/policies/env.py` documents every variable and convention in one place.
 

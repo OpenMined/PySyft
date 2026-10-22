@@ -87,6 +87,15 @@ def _read_params(run_dir: Path, params_file: str | None) -> bytes:
     return path.read_bytes() if path is not None and path.is_file() else b"{}"
 
 
+def _read_call_files(run_dir: Path, call_files: tuple[str, ...]) -> dict[str, bytes]:
+    """The files the call sent, from the run copy."""
+    return {
+        rel: (run_dir / rel).read_bytes()
+        for rel in call_files
+        if (run_dir / rel).is_file()
+    }
+
+
 def _remove_run_dir(run_dir: Path | None) -> None:
     """Remove a run copy and its temp folder; None is a no-op."""
     if run_dir is not None:
@@ -637,6 +646,7 @@ class SyftJobRunner:
             api_name=policies.api_name,
             submitter=ref.ds_email,
             params=_read_params(run_dir, policies.params_file),
+            call_files=_read_call_files(run_dir, policies.call_files),
         )
         if kind == PolicyKind.OUTPUT:
             inputs.outputs_dir = run_dir / "code" / "outputs"

@@ -65,8 +65,9 @@ syft_bg.create_api(
 )
 ```
 
-`contents` must hold `run.sh` and one Python file under `code/`; `file_paths` must hold
-`config.yaml` and one JSON file under `code/`. Paths are relative to `base_dir`.
+`contents` must hold `run.sh`; `file_paths` must hold `config.yaml` and lists every file a
+call sends. No file is in both. `params_file` names the file a call's arguments go in; it
+defaults to the one JSON file under `code/` in `file_paths`. Paths are relative to `base_dir`.
 
 ## Manage apis
 

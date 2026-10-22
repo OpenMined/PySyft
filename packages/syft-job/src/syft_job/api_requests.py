@@ -27,7 +27,7 @@ from .submission import (
     copy_submission,
     lock_for_submitter,
     submission_hash,
-    validate_submission,
+    validate_request,
 )
 
 if TYPE_CHECKING:
@@ -83,7 +83,7 @@ def _checked_api(client: JobClient, ref: JobRef) -> ResolvedApi:
     Raises PolicyResolutionError with the reason it is rejected.
     """
     request_dir = client.manager.submission_dir(ref)
-    valid, reason = validate_submission(request_dir, is_request=True)
+    valid, reason = validate_request(request_dir)
     if not valid:
         raise PolicyResolutionError(reason)
     if client.manager.submission_dir(replace(ref, is_request=False)).exists():

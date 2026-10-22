@@ -23,11 +23,13 @@ from .review_grants import grant_ds_review_read
 from .submission import (
     SUBMISSION_ENTRIES,
     API_HEADER,
+    REQUEST_CONFIG,
     SUBMISSION_HASH_HEADER,
     InvalidSubmissionError,
     OwnerJobRecord,
     code_hash,
     has_listed_files,
+    request_hash,
     lock_for_submitter,
     submission_hash,
 )
@@ -249,31 +251,37 @@ class JobClient(BaseJobClient):
         user: str,
         job_name: str,
         api_name: str,
-        code_files: dict[str, bytes],
+        files: dict[str, bytes],
     ) -> Path:
         """Call an api of ``user``: write a request to their requests/ folder.
 
-        The request holds no code. The data owner's runner adds the api's code
-        when it runs the request.
+        The request holds the files the call sends, e.g. "code/params.json".
+        The data owner accepts only the files the api takes by name, and adds
+        the api's code to make the job.
 
         Args:
             user: Email address of the datasite owner
             job_name: Name of the job the call becomes
             api_name: The api to call
-            code_files: {path relative to code/: content}, e.g. the params json
+            files: {path relative to the job's root: content}
 
         Returns:
             Path to the created request directory
         """
         JobStorage.validate_job_name(job_name)
+        if REQUEST_CONFIG in files:
+            raise ValueError(
+                f"A call can't send {REQUEST_CONFIG}; the client writes it"
+            )
         ref = self.manager.new_submission_ref(user, job_name, is_request=True)
         job_dir = self.manager.submission_dir(ref)
         # The call becomes a job of the same name in inbox/.
         job_ref = self.manager.new_submission_ref(user, job_name)
         if job_dir.exists() or self.manager.submission_dir(job_ref).exists():
             raise FileExistsError(f"Job '{job_name}' already exists for '{user}'")
-        for rel_path, content in code_files.items():
-            dest = job_dir / "code" / rel_path
+        job_dir.mkdir(parents=True)
+        for rel_path, content in files.items():
+            dest = job_dir / rel_path
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(content)
         config = JobSubmissionMetadata(
@@ -282,10 +290,10 @@ class JobClient(BaseJobClient):
             submitted_by=self.current_user_email,
             datasite_email=user,
             submitted_at=datetime.now(timezone.utc),
-            files=sorted(code_files),
+            files=sorted(files),
             headers={
                 API_HEADER: api_name,
-                SUBMISSION_HASH_HEADER: code_hash(job_dir, as_sent=True),
+                SUBMISSION_HASH_HEADER: request_hash(job_dir, as_sent=True),
             },
         )
         self.manager.write_submission(ref, config)
@@ -572,15 +580,13 @@ python {entrypoint_path}
     # Validation and reception (DO side)
     # ──────────────────────────────────────────────
 
-    def validate_submission(
-        self, inbox_job_path: Path, is_request: bool = False
-    ) -> tuple[bool, str]:
-        """Check strict schema and no symlinks; a request has no run.sh.
+    def validate_submission(self, inbox_job_path: Path) -> tuple[bool, str]:
+        """Check strict schema: only code/ + run.sh + config.yaml, no symlinks.
 
         Returns:
             Tuple of (is_valid, reason_if_invalid)
         """
-        return validate_submission_dir(inbox_job_path, is_request)
+        return validate_submission_dir(inbox_job_path)
 
     def receive_job(
         self,
@@ -650,8 +656,9 @@ python {entrypoint_path}
     def _has_all_files(self, ref: JobRef) -> bool:
         """Whether every file of the job arrived.
 
-        The submitter declares the hash of run.sh and code/ in config.yaml. A
-        submitter from before that header is checked against the file manifest.
+        The submitter declares the hash of run.sh and code/ in config.yaml, or
+        for a request, of every file but config.yaml. A submitter from before
+        that header is checked against the file manifest.
         """
         try:
             metadata = self.manager.read_submission(ref)
@@ -660,7 +667,8 @@ python {entrypoint_path}
         submission_dir = self.manager.submission_dir(ref)
         declared = metadata.headers.get(SUBMISSION_HASH_HEADER)
         if declared:
-            return code_hash(submission_dir) == declared
+            hash_files = request_hash if ref.is_request else code_hash
+            return hash_files(submission_dir) == declared
         return has_listed_files(submission_dir, metadata.files)
 
     def _lock_submission(self, ref: JobRef) -> None:

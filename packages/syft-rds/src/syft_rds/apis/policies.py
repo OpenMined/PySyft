@@ -10,7 +10,6 @@ from syft_job.policies import (
     ResolvedApi,
 )
 
-from syft_rds.apis.api import callable_layout
 from syft_rds.apis.matching import check_request
 from syft_rds.apis.models import (
     API_FILE_NAME,
@@ -67,13 +66,13 @@ def load_job_policies(api_name: str, api_dir: Path) -> JobPolicies:
     if not (api_dir / API_FILE_NAME).exists():
         raise PolicyResolutionError(f"api '{api_name}' no longer exists")
     definition = load_api_definition(api_dir)
-    layout = callable_layout(definition)
     return JobPolicies(
         api_name=api_name,
         state_dir=api_dir / POLICY_STATE_DIR_NAME,
         input=_checked_script(api_dir, PolicyKind.INPUT, definition.input_policy),
         output=_checked_script(api_dir, PolicyKind.OUTPUT, definition.output_policy),
-        params_file=layout.params_file if layout else None,
+        params_file=definition.params_file,
+        call_files=tuple(definition.call_files),
     )
 
 

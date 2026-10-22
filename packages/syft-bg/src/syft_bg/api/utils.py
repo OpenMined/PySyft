@@ -17,9 +17,9 @@ from syft_rds.apis import ApiArg, infer_args
 from syft_rds.apis.models import POLICY_STATE_DIR_NAME, policy_dir
 from syft_rds.apis.policies import load_job_policies
 
-from syft_rds.apis.matching import RUN_SCRIPT_PATH, submission_files
-from syft_rds.apis.api import callable_layout
-from syft_rds.apis.models import ApiDefinition, FileEntry
+from syft_rds.apis.matching import submission_files
+from syft_rds.apis.models import RUN_SCRIPT_PATH
+from syft_rds.apis.models import ApiDefinition, FileEntry, api_shape_error
 
 from syft_bg.approve.api_store import ApiStore, store_policy
 from syft_bg.common.config import get_default_paths, get_syftbg_dir
@@ -711,28 +711,32 @@ def _copy_or_create(source: str | Path | None, dest: Path) -> Path:
 # create_api
 # ---------------------------------------------------------------------------
 
-NOT_CALLABLE_ERROR = (
-    "An api pins run.sh and one Python file under code/ by content, and takes "
-    "config.yaml and one JSON file under code/ by name"
-)
+
+def infer_params_file(file_paths: list[str]) -> str | None:
+    """The one JSON file under code/ an api takes by name, if there is one."""
+    json_files = [
+        f for f in file_paths if f.startswith("code/") and f.endswith(".json")
+    ]
+    return json_files[0] if len(json_files) == 1 else None
 
 
 def api_input_error(
     content_files: list[tuple[str, Path]],
-    file_paths: list[str],
+    shape: ApiDefinition,
     policies: list[str | Path | None],
 ) -> str | None:
-    """Why these files and policies can't make an api, or None."""
+    """Why these files, names and policies can't make an api, or None."""
     for policy in policies:
         if policy is not None and not Path(policy).expanduser().is_file():
             return f"No policy at {policy}"
-    shape = ApiDefinition(
-        file_contents=[
-            FileEntry(relative_path=rel, hash="") for rel, _ in content_files
-        ],
-        file_paths=file_paths,
+    shape = shape.model_copy(
+        update={
+            "file_contents": [
+                FileEntry(relative_path=rel, hash="") for rel, _ in content_files
+            ]
+        }
     )
-    return None if callable_layout(shape) else NOT_CALLABLE_ERROR
+    return api_shape_error(shape)
 
 
 def default_disclosures() -> list[str]:

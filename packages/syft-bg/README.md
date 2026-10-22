@@ -79,8 +79,8 @@ the api's input and output policies. See [docs/jobs.md](../../docs/jobs.md).
 ### Creating an api
 
 Prefer building it from a job you have reviewed, with `syft_bg.create_api_from_job(job)`.
-From the command line, an api pins `run.sh` and one Python file under `code/` by
-content, and takes `config.yaml` and one JSON file under `code/` (the arguments) by
+From the command line, an api pins `run.sh` and the rest of its code by content,
+and takes `config.yaml` and the files a call sends (such as the params JSON) by
 name. Paths are relative to the job submission root.
 
 ```bash

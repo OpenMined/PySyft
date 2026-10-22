@@ -219,6 +219,7 @@ def _callable_api(store: ApiStore, temp_dir: Path) -> None:
         ["config.yaml", "code/params.json"],
         ["a@x.com"],
         args=[ApiArg(name="a", type="int", required=True)],
+        params_file="code/params.json",
     )
 
 
@@ -237,6 +238,7 @@ def _request(temp_dir: Path, files: dict[str, str]) -> Path:
         ("adder", "a@x.com", {"code/params.json": '{"a": "x"}'}, "params don't fit"),
         ("adder", "b@x.com", {"code/params.json": '{"a": 1}'}, "not shared with"),
         ("adder", "a@x.com", {"code/main.py": "evil"}, "files the api doesn't take"),
+        ("adder", "a@x.com", {}, "files the api needs"),
         ("../adder", "a@x.com", {"code/params.json": '{"a": 1}'}, "no api named"),
     ],
 )

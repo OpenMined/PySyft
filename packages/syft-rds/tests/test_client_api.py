@@ -13,7 +13,7 @@ from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.config import get_default_paths
 from syft_rds import SyftRDSClient
 from syft_rds.apis import Api, ApiArg, ApiDefinition, FileEntry, infer_args
-from syft_rds.apis.api import callable_layout
+from syft_rds.apis.models import api_shape_error
 from syft_rds.client import FINISHED_JOB_STATUSES
 
 ADDER_CODE = """import json
@@ -112,11 +112,14 @@ def test_ds_renders_and_calls_api():
     assert _read_sum(ds_manager, called_job.name) == 7
 
 
-def _definition(pinned: list[str], name_only: list[str], args=()) -> ApiDefinition:
+def _definition(
+    pinned: list[str], name_only: list[str], args=(), params_file=None
+) -> ApiDefinition:
     return ApiDefinition(
         file_contents=[FileEntry(relative_path=p, hash="sha256:x") for p in pinned],
         file_paths=name_only,
         args=list(args),
+        params_file=params_file,
     )
 
 
@@ -124,22 +127,46 @@ A_REQUIRED_INT = ApiArg(name="a", type="int", required=True)
 B_FLOAT_DEFAULT = ApiArg(name="b", type="float", default=0.5)
 
 
+PARAMS = "code/params.json"
+
+
 @pytest.mark.parametrize(
-    "pinned,name_only,expected",
+    "pinned, name_only, params_file, args, error",
     [
-        (["run.sh", "code/main.py"], ["config.yaml", "code/params.json"], True),
-        (["code/main.py"], ["config.yaml", "code/params.json"], False),
-        (["run.sh", "code/a.py", "code/b.py"], ["config.yaml", "code/p.json"], False),
-        (["run.sh", "code/main.py"], ["config.yaml"], False),
-        (["run.sh", "code/main.py"], ["config.yaml", "code/p.txt"], False),
+        (["run.sh", "code/main.py"], ["config.yaml", PARAMS], PARAMS, [], None),
+        (
+            ["run.sh", "code/a.py", "code/b.py"],
+            ["config.yaml", "data.csv"],
+            None,
+            [],
+            None,
+        ),
+        (["code/main.py"], ["config.yaml", PARAMS], PARAMS, [], "pins run.sh"),
+        (["run.sh"], [PARAMS], PARAMS, [], "takes config.yaml"),
+        (["run.sh", PARAMS], ["config.yaml", PARAMS], PARAMS, [], "pinned and taken"),
+        (["run.sh"], ["config.yaml", "code/p.txt"], "code/p.txt", [], "JSON file"),
+        (["run.sh"], ["config.yaml"], None, [A_REQUIRED_INT], "needs a params file"),
     ],
 )
-def test_callable_layout(pinned, name_only, expected):
-    layout = callable_layout(_definition(pinned, name_only))
-    assert (layout is not None) is expected
-    if expected:
-        assert layout.entrypoint == "main.py"
-        assert layout.params_file == "code/params.json"
+def test_api_shape_error(pinned, name_only, params_file, args, error):
+    reason = api_shape_error(_definition(pinned, name_only, args, params_file))
+    assert (reason is None) if error is None else (error in reason)
+
+
+def test_call_sends_exactly_listed_files():
+    definition = _definition(
+        ["run.sh"], ["config.yaml", PARAMS, "code/data.csv"], [A_REQUIRED_INT], PARAMS
+    )
+    api = Api("adder", "do@x.com", Path("/x"), definition, None)
+
+    files = api.request_files({"a": 1}, {"code/data.csv": b"x,y"})
+
+    assert files == {"code/data.csv": b"x,y", PARAMS: b'{"a": 1}'}
+    assert "files={...}" in api.call_signature
+    with pytest.raises(TypeError, match="code/data.csv"):
+        api.request_files({"a": 1}, {})
+    with pytest.raises(TypeError, match="code/extra.py"):
+        api.request_files({"a": 1}, {"code/data.csv": b"", "code/extra.py": b""})
 
 
 def test_bind_args_positional_keyword_and_defaults():
@@ -185,26 +212,27 @@ def test_describe():
 )
 def test_call_blocks_by_default(kwargs, expected_block):
     definition = _definition(
-        ["run.sh", "code/main.py"],
-        ["config.yaml", "code/params.json"],
-        [A_REQUIRED_INT],
+        ["run.sh", "code/main.py"], ["config.yaml", PARAMS], [A_REQUIRED_INT], PARAMS
     )
     client = MagicMock()
     api = Api("adder", "do@x.com", Path("/x"), definition, client)
 
     api(1, **kwargs)
 
-    client._submit_api_call.assert_called_once_with(api, {"a": 1}, block=expected_block)
+    client._submit_api_call.assert_called_once_with(
+        api, {PARAMS: b'{"a": 1}'}, block=expected_block
+    )
 
 
-def test_non_callable_api_repr_and_call():
+def test_api_without_params_file_takes_no_arguments():
     definition = _definition(["run.sh"], ["config.yaml"])
     api = Api("script", "do@x.com", Path("/nonexistent"), definition, None)
-    assert "can't be called" in repr(api)
-    assert "can't be called" in api._repr_html_()
+    assert "client.api.script()" in repr(api)
+    assert "client.api.script()" in api._repr_html_()
     assert (
         'client.api["x.y"]'
         in Api("x.y", "do@x.com", Path("/x"), definition, None).call_signature
     )
-    with pytest.raises(TypeError, match="can't be called"):
-        api()
+    assert api.request_files({}, {}) == {}
+    with pytest.raises(TypeError, match="takes 0"):
+        api(1)

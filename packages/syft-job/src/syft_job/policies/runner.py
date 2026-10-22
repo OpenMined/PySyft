@@ -17,6 +17,7 @@ from .state import PolicyState
 DEFAULT_POLICY_TIMEOUT_SECONDS = 60
 POLICY_DIR_NAME = "policy"
 PARAMS_FILE_NAME = "params.json"
+CALL_DIR_NAME = "call"
 RECIPIENTS_FILE_NAME = "recipients.json"
 
 
@@ -27,6 +28,8 @@ class PolicyInputs:
     api_name: str
     submitter: str
     params: bytes = b"{}"
+    # The files the call sent, {path relative to the job's root: content}.
+    call_files: dict[str, bytes] = field(default_factory=dict)
     # Set for an output policy only.
     outputs_dir: Optional[Path] = None
     recipients: list[str] = field(default_factory=list)
@@ -69,6 +72,7 @@ class PolicyRunner:
         policy_env.update(
             {
                 env.PARAMS_PATH: str(params_path),
+                env.CALL_DIR: str(_write_call_files(work_dir, inputs.call_files)),
                 env.SUBMITTER: inputs.submitter,
                 env.API_NAME: inputs.api_name,
                 env.STATE_DIR: str(state.state_dir),
@@ -100,6 +104,17 @@ class PolicyRunner:
             os.killpg(process.pid, signal.SIGKILL)
             _, stderr = process.communicate()
             return -1, stderr or ""
+
+
+def _write_call_files(work_dir: Path, call_files: dict[str, bytes]) -> Path:
+    """A copy of the files the call sent, laid out as in the job."""
+    call_dir = work_dir / CALL_DIR_NAME
+    call_dir.mkdir()
+    for rel_path, content in call_files.items():
+        dest = call_dir / rel_path
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(content)
+    return call_dir
 
 
 def _result(returncode: int, stderr: str, timeout: int) -> PolicyResult:

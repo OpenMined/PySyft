@@ -10,6 +10,9 @@ Environment variables (both policies):
 
     SYFT_POLICY_PARAMS_PATH         The call's params JSON, read-only. {} when
                                     the call has no params.
+    SYFT_POLICY_CALL_DIR            A copy of every file the call sent, laid
+                                    out as in the job, e.g. code/params.json.
+                                    These are the files the api takes by name.
     SYFT_POLICY_SUBMITTER           The data scientist's email.
     SYFT_POLICY_API_NAME            The api's name.
     SYFT_POLICY_STATE_DIR           The api's state folder. It persists between
@@ -37,6 +40,9 @@ Conventions:
                 does this. The job is marked failed.
     Reason      The last line of stderr is what the data scientist sees, in
                 policy_error.txt. The full stderr stays with the data owner.
+    Call files  A call sends exactly the files the api lists by name. The
+                input policy can read them in SYFT_POLICY_CALL_DIR and deny the
+                call because of what they hold.
     Outputs     Only outputs/ is shared. Anything else the job writes is never
                 shared, so a job and its output policy can agree on a staging
                 folder next to outputs/ (e.g. output_candidates/) and the
@@ -48,6 +54,7 @@ Conventions:
 """
 
 PARAMS_PATH = "SYFT_POLICY_PARAMS_PATH"
+CALL_DIR = "SYFT_POLICY_CALL_DIR"
 SUBMITTER = "SYFT_POLICY_SUBMITTER"
 API_NAME = "SYFT_POLICY_API_NAME"
 STATE_DIR = "SYFT_POLICY_STATE_DIR"

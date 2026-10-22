@@ -21,7 +21,7 @@ DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
 PEER_EMAIL = "peer@test.org"
 API_NAME = "word_count"
-PARAMS = {"params.json": b'{"word": "privacy"}'}
+PARAMS = {"code/params.json": b'{"word": "privacy"}'}
 
 RATE_LIMIT_POLICY = """import json, os
 from pathlib import Path
@@ -98,6 +98,7 @@ class FakeApis:
             state_dir=self.state_dir,
             input=self._script("input", self.input_code),
             output=self._script("output", self.output_code),
+            call_files=tuple(PARAMS),
         )
         return ResolvedApi(api_name, self.files_dir, policies)
 
@@ -284,6 +285,21 @@ def test_job_runs_its_own_code_after_api_changes(env):
 
     job = env.do_job("call.job")
     assert (job.job_review_path / "outputs" / "out.txt").read_text() == "first\n"
+
+
+def test_input_policy_reads_call_files_and_denies(env):
+    env.apis.input_code = (
+        "import json, os\n"
+        "from pathlib import Path\n"
+        'call = Path(os.environ["SYFT_POLICY_CALL_DIR"])\n'
+        'if json.loads((call / "code/params.json").read_text())["word"] == "privacy":\n'
+        '    raise ValueError("word not allowed")\n'
+    )
+
+    job = env.call("echo hi > code/outputs/out.txt")
+
+    assert job.status == "failed"
+    assert job.policy_error == "ValueError: word not allowed"
 
 
 def test_whole_job_runs_without_policies(env):
