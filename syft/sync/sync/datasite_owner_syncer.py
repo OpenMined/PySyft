@@ -634,7 +634,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     def _may_read(self, peer: str, path: str) -> bool:
         """``check_read_permissions`` without a reload: the caller reloads once."""
-        return self.perm_context.open(path).has_read_access(peer)
+        return self.perm_context.can_read(path, peer)
 
     def deliver(self, peer_emails: list[str]) -> None:
         """Send each peer the files its view lacks, and deletes for the files it
@@ -643,9 +643,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         deliveries.confirm(self.connection_router.transport.p2p.delivered())
         self.perm_context._reload()
         hashes = self._syncable_hashes()
-        for peer in peer_emails:
-            readable = {p: h for p, h in hashes.items() if self._may_read(peer, p)}
-            plan = deliveries.plan(peer, readable)
+        plans = deliveries.plan_all(
+            {
+                peer: {p: h for p, h in hashes.items() if self._may_read(peer, p)}
+                for peer in peer_emails
+            }
+        )
+        for peer, plan in plans.items():
             events = [self._create_current_state_event(p) for p in plan.send]
             events += [self._delete_event(p) for p in plan.delete]
             if events:

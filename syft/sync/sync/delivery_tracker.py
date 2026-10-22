@@ -189,11 +189,21 @@ class DeliveryTracker:
 
         ``readable`` maps every path ``peer`` may read now to its current hash.
         """
-        view = self.store.load().views.get(peer, {})
-        return DeliveryPlan(
-            send=sorted(p for p, h in readable.items() if view.get(p) != h),
-            delete=sorted(p for p in view if p not in readable),
-        )
+        return self.plan_all({peer: readable})[peer]
+
+    def plan_all(
+        self, readable_by_peer: Mapping[str, Mapping[str, str]]
+    ) -> dict[str, DeliveryPlan]:
+        """``plan`` for each peer in ``readable_by_peer``, from one load."""
+        views = self.store.load().views
+        plans = {}
+        for peer, readable in readable_by_peer.items():
+            view = views.get(peer, {})
+            plans[peer] = DeliveryPlan(
+                send=sorted(p for p, h in readable.items() if view.get(p) != h),
+                delete=sorted(p for p in view if p not in readable),
+            )
+        return plans
 
     def sent(
         self,

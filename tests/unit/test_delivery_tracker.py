@@ -62,6 +62,19 @@ def test_queued_send_updates_view_on_confirm():
     assert tracker.plan(PEER, {"a": "h1"}).send == []
 
 
+def test_plan_all_loads_state_once(monkeypatch):
+    tracker = _tracker_holding({"a": "h1"})
+    loads = []
+    load = MemoryDeliveryStateStore.load
+    monkeypatch.setattr(
+        MemoryDeliveryStateStore, "load", lambda self: loads.append(1) or load(self)
+    )
+    plans = tracker.plan_all({PEER: {"a": "h1"}, "new@x.com": {"a": "h1"}})
+    assert plans[PEER].send == []
+    assert plans["new@x.com"].send == ["a"]
+    assert len(loads) == 1
+
+
 def test_confirm_unknown_message_raises():
     tracker = DeliveryTracker(MemoryDeliveryStateStore())
     with pytest.raises(KeyError):
