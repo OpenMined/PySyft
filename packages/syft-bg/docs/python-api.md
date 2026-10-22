@@ -42,7 +42,7 @@ create_api_from_job(job, peers=["charlie@org.com"], input_policy="policies/rate_
 ```
 
 Creates an api from a job you have reviewed. The job's `run.sh` and Python file become
-the api's code; `config.yaml` and `code/params.json` are what a call sends. The
+the api's code; `code/params.json` is what a call sends. The
 arguments and their defaults are read from `code/params.json`. See
 [docs/jobs.md](../../../docs/jobs.md) for calls and policies.
 
@@ -59,14 +59,14 @@ arguments and their defaults are read from `code/params.json`. See
 ```python
 syft_bg.create_api(
     contents=["code/main.py", "run.sh"],
-    file_paths=["code/params.json", "config.yaml"],
+    file_paths=["code/params.json"],
     peers=["charlie@org.com"],
     base_dir="path/to/a/job/submission",
 )
 ```
 
-`contents` must hold `run.sh`; `file_paths` must hold `config.yaml` and lists every file a
-call sends. No file is in both. `params_file` names the file a call's arguments go in; it
+`contents` must hold `run.sh`; `file_paths` lists every file a call sends. No file is in
+both, and neither holds `config.yaml`, which the data owner writes for each call. `params_file` names the file a call's arguments go in; it
 defaults to the one JSON file under `code/` in `file_paths`. Paths are relative to `base_dir`.
 
 ## Manage apis

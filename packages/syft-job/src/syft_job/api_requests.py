@@ -12,16 +12,16 @@ from __future__ import annotations
 
 import os
 import shutil
-from dataclasses import replace
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from .job import JobInfo
-from .job_ref import JobRef
+from .job_ref import JobRef, RequestRef
 from .models import JobState, JobStatus
 from .policies import PolicyResolutionError, ResolvedApi
 from .submission import (
-    API_HEADER,
+    REQUEST_FILE_NAME,
     PERMISSION_FILE_NAME,
     OwnerJobRecord,
     copy_submission,
@@ -37,28 +37,26 @@ if TYPE_CHECKING:
 API_APPROVAL_METHOD = "api"
 
 
-def receive_request(client: JobClient, ref: JobRef) -> None:
+def receive_request(client: JobClient, ref: RequestRef) -> None:
     """Turn a request into an approved job in inbox/, or reject it.
 
     Waits while files are still arriving, and when the client can't load apis.
     """
     if _is_settled(client, ref) or client.api_resolver is None:
         return
-    if not client._has_all_files(ref):
+    if not client._request_has_all_files(ref):
         return
-    request_dir = client.manager.submission_dir(ref)
     try:
         api = _checked_api(client, ref)
     except PolicyResolutionError as e:
         _reject(client, ref, str(e))
         return
-    job_ref = replace(ref, is_request=False)
-    if _create_job(client, job_ref, ref, api):
-        _approve(client, job_ref, api)
-        shutil.rmtree(request_dir, ignore_errors=True)
+    if _create_job(client, ref, api):
+        _approve(client, ref.job_ref, api)
+        shutil.rmtree(client.manager.request_dir(ref), ignore_errors=True)
 
 
-def _is_settled(client: JobClient, ref: JobRef) -> bool:
+def _is_settled(client: JobClient, ref: RequestRef) -> bool:
     """Whether the name already has a state: the request was rejected, turned
     into a job, or a whole job holds the name.
 
@@ -66,10 +64,10 @@ def _is_settled(client: JobClient, ref: JobRef) -> bool:
     whose name a whole job holds is locked and left alone: review/ is keyed on
     the name, so it can't get a state of its own.
     """
-    if not (client.manager.review_dir(ref) / "state.yaml").exists():
+    if not (client.manager.review_dir(ref.job_ref) / "state.yaml").exists():
         return False
-    request_dir = client.manager.submission_dir(ref)
-    job_record = client.manager.read_owner_record(ref)
+    request_dir = client.manager.request_dir(ref)
+    job_record = client.manager.read_owner_record(ref.job_ref)
     if job_record is not None and job_record.api_name:
         shutil.rmtree(request_dir, ignore_errors=True)
     elif not (request_dir / PERMISSION_FILE_NAME).exists():
@@ -77,46 +75,40 @@ def _is_settled(client: JobClient, ref: JobRef) -> bool:
     return True
 
 
-def _checked_api(client: JobClient, ref: JobRef) -> ResolvedApi:
+def _checked_api(client: JobClient, ref: RequestRef) -> ResolvedApi:
     """The api the request calls, once the request passed every check.
 
     Raises PolicyResolutionError with the reason it is rejected.
     """
-    request_dir = client.manager.submission_dir(ref)
+    request_dir = client.manager.request_dir(ref)
     valid, reason = validate_request(request_dir)
     if not valid:
         raise PolicyResolutionError(reason)
-    if client.manager.submission_dir(replace(ref, is_request=False)).exists():
+    if client.manager.submission_dir(ref.job_ref).exists():
         raise PolicyResolutionError("a job in inbox/ has the same name")
-    api_name = client.manager.read_submission(ref).headers.get(API_HEADER)
-    if not api_name:
-        raise PolicyResolutionError("the request names no api")
+    api_name = client.manager.read_request(ref).api
     client.api_resolver.check_request(api_name, request_dir, ref.ds_email)
     return client.api_resolver(api_name)
 
 
-def _reject(client: JobClient, ref: JobRef, reason: str) -> None:
-    lock_for_submitter(client.manager.submission_dir(ref), ref.ds_email)
+def _reject(client: JobClient, ref: RequestRef, reason: str) -> None:
+    """Lock the request, and give the job it would become a rejected state."""
+    lock_for_submitter(client.manager.request_dir(ref), ref.ds_email)
     client.manager.write_state(
-        ref, client._rejected_state(datetime.now(timezone.utc), reason)
+        ref.job_ref, client._rejected_state(datetime.now(timezone.utc), reason)
     )
 
 
-def _create_job(
-    client: JobClient, job_ref: JobRef, request_ref: JobRef, api: ResolvedApi
-) -> bool:
-    """Write the job to inbox/: the request's files, then the api's code.
+def _create_job(client: JobClient, ref: RequestRef, api: ResolvedApi) -> bool:
+    """Write the job to inbox/: the call's files, the api's code, config.yaml.
 
     The job is built in staging/, which only the DO reads, locked, and then
     moved into place in one step, so the DS never sees half a job or writes
     into it. Returns False when another process created it first.
     """
-    staging = client.manager.staging_dir(job_ref)
-    building = staging.parent / f".{job_ref.job_name}.building"
-    shutil.rmtree(building, ignore_errors=True)
-    copy_submission(client.manager.submission_dir(request_ref), building)
-    copy_submission(api.files_dir, building)
-    lock_for_submitter(building, job_ref.ds_email)
+    job_ref = ref.job_ref
+    building = client.manager.staging_dir(job_ref).parent / f".{ref.job_name}.building"
+    _build_job(client, ref, api, building)
     job_dir = client.manager.submission_dir(job_ref)
     job_dir.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -125,6 +117,22 @@ def _create_job(
         shutil.rmtree(building, ignore_errors=True)
         return False
     return True
+
+
+def _build_job(
+    client: JobClient, ref: RequestRef, api: ResolvedApi, building: Path
+) -> None:
+    """Fill building with the job: the call's files, the api's code, its config.yaml."""
+    shutil.rmtree(building, ignore_errors=True)
+    copy_submission(client.manager.request_dir(ref), building)
+    (building / REQUEST_FILE_NAME).unlink()
+    copy_submission(api.files_dir, building)
+    request = client.manager.read_request(ref)
+    job_metadata = request.to_job_metadata(
+        ref.job_name, ref.ds_email, ref.datasite_email
+    )
+    client.manager.write_submission(ref.job_ref, job_metadata, folder=building)
+    lock_for_submitter(building, ref.ds_email)
 
 
 def _approve(client: JobClient, job_ref: JobRef, api: ResolvedApi) -> None:

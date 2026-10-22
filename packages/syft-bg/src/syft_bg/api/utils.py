@@ -18,7 +18,7 @@ from syft_rds.apis.models import POLICY_STATE_DIR_NAME, policy_dir
 from syft_rds.apis.policies import load_job_policies
 
 from syft_rds.apis.matching import submission_files
-from syft_rds.apis.models import RUN_SCRIPT_PATH
+from syft_rds.apis.models import JOB_CONFIG_PATH, RUN_SCRIPT_PATH
 from syft_rds.apis.models import ApiDefinition, FileEntry, api_shape_error
 
 from syft_bg.approve.api_store import ApiStore, store_policy
@@ -524,6 +524,19 @@ def resolve_job_approval_files(
     if error:
         return [], [], error
     return content_rel_paths, name_only, None
+
+
+def job_files_for_api(job) -> dict[str, Path]:
+    """A job's files an api is built from: all but config.yaml.
+
+    The DO writes config.yaml for each job a call becomes, so an api neither
+    pins it nor takes it from a call.
+    """
+    return {
+        rel: path
+        for rel, path in get_job_user_files(job).items()
+        if rel != JOB_CONFIG_PATH
+    }
 
 
 def get_job_user_files(job) -> dict[str, Path]:

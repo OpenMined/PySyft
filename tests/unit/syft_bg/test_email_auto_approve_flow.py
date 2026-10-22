@@ -210,9 +210,9 @@ def test_email_auto_approve_creates_api_that_runs_later_calls():
         obj = ApiStore(do_manager.syftbox_folder, do_manager.email).get(job_name)
         content_names = {e.relative_path for e in obj.file_contents}
         # run.sh is the file the runner executes, so an approval pins it.
-        # config.yaml is matched by name: it differs from job to job.
+        # config.yaml is left out: the DO writes it for each call.
         assert content_names == {"code/main.py", "run.sh"}
-        assert sorted(obj.file_paths) == ["code/params.json", "config.yaml"]
+        assert obj.file_paths == ["code/params.json"]
         assert obj.peers == [ds_manager.email]
 
         # -- Step 6: The DS calls the api with other params --

@@ -23,9 +23,9 @@ from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 # Strict schema: only these entries are allowed in a job submission.
 SUBMISSION_ENTRIES = frozenset({"code", "run.sh", "config.yaml"})
 
-# A request (an api call) holds config.yaml plus the files the api takes by
-# name; which files those are is the api's to say.
-REQUEST_CONFIG = "config.yaml"
+# A request (an api call) holds request.yaml plus the files the call sends;
+# which files those may be is the api's to say.
+REQUEST_FILE_NAME = "request.yaml"
 
 # The header of a request's config.yaml that names the api it calls.
 API_HEADER = "api"
@@ -132,8 +132,8 @@ def code_hash(submission_dir: Path, as_sent: bool = False) -> str:
 
 
 def request_hash(request_dir: Path, as_sent: bool = False) -> str:
-    """SHA-256 over every file of a request but config.yaml, which carries it."""
-    return _digest(request_dir, None, as_sent, skip=frozenset({REQUEST_CONFIG}))
+    """SHA-256 over every file of a request but request.yaml, which carries it."""
+    return _digest(request_dir, None, as_sent, skip=frozenset({REQUEST_FILE_NAME}))
 
 
 def submission_hash(submission_dir: Path) -> str:
@@ -169,12 +169,12 @@ def validate_submission(submission_dir: Path) -> tuple[bool, str]:
 
 
 def validate_request(request_dir: Path) -> tuple[bool, str]:
-    """Check a request has config.yaml and no symlinks.
+    """Check a request has request.yaml and no symlinks.
 
     Which other files it may hold is the api's to say, checked against it.
     """
-    if not (request_dir / REQUEST_CONFIG).is_file():
-        return False, f"'{REQUEST_CONFIG}' must be a file"
+    if not (request_dir / REQUEST_FILE_NAME).is_file():
+        return False, f"'{REQUEST_FILE_NAME}' must be a file"
     return _no_symlinks(request_dir)
 
 

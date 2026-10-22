@@ -79,7 +79,7 @@ Both parts can be configured. `file_paths` chooses which file is matched by name
 ```python
 sbg.create_api_from_job(
     job,
-    file_paths=["config.yaml", "code/settings.json"],
+    file_paths=["code/settings.json"],
     args=[{"name": "word", "type": "str", "required": True}],
 )
 ```
@@ -88,7 +88,7 @@ sbg.create_api_from_job(
 
 ### What a call sends
 
-An API has two lists of files. The files it pins by content, such as `run.sh` and `code/main.py`, are the API's code: a call can't change them. The files it takes by name (`file_paths`), such as `config.yaml` and `code/params.json`, are what a call sends. A call must send every file the API takes by name, and nothing else. No file is in both lists.
+An API has two lists of files. The files it pins by content, such as `run.sh` and `code/main.py`, are the API's code: a call can't change them. The files it takes by name (`file_paths`), such as `code/params.json`, are what a call sends. A call must send every file the API takes by name, and nothing else. No file is in both lists, and neither holds `config.yaml`: the DO writes it for each call.
 
 An API can take any number of files by name, anywhere in the job, for example a data file next to the params. One of them, the params file, is where `client.api` puts the call's arguments. By default it is the one JSON file in `code/` that the API takes by name.
 
@@ -105,7 +105,7 @@ ds_client.api.word_count("privacy", files={"code/stopwords.txt": "stopwords.txt"
 
 `files=` maps each file the API takes by name, other than the params file, to its content (bytes) or a path to read it from. The call checks that it sends exactly the files the API takes.
 
-Each call sends a request, not a whole job. A request is a folder in the DO's datasite, under `app_data/job/requests/<ds_email>/`, next to the `inbox/` that holds whole jobs. It names the API in its `config.yaml` and holds the files the call sends. `client.api` is a convenience: a DS can write any request with `JobClient.submit_api_request()`, and the DO's checks decide.
+Each call sends a request, not a whole job. A request is a folder in the DO's datasite, under `app_data/job/requests/<ds_email>/`, next to the `inbox/` that holds whole jobs. It holds `request.yaml`, which names the API, and the files the call sends. When the request becomes a job, the DO writes the job's `config.yaml` from `request.yaml`. `client.api` is a convenience: a DS can write any request with `JobClient.submit_api_request()`, and the DO's checks decide.
 
 When the request arrives, the DO's client checks it:
 

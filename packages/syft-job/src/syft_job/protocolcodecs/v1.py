@@ -5,7 +5,8 @@ import yaml
 from syft_migration import MigratableObject
 
 from ..config import protocol_dir_name
-from ..job_ref import JobRef
+from ..job_ref import JobRef, RequestRef
+from ..submission import REQUEST_FILE_NAME
 from .base import ProtocolCodec
 
 
@@ -16,12 +17,12 @@ class ProtocolCodecV1(ProtocolCodec):
     protocol_versions = ["1"]
 
     def submission_dir(self, ref: JobRef) -> Path:
-        get_dir = (
-            self.config.get_request_job_dir
-            if ref.is_request
-            else self.config.get_job_submission_dir
+        return self.config.get_job_submission_dir(
+            ref.datasite_email, ref.ds_email, ref.job_name, ref.protocol_version
         )
-        return get_dir(
+
+    def request_dir(self, ref: RequestRef) -> Path:
+        return self.config.get_request_job_dir(
             ref.datasite_email, ref.ds_email, ref.job_name, ref.protocol_version
         )
 
@@ -42,12 +43,13 @@ class ProtocolCodecV1(ProtocolCodec):
         return self.review_dir(ref) / self.state_marker
 
     def iter_submission_refs(self, datasite_email: str) -> Iterator[JobRef]:
-        """Jobs in inbox/, then api calls in requests/."""
         root = self.config.get_all_submissions_dir(datasite_email)
         yield from self._scan(root, datasite_email, self.submission_marker)
-        requests_root = self.config.get_requests_dir(datasite_email)
+
+    def iter_request_refs(self, datasite_email: str) -> Iterator[RequestRef]:
+        root = self.config.get_requests_dir(datasite_email)
         yield from self._scan(
-            requests_root, datasite_email, self.submission_marker, is_request=True
+            root, datasite_email, REQUEST_FILE_NAME, ref_type=RequestRef
         )
 
     def iter_review_refs(self, datasite_email: str) -> Iterator[JobRef]:
@@ -55,8 +57,12 @@ class ProtocolCodecV1(ProtocolCodec):
         yield from self._scan(root, datasite_email, self.state_marker)
 
     def _scan(
-        self, root: Path, datasite_email: str, marker: str, is_request: bool = False
-    ) -> Iterator[JobRef]:
+        self,
+        root: Path,
+        datasite_email: str,
+        marker: str,
+        ref_type: type[JobRef] | type[RequestRef] = JobRef,
+    ) -> Iterator[JobRef | RequestRef]:
         if not root.exists():
             return
         for ds_dir in sorted(p for p in root.iterdir() if p.is_dir()):
@@ -66,12 +72,8 @@ class ProtocolCodecV1(ProtocolCodec):
                     continue
                 for job_dir in sorted(p for p in version_dir.iterdir() if p.is_dir()):
                     if (job_dir / marker).exists():
-                        yield JobRef(
-                            datasite_email,
-                            ds_dir.name,
-                            job_dir.name,
-                            protocol_version,
-                            is_request,
+                        yield ref_type(
+                            datasite_email, ds_dir.name, job_dir.name, protocol_version
                         )
 
     def read(self, path: Path, canonical_name: str) -> dict:

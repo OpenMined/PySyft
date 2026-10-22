@@ -216,7 +216,7 @@ def _callable_api(store: ApiStore, temp_dir: Path) -> None:
     store.create(
         "adder",
         [("run.sh", run_sh), ("code/main.py", main)],
-        ["config.yaml", "code/params.json"],
+        ["code/params.json"],
         ["a@x.com"],
         args=[ApiArg(name="a", type="int", required=True)],
         params_file="code/params.json",
@@ -225,7 +225,7 @@ def _callable_api(store: ApiStore, temp_dir: Path) -> None:
 
 def _request(temp_dir: Path, files: dict[str, str]) -> Path:
     root = temp_dir / "request"
-    for rel_path, content in {"config.yaml": "name: call\n", **files}.items():
+    for rel_path, content in {"request.yaml": "api: adder\n", **files}.items():
         (root / rel_path).parent.mkdir(parents=True, exist_ok=True)
         (root / rel_path).write_text(content)
     return root

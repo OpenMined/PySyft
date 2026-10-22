@@ -333,8 +333,9 @@ def create_api(
     """Create an api that peers call with client.api.<name>(...).
 
     CONTENTS are the files pinned by content: run.sh and the rest of the code.
-    -f names the files a call sends: config.yaml, and any others, such as the
-    JSON file under code/ that holds the arguments. No file is in both. Paths
+    -f names the files a call sends, such as the JSON file under code/ that
+    holds the arguments. No file is in both; config.yaml is in neither, since
+    the data owner writes it for each call. Paths
     are relative to a job's submission root, so pass -b <submission directory>
     and name each file by that path.
     To build an api from a job you have reviewed, use
@@ -344,7 +345,7 @@ def create_api(
     and config.yaml:
 
       cd ./job
-      syft-bg create-api code/main.py run.sh -b . -f config.yaml -f code/params.json -p alice@uni.edu
+      syft-bg create-api code/main.py run.sh -b . -f code/params.json -p alice@uni.edu
     """
     from pathlib import Path
 

@@ -8,11 +8,9 @@ from syft_perms import SyftPermContext
 
 from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
-from syft_job.models import JobSubmissionMetadata
 from syft_job.policies import JobPolicies, PolicyResolutionError, ResolvedApi
+from syft_job.request_metadata import RequestMetadata
 from syft_job.submission import (
-    API_HEADER,
-    SUBMISSION_HASH_HEADER,
     request_hash,
 )
 
@@ -69,7 +67,7 @@ def _datasite(do: JobClient) -> Path:
 
 def test_submitter_finds_request_before_receipt(env):
     do, ds, _ = env
-    assert _ds_writes(do, f"{REQUESTS_REL}/call.job/config.yaml")
+    assert _ds_writes(do, f"{REQUESTS_REL}/call.job/request.yaml")
 
     ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, PARAMS)
 
@@ -101,23 +99,24 @@ def test_request_with_symlink_is_rejected_and_kept(env):
     do, ds, _ = env
     request_dir = ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, PARAMS)
     (request_dir / "code" / "link.txt").symlink_to("/etc/hosts")
-    [ref] = list(ds.manager.iter_submission_refs(DO_EMAIL))
-    config = ds.manager.read_submission(ref)
-    config.headers[SUBMISSION_HASH_HEADER] = request_hash(request_dir, as_sent=True)
-    ds.manager.write_submission(ref, config)
+    [ref] = list(ds.manager.iter_request_refs(DO_EMAIL))
+    request = ds.manager.read_request(ref)
+    request.files_hash = request_hash(request_dir, as_sent=True)
+    ds.manager.write_request(ref, request)
 
     [job] = do.jobs
 
     assert job.is_request and job.status == "rejected"
     assert "symlink" in job.review_reason
     assert not (_datasite(do) / INBOX_REL / "call.job").exists()
-    assert not _ds_writes(do, f"{REQUESTS_REL}/call.job/config.yaml")
+    assert not _ds_writes(do, f"{REQUESTS_REL}/call.job/request.yaml")
 
 
 def test_request_may_not_send_config(env):
     _, ds, _ = env
-    with pytest.raises(ValueError, match="config.yaml"):
-        ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, {"config.yaml": b""})
+    for reserved in ("config.yaml", "request.yaml"):
+        with pytest.raises(ValueError, match=reserved):
+            ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, {reserved: b""})
 
 
 def test_request_refused_by_api_is_rejected(env):
@@ -141,22 +140,17 @@ def test_client_refuses_request_named_like_job(env):
 
 def _write_request_by_hand(ds: JobClient, job_name: str) -> None:
     """A request as submit_api_request writes it, without its name check."""
-    ref = ds.manager.new_submission_ref(DO_EMAIL, job_name, is_request=True)
-    request_dir = ds.manager.submission_dir(ref)
+    ref = ds.manager.new_request_ref(DO_EMAIL, job_name)
+    request_dir = ds.manager.request_dir(ref)
     (request_dir / "code").mkdir(parents=True)
     (request_dir / "code" / "params.json").write_bytes(PARAMS["code/params.json"])
-    headers = {
-        API_HEADER: API_NAME,
-        SUBMISSION_HASH_HEADER: request_hash(request_dir, as_sent=True),
-    }
-    config = JobSubmissionMetadata(
-        name=job_name,
-        submitted_by=DS_EMAIL,
-        datasite_email=DO_EMAIL,
+    request = RequestMetadata(
+        api=API_NAME,
         submitted_at=datetime.now(timezone.utc),
-        headers=headers,
+        files=sorted(PARAMS),
+        files_hash=request_hash(request_dir, as_sent=True),
     )
-    ds.manager.write_submission(ref, config)
+    ds.manager.write_request(ref, request)
 
 
 @pytest.mark.parametrize("job_received_first", [True, False])

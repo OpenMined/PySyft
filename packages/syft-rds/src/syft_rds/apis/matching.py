@@ -11,7 +11,9 @@ from pathlib import Path
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 from syft_rds.apis.args import bind_args
-from syft_rds.apis.models import CALL_CONFIG_PATH, ApiDefinition
+from syft_job.submission import REQUEST_FILE_NAME
+
+from syft_rds.apis.models import ApiDefinition
 
 
 def submission_files(root: Path) -> dict[str, Path]:
@@ -42,7 +44,7 @@ def check_request(
     """
     if definition.peers and submitter not in definition.peers:
         return False, f"the api is not shared with {submitter}"
-    sent = set(submission_files(root)) - {CALL_CONFIG_PATH}
+    sent = set(submission_files(root)) - {REQUEST_FILE_NAME}
     expected = set(definition.call_files)
     if sent - expected:
         return False, f"files the api doesn't take: {sorted(sent - expected)}"

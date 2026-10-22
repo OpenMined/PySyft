@@ -5,7 +5,7 @@ import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Callable, Iterable, List, Optional, Tuple
 
 import yaml
 from syft_migration import MigrationError, ProtocolSchema
@@ -15,6 +15,8 @@ from .config import SyftJobConfig
 from .disclosures import normalize_disclosures
 from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
+from .job_ref import RequestRef
+from .request_metadata import RESERVED_CALL_FILES, RequestMetadata
 from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
 from .api_requests import receive_request
@@ -22,8 +24,6 @@ from .policies import ApiResolver
 from .review_grants import grant_ds_review_read
 from .submission import (
     SUBMISSION_ENTRIES,
-    API_HEADER,
-    REQUEST_CONFIG,
     SUBMISSION_HASH_HEADER,
     InvalidSubmissionError,
     OwnerJobRecord,
@@ -41,6 +41,9 @@ RUN_SCRIPT_PYTHON_VERSION = "3.12"
 # Strict schema: only these entries are allowed in a job submission
 VALID_SUBMISSION_ENTRIES = SUBMISSION_ENTRIES
 
+
+# What reading a config.yaml raises while it is still arriving.
+METADATA_ERRORS = (OSError, ValueError, yaml.YAMLError, MigrationError)
 
 logger = logging.getLogger(__name__)
 
@@ -269,35 +272,28 @@ class JobClient(BaseJobClient):
             Path to the created request directory
         """
         JobStorage.validate_job_name(job_name)
-        if REQUEST_CONFIG in files:
-            raise ValueError(
-                f"A call can't send {REQUEST_CONFIG}; the client writes it"
-            )
-        ref = self.manager.new_submission_ref(user, job_name, is_request=True)
-        job_dir = self.manager.submission_dir(ref)
+        reserved = sorted(RESERVED_CALL_FILES & set(files))
+        if reserved:
+            raise ValueError(f"A call can't send {reserved}; they are written for it")
+        ref = self.manager.new_request_ref(user, job_name)
+        request_dir = self.manager.request_dir(ref)
         # The call becomes a job of the same name in inbox/.
-        job_ref = self.manager.new_submission_ref(user, job_name)
-        if job_dir.exists() or self.manager.submission_dir(job_ref).exists():
+        job_dir = self.manager.submission_dir(ref.job_ref)
+        if request_dir.exists() or job_dir.exists():
             raise FileExistsError(f"Job '{job_name}' already exists for '{user}'")
-        job_dir.mkdir(parents=True)
+        request_dir.mkdir(parents=True)
         for rel_path, content in files.items():
-            dest = job_dir / rel_path
+            dest = request_dir / rel_path
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_bytes(content)
-        config = JobSubmissionMetadata(
-            name=job_name,
-            type="python",
-            submitted_by=self.current_user_email,
-            datasite_email=user,
+        request = RequestMetadata(
+            api=api_name,
             submitted_at=datetime.now(timezone.utc),
             files=sorted(files),
-            headers={
-                API_HEADER: api_name,
-                SUBMISSION_HASH_HEADER: request_hash(job_dir, as_sent=True),
-            },
+            files_hash=request_hash(request_dir, as_sent=True),
         )
-        self.manager.write_submission(ref, config)
-        return job_dir
+        self.manager.write_request(ref, request)
+        return request_dir
 
     def _write_bash_script(self, job_dir: Path, script: str) -> None:
         job_dir.mkdir(parents=True)
@@ -641,7 +637,7 @@ python {entrypoint_path}
             InvalidSubmissionError: every file arrived, but the submission is
                 outside the schema or holds a symlink.
         """
-        if not self._has_all_files(ref):
+        if not self._job_has_all_files(ref):
             return None
         submission_dir = self.manager.submission_dir(ref)
         valid, reason = self.validate_submission(submission_dir)
@@ -653,23 +649,32 @@ python {entrypoint_path}
         )
         return record if self.manager.claim_owner_record(ref, record) else None
 
-    def _has_all_files(self, ref: JobRef) -> bool:
+    def _job_has_all_files(self, ref: JobRef) -> bool:
         """Whether every file of the job arrived.
 
-        The submitter declares the hash of run.sh and code/ in config.yaml, or
-        for a request, of every file but config.yaml. A submitter from before
-        that header is checked against the file manifest.
+        The submitter declares the hash of run.sh and code/ in config.yaml. A
+        submitter from before that header is checked against the file manifest.
         """
         try:
             metadata = self.manager.read_submission(ref)
-        except (OSError, ValueError, yaml.YAMLError, MigrationError):
+        except METADATA_ERRORS:
             return False  # config.yaml is still arriving
         submission_dir = self.manager.submission_dir(ref)
         declared = metadata.headers.get(SUBMISSION_HASH_HEADER)
         if declared:
-            hash_files = request_hash if ref.is_request else code_hash
-            return hash_files(submission_dir) == declared
+            return code_hash(submission_dir) == declared
         return has_listed_files(submission_dir, metadata.files)
+
+    def _request_has_all_files(self, ref: RequestRef) -> bool:
+        """Whether every file of the request arrived.
+
+        The caller declares the hash of every file but request.yaml in it.
+        """
+        try:
+            request = self.manager.read_request(ref)
+        except METADATA_ERRORS:
+            return False  # request.yaml is still arriving
+        return request_hash(self.manager.request_dir(ref)) == request.files_hash
 
     def _lock_submission(self, ref: JobRef) -> None:
         """Make the job's inbox folder read-only for its submitter.
@@ -700,12 +705,12 @@ python {entrypoint_path}
         in inbox/, or is rejected.
         """
         for ref in self.manager.iter_submission_refs(self.current_user_email):
-            if ref.is_request:
-                receive_request(self, ref)
-            elif (self.manager.review_dir(ref) / "state.yaml").exists():
+            if (self.manager.review_dir(ref) / "state.yaml").exists():
                 self._record_received_hash(ref)
             else:
                 self.receive_job(ref.ds_email, ref.job_name, ref.protocol_version)
+        for request_ref in self.manager.iter_request_refs(self.current_user_email):
+            receive_request(self, request_ref)
 
     def _record_received_hash(self, ref: JobRef) -> None:
         """Record the received hash of a pending job that has no record yet.
@@ -732,7 +737,7 @@ python {entrypoint_path}
     # ──────────────────────────────────────────────
 
     def _get_all_jobs(self) -> List[JobInfo]:
-        """Get all jobs by scanning inbox/ and correlating with review/.
+        """Get all jobs by scanning inbox/ and requests/, and correlating with review/.
 
         Jobs from any protocol layout are upgraded in memory to the current
         object versions.
@@ -748,30 +753,56 @@ python {entrypoint_path}
             if not datasite_owner_dir.is_dir():
                 continue
 
-            datasite_owner_email = datasite_owner_dir.name
-            for ref in self.manager.iter_submission_refs(datasite_owner_email):
-                try:
-                    config = self.manager.read_submission(ref)
-                    try:
-                        state = self.manager.read_state(ref)
-                    except FileNotFoundError:
-                        state = JobState(status=JobStatus.RECEIVED)
-                    jobs.append(
-                        JobInfo(
-                            job_metadata=config,
-                            state=state,
-                            current_user_email=self.current_user_email,
-                            client=self,
-                            ref=ref,
-                        )
-                    )
-                except Exception as e:
-                    print(
-                        f"Error listing job {ref.job_name} from {ref.datasite_email}: {e}"
-                    )
-                    continue
+            email = datasite_owner_dir.name
+            jobs += self._infos(
+                self.manager.iter_submission_refs(email), self._job_info
+            )
+            jobs += self._infos(
+                self.manager.iter_request_refs(email), self._request_info
+            )
 
         return jobs
+
+    def _infos(self, refs: Iterable, make_info: Callable) -> List[JobInfo]:
+        """make_info(ref) for every ref; one that can't be read is reported."""
+        infos = []
+        for ref in refs:
+            try:
+                infos.append(make_info(ref))
+            except Exception as e:
+                print(
+                    f"Error listing job {ref.job_name} from {ref.datasite_email}: {e}"
+                )
+        return infos
+
+    def _job_info(self, ref: JobRef) -> JobInfo:
+        metadata = self.manager.read_submission(ref)
+        return self._info(metadata, self._state_or_received(ref), ref)
+
+    def _request_info(self, ref: RequestRef) -> JobInfo:
+        """A request, listed as the job it becomes; its state lives with it."""
+        request = self.manager.read_request(ref)
+        metadata = request.to_job_metadata(
+            ref.job_name, ref.ds_email, ref.datasite_email
+        )
+        return self._info(metadata, self._state_or_received(ref.job_ref), ref)
+
+    def _info(
+        self, metadata: JobSubmissionMetadata, state: JobState, ref: JobRef | RequestRef
+    ) -> JobInfo:
+        return JobInfo(
+            job_metadata=metadata,
+            state=state,
+            current_user_email=self.current_user_email,
+            client=self,
+            ref=ref,
+        )
+
+    def _state_or_received(self, ref: JobRef) -> JobState:
+        try:
+            return self.manager.read_state(ref)
+        except FileNotFoundError:
+            return JobState(status=JobStatus.RECEIVED)
 
     @property
     def jobs(self) -> JobsList:

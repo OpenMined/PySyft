@@ -133,19 +133,19 @@ PARAMS = "code/params.json"
 @pytest.mark.parametrize(
     "pinned, name_only, params_file, args, error",
     [
-        (["run.sh", "code/main.py"], ["config.yaml", PARAMS], PARAMS, [], None),
+        (["run.sh", "code/main.py"], [PARAMS], PARAMS, [], None),
         (
             ["run.sh", "code/a.py", "code/b.py"],
-            ["config.yaml", "data.csv"],
+            ["data.csv"],
             None,
             [],
             None,
         ),
-        (["code/main.py"], ["config.yaml", PARAMS], PARAMS, [], "pins run.sh"),
-        (["run.sh"], [PARAMS], PARAMS, [], "takes config.yaml"),
-        (["run.sh", PARAMS], ["config.yaml", PARAMS], PARAMS, [], "pinned and taken"),
-        (["run.sh"], ["config.yaml", "code/p.txt"], "code/p.txt", [], "JSON file"),
-        (["run.sh"], ["config.yaml"], None, [A_REQUIRED_INT], "needs a params file"),
+        (["code/main.py"], [PARAMS], PARAMS, [], "pins run.sh"),
+        (["run.sh"], ["config.yaml", PARAMS], PARAMS, [], "written for each call"),
+        (["run.sh", PARAMS], [PARAMS], PARAMS, [], "pinned and taken"),
+        (["run.sh"], ["code/p.txt"], "code/p.txt", [], "JSON file"),
+        (["run.sh"], [], None, [A_REQUIRED_INT], "needs a params file"),
     ],
 )
 def test_api_shape_error(pinned, name_only, params_file, args, error):
@@ -155,7 +155,7 @@ def test_api_shape_error(pinned, name_only, params_file, args, error):
 
 def test_call_sends_exactly_listed_files():
     definition = _definition(
-        ["run.sh"], ["config.yaml", PARAMS, "code/data.csv"], [A_REQUIRED_INT], PARAMS
+        ["run.sh"], [PARAMS, "code/data.csv"], [A_REQUIRED_INT], PARAMS
     )
     api = Api("adder", "do@x.com", Path("/x"), definition, None)
 
@@ -212,7 +212,7 @@ def test_describe():
 )
 def test_call_blocks_by_default(kwargs, expected_block):
     definition = _definition(
-        ["run.sh", "code/main.py"], ["config.yaml", PARAMS], [A_REQUIRED_INT], PARAMS
+        ["run.sh", "code/main.py"], [PARAMS], [A_REQUIRED_INT], PARAMS
     )
     client = MagicMock()
     api = Api("adder", "do@x.com", Path("/x"), definition, client)
@@ -225,7 +225,7 @@ def test_call_blocks_by_default(kwargs, expected_block):
 
 
 def test_api_without_params_file_takes_no_arguments():
-    definition = _definition(["run.sh"], ["config.yaml"])
+    definition = _definition(["run.sh"], [])
     api = Api("script", "do@x.com", Path("/nonexistent"), definition, None)
     assert "client.api.script()" in repr(api)
     assert "client.api.script()" in api._repr_html_()

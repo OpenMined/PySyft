@@ -80,13 +80,13 @@ the api's input and output policies. See [docs/jobs.md](../../docs/jobs.md).
 
 Prefer building it from a job you have reviewed, with `syft_bg.create_api_from_job(job)`.
 From the command line, an api pins `run.sh` and the rest of its code by content,
-and takes `config.yaml` and the files a call sends (such as the params JSON) by
+and takes the files a call sends (such as the params JSON) by
 name. Paths are relative to the job submission root.
 
 ```bash
 cd ./job   # a submission holding code/main.py, code/params.json, run.sh and config.yaml
 
-syft-bg create-api code/main.py run.sh -b . -f config.yaml -f code/params.json -p alice@uni.edu -n my_analysis
+syft-bg create-api code/main.py run.sh -b . -f code/params.json -p alice@uni.edu -n my_analysis
 ```
 
 ### Managing apis and peers

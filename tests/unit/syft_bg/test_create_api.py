@@ -27,7 +27,7 @@ from syft_bg.common.syft_bg_config import SyftBgConfig
 
 DO_EMAIL = "do@test.com"
 PINNED = ["run.sh", "code/main.py"]
-NAME_ONLY = ["config.yaml", "code/params.json"]
+NAME_ONLY = ["code/params.json"]
 
 
 @contextmanager
@@ -123,9 +123,14 @@ class TestCreateApi:
         "pinned, name_only, args, error",
         [
             (["code/main.py"], NAME_ONLY, None, "pins run.sh"),
-            (PINNED, ["code/params.json"], None, "takes config.yaml"),
+            (
+                PINNED,
+                ["config.yaml", "code/params.json"],
+                None,
+                "written for each call",
+            ),
             (PINNED + ["code/params.json"], NAME_ONLY, None, "pinned and taken"),
-            (PINNED, ["config.yaml"], [{"name": "a", "type": "int"}], "params file"),
+            (PINNED, [], [{"name": "a", "type": "int"}], "params file"),
         ],
     )
     def test_refuses_files_that_make_no_api(

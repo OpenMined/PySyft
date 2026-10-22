@@ -11,11 +11,13 @@ from syft_migration import (
 )
 
 from .config import SyftJobConfig, is_protocol_dir_name
-from .job_ref import JobRef, JobStateNotFoundError
+from .job_ref import JobRef, JobStateNotFoundError, RequestRef
+from .request_metadata import RequestMetadata
 from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
 from .models import JobState, JobSubmissionMetadata
 from .protocolcodecs import CODECS, ProtocolCodec
 from .submission import (
+    REQUEST_FILE_NAME,
     LEGACY_OWNER_RECORD_FILENAME,
     OWNER_RECORD_FILENAME,
     OwnerJobRecord,
@@ -127,6 +129,9 @@ class JobStorage:
     def submission_dir(self, ref: JobRef) -> Path:
         return self._codec_for(ref.protocol_version).submission_dir(ref)
 
+    def request_dir(self, ref: RequestRef) -> Path:
+        return self._codec_for(ref.protocol_version).request_dir(ref)
+
     def review_dir(self, ref: JobRef) -> Path:
         return self._codec_for(ref.protocol_version).review_dir(ref)
 
@@ -149,10 +154,8 @@ class JobStorage:
     def write_owner_record(self, ref: JobRef, record: OwnerJobRecord) -> None:
         write_owner_record(self.owner_record_path(ref), record)
 
-    def new_submission_ref(
-        self, do_email: str, job_name: str, is_request: bool = False
-    ) -> JobRef:
-        """A ref for submitting a new job, or a request, to ``do_email``."""
+    def new_submission_ref(self, do_email: str, job_name: str) -> JobRef:
+        """A ref for submitting a new job to ``do_email``."""
         return JobRef(
             datasite_email=do_email,
             ds_email=self.config.current_user_email,
@@ -162,7 +165,16 @@ class JobStorage:
             protocol_version=self.negotiated_protocol_version_for_peer(
                 do_email, raise_on_unknown=False
             ),
-            is_request=is_request,
+        )
+
+    def new_request_ref(self, do_email: str, job_name: str) -> RequestRef:
+        """A ref for calling an api of ``do_email``; the job it becomes is named job_name."""
+        job_ref = self.new_submission_ref(do_email, job_name)
+        return RequestRef(
+            job_ref.datasite_email,
+            job_ref.ds_email,
+            job_ref.job_name,
+            job_ref.protocol_version,
         )
 
     # -- naming ------------------------------------------------------------------
@@ -182,6 +194,11 @@ class JobStorage:
         """Yield a ref per job under app_data/job/inbox/, across all codecs."""
         for codec in self.codecs:
             yield from codec.iter_submission_refs(datasite_email)
+
+    def iter_request_refs(self, datasite_email: str) -> Iterator[RequestRef]:
+        """Yield a ref per api call under app_data/job/requests/, across all codecs."""
+        for codec in self.codecs:
+            yield from codec.iter_request_refs(datasite_email)
 
     def iter_review_refs(self, datasite_email: str) -> Iterator[JobRef]:
         """Yield a ref per job under app_data/job/review/, across all codecs."""
@@ -232,16 +249,33 @@ class JobStorage:
             raise JobStateNotFoundError(f"Job state not found for {ref.job_name}")
         return self._upgrade(codec.read(path, "JobState"), "JobState")
 
-    def write_submission(self, ref: JobRef, metadata: JobSubmissionMetadata) -> Path:
-        """Write config.yaml in the version/format the peer can read."""
+    def write_submission(
+        self,
+        ref: JobRef,
+        metadata: JobSubmissionMetadata,
+        folder: Optional[Path] = None,
+    ) -> Path:
+        """Write config.yaml in the version/format the peer can read.
+
+        folder writes it into a job that is still being built elsewhere.
+        """
         codec = self._codec_for(ref.protocol_version)
-        return self._write(
-            codec,
-            codec.submission_metadata_path(ref),
-            metadata,
-            ref,
-            reader_email=ref.datasite_email,
+        path = (
+            folder / codec.submission_marker
+            if folder is not None
+            else codec.submission_metadata_path(ref)
         )
+        return self._write(codec, path, metadata, ref, reader_email=ref.datasite_email)
+
+    def read_request(self, ref: RequestRef) -> RequestMetadata:
+        """Load a request's request.yaml."""
+        return RequestMetadata.load(self.request_dir(ref) / REQUEST_FILE_NAME)
+
+    def write_request(self, ref: RequestRef, metadata: RequestMetadata) -> Path:
+        """Write a request's request.yaml."""
+        path = self.request_dir(ref) / REQUEST_FILE_NAME
+        metadata.save(path)
+        return path
 
     def write_state(self, ref: JobRef, state: JobState) -> Path:
         """Write state.yaml in the version/format the peer can read."""

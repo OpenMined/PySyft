@@ -23,7 +23,9 @@ APIS_DIR = Path("app_data") / "apis"
 API_FILE_NAME = "api.yaml"
 FILES_DIR_NAME = "files"
 RUN_SCRIPT_PATH = "run.sh"
-CALL_CONFIG_PATH = "config.yaml"
+# The DO writes the config.yaml of each job a call becomes, so no api pins it
+# or takes it from a call.
+JOB_CONFIG_PATH = "config.yaml"
 POLICIES_DIR_NAME = "policies"
 POLICY_STATE_DIR_NAME = "policy_state"
 
@@ -64,23 +66,24 @@ class ApiDefinition(BaseModel):
 
     @property
     def call_files(self) -> list[str]:
-        """Every file a call sends, besides config.yaml: the name-only files."""
-        return [f for f in self.file_paths if f != CALL_CONFIG_PATH]
+        """Every file a call sends: the files the api takes by name."""
+        return list(self.file_paths)
 
 
 def api_shape_error(definition: ApiDefinition) -> Optional[str]:
     """Why the definition makes no api, or None.
 
-    An api pins run.sh by content and takes config.yaml by name. A call sends
-    exactly the files the api takes by name, so no file is both. The params
-    file, when there is one, is a JSON file the api takes by name.
+    An api pins run.sh by content. A call sends exactly the files the api takes
+    by name, so no file is both. config.yaml is neither: the DO writes it for
+    each call. The params file, when there is one, is a JSON file the api takes
+    by name.
     """
     pinned = {e.relative_path for e in definition.file_contents}
     listed = set(definition.file_paths)
     if RUN_SCRIPT_PATH not in pinned:
         return f"An api pins {RUN_SCRIPT_PATH} by content"
-    if CALL_CONFIG_PATH not in listed:
-        return f"An api takes {CALL_CONFIG_PATH} by name"
+    if JOB_CONFIG_PATH in pinned | listed:
+        return f"{JOB_CONFIG_PATH} is written for each call; leave it out"
     if pinned & listed:
         return f"A file can't be pinned and taken by name: {sorted(pinned & listed)}"
     return _params_file_error(definition)

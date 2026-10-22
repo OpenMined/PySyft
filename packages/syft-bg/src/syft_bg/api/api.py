@@ -28,7 +28,7 @@ from syft_bg.api.utils import (
     policy_test_state_dir,
     policy_under_test,
     read_job_args,
-    get_job_user_files,
+    job_files_for_api,
     move_token_to_syftbg_dir,
     resolve_content_files,
     resolve_job_approval_files,
@@ -354,8 +354,9 @@ def create_api(
     files the api takes by name; the DO's client adds the pinned files and
     approves the call.
 
-    An api pins run.sh (and the rest of its code) by content, and takes
-    config.yaml and any other files a call sends by name. No file is both.
+    An api pins run.sh (and the rest of its code) by content, and takes the
+    files a call sends by name. No file is both, and neither holds
+    config.yaml: the DO writes it for each call.
     `create_api_from_job` builds that shape from a reviewed job.
 
     Args:
@@ -363,7 +364,7 @@ def create_api(
                   these are relative paths resolved against it. Otherwise,
                   absolute paths or directories (expanded to all files within).
         file_paths: Relative paths a call sends, taken by name only, e.g.
-                  ["config.yaml", "code/params.json", "code/data.csv"]. A call
+                  ["code/params.json", "code/data.csv"]. A call
                   must send every one of them, and nothing else.
         peers: Peer emails that may call the api. If None or empty, any peer
                may, and everyone can read the api; you are asked to confirm.
@@ -444,8 +445,8 @@ def create_api_from_job(
     Args:
         job: JobInfo object to use as template.
         contents: Filenames from the job to match by name AND content.
-                  When None, every file is content-matched except config.yaml
-                  and code/params.json, which are matched by name.
+                  When None, every file is pinned except code/params.json, which
+                  a call sends. config.yaml is left out: the DO writes it.
         file_paths: Filenames from the job to match by name only.
         peers: Peer emails to restrict to. If None, defaults to the job's submitter.
         name: Name for the api. Defaults to the job name.
@@ -465,7 +466,7 @@ def create_api_from_job(
         peers = [job.submitted_by]
 
     content_rel_paths, name_only, error = resolve_job_approval_files(
-        get_job_user_files(job), contents, file_paths
+        job_files_for_api(job), contents, file_paths
     )
     if error:
         return ApiResult(success=False, error=error)
