@@ -172,7 +172,9 @@ class LocalDeliveryStateStore(DeliveryStateStore):
             tmp.unlink(missing_ok=True)
 
 
-def _apply(view: dict[str, str], changes: Mapping[str, str | None]) -> None:
+def _apply_changes_to_view(
+    view: dict[str, str], changes: Mapping[str, str | None]
+) -> None:
     for path, new_hash in changes.items():
         if new_hash is None:
             view.pop(path, None)
@@ -247,7 +249,7 @@ class DeliveryTracker:
         with self.store.locked():
             state = self.store.load()
             if status is SendStatus.DELIVERED:
-                _apply(state.views.setdefault(peer, {}), changes)
+                _apply_changes_to_view(state.views.setdefault(peer, {}), changes)
             else:
                 assert status is SendStatus.QUEUED, status
                 state.queued[msg_id] = QueuedSend(peer=peer, changes=dict(changes))
@@ -262,5 +264,7 @@ class DeliveryTracker:
             state = self.store.load()
             for msg_id in msg_ids:
                 queued = state.queued.pop(msg_id)
-                _apply(state.views.setdefault(queued.peer, {}), queued.changes)
+                _apply_changes_to_view(
+                    state.views.setdefault(queued.peer, {}), queued.changes
+                )
             self.store.save(state)

@@ -800,11 +800,16 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.connection_router.owner_write_events_message_to_syftbox(
                 file_change_events_message
             )
-        # A message that is not sent leaves the view as it is, so the plan of a
-        # later sync holds its changes again. Later messages to the same
-        # recipient wait too, so the order stays the same.
-        if self.outbox_queue.empty():
-            return
+        if not self.outbox_queue.empty():
+            self._send_outbox_messages()
+
+    def _send_outbox_messages(self) -> None:
+        """Send each message in the outbox queue, and record it in its peer's view.
+
+        A message that is not sent leaves the view as it is, so the plan of a
+        later sync holds its changes again. Later messages to the same
+        recipient wait too, so the order stays the same.
+        """
         self.perm_context._reload()
         waiting_for = set()
         try:
