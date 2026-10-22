@@ -23,7 +23,7 @@ from .policies import (
     OUTPUTS_WITHHELD_FILENAME,
     POLICY_ERROR_FILENAME,
     JobPolicies,
-    PolicyInputs,
+    PolicyEnv,
     PolicyKind,
     ApiResolver,
     PolicyResolutionError,
@@ -642,18 +642,18 @@ class SyftJobRunner:
         self, kind: PolicyKind, ref: JobRef, run_dir: Path, policies: JobPolicies
     ) -> PolicyResult:
         """Run one policy of the job's api; its full stderr stays in staging."""
-        inputs = PolicyInputs(
+        policy_env = PolicyEnv(
             api_name=policies.api_name,
             submitter=ref.ds_email,
             params=_read_params(run_dir, policies.params_file),
             call_files=_read_call_files(run_dir, policies.call_files),
         )
         if kind == PolicyKind.OUTPUT:
-            inputs.outputs_dir = run_dir / "code" / "outputs"
-            inputs.recipients = [ref.ds_email]
+            policy_env.outputs_dir = run_dir / "code" / "outputs"
+            policy_env.recipients = [ref.ds_email]
         print(f" Running the {kind.value} policy of api '{policies.api_name}'")
         state = PolicyState(policies.state_dir)
-        result = self.policy_runner.run(policies.script(kind), state, inputs)
+        result = self.policy_runner.run(policies.script(kind), state, policy_env)
         self._write_staged(ref, policy_stderr_filename(kind), result.stderr)
         return result
 

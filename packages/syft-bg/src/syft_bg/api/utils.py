@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path, PurePosixPath
 
 from syft_job.policies import (
-    PolicyInputs,
+    PolicyEnv,
     PolicyKind,
     PolicyResolutionError,
     PolicyScript,
@@ -684,7 +684,7 @@ def policy_test_state_dir(
     return copy
 
 
-def policy_test_inputs(
+def policy_test_env(
     work_dir: Path,
     kind: PolicyKind,
     api_name: str,
@@ -692,19 +692,19 @@ def policy_test_inputs(
     params: dict | None,
     outputs_dir: str | Path | None,
     candidates_dir: str | Path | None,
-) -> PolicyInputs:
+) -> PolicyEnv:
     """What the policy sees: copies of the sample outputs and candidates."""
-    inputs = PolicyInputs(
+    policy_env = PolicyEnv(
         api_name=api_name,
         submitter=submitter,
         params=json.dumps(params or {}).encode(),
     )
     if kind == PolicyKind.OUTPUT:
         job_dir = work_dir / "job"
-        inputs.outputs_dir = _copy_or_create(outputs_dir, job_dir / "outputs")
+        policy_env.outputs_dir = _copy_or_create(outputs_dir, job_dir / "outputs")
         _copy_or_create(candidates_dir, job_dir / CANDIDATES_DIR_NAME)
-        inputs.recipients = [submitter]
-    return inputs
+        policy_env.recipients = [submitter]
+    return policy_env
 
 
 def new_policy_work_dir() -> Path:

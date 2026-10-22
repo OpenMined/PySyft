@@ -55,10 +55,8 @@ SYNC_EXCLUDED_NAMES = frozenset(
 # config.yaml header where the submitter declares code_hash() of its job.
 SUBMISSION_HASH_HEADER = "submission_hash"
 
-# The data owner's record of a job, in staging/. Releases before the rename
-# wrote it as submission.json; JobStorage moves that file on first access.
+# The data owner's record of a job, in staging/.
 OWNER_RECORD_FILENAME = "owner_record.json"
-LEGACY_OWNER_RECORD_FILENAME = "submission.json"
 
 
 class InvalidSubmissionError(ValueError):
@@ -258,22 +256,6 @@ def write_owner_record(path: Path, record: OwnerJobRecord) -> None:
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
-
-
-def move_legacy_owner_record(legacy: Path, path: Path) -> None:
-    """Rename a record written under its old name, unless the new one exists.
-
-    A hard link never replaces an existing file, so a record that another
-    process just created is kept. A process that loses the race finds the old
-    file gone, or the new one there.
-    """
-    if not legacy.exists():
-        return
-    try:
-        os.link(legacy, path)
-    except (FileExistsError, FileNotFoundError):
-        pass
-    legacy.unlink(missing_ok=True)
 
 
 def lock_for_submitter(folder: Path, ds_email: str) -> None:

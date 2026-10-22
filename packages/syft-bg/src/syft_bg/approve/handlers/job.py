@@ -24,8 +24,8 @@ class StateManager(Protocol):
 class ApprovedJobHandler:
     """Runs the approved jobs on the DO's datasite.
 
-    An api call arrives approved: the DO's client turns the request into an
-    approved job when it lists jobs. A job the DO approved by hand runs too.
+    An api call arrives approved: receiving it turns the request into an
+    approved job. A job the DO approved by hand runs too.
     """
 
     def __init__(
@@ -48,12 +48,16 @@ class ApprovedJobHandler:
         return SyftBgConfig.load(self._config_path).approve.auto_approvals
 
     def run_approved_jobs(self) -> list[JobInfo]:
-        """Run every approved job; return those not seen approved before."""
+        """Receive new jobs, then run every approved one.
+
+        Returns the approved jobs not seen before.
+        """
         if not self.config.enabled:
             return []
+        self.client.receive_jobs()
         approved = [
             job
-            for job in self.client.jobs
+            for job in self.client.job_client.jobs
             if job.status == "approved"
             and job.datasite_owner_email == self.client.email
         ]

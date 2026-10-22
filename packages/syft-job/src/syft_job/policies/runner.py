@@ -22,8 +22,9 @@ RECIPIENTS_FILE_NAME = "recipients.json"
 
 
 @dataclass
-class PolicyInputs:
-    """What one run of a policy sees."""
+class PolicyEnv:
+    """What one run of a policy sees: the runner turns it into the environment
+    variables and files described in env.py."""
 
     api_name: str
     submitter: str
@@ -46,47 +47,49 @@ class PolicyRunner:
         self.timeout = timeout
 
     def run(
-        self, script: PolicyScript, state: PolicyState, inputs: PolicyInputs
+        self, script: PolicyScript, state: PolicyState, policy_env: PolicyEnv
     ) -> PolicyResult:
         with tempfile.TemporaryDirectory(prefix="syft-policy-") as tmp:
             work_dir = Path(tmp)
             policy_dir = work_dir / POLICY_DIR_NAME
             shutil.copytree(script.folder, policy_dir)
-            policy_env = self._environment(work_dir, state, inputs)
+            environ = self._environ(work_dir, state, policy_env)
             with state.lock():
                 state.ensure()
-                returncode, stderr = self._execute(policy_dir, policy_env)
+                returncode, stderr = self._execute(policy_dir, environ)
                 result = _result(returncode, stderr, self.timeout)
                 result.state = state.read_default()
-            if inputs.outputs_dir is not None and result.passed:
+            if policy_env.outputs_dir is not None and result.passed:
                 _read_recipients(work_dir / RECIPIENTS_FILE_NAME, result)
         return result
 
-    def _environment(
-        self, work_dir: Path, state: PolicyState, inputs: PolicyInputs
+    def _environ(
+        self, work_dir: Path, state: PolicyState, policy_env: PolicyEnv
     ) -> dict[str, str]:
+        """The process environment, with the files it points at in work_dir."""
         params_path = work_dir / PARAMS_FILE_NAME
-        params_path.write_bytes(inputs.params)
+        params_path.write_bytes(policy_env.params)
         params_path.chmod(0o444)
-        policy_env = os.environ.copy()
-        policy_env.update(
+        call_dir = _write_call_files(work_dir, policy_env.call_files)
+        environ = os.environ.copy()
+        environ.update(
             {
                 env.PARAMS_PATH: str(params_path),
-                env.CALL_DIR: str(_write_call_files(work_dir, inputs.call_files)),
-                env.SUBMITTER: inputs.submitter,
-                env.API_NAME: inputs.api_name,
+                env.CALL_DIR: str(call_dir),
+                env.SUBMITTER: policy_env.submitter,
+                env.API_NAME: policy_env.api_name,
                 env.STATE_DIR: str(state.state_dir),
                 env.DEFAULT_STATE_PATH: str(state.default_state_path),
             }
         )
-        if inputs.outputs_dir is not None:
+        if policy_env.outputs_dir is not None:
             recipients_path = work_dir / RECIPIENTS_FILE_NAME
-            recipients_path.write_text(json.dumps(inputs.recipients))
-            policy_env[env.OUTPUTS_DIR] = str(inputs.outputs_dir)
-            policy_env[env.RECIPIENTS_PATH] = str(recipients_path)
-        return policy_env
+            recipients_path.write_text(json.dumps(policy_env.recipients))
+            environ[env.OUTPUTS_DIR] = str(policy_env.outputs_dir)
+            environ[env.RECIPIENTS_PATH] = str(recipients_path)
+        return environ
 
-    def _execute(self, policy_dir: Path, policy_env: dict[str, str]) -> tuple[int, str]:
+    def _execute(self, policy_dir: Path, environ: dict[str, str]) -> tuple[int, str]:
         """Run the script; a timeout kills its whole process group."""
         process = subprocess.Popen(
             ["bash", str(policy_dir / "run.sh")],
@@ -94,7 +97,7 @@ class PolicyRunner:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
             text=True,
-            env=policy_env,
+            env=environ,
             start_new_session=True,
         )
         try:

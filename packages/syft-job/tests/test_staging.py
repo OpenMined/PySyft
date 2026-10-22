@@ -16,7 +16,6 @@ from syft_job.job import JobInfo
 from syft_job.job_runner import SyftJobRunner
 from syft_job.models import JobState, JobStatus
 from syft_job.submission import (
-    LEGACY_OWNER_RECORD_FILENAME,
     OWNER_RECORD_FILENAME,
     SUBMISSION_HASH_HEADER,
 )
@@ -519,16 +518,3 @@ def test_pending_job_from_before_hashes_gets_record_and_lock(tmp_path):
 
     assert (job.job_staging_path / OWNER_RECORD_FILENAME).exists()
     assert (job.job_submission_path / PERMISSION_FILE_NAME).exists()
-
-
-def test_record_under_old_name_is_moved_and_used(tmp_path):
-    job = submit_only(tmp_path)
-    staging = job.job_staging_path
-    (staging / OWNER_RECORD_FILENAME).rename(staging / LEGACY_OWNER_RECORD_FILENAME)
-
-    reload_job(tmp_path).approve()
-    run_approved(tmp_path)
-
-    assert reload_job(tmp_path).status == "done"
-    assert (staging / OWNER_RECORD_FILENAME).exists()
-    assert not (staging / LEGACY_OWNER_RECORD_FILENAME).exists()

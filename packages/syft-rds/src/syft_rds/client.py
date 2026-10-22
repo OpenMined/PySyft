@@ -597,6 +597,17 @@ class SyftRDSClient(BaseModel):
             poll_interval,
         )
 
+    def receive_jobs(self) -> None:
+        """Receive new jobs and api calls (DO only). Syncs first unless PRE_SYNC=false.
+
+        A call of an api becomes an approved job; a whole job becomes pending.
+        """
+        if not self.has_do_role:
+            raise ValueError("Only dataset owners can receive jobs")
+        if self._pre_sync_enabled:
+            self.sync_engine.sync()
+        self.job_client.scan_inbox()
+
     def process_approved_jobs(
         self,
         stream_output: bool = True,

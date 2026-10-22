@@ -17,7 +17,7 @@ from .models import (
     ResolvedApi,
     policy_stderr_filename,
 )
-from .runner import DEFAULT_POLICY_TIMEOUT_SECONDS, PolicyInputs, PolicyRunner
+from .runner import DEFAULT_POLICY_TIMEOUT_SECONDS, PolicyEnv, PolicyRunner
 from .state import PolicyState
 
 __all__ = [
@@ -28,7 +28,7 @@ __all__ = [
     "OUTPUTS_WITHHELD_FILENAME",
     "POLICY_ERROR_FILENAME",
     "PYTHON_POLICY_NAME",
-    "PolicyInputs",
+    "PolicyEnv",
     "PolicyKind",
     "PolicyResolutionError",
     "PolicyResult",

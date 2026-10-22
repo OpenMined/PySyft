@@ -24,7 +24,7 @@ from syft_bg.api.utils import (
     get_api_store,
     new_policy_work_dir,
     policy_kind_for_test,
-    policy_test_inputs,
+    policy_test_env,
     policy_test_state_dir,
     policy_under_test,
     read_job_args,
@@ -564,11 +564,11 @@ def run_policy(
     except PolicyResolutionError as e:
         return PolicyResult(passed=False, error=str(e))
     state = PolicyState(policy_test_state_dir(work_dir, state_dir, real_state))
-    inputs = policy_test_inputs(
+    policy_env = policy_test_env(
         work_dir, policy_kind, api_name, submitter, params, outputs_dir, candidates_dir
     )
-    result = PolicyRunner().run(policy, state, inputs)
-    result.outputs_dir = inputs.outputs_dir
+    result = PolicyRunner().run(policy, state, policy_env)
+    result.outputs_dir = policy_env.outputs_dir
     return result
 
 

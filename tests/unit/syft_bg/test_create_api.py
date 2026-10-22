@@ -300,7 +300,8 @@ class TestApprovedJobHandler:
     def _handler(
         self, temp_dir: Path, jobs: list
     ) -> tuple[ApprovedJobHandler, MagicMock]:
-        client = MagicMock(email=DO_EMAIL, jobs=jobs)
+        client = MagicMock(email=DO_EMAIL)
+        client.job_client.jobs = jobs
         handler = ApprovedJobHandler(
             client=client, config_path=temp_dir / "config.yaml", verbose=False
         )
@@ -311,6 +312,7 @@ class TestApprovedJobHandler:
         handler, client = self._handler(temp_dir, [call])
 
         assert handler.run_approved_jobs() == [call]
+        client.receive_jobs.assert_called_once()
         client.process_approved_jobs.assert_called_once()
         assert "share_logs_with_submitter" not in (
             client.process_approved_jobs.call_args.kwargs

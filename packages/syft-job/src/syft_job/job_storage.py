@@ -17,11 +17,9 @@ from .models import JobState, JobSubmissionMetadata, RequestMetadata
 from .protocolcodecs import CODECS, ProtocolCodec
 from .submission import (
     REQUEST_FILE_NAME,
-    LEGACY_OWNER_RECORD_FILENAME,
     OWNER_RECORD_FILENAME,
     OwnerJobRecord,
     claim_owner_record,
-    move_legacy_owner_record,
     read_owner_record,
     write_owner_record,
 )
@@ -139,10 +137,7 @@ class JobStorage:
 
     # -- owner record (owner side, in staging/) ------------------------------------
     def owner_record_path(self, ref: JobRef) -> Path:
-        """Where the owner record is, after moving one from its old name."""
-        path = self.staging_dir(ref) / OWNER_RECORD_FILENAME
-        move_legacy_owner_record(path.with_name(LEGACY_OWNER_RECORD_FILENAME), path)
-        return path
+        return self.staging_dir(ref) / OWNER_RECORD_FILENAME
 
     def read_owner_record(self, ref: JobRef) -> Optional[OwnerJobRecord]:
         return read_owner_record(self.owner_record_path(ref))
