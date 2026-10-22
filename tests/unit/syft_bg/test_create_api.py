@@ -19,7 +19,7 @@ from syft_bg.api.utils import (
     resolve_job_file_args,
 )
 from syft_bg.approve import api_store as api_store_module
-from syft_bg.approve.api_store import ApiStore
+from syft_bg.approve.api_store import ApiStore, NewApi
 from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.config import get_default_paths
@@ -65,7 +65,7 @@ def _create(project: Path, name: str = "main", **kwargs):
 def _seed(store: ApiStore, tmp: Path, name: str, peer: str = "alice@test.com"):
     script = tmp / f"{name}_run.sh"
     script.write_text(f"echo {name}\n")
-    store.create(name, [("run.sh", script)], [], [peer])
+    store.create(NewApi(name, [("run.sh", script)], [], [peer]))
 
 
 class TestListApis:
@@ -130,7 +130,7 @@ class TestCreateApi:
                 "written for each call",
             ),
             (PINNED + ["code/params.json"], NAME_ONLY, None, "pinned and taken"),
-            (PINNED, [], [{"name": "a", "type": "int"}], "params file"),
+            (PINNED, [], [{"name": "a", "type": "int"}], "params.json"),
         ],
     )
     def test_refuses_files_that_make_no_api(
@@ -148,7 +148,7 @@ class TestCreateApi:
             assert error in result.error
             assert store.names() == []
 
-    def test_takes_more_files_and_infers_params_file(self, temp_dir):
+    def test_more_files_by_name_means_no_params_file(self, temp_dir):
         with _patched_paths(temp_dir) as store:
             project = _write_project(temp_dir)
             (project / "data.csv").write_text("x\n")
@@ -161,7 +161,7 @@ class TestCreateApi:
             )
             assert result.success is True
             api = store.get("main")
-            assert api.params_file == "code/params.json"
+            assert api.params_file is None
             assert api.call_files == ["code/params.json", "data.csv"]
 
     @pytest.mark.parametrize("answer,created", [("n", False), ("y", True)])
@@ -470,19 +470,16 @@ class TestResolveContentFilesBaseDir:
 
     def test_dot_prefix_is_normalized(self, temp_dir):
         base = self._submission(temp_dir)
-        files, error = resolve_content_files(["./code/main.py", "./run.sh"], base)
-        assert error is None
+        files = resolve_content_files(["./code/main.py", "./run.sh"], base)
         assert [rel for rel, _ in files] == ["code/main.py", "run.sh"]
 
     def test_absolute_path_inside_base_is_made_relative(self, temp_dir):
         base = self._submission(temp_dir)
-        files, error = resolve_content_files([str(base / "code" / "main.py")], base)
-        assert error is None
+        files = resolve_content_files([str(base / "code" / "main.py")], base)
         assert [rel for rel, _ in files] == ["code/main.py"]
 
     def test_path_outside_base_is_an_error(self, temp_dir):
         base = self._submission(temp_dir)
         (temp_dir / "outside.py").write_text("x")
-        files, error = resolve_content_files(["../outside.py"], base)
-        assert files == []
-        assert "outside" in error
+        with pytest.raises(ValueError, match="outside"):
+            resolve_content_files(["../outside.py"], base)

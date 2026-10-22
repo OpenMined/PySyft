@@ -257,7 +257,7 @@ def test_request_becomes_approved_job_with_api_code(env):
     job = env.call("cp code/params.json code/outputs/params.json")
 
     assert job.status == "done"
-    assert not job.is_request and job.api_name == API_NAME
+    assert job.api_name == API_NAME
     assert job.approval_method == "api"
     outputs = job.job_review_path / "outputs"
     assert json.loads((outputs / "params.json").read_text()) == {"word": "privacy"}

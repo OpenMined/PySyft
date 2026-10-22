@@ -470,7 +470,8 @@ class SyftRDSClient(BaseModel):
     ) -> Any:
         """Send a call of an api as a request holding files.
 
-        With block=True, waits until the job has finished and returns it.
+        Returns the request; with block=True, waits until it was rejected or
+        its job finished, and returns that job.
         """
         peer_emails = {p.email for p in self.sync_engine.peer_manager.syncable_peers}
         if api.datasite not in peer_emails:
@@ -486,24 +487,28 @@ class SyftRDSClient(BaseModel):
             api.datasite, job_name, api.name, files
         )
         self.sync_engine.push_job_files(job_dir)
-        print(f"✅ Submitted job '{job_name}' to {api.datasite} via api '{api.name}'")
+        print(f"✅ Sent request '{job_name}' to {api.datasite} via api '{api.name}'")
         if block:
-            return self._wait_for_job(job_name)
-        return self._find_job(job_name)
+            return self._wait_for_call(job_name)
+        return _named(self.job_client.requests, job_name)
 
-    def _wait_for_job(self, job_name: str, poll_interval: float = 2.0) -> Any:
-        """Sync until the job is done, failed or rejected, then return it."""
+    def _wait_for_call(self, job_name: str, poll_interval: float = 2.0) -> Any:
+        """Sync until the request was rejected or its job finished.
+
+        Returns the job, or the request when it was rejected.
+        """
         print(f"⏳ Waiting for '{job_name}' to finish (interrupt to stop waiting)...")
         while True:
             self.sync_engine.sync()
-            job = self._find_job(job_name)
+            job = _named(self.job_client.jobs, job_name)
             if job is not None and job.status in FINISHED_JOB_STATUSES:
                 print(f"Job '{job_name}' finished with status: {job.status}")
                 return job
+            request = _named(self.job_client.requests, job_name)
+            if request is not None and request.status == "rejected":
+                print(f"Request '{job_name}' rejected: {request.review_reason}")
+                return request
             time.sleep(poll_interval)
-
-    def _find_job(self, job_name: str) -> Any:
-        return next((j for j in self.job_client.jobs if j.name == job_name), None)
 
     @property
     def _pre_sync_enabled(self) -> bool:
@@ -516,6 +521,13 @@ class SyftRDSClient(BaseModel):
         if self._pre_sync_enabled:
             self.sync_engine.sync()
         return self.job_client.jobs
+
+    @property
+    def requests(self) -> Any:
+        """Api calls you sent, or received as DO. Auto-syncs first unless PRE_SYNC=false."""
+        if self._pre_sync_enabled:
+            self.sync_engine.sync()
+        return self.job_client.requests
 
     # ------------------------------------------------------------------ #
     # waits for another party (notebook "run all" without re-run cells)
@@ -1280,3 +1292,8 @@ class SyftRDSClient(BaseModel):
 
     def __repr__(self) -> str:
         return f"SyftRDSClient(email={self.sync_engine.email!r})"
+
+
+def _named(items: list, name: str) -> Any:
+    """The job or request with this name, or None."""
+    return next((item for item in items if item.name == name), None)

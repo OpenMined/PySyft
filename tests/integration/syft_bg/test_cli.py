@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from syft_bg.approve.api_store import ApiStore
+from syft_bg.approve.api_store import ApiStore, NewApi
 
 from syft_bg.cli.commands import (
     create_api,
@@ -358,7 +358,7 @@ def _create_api(store, temp_dir, name, files, peers):
         path = temp_dir / rel
         path.write_text(f"# {rel}\n")
         content_files.append((rel, path))
-    store.create(name, content_files, [], peers)
+    store.create(NewApi(name, content_files, [], peers))
 
 
 class TestRemoveApiCommand:

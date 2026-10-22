@@ -26,6 +26,7 @@ RUN_SCRIPT_PATH = "run.sh"
 # The DO writes the config.yaml of each job a call becomes, so no api pins it
 # or takes it from a call.
 JOB_CONFIG_PATH = "config.yaml"
+PARAMS_FILE_NAME = "params.json"
 POLICIES_DIR_NAME = "policies"
 POLICY_STATE_DIR_NAME = "policy_state"
 
@@ -60,41 +61,71 @@ class ApiDefinition(BaseModel):
     output_policy: list[FileEntry] = Field(default_factory=list)
     # The items in DisclosureItem that a call's approval releases, e.g. "logs".
     disclosures: list[str] = Field(default_factory=list)
-    # The name-only JSON file that client.api builds from a call's arguments,
-    # e.g. "code/params.json". None when the api takes no arguments.
-    params_file: Optional[str] = None
 
     @property
     def call_files(self) -> list[str]:
         """Every file a call sends: the files the api takes by name."""
         return list(self.file_paths)
 
+    @property
+    def params_file(self) -> Optional[str]:
+        """The file client.api writes a call's arguments to, e.g. "code/params.json".
 
-def api_shape_error(definition: ApiDefinition) -> Optional[str]:
-    """Why the definition makes no api, or None.
+        See params_file_of.
+        """
+        return params_file_of(self.file_paths)
 
-    An api pins run.sh by content. A call sends exactly the files the api takes
-    by name, so no file is both. config.yaml is neither: the DO writes it for
-    each call. The params file, when there is one, is a JSON file the api takes
-    by name.
+
+def params_file_of(file_paths: list[str]) -> Optional[str]:
+    """The params file of an api that takes these files by name, or None.
+
+    By convention, an api has arguments only when it takes one file by name
+    and that file is a params.json.
     """
-    pinned = {e.relative_path for e in definition.file_contents}
-    listed = set(definition.file_paths)
-    if RUN_SCRIPT_PATH not in pinned:
+    if len(file_paths) == 1 and Path(file_paths[0]).name == PARAMS_FILE_NAME:
+        return file_paths[0]
+    return None
+
+
+def definition_error(definition: ApiDefinition) -> Optional[str]:
+    """Why the definition makes no api, or None."""
+    checks = (
+        _pins_run_script,
+        _leaves_out_job_config,
+        _pins_or_names_each_file_once,
+        _has_params_file_for_args,
+    )
+    return next((error for check in checks if (error := check(definition))), None)
+
+
+def _pinned(definition: ApiDefinition) -> set[str]:
+    return {e.relative_path for e in definition.file_contents}
+
+
+def _pins_run_script(definition: ApiDefinition) -> Optional[str]:
+    if RUN_SCRIPT_PATH not in _pinned(definition):
         return f"An api pins {RUN_SCRIPT_PATH} by content"
-    if JOB_CONFIG_PATH in pinned | listed:
+    return None
+
+
+def _leaves_out_job_config(definition: ApiDefinition) -> Optional[str]:
+    """The DO writes config.yaml for each call."""
+    if JOB_CONFIG_PATH in _pinned(definition) | set(definition.file_paths):
         return f"{JOB_CONFIG_PATH} is written for each call; leave it out"
-    if pinned & listed:
-        return f"A file can't be pinned and taken by name: {sorted(pinned & listed)}"
-    return _params_file_error(definition)
+    return None
 
 
-def _params_file_error(definition: ApiDefinition) -> Optional[str]:
-    params_file = definition.params_file
-    if params_file is None:
-        return "An api with arguments needs a params file" if definition.args else None
-    if params_file not in definition.file_paths or not params_file.endswith(".json"):
-        return "The params file must be a JSON file the api takes by name"
+def _pins_or_names_each_file_once(definition: ApiDefinition) -> Optional[str]:
+    """A call sends exactly the name-only files, so none is also pinned."""
+    both = _pinned(definition) & set(definition.file_paths)
+    if both:
+        return f"A file can't be pinned and taken by name: {sorted(both)}"
+    return None
+
+
+def _has_params_file_for_args(definition: ApiDefinition) -> Optional[str]:
+    if definition.args and definition.params_file is None:
+        return f"An api with arguments takes one file by name: its {PARAMS_FILE_NAME}"
     return None
 
 

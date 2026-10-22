@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 from syft_bg.api.utils import read_job_args
-from syft_bg.approve.api_store import ApiStore
+from syft_bg.approve.api_store import ApiStore, NewApi
 from syft_bg.approve.api_resolver import api_resolver
 from syft_job.policies import PolicyResolutionError, python_run_script
 from syft_perms import SyftPermContext
@@ -37,7 +37,12 @@ def _readers(store: ApiStore, name: str) -> list[str]:
 
 def test_create_writes_api_folder_with_peer_permissions(store, script, temp_dir):
     name, obj = store.create(
-        "analysis", [("run.sh", script)], ["config.yaml"], ["bob@a.com", "al@b.com"]
+        NewApi(
+            "analysis",
+            [("run.sh", script)],
+            ["code/params.json"],
+            ["bob@a.com", "al@b.com"],
+        )
     )
 
     api_dir = temp_dir / "syftbox" / DO_EMAIL / "app_data" / "apis" / "analysis"
@@ -46,17 +51,17 @@ def test_create_writes_api_folder_with_peer_permissions(store, script, temp_dir)
     stored = yaml.safe_load((api_dir / "api.yaml").read_text())
     assert set(stored["file_contents"][0]) == {"relative_path", "hash"}
     assert obj.file_contents[0].path == str(api_dir / "files" / "run.sh")
-    assert obj.file_paths == ["config.yaml"]
+    assert obj.file_paths == ["code/params.json"]
     assert _readers(store, "analysis") == ["al@b.com", "bob@a.com"]
 
 
 def test_no_peers_grants_read_to_everyone(store, script):
-    store.create("open", [("run.sh", script)], [], [])
+    store.create(NewApi("open", [("run.sh", script)], [], []))
     assert _readers(store, "open") == ["*"]
 
 
 def test_save_revokes_removed_peers(store, script):
-    store.create("analysis", [("run.sh", script)], [], ["a@x.com", "b@x.com"])
+    store.create(NewApi("analysis", [("run.sh", script)], [], ["a@x.com", "b@x.com"]))
 
     obj = store.get("analysis")
     obj.peers.remove("a@x.com")
@@ -69,14 +74,14 @@ def test_save_revokes_removed_peers(store, script):
 def test_name_collision_gets_suffix(store, script, temp_dir):
     other = temp_dir / "other.py"
     other.write_text("print('other')\n")
-    store.create("analysis", [("run.sh", script)], [], ["a@x.com"])
-    name, _ = store.create("analysis", [("run.sh", other)], [], ["a@x.com"])
+    store.create(NewApi("analysis", [("run.sh", script)], [], ["a@x.com"]))
+    name, _ = store.create(NewApi("analysis", [("run.sh", other)], [], ["a@x.com"]))
     assert name == "analysis_1"
     assert store.names() == ["analysis", "analysis_1"]
 
 
 def test_delete_removes_folder(store, script):
-    store.create("analysis", [("run.sh", script)], [], ["a@x.com"])
+    store.create(NewApi("analysis", [("run.sh", script)], [], ["a@x.com"]))
     assert store.delete("analysis") is True
     assert not store.api_dir("analysis").exists()
     assert store.delete("analysis") is False
@@ -87,7 +92,8 @@ def test_create_stores_args(store, script):
         ApiArg(name="a", type="int", default=1),
         ApiArg(name="b", type="str", required=True),
     ]
-    store.create("adder", [("run.sh", script)], [], ["a@x.com"], args=args)
+    params = ["code/params.json"]
+    store.create(NewApi("adder", [("run.sh", script)], params, ["a@x.com"], args=args))
 
     assert store.get("adder").args == args
     stored = yaml.safe_load((store.api_dir("adder") / "api.yaml").read_text())
@@ -117,7 +123,7 @@ def test_read_job_args(temp_dir, params, expected):
     (temp_dir / "code").mkdir()
     (temp_dir / "code" / "params.json").write_text(params)
     job = MagicMock(job_submission_path=temp_dir)
-    assert read_job_args(job, ["config.yaml", "code/params.json"]) == expected
+    assert read_job_args(job, ["code/params.json"]) == expected
 
 
 INPUT_POLICY = "raise SystemExit('denied')\n"
@@ -132,7 +138,7 @@ def policy(temp_dir) -> Path:
 
 def test_python_policy_gets_generated_run_sh(store, script, policy):
     _, obj = store.create(
-        "api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy
+        NewApi("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
     )
 
     folder = store.api_dir("api") / "policies" / "input"
@@ -146,7 +152,7 @@ def test_python_policy_gets_generated_run_sh(store, script, policy):
 
 
 def test_policy_state_readable_by_owner_only(store, script, temp_dir):
-    store.create("api", [("run.sh", script)], [], ["a@x.com"])
+    store.create(NewApi("api", [("run.sh", script)], [], ["a@x.com"]))
 
     ctx = SyftPermContext(datasite=temp_dir / "syftbox" / DO_EMAIL)
     api_rel = "app_data/apis/api"
@@ -157,13 +163,15 @@ def test_policy_state_readable_by_owner_only(store, script, temp_dir):
 
 def test_same_files_make_two_apis(store, script):
     """A call names its api, so two apis may share their files."""
-    store.create("first", [("run.sh", script)], [], ["a@x.com"])
-    name, _ = store.create("second", [("run.sh", script)], [], ["a@x.com"])
+    store.create(NewApi("first", [("run.sh", script)], [], ["a@x.com"]))
+    name, _ = store.create(NewApi("second", [("run.sh", script)], [], ["a@x.com"]))
     assert store.names() == ["first", "second"] and name == "second"
 
 
 def test_set_policies_clears_state_unless_asked_to_keep(store, script, policy):
-    store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
+    store.create(
+        NewApi("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
+    )
     state_file = store.api_dir("api") / "policy_state" / "state.json"
     state_file.write_text('{"calls": 3}')
     sh_policy = policy.with_suffix(".sh")
@@ -181,7 +189,9 @@ def test_set_policies_clears_state_unless_asked_to_keep(store, script, policy):
 
 
 def test_resolver_returns_code_and_policies(store, script, policy):
-    store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
+    store.create(
+        NewApi("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
+    )
 
     api = api_resolver(store)("api")
 
@@ -191,7 +201,9 @@ def test_resolver_returns_code_and_policies(store, script, policy):
 
 @pytest.mark.parametrize("changed", ["policies/input/policy.py", "files/run.sh"])
 def test_resolver_refuses_changed_file(store, script, policy, changed):
-    store.create("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
+    store.create(
+        NewApi("api", [("run.sh", script)], [], ["a@x.com"], input_policy=policy)
+    )
     (store.api_dir("api") / changed).write_text("pass\n")
 
     with pytest.raises(PolicyResolutionError, match="changed"):
@@ -200,7 +212,7 @@ def test_resolver_refuses_changed_file(store, script, policy, changed):
 
 @pytest.mark.parametrize("name", ["deleted", "../deleted", ".staging_x"])
 def test_resolver_refuses_name_that_is_no_api(store, script, name):
-    store.create("deleted", [("run.sh", script)], [], ["a@x.com"])
+    store.create(NewApi("deleted", [("run.sh", script)], [], ["a@x.com"]))
     store.delete("deleted")
 
     with pytest.raises(PolicyResolutionError, match="no api named"):
@@ -214,12 +226,13 @@ def _callable_api(store: ApiStore, temp_dir: Path) -> None:
     main = temp_dir / "main.py"
     main.write_text("print('hi')\n")
     store.create(
-        "adder",
-        [("run.sh", run_sh), ("code/main.py", main)],
-        ["code/params.json"],
-        ["a@x.com"],
-        args=[ApiArg(name="a", type="int", required=True)],
-        params_file="code/params.json",
+        NewApi(
+            "adder",
+            [("run.sh", run_sh), ("code/main.py", main)],
+            ["code/params.json"],
+            ["a@x.com"],
+            args=[ApiArg(name="a", type="int", required=True)],
+        )
     )
 
 

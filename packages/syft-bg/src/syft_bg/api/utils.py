@@ -19,7 +19,7 @@ from syft_rds.apis.policies import load_job_policies
 
 from syft_rds.apis.matching import submission_files
 from syft_rds.apis.models import JOB_CONFIG_PATH, RUN_SCRIPT_PATH
-from syft_rds.apis.models import ApiDefinition, FileEntry, api_shape_error
+from syft_rds.apis.models import ApiDefinition, params_file_of
 
 from syft_bg.approve.api_store import ApiStore, store_policy
 from syft_bg.common.config import get_default_paths, get_syftbg_dir
@@ -266,18 +266,16 @@ def api_store_for_job(job) -> ApiStore:
 
 
 def read_job_args(job, name_only: list[str]) -> list[ApiArg]:
-    """Arguments of a job, inferred from its one name-only json in code/.
+    """Arguments of a job, inferred from its params file (see params_file_of).
 
     Names, types and defaults come from the example values in that file.
     Returns [] when there is no such file, or it does not hold a JSON object.
     """
-    params_files = [
-        p for p in name_only if p.startswith("code/") and p.endswith(".json")
-    ]
-    if len(params_files) != 1:
+    params_file = params_file_of(name_only)
+    if params_file is None:
         return []
     try:
-        params = json.loads((job.job_submission_path / params_files[0]).read_text())
+        params = json.loads((job.job_submission_path / params_file).read_text())
     except (OSError, ValueError):
         return []
     return infer_args(params) if isinstance(params, dict) else []
@@ -295,43 +293,43 @@ def get_api_store() -> ApiStore:
 
 def resolve_content_files(
     contents: Sequence[str | Path], base_dir: Path | None
-) -> tuple[list[tuple[str, Path]], str | None]:
+) -> list[tuple[str, Path]]:
     """Resolve content paths to (relative_path, absolute_path) pairs.
 
-    Returns (content_files, error). error is None on success.
+    Raises ValueError for a path that is missing, or outside base_dir.
     """
-    content_files: list[tuple[str, Path]] = []
-    for item in contents:
-        if base_dir is not None:
-            # Normalize lexically, so "./code/main.py" is stored as the
-            # "code/main.py" a job is matched on.
-            abs_path = Path(os.path.abspath(base_dir / item))
-            try:
-                rel = abs_path.relative_to(os.path.abspath(base_dir)).as_posix()
-            except ValueError:
-                return [], f"{item} is outside the base directory {base_dir}"
-            if not abs_path.exists():
-                return [], f"File not found: {abs_path}"
-            if abs_path.is_dir():
-                return [], (
-                    f"{abs_path} is a directory. With a base directory, name "
-                    f"each file, so that the stored path is the one a job is "
-                    f"matched on."
-                )
-            content_files.append((rel, abs_path))
-        else:
-            p = Path(item).expanduser()
-            if p.is_dir():
-                found = sorted(f for f in p.rglob("*") if f.is_file())
-                if not found:
-                    return [], f"No files found in {p}"
-                for f in found:
-                    content_files.append((str(f.relative_to(p)), f))
-            elif not p.exists():
-                return [], f"File not found: {p}"
-            else:
-                content_files.append((p.name, p))
-    return content_files, None
+    if base_dir is not None:
+        return [_file_under(base_dir, item) for item in contents]
+    return [pair for item in contents for pair in _files_at(Path(item).expanduser())]
+
+
+def _file_under(base_dir: Path, item: str | Path) -> tuple[str, Path]:
+    """One file named relative to base_dir. Normalized lexically, so
+    "./code/main.py" is stored as the "code/main.py" a job is matched on."""
+    abs_path = Path(os.path.abspath(base_dir / item))
+    try:
+        rel = abs_path.relative_to(os.path.abspath(base_dir)).as_posix()
+    except ValueError:
+        raise ValueError(f"{item} is outside the base directory {base_dir}")
+    if abs_path.is_dir():
+        raise ValueError(
+            f"{abs_path} is a directory; with a base directory, name each file"
+        )
+    if not abs_path.exists():
+        raise ValueError(f"File not found: {abs_path}")
+    return rel, abs_path
+
+
+def _files_at(path: Path) -> list[tuple[str, Path]]:
+    """A file by its name, or every file in a folder by its path inside it."""
+    if path.is_file():
+        return [(path.name, path)]
+    if not path.is_dir():
+        raise ValueError(f"File not found: {path}")
+    found = sorted(f for f in path.rglob("*") if f.is_file())
+    if not found:
+        raise ValueError(f"No files found in {path}")
+    return [(f.relative_to(path).as_posix(), f) for f in found]
 
 
 def resolve_api_file_args(
@@ -723,33 +721,6 @@ def _copy_or_create(source: str | Path | None, dest: Path) -> Path:
 # ---------------------------------------------------------------------------
 # create_api
 # ---------------------------------------------------------------------------
-
-
-def infer_params_file(file_paths: list[str]) -> str | None:
-    """The one JSON file under code/ an api takes by name, if there is one."""
-    json_files = [
-        f for f in file_paths if f.startswith("code/") and f.endswith(".json")
-    ]
-    return json_files[0] if len(json_files) == 1 else None
-
-
-def api_input_error(
-    content_files: list[tuple[str, Path]],
-    shape: ApiDefinition,
-    policies: list[str | Path | None],
-) -> str | None:
-    """Why these files, names and policies can't make an api, or None."""
-    for policy in policies:
-        if policy is not None and not Path(policy).expanduser().is_file():
-            return f"No policy at {policy}"
-    shape = shape.model_copy(
-        update={
-            "file_contents": [
-                FileEntry(relative_path=rel, hash="") for rel, _ in content_files
-            ]
-        }
-    )
-    return api_shape_error(shape)
 
 
 def default_disclosures() -> list[str]:

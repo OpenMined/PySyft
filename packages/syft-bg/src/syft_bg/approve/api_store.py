@@ -8,7 +8,9 @@ read the apis shared with them.
 import hashlib
 import shutil
 import tempfile
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 import yaml
 from syft_job.policies import (
@@ -26,6 +28,7 @@ from syft_rds.apis.models import (
     APIS_DIR,
     FILES_DIR_NAME,
     POLICY_STATE_DIR_NAME,
+    definition_error,
     list_api_names,
     load_api_definition,
     policy_dir,
@@ -46,6 +49,25 @@ class ApiExistsError(Exception):
 
 class ApiNotFoundError(KeyError):
     """Raised when no api has the given name."""
+
+
+@dataclass
+class NewApi:
+    """An api to create: what goes in api.yaml, and where its files come from.
+
+    A policy is a .sh file (stored as run.sh) or a .py file (stored as
+    policy.py next to a generated run.sh).
+    """
+
+    name: str
+    # (path in the api, file to copy), e.g. ("code/main.py", Path("/tmp/main.py"))
+    content_files: list[tuple[str, Path]]
+    file_paths: list[str] = field(default_factory=list)
+    peers: list[str] = field(default_factory=list)
+    args: list[ApiArg] = field(default_factory=list)
+    input_policy: Optional[Path] = None
+    output_policy: Optional[Path] = None
+    disclosures: list[str] = field(default_factory=list)
 
 
 class ApiStore:
@@ -71,48 +93,24 @@ class ApiStore:
     def exists(self, name: str) -> bool:
         return (self.api_dir(name) / API_FILE_NAME).exists()
 
-    def create(
-        self,
-        name: str,
-        content_files: list[tuple[str, Path]],
-        file_paths: list[str],
-        peers: list[str],
-        args: list[ApiArg] | None = None,
-        input_policy: Path | None = None,
-        output_policy: Path | None = None,
-        disclosures: list[str] | None = None,
-        params_file: str | None = None,
-    ) -> tuple[str, ApiDefinition]:
+    def create(self, new_api: "NewApi") -> tuple[str, ApiDefinition]:
         """Store a new api. Returns the final (unique) name and the object.
 
         Files are copied into a staging dir first, outside the lock, so the
-        lock only covers picking a free name and the rename into place. A
-        policy is a .sh file (stored as run.sh) or a .py file (stored as
-        policy.py next to a generated run.sh).
+        lock only covers picking a free name and the rename into place.
+        Raises ValueError when the files make no api.
         """
         self.apis_dir.mkdir(parents=True, exist_ok=True)
         staging = Path(tempfile.mkdtemp(prefix=".staging_", dir=self.apis_dir))
         try:
-            obj = ApiDefinition(
-                file_contents=_copy_and_hash_files(
-                    content_files, staging / FILES_DIR_NAME
-                ),
-                file_paths=file_paths,
-                peers=peers,
-                args=args or [],
-                input_policy=store_policy(staging, PolicyKind.INPUT, input_policy),
-                output_policy=store_policy(staging, PolicyKind.OUTPUT, output_policy),
-                disclosures=disclosures or [],
-                params_file=params_file,
-            )
-            _write_api_file(staging, obj)
+            _write_api_file(staging, _build_definition(staging, new_api))
             with file_lock(_lock_path()):
-                name = unique_name(name, set(self.names()))
+                name = unique_name(new_api.name, set(self.names()))
                 _move_into_place(staging, self.api_dir(name))
         except BaseException:
             shutil.rmtree(staging, ignore_errors=True)
             raise
-        self._write_permissions(name, peers)
+        self._write_permissions(name, new_api.peers)
         self._create_policy_state(name)
         return name, self.get(name)
 
@@ -210,6 +208,8 @@ def store_policy(
     if source is None:
         return []
     source = Path(source).expanduser()
+    if not source.is_file():
+        raise ValueError(f"No policy at {source}")
     folder.mkdir(parents=True)
     if source.suffix == ".py":
         shutil.copy2(source, folder / PYTHON_POLICY_NAME)
@@ -222,6 +222,28 @@ def store_policy(
         FileEntry.from_file(f.relative_to(api_dir).as_posix(), f)
         for f in sorted(folder.iterdir())
     ]
+
+
+def _build_definition(staging: Path, new_api: NewApi) -> ApiDefinition:
+    """Copy new_api's files into staging, and the definition that pins them.
+
+    Raises ValueError when they make no api.
+    """
+    definition = ApiDefinition(
+        file_contents=_copy_and_hash_files(
+            new_api.content_files, staging / FILES_DIR_NAME
+        ),
+        file_paths=new_api.file_paths,
+        peers=new_api.peers,
+        args=new_api.args,
+        input_policy=store_policy(staging, PolicyKind.INPUT, new_api.input_policy),
+        output_policy=store_policy(staging, PolicyKind.OUTPUT, new_api.output_policy),
+        disclosures=new_api.disclosures,
+    )
+    error = definition_error(definition)
+    if error:
+        raise ValueError(error)
+    return definition
 
 
 def _copy_and_hash_files(

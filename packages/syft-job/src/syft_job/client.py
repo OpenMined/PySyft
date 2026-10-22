@@ -16,6 +16,7 @@ from .disclosures import normalize_disclosures
 from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_ref import RequestRef
+from .request_info import RequestInfo
 from .migrations.registry import FIRST_PROTOCOL_WITH_REQUESTS
 from .job_storage import JobRef, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata, RequestMetadata
@@ -743,7 +744,7 @@ python {entrypoint_path}
     # ──────────────────────────────────────────────
 
     def _get_all_jobs(self) -> List[JobInfo]:
-        """Get all jobs by scanning inbox/ and requests/, and correlating with review/.
+        """Get all jobs by scanning inbox/ and correlating with review/.
 
         Jobs from any protocol layout are upgraded in memory to the current
         object versions.
@@ -760,49 +761,38 @@ python {entrypoint_path}
                 continue
 
             email = datasite_owner_dir.name
-            jobs += self._infos(
-                self.manager.iter_submission_refs(email), self._job_info
-            )
-            jobs += self._infos(
-                self.manager.iter_request_refs(email), self._request_info
-            )
+            jobs += _readable(self.manager.iter_submission_refs(email), self._job_info)
 
         return jobs
 
-    def _infos(self, refs: Iterable, make_info: Callable) -> List[JobInfo]:
-        """make_info(ref) for every ref; one that can't be read is reported."""
-        infos = []
-        for ref in refs:
-            try:
-                infos.append(make_info(ref))
-            except Exception as e:
-                print(
-                    f"Error listing job {ref.job_name} from {ref.datasite_email}: {e}"
-                )
-        return infos
-
     def _job_info(self, ref: JobRef) -> JobInfo:
-        metadata = self.manager.read_submission(ref)
-        return self._info(metadata, self._state_or_received(ref), ref)
-
-    def _request_info(self, ref: RequestRef) -> JobInfo:
-        """A request, listed as the job it becomes; its state lives with it."""
-        request = self.manager.read_request(ref)
-        metadata = request.to_job_metadata(
-            ref.job_name, ref.ds_email, ref.datasite_email
-        )
-        return self._info(metadata, self._state_or_received(ref.job_ref), ref)
-
-    def _info(
-        self, metadata: JobSubmissionMetadata, state: JobState, ref: JobRef | RequestRef
-    ) -> JobInfo:
         return JobInfo(
-            job_metadata=metadata,
-            state=state,
+            job_metadata=self.manager.read_submission(ref),
+            state=self._state_or_received(ref),
             current_user_email=self.current_user_email,
             client=self,
             ref=ref,
         )
+
+    @property
+    def requests(self) -> List[RequestInfo]:
+        """Api calls that haven't become jobs: received, or rejected.
+
+        The DO removes a request once it becomes a job, which is then in
+        .jobs. Scans the inbox first, as .jobs does.
+        """
+        self.scan_inbox()
+        syftbox_root = self.config.syftbox_folder
+        if not syftbox_root.exists():
+            return []
+        requests: list[RequestInfo] = []
+        for datasite_owner_dir in (d for d in syftbox_root.iterdir() if d.is_dir()):
+            refs = self.manager.iter_request_refs(datasite_owner_dir.name)
+            requests += _readable(refs, self._request_info)
+        return requests
+
+    def _request_info(self, ref: RequestRef) -> RequestInfo:
+        return RequestInfo(ref, self.manager.read_request(ref), self)
 
     def _state_or_received(self, ref: JobRef) -> JobState:
         try:
@@ -897,3 +887,14 @@ def get_client(
     """
     config = SyftJobConfig.from_syftbox_folder(syftbox_folder_path, email)
     return JobClient(config, user_email)
+
+
+def _readable(refs: Iterable, make_info: Callable) -> list:
+    """make_info(ref) for every ref; one that can't be read is reported."""
+    infos = []
+    for ref in refs:
+        try:
+            infos.append(make_info(ref))
+        except Exception as e:
+            print(f"Error listing job {ref.job_name} from {ref.datasite_email}: {e}")
+    return infos

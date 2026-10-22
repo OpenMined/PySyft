@@ -16,10 +16,8 @@ from syft_bg.api.results import ApiResult, InstallationResult, StatusResult
 from syft_bg.api.utils import (
     confirm_no_peers,
     load_apis_or_empty,
-    api_input_error,
     default_api_name,
     default_disclosures,
-    infer_params_file,
     api_store_for_job,
     get_api_store,
     new_policy_work_dir,
@@ -39,6 +37,7 @@ from syft_bg.approve.api_store import (
     ApiExistsError,
     ApiNotFoundError,
     ApiStore,
+    NewApi,
 )
 from syft_rds.apis.models import ApiDefinition
 from syft_bg.common.config import get_default_paths, get_syftbg_dir
@@ -345,7 +344,6 @@ def create_api(
     input_policy: str | Path | None = None,
     output_policy: str | Path | None = None,
     disclosures: list[str] | None = None,
-    params_file: str | None = None,
 ) -> ApiResult:
     """Create an api in SyftBox, which peers call with client.api.<name>(...).
 
@@ -364,8 +362,9 @@ def create_api(
                   these are relative paths resolved against it. Otherwise,
                   absolute paths or directories (expanded to all files within).
         file_paths: Relative paths a call sends, taken by name only, e.g.
-                  ["code/params.json", "code/data.csv"]. A call
-                  must send every one of them, and nothing else.
+                  ["code/params.json"]. A call must send every one of them,
+                  and nothing else. When the only one is a params.json,
+                  client.api writes a call's arguments to it.
         peers: Peer emails that may call the api. If None or empty, any peer
                may, and everyone can read the api; you are asked to confirm.
         name: Name for the api. Auto-generated if not provided.
@@ -373,9 +372,15 @@ def create_api(
                   When set, FileEntry.relative_path stores the relative path.
         allow_any_peer: Allow no peers without the confirmation prompt.
         api_store: Where to store the api. Defaults to the datasite in config.yaml.
-        args: Arguments of the params file, in the order a caller passes them
+        args: Keys of the params.json, in the order a caller passes them
               positionally: ApiArg(name, type, default, required) or the
-              same as a dict.
+              same as a dict, e.g.
+                  args=[
+                      {"name": "a", "type": "int", "required": True},
+                      {"name": "b", "type": "float", "default": 0.5},
+                  ]
+              type is one of bool, int, float, str, list, dict or any.
+              Needs file_paths to be just that params.json.
         input_policy: A .py or .sh script that runs before each call's job.
               A non-zero exit stops the job. See syft_job/policies/env.py
               for what a policy gets and the conventions it follows.
@@ -384,43 +389,34 @@ def create_api(
         disclosures: The items in DisclosureItem that a call's approval
               releases, e.g. ["logs"]. Defaults to default_disclosures in
               config.yaml.
-        params_file: The file in file_paths that client.api builds from a
-              call's arguments. Defaults to the one JSON file under code/ in
-              file_paths, if there is exactly one.
 
     Returns:
         ApiResult with the created api's details.
     """
-    file_paths = file_paths or []
-    peers = peers or []
-    shape = ApiDefinition(
-        file_paths=file_paths,
-        args=[ApiArg.model_validate(a) for a in args or []],
-        params_file=params_file or infer_params_file(file_paths),
-    )
-    content_files, error = resolve_content_files(contents, base_dir)
-    error = error or api_input_error(
-        content_files, shape, [input_policy, output_policy]
-    )
-    if error:
-        return ApiResult(success=False, error=error)
-    if not peers and not allow_any_peer and not confirm_no_peers():
-        return ApiResult(success=False, error="Aborted: no peers given")
     try:
-        name, obj = (api_store or get_api_store()).create(
-            default_api_name(name, content_files),
-            content_files,
-            file_paths,
-            peers,
-            shape.args,
+        content_files = resolve_content_files(contents, base_dir)
+        new_api = NewApi(
+            name=default_api_name(name, content_files),
+            content_files=content_files,
+            file_paths=file_paths or [],
+            peers=peers or [],
+            args=[ApiArg.model_validate(a) for a in args or []],
             input_policy=Path(input_policy) if input_policy else None,
             output_policy=Path(output_policy) if output_policy else None,
             disclosures=default_disclosures() if disclosures is None else disclosures,
-            params_file=shape.params_file,
         )
+        _check_peers_confirmed(new_api.peers, allow_any_peer)
+        store = api_store or get_api_store()
+        name, obj = store.create(new_api)
     except (ApiExistsError, ValueError) as e:
         return ApiResult(success=False, error=str(e))
     return ApiResult.from_api(name, obj)
+
+
+def _check_peers_confirmed(peers: list[str], allow_any_peer: bool) -> None:
+    """An api without peers is public: ask first, unless allow_any_peer."""
+    if not peers and not allow_any_peer and not confirm_no_peers():
+        raise ValueError("Aborted: no peers given")
 
 
 def create_api_from_job(

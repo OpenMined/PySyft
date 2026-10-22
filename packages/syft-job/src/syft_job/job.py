@@ -28,7 +28,6 @@ from .job_repr import (
     jobs_list_str,
 )
 from .job_stdout import StdoutViewer
-from .job_ref import RequestRef
 from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
 from .policies import (
@@ -57,18 +56,15 @@ class JobInfo:
         state: JobState,
         current_user_email: str,
         client: JobClient,
-        ref: JobRef | RequestRef,
+        ref: JobRef,
     ):
         self.job_metadata = job_metadata
         self._state = state
         self.current_user_email = current_user_email
         self._client = client
         # Identity (owner, submitter, name) comes from the path-derived ref,
-        # never from the DS-writable config.yaml. A request (an api call not
-        # yet turned into a job) keeps its own ref for where its files are;
-        # its state lives with the job it becomes.
-        self._request_ref = ref if isinstance(ref, RequestRef) else None
-        self._ref = ref.job_ref if isinstance(ref, RequestRef) else ref
+        # never from the DS-writable config.yaml.
+        self._ref = ref
         self.job_headers = dict(job_metadata.headers)
 
     @property
@@ -77,8 +73,6 @@ class JobInfo:
 
     @property
     def job_submission_path(self) -> Path:
-        if self._request_ref is not None:
-            return self._client.manager.request_dir(self._request_ref)
         return self._client.manager.submission_dir(self._ref)
 
     @property
@@ -350,11 +344,6 @@ class JobInfo:
     def review_reason(self) -> Optional[str]:
         """Reason recorded at review time (approval or rejection)."""
         return self._state.review_reason
-
-    @property
-    def is_request(self) -> bool:
-        """Whether this is an api call not yet turned into a job (requests/)."""
-        return self._request_ref is not None
 
     @property
     def api_name(self) -> Optional[str]:

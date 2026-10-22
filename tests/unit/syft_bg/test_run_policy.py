@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 from syft_bg import run_policy
-from syft_bg.approve.api_store import ApiStore
+from syft_bg.approve.api_store import ApiStore, NewApi
 
 DO_EMAIL = "do@test.com"
 DS_EMAIL = "ds@test.com"
@@ -79,7 +79,9 @@ def test_api_policy_runs_against_copy_of_state(temp_dir):
     run_sh = _write(temp_dir / "run.sh", "echo hi\n")
     policy = _write(temp_dir / "rate_limit.py", RATE_LIMIT)
     with patch("syft_bg.approve.api_store.get_syftbg_dir", return_value=temp_dir):
-        store.create("api", [("run.sh", run_sh)], [], [DS_EMAIL], input_policy=policy)
+        store.create(
+            NewApi("api", [("run.sh", run_sh)], [], [DS_EMAIL], input_policy=policy)
+        )
     real_state = store.api_dir("api") / "policy_state" / "state.json"
     real_state.write_text('{"calls": 1}')
 
@@ -94,7 +96,7 @@ def test_api_without_that_policy_fails(temp_dir, kind):
     store = ApiStore(temp_dir / "syftbox", DO_EMAIL)
     run_sh = _write(temp_dir / "run.sh", "echo hi\n")
     with patch("syft_bg.approve.api_store.get_syftbg_dir", return_value=temp_dir):
-        store.create("api", [("run.sh", run_sh)], [], [DS_EMAIL])
+        store.create(NewApi("api", [("run.sh", run_sh)], [], [DS_EMAIL]))
 
     result = run_policy(api="api", kind=kind, api_store=store)
 

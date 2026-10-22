@@ -90,20 +90,25 @@ sbg.create_api_from_job(
 
 An API has two lists of files. The files it pins by content, such as `run.sh` and `code/main.py`, are the API's code: a call can't change them. The files it takes by name (`file_paths`), such as `code/params.json`, are what a call sends. A call must send every file the API takes by name, and nothing else. No file is in both lists, and neither holds `config.yaml`: the DO writes it for each call.
 
-An API can take any number of files by name, anywhere in the job, for example a data file next to the params. One of them, the params file, is where `client.api` puts the call's arguments. By default it is the one JSON file in `code/` that the API takes by name.
+An API can take any number of files by name, anywhere in the job. An API has arguments only when it takes exactly one file by name and that file is a `params.json`: `client.api` writes a call's arguments to it. An API that takes several files by name, for example a data file next to a JSON file, has no arguments; a call passes each file in `files=`.
 
 ### Calling an API (DS)
 
 ```python
 ds_client.api                                 # the APIs shared with you
-ds_client.api.word_count(word="privacy")      # waits for the job to finish
-ds_client.api.word_count("privacy", block=False)
+ds_client.api.word_count(word="privacy")      # waits, then returns the finished job
+request = ds_client.api.word_count("privacy", block=False)  # returns the request
+request.status                                # received, rejected or accepted
+request.job                                   # the job, once the DO accepted it
+ds_client.requests                            # your calls that aren't jobs yet
 
-# An API that also takes code/stopwords.txt by name:
-ds_client.api.word_count("privacy", files={"code/stopwords.txt": "stopwords.txt"})
+# An API without arguments that takes code/words.txt and code/stopwords.txt by name:
+ds_client.api.word_list(files={"code/words.txt": "words.txt", "code/stopwords.txt": b"the\n"})
 ```
 
-`files=` maps each file the API takes by name, other than the params file, to its content (bytes) or a path to read it from. The call checks that it sends exactly the files the API takes.
+A call is not a job until the DO's client accepts it, so `client.jobs` lists it only from then on. If the DO rejects the call, a blocking call returns the request, with the reason in `request.review_reason`.
+
+`files=` maps each file the API takes by name, other than its `params.json`, to its content (bytes) or a path to read it from. The call checks that it sends exactly the files the API takes.
 
 Each call sends a request, not a whole job. A request is a folder in the DO's datasite, under `app_data/job/requests/<ds_email>/`, next to the `inbox/` that holds whole jobs. It holds `request.yaml`, which names the API, and the files the call sends. When the request becomes a job, the DO writes the job's `config.yaml` from `request.yaml`. `client.api` is a convenience: a DS can write any request with `JobClient.submit_api_request()`, and the DO's checks decide.
 
@@ -112,7 +117,7 @@ When the request arrives, the DO's client checks it:
 - the API the request names is one of the DO's APIs;
 - the DS is one of the API's peers;
 - the request holds exactly the files the API takes by name: one it doesn't take, or one missing, rejects it;
-- the arguments in the params file fit the API's arguments.
+- the arguments in the `params.json` fit the API's arguments.
 
 If a check fails, the request is rejected, and the DS sees the reason. If every check passes, the DO's client turns the request into an ordinary job in `inbox/`, under the same name: the API's code, plus the call's arguments. The job is approved straight away, because creating the API was the DO's approval in advance. The DO's client then removes the request folder.
 

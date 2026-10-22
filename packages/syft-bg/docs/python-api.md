@@ -66,8 +66,11 @@ syft_bg.create_api(
 ```
 
 `contents` must hold `run.sh`; `file_paths` lists every file a call sends. No file is in
-both, and neither holds `config.yaml`, which the data owner writes for each call. `params_file` names the file a call's arguments go in; it
-defaults to the one JSON file under `code/` in `file_paths`. Paths are relative to `base_dir`.
+both, and neither holds `config.yaml`, which the data owner writes for each call. Paths are relative to `base_dir`.
+
+An api has arguments (`args`) only when `file_paths` is a single `params.json`: `client.api`
+writes a call's arguments to it. `create_api_from_job` reads the arguments from the job's
+`params.json`; from scratch, pass `file_paths=["code/params.json"]` and `args`.
 
 ## Manage apis
 

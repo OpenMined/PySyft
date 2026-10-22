@@ -77,9 +77,10 @@ def test_submitter_finds_request_before_receipt(env):
 
     ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, PARAMS)
 
-    [sent] = ds.jobs
-    assert (sent.name, sent.status) == ("call.job", "received")
-    assert sent.is_request and sent.api_name == API_NAME
+    assert len(ds.jobs) == 0
+    [sent] = ds.requests
+    assert (sent.name, sent.status, sent.api_name) == ("call.job", "received", API_NAME)
+    assert sent.job is None
 
 
 def test_request_becomes_approved_locked_job(env):
@@ -93,7 +94,7 @@ def test_request_becomes_approved_locked_job(env):
         "api",
         API_NAME,
     )
-    assert not job.is_request
+    assert ds.requests == []
     assert (job.job_submission_path / "run.sh").read_text() == "echo hi\n"
     assert (job.job_submission_path / "code" / "params.json").exists()
     assert not (_datasite(do) / REQUESTS_REL / "call.job").exists()
@@ -110,10 +111,10 @@ def test_request_with_symlink_is_rejected_and_kept(env):
     request.files_hash = request_hash(request_dir, as_sent=True)
     ds.manager.write_request(ref, request)
 
-    [job] = do.jobs
+    [request] = do.requests
 
-    assert job.is_request and job.status == "rejected"
-    assert "symlink" in job.review_reason
+    assert len(do.jobs) == 0 and request.status == "rejected"
+    assert "symlink" in request.review_reason
     assert not (_datasite(do) / INBOX_REL / "call.job").exists()
     assert not _ds_writes(do, f"{REQUESTS_REL}/call.job/request.yaml")
 
@@ -130,10 +131,10 @@ def test_request_refused_by_api_is_rejected(env):
     api.refused = "params don't fit the api: 'word' must be str"
     ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, PARAMS)
 
-    [job] = do.jobs
+    [request] = do.requests
 
-    assert job.status == "rejected"
-    assert job.review_reason == "params don't fit the api: 'word' must be str"
+    assert request.status == "rejected"
+    assert request.review_reason == "params don't fit the api: 'word' must be str"
 
 
 def test_client_refuses_request_named_like_job(env):
@@ -167,9 +168,8 @@ def test_request_named_like_job_leaves_job_alone(env, job_received_first):
         do.scan_inbox()
     _write_request_by_hand(ds, "same.job")
 
-    jobs = do.jobs
+    [whole_job] = do.jobs
 
-    whole_job = next(j for j in jobs if not j.is_request)
     assert whole_job.status == "pending" and whole_job.api_name is None
     assert not _ds_writes(do, f"{REQUESTS_REL}/same.job/code/params.json")
 
@@ -179,9 +179,9 @@ def test_request_waits_for_client_that_loads_apis(env):
     do.api_resolver = None
     ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, PARAMS)
 
-    [job] = do.jobs
+    [request] = do.requests
 
-    assert job.is_request and job.status == "received"
+    assert len(do.jobs) == 0 and request.status == "received"
 
 
 def test_client_refuses_request_to_do_without_api_calls(tmp_path: Path):

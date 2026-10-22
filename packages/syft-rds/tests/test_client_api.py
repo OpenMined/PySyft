@@ -13,8 +13,7 @@ from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.config import get_default_paths
 from syft_rds import SyftRDSClient
 from syft_rds.apis import Api, ApiArg, ApiDefinition, FileEntry, infer_args
-from syft_rds.apis.models import api_shape_error
-from syft_rds.client import FINISHED_JOB_STATUSES
+from syft_rds.apis.models import definition_error
 
 ADDER_CODE = """import json
 with open("params.json") as f:
@@ -95,31 +94,27 @@ def test_ds_renders_and_calls_api():
 
         # Calling it sends a request, which the DO's client turns into an
         # approved job; the approve service runs it.
-        called_job = api(3, b=4, block=False)
-        assert called_job is not None and called_job.name.startswith("adder-")
-        assert called_job.status not in FINISHED_JOB_STATUSES
+        request = api(3, b=4, block=False)
+        assert request.name.startswith("adder-") and request.status == "received"
         do_manager.sync()
         handler = ApprovedJobHandler(
             client=do_manager, config_path=paths.config, verbose=False
         )
         ran = {j.name for j in handler.run_approved_jobs()}
         # The job the api was built from is a whole job: nothing approves it.
-        assert ran == {called_job.name}
+        assert ran == {request.name}
 
     do_manager.sync()
-    finished = ds_manager._wait_for_job(called_job.name, poll_interval=0)
+    finished = ds_manager._wait_for_call(request.name, poll_interval=0)
     assert finished.status == "done"
-    assert _read_sum(ds_manager, called_job.name) == 7
+    assert _read_sum(ds_manager, request.name) == 7
 
 
-def _definition(
-    pinned: list[str], name_only: list[str], args=(), params_file=None
-) -> ApiDefinition:
+def _definition(pinned: list[str], name_only: list[str], args=()) -> ApiDefinition:
     return ApiDefinition(
         file_contents=[FileEntry(relative_path=p, hash="sha256:x") for p in pinned],
         file_paths=name_only,
         args=list(args),
-        params_file=params_file,
     )
 
 
@@ -131,42 +126,42 @@ PARAMS = "code/params.json"
 
 
 @pytest.mark.parametrize(
-    "pinned, name_only, params_file, args, error",
+    "pinned, name_only, args, error",
     [
-        (["run.sh", "code/main.py"], [PARAMS], PARAMS, [], None),
-        (
-            ["run.sh", "code/a.py", "code/b.py"],
-            ["data.csv"],
-            None,
-            [],
-            None,
-        ),
-        (["code/main.py"], [PARAMS], PARAMS, [], "pins run.sh"),
-        (["run.sh"], ["config.yaml", PARAMS], PARAMS, [], "written for each call"),
-        (["run.sh", PARAMS], [PARAMS], PARAMS, [], "pinned and taken"),
-        (["run.sh"], ["code/p.txt"], "code/p.txt", [], "JSON file"),
-        (["run.sh"], [], None, [A_REQUIRED_INT], "needs a params file"),
+        (["run.sh", "code/main.py"], [PARAMS], [A_REQUIRED_INT], None),
+        (["run.sh", "code/a.py"], ["data.csv", "code/x.json"], [], None),
+        (["code/main.py"], [PARAMS], [], "pins run.sh"),
+        (["run.sh"], ["config.yaml", PARAMS], [], "written for each call"),
+        (["run.sh", PARAMS], [PARAMS], [], "pinned and taken"),
+        (["run.sh"], [], [A_REQUIRED_INT], "params.json"),
+        (["run.sh"], [PARAMS, "data.csv"], [A_REQUIRED_INT], "params.json"),
     ],
 )
-def test_api_shape_error(pinned, name_only, params_file, args, error):
-    reason = api_shape_error(_definition(pinned, name_only, args, params_file))
+def test_definition_error(pinned, name_only, args, error):
+    reason = definition_error(_definition(pinned, name_only, args))
     assert (reason is None) if error is None else (error in reason)
 
 
+@pytest.mark.parametrize(
+    "name_only, params_file",
+    [([PARAMS], PARAMS), (["params.json"], "params.json")]
+    + [([PARAMS, "data.csv"], None), (["code/args.json"], None), ([], None)],
+)
+def test_params_file_is_only_name_only_params_json(name_only, params_file):
+    assert _definition(["run.sh"], name_only).params_file == params_file
+
+
 def test_call_sends_exactly_listed_files():
-    definition = _definition(
-        ["run.sh"], [PARAMS, "code/data.csv"], [A_REQUIRED_INT], PARAMS
-    )
-    api = Api("adder", "do@x.com", Path("/x"), definition, None)
+    definition = _definition(["run.sh"], ["code/data.csv", "code/labels.csv"])
+    api = Api("labels", "do@x.com", Path("/x"), definition, None)
+    sent = {"code/data.csv": b"x,y", "code/labels.csv": b"a"}
 
-    files = api.request_files({"a": 1}, {"code/data.csv": b"x,y"})
-
-    assert files == {"code/data.csv": b"x,y", PARAMS: b'{"a": 1}'}
+    assert api.request_files({}, sent) == sent
     assert "files={...}" in api.call_signature
-    with pytest.raises(TypeError, match="code/data.csv"):
-        api.request_files({"a": 1}, {})
+    with pytest.raises(TypeError, match="code/labels.csv"):
+        api.request_files({}, {"code/data.csv": b""})
     with pytest.raises(TypeError, match="code/extra.py"):
-        api.request_files({"a": 1}, {"code/data.csv": b"", "code/extra.py": b""})
+        api.request_files({}, {**sent, "code/extra.py": b""})
 
 
 def test_bind_args_positional_keyword_and_defaults():
@@ -211,9 +206,7 @@ def test_describe():
     "kwargs,expected_block", [({}, True), ({"block": False}, False)]
 )
 def test_call_blocks_by_default(kwargs, expected_block):
-    definition = _definition(
-        ["run.sh", "code/main.py"], [PARAMS], [A_REQUIRED_INT], PARAMS
-    )
+    definition = _definition(["run.sh", "code/main.py"], [PARAMS], [A_REQUIRED_INT])
     client = MagicMock()
     api = Api("adder", "do@x.com", Path("/x"), definition, client)
 

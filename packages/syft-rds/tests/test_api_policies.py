@@ -119,10 +119,8 @@ def test_api_policies_allow_block_and_show():
         # approves. A call over 100 passes the input policy and is blocked on
         # output.
         large = api(100, b=1, block=False)
-        assert large.is_request
-        code_files = sorted(
-            p.name for p in (large.job_submission_path / "code").iterdir()
-        )
+        assert large.job is None
+        code_files = sorted(p.name for p in (large.request_path / "code").iterdir())
         assert code_files == ["params.json"]
         assert _run_calls(do_manager, paths.config) == {large.name}
         blocked = _ds_job(ds_manager, large.name)
