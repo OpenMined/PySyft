@@ -140,8 +140,6 @@ def check_request(
     """
     if definition.peers and submitter not in definition.peers:
         return False, f"the api is not shared with {submitter}"
-    if not definition.accepts_requests:
-        return False, "the api takes no requests"
     sent = set(submission_files(root)) - {REQUEST_CONFIG_PATH}
     not_allowed = sent - set(definition.file_paths)
     if not_allowed:

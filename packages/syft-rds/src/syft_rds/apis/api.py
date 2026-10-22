@@ -92,10 +92,6 @@ class Api:
         return self.layout is not None
 
     @property
-    def run_script(self) -> bytes:
-        return self._stored_file(RUN_SCRIPT).read_bytes()
-
-    @property
     def code(self) -> str | None:
         """The Python code a call runs, or None if the api isn't callable."""
         layout = self.layout
@@ -126,15 +122,6 @@ class Api:
             else f'client.api["{self.name}"]'
         )
         return f"{accessor}({', '.join(self.arg_names)})"
-
-    def job_code_files(self, params: dict[str, Any]) -> dict[str, bytes]:
-        """The files of a job's code/ folder for a call with these params."""
-        layout = self.layout
-        python_code = self._stored_file(layout.python_file).read_bytes()
-        return {
-            layout.entrypoint: python_code,
-            layout.params_file.removeprefix(CODE_PREFIX): json.dumps(params).encode(),
-        }
 
     def request_code_files(self, params: dict[str, Any]) -> dict[str, bytes]:
         """The files of a request's code/ folder: only the params json."""

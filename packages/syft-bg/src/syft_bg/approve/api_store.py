@@ -107,7 +107,6 @@ class ApiStore:
                 args=args or [],
                 input_policy=store_policy(staging, PolicyKind.INPUT, input_policy),
                 output_policy=store_policy(staging, PolicyKind.OUTPUT, output_policy),
-                accepts_requests=True,
             )
             _write_api_file(staging, obj)
             with file_lock(_lock_path()):

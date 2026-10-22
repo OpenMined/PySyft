@@ -482,29 +482,14 @@ class SyftRDSClient(BaseModel):
         compat.maybe_warn()
 
         job_name = f"{api.name}-{uuid4().hex[:8]}"
-        job_dir = self._submit_call(api, job_name, params)
+        job_dir = self.job_client.submit_api_request(
+            api.datasite, job_name, api.name, api.request_code_files(params)
+        )
         self.sync_engine.push_job_files(job_dir)
         print(f"✅ Submitted job '{job_name}' to {api.datasite} via api '{api.name}'")
         if block:
             return self._wait_for_job(job_name)
         return self._find_job(job_name)
-
-    def _submit_call(self, api: Api, job_name: str, params: dict[str, Any]) -> Path:
-        """Write the call: a request when the api takes them, else a whole job.
-
-        An api written by an older syft-bg takes whole jobs only.
-        """
-        if api.definition.accepts_requests:
-            return self.job_client.submit_api_request(
-                api.datasite, job_name, api.name, api.request_code_files(params)
-            )
-        return self.job_client.submit_prepared_python_job(
-            api.datasite,
-            job_name,
-            api.run_script,
-            api.job_code_files(params),
-            api.layout.entrypoint,
-        )
 
     def _wait_for_job(self, job_name: str, poll_interval: float = 2.0) -> Any:
         """Sync until the job is done, failed or rejected, then return it."""
