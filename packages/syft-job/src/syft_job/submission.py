@@ -27,6 +27,9 @@ SUBMISSION_ENTRIES = frozenset({"code", "run.sh", "config.yaml"})
 # which files those may be is the api's to say.
 REQUEST_FILE_NAME = "request.yaml"
 
+# Files the DO writes into the job a request becomes, so a call can't send them.
+RESERVED_CALL_FILES = frozenset({REQUEST_FILE_NAME, "config.yaml"})
+
 # The header of a request's config.yaml that names the api it calls.
 API_HEADER = "api"
 

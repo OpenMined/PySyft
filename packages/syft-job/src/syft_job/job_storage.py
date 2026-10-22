@@ -12,9 +12,8 @@ from syft_migration import (
 
 from .config import SyftJobConfig, is_protocol_dir_name
 from .job_ref import JobRef, JobStateNotFoundError, RequestRef
-from .request_metadata import RequestMetadata
 from .migrations.registry import JOB_PROTOCOL_VERSION, job_registry
-from .models import JobState, JobSubmissionMetadata
+from .models import JobState, JobSubmissionMetadata, RequestMetadata
 from .protocolcodecs import CODECS, ProtocolCodec
 from .submission import (
     REQUEST_FILE_NAME,
@@ -268,14 +267,18 @@ class JobStorage:
         return self._write(codec, path, metadata, ref, reader_email=ref.datasite_email)
 
     def read_request(self, ref: RequestRef) -> RequestMetadata:
-        """Load a request's request.yaml."""
-        return RequestMetadata.load(self.request_dir(ref) / REQUEST_FILE_NAME)
+        """Load a request's request.yaml, upgraded to the latest version."""
+        codec = self._codec_for(ref.protocol_version)
+        data = codec.read(codec.request_dir(ref) / REQUEST_FILE_NAME, "RequestMetadata")
+        return self._upgrade(data, "RequestMetadata")
 
     def write_request(self, ref: RequestRef, metadata: RequestMetadata) -> Path:
-        """Write a request's request.yaml."""
-        path = self.request_dir(ref) / REQUEST_FILE_NAME
-        metadata.save(path)
-        return path
+        """Write request.yaml in the version/format the DO can read."""
+        codec = self._codec_for(ref.protocol_version)
+        path = codec.request_dir(ref) / REQUEST_FILE_NAME
+        return self._write(
+            codec, path, metadata, ref.job_ref, reader_email=ref.datasite_email
+        )
 
     def write_state(self, ref: JobRef, state: JobState) -> Path:
         """Write state.yaml in the version/format the peer can read."""

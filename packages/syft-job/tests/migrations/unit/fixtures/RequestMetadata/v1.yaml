@@ -1,0 +1,7 @@
+api: word_count
+canonical_name: RequestMetadata
+files:
+  - code/params.json
+files_hash: 3b1f0c0a2d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8
+submitted_at: '2026-10-22T10:00:00Z'
+version: '1'

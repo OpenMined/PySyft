@@ -6,7 +6,6 @@ from syft_migration import MigratableObject
 
 from ..config import protocol_dir_name
 from ..job_ref import JobRef, RequestRef
-from ..submission import REQUEST_FILE_NAME
 from .base import ProtocolCodec
 
 
@@ -18,11 +17,6 @@ class ProtocolCodecV1(ProtocolCodec):
 
     def submission_dir(self, ref: JobRef) -> Path:
         return self.config.get_job_submission_dir(
-            ref.datasite_email, ref.ds_email, ref.job_name, ref.protocol_version
-        )
-
-    def request_dir(self, ref: RequestRef) -> Path:
-        return self.config.get_request_job_dir(
             ref.datasite_email, ref.ds_email, ref.job_name, ref.protocol_version
         )
 
@@ -45,12 +39,6 @@ class ProtocolCodecV1(ProtocolCodec):
     def iter_submission_refs(self, datasite_email: str) -> Iterator[JobRef]:
         root = self.config.get_all_submissions_dir(datasite_email)
         yield from self._scan(root, datasite_email, self.submission_marker)
-
-    def iter_request_refs(self, datasite_email: str) -> Iterator[RequestRef]:
-        root = self.config.get_requests_dir(datasite_email)
-        yield from self._scan(
-            root, datasite_email, REQUEST_FILE_NAME, ref_type=RequestRef
-        )
 
     def iter_review_refs(self, datasite_email: str) -> Iterator[JobRef]:
         root = self.config.get_review_dir(datasite_email)

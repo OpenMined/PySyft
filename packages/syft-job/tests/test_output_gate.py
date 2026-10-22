@@ -9,12 +9,17 @@ from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
 from syft_job.disclosures import DISCLOSURES_FILENAME
 from syft_job.job_runner import SyftJobRunner
+from syft_job.config import protocol_dir_name
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
+
+# The path segment of the current job protocol, e.g. "v2".
+PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
 
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
 JOB_NAME = "gate.job"
 REVIEW_REL = f"app_data/job/review/{DS_EMAIL}"
-JOB_REVIEW_REL = f"{REVIEW_REL}/v1/{JOB_NAME}"
+JOB_REVIEW_REL = f"{REVIEW_REL}/{PROTOCOL_DIR}/{JOB_NAME}"
 
 
 @pytest.fixture

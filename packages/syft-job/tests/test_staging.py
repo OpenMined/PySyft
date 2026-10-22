@@ -21,6 +21,11 @@ from syft_job.submission import (
     SUBMISSION_HASH_HEADER,
 )
 from syft_job.traceback_capture import FRAMES_FILENAME
+from syft_job.config import protocol_dir_name
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
+
+# The path segment of the current job protocol, e.g. "v2".
+PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
 
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
@@ -230,7 +235,7 @@ def test_rerun_clears_crash_record(tmp_path):
 def ds_can_read(tmp_path: Path, name: str) -> bool:
     ctx = SyftPermContext(datasite=tmp_path / "SyftBox" / DO_EMAIL)
     return ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/v1/test.job/{name}"
+        f"app_data/job/review/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/{name}"
     ).has_read_access(DS_EMAIL)
 
 

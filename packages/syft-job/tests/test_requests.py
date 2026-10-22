@@ -4,22 +4,28 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from syft_migration import ProtocolSchema
 from syft_perms import SyftPermContext
 
 from syft_job.client import JobClient
 from syft_job.config import SyftJobConfig
 from syft_job.policies import JobPolicies, PolicyResolutionError, ResolvedApi
-from syft_job.request_metadata import RequestMetadata
+from syft_job.models import RequestMetadata
 from syft_job.submission import (
     request_hash,
 )
+from syft_job.config import protocol_dir_name
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
+
+# The path segment of the current job protocol, e.g. "v2".
+PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
 
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
 API_NAME = "word_count"
 PARAMS = {"code/params.json": b'{"word": "privacy"}'}
-REQUESTS_REL = f"app_data/job/requests/{DS_EMAIL}/v1"
-INBOX_REL = f"app_data/job/inbox/{DS_EMAIL}/v1"
+REQUESTS_REL = f"app_data/job/requests/{DS_EMAIL}/{PROTOCOL_DIR}"
+INBOX_REL = f"app_data/job/inbox/{DS_EMAIL}/{PROTOCOL_DIR}"
 
 
 class OneApi:
@@ -176,3 +182,14 @@ def test_request_waits_for_client_that_loads_apis(env):
     [job] = do.jobs
 
     assert job.is_request and job.status == "received"
+
+
+def test_client_refuses_request_to_do_without_api_calls(tmp_path: Path):
+    """A DO that speaks job protocol 1 has no requests/ to receive the call."""
+    syftbox = tmp_path / "SyftBox"
+    config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
+    old_do = ProtocolSchema(protocol_name="syft-job", version="1")
+    ds = JobClient(config, peer_schemas={DO_EMAIL: old_do})
+
+    with pytest.raises(ValueError, match="job protocol 1"):
+        ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, PARAMS)

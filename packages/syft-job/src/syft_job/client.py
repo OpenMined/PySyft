@@ -16,13 +16,14 @@ from .disclosures import normalize_disclosures
 from .install_source import get_syft_install_source
 from .job import JobInfo, JobsList
 from .job_ref import RequestRef
-from .request_metadata import RESERVED_CALL_FILES, RequestMetadata
+from .migrations.registry import FIRST_PROTOCOL_WITH_REQUESTS
 from .job_storage import JobRef, JobStorage
-from .models import JobState, JobStatus, JobSubmissionMetadata
+from .models import JobState, JobStatus, JobSubmissionMetadata, RequestMetadata
 from .api_requests import receive_request
 from .policies import ApiResolver
 from .review_grants import grant_ds_review_read
 from .submission import (
+    RESERVED_CALL_FILES,
     SUBMISSION_ENTRIES,
     SUBMISSION_HASH_HEADER,
     InvalidSubmissionError,
@@ -276,6 +277,11 @@ class JobClient(BaseJobClient):
         if reserved:
             raise ValueError(f"A call can't send {reserved}; they are written for it")
         ref = self.manager.new_request_ref(user, job_name)
+        if int(ref.protocol_version) < int(FIRST_PROTOCOL_WITH_REQUESTS):
+            raise ValueError(
+                f"{user} runs a syft-job release without api calls (job protocol "
+                f"{ref.protocol_version}). Ask them to upgrade."
+            )
         request_dir = self.manager.request_dir(ref)
         # The call becomes a job of the same name in inbox/.
         job_dir = self.manager.submission_dir(ref.job_ref)

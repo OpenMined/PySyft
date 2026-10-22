@@ -16,6 +16,11 @@ from syft_job.policies import (
     ResolvedApi,
     python_run_script,
 )
+from syft_job.config import protocol_dir_name
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
+
+# The path segment of the current job protocol, e.g. "v2".
+PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
 
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
@@ -164,7 +169,7 @@ class Env:
         return next(j for j in self.do_client.jobs if j.name == job_name)
 
     def reads(self, user: str, job_name: str, rel_path: str) -> bool:
-        review = f"app_data/job/review/{DS_EMAIL}/v1/{job_name}"
+        review = f"app_data/job/review/{DS_EMAIL}/{PROTOCOL_DIR}/{job_name}"
         ctx = SyftPermContext(datasite=self.syftbox / DO_EMAIL)
         return ctx.open(f"{review}/{rel_path}").has_read_access(user)
 
@@ -260,7 +265,7 @@ def test_request_becomes_approved_job_with_api_code(env):
     assert (job.job_submission_path / "run.sh").exists()
     assert (
         not env.do_client.config.get_requests_dir(DO_EMAIL)
-        .joinpath(DS_EMAIL, "v1", "call.job")
+        .joinpath(DS_EMAIL, PROTOCOL_DIR, "call.job")
         .exists()
     )
 
