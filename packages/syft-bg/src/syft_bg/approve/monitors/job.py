@@ -1,11 +1,11 @@
-"""Job monitor for auto-approval."""
+"""Job monitor: runs the jobs api calls became."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional
 
-from syft_bg.approve.handlers.job import JobApprovalHandler, StateManager
+from syft_bg.approve.handlers.job import ApprovedJobHandler, StateManager
 from syft_bg.common.monitor import Monitor
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class JobMonitor(Monitor):
-    """Monitors for jobs to auto-approve."""
+    """Watches for approved jobs, and runs them."""
 
     def __init__(
         self,
@@ -25,7 +25,7 @@ class JobMonitor(Monitor):
         verbose: bool = True,
     ):
         super().__init__()
-        self.handler = JobApprovalHandler(
+        self.handler = ApprovedJobHandler(
             client=client,
             config_path=config_path,
             state=state,
@@ -34,5 +34,5 @@ class JobMonitor(Monitor):
         )
 
     def _check_all_entities(self):
-        """Check and approve matching jobs."""
-        self.handler.check_and_approve()
+        """Run approved jobs."""
+        self.handler.run_approved_jobs()

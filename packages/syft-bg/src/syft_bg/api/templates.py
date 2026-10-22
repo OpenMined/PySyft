@@ -15,9 +15,9 @@ services
 {line}
 {services}"""
 
-AUTO_APPROVALS_SECTION = """
+APIS_SECTION = """
 
-auto-approval objects
+apis
 {line}
 {contents}"""
 

@@ -28,6 +28,8 @@ from syft_datasets.dataset_ref import DatasetNotFoundError
 from syft_datasets.migrations.registry import DATASET_PROTOCOL_VERSION
 from syft_rds.waiting import JobCheck, JobStatusArg, wait_for_dataset, wait_for_job
 from syft_rds.apis import Api, ApiCollection
+from syft_rds.apis.models import APIS_DIR
+from syft_rds.apis.policies import ApiResolver
 from syft_rds.config import (
     DATASET_COLLECTION_SPECS,
     MOCK_DATASET_SPEC,
@@ -121,6 +123,11 @@ class SyftRDSClient(BaseModel):
     dataset_manager: SyftDatasetManager
 
     def model_post_init(self, __context: Any) -> None:
+        # A request (an api call) runs with its api's code and policies.
+        if self.job_runner is not None:
+            resolver = ApiResolver(Path(self.syftbox_folder) / self.email / APIS_DIR)
+            self.job_runner.api_resolver = self.job_runner.api_resolver or resolver
+            self.job_client.api_resolver = resolver
         # React to sync-engine peer lifecycle events with RDS-owned logic.
         self.sync_engine.on("peer_approved", self._on_peer_approved)
         self.sync_engine.on("peers_loaded", self._on_peers_loaded)
@@ -317,12 +324,19 @@ class SyftRDSClient(BaseModel):
 
     def _on_peers_loaded(self, *args: Any, **kwargs: Any) -> None:
         """Peers were (re)loaded: copy each peer's advertised install source
-        into our owned job client so submitted run.sh references the DO's path."""
+        into our owned job client so submitted run.sh references the DO's path.
+
+        As a DO, also give every approved peer a requests/ folder, so a peer
+        approved before api requests existed can call apis.
+        """
         for peer in self.sync_engine.peer_manager.syncable_peers:
             if peer.version:
                 self.job_client.peer_install_sources[peer.email] = (
                     peer.version.syft_client_install_source
                 )
+        if self.has_do_role:
+            for peer in self.sync_engine.peer_manager.approved_peers:
+                self.job_client.setup_ds_request_folder_as_do(peer.email)
 
     def _share_any_datasets_with_peer(self, peer_email: str) -> None:
         """Share all datasets tagged 'any' with a specific peer.
@@ -452,11 +466,12 @@ class SyftRDSClient(BaseModel):
         return ApiCollection(self)
 
     def _submit_api_call(
-        self, api: Api, params: dict[str, Any], block: bool = True
+        self, api: Api, files: dict[str, bytes], block: bool = True
     ) -> Any:
-        """Submit a job with an api's pinned files and params as its JSON.
+        """Send a call of an api as a request holding files.
 
-        With block=True, waits until the job has finished and returns it.
+        Returns the request; with block=True, waits until it was rejected or
+        its job finished, and returns that job.
         """
         peer_emails = {p.email for p in self.sync_engine.peer_manager.syncable_peers}
         if api.datasite not in peer_emails:
@@ -468,32 +483,32 @@ class SyftRDSClient(BaseModel):
         compat.maybe_warn()
 
         job_name = f"{api.name}-{uuid4().hex[:8]}"
-        job_dir = self.job_client.submit_prepared_python_job(
-            api.datasite,
-            job_name,
-            api.run_script,
-            api.job_code_files(params),
-            api.layout.entrypoint,
+        job_dir = self.job_client.submit_api_request(
+            api.datasite, job_name, api.name, files
         )
         self.sync_engine.push_job_files(job_dir)
-        print(f"✅ Submitted job '{job_name}' to {api.datasite} via api '{api.name}'")
+        print(f"✅ Sent request '{job_name}' to {api.datasite} via api '{api.name}'")
         if block:
-            return self._wait_for_job(job_name)
-        return self._find_job(job_name)
+            return self._wait_for_call(job_name)
+        return _named(self.job_client.requests, job_name)
 
-    def _wait_for_job(self, job_name: str, poll_interval: float = 2.0) -> Any:
-        """Sync until the job is done, failed or rejected, then return it."""
+    def _wait_for_call(self, job_name: str, poll_interval: float = 2.0) -> Any:
+        """Sync until the request was rejected or its job finished.
+
+        Returns the job, or the request when it was rejected.
+        """
         print(f"⏳ Waiting for '{job_name}' to finish (interrupt to stop waiting)...")
         while True:
             self.sync_engine.sync()
-            job = self._find_job(job_name)
+            job = _named(self.job_client.jobs, job_name)
             if job is not None and job.status in FINISHED_JOB_STATUSES:
                 print(f"Job '{job_name}' finished with status: {job.status}")
                 return job
+            request = _named(self.job_client.requests, job_name)
+            if request is not None and request.status == "rejected":
+                print(f"Request '{job_name}' rejected: {request.review_reason}")
+                return request
             time.sleep(poll_interval)
-
-    def _find_job(self, job_name: str) -> Any:
-        return next((j for j in self.job_client.jobs if j.name == job_name), None)
 
     @property
     def _pre_sync_enabled(self) -> bool:
@@ -506,6 +521,13 @@ class SyftRDSClient(BaseModel):
         if self._pre_sync_enabled:
             self.sync_engine.sync()
         return self.job_client.jobs
+
+    @property
+    def requests(self) -> Any:
+        """Api calls you sent, or received as DO. Auto-syncs first unless PRE_SYNC=false."""
+        if self._pre_sync_enabled:
+            self.sync_engine.sync()
+        return self.job_client.requests
 
     # ------------------------------------------------------------------ #
     # waits for another party (notebook "run all" without re-run cells)
@@ -587,6 +609,17 @@ class SyftRDSClient(BaseModel):
             poll_interval,
         )
 
+    def receive_jobs(self) -> None:
+        """Receive new jobs and api calls (DO only). Syncs first unless PRE_SYNC=false.
+
+        A call of an api becomes an approved job; a whole job becomes pending.
+        """
+        if not self.has_do_role:
+            raise ValueError("Only dataset owners can receive jobs")
+        if self._pre_sync_enabled:
+            self.sync_engine.sync()
+        self.job_client.scan_inbox()
+
     def process_approved_jobs(
         self,
         stream_output: bool = True,
@@ -637,6 +670,7 @@ class SyftRDSClient(BaseModel):
             skip_jobs=[(name, peer) for name, peer, _ in skipped] or None,
             share_outputs_with_submitter=share_outputs_with_submitter,
             share_logs_with_submitter=share_logs_with_submitter,
+            approved_peers=[p.email for p in self.peer_manager.approved_peers],
         )
 
         # maybe_warn() above logs the peer, never the job.
@@ -1258,3 +1292,8 @@ class SyftRDSClient(BaseModel):
 
     def __repr__(self) -> str:
         return f"SyftRDSClient(email={self.sync_engine.email!r})"
+
+
+def _named(items: list, name: str) -> Any:
+    """The job or request with this name, or None."""
+    return next((item for item in items if item.name == name), None)

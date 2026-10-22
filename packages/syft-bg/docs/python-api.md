@@ -29,68 +29,57 @@ Starts the listed services if they aren't already running. Pass `restart=True` t
 syft_bg.status
 ```
 
-Shows email, services, auto-approval objects, and environment info. No parentheses needed.
+Shows email, services, apis, and environment info. No parentheses needed.
 
-## Auto-approve
-
-```python
-syft_bg.auto_approve(
-    contents=["code/main.py", "run.sh"],
-    file_paths=["code/params.json", "config.yaml"],
-    peers=["charlie@org.com"],
-    base_dir="~/SyftBox/datasites/me@org.com/apis/jobs/inbox/ds@org.com/my-job",
-)
-```
-
-Registers files for auto-approval. Jobs matching these files from listed peers get approved automatically.
-
-A path is relative to the job submission root, so code sits under `code/` and
-the script the runner executes is `run.sh`. The two lists together must name
-every file of the submission, and `run.sh` must be in `contents`, or the rule
-matches nothing. `config.yaml` belongs in `file_paths`: its bytes carry the job
-name and the time it was submitted, so hashing them matches one job.
-
-- `contents` — files (or directories) to approve by content
-- `file_paths` — files to allow by name only (e.g. data files)
-- `peers` — restrict to these emails. Omit to allow any peer
-- `name` — optional name for the approval object
-- `base_dir` — the job submission directory, which `contents` is resolved
-  against. `file_paths` is stored as written, so write those relative to the
-  same root
-
-## Auto-approve from job
+## Create an api from a job
 
 ```python
-from syft_bg import auto_approve_job
+from syft_bg import create_api_from_job
 
 job = do_manager.jobs[0]
+create_api_from_job(job)                                  # callable by the job's submitter
+create_api_from_job(job, peers=["charlie@org.com"], input_policy="policies/rate_limit.py")
+```
 
-# Default: every file matched by content, except config.yaml and
-# code/params.json, which are matched by name
-auto_approve_job(job)
+Creates an api from a job you have reviewed. The job's `run.sh` and Python file become
+the api's code; `code/params.json` is what a call sends. The
+arguments and their defaults are read from `code/params.json`. See
+[docs/jobs.md](../../../docs/jobs.md) for calls and policies.
 
-# Match data.json by name too; config.yaml and code/params.json stay by name
-auto_approve_job(job, file_paths=["data.json"])
+- `job` — `JobInfo` object to use as template
+- `peers` — emails that may call the api. Defaults to the job's submitter
+- `name` — name for the api (defaults to the job name)
+- `args` — the api's arguments, instead of reading them from `code/params.json`
+- `input_policy`, `output_policy` — scripts that run before and after each call
+- `disclosures` — what a call's approval releases, e.g. `["logs"]`. Defaults to
+  `default_disclosures` in config.yaml
 
-# Content-match main.py and the script that runs, allow the rest by name
-auto_approve_job(
-    job,
-    contents=["main.py", "run.sh"],
-    file_paths=["data.json", "config.yaml"],
+## Create an api from files
+
+```python
+syft_bg.create_api(
+    contents=["code/main.py", "run.sh"],
+    file_paths=["code/params.json"],
+    peers=["charlie@org.com"],
+    base_dir="path/to/a/job/submission",
 )
 ```
 
-`contents` must name `run.sh`, and the two lists together must name every file
-of the job, or `auto_approve_job` refuses to write an object that could never
-approve anything.
+`contents` must hold `run.sh`; `file_paths` lists every file a call sends. No file is in
+both, and neither holds `config.yaml`, which the data owner writes for each call. Paths are relative to `base_dir`.
 
-Creates an auto-approval config from an existing job's files. Calls `auto_approve()` internally.
+An api has arguments (`args`) only when `file_paths` is a single `params.json`: `client.api`
+writes a call's arguments to it. `create_api_from_job` reads the arguments from the job's
+`params.json`; from scratch, pass `file_paths=["code/params.json"]` and `args`.
 
-- `job` — `JobInfo` object to use as template
-- `contents` — filenames from the job to match by name AND content. Default (None): every file is content-matched except `config.yaml` and `code/params.json`, which are matched by name
-- `file_paths` — filenames from the job to match by name only. With `contents` left unset, the other files are content-matched, except `config.yaml` and `code/params.json`, which stay matched by name. With both set, the two lists must name every file of the job between them
-- `peers` — restrict to these emails. Defaults to the job's submitter
-- `name` — optional name for the approval object (defaults to job name)
+## Manage apis
+
+```python
+syft_bg.list_apis()                                  # {name: ApiDefinition}
+syft_bg.remove_api("my_analysis")
+syft_bg.set_policies("my_analysis", input_policy=None)  # remove a policy
+syft_bg.run_policy("policies/rate_limit.py", submitter="ds@org.com")
+```
 
 ## Service control
 
@@ -117,7 +106,7 @@ syft_bg.ensure_running(["notify", "approve"])
 # Check everything
 syft_bg.status
 
-# Auto-approve future runs of this job
+# Let the submitter call this job again as an api
 job = do_manager.jobs[0]
-syft_bg.auto_approve_job(job)
+syft_bg.create_api_from_job(job)
 ```

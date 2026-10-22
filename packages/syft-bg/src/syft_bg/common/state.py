@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError
 
-from syft_bg.common.locking import file_lock
+from syft_job.policies.locking import file_lock
 
 
 class BgState(BaseModel):

@@ -457,6 +457,14 @@ def job_info_repr_html(job: "JobInfo") -> str:
                     </div>
                 </div>"""
 
+    if job.outputs_withheld and job.current_user_email == job.submitted_by:
+        outputs_section = """
+                <div class="syftjob-single-section">
+                    <h4>📁 Outputs</h4>
+                    <div class="syftjob-single-outputs-list">Outputs not shared with you</div>
+                </div>"""
+    policy_details, policy_section = _policy_html(job)
+
     disclosure_details = "".join(
         f"""
                     <div class="syftjob-single-detail">
@@ -730,15 +738,44 @@ def job_info_repr_html(job: "JobInfo") -> str:
                     <div class="syftjob-single-detail">
                         <div class="syftjob-single-detail-label">Review reason:</div>
                         <div class="syftjob-single-detail-value">{job.review_reason or ""}</div>
-                    </div>{disclosure_details}
+                    </div>{disclosure_details}{policy_details}
                 </div>
                 <div class="syftjob-single-section">
                     <h4>📜 Script</h4>
                     <div class="syftjob-single-script">{script_content}</div>
-                </div>{code_section}{outputs_section}
+                </div>{code_section}{policy_section}{outputs_section}
             </div>
         </div>
         """
+
+
+def _detail_html(label: str, value: str) -> str:
+    return f"""
+                    <div class="syftjob-single-detail">
+                        <div class="syftjob-single-detail-label">{escape(label)}:</div>
+                        <div class="syftjob-single-detail-value">{escape(value)}</div>
+                    </div>"""
+
+
+def _policy_html(job: "JobInfo") -> tuple[str, str]:
+    """Detail rows (api, policy error) and a section with the policies' code."""
+    details = ""
+    if job.api_name:
+        details += _detail_html("API", job.api_name)
+    if job.policy_error:
+        details += _detail_html("Denied by policy", job.policy_error)
+    policies = job.policies
+    if policies is None:
+        return details, ""
+    section = ""
+    for label, script in (("Input", policies.input), ("Output", policies.output)):
+        if script is not None:
+            section += f"""
+                <div class="syftjob-single-section">
+                    <h4>🛡️ {label} policy</h4>
+                    <div class="syftjob-single-code">{_get_python_syntax_highlighted_html(script.code)}</div>
+                </div>"""
+    return details, section
 
 
 def _owner_groups(jobs: List["JobInfo"]) -> List[tuple[str, List["JobInfo"]]]:

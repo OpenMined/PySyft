@@ -89,6 +89,17 @@ class SyftJobConfig(BaseModel):
         """
         return self.get_job_dir(datasite_email) / "inbox"
 
+    def get_requests_dir(self, datasite_email: str) -> Path:
+        """
+        Get the directory for api calls (requests).
+
+        Path: SyftBox/<datasite_email>/app_data/job/requests/
+
+        A request names an api and holds only the files the caller chooses,
+        such as code/params.json. The api supplies the code.
+        """
+        return self.get_job_dir(datasite_email) / "requests"
+
     def get_review_dir(self, datasite_email: str) -> Path:
         """
         Get the review directory for job state and results.
@@ -125,6 +136,21 @@ class SyftJobConfig(BaseModel):
         base = self.get_all_submissions_dir(datasite_email) / ds_email
         segment = protocol_dir_name(protocol_version)
         return base / segment / job_name if segment else base / job_name
+
+    def get_request_job_dir(
+        self,
+        datasite_email: str,
+        ds_email: str,
+        job_name: str,
+        protocol_version: str = JOB_PROTOCOL_VERSION,
+    ) -> Path:
+        """
+        Get the requests path for a specific api call.
+
+        Path: SyftBox/<datasite_email>/app_data/job/requests/<ds_email>/v<n>/<job_name>/
+        """
+        base = self.get_requests_dir(datasite_email) / ds_email
+        return base / protocol_dir_name(protocol_version) / job_name
 
     def get_review_job_dir(
         self,

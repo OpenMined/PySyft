@@ -18,10 +18,7 @@ from syft_job.disclosures import (  # noqa: F401 (re-exported)
 )
 from syft_job.job import JobInfo
 from syft_job.models import JobStatus
-from syft_job.submission import (  # noqa: F401 (submission_hash re-exported)
-    check_expected_digest,
-    submission_hash,
-)
+from syft_job.submission import submission_hash  # noqa: F401 (re-exported)
 
 
 class PartyApprovalStatus(BaseModel):
@@ -225,12 +222,8 @@ class EnclaveJobInfo(JobInfo):
         reason: Optional[str] = None,
         approval_method: str = "manual",
         disclosures: DisclosuresArg = None,
-        expected_digest: Optional[str] = None,
     ) -> None:
         """Approve this submission in the DO's own approval file.
-
-        ``expected_digest`` is the submission hash an automated approver
-        checked; the approval is refused unless the submission still has it.
 
         ``disclosures`` names the items in ``DisclosureItem`` that this party
         releases to the other parties. The enclave releases an item only when
@@ -246,7 +239,6 @@ class EnclaveJobInfo(JobInfo):
         check_approval_reason(reason)
         approval = self._load_own_approval()
         current = submission_hash(self.job_submission_path)
-        check_expected_digest(self.name, expected_digest, current)
         if approval.status == JobStatus.REJECTED or _approves(approval, current):
             raise ValueError(f"Already in status: {approval.status.value}")
         approval.status = JobStatus.APPROVED

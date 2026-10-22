@@ -12,6 +12,10 @@ from syft_job.job_runner import SyftJobRunner
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_job.models import JobState
 from syft_perms import SyftPermContext
+from syft_job.config import protocol_dir_name
+
+# The path segment of the current job protocol, e.g. "v2".
+PROTOCOL_DIR = protocol_dir_name(JOB_PROTOCOL_VERSION)
 
 DO_EMAIL = "do@test.org"
 DS_EMAIL = "ds@test.org"
@@ -59,8 +63,10 @@ def test_full_job_lifecycle(tmp_path: Path):
     assert (job_dir / "config.yaml").exists()
     assert (job_dir / "code" / "main.py").exists()
 
-    # Job dir should be under inbox/<ds_email>/v1/<job_name>
-    expected_parent = ds_config.get_all_submissions_dir(DO_EMAIL) / DS_EMAIL / "v1"
+    # Job dir should be under inbox/<ds_email>/{PROTOCOL_DIR}/<job_name>
+    expected_parent = (
+        ds_config.get_all_submissions_dir(DO_EMAIL) / DS_EMAIL / PROTOCOL_DIR
+    )
     assert job_dir.parent == expected_parent
 
     # --- DO lists jobs (auto-scans inbox) and sees it as pending ---
@@ -112,14 +118,14 @@ def test_full_job_lifecycle(tmp_path: Path):
     ctx = SyftPermContext(datasite=syftbox / DO_EMAIL)
     # The DS polls state.yaml through the peer grant.
     assert ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/v1/test.job/state.yaml"
+        f"app_data/job/review/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/state.yaml"
     ).has_read_access(DS_EMAIL)
     assert not ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/v1/test.job/outputs/"
+        f"app_data/job/review/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/outputs/"
     ).has_read_access(DS_EMAIL)
     for name in LOG_FILES:
         assert not ctx.open(
-            f"app_data/job/staging/{DS_EMAIL}/v1/test.job/{name}"
+            f"app_data/job/staging/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/{name}"
         ).has_read_access(DS_EMAIL)
 
     # --- Release the logs, then share outputs and logs with DS ---
@@ -135,17 +141,23 @@ def test_full_job_lifecycle(tmp_path: Path):
     # --- Verify DS has read access via SyftPermContext ---
     ctx = SyftPermContext(datasite=syftbox / DO_EMAIL)
 
-    outputs_folder = ctx.open(f"app_data/job/review/{DS_EMAIL}/v1/test.job/outputs/")
+    outputs_folder = ctx.open(
+        f"app_data/job/review/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/outputs/"
+    )
     assert outputs_folder.has_read_access(DS_EMAIL)
 
-    stdout_file = ctx.open(f"app_data/job/review/{DS_EMAIL}/v1/test.job/stdout.txt")
+    stdout_file = ctx.open(
+        f"app_data/job/review/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/stdout.txt"
+    )
     assert stdout_file.has_read_access(DS_EMAIL)
 
-    stderr_file = ctx.open(f"app_data/job/review/{DS_EMAIL}/v1/test.job/stderr.txt")
+    stderr_file = ctx.open(
+        f"app_data/job/review/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/stderr.txt"
+    )
     assert stderr_file.has_read_access(DS_EMAIL)
 
     returncode_file = ctx.open(
-        f"app_data/job/review/{DS_EMAIL}/v1/test.job/returncode.txt"
+        f"app_data/job/review/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/returncode.txt"
     )
     assert returncode_file.has_read_access(DS_EMAIL)
 

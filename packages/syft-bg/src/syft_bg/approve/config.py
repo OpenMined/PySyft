@@ -5,13 +5,9 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from syft_rds.apis.models import ApiDefinition, FileEntry
+from syft_rds.apis.models import FileEntry
 
 from syft_bg.common.config import get_default_paths
-
-
-# The api format is shared with the client, which reads it on the DS side.
-AutoApprovalObj = ApiDefinition
 
 
 class AutoApprovalsConfig(BaseModel):
@@ -68,7 +64,7 @@ ScriptRule = FileEntry
 
 
 class PeerApprovalEntry(BaseModel):
-    """Deprecated: use AutoApprovalObj instead."""
+    """Deprecated: use ApiDefinition instead."""
 
     mode: str = "strict"
     scripts: list[FileEntry] = Field(default_factory=list)

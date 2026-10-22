@@ -1271,12 +1271,13 @@ def test_in_memory_connection_load_state():
     ds_manager2.sync()
 
     # Verify events in DO cache (inbox was processed)
-    # 2 data events + 1 permission file event (syft.pub.yaml from approve_peer_request)
+    # 2 data events + 3 permission file events: the DS's inbox, review and
+    # requests folders, set up when the peer was approved
     assert (
         len(
             do_manager2.sync_engine.datasite_owner_syncer.event_cache.get_cached_events()
         )
-        == 4
+        == 5
     )
 
     # verify events in DS cache

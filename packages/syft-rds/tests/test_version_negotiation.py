@@ -7,6 +7,8 @@ import pytest
 from syft.sync.version.exceptions import VersionUnknownError
 from syft.sync.version.peer_manager import PeerCompatibilityResult, PeerManager
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
+from syft_job.config import protocol_dir_name
+from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_rds import SyftRDSClient
 
 
@@ -83,7 +85,7 @@ class TestForceSubmission:
             / "job"
             / "inbox"
             / ds.email
-            / "v1"
+            / protocol_dir_name(JOB_PROTOCOL_VERSION)
             / "test.force.job"
         )
         assert job_dir.exists()
