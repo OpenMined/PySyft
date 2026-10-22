@@ -756,15 +756,22 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                     recipient, message
                 )
             except (PeerEncryptionPendingError, EncryptionPolicyConflictError) as e:
-                if not self.connection_router.peer_store.should_hold(recipient):
-                    warnings.warn(
-                        f"Dropped an outbox message for {recipient}: not a peer"
-                    )
-                    continue
-                warnings.warn(f"Changes for {recipient} wait for a later sync: {e}")
-                waiting_for.add(recipient)
+                if self._hold_or_drop(recipient, e):
+                    waiting_for.add(recipient)
             else:
                 self._record_sent(recipient, message, status)
+
+    def _hold_or_drop(self, recipient: str, error: Exception) -> bool:
+        """Warn about an outbox message that cannot go to ``recipient`` now.
+
+        Returns True when the message waits for a later sync, and False when it
+        is dropped because ``recipient`` is not a peer.
+        """
+        if not self.connection_router.peer_store.should_hold(recipient):
+            warnings.warn(f"Dropped an outbox message for {recipient}: not a peer")
+            return False
+        warnings.warn(f"Changes for {recipient} wait for a later sync: {error}")
+        return True
 
     def _record_sent(
         self, recipient: str, message: FileChangeEventsMessage, status: SendStatus
