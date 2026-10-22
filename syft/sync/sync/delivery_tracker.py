@@ -21,11 +21,12 @@ A new peer starts with an empty view, so it is sent every file it may read. A
 peer that the owner rejects and then approves again keeps its view, and gets
 only what changed.
 
-An owner that kept no views before, because it ran an earlier client or lost
-its views file, has file hashes but no state. ``seed`` then starts each current
-peer's view with every file it may read now, so the upgrade sends nothing
-extra. The paths that the earlier client still had to send are left out, so
-they are sent.
+An owner whose state was never seeded, because it ran an earlier client or
+lost its views file, has file hashes but no views. ``seed`` then starts the
+view of each approved peer with every file it may read now, so the upgrade
+sends nothing extra. A path that the earlier client still had to send gets
+``UNSENT_HASH``, so the next plan sends it, or deletes it when it is gone. A
+view that a send already recorded is kept.
 
 Recording a send
 ----------------
@@ -65,6 +66,9 @@ DELIVERY_VIEWS_FILENAME = "owner_delivery_views.json"
 # Format of DeliveryState. Raise it when the layout changes, and keep a read
 # path for every earlier version.
 DELIVERY_STATE_VERSION = 1
+# A view hash that matches no file, for a path that the peer may hold in any
+# version. The next plan sends the path, or deletes it.
+UNSENT_HASH = ""
 
 
 class QueuedSend(BaseModel):
@@ -85,6 +89,8 @@ class DeliveryState(BaseModel):
     views: dict[str, dict[str, str]] = Field(default_factory=dict)
     # msg_id -> the send it confirms
     queued: dict[str, QueuedSend] = Field(default_factory=dict)
+    # Whether ``DeliveryTracker.seed`` ran on this state.
+    seeded: bool = False
 
 
 class DeliveryPlan(BaseModel):
@@ -111,10 +117,6 @@ class DeliveryStateStore(ABC):
     def save(self, state: DeliveryState) -> None:
         """Store ``state``, replacing what was there."""
 
-    @abstractmethod
-    def has_state(self) -> bool:
-        """Whether a state was ever saved."""
-
     def locked(self) -> ContextManager[None]:
         """Keep other writers out from a ``load`` to the ``save`` that follows."""
         return nullcontext()
@@ -124,16 +126,13 @@ class MemoryDeliveryStateStore(DeliveryStateStore):
     """A state kept in this process only."""
 
     def __init__(self):
-        self._state: DeliveryState | None = None
+        self._state = DeliveryState()
 
     def load(self) -> DeliveryState:
-        return (self._state or DeliveryState()).model_copy(deep=True)
+        return self._state.model_copy(deep=True)
 
     def save(self, state: DeliveryState) -> None:
         self._state = state.model_copy(deep=True)
-
-    def has_state(self) -> bool:
-        return self._state is not None
 
 
 class LocalDeliveryStateStore(DeliveryStateStore):
@@ -152,9 +151,6 @@ class LocalDeliveryStateStore(DeliveryStateStore):
                 f"up to version {DELIVERY_STATE_VERSION}."
             )
         return state
-
-    def has_state(self) -> bool:
-        return self.path.exists()
 
     @contextmanager
     def locked(self):
@@ -200,18 +196,24 @@ class DeliveryTracker:
         with self.store.locked():
             self.store.save(DeliveryState())
 
-    def has_state(self) -> bool:
-        """Whether the store holds a state. False until the first ``seed``."""
-        return self.store.has_state()
+    def is_seeded(self) -> bool:
+        """Whether ``seed`` ran on the stored state."""
+        return self.store.load().seeded
 
-    def seed(self, readable_by_peer: Mapping[str, Mapping[str, str]]) -> None:
-        """Start each view with the files in ``readable_by_peer``, if the store
-        holds no state yet. Otherwise do nothing."""
+    def seed(self, held_by_peer: Mapping[str, Mapping[str, str]]) -> None:
+        """Add the files in ``held_by_peer`` to each peer's view, one time.
+
+        A path that the view already holds keeps its hash. After the first
+        call, later calls do nothing.
+        """
         with self.store.locked():
-            if self.store.has_state():
+            state = self.store.load()
+            if state.seeded:
                 return
-            views = {peer: dict(files) for peer, files in readable_by_peer.items()}
-            self.store.save(DeliveryState(views=views))
+            for peer, files in held_by_peer.items():
+                state.views[peer] = {**files, **state.views.get(peer, {})}
+            state.seeded = True
+            self.store.save(state)
 
     def plan(
         self, readable_by_peer: Mapping[str, Mapping[str, str]]

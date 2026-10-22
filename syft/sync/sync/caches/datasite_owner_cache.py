@@ -323,15 +323,19 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
 
     def legacy_pending_paths(self) -> dict[str, set[str]]:
         """The paths that a client before the delivery tracker still had to send,
-        per peer. Empty for an in-memory cache."""
-        if self.syftbox_folder is None:
+        per peer.
+
+        Empty when the views are not kept on disk, or when that client left no
+        file.
+        """
+        store = self.deliveries.store
+        if not isinstance(store, LocalDeliveryStateStore):
             return {}
-        pending = PersistedDict(
-            path=Path(self.syftbox_folder)
-            / CACHE_DIR
-            / OWNER_PENDING_DELIVERIES_FILENAME
-        )
-        return {peer: set(paths) for peer, paths in pending.items()}
+        # The earlier client kept its file next to the views file.
+        path = store.path.parent / OWNER_PENDING_DELIVERIES_FILENAME
+        if not path.exists():
+            return {}
+        return {peer: set(paths) for peer, paths in PersistedDict(path=path).items()}
 
     def has_conflict(self, proposed_event: ProposedFileChange) -> bool:
         if proposed_event.path_in_datasite not in self.file_hashes:
