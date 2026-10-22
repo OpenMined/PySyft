@@ -2,11 +2,14 @@
 longer have, from a per-peer record of what the peer holds."""
 
 import threading
+from pathlib import Path
 
 import pytest
 
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.sync.constants import CACHE_DIR
+from syft.sync.sync import datasite_owner_syncer
+from syft.sync.sync.caches.persisted_dict import PersistedDict
+from syft.sync.sync.constants import CACHE_DIR, OWNER_PENDING_DELIVERIES_FILENAME
 from syft.sync.sync.caches.datasite_owner_cache import (
     ProposedEventFileOutdatedException,
 )
@@ -47,6 +50,13 @@ def test_delivered_send_updates_view():
     tracker.sent(PEER, "m1", SendStatus.DELIVERED, {"a": "h2", "b": None})
     assert tracker.plan({PEER: {"a": "h2"}})[PEER].send == []
     assert tracker.plan({PEER: {"a": "h2"}})[PEER].delete == []
+
+
+def test_seed_starts_views_only_without_state():
+    tracker = DeliveryTracker(MemoryDeliveryStateStore())
+    tracker.seed({PEER: {"a": "h1"}})
+    tracker.seed({PEER: {}})
+    assert tracker.plan({PEER: {"a": "h1"}})[PEER].send == []
 
 
 def test_queued_send_updates_view_on_confirm():
@@ -157,13 +167,16 @@ def test_peer_approved_later_gets_existing_files():
     )
 
 
-def test_in_memory_owner_sends_file_content():
+def test_in_memory_owner_sends_content_then_delete_on_revoke():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
     syncer = do_manager.datasite_owner_syncer
-    syncer.perm_context.open("shared/").grant_read_access(ds_manager.email)
+    folder = syncer.perm_context.open("shared/")
+    folder.grant_read_access(ds_manager.email)
     syncer.event_cache.file_connection.write_file("shared/data.txt", "hello")
 
     do_manager.sync(auto_checkpoint=False)
+    do_manager.sync(auto_checkpoint=False)
+    folder.revoke_read_access(ds_manager.email)
     do_manager.sync(auto_checkpoint=False)
     messages = ds_manager._connection_router.watcher_get_events_messages(
         do_manager.email, None
@@ -174,7 +187,7 @@ def test_in_memory_owner_sends_file_content():
         for e in m.events
         if str(e.path_in_datasite) == "shared/data.txt"
     ]
-    assert sent == [(False, "hello")]
+    assert sent == [(False, "hello"), (True, None)]
 
 
 @pytest.mark.parametrize("persist_owner_state", [True, False])
@@ -207,17 +220,67 @@ def test_restarted_owner_sends_nothing_new():
     assert _outbox_paths(ds_manager, do_manager) == sent_before
 
 
-def test_lost_views_resend_everything():
+def test_upgrade_sends_only_unsent_changes():
     ds_manager, do_manager = _pair()
     do_manager.datasite_owner_syncer.perm_context.open("shared/").grant_read_access(
         ds_manager.email
     )
-    _write(do_manager, "shared/data.txt", "one")
+    _write(do_manager, "shared/held.txt", "one")
+    _write(do_manager, "shared/pending.txt", "one")
     do_manager.sync(auto_checkpoint=False)
-    (do_manager.syftbox_folder / CACHE_DIR / DELIVERY_VIEWS_FILENAME).unlink()
+
+    # Make the cache look like one from a client before the delivery tracker:
+    # no views, and one path that the client still had to send.
+    cache_dir = do_manager.syftbox_folder / CACHE_DIR
+    (cache_dir / DELIVERY_VIEWS_FILENAME).unlink()
+    pending = PersistedDict(path=cache_dir / OWNER_PENDING_DELIVERIES_FILENAME)
+    pending[ds_manager.email] = {"shared/pending.txt": "msg"}
+    _write(do_manager, "shared/offline.txt", "new")
 
     do_manager.sync(auto_checkpoint=False)
-    assert _outbox_paths(ds_manager, do_manager).count("shared/data.txt") == 2
+    sent = _outbox_paths(ds_manager, do_manager)
+    assert sent.count("shared/held.txt") == 1
+    assert sent.count("shared/pending.txt") == 2
+    assert sent.count("shared/offline.txt") == 1
+
+
+def test_private_dataset_sent_to_peer_never_revoked():
+    ds_manager, do_manager = _pair()
+    syncer = do_manager.datasite_owner_syncer
+    _write(do_manager, "private/data.csv", "rows")
+    message = syncer.event_cache.create_events_for_files(
+        {Path("private/data.csv"): b"rows"}
+    )
+    syncer.queue_event_for_syftbox(
+        recipients=[ds_manager.email], file_change_events_message=message
+    )
+    syncer.process_syftbox_events_queue()
+
+    do_manager.sync(auto_checkpoint=False)
+    do_manager.sync(auto_checkpoint=False)
+    messages = ds_manager._connection_router.watcher_get_events_messages(
+        do_manager.email, None
+    )
+    events = [
+        (str(e.path_in_datasite), e.is_deleted) for m in messages for e in m.events
+    ]
+    assert events == [("private/data.csv", False)]
+
+
+def test_large_catch_up_split_into_messages(monkeypatch):
+    monkeypatch.setattr(datasite_owner_syncer, "MAX_DELIVERY_MESSAGE_CONTENT", 6)
+    ds_manager, do_manager = _pair()
+    do_manager.datasite_owner_syncer.perm_context.open("shared/").grant_read_access(
+        ds_manager.email
+    )
+    for name in ("a", "b", "c"):
+        _write(do_manager, f"shared/{name}.txt", "abc")
+
+    do_manager.sync(auto_checkpoint=False)
+    messages = ds_manager._connection_router.watcher_get_events_messages(
+        do_manager.email, None
+    )
+    assert sorted(len(m.events) for m in messages) == [1, 2]
 
 
 def test_outdated_proposal_does_not_block_owner_changes():

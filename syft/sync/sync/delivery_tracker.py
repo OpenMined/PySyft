@@ -17,8 +17,15 @@ peer may read now:
 Every readable file counts, whoever wrote it. Thus a change that the owner
 accepts from one peer also goes to every other peer that may read it.
 
-A peer with no view, because it is new or its record was lost, starts with an
-empty view, so it is sent every file it may read.
+A new peer starts with an empty view, so it is sent every file it may read. A
+peer that the owner rejects and then approves again keeps its view, and gets
+only what changed.
+
+An owner that kept no views before, because it ran an earlier client or lost
+its views file, has file hashes but no state. ``seed`` then starts each current
+peer's view with every file it may read now, so the upgrade sends nothing
+extra. The paths that the earlier client still had to send are left out, so
+they are sent.
 
 Recording a send
 ----------------
@@ -36,8 +43,10 @@ stopped before the send, stays in the plan of the next sync.
 Storage
 -------
 The views are kept on the owner's local disk only, also with
-``persist_owner_state``. An owner that loses its local state sends every peer
-every file it may read once again.
+``persist_owner_state``. An owner that loses its local state, file hashes
+included, sends every peer every file it may read once again. With
+``persist_owner_state``, the file hashes come back from Drive, so ``seed``
+starts the views from them.
 """
 
 import os
@@ -102,6 +111,10 @@ class DeliveryStateStore(ABC):
     def save(self, state: DeliveryState) -> None:
         """Store ``state``, replacing what was there."""
 
+    @abstractmethod
+    def has_state(self) -> bool:
+        """Whether a state was ever saved."""
+
     def locked(self) -> ContextManager[None]:
         """Keep other writers out from a ``load`` to the ``save`` that follows."""
         return nullcontext()
@@ -111,13 +124,16 @@ class MemoryDeliveryStateStore(DeliveryStateStore):
     """A state kept in this process only."""
 
     def __init__(self):
-        self._state = DeliveryState()
+        self._state: DeliveryState | None = None
 
     def load(self) -> DeliveryState:
-        return self._state.model_copy(deep=True)
+        return (self._state or DeliveryState()).model_copy(deep=True)
 
     def save(self, state: DeliveryState) -> None:
         self._state = state.model_copy(deep=True)
+
+    def has_state(self) -> bool:
+        return self._state is not None
 
 
 class LocalDeliveryStateStore(DeliveryStateStore):
@@ -136,6 +152,9 @@ class LocalDeliveryStateStore(DeliveryStateStore):
                 f"up to version {DELIVERY_STATE_VERSION}."
             )
         return state
+
+    def has_state(self) -> bool:
+        return self.path.exists()
 
     @contextmanager
     def locked(self):
@@ -180,6 +199,19 @@ class DeliveryTracker:
         """Forget every view and every queued send."""
         with self.store.locked():
             self.store.save(DeliveryState())
+
+    def has_state(self) -> bool:
+        """Whether the store holds a state. False until the first ``seed``."""
+        return self.store.has_state()
+
+    def seed(self, readable_by_peer: Mapping[str, Mapping[str, str]]) -> None:
+        """Start each view with the files in ``readable_by_peer``, if the store
+        holds no state yet. Otherwise do nothing."""
+        with self.store.locked():
+            if self.store.has_state():
+                return
+            views = {peer: dict(files) for peer, files in readable_by_peer.items()}
+            self.store.save(DeliveryState(views=views))
 
     def plan(
         self, readable_by_peer: Mapping[str, Mapping[str, str]]

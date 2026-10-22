@@ -58,6 +58,10 @@ DEFAULT_CHECKPOINT_EVENT_THRESHOLD = 50
 # Default: upload rolling state to GDrive after this many events
 DEFAULT_ROLLING_STATE_UPLOAD_THRESHOLD = 1
 
+# A delivery message holds about this much file content at most. A larger
+# catch-up goes out in more than one message.
+MAX_DELIVERY_MESSAGE_CONTENT = 50 * 1024 * 1024
+
 # Minimum number of message files in a peer's outbox before
 # compact_outbox_if_needed() will merge them into a single message.
 MIN_MESSAGES_COMPACT = 20
@@ -111,6 +115,25 @@ class DatasiteOwnerSyncerConfig(BaseModel):
         default_factory=DataSiteOwnerEventCacheConfig
     )
     connection_configs: List[ConnectionConfig] = []
+
+
+def _batches_by_content_size(
+    events: list[FileChangeEvent], limit: int
+) -> list[list[FileChangeEvent]]:
+    """Split ``events`` in order into lists of at most ``limit`` content bytes.
+
+    An event larger than ``limit`` gets a list of its own.
+    """
+    batches: list[list[FileChangeEvent]] = []
+    size = 0
+    for event in events:
+        event_size = len(event.content or b"")
+        if not batches or size + event_size > limit:
+            batches.append([])
+            size = 0
+        batches[-1].append(event)
+        size += event_size
+    return batches
 
 
 class DatasiteOwnerSyncer(BaseModelCallbackMixin):
@@ -212,6 +235,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         try:
             if not self.initial_sync_done:
                 self.pull_initial_state()
+            # Before the local changes are recorded, so that a file changed
+            # while the owner was offline is not seeded as held.
+            self._seed_views_on_upgrade(peer_emails)
 
             if recompute_hashes:
                 self._record_local_changes()
@@ -630,28 +656,49 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             if is_normal_syncable_path(str(path), collections_path=collections_rel)
         }
 
+    def _readable_hashes(self, peer_emails: list[str]) -> dict[str, dict[str, str]]:
+        """For each peer, the current hash of every syncable file it may read.
+
+        The caller reloads the permissions first.
+        """
+        hashes = self._syncable_hashes()
+        return {
+            peer: {
+                p: h for p, h in hashes.items() if self.perm_context.can_read(p, peer)
+            }
+            for peer in peer_emails
+        }
+
+    def _seed_views_on_upgrade(self, peer_emails: list[str]) -> None:
+        """Start the views of an owner that kept none before.
+
+        Each peer is taken to hold every file it may read now, except the paths
+        that the earlier client still had to send it.
+        """
+        deliveries = self.event_cache.deliveries
+        if deliveries.has_state():
+            return
+        self.perm_context._reload()
+        pending = self.event_cache.legacy_pending_paths()
+        deliveries.seed(
+            {
+                peer: {p: h for p, h in files.items() if p not in pending.get(peer, ())}
+                for peer, files in self._readable_hashes(peer_emails).items()
+            }
+        )
+
     def deliver(self, peer_emails: list[str]) -> None:
         """Send each peer the files its view lacks, and deletes for the files it
         may no longer have."""
         deliveries = self.event_cache.deliveries
         deliveries.confirm(self.connection_router.transport.p2p.delivered())
         self.perm_context._reload()
-        hashes = self._syncable_hashes()
-        plans = deliveries.plan(
-            {
-                peer: {
-                    p: h
-                    for p, h in hashes.items()
-                    if self.perm_context.can_read(p, peer)
-                }
-                for peer in peer_emails
-            }
-        )
+        plans = deliveries.plan(self._readable_hashes(peer_emails))
         for peer, plan in plans.items():
             events = [self._create_current_state_event(p) for p in plan.send]
             events += [self._deletion_event(p) for p in plan.delete]
-            if events:
-                self.outbox_queue.put((peer, FileChangeEventsMessage(events=events)))
+            for batch in _batches_by_content_size(events, MAX_DELIVERY_MESSAGE_CONTENT):
+                self.outbox_queue.put((peer, FileChangeEventsMessage(events=batch)))
         self.process_syftbox_events_queue()
 
     def pull_and_process_next_proposed_filechange(

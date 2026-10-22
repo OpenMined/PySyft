@@ -18,7 +18,11 @@ from syft.sync.sync.caches.cache_file_writer_connection import (
 )
 from syft.sync.utils.syftbox_utils import get_event_hash_from_content
 from syft.sync.checkpoints.checkpoint import Checkpoint
-from syft.sync.sync.constants import CACHE_DIR, OWNER_FILE_HASHES_FILENAME
+from syft.sync.sync.constants import (
+    CACHE_DIR,
+    OWNER_FILE_HASHES_FILENAME,
+    OWNER_PENDING_DELIVERIES_FILENAME,
+)
 from syft.sync.sync.delivery_tracker import (
     DELIVERY_VIEWS_FILENAME,
     DeliveryTracker,
@@ -316,6 +320,18 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
         self.file_connection.clear_cache()
         self.file_hashes.clear()
         self.deliveries.clear()
+
+    def legacy_pending_paths(self) -> dict[str, set[str]]:
+        """The paths that a client before the delivery tracker still had to send,
+        per peer. Empty for an in-memory cache."""
+        if self.syftbox_folder is None:
+            return {}
+        pending = PersistedDict(
+            path=Path(self.syftbox_folder)
+            / CACHE_DIR
+            / OWNER_PENDING_DELIVERIES_FILENAME
+        )
+        return {peer: set(paths) for peer, paths in pending.items()}
 
     def has_conflict(self, proposed_event: ProposedFileChange) -> bool:
         if proposed_event.path_in_datasite not in self.file_hashes:
