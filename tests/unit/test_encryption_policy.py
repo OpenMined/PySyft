@@ -295,21 +295,15 @@ def test_required_sender_needs_no_peer_policy():
     assert PeerStore.is_envelope(alice.encrypt_if_needed("bob@example.com", b"data"))
 
 
-@pytest.mark.parametrize(
-    "mine, theirs, with_keys",
-    [(OPTIONAL, REQUIRED, False), (REQUIRED, OPTIONAL, True)],
-    ids=["no own keys", "no peer bundle"],
-)
-def test_encrypting_pair_without_keys_or_pin_not_ready(mine, theirs, with_keys):
-    store = _store_with_peer(mine, theirs)
-    if with_keys:
-        store.generate_keys()
+def test_encrypting_pair_without_peer_bundle_not_ready():
+    store = _store_with_peer(REQUIRED, OPTIONAL)
+    store.generate_keys()
     with pytest.raises(PeerKeysNotReadyError):
         store.encrypt_if_needed("bob@example.com", b"data")
 
 
 # =========================================================================
-# Keys and pins
+# Keys and bundles
 # =========================================================================
 
 
@@ -377,29 +371,10 @@ def test_receiver_accepts_envelope_from_plaintext_peer():
     assert bob.decrypt_and_verify_if_needed("alice@example.com", envelope) == b"secret"
 
 
-def _unpinned_receiver() -> PeerStore:
-    _, bob = _keyed_pair(REQUIRED, OPTIONAL)
-    bob.get_cached_peer("alice@example.com").public_encryption_bundle = None
-    return bob
-
-
-def _keyless_receiver() -> PeerStore:
-    bob = PeerStore(email="bob@example.com")
-    bob.add_peer(
-        Peer(email="alice@example.com", version=_version_with_policy(REQUIRED))
-    )
-    return bob
-
-
-@pytest.mark.parametrize(
-    "make_receiver",
-    [_unpinned_receiver, _keyless_receiver],
-    ids=["no peer bundle", "no own keys"],
-)
-def test_envelope_before_keys_and_pin_is_not_ready(make_receiver):
-    alice, _ = _keyed_pair(REQUIRED, OPTIONAL)
+def test_envelope_without_peer_bundle_is_not_ready():
+    alice, bob = _keyed_pair(REQUIRED, OPTIONAL)
     envelope = alice.encrypt("bob@example.com", b"secret")
-    bob = make_receiver()
+    bob.get_cached_peer("alice@example.com").public_encryption_bundle = None
     with pytest.raises(PeerKeysNotReadyError):
         bob.decrypt_and_verify_if_needed("alice@example.com", envelope)
 
@@ -420,7 +395,7 @@ def test_negotiated_encryption_flow(ds_policy, do_policy):
         do_encryption_policy=do_policy,
     )
     grant_job_inbox_access(do_manager, ds_manager.email)
-    # One load_peers round each lets both sides see the policy and pin bundles.
+    # One load_peers round each lets both sides see the policy and read bundles.
     ds_manager.load_peers()
     do_manager.load_peers()
 
@@ -554,8 +529,8 @@ def test_conflict_found_on_read_makes_peer_wait():
     assert message is None
 
 
-def test_owner_waits_on_envelope_from_unpinned_peer():
-    """The sync goes on; the message stays in the inbox until the pin exists."""
+def test_owner_waits_on_envelope_from_peer_without_bundle():
+    """The sync goes on; the message stays in the inbox until the bundle is read."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         ds_encryption_policy=REQUIRED,
         do_encryption_policy=OPTIONAL,
@@ -563,16 +538,16 @@ def test_owner_waits_on_envelope_from_unpinned_peer():
     grant_job_inbox_access(do_manager, ds_manager.email)
     do_manager.load_peers()
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    ds_manager._send_file_change(file_path, "pinned later")
+    ds_manager._send_file_change(file_path, "bundle later")
 
     peer = do_manager.peer_manager.peer_store.get_cached_peer(ds_manager.email)
     peer.public_encryption_bundle = None
     with pytest.warns(UserWarning, match="wait"):
         do_manager.datasite_owner_syncer.sync([ds_manager.email])
-    assert not any("pinned later" in c for c in _accepted_contents(do_manager))
+    assert not any("bundle later" in c for c in _accepted_contents(do_manager))
 
     do_manager.sync()
-    assert any("pinned later" in c for c in _accepted_contents(do_manager))
+    assert any("bundle later" in c for c in _accepted_contents(do_manager))
 
 
 # =========================================================================
@@ -629,7 +604,7 @@ def test_send_before_peer_accepts_waits_until_sync():
 
 
 def test_send_after_accept_before_peer_load_waits_until_sync():
-    """The owner accepted, but the scientist has no keys or pin yet."""
+    """The owner accepted, but the scientist has not read its bundle yet."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         add_peers=False,
         do_encryption_policy=REQUIRED,
