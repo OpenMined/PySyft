@@ -5,7 +5,7 @@ import yaml
 from syft_migration import MigratableObject
 
 from ..config import protocol_dir_name
-from ..job_ref import JobRef
+from ..job_ref import JobRef, RequestRef
 from .base import ProtocolCodec
 
 
@@ -44,7 +44,13 @@ class ProtocolCodecV1(ProtocolCodec):
         root = self.config.get_review_dir(datasite_email)
         yield from self._scan(root, datasite_email, self.state_marker)
 
-    def _scan(self, root: Path, datasite_email: str, marker: str) -> Iterator[JobRef]:
+    def _scan(
+        self,
+        root: Path,
+        datasite_email: str,
+        marker: str,
+        ref_type: type[JobRef] | type[RequestRef] = JobRef,
+    ) -> Iterator[JobRef | RequestRef]:
         if not root.exists():
             return
         for ds_dir in sorted(p for p in root.iterdir() if p.is_dir()):
@@ -54,7 +60,7 @@ class ProtocolCodecV1(ProtocolCodec):
                     continue
                 for job_dir in sorted(p for p in version_dir.iterdir() if p.is_dir()):
                     if (job_dir / marker).exists():
-                        yield JobRef(
+                        yield ref_type(
                             datasite_email, ds_dir.name, job_dir.name, protocol_version
                         )
 

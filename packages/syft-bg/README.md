@@ -1,6 +1,6 @@
 # syft-bg
 
-Background services for SyftBox: email notifications and auto-approval for peers and jobs.
+Background services for SyftBox: email notifications, running api calls, and approving peers.
 
 ## Installation
 
@@ -43,10 +43,10 @@ syft-bg start [service]        # Start all or specific service
 syft-bg stop [service]         # Stop all or specific service
 syft-bg restart [service]      # Restart all or specific service
 syft-bg logs <service>         # View logs (notify or approve)
-syft-bg auto-approve           # Create auto-approval object
-syft-bg remove-auto-approval   # Remove files from an auto-approval object
-syft-bg remove-peer            # Remove a peer from config
-syft-bg list-auto-approvals    # List auto-approval objects
+syft-bg create-api             # Create an api
+syft-bg remove-api             # Remove an api
+syft-bg remove-peer            # Remove a peer from apis
+syft-bg list-apis              # List apis
 syft-bg install                # Install systemd service (auto-start on boot)
 syft-bg uninstall              # Remove systemd service
 ```
@@ -69,61 +69,34 @@ syft-bg ensure-running notify approve
 syft-bg ensure-running notify approve --restart  # Force restart
 ```
 
-## Auto-Approval
+## Apis
 
-Data owners can configure auto-approval objects that automatically approve matching jobs.
-Each object specifies files to match by content (name + SHA256 hash) and optionally files to match by name only.
+An api is a job the data owner approved in advance, which peers call with their own
+arguments: `client.api.<name>(...)`. A call sends only the arguments. The data owner's
+client adds the api's code, approves the call, and the approve service runs it, with
+the api's input and output policies. See [docs/jobs.md](../../docs/jobs.md).
 
-### Creating auto-approval objects
+### Creating an api
 
-A path is relative to the job submission root, so code sits under `code/` and
-the script the runner executes is `run.sh`. A rule must name every file of the
-submission and pin the content of `run.sh`, or it matches nothing. Prefer
-building it from a job you have reviewed, with `syft_bg.auto_approve_job(job)`.
-
-Name `config.yaml` with `-f`, never as content: its bytes carry the job name
-and the time it was submitted, so a rule that hashes it matches one job and no
-other. A directory argument hashes every file it finds, `config.yaml` included.
-
-A name is read from the current directory as well as from `-b`, so run the
-command from inside the submission.
+Prefer building it from a job you have reviewed, with `syft_bg.create_api_from_job(job)`.
+From the command line, an api pins `run.sh` and the rest of its code by content,
+and takes the files a call sends (such as the params JSON) by
+name. Paths are relative to the job submission root.
 
 ```bash
-cd ./job   # a submission holding code/main.py, run.sh and config.yaml
+cd ./job   # a submission holding code/main.py, code/params.json, run.sh and config.yaml
 
-# Approve it for specific peers
-syft-bg auto-approve code/main.py run.sh -b . -f config.yaml -p alice@uni.edu
-
-# The same, under a name
-syft-bg auto-approve code/main.py run.sh -b . -f config.yaml -n my_analysis
-
-# For a submission that also holds code/params.json
-syft-bg auto-approve code/main.py run.sh -b . -f code/params.json -f config.yaml
+syft-bg create-api code/main.py run.sh -b . -f code/params.json -p alice@uni.edu -n my_analysis
 ```
 
-### Managing auto-approvals and peers
+### Managing apis and peers
 
 ```bash
-# List all auto-approval objects
-syft-bg list-auto-approvals
-
-# List a specific auto-approval object
-syft-bg list-auto-approvals -n my_analysis
-
-# Remove files from an auto-approval object (paths as stored)
-syft-bg remove-auto-approval code/utils.py -n my_analysis
-
-# Remove a peer entirely
-syft-bg remove-peer alice@uni.edu
+syft-bg list-apis                 # list all apis
+syft-bg list-apis -n my_analysis  # show one api
+syft-bg remove-api my_analysis    # remove an api
+syft-bg remove-peer alice@uni.edu # remove a peer from every api
 ```
-
-### How validation works
-
-When a job is submitted, the approval service checks:
-
-1. Every file in the job must match an approved file entry
-2. Content-matched files must have a matching SHA256 hash
-3. If peers are specified, the submitter must be in the list
 
 ## CLI Flags for `syft-bg init`
 
@@ -186,10 +159,10 @@ DO notifications are threaded per job (new → approved/rejected → completed i
 
 ### approve
 
-Auto-approves peers and jobs based on your config:
+Runs api calls, and approves peers based on your config:
 
-- **Peers**: Auto-accept connection requests from approved domains
-- **Jobs**: Auto-approve if every submitted script matches an approved name + hash for that peer
+- **Peers**: Auto-accept connection requests from approved domains, and from the peers of your apis
+- **Jobs**: Run every approved job; an api call arrives approved
 
 ## Configuration
 

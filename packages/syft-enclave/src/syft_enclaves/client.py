@@ -669,7 +669,7 @@ class SyftEnclaveClient:
         at receipt, is not.
         """
         job_manager = self._rds.job_client.manager
-        if job_manager.read_submission_record(ref) is None:
+        if job_manager.read_owner_record(ref) is None:
             return
         job_dir = job_manager.submission_dir(ref)
         config = job_manager.read_submission(ref)

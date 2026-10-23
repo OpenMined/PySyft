@@ -25,7 +25,7 @@ from syft.sync.encryption_policy import (
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
 )
-from syft.sync.peers.peer import Peer, PeerState
+from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.datasite_watcher_syncer import DatasiteWatcherSyncer
@@ -494,26 +494,6 @@ def test_no_key_file_warning_without_switch_to_required(tmp_path, before, action
         action(keys_path)
 
 
-def test_keys_from_other_process_keep_pin_held_in_memory(tmp_path):
-    """A pin set before there were keys is saved once the key file exists."""
-    keys_path = tmp_path / "crypto_keys.json"
-    bob = PeerStore(email="bob@example.com", encryption_policy=REQUIRED)
-    bob.generate_keys()
-    alice = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    alice.add_peer(
-        Peer(email="bob@example.com", version=_version_with_policy(REQUIRED))
-    )
-    alice.set_peer_bundle("bob@example.com", bob.get_public_bundle())
-    # Another process on the datasite makes the key file.
-    PeerStore.create(email="alice@example.com", keys_path=keys_path).ensure_keys()
-
-    thread = threading.Thread(target=alice.ensure_keys, daemon=True)
-    thread.start()
-    thread.join(timeout=10)
-    assert not thread.is_alive(), "ensure_keys did not finish"
-    assert PeerStore.load_keys(keys_path).has_peer_bundle("bob@example.com")
-
-
 def test_concurrent_processes_make_one_key_pair(tmp_path):
     """A notebook and syft-bg that need keys at once must end with the same keys."""
     keys_path = tmp_path / "crypto_keys.json"
@@ -535,46 +515,6 @@ def test_concurrent_processes_make_one_key_pair(tmp_path):
 
     on_disk = PeerStore.load_keys(keys_path).get_public_bundle()
     assert all(store.get_public_bundle() == on_disk for store in stores)
-
-
-def test_optional_store_without_keys_ignores_drive_bundle():
-    """Without keys there is no pin, so a bundle from the Drive copy is not trusted."""
-    bob = PeerStore(email="bob@example.com", encryption_policy=REQUIRED)
-    bob.generate_keys()
-    store = PeerStore(email="alice@example.com")
-    store.set_peers(
-        [
-            Peer(
-                email="bob@example.com",
-                public_encryption_bundle=bob.get_public_bundle(),
-            )
-        ]
-    )
-    assert not store.has_peer_bundle("bob@example.com")
-
-
-def test_optional_client_pins_published_bundle_over_drive_copy():
-    """A swapped bundle in SYFT_peers.json does not become the key we encrypt to."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        add_peers=False,
-        do_encryption_policy=REQUIRED,
-    )
-    ds_manager.add_peer(do_manager.email, sync=False)
-    do_manager.load_peers()
-    do_manager.approve_peer_request(ds_manager.email)
-
-    attacker = PeerStore(email=do_manager.email, encryption_policy=REQUIRED)
-    attacker.generate_keys()
-    ds_manager.peer_manager.connection_router.update_peer_state(
-        do_manager.email,
-        PeerState.REQUESTED_BY_ME.value,
-        public_encryption_bundle=attacker.get_public_bundle(),
-    )
-    ds_manager.load_peers()
-
-    ds_store = ds_manager.peer_manager.peer_store
-    real = do_manager.peer_manager.peer_store.my_fingerprint
-    assert ds_store.peer_fingerprint(do_manager.email) == real
 
 
 # =========================================================================

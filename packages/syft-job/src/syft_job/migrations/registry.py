@@ -9,7 +9,12 @@ PROTOCOL_NAME = "syft-job"
 # Incrementing version of the job protocol. Protocol 0 is the last release
 # without versioning (<= 0.1.38, no v<n> path segment); protocol >= 1 stores
 # jobs under a v<n> segment after the peer email (see config.protocol_dir_name).
-JOB_PROTOCOL_VERSION = "1"
+# Protocol 2 adds api calls: requests/ and RequestMetadata.
+JOB_PROTOCOL_VERSION = "2"
+
+# The first job protocol with api calls. A DS can call an api of a DO only
+# when the two negotiate at least this protocol.
+FIRST_PROTOCOL_WITH_REQUESTS = "2"
 
 # Oldest job protocol this release still reads. "0" refuses no peer. Raise it
 # only when the code drops support for a released protocol, because a peer below

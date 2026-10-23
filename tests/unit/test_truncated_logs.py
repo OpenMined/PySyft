@@ -6,7 +6,7 @@ from pathlib import Path
 from syft_job.job_runner import SyftJobRunner
 from syft_job.config import SyftJobConfig
 from syft_job.models import JobState, JobStatus
-from syft_job.submission import SubmissionRecord, submission_hash
+from syft_job.submission import OwnerJobRecord, submission_hash
 
 
 def test_exception_logs_not_truncated():
@@ -64,9 +64,9 @@ func_a()
         ref = runner._find_jobref_from_name(job_name, user=ds_email)
         # The runner executes only a submission with an approved hash.
         digest = submission_hash(inbox_dir)
-        runner.manager.write_submission_record(
+        runner.manager.write_owner_record(
             ref,
-            SubmissionRecord(
+            OwnerJobRecord(
                 received_hash=digest,
                 received_at=datetime.now(timezone.utc),
                 approved_hash=digest,

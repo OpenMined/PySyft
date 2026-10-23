@@ -5,7 +5,7 @@ from typing import Iterator
 from syft_migration import MigratableObject
 
 from ..config import SyftJobConfig
-from ..job_ref import JobRef
+from ..job_ref import JobRef, RequestRef
 
 
 class ProtocolCodec(ABC):
@@ -46,6 +46,14 @@ class ProtocolCodec(ABC):
 
     @abstractmethod
     def iter_review_refs(self, datasite_email: str) -> Iterator[JobRef]: ...
+
+    def request_dir(self, ref: RequestRef) -> Path:
+        """Where a request lives. Layouts without requests have none."""
+        raise NotImplementedError(f"protocol {self.version} has no requests")
+
+    def iter_request_refs(self, datasite_email: str) -> Iterator[RequestRef]:
+        """Requests in requests/; none for a layout without requests."""
+        return iter(())
 
     @abstractmethod
     def read(self, path: Path, canonical_name: str) -> dict: ...

@@ -30,7 +30,13 @@ from .job_repr import (
 from .job_stdout import StdoutViewer
 from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
-from .submission import SubmissionRecord, check_expected_digest, submission_hash
+from .policies import (
+    OUTPUTS_WITHHELD_FILENAME,
+    POLICY_ERROR_FILENAME,
+    JobPolicies,
+    PolicyResolutionError,
+)
+from .submission import API_HEADER, OwnerJobRecord, submission_hash
 
 # The files that ``share_logs_with_submitter`` releases.
 STAGED_LOG_FILES = tuple(
@@ -151,10 +157,12 @@ class JobInfo:
         """The items that go to the submitter: requested and released."""
         return set(self.disclosures) & set(self.requested_disclosures)
 
-    def _write_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
+    def _write_disclosures(
+        self, disclosures: DisclosuresArg, stacklevel: int = 4
+    ) -> dict[str, bool]:
         granted = restrict_to_request(disclosures, self.requested_disclosures)
-        # Up to the public caller: approve() or update_disclosures().
-        warn_on_logs_release(granted, self.requested_disclosures, stacklevel=4)
+        # Up to the public caller, update_disclosures() by default.
+        warn_on_logs_release(granted, self.requested_disclosures, stacklevel)
         path = self.job_review_path / DISCLOSURES_FILENAME
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(granted))
@@ -337,12 +345,52 @@ class JobInfo:
         """Reason recorded at review time (approval or rejection)."""
         return self._state.review_reason
 
+    @property
+    def api_name(self) -> Optional[str]:
+        """The api this job calls.
+
+        On the DO's side it comes from the owner record, which only the DO
+        writes. Elsewhere it is the name the caller put in config.yaml.
+        """
+        record = self._client.manager.read_owner_record(self._ref)
+        if record is not None:
+            return record.api_name
+        return self.job_headers.get(API_HEADER)
+
+    @property
+    def policies(self) -> Optional[JobPolicies]:
+        """The policies of the api this job calls, when this client loads apis."""
+        resolver = self._client.api_resolver
+        if self.api_name is None or resolver is None:
+            return None
+        try:
+            return resolver(self.api_name).policies
+        except PolicyResolutionError:
+            return None
+
+    @property
+    def policy_error(self) -> Optional[str]:
+        """Why a policy denied the job, as the submitter sees it."""
+        path = self.artifact_path(POLICY_ERROR_FILENAME)
+        try:
+            return path.read_text().strip() or None
+        except OSError:
+            return None
+
+    @property
+    def outputs_withheld(self) -> bool:
+        """True when the output policy kept the outputs from the submitter.
+
+        The runner releases an empty marker file to the submitter for this;
+        only whether it exists matters.
+        """
+        return self.artifact_path(OUTPUTS_WITHHELD_FILENAME).exists()
+
     def approve(
         self,
         reason: Optional[str] = None,
         approval_method: str = "manual",
         disclosures: DisclosuresArg = None,
-        expected_digest: Optional[str] = None,
     ) -> None:
         """
         Approve a job by updating state.yaml in review/.
@@ -359,33 +407,27 @@ class JobInfo:
                 releases. Only the items that the submitter requested are
                 stored, so a later edit of the request cannot add items.
                 Omit the argument to release nothing.
-            expected_digest: The submission hash an automated approver checked.
-                The approval is refused unless the submission still has it.
 
         Raises:
             ValueError: If job is not in pending status, was not fully
-                received, or changed after it was received or was checked
+                received, or changed after it was received
             PermissionError: If the current user is not authorized to approve
             TypeError: If reason is not a string
         """
         check_approval_reason(reason)
-        if self._state.status != JobStatus.PENDING:
-            raise ValueError(
-                f"Job '{self.name}' is not in pending status (current: {self.status})"
-            )
+        self._approve(reason, approval_method, disclosures)
 
-        if self.datasite_owner_email != self.current_user_email:
-            raise PermissionError(
-                f"You are {self.current_user_email}, and job '{self.name}' is on "
-                f"{self.datasite_owner_email}'s datasite. Only they can approve "
-                f"it. If you meant one of your own, select your datasite "
-                f'first: jobs["{self.current_user_email}"]["<name>"].'
-            )
-
-        # The approved hash and the grant go first, so the runner never sees an
-        # approved state without them. The hash check runs before any write.
-        record = self._record_approved_hash(approval_method, expected_digest)
-        self._write_disclosures(disclosures)
+    def _approve(
+        self, reason: Optional[str], approval_method: str, disclosures: DisclosuresArg
+    ) -> None:
+        self._check_can_approve()
+        # The check runs before any write. The record and the grant go before
+        # the state, so the runner never sees an approved state without them.
+        record = self._read_owner_record()
+        self._check_unchanged(record)
+        self._record_approval(record, approval_method)
+        # Up to the caller of approve(), through _approve().
+        self._write_disclosures(disclosures, stacklevel=5)
         self._state.status = JobStatus.APPROVED
         self._state.approved_by = self.current_user_email
         self._state.approved_at = record.approved_at
@@ -397,6 +439,19 @@ class JobInfo:
         print("\n⏳ Next step: run process_approved_jobs() to execute it.")
         print("   client.process_approved_jobs(share_outputs_with_submitter=True)")
 
+    def _check_can_approve(self) -> None:
+        if self._state.status != JobStatus.PENDING:
+            raise ValueError(
+                f"Job '{self.name}' is not in pending status (current: {self.status})"
+            )
+        if self.datasite_owner_email != self.current_user_email:
+            raise PermissionError(
+                f"You are {self.current_user_email}, and job '{self.name}' is on "
+                f"{self.datasite_owner_email}'s datasite. Only they can approve "
+                f"it. If you meant one of your own, select your datasite "
+                f'first: jobs["{self.current_user_email}"]["<name>"].'
+            )
+
     def record_approval(self, approval_method: str) -> None:
         """Record the received submission as approved, without changing the state.
 
@@ -407,32 +462,39 @@ class JobInfo:
         Raises:
             ValueError: If the job was not fully received, or changed after.
         """
-        self._record_approved_hash(approval_method, expected_digest=None)
+        record = self._read_owner_record()
+        self._check_unchanged(record)
+        self._record_approval(record, approval_method)
 
-    def _record_approved_hash(
-        self, approval_method: str, expected_digest: Optional[str]
-    ) -> SubmissionRecord:
-        """Check the submission is the one received, and record it as approved."""
-        manager = self._client.manager
-        record = manager.read_submission_record(self._ref)
+    def _read_owner_record(self) -> OwnerJobRecord:
+        """The owner-side record of the job, written when it was received."""
+        record = self._client.manager.read_owner_record(self._ref)
         if record is None:
             raise ValueError(
                 f"Job '{self.name}' was not fully received yet. List the jobs "
                 f"again once all its files arrived, then approve."
             )
-        current = submission_hash(self.job_submission_path)
-        if current != record.received_hash:
+        return record
+
+    def _check_unchanged(self, record: OwnerJobRecord) -> None:
+        """Raise unless the submission is the one received.
+
+        The runner checks its run copy against the approved hash anyway; this
+        gives a clear error at approval instead of a failed job later.
+        """
+        if submission_hash(self.job_submission_path) != record.received_hash:
             raise ValueError(
                 f"Job '{self.name}' changed after it was received, so it is not "
                 f"approved. Reject it, or ask the submitter to submit it again."
             )
-        check_expected_digest(self.name, expected_digest, current)
-        record.approved_hash = current
+
+    def _record_approval(self, record: OwnerJobRecord, approval_method: str) -> None:
+        """Record the received submission as approved, and how, in one write."""
+        record.approved_hash = record.received_hash
         record.approved_by = self.current_user_email
         record.approved_at = datetime.now(timezone.utc)
         record.approval_method = approval_method
-        manager.write_submission_record(self._ref, record)
-        return record
+        self._client.manager.write_owner_record(self._ref, record)
 
     def reject(self, reason: Optional[str] = None) -> None:
         """
