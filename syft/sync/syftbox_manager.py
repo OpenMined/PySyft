@@ -1087,8 +1087,8 @@ class SyftboxManager(BaseModelCallbackMixin):
     def reject_peer_request(self, email_or_peer: str | Peer):
         """Reject a pending peer request. Delegates to PeerManager.
 
-        The DO drops the peer's delivery view, so a later approval sends the
-        peer every file it may read.
+        The DO resets the peer's delivery view, so a later approval sends the
+        peer every file it may read, and deletes the files it may no longer have.
         """
         self.peer_manager.reject_peer_request(email_or_peer)
         if self.has_do_role:

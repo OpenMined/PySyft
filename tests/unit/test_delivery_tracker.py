@@ -17,6 +17,7 @@ from syft.sync.sync.caches.datasite_owner_cache import (
 )
 from syft.sync.sync.delivery_tracker import (
     DELIVERY_STATE_VERSION,
+    AcceptedChange,
     DELIVERY_VIEWS_FILENAME,
     DeliveryState,
     DeliveryTracker,
@@ -56,10 +57,19 @@ def test_seed_runs_once_and_keeps_recorded_views():
     assert tracker.plan({PEER: {"a": "h1", "b": "h9"}})[PEER].send == []
 
 
-def test_reset_drops_view():
-    tracker = _tracker_holding({"a": "h1"})
+def test_reset_resends_readable_deletes_gone():
+    tracker = _tracker_holding({"a": "h1", "gone": "h1"})
     tracker.reset(PEER)
-    assert tracker.plan({PEER: {"a": "h1"}})[PEER].send == ["a"]
+    plan = tracker.plan({PEER: {"a": "h1"}})[PEER]
+    assert plan.send == ["a"]
+    assert plan.delete == ["gone"]
+
+
+def test_reset_stops_withholding_accepted_changes():
+    tracker = DeliveryTracker(MemoryDeliveryStateStore())
+    tracker.accept({"a": AcceptedChange(hash="h1", withheld_from=[PEER, "b@x.com"])})
+    tracker.reset(PEER)
+    assert tracker.accepted_changes()["a"].withheld_from == ["b@x.com"]
 
 
 def test_queued_send_updates_view_on_confirm():
@@ -231,23 +241,27 @@ def test_revoked_peer_gets_content_then_delete(
     ]
 
 
-def test_rejected_then_approved_peer_gets_every_file():
+def test_rejected_then_approved_peer_gets_every_file_and_deletes():
     ds_manager, do_manager = _pair()
     do_manager.datasite_owner_syncer.perm_context.open("shared/").grant_read_access(
         ds_manager.email
     )
     _write(do_manager, "shared/data.txt", "one")
+    _write(do_manager, "shared/gone.txt", "one")
     do_manager.sync(auto_checkpoint=False)
 
-    # The DS asks again. The DO rejects it, and then approves a later request.
+    # The DS asks again. The DO rejects it, deletes a file, and then approves a
+    # later request.
     peer = do_manager.peer_manager.get_cached_peer(ds_manager.email)
     peer.state = PeerState.REQUESTED_BY_PEER
     do_manager.reject_peer_request(ds_manager.email)
+    (do_manager.syftbox_folder / do_manager.email / "shared/gone.txt").unlink()
     peer.state = PeerState.REQUESTED_BY_PEER
     do_manager.approve_peer_request(ds_manager.email)
 
     do_manager.sync(auto_checkpoint=False)
     assert _outbox_paths(ds_manager, do_manager).count("shared/data.txt") == 2
+    assert _sent_events(ds_manager, do_manager, "shared/gone.txt")[-1] == (True, None)
 
 
 def test_restarted_owner_sends_nothing_new():

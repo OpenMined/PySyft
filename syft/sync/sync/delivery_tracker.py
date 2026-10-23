@@ -15,13 +15,16 @@ peer may read now:
     in the view, but the file is gone             -> delete
 
 A change that the owner accepts from a peer goes only to that peer.
-``accepted`` records it, and the owner leaves it out of the plan of every other
-peer while the file stays in that state. When the owner changes the file
-again, every peer that may read it gets it.
+``accept`` records it, with the other peers that may read the file at that
+time. The owner leaves the change out of their plans while the file stays in
+that state. A peer that joins later, or that may read the file only later, gets
+it. When the owner changes the file again, every peer that may read it gets it.
 
 A new peer starts with an empty view, so it is sent every file it may read.
-When the owner rejects a peer, ``reset`` drops its view. Thus a peer that the
-owner rejects and then approves again is sent every file it may read.
+When the owner rejects a peer, ``reset`` sets each path in its view to
+``UNSENT_HASH``, and stops withholding accepted changes from it. Thus a peer
+that the owner rejects and then approves again is sent every file it may read,
+and a delete for each file that it may no longer have.
 
 An owner whose state was never seeded, because it ran an earlier client or
 lost its views file, has file hashes but no views. ``seed`` then starts the
@@ -82,13 +85,15 @@ class QueuedSend(BaseModel):
 
 
 class AcceptedChange(BaseModel):
-    """A change that the owner accepted from ``peer``.
+    """A change that the owner accepted from a peer.
 
     ``hash`` is the new hash of the file, or None for a delete.
+    ``withheld_from`` holds the other peers that could read the file when the
+    owner accepted the change.
     """
 
-    peer: str
     hash: str | None
+    withheld_from: list[str] = Field(default_factory=list)
 
 
 class DeliveryState(BaseModel):
@@ -198,19 +203,25 @@ class DeliveryTracker:
             self.store.save(DeliveryState())
 
     def reset(self, peer: str) -> None:
-        """Drop ``peer``'s view, so the next plan sends it every file it may read."""
+        """Set each path in ``peer``'s view to ``UNSENT_HASH``.
+
+        The next plan sends ``peer`` every file it may read, and deletes the
+        paths of its view that it may no longer have.
+        """
         with self.store.locked():
             state = self.store.load()
-            state.views.pop(peer, None)
+            view = state.views.get(peer, {})
+            state.views[peer] = dict.fromkeys(view, UNSENT_HASH)
+            for change in state.accepted.values():
+                if peer in change.withheld_from:
+                    change.withheld_from.remove(peer)
             self.store.save(state)
 
-    def accept(self, peer: str, changes: Mapping[str, str | None]) -> None:
-        """Record ``changes`` (path -> new hash, None for a delete) as accepted
-        from ``peer``."""
+    def accept(self, changes: Mapping[str, AcceptedChange]) -> None:
+        """Record ``changes``, by path, as the last change accepted from a peer."""
         with self.store.locked():
             state = self.store.load()
-            for path, new_hash in changes.items():
-                state.accepted[path] = AcceptedChange(peer=peer, hash=new_hash)
+            state.accepted.update(changes)
             self.store.save(state)
 
     def accepted_changes(self) -> dict[str, AcceptedChange]:

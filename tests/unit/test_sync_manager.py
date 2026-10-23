@@ -794,6 +794,30 @@ def test_accepted_change_goes_only_to_submitter():
     assert ("shared/proposal.txt", False) in _events_for(peer_b_router, do_manager)
 
 
+def test_reader_granted_after_accept_gets_accepted_file():
+    """Peer C may read the folder only after the DO accepts peer A's change, so
+    peer C gets the file. Peer B, who could read it then, does not."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    peer_b_email = "peer_b@example.com"
+    peer_c_email = "peer_c@example.com"
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
+    peer_c_router = _peer_router(ds_manager, do_manager, peer_c_email)
+    syncer = do_manager.datasite_owner_syncer
+    shared = syncer.perm_context.open("shared/")
+    shared.grant_write_access(ds_manager.email)
+    shared.grant_read_access(peer_b_email)
+    peers = [ds_manager.email, peer_b_email, peer_c_email]
+
+    ds_manager._send_file_change(f"{do_manager.email}/shared/proposal.txt", "from A")
+    syncer.sync(peers)
+    shared.grant_read_access(peer_c_email)
+    syncer.sync(peers)
+    assert ("shared/proposal.txt", False) in _events_for(peer_c_router, do_manager)
+    assert ("shared/proposal.txt", False) not in _events_for(peer_b_router, do_manager)
+
+
 def test_revoke_after_accepted_change_sends_delete():
     """Peer B holds the DO's version of a file. After the DO accepts peer A's
     change to it and peer B loses read access, peer B gets a delete."""
