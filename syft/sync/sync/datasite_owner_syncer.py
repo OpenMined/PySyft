@@ -7,7 +7,7 @@ from functools import partial
 from pydantic import ConfigDict, Field, BaseModel, PrivateAttr
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
-from typing import List, NamedTuple, Tuple
+from typing import List, Mapping, NamedTuple, Tuple
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
     FileChangeEventsMessageFileName,
@@ -43,6 +43,12 @@ from syft.sync.checkpoints.rolling_state import (
 )
 from syft_perms import SyftPermContext
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
+from syft.sync.sync.delivery_tracker import (
+    UNSENT_HASH,
+    AcceptedChange,
+    DeliveryPlan,
+)
+from syft.sync.transport.types import SendStatus
 from syft.sync.utils.syftbox_utils import (
     create_event_timestamp,
     get_event_hash_from_content,
@@ -56,6 +62,10 @@ DEFAULT_CHECKPOINT_EVENT_THRESHOLD = 50
 
 # Default: upload rolling state to GDrive after this many events
 DEFAULT_ROLLING_STATE_UPLOAD_THRESHOLD = 1
+
+# A delivery message holds about this much file content at most. A larger
+# catch-up goes out in more than one message.
+MAX_DELIVERY_MESSAGE_CONTENT = 50 * 1024 * 1024
 
 # Minimum number of message files in a peer's outbox before
 # compact_outbox_if_needed() will merge them into a single message.
@@ -112,6 +122,25 @@ class DatasiteOwnerSyncerConfig(BaseModel):
     connection_configs: List[ConnectionConfig] = []
 
 
+def _batches_by_content_size(
+    events: list[FileChangeEvent], limit: int
+) -> list[list[FileChangeEvent]]:
+    """Split ``events`` in order into lists of at most ``limit`` content bytes.
+
+    An event larger than ``limit`` gets a list of its own.
+    """
+    batches: list[list[FileChangeEvent]] = []
+    size = 0
+    for event in events:
+        event_size = len(event.content or b"")
+        if not batches or size + event_size > limit:
+            batches.append([])
+            size = 0
+        batches[-1].append(event)
+        size += event_size
+    return batches
+
+
 class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     """Responsible for downloading files and checking permissions"""
 
@@ -141,11 +170,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     )
     # Cache of collections shared with "any" - list of (tag, content_hash) tuples
     _any_shared_collections: List[tuple] = PrivateAttr(default_factory=list)
-    # Cache of read permissions per file path → frozenset of peer emails
-    _read_perm_cache: dict[str, frozenset[str]] = PrivateAttr(default_factory=dict)
-    # Approved peers that fail the version gate in this sync. Their messages
-    # stay pending and are not uploaded.
-    _deferred_peer_emails: frozenset[str] = PrivateAttr(default_factory=frozenset)
+    # Names of the outbox messages that `deliver` queued and that are not sent yet
+    _planned_message_names: set[str] = PrivateAttr(default_factory=set)
 
     # In-memory rolling state for tracking events since last checkpoint
     _rolling_state: RollingState | None = PrivateAttr(default=None)
@@ -204,32 +230,26 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         tmp.write_text(self._rolling_state.model_dump_json())
         tmp.rename(path)
 
-    def sync(
-        self,
-        peer_emails: list[str],
-        recompute_hashes: bool = True,
-        deferred_peer_emails: tuple[str, ...] | list[str] = (),
-    ):
-        """Push local changes and pull proposed changes from ``peer_emails``.
+    def sync(self, peer_emails: list[str], recompute_hashes: bool = True):
+        """Send each of ``peer_emails`` what it does not hold yet, then pull
+        their proposed changes.
 
-        ``deferred_peer_emails`` are approved peers that fail the version gate.
-        Changes they can read stay pending, and go out in a later sync where
-        the peer is in ``peer_emails``.
+        The send comes first, so a proposal that fails does not hold back the
+        owner's own changes.
         """
         if self.persist_owner_state:
             self._load_rolling_state()
-        self._deferred_peer_emails = frozenset(deferred_peer_emails)
         try:
             if not self.initial_sync_done:
                 self.pull_initial_state()
+            # Before the local changes are recorded, so that a file changed
+            # while the owner was offline is not seeded as held.
+            self._seed_views_if_missing(peer_emails)
 
-            self._queue_pending_deliveries(peer_emails)
             if recompute_hashes:
-                self.process_local_changes(
-                    recipients=[*peer_emails, *deferred_peer_emails]
-                )
+                self._record_local_changes()
+            self.deliver(peer_emails)
 
-            # first, pull existing state
             for peer_email in peer_emails:
                 proposed_count = 0
                 while True:
@@ -247,7 +267,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                     )
                 self.process_syftbox_events_queue()
         finally:
-            self._deferred_peer_emails = frozenset()
             if self.persist_owner_state:
                 self._save_rolling_state()
 
@@ -587,208 +606,175 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         connection = self.connection_router.connection_for_parallel_download()
         return connection.watcher_download_collection_file(file_id)
 
-    def _get_readers(self, path: str, recipients: list[str]) -> frozenset[str]:
-        """Return the set of recipients that have read access to the given path."""
-        return frozenset(r for r in recipients if self.check_read_permissions(r, path))
+    def _create_current_state_event(self, path: str) -> FileChangeEvent:
+        """An event that sets ``path`` on a peer to its current local state.
 
-    def _get_paths_under_perm_file(self, perm_path: str) -> list[str]:
-        """Find all files under the perm file's parent directory on the filesystem."""
-        datasite = self.syftbox_folder / self.email
-        parent_dir = datasite / str(Path(perm_path).parent)
-        if not parent_dir.exists():
-            return []
-        collections_rel = self.event_cache.collections_relative_path()
-        paths = []
-        for file_path in parent_dir.rglob("*"):
-            if file_path.is_file():
-                rel = str(file_path.relative_to(datasite))
-                if is_normal_syncable_path(rel, collections_path=collections_rel):
-                    paths.append(rel)
-        return paths
-
-    def _create_resend_event(self, path: str) -> "FileChangeEvent | None":
-        """Create a FileChangeEvent for an existing file to resend to new readers."""
+        A file missing from the cache gives a deletion. A read error raises.
+        """
         try:
             content = self.event_cache.file_connection.read_file(path)
-        except Exception:
-            return None
-        if content is None:
-            return None
-        from syft.sync.utils.syftbox_utils import (
-            get_event_hash_from_content,
-            create_event_timestamp,
-        )
-
+        except (KeyError, FileNotFoundError):
+            # The in-memory cache raises KeyError, the filesystem cache
+            # FileNotFoundError.
+            return self._deletion_event(path)
         timestamp = create_event_timestamp()
         return FileChangeEvent(
             id=uuid4(),
             path_in_datasite=Path(path),
             content=content,
-            old_hash=None,
             new_hash=get_event_hash_from_content(content),
             submitted_timestamp=timestamp,
             timestamp=timestamp,
             datasite_email=self.email,
-            is_deleted=False,
         )
 
-    def _create_current_state_event(self, path: str) -> FileChangeEvent:
-        """An event that sets ``path`` on a peer to its current local state.
-
-        A missing file gives a deletion. A read error raises.
-        """
-        content = None
-        if (self.syftbox_folder / self.email / path).exists():
-            content = self.event_cache.file_connection.read_file(path)
+    def _deletion_event(self, path: str) -> FileChangeEvent:
+        """An event that removes ``path`` from a peer."""
         timestamp = create_event_timestamp()
         return FileChangeEvent(
             id=uuid4(),
             path_in_datasite=Path(path),
-            content=content,
-            new_hash=None if content is None else get_event_hash_from_content(content),
+            content=None,
+            new_hash=None,
             submitted_timestamp=timestamp,
             timestamp=timestamp,
             datasite_email=self.email,
-            is_deleted=content is None,
+            is_deleted=True,
         )
 
-    def _queue_pending_deliveries(self, peer_emails: list[str]) -> None:
-        """Queue the current state of each pending path for each peer."""
-        pending = self.event_cache.pending_deliveries
-        for peer_email in peer_emails:
-            paths = [
-                path
-                for path in pending.get(peer_email) or {}
-                if self.check_read_permissions(peer_email, path)
-            ]
-            if paths:
-                msg = FileChangeEventsMessage(
-                    events=[self._create_current_state_event(p) for p in paths]
-                )
-                self._queue_for_outbox(peer_email, msg)
-                name = msg.message_filepath.as_string()
-            else:
-                name = None
-            # Drop the paths that this resend does not hold. The peer can no
-            # longer read them.
-            pending.update_entry(
-                peer_email,
-                lambda old: {p: m for p, m in (old or {}).items() if m == name} or None,
-            )
-
-    def _queue_for_outbox(self, recipient: str, msg: FileChangeEventsMessage) -> None:
-        """Queue ``msg`` for ``recipient``. Its paths stay pending until the upload succeeds."""
-        name = msg.message_filepath.as_string()
-        paths = {str(e.path_in_datasite): name for e in msg.events}
-        self.event_cache.pending_deliveries.update_entry(
-            recipient, lambda old: {**(old or {}), **paths}
-        )
-        self.outbox_queue.put((recipient, msg))
-
-    def _clear_delivered(self, recipient: str, msg: FileChangeEventsMessage) -> None:
-        """Remove the paths that ``msg`` delivered, unless a later message holds them."""
-        name = msg.message_filepath.as_string()
-        self.event_cache.pending_deliveries.update_entry(
-            recipient,
-            lambda old: {p: m for p, m in (old or {}).items() if m != name} or None,
-        )
-
-    def process_local_changes(self, recipients: list[str]):
+    def _record_local_changes(self) -> None:
+        """Update the file hashes from the local files. With
+        ``persist_owner_state``, also write the changes to the owner's event log."""
         file_change_events_message = self.event_cache.process_local_file_changes()
-        if file_change_events_message is None:
+        if file_change_events_message is None or not self.persist_owner_state:
             return
-
-        perm_events, data_events = self._split_events(file_change_events_message.events)
-        events_by_recipient: dict[str, list[FileChangeEvent]] = {
-            r: [] for r in recipients
-        }
-        data_event_sent_to: dict[str, set[str]] = {}
-
-        self._route_data_events(
-            data_events, recipients, events_by_recipient, data_event_sent_to
-        )
-        self._route_perm_events(
-            perm_events, recipients, events_by_recipient, data_event_sent_to
-        )
-        self._queue_events_for_outbox(events_by_recipient)
-        if self.persist_owner_state:
-            # Record local events in the owner's log and feed them into rolling
-            # state so they flow through incremental/full checkpoints.
-            self.syftbox_events_queue.put(file_change_events_message)
-            self._add_events_to_rolling_state(file_change_events_message)
+        # Feed the events into rolling state so they flow through
+        # incremental/full checkpoints.
+        self.syftbox_events_queue.put(file_change_events_message)
+        self._add_events_to_rolling_state(file_change_events_message)
         self.process_syftbox_events_queue()
 
-    def _split_events(
-        self, events: list[FileChangeEvent]
-    ) -> tuple[list[FileChangeEvent], list[FileChangeEvent]]:
-        """Split events into (permission_events, data_events)."""
-        from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
+    def _is_syncable(self, path: str) -> bool:
+        """Whether a peer can get ``path`` by a delivery plan."""
+        collections_rel = self.event_cache.collections_relative_path()
+        return is_normal_syncable_path(path, collections_path=collections_rel)
 
-        perm_events = []
-        data_events = []
-        for event in events:
-            # Compare the last path part without case, as the ACL gate does.
-            if event.path_in_datasite.name.casefold() == PERMISSION_FILE_NAME:
-                perm_events.append(event)
-            else:
-                data_events.append(event)
-        return perm_events, data_events
+    def _syncable_hashes(self) -> dict[str, str]:
+        """The current hash of every file that a peer can get, by path."""
+        return {
+            str(path): file_hash
+            for path, file_hash in self.event_cache.file_hashes.items()
+            if self._is_syncable(str(path))
+        }
 
-    def _route_data_events(
+    def _readable_hashes(self, peer_emails: list[str]) -> dict[str, dict[str, str]]:
+        """For each peer, the current hash of every syncable file it may read.
+
+        The caller reloads the permissions first.
+        """
+        syncable = self._syncable_hashes()
+        return {
+            peer: {
+                p: h for p, h in syncable.items() if self._may_hold(peer, p, syncable)
+            }
+            for peer in peer_emails
+        }
+
+    def _may_hold(self, peer: str, path: str, syncable: Mapping[str, str]) -> bool:
+        """Whether a view of ``peer`` may hold ``path``: a file in ``syncable``
+        that ``peer`` may read."""
+        return path in syncable and self.perm_context.can_read(path, peer)
+
+    def _seed_views_if_missing(self, peer_emails: list[str]) -> None:
+        """Seed the views one time, for an owner whose state was never seeded.
+
+        The seed covers each approved peer, and each peer in ``peer_emails``.
+        """
+        deliveries = self.event_cache.deliveries
+        if deliveries.is_seeded():
+            return
+        self.perm_context._reload()
+        approved = [p.email for p in self.connection_router.peer_store.approved_peers]
+        deliveries.seed(self._held_before_seed(sorted({*approved, *peer_emails})))
+
+    def _held_before_seed(self, peers: list[str]) -> dict[str, dict[str, str]]:
+        """What each of ``peers`` is taken to hold when the views are seeded.
+
+        Each peer holds every file it may read now. A syncable path that an
+        earlier client still had to send gets ``UNSENT_HASH``, so the next plan
+        sends or deletes it. Other pending paths, such as a private dataset
+        share, stay out of the view: a plan never sends them, so it must not
+        delete them. The caller reloads the permissions first.
+        """
+        pending = self.event_cache.legacy_pending_paths()
+        held = self._readable_hashes(peers)
+        for peer, files in held.items():
+            unsent = [p for p in pending.get(peer, ()) if self._is_syncable(p)]
+            files.update(dict.fromkeys(unsent, UNSENT_HASH))
+        return held
+
+    def deliver(self, peer_emails: list[str]) -> None:
+        """Send each peer the files its view lacks, and deletes for the files it
+        may no longer have."""
+        deliveries = self.event_cache.deliveries
+        deliveries.confirm(self.connection_router.transport.p2p.delivered())
+        self.perm_context._reload()
+        plans = deliveries.plan(self._readable_hashes(peer_emails))
+        accepted = deliveries.accepted_changes()
+        syncable = self._syncable_hashes()
+        plans = {
+            peer: self._skip_accepted_from_others(peer, plan, accepted, syncable)
+            for peer, plan in plans.items()
+        }
+        # Build every message before the first one is queued, so a read error
+        # leaves no message of this plan in the queue.
+        messages = [
+            (peer, FileChangeEventsMessage(events=batch))
+            for peer, plan in plans.items()
+            for batch in _batches_by_content_size(
+                self._plan_events(plan), MAX_DELIVERY_MESSAGE_CONTENT
+            )
+        ]
+        for peer, message in messages:
+            self._planned_message_names.add(message.message_filepath.as_string())
+            self.outbox_queue.put((peer, message))
+        self.process_syftbox_events_queue()
+
+    def _skip_accepted_from_others(
         self,
-        data_events: list[FileChangeEvent],
-        recipients: list[str],
-        events_by_recipient: dict[str, list[FileChangeEvent]],
-        data_event_sent_to: dict[str, set[str]],
-    ):
-        """Route data events to recipients who have read access."""
-        for event in data_events:
-            path_str = str(event.path_in_datasite)
-            readers = self._get_readers(path_str, recipients)
-            self._read_perm_cache[path_str] = readers
-            data_event_sent_to[path_str] = set(readers)
-            for reader in readers:
-                events_by_recipient[reader].append(event)
+        peer: str,
+        plan: DeliveryPlan,
+        accepted: Mapping[str, AcceptedChange],
+        syncable: Mapping[str, str],
+    ) -> DeliveryPlan:
+        """``plan`` without the accepted changes that are withheld from ``peer``.
 
-    def _route_perm_events(
-        self,
-        perm_events: list[FileChangeEvent],
-        recipients: list[str],
-        events_by_recipient: dict[str, list[FileChangeEvent]],
-        data_event_sent_to: dict[str, set[str]],
-    ):
-        """Share perm files with readers and resend affected files to newly-permitted readers."""
-        for event in perm_events:
-            path_str = str(event.path_in_datasite)
-            perm_readers = self._get_readers(path_str, recipients)
-            for reader in perm_readers:
-                events_by_recipient[reader].append(event)
+        An accepted file is withheld while ``syncable`` still has the hash that
+        the change gave it. An accepted delete is withheld while the file stays
+        gone. A delete after a revoke still goes out.
+        """
 
-            affected_paths = self._get_paths_under_perm_file(path_str)
-            for affected_path in affected_paths:
-                new_readers = self._get_readers(affected_path, recipients)
-                old_readers = self._read_perm_cache.get(affected_path, frozenset())
-                newly_permitted = new_readers - old_readers
-                self._read_perm_cache[affected_path] = new_readers
+        def from_other(path: str) -> bool:
+            change = accepted.get(path)
+            return (
+                change is not None
+                and peer in change.withheld_from
+                and change.hash == syncable.get(path)
+            )
 
-                if not newly_permitted:
-                    continue
-                already_sent = data_event_sent_to.get(affected_path, set())
-                needs_resend = newly_permitted - already_sent
-                if needs_resend:
-                    resend_event = self._create_resend_event(affected_path)
-                    if resend_event is not None:
-                        for reader in needs_resend:
-                            events_by_recipient[reader].append(resend_event)
+        return DeliveryPlan(
+            send=[p for p in plan.send if not from_other(p)],
+            delete=[
+                p
+                for p in plan.delete
+                if not (from_other(p) and accepted[p].hash is None)
+            ],
+        )
 
-    def _queue_events_for_outbox(
-        self, events_by_recipient: dict[str, list[FileChangeEvent]]
-    ):
-        """Wrap events into messages per recipient and queue for outbox."""
-        for recipient, events in events_by_recipient.items():
-            if events:
-                msg = FileChangeEventsMessage(events=events)
-                self._queue_for_outbox(recipient, msg)
+    def _plan_events(self, plan: DeliveryPlan) -> list[FileChangeEvent]:
+        """The events that carry out ``plan``: its sends, then its deletes."""
+        events = [self._create_current_state_event(p) for p in plan.send]
+        return events + [self._deletion_event(p) for p in plan.delete]
 
     def pull_and_process_next_proposed_filechange(
         self, sender_email: str, raise_on_none=True
@@ -825,11 +811,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         self.perm_context._reload()
         return self.perm_context.open(path).has_write_access(sender_email)
 
-    def check_read_permissions(self, recipient_email: str, path: str) -> bool:
-        """Check if recipient has read access to the given path."""
-        self.perm_context._reload()
-        return self.perm_context.open(path).has_read_access(recipient_email)
-
     def handle_proposed_filechange_events_message(
         self, sender_email: str, proposed_events_message: ProposedFileChangesMessage
     ):
@@ -855,12 +836,40 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             filtered_message
         )
         if accepted_events_message is not None:
+            self.event_cache.deliveries.accept(
+                self._accepted_changes(sender_email, accepted_events_message)
+            )
             self.queue_event_for_syftbox(
                 recipients=[sender_email],
                 file_change_events_message=accepted_events_message,
             )
             if self.persist_owner_state:
                 self._add_events_to_rolling_state(accepted_events_message)
+
+    def _accepted_changes(
+        self, sender_email: str, message: FileChangeEventsMessage
+    ) -> dict[str, AcceptedChange]:
+        """The changes of ``message``, accepted from ``sender_email``, by path.
+
+        Each change is withheld from the other approved peers that may read its
+        file now.
+        """
+        self.perm_context._reload()
+        others = [
+            p.email
+            for p in self.connection_router.peer_store.approved_peers
+            if p.email != sender_email
+        ]
+        changes = {}
+        for event in message.events:
+            path = str(event.path_in_datasite)
+            changes[path] = AcceptedChange(
+                hash=None if event.is_deleted else event.new_hash,
+                withheld_from=[
+                    p for p in others if self.perm_context.can_read(path, p)
+                ],
+            )
+        return changes
 
     def queue_event_for_syftbox(
         self, recipients: list[str], file_change_events_message: FileChangeEventsMessage
@@ -872,7 +881,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.syftbox_events_queue.put(file_change_events_message)
 
         for recipient in recipients:
-            self._queue_for_outbox(recipient, file_change_events_message)
+            self.outbox_queue.put((recipient, file_change_events_message))
 
     def process_syftbox_events_queue(self):
         # TODO: make this atomic
@@ -881,39 +890,89 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.connection_router.owner_write_events_message_to_syftbox(
                 file_change_events_message
             )
-        # A message that waits is not cleared: its paths stay pending, and a
-        # later sync sends their current state. Later messages to the same
-        # recipient wait too, so the order stays the same.
-        waiting_for = set()
-        while not self.outbox_queue.empty():
-            recipient, message = self.outbox_queue.get()
-            if recipient in self._deferred_peer_emails or recipient in waiting_for:
-                continue
-            if self._send_outbox_message(recipient, message):
-                self._clear_delivered(recipient, message)
-            else:
-                waiting_for.add(recipient)
+        if not self.outbox_queue.empty():
+            self._send_outbox_messages()
 
-    def _send_outbox_message(
-        self, recipient: str, message: FileChangeEventsMessage
-    ) -> bool:
-        """Write one outbox message.
+    def _send_outbox_messages(self) -> None:
+        """Send each message in the outbox queue, and record it in its peer's view.
 
-        Returns False when the message waits for encryption with a peer, or
-        for a policy conflict to end. Returns True when it is written, or
-        dropped because ``recipient`` is not a peer.
+        A message that is not sent leaves the view as it is, so the plan of a
+        later sync holds its changes again. Later messages to the same
+        recipient wait too, so the order stays the same.
         """
+        self.perm_context._reload()
+        waiting_for = set()
+        held = []
         try:
-            self.connection_router.owner_write_event_messages_to_outbox(
-                recipient, message
-            )
-        except (PeerEncryptionPendingError, EncryptionPolicyConflictError) as e:
-            if not self.connection_router.peer_store.should_hold(recipient):
-                warnings.warn(f"Dropped an outbox message for {recipient}: not a peer")
-                return True
-            warnings.warn(f"Changes for {recipient} wait for a later sync: {e}")
+            while not self.outbox_queue.empty():
+                recipient, message = self.outbox_queue.get()
+                if recipient in waiting_for:
+                    held.append((recipient, message))
+                    continue
+                try:
+                    status = (
+                        self.connection_router.owner_write_event_messages_to_outbox(
+                            recipient, message
+                        )
+                    )
+                except (PeerEncryptionPendingError, EncryptionPolicyConflictError) as e:
+                    if self._warn_and_should_hold(recipient, e):
+                        waiting_for.add(recipient)
+                        held.append((recipient, message))
+                else:
+                    self._record_sent(recipient, message, status)
+        finally:
+            self._requeue_unplanned_messages(held)
+
+    def _requeue_unplanned_messages(self, held: list) -> None:
+        """Put back the unsent messages that ``deliver`` did not queue.
+
+        The ``held`` messages go first, so each peer keeps its order. A
+        message that ``deliver`` queued is dropped: a later send would not
+        check the views or the permissions again, so ``deliver`` plans it
+        again from the views instead.
+        """
+        unsent = [*held]
+        while not self.outbox_queue.empty():
+            unsent.append(self.outbox_queue.get())
+        for recipient, message in unsent:
+            if message.message_filepath.as_string() not in self._planned_message_names:
+                self.outbox_queue.put((recipient, message))
+        self._planned_message_names.clear()
+
+    def _warn_and_should_hold(self, recipient: str, error: Exception) -> bool:
+        """Warn about an outbox message that cannot go to ``recipient`` now.
+
+        Returns True when the message waits for a later sync, and False when it
+        is dropped because ``recipient`` is not a peer.
+        """
+        if not self.connection_router.peer_store.should_hold(recipient):
+            warnings.warn(f"Dropped an outbox message for {recipient}: not a peer")
             return False
+        warnings.warn(f"Changes for {recipient} wait for a later sync: {error}")
         return True
+
+    def _record_sent(
+        self, recipient: str, message: FileChangeEventsMessage, status: SendStatus
+    ) -> None:
+        """Add the changes of a sent message to ``recipient``'s view.
+
+        A delete always counts. A file counts only if it is syncable and
+        ``recipient`` may read it, so a later permission change sends a delete
+        for it. Other files, such as a private dataset sent to an enclave, are
+        not in the view.
+        """
+        syncable = self._syncable_hashes()
+        changes = {}
+        for event in message.events:
+            path = str(event.path_in_datasite)
+            if event.is_deleted:
+                changes[path] = None
+            elif self._may_hold(recipient, path, syncable):
+                changes[path] = event.new_hash
+        self.event_cache.deliveries.sent(
+            recipient, message.message_filepath.as_string(), status, changes
+        )
 
     def _download_outbox_message_with_new_connection(
         self, file_id: str
@@ -928,10 +987,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         recipient_email: str,
         min_messages: int = MIN_MESSAGES_COMPACT,
     ) -> int:
-        """Merge accumulated event-message files in a recipient's outbox into one.
+        """Merge accumulated event-message files in a recipient's outbox into fewer.
 
-        Compaction downloads them, concatenates their events into one fresh message, and
-        deletes the originals.
+        Compaction downloads them, concatenates their events, writes them again
+        as messages of at most ``MAX_DELIVERY_MESSAGE_CONTENT`` of file content,
+        and deletes the originals.
 
         Returns the number of source messages compacted (0 if below threshold,
         if no outbox folder, or if peer encryption is on or the peer policy is
@@ -987,14 +1047,16 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         for msg in messages:
             merged_events.extend(msg.events)
 
-        merged = FileChangeEventsMessage(events=merged_events)
-
-        # Write the merged message FIRST. A DS that pulls between this and
+        # Write the merged messages FIRST. A DS that pulls between this and
         # the delete sees `merged ∪ some originals`; its file_hashes cache
-        # makes duplicate events no-op writes.
-        self.connection_router.owner_write_event_messages_to_outbox(
-            recipient_email, merged
-        )
+        # makes duplicate events no-op writes. The size cap of a delivery
+        # message holds here too.
+        for batch in _batches_by_content_size(
+            merged_events, MAX_DELIVERY_MESSAGE_CONTENT
+        ):
+            self.connection_router.owner_write_event_messages_to_outbox(
+                recipient_email, FileChangeEventsMessage(events=batch)
+            )
         conn.delete_multiple_files_by_ids(file_ids)
         return len(parsed)
 

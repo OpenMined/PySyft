@@ -23,6 +23,12 @@ from syft.sync.sync.constants import (
     OWNER_FILE_HASHES_FILENAME,
     OWNER_PENDING_DELIVERIES_FILENAME,
 )
+from syft.sync.sync.delivery_tracker import (
+    DELIVERY_VIEWS_FILENAME,
+    DeliveryTracker,
+    LocalDeliveryStateStore,
+    MemoryDeliveryStateStore,
+)
 
 
 class ProposedEventFileOutdatedException(Exception):
@@ -62,9 +68,10 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
     # Wired in pre-init validator: persisted-to-disk when syftbox_folder is set,
     # plain in-memory PersistedDict otherwise.
     file_hashes: PersistedDict = Field(default_factory=PersistedDict)
-    # peer email -> {path in datasite: name of the last message that holds it}.
-    # A path stays here until the upload of that message to the peer succeeds.
-    pending_deliveries: PersistedDict = Field(default_factory=PersistedDict)
+    # What each peer holds. Kept next to file_hashes when syftbox_folder is set.
+    deliveries: DeliveryTracker = Field(
+        default_factory=lambda: DeliveryTracker(MemoryDeliveryStateStore())
+    )
     email: str
     # Full path to collections (datasets) folder
     collections_folder: Path | None = None
@@ -85,11 +92,13 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
                     key_serializer=str,
                     key_deserializer=Path,
                 )
-        if isinstance(data, dict) and "pending_deliveries" not in data:
+        if isinstance(data, dict) and "deliveries" not in data:
             folder = data.get("syftbox_folder")
             if folder is not None:
-                data["pending_deliveries"] = PersistedDict(
-                    path=Path(folder) / CACHE_DIR / OWNER_PENDING_DELIVERIES_FILENAME
+                data["deliveries"] = DeliveryTracker(
+                    LocalDeliveryStateStore(
+                        Path(folder) / CACHE_DIR / DELIVERY_VIEWS_FILENAME
+                    )
                 )
         return data
 
@@ -102,7 +111,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
                 email=config.email,
                 syftbox_folder=config.syftbox_folder,
                 file_hashes=PersistedDict(),
-                pending_deliveries=PersistedDict(),
+                deliveries=DeliveryTracker(MemoryDeliveryStateStore()),
                 collections_folder=config.collections_folder,
                 collection_variants=config.collection_variants,
             )
@@ -310,6 +319,23 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
         self.events_messages_connection.clear_cache()
         self.file_connection.clear_cache()
         self.file_hashes.clear()
+        self.deliveries.clear()
+
+    def legacy_pending_paths(self) -> dict[str, set[str]]:
+        """The paths that a client before the delivery tracker still had to send,
+        per peer.
+
+        Empty when the views are not kept on disk, or when that client left no
+        file.
+        """
+        store = self.deliveries.store
+        if not isinstance(store, LocalDeliveryStateStore):
+            return {}
+        # The earlier client kept its file next to the views file.
+        path = store.path.parent / OWNER_PENDING_DELIVERIES_FILENAME
+        if not path.exists():
+            return {}
+        return {peer: set(paths) for peer, paths in PersistedDict(path=path).items()}
 
     def has_conflict(self, proposed_event: ProposedFileChange) -> bool:
         if proposed_event.path_in_datasite not in self.file_hashes:
@@ -440,9 +466,10 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
         self.file_hashes.clear()
 
         # Restore from checkpoint
-        # Always write to file_connection to maintain consistent state for
-        # process_local_changes comparison. This is needed even when write_files=False
-        # because file_connection may be in-memory and serves as the source of truth.
+        # Always write to file_connection to maintain consistent state for the
+        # comparison in process_local_file_changes. This is needed even when
+        # write_files=False, because file_connection may be in-memory and serves
+        # as the source of truth.
         for file_entry in checkpoint.files:
             path = Path(file_entry.path)
             self.file_hashes[path] = file_entry.hash
