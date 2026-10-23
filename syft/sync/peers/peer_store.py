@@ -443,6 +443,31 @@ class PeerStore(BaseModel):
         return store
 
 
+def import_key_file(source: Path | str, keys_path: Path | str, email: str) -> None:
+    """Copy the key file ``source`` of ``email`` to ``keys_path``.
+
+    Use it to restore the keys of an earlier session, e.g. an uploaded key file
+    on Colab, before the client is built. When ``keys_path`` holds the same
+    keys already, nothing changes.
+
+    Raises:
+        ValueError: if ``source`` has another version or belongs to another
+            identity.
+        FileExistsError: if ``keys_path`` holds other keys.
+    """
+    source, keys_path = Path(source), Path(keys_path)
+    _read_private_keys(source, email)
+    data = json.loads(source.read_text())
+    if keys_path.exists():
+        if json.loads(keys_path.read_text()) != data:
+            raise FileExistsError(
+                f"{keys_path} holds other keys than {source}. Remove it to "
+                "import the file, or log in without the file."
+            )
+        return
+    _create_key_file(keys_path, data)
+
+
 def _read_private_keys(path: Path, email: str) -> syc.SyftPrivateKeys:
     data = json.loads(path.read_text())
     if data["version"] != CRYPTO_KEYS_VERSION:

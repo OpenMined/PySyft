@@ -113,23 +113,15 @@ class PeerManagerConfig(BaseModel):
     has_do_role: bool = False
     has_ds_role: bool = False
     encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL
-    # Explicit override for the encryption key file. When None, falls back to
-    # ``default_crypto_keys_path`` (the per-datasite location).
-    crypto_keys_path: Path | None = None
     skip_peer_on_patch_version_diff: Optional[bool] = (
         None  # None: value is determined by the role (resolves to has_do_role)
     )
 
     @property
-    def default_crypto_keys_path(self) -> Path:
-        """Default per-datasite encryption key file for this participant
+    def crypto_keys_path(self) -> Path:
+        """Per-datasite encryption key file for this participant
         (``<syftbox_folder>/<email>/private/crypto_keys.json``)."""
         return datasite_crypto_keys_path(self.syftbox_folder, self.email)
-
-    @property
-    def resolved_crypto_keys_path(self) -> Path:
-        """The explicit ``crypto_keys_path`` override if given, else the default."""
-        return self.crypto_keys_path or self.default_crypto_keys_path
 
     @model_validator(mode="after")
     def _default_skip_peer_on_patch(self) -> "PeerManagerConfig":
@@ -207,7 +199,7 @@ class PeerManager(BaseModel):
         peer_store = PeerStore.create(
             email=resolved_email,
             encryption_policy=config.encryption_policy,
-            keys_path=config.resolved_crypto_keys_path,
+            keys_path=config.crypto_keys_path,
         )
         connection_router = ConnectionRouter.from_configs(
             resolved_email, config.connection_configs

@@ -137,7 +137,6 @@ class SyftboxManagerConfig(BaseModel):
         has_do_role: bool = False,
         encryption: bool | str = False,
         persist_owner_state: bool = True,
-        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -193,7 +192,6 @@ class SyftboxManagerConfig(BaseModel):
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
             encryption_policy=EncryptionPolicy.coerce(encryption),
-            crypto_keys_path=crypto_keys_path,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             force_ignore_peer_version=force_ignore_peer_version,
         )
@@ -219,7 +217,6 @@ class SyftboxManagerConfig(BaseModel):
         token_path: Path | None = None,
         encryption: bool | str = False,
         persist_owner_state: bool = True,
-        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -279,7 +276,6 @@ class SyftboxManagerConfig(BaseModel):
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
             encryption_policy=EncryptionPolicy.coerce(encryption),
-            crypto_keys_path=crypto_keys_path,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             force_ignore_peer_version=force_ignore_peer_version,
         )
@@ -623,7 +619,6 @@ class SyftboxManager(BaseModelCallbackMixin):
         has_do_role: bool = False,
         encryption: bool | str = False,
         persist_owner_state: bool = True,
-        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -636,7 +631,6 @@ class SyftboxManager(BaseModelCallbackMixin):
                 has_do_role=has_do_role,
                 encryption=encryption,
                 persist_owner_state=persist_owner_state,
-                crypto_keys_path=crypto_keys_path,
                 skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=force_ignore_peer_version,
             )
@@ -652,7 +646,6 @@ class SyftboxManager(BaseModelCallbackMixin):
         token_path: Path | None = None,
         encryption: bool | str = False,
         persist_owner_state: bool = True,
-        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -668,7 +661,6 @@ class SyftboxManager(BaseModelCallbackMixin):
                 token_path=token_path,
                 encryption=encryption,
                 persist_owner_state=persist_owner_state,
-                crypto_keys_path=crypto_keys_path,
                 skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=force_ignore_peer_version,
             )

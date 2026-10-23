@@ -8,7 +8,7 @@ import pytest
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer, PeerState
-from syft.sync.peers.peer_store import PeerStore
+from syft.sync.peers.peer_store import PeerStore, import_key_file
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
@@ -178,6 +178,49 @@ def test_key_file_holds_identity_only(tmp_path):
     reloaded = PeerStore.create(email="alice@example.com", keys_path=keys_path)
     assert reloaded.get_public_bundle() == alice.get_public_bundle()
     assert not reloaded.has_peer_bundle("bob@example.com")
+
+
+def _session_key_file(tmp_path, email="alice@example.com"):
+    path = tmp_path / "upload" / "crypto_keys.json"
+    return path, PeerStore.create(email=email, keys_path=path)
+
+
+def test_imported_key_file_restores_keys(tmp_path):
+    uploaded, earlier = _session_key_file(tmp_path)
+    keys_path = tmp_path / "SyftBox" / "crypto_keys.json"
+
+    import_key_file(uploaded, keys_path, "alice@example.com")
+
+    restored = PeerStore.create(email="alice@example.com", keys_path=keys_path)
+    assert restored.get_public_bundle() == earlier.get_public_bundle()
+
+
+def test_import_same_key_file_twice(tmp_path):
+    uploaded, _ = _session_key_file(tmp_path)
+    keys_path = tmp_path / "SyftBox" / "crypto_keys.json"
+    import_key_file(uploaded, keys_path, "alice@example.com")
+
+    import_key_file(uploaded, keys_path, "alice@example.com")
+
+
+def test_import_key_file_of_another_identity_refused(tmp_path):
+    uploaded, _ = _session_key_file(tmp_path, email="bob@example.com")
+    keys_path = tmp_path / "SyftBox" / "crypto_keys.json"
+
+    with pytest.raises(ValueError, match="belongs to"):
+        import_key_file(uploaded, keys_path, "alice@example.com")
+    assert not keys_path.exists()
+
+
+def test_import_never_replaces_other_keys(tmp_path):
+    uploaded, _ = _session_key_file(tmp_path)
+    keys_path = tmp_path / "SyftBox" / "crypto_keys.json"
+    PeerStore.create(email="alice@example.com", keys_path=keys_path)
+    on_disk = keys_path.read_text()
+
+    with pytest.raises(FileExistsError):
+        import_key_file(uploaded, keys_path, "alice@example.com")
+    assert keys_path.read_text() == on_disk
 
 
 # =========================================================================

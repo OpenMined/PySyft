@@ -213,8 +213,6 @@ class EnclaveRunner:
             logger.warning("Could not publish the public key bundle: %s", e)
 
     def _keys_path(self) -> Path:
-        # The per-datasite default location; the enclave never overrides
-        # crypto_keys_path, and PeerManager does not carry the resolved value.
         peer_manager = self.client._rds.peer_manager
         return datasite_crypto_keys_path(
             peer_manager.syftbox_folder, peer_manager.peer_store.email
