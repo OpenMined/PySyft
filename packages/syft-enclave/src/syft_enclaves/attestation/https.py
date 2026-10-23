@@ -30,7 +30,6 @@ from typing import Any, Optional
 from syft_enclaves.attestation.nonce import new_nonce
 
 ATTESTATION_PATH = "/attestation"
-WELL_KNOWN_PATH = "/.well-known/tinfoil-attestation"
 DEFAULT_TIMEOUT_SECONDS = 30
 
 
@@ -80,9 +79,10 @@ def fetch_attested_payload(
         host, timeout=timeout, context=_unverified_context()
     )
     try:
-        payload = _attestation_or_empty(connection, nonce)
-        document, key_bundle = _split_payload(payload, connection, timeout)
-        fingerprint = _peer_public_key_fp(connection)
+        payload, fingerprint = _get_json(
+            connection, f"{ATTESTATION_PATH}?nonce={nonce}"
+        )
+        document = _attestation_document(payload, host)
     except (OSError, ssl.SSLError, ValueError) as e:
         raise AttestationFetchError(
             f"Could not fetch attestation from {host}: {e}"
@@ -98,7 +98,7 @@ def fetch_attested_payload(
         )
     return AttestedPayload(
         document=document,
-        key_bundle=key_bundle,
+        key_bundle=payload.get("key_bundle"),
         tls_public_key_fp=fingerprint,
         host=host,
         nonce=nonce,
@@ -107,42 +107,24 @@ def fetch_attested_payload(
     )
 
 
-def _attestation_or_empty(
-    connection: http.client.HTTPSConnection, nonce: str
-) -> dict[str, Any]:
-    """The /attestation response, or {} if the enclave will not serve it.
-
-    An enclave running an older image rejects the nonce outright. Rather than
-    surface its 500, fall through to the shim's own endpoint for the report —
-    the nonce check then fails with "no signature", which says plainly what is
-    wrong instead of hiding it behind a transport error.
-    """
-    try:
-        return _get_json(connection, f"{ATTESTATION_PATH}?nonce={nonce}")
-    except ValueError:
-        return {}
-
-
-def _split_payload(
-    payload: dict[str, Any], connection: http.client.HTTPSConnection, timeout: float
-) -> tuple[dict[str, Any], Optional[dict[str, Any]]]:
-    """Pull the raw document and key bundle out of an /attestation response.
-
-    Falls back to the shim's well-known path when the enclave does not run
-    syft's own endpoint — that still yields a verifiable report, just no key
-    bundle.
-    """
+def _attestation_document(payload: dict[str, Any], host: str) -> dict[str, Any]:
+    """The raw report out of an /attestation response."""
     evidence = payload.get("evidence") or {}
     document = {k: evidence[k] for k in ("format", "body") if k in evidence}
-    if not document:
-        document = _get_json(connection, WELL_KNOWN_PATH)
     if "format" not in document or "body" not in document:
-        raise ValueError("response carried no attestation document")
-    return document, payload.get("key_bundle")
+        raise ValueError(
+            f"{host} served no attestation document; is it running a syft image?"
+        )
+    return document
 
 
-def _get_json(connection: http.client.HTTPSConnection, path: str) -> dict[str, Any]:
+def _get_json(
+    connection: http.client.HTTPSConnection, path: str
+) -> tuple[dict[str, Any], str]:
+    """The response body, and the fingerprint of the key that served it."""
     connection.request("GET", path)
+    # Before getresponse(): it drops the socket on "Connection: close".
+    fingerprint = _peer_public_key_fp(connection)
     response = connection.getresponse()
     body = response.read()
     if response.status != 200:
@@ -153,7 +135,7 @@ def _get_json(connection: http.client.HTTPSConnection, path: str) -> dict[str, A
         raise ValueError(f"GET {path} did not return JSON: {e}") from e
     if not isinstance(parsed, dict):
         raise ValueError(f"GET {path} did not return an object")
-    return parsed
+    return parsed, fingerprint
 
 
 def _unverified_context() -> ssl.SSLContext:
