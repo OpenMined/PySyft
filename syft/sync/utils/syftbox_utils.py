@@ -1,4 +1,5 @@
 import random
+import uuid
 import io
 import shutil
 import tarfile
@@ -56,7 +57,9 @@ def random_email():
 
 
 def random_syftbox_folder_for_testing():
-    return Path(f"/tmp/sb_folder_testing-{random.randint(1, 1000000)}")
+    # Not ``random``: pytest-randomly reseeds it for each test, so two tests
+    # in one worker would share a folder, and its on-disk caches.
+    return Path(f"/tmp/sb_folder_testing-{uuid.uuid4().hex}")
 
 
 def compress_data(data: bytes) -> bytes:

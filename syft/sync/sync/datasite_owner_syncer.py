@@ -1,4 +1,5 @@
 import logging
+import warnings
 from pathlib import Path
 from uuid import uuid4
 from functools import partial
@@ -20,6 +21,10 @@ from syft.sync.sync.caches.datasite_owner_cache import (
     DataSiteOwnerEventCacheConfig,
 )
 from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.encryption_policy import (
+    EncryptionPolicyConflictError,
+    PeerEncryptionPendingError,
+)
 from syft.sync.sync.caches.datasite_owner_cache import DataSiteOwnerEventCache
 from syft.sync.sync.collection_spec import CollectionSyncSpec
 from syft.sync.callback_mixin import BaseModelCallbackMixin
@@ -44,6 +49,7 @@ from syft.sync.utils.syftbox_utils import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 # Default threshold for creating incremental checkpoint from rolling state
 DEFAULT_CHECKPOINT_EVENT_THRESHOLD = 50
@@ -875,14 +881,39 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.connection_router.owner_write_events_message_to_syftbox(
                 file_change_events_message
             )
+        # A message that waits is not cleared: its paths stay pending, and a
+        # later sync sends their current state. Later messages to the same
+        # recipient wait too, so the order stays the same.
+        waiting_for = set()
         while not self.outbox_queue.empty():
-            recipient, file_change_events_message = self.outbox_queue.get()
-            if recipient in self._deferred_peer_emails:
+            recipient, message = self.outbox_queue.get()
+            if recipient in self._deferred_peer_emails or recipient in waiting_for:
                 continue
+            if self._send_outbox_message(recipient, message):
+                self._clear_delivered(recipient, message)
+            else:
+                waiting_for.add(recipient)
+
+    def _send_outbox_message(
+        self, recipient: str, message: FileChangeEventsMessage
+    ) -> bool:
+        """Write one outbox message.
+
+        Returns False when the message waits for encryption with a peer, or
+        for a policy conflict to end. Returns True when it is written, or
+        dropped because ``recipient`` is not a peer.
+        """
+        try:
             self.connection_router.owner_write_event_messages_to_outbox(
-                recipient, file_change_events_message
+                recipient, message
             )
-            self._clear_delivered(recipient, file_change_events_message)
+        except (PeerEncryptionPendingError, EncryptionPolicyConflictError) as e:
+            if not self.connection_router.peer_store.should_hold(recipient):
+                warnings.warn(f"Dropped an outbox message for {recipient}: not a peer")
+                return True
+            warnings.warn(f"Changes for {recipient} wait for a later sync: {e}")
+            return False
+        return True
 
     def _download_outbox_message_with_new_connection(
         self, file_id: str
@@ -903,10 +934,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         deletes the originals.
 
         Returns the number of source messages compacted (0 if below threshold,
-        if no outbox folder, or if peer encryption is on — DO can't read
-        peer-encrypted bytes back to merge).
+        if no outbox folder, or if peer encryption is on or the peer policy is
+        not known — DO can't read peer-encrypted bytes back to merge).
         """
-        if self.connection_router.peer_store.peer_uses_encryption(recipient_email):
+        peer_store = self.connection_router.peer_store
+        if not peer_store.peer_policy_known(
+            recipient_email
+        ) or peer_store.peer_uses_encryption(recipient_email):
             logger.debug(
                 f"outbox compaction for {recipient_email} skipped — "
                 f"peer encryption is not supported yet"

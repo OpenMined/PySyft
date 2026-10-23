@@ -62,10 +62,6 @@ WEIGHTS_DIR = Path(
     )
 ).expanduser()
 EXPECT_MODEL = os.environ.get("DEMO_EXPECT_MODEL", "auto").lower()  # auto|real|mock
-# Encrypt all Drive communication. MUST match the enclave: the prod `inference-start`
-# recipe forces SYFT_ENCLAVE_USE_ENCRYPTION=true, so set DEMO_ENCRYPTION=true when
-# running against a prod enclave (debug VMs default to encryption off).
-ENCRYPTION = os.environ.get("DEMO_ENCRYPTION", "false").lower() in ("1", "true", "yes")
 
 ENCLAVE = "beach.do.008@gmail.com"
 DO1 = "koenlennartvanderveen@gmail.com"  # model + log owner
@@ -201,15 +197,10 @@ def main():
             "DEMO_EXPECT_MODEL=mock but the enclave is serving the REAL backend."
         )
     print(f"enclave backend: {'REAL Gemma' if server_real else 'mock'}")
-    # Match the enclave's encryption setting (reported by /model-status). Fall
-    # back to DEMO_ENCRYPTION if the endpoint doesn't expose it (older image).
-    server_enc = status.get("use_encryption")
-    encryption = ENCRYPTION if server_enc is None else bool(server_enc)
-
+    # The data owners encrypt with the enclave when its policy requires it.
     banner("log in the two data owners")
-    print(f"encryption: {encryption}")
-    do1 = login_do(DO1, CRED / "token_do.json", encryption=encryption)
-    do2 = login_do(DO2, CRED / "token_ds.json", encryption=encryption)
+    do1 = login_do(DO1, CRED / "token_do.json")
+    do2 = login_do(DO2, CRED / "token_ds.json")
 
     banner("peer with the enclave, wait until connected")
     do1.add_peer(ENCLAVE)

@@ -48,6 +48,26 @@ Syft uses Google Drive as its file-based transport layer. All peer-to-peer commu
 
 ---
 
+## Encryption Policy
+
+Each client advertises an encryption policy in `SYFT_version.json`:
+
+| Policy     | Set with                    | Effect                                    |
+| ---------- | --------------------------- | ----------------------------------------- |
+| `optional` | default, `encryption=False` | encrypt only with a peer that requires it |
+| `required` | `encryption=True`           | encrypt with every peer; refuse plaintext |
+| `off`      | `encryption="off"`          | never encrypt                             |
+
+A pair encrypts when one side is `required`. An `off` and a `required` client conflict: each side skips the other with a warning.
+
+A client takes its policy at login. The key file records a `required` policy, so later logins (and syft-bg) stay `required`. A process that started with another policy stops at its next sync with an error to restart it. Files at rest written before the switch stay plaintext; new ones are encrypted.
+
+While a peer's policy or keys are not known yet, a change for it waits, with a warning, and a later sync sends it. An owner's change stays pending on disk. A scientist's change waits in memory, and is lost if the process exits.
+
+A pair that encrypts refuses plaintext. The receiver drops a plaintext message with a warning: the owner archives it unread, and a scientist skips it.
+
+A peer whose version file has no policy runs an outdated syft. It is skipped with a warning to upgrade, and a send to it raises.
+
 ## Peer Requests
 
 DS creates inbox/outbox folders on their own drive and grants the DO write access. The DO discovers these folders by searching for `syft_datasite#{my_email}#` folders they don't own.

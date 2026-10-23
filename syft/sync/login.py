@@ -100,6 +100,7 @@ def login(
     token_path: str | Path | None = None,
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
+    encryption: bool | str = False,  # True: required; "off": never encrypt
 ):
     return login_ds(
         email,
@@ -107,6 +108,7 @@ def login(
         load_peers,
         token_path,
         skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+        encryption=encryption,
     )
 
 
@@ -117,6 +119,7 @@ def login_ds(
     token_path: str | Path | None = None,
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
+    encryption: bool | str = False,  # True: required; "off": never encrypt
 ):
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
@@ -128,6 +131,7 @@ def login_ds(
             email=email,
             has_ds_role=True,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+            encryption=encryption,
         )
     else:
         client = SyftboxManager.for_jupyter(
@@ -135,6 +139,7 @@ def login_ds(
             has_ds_role=True,
             token_path=token_path,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+            encryption=encryption,
         )
 
     return _init_client_login(client, sync, load_peers, repair_pending)
@@ -147,6 +152,7 @@ def login_do(
     token_path: str | Path | None = None,
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
+    encryption: bool | str = False,  # True: required; "off": never encrypt
 ):
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
@@ -158,6 +164,7 @@ def login_do(
             email=email,
             has_do_role=True,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+            encryption=encryption,
         )
     else:
         client = SyftboxManager.for_jupyter(
@@ -165,6 +172,7 @@ def login_do(
             has_do_role=True,
             token_path=token_path,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
+            encryption=encryption,
         )
 
     return _init_client_login(client, sync, load_peers, repair_pending)

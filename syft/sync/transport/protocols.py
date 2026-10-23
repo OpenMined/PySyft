@@ -291,8 +291,13 @@ class Peering(ABC):
         """``peer``'s published version document, or None."""
 
     @abstractmethod
-    def grant_version_read(self, peer: str) -> None:
-        """Let ``peer`` read my version document."""
+    def grant_version_read(
+        self, peer: str, version_info: VersionInfo | None = None
+    ) -> None:
+        """Let ``peer`` read my version document.
+
+        When I have no document yet, publish ``version_info`` first.
+        """
 
 
 class Transport(BaseModel):

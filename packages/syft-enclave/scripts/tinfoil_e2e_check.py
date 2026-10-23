@@ -97,7 +97,7 @@ def main() -> int:
     from syft_enclaves.attestation.tinfoil import TinfoilAppraisalPolicy
 
     print("=== 1. login as the data owner ===", flush=True)
-    client = login_do(email=args.do_email, token_path=args.token, encryption=True)
+    client = login_do(email=args.do_email, token_path=args.token)
 
     print("=== 2. peer with the enclave ===", flush=True)
     client.add_peer(args.enclave_email)

@@ -20,7 +20,7 @@ def _login(
     skip_peer_on_patch_version_diff: bool | None,
     has_do_role: bool,
     has_ds_role: bool,
-    encryption: bool = False,
+    encryption: bool | str = False,
     crypto_keys_path: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Shared login for enclave-flow participants.
@@ -29,9 +29,10 @@ def _login(
     run the login-time version-mismatch check, then build the enclave client
     for Colab or Jupyter — always wrapping the job_client with EnclaveJobClient.
 
-    When ``encryption`` is set, keys are persisted per-datasite to
+    Keys are persisted per-datasite to
     ``<syftbox_folder>/<email>/private/crypto_keys.json`` (a stable identity
-    across sessions; never synced to Drive).
+    across sessions; never synced to Drive). The client makes them when
+    ``encryption`` is set, or when a peer first requires encryption.
     """
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
@@ -79,12 +80,15 @@ def login_do(
     sync: bool = True,
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
-    encryption: bool = False,
+    encryption: bool | str = False,
     crypto_keys_path: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Log in a data owner for an enclave computation.
 
-    Set ``encryption=True`` to encrypt all drive communication.
+    Set ``encryption=True`` to require encryption with every peer. Without
+    it, the client encrypts with each peer that requires it, such as an
+    enclave. Set ``encryption="off"`` to never encrypt, e.g. against a debug
+    enclave; a peer that requires encryption is then skipped.
     """
     return _login(
         email=email,
@@ -105,12 +109,15 @@ def login_ds(
     sync: bool = True,
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
-    encryption: bool = False,
+    encryption: bool | str = False,
     crypto_keys_path: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Log in a data scientist for an enclave computation.
 
-    Set ``encryption=True`` to encrypt all drive communication.
+    Set ``encryption=True`` to require encryption with every peer. Without
+    it, the client encrypts with each peer that requires it, such as an
+    enclave. Set ``encryption="off"`` to never encrypt, e.g. against a debug
+    enclave; a peer that requires encryption is then skipped.
     """
     return _login(
         email=email,

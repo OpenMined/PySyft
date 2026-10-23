@@ -31,6 +31,7 @@ from syft.sync.transport import (
     WatcherStore,
 )
 from syft.sync.version.version_info import VersionInfo
+from tests.unit.test_sync_manager import _store_knowing
 
 DO = "do@example.com"
 DS = "ds@example.com"
@@ -255,7 +256,7 @@ def test_peering_publishes_a_version_the_peer_can_read(pair):
 
 def _router_with_mock_p2p():
     do_conn, _ = pair_with_mock_service(DO, DS)
-    router = ConnectionRouter(connections=[do_conn], peer_store=PeerStore(email=DO))
+    router = ConnectionRouter(connections=[do_conn], peer_store=_store_knowing(DO, DS))
     drive = do_conn.as_transport()
     p2p = Mock(spec=P2PConnection)
     router._transport = drive.model_copy(update={"p2p": p2p})
