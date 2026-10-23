@@ -416,10 +416,6 @@ class ConnectionRouter(BaseModel):
     # ENCRYPTION BUNDLE EXCHANGE
     # =========================================================================
 
-    def read_own_encryption_bundle(self, peer_email: str) -> str | None:
-        """Read the bundle this client published for ``peer_email``."""
-        return self.transport.peering.read_own_key_bundle(peer_email)
-
     def write_encryption_bundle(self, peer_email: str, bundle_json: str) -> None:
         """Write own encryption bundle for a peer."""
         self.transport.peering.publish_key_bundle(peer_email, bundle_json)

@@ -47,9 +47,9 @@ class PeerEncryptionPolicyUnknownError(PeerEncryptionPendingError):
 
 
 class PeerKeysNotReadyError(PeerEncryptionPendingError):
-    """The pair encrypts, but our keys or the pinned peer bundle are missing.
+    """The pair encrypts, but the peer bundle is missing.
 
-    ``load_peers`` makes the keys and pins the bundle.
+    ``load_peers`` reads the bundle.
     """
 
     def __init__(self, peer_email: str):

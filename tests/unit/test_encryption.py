@@ -1,6 +1,6 @@
 import copy
+import json
 import pickle
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -23,9 +23,7 @@ def test_key_generation():
     ps = PeerStore(
         email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
     )
-    assert not ps.has_my_keys()
     ps.generate_keys()
-    assert ps.has_my_keys()
     assert ps.public_key is not None
     assert ps.get_public_bundle() is not None
 
@@ -168,30 +166,18 @@ def test_try_decrypt_invalid_envelope():
         bob.decrypt("alice@example.com", bad_data)
 
 
-def test_save_and_load_keys():
-    alice = PeerStore(
-        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
-    )
-    alice.generate_keys()
-    bob = PeerStore(
-        email="bob@example.com", encryption_policy=EncryptionPolicy.REQUIRED
-    )
+def test_key_file_holds_identity_only(tmp_path):
+    keys_path = tmp_path / "crypto_keys.json"
+    alice = PeerStore.create(email="alice@example.com", keys_path=keys_path)
+    bob = PeerStore(email="bob@example.com")
     bob.generate_keys()
-
     alice.add_peer(Peer(email="bob@example.com"))
     alice.set_peer_bundle("bob@example.com", bob.get_public_bundle())
 
-    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
-        path = Path(f.name)
-
-    alice.save_keys(path)
-    loaded = PeerStore.load_keys(path)
-
-    assert loaded.email == "alice@example.com"
-    assert loaded.has_my_keys()
-    assert loaded.get_public_bundle() is not None
-    assert loaded.has_peer_bundle("bob@example.com")
-    path.unlink()
+    assert set(json.loads(keys_path.read_text())) == {"version", "email", "keys_jwk"}
+    reloaded = PeerStore.create(email="alice@example.com", keys_path=keys_path)
+    assert reloaded.get_public_bundle() == alice.get_public_bundle()
+    assert not reloaded.has_peer_bundle("bob@example.com")
 
 
 # =========================================================================
@@ -270,9 +256,6 @@ def test_no_encryption_backward_compat():
     )
 
     grant_job_inbox_access(do_manager, ds_manager.email)
-
-    assert not ds_manager._peer_store.has_my_keys()
-    assert not do_manager._peer_store.has_my_keys()
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "hello unencrypted")
@@ -358,17 +341,6 @@ def test_self_encrypt_if_needed_without_encryption():
     assert ps.decrypt_and_verify_for_self_if_needed(data) == data
 
 
-def test_self_encrypt_if_needed_without_keys():
-    """encrypt_for_self_if_needed is a no-op when keys are missing."""
-    ps = PeerStore(
-        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
-    )
-
-    data = b"hello"
-    assert ps.encrypt_for_self_if_needed(data) == data
-    assert ps.decrypt_and_verify_for_self_if_needed(data) == data
-
-
 # =========================================================================
 # At-rest encryption via mock drive: events, checkpoints, rolling state
 # =========================================================================
@@ -426,7 +398,6 @@ def test_encrypted_rolling_state_roundtrip():
         FileChangeEvent,
         FileChangeEventsMessage,
     )
-    from pathlib import Path
     from uuid import uuid4
 
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(

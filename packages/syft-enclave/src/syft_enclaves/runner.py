@@ -14,6 +14,7 @@ Two ways to use this:
 import logging
 import signal
 import time
+from pathlib import Path
 from typing import Callable, Optional
 
 from syft.sync.peers.peer_store import datasite_crypto_keys_path
@@ -127,6 +128,9 @@ class EnclaveRunner:
                 "(local folder + Google Drive files) before init"
             )
             self.client.delete_syftbox()
+            # The wipe took the key file with it. The keys live on in memory,
+            # so write them again: the endpoint signs nonces with that file.
+            self._save_keys()
             logger.info("State wipe complete — enclave starts with a clean slate")
 
     def _on_attesting(self) -> None:
@@ -144,9 +148,6 @@ class EnclaveRunner:
         logger.info(
             "TEE detected (%s) — collecting attestation evidence", provider.kind.value
         )
-        # An optional enclave makes keys too: a peer that requires encryption
-        # later uses them, and only keys that exist now are bound to the report.
-        self.client._rds.peer_manager.peer_store.ensure_keys()
         # The key bundle and claims first: on a target that commits to them in
         # the token, the digest has to exist before minting.
         claims = self._build_claims()
@@ -178,7 +179,7 @@ class EnclaveRunner:
         report already binds and serves it over the pinned connection.
         """
         peer_store = self.client._rds.peer_manager.peer_store
-        bundle = peer_store.get_public_bundle() if peer_store.has_my_keys() else None
+        bundle = peer_store.get_public_bundle()
         claims = build_claims(
             email=self.client.email,
             data_owners=self.client.data_owners,
@@ -197,32 +198,30 @@ class EnclaveRunner:
         """Expose our public key bundle on the attestation endpoint.
 
         A peer fetching the report over a pinned connection gets the bundle
-        from the same channel, which binds it to the hardware report. Skipped
-        when there are no keys, since then there is no bundle.
+        from the same channel, which binds it to the hardware report.
         """
         peer_store = self.client._rds.peer_manager.peer_store
-        if not peer_store.has_my_keys():
-            logger.info("No keys — no key bundle to publish")
-            return
-        peer_manager = self.client._rds.peer_manager
-        # The per-datasite default location; the enclave never overrides
-        # crypto_keys_path, and PeerManager does not carry the resolved value.
-        keys_path = datasite_crypto_keys_path(
-            peer_manager.syftbox_folder, peer_store.email
-        )
         try:
-            # fresh_state wiped the syftbox folder a moment ago, taking the key
-            # file with it — the keys live on in memory, so persist them again
-            # before advertising where they are. Without this the endpoint
-            # serves a bundle it cannot sign a nonce with.
-            peer_store.save_keys(keys_path)
             write_public_bundle(
-                peer_store.get_public_bundle(), keys_path=keys_path, claims=claims
+                peer_store.get_public_bundle(),
+                keys_path=self._keys_path(),
+                claims=claims,
             )
         except OSError as e:
             # Not fatal: peers can still fall back to the Drive-published
             # bundle, they just lose the attestation binding.
             logger.warning("Could not publish the public key bundle: %s", e)
+
+    def _keys_path(self) -> Path:
+        # The per-datasite default location; the enclave never overrides
+        # crypto_keys_path, and PeerManager does not carry the resolved value.
+        peer_manager = self.client._rds.peer_manager
+        return datasite_crypto_keys_path(
+            peer_manager.syftbox_folder, peer_manager.peer_store.email
+        )
+
+    def _save_keys(self) -> None:
+        self.client._rds.peer_manager.peer_store.save_keys(self._keys_path())
 
     def _on_peering(self) -> None:
         """Load peers and accept pending peer requests."""

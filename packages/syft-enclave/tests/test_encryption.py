@@ -39,7 +39,7 @@ def test_encrypted_quad_keys_and_bundles():
         store = client._rds.sync_engine._peer_store
         assert store is not None
         assert store.use_encryption is True
-        assert store.has_my_keys() is True
+        assert store.get_public_bundle() is not None
 
     # The enclave peers with all three; it should hold each of their bundles
     # after wiring, so it can encrypt to and verify from them.

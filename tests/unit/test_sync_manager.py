@@ -167,7 +167,7 @@ def test_sync_existing_datasite_state_do():
 
     n_outbox = connection_ds.watcher_get_outbox_file_metadatas(do_manager.email, None)
     assert n_messages_in_cache >= 1  # At least 1 message with the 2 file changes
-    assert n_files_in_cache == 2  # 2 data files
+    assert n_files_in_cache == 3  # 2 data files + private/crypto_keys.json
     assert hashes_in_cache == 2  # 2 data files
     assert len(n_outbox) >= 1
 
@@ -203,7 +203,8 @@ def test_sync_existing_inbox_state_do():
     n_files_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_connection)
     hashes_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_hashes)
     assert n_events_message_in_cache >= 1  # At least 1 message with 2 file changes
-    assert n_files_in_cache == 3  # 2 data files + root syft.pub.yaml
+    # 2 data files + root syft.pub.yaml + private/crypto_keys.json
+    assert n_files_in_cache == 4
     assert hashes_in_cache == 3  # 2 data files + root syft.pub.yaml
 
 

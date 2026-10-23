@@ -7,12 +7,9 @@ Shared between PeerManager and all ConnectionRouter instances.
 import json
 import os
 import tempfile
-import warnings
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator, List, Optional
+from typing import List, Optional
 
-import portalocker
 import syft_crypto_python as syc
 from pydantic import BaseModel, PrivateAttr
 
@@ -36,14 +33,9 @@ from syft.sync.peers.peer import Peer, PeerState
 PRIVATE_DIR_NAME = "private"
 CRYPTO_KEYS_FILENAME = "crypto_keys.json"
 
-# Format of the crypto key file. Raise it when the layout of the file changes,
-# and add a read path for every earlier version. A file with no version was
-# written before the field, and is version 0.
-CRYPTO_KEYS_VERSION = 1
-# Key in the crypto key file that records the policy. Every process that
-# loads the file (a notebook and syft-bg) then uses the same policy. A file
-# without it was written when only required clients had keys.
-ENCRYPTION_POLICY_KEY = "encryption_policy"
+# Format of the crypto key file. Raise it when the layout of the file changes.
+# A file of any other version is refused.
+CRYPTO_KEYS_VERSION = 2
 
 
 def datasite_crypto_keys_path(syftbox_folder: Path | str, email: str) -> Path:
@@ -61,9 +53,6 @@ class PeerStore(BaseModel):
 
     _private_keys: syc.SyftPrivateKeys | None = PrivateAttr(default=None)
     _peers: List[Peer] = PrivateAttr(default_factory=list)
-    # The private key file. None when the store was built in memory, e.g. in
-    # tests.
-    _keys_path: Path | None = PrivateAttr(default=None)
     # Peers whose version file was read again since the last ``set_peers``.
     _policy_rereads: set[str] = PrivateAttr(default_factory=set)
     # The last policy known of each peer in this process (see peer_policy).
@@ -110,8 +99,8 @@ class PeerStore(BaseModel):
         Raises:
             PeerEncryptionPolicyUnknownError: when this client is optional and
                 the policy of the peer is not known.
-            PeerKeysNotReadyError: when the pair encrypts, but our keys or the
-                peer bundle are missing.
+            PeerKeysNotReadyError: when the pair encrypts, but the peer bundle
+                is missing.
             EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
         error = self._cached_conflict_error(email)
@@ -121,7 +110,7 @@ class PeerStore(BaseModel):
             raise PeerEncryptionPolicyUnknownError(email)
         if not self.peer_uses_encryption(email):
             return data
-        if not self.encryption_ready(email):
+        if not self.has_peer_bundle(email):
             raise PeerKeysNotReadyError(email)
         return self.encrypt(email, data)
 
@@ -139,8 +128,8 @@ class PeerStore(BaseModel):
                 the peer policy is not known.
             UnencryptedMessageError: when the pair encrypts and ``data`` is
                 plaintext.
-            PeerKeysNotReadyError: when ``data`` is an envelope, but our keys
-                or the peer bundle are missing.
+            PeerKeysNotReadyError: when ``data`` is an envelope, but the peer
+                bundle is missing.
             EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
         error = self._cached_conflict_error(email)
@@ -152,7 +141,7 @@ class PeerStore(BaseModel):
             if self.peer_uses_encryption(email):
                 raise UnencryptedMessageError(email)
             return data
-        if not self.encryption_ready(email):
+        if not self.has_peer_bundle(email):
             raise PeerKeysNotReadyError(email)
         self.verify_message(email, data)
         return self.decrypt(email, data)
@@ -202,10 +191,6 @@ class PeerStore(BaseModel):
         A required client encrypts with every peer, so it needs no peer policy.
         """
         return self.use_encryption or self.peer_policy(email) is not None
-
-    def encryption_ready(self, email: str) -> bool:
-        """Whether our keys and the bundle of ``email`` exist."""
-        return self.has_my_keys() and self.has_peer_bundle(email)
 
     def conflict_error(self, peer: Peer) -> EncryptionPolicyConflictError | None:
         """Why this client and ``peer`` cannot exchange messages, or None when they can.
@@ -326,67 +311,6 @@ class PeerStore(BaseModel):
     def generate_keys(self) -> None:
         self._private_keys = syc.SyftRecoveryKey.generate().derive_keys()
 
-    def ensure_keys(self) -> None:
-        """Make sure this client has keys: keep them, load the key file, or generate.
-
-        An optional client has no keys until a peer requires encryption. New
-        keys are saved to the key file when the store has one. The lock covers
-        the check and the write, so two processes on one datasite (a notebook
-        and syft-bg) do not each make a key pair.
-        """
-        if self.has_my_keys():
-            return
-        if self._keys_path is None:
-            self.generate_keys()
-            return
-        with _locked_key_file(self._keys_path):
-            if self._keys_path.exists():
-                self._adopt_key_file(self.load_keys(self._keys_path))
-            else:
-                self.generate_keys()
-                _write_key_file(self._keys_path, self._key_file_data())
-
-    def check_key_file_policy(self) -> None:
-        """Raise when the key file requires encryption and this process does not.
-
-        The policy is read at startup only. Another process (a new login) can
-        make the datasite required later; this process must not go on
-        without encryption.
-
-        Raises:
-            ValueError: when the key file records a required policy, and this
-                client is optional or off.
-        """
-        if self.use_encryption or self._keys_path is None:
-            return
-        data = self._read_key_file()
-        if data is None:
-            return
-        recorded = data.get(ENCRYPTION_POLICY_KEY, EncryptionPolicy.REQUIRED.value)
-        if recorded == EncryptionPolicy.REQUIRED.value:
-            raise ValueError(
-                f"The key file {self._keys_path} requires encryption, but this "
-                f"process started with encryption {self.encryption_policy.value}. "
-                "Restart it (for example syft-bg) to use the new policy."
-            )
-
-    def _adopt_key_file(self, loaded: "PeerStore") -> None:
-        """Take the keys of ``loaded``, a store read from our key file.
-
-        The peers of ``loaded`` are taken only when this store has none.
-        """
-        if loaded.email != self.email:
-            raise ValueError(
-                f"Encryption key file {self._keys_path} belongs to "
-                f"{loaded.email!r}, not {self.email!r}"
-            )
-        self._private_keys = loaded._private_keys
-        if not self._peers:
-            self._peers = loaded._peers
-
-    def has_my_keys(self) -> bool:
-        return self._private_keys is not None
-
     @property
     def public_key(self) -> syc.SyftPublicKeyBundle:
         keys = self._ensure_private_keys()
@@ -454,8 +378,8 @@ class PeerStore(BaseModel):
         return syc.decrypt_message(self.email, keys, own_bundle, parsed)
 
     def encrypt_for_self_if_needed(self, data: bytes) -> bytes:
-        """Encrypt for self if encryption is enabled and keys are available."""
-        if self.use_encryption and self.has_my_keys():
+        """Encrypt for self if this client requires encryption."""
+        if self.use_encryption:
             return self.encrypt_for_self(data)
         return data
 
@@ -471,168 +395,85 @@ class PeerStore(BaseModel):
 
     # ========== Persistence ==========
 
-    def _key_file_data(self) -> dict:
-        """The key file as this store would write it from memory."""
+    def save_keys(self, path: Path | str) -> None:
+        """Write our keys to a new key file at ``path``.
+
+        Raises:
+            FileExistsError: if a file exists at ``path``.
+        """
         keys = self._ensure_private_keys()
-        return {
+        data = {
             "version": CRYPTO_KEYS_VERSION,
             "email": self.email,
             "keys_jwk": keys.to_jwks(),
-            "peer_bundles": {
-                peer.email: peer.public_encryption_bundle
-                for peer in self._peers
-                if peer.public_encryption_bundle is not None
-            },
-            ENCRYPTION_POLICY_KEY: self.encryption_policy.value,
         }
-
-    def _record_required_policy(self) -> None:
-        """Record a required policy in the key file, keeping what else it holds."""
-        if self._keys_path is None or not self.use_encryption:
-            return
-        with _locked_key_file(self._keys_path):
-            data = self._read_key_file() or self._key_file_data()
-            if data.get(ENCRYPTION_POLICY_KEY) == EncryptionPolicy.REQUIRED.value:
-                return
-            data = {**data, ENCRYPTION_POLICY_KEY: EncryptionPolicy.REQUIRED.value}
-            _write_key_file(self._keys_path, data)
-        _warn_key_file_holds_data(self._keys_path)
-
-    def save_keys(self, path: Path) -> None:
-        data = self._key_file_data()
-        path = Path(path)
-        with _locked_key_file(path):
-            _write_key_file(path, data)
-        self._keys_path = path
-
-    def _read_key_file(self) -> dict | None:
-        """The key file as a dict, or None when missing, unreadable or another identity's."""
-        if self._keys_path is None:
-            return None
-        try:
-            data = json.loads(self._keys_path.read_text())
-        except (OSError, ValueError):
-            return None
-        if not isinstance(data, dict) or data.get("email") != self.email:
-            return None
-        return data
-
-    @classmethod
-    def load_keys(cls, path: Path) -> "PeerStore":
-        data = json.loads(Path(path).read_text())
-        # A file with no version was written before the field, and its layout is
-        # this client reads. A later version is refused: a user cannot rebuild a
-        # private key, so a wrong read loses the keys.
-        version = data.get("version", 0)
-        if version > CRYPTO_KEYS_VERSION:
-            raise ValueError(
-                f"The crypto key file at {path} has version {version}, and this "
-                f"client reads up to version {CRYPTO_KEYS_VERSION}. Install a "
-                "newer syft to use these keys."
-            )
-        policy = data.get(ENCRYPTION_POLICY_KEY, EncryptionPolicy.REQUIRED.value)
-        store = cls(email=data["email"], encryption_policy=EncryptionPolicy(policy))
-        store._private_keys = syc.SyftPrivateKeys.from_jwks(data["keys_jwk"])
-        store._keys_path = Path(path)
-        for email, bundle_dict in data.get("peer_bundles", {}).items():
-            store._peers.append(Peer(email=email, public_encryption_bundle=bundle_dict))
-        return store
+        _create_key_file(Path(path), data)
 
     @classmethod
     def create(
         cls,
         email: str,
+        keys_path: Path | str,
         encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL,
-        keys_path: Path | str | None = None,
     ) -> "PeerStore":
-        """Build a PeerStore for ``email`` with its per-datasite key file.
+        """Build a PeerStore for ``email`` with the keys in its key file.
 
         ``keys_path`` is the participant's own key file
         (``<syftbox_folder>/<email>/private/crypto_keys.json``, see
         :func:`datasite_crypto_keys_path`). When the file exists, the store
-        loads its keys and peer bundles. A required policy in the file wins over an
-        optional ``encryption_policy``, so all processes on a datasite agree.
-
-        Without a file, a required store generates keys and saves them. An
-        optional store has no keys until :meth:`ensure_keys`.
+        loads its keys. Else the store generates keys and writes the file.
 
         Scoping keys to a per-datasite file lets several identities run on one
         machine (e.g. two data owners in the same notebook) without colliding, and
         ties key lifetime to the datasite folder.
 
         Raises:
-            ValueError: if the policy is required but ``keys_path`` is missing,
-                or the existing key file belongs to a different identity.
+            ValueError: if the key file has another version or belongs to
+                another identity.
+            FileExistsError: if another process created the key file while
+                this store generated its keys.
         """
         store = cls(email=email, encryption_policy=encryption_policy)
-        if keys_path is None:
-            if store.use_encryption:
-                raise ValueError("keys_path is required when encryption is required")
-            return store
-        store._keys_path = Path(keys_path)
-        if store._keys_path.exists():
-            loaded = cls.load_keys(store._keys_path)
-            if encryption_policy == EncryptionPolicy.OFF and loaded.use_encryption:
-                raise _off_refused_error(store._keys_path)
-            if loaded.use_encryption:
-                store.encryption_policy = EncryptionPolicy.REQUIRED
-            store._adopt_key_file(loaded)
-            store._record_required_policy()
-        elif store.use_encryption:
+        path = Path(keys_path)
+        if path.exists():
+            store._private_keys = _read_private_keys(path, email)
+        else:
             store.generate_keys()
-            store.save_keys(store._keys_path)
-            _warn_key_file_holds_data(store._keys_path)
+            store.save_keys(path)
         return store
 
 
-def _off_refused_error(keys_path: Path) -> ValueError:
-    return ValueError(
-        f"The key file {keys_path} requires encryption: files of this "
-        "datasite at rest are encrypted. Encryption cannot be off for it. Use a "
-        "new SyftBox folder for a client with encryption off."
-    )
+def _read_private_keys(path: Path, email: str) -> syc.SyftPrivateKeys:
+    data = json.loads(path.read_text())
+    if data["version"] != CRYPTO_KEYS_VERSION:
+        raise ValueError(
+            f"The crypto key file at {path} has version {data['version']}, and "
+            f"this client reads only version {CRYPTO_KEYS_VERSION}."
+        )
+    if data["email"] != email:
+        raise ValueError(
+            f"Encryption key file {path} belongs to {data['email']!r}, not {email!r}"
+        )
+    return syc.SyftPrivateKeys.from_jwks(data["keys_jwk"])
 
 
-def _warn_key_file_holds_data(keys_path: Path) -> None:
-    """Warn once, when a datasite starts to require encryption."""
-    warnings.warn(
-        "This datasite now requires encryption, and every later session keeps "
-        "that setting. Its new files at rest are encrypted with the key in "
-        f"{keys_path}. Without that file, they cannot be read again: keep a "
-        "copy in a safe place."
-    )
+def _create_key_file(path: Path, data: dict) -> None:
+    """Write ``data`` to a new key file at ``path`` in one step.
 
-
-@contextmanager
-def _locked_key_file(path: Path) -> Iterator[None]:
-    """Hold an exclusive cross-process lock on the key file at ``path``.
-
-    The lock is on a sibling ``.lock`` file, as in ``PersistedDict``, so the
-    key file itself can be replaced while the lock is held.
+    The key file holds the only copy of the private keys. The data goes to a
+    temporary file in the same folder and reaches the disk. A hard link then
+    gives it the name of the key file. The link fails when that name exists,
+    so a write cut short leaves no partial file, and a second process cannot
+    replace the keys of the first. ``mkstemp`` makes the file readable by this
+    user only.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path.with_suffix(f"{path.suffix}.lock"), "a") as f:
-        portalocker.lock(f, portalocker.LOCK_EX)
-        try:
-            yield
-        finally:
-            portalocker.unlock(f)
-
-
-def _write_key_file(path: Path, data: dict) -> None:
-    """Replace the key file at ``path`` with ``data`` in one step.
-
-    The key file holds the only copy of the private keys, so a write cut short
-    must leave the old file in place. The data goes to a temporary file in the
-    same folder, reaches the disk, and then takes the name of the key file.
-    ``mkstemp`` creates the temporary file readable by this user only.
-    """
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w") as f:
             f.write(json.dumps(data, indent=2))
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp, path)
+        os.link(tmp, path)
     finally:
-        Path(tmp).unlink(missing_ok=True)
+        os.unlink(tmp)

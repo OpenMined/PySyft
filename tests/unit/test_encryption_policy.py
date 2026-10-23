@@ -5,9 +5,6 @@ or ``required``. A pair encrypts when either side requires it, and neither
 side is ``off``.
 """
 
-import json
-import threading
-import warnings
 from pathlib import Path
 
 import pytest
@@ -221,34 +218,6 @@ def test_missing_version_file_created_with_own_policy():
     assert b_conn.read_peer_version_file("a@example.com").encryption_policy == REQUIRED
 
 
-def _write_garbage_own_bundle(ds_manager, do_manager, monkeypatch) -> None:
-    ds_manager.peer_manager.connection_router.write_encryption_bundle(
-        do_manager.email, "not json"
-    )
-
-
-def _make_own_bundle_undecodable(ds_manager, do_manager, monkeypatch) -> None:
-    def undecodable(self, peer_email):
-        raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
-
-    monkeypatch.setattr(ConnectionRouter, "read_own_encryption_bundle", undecodable)
-
-
-@pytest.mark.parametrize(
-    "damage",
-    [_write_garbage_own_bundle, _make_own_bundle_undecodable],
-    ids=["not json", "not utf-8"],
-)
-def test_unreadable_own_bundle_is_written_again(damage, monkeypatch):
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        do_encryption_policy=REQUIRED,
-    )
-    damage(ds_manager, do_manager, monkeypatch)
-    ds_manager.peer_manager._bundle_published_for.clear()  # as a new process
-    ds_manager.load_peers()
-    assert do_manager.email in ds_manager.peer_manager._bundle_published_for
-
-
 def test_malformed_peer_bundle_does_not_stop_peer_load():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         add_peers=False,
@@ -344,177 +313,22 @@ def test_encrypting_pair_without_keys_or_pin_not_ready(mine, theirs, with_keys):
 # =========================================================================
 
 
-@pytest.mark.parametrize("policy", [OPTIONAL, OFF])
-def test_store_not_requiring_encryption_creates_no_key_file(tmp_path, policy):
+@pytest.mark.parametrize("policy", [OPTIONAL, OFF, REQUIRED])
+def test_every_policy_creates_key_file(tmp_path, policy):
     keys_path = tmp_path / "crypto_keys.json"
     store = PeerStore.create(
         email="alice@example.com", encryption_policy=policy, keys_path=keys_path
     )
-    assert not store.has_my_keys()
-    assert not keys_path.exists()
-
-
-@pytest.mark.parametrize("policy", [OPTIONAL, OFF])
-def test_sync_refuses_key_file_made_required_after_start(policy):
-    """The policy is read at startup; a running process must not go on without it."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        do_encryption_policy=policy,
-    )
-    keys_path = do_manager.peer_manager.peer_store._keys_path
-    with pytest.warns(UserWarning):
-        PeerStore.create(
-            email=do_manager.email, encryption_policy=REQUIRED, keys_path=keys_path
-        )
-    with pytest.raises(ValueError, match="Restart"):
-        do_manager.sync()
-
-
-def test_off_refused_when_key_file_requires_encryption(tmp_path):
-    """Files at rest of such a datasite are encrypted; off cannot read them."""
-    keys_path = tmp_path / "crypto_keys.json"
-    with pytest.warns(UserWarning):
-        PeerStore.create(
-            email="alice@example.com", encryption_policy=REQUIRED, keys_path=keys_path
-        )
-    with pytest.raises(ValueError, match="new SyftBox folder"):
-        PeerStore.create(
-            email="alice@example.com", encryption_policy=OFF, keys_path=keys_path
-        )
-
-
-def test_off_policy_wins_over_optional_key_file(tmp_path):
-    keys_path = tmp_path / "crypto_keys.json"
-    PeerStore.create(email="alice@example.com", keys_path=keys_path).ensure_keys()
-    store = PeerStore.create(
-        email="alice@example.com", encryption_policy=OFF, keys_path=keys_path
-    )
-    assert store.encryption_policy == OFF
-
-
-def test_optional_store_creates_keys_when_needed(tmp_path):
-    keys_path = tmp_path / "crypto_keys.json"
-    store = PeerStore.create(
-        email="alice@example.com", encryption_policy=OPTIONAL, keys_path=keys_path
-    )
-    store.ensure_keys()
-    assert store.has_my_keys()
-
     reloaded = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    assert reloaded.has_my_keys()
-    assert reloaded.encryption_policy == OPTIONAL
+    assert reloaded.get_public_bundle() == store.get_public_bundle()
 
 
-def test_optional_store_loads_existing_keys_when_needed(tmp_path):
-    keys_path = tmp_path / "crypto_keys.json"
-    first = PeerStore.create(
-        email="alice@example.com", encryption_policy=REQUIRED, keys_path=keys_path
-    )
-    second = PeerStore.create(
-        email="alice@example.com", encryption_policy=OPTIONAL, keys_path=keys_path
-    )
-    second.ensure_keys()
-    assert second.get_public_bundle() == first.get_public_bundle()
-
-
-def test_required_policy_in_key_file_wins(tmp_path):
-    """syft-bg next to a required notebook loads the same key file and requires too."""
-    keys_path = tmp_path / "crypto_keys.json"
-    PeerStore.create(
-        email="alice@example.com", encryption_policy=REQUIRED, keys_path=keys_path
-    )
-    daemon = PeerStore.create(
-        email="alice@example.com", encryption_policy=OPTIONAL, keys_path=keys_path
-    )
-    assert daemon.encryption_policy == REQUIRED
-
-
-def test_key_file_without_policy_reads_as_required(tmp_path):
-    """Before the field, only required clients wrote a key file."""
-    keys_path = tmp_path / "crypto_keys.json"
-    PeerStore.create(
-        email="alice@example.com", encryption_policy=REQUIRED, keys_path=keys_path
-    )
-    data = json.loads(keys_path.read_text())
-    del data["encryption_policy"]
-    keys_path.write_text(json.dumps(data))
-
-    store = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    assert store.encryption_policy == REQUIRED
-
-
-def test_required_client_records_policy_in_existing_key_file(tmp_path):
-    keys_path = tmp_path / "crypto_keys.json"
-    PeerStore.create(email="alice@example.com", keys_path=keys_path).ensure_keys()
-    PeerStore.create(
-        email="alice@example.com", encryption_policy=REQUIRED, keys_path=keys_path
-    )
-    store = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    assert store.encryption_policy == REQUIRED
-
-
-def _create(keys_path, policy=OPTIONAL) -> PeerStore:
-    return PeerStore.create(
-        email="alice@example.com", encryption_policy=policy, keys_path=keys_path
-    )
-
-
-def _make_optional_keys(keys_path) -> None:
-    _create(keys_path).ensure_keys()
-
-
-def _first_required_login(keys_path) -> None:
-    with pytest.warns(UserWarning):
-        _create(keys_path, REQUIRED)
-
-
-@pytest.mark.parametrize(
-    "before", [lambda keys_path: None, _make_optional_keys], ids=["first", "switch"]
-)
-def test_datasite_starting_to_require_warns_about_key_file(tmp_path, before):
-    keys_path = tmp_path / "crypto_keys.json"
-    before(keys_path)
-    with pytest.warns(UserWarning, match="keep a copy"):
-        _create(keys_path, REQUIRED)
-
-
-@pytest.mark.parametrize(
-    "before, action",
-    [
-        (_first_required_login, lambda keys_path: _create(keys_path, REQUIRED)),
-        (_first_required_login, lambda keys_path: _create(keys_path, OPTIONAL)),
-        (lambda keys_path: None, _make_optional_keys),
-    ],
-    ids=["later required login", "later optional login", "optional keys"],
-)
-def test_no_key_file_warning_without_switch_to_required(tmp_path, before, action):
-    keys_path = tmp_path / "crypto_keys.json"
-    before(keys_path)
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        action(keys_path)
-
-
-def test_concurrent_processes_make_one_key_pair(tmp_path):
-    """A notebook and syft-bg that need keys at once must end with the same keys."""
-    keys_path = tmp_path / "crypto_keys.json"
-    stores = [
-        PeerStore.create(email="alice@example.com", keys_path=keys_path)
-        for _ in range(8)
-    ]
-    barrier = threading.Barrier(len(stores))
-
-    def make_keys(store: PeerStore) -> None:
-        barrier.wait()
-        store.ensure_keys()
-
-    threads = [threading.Thread(target=make_keys, args=(s,)) for s in stores]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
-
-    on_disk = PeerStore.load_keys(keys_path).get_public_bundle()
-    assert all(store.get_public_bundle() == on_disk for store in stores)
+def test_plaintext_pair_publishes_bundles_at_peering():
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    ds_router = ds_manager.peer_manager.connection_router
+    do_router = do_manager.peer_manager.connection_router
+    assert ds_router.read_peer_encryption_bundle(do_manager.email) is not None
+    assert do_router.read_peer_encryption_bundle(ds_manager.email) is not None
 
 
 # =========================================================================
@@ -633,7 +447,7 @@ def test_client_required_after_peering_publishes_bundle():
     ds_manager.load_peers()
 
     do_store = do_manager.peer_manager.peer_store
-    assert do_store.encryption_ready(ds_manager.email)
+    assert do_store.has_peer_bundle(ds_manager.email)
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "after switch")
     do_manager.sync()
@@ -689,7 +503,6 @@ def test_off_client_works_in_plaintext_with_optional_peer():
     assert not PeerStore.is_envelope(_raw_inbox_message(do_manager, ds_manager.email))
     do_manager.sync()
     assert any("plain content" in c for c in _accepted_contents(do_manager))
-    assert not ds_manager.peer_manager.peer_store.has_my_keys()
 
 
 def test_off_and_required_peers_skip_each_other():
@@ -739,41 +552,6 @@ def test_conflict_found_on_read_makes_peer_wait():
             ds_manager.email, raise_on_none=False
         )
     assert message is None
-
-
-def test_current_published_bundle_not_written_again(monkeypatch):
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        do_encryption_policy=REQUIRED,
-    )
-    ds_manager.load_peers()
-    writes = []
-    monkeypatch.setattr(
-        ConnectionRouter,
-        "write_encryption_bundle",
-        lambda self, peer_email, bundle_json: writes.append(peer_email),
-    )
-    ds_manager.peer_manager._bundle_published_for.clear()  # as a new process
-    ds_manager.load_peers()
-    assert writes == []
-
-
-def test_drive_error_while_publishing_bundle_does_not_stop_sync(monkeypatch):
-    from googleapiclient.errors import HttpError
-
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        do_encryption_policy=REQUIRED,
-    )
-
-    def fail(self, peer_email):
-        raise HttpError(
-            resp=type("R", (), {"status": 503, "reason": ""})(), content=b""
-        )
-
-    monkeypatch.setattr(ConnectionRouter, "read_own_encryption_bundle", fail)
-    ds_manager.peer_manager._bundle_published_for.clear()  # as a new process
-    with pytest.warns(UserWarning, match="publish"):
-        ds_manager.load_peers()
-    assert do_manager.email not in ds_manager.peer_manager._bundle_published_for
 
 
 def test_owner_waits_on_envelope_from_unpinned_peer():

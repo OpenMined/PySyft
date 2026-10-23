@@ -1016,7 +1016,6 @@ class SyftboxManager(BaseModelCallbackMixin):
                           separate process may have updated the file.
         """
         with self.sync_file_lock():
-            self.peer_manager.peer_store.check_key_file_policy()
             self.load_peers(force_download=force_download_peer_state)
             if self.has_do_role:
                 peer_emails = [peer.email for peer in self.peer_manager.approved_peers]
