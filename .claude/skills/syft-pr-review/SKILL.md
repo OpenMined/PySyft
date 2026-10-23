@@ -82,15 +82,15 @@ Flows come first, because they are why the reader opened the document.
   - [ ] **1.1 <Flow name>** _(new)_
     - [ ] When <trigger>, `A.start()` calls `B.handle()`, which calls `C.save()`.
     - [ ] Decision: we could have done Z; we do A because <reason>.
-    - [ ] **1.1.1 New code**
+    - [ ] **New code**
       - [ ] NEW CLASS `Name` — `path/file.py:<line>` — <what it is for>. Built by `A.b()`.
       - [ ] NEW helpers in `path/file.py` — `f()` <does X>, `g()` <does Y>.
-    - [ ] **1.1.2 Changed code**
+    - [ ] **Changed code**
       - [ ] `path/file.py: Class.method()` — previously <did Z>, now <does A>.
       - [ ] DELETED `Class.old()` and `file.py: helper()`, because <reason>.
   - [ ] **1.2 <Flow name>** _(changed)_
     - [ ] When we <do X>, we previously <did Z>. Now <A>.
-    - [ ] **1.2.1 New code** — `Name` (1.1.1); here it <does Y>.
+    - [ ] **New code** — `Name` (1.1.3.1); here it <does Y>.
 
 - [ ] **2. Other new code** — only code no flow uses; usually dropped
 
@@ -188,8 +188,9 @@ test_no_hint_when_do_owns_no_jobs()`
 - [ ] **Budget reading time:** roughly 40 bullets for a normal PR, 120 for a very large one.
 - [ ] Do not repeat the PR description. If your text matches it, you read the wrong thing.
 - [ ] **Number every section and subsection**, `**<N>.<M> <label>**`, in every section and to the
-      same depth as the template shows. A leaf bullet is not numbered — its position under a
-      numbered parent already names it. This is what lets a comment say which bullet it is about.
+      same depth as the template shows. Deeper bullets are not numbered — the review UI numbers them
+      by position (the first bullet under 1.1 is 1.1.1), so an explicit number there would clash.
+      This is what lets a comment say which bullet it is about.
 - [ ] Cross-reference by number, e.g. `(Flow 1.2)` or `(1.1.2)`. Links such as `[x](#slug)` do not
       work: GitHub gives headings no `id` inside a comment, so there is nothing to point at.
 
