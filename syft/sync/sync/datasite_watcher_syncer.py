@@ -9,11 +9,9 @@ from pydantic import BaseModel, Field, PrivateAttr
 from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.callback_mixin import BaseModelCallbackMixin
-from syft.sync.encryption_policy import (
-    EncryptionPolicyConflictError,
-    PeerEncryptionPendingError,
-)
+from syft.sync.encryption_policy import EncryptionPolicyConflictError
 from syft.sync.events.file_change_event import FileChangeEventsMessage
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.messages.proposed_filechange import (
     ProposedFileChange,
     ProposedFileChangesMessage,
@@ -81,7 +79,6 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     def process_file_changes_queue(self):
         # One message per datasite: each change goes to the owner of its path.
         changes_by_recipient: Dict[str, List[ProposedFileChange]] = {}
-        items_by_recipient: Dict[str, list] = {}
         while not self.queue.empty():
             relative_path, content = self.queue.get()
 
@@ -105,47 +102,24 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
                 path_in_datasite, content, datasite_email=recipient
             )
             changes_by_recipient.setdefault(recipient, []).append(file_change)
-            items_by_recipient.setdefault(recipient, []).append(
-                (relative_path, content)
-            )
-        self._send_by_recipient(changes_by_recipient, items_by_recipient)
+        self._send_by_recipient(changes_by_recipient)
 
     def _send_by_recipient(
-        self,
-        changes_by_recipient: Dict[str, List[ProposedFileChange]],
-        items_by_recipient: Dict[str, list],
+        self, changes_by_recipient: Dict[str, List[ProposedFileChange]]
     ) -> None:
-        """Send one message to each recipient; put pending ones back in the queue.
+        """Send one message to each recipient.
 
-        ``items_by_recipient`` holds the queue items each message was built
-        from. The other recipients still get their changes when one fails.
-
-        Raises:
-            PeerEncryptionPendingError: when a recipient is not a peer.
-            EncryptionPolicyConflictError: when the policies of a pair conflict.
+        A recipient that cannot receive now is skipped with a warning, and its
+        changes are dropped. The other recipients still get their changes.
         """
-        error = None
         for recipient, changes in changes_by_recipient.items():
             message = ProposedFileChangesMessage(
                 sender_email=self.email, proposed_file_changes=changes
             )
             try:
                 self._send_message(recipient, message)
-            except PeerEncryptionPendingError as e:
-                if not self.connection_router.peer_store.should_hold(recipient):
-                    error = error or e
-                    continue
-                # The changes wait in the queue; the next sync sends them.
-                warnings.warn(
-                    f"Changes for {recipient} wait for the next sync: {e} They "
-                    "are held in memory, and lost if this process exits."
-                )
-                for item in items_by_recipient[recipient]:
-                    self.queue.put(item)
-            except EncryptionPolicyConflictError as e:
-                error = error or e
-        if error is not None:
-            raise error
+            except (SyftPeerNotReadyError, EncryptionPolicyConflictError) as e:
+                warnings.warn(f"Dropped the changes for {recipient}: {e}")
 
     def _record_sent_hashes(self, message: ProposedFileChangesMessage) -> None:
         hashes = self.datasite_watcher_cache.file_hashes
@@ -162,9 +136,8 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         """Send ``message`` and record the hashes it sent.
 
         Raises:
-            PeerEncryptionPendingError: while encryption with ``recipient`` is
-                pending: its policy is unknown, or the pair encrypts and the
-                keys or the peer bundle are missing.
+            SyftPeerNotReadyError: when the policy of ``recipient`` is not
+                known, or the pair encrypts and the peer bundle is missing.
             EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
         self.connection_router.watcher_send_proposed_file_changes_message(
@@ -183,17 +156,16 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     # --- Pulling from datasite outboxes ---
 
     def download_events_message_with_new_connection(
-        self, file_meta: dict, peer_email: str
+        self, file_id: str, peer_email: str
     ) -> FileChangeEventsMessage | None:
         """Download from outbox using a new connection (thread-safe).
 
-        Returns None when the message cannot be read yet (see
+        Returns None when the message is skipped (see
         ``ConnectionRouter.watcher_read_events_message``).
         """
         connection = self.connection_router.connection_for_parallel_download()
-        return self.connection_router.watcher_read_events_message(
-            connection, peer_email, file_meta
-        )
+        raw = connection.download_file(file_id)
+        return self.connection_router.watcher_read_events_message(peer_email, raw)
 
     def download_collection_file_with_new_connection(
         self, file_id: str, owner_email: str
@@ -212,9 +184,9 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             event_count = self.datasite_watcher_cache.sync_down_parallel(
                 peer_email,
                 self._executor,
-                lambda meta,
+                lambda fid,
                 pe=peer_email: self.download_events_message_with_new_connection(
-                    meta, pe
+                    fid, pe
                 ),
             )
             if event_count:

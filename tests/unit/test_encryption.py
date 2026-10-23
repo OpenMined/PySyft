@@ -384,6 +384,16 @@ def test_self_encrypt_if_needed_without_encryption():
     assert ps.decrypt_and_verify_for_self_if_needed(data) == data
 
 
+def test_required_self_decrypt_refuses_plaintext():
+    ps = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
+    ps.generate_keys()
+
+    with pytest.raises(ValueError, match="SYC envelope"):
+        ps.decrypt_and_verify_for_self_if_needed(b"hello")
+
+
 # =========================================================================
 # At-rest encryption via mock drive: events, checkpoints, rolling state
 # =========================================================================

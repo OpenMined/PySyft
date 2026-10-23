@@ -855,14 +855,18 @@ class GDriveConnection(SyftboxPlatformConnection):
             raise ValueError(
                 f"Event {fname} not found in inbox, event should already be created for this type of connection"
             )
+        self.owner_archive_inbox_file(gdrive_id, sender_email)
+
+    def owner_archive_inbox_file(self, file_id: str, sender_email: str) -> None:
+        """Move the inbox file ``file_id`` from ``sender_email`` to its archive folder."""
         file_info = execute_with_retries(
-            self.drive_service.files().get(fileId=gdrive_id, fields="parents")
+            self.drive_service.files().get(fileId=file_id, fields="parents")
         )
         previous_parents = ",".join(file_info.get("parents", []))
         archive_folder_id = self.owner_get_archive_folder_id(sender_email)
         execute_with_retries(
             self.drive_service.files().update(
-                fileId=gdrive_id,
+                fileId=file_id,
                 addParents=archive_folder_id,
                 removeParents=previous_parents,
                 fields="id, parents",

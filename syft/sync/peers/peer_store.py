@@ -16,10 +16,8 @@ from pydantic import BaseModel, PrivateAttr
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
     EncryptionPolicyConflictError,
-    PeerEncryptionPolicyUnknownError,
-    PeerKeysNotReadyError,
     PeerOutdatedError,
-    UnencryptedMessageError,
+    MessageFormatError,
     pair_conflicts,
     pair_uses_encryption,
 )
@@ -53,8 +51,6 @@ class PeerStore(BaseModel):
 
     _private_keys: syc.SyftPrivateKeys | None = PrivateAttr(default=None)
     _peers: List[Peer] = PrivateAttr(default_factory=list)
-    # Peers whose version file was read again since the last ``set_peers``.
-    _policy_rereads: set[str] = PrivateAttr(default_factory=set)
     # The last policy known of each peer in this process (see peer_policy).
     _last_known_policies: dict[str, EncryptionPolicy] = PrivateAttr(
         default_factory=dict
@@ -97,52 +93,36 @@ class PeerStore(BaseModel):
         """Encrypt ``data`` for ``email`` when the pair encrypts.
 
         Raises:
-            PeerEncryptionPolicyUnknownError: when this client is optional and
-                the policy of the peer is not known.
-            PeerKeysNotReadyError: when the pair encrypts, but the peer bundle
-                is missing.
+            SyftPeerNotReadyError: when the policy of the peer is not known, or
+                the pair encrypts and the peer bundle is missing.
             EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
-        error = self._cached_conflict_error(email)
-        if error is not None:
-            raise error
-        if not self.peer_policy_known(email):
-            raise PeerEncryptionPolicyUnknownError(email)
+        self._raise_unless_can_exchange(email)
         if not self.peer_uses_encryption(email):
             return data
-        if not self.has_peer_bundle(email):
-            raise PeerKeysNotReadyError(email)
         return self.encrypt(email, data)
 
     def decrypt_and_verify_if_needed(self, email: str, data: bytes) -> bytes:
-        """Verify and decrypt an envelope from ``email``; pass plaintext through.
+        """Verify and decrypt a message from ``email`` when the pair encrypts.
 
-        When the pair encrypts, plaintext is refused, so that a peer or the
-        storage provider cannot downgrade the pair. While the peer policy is
-        not known, plaintext waits, as a send does. When the pair does not
-        encrypt, an envelope is still accepted: the peer can have started to
-        require encryption after the last load.
+        The format of ``data`` must match the pair. Plaintext in a pair that
+        encrypts is refused, so that a peer or the storage provider cannot
+        downgrade the pair.
 
         Raises:
-            PeerEncryptionPolicyUnknownError: when ``data`` is plaintext and
-                the peer policy is not known.
-            UnencryptedMessageError: when the pair encrypts and ``data`` is
-                plaintext.
-            PeerKeysNotReadyError: when ``data`` is an envelope, but the peer
-                bundle is missing.
+            SyftPeerNotReadyError: when the policy of the peer is not known, or
+                the pair encrypts and the peer bundle is missing.
+            MessageFormatError: when ``data`` is plaintext and the pair
+                encrypts, or ``data`` is an envelope and the pair does not.
             EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
-        error = self._cached_conflict_error(email)
-        if error is not None:
-            raise error
-        if not self.is_envelope(data):
-            if not self.peer_policy_known(email):
-                raise PeerEncryptionPolicyUnknownError(email)
-            if self.peer_uses_encryption(email):
-                raise UnencryptedMessageError(email)
+        self._raise_unless_can_exchange(email)
+        encrypts = self.peer_uses_encryption(email)
+        encrypted = self.is_envelope(data)
+        if encrypted != encrypts:
+            raise MessageFormatError(email, encrypted)
+        if not encrypts:
             return data
-        if not self.has_peer_bundle(email):
-            raise PeerKeysNotReadyError(email)
         self.verify_message(email, data)
         return self.decrypt(email, data)
 
@@ -185,13 +165,6 @@ class PeerStore(BaseModel):
         self._last_known_policies[peer.email] = policy
         return policy
 
-    def peer_policy_known(self, email: str) -> bool:
-        """Whether this client can select the format for ``email``.
-
-        A required client encrypts with every peer, so it needs no peer policy.
-        """
-        return self.use_encryption or self.peer_policy(email) is not None
-
     def conflict_error(self, peer: Peer) -> EncryptionPolicyConflictError | None:
         """Why this client and ``peer`` cannot exchange messages, or None when they can.
 
@@ -204,11 +177,26 @@ class PeerStore(BaseModel):
             return EncryptionPolicyConflictError(peer.email)
         return None
 
-    def _cached_conflict_error(
-        self, email: str
-    ) -> EncryptionPolicyConflictError | None:
+    def _raise_unless_can_exchange(self, email: str) -> None:
+        """Raise unless the policy of ``email`` is known and does not conflict.
+
+        Raises:
+            EncryptionPolicyConflictError: when the policies of the pair conflict.
+            SyftPeerNotReadyError: when the policy of the peer is not known.
+        """
         peer = self.get_cached_peer(email)
-        return None if peer is None else self.conflict_error(peer)
+        error = None if peer is None else self.conflict_error(peer)
+        if error is not None:
+            raise error
+        if peer is None or self.policy_of(peer) is None:
+            raise SyftPeerNotReadyError(
+                email,
+                cause=f"The encryption policy of {email} is not known yet.",
+                remedy=(
+                    "Peer with them and wait until they accept. Then run "
+                    "client.sync() and send again."
+                ),
+            )
 
     def peer_uses_encryption(self, email: str) -> bool:
         """Whether the pair with ``email`` encrypts. False when the peer policy is not known."""
@@ -226,22 +214,6 @@ class PeerStore(BaseModel):
 
     def set_peers(self, peers: List[Peer]) -> None:
         self._peers = peers
-        self._policy_rereads.clear()
-
-    def should_hold(self, recipient: str) -> bool:
-        """Whether a message to ``recipient`` waits while encryption is pending.
-
-        Only a peer waits. Any other recipient never gets a policy, so a
-        message to it would wait forever.
-        """
-        return self.get_cached_peer(recipient) is not None
-
-    def take_policy_reread(self, email: str) -> bool:
-        """True once per peer load: the caller may read the version file again."""
-        if email in self._policy_rereads:
-            return False
-        self._policy_rereads.add(email)
-        return True
 
     # ========== Ensure helpers ==========
 
@@ -384,11 +356,8 @@ class PeerStore(BaseModel):
         return data
 
     def decrypt_and_verify_for_self_if_needed(self, data: bytes) -> bytes:
-        """Verify and decrypt an envelope this client wrote for itself; pass plaintext through.
-
-        Files written while this client was optional stay plaintext.
-        """
-        if self.is_envelope(data):
+        """Verify and decrypt data for self if this client requires encryption."""
+        if self.use_encryption:
             self.verify_message_from_self(data)
             return self.decrypt_for_self(data)
         return data

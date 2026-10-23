@@ -568,7 +568,6 @@ class SyftboxManager(BaseModelCallbackMixin):
         # Every router that sends peer-directed messages downgrades them to the
         # peer's negotiated syft protocol, so each one gets the live map.
         manager_res._set_peer_schemas(peer_manager.live_peer_schemas("syft"))
-        manager_res._set_version_loader(peer_manager.load_peer_version)
 
         return manager_res
 
@@ -582,17 +581,6 @@ class SyftboxManager(BaseModelCallbackMixin):
             )
             self.datasite_watcher_syncer.datasite_watcher_cache.connection_router.set_peer_schemas(
                 peer_schemas
-            )
-
-    def _set_version_loader(self, version_loader) -> None:
-        """Wire PeerManager's version reload into all routers that send."""
-        if self.datasite_owner_syncer:
-            self.datasite_owner_syncer.connection_router.set_version_loader(
-                version_loader
-            )
-        if self.datasite_watcher_syncer:
-            self.datasite_watcher_syncer.connection_router.set_version_loader(
-                version_loader
             )
 
     def _set_peer_store(self, peer_store) -> None:

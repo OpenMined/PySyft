@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
@@ -11,10 +13,10 @@ def test_peer_request_blocks_sync_until_approved():
 
     Workflow:
     1. DS adds DO as peer (creates peer request)
-    2. DS submits a job
+    2. DS submits a job - it is dropped (DO policy not known)
     3. DO syncs - nothing should sync (peer not approved)
     4. DO approves peer request
-    5. DS syncs (sends the held job), DO syncs - job should now sync
+    5. DS syncs and submits again, DO syncs - job should now sync
     """
     # Create managers with mock drive service connection, no auto-add peers
     # Note: email1 becomes DO, email2 becomes DS
@@ -36,7 +38,8 @@ def test_peer_request_blocks_sync_until_approved():
     # Step 2: DS submits a file to their job folder
     job_file_path = path_for_job(do_manager.email, ds_manager.email)
     job_content = "print('Hello from DS')"
-    ds_manager._send_file_change(job_file_path, job_content)
+    with pytest.warns(UserWarning, match="Dropped the changes"):
+        ds_manager._send_file_change(job_file_path, job_content)
 
     # Step 3: DO syncs WITHOUT accepting - nothing should sync
     do_manager.sync()
@@ -54,9 +57,10 @@ def test_peer_request_blocks_sync_until_approved():
     assert len(do_manager.peer_manager.approved_peers) == 1
     assert do_manager.peer_manager.approved_peers[0].email == ds_manager.email
 
-    # Step 5: DS syncs, which sends the job it held while the DO policy was
-    # unknown. DO syncs again - now it should work
+    # Step 5: DS syncs, which reads the DO policy, and submits again. DO syncs
+    # again - now it should work
     ds_manager.sync()
+    ds_manager._send_file_change(job_file_path, job_content)
     do_manager.sync()
 
     # Verify: File synced and in cache

@@ -30,36 +30,6 @@ class EncryptionPolicy(str, Enum):
         return cls(value)
 
 
-class PeerEncryptionPendingError(ValueError):
-    """A message to a peer cannot go yet. A later sync sends it."""
-
-
-class PeerEncryptionPolicyUnknownError(PeerEncryptionPendingError):
-    """The policy of a peer is not known, so the client cannot select a format."""
-
-    def __init__(self, peer_email: str):
-        super().__init__(
-            f"The encryption policy of {peer_email} is not known. The peer has "
-            "not shared its version file yet. Wait until the peer accepts the "
-            "peer request, then send again."
-        )
-        self.peer_email = peer_email
-
-
-class PeerKeysNotReadyError(PeerEncryptionPendingError):
-    """The pair encrypts, but the peer bundle is missing.
-
-    ``load_peers`` reads the bundle.
-    """
-
-    def __init__(self, peer_email: str):
-        super().__init__(
-            f"Encryption with {peer_email} is not set up yet. The next sync "
-            "sets it up and sends the message."
-        )
-        self.peer_email = peer_email
-
-
 class EncryptionPolicyConflictError(ValueError):
     """One side of the pair has encryption off and the other requires it."""
 
@@ -84,14 +54,15 @@ class PeerOutdatedError(EncryptionPolicyConflictError):
         )
 
 
-class UnencryptedMessageError(ValueError):
-    """A client that requires encryption received plaintext."""
+class MessageFormatError(ValueError):
+    """A message is plaintext in a pair that encrypts, or the other way around."""
 
-    def __init__(self, peer_email: str):
-        super().__init__(
-            f"A message from {peer_email} is not encrypted, and the pair "
-            "requires encryption."
-        )
+    def __init__(self, peer_email: str, encrypted: bool):
+        if encrypted:
+            detail = "is encrypted, and the pair does not encrypt"
+        else:
+            detail = "is not encrypted, and the pair encrypts"
+        super().__init__(f"A message from {peer_email} {detail}.")
         self.peer_email = peer_email
 
 
