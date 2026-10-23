@@ -5,6 +5,8 @@ from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
+from syft_rds import EncryptionPolicy
+
 from syft_bg.api.api import init
 from syft_bg.api.utils import move_token_to_syftbg_dir
 from syft_bg.common.config import get_default_paths
@@ -67,3 +69,22 @@ class TestInitTokenPath:
         canonical_token_path = temp_dir / "syftbg" / "token.json"
         assert config.drive_token_path == canonical_token_path
         assert config.gmail_token_path == canonical_token_path
+
+
+class TestInitEncryption:
+    """api.init(encryption=...) sets the policy of every service that syncs."""
+
+    def test_default_is_optional(self, temp_dir):
+        with _patched_paths(temp_dir) as patched:
+            init(do_email="alice@test.com")
+            config = SyftBgConfig.from_path(patched.config)
+
+        assert config.sync.encryption_policy == EncryptionPolicy.OPTIONAL
+
+    def test_required_reaches_sync_and_approve(self, temp_dir):
+        with _patched_paths(temp_dir) as patched:
+            init(do_email="alice@test.com", encryption=True)
+            config = SyftBgConfig.from_path(patched.config)
+
+        assert config.sync.encryption_policy == EncryptionPolicy.REQUIRED
+        assert config.approve.encryption_policy == EncryptionPolicy.REQUIRED

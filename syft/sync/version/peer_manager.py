@@ -274,9 +274,7 @@ class PeerManager(BaseModel):
         """Get current client's version info."""
         if self._own_version is None:
             self._own_version = VersionInfo.current()
-        # The store can change after the first call: tests and the enclave
-        # replace it, and a key file can make it required.
-        self._own_version.encryption_policy = self.peer_store.encryption_policy
+            self._own_version.encryption_policy = self.peer_store.encryption_policy
         return self._own_version
 
     def write_own_version(self) -> None:

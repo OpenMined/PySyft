@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import syft_crypto_python as syc
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, Field, PrivateAttr
 
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
@@ -47,7 +47,9 @@ class PeerStore(BaseModel):
     model_config = {"arbitrary_types_allowed": True, "extra": "forbid"}
 
     email: str
-    encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL
+    encryption_policy: EncryptionPolicy = Field(
+        default=EncryptionPolicy.OPTIONAL, frozen=True
+    )
 
     _private_keys: syc.SyftPrivateKeys | None = PrivateAttr(default=None)
     _peers: List[Peer] = PrivateAttr(default_factory=list)

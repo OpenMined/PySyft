@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from pydantic import BaseModel, Field
+from syft_rds import EncryptionPolicy
 
 from syft_bg.common.config import get_default_paths
 
@@ -14,6 +15,7 @@ class SyncConfig(BaseModel):
     retry_backoff: float = 2.0
     do_email: Optional[str] = None
     syftbox_root: Optional[Path] = None
+    encryption_policy: Optional[EncryptionPolicy] = None
     drive_token_path: Path = Field(
         default_factory=lambda: get_default_paths().drive_token
     )

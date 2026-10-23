@@ -12,31 +12,38 @@ def create_configs(
     do2_email,
     ds_email,
     use_in_memory_cache,
+    policies,
     enclave_persist_owner_state=False,
 ) -> tuple:
+    """Configs of the enclave, DO1, DO2 and DS, with ``policies`` in that order."""
+    enclave_policy, do1_policy, do2_policy, ds_policy = policies
     enclave_config = SyftRDSClientConfig._base_config_for_testing(
         email=enclave_email,
         has_do_role=True,
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
         persist_owner_state=enclave_persist_owner_state,
+        encryption_policy=enclave_policy,
     )
     do1_config = SyftRDSClientConfig._base_config_for_testing(
         email=do1_email,
         has_do_role=True,
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
+        encryption_policy=do1_policy,
     )
     do2_config = SyftRDSClientConfig._base_config_for_testing(
         email=do2_email,
         has_do_role=True,
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
+        encryption_policy=do2_policy,
     )
     ds_config = SyftRDSClientConfig._base_config_for_testing(
         email=ds_email,
         has_ds_role=True,
         use_in_memory_cache=use_in_memory_cache,
+        encryption_policy=ds_policy,
     )
     return enclave_config, do1_config, do2_config, ds_config
 

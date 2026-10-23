@@ -10,6 +10,7 @@ from syft_job.policies import (
     PolicyRunner,
     PolicyState,
 )
+from syft_rds import EncryptionPolicy
 from syft_rds.apis import ApiArg
 
 from syft_bg.api.results import ApiResult, InstallationResult, StatusResult
@@ -55,7 +56,13 @@ def init(
     syftbox_root: str | Path | None = None,
     token_path: str | Path | None = None,
     settings: dict[str, dict] | None = None,
+    encryption: bool | str = False,
 ) -> None:
+    """Write the syft-bg config for ``do_email``.
+
+    ``encryption`` takes the same values as ``login_do``, and it must match
+    the login of the notebook: both write the same datasite.
+    """
     token_kwargs: dict = {}
     if token_path is not None:
         # A single OAuth token is used for both the Gmail and Drive APIs.
@@ -65,6 +72,7 @@ def init(
     config = SyftBgConfig(
         do_email=do_email,
         syftbox_root=syftbox_root,
+        encryption_policy=EncryptionPolicy.coerce(encryption),
         **token_kwargs,
     )
 

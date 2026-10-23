@@ -27,7 +27,6 @@ from syft.sync.job_file_change_handler import JobFileChangeHandler
 from syft.sync.peers.peer import Peer, PeerNotReadyError
 from syft.sync.peers.peer_list import PeerList
 from syft.sync.encryption_policy import EncryptionPolicy
-from syft.sync.peers.peer_store import PeerStore
 from syft.sync.platforms.base_platform import BasePlatform
 from syft.sync.sync.caches.datasite_owner_cache import (
     DataSiteOwnerEventCacheConfig,
@@ -303,6 +302,7 @@ class SyftboxManagerConfig(BaseModel):
         persist_owner_state: bool = True,
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
+        encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL,
     ):
         # No collection specs by default: the generic sync engine knows nothing
         # about datasets. syft-rds registers its dataset spec at initialization
@@ -351,6 +351,7 @@ class SyftboxManagerConfig(BaseModel):
             force_ignore_peer_version=not check_versions,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
+            encryption_policy=encryption_policy,
         )
 
         return cls(
@@ -784,6 +785,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         Returns:
             Tuple of (ds_manager, do_manager)
         """
+        default_policy = EncryptionPolicy.coerce(encryption)
         # Create configs using the existing base config generator
         do_config = SyftboxManagerConfig._base_config_for_testing(
             email=email1,
@@ -794,6 +796,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             persist_owner_state=persist_owner_state,
             check_versions=check_versions,
             collection_specs=collection_specs,
+            encryption_policy=do_encryption_policy or default_policy,
         )
 
         ds_config = SyftboxManagerConfig._base_config_for_testing(
@@ -805,6 +808,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             persist_owner_state=persist_owner_state,
             check_versions=check_versions,
             collection_specs=collection_specs,
+            encryption_policy=ds_encryption_policy or default_policy,
         )
 
         # Create managers from configs
@@ -836,13 +840,6 @@ class SyftboxManager(BaseModelCallbackMixin):
         ds_manager.peer_manager.write_own_version()
         do_manager.peer_manager.write_own_version()
 
-        default_policy = EncryptionPolicy.coerce(encryption)
-        for manager, policy in (
-            (ds_manager, ds_encryption_policy or default_policy),
-            (do_manager, do_encryption_policy or default_policy),
-        ):
-            manager._apply_encryption_policy_for_testing(policy)
-
         if add_peers:
             # DS creates peer request
             ds_manager.add_peer(do_manager.email, sync=False)
@@ -854,26 +851,6 @@ class SyftboxManager(BaseModelCallbackMixin):
             ds_manager.load_peers()
 
         return ds_manager, do_manager
-
-    def _apply_encryption_policy_for_testing(self, policy: EncryptionPolicy) -> None:
-        """Give a mock-Drive client ``policy``, before it peers."""
-        if policy == EncryptionPolicy.REQUIRED:
-            self._init_encrypted_peer_store()
-        elif policy == EncryptionPolicy.OFF:
-            self.peer_manager.peer_store.encryption_policy = policy
-            self.peer_manager.write_own_version()
-
-    def _init_encrypted_peer_store(self) -> None:
-        """Replace the peer store with an in-memory one that requires encryption.
-
-        The version file is written again, so that peers read the new policy.
-        """
-        peer_store = PeerStore(
-            email=self.email, encryption_policy=EncryptionPolicy.REQUIRED
-        )
-        peer_store.generate_keys()
-        self._set_peer_store(peer_store)
-        self.peer_manager.write_own_version()
 
     def add_peer(
         self,

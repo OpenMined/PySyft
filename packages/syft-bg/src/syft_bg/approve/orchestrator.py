@@ -68,6 +68,8 @@ class ApprovalOrchestrator(BaseOrchestrator):
             raise ValueError("Config missing 'do_email' field")
         if not config.syftbox_root:
             raise ValueError("Config missing 'syftbox_root' field")
+        if config.encryption_policy is None:
+            raise ValueError("Config missing 'encryption_policy' field")
 
         # Wait for sync to seed the cache before building the RDS client —
         # its nested SyftboxManager.from_config triggers
@@ -86,6 +88,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
             rds_config = SyftRDSClientConfig.for_colab(
                 email=config.do_email,
                 has_do_role=True,
+                encryption=config.encryption_policy,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )
@@ -94,6 +97,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
                 email=config.do_email,
                 has_do_role=True,
                 token_path=config.drive_token_path,
+                encryption=config.encryption_policy,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )

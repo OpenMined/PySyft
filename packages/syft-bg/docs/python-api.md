@@ -12,6 +12,10 @@ syft_bg.init(do_email="you@example.com")
 
 Creates the config file. Optionally pass `syftbox_root` and `token_path`.
 
+Pass `encryption` with the same value as the notebook's `login_do`
+(`True`, `False` or `"off"`). syft-bg writes the same datasite as the
+notebook, so the two must use the same policy.
+
 ## Ensure running
 
 ```python

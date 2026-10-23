@@ -238,7 +238,14 @@ def run_foreground(service: str, once: bool):
     type=click.Path(exists=True),
     help="Path to the OAuth token file.",
 )
-def init(email: str, syftbox_root: str | None, token_path: str | None):
+@click.option(
+    "--encryption",
+    type=click.Choice(["off", "optional", "required"]),
+    default="optional",
+    show_default=True,
+    help="Encryption policy. Use the same policy as the notebook login.",
+)
+def init(email: str, syftbox_root: str | None, token_path: str | None, encryption: str):
     """Initialize syft-bg configuration.
 
     Sets up the config file with the data owner email and optional
@@ -249,6 +256,8 @@ def init(email: str, syftbox_root: str | None, token_path: str | None):
       syft-bg init -e alice@uni.edu
 
       syft-bg init -e alice@uni.edu -r ~/syftbox -t ~/token.json
+
+      syft-bg init -e alice@uni.edu --encryption required
     """
     from syft_bg.api.api import init as api_init
 
@@ -256,6 +265,7 @@ def init(email: str, syftbox_root: str | None, token_path: str | None):
         do_email=email,
         syftbox_root=syftbox_root,
         token_path=token_path,
+        encryption=encryption,
     )
 
 

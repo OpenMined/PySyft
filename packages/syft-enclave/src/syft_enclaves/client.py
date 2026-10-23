@@ -874,12 +874,16 @@ class SyftEnclaveClient:
         Returns:
             Tuple of (enclave, do1, do2, ds)
         """
+        policies = [EncryptionPolicy.coerce(encryption)] * 4
+        if enclave_encryption_policy is not None:
+            policies[0] = enclave_encryption_policy
         configs = create_configs(
             enclave_email,
             do1_email,
             do2_email,
             ds_email,
             use_in_memory_cache,
+            policies,
             enclave_persist_owner_state,
         )
         clients = create_clients(configs)
@@ -894,14 +898,6 @@ class SyftEnclaveClient:
         setup_connections(managers)
         setup_callbacks(managers)
         write_versions(managers)
-        # Initialize encryption AFTER connections/versions but BEFORE peering,
-        # so the bundle exchange in wire_peers() picks up each client's keys
-        # (mirrors SyftboxManager.pair_with_mock_drive_service_connection).
-        policies = [EncryptionPolicy.coerce(encryption)] * len(managers)
-        if enclave_encryption_policy is not None:
-            policies[0] = enclave_encryption_policy
-        for manager, policy in zip(managers, policies):
-            manager._apply_encryption_policy_for_testing(policy)
         wire_peers(managers)
 
         return clients

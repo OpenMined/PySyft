@@ -143,6 +143,12 @@ def test_policy_defaults_to_optional():
     assert PeerStore(email="alice@example.com").encryption_policy == OPTIONAL
 
 
+def test_policy_cannot_change_after_login():
+    store = PeerStore(email="alice@example.com", encryption_policy=OPTIONAL)
+    with pytest.raises(ValidationError, match="frozen"):
+        store.encryption_policy = REQUIRED
+
+
 @pytest.mark.parametrize(
     "build",
     [
@@ -398,25 +404,6 @@ def test_negotiated_encryption_flow(ds_policy, do_policy):
     assert len(_ds_cached_contents(ds_manager)) > 0
 
 
-def test_client_required_after_peering_publishes_bundle():
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-    grant_job_inbox_access(do_manager, ds_manager.email)
-
-    # A later login of the DS requires encryption.
-    ds_manager.peer_manager.peer_store.encryption_policy = REQUIRED
-    ds_manager.peer_manager.write_own_version()
-    ds_manager.load_peers()
-    do_manager.load_peers()
-    ds_manager.load_peers()
-
-    do_store = do_manager.peer_manager.peer_store
-    assert do_store.has_peer_bundle(ds_manager.email)
-    file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    ds_manager._send_file_change(file_path, "after switch")
-    do_manager.sync()
-    assert any("after switch" in c for c in _accepted_contents(do_manager))
-
-
 def test_off_client_works_in_plaintext_with_optional_peer():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         ds_encryption_policy=OFF,
@@ -464,15 +451,17 @@ def test_owner_drops_outbox_message_to_non_peer():
 
 def test_conflict_found_on_read_leaves_message_in_inbox():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
-        ds_encryption_policy=OFF,
-        do_encryption_policy=OPTIONAL,
+        ds_encryption_policy=OPTIONAL,
+        do_encryption_policy=REQUIRED,
     )
     grant_job_inbox_access(do_manager, ds_manager.email)
+    ds_manager.load_peers()
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "content")
 
-    # The owner now requires encryption, after the message was sent.
-    do_manager.peer_manager.peer_store.encryption_policy = REQUIRED
+    # The scientist logs in again with encryption off, after the message was sent.
+    peer = do_manager.peer_manager.get_cached_peer(ds_manager.email)
+    peer.version = _version_with_policy(OFF)
     match = f"Messages from {ds_manager.email} stay in the inbox"
     with pytest.warns(UserWarning, match=match):
         do_manager.datasite_owner_syncer.sync([ds_manager.email])
