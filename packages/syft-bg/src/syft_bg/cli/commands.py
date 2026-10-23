@@ -241,8 +241,7 @@ def run_foreground(service: str, once: bool):
 @click.option(
     "--encryption",
     type=click.Choice(["off", "optional", "required"]),
-    default="optional",
-    show_default=True,
+    required=True,
     help="Encryption policy. Use the same policy as the notebook login.",
 )
 def init(email: str, syftbox_root: str | None, token_path: str | None, encryption: str):
@@ -253,11 +252,9 @@ def init(email: str, syftbox_root: str | None, token_path: str | None, encryptio
 
     Examples:
 
-      syft-bg init -e alice@uni.edu
+      syft-bg init -e alice@uni.edu --encryption optional
 
-      syft-bg init -e alice@uni.edu -r ~/syftbox -t ~/token.json
-
-      syft-bg init -e alice@uni.edu --encryption required
+      syft-bg init -e alice@uni.edu --encryption required -r ~/syftbox -t ~/token.json
     """
     from syft_bg.api.api import init as api_init
 

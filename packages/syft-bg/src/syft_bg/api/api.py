@@ -53,10 +53,10 @@ from syft_bg.systemd import install_service, is_installed, uninstall_service
 
 def init(
     do_email: str,
+    encryption: bool | str,
     syftbox_root: str | Path | None = None,
     token_path: str | Path | None = None,
     settings: dict[str, dict] | None = None,
-    encryption: bool | str = False,
 ) -> None:
     """Write the syft-bg config for ``do_email``.
 

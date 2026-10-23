@@ -7,6 +7,8 @@ import click
 
 from syft_bg.cli.init.exceptions import InitFlowError
 from syft_bg.common.config import get_default_paths
+from syft_rds import EncryptionPolicy
+
 from syft_bg.common.syft_bg_config import SyftBgConfig
 
 
@@ -21,6 +23,7 @@ class UserPassedConfig:
     # Core settings
     email: str | None = None
     syftbox_root: str | None = None
+    encryption: str | None = None
 
     # Control flags
     yes: bool = False  # Auto-confirm config update
@@ -114,6 +117,25 @@ def _resolve_common_settings(config: UserPassedConfig, result: SyftBgConfig) -> 
     else:
         result.syftbox_root = click.prompt(
             "SyftBox root directory", default=default_syftbox
+        )
+
+    if config.encryption is not None:
+        result.encryption_policy = EncryptionPolicy(config.encryption)
+    elif config.quiet:
+        if result.encryption_policy is None:
+            raise InitFlowError(
+                "--encryption is required in quiet mode\n"
+                "Usage: syft-bg init --email user@example.com --encryption "
+                "optional --quiet"
+            )
+    else:
+        current = result.encryption_policy
+        result.encryption_policy = EncryptionPolicy(
+            click.prompt(
+                "Encryption policy (use the same as the notebook login)",
+                type=click.Choice([p.value for p in EncryptionPolicy]),
+                default=current.value if current is not None else None,
+            )
         )
 
 

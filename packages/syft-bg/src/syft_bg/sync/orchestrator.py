@@ -42,7 +42,9 @@ class SyncOrchestrator(BaseOrchestrator):
         if not config.syftbox_root:
             raise ValueError("SyncConfig missing 'syftbox_root'")
         if config.encryption_policy is None:
-            raise ValueError("SyncConfig missing 'encryption_policy'")
+            raise ValueError(
+                "SyncConfig missing 'encryption_policy': run syft-bg init with an encryption policy"
+            )
 
         from syft_rds import (
             Environment,

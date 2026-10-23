@@ -1005,8 +1005,6 @@ class SyftboxManager(BaseModelCallbackMixin):
                 peer_emails = self.peer_manager.without_encryption_conflicts(
                     peer_emails
                 )
-                # Changes that waited for encryption with their recipient.
-                self.datasite_watcher_syncer.process_file_changes_queue()
                 self.datasite_watcher_syncer.sync_down(peer_emails)
 
     def load_peers(self, force_download: bool = False):

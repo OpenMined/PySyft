@@ -5,6 +5,7 @@ or ``required``. A pair encrypts when either side requires it, and neither
 side is ``off``.
 """
 
+import json
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,7 @@ from syft.sync.encryption_policy import (
     EncryptionPolicy,
     EncryptionPolicyConflictError,
     MessageFormatError,
+    PeerOutdatedError,
 )
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
@@ -193,7 +195,7 @@ def test_outdated_peer_skipped_with_upgrade_warning():
     ds_manager.load_peers()
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    with pytest.warns(UserWarning, match="Dropped the changes.*upgrade"):
+    with pytest.raises(PeerOutdatedError, match="upgrade"):
         ds_manager._send_file_change(file_path, "content")
     with pytest.warns(UserWarning, match="upgrade"):
         ds_manager.sync()
@@ -320,6 +322,20 @@ def test_plaintext_pair_publishes_bundles_at_peering():
     assert do_router.read_peer_encryption_bundle(ds_manager.email) is not None
 
 
+def test_first_peer_load_refuses_bundle_of_other_keys():
+    """A new runtime without the key file has new keys; peers hold the old bundle."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    earlier = PeerStore(email=do_manager.email)
+    earlier.generate_keys()
+    do_manager.peer_manager.connection_router.write_encryption_bundle(
+        ds_manager.email,
+        json.dumps({"public_encryption_bundle": earlier.get_public_bundle()}),
+    )
+    do_manager.peer_manager._states_at_start = None  # as a new process
+    with pytest.raises(ValueError, match="already has a key"):
+        do_manager.load_peers()
+
+
 # =========================================================================
 # Receive path
 # =========================================================================
@@ -429,7 +445,7 @@ def test_off_and_required_peers_skip_each_other():
     ds_manager.load_peers()
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    with pytest.warns(UserWarning, match="Dropped the changes"):
+    with pytest.raises(EncryptionPolicyConflictError):
         ds_manager._send_file_change(file_path, "content")
     with pytest.warns(UserWarning, match="skipped"):
         do_manager.sync()
@@ -499,7 +515,7 @@ def _queued_changes(manager) -> int:
 
 
 @pytest.mark.parametrize("do_policy", [OPTIONAL, REQUIRED])
-def test_send_before_owner_accepts_is_dropped(do_policy):
+def test_send_before_owner_accepts_raises(do_policy):
     """Before the owner accepts, its policy is not known, so nothing is sent."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         add_peers=False,
@@ -508,7 +524,7 @@ def test_send_before_owner_accepts_is_dropped(do_policy):
     ds_manager.add_peer(do_manager.email, sync=False)
 
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    with pytest.warns(UserWarning, match="Dropped the changes.*not known"):
+    with pytest.raises(SyftPeerNotReadyError, match="not known"):
         ds_manager._send_file_change(file_path, "early content")
     assert _queued_changes(ds_manager) == 0
 
@@ -519,12 +535,12 @@ def test_send_before_owner_accepts_is_dropped(do_policy):
     assert not any("early content" in c for c in _accepted_contents(do_manager))
 
 
-def test_send_to_non_peer_dropped():
+def test_send_to_non_peer_raises():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         add_peers=False,
     )
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    with pytest.warns(UserWarning, match="Dropped the changes.*not known"):
+    with pytest.raises(SyftPeerNotReadyError, match="not known"):
         ds_manager._send_file_change(file_path, "content")
 
 
@@ -572,7 +588,7 @@ def test_failure_for_one_recipient_still_sends_to_other(monkeypatch, error):
     watcher = ds_manager.datasite_watcher_syncer
     watcher.on_file_change("other@example.com/a.txt", "a", process_now=False)
     watcher.on_file_change(f"{do_manager.email}/b.txt", "b", process_now=False)
-    with pytest.warns(UserWarning, match="Dropped the changes for other@example.com"):
+    with pytest.raises((EncryptionPolicyConflictError, SyftPeerNotReadyError)):
         watcher.process_file_changes_queue()
     assert sent == [do_manager.email]
     assert _queued_changes(ds_manager) == 0

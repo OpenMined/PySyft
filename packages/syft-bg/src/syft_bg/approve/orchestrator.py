@@ -69,7 +69,9 @@ class ApprovalOrchestrator(BaseOrchestrator):
         if not config.syftbox_root:
             raise ValueError("Config missing 'syftbox_root' field")
         if config.encryption_policy is None:
-            raise ValueError("Config missing 'encryption_policy' field")
+            raise ValueError(
+                "Config missing 'encryption_policy' field: run syft-bg init with an encryption policy"
+            )
 
         # Wait for sync to seed the cache before building the RDS client —
         # its nested SyftboxManager.from_config triggers

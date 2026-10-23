@@ -7,12 +7,12 @@ import syft_bg
 ## Init
 
 ```python
-syft_bg.init(do_email="you@example.com")
+syft_bg.init(do_email="you@example.com", encryption=False)
 ```
 
 Creates the config file. Optionally pass `syftbox_root` and `token_path`.
 
-Pass `encryption` with the same value as the notebook's `login_do`
+`encryption` is required. Pass the same value as the notebook's `login_do`
 (`True`, `False` or `"off"`). syft-bg writes the same datasite as the
 notebook, so the two must use the same policy.
 
@@ -102,7 +102,7 @@ syft_bg.logs("notify")                       # last 50 lines of notify service l
 import syft_bg
 
 # Create config
-syft_bg.init(do_email="you@example.com")
+syft_bg.init(do_email="you@example.com", encryption=False)
 
 # Start services
 syft_bg.ensure_running(["notify", "approve"])

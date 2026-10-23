@@ -10,6 +10,7 @@ from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 from syft_job.config import protocol_dir_name
 from syft_job.migrations.registry import JOB_PROTOCOL_VERSION
 from syft_rds import SyftRDSClient
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
 
 
 def build_client_version(version: str) -> VersionInfo:
@@ -71,12 +72,15 @@ class TestForceSubmission:
                 job_name="test.fail.job",
             )
 
-        ds.submit_python_job(
-            user=do.email,
-            code_path=test_py_path,
-            job_name="test.force.job",
-            force_submission=True,
-        )
+        # Force skips the version gate, but the DO policy is not known before it
+        # accepts, so the send raises. The job is written locally.
+        with pytest.raises(SyftPeerNotReadyError, match="not known"):
+            ds.submit_python_job(
+                user=do.email,
+                code_path=test_py_path,
+                job_name="test.force.job",
+                force_submission=True,
+            )
 
         job_dir = (
             ds.syftbox_folder

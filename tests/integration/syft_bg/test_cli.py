@@ -27,13 +27,16 @@ class TestInitCommand:
     def test_init_basic(self, mock_api_init):
         """Should pass email to api.init."""
         runner = CliRunner()
-        result = runner.invoke(init, ["-e", "alice@uni.edu"])
+        result = runner.invoke(
+            init, ["-e", "alice@uni.edu", "--encryption", "optional"]
+        )
 
         assert result.exit_code == 0
         mock_api_init.assert_called_once_with(
             do_email="alice@uni.edu",
             syftbox_root=None,
             token_path=None,
+            encryption="optional",
         )
 
     @patch("syft_bg.api.api.init")
@@ -49,6 +52,15 @@ class TestInitCommand:
         # token path must exist for click.Path(exists=True), so this will fail
         # unless file exists. Test the basic flow instead.
         mock_api_init.assert_not_called()  # file doesn't exist
+
+    @patch("syft_bg.api.api.init")
+    def test_init_requires_encryption(self, mock_api_init):
+        """Should error when the encryption policy is not provided."""
+        runner = CliRunner()
+        result = runner.invoke(init, ["-e", "alice@uni.edu"])
+
+        assert result.exit_code != 0
+        mock_api_init.assert_not_called()
 
     @patch("syft_bg.api.api.init")
     def test_init_requires_email(self, mock_api_init):

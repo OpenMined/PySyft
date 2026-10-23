@@ -662,13 +662,22 @@ class PeerManager(BaseModel):
                         email, PeerState.ACCEPTED.value
                     )
 
-        if self._states_at_start is None:
+        first_load = self._states_at_start is None
+        if first_load:
             self._states_at_start = {
                 p.email: p.state
                 for p in peers
                 if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_PEER)
             }
         self.peer_store.set_peers(peers)
+        if first_load:
+            self._check_published_bundles(
+                [
+                    p.email
+                    for p in peers
+                    if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_ME)
+                ]
+            )
         self.load_peer_versions_parallel([peer.email for peer in peers])
 
         # Peer policies are known only after the versions load.
@@ -680,6 +689,34 @@ class PeerManager(BaseModel):
         ]
         self._read_missing_peer_bundles(encrypted)
 
+    def _check_published_bundles(self, peer_emails: list[str]) -> None:
+        """Raise when a bundle this client published differs from its keys.
+
+        A runtime without the key file of the account makes new keys, and
+        peers keep the bundle of the earlier keys. The keys do not change
+        while the process runs, so the first peer load checks once.
+
+        Raises:
+            ValueError: when a published bundle carries other keys.
+        """
+        own_bundle = self.peer_store.get_public_bundle()
+        published = self._executor.map(self._read_own_published_bundle, peer_emails)
+        for peer_email, bundle in zip(peer_emails, published):
+            if bundle is not None and bundle != own_bundle:
+                raise ValueError(
+                    f"The encryption key published for {peer_email} is not the "
+                    "key of this client: this account already has a key. Log in "
+                    "again with the key file of this account."
+                )
+
+    def _read_own_published_bundle(self, peer_email: str) -> dict | None:
+        """The bundle this client published for ``peer_email``, or None (thread-safe)."""
+        connection = self.connection_router.connection_for_version_read(create_new=True)
+        bundle_json = connection.read_own_encryption_bundle(peer_email)
+        if bundle_json is None:
+            return None
+        return json.loads(bundle_json)["public_encryption_bundle"]
+
     def _read_published_bundle(self, peer_email: str) -> dict | None:
         """The bundle ``peer_email`` published for us, or None when it is missing or malformed."""
         try:
@@ -688,7 +725,7 @@ class PeerManager(BaseModel):
             warnings.warn(f"Refusing the encryption key of {peer_email}: {e}")
             return None
 
-    def _read_missing_peer_bundles(self, peers: List[Peer]) -> None:
+    def _read_missing_peer_bundles(self, peers: list[Peer]) -> None:
         """Read the published bundle of every peer we hold none for."""
         for peer in peers:
             if self.peer_store.has_peer_bundle(peer.email):

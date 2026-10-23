@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
 
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
@@ -13,7 +14,7 @@ def test_peer_request_blocks_sync_until_approved():
 
     Workflow:
     1. DS adds DO as peer (creates peer request)
-    2. DS submits a job - it is dropped (DO policy not known)
+    2. DS submits a job - the send raises (DO policy not known)
     3. DO syncs - nothing should sync (peer not approved)
     4. DO approves peer request
     5. DS syncs and submits again, DO syncs - job should now sync
@@ -38,7 +39,7 @@ def test_peer_request_blocks_sync_until_approved():
     # Step 2: DS submits a file to their job folder
     job_file_path = path_for_job(do_manager.email, ds_manager.email)
     job_content = "print('Hello from DS')"
-    with pytest.warns(UserWarning, match="Dropped the changes"):
+    with pytest.raises(SyftPeerNotReadyError, match="not known"):
         ds_manager._send_file_change(job_file_path, job_content)
 
     # Step 3: DO syncs WITHOUT accepting - nothing should sync
@@ -91,9 +92,10 @@ def test_peer_request_rejection():
     ds_manager.add_peer(do_manager.email)
     do_manager.load_peers()
 
-    # DS sends a job
+    # DS sends a job; the DO policy is not known before it accepts
     job_file_path = path_for_job(do_manager.email, ds_manager.email)
-    ds_manager._send_file_change(job_file_path, "print('test')")
+    with pytest.raises(SyftPeerNotReadyError):
+        ds_manager._send_file_change(job_file_path, "print('test')")
 
     # DO rejects the peer request
     do_manager.reject_peer_request(ds_manager.email)

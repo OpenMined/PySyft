@@ -25,9 +25,9 @@ class SyftBgConfig(BaseModel):
 
     do_email: str | None = None
     syftbox_root: str | Path | None = None
-    # Must match the policy the notebook logs in with: both write the same
-    # datasite, at rest and to the same peers.
-    encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL
+    # Set by init. Must match the policy the notebook logs in with: both
+    # write the same datasite, at rest and to the same peers.
+    encryption_policy: EncryptionPolicy | None = None
     credentials_path: Path = Field(
         default_factory=lambda: get_default_paths().credentials
     )

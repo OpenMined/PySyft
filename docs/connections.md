@@ -60,13 +60,13 @@ Each client advertises an encryption policy in `SYFT_version.json`:
 
 A pair encrypts when one side is `required`. An `off` and a `required` client conflict: each side skips the other with a warning.
 
-A client takes its policy at login. The key file records a `required` policy, so later logins (and syft-bg) stay `required`. A process that started with another policy stops at its next sync with an error to restart it. Files at rest written before the switch stay plaintext; new ones are encrypted.
+A client takes its policy at login, and keeps it until the process exits. syft-bg takes its policy in `syft_bg.init(encryption=...)`; use the same value as the notebook login, because both write the same datasite. Files at rest are read with the current policy, so a datasite keeps one policy.
 
-While a peer's policy or keys are not known yet, a change for it waits, with a warning, and a later sync sends it. An owner's change stays pending on disk. A scientist's change waits in memory, and is lost if the process exits.
+Nothing is sent to a peer until its policy is known, that is, until it accepts and shares its version file. A scientist's change for a peer whose policy or bundle is not known is dropped, and the send raises. An owner's change for that peer is dropped with a warning. An owner keeps a message it cannot read yet in the inbox, with a warning.
 
-A pair that encrypts refuses plaintext. The receiver drops a plaintext message with a warning: the owner archives it unread, and a scientist skips it.
+The format of a message must match the pair: plaintext in a pair that encrypts is refused, and so is an envelope in a pair that does not. The owner archives such a message unread, and a scientist skips it, each with a warning.
 
-A peer whose version file has no policy runs an outdated syft. It is skipped with a warning to upgrade, and a send to it raises.
+A peer whose version file has no policy runs an outdated syft. It is skipped with a warning to upgrade.
 
 ## Peer Requests
 

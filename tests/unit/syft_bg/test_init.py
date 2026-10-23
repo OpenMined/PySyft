@@ -5,9 +5,12 @@ from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from syft_rds import EncryptionPolicy
 
 from syft_bg.api.api import init
+from syft_bg.cli.init import InitFlowError, UserPassedConfig, run_init_flow
 from syft_bg.api.utils import move_token_to_syftbg_dir
 from syft_bg.common.config import get_default_paths
 from syft_bg.common.syft_bg_config import SyftBgConfig
@@ -62,7 +65,7 @@ class TestInitTokenPath:
         token_source.write_text("{}")
 
         with _patched_paths(temp_dir) as patched:
-            init(do_email="alice@test.com", token_path=token_source)
+            init(do_email="alice@test.com", token_path=token_source, encryption=False)
 
             config = SyftBgConfig.from_path(patched.config)
 
@@ -74,12 +77,9 @@ class TestInitTokenPath:
 class TestInitEncryption:
     """api.init(encryption=...) sets the policy of every service that syncs."""
 
-    def test_default_is_optional(self, temp_dir):
-        with _patched_paths(temp_dir) as patched:
+    def test_policy_is_required(self, temp_dir):
+        with _patched_paths(temp_dir), pytest.raises(TypeError, match="encryption"):
             init(do_email="alice@test.com")
-            config = SyftBgConfig.from_path(patched.config)
-
-        assert config.sync.encryption_policy == EncryptionPolicy.OPTIONAL
 
     def test_required_reaches_sync_and_approve(self, temp_dir):
         with _patched_paths(temp_dir) as patched:
@@ -88,3 +88,23 @@ class TestInitEncryption:
 
         assert config.sync.encryption_policy == EncryptionPolicy.REQUIRED
         assert config.approve.encryption_policy == EncryptionPolicy.REQUIRED
+
+
+class TestInitFlowEncryption:
+    """The interactive init flow sets the policy; quiet mode needs it."""
+
+    def _run_quiet(self, temp_dir, **kwargs):
+        with _patched_paths(temp_dir) as patched:
+            with patch("syft_bg.cli.init.flow.get_default_paths", return_value=patched):
+                run_init_flow(
+                    UserPassedConfig(email="alice@test.com", quiet=True, **kwargs)
+                )
+            return SyftBgConfig.from_path(patched.config)
+
+    def test_quiet_mode_requires_policy(self, temp_dir):
+        with pytest.raises(InitFlowError, match="--encryption"):
+            self._run_quiet(temp_dir)
+
+    def test_quiet_mode_sets_policy(self, temp_dir):
+        config = self._run_quiet(temp_dir, encryption="required")
+        assert config.sync.encryption_policy == EncryptionPolicy.REQUIRED

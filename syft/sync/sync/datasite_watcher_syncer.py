@@ -1,4 +1,3 @@
-import warnings
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
@@ -105,13 +104,20 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         self._send_by_recipient(changes_by_recipient)
 
     def _send_by_recipient(
-        self, changes_by_recipient: Dict[str, List[ProposedFileChange]]
+        self, changes_by_recipient: dict[str, list[ProposedFileChange]]
     ) -> None:
         """Send one message to each recipient.
 
-        A recipient that cannot receive now is skipped with a warning, and its
-        changes are dropped. The other recipients still get their changes.
+        The changes for a recipient that cannot receive now are dropped. The
+        other recipients still get their changes, and then the first error is
+        raised.
+
+        Raises:
+            SyftPeerNotReadyError: when the policy of a recipient is not known,
+                or the pair encrypts and the peer bundle is missing.
+            EncryptionPolicyConflictError: when the policies of a pair conflict.
         """
+        error = None
         for recipient, changes in changes_by_recipient.items():
             message = ProposedFileChangesMessage(
                 sender_email=self.email, proposed_file_changes=changes
@@ -119,7 +125,9 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             try:
                 self._send_message(recipient, message)
             except (SyftPeerNotReadyError, EncryptionPolicyConflictError) as e:
-                warnings.warn(f"Dropped the changes for {recipient}: {e}")
+                error = error or e
+        if error is not None:
+            raise error
 
     def _record_sent_hashes(self, message: ProposedFileChangesMessage) -> None:
         hashes = self.datasite_watcher_cache.file_hashes
