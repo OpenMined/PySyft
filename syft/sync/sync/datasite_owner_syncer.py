@@ -885,12 +885,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             recipient, message = self.outbox_queue.get()
             if recipient in self._deferred_peer_emails:
                 continue
-            try:
-                self.connection_router.owner_write_event_messages_to_outbox(
-                    recipient, message
-                )
-            except SyftPeerNotReadyError as e:
-                warnings.warn(f"Dropped an outbox message for {recipient}: {e}")
+            # A send that cannot go raises before the clear, so the paths stay
+            # pending and a later sync sends them.
+            self.connection_router.owner_write_event_messages_to_outbox(
+                recipient, message
+            )
             self._clear_delivered(recipient, message)
 
     def _download_outbox_message_with_new_connection(

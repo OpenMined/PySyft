@@ -1,8 +1,7 @@
 """Per-peer encryption negotiated from each side's advertised policy.
 
-A client is ``off``, ``optional`` (encrypt only when the peer requires it)
-or ``required``. A pair encrypts when either side requires it, and neither
-side is ``off``.
+A client is ``optional`` (encrypt only when the peer requires it) or
+``required``. A pair encrypts when either side requires it.
 """
 
 import json
@@ -21,9 +20,13 @@ from syft.sync.events.file_change_event import (
 )
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer
-from syft.sync.peers.peer_store import PeerStore
+from syft.sync.peers.peer_store import PeerStore, datasite_crypto_keys_path
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.version.version_info import VersionInfo
+from tests.unit.test_persisted_cache import (
+    _assert_ds_receives_after_notebook_sync,
+    _pair_with_unsent_do_file,
+)
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
 
@@ -143,6 +146,12 @@ def test_encryption_setting_maps_to_policy(value, expected):
     assert EncryptionPolicy.from_bool(value) == expected
 
 
+@pytest.mark.parametrize("value", [OPTIONAL, "optional", 1, None])
+def test_encryption_setting_must_be_bool(value):
+    with pytest.raises(TypeError, match="True or False"):
+        EncryptionPolicy.from_bool(value)
+
+
 def test_own_version_advertises_policy():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         ds_encryption_policy=OPTIONAL,
@@ -241,6 +250,17 @@ def test_every_policy_creates_key_file(tmp_path, policy):
         email="alice@example.com", encryption_policy=policy, keys_path=keys_path
     )
     reloaded = PeerStore.create(email="alice@example.com", keys_path=keys_path)
+    assert reloaded.get_public_bundle() == store.get_public_bundle()
+
+
+def test_delete_syftbox_keeps_keys_on_disk():
+    """The client keeps its keys after the wipe, so the next login must find them."""
+    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    store = do_manager.peer_manager.peer_store
+    do_manager.delete_syftbox(verbose=False, broadcast_delete_events=False)
+
+    keys_path = datasite_crypto_keys_path(do_manager.syftbox_folder, do_manager.email)
+    reloaded = PeerStore.create(email=do_manager.email, keys_path=keys_path)
     assert reloaded.get_public_bundle() == store.get_public_bundle()
 
 
@@ -350,16 +370,15 @@ def test_negotiated_encryption_flow(ds_policy, do_policy):
     assert len(_ds_cached_contents(ds_manager)) > 0
 
 
-def test_owner_drops_outbox_message_to_non_peer():
+def test_owner_send_to_non_peer_raises():
     _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         do_encryption_policy=REQUIRED,
     )
     syncer = do_manager.datasite_owner_syncer
     message = FileChangeEventsMessage(events=[])
     syncer.outbox_queue.put(("former@example.com", message))
-    with pytest.warns(UserWarning, match="Dropped an outbox message"):
+    with pytest.raises(SyftPeerNotReadyError, match="not known"):
         syncer.process_syftbox_events_queue()
-    assert syncer.outbox_queue.empty()
 
 
 def test_owner_leaves_envelope_from_peer_without_bundle_in_inbox():
@@ -471,18 +490,19 @@ def test_failure_for_one_recipient_still_sends_to_other(monkeypatch):
     assert _queued_changes(ds_manager) == 0
 
 
-def test_owner_drops_outbox_message_it_cannot_send(monkeypatch):
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+def test_unsent_owner_change_stays_pending(monkeypatch):
+    """The send raises, and the next sync sends the change."""
+    ds_manager, do_manager = _pair_with_unsent_do_file()
 
     def fail(self, recipient, message):
         raise _not_ready(recipient)
 
-    monkeypatch.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", fail)
-    syncer = do_manager.datasite_owner_syncer
-    syncer.outbox_queue.put((ds_manager.email, FileChangeEventsMessage(events=[])))
-    with pytest.warns(UserWarning, match="Dropped an outbox message"):
-        syncer.process_syftbox_events_queue()
-    assert syncer.outbox_queue.empty()
+    with monkeypatch.context() as m:
+        m.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", fail)
+        with pytest.raises(SyftPeerNotReadyError):
+            do_manager.sync(auto_checkpoint=False)
+
+    _assert_ds_receives_after_notebook_sync(ds_manager, do_manager)
 
 
 # =========================================================================

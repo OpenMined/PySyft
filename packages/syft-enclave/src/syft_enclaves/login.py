@@ -3,9 +3,12 @@
 from pathlib import Path
 
 from syft.sync.environments.environment import Environment
-from syft.sync.login import _init_client_login, _resolve_login_params
+from syft.sync.login import (
+    _import_key_file,
+    _init_client_login,
+    _resolve_login_params,
+)
 from syft.sync.login_utils import handle_potential_version_mismatches_on_login
-from syft.sync.peers.peer_store import datasite_crypto_keys_path, import_key_file
 from syft.sync.utils.syftbox_utils import check_env
 from syft_rds import SyftRDSClientConfig
 
@@ -58,12 +61,7 @@ def _login(
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         )
 
-    if key_file is not None:
-        import_key_file(
-            key_file,
-            datasite_crypto_keys_path(config.sync.syftbox_folder, email),
-            email,
-        )
+    _import_key_file(key_file, config.sync.syftbox_folder, email)
     client = SyftEnclaveClient.from_config(config)
 
     # Reuses syft's login init: verifies the token authenticates as

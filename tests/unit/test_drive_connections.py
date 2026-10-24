@@ -226,6 +226,12 @@ def test_peering_keeps_the_peer_registry(pair):
     assert peering.read_peer_registry(force_download=True)[DS]["state"] == "accepted"
 
 
+def test_reading_own_key_bundle_creates_no_folder(pair):
+    owner = pair[0].as_transport()
+    assert owner.peering.read_own_key_bundle(DS) is None
+    assert pair[0]._find_encryption_bundles_folder_id() is None
+
+
 def test_peering_publishes_a_key_bundle_both_sides_can_read(pair):
     do_conn, ds_conn = pair
     owner, scientist = do_conn.as_transport(), ds_conn.as_transport()

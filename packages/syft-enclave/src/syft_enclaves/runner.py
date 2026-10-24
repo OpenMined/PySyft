@@ -128,9 +128,6 @@ class EnclaveRunner:
                 "(local folder + Google Drive files) before init"
             )
             self.client.delete_syftbox()
-            # The wipe took the key file with it. The keys live on in memory,
-            # so write them again: the endpoint signs nonces with that file.
-            self._save_keys()
             logger.info("State wipe complete — enclave starts with a clean slate")
 
     def _on_attesting(self) -> None:
@@ -217,9 +214,6 @@ class EnclaveRunner:
         return datasite_crypto_keys_path(
             peer_manager.syftbox_folder, peer_manager.peer_store.email
         )
-
-    def _save_keys(self) -> None:
-        self.client._rds.peer_manager.peer_store.save_keys(self._keys_path())
 
     def _on_peering(self) -> None:
         """Load peers and accept pending peer requests."""

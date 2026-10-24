@@ -14,7 +14,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from syft.sync.environments.environment import Environment
-from syft.sync.login import _init_client_login, _resolve_login_params
+from syft.sync.login import (
+    _import_key_file,
+    _init_client_login,
+    _resolve_login_params,
+)
 from syft.sync.login_utils import handle_potential_version_mismatches_on_login
 from syft.sync.utils.syftbox_utils import check_env
 
@@ -32,6 +36,7 @@ def _login(
     has_do_role: bool,
     has_ds_role: bool,
     encryption: bool = False,
+    key_file: str | Path | None = None,
 ) -> SyftRDSClient:
     """Shared RDS login.
 
@@ -60,6 +65,7 @@ def _login(
             encryption=encryption,
         )
 
+    _import_key_file(key_file, config.sync.syftbox_folder, email)
     client = SyftRDSClient.from_config(config)
     _init_client_login(
         client.sync_engine,
@@ -78,6 +84,7 @@ def login_do(
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
     encryption: bool = False,
+    key_file: str | Path | None = None,
 ) -> SyftRDSClient:
     """Log in as a Data Owner and return a self-contained RDS client."""
     return _login(
@@ -87,6 +94,7 @@ def login_do(
         load_peers=load_peers,
         skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         encryption=encryption,
+        key_file=key_file,
         has_do_role=True,
         has_ds_role=False,
     )
@@ -100,6 +108,7 @@ def login_ds(
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
     encryption: bool = False,
+    key_file: str | Path | None = None,
 ) -> SyftRDSClient:
     """Log in as a Data Scientist and return a self-contained RDS client."""
     return _login(
@@ -109,6 +118,7 @@ def login_ds(
         load_peers=load_peers,
         skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         encryption=encryption,
+        key_file=key_file,
         has_do_role=False,
         has_ds_role=True,
     )

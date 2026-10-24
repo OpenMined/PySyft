@@ -2393,16 +2393,25 @@ class GDriveConnection(SyftboxPlatformConnection):
     # ENCRYPTION BUNDLE METHODS
     # =========================================================================
 
-    def _get_or_create_encryption_bundles_folder_id(self) -> str:
-        """Get or create the encryption bundles folder for this user."""
+    def _find_encryption_bundles_folder_id(self) -> str | None:
+        """The id of the encryption bundles folder of this user, or None when it does not exist."""
         if self._encryption_bundles_folder_id:
             return self._encryption_bundles_folder_id
         folder_name = GdriveEncryptionBundlesFolder(email=self.email).as_string()
-        syftbox_folder_id = self.get_syftbox_folder_id()
-        folder_id = self._find_folder_by_name(folder_name, parent_id=syftbox_folder_id)
+        folder_id = self._find_folder_by_name(
+            folder_name, parent_id=self.get_syftbox_folder_id()
+        )
+        if folder_id:
+            self._encryption_bundles_folder_id = folder_id
+        return folder_id
+
+    def _get_or_create_encryption_bundles_folder_id(self) -> str:
+        """Get or create the encryption bundles folder for this user."""
+        folder_id = self._find_encryption_bundles_folder_id()
         if not folder_id:
-            folder_id = self.create_folder(folder_name, syftbox_folder_id)
-        self._encryption_bundles_folder_id = folder_id
+            folder_name = GdriveEncryptionBundlesFolder(email=self.email).as_string()
+            folder_id = self.create_folder(folder_name, self.get_syftbox_folder_id())
+            self._encryption_bundles_folder_id = folder_id
         return folder_id
 
     def _encryption_bundle_filename(self, owner_email: str, peer_email: str) -> str:
@@ -2443,8 +2452,13 @@ class GDriveConnection(SyftboxPlatformConnection):
         self.add_permission(folder_id, peer_email, write=False)
 
     def read_own_encryption_bundle(self, peer_email: str) -> str | None:
-        """Read the bundle this client published for ``peer_email``, or None."""
-        folder_id = self._get_or_create_encryption_bundles_folder_id()
+        """Read the bundle this client published for ``peer_email``, or None.
+
+        A read never creates the bundles folder: without it, nothing is published.
+        """
+        folder_id = self._find_encryption_bundles_folder_id()
+        if folder_id is None:
+            return None
         filename = self._encryption_bundle_filename(self.email, peer_email)
         query = f"name='{filename}' and '{folder_id}' in parents and trashed=false"
         results = execute_with_retries(

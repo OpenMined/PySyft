@@ -17,7 +17,16 @@ class EncryptionPolicy(str, Enum):
 
     @classmethod
     def from_bool(cls, encryption: bool) -> "EncryptionPolicy":
-        """The policy for an ``encryption`` setting: ``True`` is ``REQUIRED``."""
+        """The policy for an ``encryption`` setting: ``True`` is ``REQUIRED``.
+
+        Raises:
+            TypeError: if ``encryption`` is not a bool.
+        """
+        if not isinstance(encryption, bool):
+            raise TypeError(
+                f"encryption must be True or False, got {encryption!r} "
+                f"({type(encryption).__name__})"
+            )
         return cls.REQUIRED if encryption else cls.OPTIONAL
 
 

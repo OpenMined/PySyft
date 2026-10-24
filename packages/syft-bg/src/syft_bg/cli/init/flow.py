@@ -80,7 +80,8 @@ def _load_existing_config(config: UserPassedConfig, config_path: Path) -> SyftBg
     if not config.quiet:
         click.echo(f"Found existing config at {config_path}")
 
-    return SyftBgConfig.from_path(config_path)
+    # Without the merge, so the services keep inheriting the top-level fields.
+    return SyftBgConfig.from_path(config_path, merge=False)
 
 
 def _resolve_common_settings(config: UserPassedConfig, result: SyftBgConfig) -> None:

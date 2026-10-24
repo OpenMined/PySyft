@@ -138,9 +138,6 @@ class TestAttestPhase:
         assert written["bundle"] == {"identity": "enclave@openmined.org"}
         # The endpoint needs the private key location to answer a nonce.
         assert written["keys_path"].name == "crypto_keys.json"
-        # And the keys must be back on disk: fresh_state wiped the folder
-        # moments earlier, so the file the endpoint signs with is gone.
-        store.save_keys.assert_called_once_with(written["keys_path"])
 
     def test_provider_gets_the_settings_object(self, monkeypatch):
         seen = {}

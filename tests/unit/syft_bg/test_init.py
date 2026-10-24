@@ -108,3 +108,9 @@ class TestInitFlowEncryption:
     def test_quiet_mode_sets_policy(self, temp_dir):
         config = self._run_quiet(temp_dir, encryption="required")
         assert config.sync.encryption_policy == EncryptionPolicy.REQUIRED
+
+    def test_new_policy_reaches_services(self, temp_dir):
+        self._run_quiet(temp_dir, encryption="optional")
+        config = self._run_quiet(temp_dir, encryption="required")
+        assert config.sync.encryption_policy == EncryptionPolicy.REQUIRED
+        assert config.approve.encryption_policy == EncryptionPolicy.REQUIRED

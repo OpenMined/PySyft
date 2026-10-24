@@ -26,6 +26,7 @@ from syft.sync.file_writer import FileWriter
 from syft.sync.job_file_change_handler import JobFileChangeHandler
 from syft.sync.peers.peer import Peer, PeerNotReadyError
 from syft.sync.peers.peer_list import PeerList
+from syft.sync.peers.peer_store import datasite_crypto_keys_path
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.platforms.base_platform import BasePlatform
 from syft.sync.sync.caches.datasite_owner_cache import (
@@ -1239,6 +1240,11 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         # Delete local syftbox folder and cache directories
         self._delete_local_dirs()
+        # The folder held the key file. The client keeps its keys, so they go
+        # back to disk: the next login must load the keys that peers know.
+        self.peer_manager.peer_store.save_keys(
+            datasite_crypto_keys_path(self.syftbox_folder, self.email)
+        )
 
         print(
             f"{_ANSI_RED}Done. If you are also running syft-bg, make sure to call "
@@ -1258,9 +1264,6 @@ class SyftboxManager(BaseModelCallbackMixin):
         for d in dirs_to_delete:
             if d.exists():
                 shutil.rmtree(d)
-        # Encryption keys live in <syftbox_folder>/<email>/private/crypto_keys.json,
-        # so deleting the syftbox folder above already removes them — a fresh state
-        # regenerates a new identity.
 
     # =========================================================================
     # CHECKPOINT METHODS

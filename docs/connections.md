@@ -61,7 +61,7 @@ A pair encrypts when one side is `required`.
 
 A client takes its policy at login, and keeps it until the process exits. syft-bg takes its policy in `syft_bg.init(encryption=...)`; use the same value as the notebook login, because both write the same datasite. Files at rest are read with the current policy, so a datasite keeps one policy.
 
-Nothing is sent to a peer until its policy is known, that is, until it accepts and shares its version file. A scientist's change for a peer whose policy or bundle is not known is dropped, and the send raises. An owner's change for that peer is dropped with a warning. An owner keeps a message it cannot read yet in the inbox, with a warning.
+Nothing is sent to a peer until its policy is known, that is, until it accepts and shares its version file. A scientist's change for a peer whose policy or bundle is not known is dropped, and the send raises. An owner's send to that peer raises, and the change stays pending, so a later sync sends it. An owner keeps a message it cannot read yet in the inbox, with a warning.
 
 The format of a message must match the pair: plaintext in a pair that encrypts is refused, and so is an envelope in a pair that does not. The owner archives such a message unread, and a scientist skips it, each with a warning.
 

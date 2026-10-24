@@ -831,7 +831,7 @@ class SyftEnclaveClient:
             has_ds_role=True,
             has_do_role=True,
             token_path=Path(token_path) if token_path is not None else None,
-            encryption=EncryptionPolicy.REQUIRED,
+            encryption=True,
             persist_owner_state=persist_owner_state,
         )
 

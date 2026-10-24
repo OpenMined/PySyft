@@ -2,7 +2,8 @@ from pathlib import Path
 
 from syft.sync.utils.syftbox_utils import check_env
 from syft.sync.environments.environment import Environment
-from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.peers.peer_store import datasite_crypto_keys_path, import_key_file
+from syft.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
 from syft.sync.utils.print_utils import (
     print_client_connected,
     print_client_connecting,
@@ -93,6 +94,19 @@ def _resolve_login_params(
     return email, token_path
 
 
+def _import_key_file(
+    key_file: str | Path | None, syftbox_folder: Path, email: str
+) -> None:
+    """Copy ``key_file``, the key file of an earlier session, into the datasite of ``email``.
+
+    Call it before the client is built, so that the client loads these keys.
+    """
+    if key_file is not None:
+        import_key_file(
+            key_file, datasite_crypto_keys_path(syftbox_folder, email), email
+        )
+
+
 def login(
     email: str | None = None,
     sync: bool = True,
@@ -101,6 +115,7 @@ def login(
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
     encryption: bool = False,  # True: required
+    key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
 ):
     return login_ds(
         email,
@@ -109,6 +124,7 @@ def login(
         token_path,
         skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         encryption=encryption,
+        key_file=key_file,
     )
 
 
@@ -120,6 +136,7 @@ def login_ds(
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
     encryption: bool = False,  # True: required
+    key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
 ):
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
@@ -127,20 +144,22 @@ def login_ds(
     repair_pending = handle_potential_version_mismatches_on_login(email, token_path)
 
     if env == Environment.COLAB:
-        client = SyftboxManager.for_colab(
+        config = SyftboxManagerConfig.for_colab(
             email=email,
             has_ds_role=True,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             encryption=encryption,
         )
     else:
-        client = SyftboxManager.for_jupyter(
+        config = SyftboxManagerConfig.for_jupyter(
             email=email,
             has_ds_role=True,
-            token_path=token_path,
+            token_path=Path(token_path) if token_path is not None else None,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             encryption=encryption,
         )
+    _import_key_file(key_file, config.syftbox_folder, email)
+    client = SyftboxManager.from_config(config)
 
     return _init_client_login(client, sync, load_peers, repair_pending)
 
@@ -153,6 +172,7 @@ def login_do(
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
     encryption: bool = False,  # True: required
+    key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
 ):
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
@@ -160,19 +180,21 @@ def login_do(
     repair_pending = handle_potential_version_mismatches_on_login(email, token_path)
 
     if env == Environment.COLAB:
-        client = SyftboxManager.for_colab(
+        config = SyftboxManagerConfig.for_colab(
             email=email,
             has_do_role=True,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             encryption=encryption,
         )
     else:
-        client = SyftboxManager.for_jupyter(
+        config = SyftboxManagerConfig.for_jupyter(
             email=email,
             has_do_role=True,
-            token_path=token_path,
+            token_path=Path(token_path) if token_path is not None else None,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             encryption=encryption,
         )
+    _import_key_file(key_file, config.syftbox_folder, email)
+    client = SyftboxManager.from_config(config)
 
     return _init_client_login(client, sync, load_peers, repair_pending)
