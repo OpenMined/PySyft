@@ -36,7 +36,7 @@ class TestInitCommand:
             do_email="alice@uni.edu",
             syftbox_root=None,
             token_path=None,
-            encryption="optional",
+            encryption=False,
         )
 
     @patch("syft_bg.api.api.init")

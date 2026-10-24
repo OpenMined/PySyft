@@ -240,7 +240,7 @@ def run_foreground(service: str, once: bool):
 )
 @click.option(
     "--encryption",
-    type=click.Choice(["off", "optional", "required"]),
+    type=click.Choice(["optional", "required"]),
     required=True,
     help="Encryption policy. Use the same policy as the notebook login.",
 )
@@ -262,7 +262,7 @@ def init(email: str, syftbox_root: str | None, token_path: str | None, encryptio
         do_email=email,
         syftbox_root=syftbox_root,
         token_path=token_path,
-        encryption=encryption,
+        encryption=encryption == "required",
     )
 
 

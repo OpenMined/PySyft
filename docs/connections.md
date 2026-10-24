@@ -56,9 +56,8 @@ Each client advertises an encryption policy in `SYFT_version.json`:
 | ---------- | --------------------------- | ----------------------------------------- |
 | `optional` | default, `encryption=False` | encrypt only with a peer that requires it |
 | `required` | `encryption=True`           | encrypt with every peer; refuse plaintext |
-| `off`      | `encryption="off"`          | never encrypt                             |
 
-A pair encrypts when one side is `required`. An `off` and a `required` client conflict: each side skips the other with a warning.
+A pair encrypts when one side is `required`.
 
 A client takes its policy at login, and keeps it until the process exits. syft-bg takes its policy in `syft_bg.init(encryption=...)`; use the same value as the notebook login, because both write the same datasite. Files at rest are read with the current policy, so a datasite keeps one policy.
 

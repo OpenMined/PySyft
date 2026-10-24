@@ -848,7 +848,7 @@ class SyftEnclaveClient:
         do2_email: str | None = None,
         ds_email: str | None = None,
         use_in_memory_cache: bool = True,
-        encryption: bool | str = False,
+        encryption: bool = False,
         enclave_persist_owner_state: bool = False,
     ) -> tuple[
         "SyftEnclaveClient",
@@ -873,7 +873,7 @@ class SyftEnclaveClient:
             Tuple of (enclave, do1, do2, ds)
         """
         policies = [EncryptionPolicy.REQUIRED] + [
-            EncryptionPolicy.coerce(encryption)
+            EncryptionPolicy.from_bool(encryption)
         ] * 3
         configs = create_configs(
             enclave_email,

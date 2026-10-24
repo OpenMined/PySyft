@@ -134,7 +134,7 @@ class SyftboxManagerConfig(BaseModel):
         email: str,
         has_ds_role: bool = False,
         has_do_role: bool = False,
-        encryption: bool | str = False,
+        encryption: bool = False,
         persist_owner_state: bool = True,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -190,7 +190,7 @@ class SyftboxManagerConfig(BaseModel):
             connection_configs=connection_configs,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
-            encryption_policy=EncryptionPolicy.coerce(encryption),
+            encryption_policy=EncryptionPolicy.from_bool(encryption),
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             force_ignore_peer_version=force_ignore_peer_version,
         )
@@ -214,7 +214,7 @@ class SyftboxManagerConfig(BaseModel):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         token_path: Path | None = None,
-        encryption: bool | str = False,
+        encryption: bool = False,
         persist_owner_state: bool = True,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -274,7 +274,7 @@ class SyftboxManagerConfig(BaseModel):
             connection_configs=connection_configs,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
-            encryption_policy=EncryptionPolicy.coerce(encryption),
+            encryption_policy=EncryptionPolicy.from_bool(encryption),
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             force_ignore_peer_version=force_ignore_peer_version,
         )
@@ -606,7 +606,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         email: str,
         has_ds_role: bool = False,
         has_do_role: bool = False,
-        encryption: bool | str = False,
+        encryption: bool = False,
         persist_owner_state: bool = True,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -633,7 +633,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         token_path: Path | None = None,
-        encryption: bool | str = False,
+        encryption: bool = False,
         persist_owner_state: bool = True,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -757,7 +757,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         use_in_memory_cache: bool = True,
         persist_owner_state: bool = True,
         check_versions: bool = False,
-        encryption: bool | str = False,
+        encryption: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
         ds_encryption_policy: EncryptionPolicy | None = None,
         do_encryption_policy: EncryptionPolicy | None = None,
@@ -785,7 +785,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         Returns:
             Tuple of (ds_manager, do_manager)
         """
-        default_policy = EncryptionPolicy.coerce(encryption)
+        default_policy = EncryptionPolicy.from_bool(encryption)
         # Create configs using the existing base config generator
         do_config = SyftboxManagerConfig._base_config_for_testing(
             email=email1,
@@ -982,9 +982,6 @@ class SyftboxManager(BaseModelCallbackMixin):
                         ignore_peer_version=ignore_peer_version,
                     )
                 )
-                compatible_emails = self.peer_manager.without_encryption_conflicts(
-                    compatible_emails
-                )
                 self.datasite_owner_syncer.sync(
                     compatible_emails,
                     deferred_peer_emails=[
@@ -1002,9 +999,6 @@ class SyftboxManager(BaseModelCallbackMixin):
             if self.has_ds_role:
                 peer_emails = [peer.email for peer in self.peer_manager.syncable_peers]
                 self.peer_manager.warn_if_all_peers_incompatible(peer_emails)
-                peer_emails = self.peer_manager.without_encryption_conflicts(
-                    peer_emails
-                )
                 self.datasite_watcher_syncer.sync_down(peer_emails)
 
     def load_peers(self, force_download: bool = False):

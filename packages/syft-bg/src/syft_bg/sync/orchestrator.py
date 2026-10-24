@@ -47,6 +47,7 @@ class SyncOrchestrator(BaseOrchestrator):
             )
 
         from syft_rds import (
+            EncryptionPolicy,
             Environment,
             SyftRDSClient,
             SyftRDSClientConfig,
@@ -57,7 +58,7 @@ class SyncOrchestrator(BaseOrchestrator):
             rds_config = SyftRDSClientConfig.for_colab(
                 email=config.do_email,
                 has_do_role=True,
-                encryption=config.encryption_policy,
+                encryption=config.encryption_policy == EncryptionPolicy.REQUIRED,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )
@@ -66,7 +67,7 @@ class SyncOrchestrator(BaseOrchestrator):
                 email=config.do_email,
                 has_do_role=True,
                 token_path=config.drive_token_path,
-                encryption=config.encryption_policy,
+                encryption=config.encryption_policy == EncryptionPolicy.REQUIRED,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )

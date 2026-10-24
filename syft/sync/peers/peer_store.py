@@ -14,9 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
-    EncryptionPolicyConflictError,
     MessageFormatError,
-    pair_conflicts,
     pair_uses_encryption,
 )
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
@@ -126,9 +124,8 @@ class PeerStore(BaseModel):
         Raises:
             SyftPeerNotReadyError: when the policy of the peer is not known, or
                 the pair encrypts and the peer bundle is missing.
-            EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
-        self._raise_unless_can_exchange(email)
+        self._raise_unless_policy_known(email)
         if not self.peer_uses_encryption(email):
             return data
         return self.encrypt(email, data)
@@ -145,9 +142,8 @@ class PeerStore(BaseModel):
                 the pair encrypts and the peer bundle is missing.
             MessageFormatError: when ``data`` is plaintext and the pair
                 encrypts, or ``data`` is an envelope and the pair does not.
-            EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
-        self._raise_unless_can_exchange(email)
+        self._raise_unless_policy_known(email)
         encrypts = self.peer_uses_encryption(email)
         encrypted = self.is_envelope(data)
         if encrypted != encrypts:
@@ -196,26 +192,13 @@ class PeerStore(BaseModel):
         self._last_known_policies[peer.email] = policy
         return policy
 
-    def conflict_error(self, peer: Peer) -> EncryptionPolicyConflictError | None:
-        """Why this client and ``peer`` cannot exchange messages, or None when they can.
-
-        That is when one side has encryption off and the other requires it.
-        """
-        if pair_conflicts(self.encryption_policy, self.policy_of(peer)):
-            return EncryptionPolicyConflictError(peer.email)
-        return None
-
-    def _raise_unless_can_exchange(self, email: str) -> None:
-        """Raise unless the policy of ``email`` is known and does not conflict.
+    def _raise_unless_policy_known(self, email: str) -> None:
+        """Raise unless the policy of ``email`` is known.
 
         Raises:
-            EncryptionPolicyConflictError: when the policies of the pair conflict.
             SyftPeerNotReadyError: when the policy of the peer is not known.
         """
         peer = self.get_cached_peer(email)
-        error = None if peer is None else self.conflict_error(peer)
-        if error is not None:
-            raise error
         if peer is None or self.policy_of(peer) is None:
             raise SyftPeerNotReadyError(
                 email,

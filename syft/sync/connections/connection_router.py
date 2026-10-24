@@ -18,7 +18,6 @@ from syft.sync.connections.base_connection import (
     SyftboxPlatformConnection,
 )
 from syft.sync.encryption_policy import (
-    EncryptionPolicyConflictError,
     MessageFormatError,
 )
 from syft.sync.events.file_change_event import (
@@ -175,7 +174,6 @@ class ConnectionRouter(BaseModel):
         Raises:
             SyftPeerNotReadyError: when the message cannot be read yet. It
                 stays in the inbox.
-            EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
         connection = self.connection_for_receive_message()
         while True:
@@ -232,7 +230,6 @@ class ConnectionRouter(BaseModel):
         except (
             MessageFormatError,
             SyftPeerNotReadyError,
-            EncryptionPolicyConflictError,
         ) as e:
             warnings.warn(f"Skipped an outbox message of {peer_email}: {e}")
             return None

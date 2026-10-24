@@ -21,7 +21,6 @@ from syft.sync.sync.caches.datasite_owner_cache import (
     DataSiteOwnerEventCacheConfig,
 )
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.encryption_policy import EncryptionPolicyConflictError
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.sync.caches.datasite_owner_cache import DataSiteOwnerEventCache
 from syft.sync.sync.collection_spec import CollectionSyncSpec
@@ -239,7 +238,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                             # no new message, we are done
                             break
                         proposed_count += len(msg.proposed_file_changes)
-                except (SyftPeerNotReadyError, EncryptionPolicyConflictError) as e:
+                except SyftPeerNotReadyError as e:
                     warnings.warn(f"Messages from {peer_email} stay in the inbox: {e}")
                 if proposed_count:
                     print(
@@ -890,7 +889,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 self.connection_router.owner_write_event_messages_to_outbox(
                     recipient, message
                 )
-            except (SyftPeerNotReadyError, EncryptionPolicyConflictError) as e:
+            except SyftPeerNotReadyError as e:
                 warnings.warn(f"Dropped an outbox message for {recipient}: {e}")
             self._clear_delivered(recipient, message)
 

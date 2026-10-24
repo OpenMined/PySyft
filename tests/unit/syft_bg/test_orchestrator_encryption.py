@@ -54,7 +54,7 @@ def client_kwargs(monkeypatch):
 def test_orchestrator_uses_configured_policy(temp_dir, client_kwargs, build):
     orchestrator, config = build(temp_dir, EncryptionPolicy.REQUIRED)
     orchestrator.from_config(config)
-    assert client_kwargs["encryption"] == EncryptionPolicy.REQUIRED
+    assert client_kwargs["encryption"] is True
 
 
 @pytest.mark.parametrize("build", [_sync, _approve], ids=["sync", "approve"])

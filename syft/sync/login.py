@@ -100,7 +100,7 @@ def login(
     token_path: str | Path | None = None,
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
-    encryption: bool | str = False,  # True: required; "off": never encrypt
+    encryption: bool = False,  # True: required
 ):
     return login_ds(
         email,
@@ -119,7 +119,7 @@ def login_ds(
     token_path: str | Path | None = None,
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
-    encryption: bool | str = False,  # True: required; "off": never encrypt
+    encryption: bool = False,  # True: required
 ):
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
@@ -152,7 +152,7 @@ def login_do(
     token_path: str | Path | None = None,
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
-    encryption: bool | str = False,  # True: required; "off": never encrypt
+    encryption: bool = False,  # True: required
 ):
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)

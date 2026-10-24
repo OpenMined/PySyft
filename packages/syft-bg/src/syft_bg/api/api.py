@@ -53,7 +53,7 @@ from syft_bg.systemd import install_service, is_installed, uninstall_service
 
 def init(
     do_email: str,
-    encryption: bool | str,
+    encryption: bool,
     syftbox_root: str | Path | None = None,
     token_path: str | Path | None = None,
     settings: dict[str, dict] | None = None,
@@ -72,7 +72,7 @@ def init(
     config = SyftBgConfig(
         do_email=do_email,
         syftbox_root=syftbox_root,
-        encryption_policy=EncryptionPolicy.coerce(encryption),
+        encryption_policy=EncryptionPolicy.from_bool(encryption),
         **token_kwargs,
     )
 

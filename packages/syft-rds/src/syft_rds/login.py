@@ -31,7 +31,7 @@ def _login(
     skip_peer_on_patch_version_diff: bool | None,
     has_do_role: bool,
     has_ds_role: bool,
-    encryption: bool | str = False,
+    encryption: bool = False,
 ) -> SyftRDSClient:
     """Shared RDS login.
 
@@ -77,7 +77,7 @@ def login_do(
     sync: bool = True,
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
-    encryption: bool | str = False,
+    encryption: bool = False,
 ) -> SyftRDSClient:
     """Log in as a Data Owner and return a self-contained RDS client."""
     return _login(
@@ -99,7 +99,7 @@ def login_ds(
     sync: bool = True,
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
-    encryption: bool | str = False,
+    encryption: bool = False,
 ) -> SyftRDSClient:
     """Log in as a Data Scientist and return a self-contained RDS client."""
     return _login(

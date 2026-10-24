@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field, PrivateAttr
 from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.callback_mixin import BaseModelCallbackMixin
-from syft.sync.encryption_policy import EncryptionPolicyConflictError
 from syft.sync.events.file_change_event import FileChangeEventsMessage
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.messages.proposed_filechange import (
@@ -115,7 +114,6 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         Raises:
             SyftPeerNotReadyError: when the policy of a recipient is not known,
                 or the pair encrypts and the peer bundle is missing.
-            EncryptionPolicyConflictError: when the policies of a pair conflict.
         """
         error = None
         for recipient, changes in changes_by_recipient.items():
@@ -124,7 +122,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             )
             try:
                 self._send_message(recipient, message)
-            except (SyftPeerNotReadyError, EncryptionPolicyConflictError) as e:
+            except SyftPeerNotReadyError as e:
                 error = error or e
         if error is not None:
             raise error
@@ -146,7 +144,6 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         Raises:
             SyftPeerNotReadyError: when the policy of ``recipient`` is not
                 known, or the pair encrypts and the peer bundle is missing.
-            EncryptionPolicyConflictError: when the policies of the pair conflict.
         """
         self.connection_router.watcher_send_proposed_file_changes_message(
             recipient, message

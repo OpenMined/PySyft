@@ -477,22 +477,6 @@ class PeerManager(BaseModel):
                 compatible.append(email)
         return compatible
 
-    def without_encryption_conflicts(self, peer_emails: List[str]) -> List[str]:
-        """``peer_emails`` without the peers whose encryption policy conflicts.
-
-        Such a pair cannot exchange messages, so it is skipped with a warning.
-        ``ignore_peer_version`` does not apply: it is not a version question.
-        """
-        result = []
-        for email in peer_emails:
-            peer = self.peer_store.get_cached_peer(email)
-            error = None if peer is None else self.peer_store.conflict_error(peer)
-            if error is None:
-                result.append(email)
-            else:
-                warnings.warn(f"{email} is skipped: {error}")
-        return result
-
     def warn_if_all_peers_incompatible(self, peer_emails: List[str]) -> None:
         """Warn if all connected peers are incompatible (used by DS during sync)."""
         if self.suppress_version_warnings:
@@ -576,9 +560,6 @@ class PeerManager(BaseModel):
             self.peer_store.encryption_policy,
             self.peer_store.policy_of(new_peer_obj),
         )
-        error = self.peer_store.conflict_error(new_peer_obj)
-        if error is not None:
-            warnings.warn(f"{peer_email} is skipped: {error}")
 
         peer_bundle = None
         if encrypted and is_accepting:
