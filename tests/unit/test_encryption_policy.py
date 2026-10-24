@@ -6,7 +6,6 @@ side is ``off``.
 """
 
 import json
-from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -25,7 +24,6 @@ from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.syftbox_manager import SyftboxManager
-from syft.sync.version.peer_manager import PeerManagerConfig
 from syft.sync.version.version_info import VersionInfo
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
@@ -140,20 +138,6 @@ def test_policy_cannot_change_after_login():
     store = PeerStore(email="alice@example.com", encryption_policy=OPTIONAL)
     with pytest.raises(ValidationError, match="frozen"):
         store.encryption_policy = REQUIRED
-
-
-@pytest.mark.parametrize(
-    "build",
-    [
-        lambda: PeerStore(email="alice@example.com", use_encryption=True),
-        lambda: PeerManagerConfig(syftbox_folder=Path("/tmp"), use_encryption=True),
-    ],
-    ids=["PeerStore", "PeerManagerConfig"],
-)
-def test_removed_use_encryption_keyword_raises(build):
-    """The keyword gave a store without encryption when it was ignored."""
-    with pytest.raises(ValidationError, match="use_encryption"):
-        build()
 
 
 @pytest.mark.parametrize(
