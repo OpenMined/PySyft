@@ -653,14 +653,6 @@ class PeerManager(BaseModel):
                 if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_PEER)
             }
         self.peer_store.set_peers(peers)
-        if first_load:
-            self._check_published_bundles(
-                [
-                    p.email
-                    for p in peers
-                    if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_ME)
-                ]
-            )
         self.load_peer_versions_parallel([peer.email for peer in peers])
 
         # Peer policies are known only after the versions load.
@@ -670,6 +662,9 @@ class PeerManager(BaseModel):
             if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_ME)
             and self.peer_store.peer_uses_encryption(p.email)
         ]
+        if first_load:
+            # Only a pair that encrypts uses the bundle we published.
+            self._check_published_bundles([p.email for p in encrypted])
         self._read_missing_peer_bundles(encrypted)
 
     def _check_published_bundles(self, peer_emails: list[str]) -> None:

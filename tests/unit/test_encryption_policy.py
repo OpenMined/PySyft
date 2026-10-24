@@ -272,9 +272,8 @@ def test_plaintext_pair_publishes_bundles_at_peering():
     assert do_router.read_peer_encryption_bundle(ds_manager.email) is not None
 
 
-def test_first_peer_load_refuses_bundle_of_other_keys():
-    """A new runtime without the key file has new keys; peers hold the old bundle."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+def _publish_bundle_of_other_keys(do_manager, ds_manager) -> None:
+    """As a new runtime without the key file: Drive holds the bundle of older keys."""
     earlier = PeerStore(email=do_manager.email)
     earlier.generate_keys()
     do_manager.peer_manager.connection_router.write_encryption_bundle(
@@ -282,8 +281,22 @@ def test_first_peer_load_refuses_bundle_of_other_keys():
         json.dumps({"public_encryption_bundle": earlier.get_public_bundle()}),
     )
     do_manager.peer_manager._states_at_start = None  # as a new process
+
+
+def test_first_peer_load_refuses_bundle_of_other_keys():
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        do_encryption_policy=REQUIRED,
+    )
+    _publish_bundle_of_other_keys(do_manager, ds_manager)
     with pytest.raises(ValueError, match="already has a key"):
         do_manager.load_peers()
+
+
+def test_bundle_of_other_keys_ignored_when_pair_does_not_encrypt():
+    """No peer uses the bundle, so new keys on a new runtime are fine."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    _publish_bundle_of_other_keys(do_manager, ds_manager)
+    do_manager.load_peers()
 
 
 # =========================================================================
