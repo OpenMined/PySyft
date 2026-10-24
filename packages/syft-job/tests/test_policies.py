@@ -1,6 +1,7 @@
 """Api calls (requests), and the input and output policies run around them."""
 
 import json
+from html import escape
 from pathlib import Path
 
 import pytest
@@ -344,6 +345,21 @@ def test_api_call_ignores_share_flags(env):
     assert not env.reads(DS_EMAIL, "call.job", "outputs/out.txt")
     assert not env.reads(DS_EMAIL, "call.job", "stdout.txt")
     assert job.outputs_withheld
+
+
+def test_job_view_shows_params_escaped(env):
+    (env.apis.files_dir / "run.sh").write_text("echo hi\n")
+    params = {"code/params.json": b'{"word": "<b>privacy</b>", "n": 3}'}
+    env.ds_client.submit_api_request(DO_EMAIL, "call.job", API_NAME, params)
+    env.ds_client.submit_bash_job(DO_EMAIL, "echo hi", "plain.job")
+
+    html = env.do_job("call.job")._repr_html_()
+
+    assert "<h4>Parameters</h4>" in html
+    pretty = '{\n  "word": "<b>privacy</b>",\n  "n": 3\n}'
+    assert escape(pretty) in html and "<b>privacy</b>" not in html
+    # A job without code/params.json has no such section.
+    assert "<h4>Parameters</h4>" not in env.do_job("plain.job")._repr_html_()
 
 
 def test_request_becomes_approved_job_with_api_code(env):

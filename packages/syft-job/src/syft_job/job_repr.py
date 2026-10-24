@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from html import escape
 from typing import TYPE_CHECKING, List
@@ -428,6 +429,8 @@ def job_info_repr_html(job: "JobInfo") -> str:
         except Exception:
             pass
 
+    params_section = _params_html(job)
+
     status_emoji_map = {
         "received": "📨",
         "pending": "📥",
@@ -743,7 +746,7 @@ def job_info_repr_html(job: "JobInfo") -> str:
                 <div class="syftjob-single-section">
                     <h4>📜 Script</h4>
                     <div class="syftjob-single-script">{script_content}</div>
-                </div>{code_section}{policy_section}{outputs_section}
+                </div>{code_section}{params_section}{policy_section}{outputs_section}
             </div>
         </div>
         """
@@ -755,6 +758,24 @@ def _detail_html(label: str, value: str) -> str:
                         <div class="syftjob-single-detail-label">{escape(label)}:</div>
                         <div class="syftjob-single-detail-value">{escape(value)}</div>
                     </div>"""
+
+
+def _params_html(job: "JobInfo") -> str:
+    """A section with code/params.json, the arguments the job runs with."""
+    try:
+        params = (job.code_dir / "params.json").read_text()
+    except (OSError, ValueError):
+        return ""
+    try:
+        params = json.dumps(json.loads(params), indent=2, ensure_ascii=False)
+    except ValueError:
+        pass  # not JSON: show it as it is
+    return f"""
+                <div class="syftjob-single-section">
+                    <h4>Parameters</h4>
+                    <div class="syftjob-single-filename">code/params.json</div>
+                    <div class="syftjob-single-code">{escape(params)}</div>
+                </div>"""
 
 
 def _policy_html(job: "JobInfo") -> tuple[str, str]:
