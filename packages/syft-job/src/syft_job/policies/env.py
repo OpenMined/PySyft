@@ -36,10 +36,17 @@ Conventions:
                 file in SYFT_POLICY_STATE_DIR. Nothing changes unless the policy
                 writes. The runner holds a lock on the state for the whole run,
                 so two calls of one api never run their policies at once.
-    Deny        Exit with a non-zero code. In Python, any uncaught exception
-                does this. The job is marked failed.
+    Describe    Start the policy with a one- or two-line docstring (a comment
+                in bash) that says in plain words what it allows and refuses.
+                The data scientist sees the policy's full source in client.api.
+    Deny        Exit with a non-zero code. The job is marked failed. In
+                Python, use sys.exit("<message for the data scientist>"). An
+                uncaught exception also denies, but the data scientist then
+                sees the exception's name too, e.g. "ValueError: ...".
     Reason      The last line of stderr is what the data scientist sees, in
-                policy_error.txt. The full stderr stays with the data owner.
+                policy_error.txt. sys.exit("...") writes just its message, so
+                keep the message to one line. The full stderr stays with the
+                data owner.
     Call files  A call sends exactly the files the api lists by name. The
                 input policy can read them in SYFT_POLICY_CALL_DIR and deny the
                 call because of what they hold.
