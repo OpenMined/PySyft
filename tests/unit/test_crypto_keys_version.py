@@ -50,6 +50,21 @@ def test_a_file_of_another_version_is_refused(tmp_path, version):
         PeerStore.create(email=EMAIL, keys_path=path)
 
 
+@pytest.mark.parametrize(
+    "change",
+    [lambda d: d.pop("keys_jwk"), lambda d: d.update(peer_bundles={})],
+    ids=["missing field", "extra field"],
+)
+def test_a_file_of_another_shape_is_refused(tmp_path, change):
+    path = _saved(tmp_path)
+    data = json.loads(path.read_text())
+    change(data)
+    path.write_text(json.dumps(data))
+
+    with pytest.raises(ValueError, match="_KeyFile"):
+        PeerStore.create(email=EMAIL, keys_path=path)
+
+
 def test_a_file_of_another_identity_is_refused(tmp_path):
     path = _saved(tmp_path)
 

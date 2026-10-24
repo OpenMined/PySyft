@@ -184,7 +184,7 @@ def test_missing_version_file_created_with_own_policy():
     assert b_conn.read_peer_version_file("a@example.com").encryption_policy == REQUIRED
 
 
-def test_malformed_peer_bundle_does_not_stop_peer_load():
+def test_malformed_peer_bundle_raises_on_peer_load():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         add_peers=False,
         do_encryption_policy=REQUIRED,
@@ -195,9 +195,8 @@ def test_malformed_peer_bundle_does_not_stop_peer_load():
     do_manager.peer_manager.connection_router.write_encryption_bundle(
         ds_manager.email, "not json"
     )
-    with pytest.warns(UserWarning, match="Refusing"):
+    with pytest.raises(ValueError):
         ds_manager.load_peers()
-    assert not ds_manager.peer_manager.peer_store.has_peer_bundle(do_manager.email)
 
 
 # =========================================================================

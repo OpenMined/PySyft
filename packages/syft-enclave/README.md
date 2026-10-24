@@ -69,7 +69,7 @@ just start-debug EMAIL my-vm n2d-standard-4     # override name / machine type
 just stop [name]                                # Teardown: Deletes the VM.
 ```
 
-Debug enclaves set `use_encryption=false`, so their policy is `optional`: they encrypt only with a peer that requires encryption. Clients select encryption from the enclave policy, so they need no setting.
+An enclave always requires encryption, debug enclaves too. Clients select encryption from the enclave policy, so they need no setting.
 
 ## GPU deployments
 

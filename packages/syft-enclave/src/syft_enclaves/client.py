@@ -811,16 +811,16 @@ class SyftEnclaveClient:
         email: str,
         token_path: Path | str | None = None,
         data_owners: list[str] | None = None,
-        encryption: bool | str = False,
         persist_owner_state: bool = False,
     ) -> "SyftEnclaveClient":
         """Build an enclave client backed by a real Google Drive connection.
+
+        An enclave always requires encryption with every peer.
+
         Args:
             email: The enclave datasite's email address.
             token_path: Path to a pre-authorized Google Drive OAuth token.
             data_owners: Emails whose approval gates every job on this enclave.
-            encryption: Require end-to-end drive encryption with every peer.
-                Without it, the enclave encrypts with each peer that requires it.
             persist_owner_state: Keep the owner-only state used to restore
                 this datasite later (event log, rolling state, checkpoints).
                 Off by default - an enclave gets ephemeral keys and wipes its
@@ -831,7 +831,7 @@ class SyftEnclaveClient:
             has_ds_role=True,
             has_do_role=True,
             token_path=Path(token_path) if token_path is not None else None,
-            encryption=encryption,
+            encryption=EncryptionPolicy.REQUIRED,
             persist_owner_state=persist_owner_state,
         )
 
@@ -850,7 +850,6 @@ class SyftEnclaveClient:
         use_in_memory_cache: bool = True,
         encryption: bool | str = False,
         enclave_persist_owner_state: bool = False,
-        enclave_encryption_policy: EncryptionPolicy | None = None,
     ) -> tuple[
         "SyftEnclaveClient",
         "SyftEnclaveClient",
@@ -866,17 +865,16 @@ class SyftEnclaveClient:
         - DS: peers with DO1, DO2, Enclave
 
         Args:
-            encryption: Require end-to-end drive encryption on all four clients.
+            encryption: Policy of the DOs and the DS. The enclave always
+                requires encryption.
             enclave_persist_owner_state: Whether the enclave keeps restorable
                 owner state. Off by default, as in production.
-            enclave_encryption_policy: Policy of the enclave; overrides
-                ``encryption`` for the enclave only.
         Returns:
             Tuple of (enclave, do1, do2, ds)
         """
-        policies = [EncryptionPolicy.coerce(encryption)] * 4
-        if enclave_encryption_policy is not None:
-            policies[0] = enclave_encryption_policy
+        policies = [EncryptionPolicy.REQUIRED] + [
+            EncryptionPolicy.coerce(encryption)
+        ] * 3
         configs = create_configs(
             enclave_email,
             do1_email,

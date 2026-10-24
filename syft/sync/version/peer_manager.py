@@ -582,7 +582,7 @@ class PeerManager(BaseModel):
 
         peer_bundle = None
         if encrypted and is_accepting:
-            peer_bundle = self._read_published_bundle(peer_email)
+            peer_bundle = self._read_peer_encryption_bundle(peer_email)
 
         self.connection_router.update_peer_state(
             peer_email, new_state.value, public_encryption_bundle=peer_bundle
@@ -610,12 +610,16 @@ class PeerManager(BaseModel):
         return bundle
 
     def _read_peer_encryption_bundle(self, peer_email: str) -> dict | None:
-        """Read a peer's encryption bundle if available."""
+        """The bundle ``peer_email`` published for us, or None when it has not published one.
+
+        Raises:
+            ValueError: when the published bundle file is not valid JSON.
+            KeyError: when it holds no bundle.
+        """
         bundle_json = self.connection_router.read_peer_encryption_bundle(peer_email)
         if not bundle_json:
             return None
-        data = json.loads(bundle_json)
-        return data.get("public_encryption_bundle")
+        return json.loads(bundle_json)["public_encryption_bundle"]
 
     def load_peers(self, force_download: bool = False):
         """Load peers: from JSON (accepted + requested_by_me) + new requests from folder scan.
@@ -715,20 +719,12 @@ class PeerManager(BaseModel):
             return None
         return json.loads(bundle_json)["public_encryption_bundle"]
 
-    def _read_published_bundle(self, peer_email: str) -> dict | None:
-        """The bundle ``peer_email`` published for us, or None when it is missing or malformed."""
-        try:
-            return self._read_peer_encryption_bundle(peer_email)
-        except ValueError as e:
-            warnings.warn(f"Refusing the encryption key of {peer_email}: {e}")
-            return None
-
     def _read_missing_peer_bundles(self, peers: list[Peer]) -> None:
         """Read the published bundle of every peer we hold none for."""
         for peer in peers:
             if self.peer_store.has_peer_bundle(peer.email):
                 continue
-            bundle = self._read_published_bundle(peer.email)
+            bundle = self._read_peer_encryption_bundle(peer.email)
             if bundle:
                 self.peer_store.set_peer_bundle(peer.email, bundle)
                 self.connection_router.update_peer_state(

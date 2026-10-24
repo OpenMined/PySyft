@@ -4,14 +4,13 @@ Holds peers, encryption keys, and the encryption policy of this client.
 Shared between PeerManager and all ConnectionRouter instances.
 """
 
-import json
 import os
 import tempfile
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import syft_crypto_python as syc
-from pydantic import BaseModel, Field, PrivateAttr
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
@@ -33,6 +32,37 @@ CRYPTO_KEYS_FILENAME = "crypto_keys.json"
 # Format of the crypto key file. Raise it when the layout of the file changes.
 # A file of any other version is refused.
 CRYPTO_KEYS_VERSION = 2
+
+
+class _KeyFile(BaseModel):
+    """The private key file of one identity. It holds the only copy of its keys."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    version: int
+    email: str
+    keys_jwk: dict[str, Any]
+
+    @classmethod
+    def read(cls, path: Path, email: str) -> "_KeyFile":
+        """Read the key file of ``email`` at ``path``.
+
+        Raises:
+            ValueError: if the file has another shape or version, or belongs to
+                another identity.
+        """
+        key_file = cls.model_validate_json(path.read_text())
+        if key_file.version != CRYPTO_KEYS_VERSION:
+            raise ValueError(
+                f"The crypto key file at {path} has version {key_file.version}, "
+                f"and this client reads only version {CRYPTO_KEYS_VERSION}."
+            )
+        if key_file.email != email:
+            raise ValueError(
+                f"Encryption key file {path} belongs to {key_file.email!r}, "
+                f"not {email!r}"
+            )
+        return key_file
 
 
 def datasite_crypto_keys_path(syftbox_folder: Path | str, email: str) -> Path:
@@ -369,12 +399,10 @@ class PeerStore(BaseModel):
             FileExistsError: if a file exists at ``path``.
         """
         keys = self._ensure_private_keys()
-        data = {
-            "version": CRYPTO_KEYS_VERSION,
-            "email": self.email,
-            "keys_jwk": keys.to_jwks(),
-        }
-        _create_key_file(Path(path), data)
+        key_file = _KeyFile(
+            version=CRYPTO_KEYS_VERSION, email=self.email, keys_jwk=keys.to_jwks()
+        )
+        _create_key_file(Path(path), key_file)
 
     @classmethod
     def create(
@@ -395,15 +423,16 @@ class PeerStore(BaseModel):
         ties key lifetime to the datasite folder.
 
         Raises:
-            ValueError: if the key file has another version or belongs to
-                another identity.
+            ValueError: if the key file has another shape or version, or belongs
+                to another identity.
             FileExistsError: if another process created the key file while
                 this store generated its keys.
         """
         store = cls(email=email, encryption_policy=encryption_policy)
         path = Path(keys_path)
         if path.exists():
-            store._private_keys = _read_private_keys(path, email)
+            key_file = _KeyFile.read(path, email)
+            store._private_keys = syc.SyftPrivateKeys.from_jwks(key_file.keys_jwk)
         else:
             store.generate_keys()
             store.save_keys(path)
@@ -418,39 +447,24 @@ def import_key_file(source: Path | str, keys_path: Path | str, email: str) -> No
     keys already, nothing changes.
 
     Raises:
-        ValueError: if ``source`` has another version or belongs to another
-            identity.
+        ValueError: if ``source`` has another shape or version, or belongs to
+            another identity.
         FileExistsError: if ``keys_path`` holds other keys.
     """
     source, keys_path = Path(source), Path(keys_path)
-    _read_private_keys(source, email)
-    data = json.loads(source.read_text())
+    key_file = _KeyFile.read(source, email)
     if keys_path.exists():
-        if json.loads(keys_path.read_text()) != data:
+        if _KeyFile.read(keys_path, email) != key_file:
             raise FileExistsError(
                 f"{keys_path} holds other keys than {source}. Remove it to "
                 "import the file, or log in without the file."
             )
         return
-    _create_key_file(keys_path, data)
+    _create_key_file(keys_path, key_file)
 
 
-def _read_private_keys(path: Path, email: str) -> syc.SyftPrivateKeys:
-    data = json.loads(path.read_text())
-    if data["version"] != CRYPTO_KEYS_VERSION:
-        raise ValueError(
-            f"The crypto key file at {path} has version {data['version']}, and "
-            f"this client reads only version {CRYPTO_KEYS_VERSION}."
-        )
-    if data["email"] != email:
-        raise ValueError(
-            f"Encryption key file {path} belongs to {data['email']!r}, not {email!r}"
-        )
-    return syc.SyftPrivateKeys.from_jwks(data["keys_jwk"])
-
-
-def _create_key_file(path: Path, data: dict) -> None:
-    """Write ``data`` to a new key file at ``path`` in one step.
+def _create_key_file(path: Path, key_file: _KeyFile) -> None:
+    """Write ``key_file`` to a new file at ``path`` in one step.
 
     The key file holds the only copy of the private keys. The data goes to a
     temporary file in the same folder and reaches the disk. A hard link then
@@ -463,7 +477,7 @@ def _create_key_file(path: Path, data: dict) -> None:
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w") as f:
-            f.write(json.dumps(data, indent=2))
+            f.write(key_file.model_dump_json(indent=2))
             f.flush()
             os.fsync(f.fileno())
         os.link(tmp, path)

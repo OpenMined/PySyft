@@ -7,9 +7,8 @@ from pathlib import Path
 
 os.environ["PRE_SYNC"] = "false"
 
-from syft_enclaves import SyftEnclaveClient
-
 from syft.sync.encryption_policy import EncryptionPolicy
+from syft_enclaves import SyftEnclaveClient
 
 
 def _simple_job_code() -> str:
@@ -72,9 +71,22 @@ def test_encrypted_message_to_enclave_roundtrips():
     assert "simple_job" in [j.name for j in enclave.jobs]
 
 
-def test_quad_builder_applies_off_to_enclave():
-    enclave, *_ = SyftEnclaveClient.quad_with_mock_drive_service_connection(
-        enclave_encryption_policy=EncryptionPolicy.OFF
+def test_quad_enclave_requires_encryption_with_optional_peers():
+    enclave, do1, *_ = SyftEnclaveClient.quad_with_mock_drive_service_connection()
+    enclave_store = enclave._rds.peer_manager.peer_store
+    assert enclave_store.encryption_policy == EncryptionPolicy.REQUIRED
+    assert (
+        do1._rds.peer_manager.peer_store.encryption_policy == EncryptionPolicy.OPTIONAL
     )
-    store = enclave._rds.peer_manager.peer_store
-    assert store.encryption_policy == EncryptionPolicy.OFF
+
+
+def test_for_enclave_requires_encryption(monkeypatch):
+    configs = []
+    monkeypatch.setattr(
+        SyftEnclaveClient,
+        "from_config",
+        classmethod(lambda cls, config, data_owners=None: configs.append(config)),
+    )
+    SyftEnclaveClient.for_enclave(email="enclave@openmined.org")
+    policy = configs[0].sync.peer_manager_config.encryption_policy
+    assert policy == EncryptionPolicy.REQUIRED
