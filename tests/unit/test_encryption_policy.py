@@ -512,8 +512,56 @@ def test_send_to_non_peer_raises():
         ds_manager._send_file_change(file_path, "content")
 
 
+def test_changes_for_two_datasites_go_to_each(monkeypatch):
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    sent = []
+    monkeypatch.setattr(
+        ConnectionRouter,
+        "watcher_send_proposed_file_changes_message",
+        lambda self, recipient, message: (
+            sent.append(
+                (recipient, {fc.datasite_email for fc in message.proposed_file_changes})
+            )
+        ),
+    )
+    watcher = ds_manager.datasite_watcher_syncer
+    watcher.on_file_change(f"{do_manager.email}/a.txt", "a", process_now=False)
+    watcher.on_file_change("other@example.com/b.txt", "b", process_now=False)
+    watcher.process_file_changes_queue()
+    assert sorted(sent) == sorted(
+        [
+            (do_manager.email, {do_manager.email}),
+            ("other@example.com", {"other@example.com"}),
+        ]
+    )
+
+
 def _not_ready(recipient: str) -> SyftPeerNotReadyError:
     return SyftPeerNotReadyError(recipient, cause="No bundle.", remedy="Sync.")
+
+
+@pytest.mark.parametrize(
+    "error", [EncryptionPolicyConflictError, _not_ready], ids=["conflict", "not ready"]
+)
+def test_failure_for_one_recipient_still_sends_to_other(monkeypatch, error):
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    sent = []
+
+    def send_message(self, recipient, message):
+        if recipient == "other@example.com":
+            raise error(recipient)
+        sent.append(recipient)
+
+    monkeypatch.setattr(
+        ConnectionRouter, "watcher_send_proposed_file_changes_message", send_message
+    )
+    watcher = ds_manager.datasite_watcher_syncer
+    watcher.on_file_change("other@example.com/a.txt", "a", process_now=False)
+    watcher.on_file_change(f"{do_manager.email}/b.txt", "b", process_now=False)
+    with pytest.raises((EncryptionPolicyConflictError, SyftPeerNotReadyError)):
+        watcher.process_file_changes_queue()
+    assert sent == [do_manager.email]
+    assert _queued_changes(ds_manager) == 0
 
 
 @pytest.mark.parametrize(
