@@ -512,7 +512,9 @@ def set_policies(
         )
     except (ApiNotFoundError, ValueError) as e:
         return ApiResult(success=False, error=str(e))
-    return ApiResult.from_api(name, obj)
+    result = ApiResult.from_api(name, obj)
+    result.state_cleared = reset_state
+    return result
 
 
 def run_policy(
