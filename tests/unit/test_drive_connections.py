@@ -245,7 +245,7 @@ def test_peering_publishes_a_version_the_peer_can_read(pair):
     version = VersionInfo.current()
 
     owner.peering.publish_version(version)
-    owner.peering.grant_version_read(DS)
+    owner.peering.grant_version_read(DS, version)
 
     assert owner.peering.read_own_version() == version
     assert scientist.peering.read_peer_version(DO) == version

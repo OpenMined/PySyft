@@ -16,7 +16,6 @@ from pydantic import BaseModel, Field, PrivateAttr
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
     EncryptionPolicyConflictError,
-    PeerOutdatedError,
     MessageFormatError,
     pair_conflicts,
     pair_uses_encryption,
@@ -53,7 +52,7 @@ class PeerStore(BaseModel):
 
     _private_keys: syc.SyftPrivateKeys | None = PrivateAttr(default=None)
     _peers: List[Peer] = PrivateAttr(default_factory=list)
-    # The last policy known of each peer in this process (see peer_policy).
+    # The last policy known of each peer in this process (see policy_of).
     _last_known_policies: dict[str, EncryptionPolicy] = PrivateAttr(
         default_factory=dict
     )
@@ -162,7 +161,7 @@ class PeerStore(BaseModel):
         applies.
         """
         policy = peer.encryption_policy
-        if policy is None and not peer.is_outdated:
+        if policy is None:
             return self._last_known_policies.get(peer.email)
         self._last_known_policies[peer.email] = policy
         return policy
@@ -170,11 +169,8 @@ class PeerStore(BaseModel):
     def conflict_error(self, peer: Peer) -> EncryptionPolicyConflictError | None:
         """Why this client and ``peer`` cannot exchange messages, or None when they can.
 
-        That is when one side has encryption off and the other requires it,
-        or when the peer runs an outdated syft.
+        That is when one side has encryption off and the other requires it.
         """
-        if peer.is_outdated:
-            return PeerOutdatedError(peer.email)
         if pair_conflicts(self.encryption_policy, self.policy_of(peer)):
             return EncryptionPolicyConflictError(peer.email)
         return None

@@ -17,7 +17,6 @@ from syft.sync.encryption_policy import (
     EncryptionPolicy,
     EncryptionPolicyConflictError,
     MessageFormatError,
-    PeerOutdatedError,
 )
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
@@ -73,11 +72,6 @@ def _keyed_pair(
     return alice, bob
 
 
-def _forget(store: PeerStore, email: str) -> None:
-    """Make ``store`` forget what it knew of ``email``'s policy, as a new client."""
-    store._last_known_policies.pop(email, None)
-
-
 def _raw_inbox_message(do_manager, sender_email: str) -> bytes:
     connection = do_manager.datasite_owner_syncer.connection_router
     raw, _ = (
@@ -112,8 +106,6 @@ def _pair_with_stale_sender_view():
     do_manager.load_peers()
     stale = ds_manager.peer_manager.get_cached_peer(do_manager.email)
     stale.version = _version_with_policy(OPTIONAL)
-    # A client that never saw the owner as required.
-    _forget(ds_manager.peer_manager.peer_store, do_manager.email)
     return ds_manager, do_manager
 
 
@@ -171,34 +163,6 @@ def test_removed_use_encryption_keyword_raises(build):
 )
 def test_encryption_setting_coerced_to_policy(value, expected):
     assert EncryptionPolicy.coerce(value) == expected
-
-
-def test_version_info_without_policy_field_has_no_policy():
-    """A version file from a client that predates the field says nothing."""
-    data = VersionInfo.current().model_dump(mode="json")
-    data.pop("encryption_policy")
-    assert VersionInfo.model_validate(data).encryption_policy is None
-
-
-def _advertise_as_outdated_client(manager) -> None:
-    """Write the version file of ``manager`` without the policy field."""
-    outdated = manager.peer_manager.get_own_version().model_copy()
-    outdated.encryption_policy = None
-    manager.peer_manager.connection_router.write_version_file(outdated)
-
-
-def test_outdated_peer_skipped_with_upgrade_warning():
-    """A peer without a policy in its version file runs an outdated syft."""
-    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-    grant_job_inbox_access(do_manager, ds_manager.email)
-    _advertise_as_outdated_client(do_manager)
-    ds_manager.load_peers()
-
-    file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
-    with pytest.raises(PeerOutdatedError, match="upgrade"):
-        ds_manager._send_file_change(file_path, "content")
-    with pytest.warns(UserWarning, match="upgrade"):
-        ds_manager.sync()
 
 
 def test_own_version_advertises_policy():
@@ -288,6 +252,12 @@ def test_resolution_follows_changed_peer_policy():
 def test_sender_refuses_peer_with_unknown_policy(policy):
     store = PeerStore(email="alice@example.com", encryption_policy=policy)
     store.add_peer(Peer(email="bob@example.com"))
+    with pytest.raises(SyftPeerNotReadyError, match="not known"):
+        store.encrypt_if_needed("bob@example.com", b"data")
+
+
+def test_peer_version_without_policy_is_not_known():
+    store = _store_with_peer(OPTIONAL, None)
     with pytest.raises(SyftPeerNotReadyError, match="not known"):
         store.encrypt_if_needed("bob@example.com", b"data")
 

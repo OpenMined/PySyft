@@ -250,9 +250,7 @@ class DrivePeering(Peering):
     def read_peer_version(self, peer: str) -> VersionInfo | None:
         return self._conn.read_peer_version_file(peer)
 
-    def grant_version_read(
-        self, peer: str, version_info: VersionInfo | None = None
-    ) -> None:
+    def grant_version_read(self, peer: str, version_info: VersionInfo) -> None:
         self._conn.share_version_file_with_peer(peer, version_info)
 
 

@@ -216,7 +216,7 @@ class VersionInfoV2(VersionInfoV1):
     extra: dict[str, Any] = Field(default_factory=dict)
 
     # Peers read it to select encryption for the pair. None in a file from a
-    # syft that predates it: such a peer is outdated and must upgrade.
+    # syft without it: the policy of that peer is not known.
     encryption_policy: Optional[EncryptionPolicy] = None
 
     @classmethod

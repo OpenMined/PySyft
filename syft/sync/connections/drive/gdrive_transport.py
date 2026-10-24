@@ -1929,20 +1929,16 @@ class GDriveConnection(SyftboxPlatformConnection):
             return None
 
     def share_version_file_with_peer(
-        self, peer_email: str, version_info: Optional["VersionInfo"] = None
+        self, peer_email: str, version_info: "VersionInfo"
     ) -> None:
         """Share the version file with a peer so they can read it.
 
         A missing file is created from ``version_info``, the version of this
-        client. Without it, the file says only what any client of this release
-        says, and not the encryption policy of this client.
+        client.
         """
         file_id = self._get_version_file_id()
         if file_id is None:
-            # Version file doesn't exist yet, create it first
-            from syft.sync.version.version_info import VersionInfo
-
-            self.write_version_file(version_info or VersionInfo.current())
+            self.write_version_file(version_info)
             file_id = self._get_version_file_id()
 
         if file_id:

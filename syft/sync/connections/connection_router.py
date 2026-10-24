@@ -458,7 +458,7 @@ class ConnectionRouter(BaseModel):
         return self.transport.peering.read_peer_version(peer_email)
 
     def share_version_file_with_peer(
-        self, peer_email: str, version_info: Optional["VersionInfo"] = None
+        self, peer_email: str, version_info: "VersionInfo"
     ) -> None:
         """Share version file with a peer so they can read it."""
         self.transport.peering.grant_version_read(peer_email, version_info)

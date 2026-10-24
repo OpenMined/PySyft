@@ -43,17 +43,6 @@ class EncryptionPolicyConflictError(ValueError):
         self.peer_email = peer_email
 
 
-class PeerOutdatedError(EncryptionPolicyConflictError):
-    """The peer runs a syft that predates encryption negotiation."""
-
-    def __init__(self, peer_email: str):
-        super().__init__(
-            peer_email,
-            f"{peer_email} runs an outdated syft: its version file has no "
-            "encryption policy. Ask them to upgrade syft.",
-        )
-
-
 class MessageFormatError(ValueError):
     """A message is plaintext in a pair that encrypts, or the other way around."""
 

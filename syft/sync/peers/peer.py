@@ -39,11 +39,6 @@ class Peer(BaseModel):
         return self.version.encryption_policy
 
     @property
-    def is_outdated(self) -> bool:
-        """Whether the peer runs a syft that predates encryption negotiation."""
-        return self.version is not None and self.version.encryption_policy is None
-
-    @property
     def is_approved(self) -> bool:
         """Returns True if peer is accepted"""
         return self.state == PeerState.ACCEPTED

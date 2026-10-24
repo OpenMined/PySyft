@@ -481,8 +481,6 @@ class PeerManager(BaseModel):
         """``peer_emails`` without the peers whose encryption policy conflicts.
 
         Such a pair cannot exchange messages, so it is skipped with a warning.
-        A peer that runs an outdated syft is skipped too, with a warning to
-        upgrade.
         ``ignore_peer_version`` does not apply: it is not a version question.
         """
         result = []

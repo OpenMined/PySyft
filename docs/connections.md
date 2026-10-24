@@ -66,7 +66,7 @@ Nothing is sent to a peer until its policy is known, that is, until it accepts a
 
 The format of a message must match the pair: plaintext in a pair that encrypts is refused, and so is an envelope in a pair that does not. The owner archives such a message unread, and a scientist skips it, each with a warning.
 
-A peer whose version file has no policy runs an outdated syft. It is skipped with a warning to upgrade.
+A peer whose version file has no policy has a policy that is not known: nothing is exchanged with it.
 
 ## Peer Requests
 
