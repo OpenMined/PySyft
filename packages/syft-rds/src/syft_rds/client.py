@@ -109,6 +109,16 @@ def _print_skipped_jobs(skipped: list[tuple[str, str, str]]) -> None:
     print("   Pass ignore_peer_version=True to run them anyway.")
 
 
+def _print_call_result(job: Any) -> None:
+    """Report how the job of a blocking api call ended, and why a policy stopped it."""
+    print(f"Job '{job.name}' finished with status: {job.status}")
+    if job.policy_error:
+        print(f"   The data owner's policy refused the call: {job.policy_error}")
+    elif job.status == "done" and job.outputs_withheld:
+        print("   The data owner's output policy held the outputs back.")
+        print("   The data owner can still share them with you later.")
+
+
 class SyftRDSClient(BaseModel):
     # Holds live service objects (sync engine + RDS-owned managers), not
     # serializable data, so arbitrary types are allowed.
@@ -502,7 +512,7 @@ class SyftRDSClient(BaseModel):
             self.sync_engine.sync()
             job = _named(self.job_client.jobs, job_name)
             if job is not None and job.status in FINISHED_JOB_STATUSES:
-                print(f"Job '{job_name}' finished with status: {job.status}")
+                _print_call_result(job)
                 return job
             request = _named(self.job_client.requests, job_name)
             if request is not None and request.status == "rejected":
