@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 from syft_job.job_runner import (
     DEFAULT_JOB_TIMEOUT_SECONDS,
     _format_timeout,
@@ -41,6 +41,7 @@ def test_job_timeout_rejects_invalid_environment_value(
 @pytest.mark.parametrize(
     "seconds,expected",
     [
+        (0, "0 seconds"),
         (30, "30 seconds"),
         (1, "1 second"),
         (60, "1 minute"),
@@ -55,7 +56,7 @@ def test_job_timeout_rejects_invalid_environment_value(
 def test_format_timeout_produces_human_readable_string(
     seconds: int, expected: str
 ) -> None:
-    """Sub-minute timeouts must not be reported as '0 minutes' (issue #9527)."""
+    """Timeouts should be formatted as readable hours, minutes, and seconds."""
     assert _format_timeout(seconds) == expected
 
 
