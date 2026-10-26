@@ -72,6 +72,21 @@ def test_reset_stops_withholding_accepted_changes():
     assert tracker.accepted_changes()["a"].withheld_from == ["b@x.com"]
 
 
+def test_accepted_change_kept_only_while_withheld():
+    tracker = DeliveryTracker(MemoryDeliveryStateStore())
+    tracker.accept(
+        {
+            "a": AcceptedChange(hash="h1", withheld_from=[]),
+            "b": AcceptedChange(hash="h1", withheld_from=[PEER]),
+            "c": AcceptedChange(hash="h1", withheld_from=["c@x.com"]),
+        }
+    )
+    assert sorted(tracker.accepted_changes()) == ["b", "c"]
+    tracker.sent(PEER, "m1", SendStatus.DELIVERED, {"b": None})
+    tracker.reset("c@x.com")
+    assert tracker.accepted_changes() == {}
+
+
 def test_queued_send_updates_view_on_confirm():
     tracker = DeliveryTracker(MemoryDeliveryStateStore())
     tracker.sent(PEER, "m1", SendStatus.QUEUED, {"a": "h1"})
@@ -369,6 +384,26 @@ def test_failed_send_outside_plan_dropped(monkeypatch):
 
     do_manager.datasite_owner_syncer.process_syftbox_events_queue()
     assert _sent_events(ds_manager, do_manager, "private/data.csv") == []
+
+
+def test_peer_not_ready_does_not_block_other_peers():
+    ds_manager, do_manager = _pair()
+    syncer = do_manager.datasite_owner_syncer
+    not_ready = "stranger@example.com"
+    shared = syncer.perm_context.open("shared/")
+    shared.grant_read_access(not_ready)
+    shared.grant_read_access(ds_manager.email)
+    _write(do_manager, "shared/data.txt", "one")
+
+    syncer._record_local_changes()
+    with pytest.warns(UserWarning, match=not_ready):
+        syncer.deliver([not_ready, ds_manager.email])
+    assert _outbox_paths(ds_manager, do_manager) == ["shared/data.txt"]
+    # The skipped peer's view did not change, so its next plan sends the file.
+    readable = syncer._readable_hashes([not_ready])
+    assert syncer.event_cache.deliveries.plan(readable)[not_ready].send == [
+        "shared/data.txt"
+    ]
 
 
 def test_failed_send_outside_plan_does_not_block_later_syncs():

@@ -907,21 +907,38 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     def _send_outbox_messages(self) -> None:
         """Send each message in the outbox queue, and record it in its peer's view.
 
-        A send that cannot go raises. Its message is dropped, so it cannot block
-        a later sync, and the messages after it are not sent. Their views stay
-        as they are, so the plan of a later sync holds their changes again.
+        A planned send to a peer that is not ready warns, and the rest of that
+        peer's plan is skipped. Its view stays as it is, so a later plan holds
+        the changes again. Any other send that cannot go raises, and its
+        message is dropped. The planned messages after it are dropped too, and
+        the other messages after it go back on the queue.
         """
         self.perm_context._reload()
         unsent = deque()
         while not self.outbox_queue.empty():
             unsent.append(self.outbox_queue.get())
+        not_ready = set()
         try:
             while unsent:
                 recipient, message = unsent.popleft()
-                status = self.connection_router.owner_write_event_messages_to_outbox(
-                    recipient, message
+                planned = (
+                    message.message_filepath.as_string() in self._planned_message_names
                 )
-                self._record_sent(recipient, message, status)
+                if planned and recipient in not_ready:
+                    continue
+                try:
+                    status = (
+                        self.connection_router.owner_write_event_messages_to_outbox(
+                            recipient, message
+                        )
+                    )
+                except SyftPeerNotReadyError as e:
+                    if not planned:
+                        raise
+                    not_ready.add(recipient)
+                    warnings.warn(f"Changes for {recipient} wait for a later sync: {e}")
+                else:
+                    self._record_sent(recipient, message, status)
         finally:
             self._requeue_unplanned_messages(unsent)
 

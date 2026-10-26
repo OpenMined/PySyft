@@ -548,7 +548,7 @@ def test_failure_for_one_recipient_still_sends_to_other(monkeypatch):
 
 
 def test_unsent_owner_change_stays_pending(monkeypatch):
-    """The send raises, and the next sync sends the change."""
+    """The send warns, and the next sync sends the change."""
     ds_manager, do_manager = _pair_with_unsent_do_file()
 
     def fail(self, recipient, message):
@@ -556,7 +556,7 @@ def test_unsent_owner_change_stays_pending(monkeypatch):
 
     with monkeypatch.context() as m:
         m.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", fail)
-        with pytest.raises(SyftPeerNotReadyError):
+        with pytest.warns(UserWarning, match="wait for a later sync"):
             do_manager.sync(auto_checkpoint=False)
 
     _assert_ds_receives_after_notebook_sync(ds_manager, do_manager)

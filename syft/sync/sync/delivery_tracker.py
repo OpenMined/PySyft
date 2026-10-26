@@ -198,7 +198,16 @@ def _record_delivery(
     for path, new_hash in changes.items():
         change = state.accepted.get(path)
         if new_hash is None and change is not None and peer in change.withheld_from:
-            change.withheld_from.remove(peer)
+            _stop_withholding(state, path, peer)
+
+
+def _stop_withholding(state: DeliveryState, path: str, peer: str) -> None:
+    """Remove ``peer`` from the accepted change of ``path``, and drop the change
+    when it is withheld from nobody."""
+    change = state.accepted[path]
+    change.withheld_from.remove(peer)
+    if not change.withheld_from:
+        del state.accepted[path]
 
 
 class DeliveryTracker:
@@ -227,16 +236,23 @@ class DeliveryTracker:
             state = self.store.load()
             view = state.views.get(peer, {})
             state.views[peer] = dict.fromkeys(view, UNSENT_HASH)
-            for change in state.accepted.values():
+            for path, change in list(state.accepted.items()):
                 if peer in change.withheld_from:
-                    change.withheld_from.remove(peer)
+                    _stop_withholding(state, path, peer)
             self.store.save(state)
 
     def accept(self, changes: Mapping[str, AcceptedChange]) -> None:
-        """Record ``changes``, by path, as the last change accepted from a peer."""
+        """Record ``changes``, by path, as the last change accepted from a peer.
+
+        A change withheld from nobody is not kept.
+        """
         with self.store.locked():
             state = self.store.load()
-            state.accepted.update(changes)
+            for path, change in changes.items():
+                if change.withheld_from:
+                    state.accepted[path] = change
+                else:
+                    state.accepted.pop(path, None)
             self.store.save(state)
 
     def drop_accepted(self, paths: Iterable[str]) -> None:
