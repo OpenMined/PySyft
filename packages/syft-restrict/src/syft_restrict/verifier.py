@@ -118,26 +118,20 @@ _BANNED_NODES: tuple[type[ast.AST], ...] = (
 # usage (mark the body private, leave the `def`/`for`/`if` line public) -- NOT a boundary straddle.
 # Their bodies are separate statements the walk enforces on their own; only *simple* statements and
 # expressions that themselves span the boundary count as straddling. Excluded from straddle-enforce.
-# `ast.TryStar` (3.11+) and `ast.Match` (3.10+) are resolved via getattr and filtered out when
-# absent, so the module still imports on the >=3.10 floor.
-_COMPOUND_NODES: tuple[type[ast.AST], ...] = tuple(
-    t
-    for t in (
-        ast.Module,
-        ast.FunctionDef,
-        ast.AsyncFunctionDef,
-        ast.ClassDef,
-        ast.For,
-        ast.AsyncFor,
-        ast.While,
-        ast.If,
-        ast.With,
-        ast.AsyncWith,
-        ast.Try,
-        getattr(ast, "TryStar", None),
-        getattr(ast, "Match", None),
-    )
-    if t is not None
+_COMPOUND_NODES: tuple[type[ast.AST], ...] = (
+    ast.Module,
+    ast.FunctionDef,
+    ast.AsyncFunctionDef,
+    ast.ClassDef,
+    ast.For,
+    ast.AsyncFor,
+    ast.While,
+    ast.If,
+    ast.With,
+    ast.AsyncWith,
+    ast.Try,
+    ast.TryStar,
+    ast.Match,
 )
 
 # violation-code registry: every code a check can raise, one line each (docs/blacklist.md)
