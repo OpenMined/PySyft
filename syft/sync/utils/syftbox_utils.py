@@ -58,8 +58,10 @@ def random_email():
 
 def random_syftbox_folder_for_testing():
     # Not ``random``: pytest-randomly reseeds it for each test, so two tests
-    # in one worker would share a folder, and its on-disk caches.
-    return Path(f"/tmp/sb_folder_testing-{uuid.uuid4().hex}")
+    # in one worker would share a folder, and its on-disk caches. Resolved,
+    # because /tmp links to /private/tmp on macOS, and code that resolves a
+    # path would otherwise not match the folder of the client.
+    return Path(f"/tmp/sb_folder_testing-{uuid.uuid4().hex}").resolve()
 
 
 def compress_data(data: bytes) -> bytes:

@@ -398,7 +398,7 @@ class TestRemovePeerCommand:
     def test_remove_peer(self, api_store, temp_dir):
         """Should remove peer from apis."""
         _create_api(
-            api_store, temp_dir, "my_analysis", ["main.py"], ["a@x.com", "b@x.com"]
+            api_store, temp_dir, "my_analysis", ["run.sh"], ["a@x.com", "b@x.com"]
         )
 
         runner = CliRunner()
@@ -410,7 +410,7 @@ class TestRemovePeerCommand:
 
     def test_removing_last_peer_asks_for_confirmation(self, api_store, temp_dir):
         """An object left without peers matches anyone, so ask first."""
-        _create_api(api_store, temp_dir, "my_analysis", ["main.py"], ["a@x.com"])
+        _create_api(api_store, temp_dir, "my_analysis", ["run.sh"], ["a@x.com"])
 
         runner = CliRunner()
         result = runner.invoke(remove_peer, ["a@x.com"], input="n\n")
