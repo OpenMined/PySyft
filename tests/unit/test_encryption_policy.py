@@ -27,6 +27,7 @@ from syft.sync.peers.peer_store import (
     resolve_encryption_policy,
 )
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.sync.datasite_owner_syncer import OutgoingMessage
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.peer_manager import PeerManager, PeerManagerConfig
 from syft.sync.version.version_info import VersionInfo
@@ -433,7 +434,9 @@ def test_owner_send_to_non_peer_raises():
     )
     syncer = do_manager.datasite_owner_syncer
     message = FileChangeEventsMessage(events=[])
-    syncer.outbox_queue.put(("former@example.com", message))
+    syncer.outbox_queue.put(
+        OutgoingMessage("former@example.com", message, planned=False)
+    )
     with pytest.raises(SyftPeerNotReadyError, match="not known"):
         syncer.process_syftbox_events_queue()
 

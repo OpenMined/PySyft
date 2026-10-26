@@ -1,45 +1,45 @@
 import logging
 import warnings
-from pathlib import Path
-from uuid import uuid4
-from functools import partial
-
-from pydantic import ConfigDict, Field, BaseModel, PrivateAttr
-from concurrent.futures import ThreadPoolExecutor
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+from pathlib import Path
 from queue import Queue
-from typing import Iterable, List, Mapping, NamedTuple, Tuple
-from syft.sync.events.file_change_event import (
-    FileChangeEventsMessage,
-    FileChangeEventsMessageFileName,
-    FileChangeEvent,
-)
-from syft.sync.connections.base_connection import (
-    ConnectionConfig,
-    FileCollection,
-)
-from syft.sync.sync.caches.datasite_owner_cache import (
-    DataSiteOwnerEventCacheConfig,
-)
-from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.peers.exceptions import SyftPeerNotReadyError
-from syft.sync.sync.caches.datasite_owner_cache import DataSiteOwnerEventCache
-from syft.sync.sync.collection_spec import CollectionSyncSpec
+from typing import List, Mapping, NamedTuple, Tuple
+from uuid import uuid4
+
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+from syft_perms import SyftPermContext
+
 from syft.sync.callback_mixin import BaseModelCallbackMixin
-from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
-from syft.sync.utils.path_filters import is_normal_syncable_path
 from syft.sync.checkpoints.checkpoint import (
+    DEFAULT_COMPACTING_THRESHOLD,
     Checkpoint,
     CheckpointFile,
     IncrementalCheckpoint,
     compact_incremental_checkpoints,
-    DEFAULT_COMPACTING_THRESHOLD,
 )
 from syft.sync.checkpoints.rolling_state import (
     RollingState,
     raise_for_later_version,
 )
-from syft_perms import SyftPermContext
+from syft.sync.connections.base_connection import (
+    ConnectionConfig,
+    FileCollection,
+)
+from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.events.file_change_event import (
+    FileChangeEvent,
+    FileChangeEventsMessage,
+    FileChangeEventsMessageFileName,
+)
+from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
+from syft.sync.sync.caches.datasite_owner_cache import (
+    DataSiteOwnerEventCache,
+    DataSiteOwnerEventCacheConfig,
+)
+from syft.sync.sync.collection_spec import CollectionSyncSpec
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
 from syft.sync.sync.delivery_tracker import (
     UNSENT_HASH,
@@ -47,6 +47,7 @@ from syft.sync.sync.delivery_tracker import (
     DeliveryPlan,
 )
 from syft.sync.transport.types import SendStatus
+from syft.sync.utils.path_filters import is_normal_syncable_path
 from syft.sync.utils.syftbox_utils import (
     create_event_timestamp,
     get_event_hash_from_content,
@@ -120,6 +121,13 @@ class DatasiteOwnerSyncerConfig(BaseModel):
     connection_configs: List[ConnectionConfig] = []
 
 
+class OutgoingMessage(NamedTuple):
+    recipient: str
+    message: FileChangeEventsMessage
+    # Whether `deliver` queued the message from the views of `recipient`.
+    planned: bool
+
+
 def _batches_by_content_size(
     events: list[FileChangeEvent], limit: int
 ) -> list[list[FileChangeEvent]]:
@@ -159,17 +167,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     collection_specs: List[CollectionSyncSpec] = []
 
     syftbox_events_queue: Queue[FileChangeEventsMessage] = Field(default_factory=Queue)
-    outbox_queue: Queue[Tuple[str, FileChangeEventsMessage]] = Field(
-        default_factory=Queue
-    )
+    outbox_queue: Queue[OutgoingMessage] = Field(default_factory=Queue)
 
     _executor: ThreadPoolExecutor = PrivateAttr(
         default_factory=lambda: ThreadPoolExecutor(max_workers=10)
     )
     # Cache of collections shared with "any" - list of (tag, content_hash) tuples
     _any_shared_collections: List[tuple] = PrivateAttr(default_factory=list)
-    # Names of the outbox messages that `deliver` queued and that are not sent yet
-    _planned_message_names: set[str] = PrivateAttr(default_factory=set)
 
     # In-memory rolling state for tracking events since last checkpoint
     _rolling_state: RollingState | None = PrivateAttr(default=None)
@@ -735,15 +739,14 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         # Build every message before the first one is queued, so a read error
         # leaves no message of this plan in the queue.
         messages = [
-            (peer, FileChangeEventsMessage(events=batch))
+            OutgoingMessage(peer, FileChangeEventsMessage(events=batch), planned=True)
             for peer, plan in plans.items()
             for batch in _batches_by_content_size(
                 self._plan_events(plan), MAX_DELIVERY_MESSAGE_CONTENT
             )
         ]
-        for peer, message in messages:
-            self._planned_message_names.add(message.message_filepath.as_string())
-            self.outbox_queue.put((peer, message))
+        for message in messages:
+            self.outbox_queue.put(message)
         self.process_syftbox_events_queue()
 
     def _skip_accepted_from_others(
@@ -891,7 +894,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.syftbox_events_queue.put(file_change_events_message)
 
         for recipient in recipients:
-            self.outbox_queue.put((recipient, file_change_events_message))
+            self.outbox_queue.put(
+                OutgoingMessage(recipient, file_change_events_message, planned=False)
+            )
 
     def process_syftbox_events_queue(self):
         # TODO: make this atomic
@@ -904,13 +909,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self._send_outbox_messages()
 
     def _send_outbox_messages(self) -> None:
-        """Send each message in the outbox queue, and record it in its peer's view.
+        """Send the queued messages, and record each sent one in its peer's view.
 
-        A planned send to a peer that is not ready warns, and the rest of that
-        peer's plan is skipped. Its view stays as it is, so a later plan holds
-        the changes again. Any other send that cannot go raises, and its
-        message is dropped. The planned messages after it are dropped too, and
-        the other messages after it go back on the queue.
+        A peer that is not ready gets none of its planned messages. They wait
+        for the next plan, with a warning. Any other failed send raises. Only
+        the unplanned messages after it go back on the queue.
         """
         unsent = deque()
         while not self.outbox_queue.empty():
@@ -918,10 +921,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         not_ready = set()
         try:
             while unsent:
-                recipient, message = unsent.popleft()
-                planned = (
-                    message.message_filepath.as_string() in self._planned_message_names
-                )
+                recipient, message, planned = unsent.popleft()
                 if planned and recipient in not_ready:
                     continue
                 try:
@@ -938,21 +938,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 else:
                     self._record_sent(recipient, message, status)
         finally:
-            self._requeue_unplanned_messages(unsent)
-
-    def _requeue_unplanned_messages(
-        self, unsent: Iterable[Tuple[str, FileChangeEventsMessage]]
-    ) -> None:
-        """Put back, in order, the ``unsent`` messages that ``deliver`` did not queue.
-
-        A message that ``deliver`` queued is dropped: a later send would not
-        check the views or the permissions again, so ``deliver`` plans it
-        again from the views instead.
-        """
-        for recipient, message in unsent:
-            if message.message_filepath.as_string() not in self._planned_message_names:
-                self.outbox_queue.put((recipient, message))
-        self._planned_message_names.clear()
+            # A later send of a planned message would not check the views or the
+            # permissions again, so `deliver` plans it again instead.
+            for entry in unsent:
+                if not entry.planned:
+                    self.outbox_queue.put(entry)
 
     def _record_sent(
         self, recipient: str, message: FileChangeEventsMessage, status: SendStatus
