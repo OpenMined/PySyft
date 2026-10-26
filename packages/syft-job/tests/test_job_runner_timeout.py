@@ -1,6 +1,7 @@
 import pytest
 from syft_job.job_runner import (
     DEFAULT_JOB_TIMEOUT_SECONDS,
+    _format_timeout,
     get_job_timeout_seconds,
 )
 
@@ -35,3 +36,16 @@ def test_job_timeout_rejects_invalid_environment_value(
         ),
     ):
         get_job_timeout_seconds()
+
+
+@pytest.mark.parametrize(
+    "seconds,expected",
+    [
+        (30, "30 seconds"),
+        (60, "1 minute"),
+        (90, "1 minute 30 seconds"),
+        (3661, "1 hour 1 minute 1 second"),
+    ],
+)
+def test_format_timeout(seconds: int, expected: str) -> None:
+    assert _format_timeout(seconds) == expected
