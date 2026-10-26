@@ -26,7 +26,6 @@ from syft.sync.file_writer import FileWriter
 from syft.sync.job_file_change_handler import JobFileChangeHandler
 from syft.sync.peers.peer import Peer, PeerNotReadyError
 from syft.sync.peers.peer_list import PeerList
-from syft.sync.peers.peer_store import datasite_crypto_keys_path
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.platforms.base_platform import BasePlatform
 from syft.sync.sync.caches.datasite_owner_cache import (
@@ -135,7 +134,7 @@ class SyftboxManagerConfig(BaseModel):
         email: str,
         has_ds_role: bool = False,
         has_do_role: bool = False,
-        encryption: bool = False,
+        encryption: bool | None = None,
         persist_owner_state: bool = True,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -215,7 +214,7 @@ class SyftboxManagerConfig(BaseModel):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         token_path: Path | None = None,
-        encryption: bool = False,
+        encryption: bool | None = None,
         persist_owner_state: bool = True,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -607,7 +606,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         email: str,
         has_ds_role: bool = False,
         has_do_role: bool = False,
-        encryption: bool = False,
+        encryption: bool | None = None,
         persist_owner_state: bool = True,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -634,7 +633,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         token_path: Path | None = None,
-        encryption: bool = False,
+        encryption: bool | None = None,
         persist_owner_state: bool = True,
         skip_peer_on_patch_version_diff: Optional[
             bool
@@ -974,6 +973,7 @@ class SyftboxManager(BaseModelCallbackMixin):
                           separate process may have updated the file.
         """
         with self.sync_file_lock():
+            self.peer_manager.check_encryption_policy()
             self.load_peers(force_download=force_download_peer_state)
             if self.has_do_role:
                 peer_emails = [peer.email for peer in self.peer_manager.approved_peers]
@@ -1240,11 +1240,6 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         # Delete local syftbox folder and cache directories
         self._delete_local_dirs()
-        # The folder held the key file. The client keeps its keys, so they go
-        # back to disk: the next login must load the keys that peers know.
-        self.peer_manager.peer_store.save_keys(
-            datasite_crypto_keys_path(self.syftbox_folder, self.email)
-        )
 
         print(
             f"{_ANSI_RED}Done. If you are also running syft-bg, make sure to call "

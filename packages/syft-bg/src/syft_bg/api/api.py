@@ -10,7 +10,12 @@ from syft_job.policies import (
     PolicyRunner,
     PolicyState,
 )
-from syft_rds import EncryptionPolicy
+from syft_rds import (
+    EncryptionPolicy,
+    datasite_settings_path,
+    get_jupyter_default_syftbox_folder,
+    resolve_encryption_policy,
+)
 from syft_rds.apis import ApiArg
 
 from syft_bg.api.results import ApiResult, InstallationResult, StatusResult
@@ -53,16 +58,26 @@ from syft_bg.systemd import install_service, is_installed, uninstall_service
 
 def init(
     do_email: str,
-    encryption: bool,
+    encryption: bool | None = None,
     syftbox_root: str | Path | None = None,
     token_path: str | Path | None = None,
     settings: dict[str, dict] | None = None,
 ) -> None:
     """Write the syft-bg config for ``do_email``.
 
-    ``encryption`` takes the same values as ``login_do``, and it must match
-    the login of the notebook: both write the same datasite.
+    ``encryption`` takes the same values as ``login_do``. The policy is kept
+    in the SyftBox, not in the syft-bg config, so syft-bg and the notebook
+    share it. Without ``encryption``, the SyftBox keeps its policy.
+
+    Raises:
+        EncryptionPolicyMismatchError: if ``encryption`` differs from the
+            policy of the SyftBox.
     """
+    root = syftbox_root or get_jupyter_default_syftbox_folder(do_email)
+    resolve_encryption_policy(
+        datasite_settings_path(root, do_email), EncryptionPolicy.from_bool(encryption)
+    )
+
     token_kwargs: dict = {}
     if token_path is not None:
         # A single OAuth token is used for both the Gmail and Drive APIs.
@@ -72,7 +87,6 @@ def init(
     config = SyftBgConfig(
         do_email=do_email,
         syftbox_root=syftbox_root,
-        encryption_policy=EncryptionPolicy.from_bool(encryption),
         **token_kwargs,
     )
 

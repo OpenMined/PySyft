@@ -1,10 +1,9 @@
-"""The syft-bg orchestrators build their client with the configured policy."""
+"""The syft-bg orchestrators build their client with the policy of the SyftBox."""
 
 from unittest.mock import MagicMock
 
 import pytest
 import syft_rds
-from syft_rds import EncryptionPolicy
 
 from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.approve.orchestrator import ApprovalOrchestrator
@@ -12,20 +11,17 @@ from syft_bg.sync.config import SyncConfig
 from syft_bg.sync.orchestrator import SyncOrchestrator
 
 
-def _sync(temp_dir, policy):
+def _sync(temp_dir):
     config = SyncConfig(
         do_email="do@test.com",
         syftbox_root=temp_dir,
-        encryption_policy=policy,
         sync_state_path=temp_dir / "sync_state.json",
     )
     return SyncOrchestrator, config
 
 
-def _approve(temp_dir, policy):
-    config = AutoApproveConfig(
-        do_email="do@test.com", syftbox_root=temp_dir, encryption_policy=policy
-    )
+def _approve(temp_dir):
+    config = AutoApproveConfig(do_email="do@test.com", syftbox_root=temp_dir)
     return ApprovalOrchestrator, config
 
 
@@ -51,14 +47,7 @@ def client_kwargs(monkeypatch):
 
 
 @pytest.mark.parametrize("build", [_sync, _approve], ids=["sync", "approve"])
-def test_orchestrator_uses_configured_policy(temp_dir, client_kwargs, build):
-    orchestrator, config = build(temp_dir, EncryptionPolicy.REQUIRED)
+def test_orchestrator_takes_policy_of_syftbox(temp_dir, client_kwargs, build):
+    orchestrator, config = build(temp_dir)
     orchestrator.from_config(config)
-    assert client_kwargs["encryption"] is True
-
-
-@pytest.mark.parametrize("build", [_sync, _approve], ids=["sync", "approve"])
-def test_orchestrator_refuses_missing_policy(temp_dir, client_kwargs, build):
-    orchestrator, config = build(temp_dir, None)
-    with pytest.raises(ValueError, match="encryption_policy"):
-        orchestrator.from_config(config)
+    assert client_kwargs.get("encryption") is None

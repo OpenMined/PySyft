@@ -7,7 +7,12 @@ import click
 
 from syft_bg.cli.init.exceptions import InitFlowError
 from syft_bg.common.config import get_default_paths
-from syft_rds import EncryptionPolicy
+from syft_rds import (
+    EncryptionPolicy,
+    EncryptionPolicyMismatchError,
+    datasite_settings_path,
+    resolve_encryption_policy,
+)
 
 from syft_bg.common.syft_bg_config import SyftBgConfig
 
@@ -85,7 +90,7 @@ def _load_existing_config(config: UserPassedConfig, config_path: Path) -> SyftBg
 
 
 def _resolve_common_settings(config: UserPassedConfig, result: SyftBgConfig) -> None:
-    """Resolve email and syftbox_root, mutating result."""
+    """Resolve email, syftbox_root and the encryption policy, mutating result."""
     default_email = result.do_email or ""
 
     if config.email is not None:
@@ -120,24 +125,31 @@ def _resolve_common_settings(config: UserPassedConfig, result: SyftBgConfig) -> 
             "SyftBox root directory", default=default_syftbox
         )
 
-    if config.encryption is not None:
-        result.encryption_policy = EncryptionPolicy(config.encryption)
-    elif config.quiet:
-        if result.encryption_policy is None:
-            raise InitFlowError(
-                "--encryption is required in quiet mode\n"
-                "Usage: syft-bg init --email user@example.com --encryption "
-                "optional --quiet"
-            )
-    else:
-        current = result.encryption_policy
-        result.encryption_policy = EncryptionPolicy(
+    _resolve_encryption(config, result)
+
+
+def _resolve_encryption(config: UserPassedConfig, result: SyftBgConfig) -> None:
+    """Set the encryption policy of the SyftBox, or keep the one it has.
+
+    The policy lives in the SyftBox, so syft-bg and the notebook share it.
+    Only a new SyftBox prompts for it.
+    """
+    settings_path = datasite_settings_path(result.syftbox_root, result.do_email)
+    requested = EncryptionPolicy(config.encryption) if config.encryption else None
+    if requested is None and not config.quiet and not settings_path.exists():
+        requested = EncryptionPolicy(
             click.prompt(
-                "Encryption policy (use the same as the notebook login)",
+                "Encryption policy",
                 type=click.Choice([p.value for p in EncryptionPolicy]),
-                default=current.value if current is not None else None,
+                default=EncryptionPolicy.OPTIONAL.value,
             )
         )
+    try:
+        policy = resolve_encryption_policy(settings_path, requested)
+    except EncryptionPolicyMismatchError as e:
+        raise InitFlowError(str(e)) from e
+    if not config.quiet:
+        click.echo(f"Encryption policy: {policy.value}")
 
 
 # def _setup_auth(

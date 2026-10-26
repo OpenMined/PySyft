@@ -54,13 +54,13 @@ class TestInitCommand:
         mock_api_init.assert_not_called()  # file doesn't exist
 
     @patch("syft_bg.api.api.init")
-    def test_init_requires_encryption(self, mock_api_init):
-        """Should error when the encryption policy is not provided."""
+    def test_init_without_encryption_keeps_syftbox_policy(self, mock_api_init):
+        """Without --encryption, api.init gets None: the SyftBox keeps its policy."""
         runner = CliRunner()
         result = runner.invoke(init, ["-e", "alice@uni.edu"])
 
-        assert result.exit_code != 0
-        mock_api_init.assert_not_called()
+        assert result.exit_code == 0
+        assert mock_api_init.call_args.kwargs["encryption"] is None
 
     @patch("syft_bg.api.api.init")
     def test_init_requires_email(self, mock_api_init):

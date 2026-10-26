@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
+    EncryptionPolicyMismatchError,
     MessageFormatError,
     pair_uses_encryption,
 )
@@ -26,6 +27,8 @@ from syft.sync.peers.peer import Peer, PeerState
 # colliding, and delete_syftbox removes them together with the folder.
 PRIVATE_DIR_NAME = "private"
 CRYPTO_KEYS_FILENAME = "crypto_keys.json"
+# Settings every process on a datasite shares, next to the key file.
+SETTINGS_FILENAME = "syft_settings.json"
 
 # Format of the crypto key file. Raise it when the layout of the file changes.
 # A file of any other version is refused.
@@ -66,6 +69,47 @@ class _KeyFile(BaseModel):
 def datasite_crypto_keys_path(syftbox_folder: Path | str, email: str) -> Path:
     """Per-datasite key file: ``<syftbox_folder>/<email>/private/crypto_keys.json``."""
     return Path(syftbox_folder) / email / PRIVATE_DIR_NAME / CRYPTO_KEYS_FILENAME
+
+
+def datasite_settings_path(syftbox_folder: Path | str, email: str) -> Path:
+    """Per-datasite settings file: ``<syftbox_folder>/<email>/private/syft_settings.json``."""
+    return Path(syftbox_folder) / email / PRIVATE_DIR_NAME / SETTINGS_FILENAME
+
+
+class _DatasiteSettings(BaseModel):
+    """The settings every process on one datasite shares."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    encryption_policy: EncryptionPolicy
+
+
+def resolve_encryption_policy(
+    settings_path: Path | str, requested: EncryptionPolicy | None
+) -> EncryptionPolicy:
+    """The encryption policy of the datasite with the settings file ``settings_path``.
+
+    The first client to start writes ``requested`` (``OPTIONAL`` when None).
+    A later client gets the policy on disk.
+
+    Raises:
+        EncryptionPolicyMismatchError: if ``requested`` differs from the
+            policy on disk.
+    """
+    path = Path(settings_path)
+    if not path.exists():
+        settings = _DatasiteSettings(
+            encryption_policy=requested or EncryptionPolicy.OPTIONAL
+        )
+        try:
+            _create_private_file(path, settings.model_dump_json(indent=2))
+            return settings.encryption_policy
+        except FileExistsError:
+            pass  # Another process started first; its policy applies.
+    on_disk = _DatasiteSettings.model_validate_json(path.read_text()).encryption_policy
+    if requested is not None and requested != on_disk:
+        raise EncryptionPolicyMismatchError(path, on_disk, requested)
+    return on_disk
 
 
 class PeerStore(BaseModel):
@@ -385,7 +429,7 @@ class PeerStore(BaseModel):
         key_file = _KeyFile(
             version=CRYPTO_KEYS_VERSION, email=self.email, keys_jwk=keys.to_jwks()
         )
-        _create_key_file(Path(path), key_file)
+        _create_private_file(Path(path), key_file.model_dump_json(indent=2))
 
     @classmethod
     def create(
@@ -443,24 +487,24 @@ def import_key_file(source: Path | str, keys_path: Path | str, email: str) -> No
                 "import the file, or log in without the file."
             )
         return
-    _create_key_file(keys_path, key_file)
+    _create_private_file(keys_path, key_file.model_dump_json(indent=2))
 
 
-def _create_key_file(path: Path, key_file: _KeyFile) -> None:
-    """Write ``key_file`` to a new file at ``path`` in one step.
+def _create_private_file(path: Path, content: str) -> None:
+    """Write ``content`` to a new file at ``path`` in one step.
 
-    The key file holds the only copy of the private keys. The data goes to a
-    temporary file in the same folder and reaches the disk. A hard link then
-    gives it the name of the key file. The link fails when that name exists,
-    so a write cut short leaves no partial file, and a second process cannot
-    replace the keys of the first. ``mkstemp`` makes the file readable by this
-    user only.
+    Used for the key file, which holds the only copy of the private keys, and
+    the settings file. The data goes to a temporary file in the same folder
+    and reaches the disk. A hard link then gives it its name. The link fails
+    with ``FileExistsError`` when that name exists, so a write cut short
+    leaves no partial file, and a second process cannot replace the file of
+    the first. ``mkstemp`` makes the file readable by this user only.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w") as f:
-            f.write(key_file.model_dump_json(indent=2))
+            f.write(content)
             f.flush()
             os.fsync(f.fileno())
         os.link(tmp, path)

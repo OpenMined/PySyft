@@ -52,20 +52,20 @@ Syft uses Google Drive as its file-based transport layer. All peer-to-peer commu
 
 Each client advertises an encryption policy in `SYFT_version.json`:
 
-| Policy     | Set with                    | Effect                                    |
-| ---------- | --------------------------- | ----------------------------------------- |
-| `optional` | default, `encryption=False` | encrypt only with a peer that requires it |
-| `required` | `encryption=True`           | encrypt with every peer; refuse plaintext |
+| Policy     | Set with                                     | Effect                                    |
+| ---------- | -------------------------------------------- | ----------------------------------------- |
+| `optional` | default on a new SyftBox, `encryption=False` | encrypt only with a peer that requires it |
+| `required` | `encryption=True`                            | encrypt with every peer; refuse plaintext |
 
 A pair encrypts when one side is `required`.
 
-A client takes its policy at login, and keeps it until the process exits. syft-bg takes its policy in `syft_bg.init(encryption=...)`; use the same value as the notebook login, because both write the same datasite. Files at rest are read with the current policy, so a datasite keeps one policy.
+A SyftBox has one policy, kept in `<syftbox>/<email>/private/syft_settings.json`. The first client to start on a new SyftBox writes it: the `encryption` it logged in with, or `optional`. A later client, the notebook or syft-bg, logs in without `encryption` and gets the policy on disk. A client that asks for another policy raises `EncryptionPolicyMismatchError`, and so does a running client at its next sync when the file changed under it. Files at rest are read with the current policy, so to change the policy, delete the SyftBox (`client.delete_syftbox()`) and log in again. `syft-bg init --encryption ...` sets the policy the same way as a login.
 
 Nothing is sent to a peer until its policy is known, that is, until it accepts and shares its version file. A scientist's change for a peer whose policy or bundle is not known is dropped, and the send raises. An owner's send to that peer raises, and the change stays pending, so a later sync sends it. An owner keeps a message it cannot read yet in the inbox, with a warning.
 
 The format of a message must match the pair: plaintext in a pair that encrypts is refused, and so is an envelope in a pair that does not. The owner archives such a message unread, and a scientist skips it, each with a warning.
 
-A peer whose version file has no policy has a policy that is not known: nothing is exchanged with it.
+A peer whose version file has no policy, written by a syft older than `PeerInfo`, counts as `optional`. A peer whose version file is not read yet has a policy that is not known: nothing is exchanged with it.
 
 ## Peer Requests
 
