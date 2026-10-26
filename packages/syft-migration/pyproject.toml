@@ -5,7 +5,7 @@ description = "Versioning and on-the-fly migration foundation for Syft objects"
 readme = "README.md"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 dependencies = [
     "pydantic>=2.11.7",

@@ -6,7 +6,7 @@ Thank you for your interest in contributing to syft! This document provides guid
 
 ### Prerequisites
 
-- Python 3.10 or higher
+- Python 3.11 or higher
 - Git
 - [uv](https://github.com/astral-sh/uv) (recommended) or pip
 
