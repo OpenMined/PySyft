@@ -1839,8 +1839,8 @@ class GDriveConnection(SyftboxPlatformConnection):
         self.collection_folder_id_cache[folder_name] = folder_id
         return folder_id
 
-    def _get_version_file_id(self) -> Optional[str]:
-        """Find SYFT_version.json file in /SyftBox folder"""
+    def _get_own_peer_info_file_id(self) -> Optional[str]:
+        """Find the own peer info file, SYFT_version.json, in /SyftBox."""
         syftbox_folder_id = self.get_syftbox_folder_id()
         query = f"name='{SYFT_VERSION_FILE}' and '{syftbox_folder_id}' in parents and trashed=false"
         results = execute_with_retries(
@@ -1850,10 +1850,10 @@ class GDriveConnection(SyftboxPlatformConnection):
         return items[0]["id"] if items else None
 
     def write_peer_info_file(self, peer_info: "PeerInfo") -> None:
-        """Write version file to /SyftBox folder. Creates or updates the file."""
+        """Write the peer info file to /SyftBox. Creates or updates the file."""
 
         syftbox_folder_id = self.get_syftbox_folder_id()
-        file_id = self._get_version_file_id()
+        file_id = self._get_own_peer_info_file_id()
 
         # Convert to JSON string
         json_data = peer_info.to_json()
@@ -1878,9 +1878,8 @@ class GDriveConnection(SyftboxPlatformConnection):
                 )
             )
 
-    def _get_peer_version_file_id(self, peer_email: str) -> Optional[str]:
-        """Find SYFT_version.json file in a peer's /SyftBox folder"""
-        # Find the peer's SyftBox folder
+    def _get_peer_info_file_id_of(self, peer_email: str) -> Optional[str]:
+        """Find the peer info file, SYFT_version.json, of ``peer_email``."""
         query = (
             f"name='{SYFT_VERSION_FILE}' and trashed=false and '{peer_email}' in owners"
         )
@@ -1891,54 +1890,56 @@ class GDriveConnection(SyftboxPlatformConnection):
         return items[0]["id"] if items else None
 
     def read_own_peer_info_file(self) -> Optional["PeerInfo"]:
-        """Read version file from own /SyftBox folder."""
+        """Read the own peer info file from /SyftBox."""
         from syft.sync.version.peer_info import PeerInfo
 
-        file_id = self._get_version_file_id()
+        file_id = self._get_own_peer_info_file_id()
         if file_id is None:
             return None
 
         try:
             file_data = self.download_file(file_id)
         except Exception as e:
-            print(f"Warning: could not download the own version file: {e}")
+            print(f"Warning: could not download the own peer info file: {e}")
             return None
         try:
             return PeerInfo.from_json(file_data.decode("utf-8"))
         except (ValueError, MigrationError) as e:
-            print(f"Warning: could not read the own version file: {e}")
+            print(f"Warning: could not read the own peer info file: {e}")
             return None
 
     def read_peer_info_file(self, peer_email: str) -> Optional["PeerInfo"]:
-        """Read version file from a peer's /SyftBox folder."""
+        """Read the peer info file from a peer's /SyftBox folder."""
         from syft.sync.version.peer_info import PeerInfo
 
-        file_id = self._get_peer_version_file_id(peer_email)
+        file_id = self._get_peer_info_file_id_of(peer_email)
         if file_id is None:
             return None
 
         try:
             file_data = self.download_file(file_id)
         except Exception as e:
-            print(f"Warning: could not download the version file of {peer_email}: {e}")
+            print(
+                f"Warning: could not download the peer info file of {peer_email}: {e}"
+            )
             return None
         try:
             return PeerInfo.from_json(file_data.decode("utf-8"))
         except (ValueError, MigrationError) as e:
-            print(f"Warning: could not read the version file of {peer_email}: {e}")
+            print(f"Warning: could not read the peer info file of {peer_email}: {e}")
             return None
 
     def share_peer_info_file_with_peer(
         self, peer_email: str, peer_info: "PeerInfo"
     ) -> None:
-        """Share the version file with a peer so they can read it.
+        """Share the peer info file with a peer so they can read it.
 
         A missing file is created from ``peer_info``, the info of this client.
         """
-        file_id = self._get_version_file_id()
+        file_id = self._get_own_peer_info_file_id()
         if file_id is None:
             self.write_peer_info_file(peer_info)
-            file_id = self._get_version_file_id()
+            file_id = self._get_own_peer_info_file_id()
 
         if file_id:
             self.add_permission(file_id, peer_email, write=False)

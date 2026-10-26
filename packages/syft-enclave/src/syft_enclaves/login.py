@@ -24,7 +24,7 @@ def _login(
     skip_peer_on_patch_version_diff: bool | None,
     has_do_role: bool,
     has_ds_role: bool,
-    encryption: bool = False,
+    encryption: bool | None = None,
     key_file: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Shared login for enclave-flow participants.
@@ -82,14 +82,15 @@ def login_do(
     sync: bool = True,
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
-    encryption: bool = False,
+    encryption: bool | None = None,
     key_file: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Log in a data owner for an enclave computation.
 
-    Set ``encryption=True`` to require encryption with every peer. Without
-    it, the client encrypts with each peer that requires it, such as an
-    enclave.
+    Set ``encryption=True`` to require encryption with every peer, and
+    ``False`` to encrypt only with each peer that requires it, such as an
+    enclave. Without it, the client takes the policy of its SyftBox, or
+    ``False`` on a new one.
 
     ``key_file`` is the ``crypto_keys.json`` of an earlier session, e.g. an
     uploaded file on Colab. Without it, the first login makes new keys.
@@ -113,14 +114,15 @@ def login_ds(
     sync: bool = True,
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
-    encryption: bool = False,
+    encryption: bool | None = None,
     key_file: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Log in a data scientist for an enclave computation.
 
-    Set ``encryption=True`` to require encryption with every peer. Without
-    it, the client encrypts with each peer that requires it, such as an
-    enclave.
+    Set ``encryption=True`` to require encryption with every peer, and
+    ``False`` to encrypt only with each peer that requires it, such as an
+    enclave. Without it, the client takes the policy of its SyftBox, or
+    ``False`` on a new one.
 
     ``key_file`` is the ``crypto_keys.json`` of an earlier session, e.g. an
     uploaded file on Colab. Without it, the first login makes new keys.

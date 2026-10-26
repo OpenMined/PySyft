@@ -37,6 +37,16 @@ def test_fresh_state_true_invokes_delete_syftbox():
     client.delete_syftbox.assert_called_once_with()
 
 
+def test_fresh_state_writes_keys_back_after_wipe():
+    """The attestation server signs nonces with the key file the wipe deleted."""
+    client = _make_client()
+    runner = EnclaveRunner(client=client, fresh_state=True, attestation_provider="none")
+    runner.init()
+
+    peer_store = client._rds.peer_manager.peer_store
+    peer_store.save_keys.assert_called_once_with(runner._keys_path())
+
+
 def test_fresh_state_false_skips_delete_syftbox():
     """Opting out (fresh_state=False) preserves state across init."""
     client = _make_client()

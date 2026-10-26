@@ -13,6 +13,7 @@ from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
+    EncryptionPolicyMismatchError,
     MessageFormatError,
 )
 from syft.sync.events.file_change_event import (
@@ -20,9 +21,14 @@ from syft.sync.events.file_change_event import (
 )
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer
-from syft.sync.peers.peer_store import PeerStore, datasite_crypto_keys_path
+from syft.sync.peers.peer_store import (
+    PeerStore,
+    datasite_settings_path,
+    resolve_encryption_policy,
+)
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.version.peer_info import PeerInfo
+from syft.sync.version.peer_manager import PeerManager, PeerManagerConfig
 from syft.sync.version.version_info import VersionInfo
 from tests.unit.test_persisted_cache import (
     _assert_ds_receives_after_notebook_sync,
@@ -141,9 +147,13 @@ def test_encryption_setting_maps_to_policy(value, expected):
     assert EncryptionPolicy.from_bool(value) == expected
 
 
-@pytest.mark.parametrize("value", [OPTIONAL, "optional", 1, None])
-def test_encryption_setting_must_be_bool(value):
-    with pytest.raises(TypeError, match="True or False"):
+def test_no_encryption_setting_maps_to_no_policy():
+    assert EncryptionPolicy.from_bool(None) is None
+
+
+@pytest.mark.parametrize("value", [OPTIONAL, "optional", 1])
+def test_encryption_setting_must_be_bool_or_none(value):
+    with pytest.raises(TypeError, match="True, False or None"):
         EncryptionPolicy.from_bool(value)
 
 
@@ -238,6 +248,56 @@ def test_encrypting_pair_without_peer_bundle_not_ready():
 # =========================================================================
 
 
+@pytest.mark.parametrize(
+    "requested, expected", [(None, OPTIONAL), (REQUIRED, REQUIRED)]
+)
+def test_first_client_writes_policy(tmp_path, requested, expected):
+    path = tmp_path / "syft_settings.json"
+    assert resolve_encryption_policy(path, requested) == expected
+    assert resolve_encryption_policy(path, None) == expected
+
+
+def test_client_with_other_policy_than_disk_raises(tmp_path):
+    path = tmp_path / "syft_settings.json"
+    resolve_encryption_policy(path, OPTIONAL)
+    with pytest.raises(EncryptionPolicyMismatchError, match="'optional'"):
+        resolve_encryption_policy(path, REQUIRED)
+
+
+def test_client_without_policy_takes_policy_of_syftbox(tmp_path):
+    """syft-bg starts after a notebook that required encryption."""
+
+    def start(policy):
+        config = PeerManagerConfig(
+            syftbox_folder=tmp_path, email="alice@example.com", encryption_policy=policy
+        )
+        return PeerManager.from_config(config).peer_store.encryption_policy
+
+    assert start(REQUIRED) == REQUIRED
+    assert start(None) == REQUIRED
+
+
+def test_sync_raises_when_policy_on_disk_changed():
+    """Another process deleted the SyftBox and started with another policy."""
+    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    settings = datasite_settings_path(do_manager.syftbox_folder, do_manager.email)
+    settings.unlink()
+    resolve_encryption_policy(settings, REQUIRED)
+    with pytest.raises(EncryptionPolicyMismatchError):
+        do_manager.sync()
+
+
+def test_policy_check_writes_missing_settings_back():
+    """After delete_syftbox, the running client keeps its policy for the SyftBox."""
+    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        do_encryption_policy=REQUIRED
+    )
+    settings = datasite_settings_path(do_manager.syftbox_folder, do_manager.email)
+    settings.unlink()
+    do_manager.peer_manager.check_encryption_policy()
+    assert resolve_encryption_policy(settings, None) == REQUIRED
+
+
 @pytest.mark.parametrize("policy", [OPTIONAL, REQUIRED])
 def test_every_policy_creates_key_file(tmp_path, policy):
     keys_path = tmp_path / "crypto_keys.json"
@@ -245,17 +305,6 @@ def test_every_policy_creates_key_file(tmp_path, policy):
         email="alice@example.com", encryption_policy=policy, keys_path=keys_path
     )
     reloaded = PeerStore.create(email="alice@example.com", keys_path=keys_path)
-    assert reloaded.get_public_bundle() == store.get_public_bundle()
-
-
-def test_delete_syftbox_keeps_keys_on_disk():
-    """The client keeps its keys after the wipe, so the next login must find them."""
-    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-    store = do_manager.peer_manager.peer_store
-    do_manager.delete_syftbox(verbose=False, broadcast_delete_events=False)
-
-    keys_path = datasite_crypto_keys_path(do_manager.syftbox_folder, do_manager.email)
-    reloaded = PeerStore.create(email=do_manager.email, keys_path=keys_path)
     assert reloaded.get_public_bundle() == store.get_public_bundle()
 
 

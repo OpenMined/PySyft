@@ -128,6 +128,9 @@ class EnclaveRunner:
                 "(local folder + Google Drive files) before init"
             )
             self.client.delete_syftbox()
+            # The wipe took the key file with it. The attestation server reads
+            # it to sign nonces, so write the keys held in memory back.
+            self.client._rds.peer_manager.peer_store.save_keys(self._keys_path())
             logger.info("State wipe complete — enclave starts with a clean slate")
 
     def _on_attesting(self) -> None:

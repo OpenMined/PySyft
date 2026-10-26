@@ -434,10 +434,13 @@ class ConnectionRouter(BaseModel):
             }
         return files
 
-    def connection_for_version_read(
+    def connection_for_peer_file_read(
         self, create_new: bool = False
     ) -> SyftboxPlatformConnection:
-        """Get connection for reading version files. Can create new for thread safety."""
+        """Connection for reading files a peer publishes: peer info and key bundles.
+
+        Can create a new one for thread safety.
+        """
         existing_connection = self.connections[0]
         if create_new:
             return self.copy_connection(existing_connection)
@@ -445,21 +448,21 @@ class ConnectionRouter(BaseModel):
             return existing_connection
 
     def write_peer_info_file(self, peer_info: "PeerInfo") -> None:
-        """Write version file to own SyftBox folder."""
+        """Write the peer info file to own SyftBox folder."""
         self.transport.peering.publish_peer_info(peer_info)
 
     def read_own_peer_info_file(self) -> Optional["PeerInfo"]:
-        """Read version file from own SyftBox folder."""
+        """Read the peer info file from own SyftBox folder."""
         return self.transport.peering.read_own_peer_info()
 
     def read_peer_info_file(self, peer_email: str) -> Optional["PeerInfo"]:
-        """Read version file from a peer's SyftBox folder."""
+        """Read the peer info file from a peer's SyftBox folder."""
         return self.transport.peering.read_peer_info(peer_email)
 
     def share_peer_info_file_with_peer(
         self, peer_email: str, peer_info: "PeerInfo"
     ) -> None:
-        """Share version file with a peer so they can read it."""
+        """Share the peer info file with a peer so they can read it."""
         self.transport.peering.grant_peer_info_read(peer_email, peer_info)
 
     def watcher_get_collection_file_metadatas(

@@ -241,10 +241,16 @@ def run_foreground(service: str, once: bool):
 @click.option(
     "--encryption",
     type=click.Choice(["optional", "required"]),
-    required=True,
-    help="Encryption policy. Use the same policy as the notebook login.",
+    default=None,
+    help="Encryption policy of the SyftBox. Without it, the SyftBox keeps its "
+    "policy, or uses optional when it has none.",
 )
-def init(email: str, syftbox_root: str | None, token_path: str | None, encryption: str):
+def init(
+    email: str,
+    syftbox_root: str | None,
+    token_path: str | None,
+    encryption: str | None,
+):
     """Initialize syft-bg configuration.
 
     Sets up the config file with the data owner email and optional
@@ -252,7 +258,7 @@ def init(email: str, syftbox_root: str | None, token_path: str | None, encryptio
 
     Examples:
 
-      syft-bg init -e alice@uni.edu --encryption optional
+      syft-bg init -e alice@uni.edu
 
       syft-bg init -e alice@uni.edu --encryption required -r ~/syftbox -t ~/token.json
     """
@@ -262,7 +268,7 @@ def init(email: str, syftbox_root: str | None, token_path: str | None, encryptio
         do_email=email,
         syftbox_root=syftbox_root,
         token_path=token_path,
-        encryption=encryption == "required",
+        encryption=None if encryption is None else encryption == "required",
     )
 
 

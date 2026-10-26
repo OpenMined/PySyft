@@ -114,7 +114,7 @@ def login(
     token_path: str | Path | None = None,
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
-    encryption: bool = False,  # True: required
+    encryption: bool | None = None,  # True: required; None: the datasite's policy
     key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
 ):
     return login_ds(
@@ -135,7 +135,7 @@ def login_ds(
     token_path: str | Path | None = None,
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
-    encryption: bool = False,  # True: required
+    encryption: bool | None = None,  # True: required; None: the datasite's policy
     key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
 ):
     env = check_env()
@@ -171,7 +171,7 @@ def login_do(
     token_path: str | Path | None = None,
     skip_peer_on_patch_version_diff: bool
     | None = None,  # None: value is determined by the role
-    encryption: bool = False,  # True: required
+    encryption: bool | None = None,  # True: required; None: the datasite's policy
     key_file: str | Path | None = None,  # crypto_keys.json of an earlier session
 ):
     env = check_env()

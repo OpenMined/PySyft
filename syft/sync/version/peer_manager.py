@@ -20,7 +20,12 @@ from syft.sync.encryption_policy import (
     pair_uses_encryption,
 )
 from syft.sync.peers.peer import Peer, PeerNotReadyError, PeerSetupError, PeerState
-from syft.sync.peers.peer_store import PeerStore, datasite_crypto_keys_path
+from syft.sync.peers.peer_store import (
+    PeerStore,
+    datasite_crypto_keys_path,
+    datasite_settings_path,
+    resolve_encryption_policy,
+)
 from syft.sync.utils.print_utils import (
     print_peer_already_connected,
     print_peer_connection_established,
@@ -113,7 +118,8 @@ class PeerManagerConfig(BaseModel):
     n_threads: int = 10
     has_do_role: bool = False
     has_ds_role: bool = False
-    encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL
+    # None: the policy of the datasite on disk, or OPTIONAL on a new datasite.
+    encryption_policy: Optional[EncryptionPolicy] = None
     skip_peer_on_patch_version_diff: Optional[bool] = (
         None  # None: value is determined by the role (resolves to has_do_role)
     )
@@ -123,6 +129,11 @@ class PeerManagerConfig(BaseModel):
         """Per-datasite encryption key file for this participant
         (``<syftbox_folder>/<email>/private/crypto_keys.json``)."""
         return datasite_crypto_keys_path(self.syftbox_folder, self.email)
+
+    @property
+    def settings_path(self) -> Path:
+        """Per-datasite settings file, shared by every process on the datasite."""
+        return datasite_settings_path(self.syftbox_folder, self.email)
 
     @model_validator(mode="after")
     def _default_skip_peer_on_patch(self) -> "PeerManagerConfig":
@@ -199,7 +210,9 @@ class PeerManager(BaseModel):
         resolved_email = config.email or email
         peer_store = PeerStore.create(
             email=resolved_email,
-            encryption_policy=config.encryption_policy,
+            encryption_policy=resolve_encryption_policy(
+                config.settings_path, config.encryption_policy
+            ),
             keys_path=config.crypto_keys_path,
         )
         connection_router = ConnectionRouter.from_configs(
@@ -285,14 +298,14 @@ class PeerManager(BaseModel):
         )
 
     def write_own_peer_info(self) -> None:
-        """Write version file to own SyftBox folder (remote) and local disk."""
+        """Write the peer info file to own SyftBox folder, and the version to local disk."""
         from syft.sync.version.local_version import write_local_version
 
         self.connection_router.write_peer_info_file(self.get_own_peer_info())
         write_local_version(self.syftbox_folder)
 
     def share_peer_info_with_peer(self, peer_email: str) -> None:
-        """Share version file with a peer so they can read it."""
+        """Share the peer info file with a peer so they can read it."""
         self.connection_router.share_peer_info_file_with_peer(
             peer_email, self.get_own_peer_info()
         )
@@ -319,13 +332,13 @@ class PeerManager(BaseModel):
         """Load the info of a single peer. Used by parallel loader."""
         try:
             # Create new connection for thread safety
-            connection = self.connection_router.connection_for_version_read(
+            connection = self.connection_router.connection_for_peer_file_read(
                 create_new=True
             )
             peer_info = connection.read_peer_info_file(peer_email)
         except Exception as e:
             if not self.suppress_version_warnings:
-                warnings.warn(f"Failed to load version for {peer_email}: {e}")
+                warnings.warn(f"Failed to load peer info for {peer_email}: {e}")
             return (peer_email, None)
         return (peer_email, peer_info)
 
@@ -690,7 +703,9 @@ class PeerManager(BaseModel):
 
     def _read_own_published_bundle(self, peer_email: str) -> dict | None:
         """The bundle this client published for ``peer_email``, or None (thread-safe)."""
-        connection = self.connection_router.connection_for_version_read(create_new=True)
+        connection = self.connection_router.connection_for_peer_file_read(
+            create_new=True
+        )
         bundle_json = connection.read_own_encryption_bundle(peer_email)
         if bundle_json is None:
             return None
@@ -707,6 +722,20 @@ class PeerManager(BaseModel):
                 self.connection_router.update_peer_state(
                     peer.email, peer.state.value, public_encryption_bundle=bundle
                 )
+
+    def check_encryption_policy(self) -> None:
+        """Raise when the datasite policy on disk is not the policy of this client.
+
+        Another process may have deleted the SyftBox and started with another
+        policy. A missing settings file gets the policy of this client.
+
+        Raises:
+            EncryptionPolicyMismatchError: if the policy on disk differs.
+        """
+        resolve_encryption_policy(
+            datasite_settings_path(self.syftbox_folder, self.peer_store.email),
+            self.peer_store.encryption_policy,
+        )
 
     def validate_peer(self, peer_email: str) -> Peer:
         """Return the peer ``peer_email`` if it is approved, else raise.
