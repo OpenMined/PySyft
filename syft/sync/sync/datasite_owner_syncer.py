@@ -240,6 +240,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         try:
             if not self.initial_sync_done:
                 self.pull_initial_state()
+            # The one permission load of this pass. Each step below reads it.
+            self.perm_context._reload()
             # Before the local changes are recorded, so that a file changed
             # while the owner was offline is not seeded as held.
             self._seed_views_if_missing(peer_emails)
@@ -699,7 +701,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         deliveries = self.event_cache.deliveries
         if deliveries.is_seeded():
             return
-        self.perm_context._reload()
         approved = [p.email for p in self.connection_router.peer_store.approved_peers]
         deliveries.seed(self._held_before_seed(sorted({*approved, *peer_emails})))
 
@@ -721,10 +722,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     def deliver(self, peer_emails: list[str]) -> None:
         """Send each peer the files its view lacks, and deletes for the files it
-        may no longer have."""
+        may no longer have. The caller loads the permissions first."""
         deliveries = self.event_cache.deliveries
         deliveries.confirm(self.connection_router.transport.p2p.delivered())
-        self.perm_context._reload()
         plans = deliveries.plan(self._readable_hashes(peer_emails))
         accepted = deliveries.accepted_changes()
         syncable = self._syncable_hashes()
@@ -863,9 +863,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """The changes of ``message``, accepted from ``sender_email``, by path.
 
         Each change is withheld from the other approved peers that may read its
-        file now.
+        file now. The caller loads the permissions first.
         """
-        self.perm_context._reload()
         others = [
             p.email
             for p in self.connection_router.peer_store.approved_peers
@@ -913,7 +912,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         message is dropped. The planned messages after it are dropped too, and
         the other messages after it go back on the queue.
         """
-        self.perm_context._reload()
         unsent = deque()
         while not self.outbox_queue.empty():
             unsent.append(self.outbox_queue.get())

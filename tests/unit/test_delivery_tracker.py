@@ -26,6 +26,7 @@ from syft.sync.sync.delivery_tracker import (
 )
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.transport.types import SendStatus
+from syft_perms import SyftPermContext
 
 PEER = "ds@example.com"
 
@@ -434,6 +435,25 @@ def test_private_dataset_sent_to_peer_never_revoked():
     assert _sent_events(ds_manager, do_manager, "private/data.csv") == [
         (False, b"rows")
     ]
+
+
+def test_sync_reloads_permissions_once(monkeypatch):
+    ds_manager, do_manager = _pair()
+    do_manager.datasite_owner_syncer.perm_context.open("shared/").grant_read_access(
+        ds_manager.email
+    )
+    _write(do_manager, "shared/data.txt", "one")
+    reload = SyftPermContext._reload
+    reloads = []
+
+    def counting_reload(self):
+        reloads.append(self)
+        reload(self)
+
+    monkeypatch.setattr(SyftPermContext, "_reload", counting_reload)
+    do_manager.sync(auto_checkpoint=False)
+    assert _outbox_paths(ds_manager, do_manager) == ["shared/data.txt"]
+    assert len(reloads) == 1
 
 
 def test_large_catch_up_split_into_messages(monkeypatch):
