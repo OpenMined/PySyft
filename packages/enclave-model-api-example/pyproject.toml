@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Example LLM inference API packaged on top of a syft-enclave"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 dependencies = [
     "syft-enclave==0.1.1",

@@ -5,7 +5,7 @@ description = "Background services TUI dashboard for SyftBox"
 readme = "README.md"
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "click>=8.0.0",
     "pyyaml>=6.0",
