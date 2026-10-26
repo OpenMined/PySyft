@@ -171,9 +171,27 @@ The runner gives each policy these environment variables:
 
 The module docstring of `syft_job/policies/env.py` documents every variable and convention in one place.
 
+### Describing a policy
+
+The DS sees the full source of an API's policies when they look at the API, for example in `ds_client.api["word_count"]`. Start every policy with a docstring of one or two lines that says in plain words what the policy allows and what it refuses, so that is the first thing the DS reads:
+
+```python
+"""Allows each caller up to 10 calls every 24 hours, and refuses any call over that limit."""
+```
+
+A bash policy can start with a comment instead.
+
 ### Denying a call
 
-A policy denies a call by exiting with a non-zero code. In Python, any uncaught exception does that. The job is then marked `failed`. The last line of the policy's error output is written to `policy_error.txt` and shared with the DS. The full error output stays with the DO, because a traceback can show private paths or data.
+A policy denies a call by raising an exception, or by exiting with a non-zero code. The job is then marked `failed`. The last line of the policy's error output is written to `policy_error.txt` and shared with the DS, who reads it in `job.policy_error`. The full error output stays with the DO, because a traceback can show private paths or data.
+
+For an uncaught exception, that last line is the exception's name and message. Keep the message to one line that says what was refused and why:
+
+```python
+raise ValueError("Rate limit reached: 10 calls per 24 hours")
+```
+
+The DS then sees `ValueError: Rate limit reached: 10 calls per 24 hours`.
 
 ### State and locking
 
@@ -182,6 +200,8 @@ The state folder belongs to the API, and only the DO can read it. The policy wri
 ### Example: rate limit
 
 ```python
+"""Allows each caller up to 10 calls every 24 hours, and refuses any call over that limit."""
+
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -246,6 +266,9 @@ The DS always sees the job's status. When the output policy denies, the job is `
 ### Example: block a word
 
 ```python
+"""Shares the outputs only when no output file contains the word SECRET.
+Refuses to share any of them when one does."""
+
 import os
 from pathlib import Path
 
@@ -253,7 +276,7 @@ outputs = Path(os.environ["SYFT_POLICY_OUTPUTS_DIR"])
 
 for f in outputs.rglob("*"):
     if f.is_file() and "SECRET" in f.read_text(errors="ignore"):
-        raise ValueError(f"Output {f.name} contains a blocked word")
+        raise ValueError(f"Outputs not shared: {f.name} contains a blocked word")
 ```
 
 ### Example: redact CSV rows
@@ -261,6 +284,9 @@ for f in outputs.rglob("*"):
 Only `outputs/` is shared, so a job and its output policy can agree on another folder for staging. In this example the job writes `results.csv` to `output_candidates/`, next to `outputs/`. The policy replaces every row that mentions the secret, writes the cleaned file to `outputs/`, and logs the original rows in the state folder. `output_candidates/` is a convention of this example; the runner does not know about it.
 
 ```python
+"""Shares results.csv with every row that mentions SECRET replaced by [REDACTED].
+The original rows stay with the data owner."""
+
 import csv
 import os
 from pathlib import Path
@@ -295,6 +321,8 @@ result.outputs_dir   # the outputs after the run
 ### Example: add an auditor
 
 ```python
+"""Shares the outputs with the caller and with auditor@example.com."""
+
 import json
 import os
 from pathlib import Path
