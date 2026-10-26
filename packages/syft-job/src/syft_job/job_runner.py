@@ -75,6 +75,7 @@ def _format_timeout(seconds: int) -> str:
         parts.append(f"{secs} second{'s' if secs != 1 else ''}")
     return " ".join(parts)
 
+
 # A job runs from a fresh copy of its approved submission in the system temp
 # folder, outside the SyftBox: sync never reads it, and no submitter writes it.
 RUN_DIR_PREFIX = "syft-job-run-"

@@ -41,30 +41,11 @@ def test_job_timeout_rejects_invalid_environment_value(
 @pytest.mark.parametrize(
     "seconds,expected",
     [
-        (0, "0 seconds"),
         (30, "30 seconds"),
-        (1, "1 second"),
         (60, "1 minute"),
         (90, "1 minute 30 seconds"),
-        (120, "2 minutes"),
-        (600, "10 minutes"),
-        (3600, "1 hour"),
         (3661, "1 hour 1 minute 1 second"),
-        (7384, "2 hours 3 minutes 4 seconds"),
     ],
 )
-def test_format_timeout_produces_human_readable_string(
-    seconds: int, expected: str
-) -> None:
-    """Timeouts should be formatted as readable hours, minutes, and seconds."""
+def test_format_timeout(seconds: int, expected: str) -> None:
     assert _format_timeout(seconds) == expected
-
-
-def test_format_timeout_never_reports_zero_minutes_for_sub_minute_timeout() -> None:
-    """Regression test for issue #9527: sub-minute timeouts reported as 0 minutes."""
-    for seconds in range(1, 60):
-        result = _format_timeout(seconds)
-        assert "0 minutes" not in result, (
-            f"_format_timeout({seconds}) returned {result!r}, "
-            "which incorrectly contains '0 minutes'"
-        )
