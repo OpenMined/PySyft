@@ -1098,44 +1098,6 @@ class SyftboxManager(BaseModelCallbackMixin):
             f"Timed out after {timeout:g}s waiting for peer {peer_email}: {error}"
         ) from error
 
-    # ========== Encryption key fingerprints ==========
-
-    @property
-    def encryption_fingerprint(self) -> str | None:
-        """Fingerprint of our own encryption key, to give peers out of band.
-
-        None when encryption is off.
-        """
-        return self.peer_manager.my_fingerprint()
-
-    def peer_fingerprint(self, peer_email: str) -> str | None:
-        """Fingerprint of the encryption key pinned for ``peer_email``.
-
-        Compare it with the fingerprint the peer reads out from their own
-        ``client.encryption_fingerprint``. The key arrived over Drive, and only
-        that comparison shows it is theirs. None when no key is pinned.
-        """
-        return self.peer_manager.peer_fingerprint(peer_email)
-
-    def trust_peer_key(self, peer_email: str, fingerprint: str) -> str | None:
-        """Adopt the key ``peer_email`` publishes, if it carries ``fingerprint``.
-
-        Run this after a peer reinstalled or regenerated their keys. Ask them
-        for their new ``client.encryption_fingerprint`` out of band and pass it
-        here: the storage provider is not trusted, so the published key is
-        adopted only when it matches. Spaces and case in ``fingerprint`` are
-        ignored. Returns the fingerprint now pinned.
-
-        Raises:
-            PeerFingerprintMismatchError: the published key carries another
-                fingerprint. The pin is left unchanged.
-        """
-        pinned_fingerprint = self.peer_manager.refresh_peer_bundle(
-            peer_email, trust_new_key=True, expected_fingerprint=fingerprint
-        )
-        self._emit_peers_loaded()
-        return pinned_fingerprint
-
     def _add_connection(self, connection: SyftboxPlatformConnection):
         if not (
             isinstance(connection, GDriveConnection)
