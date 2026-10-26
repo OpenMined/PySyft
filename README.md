@@ -20,7 +20,7 @@ PySyft lets data scientists submit computations which are run by data owners on 
 - [Workflow](https://github.com/OpenMined/PySyft/blob/dev/docs/workflow.md) — End-to-end privacy-preserving data analysis workflow
 - [API Reference](https://github.com/OpenMined/PySyft/blob/dev/docs/API.md) — All public client methods and properties
 - [Authentication & Setup](https://github.com/OpenMined/PySyft/blob/dev/docs/auth.md) — Google Cloud OAuth setup for local/Jupyter usage
-- [Background Services](https://github.com/OpenMined/PySyft/blob/dev/packages/syft-bg/README.md) — Email notifications, auto-approval, and TUI dashboard
+- [Background Services](https://github.com/OpenMined/PySyft/blob/dev/packages/syft-bg/README.md) — Email notifications, running api calls, and TUI dashboard
 - [Connections](https://github.com/OpenMined/PySyft/blob/dev/docs/connections.md) — How the Google Drive transport layer works
 - [Permissions](https://github.com/OpenMined/PySyft/blob/dev/packages/syft-permissions/docs/permission-user-docs.md) - Permissions for syft
 - [Enclaves](https://github.com/OpenMined/PySyft/tree/dev/packages/syft-enclave) - Enclaves with syft
@@ -100,14 +100,15 @@ Submit the job and retrieve results:
 ds.submit_python_job(
     user="do@org.com",
     code_path="analysis.py",
+    job_name="analysis",
 )
 ds.sync(); do.sync()
 
 # Data owner Approves & runs job
-do.jobs[0].approve()
+do.jobs["ds@org.com"]["analysis"].approve()
 do.process_approved_jobs(share_outputs_with_submitter=True)
 do.sync(); ds.sync()
-result = open(ds.jobs[-1].output_paths[0]).read()
+result = open(ds.jobs["do@org.com"]["analysis"].output_paths[0]).read()
 ```
 
 ## Packages

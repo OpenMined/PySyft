@@ -18,10 +18,7 @@ from syft_job.disclosures import (  # noqa: F401 (re-exported)
 )
 from syft_job.job import JobInfo
 from syft_job.models import JobStatus
-from syft_job.submission import (  # noqa: F401 (submission_hash re-exported)
-    check_expected_digest,
-    submission_hash,
-)
+from syft_job.submission import submission_hash  # noqa: F401 (re-exported)
 
 
 class PartyApprovalStatus(BaseModel):
@@ -117,8 +114,11 @@ class EnclaveJobInfo(JobInfo):
     def _load_own_approval(self) -> PartyApprovalStatus:
         if not self._approval_file.exists():
             raise PermissionError(
-                f"No approval file found for {self.current_user_email}. "
-                f"You may not be a designated party for this job."
+                f"No approval file for {self.current_user_email} on job "
+                f"'{self.name}'. The enclave writes one per designated party "
+                f"when it distributes the job, so either it has not distributed "
+                f"this job yet — run client.sync() and retry — or you are not a "
+                f"party to it."
             )
         return PartyApprovalStatus.load_json(self._approval_file)
 
@@ -222,12 +222,8 @@ class EnclaveJobInfo(JobInfo):
         reason: Optional[str] = None,
         approval_method: str = "manual",
         disclosures: DisclosuresArg = None,
-        expected_digest: Optional[str] = None,
     ) -> None:
         """Approve this submission in the DO's own approval file.
-
-        ``expected_digest`` is the submission hash an automated approver
-        checked; the approval is refused unless the submission still has it.
 
         ``disclosures`` names the items in ``DisclosureItem`` that this party
         releases to the other parties. The enclave releases an item only when
@@ -243,7 +239,6 @@ class EnclaveJobInfo(JobInfo):
         check_approval_reason(reason)
         approval = self._load_own_approval()
         current = submission_hash(self.job_submission_path)
-        check_expected_digest(self.name, expected_digest, current)
         if approval.status == JobStatus.REJECTED or _approves(approval, current):
             raise ValueError(f"Already in status: {approval.status.value}")
         approval.status = JobStatus.APPROVED

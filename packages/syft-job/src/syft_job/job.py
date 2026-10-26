@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, List, Optional
@@ -29,7 +30,13 @@ from .job_repr import (
 from .job_stdout import StdoutViewer
 from .job_storage import JobRef
 from .models import JobState, JobStatus, JobSubmissionMetadata
-from .submission import SubmissionRecord, check_expected_digest, submission_hash
+from .policies import (
+    OUTPUTS_WITHHELD_FILENAME,
+    POLICY_ERROR_FILENAME,
+    JobPolicies,
+    PolicyResolutionError,
+)
+from .submission import API_HEADER, OwnerJobRecord, submission_hash
 
 # The files that ``share_logs_with_submitter`` releases.
 STAGED_LOG_FILES = tuple(
@@ -150,10 +157,12 @@ class JobInfo:
         """The items that go to the submitter: requested and released."""
         return set(self.disclosures) & set(self.requested_disclosures)
 
-    def _write_disclosures(self, disclosures: DisclosuresArg) -> dict[str, bool]:
+    def _write_disclosures(
+        self, disclosures: DisclosuresArg, stacklevel: int = 4
+    ) -> dict[str, bool]:
         granted = restrict_to_request(disclosures, self.requested_disclosures)
-        # Up to the public caller: approve() or update_disclosures().
-        warn_on_logs_release(granted, self.requested_disclosures, stacklevel=4)
+        # Up to the public caller, update_disclosures() by default.
+        warn_on_logs_release(granted, self.requested_disclosures, stacklevel)
         path = self.job_review_path / DISCLOSURES_FILENAME
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(granted))
@@ -265,7 +274,7 @@ class JobInfo:
                     for item in outputs_dir.iterdir()
                     if item.name != PERMISSION_FILE_NAME
                 ]
-            except Exception:
+            except OSError:
                 return []
 
         if status == JobStatus.FAILED:
@@ -319,7 +328,7 @@ class JobInfo:
                     ):
                         continue
                     all_files.append(f)
-        except Exception:
+        except OSError:
             pass
         return all_files
 
@@ -336,12 +345,52 @@ class JobInfo:
         """Reason recorded at review time (approval or rejection)."""
         return self._state.review_reason
 
+    @property
+    def api_name(self) -> Optional[str]:
+        """The api this job calls.
+
+        On the DO's side it comes from the owner record, which only the DO
+        writes. Elsewhere it is the name the caller put in config.yaml.
+        """
+        record = self._client.manager.read_owner_record(self._ref)
+        if record is not None:
+            return record.api_name
+        return self.job_headers.get(API_HEADER)
+
+    @property
+    def policies(self) -> Optional[JobPolicies]:
+        """The policies of the api this job calls, when this client loads apis."""
+        resolver = self._client.api_resolver
+        if self.api_name is None or resolver is None:
+            return None
+        try:
+            return resolver(self.api_name).policies
+        except PolicyResolutionError:
+            return None
+
+    @property
+    def policy_error(self) -> Optional[str]:
+        """Why a policy denied the job, as the submitter sees it."""
+        path = self.artifact_path(POLICY_ERROR_FILENAME)
+        try:
+            return path.read_text().strip() or None
+        except OSError:
+            return None
+
+    @property
+    def outputs_withheld(self) -> bool:
+        """True when the output policy kept the outputs from the submitter.
+
+        The runner releases an empty marker file to the submitter for this;
+        only whether it exists matters.
+        """
+        return self.artifact_path(OUTPUTS_WITHHELD_FILENAME).exists()
+
     def approve(
         self,
         reason: Optional[str] = None,
         approval_method: str = "manual",
         disclosures: DisclosuresArg = None,
-        expected_digest: Optional[str] = None,
     ) -> None:
         """
         Approve a job by updating state.yaml in review/.
@@ -358,31 +407,27 @@ class JobInfo:
                 releases. Only the items that the submitter requested are
                 stored, so a later edit of the request cannot add items.
                 Omit the argument to release nothing.
-            expected_digest: The submission hash an automated approver checked.
-                The approval is refused unless the submission still has it.
 
         Raises:
             ValueError: If job is not in pending status, was not fully
-                received, or changed after it was received or was checked
+                received, or changed after it was received
             PermissionError: If the current user is not authorized to approve
             TypeError: If reason is not a string
         """
         check_approval_reason(reason)
-        if self._state.status != JobStatus.PENDING:
-            raise ValueError(
-                f"Job '{self.name}' is not in pending status (current: {self.status})"
-            )
+        self._approve(reason, approval_method, disclosures)
 
-        if self.datasite_owner_email != self.current_user_email:
-            raise PermissionError(
-                f"Only the admin user ({self.datasite_owner_email}) can approve jobs in their folder. "
-                f"Current job is in {self.datasite_owner_email}'s folder."
-            )
-
-        # The approved hash and the grant go first, so the runner never sees an
-        # approved state without them. The hash check runs before any write.
-        record = self._record_approved_hash(approval_method, expected_digest)
-        self._write_disclosures(disclosures)
+    def _approve(
+        self, reason: Optional[str], approval_method: str, disclosures: DisclosuresArg
+    ) -> None:
+        self._check_can_approve()
+        # The check runs before any write. The record and the grant go before
+        # the state, so the runner never sees an approved state without them.
+        record = self._read_owner_record()
+        self._check_unchanged(record)
+        self._record_approval(record, approval_method)
+        # Up to the caller of approve(), through _approve().
+        self._write_disclosures(disclosures, stacklevel=5)
         self._state.status = JobStatus.APPROVED
         self._state.approved_by = self.current_user_email
         self._state.approved_at = record.approved_at
@@ -394,6 +439,19 @@ class JobInfo:
         print("\n⏳ Next step: run process_approved_jobs() to execute it.")
         print("   client.process_approved_jobs(share_outputs_with_submitter=True)")
 
+    def _check_can_approve(self) -> None:
+        if self._state.status != JobStatus.PENDING:
+            raise ValueError(
+                f"Job '{self.name}' is not in pending status (current: {self.status})"
+            )
+        if self.datasite_owner_email != self.current_user_email:
+            raise PermissionError(
+                f"You are {self.current_user_email}, and job '{self.name}' is on "
+                f"{self.datasite_owner_email}'s datasite. Only they can approve "
+                f"it. If you meant one of your own, select your datasite "
+                f'first: jobs["{self.current_user_email}"]["<name>"].'
+            )
+
     def record_approval(self, approval_method: str) -> None:
         """Record the received submission as approved, without changing the state.
 
@@ -404,32 +462,39 @@ class JobInfo:
         Raises:
             ValueError: If the job was not fully received, or changed after.
         """
-        self._record_approved_hash(approval_method, expected_digest=None)
+        record = self._read_owner_record()
+        self._check_unchanged(record)
+        self._record_approval(record, approval_method)
 
-    def _record_approved_hash(
-        self, approval_method: str, expected_digest: Optional[str]
-    ) -> SubmissionRecord:
-        """Check the submission is the one received, and record it as approved."""
-        manager = self._client.manager
-        record = manager.read_submission_record(self._ref)
+    def _read_owner_record(self) -> OwnerJobRecord:
+        """The owner-side record of the job, written when it was received."""
+        record = self._client.manager.read_owner_record(self._ref)
         if record is None:
             raise ValueError(
                 f"Job '{self.name}' was not fully received yet. List the jobs "
                 f"again once all its files arrived, then approve."
             )
-        current = submission_hash(self.job_submission_path)
-        if current != record.received_hash:
+        return record
+
+    def _check_unchanged(self, record: OwnerJobRecord) -> None:
+        """Raise unless the submission is the one received.
+
+        The runner checks its run copy against the approved hash anyway; this
+        gives a clear error at approval instead of a failed job later.
+        """
+        if submission_hash(self.job_submission_path) != record.received_hash:
             raise ValueError(
                 f"Job '{self.name}' changed after it was received, so it is not "
                 f"approved. Reject it, or ask the submitter to submit it again."
             )
-        check_expected_digest(self.name, expected_digest, current)
-        record.approved_hash = current
+
+    def _record_approval(self, record: OwnerJobRecord, approval_method: str) -> None:
+        """Record the received submission as approved, and how, in one write."""
+        record.approved_hash = record.received_hash
         record.approved_by = self.current_user_email
         record.approved_at = datetime.now(timezone.utc)
         record.approval_method = approval_method
-        manager.write_submission_record(self._ref, record)
-        return record
+        self._client.manager.write_owner_record(self._ref, record)
 
     def reject(self, reason: Optional[str] = None) -> None:
         """
@@ -449,7 +514,8 @@ class JobInfo:
 
         if self.datasite_owner_email != self.current_user_email:
             raise PermissionError(
-                f"Only the admin user ({self.datasite_owner_email}) can reject jobs."
+                f"You are {self.current_user_email}, and job '{self.name}' is on "
+                f"{self.datasite_owner_email}'s datasite. Only they can reject it."
             )
 
         self._state.status = JobStatus.REJECTED
@@ -638,24 +704,206 @@ class JobInfo:
         return job_info_repr_html(self)
 
 
+def _with_party(jobs: List[JobInfo], email: str) -> List[JobInfo]:
+    """The jobs ``email`` is a party to: on its datasite, or submitted by it."""
+    return [j for j in jobs if email in (j.datasite_owner_email, j.submitted_by)]
+
+
+def _with_name(jobs: List[JobInfo], name: str) -> List[JobInfo]:
+    """The jobs called ``name``."""
+    return [j for j in jobs if j.name == name]
+
+
+def _with_submission(
+    jobs: List[JobInfo], datasite: str, submitter: str
+) -> List[JobInfo]:
+    """The jobs on ``datasite`` submitted by ``submitter``."""
+    return [
+        j
+        for j in jobs
+        if j.datasite_owner_email == datasite and j.submitted_by == submitter
+    ]
+
+
+def _keep(jobs: List[JobInfo], key: str, first_email: str | None) -> List[JobInfo]:
+    """The jobs one subscript key keeps, read the way ``__getitem__`` reads it.
+
+    ``first_email`` is the email an earlier key in the chain gave, or None.
+    The '@' tells the two kinds of key apart, so the usage hint can measure a
+    chain before offering it. A deprecated job name holding an '@' reads here
+    as an email and keeps nothing, where ``__getitem__`` falls back to the
+    name; the hint then offers a position, which is the safe direction to err.
+    """
+    if "@" not in key:
+        return _with_name(jobs, key)
+    if first_email is None:
+        return _with_party(jobs, key)
+    return _with_submission(jobs, first_email, key)
+
+
 class JobsList:
     """A list-like container for JobInfo objects with nice display."""
 
-    def __init__(self, jobs: List[JobInfo], root_email: str, has_do_role: bool = False):
+    def __init__(
+        self,
+        jobs: List[JobInfo],
+        root_email: str,
+        has_do_role: bool = False,
+        first_email: str | None = None,
+    ):
         self._jobs = jobs
         self._root_email = root_email
         self._has_do_role = has_do_role
+        # The email that selected this list, which a second email key reads as
+        # the datasite. None for a list no email has selected.
+        self._first_email = first_email
 
-    def __getitem__(self, index: int | str) -> JobInfo:
+    def __getitem__(self, index: int | str) -> "JobInfo | JobsList":
+        """A job by position or name, or the jobs of one party by email.
+
+        A first email keeps the jobs it is a party to, on either side. That is
+        usually the other party — a data scientist names the data owner, a data
+        owner names the submitter — but naming yourself keeps your own. So
+        ``jobs["do@x.org"]["analysis"]`` reads as one job. A second email names
+        the submitter, and the first one is then the datasite:
+        ``jobs["do@x.org"]["ds@y.org"]["analysis"]`` pins the pair a job name is
+        unique under, even when the two people sent each other a job of that
+        name. A bare name searches
+        every datasite at once and raises when more than one job answers to it.
+        Job names cannot contain ``@``, so the two kinds of key never collide.
+        """
         if isinstance(index, int):
             return self._jobs[index]
         elif isinstance(index, str):
-            for job in self._jobs:
-                if job.name == index:
-                    return job
-            raise ValueError(f"Job with name '{index}' not found")
+            if "@" in index:
+                return self._by_email(index)
+            return self._by_name(index)
         else:
             raise TypeError(f"Invalid index type: {type(index)}")
+
+    def _by_email(self, email: str) -> "JobInfo | JobsList":
+        """The jobs this email is a party to, or, after a first email, submitted.
+
+        A first email covers both roles because which one narrows depends on
+        who is asking. A data scientist names the data owner's datasite; a data
+        owner names the submitter. A second email has to fix the roles, because
+        two people with both roles can each hold a job of one name that the
+        other submitted, and each email is a party to both.
+
+        A job submitted before names could not hold an '@' answers to no party,
+        and reading it is the one thing this key must not take away, so a key
+        that names no party falls back to the name.
+        """
+        matches = _keep(self._jobs, email, self._first_email)
+        if matches:
+            return JobsList(
+                matches,
+                self._root_email,
+                self._has_do_role,
+                first_email=self._first_email or email,
+            )
+
+        if any(job.name == email for job in self._jobs):
+            warnings.warn(
+                f"Job name {email!r} holds an '@', which now marks a datasite or "
+                "submitter email. Such names are deprecated and the next version "
+                "will not resolve them. Rename the job.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            return self._by_name(email)
+
+        datasites = ", ".join(sorted({job.datasite_owner_email for job in self._jobs}))
+        submitters = ", ".join(sorted({job.submitted_by for job in self._jobs}))
+        raise ValueError(
+            f"No jobs involving {email}. These jobs are on: {datasites}. "
+            f"They were submitted by: {submitters}."
+        )
+
+    def _by_name(self, name: str) -> JobInfo:
+        matches = _with_name(self._jobs, name)
+        if not matches:
+            raise ValueError(f"Job with name '{name}' not found")
+        if len(matches) > 1:
+            raise ValueError(self._ambiguous_name_message(name, matches))
+        return matches[0]
+
+    def _ambiguous_name_message(self, name: str, matches: List[JobInfo]) -> str:
+        """Why the name did not resolve, and a subscript chain for each job.
+
+        An email key keeps jobs on either side, so one email can be the
+        datasite of one candidate and the submitter of another. Each chain is
+        measured with ``_reaches_only`` before it is offered. One submitter
+        holding a name twice across protocol layouts defeats every chain, so
+        such a job gets its position in this list.
+        """
+        lines = [
+            f"  {self._accessor_for(job)} — on {job.datasite_owner_email} "
+            f"from {job.submitted_by}"
+            for job in matches
+        ]
+        return (
+            f"Multiple jobs are named '{name}'. Select one by subscripting this "
+            "list with:\n" + "\n".join(lines)
+        )
+
+    def _accessor_for(self, job: JobInfo) -> str:
+        """The shortest subscript chain that reaches ``job`` alone, or its position."""
+        chains = (
+            (job.datasite_owner_email, job.name),
+            (job.submitted_by, job.name),
+            (job.datasite_owner_email, job.submitted_by, job.name),
+        )
+        for keys in chains:
+            if self._reaches_only(keys, job):
+                return "".join(f'["{key}"]' for key in keys)
+        return f"[{self._jobs.index(job)}]"
+
+    def hint_accessor(self) -> str | None:
+        """The subscript chain the jobs table tells a data owner to type.
+
+        Names a pending job on the DO's own datasite and gives the shortest
+        chain that reaches it and nothing else. The email in a chain is the
+        other party, so the submitter comes first; the datasite joins it only
+        when that submitter used the name on another datasite too. One
+        submitter holding a name twice across protocol layouts defeats every
+        chain, which is what the position is for.
+
+        Returns None when no such job is there to name, because the hint's
+        ``approve()`` takes only a pending job on your own datasite: a client
+        with no data-owner role, a DO who owns none of these jobs, or a DO
+        whose own jobs have all been reviewed already. The hint also offers
+        ``accept_by_depositing_result()``, which an approved job would still
+        take; withholding both is the cost of never printing a command that
+        raises.
+        """
+        if not self._has_do_role:
+            return None
+        owned = [
+            j
+            for j in self._jobs
+            if j.datasite_owner_email == self._root_email and j.status == "pending"
+        ]
+        if not owned:
+            return None
+        pick = owned[0]
+        chains = (
+            (pick.submitted_by, pick.name),
+            (self._root_email, pick.submitted_by, pick.name),
+        )
+        for keys in chains:
+            if self._reaches_only(keys, pick):
+                return "".join(f'["{key}"]' for key in keys)
+        return f"[{self._jobs.index(pick)}]"
+
+    def _reaches_only(self, keys: tuple[str, ...], job: JobInfo) -> bool:
+        """Whether subscripting by ``keys`` in turn reaches ``job`` and nothing else."""
+        reached, first_email = self._jobs, self._first_email
+        for key in keys:
+            reached = _keep(reached, key, first_email)
+            if "@" in key and first_email is None:
+                first_email = key
+        return len(reached) == 1 and reached[0] is job
 
     def __len__(self) -> int:
         return len(self._jobs)
@@ -664,10 +912,10 @@ class JobsList:
         return iter(self._jobs)
 
     def __str__(self) -> str:
-        return jobs_list_str(self._jobs, self._root_email, self._has_do_role)
+        return jobs_list_str(self._jobs, self.hint_accessor())
 
     def __repr__(self) -> str:
         return f"JobsList({len(self._jobs)} jobs)"
 
     def _repr_html_(self) -> str:
-        return jobs_list_repr_html(self._jobs, self._root_email, self._has_do_role)
+        return jobs_list_repr_html(self._jobs, self.hint_accessor())

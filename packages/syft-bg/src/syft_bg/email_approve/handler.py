@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class EmailAction(Enum):
     APPROVE = "approve"
-    AUTO_APPROVE = "auto_approve"
+    AUTO_APPROVE = "create_api"
     DENY = "deny"
     UNKNOWN = "unknown"
 
@@ -107,7 +107,7 @@ class EmailApproveHandler:
         if response.action == EmailAction.APPROVE:
             self._approve_job(job, job_name, state_key)
         elif response.action == EmailAction.AUTO_APPROVE:
-            self._auto_approve_job(job, job_name, state_key)
+            self._approve_and_create_api(job, job_name, state_key)
         elif response.action == EmailAction.DENY:
             self._reject_job(job, job_name, response.reason or "", state_key)
 
@@ -130,18 +130,22 @@ class EmailApproveHandler:
         self.job_runner.process_approved_jobs(share_outputs_with_submitter=True)
         print(f"[EmailApproveHandler] Approved job: {job_name}")
 
-    def _auto_approve_job(self, job, job_name: str, state_key: str) -> None:
-        """Approve a job and create an auto-approval object for future jobs."""
-        self._approve_job(job, job_name, state_key, approval_method="auto")
+    def _approve_and_create_api(self, job, job_name: str, state_key: str) -> None:
+        """Approve a job, and create an api from it that the submitter calls.
 
-        from syft_bg.api.api import auto_approve_job
+        Later runs come in as calls of that api, through client.api, and run
+        without a reply. A resubmitted whole job still waits for one.
+        """
+        self._approve_job(job, job_name, state_key)
 
-        result = auto_approve_job(job)
+        from syft_bg.api.api import create_api_from_job
+
+        result = create_api_from_job(job)
         if result.success:
-            print(f"[EmailApproveHandler] Auto-approval created for: {job_name}")
+            print(f"[EmailApproveHandler] Api created from: {job_name}")
         else:
             print(
-                f"[EmailApproveHandler] Failed to create auto-approval for {job_name}: {result.error}"
+                f"[EmailApproveHandler] Failed to create an api from {job_name}: {result.error}"
             )
 
     def _reject_job(self, job, job_name: str, reason: str, state_key: str) -> None:

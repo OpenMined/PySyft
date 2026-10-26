@@ -17,10 +17,21 @@ from typing import Iterable, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel
+from syft_permissions import Access, Rule, RuleSet
 from syft_permissions.spec.ruleset import PERMISSION_FILE_NAME
 
 # Strict schema: only these entries are allowed in a job submission.
 SUBMISSION_ENTRIES = frozenset({"code", "run.sh", "config.yaml"})
+
+# A request (an api call) holds request.yaml plus the files the call sends;
+# which files those may be is the api's to say.
+REQUEST_FILE_NAME = "request.yaml"
+
+# Files the DO writes into the job a request becomes, so a call can't send them.
+RESERVED_CALL_FILES = frozenset({REQUEST_FILE_NAME, "config.yaml"})
+
+# The header of a request's config.yaml that names the api it calls.
+API_HEADER = "api"
 
 # The entries the submitter's hash covers. config.yaml carries that hash, so it
 # cannot be part of it.
@@ -44,15 +55,19 @@ SYNC_EXCLUDED_NAMES = frozenset(
 # config.yaml header where the submitter declares code_hash() of its job.
 SUBMISSION_HASH_HEADER = "submission_hash"
 
-SUBMISSION_RECORD_FILENAME = "submission.json"
+# The data owner's record of a job, in staging/.
+OWNER_RECORD_FILENAME = "owner_record.json"
 
 
 class InvalidSubmissionError(ValueError):
     """The submission holds a symlink, or not the expected entries."""
 
 
-class SubmissionRecord(BaseModel):
-    """What the data owner received, and later approved, as hashes."""
+class OwnerJobRecord(BaseModel):
+    """The data owner's own record of a job: what it received and approved.
+
+    Only the data owner writes it, so the submitter can't change it.
+    """
 
     received_hash: str
     received_at: datetime
@@ -60,6 +75,9 @@ class SubmissionRecord(BaseModel):
     approved_by: Optional[str] = None
     approved_at: Optional[datetime] = None
     approval_method: Optional[str] = None
+    # Set when the DO turned an api call (a request) into this job. The runner
+    # runs the job with that api's policies. Only the DO writes it.
+    api_name: Optional[str] = None
 
 
 def _is_skipped(relative: Path) -> bool:
@@ -83,7 +101,10 @@ def _as_sent(path: Path) -> bytes:
 
 
 def _digest(
-    submission_dir: Path, entries: Optional[frozenset[str]], as_sent: bool
+    submission_dir: Path,
+    entries: Optional[frozenset[str]],
+    as_sent: bool,
+    skip: frozenset[str] = frozenset(),
 ) -> str:
     digest = hashlib.sha256()
     files = sorted(
@@ -92,6 +113,7 @@ def _digest(
         if path.is_file()
         and not _is_skipped(relative := path.relative_to(submission_dir))
         and (entries is None or relative.parts[0] in entries)
+        and relative.as_posix() not in skip
     )
     for path in files:
         content = _as_sent(path) if as_sent else path.read_bytes()
@@ -110,6 +132,11 @@ def code_hash(submission_dir: Path, as_sent: bool = False) -> str:
     return _digest(submission_dir, CODE_ENTRIES, as_sent)
 
 
+def request_hash(request_dir: Path, as_sent: bool = False) -> str:
+    """SHA-256 over every file of a request but request.yaml, which carries it."""
+    return _digest(request_dir, None, as_sent, skip=frozenset({REQUEST_FILE_NAME}))
+
+
 def submission_hash(submission_dir: Path) -> str:
     """SHA-256 over every file of a submission: code/, run.sh and config.yaml.
 
@@ -118,19 +145,6 @@ def submission_hash(submission_dir: Path) -> str:
     names that sync never carries are left out.
     """
     return _digest(submission_dir, None, as_sent=False)
-
-
-def check_expected_digest(job_name: str, expected: Optional[str], found: str) -> None:
-    """Raise unless ``expected`` is None or equals ``found``.
-
-    An automated approver passes the hash of the submission it checked, so a
-    job that changed after the check is not approved.
-    """
-    if expected is not None and expected != found:
-        raise ValueError(
-            f"Job '{job_name}' does not match the submission that was checked "
-            f"(expected {expected}, found {found})."
-        )
 
 
 def validate_submission(submission_dir: Path) -> tuple[bool, str]:
@@ -152,12 +166,23 @@ def validate_submission(submission_dir: Path) -> tuple[bool, str]:
         return False, "'run.sh' must be a file"
     if not (submission_dir / "config.yaml").is_file():
         return False, "'config.yaml' must be a file"
-    for path in submission_dir.rglob("*"):
+    return _no_symlinks(submission_dir)
+
+
+def validate_request(request_dir: Path) -> tuple[bool, str]:
+    """Check a request has request.yaml and no symlinks.
+
+    Which other files it may hold is the api's to say, checked against it.
+    """
+    if not (request_dir / REQUEST_FILE_NAME).is_file():
+        return False, f"'{REQUEST_FILE_NAME}' must be a file"
+    return _no_symlinks(request_dir)
+
+
+def _no_symlinks(folder: Path) -> tuple[bool, str]:
+    for path in folder.rglob("*"):
         if path.is_symlink():
-            return (
-                False,
-                f"'{path.relative_to(submission_dir).as_posix()}' is a symlink",
-            )
+            return False, f"'{path.relative_to(folder).as_posix()}' is a symlink"
     return True, ""
 
 
@@ -196,15 +221,15 @@ def copy_submission(source: Path, target: Path) -> None:
             shutil.copy2(path, destination)
 
 
-def read_submission_record(path: Path) -> Optional[SubmissionRecord]:
+def read_owner_record(path: Path) -> Optional[OwnerJobRecord]:
     """The record at ``path``, or None when absent or unreadable."""
     try:
-        return SubmissionRecord.model_validate_json(path.read_text())
+        return OwnerJobRecord.model_validate_json(path.read_text())
     except (OSError, ValueError):
         return None
 
 
-def claim_submission_record(path: Path, record: SubmissionRecord) -> bool:
+def claim_owner_record(path: Path, record: OwnerJobRecord) -> bool:
     """Create the record only if there is none; True when this call created it.
 
     Two data owner processes can receive the same job at once. Only the one
@@ -222,7 +247,7 @@ def claim_submission_record(path: Path, record: SubmissionRecord) -> bool:
     return True
 
 
-def write_submission_record(path: Path, record: SubmissionRecord) -> None:
+def write_owner_record(path: Path, record: OwnerJobRecord) -> None:
     """Replace the record in one step, so a reader never sees half of it."""
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
@@ -231,3 +256,13 @@ def write_submission_record(path: Path, record: SubmissionRecord) -> None:
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def lock_for_submitter(folder: Path, ds_email: str) -> None:
+    """Make folder read-only for its submitter.
+
+    The permission file is the nearest one for every file below it, so it
+    replaces the submitter's write on the folder above.
+    """
+    ruleset = RuleSet(rules=[Rule(pattern="**", access=Access(read=[ds_email]))])
+    ruleset.save(folder / PERMISSION_FILE_NAME)

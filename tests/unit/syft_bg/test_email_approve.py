@@ -224,7 +224,7 @@ class TestEmailApproveHandler:
         handler.handle_reply(thread_id="thread_dup", reply_text="approve")
         mock_job.approve.assert_not_called()
 
-    def test_auto_approve_job(self, tmp_path):
+    def test_auto_approve_reply_approves_and_creates_api(self, tmp_path):
         handler, job_client, job_runner, state, notify_state = self._make_handler(
             tmp_path
         )
@@ -240,14 +240,14 @@ class TestEmailApproveHandler:
         mock_result = MagicMock()
         mock_result.success = True
         with patch(
-            "syft_bg.api.api.auto_approve_job",
+            "syft_bg.api.api.create_api_from_job",
             return_value=mock_result,
-        ) as mock_auto:
+        ) as mock_create_api:
             handler.handle_reply(thread_id="thread_auto", reply_text="auto-approve")
 
         mock_job.approve.assert_called_once()
         job_runner.process_approved_jobs.assert_called_once()
-        mock_auto.assert_called_once_with(mock_job)
+        mock_create_api.assert_called_once_with(mock_job)
 
     def test_job_not_pending(self, tmp_path):
         handler, job_client, _, state, notify_state = self._make_handler(tmp_path)

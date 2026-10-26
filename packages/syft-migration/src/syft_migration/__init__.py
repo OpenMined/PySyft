@@ -1,4 +1,11 @@
 from syft_migration.base import MigratableObject
+from syft_migration.coverage import (
+    import_all_modules,
+    missing_downgrade_paths,
+    missing_upgrade_paths,
+    unregistered_objects,
+    versioned_objects,
+)
 from syft_migration.identity import MigrationError
 from syft_migration.registry import MigrationRegistry
 from syft_migration.schema import (
@@ -21,4 +28,9 @@ __all__ = [
     "ReleasedPackageProtocolInfo",
     "ReleasedProtocol",
     "__version__",
+    "import_all_modules",
+    "missing_downgrade_paths",
+    "missing_upgrade_paths",
+    "unregistered_objects",
+    "versioned_objects",
 ]

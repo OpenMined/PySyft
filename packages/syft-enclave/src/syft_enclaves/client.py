@@ -322,7 +322,7 @@ class SyftEnclaveClient:
             self._as_enclave_job(j) if j.job_headers.get("job_type") == "enclave" else j
             for j in jobs_list
         ]
-        return JobsList(wrapped, jobs_list._root_email)
+        return JobsList(wrapped, jobs_list._root_email, jobs_list._has_do_role)
 
     def wait_until_peered(
         self,
@@ -668,7 +668,7 @@ class SyftEnclaveClient:
         at receipt, is not.
         """
         job_manager = self._rds.job_client.manager
-        if job_manager.read_submission_record(ref) is None:
+        if job_manager.read_owner_record(ref) is None:
             return
         job_dir = job_manager.submission_dir(ref)
         config = job_manager.read_submission(ref)

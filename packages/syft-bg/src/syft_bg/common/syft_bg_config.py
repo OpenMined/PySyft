@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.common.config import get_default_paths
-from syft_bg.common.locking import file_lock
+from syft_job.policies.locking import file_lock
 from syft_bg.email_approve.config import EmailApproveConfig
 from syft_bg.notify.config import NotifyConfig
 from syft_bg.sync.config import SyncConfig

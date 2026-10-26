@@ -1,21 +1,25 @@
 __version__ = "0.2.2"
 
+from syft_job.logging_config import configure_package_logger
+
 from syft_bg.api import (
     AuthResult,
-    AutoApproveResult,
+    ApiResult,
     InitResult,
     InstallationResult,
     StatusResult,
-    auto_approve,
-    auto_approve_job,
+    create_api,
+    create_api_from_job,
     ensure_running,
     init,
     install,
-    list_auto_approvals,
+    list_apis,
     logs,
-    remove_auto_approve,
+    remove_api,
     restart,
     reset,
+    run_policy,
+    set_policies,
     start,
     stop,
     uninstall,
@@ -27,11 +31,13 @@ __all__ = [
     "InitResult",
     "InstallationResult",
     "AuthResult",
-    "auto_approve",
-    "auto_approve_job",
-    "AutoApproveResult",
-    "list_auto_approvals",
-    "remove_auto_approve",
+    "create_api",
+    "create_api_from_job",
+    "ApiResult",
+    "list_apis",
+    "remove_api",
+    "set_policies",
+    "run_policy",
     "status",
     "StatusResult",
     "start",
@@ -61,3 +67,7 @@ def __getattr__(name: str):
             print("No config file found, run syft_bg.init() first")
             return
     raise AttributeError(f"module 'syft_bg' has no attribute {name!r}")
+
+
+# Last, so the imports stay at the top. Nothing here logs at import time.
+configure_package_logger(__name__)

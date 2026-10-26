@@ -62,12 +62,12 @@ def test_returns_document_bundle_and_tls_fingerprint(patched):
     assert payload.tls_public_key_fp == "ab" * 32
 
 
-def test_falls_back_to_the_shim_well_known_path(patched):
-    # An enclave not running syft's endpoint still yields a verifiable report.
-    patched([_FakeResponse({"status": "weird"}), _FakeResponse(DOC)])
-    payload = fetch_attested_payload("enclave.example")
-    assert payload.document == DOC
-    assert payload.key_bundle is None
+def test_response_without_document_is_an_error(patched):
+    # No fallback endpoint: a second request could reach a different server.
+    conn = patched([_FakeResponse({"status": "weird", "key_bundle": {}})])
+    with pytest.raises(AttestationFetchError, match="no attestation document"):
+        fetch_attested_payload("enclave.example")
+    assert conn.request.call_count == 1
 
 
 def test_a_missing_certificate_is_an_error(patched):
@@ -76,28 +76,16 @@ def test_a_missing_certificate_is_an_error(patched):
         fetch_attested_payload("enclave.example")
 
 
-def test_an_error_from_both_endpoints_is_an_error(patched):
-    patched([_FakeResponse({}, status=503), _FakeResponse({}, status=503)])
+def test_an_error_response_is_an_error(patched):
+    patched([_FakeResponse({}, status=503)])
     with pytest.raises(AttestationFetchError):
         fetch_attested_payload("enclave.example")
 
 
-def test_non_json_from_both_endpoints_is_an_error(patched):
-    patched([_FakeResponse(b"<html>nope</html>"), _FakeResponse(b"<html>nope</html>")])
+def test_non_json_is_an_error(patched):
+    patched([_FakeResponse(b"<html>nope</html>")])
     with pytest.raises(AttestationFetchError):
         fetch_attested_payload("enclave.example")
-
-
-def test_an_older_enclave_that_rejects_the_nonce_still_yields_a_report(patched):
-    """It 500s on /attestation?nonce=, so fall through to the shim endpoint.
-
-    The nonce check then fails with "no signature", which names the problem
-    instead of hiding it behind a transport error.
-    """
-    patched([_FakeResponse({}, status=500), _FakeResponse(DOC)])
-    payload = fetch_attested_payload("enclave.example")
-    assert payload.document == DOC
-    assert payload.nonce_signature is None
 
 
 def test_a_nonce_is_always_sent(patched):

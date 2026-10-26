@@ -1,8 +1,7 @@
-"""Approval service for auto-approving jobs and peers."""
+"""Approval service: runs api calls, and approves peers."""
 
 from syft_bg.approve.config import (
     AutoApproveConfig,
-    AutoApprovalObj,
     AutoApprovalsConfig,
     PeerApprovalConfig,
     FileEntry,
@@ -12,7 +11,6 @@ from syft_bg.approve.config import (
 __all__ = [
     "AutoApproveConfig",
     "AutoApprovalsConfig",
-    "AutoApprovalObj",
     "FileEntry",
     "ScriptEntry",
     "PeerApprovalConfig",

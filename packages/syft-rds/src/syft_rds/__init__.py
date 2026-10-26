@@ -1,8 +1,9 @@
 """syft-rds: Remote Data Science product composed on top of syft."""
 
+from syft_job.logging_config import configure_package_logger
+
 from syft_rds.client import DatasetUpgrade, SyftRDSClient, UpgradeReport
 from syft_rds.config import SyftRDSClientConfig
-from syft_rds.job_auto_approval import auto_approve_and_run_jobs, job_matches_criteria
 from syft_rds.login import login_do, login_ds
 
 # Generic sync-stack helpers re-exported so consumers that compose the RDS product
@@ -20,10 +21,11 @@ __all__ = [
     "SyftRDSClientConfig",
     "login_do",
     "login_ds",
-    "auto_approve_and_run_jobs",
-    "job_matches_criteria",
     "get_jupyter_default_syftbox_folder",
     "is_normal_syncable_path",
     "Environment",
     "check_env",
 ]
+
+# Last, so the imports stay at the top. Nothing here logs at import time.
+configure_package_logger(__name__)

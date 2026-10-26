@@ -18,7 +18,11 @@ from syft.sync.sync.caches.cache_file_writer_connection import (
 )
 from syft.sync.utils.syftbox_utils import get_event_hash_from_content
 from syft.sync.checkpoints.checkpoint import Checkpoint
-from syft.sync.sync.constants import CACHE_DIR, OWNER_FILE_HASHES_FILENAME
+from syft.sync.sync.constants import (
+    CACHE_DIR,
+    OWNER_FILE_HASHES_FILENAME,
+    OWNER_PENDING_DELIVERIES_FILENAME,
+)
 
 
 class ProposedEventFileOutdatedException(Exception):
@@ -58,6 +62,9 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
     # Wired in pre-init validator: persisted-to-disk when syftbox_folder is set,
     # plain in-memory PersistedDict otherwise.
     file_hashes: PersistedDict = Field(default_factory=PersistedDict)
+    # peer email -> {path in datasite: name of the last message that holds it}.
+    # A path stays here until the upload of that message to the peer succeeds.
+    pending_deliveries: PersistedDict = Field(default_factory=PersistedDict)
     email: str
     # Full path to collections (datasets) folder
     collections_folder: Path | None = None
@@ -78,6 +85,12 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
                     key_serializer=str,
                     key_deserializer=Path,
                 )
+        if isinstance(data, dict) and "pending_deliveries" not in data:
+            folder = data.get("syftbox_folder")
+            if folder is not None:
+                data["pending_deliveries"] = PersistedDict(
+                    path=Path(folder) / CACHE_DIR / OWNER_PENDING_DELIVERIES_FILENAME
+                )
         return data
 
     @classmethod
@@ -89,6 +102,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
                 email=config.email,
                 syftbox_folder=config.syftbox_folder,
                 file_hashes=PersistedDict(),
+                pending_deliveries=PersistedDict(),
                 collections_folder=config.collections_folder,
                 collection_variants=config.collection_variants,
             )

@@ -1,9 +1,11 @@
+import json
 import logging
 import os
 import shutil
 import subprocess
 import tempfile
 import time
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Set
@@ -16,8 +18,26 @@ from .config import SyftJobConfig
 from .job import JobInfo
 from .job_storage import JobRef, JobStateNotFoundError, JobStorage
 from .models import JobState, JobStatus, JobSubmissionMetadata
+from .policies import (
+    OUTPUT_RECIPIENTS_FILENAME,
+    OUTPUTS_WITHHELD_FILENAME,
+    POLICY_ERROR_FILENAME,
+    JobPolicies,
+    PolicyEnv,
+    PolicyKind,
+    ApiResolver,
+    PolicyResolutionError,
+    PolicyResult,
+    PolicyRunner,
+    PolicyState,
+    policy_stderr_filename,
+)
 from .review_grants import replace_ds_folder_read
-from .submission import InvalidSubmissionError, copy_submission, submission_hash
+from .submission import (
+    InvalidSubmissionError,
+    copy_submission,
+    submission_hash,
+)
 from .traceback_capture import write_frames_record
 
 # Default timeout for job execution (10 minutes)
@@ -89,6 +109,21 @@ CHANGED_SUBMISSION_REASON = "the submission changed after it was approved"
 logger = logging.getLogger(__name__)
 
 
+def _read_params(run_dir: Path, params_file: str | None) -> bytes:
+    """The call's params JSON from the run copy, {} when there is none."""
+    path = run_dir / params_file if params_file else None
+    return path.read_bytes() if path is not None and path.is_file() else b"{}"
+
+
+def _read_call_files(run_dir: Path, call_files: tuple[str, ...]) -> dict[str, bytes]:
+    """The files the call sent, from the run copy."""
+    return {
+        rel: (run_dir / rel).read_bytes()
+        for rel in call_files
+        if (run_dir / rel).is_file()
+    }
+
+
 def _remove_run_dir(run_dir: Path | None) -> None:
     """Remove a run copy and its temp folder; None is a no-op."""
     if run_dir is not None:
@@ -118,16 +153,25 @@ class SyftJobRunner:
     return code to staging/.
     """
 
-    def __init__(self, config: SyftJobConfig, poll_interval: int = 5):
+    def __init__(
+        self,
+        config: SyftJobConfig,
+        poll_interval: int = 5,
+        api_resolver: ApiResolver | None = None,
+    ):
         """
         Initialize the job runner.
 
         Args:
             config: SyftJobConfig instance
             poll_interval: How often to check for new jobs (in seconds)
+            api_resolver: Loads the api a request calls: its code and its
+                policies. A request fails when there is no resolver.
         """
         self.config = config
         self.poll_interval = poll_interval
+        self.api_resolver = api_resolver
+        self.policy_runner = PolicyRunner()
         self.manager = JobStorage(config=config)
         self.known_jobs: Set[JobRef] = set()
 
@@ -457,10 +501,12 @@ class SyftJobRunner:
         if run_dir is None:
             return False
         try:
-            self._run_approved_job(ref, run_dir, stream_output, timeout)
+            resolved, policies = self._load_policies(ref)
+            if resolved:
+                self._run_approved_job(ref, run_dir, stream_output, timeout, policies)
         finally:
             _remove_run_dir(run_dir)
-        return True
+        return resolved
 
     def _approved_run_dir(self, ref: JobRef) -> Path | None:
         """A fresh copy of the approved submission to run from, or None.
@@ -471,7 +517,7 @@ class SyftJobRunner:
         hash fails the job. A local error while copying (disk, permissions,
         temp folder) leaves the job approved, so the next cycle retries it.
         """
-        record = self.manager.read_submission_record(ref)
+        record = self.manager.read_owner_record(ref)
         if record is None or record.approved_hash is None:
             self._return_to_pending(ref)
             return None
@@ -515,15 +561,40 @@ class SyftJobRunner:
         print(f" Job {ref.job_name} not run: {NO_APPROVED_HASH_REASON}")
 
     def _fail_unverified(self, ref: JobRef) -> None:
+        self._fail_job(ref, CHANGED_SUBMISSION_REASON)
+
+    def _fail_job(self, ref: JobRef, reason: str) -> None:
         state = self.manager.read_state(ref)
         state.status = JobStatus.FAILED
         state.completed_at = datetime.now(timezone.utc)
-        state.review_reason = CHANGED_SUBMISSION_REASON
+        state.review_reason = reason
         self.manager.write_state(ref, state)
-        print(f" Job {ref.job_name} not run: {CHANGED_SUBMISSION_REASON}")
+        print(f" Job {ref.job_name} not run: {reason}")
+
+    def _load_policies(self, ref: JobRef) -> tuple[bool, JobPolicies | None]:
+        """The policies of the api this job calls, from the owner record.
+
+        A job with no api runs with no policies. A job whose api can't be
+        loaded fails, and returns (False, None): it never runs without them.
+        """
+        record = self.manager.read_owner_record(ref)
+        if record is None or not record.api_name:
+            return True, None
+        try:
+            if self.api_resolver is None:
+                raise PolicyResolutionError("no api resolver is configured")
+            return True, self.api_resolver(record.api_name).policies
+        except PolicyResolutionError as e:
+            self._fail_job(ref, f"api call not run: {e}")
+            return False, None
 
     def _run_approved_job(
-        self, ref: JobRef, run_dir: Path, stream_output: bool, timeout: int
+        self,
+        ref: JobRef,
+        run_dir: Path,
+        stream_output: bool,
+        timeout: int,
+        policies: JobPolicies | None = None,
     ) -> None:
         job_name = ref.job_name
         review_dir = self.manager.review_dir(ref)
@@ -534,12 +605,15 @@ class SyftJobRunner:
         self._mark_running(ref)
 
         try:
+            if not self._run_input_policy(ref, run_dir, policies):
+                return
             if stream_output:
                 returncode = self._execute_job_streaming(ref, timeout, run_dir)
             else:
                 returncode = self._execute_job_captured(ref, timeout, run_dir)
 
             self._capture_traceback(ref, returncode, run_dir / "code")
+            returncode = self._run_output_policy(ref, run_dir, policies, returncode)
 
             # Move outputs from the run copy to review/
             self._move_outputs_to_review(run_dir, review_dir)
@@ -558,6 +632,72 @@ class SyftJobRunner:
         state = self.manager.read_state(ref)
         state.status = JobStatus.RUNNING
         self.manager.write_state(ref, state)
+
+    def _run_input_policy(
+        self, ref: JobRef, run_dir: Path, policies: JobPolicies | None
+    ) -> bool:
+        """Run the input policy. On a deny, fail the job before it runs."""
+        if policies is None or policies.input is None:
+            return True
+        result = self._run_policy(PolicyKind.INPUT, ref, run_dir, policies)
+        if result.passed:
+            return True
+        self._deny(ref, PolicyKind.INPUT, result)
+        self._finalize(ref, 1)
+        return False
+
+    def _run_output_policy(
+        self, ref: JobRef, run_dir: Path, policies: JobPolicies | None, returncode: int
+    ) -> int:
+        """Run the output policy, record who gets the outputs, return the exit code.
+
+        A failed job or a deny shares the outputs with nobody; a deny also
+        fails the job. The outputs still go to review/, for the data owner.
+        """
+        if policies is None or policies.output is None:
+            return returncode
+        if returncode != 0:
+            self._write_recipients(ref, [])
+            return returncode
+        result = self._run_policy(PolicyKind.OUTPUT, ref, run_dir, policies)
+        self._write_recipients(ref, result.recipients if result.passed else [])
+        if result.passed:
+            return returncode
+        self._deny(ref, PolicyKind.OUTPUT, result)
+        return 1
+
+    def _run_policy(
+        self, kind: PolicyKind, ref: JobRef, run_dir: Path, policies: JobPolicies
+    ) -> PolicyResult:
+        """Run one policy of the job's api; its full stderr stays in staging."""
+        policy_env = PolicyEnv(
+            api_name=policies.api_name,
+            submitter=ref.ds_email,
+            params=_read_params(run_dir, policies.params_file),
+            call_files=_read_call_files(run_dir, policies.call_files),
+        )
+        if kind == PolicyKind.OUTPUT:
+            policy_env.outputs_dir = run_dir / "code" / "outputs"
+            policy_env.recipients = [ref.ds_email]
+        print(f" Running the {kind.value} policy of api '{policies.api_name}'")
+        state = PolicyState(policies.state_dir)
+        result = self.policy_runner.run(policies.script(kind), state, policy_env)
+        self._write_staged(ref, policy_stderr_filename(kind), result.stderr)
+        return result
+
+    def _deny(self, ref: JobRef, kind: PolicyKind, result: PolicyResult) -> None:
+        """Release the reason of a deny to the submitter."""
+        self._write_staged(ref, POLICY_ERROR_FILENAME, f"{result.error}\n")
+        self._get_job_info(ref)._release_to_submitter([POLICY_ERROR_FILENAME])
+        print(f" Job {ref.job_name} denied by the {kind.value} policy: {result.error}")
+
+    def _write_recipients(self, ref: JobRef, recipients: list[str]) -> None:
+        self._write_staged(ref, OUTPUT_RECIPIENTS_FILENAME, json.dumps(recipients))
+
+    def _write_staged(self, ref: JobRef, filename: str, content: str) -> None:
+        staging_dir = self.manager.staging_dir(ref)
+        staging_dir.mkdir(parents=True, exist_ok=True)
+        (staging_dir / filename).write_text(content)
 
     def _report_result(self, ref: JobRef, returncode: int) -> None:
         """Print how the job ended and where its logs are."""
@@ -681,26 +821,72 @@ class SyftJobRunner:
             ref=ref,
         )
 
+    @staticmethod
+    def _resolve_skip_jobs(
+        approved_jobs: List[JobRef],
+        skip_jobs: list[tuple[str, str]] | None,
+        skip_job_names: list[str] | None,
+    ) -> Set[tuple[str, str]]:
+        """The (job_name, ds_email) pairs to skip, accepting the old name-only form.
+
+        A bare name expands to every submitter who used it, which is what
+        ``skip_job_names`` did. Bare names in ``skip_jobs`` are read the same
+        way, so a caller who passed the old third positional argument keeps the
+        behaviour it had.
+        """
+        pairs: Set[tuple[str, str]] = set()
+        names: List[str] = list(skip_job_names or [])
+        for entry in skip_jobs or []:
+            if isinstance(entry, str):
+                names.append(entry)
+            else:
+                pairs.add((entry[0], entry[1]))
+
+        if names:
+            warnings.warn(
+                "Skipping jobs by name alone is deprecated: a name is unique "
+                "per datasite and submitter, so it also drops other "
+                "submitters' jobs of the same name. Pass "
+                "skip_jobs=[(job_name, ds_email), ...] instead.",
+                DeprecationWarning,
+                stacklevel=3,
+            )
+            wanted = set(names)
+            pairs.update(
+                (ref.job_name, ref.ds_email)
+                for ref in approved_jobs
+                if ref.job_name in wanted
+            )
+        return pairs
+
     def process_approved_jobs(
         self,
         stream_output: bool = True,
         timeout: int | None = None,
-        skip_job_names: list[str] | None = None,
+        skip_jobs: list[tuple[str, str]] | None = None,
         share_outputs_with_submitter: bool = False,
         share_logs_with_submitter: bool = False,
+        skip_job_names: list[str] | None = None,
+        approved_peers: list[str] | None = None,
     ) -> None:
         """Process all jobs in approved status.
 
         Args:
             stream_output: If True (default), stream output in real-time.
             timeout: Timeout in seconds per job. Defaults to the configured value or 600.
-            skip_job_names: Optional list of job names to skip.
+            skip_jobs: Optional (job_name, ds_email) pairs to skip. A name alone
+                does not identify a job — it is unique per datasite and
+                submitter — so skipping by name drops every other job that
+                shares it.
             share_outputs_with_submitter: If True, grant read access on outputs to submitter.
             share_logs_with_submitter: If True, release the logs and the exit
                 code to the submitter, whatever the job requested. False
                 (default) releases only the items that the submitter requested
                 and the approval granted. The rest stays in staging, where only
                 the datasite owner reads it.
+            skip_job_names: Deprecated. The name-only form of ``skip_jobs``.
+            approved_peers: The peers an output policy may send outputs to.
+                None allows the submitter only.
         """
         self._replace_ds_folder_reads()
         approved_jobs = self._get_jobs_in_approved()
@@ -708,10 +894,11 @@ class SyftJobRunner:
         if not approved_jobs:
             return
 
-        # Filter out jobs to skip
-        if skip_job_names:
-            skip_set = set(skip_job_names)
-            approved_jobs = [j for j in approved_jobs if j.job_name not in skip_set]
+        skip_set = self._resolve_skip_jobs(approved_jobs, skip_jobs, skip_job_names)
+        if skip_set:
+            approved_jobs = [
+                j for j in approved_jobs if (j.job_name, j.ds_email) not in skip_set
+            ]
 
         if not approved_jobs:
             return
@@ -722,7 +909,10 @@ class SyftJobRunner:
             print(f"\n{'=' * 50}")
             if self._execute_job(ref, stream_output=stream_output, timeout=timeout):
                 self._share_job_results(
-                    ref, share_outputs_with_submitter, share_logs_with_submitter
+                    ref,
+                    share_outputs_with_submitter,
+                    share_logs_with_submitter,
+                    self._output_recipients(ref, approved_peers),
                 )
             print(f"{'=' * 50}")
 
@@ -736,20 +926,55 @@ class SyftJobRunner:
         share_logs: bool,
         user: str | None = None,
     ) -> None:
-        """Share job outputs/logs with submitter if requested."""
-        self._share_job_results(
-            self._find_jobref_from_name(job_name, user), share_outputs, share_logs
-        )
+        """Share job outputs/logs with submitter if requested.
+
+        Shares with the submitter even when an output policy held the outputs
+        back.
+        """
+        ref = self._find_jobref_from_name(job_name, user)
+        if share_outputs:
+            # The outputs reach the submitter now, so drop the marker that
+            # said they were held back.
+            (self.manager.review_dir(ref) / OUTPUTS_WITHHELD_FILENAME).unlink(
+                missing_ok=True
+            )
+        self._share_job_results(ref, share_outputs, share_logs, [ref.ds_email])
 
     def _share_job_results(
-        self, ref: JobRef, share_outputs: bool, share_logs: bool
+        self, ref: JobRef, share_outputs: bool, share_logs: bool, recipients: list[str]
     ) -> None:
         job_info = self._get_job_info(ref)
         job_info.release_disclosures()
         if share_outputs:
-            job_info.share_outputs([ref.ds_email])
+            job_info.share_outputs(recipients)
+            if ref.ds_email not in recipients:
+                # An empty marker: that the submitter can read this file is
+                # the message. Their job then shows "Outputs not shared with
+                # you" instead of looking like it wrote no outputs.
+                self._write_staged(ref, OUTPUTS_WITHHELD_FILENAME, "")
+                job_info._release_to_submitter([OUTPUTS_WITHHELD_FILENAME])
         if share_logs:
             job_info.release_logs()
+
+    def _output_recipients(
+        self, ref: JobRef, approved_peers: list[str] | None
+    ) -> list[str]:
+        """Who gets the outputs: the output policy's list, else the submitter.
+
+        Only approved peers receive outputs; other emails are skipped and logged.
+        """
+        path = self.manager.staging_dir(ref) / OUTPUT_RECIPIENTS_FILENAME
+        if not path.exists():
+            return [ref.ds_email]
+        allowed = set(approved_peers or []) | {ref.ds_email}
+        requested = json.loads(path.read_text())
+        skipped = [email for email in requested if email not in allowed]
+        if skipped:
+            logger.warning(
+                f"Job {ref.job_name}: outputs not shared with {skipped}, "
+                f"they are not approved peers"
+            )
+        return [email for email in dict.fromkeys(requested) if email in allowed]
 
     def run(self) -> None:
         """Start monitoring the inbox and approved folders for jobs."""

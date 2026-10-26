@@ -1,4 +1,4 @@
-"""Approval orchestrator for auto-approving jobs and peers."""
+"""Approval orchestrator: runs api calls, and approves peers."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class ApprovalOrchestrator(BaseOrchestrator):
-    """Orchestrator for job and peer auto-approval service."""
+    """Orchestrator of the approve service: runs api calls, approves peers."""
 
     def __init__(
         self,
@@ -101,8 +101,8 @@ class ApprovalOrchestrator(BaseOrchestrator):
 
         return cls(client=client, config=config)
 
-    def _collect_auto_approve_emails(self) -> set[str]:
-        """Collect peer emails from all auto-approval objects."""
+    def _collect_api_peer_emails(self) -> set[str]:
+        """Collect the peer emails of every api; they are approved as peers."""
         emails: set[str] = set()
         store = ApiStore(self.client.syftbox_folder, self.client.email)
         for obj in store.load_all().values():
@@ -122,9 +122,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
                 verbose=True,
             )
 
-        self.config.peers.auto_approve_emails = list(
-            self._collect_auto_approve_emails()
-        )
+        self.config.peers.auto_approve_emails = list(self._collect_api_peer_emails())
         if self.config.peers.auto_approve_emails or self.config.peers.approved_domains:
             self._peer_monitor = PeerMonitor(
                 client=self.client,
@@ -142,7 +140,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
         print(f"  SyftBox: {self.config.syftbox_root}")
         print(f"  Interval: {self.config.interval}s")
         print(
-            f"  Auto-approvals: {'enabled' if self.config.auto_approvals.enabled else 'disabled'}"
+            f"  Api calls: {'run' if self.config.auto_approvals.enabled else 'not run'}"
         )
         emails = self.config.peers.auto_approve_emails
         domains = self.config.peers.approved_domains

@@ -283,46 +283,6 @@ def ensure_running(services: tuple[str, ...], restart: bool, install: bool):
     api_ensure_running(list(services), restart=restart, install=install)
 
 
-def _warn_unmatchable_object(file_contents: list[str]) -> None:
-    """Warn about content paths that no submitted job can match."""
-    from syft_bg.api.utils import (
-        PER_JOB_FILES,
-        RUN_SCRIPT_PATH,
-        SUBMISSION_ROOT_FILES,
-    )
-
-    content = set(file_contents)
-    if RUN_SCRIPT_PATH not in content:
-        click.echo(
-            f"\nWarning: nothing matches the content of '{RUN_SCRIPT_PATH}', the "
-            f"file the runner executes, so this object approves no job. Pass it "
-            f"in CONTENTS, or build the object from a job you have reviewed with "
-            f"syft_bg.auto_approve_job(job).",
-            err=True,
-        )
-    bare = sorted(
-        path
-        for path in content
-        if "/" not in path and path not in SUBMISSION_ROOT_FILES
-    )
-    if bare:
-        click.echo(
-            f"\nWarning: {bare} is stored under that name alone, and a job is "
-            f"matched on a path relative to its submission root, such as "
-            f"'code/main.py'. Pass -b <submission directory> and name the file "
-            f"by that path.",
-            err=True,
-        )
-    per_job = sorted(content & PER_JOB_FILES)
-    if per_job:
-        click.echo(
-            f"\nWarning: {per_job} is matched by content, and its bytes carry "
-            f"the job name and the time it was submitted, so this object "
-            f"approves one job and no other. Pass it with -f instead.",
-            err=True,
-        )
-
-
 def _confirm_no_peers() -> None:
     from syft_bg.api.utils import NO_PEERS_WARNING
 
@@ -330,25 +290,25 @@ def _confirm_no_peers() -> None:
     click.confirm("Continue?", abort=True)
 
 
-@main.command("auto-approve")
+@main.command("create-api")
 @click.argument("contents", nargs=-1, required=True, type=click.Path(exists=True))
 @click.option(
     "--peers",
     "-p",
     multiple=True,
-    help="Peer email(s) to restrict to. Can be specified multiple times.",
+    help="Peer email(s) that may call the api. Can be specified multiple times.",
 )
 @click.option(
     "--name",
     "-n",
     default=None,
-    help="Name for the auto-approval object. Auto-generated if not provided.",
+    help="Name for the api. Auto-generated if not provided.",
 )
 @click.option(
     "--file-paths",
     "-f",
     multiple=True,
-    help="Filenames to allow by name only (e.g. params.json).",
+    help="Files a call sends, taken by name only (e.g. code/params.json).",
 )
 @click.option(
     "--base-dir",
@@ -360,9 +320,9 @@ def _confirm_no_peers() -> None:
 @click.option(
     "--allow-any-peer",
     is_flag=True,
-    help="Allow an object without peers (any peer matches) without asking.",
+    help="Allow an api without peers (any peer may call it) without asking.",
 )
-def auto_approve(
+def create_api(
     contents: tuple[str, ...],
     peers: tuple[str, ...],
     name: str | None,
@@ -370,47 +330,31 @@ def auto_approve(
     base_dir: str | None,
     allow_any_peer: bool,
 ):
-    """Create or update an auto-approval object.
+    """Create an api that peers call with client.api.<name>(...).
 
-    Accepts file paths as contents. These are files whose content will be
-    hashed and matched. Without -b, a directory is expanded to the files within
-    it, each stored relative to that directory, while a single file is stored
-    under its base name alone. With -b, name each file by the path a job is
-    matched on.
+    CONTENTS are the files pinned by content: run.sh and the rest of the code.
+    -f names the files a call sends, such as the JSON file under code/ that
+    holds the arguments. No file is in both; config.yaml is in neither, since
+    the data owner writes it for each call. Paths
+    are relative to a job's submission root, so pass -b <submission directory>
+    and name each file by that path.
+    To build an api from a job you have reviewed, use
+    syft_bg.create_api_from_job(job) instead of this command.
 
-    A job is matched on paths relative to its submission root, so code sits
-    under "code/" and the script the runner executes is "run.sh". The rule must
-    name every file of the submission and pin the content of run.sh, or it
-    matches nothing. To build that from a job you have reviewed, use
-    syft_bg.auto_approve_job(job) instead of this command.
-
-    Name config.yaml with -f. Its bytes carry the job name and the time it was
-    submitted, so a rule that hashes it matches one job and no other. A
-    directory argument, which needs no -b, hashes every file it finds,
-    config.yaml included, so it has the same effect.
-
-    A name is read from the current directory as well as from -b, so run this
-    from inside the submission.
-
-    Examples, for a submission holding code/main.py, run.sh and config.yaml:
+    Example, for a submission holding code/main.py, code/params.json, run.sh
+    and config.yaml:
 
       cd ./job
-      syft-bg auto-approve code/main.py run.sh -b . -f config.yaml -p alice@uni.edu
-
-      syft-bg auto-approve code/main.py run.sh -b . -f config.yaml -n my_analysis
-
-    And for one that also holds code/params.json:
-
-      syft-bg auto-approve code/main.py run.sh -b . -f code/params.json -f config.yaml
+      syft-bg create-api code/main.py run.sh -b . -f code/params.json -p alice@uni.edu
     """
     from pathlib import Path
 
-    from syft_bg.api.api import auto_approve as api_auto_approve
+    from syft_bg.api.api import create_api as api_create_api
 
     if not peers and not allow_any_peer:
         _confirm_no_peers()
 
-    result = api_auto_approve(
+    result = api_create_api(
         contents=list(contents),
         file_paths=list(file_paths) or None,
         peers=list(peers) or None,
@@ -418,59 +362,28 @@ def auto_approve(
         base_dir=Path(base_dir) if base_dir else None,
         allow_any_peer=True,
     )
-
     if not result.success:
         click.echo(f"Error: {result.error}", err=True)
         raise SystemExit(1)
-
-    click.echo(f"Auto-approval object: {result.name}")
-    if result.file_contents:
-        for entry in result.file_contents:
-            click.echo(f"  {entry}")
-    if result.peers:
-        click.echo(f"Peers: {', '.join(result.peers)}")
-    else:
-        click.echo("Peers: (any)")
-    if result.file_paths:
-        click.echo(f"Allowed files: {', '.join(result.file_paths)}")
-
-    _warn_unmatchable_object(result.file_contents or [])
+    click.echo(repr(result))
 
 
-@main.command("remove-auto-approval")
-@click.argument("files", nargs=-1, required=True)
-@click.option(
-    "--name",
-    "-n",
-    required=True,
-    help="Name of the auto-approval object to remove scripts from.",
-)
-def remove_auto_approval(files: tuple[str, ...], name: str):
-    """Remove scripts from an auto-approval object.
+@main.command("remove-api")
+@click.argument("name")
+def remove_api(name: str):
+    """Remove an api.
 
-    A stored path is relative to the job submission root, so code sits under
-    "code/".
+    Example:
 
-    Examples:
-
-      syft-bg remove-auto-approval code/utils.py -n my_analysis
-
-      syft-bg remove-auto-approval code/main.py code/utils.py -n my_analysis
+      syft-bg remove-api my_analysis
     """
-    from syft_bg.api.utils import get_api_store
+    from syft_bg.api.api import remove_api as api_remove_api
 
-    store = get_api_store()
-    if not store.exists(name):
-        click.echo(f"Auto-approval object '{name}' not found.", err=True)
+    result = api_remove_api(name)
+    if not result.success:
+        click.echo(f"Error: {result.error}", err=True)
         raise SystemExit(1)
-
-    obj = store.get(name)
-    before = len(obj.file_contents)
-    obj.file_contents = [s for s in obj.file_contents if s.relative_path not in files]
-    removed = before - len(obj.file_contents)
-    store.save(name, obj)
-
-    click.echo(f"Removed {removed} script(s) from '{name}'.")
+    click.echo(f"Removed api '{name}'.")
 
 
 @main.command("remove-peer")
@@ -479,17 +392,17 @@ def remove_auto_approval(files: tuple[str, ...], name: str):
     "--name",
     "-n",
     default=None,
-    help="Remove peer from a specific object only. If not given, removes from all.",
+    help="Remove peer from a specific api only. If not given, removes from all.",
 )
 @click.option(
     "--allow-any-peer",
     is_flag=True,
-    help="Allow leaving an object without peers (any peer matches) without asking.",
+    help="Allow leaving an api without peers (any peer may call it) without asking.",
 )
 def remove_peer(peer: str, name: str | None, allow_any_peer: bool):
-    """Remove a peer from auto-approval objects.
+    """Remove a peer from apis.
 
-    An object left without peers matches any peer and is readable by
+    An api left without peers may be called by any peer and is readable by
     everyone, so you are asked to confirm that unless --allow-any-peer is given.
 
     Examples:
@@ -502,14 +415,14 @@ def remove_peer(peer: str, name: str | None, allow_any_peer: bool):
 
     store = get_api_store()
     if name and not store.exists(name):
-        click.echo(f"Auto-approval object '{name}' not found.", err=True)
+        click.echo(f"Api '{name}' not found.", err=True)
         raise SystemExit(1)
 
     names = [name] if name else store.names()
     objects = {n: store.get(n) for n in names}
     objects = {n: obj for n, obj in objects.items() if peer in obj.peers}
     if not objects:
-        click.echo(f"Peer {peer} not found in any auto-approval object.", err=True)
+        click.echo(f"Peer {peer} not found in any api.", err=True)
         raise SystemExit(1)
 
     if not allow_any_peer and any(obj.peers == [peer] for obj in objects.values()):
@@ -519,36 +432,36 @@ def remove_peer(peer: str, name: str | None, allow_any_peer: bool):
         obj.peers.remove(peer)
         store.save(obj_name, obj)
 
-    click.echo(f"Removed peer {peer} from {len(objects)} object(s).")
+    click.echo(f"Removed peer {peer} from {len(objects)} api(s).")
 
 
-@main.command("list-auto-approvals")
+@main.command("list-apis")
 @click.option(
     "--name",
     "-n",
     default=None,
-    help="Show a specific auto-approval object only.",
+    help="Show a specific api only.",
 )
-def list_auto_approvals(name: str | None):
-    """List auto-approval objects and their scripts.
+def list_apis(name: str | None):
+    """List apis and their files.
 
     Examples:
 
-      syft-bg list-auto-approvals
+      syft-bg list-apis
 
-      syft-bg list-auto-approvals -n my_analysis
+      syft-bg list-apis -n my_analysis
     """
-    from syft_bg.api.api import list_auto_approvals as api_list_auto_approvals
+    from syft_bg.api.api import list_apis as api_list_apis
 
-    objects = api_list_auto_approvals()
+    objects = api_list_apis()
 
     if not objects:
-        click.echo("No auto-approval objects configured.")
+        click.echo("No apis created.")
         return
 
     if name:
         if name not in objects:
-            click.echo(f"Auto-approval object '{name}' not found.", err=True)
+            click.echo(f"Api '{name}' not found.", err=True)
             raise SystemExit(1)
         objects_to_show = {name: objects[name]}
     else:
