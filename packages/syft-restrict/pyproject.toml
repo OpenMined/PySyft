@@ -5,7 +5,7 @@ description = "Verify + obfuscate: prove JAX/Flax inference code only does math 
 authors = [{ name = "OpenMined", email = "info@openmined.org" }]
 license = { text = "Apache-2.0" }
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 # Static analysis on the stdlib (ast, tokenize, hashlib, fnmatch); pydantic models the results.
 dependencies = ["pydantic>=2"]
