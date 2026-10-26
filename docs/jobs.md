@@ -183,15 +183,15 @@ A bash policy can start with a comment instead.
 
 ### Denying a call
 
-A policy denies a call by exiting with a non-zero code. The job is then marked `failed`. The last line of the policy's error output is written to `policy_error.txt` and shared with the DS, who reads it in `job.policy_error`. The full error output stays with the DO, because a traceback can show private paths or data.
+A policy denies a call by raising an exception, or by exiting with a non-zero code. The job is then marked `failed`. The last line of the policy's error output is written to `policy_error.txt` and shared with the DS, who reads it in `job.policy_error`. The full error output stays with the DO, because a traceback can show private paths or data.
 
-In Python, deny with `sys.exit("<message for the DS>")`. It writes the message to the error output and exits with code 1, so the message is exactly what the DS sees. Keep it to one line that says what was refused and why:
+For an uncaught exception, that last line is the exception's name and message. Keep the message to one line that says what was refused and why:
 
 ```python
-sys.exit("Rate limit reached: 10 calls per 24 hours")
+raise ValueError("Rate limit reached: 10 calls per 24 hours")
 ```
 
-An uncaught exception also denies the call, but the DS then sees the exception's name too, as in `ValueError: Rate limit reached: 10 calls per 24 hours`, which reads like a crash.
+The DS then sees `ValueError: Rate limit reached: 10 calls per 24 hours`.
 
 ### State and locking
 
@@ -204,7 +204,6 @@ The state folder belongs to the API, and only the DO can read it. The policy wri
 
 import json
 import os
-import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -216,7 +215,7 @@ now = datetime.now(timezone.utc)
 day_ago = now - timedelta(days=1)
 calls = [t for t in state.get(submitter, []) if datetime.fromisoformat(t) > day_ago]
 if len(calls) >= 10:
-    sys.exit("Rate limit reached: 10 calls per 24 hours")
+    raise ValueError("Rate limit reached: 10 calls per 24 hours")
 
 state[submitter] = calls + [now.isoformat()]
 state_path.write_text(json.dumps(state))
@@ -271,14 +270,13 @@ The DS always sees the job's status. When the output policy denies, the job is `
 Refuses to share any of them when one does."""
 
 import os
-import sys
 from pathlib import Path
 
 outputs = Path(os.environ["SYFT_POLICY_OUTPUTS_DIR"])
 
 for f in outputs.rglob("*"):
     if f.is_file() and "SECRET" in f.read_text(errors="ignore"):
-        sys.exit(f"Outputs not shared: {f.name} contains a blocked word")
+        raise ValueError(f"Outputs not shared: {f.name} contains a blocked word")
 ```
 
 ### Example: redact CSV rows

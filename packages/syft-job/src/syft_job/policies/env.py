@@ -39,14 +39,13 @@ Conventions:
     Describe    Start the policy with a one- or two-line docstring (a comment
                 in bash) that says in plain words what it allows and refuses.
                 The data scientist sees the policy's full source in client.api.
-    Deny        Exit with a non-zero code. The job is marked failed. In
-                Python, use sys.exit("<message for the data scientist>"). An
-                uncaught exception also denies, but the data scientist then
-                sees the exception's name too, e.g. "ValueError: ...".
+    Deny        Raise an exception, or exit with a non-zero code. The job is
+                marked failed.
     Reason      The last line of stderr is what the data scientist sees, in
-                policy_error.txt. sys.exit("...") writes just its message, so
-                keep the message to one line. The full stderr stays with the
-                data owner.
+                policy_error.txt. For an uncaught exception that is its name
+                and message, e.g. "ValueError: Rate limit reached", so keep
+                the message to one line. The full stderr stays with the data
+                owner.
     Call files  A call sends exactly the files the api lists by name. The
                 input policy can read them in SYFT_POLICY_CALL_DIR and deny the
                 call because of what they hold.
