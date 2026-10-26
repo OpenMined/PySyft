@@ -35,7 +35,7 @@ def _dataset_manager(tmp_path: Path, peer_schemas=None) -> SyftDatasetManager:
     syftbox.mkdir()
     mgr = SyftDatasetManager(syftbox_folder_path=syftbox, email=DO_EMAIL)
     if peer_schemas is not None:
-        mgr.storage.peer_schemas = peer_schemas
+        mgr.storage.peer_schema = peer_schemas.get
     return mgr
 
 

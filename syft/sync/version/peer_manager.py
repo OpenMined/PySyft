@@ -11,14 +11,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
-from syft_migration import ProtocolSchema
-
 from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.encryption_policy import (
-    EncryptionPolicy,
-    pair_uses_encryption,
-)
+from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.peer import Peer, PeerNotReadyError, PeerSetupError, PeerState
 from syft.sync.peers.peer_store import (
     PeerStore,
@@ -159,20 +154,8 @@ class PeerManager(BaseModel):
 
     _own_version: Optional[VersionInfo] = PrivateAttr(default=None)
     _executor: Optional[ThreadPoolExecutor] = PrivateAttr(default=None)
-    # protocol name -> {peer email -> ProtocolSchema}. Inner dicts are handed
-    # out by live_peer_schemas() and mutated in place as peer versions load,
-    # so consumers (JobStorage, DatasetStorage) always see current knowledge.
-    _peer_protocol_schemas: Dict[str, Dict[str, ProtocolSchema]] = PrivateAttr(
-        default_factory=dict
-    )
-    # peer email -> last loaded VersionInfo (or None); lets a protocol map
-    # registered AFTER versions were loaded backfill instead of starting empty.
-    _loaded_peer_versions: Dict[str, Optional[VersionInfo]] = PrivateAttr(
-        default_factory=dict
-    )
-    # Peer email -> state at the first load_peers(), for accepted peers and
-    # waiting requests. None until that load.
-    _states_at_start: Optional[Dict[str, PeerState]] = PrivateAttr(default=None)
+    # Set by the first load_peers(), which records Peer.state_at_start.
+    _first_load_done: bool = PrivateAttr(default=False)
 
     # ========== Peer List Properties ==========
 
@@ -237,53 +220,6 @@ class PeerManager(BaseModel):
         """Initialize the thread pool executor."""
         self._executor = ThreadPoolExecutor(max_workers=self.n_threads)
 
-    def live_peer_schemas(self, protocol_name: str) -> Dict[str, ProtocolSchema]:
-        """The live {peer email -> ProtocolSchema} map for ``protocol_name``.
-
-        The returned dict is owned by this PeerManager and updated in place
-        whenever a peer's version file is (re)loaded: peers advertising the
-        protocol appear, peers that stop advertising it (or whose version is
-        cleared) disappear. Hand it to JobStorage/DatasetStorage as
-        ``peer_schemas`` so negotiation always uses current knowledge. A map
-        registered after peer versions were already loaded is backfilled from
-        them.
-        """
-        per_peer = self._peer_protocol_schemas.get(protocol_name)
-        if per_peer is None:
-            per_peer = self._peer_protocol_schemas[protocol_name] = {}
-            for email, version_info in list(self._loaded_peer_versions.items()):
-                self._sync_one(per_peer, protocol_name, email, version_info)
-        return per_peer
-
-    @staticmethod
-    def _sync_one(
-        per_peer: Dict[str, ProtocolSchema],
-        protocol_name: str,
-        peer_email: str,
-        version_info: Optional[VersionInfo],
-    ) -> None:
-        # getattr: a peer's version may be a V1 object (no schemas attribute).
-        advertised = getattr(version_info, "protocol_schemas", None) or {}
-        schema = advertised.get(protocol_name)
-        if schema is not None:
-            per_peer[peer_email] = schema
-        else:
-            per_peer.pop(peer_email, None)
-
-    def _update_peer_schemas(
-        self, peer_email: str, version_info: Optional[VersionInfo]
-    ) -> None:
-        """Sync the live schema maps with a freshly loaded peer version.
-
-        A None version or a pre-V2 version file (empty ``protocol_schemas``)
-        removes the peer: it is an unknown speaker, and consumers apply their
-        own unknown-peer defaults.
-        """
-        self._loaded_peer_versions[peer_email] = version_info
-        # list(): guard against a concurrent live_peer_schemas() registration.
-        for protocol_name, per_peer in list(self._peer_protocol_schemas.items()):
-            self._sync_one(per_peer, protocol_name, peer_email, version_info)
-
     def get_own_version(self) -> VersionInfo:
         """Get current client's version info."""
         if self._own_version is None:
@@ -321,12 +257,15 @@ class PeerManager(BaseModel):
         return peer_info
 
     def _set_peer_info(self, peer_email: str, peer_info: Optional[PeerInfo]) -> None:
-        """Cache a freshly loaded peer info on the peer and in the schema maps."""
+        """Cache a freshly loaded peer info on the peer.
+
+        A read that finds nothing keeps the info known before: a peer that
+        deleted its SyftBox still sends messages under its last policy, such
+        as the deletes of its files.
+        """
         cached_peer = self.get_cached_peer(peer_email)
-        if cached_peer:
+        if cached_peer and peer_info is not None:
             cached_peer.info = peer_info
-        version_info = peer_info.version_info if peer_info else None
-        self._update_peer_schemas(peer_email, version_info)
 
     def _load_single_peer_info(self, peer_email: str) -> tuple[str, Optional[PeerInfo]]:
         """Load the info of a single peer. Used by parallel loader."""
@@ -365,7 +304,9 @@ class PeerManager(BaseModel):
 
     def clear_peer_info(self, peer_email: str) -> None:
         """Clear the cached info of a peer (useful for testing)."""
-        self._set_peer_info(peer_email, None)
+        cached_peer = self.get_cached_peer(peer_email)
+        if cached_peer:
+            cached_peer.info = None
 
     def peer_compatibility_status(self, peer_email: str) -> CompatibilityStatus:
         """Get the CompatibilityStatus for a peer (UNKNOWN if version not loaded)."""
@@ -530,71 +471,69 @@ class PeerManager(BaseModel):
         - If no existing peer, creates folders and marks REQUESTED_BY_ME.
         """
         existing_peer_obj = self.get_cached_peer(peer_email)
-        if existing_peer_obj and not force:
-            if existing_peer_obj.state == PeerState.REQUESTED_BY_ME:
-                if verbose:
-                    print_peer_already_connected(
-                        peer_email, PeerState.REQUESTED_BY_ME.value
-                    )
-                return
-            if existing_peer_obj.state == PeerState.ACCEPTED:
-                if verbose:
-                    print_peer_already_connected(peer_email, PeerState.ACCEPTED.value)
-                return
-            # REQUESTED_BY_PEER falls through to accept the incoming request
+        if self._return_early(existing_peer_obj, peer_email, force, verbose):
+            return
 
         is_accepting = (
-            existing_peer_obj and existing_peer_obj.state == PeerState.REQUESTED_BY_PEER
+            existing_peer_obj is not None
+            and existing_peer_obj.state == PeerState.REQUESTED_BY_PEER
         )
-
-        if verbose:
-            if force:
-                print_peer_request_resending(peer_email)
-            elif is_accepting:
-                print_peer_request_accepting(peer_email)
-            else:
-                print_peer_request_sending(peer_email)
-
         new_state = PeerState.ACCEPTED if is_accepting else PeerState.REQUESTED_BY_ME
+        if verbose:
+            self._print_add_peer_start(peer_email, force, is_accepting)
 
-        new_peer_obj = self.connection_router.add_peer(
-            peer_email=peer_email, verbose=False
-        )
-
-        if existing_peer_obj:
-            new_peer_obj = existing_peer_obj
+        peer = self.connection_router.add_peer(peer_email=peer_email, verbose=False)
 
         # Both sides publish their bundle at peering, so a pair can start to
-        # encrypt in a later session. The peer policy selects encryption for
-        # the pair. Before the peer accepts, its version file is not shared
-        # and the policy is unknown; load_peers reads the bundle once it is.
+        # encrypt in a later session. The peer's bundle is None until it does.
         self._write_encryption_bundle_for_peer(peer_email)
-        new_peer_obj.info = self.connection_router.read_peer_info_file(peer_email)
-        encrypted = pair_uses_encryption(
-            self.peer_store.encryption_policy,
-            self.peer_store.policy_of(new_peer_obj),
-        )
-
-        peer_bundle = None
-        if encrypted and is_accepting:
-            peer_bundle = self._read_peer_encryption_bundle(peer_email)
+        peer.info = self.connection_router.read_peer_info_file(peer_email)
+        peer.public_encryption_bundle = self._read_peer_encryption_bundle(peer_email)
 
         self.connection_router.update_peer_state(
-            peer_email, new_state.value, public_encryption_bundle=peer_bundle
+            peer_email,
+            new_state.value,
+            public_encryption_bundle=peer.public_encryption_bundle,
         )
         self.share_peer_info_with_peer(peer_email)
-        self._update_peer_schemas(peer_email, new_peer_obj.version)
 
-        if peer_bundle is not None:
-            new_peer_obj.public_encryption_bundle = peer_bundle
-        new_peer_obj.state = new_state
-        self.peer_store.set_peer(new_peer_obj)
+        peer.state = new_state
+        self.peer_store.set_peer(peer)
 
         if verbose:
-            if is_accepting:
-                print_peer_connection_established(peer_email)
-            else:
-                print_peer_request_sent(peer_email)
+            self._print_add_peer_done(peer_email, is_accepting)
+
+    def _return_early(
+        self, existing_peer_obj, peer_email: str, force: bool, verbose: bool
+    ) -> bool:
+        """True if the peer is already requested by us or accepted (unless force).
+
+        REQUESTED_BY_PEER returns False so add_peer accepts the incoming request.
+        """
+        if not existing_peer_obj or force:
+            return False
+        state = existing_peer_obj.state
+        if state not in (PeerState.REQUESTED_BY_ME, PeerState.ACCEPTED):
+            return False
+        if verbose:
+            print_peer_already_connected(peer_email, state.value)
+        return True
+
+    def _print_add_peer_start(
+        self, peer_email: str, force: bool, is_accepting: bool
+    ) -> None:
+        if force:
+            print_peer_request_resending(peer_email)
+        elif is_accepting:
+            print_peer_request_accepting(peer_email)
+        else:
+            print_peer_request_sending(peer_email)
+
+    def _print_add_peer_done(self, peer_email: str, is_accepting: bool) -> None:
+        if is_accepting:
+            print_peer_connection_established(peer_email)
+        else:
+            print_peer_request_sent(peer_email)
 
     def _write_encryption_bundle_for_peer(self, peer_email: str) -> dict | None:
         """Write own encryption bundle for a peer."""
@@ -659,13 +598,12 @@ class PeerManager(BaseModel):
                         email, PeerState.ACCEPTED.value
                     )
 
-        first_load = self._states_at_start is None
+        first_load = not self._first_load_done
         if first_load:
-            self._states_at_start = {
-                p.email: p.state
-                for p in peers
-                if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_PEER)
-            }
+            self._first_load_done = True
+            for p in peers:
+                if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_PEER):
+                    p.state_at_start = p.state
         self.peer_store.set_peers(peers)
         self.load_peer_infos_parallel([peer.email for peer in peers])
 
@@ -674,7 +612,7 @@ class PeerManager(BaseModel):
             p
             for p in peers
             if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_ME)
-            and self.peer_store.peer_uses_encryption(p.email)
+            and self.peer_store.pair_encrypts(p)
         ]
         if first_load:
             # Only a pair that encrypts uses the bundle we published.
@@ -775,7 +713,8 @@ class PeerManager(BaseModel):
 
     def _warn_if_known_at_start(self, peer_email: str) -> None:
         """Warn if ``peer_email`` was connected, or waiting, at the first load."""
-        state = (self._states_at_start or {}).get(peer_email)
+        peer = self.get_cached_peer(peer_email)
+        state = peer.state_at_start if peer is not None else None
         if state is None:
             return
         found = (
@@ -794,7 +733,9 @@ class PeerManager(BaseModel):
         Call it after this client deletes its state. Its peers then connect
         again from nothing, so ``validate_peer`` does not warn about them.
         """
-        self._states_at_start = {}
+        self._first_load_done = True
+        for peer in self.peer_store.peers:
+            peer.state_at_start = None
 
     def peer_may_be_valid(self, peer_email: str) -> bool:
         """Tell if ``validate_peer`` can pass after the next ``load_peers()``.

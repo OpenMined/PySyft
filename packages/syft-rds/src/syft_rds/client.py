@@ -6,11 +6,12 @@ import logging
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Optional
 from uuid import uuid4
 
 import yaml
 from pydantic import BaseModel, ConfigDict
+from syft_migration import ProtocolSchema
 
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.peers.peer import Peer
@@ -109,6 +110,14 @@ def _print_skipped_jobs(skipped: list[tuple[str, str, str]]) -> None:
     print("   Pass ignore_peer_version=True to run them anyway.")
 
 
+def _peer_schema_lookup(
+    manager: SyftboxManager, protocol_name: str
+) -> Callable[[str], Optional[ProtocolSchema]]:
+    """Look up the ``protocol_name`` schema a peer advertises, on each call."""
+    peer_store = manager.peer_manager.peer_store
+    return lambda email: peer_store.protocol_schema(email, protocol_name)
+
+
 class SyftRDSClient(BaseModel):
     # Holds live service objects (sync engine + RDS-owned managers), not
     # serializable data, so arbitrary types are allowed.
@@ -141,21 +150,21 @@ class SyftRDSClient(BaseModel):
     @classmethod
     def from_config(cls, config: "SyftRDSClientConfig") -> "SyftRDSClient":
         sync_engine = SyftboxManager.from_config(config.sync)
-        # The job client selects a job protocol version per peer from the live
-        # peer-schema map, as the dataset manager does for dataset layouts.
+        # The job client selects a job protocol version per peer from the
+        # schema the peer advertises, as the dataset manager does for layouts.
         job_client = JobClient.from_config(
             config.job,
-            peer_schemas=sync_engine.peer_manager.live_peer_schemas("syft-job"),
+            peer_schema=_peer_schema_lookup(sync_engine, "syft-job"),
         )
         job_runner = (
             SyftJobRunner.from_config(config.job) if config.sync.has_do_role else None
         )
-        # The dataset manager gets the live peer-schema map, as the job client
-        # does. It selects a layout for each peer, and the transport carries one
+        # The dataset manager looks up peer schemas as the job client does. It
+        # selects a layout for each peer, and the transport carries one
         # collection for each layout.
         dataset_manager = SyftDatasetManager.from_config(
             config.dataset,
-            peer_schemas=sync_engine.peer_manager.live_peer_schemas("syft-dataset"),
+            peer_schema=_peer_schema_lookup(sync_engine, "syft-dataset"),
         )
         return cls(
             sync_engine=sync_engine,
@@ -184,14 +193,14 @@ class SyftRDSClient(BaseModel):
                 sync_engine=mgr,
                 job_client=JobClient.from_config(
                     config.job,
-                    peer_schemas=mgr.peer_manager.live_peer_schemas("syft-job"),
+                    peer_schema=_peer_schema_lookup(mgr, "syft-job"),
                 ),
                 job_runner=(
                     SyftJobRunner.from_config(config.job) if mgr.has_do_role else None
                 ),
                 dataset_manager=SyftDatasetManager.from_config(
                     config.dataset,
-                    peer_schemas=mgr.peer_manager.live_peer_schemas("syft-dataset"),
+                    peer_schema=_peer_schema_lookup(mgr, "syft-dataset"),
                 ),
             )
 

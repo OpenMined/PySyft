@@ -53,7 +53,7 @@ def test_negotiated_protocol_version_for_peer_raises_on_unknown(tmp_path: Path):
     ds_config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
     protocol0_schema = job_registry.schema_for_protocol_version("0")
     manager = JobClient(
-        config=ds_config, peer_schemas={DO_EMAIL: protocol0_schema}
+        config=ds_config, peer_schema={DO_EMAIL: protocol0_schema}.get
     ).manager
 
     # An older peer negotiates down to the version both sides can read.

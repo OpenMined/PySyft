@@ -112,7 +112,7 @@ def _wire_version(manager, peer_email: str, raw: bytes) -> str:
     """
     peer_store = manager.peer_manager.peer_store
     opened = peer_store.decrypt_and_verify_if_needed(peer_email, raw)
-    if peer_store.peer_uses_encryption(peer_email):
+    if peer_store.pair_encrypts(peer_store.get_cached_peer(peer_email)):
         assert opened != raw, "encryption is on, but the wire holds plaintext"
     return json.loads(uncompress_data(opened))["version"]
 
@@ -134,14 +134,12 @@ def _raw_outbox_versions(ds_manager, do_email: str) -> list[str]:
 
 
 def test_a_v2_proposal_for_a_protocol0_peer_downgrades_on_the_wire(
-    pair, v2_wire_envelopes
+    pair, v2_wire_envelopes, advertised_schemas
 ):
     ds_manager, do_manager = pair
     v2_proposed, _ = v2_wire_envelopes
     # The DO advertises client protocol 0, as a client of 0.1.117 or earlier does.
-    ds_manager.peer_manager.live_peer_schemas("syft")[do_manager.email] = (
-        _client_schema("0")
-    )
+    advertised_schemas[do_manager.email, "syft"] = _client_schema("0")
 
     message = v2_proposed(**mock_message().model_dump(exclude={"version"}))
     ds_manager._connection_router.watcher_send_proposed_file_changes_message(
@@ -155,13 +153,11 @@ def test_a_v2_proposal_for_a_protocol0_peer_downgrades_on_the_wire(
 
 
 def test_a_v2_events_message_for_a_protocol0_peer_downgrades_on_the_wire(
-    pair, v2_wire_envelopes
+    pair, v2_wire_envelopes, advertised_schemas
 ):
     ds_manager, do_manager = pair
     _, v2_events = v2_wire_envelopes
-    do_manager.peer_manager.live_peer_schemas("syft")[ds_manager.email] = (
-        _client_schema("0")
-    )
+    advertised_schemas[ds_manager.email, "syft"] = _client_schema("0")
 
     message = v2_events(
         **get_mock_events_messages(1)[0].model_dump(exclude={"version"})
@@ -173,12 +169,12 @@ def test_a_v2_events_message_for_a_protocol0_peer_downgrades_on_the_wire(
     assert _raw_outbox_versions(ds_manager, do_manager.email) == ["1"]
 
 
-def test_a_send_beyond_the_peers_floor_raises(pair):
+def test_a_send_beyond_the_peers_floor_raises(pair, advertised_schemas):
     # A future peer that dropped support for our protocol. Sending anyway would
     # put up a blob the peer refuses; the negotiation must fail loudly instead.
     ds_manager, do_manager = pair
-    ds_manager.peer_manager.live_peer_schemas("syft")[do_manager.email] = (
-        _client_schema("2", min_supported_version="2")
+    advertised_schemas[do_manager.email, "syft"] = _client_schema(
+        "2", min_supported_version="2"
     )
 
     with pytest.raises(MigrationError):
@@ -187,11 +183,13 @@ def test_a_send_beyond_the_peers_floor_raises(pair):
         )
 
 
-def test_a_send_to_an_unknown_peer_warns_and_keeps_the_current_version(pair, caplog):
+def test_a_send_to_an_unknown_peer_warns_and_keeps_the_current_version(
+    pair, caplog, advertised_schemas
+):
     # Same policy as jobs: a peer without a known schema is assumed to run the
     # current protocol, and the assumption is logged.
     ds_manager, do_manager = pair
-    ds_manager.peer_manager.live_peer_schemas("syft").pop(do_manager.email, None)
+    advertised_schemas[do_manager.email, "syft"] = None
 
     with caplog.at_level(logging.WARNING):
         ds_manager._connection_router.watcher_send_proposed_file_changes_message(
@@ -202,13 +200,11 @@ def test_a_send_to_an_unknown_peer_warns_and_keeps_the_current_version(pair, cap
     assert _raw_proposal_version(do_manager, ds_manager.email) == "1"
 
 
-def test_a_current_protocol_peer_gets_the_current_version(pair):
+def test_a_current_protocol_peer_gets_the_current_version(pair, advertised_schemas):
     # The control: a peer on our own protocol gets the current version, so the
     # tests above measure the downgrade and not a broken default.
     ds_manager, do_manager = pair
-    ds_manager.peer_manager.live_peer_schemas("syft")[do_manager.email] = (
-        _client_schema("1")
-    )
+    advertised_schemas[do_manager.email, "syft"] = _client_schema("1")
 
     ds_manager._connection_router.watcher_send_proposed_file_changes_message(
         do_manager.email, mock_message()

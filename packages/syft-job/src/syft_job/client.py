@@ -86,7 +86,7 @@ class JobClient(BaseJobClient):
         self,
         config: SyftJobConfig,
         target_datasite_owner_email: Optional[str] = None,
-        peer_schemas: Optional[dict[str, ProtocolSchema]] = None,
+        peer_schema: Optional[Callable[[str], Optional[ProtocolSchema]]] = None,
     ):
         """Initialize JobClient with configuration and optional user email for job views."""
         self.config = config
@@ -104,8 +104,8 @@ class JobClient(BaseJobClient):
             str, str
         ] = {}  # do_email -> syft install source (local path, git URL, or "syft==X.Y.Z") advertised by that DO in their VersionInfo
         # All model reads/writes and path resolution go through the manager;
-        # peer_schemas (peer email -> job ProtocolSchema) is filled by syft.
-        self.manager = JobStorage(config=config, peer_schemas=peer_schemas)
+        # peer_schema (peer email -> job ProtocolSchema) comes from syft.
+        self.manager = JobStorage(config=config, peer_schema=peer_schema)
 
         # Validate that user_email exists in SyftBox root
         self._validate_user_email()
@@ -114,9 +114,9 @@ class JobClient(BaseJobClient):
     def from_config(
         cls,
         config: SyftJobConfig,
-        peer_schemas: Optional[dict[str, ProtocolSchema]] = None,
+        peer_schema: Optional[Callable[[str], Optional[ProtocolSchema]]] = None,
     ) -> "JobClient":
-        return cls(config, config.current_user_email, peer_schemas=peer_schemas)
+        return cls(config, config.current_user_email, peer_schema=peer_schema)
 
     def _validate_user_email(self) -> None:
         """Validate that the user_email directory exists in SyftBox root."""

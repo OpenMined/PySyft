@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Callable, Iterator, Optional
 
 from syft_migration import (
     MigratableObject,
@@ -29,6 +29,11 @@ logger = logging.getLogger(__name__)
 __all__ = ["JobRef", "JobStateNotFoundError", "JobStorage"]
 
 
+def _no_peer_schema(peer_email: str) -> Optional[ProtocolSchema]:
+    """No peer schema is known: the default when syft passes no lookup."""
+    return None
+
+
 class JobStorage:
     """Job filesystem IO and path resolution, delegating disk layout to codecs.
 
@@ -43,20 +48,15 @@ class JobStorage:
         self,
         config: SyftJobConfig,
         registry: MigrationRegistry = job_registry,
-        peer_schemas: Optional[dict[str, ProtocolSchema]] = None,
+        peer_schema: Optional[Callable[[str], Optional[ProtocolSchema]]] = None,
     ) -> None:
         self.config = config
         self.registry = registry
         self.service = MigrationService(registry=registry)
-        # peer email -> job ProtocolSchema; syft passes PeerManager's
-        # live map here (updated in place as peer version files load). Peers
-        # without an entry are assumed to run the current protocol.
-        # `is not None`, not `or`: syft passes a live (initially empty)
-        # dict it mutates as peer version files load; `or {}` would drop the
-        # shared reference and freeze negotiation at construction-time state.
-        self.peer_schemas: dict[str, ProtocolSchema] = (
-            peer_schemas if peer_schemas is not None else {}
-        )
+        # peer email -> the job ProtocolSchema it advertises, or None when not
+        # known; syft looks it up in the peer store on each call. Peers without
+        # a schema are assumed to run the current protocol.
+        self.peer_schema = peer_schema or _no_peer_schema
         self.codecs = [cls(config) for cls in CODECS]
 
     @property
@@ -88,7 +88,7 @@ class JobStorage:
         known schema raises by default; with ``raise_on_unknown=False`` it is
         assumed to run the current protocol.
         """
-        schema = self.peer_schemas.get(peer_email)
+        schema = self.peer_schema(peer_email)
         if schema is not None:
             return self.registry.infer_protocol_version_to_use(
                 peer_version=schema.version,
@@ -117,7 +117,7 @@ class JobStorage:
         format; a known peer schema only refines the object versions when it
         speaks the same protocol version.
         """
-        schema = self.peer_schemas.get(reader_email)
+        schema = self.peer_schema(reader_email)
         if schema is not None and schema.version == ref.protocol_version:
             return schema
         return self.registry.schema_for_protocol_version(ref.protocol_version)

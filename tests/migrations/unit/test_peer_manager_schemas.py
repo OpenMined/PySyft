@@ -1,17 +1,23 @@
-"""PeerManager's live peer-schema maps track loaded peer versions."""
+"""PeerStore.protocol_schema reads the schemas a peer advertises in its peer info."""
 
-from syft.sync.version.peer_manager import PeerManager
+from syft.sync.encryption_policy import EncryptionPolicy
+from syft.sync.peers.peer import Peer
+from syft.sync.peers.peer_store import PeerStore
+from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import VersionInfo, VersionInfoV1
 
-
-def _peer_manager() -> PeerManager:
-    # Construct without model_validate side effects: only the private schema
-    # map and _update_peer_schemas are exercised here.
-    return PeerManager.model_construct()
+PEER = "do@test.org"
 
 
-def _v2_with_schemas() -> VersionInfo:
-    return VersionInfo.current()
+def _store_with_peer(version_info) -> PeerStore:
+    store = PeerStore(email="ds@test.org")
+    info = None
+    if version_info is not None:
+        info = PeerInfo.model_construct(
+            version_info=version_info, encryption_policy=EncryptionPolicy.OPTIONAL
+        )
+    store.add_peer(Peer(email=PEER, info=info))
+    return store
 
 
 def _v1() -> VersionInfoV1:
@@ -23,42 +29,25 @@ def _v1() -> VersionInfoV1:
     )
 
 
-def test_advertising_peer_appears_in_live_map():
-    pm = _peer_manager()
-    live = pm.live_peer_schemas("syft-job")
-    pm._update_peer_schemas("do@test.org", _v2_with_schemas())
-    assert "do@test.org" in live
-    assert live["do@test.org"].protocol_name == "syft-job"
+def test_advertising_peer_has_schema():
+    store = _store_with_peer(VersionInfo.current())
+    assert store.protocol_schema(PEER, "syft-job").protocol_name == "syft-job"
 
 
 def test_pre_v2_peer_is_an_unknown_speaker():
-    pm = _peer_manager()
-    live = pm.live_peer_schemas("syft-job")
-    pm._update_peer_schemas("do@test.org", _v2_with_schemas())
-    # A reloaded version file from an old client (upgraded V1: no schemas)
-    # must remove the stale entry.
-    pm._update_peer_schemas("do@test.org", _v1())
-    assert live == {}
+    # A version file from an old client (V1) advertises no schemas.
+    assert _store_with_peer(_v1()).protocol_schema(PEER, "syft-job") is None
 
 
-def test_cleared_version_removes_peer():
-    pm = _peer_manager()
-    live = pm.live_peer_schemas("syft")
-    pm._update_peer_schemas("do@test.org", _v2_with_schemas())
-    pm._update_peer_schemas("do@test.org", None)
-    assert live == {}
+def test_peer_without_info_has_no_schema():
+    assert _store_with_peer(None).protocol_schema(PEER, "syft") is None
 
 
-def test_map_identity_is_stable():
-    # live_peer_schemas must always return the same dict object so consumers
-    # holding a reference see updates.
-    pm = _peer_manager()
-    assert pm.live_peer_schemas("syft-job") is pm.live_peer_schemas("syft-job")
+def test_peer_not_in_store_has_no_schema():
+    assert PeerStore(email="ds@test.org").protocol_schema(PEER, "syft") is None
 
 
-def test_late_registered_map_backfills_from_loaded_versions():
-    pm = _peer_manager()
-    pm._update_peer_schemas("do@test.org", _v2_with_schemas())
-    # Registering the protocol AFTER the version loaded must not start empty.
-    live = pm.live_peer_schemas("syft-job")
-    assert "do@test.org" in live
+def test_schema_follows_reloaded_info():
+    store = _store_with_peer(VersionInfo.current())
+    store.get_cached_peer(PEER).info = None
+    assert store.protocol_schema(PEER, "syft-job") is None

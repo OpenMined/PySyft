@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Any, List, Optional
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, Field, PrivateAttr
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.platforms.base_platform import BasePlatform
 from syft.sync.version.peer_info import PeerInfo
@@ -28,6 +28,9 @@ class Peer(BaseModel):
     state: PeerState = PeerState.ACCEPTED  # Default for backward compatibility
     info: Optional[PeerInfo] = None
     public_encryption_bundle: Optional[dict] = None
+    # The state at the first load_peers() of this process, for a peer that was
+    # connected or waiting then. Known in this process only, so not saved.
+    state_at_start: Optional[PeerState] = Field(default=None, exclude=True)
 
     # Set by SyftboxManager.peers when this Peer is handed out.
     _manager: Any = PrivateAttr(default=None)

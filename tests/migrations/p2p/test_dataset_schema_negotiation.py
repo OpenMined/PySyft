@@ -26,7 +26,7 @@ def _dataset_schema(protocol_version: str) -> ProtocolSchema:
 def _storage(tmp_path: Path, peer_schemas: dict) -> DatasetStorage:
     config = SyftBoxConfig(syftbox_folder=tmp_path / "SyftBox", email=OWNER_EMAIL)
     (tmp_path / "SyftBox" / OWNER_EMAIL).mkdir(parents=True, exist_ok=True)
-    return DatasetStorage(config=config, peer_schemas=peer_schemas)
+    return DatasetStorage(config=config, peer_schema=peer_schemas.get)
 
 
 def test_mixed_audience_writes_both_versions(tmp_path):
@@ -63,7 +63,7 @@ def test_no_audience_needs_no_older_layout(tmp_path):
     assert storage.target_protocol_versions_for_peers() == set()
 
 
-def test_live_map_updates_are_seen_by_storage(tmp_path):
+def test_schema_learned_later_is_seen_by_storage(tmp_path):
     live: dict = {}
     storage = _storage(tmp_path, live)
     assert storage.target_protocol_versions_for_peers([NEW_PEER]) == {
@@ -75,12 +75,12 @@ def test_live_map_updates_are_seen_by_storage(tmp_path):
     }
 
 
-def test_manager_from_config_passes_schemas_through(tmp_path):
+def test_manager_from_config_passes_schema_lookup_through(tmp_path):
     config = SyftBoxConfig(syftbox_folder=tmp_path / "SyftBox", email=OWNER_EMAIL)
     (tmp_path / "SyftBox" / OWNER_EMAIL).mkdir(parents=True, exist_ok=True)
-    live = {OLD_PEER: _dataset_schema("0")}
-    manager = SyftDatasetManager.from_config(config, peer_schemas=live)
-    assert manager.storage.peer_schemas is live
+    lookup = {OLD_PEER: _dataset_schema("0")}.get
+    manager = SyftDatasetManager.from_config(config, peer_schema=lookup)
+    assert manager.storage.peer_schema is lookup
 
 
 def test_newer_peer_clamps_to_our_protocol(tmp_path):

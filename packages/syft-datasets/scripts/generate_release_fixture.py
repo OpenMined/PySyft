@@ -41,9 +41,9 @@ def create_syftbox_with_datasets_created_by_manager(
     """One dataset written in the given protocol layout (mock + private + readme)."""
     mgr = SyftDatasetManager(syftbox_folder_path=syftbox, email=DO_EMAIL)
     # Force the target protocol by advertising a peer at that version.
-    mgr.storage.peer_schemas = {
+    mgr.storage.peer_schema = {
         DS_EMAIL: dataset_registry.schema_for_protocol_version(protocol_version)
-    }
+    }.get
 
     mock_path = src_dir / "mock.csv"
     mock_path.write_text("id,value\n1,10\n2,20\n")

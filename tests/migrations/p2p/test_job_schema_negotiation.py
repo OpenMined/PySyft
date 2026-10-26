@@ -27,7 +27,7 @@ def _storage(tmp_path: Path, peer_schemas: dict) -> JobStorage:
         syftbox_folder=tmp_path / "SyftBox", current_user_email=DS_EMAIL
     )
     (tmp_path / "SyftBox" / DS_EMAIL).mkdir(parents=True, exist_ok=True)
-    return JobStorage(config=config, peer_schemas=peer_schemas)
+    return JobStorage(config=config, peer_schema=peer_schemas.get)
 
 
 def test_protocol0_peer_negotiates_down(tmp_path):
@@ -68,14 +68,14 @@ def test_live_map_updates_are_seen_by_storage(tmp_path):
     assert storage.new_submission_ref(DO_EMAIL, "after.job").protocol_version == "0"
 
 
-def test_job_client_from_config_passes_schemas_through(tmp_path):
+def test_job_client_from_config_passes_schema_lookup_through(tmp_path):
     config = SyftJobConfig(
         syftbox_folder=tmp_path / "SyftBox", current_user_email=DS_EMAIL
     )
     (tmp_path / "SyftBox" / DS_EMAIL).mkdir(parents=True, exist_ok=True)
-    live = {DO_EMAIL: _job_schema("0")}
-    client = JobClient.from_config(config, peer_schemas=live)
-    assert client.manager.peer_schemas is live
+    lookup = {DO_EMAIL: _job_schema("0")}.get
+    client = JobClient.from_config(config, peer_schema=lookup)
+    assert client.manager.peer_schema is lookup
 
 
 def test_newer_peer_clamps_to_our_protocol(tmp_path):

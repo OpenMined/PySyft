@@ -48,12 +48,10 @@ def _submit(ds_manager, do_manager, job_name: str) -> Path:
     return project_dir
 
 
-def test_a_job_for_a_protocol0_peer_uses_the_flat_layout(pair):
+def test_a_job_for_a_protocol0_peer_uses_the_flat_layout(pair, advertised_schemas):
     ds_manager, do_manager = pair
     # The DO advertises job protocol 0, as a client of 0.1.38 or earlier does.
-    ds_manager.peer_manager.live_peer_schemas("syft-job")[do_manager.email] = (
-        _job_schema("0")
-    )
+    advertised_schemas[do_manager.email, "syft-job"] = _job_schema("0")
 
     ref = ds_manager.job_client.manager.new_submission_ref(do_manager.email, "skew.job")
     assert ref.protocol_version == "0"
@@ -62,11 +60,9 @@ def test_a_job_for_a_protocol0_peer_uses_the_flat_layout(pair):
     )
 
 
-def test_a_job_for_a_protocol0_peer_arrives_and_reads(pair):
+def test_a_job_for_a_protocol0_peer_arrives_and_reads(pair, advertised_schemas):
     ds_manager, do_manager = pair
-    ds_manager.peer_manager.live_peer_schemas("syft-job")[do_manager.email] = (
-        _job_schema("0")
-    )
+    advertised_schemas[do_manager.email, "syft-job"] = _job_schema("0")
 
     _submit(ds_manager, do_manager, "skew.job")
 

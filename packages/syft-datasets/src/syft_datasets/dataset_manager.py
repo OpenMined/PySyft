@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Callable
 
 from typing_extensions import Self
 
@@ -27,29 +28,28 @@ class SyftDatasetManager:
         self,
         syftbox_folder_path: PathLike,
         email: str,
-        peer_schemas: dict[str, ProtocolSchema] | None = None,
+        peer_schema: Callable[[str], ProtocolSchema | None] | None = None,
     ):
         self.syftbox_config = SyftBoxConfig(
             syftbox_folder=to_path(syftbox_folder_path), email=email
         )
-        # peer_schemas (peer email -> dataset ProtocolSchema): syft
-        # passes PeerManager's live map here (updated in place as peer version
-        # files load). A named peer without an entry resolves to the floor, so
-        # the dataset stays readable by a peer of unknown version.
+        # peer_schema (peer email -> dataset ProtocolSchema) comes from syft. A
+        # named peer without a schema resolves to the floor, so the dataset
+        # stays readable by a peer of unknown version.
         self.storage = DatasetStorage(
-            config=self.syftbox_config, peer_schemas=peer_schemas
+            config=self.syftbox_config, peer_schema=peer_schema
         )
 
     @classmethod
     def from_config(
         cls,
         config: SyftBoxConfig,
-        peer_schemas: dict[str, ProtocolSchema] | None = None,
+        peer_schema: Callable[[str], ProtocolSchema | None] | None = None,
     ) -> Self:
         return cls(
             syftbox_folder_path=config.syftbox_folder,
             email=config.email,
-            peer_schemas=peer_schemas,
+            peer_schema=peer_schema,
         )
 
     def create(

@@ -17,7 +17,7 @@ def _storage(tmp_path: Path, peer_schemas=None) -> DatasetStorage:
     syftbox = tmp_path / "SyftBox"
     syftbox.mkdir()
     config = SyftBoxConfig(syftbox_folder=syftbox, email=DO_EMAIL)
-    return DatasetStorage(config=config, peer_schemas=peer_schemas)
+    return DatasetStorage(config=config, peer_schema=(peer_schemas or {}).get)
 
 
 def test_reserved_dataset_name_rejected(tmp_path: Path):

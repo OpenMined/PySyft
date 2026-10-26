@@ -207,26 +207,34 @@ def test_malformed_peer_bundle_raises_on_peer_load():
 )
 def test_peer_encryption_resolved_from_both_policies(mine, theirs, encrypted):
     store = _store_with_peer(mine, theirs)
-    assert store.peer_uses_encryption("bob@example.com") is encrypted
+    assert store.pair_encrypts(store.get_cached_peer("bob@example.com")) is encrypted
 
 
 def test_resolution_follows_changed_peer_policy():
     """An enclave that reboots with another setting is picked up on the next load."""
     store = _store_with_peer(OPTIONAL, OPTIONAL)
-    assert not store.peer_uses_encryption("bob@example.com")
+    assert not store.pair_encrypts(store.get_cached_peer("bob@example.com"))
 
     store.get_cached_peer("bob@example.com").info = _peer_info(REQUIRED)
-    assert store.peer_uses_encryption("bob@example.com")
+    assert store.pair_encrypts(store.get_cached_peer("bob@example.com"))
 
     store.get_cached_peer("bob@example.com").info = _peer_info(OPTIONAL)
-    assert not store.peer_uses_encryption("bob@example.com")
+    assert not store.pair_encrypts(store.get_cached_peer("bob@example.com"))
 
 
-@pytest.mark.parametrize("policy", [OPTIONAL, REQUIRED])
-def test_sender_refuses_peer_with_unknown_policy(policy):
-    store = PeerStore(email="alice@example.com", encryption_policy=policy)
+def test_sender_refuses_peer_with_unknown_policy():
+    store = PeerStore(email="alice@example.com", encryption_policy=OPTIONAL)
     store.add_peer(Peer(email="bob@example.com"))
     with pytest.raises(SyftPeerNotReadyError, match="not known"):
+        store.encrypt_if_needed("bob@example.com", b"data")
+
+
+def test_required_sender_encrypts_without_peer_policy():
+    """A client that requires encryption encrypts whatever the peer advertises."""
+    store = PeerStore(email="alice@example.com", encryption_policy=REQUIRED)
+    store.generate_keys()
+    store.add_peer(Peer(email="bob@example.com"))
+    with pytest.raises(SyftPeerNotReadyError, match="public encryption bundle"):
         store.encrypt_if_needed("bob@example.com", b"data")
 
 
@@ -324,7 +332,7 @@ def _publish_bundle_of_other_keys(do_manager, ds_manager) -> None:
         ds_manager.email,
         json.dumps({"public_encryption_bundle": earlier.get_public_bundle()}),
     )
-    do_manager.peer_manager._states_at_start = None  # as a new process
+    do_manager.peer_manager._first_load_done = False  # as a new process
 
 
 def test_first_peer_load_refuses_bundle_of_other_keys():
@@ -365,14 +373,6 @@ def test_message_from_peer_with_unknown_policy_refused():
     bob.get_cached_peer("alice@example.com").info = None
     with pytest.raises(SyftPeerNotReadyError, match="not known"):
         bob.decrypt_and_verify_if_needed("alice@example.com", b"plain")
-
-
-def test_last_known_policy_kept_when_version_vanishes():
-    """E.g. after the owner's delete_syftbox(): its plaintext deletes still apply."""
-    _, bob = _keyed_pair(OPTIONAL, OPTIONAL)
-    assert bob.peer_policy("alice@example.com") == OPTIONAL
-    bob.get_cached_peer("alice@example.com").info = None
-    assert bob.decrypt_and_verify_if_needed("alice@example.com", b"plain") == b"plain"
 
 
 def test_receiver_accepts_plaintext_in_plaintext_pair():

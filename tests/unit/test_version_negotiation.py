@@ -512,7 +512,6 @@ class TestVersionMismatchBehavior:
         peer = do_manager.peer_manager.get_cached_peer(ds_manager.email)
         assert peer is not None
         peer.info = None
-        do_manager.peer_manager._loaded_peer_versions[ds_manager.email] = None
 
         do_manager.peer_manager.suppress_version_warnings = True
         compatible_peers = (
