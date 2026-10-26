@@ -259,6 +259,7 @@ class PeerStore(BaseModel):
     def set_peer(self, peer: Peer) -> None:
         for i, p in enumerate(self._peers):
             if p.email == peer.email:
+                self._keep_known(peer, p)
                 self._peers[i] = peer
                 return
         self._peers.append(peer)
@@ -267,18 +268,26 @@ class PeerStore(BaseModel):
         self._peers.append(peer)
 
     def set_peers(self, peers: List[Peer]) -> None:
-        """Replace the peers, keeping what this process learned of each.
-
-        ``info`` and ``state_at_start`` come from reads in this process, not
-        from the peer list, so a reload would lose them.
-        """
+        """Replace the peers, keeping what this process learned of each."""
         previous = {p.email: p for p in self._peers}
         for peer in peers:
             old = previous.get(peer.email)
             if old is not None:
-                peer.info = peer.info or old.info
-                peer.state_at_start = peer.state_at_start or old.state_at_start
+                self._keep_known(peer, old)
         self._peers = peers
+
+    @staticmethod
+    def _keep_known(peer: Peer, old: Peer) -> None:
+        """Carry over what ``old`` knows and ``peer`` does not set.
+
+        ``info`` and ``state_at_start`` come from reads in this process, not
+        from the peer list, so a reload would lose them.
+        """
+        peer.info = peer.info or old.info
+        peer.state_at_start = peer.state_at_start or old.state_at_start
+        peer.public_encryption_bundle = (
+            peer.public_encryption_bundle or old.public_encryption_bundle
+        )
 
     # ========== Ensure helpers ==========
 
