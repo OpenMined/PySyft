@@ -97,7 +97,7 @@ class AcceptedChange(BaseModel):
 
 
 class DeliveryState(BaseModel):
-    """Everything the tracker keeps: views, and sends awaiting confirmation."""
+    """Everything the tracker keeps."""
 
     version: int = DELIVERY_STATE_VERSION
     # peer -> {path: hash}

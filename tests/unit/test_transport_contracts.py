@@ -1,6 +1,5 @@
 """The transport contracts: the abstract jobs, their helper methods, the
-message types, the naming rules and the DeliveryTracker state. No backend
-implements them yet."""
+message types, the naming rules and the DeliveryTracker state."""
 
 from types import SimpleNamespace
 from unittest.mock import Mock
