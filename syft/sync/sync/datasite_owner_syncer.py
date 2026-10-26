@@ -647,7 +647,12 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """Update the file hashes from the local files. With
         ``persist_owner_state``, also write the changes to the owner's event log."""
         file_change_events_message = self.event_cache.process_local_file_changes()
-        if file_change_events_message is None or not self.persist_owner_state:
+        if file_change_events_message is None:
+            return
+        self.event_cache.deliveries.drop_accepted(
+            str(e.path_in_datasite) for e in file_change_events_message.events
+        )
+        if not self.persist_owner_state:
             return
         # Feed the events into rolling state so they flow through
         # incremental/full checkpoints.
@@ -752,7 +757,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
         An accepted file is withheld while ``syncable`` still has the hash that
         the change gave it. An accepted delete is withheld while the file stays
-        gone. A delete after a revoke still goes out.
+        gone and ``peer`` may still read its path. A delete after a revoke
+        still goes out.
         """
 
         def from_other(path: str) -> bool:
@@ -768,7 +774,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             delete=[
                 p
                 for p in plan.delete
-                if not (from_other(p) and accepted[p].hash is None)
+                if not (
+                    from_other(p)
+                    and accepted[p].hash is None
+                    and self.perm_context.can_read(p, peer)
+                )
             ],
         )
 
@@ -897,9 +907,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     def _send_outbox_messages(self) -> None:
         """Send each message in the outbox queue, and record it in its peer's view.
 
-        A send that cannot go raises, and the messages from it on are not sent.
-        Their views stay as they are, so the plan of a later sync holds their
-        changes again.
+        A send that cannot go raises. Its message is dropped, so it cannot block
+        a later sync, and the messages after it are not sent. Their views stay
+        as they are, so the plan of a later sync holds their changes again.
         """
         self.perm_context._reload()
         unsent = deque()
@@ -907,11 +917,10 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             unsent.append(self.outbox_queue.get())
         try:
             while unsent:
-                recipient, message = unsent[0]
+                recipient, message = unsent.popleft()
                 status = self.connection_router.owner_write_event_messages_to_outbox(
                     recipient, message
                 )
-                unsent.popleft()
                 self._record_sent(recipient, message, status)
         finally:
             self._requeue_unplanned_messages(unsent)

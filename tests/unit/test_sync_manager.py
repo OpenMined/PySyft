@@ -893,6 +893,106 @@ def test_accepted_delete_goes_only_to_submitter():
     assert _events_for(peer_b_router, do_manager) == [("shared/data.txt", False)]
 
 
+def _accept_setup(ds_manager, do_manager, peer_b_email: str):
+    """Peer A may write ``shared/``, peer B may read it, and both hold
+    ``shared/data.txt`` with "one". Returns the syncer, the folder and the peers."""
+    syncer = do_manager.datasite_owner_syncer
+    shared = syncer.perm_context.open("shared/")
+    shared.grant_write_access(ds_manager.email)
+    shared.grant_read_access(peer_b_email)
+    peers = [ds_manager.email, peer_b_email]
+    data = do_manager.syftbox_folder / do_manager.email / "shared/data.txt"
+    data.parent.mkdir(parents=True, exist_ok=True)
+    data.write_text("one")
+    syncer.sync(peers)
+    ds_manager.sync()
+    return syncer, shared, peers
+
+
+def _contents_for(router: ConnectionRouter, do_manager, path: str) -> list:
+    """The content of each event for ``path`` in the DO's outbox for ``router``'s
+    peer, None for a delete."""
+    return [
+        e.content
+        for m in router.watcher_get_events_messages(do_manager.email, None)
+        for e in m.events
+        if str(e.path_in_datasite) == path
+    ]
+
+
+def test_revoke_after_accepted_delete_sends_delete():
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    peer_b_email = "peer_b@example.com"
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
+    syncer, shared, peers = _accept_setup(ds_manager, do_manager, peer_b_email)
+
+    proposal = ProposedFileChangesMessage(
+        sender_email=ds_manager.email,
+        proposed_file_changes=[
+            ProposedFileChange(
+                path_in_datasite="shared/data.txt",
+                old_hash=syncer.event_cache.file_hashes[Path("shared/data.txt")],
+                datasite_email=do_manager.email,
+                is_deleted=True,
+            )
+        ],
+    )
+    syncer.handle_proposed_filechange_events_message(ds_manager.email, proposal)
+    syncer.process_syftbox_events_queue()
+    syncer.sync(peers)
+    shared.revoke_read_access(peer_b_email)
+    syncer.sync(peers)
+    assert _events_for(peer_b_router, do_manager) == [
+        ("shared/data.txt", False),
+        ("shared/data.txt", True),
+    ]
+
+
+def test_owner_change_back_to_accepted_content_reaches_readers():
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    peer_b_email = "peer_b@example.com"
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
+    syncer, _, peers = _accept_setup(ds_manager, do_manager, peer_b_email)
+    data = do_manager.syftbox_folder / do_manager.email / "shared/data.txt"
+
+    ds_manager._send_file_change(f"{do_manager.email}/shared/data.txt", "from A")
+    syncer.sync(peers)
+    data.write_text("two")
+    syncer.sync(peers)
+    data.write_text("from A")
+    syncer.sync(peers)
+    assert _contents_for(peer_b_router, do_manager, "shared/data.txt") == [
+        "one",
+        "two",
+        "from A",
+    ]
+
+
+def test_reader_granted_again_after_revoke_gets_accepted_file():
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+    )
+    peer_b_email = "peer_b@example.com"
+    peer_b_router = _peer_router(ds_manager, do_manager, peer_b_email)
+    syncer, shared, peers = _accept_setup(ds_manager, do_manager, peer_b_email)
+
+    ds_manager._send_file_change(f"{do_manager.email}/shared/data.txt", "from A")
+    syncer.sync(peers)
+    shared.revoke_read_access(peer_b_email)
+    syncer.sync(peers)
+    shared.grant_read_access(peer_b_email)
+    syncer.sync(peers)
+    assert _contents_for(peer_b_router, do_manager, "shared/data.txt") == [
+        "one",
+        None,
+        "from A",
+    ]
+
+
 def test_default_collections_folder_picks_shareable_spec_regardless_of_order():
     """The collections folder is chosen by owner_only, not by position."""
     from syft.sync.syftbox_manager import default_collections_folder

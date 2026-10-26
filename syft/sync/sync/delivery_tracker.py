@@ -186,6 +186,21 @@ def _apply_changes_to_view(
             view[path] = new_hash
 
 
+def _record_delivery(
+    state: DeliveryState, peer: str, changes: Mapping[str, str | None]
+) -> None:
+    """Apply ``changes`` to ``peer``'s view.
+
+    After a delete, ``peer`` no longer holds the version from before an accepted
+    change, so that change is no longer withheld from it.
+    """
+    _apply_changes_to_view(state.views.setdefault(peer, {}), changes)
+    for path, new_hash in changes.items():
+        change = state.accepted.get(path)
+        if new_hash is None and change is not None and peer in change.withheld_from:
+            change.withheld_from.remove(peer)
+
+
 class DeliveryTracker:
     """Per-peer views of confirmed file versions, for the data owner.
 
@@ -222,6 +237,14 @@ class DeliveryTracker:
         with self.store.locked():
             state = self.store.load()
             state.accepted.update(changes)
+            self.store.save(state)
+
+    def drop_accepted(self, paths: Iterable[str]) -> None:
+        """Forget the accepted changes of ``paths``, which the owner changed."""
+        with self.store.locked():
+            state = self.store.load()
+            for path in paths:
+                state.accepted.pop(path, None)
             self.store.save(state)
 
     def accepted_changes(self) -> dict[str, AcceptedChange]:
@@ -279,7 +302,7 @@ class DeliveryTracker:
         with self.store.locked():
             state = self.store.load()
             if status is SendStatus.DELIVERED:
-                _apply_changes_to_view(state.views.setdefault(peer, {}), changes)
+                _record_delivery(state, peer, changes)
             else:
                 assert status is SendStatus.QUEUED, status
                 state.queued[msg_id] = QueuedSend(peer=peer, changes=dict(changes))
@@ -294,7 +317,5 @@ class DeliveryTracker:
             state = self.store.load()
             for msg_id in msg_ids:
                 queued = state.queued.pop(msg_id)
-                _apply_changes_to_view(
-                    state.views.setdefault(queued.peer, {}), queued.changes
-                )
+                _record_delivery(state, queued.peer, queued.changes)
             self.store.save(state)

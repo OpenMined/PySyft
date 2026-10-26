@@ -354,7 +354,7 @@ def test_upgrade_keeps_pending_private_share():
     ]
 
 
-def test_held_send_outside_plan_goes_out_later(monkeypatch):
+def test_failed_send_outside_plan_dropped(monkeypatch):
     ds_manager, do_manager = _pair()
 
     def peer_not_ready(self, recipient, *args, **kwargs):
@@ -368,9 +368,26 @@ def test_held_send_outside_plan_goes_out_later(monkeypatch):
             _push_private_file(do_manager, ds_manager)
 
     do_manager.datasite_owner_syncer.process_syftbox_events_queue()
-    assert _sent_events(ds_manager, do_manager, "private/data.csv") == [
-        (False, b"rows")
-    ]
+    assert _sent_events(ds_manager, do_manager, "private/data.csv") == []
+
+
+def test_failed_send_outside_plan_does_not_block_later_syncs():
+    ds_manager, do_manager = _pair()
+    syncer = do_manager.datasite_owner_syncer
+    _write(do_manager, "private/data.csv", "rows")
+    message = syncer.event_cache.create_events_for_files(
+        {Path("private/data.csv"): b"rows"}
+    )
+    syncer.queue_event_for_syftbox(
+        recipients=["stranger@example.com"], file_change_events_message=message
+    )
+    with pytest.raises(SyftPeerNotReadyError):
+        syncer.process_syftbox_events_queue()
+
+    syncer.perm_context.open("shared/").grant_read_access(ds_manager.email)
+    _write(do_manager, "shared/data.txt", "one")
+    do_manager.sync(auto_checkpoint=False)
+    assert _outbox_paths(ds_manager, do_manager) == ["shared/data.txt"]
 
 
 def test_private_dataset_sent_to_peer_never_revoked():
