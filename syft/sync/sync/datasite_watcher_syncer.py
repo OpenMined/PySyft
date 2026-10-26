@@ -1,7 +1,7 @@
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
-from typing import List
+from typing import Dict, List
 
 from pydantic import BaseModel, Field, PrivateAttr
 
@@ -9,6 +9,7 @@ from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.callback_mixin import BaseModelCallbackMixin
 from syft.sync.events.file_change_event import FileChangeEventsMessage
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.messages.proposed_filechange import (
     ProposedFileChange,
     ProposedFileChangesMessage,
@@ -74,7 +75,8 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         )
 
     def process_file_changes_queue(self):
-        file_changes = []
+        # One message per datasite: each change goes to the owner of its path.
+        changes_by_recipient: Dict[str, List[ProposedFileChange]] = {}
         while not self.queue.empty():
             relative_path, content = self.queue.get()
 
@@ -97,22 +99,56 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
             file_change = self.get_proposed_file_change_object(
                 path_in_datasite, content, datasite_email=recipient
             )
-            file_changes.append(file_change)
+            changes_by_recipient.setdefault(recipient, []).append(file_change)
+        self._send_by_recipient(changes_by_recipient)
 
-        message = ProposedFileChangesMessage(
-            sender_email=self.email, proposed_file_changes=file_changes
-        )
+    def _send_by_recipient(
+        self, changes_by_recipient: dict[str, list[ProposedFileChange]]
+    ) -> None:
+        """Send one message to each recipient.
+
+        The changes for a recipient that cannot receive now are dropped. The
+        other recipients still get their changes, and then the first error is
+        raised.
+
+        Raises:
+            SyftPeerNotReadyError: when the policy of a recipient is not known,
+                or the pair encrypts and the peer bundle is missing.
+        """
+        error = None
+        for recipient, changes in changes_by_recipient.items():
+            message = ProposedFileChangesMessage(
+                sender_email=self.email, proposed_file_changes=changes
+            )
+            try:
+                self._send_message(recipient, message)
+            except SyftPeerNotReadyError as e:
+                error = error or e
+        if error is not None:
+            raise error
+
+    def _record_sent_hashes(self, message: ProposedFileChangesMessage) -> None:
+        hashes = self.datasite_watcher_cache.file_hashes
+        for fc in message.proposed_file_changes:
+            path_key = Path(fc.datasite_email) / fc.path_in_datasite
+            if fc.is_deleted:
+                hashes.pop(path_key, None)
+            else:
+                hashes[path_key] = fc.new_hash
+
+    def _send_message(
+        self, recipient: str, message: ProposedFileChangesMessage
+    ) -> None:
+        """Send ``message`` and record the hashes it sent.
+
+        Raises:
+            SyftPeerNotReadyError: when the policy of ``recipient`` is not
+                known, or the pair encrypts and the peer bundle is missing.
+        """
         self.connection_router.watcher_send_proposed_file_changes_message(
             recipient, message
         )
-
-        # Update local cache with new hashes
-        for fc in file_changes:
-            path_key = Path(fc.datasite_email) / fc.path_in_datasite
-            if fc.is_deleted:
-                self.datasite_watcher_cache.file_hashes.pop(path_key, None)
-            else:
-                self.datasite_watcher_cache.file_hashes[path_key] = fc.new_hash
+        self._record_sent_hashes(message)
 
     def on_file_change(
         self, relative_path: Path | str, content: str | None = None, process_now=True
@@ -126,14 +162,15 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
     def download_events_message_with_new_connection(
         self, file_id: str, peer_email: str
-    ) -> FileChangeEventsMessage:
-        """Download from outbox using a new connection (thread-safe)."""
+    ) -> FileChangeEventsMessage | None:
+        """Download from outbox using a new connection (thread-safe).
+
+        Returns None when the message is skipped (see
+        ``ConnectionRouter.watcher_read_events_message``).
+        """
         connection = self.connection_router.connection_for_parallel_download()
         raw = connection.download_file(file_id)
-        raw = self.connection_router.peer_store.decrypt_and_verify_if_needed(
-            peer_email, raw
-        )
-        return FileChangeEventsMessage.from_compressed_data(raw)
+        return self.connection_router.watcher_read_events_message(peer_email, raw)
 
     def download_collection_file_with_new_connection(
         self, file_id: str, owner_email: str

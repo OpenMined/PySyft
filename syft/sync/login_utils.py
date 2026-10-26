@@ -22,7 +22,8 @@ def _read_remote_version(
     from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
     conn = GDriveConnection.from_token_path(email=email, token_path=token_path)
-    return conn.read_own_version_file()
+    peer_info = conn.read_own_peer_info_file()
+    return peer_info.version_info if peer_info else None
 
 
 def _handle_version_incompatible(
@@ -46,9 +47,9 @@ def _handle_version_incompatible(
     if choice == "1":
         print(
             f"Continuing with v{SYFT_VERSION}. Local and remote data are kept.\n"
-            "Encryption keys are the one exception. A key file from a newer "
-            "client is refused, because a private key cannot be rebuilt. Install "
-            "that client to use those keys.\n"
+            "Encryption keys are the one exception. A key file of another "
+            "version is refused, because a private key cannot be rebuilt. Install "
+            "the client that wrote it to use those keys.\n"
         )
         return True
     if choice == "2":

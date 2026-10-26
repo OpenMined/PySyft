@@ -1,13 +1,14 @@
 import copy
+import json
 import pickle
-import tempfile
 from pathlib import Path
 
 import pytest
 
+from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer, PeerState
-from syft.sync.peers.peer_store import PeerStore
+from syft.sync.peers.peer_store import PeerStore, import_key_file
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
@@ -19,18 +20,22 @@ from tests.unit.utils import grant_job_inbox_access
 
 
 def test_key_generation():
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
-    assert not ps.has_my_keys()
+    ps = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     ps.generate_keys()
-    assert ps.has_my_keys()
     assert ps.public_key is not None
     assert ps.get_public_bundle() is not None
 
 
 def test_encrypt_decrypt_roundtrip():
-    alice = PeerStore(email="alice@example.com", use_encryption=True)
+    alice = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     alice.generate_keys()
-    bob = PeerStore(email="bob@example.com", use_encryption=True)
+    bob = PeerStore(
+        email="bob@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     bob.generate_keys()
 
     # Add peers so bundles can be stored on Peer objects
@@ -50,7 +55,9 @@ def test_encrypt_decrypt_roundtrip():
 
 
 def test_encrypt_without_keys_raises():
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
+    ps = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     ps.add_peer(Peer(email="bob@example.com"))
     with pytest.raises(ValueError, match="Keys are created at login"):
         ps.encrypt("bob@example.com", b"data")
@@ -87,7 +94,9 @@ def test_encrypt_without_peer_bundle_names_the_cause(state, cause, remedy):
     Naming neither the cause nor the remedy is what left data owners stuck on
     this error with nothing to act on.
     """
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
+    ps = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     ps.generate_keys()
     ps.add_peer(Peer(email="bob@example.com", state=state))
 
@@ -116,14 +125,18 @@ def test_peer_not_ready_error_survives_pickle_and_copy():
 
 
 def test_try_decrypt_no_keys():
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
+    ps = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     data = b"some unencrypted data"
     with pytest.raises(ValueError, match="Keys are created at login"):
         ps.decrypt("bob@example.com", data) == data
 
 
 def test_try_decrypt_no_peer_bundle():
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
+    ps = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     ps.generate_keys()
     data = b"some unencrypted data"
     with pytest.raises(SyftPeerNotReadyError) as exc:
@@ -133,9 +146,13 @@ def test_try_decrypt_no_peer_bundle():
 
 
 def test_try_decrypt_invalid_envelope():
-    alice = PeerStore(email="alice@example.com", use_encryption=True)
+    alice = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     alice.generate_keys()
-    bob = PeerStore(email="bob@example.com", use_encryption=True)
+    bob = PeerStore(
+        email="bob@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     bob.generate_keys()
 
     alice.add_peer(Peer(email="bob@example.com"))
@@ -149,48 +166,61 @@ def test_try_decrypt_invalid_envelope():
         bob.decrypt("alice@example.com", bad_data)
 
 
-def test_save_and_load_keys():
-    alice = PeerStore(email="alice@example.com", use_encryption=True)
-    alice.generate_keys()
-    bob = PeerStore(email="bob@example.com", use_encryption=True)
+def test_key_file_holds_identity_only(tmp_path):
+    keys_path = tmp_path / "crypto_keys.json"
+    alice = PeerStore.create(email="alice@example.com", keys_path=keys_path)
+    bob = PeerStore(email="bob@example.com")
     bob.generate_keys()
-
     alice.add_peer(Peer(email="bob@example.com"))
     alice.set_peer_bundle("bob@example.com", bob.get_public_bundle())
 
-    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
-        path = Path(f.name)
-
-    alice.save_keys(path)
-    loaded = PeerStore.load_keys(path)
-
-    assert loaded.email == "alice@example.com"
-    assert loaded.has_my_keys()
-    assert loaded.get_public_bundle() is not None
-    assert loaded.has_peer_bundle("bob@example.com")
-    path.unlink()
+    assert set(json.loads(keys_path.read_text())) == {"version", "email", "keys_jwk"}
+    reloaded = PeerStore.create(email="alice@example.com", keys_path=keys_path)
+    assert reloaded.get_public_bundle() == alice.get_public_bundle()
+    assert not reloaded.has_peer_bundle("bob@example.com")
 
 
-def test_peer_use_encryption_inherited():
-    """Peers added to PeerStore inherit its use_encryption flag."""
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
-    peer = Peer(email="bob@example.com")
-    assert not peer.use_encryption
-    ps.add_peer(peer)
-    assert peer.use_encryption
-
-    ps2 = PeerStore(email="alice@example.com", use_encryption=False)
-    peer2 = Peer(email="bob@example.com", use_encryption=True)
-    ps2.add_peer(peer2)
-    assert not peer2.use_encryption
+def _session_key_file(tmp_path, email="alice@example.com"):
+    path = tmp_path / "upload" / "crypto_keys.json"
+    return path, PeerStore.create(email=email, keys_path=path)
 
 
-def test_set_peers_inherits_encryption():
-    """set_peers propagates use_encryption to all peers."""
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
-    peers = [Peer(email="bob@example.com"), Peer(email="carol@example.com")]
-    ps.set_peers(peers)
-    assert all(p.use_encryption for p in peers)
+def test_imported_key_file_restores_keys(tmp_path):
+    uploaded, earlier = _session_key_file(tmp_path)
+    keys_path = tmp_path / "SyftBox" / "crypto_keys.json"
+
+    import_key_file(uploaded, keys_path, "alice@example.com")
+
+    restored = PeerStore.create(email="alice@example.com", keys_path=keys_path)
+    assert restored.get_public_bundle() == earlier.get_public_bundle()
+
+
+def test_import_same_key_file_twice(tmp_path):
+    uploaded, _ = _session_key_file(tmp_path)
+    keys_path = tmp_path / "SyftBox" / "crypto_keys.json"
+    import_key_file(uploaded, keys_path, "alice@example.com")
+
+    import_key_file(uploaded, keys_path, "alice@example.com")
+
+
+def test_import_key_file_of_another_identity_refused(tmp_path):
+    uploaded, _ = _session_key_file(tmp_path, email="bob@example.com")
+    keys_path = tmp_path / "SyftBox" / "crypto_keys.json"
+
+    with pytest.raises(ValueError, match="belongs to"):
+        import_key_file(uploaded, keys_path, "alice@example.com")
+    assert not keys_path.exists()
+
+
+def test_import_never_replaces_other_keys(tmp_path):
+    uploaded, _ = _session_key_file(tmp_path)
+    keys_path = tmp_path / "SyftBox" / "crypto_keys.json"
+    PeerStore.create(email="alice@example.com", keys_path=keys_path)
+    on_disk = keys_path.read_text()
+
+    with pytest.raises(FileExistsError):
+        import_key_file(uploaded, keys_path, "alice@example.com")
+    assert keys_path.read_text() == on_disk
 
 
 # =========================================================================
@@ -270,9 +300,6 @@ def test_no_encryption_backward_compat():
 
     grant_job_inbox_access(do_manager, ds_manager.email)
 
-    assert ds_manager._peer_store is None
-    assert do_manager._peer_store is None
-
     file_path = path_for_job(do_manager.email, ds_manager.email, "my.job")
     ds_manager._send_file_change(file_path, "hello unencrypted")
     do_manager.sync()
@@ -317,7 +344,9 @@ def test_bundle_exchange_through_peer_approval():
 
 def test_self_encrypt_decrypt_roundtrip():
     """PeerStore can encrypt and decrypt data for itself."""
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
+    ps = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     ps.generate_keys()
 
     plaintext = b"secret at-rest data"
@@ -330,7 +359,9 @@ def test_self_encrypt_decrypt_roundtrip():
 
 def test_self_encrypt_if_needed_with_encryption():
     """encrypt_for_self_if_needed encrypts when enabled and keys exist."""
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
+    ps = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     ps.generate_keys()
 
     data = b"hello"
@@ -343,7 +374,9 @@ def test_self_encrypt_if_needed_with_encryption():
 
 def test_self_encrypt_if_needed_without_encryption():
     """encrypt_for_self_if_needed is a no-op when encryption is disabled."""
-    ps = PeerStore(email="alice@example.com", use_encryption=False)
+    ps = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.OPTIONAL
+    )
     ps.generate_keys()
 
     data = b"hello"
@@ -351,13 +384,14 @@ def test_self_encrypt_if_needed_without_encryption():
     assert ps.decrypt_and_verify_for_self_if_needed(data) == data
 
 
-def test_self_encrypt_if_needed_without_keys():
-    """encrypt_for_self_if_needed is a no-op when keys are missing."""
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
+def test_required_self_decrypt_refuses_plaintext():
+    ps = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
+    ps.generate_keys()
 
-    data = b"hello"
-    assert ps.encrypt_for_self_if_needed(data) == data
-    assert ps.decrypt_and_verify_for_self_if_needed(data) == data
+    with pytest.raises(ValueError, match="SYC envelope"):
+        ps.decrypt_and_verify_for_self_if_needed(b"hello")
 
 
 # =========================================================================
@@ -417,7 +451,6 @@ def test_encrypted_rolling_state_roundtrip():
         FileChangeEvent,
         FileChangeEventsMessage,
     )
-    from pathlib import Path
     from uuid import uuid4
 
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
@@ -477,9 +510,13 @@ def test_at_rest_no_encryption_backward_compat():
 
 def _setup_alice_bob():
     """Helper: create alice and bob PeerStores with exchanged bundles."""
-    alice = PeerStore(email="alice@example.com", use_encryption=True)
+    alice = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     alice.generate_keys()
-    bob = PeerStore(email="bob@example.com", use_encryption=True)
+    bob = PeerStore(
+        email="bob@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     bob.generate_keys()
 
     alice.add_peer(Peer(email="bob@example.com"))
@@ -505,7 +542,9 @@ def test_verify_message_wrong_sender_raises():
     """Verification fails when checked against the wrong sender's key."""
     alice, bob = _setup_alice_bob()
 
-    carol = PeerStore(email="carol@example.com", use_encryption=True)
+    carol = PeerStore(
+        email="carol@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     carol.generate_keys()
     bob.add_peer(Peer(email="carol@example.com"))
     bob.set_peer_bundle("carol@example.com", carol.get_public_bundle())
@@ -531,7 +570,9 @@ def test_decrypt_tampered_envelope_raises():
 
 def test_verify_message_from_self():
     """Verify signature of a self-encrypted envelope."""
-    ps = PeerStore(email="alice@example.com", use_encryption=True)
+    ps = PeerStore(
+        email="alice@example.com", encryption_policy=EncryptionPolicy.REQUIRED
+    )
     ps.generate_keys()
 
     plaintext = b"self-signed data"

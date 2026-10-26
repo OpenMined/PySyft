@@ -22,7 +22,7 @@ from syft.migrations import client_registry
 from syft.sync.events.file_change_event import FileChangeEventsMessage
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.utils.syftbox_utils import uncompress_data
-from syft.sync.version.version_info import VersionInfo
+from syft.sync.version.peer_info import PeerInfo
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 RELEASE_FIXTURES = sorted(FIXTURES_DIR.glob("*-protocol*"))
@@ -56,11 +56,14 @@ def test_version_file_reads_and_round_trips(fixture: Path):
     raw = _single(fixture, "SYFT_version.json").read_text()
     assert ("canonical_name" in json.loads(raw)) == _has_identity(_protocol_of(fixture))
 
-    info = VersionInfo.from_json(raw)
-    assert info.version == client_registry.latest_version("VersionInfo")
-    assert info.syft_client_version
+    # Read as a client reads a peer's file: a release before PeerInfo wrote a
+    # bare VersionInfo.
+    info = PeerInfo.from_json(raw)
+    assert info.version == client_registry.latest_version("PeerInfo")
+    assert info.version_info.version == client_registry.latest_version("VersionInfo")
+    assert info.version_info.syft_client_version
     # Round-trip: what the current code writes must load again.
-    assert VersionInfo.from_json(info.to_json()) == info
+    assert PeerInfo.from_json(info.to_json()) == info
 
 
 @released_fixtures

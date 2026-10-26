@@ -182,7 +182,7 @@ def test_submit_to_peer_writes_that_protocol_layout(peer_protocol: str, tmp_path
     )
     peer_schema = job_registry.schema_for_protocol_version(peer_protocol)
     ds_client_current_protocol = JobClient(
-        config=ds_config_current_protocol, peer_schemas={DO_EMAIL: peer_schema}
+        config=ds_config_current_protocol, peer_schema={DO_EMAIL: peer_schema}.get
     )
 
     job_dir = ds_client_current_protocol.submit_bash_job(

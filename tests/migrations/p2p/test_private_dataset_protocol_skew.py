@@ -37,13 +37,13 @@ def pair():
     )
 
 
-def _create(ds_manager, do_manager, name: str, mixed_audience: bool):
+def _create(
+    advertised_schemas, ds_manager, do_manager, name: str, mixed_audience: bool
+):
     """Create a dataset locally; with a mixed audience both layouts exist."""
     users = [ds_manager.email]
     if mixed_audience:
-        do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
-            _dataset_schema("0")
-        )
+        advertised_schemas[OLD_PEER, "syft-dataset"] = _dataset_schema("0")
         users.append(OLD_PEER)
     mock_path, private_path, readme_path = create_tmp_dataset_files()
     return do_manager.create_dataset(
@@ -68,13 +68,15 @@ def _shipped_private_paths(ds_manager, do_manager) -> list[str]:
     ]
 
 
-def test_private_files_for_a_protocol0_peer_ship_in_the_flat_layout(pair):
+def test_private_files_for_a_protocol0_peer_ship_in_the_flat_layout(
+    pair, advertised_schemas
+):
     ds_manager, do_manager = pair
-    _create(ds_manager, do_manager, "mixed private", mixed_audience=True)
-    # The recipient advertises dataset protocol 0, as an earlier client does.
-    do_manager.peer_manager.live_peer_schemas("syft-dataset")[ds_manager.email] = (
-        _dataset_schema("0")
+    _create(
+        advertised_schemas, ds_manager, do_manager, "mixed private", mixed_audience=True
     )
+    # The recipient advertises dataset protocol 0, as an earlier client does.
+    advertised_schemas[ds_manager.email, "syft-dataset"] = _dataset_schema("0")
 
     do_manager.share_private_dataset("mixed private", ds_manager.email)
 
@@ -86,11 +88,15 @@ def test_private_files_for_a_protocol0_peer_ship_in_the_flat_layout(pair):
         )
 
 
-def test_private_files_for_a_current_peer_ship_in_the_versioned_layout(pair):
+def test_private_files_for_a_current_peer_ship_in_the_versioned_layout(
+    pair, advertised_schemas
+):
     # The control: a peer of our own protocol gets the newest layout, so the
     # test above measures negotiation and not a broken default.
     ds_manager, do_manager = pair
-    _create(ds_manager, do_manager, "mixed private", mixed_audience=True)
+    _create(
+        advertised_schemas, ds_manager, do_manager, "mixed private", mixed_audience=True
+    )
 
     do_manager.share_private_dataset("mixed private", ds_manager.email)
 
@@ -100,19 +106,19 @@ def test_private_files_for_a_current_peer_ship_in_the_versioned_layout(pair):
         assert path.startswith("private/syft_datasets/v1/mixed private/")
 
 
-def test_a_missing_flat_copy_is_materialized_for_a_protocol0_peer(pair):
+def test_a_missing_flat_copy_is_materialized_for_a_protocol0_peer(
+    pair, advertised_schemas
+):
     # The dataset was created for a current audience, so no flat copy exists.
     # The share must create one -- the same fill that share_dataset applies --
     # because shipping the v1 paths gives the peer files it never scans.
     ds_manager, do_manager = pair
-    _create(ds_manager, do_manager, "v1 only", mixed_audience=False)
+    _create(advertised_schemas, ds_manager, do_manager, "v1 only", mixed_audience=False)
     storage = do_manager.dataset_manager.storage
     flat_dir = storage.private_dataset_dir(storage.new_dataset_ref("v1 only", "0"))
     assert not flat_dir.exists(), "the flat copy should not exist before the share"
 
-    do_manager.peer_manager.live_peer_schemas("syft-dataset")[ds_manager.email] = (
-        _dataset_schema("0")
-    )
+    advertised_schemas[ds_manager.email, "syft-dataset"] = _dataset_schema("0")
     do_manager.share_private_dataset("v1 only", ds_manager.email)
 
     paths = _shipped_private_paths(ds_manager, do_manager)

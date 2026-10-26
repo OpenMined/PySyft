@@ -5,10 +5,14 @@ import yaml
 
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.encryption_policy import EncryptionPolicy
+from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.messages.proposed_filechange import ProposedFileChange
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.version.peer_info import PeerInfo
+from syft.sync.version.version_info import VersionInfo
 from syft.sync.sync.caches.datasite_owner_cache import (
     ProposedEventFileOutdatedException,
 )
@@ -164,7 +168,8 @@ def test_sync_existing_datasite_state_do():
 
     n_outbox = connection_ds.watcher_get_outbox_file_metadatas(do_manager.email, None)
     assert n_messages_in_cache >= 1  # At least 1 message with the 2 file changes
-    assert n_files_in_cache == 2  # 2 data files
+    # 2 data files + private/crypto_keys.json + private/syft_settings.json
+    assert n_files_in_cache == 4
     assert hashes_in_cache == 2  # 2 data files
     assert len(n_outbox) >= 1
 
@@ -200,7 +205,9 @@ def test_sync_existing_inbox_state_do():
     n_files_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_connection)
     hashes_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_hashes)
     assert n_events_message_in_cache >= 1  # At least 1 message with 2 file changes
-    assert n_files_in_cache == 3  # 2 data files + root syft.pub.yaml
+    # 2 data files + root syft.pub.yaml + private/crypto_keys.json
+    # + private/syft_settings.json
+    assert n_files_in_cache == 5
     assert hashes_in_cache == 3  # 2 data files + root syft.pub.yaml
 
 
@@ -434,6 +441,26 @@ def test_collection_files_excluded_from_outbox_sync():
     )
 
 
+def _store_knowing(email: str, peer_email: str) -> PeerStore:
+    """A store for ``email`` that knows ``peer_email`` as an optional peer."""
+    info = PeerInfo(
+        version_info=VersionInfo.current(),
+        encryption_policy=EncryptionPolicy.OPTIONAL,
+    )
+    store = PeerStore(email=email)
+    store.add_peer(Peer(email=peer_email, info=info))
+    return store
+
+
+def _add_known_peer(do_manager, email: str) -> None:
+    """Make ``email`` a peer of the DO with a known version, as peering does."""
+    info = PeerInfo(
+        version_info=VersionInfo.current(),
+        encryption_policy=EncryptionPolicy.OPTIONAL,
+    )
+    do_manager.peer_manager.peer_store.add_peer(Peer(email=email, info=info))
+
+
 def test_job_files_sync_to_submitter_only():
     """Test that job files only sync to the peer who submitted the job.
 
@@ -487,9 +514,10 @@ def test_job_files_sync_to_submitter_only():
         submitter_email, ds_manager._connection_router.connections[0].drive_service
     )
     submitter_conn.add_peer(do_manager.email)
+    _add_known_peer(do_manager, submitter_email)
     submitter_router = ConnectionRouter(
         connections=[submitter_conn],
-        peer_store=PeerStore(email=submitter_email),
+        peer_store=_store_knowing(submitter_email, do_manager.email),
     )
     do_manager.datasite_owner_syncer.process_local_changes(recipients)
 
@@ -689,9 +717,10 @@ def test_permission_change_triggers_resend():
         peer_b_email, ds_manager._connection_router.connections[0].drive_service
     )
     peer_b_conn.add_peer(do_manager.email)
+    _add_known_peer(do_manager, peer_b_email)
     peer_b_router = ConnectionRouter(
         connections=[peer_b_conn],
-        peer_store=PeerStore(email=peer_b_email),
+        peer_store=_store_knowing(peer_b_email, do_manager.email),
     )
 
     # Grant only peer A read access to project/

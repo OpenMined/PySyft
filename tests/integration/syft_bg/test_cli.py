@@ -27,13 +27,16 @@ class TestInitCommand:
     def test_init_basic(self, mock_api_init):
         """Should pass email to api.init."""
         runner = CliRunner()
-        result = runner.invoke(init, ["-e", "alice@uni.edu"])
+        result = runner.invoke(
+            init, ["-e", "alice@uni.edu", "--encryption", "optional"]
+        )
 
         assert result.exit_code == 0
         mock_api_init.assert_called_once_with(
             do_email="alice@uni.edu",
             syftbox_root=None,
             token_path=None,
+            encryption=False,
         )
 
     @patch("syft_bg.api.api.init")
@@ -49,6 +52,15 @@ class TestInitCommand:
         # token path must exist for click.Path(exists=True), so this will fail
         # unless file exists. Test the basic flow instead.
         mock_api_init.assert_not_called()  # file doesn't exist
+
+    @patch("syft_bg.api.api.init")
+    def test_init_without_encryption_keeps_syftbox_policy(self, mock_api_init):
+        """Without --encryption, api.init gets None: the SyftBox keeps its policy."""
+        runner = CliRunner()
+        result = runner.invoke(init, ["-e", "alice@uni.edu"])
+
+        assert result.exit_code == 0
+        assert mock_api_init.call_args.kwargs["encryption"] is None
 
     @patch("syft_bg.api.api.init")
     def test_init_requires_email(self, mock_api_init):
@@ -386,7 +398,7 @@ class TestRemovePeerCommand:
     def test_remove_peer(self, api_store, temp_dir):
         """Should remove peer from apis."""
         _create_api(
-            api_store, temp_dir, "my_analysis", ["main.py"], ["a@x.com", "b@x.com"]
+            api_store, temp_dir, "my_analysis", ["run.sh"], ["a@x.com", "b@x.com"]
         )
 
         runner = CliRunner()
@@ -398,7 +410,7 @@ class TestRemovePeerCommand:
 
     def test_removing_last_peer_asks_for_confirmation(self, api_store, temp_dir):
         """An object left without peers matches anyone, so ask first."""
-        _create_api(api_store, temp_dir, "my_analysis", ["main.py"], ["a@x.com"])
+        _create_api(api_store, temp_dir, "my_analysis", ["run.sh"], ["a@x.com"])
 
         runner = CliRunner()
         result = runner.invoke(remove_peer, ["a@x.com"], input="n\n")

@@ -541,8 +541,8 @@ def test_version_upgrade_breaks_communication():
     sleep(2)
 
     # Verify initial version compatibility
-    ds_manager.peer_manager.load_peer_version(do_manager.email)
-    do_manager.peer_manager.load_peer_version(ds_manager.email)
+    ds_manager.peer_manager.load_peer_info(do_manager.email)
+    do_manager.peer_manager.load_peer_info(ds_manager.email)
 
     assert ds_manager.peer_manager.is_peer_version_compatible(do_manager.email), (
         "DS should see DO as compatible initially"
@@ -564,17 +564,20 @@ def test_version_upgrade_breaks_communication():
     )
 
     # Write the new version to GDrive (simulating DS upgrading their client)
-    ds_connection.write_version_file(new_version)
+    own_info = ds_manager.peer_manager.get_own_peer_info()
+    ds_connection.write_peer_info_file(
+        own_info.model_copy(update={"version_info": new_version})
+    )
 
     # Phase 3: Clear DO's cached version of DS and reload from GDrive
-    do_manager.peer_manager.clear_peer_version(ds_manager.email)
+    do_manager.peer_manager.clear_peer_info(ds_manager.email)
 
     # Reload DS's version (this fetches from GDrive)
-    reloaded_version = do_manager.peer_manager.load_peer_version(ds_manager.email)
+    reloaded_info = do_manager.peer_manager.load_peer_info(ds_manager.email)
 
     # Verify the new version was loaded
-    assert reloaded_version is not None, "Should be able to reload peer version"
-    assert reloaded_version.syft_client_version == "99.0.0", (
+    assert reloaded_info is not None, "Should be able to reload peer version"
+    assert reloaded_info.version_info.syft_client_version == "99.0.0", (
         "Reloaded version should be the upgraded version"
     )
 
@@ -584,4 +587,4 @@ def test_version_upgrade_breaks_communication():
     )
 
     # Cleanup: Restore DS's version file to the original version
-    ds_connection.write_version_file(current)
+    ds_connection.write_peer_info_file(own_info)

@@ -1,8 +1,8 @@
-"""The crypto key file carries a version, and an unknown one stops the load.
+"""The crypto key file carries a version, and any other version stops the load.
 
 A user cannot rebuild a private key, so delete-and-rebuild is not a recovery
-here. If a newer client wrote the file, this client must refuse it rather than
-read it wrong and lose the keys.
+here. A client must refuse a file of another version rather than read it wrong
+and lose the keys.
 """
 
 import json
@@ -10,13 +10,19 @@ import json
 import pytest
 from syft.sync.peers.peer_store import CRYPTO_KEYS_VERSION, PeerStore
 
+EMAIL = "alice@example.com"
+
 
 def _saved(tmp_path):
-    store = PeerStore(email="alice@example.com", use_encryption=True)
-    store.generate_keys()
     path = tmp_path / "crypto_keys.json"
-    store.save_keys(path)
+    PeerStore.create(email=EMAIL, keys_path=path)
     return path
+
+
+def _set_version(path, version):
+    data = json.loads(path.read_text())
+    data["version"] = version
+    path.write_text(json.dumps(data))
 
 
 def test_a_saved_file_carries_the_version(tmp_path):
@@ -26,26 +32,54 @@ def test_a_saved_file_carries_the_version(tmp_path):
 
 def test_a_saved_file_loads_back(tmp_path):
     path = _saved(tmp_path)
-    loaded = PeerStore.load_keys(path)
-    assert loaded.email == "alice@example.com"
+    on_disk = path.read_text()
+    PeerStore.create(email=EMAIL, keys_path=path)
+    assert path.read_text() == on_disk
 
 
-def test_a_file_without_a_version_still_loads(tmp_path):
-    # Written before the version field existed. Those keys must keep working.
+@pytest.mark.parametrize(
+    "version",
+    [CRYPTO_KEYS_VERSION - 1, CRYPTO_KEYS_VERSION + 1],
+    ids=["older", "newer"],
+)
+def test_a_file_of_another_version_is_refused(tmp_path, version):
+    path = _saved(tmp_path)
+    _set_version(path, version)
+
+    with pytest.raises(ValueError, match=f"version {version}"):
+        PeerStore.create(email=EMAIL, keys_path=path)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [lambda d: d.pop("keys_jwk"), lambda d: d.update(peer_bundles={})],
+    ids=["missing field", "extra field"],
+)
+def test_a_file_of_another_shape_is_refused(tmp_path, change):
     path = _saved(tmp_path)
     data = json.loads(path.read_text())
-    del data["version"]
+    change(data)
     path.write_text(json.dumps(data))
 
-    loaded = PeerStore.load_keys(path)
-    assert loaded.email == "alice@example.com"
+    with pytest.raises(ValueError, match="_KeyFile"):
+        PeerStore.create(email=EMAIL, keys_path=path)
 
 
-def test_a_file_from_a_newer_client_is_refused(tmp_path):
+def test_a_file_of_another_identity_is_refused(tmp_path):
     path = _saved(tmp_path)
-    data = json.loads(path.read_text())
-    data["version"] = CRYPTO_KEYS_VERSION + 1
-    path.write_text(json.dumps(data))
 
-    with pytest.raises(ValueError, match=str(CRYPTO_KEYS_VERSION + 1)):
-        PeerStore.load_keys(path)
+    with pytest.raises(ValueError, match="belongs to"):
+        PeerStore.create(email="bob@example.com", keys_path=path)
+
+
+def test_saving_never_replaces_an_existing_file(tmp_path):
+    """A second process that generated keys at the same time must not win."""
+    path = _saved(tmp_path)
+    on_disk = path.read_text()
+    other = PeerStore(email=EMAIL)
+    other.generate_keys()
+
+    with pytest.raises(FileExistsError):
+        other.save_keys(path)
+    assert path.read_text() == on_disk
+    assert [p.name for p in tmp_path.iterdir()] == ["crypto_keys.json"]

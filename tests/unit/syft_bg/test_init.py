@@ -5,7 +5,17 @@ from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+from syft_rds import (
+    EncryptionPolicy,
+    EncryptionPolicyMismatchError,
+    datasite_settings_path,
+    resolve_encryption_policy,
+)
+
 from syft_bg.api.api import init
+from syft_bg.cli.init import InitFlowError, UserPassedConfig, run_init_flow
 from syft_bg.api.utils import move_token_to_syftbg_dir
 from syft_bg.common.config import get_default_paths
 from syft_bg.common.syft_bg_config import SyftBgConfig
@@ -60,10 +70,83 @@ class TestInitTokenPath:
         token_source.write_text("{}")
 
         with _patched_paths(temp_dir) as patched:
-            init(do_email="alice@test.com", token_path=token_source)
+            init(
+                do_email="alice@test.com",
+                syftbox_root=temp_dir / "SyftBox",
+                token_path=token_source,
+            )
 
             config = SyftBgConfig.from_path(patched.config)
 
         canonical_token_path = temp_dir / "syftbg" / "token.json"
         assert config.drive_token_path == canonical_token_path
         assert config.gmail_token_path == canonical_token_path
+
+
+def _policy_on_disk(syftbox_root: Path) -> EncryptionPolicy:
+    path = datasite_settings_path(syftbox_root, "alice@test.com")
+    return resolve_encryption_policy(path, None)
+
+
+class TestInitEncryption:
+    """api.init(encryption=...) sets the policy of the SyftBox, not of syft-bg."""
+
+    def test_new_syftbox_without_policy_is_optional(self, temp_dir):
+        with _patched_paths(temp_dir):
+            init(do_email="alice@test.com", syftbox_root=temp_dir / "SyftBox")
+        assert _policy_on_disk(temp_dir / "SyftBox") == EncryptionPolicy.OPTIONAL
+
+    def test_required_is_written_to_syftbox(self, temp_dir):
+        with _patched_paths(temp_dir) as patched:
+            init(
+                do_email="alice@test.com",
+                syftbox_root=temp_dir / "SyftBox",
+                encryption=True,
+            )
+            config = SyftBgConfig.from_path(patched.config)
+        assert _policy_on_disk(temp_dir / "SyftBox") == EncryptionPolicy.REQUIRED
+        assert "encryption_policy" not in config.model_dump()
+
+    def test_other_policy_than_syftbox_raises(self, temp_dir):
+        with _patched_paths(temp_dir):
+            init(do_email="alice@test.com", syftbox_root=temp_dir / "SyftBox")
+            with pytest.raises(EncryptionPolicyMismatchError):
+                init(
+                    do_email="alice@test.com",
+                    syftbox_root=temp_dir / "SyftBox",
+                    encryption=True,
+                )
+
+
+class TestInitFlowEncryption:
+    """The init flow sets the policy of a new SyftBox and keeps that of an old one."""
+
+    def _run_quiet(self, temp_dir, **kwargs):
+        with _patched_paths(temp_dir) as patched:
+            with patch("syft_bg.cli.init.flow.get_default_paths", return_value=patched):
+                run_init_flow(
+                    UserPassedConfig(
+                        email="alice@test.com",
+                        syftbox_root=str(temp_dir / "SyftBox"),
+                        quiet=True,
+                        **kwargs,
+                    )
+                )
+
+    def test_quiet_mode_without_policy_is_optional(self, temp_dir):
+        self._run_quiet(temp_dir)
+        assert _policy_on_disk(temp_dir / "SyftBox") == EncryptionPolicy.OPTIONAL
+
+    def test_quiet_mode_sets_policy(self, temp_dir):
+        self._run_quiet(temp_dir, encryption="required")
+        assert _policy_on_disk(temp_dir / "SyftBox") == EncryptionPolicy.REQUIRED
+
+    def test_quiet_mode_without_policy_keeps_syftbox_policy(self, temp_dir):
+        self._run_quiet(temp_dir, encryption="required")
+        self._run_quiet(temp_dir)
+        assert _policy_on_disk(temp_dir / "SyftBox") == EncryptionPolicy.REQUIRED
+
+    def test_other_policy_than_syftbox_raises(self, temp_dir):
+        self._run_quiet(temp_dir, encryption="optional")
+        with pytest.raises(InitFlowError, match="encryption policy"):
+            self._run_quiet(temp_dir, encryption="required")

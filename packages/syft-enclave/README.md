@@ -69,7 +69,7 @@ just start-debug EMAIL my-vm n2d-standard-4     # override name / machine type
 just stop [name]                                # Teardown: Deletes the VM.
 ```
 
-Debug enclaves run with encryption off — data owner clients must match: `login_do(encryption=False)`.
+An enclave always requires encryption, debug enclaves too. Clients select encryption from the enclave policy, so they need no setting.
 
 ## GPU deployments
 

@@ -159,14 +159,12 @@ def test_a_dataset_for_a_protocol0_peer_arrives_flat_and_reads(pair):
         )
 
 
-def test_a_create_for_a_protocol0_peer_publishes_both_layouts(pair):
+def test_a_create_for_a_protocol0_peer_publishes_both_layouts(pair, advertised_schemas):
     # The create writes the current layout always, and the layout of each peer
     # in the audience. A peer that reads only the older one still finds a copy,
     # and a peer that reads both prefers the newest.
     ds_manager, do_manager = pair
-    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
-        _dataset_schema("0")
-    )
+    advertised_schemas[OLD_PEER, "syft-dataset"] = _dataset_schema("0")
 
     mock_path, private_path, readme_path = create_tmp_dataset_files()
     do_manager.create_dataset(
@@ -232,11 +230,11 @@ def test_the_owner_listing_names_each_dataset_once(pair):
     assert tags.count("mixed dataset") == 1
 
 
-def _create_for_a_mixed_audience(ds_manager, do_manager, name: str, **kwargs):
+def _create_for_a_mixed_audience(
+    advertised_schemas, ds_manager, do_manager, name: str, **kwargs
+):
     """Create a dataset for an audience of one protocol-0 peer and one current peer."""
-    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
-        _dataset_schema("0")
-    )
+    advertised_schemas[OLD_PEER, "syft-dataset"] = _dataset_schema("0")
     mock_path, private_path, readme_path = create_tmp_dataset_files()
     return do_manager.create_dataset(
         name=name,
@@ -248,29 +246,35 @@ def _create_for_a_mixed_audience(ds_manager, do_manager, name: str, **kwargs):
     )
 
 
-def test_a_mixed_audience_through_create_dataset_writes_both_layouts(pair):
+def test_a_mixed_audience_through_create_dataset_writes_both_layouts(
+    pair, advertised_schemas
+):
     ds_manager, do_manager = pair
-    _create_for_a_mixed_audience(ds_manager, do_manager, "mixed")
+    _create_for_a_mixed_audience(advertised_schemas, ds_manager, do_manager, "mixed")
 
     public = do_manager._mock_collections_for("mixed")
     assert {do_manager._protocol_of(c) for c in public} == {"0", "1"}
 
 
-def test_every_copy_uploads_its_own_private_collection(pair):
+def test_every_copy_uploads_its_own_private_collection(pair, advertised_schemas):
     # Each copy holds its own private directory. An upload of only the newest
     # leaves the other copies local, and a cold start does not restore them.
     ds_manager, do_manager = pair
-    _create_for_a_mixed_audience(ds_manager, do_manager, "mixed", upload_private=True)
+    _create_for_a_mixed_audience(
+        advertised_schemas, ds_manager, do_manager, "mixed", upload_private=True
+    )
 
     private = do_manager._private_collections_for("mixed")
     assert {do_manager._protocol_of(c) for c in private} == {"0", "1"}
 
 
-def test_a_cold_start_restores_the_private_data_of_every_copy(pair):
+def test_a_cold_start_restores_the_private_data_of_every_copy(pair, advertised_schemas):
     import shutil
 
     ds_manager, do_manager = pair
-    _create_for_a_mixed_audience(ds_manager, do_manager, "mixed", upload_private=True)
+    _create_for_a_mixed_audience(
+        advertised_schemas, ds_manager, do_manager, "mixed", upload_private=True
+    )
 
     storage = do_manager.dataset_manager.storage
     private_dirs = {
@@ -436,7 +440,9 @@ def _collections_for(do_manager, tag: str):
     return {do_manager._protocol_of(c) for c in do_manager._mock_collections_for(tag)}
 
 
-def test_sharing_with_a_protocol0_peer_materializes_the_flat_copy(pair):
+def test_sharing_with_a_protocol0_peer_materializes_the_flat_copy(
+    pair, advertised_schemas
+):
     # A share is a change of audience. The audience decided the layouts at
     # create time, so a new audience member of another protocol needs a copy
     # in its layout -- granting it the versioned collection gives it a folder
@@ -445,9 +451,7 @@ def test_sharing_with_a_protocol0_peer_materializes_the_flat_copy(pair):
     _create_for_the_current_audience(ds_manager, do_manager, "afterthought")
     assert _collections_for(do_manager, "afterthought") == {"1"}
 
-    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
-        _dataset_schema("0")
-    )
+    advertised_schemas[OLD_PEER, "syft-dataset"] = _dataset_schema("0")
     do_manager.share_dataset("afterthought", [OLD_PEER], sync=False)
 
     assert _collections_for(do_manager, "afterthought") == {"0", "1"}
@@ -458,15 +462,13 @@ def test_sharing_with_a_protocol0_peer_materializes_the_flat_copy(pair):
     assert flat_dir.exists()
 
 
-def test_sharing_with_a_current_peer_creates_no_extra_copy(pair):
+def test_sharing_with_a_current_peer_creates_no_extra_copy(pair, advertised_schemas):
     # The control: a peer of our own protocol reads the existing layout, so
     # the test above measures the fill and not an unconditional copy.
     ds_manager, do_manager = pair
     _create_for_the_current_audience(ds_manager, do_manager, "current share")
 
-    do_manager.peer_manager.live_peer_schemas("syft-dataset")["new@test.org"] = (
-        _dataset_schema("1")
-    )
+    advertised_schemas["new@test.org", "syft-dataset"] = _dataset_schema("1")
     do_manager.share_dataset("current share", ["new@test.org"], sync=False)
 
     assert _collections_for(do_manager, "current share") == {"1"}
@@ -483,7 +485,9 @@ def test_sharing_with_an_unknown_peer_materializes_the_widest_layout(pair):
     assert _collections_for(do_manager, "unknown share") == {"0", "1"}
 
 
-def test_a_copy_materialized_at_share_time_uploads_its_private_collection(pair):
+def test_a_copy_materialized_at_share_time_uploads_its_private_collection(
+    pair, advertised_schemas
+):
     # Each copy holds its own private directory (see the cold-start test
     # above). A copy created at share time must follow the same rule, or a
     # cold start loses its private data.
@@ -492,16 +496,14 @@ def test_a_copy_materialized_at_share_time_uploads_its_private_collection(pair):
         ds_manager, do_manager, "private fill", upload_private=True
     )
 
-    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
-        _dataset_schema("0")
-    )
+    advertised_schemas[OLD_PEER, "syft-dataset"] = _dataset_schema("0")
     do_manager.share_dataset("private fill", [OLD_PEER], sync=False)
 
     private = do_manager._private_collections_for("private fill")
     assert {do_manager._protocol_of(c) for c in private} == {"0", "1"}
 
 
-def test_a_share_uploads_a_local_copy_that_has_no_collection(pair):
+def test_a_share_uploads_a_local_copy_that_has_no_collection(pair, advertised_schemas):
     # A share that fails after the migrate leaves the copy on disk with no
     # collection of its own. The next share must upload that copy. A second
     # write of the same layout raises, and the share then grants nothing at
@@ -511,9 +513,7 @@ def test_a_share_uploads_a_local_copy_that_has_no_collection(pair):
     do_manager.dataset_manager.migrate("half done", "0", users=[ds_manager.email])
     assert _collections_for(do_manager, "half done") == {"1"}
 
-    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
-        _dataset_schema("0")
-    )
+    advertised_schemas[OLD_PEER, "syft-dataset"] = _dataset_schema("0")
     do_manager.share_dataset("half done", [OLD_PEER], sync=False)
 
     assert _collections_for(do_manager, "half done") == {"0", "1"}
@@ -560,7 +560,9 @@ def test_upgrade_publishes_the_current_layout_and_the_peer_prefers_it(pair):
         )
 
 
-def test_a_peer_approved_after_an_any_create_gets_a_layout_it_reads(pair):
+def test_a_peer_approved_after_an_any_create_gets_a_layout_it_reads(
+    pair, advertised_schemas
+):
     # An "any" dataset holds the layouts its audience read at create time. A
     # peer approved later may read none of them, so the approval materializes
     # and publishes its layout before granting on the collection.
@@ -578,15 +580,13 @@ def test_a_peer_approved_after_an_any_create_gets_a_layout_it_reads(pair):
     assert _collections_for(do_manager, "open dataset") == {"1"}
 
     # A protocol-0 peer arrives and is approved.
-    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
-        _dataset_schema("0")
-    )
+    advertised_schemas[OLD_PEER, "syft-dataset"] = _dataset_schema("0")
     do_manager._share_any_datasets_with_peer(OLD_PEER)
 
     assert _collections_for(do_manager, "open dataset") == {"0", "1"}
 
 
-def test_a_backfilled_any_layout_is_marked_any_too(pair):
+def test_a_backfilled_any_layout_is_marked_any_too(pair, advertised_schemas):
     # The "any" bit lives on the collection. A layout added at approval time
     # must carry it, or a later cache rebuild from has_any_permission loses it
     # and the next peer never sees that layout.
@@ -602,9 +602,7 @@ def test_a_backfilled_any_layout_is_marked_any_too(pair):
     )
     do_manager._upload_dataset_to_collection(created["1"], users="any")
 
-    do_manager.peer_manager.live_peer_schemas("syft-dataset")[OLD_PEER] = (
-        _dataset_schema("0")
-    )
+    advertised_schemas[OLD_PEER, "syft-dataset"] = _dataset_schema("0")
     do_manager._share_any_datasets_with_peer(OLD_PEER)
 
     collections = do_manager._mock_collections_for("open dataset")

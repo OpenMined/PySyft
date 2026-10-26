@@ -15,6 +15,7 @@ from syft_perms.syftperm_context import SyftPermContext
 from syft_rds import SyftRDSClient, SyftRDSClientConfig
 from syft_rds.waiting import JobCheck, JobStatusArg, wait_for_job
 
+from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_list import PeerList
 from syft.sync.utils.waiting import (
@@ -271,10 +272,10 @@ class SyftEnclaveClient:
 
         Prints why there is none, unless ``quiet`` is set.
         """
-        version_info = self._rds.peer_manager.connection_router.read_peer_version_file(
+        peer_info = self._rds.peer_manager.connection_router.read_peer_info_file(
             peer_email
         )
-        if version_info is None:
+        if peer_info is None:
             if not quiet:
                 print(
                     f"ℹ️  No version file available for peer {peer_email!r}; skipping attestation."
@@ -283,7 +284,7 @@ class SyftEnclaveClient:
         # A malformed envelope raises rather than skipping: a peer that
         # published something unparseable is not the same as one that
         # published nothing.
-        evidence = AttestationEvidence.read_from(version_info)
+        evidence = AttestationEvidence.read_from(peer_info.version_info)
         if evidence is None and not quiet:
             print(
                 f"ℹ️  Peer {peer_email!r} published no attestation evidence "
@@ -789,7 +790,7 @@ class SyftEnclaveClient:
         """Build a SyftEnclaveClient from an RDS config with a wrapped job_client.
 
         Encryption rides along on ``config.sync`` via
-        ``peer_manager_config.use_encryption``; ``SyftboxManager.from_config``
+        ``peer_manager_config.encryption_policy``; ``SyftboxManager.from_config``
         (invoked inside ``SyftRDSClient.from_config``) loads/generates this
         datasite's keys from its per-datasite key file, so no extra step is needed.
         """
@@ -810,15 +811,16 @@ class SyftEnclaveClient:
         email: str,
         token_path: Path | str | None = None,
         data_owners: list[str] | None = None,
-        encryption: bool = False,
         persist_owner_state: bool = False,
     ) -> "SyftEnclaveClient":
         """Build an enclave client backed by a real Google Drive connection.
+
+        An enclave always requires encryption with every peer.
+
         Args:
             email: The enclave datasite's email address.
             token_path: Path to a pre-authorized Google Drive OAuth token.
             data_owners: Emails whose approval gates every job on this enclave.
-            encryption: Enable end-to-end drive encryption.
             persist_owner_state: Keep the owner-only state used to restore
                 this datasite later (event log, rolling state, checkpoints).
                 Off by default - an enclave gets ephemeral keys and wipes its
@@ -829,7 +831,7 @@ class SyftEnclaveClient:
             has_ds_role=True,
             has_do_role=True,
             token_path=Path(token_path) if token_path is not None else None,
-            encryption=encryption,
+            encryption=True,
             persist_owner_state=persist_owner_state,
         )
 
@@ -863,18 +865,23 @@ class SyftEnclaveClient:
         - DS: peers with DO1, DO2, Enclave
 
         Args:
-            encryption: Enable end-to-end drive encryption on all four clients.
+            encryption: Policy of the DOs and the DS. The enclave always
+                requires encryption.
             enclave_persist_owner_state: Whether the enclave keeps restorable
                 owner state. Off by default, as in production.
         Returns:
             Tuple of (enclave, do1, do2, ds)
         """
+        policies = [EncryptionPolicy.REQUIRED] + [
+            EncryptionPolicy.from_bool(encryption)
+        ] * 3
         configs = create_configs(
             enclave_email,
             do1_email,
             do2_email,
             ds_email,
             use_in_memory_cache,
+            policies,
             enclave_persist_owner_state,
         )
         clients = create_clients(configs)
@@ -889,12 +896,6 @@ class SyftEnclaveClient:
         setup_connections(managers)
         setup_callbacks(managers)
         write_versions(managers)
-        # Initialize encryption AFTER connections/versions but BEFORE peering,
-        # so the bundle exchange in wire_peers() picks up each client's keys
-        # (mirrors SyftboxManager.pair_with_mock_drive_service_connection).
-        if encryption:
-            for manager in managers:
-                manager._init_encrypted_peer_store()
         wire_peers(managers)
 
         return clients

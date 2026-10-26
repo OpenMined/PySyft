@@ -7,6 +7,8 @@ from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.version.exceptions import (
     VersionMismatchError,
 )
+from syft.sync.encryption_policy import EncryptionPolicy
+from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.peer_manager import CompatAction
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 
@@ -165,8 +167,8 @@ class TestPeerManager:
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
 
-        ds_version = do_manager.peer_manager.load_peer_version(ds_manager.email)
-        do_version = ds_manager.peer_manager.load_peer_version(do_manager.email)
+        ds_version = do_manager.peer_manager.load_peer_info(ds_manager.email)
+        do_version = ds_manager.peer_manager.load_peer_info(do_manager.email)
 
         assert ds_version is not None
         assert do_version is not None
@@ -176,12 +178,12 @@ class TestPeerManager:
             add_peers=False
         )
 
-        ds_version_before = do_manager.peer_manager.load_peer_version(ds_manager.email)
+        ds_version_before = do_manager.peer_manager.load_peer_info(ds_manager.email)
         assert ds_version_before is None
 
         ds_manager.add_peer(do_manager.email)
 
-        ds_version_after = do_manager.peer_manager.load_peer_version(ds_manager.email)
+        ds_version_after = do_manager.peer_manager.load_peer_info(ds_manager.email)
         assert ds_version_after is not None
 
     def test_version_shared_on_approve_peer(self):
@@ -192,12 +194,12 @@ class TestPeerManager:
         ds_manager.add_peer(do_manager.email)
         do_manager.load_peers()
 
-        do_version_before = ds_manager.peer_manager.load_peer_version(do_manager.email)
+        do_version_before = ds_manager.peer_manager.load_peer_info(do_manager.email)
         assert do_version_before is None
 
         do_manager.approve_peer_request(ds_manager.email)
 
-        do_version_after = ds_manager.peer_manager.load_peer_version(do_manager.email)
+        do_version_after = ds_manager.peer_manager.load_peer_info(do_manager.email)
         assert do_version_after is not None
 
     def test_load_peer_version(self):
@@ -205,16 +207,19 @@ class TestPeerManager:
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
 
-        version = ds_manager.peer_manager.load_peer_version(do_manager.email)
-        assert version is not None
-        assert version.syft_client_version == VersionInfo.current().syft_client_version
+        info = ds_manager.peer_manager.load_peer_info(do_manager.email)
+        assert info is not None
+        assert (
+            info.version_info.syft_client_version
+            == VersionInfo.current().syft_client_version
+        )
 
     def test_load_peer_version_without_permission(self):
         ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
             add_peers=False
         )
 
-        version = ds_manager.peer_manager.load_peer_version(do_manager.email)
+        version = ds_manager.peer_manager.load_peer_info(do_manager.email)
         assert version is None
 
     def test_load_peer_versions_parallel(self):
@@ -235,13 +240,16 @@ class TestPeerManager:
         ].drive_service._backing_store
 
         third_peer_email = "third_peer@test.com"
-        third_peer_version = VersionInfo.current()
+        third_peer_info = PeerInfo(
+            version_info=VersionInfo.current(),
+            encryption_policy=EncryptionPolicy.OPTIONAL,
+        )
         version_file = MockDriveFile(
             name=SYFT_VERSION_FILE,
             mimeType="application/json",
             parents=[],
             owners=[{"emailAddress": third_peer_email}],
-            content=third_peer_version.to_json(),
+            content=third_peer_info.to_json(),
         )
         backing_store.add_file(version_file)
 
@@ -255,7 +263,7 @@ class TestPeerManager:
         )
 
         peer_emails = [do_manager.email, third_peer_email]
-        versions = ds_manager.peer_manager.load_peer_versions_parallel(
+        versions = ds_manager.peer_manager.load_peer_infos_parallel(
             peer_emails, force=True
         )
 
@@ -263,8 +271,8 @@ class TestPeerManager:
         assert versions[do_manager.email] is not None
         assert versions[third_peer_email] is not None
         assert (
-            versions[third_peer_email].syft_client_version
-            == third_peer_version.syft_client_version
+            versions[third_peer_email].version_info.syft_client_version
+            == third_peer_info.version_info.syft_client_version
         )
 
 
@@ -272,7 +280,8 @@ def _set_peer_version(manager: SyftboxManager, peer_email: str, version: Version
     """Override the cached version for a peer without a Drive round-trip."""
     peer = manager.peer_manager.get_cached_peer(peer_email)
     assert peer is not None, f"peer {peer_email} not in store"
-    peer.version = version
+    policy = peer.encryption_policy or EncryptionPolicy.OPTIONAL
+    peer.info = PeerInfo(version_info=version, encryption_policy=policy)
 
 
 def _patch_plus_one_version() -> VersionInfo:
@@ -502,8 +511,7 @@ class TestVersionMismatchBehavior:
         )
         peer = do_manager.peer_manager.get_cached_peer(ds_manager.email)
         assert peer is not None
-        peer.version = None
-        do_manager.peer_manager._loaded_peer_versions[ds_manager.email] = None
+        peer.info = None
 
         do_manager.peer_manager.suppress_version_warnings = True
         compatible_peers = (
@@ -519,8 +527,8 @@ class TestVersionMismatchBehavior:
             check_versions=True,
         )
 
-        ds_manager.peer_manager.load_peer_version(do_manager.email)
-        do_manager.peer_manager.load_peer_version(ds_manager.email)
+        ds_manager.peer_manager.load_peer_info(do_manager.email)
+        do_manager.peer_manager.load_peer_info(ds_manager.email)
 
         assert ds_manager.peer_manager.is_peer_version_compatible(do_manager.email)
         assert do_manager.peer_manager.is_peer_version_compatible(ds_manager.email)

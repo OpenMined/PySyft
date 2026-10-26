@@ -13,7 +13,12 @@ from syft.sync.messages.proposed_filechange import (
 from syft.sync.version.version_info import VersionInfo, VersionInfoV2
 from syft_migration import unregistered_objects, versioned_objects
 
-OBJECTS = {"VersionInfo", "FileChangeEventsMessage", "ProposedFileChangesMessage"}
+OBJECTS = {
+    "VersionInfo",
+    "PeerInfo",
+    "FileChangeEventsMessage",
+    "ProposedFileChangesMessage",
+}
 
 
 def test_versioned_objects_registered_and_aliased():

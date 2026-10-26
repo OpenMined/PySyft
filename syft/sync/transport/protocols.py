@@ -23,7 +23,7 @@ from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
 
 if TYPE_CHECKING:
     from syft.sync.connections.base_connection import FileCollection
-    from syft.sync.version.version_info import VersionInfo
+    from syft.sync.version.peer_info import PeerInfo
 
 
 class P2PConnection(ABC):
@@ -279,20 +279,23 @@ class Peering(ABC):
 
     # -- version documents -----------------------------------------------------
     @abstractmethod
-    def publish_version(self, version_info: VersionInfo) -> None:
+    def publish_peer_info(self, peer_info: PeerInfo) -> None:
         """Publish my version document."""
 
     @abstractmethod
-    def read_own_version(self) -> VersionInfo | None:
+    def read_own_peer_info(self) -> PeerInfo | None:
         """My published version document, or None."""
 
     @abstractmethod
-    def read_peer_version(self, peer: str) -> VersionInfo | None:
+    def read_peer_info(self, peer: str) -> PeerInfo | None:
         """``peer``'s published version document, or None."""
 
     @abstractmethod
-    def grant_version_read(self, peer: str) -> None:
-        """Let ``peer`` read my version document."""
+    def grant_peer_info_read(self, peer: str, peer_info: PeerInfo) -> None:
+        """Let ``peer`` read my version document.
+
+        When I have no document yet, publish ``peer_info`` first.
+        """
 
 
 class Transport(BaseModel):

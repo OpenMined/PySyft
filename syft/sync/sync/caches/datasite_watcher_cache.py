@@ -241,9 +241,13 @@ class DataSiteWatcherCache(BaseModel):
         self,
         peer_email: str,
         executor: ThreadPoolExecutor,
-        download_fn: Callable[[str], FileChangeEventsMessage],
+        download_fn: Callable[[str], FileChangeEventsMessage | None],
     ) -> int:
-        """Sync with parallel file downloads. Returns the number of events applied."""
+        """Sync with parallel file downloads. Returns the number of events applied.
+
+        ``download_fn`` gets the id of one file. It returns None for a message
+        that it skips.
+        """
         peer_timestamp = self.last_event_timestamp_per_peer.get(peer_email)
 
         # Get file metadata (no download yet)
@@ -259,7 +263,9 @@ class DataSiteWatcherCache(BaseModel):
 
         # Download all files in parallel
         file_ids = [m["file_id"] for m in file_metadatas]
-        downloaded_messages = list(executor.map(download_fn, file_ids))
+        downloaded_messages = [
+            m for m in executor.map(download_fn, file_ids) if m is not None
+        ]
 
         # Apply in timestamp order
         event_count = 0

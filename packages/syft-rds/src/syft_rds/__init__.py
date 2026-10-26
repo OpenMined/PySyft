@@ -13,6 +13,8 @@ from syft.sync.syftbox_manager import get_jupyter_default_syftbox_folder
 from syft.sync.utils.path_filters import is_normal_syncable_path
 from syft.sync.environments.environment import Environment
 from syft.sync.utils.syftbox_utils import check_env
+from syft.sync.encryption_policy import EncryptionPolicy, EncryptionPolicyMismatchError
+from syft.sync.peers.peer_store import datasite_settings_path, resolve_encryption_policy
 
 __all__ = [
     "SyftRDSClient",
@@ -25,6 +27,10 @@ __all__ = [
     "is_normal_syncable_path",
     "Environment",
     "check_env",
+    "EncryptionPolicy",
+    "EncryptionPolicyMismatchError",
+    "datasite_settings_path",
+    "resolve_encryption_policy",
 ]
 
 # Last, so the imports stay at the top. Nothing here logs at import time.

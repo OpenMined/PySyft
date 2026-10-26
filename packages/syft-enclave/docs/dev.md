@@ -25,7 +25,7 @@ just start-debug                 # cpu (default)
 just hardware=gpu start-debug    # gpu (a3-highgpu-1g, 1x H100) — see docs/terraform_cs.md (Confidential Spaces) "GPU deployments"
 ```
 
-Debug enclaves run with encryption off — data owner clients must match: `login_do(encryption=False)`.
+An enclave always requires encryption, debug enclaves too. Clients select encryption from the enclave policy, so they need no setting.
 
 ## Building & pushing a new Docker Image
 

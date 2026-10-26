@@ -3,7 +3,11 @@
 from pathlib import Path
 
 from syft.sync.environments.environment import Environment
-from syft.sync.login import _init_client_login, _resolve_login_params
+from syft.sync.login import (
+    _import_key_file,
+    _init_client_login,
+    _resolve_login_params,
+)
 from syft.sync.login_utils import handle_potential_version_mismatches_on_login
 from syft.sync.utils.syftbox_utils import check_env
 from syft_rds import SyftRDSClientConfig
@@ -20,8 +24,8 @@ def _login(
     skip_peer_on_patch_version_diff: bool | None,
     has_do_role: bool,
     has_ds_role: bool,
-    encryption: bool = False,
-    crypto_keys_path: str | Path | None = None,
+    encryption: bool | None = None,
+    key_file: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Shared login for enclave-flow participants.
 
@@ -29,9 +33,11 @@ def _login(
     run the login-time version-mismatch check, then build the enclave client
     for Colab or Jupyter — always wrapping the job_client with EnclaveJobClient.
 
-    When ``encryption`` is set, keys are persisted per-datasite to
+    Keys are persisted per-datasite to
     ``<syftbox_folder>/<email>/private/crypto_keys.json`` (a stable identity
-    across sessions; never synced to Drive).
+    across sessions; never synced to Drive). The client makes them at the
+    first login. ``key_file`` restores the keys of an earlier session: it is
+    copied to that path before the client is built.
     """
     env = check_env()
     email, token_path = _resolve_login_params(email, token_path)
@@ -43,7 +49,6 @@ def _login(
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
             encryption=encryption,
-            crypto_keys_path=crypto_keys_path,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         )
     else:
@@ -53,12 +58,10 @@ def _login(
             has_ds_role=has_ds_role,
             token_path=Path(token_path) if token_path is not None else None,
             encryption=encryption,
-            crypto_keys_path=crypto_keys_path,
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
         )
 
-    # Encryption keys (when enabled) are resolved inside from_config via the
-    # config's peer_manager_config.
+    _import_key_file(key_file, config.sync.syftbox_folder, email)
     client = SyftEnclaveClient.from_config(config)
 
     # Reuses syft's login init: verifies the token authenticates as
@@ -79,12 +82,18 @@ def login_do(
     sync: bool = True,
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
-    encryption: bool = False,
-    crypto_keys_path: str | Path | None = None,
+    encryption: bool | None = None,
+    key_file: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Log in a data owner for an enclave computation.
 
-    Set ``encryption=True`` to encrypt all drive communication.
+    Set ``encryption=True`` to require encryption with every peer, and
+    ``False`` to encrypt only with each peer that requires it, such as an
+    enclave. Without it, the client takes the policy of its SyftBox, or
+    ``False`` on a new one.
+
+    ``key_file`` is the ``crypto_keys.json`` of an earlier session, e.g. an
+    uploaded file on Colab. Without it, the first login makes new keys.
     """
     return _login(
         email=email,
@@ -95,7 +104,7 @@ def login_do(
         has_do_role=True,
         has_ds_role=True,
         encryption=encryption,
-        crypto_keys_path=crypto_keys_path,
+        key_file=key_file,
     )
 
 
@@ -105,12 +114,18 @@ def login_ds(
     sync: bool = True,
     load_peers: bool = True,
     skip_peer_on_patch_version_diff: bool | None = None,
-    encryption: bool = False,
-    crypto_keys_path: str | Path | None = None,
+    encryption: bool | None = None,
+    key_file: str | Path | None = None,
 ) -> SyftEnclaveClient:
     """Log in a data scientist for an enclave computation.
 
-    Set ``encryption=True`` to encrypt all drive communication.
+    Set ``encryption=True`` to require encryption with every peer, and
+    ``False`` to encrypt only with each peer that requires it, such as an
+    enclave. Without it, the client takes the policy of its SyftBox, or
+    ``False`` on a new one.
+
+    ``key_file`` is the ``crypto_keys.json`` of an earlier session, e.g. an
+    uploaded file on Colab. Without it, the first login makes new keys.
     """
     return _login(
         email=email,
@@ -121,5 +136,5 @@ def login_ds(
         has_do_role=False,
         has_ds_role=True,
         encryption=encryption,
-        crypto_keys_path=crypto_keys_path,
+        key_file=key_file,
     )

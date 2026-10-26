@@ -1,4 +1,5 @@
 import logging
+import warnings
 from pathlib import Path
 from uuid import uuid4
 from functools import partial
@@ -20,6 +21,7 @@ from syft.sync.sync.caches.datasite_owner_cache import (
     DataSiteOwnerEventCacheConfig,
 )
 from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.sync.caches.datasite_owner_cache import DataSiteOwnerEventCache
 from syft.sync.sync.collection_spec import CollectionSyncSpec
 from syft.sync.callback_mixin import BaseModelCallbackMixin
@@ -44,6 +46,7 @@ from syft.sync.utils.syftbox_utils import (
 )
 
 logger = logging.getLogger(__name__)
+
 
 # Default threshold for creating incremental checkpoint from rolling state
 DEFAULT_CHECKPOINT_EVENT_THRESHOLD = 50
@@ -226,14 +229,17 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             # first, pull existing state
             for peer_email in peer_emails:
                 proposed_count = 0
-                while True:
-                    msg = self.pull_and_process_next_proposed_filechange(
-                        peer_email, raise_on_none=False
-                    )
-                    if msg is None:
-                        # no new message, we are done
-                        break
-                    proposed_count += len(msg.proposed_file_changes)
+                try:
+                    while True:
+                        msg = self.pull_and_process_next_proposed_filechange(
+                            peer_email, raise_on_none=False
+                        )
+                        if msg is None:
+                            # no new message, we are done
+                            break
+                        proposed_count += len(msg.proposed_file_changes)
+                except SyftPeerNotReadyError as e:
+                    warnings.warn(f"Messages from {peer_email} stay in the inbox: {e}")
                 if proposed_count:
                     print(
                         f"Received {proposed_count} proposed change(s) "
@@ -876,13 +882,15 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 file_change_events_message
             )
         while not self.outbox_queue.empty():
-            recipient, file_change_events_message = self.outbox_queue.get()
+            recipient, message = self.outbox_queue.get()
             if recipient in self._deferred_peer_emails:
                 continue
+            # A send that cannot go raises before the clear, so the paths stay
+            # pending and a later sync sends them.
             self.connection_router.owner_write_event_messages_to_outbox(
-                recipient, file_change_events_message
+                recipient, message
             )
-            self._clear_delivered(recipient, file_change_events_message)
+            self._clear_delivered(recipient, message)
 
     def _download_outbox_message_with_new_connection(
         self, file_id: str
@@ -906,7 +914,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if no outbox folder, or if peer encryption is on — DO can't read
         peer-encrypted bytes back to merge).
         """
-        if self.connection_router.peer_store.peer_uses_encryption(recipient_email):
+        peer_store = self.connection_router.peer_store
+        if peer_store.pair_encrypts(peer_store.get_cached_peer(recipient_email)):
             logger.debug(
                 f"outbox compaction for {recipient_email} skipped — "
                 f"peer encryption is not supported yet"
