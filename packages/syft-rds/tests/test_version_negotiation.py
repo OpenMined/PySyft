@@ -5,6 +5,8 @@ from unittest.mock import patch
 import pytest
 
 from syft.sync.version.exceptions import VersionUnknownError
+from syft.sync.encryption_policy import EncryptionPolicy
+from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.peer_manager import PeerCompatibilityResult, PeerManager
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 from syft_job.config import protocol_dir_name
@@ -26,7 +28,8 @@ def _set_peer_version(client, peer_email: str, version: VersionInfo):
     """Override the cached version for a peer without a Drive round-trip."""
     peer = client.peer_manager.get_cached_peer(peer_email)
     assert peer is not None, f"peer {peer_email} not in store"
-    peer.version = version
+    policy = peer.encryption_policy or EncryptionPolicy.OPTIONAL
+    peer.info = PeerInfo(version_info=version, encryption_policy=policy)
 
 
 class TestForceSubmission:

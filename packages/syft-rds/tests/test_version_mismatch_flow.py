@@ -84,7 +84,7 @@ def _reinitialize_manager(
         )
 
     if write_version:
-        manager.peer_manager.write_own_version()
+        manager.peer_manager.write_own_peer_info()
     return manager
 
 
@@ -97,7 +97,7 @@ def _simulate_continue_on_mismatch(manager, backing_store):
     mock_conn = GDriveConnection.from_service(email, mock_service)
 
     def read_remote(e, t):
-        return mock_conn.read_own_version_file()
+        return mock_conn.read_own_peer_info_file().version_info
 
     with (
         patch(
@@ -328,7 +328,9 @@ def test_login_writes_the_remote_version_file_too():
         check_versions=True,
     )
     conn = do_manager.peer_manager.connection_router.connections[0]
-    assert conn.read_own_version_file().syft_client_version == SYFT_VERSION
+    assert (
+        conn.read_own_peer_info_file().version_info.syft_client_version == SYFT_VERSION
+    )
 
     with (
         patch("syft.version.SYFT_VERSION", NEW_VERSION),
@@ -337,11 +339,17 @@ def test_login_writes_the_remote_version_file_too():
         upgraded = _upgraded_manager(do_manager)
         new_conn = upgraded.peer_manager.connection_router.connections[0]
         # Still the pre-upgrade version: nothing has refreshed it yet.
-        assert new_conn.read_own_version_file().syft_client_version == SYFT_VERSION
+        assert (
+            new_conn.read_own_peer_info_file().version_info.syft_client_version
+            == SYFT_VERSION
+        )
 
         _init_client_login(upgraded.sync_engine, sync=False, load_peers=False)
 
-        assert new_conn.read_own_version_file().syft_client_version == NEW_VERSION
+        assert (
+            new_conn.read_own_peer_info_file().version_info.syft_client_version
+            == NEW_VERSION
+        )
         local = read_local_version(upgraded.syftbox_folder)
         assert local is not None
         assert local.syft_client_version == NEW_VERSION
@@ -383,7 +391,7 @@ def test_the_mismatch_prompt_does_not_return_after_a_login():
         conn = do_manager.peer_manager.connection_router.connections[0]
         with patch(
             "syft.sync.login_utils._read_remote_version",
-            side_effect=lambda e, t: conn.read_own_version_file(),
+            side_effect=lambda e, t: conn.read_own_peer_info_file().version_info,
         ):
             # The check runs before the client exists, so it reads the files
             # the previous client version left behind.

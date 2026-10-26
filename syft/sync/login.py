@@ -43,7 +43,7 @@ def _init_client_login(
     # file at the version that first created it. Two things then break: the
     # login mismatch check reads that stale file and prompts at every login, and
     # a peer reads it to select a job or dataset protocol version for us.
-    client.peer_manager.write_own_version()
+    client.peer_manager.write_own_peer_info()
 
     if repair_pending:
         if sync:

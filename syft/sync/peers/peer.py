@@ -3,6 +3,7 @@ from typing import Any, List, Optional
 from pydantic import BaseModel, PrivateAttr
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.platforms.base_platform import BasePlatform
+from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import VersionInfo
 
 
@@ -25,18 +26,21 @@ class Peer(BaseModel):
     email: str
     platforms: List[BasePlatform] = []
     state: PeerState = PeerState.ACCEPTED  # Default for backward compatibility
-    version: Optional[VersionInfo] = None
+    info: Optional[PeerInfo] = None
     public_encryption_bundle: Optional[dict] = None
 
     # Set by SyftboxManager.peers when this Peer is handed out.
     _manager: Any = PrivateAttr(default=None)
 
     @property
+    def version(self) -> Optional[VersionInfo]:
+        """The version the peer advertises, or None before its version file is read."""
+        return self.info.version_info if self.info else None
+
+    @property
     def encryption_policy(self) -> Optional[EncryptionPolicy]:
         """The policy the peer advertises, or None before its version file is read."""
-        if self.version is None:
-            return None
-        return self.version.encryption_policy
+        return self.info.encryption_policy if self.info else None
 
     @property
     def is_approved(self) -> bool:

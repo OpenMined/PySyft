@@ -22,7 +22,8 @@ def _read_remote_version(
     from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
     conn = GDriveConnection.from_token_path(email=email, token_path=token_path)
-    return conn.read_own_version_file()
+    peer_info = conn.read_own_peer_info_file()
+    return peer_info.version_info if peer_info else None
 
 
 def _handle_version_incompatible(

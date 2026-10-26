@@ -83,7 +83,7 @@ def setup_callbacks(managers: tuple):
 
 def write_versions(managers: tuple):
     for manager in managers:
-        manager.peer_manager.write_own_version()
+        manager.peer_manager.write_own_peer_info()
 
 
 def wire_peers(managers: tuple):

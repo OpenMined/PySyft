@@ -84,22 +84,22 @@ class TestPolicyTypeGuard:
 
 
 class TestAttestPeer:
-    def _client(self, version_info):
+    def _client(self, peer_info):
         client = SyftEnclaveClient(rds=MagicMock())
         router = client._rds.peer_manager.connection_router
-        router.read_peer_version_file.return_value = version_info
+        router.read_peer_info_file.return_value = peer_info
         return client
 
     def _peer_publishing(self, evidence_field):
         """A peer whose version file carries this evidence in its extra bag."""
-        return MagicMock(extra={"attestation": evidence_field})
+        return MagicMock(version_info=MagicMock(extra={"attestation": evidence_field}))
 
     def test_no_version_file_skips(self, capsys):
         assert self._client(None).attest_peer("enclave@openmined.org") is None
         assert "No version file" in capsys.readouterr().out
 
     def test_no_evidence_skips(self, capsys):
-        client = self._client(MagicMock(extra={}))
+        client = self._client(self._peer_publishing(None))
         assert client.attest_peer("enclave@openmined.org") is None
         assert "published no attestation evidence" in capsys.readouterr().out
 
@@ -135,7 +135,7 @@ class TestAttestPeer:
         assert policy.expected_email == "enclave@openmined.org"
 
     def test_digest_and_policy_together_are_refused(self):
-        client = self._client(MagicMock(extra={}))
+        client = self._client(self._peer_publishing(None))
         with pytest.raises(ValueError, match="not both"):
             client.attest_peer(
                 "enclave@openmined.org",
@@ -173,8 +173,10 @@ class TestAdoptingVerifiedKeys:
     def _client(self, bundle_on_drive=None):
         client = SyftEnclaveClient(rds=MagicMock())
         router = client._rds.peer_manager.connection_router
-        router.read_peer_version_file.return_value = MagicMock(
-            extra={"attestation": TINFOIL_EVIDENCE.to_version_field()}
+        router.read_peer_info_file.return_value = MagicMock(
+            version_info=MagicMock(
+                extra={"attestation": TINFOIL_EVIDENCE.to_version_field()}
+            )
         )
         store = client._rds.peer_manager.peer_store
         store.has_peer_bundle.return_value = bundle_on_drive is not None

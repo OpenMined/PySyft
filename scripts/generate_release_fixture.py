@@ -37,6 +37,8 @@ from syft.sync.messages.proposed_filechange import (
     ProposedFileChange,
     ProposedFileChangesMessage,
 )
+from syft.sync.encryption_policy import EncryptionPolicy
+from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import VersionInfo
 from syft.version import SYFT_VERSION
 
@@ -48,11 +50,14 @@ FIXTURES_DIR = (
 )
 
 
-def build_version_info() -> VersionInfo:
+def build_peer_info() -> PeerInfo:
     # Not VersionInfo.current(): the detected install source is an absolute
     # local path on dev machines, which must not leak into a committed fixture.
-    return VersionInfo.current().model_copy(
+    version_info = VersionInfo.current().model_copy(
         update={"syft_client_install_source": "pip"}
+    )
+    return PeerInfo(
+        version_info=version_info, encryption_policy=EncryptionPolicy.REQUIRED
     )
 
 
@@ -105,7 +110,7 @@ def main() -> None:
     )
     target.mkdir(parents=True)
 
-    (target / "SYFT_version.json").write_text(build_version_info().to_json())
+    (target / "SYFT_version.json").write_text(build_peer_info().to_json())
 
     proposed = build_proposed_message()
     (target / proposed.message_filename.as_string()).write_bytes(

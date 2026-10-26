@@ -489,14 +489,14 @@ class SyftboxManager(BaseModelCallbackMixin):
         "should_create_checkpoint",
         "try_create_checkpoint",
         "delete_syftbox",
-        "write_own_version",
+        "write_own_peer_info",
     )
 
     def __dir__(self):
         return list(self._PUBLIC_API)
 
     # Version file IO lives in syft.sync.version.local_version, and
-    # `write_own_version` writes both the local and the remote file. A
+    # `write_own_peer_info` writes both the local and the remote file. A
     # local-only writer on the manager leaves the remote file stale, which is
     # the bug that made the login mismatch prompt repeat at every login.
 
@@ -703,8 +703,8 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         # Write version files if version checking is enabled
         if check_versions:
-            sender_manager.peer_manager.write_own_version()
-            receiver_manager.peer_manager.write_own_version()
+            sender_manager.peer_manager.write_own_peer_info()
+            receiver_manager.peer_manager.write_own_peer_info()
 
         # this makes sure that when we write a file as sender, the inactive file watcher picks it up
         sender_manager.file_writer.add_callback(
@@ -838,8 +838,8 @@ class SyftboxManager(BaseModelCallbackMixin):
         )
 
         # Write version files
-        ds_manager.peer_manager.write_own_version()
-        do_manager.peer_manager.write_own_version()
+        ds_manager.peer_manager.write_own_peer_info()
+        do_manager.peer_manager.write_own_peer_info()
 
         if add_peers:
             # DS creates peer request

@@ -272,10 +272,10 @@ class SyftEnclaveClient:
 
         Prints why there is none, unless ``quiet`` is set.
         """
-        version_info = self._rds.peer_manager.connection_router.read_peer_version_file(
+        peer_info = self._rds.peer_manager.connection_router.read_peer_info_file(
             peer_email
         )
-        if version_info is None:
+        if peer_info is None:
             if not quiet:
                 print(
                     f"ℹ️  No version file available for peer {peer_email!r}; skipping attestation."
@@ -284,7 +284,7 @@ class SyftEnclaveClient:
         # A malformed envelope raises rather than skipping: a peer that
         # published something unparseable is not the same as one that
         # published nothing.
-        evidence = AttestationEvidence.read_from(version_info)
+        evidence = AttestationEvidence.read_from(peer_info.version_info)
         if evidence is None and not quiet:
             print(
                 f"ℹ️  Peer {peer_email!r} published no attestation evidence "

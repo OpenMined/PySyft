@@ -36,7 +36,7 @@ from syft.sync.utils.print_utils import (
 )
 
 if TYPE_CHECKING:
-    from syft.sync.version.version_info import VersionInfo
+    from syft.sync.version.peer_info import PeerInfo
 
 
 logger = logging.getLogger(__name__)
@@ -442,23 +442,23 @@ class ConnectionRouter(BaseModel):
         else:
             return existing_connection
 
-    def write_version_file(self, version_info: "VersionInfo") -> None:
+    def write_peer_info_file(self, peer_info: "PeerInfo") -> None:
         """Write version file to own SyftBox folder."""
-        self.transport.peering.publish_version(version_info)
+        self.transport.peering.publish_peer_info(peer_info)
 
-    def read_own_version_file(self) -> Optional["VersionInfo"]:
+    def read_own_peer_info_file(self) -> Optional["PeerInfo"]:
         """Read version file from own SyftBox folder."""
-        return self.transport.peering.read_own_version()
+        return self.transport.peering.read_own_peer_info()
 
-    def read_peer_version_file(self, peer_email: str) -> Optional["VersionInfo"]:
+    def read_peer_info_file(self, peer_email: str) -> Optional["PeerInfo"]:
         """Read version file from a peer's SyftBox folder."""
-        return self.transport.peering.read_peer_version(peer_email)
+        return self.transport.peering.read_peer_info(peer_email)
 
-    def share_version_file_with_peer(
-        self, peer_email: str, version_info: "VersionInfo"
+    def share_peer_info_file_with_peer(
+        self, peer_email: str, peer_info: "PeerInfo"
     ) -> None:
         """Share version file with a peer so they can read it."""
-        self.transport.peering.grant_version_read(peer_email, version_info)
+        self.transport.peering.grant_peer_info_read(peer_email, peer_info)
 
     def watcher_get_collection_file_metadatas(
         self, prefix: str, tag: str, content_hash: str, owner_email: str

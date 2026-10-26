@@ -33,6 +33,7 @@ from syft.sync.version.exceptions import (
     VersionMismatchError,
     VersionUnknownError,
 )
+from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
 
 logger = logging.getLogger(__name__)
@@ -274,83 +275,84 @@ class PeerManager(BaseModel):
         """Get current client's version info."""
         if self._own_version is None:
             self._own_version = VersionInfo.current()
-            self._own_version.encryption_policy = self.peer_store.encryption_policy
         return self._own_version
 
-    def write_own_version(self) -> None:
+    def get_own_peer_info(self) -> PeerInfo:
+        """What this client publishes to its peers."""
+        return PeerInfo(
+            version_info=self.get_own_version(),
+            encryption_policy=self.peer_store.encryption_policy,
+        )
+
+    def write_own_peer_info(self) -> None:
         """Write version file to own SyftBox folder (remote) and local disk."""
         from syft.sync.version.local_version import write_local_version
 
-        version_info = self.get_own_version()
-        self.connection_router.write_version_file(version_info)
+        self.connection_router.write_peer_info_file(self.get_own_peer_info())
         write_local_version(self.syftbox_folder)
 
-    def share_version_with_peer(self, peer_email: str) -> None:
+    def share_peer_info_with_peer(self, peer_email: str) -> None:
         """Share version file with a peer so they can read it."""
-        self.connection_router.share_version_file_with_peer(
-            peer_email, self.get_own_version()
+        self.connection_router.share_peer_info_file_with_peer(
+            peer_email, self.get_own_peer_info()
         )
 
     def get_cached_peer(self, email: str) -> Optional[Peer]:
         """Get a peer by email, or None if not found."""
         return self.peer_store.get_cached_peer(email)
 
-    def load_peer_version(self, peer_email: str) -> Optional[VersionInfo]:
-        """Load version for a single peer (blocking)."""
-        version_info = self.connection_router.read_peer_version_file(peer_email)
+    def load_peer_info(self, peer_email: str) -> Optional[PeerInfo]:
+        """Load the info of a single peer (blocking)."""
+        peer_info = self.connection_router.read_peer_info_file(peer_email)
+        self._set_peer_info(peer_email, peer_info)
+        return peer_info
+
+    def _set_peer_info(self, peer_email: str, peer_info: Optional[PeerInfo]) -> None:
+        """Cache a freshly loaded peer info on the peer and in the schema maps."""
         cached_peer = self.get_cached_peer(peer_email)
         if cached_peer:
-            cached_peer.version = version_info
+            cached_peer.info = peer_info
+        version_info = peer_info.version_info if peer_info else None
         self._update_peer_schemas(peer_email, version_info)
-        return version_info
 
-    def _load_single_peer_version(
-        self, peer_email: str
-    ) -> tuple[str, Optional[VersionInfo]]:
-        """Load version for a single peer. Used by parallel loader."""
+    def _load_single_peer_info(self, peer_email: str) -> tuple[str, Optional[PeerInfo]]:
+        """Load the info of a single peer. Used by parallel loader."""
         try:
             # Create new connection for thread safety
             connection = self.connection_router.connection_for_version_read(
                 create_new=True
             )
-            version_info = connection.read_peer_version_file(peer_email)
+            peer_info = connection.read_peer_info_file(peer_email)
         except Exception as e:
             if not self.suppress_version_warnings:
                 warnings.warn(f"Failed to load version for {peer_email}: {e}")
             return (peer_email, None)
-        return (peer_email, version_info)
+        return (peer_email, peer_info)
 
-    def load_peer_versions_parallel(
+    def load_peer_infos_parallel(
         self, peer_emails: List[str], force: bool = False
-    ) -> Dict[str, Optional[VersionInfo]]:
-        """Load versions for multiple peers in parallel using internal executor."""
+    ) -> Dict[str, Optional[PeerInfo]]:
+        """Load the infos of multiple peers in parallel using internal executor."""
 
         if not peer_emails:
             return {}
 
         # Submit all tasks and collect results
-        results = list(self._executor.map(self._load_single_peer_version, peer_emails))
+        results = list(self._executor.map(self._load_single_peer_info, peer_emails))
 
-        # Update peer version fields and return
-        for email, version in results:
-            peer = self.get_cached_peer(email)
-            if peer:
-                peer.version = version
-            self._update_peer_schemas(email, version)
+        for email, peer_info in results:
+            self._set_peer_info(email, peer_info)
 
-        return {email: version for email, version in results}
+        return dict(results)
 
     def get_peer_version(self, peer_email: str) -> Optional[VersionInfo]:
         """Get cached version for peer, None if not loaded or not available."""
         peer = self.get_cached_peer(peer_email)
         return peer.version if peer else None
 
-    def clear_peer_version(self, peer_email: str) -> None:
-        """Clear the cached version for a peer (useful for testing)."""
-        peer = self.get_cached_peer(peer_email)
-        if peer:
-            peer.version = None
-        self._update_peer_schemas(peer_email, None)
+    def clear_peer_info(self, peer_email: str) -> None:
+        """Clear the cached info of a peer (useful for testing)."""
+        self._set_peer_info(peer_email, None)
 
     def peer_compatibility_status(self, peer_email: str) -> CompatibilityStatus:
         """Get the CompatibilityStatus for a peer (UNKNOWN if version not loaded)."""
@@ -554,8 +556,7 @@ class PeerManager(BaseModel):
         # the pair. Before the peer accepts, its version file is not shared
         # and the policy is unknown; load_peers reads the bundle once it is.
         self._write_encryption_bundle_for_peer(peer_email)
-        version_info = self.connection_router.read_peer_version_file(peer_email)
-        new_peer_obj.version = version_info
+        new_peer_obj.info = self.connection_router.read_peer_info_file(peer_email)
         encrypted = pair_uses_encryption(
             self.peer_store.encryption_policy,
             self.peer_store.policy_of(new_peer_obj),
@@ -568,8 +569,8 @@ class PeerManager(BaseModel):
         self.connection_router.update_peer_state(
             peer_email, new_state.value, public_encryption_bundle=peer_bundle
         )
-        self.share_version_with_peer(peer_email)
-        self._update_peer_schemas(peer_email, version_info)
+        self.share_peer_info_with_peer(peer_email)
+        self._update_peer_schemas(peer_email, new_peer_obj.version)
 
         if peer_bundle is not None:
             new_peer_obj.public_encryption_bundle = peer_bundle
@@ -653,7 +654,7 @@ class PeerManager(BaseModel):
                 if p.state in (PeerState.ACCEPTED, PeerState.REQUESTED_BY_PEER)
             }
         self.peer_store.set_peers(peers)
-        self.load_peer_versions_parallel([peer.email for peer in peers])
+        self.load_peer_infos_parallel([peer.email for peer in peers])
 
         # Peer policies are known only after the versions load.
         encrypted = [

@@ -159,7 +159,7 @@ class EnclaveRunner:
         evidence = provider.collect(**binding)
         peer_manager = self.client._rds.peer_manager
         evidence.publish_to(peer_manager.get_own_version())
-        peer_manager.write_own_version()
+        peer_manager.write_own_peer_info()
         logger.info(
             "Attestation evidence (%s) published to SYFT_version.json",
             evidence.kind.value,

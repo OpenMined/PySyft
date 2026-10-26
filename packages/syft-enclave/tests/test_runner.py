@@ -85,7 +85,7 @@ class TestAttestPhase:
     def test_no_tee_without_require_tee_publishes_nothing(self):
         client = _make_client()
         EnclaveRunner(client=client, attestation_provider="none").init()
-        client._rds.peer_manager.write_own_version.assert_not_called()
+        client._rds.peer_manager.write_own_peer_info.assert_not_called()
 
     def test_publishes_evidence_to_the_version_file(self, monkeypatch):
         evidence = tinfoil_evidence(TINFOIL_DOC, repo="OpenMined/x")
@@ -103,7 +103,7 @@ class TestAttestPhase:
         EnclaveRunner(client=client, require_tee=True).init()
 
         assert AttestationEvidence.read_from(version) == evidence
-        client._rds.peer_manager.write_own_version.assert_called_once_with()
+        client._rds.peer_manager.write_own_peer_info.assert_called_once_with()
 
     def test_the_key_bundle_is_published_for_the_attestation_endpoint(
         self, monkeypatch

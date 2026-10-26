@@ -22,6 +22,7 @@ from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_store import PeerStore, datasite_crypto_keys_path
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import VersionInfo
 from tests.unit.test_persisted_cache import (
     _assert_ds_receives_after_notebook_sync,
@@ -34,20 +35,18 @@ OPTIONAL = EncryptionPolicy.OPTIONAL
 REQUIRED = EncryptionPolicy.REQUIRED
 
 
-def _version_with_policy(policy: EncryptionPolicy | None) -> VersionInfo:
-    version = VersionInfo.current()
-    if policy is not None:
-        version.encryption_policy = policy
-    return version
+def _peer_info(policy: EncryptionPolicy | None) -> PeerInfo | None:
+    """The info a peer publishes, or None when it was not read yet."""
+    if policy is None:
+        return None
+    return PeerInfo(version_info=VersionInfo.current(), encryption_policy=policy)
 
 
 def _store_with_peer(
     my_policy: EncryptionPolicy, peer_policy: EncryptionPolicy | None
 ) -> PeerStore:
     store = PeerStore(email="alice@example.com", encryption_policy=my_policy)
-    store.add_peer(
-        Peer(email="bob@example.com", version=_version_with_policy(peer_policy))
-    )
+    store.add_peer(Peer(email="bob@example.com", info=_peer_info(peer_policy)))
     return store
 
 
@@ -59,12 +58,8 @@ def _keyed_pair(
     bob = PeerStore(email="bob@example.com", encryption_policy=bob_policy)
     alice.generate_keys()
     bob.generate_keys()
-    alice.add_peer(
-        Peer(email="bob@example.com", version=_version_with_policy(bob_policy))
-    )
-    bob.add_peer(
-        Peer(email="alice@example.com", version=_version_with_policy(alice_policy))
-    )
+    alice.add_peer(Peer(email="bob@example.com", info=_peer_info(bob_policy)))
+    bob.add_peer(Peer(email="alice@example.com", info=_peer_info(alice_policy)))
     alice.set_peer_bundle("bob@example.com", bob.get_public_bundle())
     bob.set_peer_bundle("alice@example.com", alice.get_public_bundle())
     return alice, bob
@@ -103,7 +98,7 @@ def _pair_with_stale_sender_view():
     ds_manager.load_peers()
     do_manager.load_peers()
     stale = ds_manager.peer_manager.get_cached_peer(do_manager.email)
-    stale.version = _version_with_policy(OPTIONAL)
+    stale.info = _peer_info(OPTIONAL)
     return ds_manager, do_manager
 
 
@@ -157,9 +152,9 @@ def test_own_version_advertises_policy():
         ds_encryption_policy=OPTIONAL,
         do_encryption_policy=REQUIRED,
     )
-    assert do_manager.peer_manager.get_own_version().encryption_policy == REQUIRED
-    assert ds_manager.peer_manager.get_own_version().encryption_policy == OPTIONAL
-    advertised = ds_manager.peer_manager.get_peer_version(do_manager.email)
+    assert do_manager.peer_manager.get_own_peer_info().encryption_policy == REQUIRED
+    assert ds_manager.peer_manager.get_own_peer_info().encryption_policy == OPTIONAL
+    advertised = ds_manager.peer_manager.get_cached_peer(do_manager.email)
     assert advertised.encryption_policy == REQUIRED
 
 
@@ -167,8 +162,8 @@ def test_missing_version_file_created_with_own_policy():
     a_conn, b_conn = mock_drive_service.pair_with_mock_service(
         "a@example.com", "b@example.com"
     )
-    a_conn.share_version_file_with_peer("b@example.com", _version_with_policy(REQUIRED))
-    assert b_conn.read_peer_version_file("a@example.com").encryption_policy == REQUIRED
+    a_conn.share_peer_info_file_with_peer("b@example.com", _peer_info(REQUIRED))
+    assert b_conn.read_peer_info_file("a@example.com").encryption_policy == REQUIRED
 
 
 def test_malformed_peer_bundle_raises_on_peer_load():
@@ -210,10 +205,10 @@ def test_resolution_follows_changed_peer_policy():
     store = _store_with_peer(OPTIONAL, OPTIONAL)
     assert not store.peer_uses_encryption("bob@example.com")
 
-    store.get_cached_peer("bob@example.com").version = _version_with_policy(REQUIRED)
+    store.get_cached_peer("bob@example.com").info = _peer_info(REQUIRED)
     assert store.peer_uses_encryption("bob@example.com")
 
-    store.get_cached_peer("bob@example.com").version = _version_with_policy(OPTIONAL)
+    store.get_cached_peer("bob@example.com").info = _peer_info(OPTIONAL)
     assert not store.peer_uses_encryption("bob@example.com")
 
 
@@ -225,7 +220,7 @@ def test_sender_refuses_peer_with_unknown_policy(policy):
         store.encrypt_if_needed("bob@example.com", b"data")
 
 
-def test_peer_version_without_policy_is_not_known():
+def test_unread_peer_info_policy_not_known():
     store = _store_with_peer(OPTIONAL, None)
     with pytest.raises(SyftPeerNotReadyError, match="not known"):
         store.encrypt_if_needed("bob@example.com", b"data")
@@ -318,7 +313,7 @@ def test_receiver_rejects_plaintext_when_pair_encrypts(alice_policy, bob_policy)
 
 def test_message_from_peer_with_unknown_policy_refused():
     _, bob = _keyed_pair(OPTIONAL, OPTIONAL)
-    bob.get_cached_peer("alice@example.com").version = None
+    bob.get_cached_peer("alice@example.com").info = None
     with pytest.raises(SyftPeerNotReadyError, match="not known"):
         bob.decrypt_and_verify_if_needed("alice@example.com", b"plain")
 
@@ -327,7 +322,7 @@ def test_last_known_policy_kept_when_version_vanishes():
     """E.g. after the owner's delete_syftbox(): its plaintext deletes still apply."""
     _, bob = _keyed_pair(OPTIONAL, OPTIONAL)
     assert bob.peer_policy("alice@example.com") == OPTIONAL
-    bob.get_cached_peer("alice@example.com").version = None
+    bob.get_cached_peer("alice@example.com").info = None
     assert bob.decrypt_and_verify_if_needed("alice@example.com", b"plain") == b"plain"
 
 
@@ -339,7 +334,7 @@ def test_receiver_accepts_plaintext_in_plaintext_pair():
 def test_receiver_rejects_envelope_when_pair_does_not_encrypt():
     alice, bob = _keyed_pair(REQUIRED, OPTIONAL)
     envelope = alice.encrypt("bob@example.com", b"secret")
-    bob.get_cached_peer("alice@example.com").version = _version_with_policy(OPTIONAL)
+    bob.get_cached_peer("alice@example.com").info = _peer_info(OPTIONAL)
     with pytest.raises(MessageFormatError, match="is encrypted"):
         bob.decrypt_and_verify_if_needed("alice@example.com", envelope)
 

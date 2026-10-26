@@ -72,7 +72,7 @@ def test_reset_then_re_peer_in_the_same_session_is_valid(recwarn):
     ds_manager, do_manager = _pair(add_peers=True)  # connected at start
     for manager in (ds_manager, do_manager):
         manager.delete_syftbox(verbose=False, broadcast_delete_events=False)
-        manager.peer_manager.write_own_version()
+        manager.peer_manager.write_own_peer_info()
 
     ds_manager.add_peer(do_manager.email)
     do_manager.approve_peer_request(ds_manager.email, peer_must_exist=False)
