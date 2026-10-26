@@ -11,6 +11,9 @@ from syft_bg.api import create_api_from_job
 from syft_bg.approve.handlers.job import ApprovedJobHandler
 from syft_bg.common.config import get_default_paths
 from syft_rds import SyftRDSClient
+from syft_rds.apis import Api, ApiDefinition, FileEntry
+from syft_rds.apis.repr import api_collection_repr_html, api_collection_repr_str
+from syft_rds.client import _print_call_result
 
 ADDER_CODE = """import json
 with open("params.json") as f:
@@ -35,6 +38,12 @@ from pathlib import Path
 outputs = Path(os.environ["SYFT_POLICY_OUTPUTS_DIR"])
 if json.loads((outputs / "result.json").read_text())["sum"] > 100:
     raise ValueError("Sum too large to share")
+"""
+
+# Shares the outputs with no one.
+HOLD_BACK_POLICY = """import os
+from pathlib import Path
+Path(os.environ["SYFT_POLICY_RECIPIENTS_PATH"]).write_text("[]")
 """
 
 
@@ -92,7 +101,7 @@ def _ds_job(ds_manager, name: str):
     return next(j for j in ds_manager.jobs if j.name == name)
 
 
-def test_api_policies_allow_block_and_show():
+def test_api_policies_allow_block_and_show(capsys):
     ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
         sync_automatically=False,
@@ -109,6 +118,11 @@ def test_api_policies_allow_block_and_show():
 
         do_manager.sync()
         ds_manager.sync()
+        # The api table says which policies an api has.
+        assert "client.api.adder(a, b) | policies: input, output" in str(ds_manager.api)
+        table = ds_manager.api._repr_html_()
+        assert '<th class="syftapi-th">Policies</th>' in table
+        assert '<td class="syftapi-td">input, output</td>' in table
         api = ds_manager.api.adder
         assert "Rate limit reached" in repr(api)
         assert "Sum too large to share" in api._repr_html_()
@@ -126,7 +140,21 @@ def test_api_policies_allow_block_and_show():
         blocked = _ds_job(ds_manager, large.name)
         assert blocked.status == "failed"
         assert blocked.policy_error == "ValueError: Sum too large to share"
+        capsys.readouterr()
         assert blocked.output_paths == []
+        # The DS is sent to the policy's reason, not to a stderr they don't get.
+        out = capsys.readouterr().out
+        assert (
+            "The data owner's policy refused the call: "
+            "ValueError: Sum too large to share" in out
+        )
+        assert "job.policy_error" in out and "job.stderr" not in out
+        _print_call_result(blocked)
+        assert capsys.readouterr().out == (
+            f"Job '{large.name}' finished with status: failed\n"
+            "   The data owner's policy refused the call: "
+            "ValueError: Sum too large to share\n"
+        )
 
         # The rate limit of one call is used up.
         second = api(1, b=2, block=False)
@@ -134,6 +162,12 @@ def test_api_policies_allow_block_and_show():
         limited = _ds_job(ds_manager, second.name)
         assert limited.status == "failed"
         assert limited.policy_error == "ValueError: Rate limit reached: 1 call"
+        capsys.readouterr()
+        _print_call_result(limited)
+        assert (
+            "refused the call: ValueError: Rate limit reached: 1 call"
+            in capsys.readouterr().out
+        )
 
     # The DO's view of a call shows the api and its policies.
     do_job = next(j for j in do_manager.jobs if j.name == large.name)
@@ -142,3 +176,69 @@ def test_api_policies_allow_block_and_show():
     assert "adder" in html and "Input policy" in html and "Output policy" in html
     original = next(j for j in do_manager.jobs if j.name == job.name)
     assert original.status == "pending"
+
+
+def test_held_back_outputs_point_to_the_policy(capsys):
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+        sync_automatically=False,
+    )
+    job = _submit_adder_job(ds_manager, do_manager, {"a": 1, "b": 2})
+
+    with _temp_config_paths() as (paths, tmp):
+        result = create_api_from_job(
+            job, output_policy=_write(tmp / "hold_back.py", HOLD_BACK_POLICY)
+        )
+        assert result.success
+        do_manager.sync()
+        ds_manager.sync()
+        call = ds_manager.api.adder(1, b=2, block=False)
+        _run_calls(do_manager, paths.config)
+        held = _ds_job(ds_manager, call.name)
+
+    assert held.status == "done" and held.outputs_withheld
+    capsys.readouterr()
+    assert held.output_paths == []
+    # The DS is told the policy held the outputs back, not that the script
+    # wrote none.
+    out = capsys.readouterr().out
+    assert "The data owner's output policy held the outputs back." in out
+    assert "The data owner can still share them with you later." in out
+    assert "may not have written" not in out
+    _print_call_result(held)
+    assert capsys.readouterr().out == (
+        f"Job '{call.name}' finished with status: done\n"
+        "   The data owner's output policy held the outputs back.\n"
+        "   The data owner can still share them with you later.\n"
+    )
+
+
+def _policy_entry(kind: str) -> list[FileEntry]:
+    return [FileEntry(relative_path=f"policies/{kind}/run.sh", hash="sha256:0")]
+
+
+def test_api_table_shows_policies(tmp_path):
+    definitions = {
+        "plain": ApiDefinition(),
+        "checked": ApiDefinition(input_policy=_policy_entry("input")),
+        "filtered": ApiDefinition(output_policy=_policy_entry("output")),
+        "both": ApiDefinition(
+            input_policy=_policy_entry("input"),
+            output_policy=_policy_entry("output"),
+        ),
+    }
+    apis = [
+        Api(name, "do@test.org", tmp_path, definition, client=None)
+        for name, definition in definitions.items()
+    ]
+
+    lines = api_collection_repr_str(apis).splitlines()[1:]
+    assert [line.split(" | ")[1] for line in lines] == [
+        "policies: -",
+        "policies: input",
+        "policies: output",
+        "policies: input, output",
+    ]
+    html = api_collection_repr_html(apis)
+    for policies in ("-", "input", "output", "input, output"):
+        assert f'<td class="syftapi-td">{policies}</td>' in html

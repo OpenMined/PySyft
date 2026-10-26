@@ -280,10 +280,13 @@ class JobInfo:
         if status == JobStatus.FAILED:
             partial = _list_output_files()
             print(f"❌ Job '{self.name}' failed (status: {self.status}).")
-            print(
-                f"   Returning {len(partial)} partial output file(s). "
-                "Check stderr for details: job.stderr"
-            )
+            policy_error = self.policy_error
+            if policy_error:
+                print(f"   The data owner's policy refused the call: {policy_error}")
+                hint = "The reason is in job.policy_error."
+            else:
+                hint = "Check stderr for details: job.stderr"
+            print(f"   Returning {len(partial)} partial output file(s). {hint}")
             return partial
 
         if status != JobStatus.DONE:
@@ -294,7 +297,11 @@ class JobInfo:
         output_files = _list_output_files()
         if not output_files:
             print(f"⚠️  Job '{self.name}' is done but no output files were found.")
-            print("   The job script may not have written to the outputs/ folder.")
+            if self.outputs_withheld:
+                print("   The data owner's output policy held the outputs back.")
+                print("   The data owner can still share them with you later.")
+            else:
+                print("   The job script may not have written to the outputs/ folder.")
             return []
 
         return output_files
