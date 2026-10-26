@@ -3,57 +3,22 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from syft_rds.apis.args import ApiArg, bind_args
-from syft_rds.apis.models import FILES_DIR_NAME, ApiDefinition
+from syft_job.policies import PolicyScript
+
+from syft_rds.apis.models import FILES_DIR_NAME, ApiDefinition, policy_dir
 from syft_rds.apis.repr import api_repr_html, api_repr_str
 
 if TYPE_CHECKING:
     from syft_rds.client import SyftRDSClient
 
-RUN_SCRIPT = "run.sh"
-CONFIG_FILE = "config.yaml"
 CODE_PREFIX = "code/"
 
-
-@dataclass(frozen=True)
-class CallableLayout:
-    """The files of an api that can be called with arguments."""
-
-    python_file: str  # e.g. "code/main.py"
-    params_file: str  # e.g. "code/params.json"
-
-    @property
-    def entrypoint(self) -> str:
-        return self.python_file.removeprefix(CODE_PREFIX)
-
-
-def callable_layout(definition: ApiDefinition) -> CallableLayout | None:
-    """The layout of an api with arguments, or None if it isn't one.
-
-    Such an api pins run.sh and one Python file by content, and matches
-    config.yaml and one JSON file (the arguments) by name only.
-    """
-    pinned = {e.relative_path for e in definition.file_contents}
-    name_only = set(definition.file_paths)
-    if RUN_SCRIPT not in pinned or CONFIG_FILE not in name_only:
-        return None
-    python_files, json_files = pinned - {RUN_SCRIPT}, name_only - {CONFIG_FILE}
-    if len(python_files) != 1 or len(json_files) != 1:
-        return None
-    layout = CallableLayout(python_files.pop(), json_files.pop())
-    if not _is_code_file(layout.python_file, ".py"):
-        return None
-    if not _is_code_file(layout.params_file, ".json"):
-        return None
-    return layout
-
-
-def _is_code_file(rel_path: str, suffix: str) -> bool:
-    return rel_path.startswith(CODE_PREFIX) and rel_path.endswith(suffix)
+# What a call can pass for a file: its content, or a path to read it from.
+CallFile = bytes | str | Path
 
 
 class Api:
@@ -82,24 +47,47 @@ class Api:
         return [a.name for a in self.args]
 
     @property
-    def layout(self) -> CallableLayout | None:
-        return callable_layout(self.definition)
+    def params_file(self) -> str | None:
+        """The file a call's arguments go in, e.g. "code/params.json"."""
+        return self.definition.params_file
 
     @property
-    def is_callable(self) -> bool:
-        return self.layout is not None
+    def sent_files(self) -> list[str]:
+        """The files a call passes in files=: what it sends besides the params."""
+        return [f for f in self.definition.call_files if f != self.params_file]
 
     @property
-    def run_script(self) -> bytes:
-        return self._stored_file(RUN_SCRIPT).read_bytes()
+    def python_file(self) -> str | None:
+        """The one Python file the api pins under code/, if it pins one."""
+        python_files = [
+            e.relative_path
+            for e in self.definition.file_contents
+            if e.relative_path.startswith(CODE_PREFIX)
+            and e.relative_path.endswith(".py")
+        ]
+        return python_files[0] if len(python_files) == 1 else None
 
     @property
     def code(self) -> str | None:
-        """The Python code a call runs, or None if the api isn't callable."""
-        layout = self.layout
-        if layout is None:
+        """The Python code a call runs, when the api pins one Python file."""
+        if self.python_file is None:
             return None
-        return self._stored_file(layout.python_file).read_text(encoding="utf-8")
+        return self._stored_file(self.python_file).read_text(encoding="utf-8")
+
+    @property
+    def input_policy_code(self) -> str | None:
+        """The code of the input policy, or None if the api has none."""
+        return self._policy_code("input", self.definition.input_policy)
+
+    @property
+    def output_policy_code(self) -> str | None:
+        """The code of the output policy, or None if the api has none."""
+        return self._policy_code("output", self.definition.output_policy)
+
+    def _policy_code(self, kind: str, entries: list) -> str | None:
+        if not entries:
+            return None
+        return PolicyScript(policy_dir(self.api_dir, kind)).code
 
     @property
     def call_signature(self) -> str:
@@ -108,16 +96,25 @@ class Api:
             if self.name.isidentifier()
             else f'client.api["{self.name}"]'
         )
-        return f"{accessor}({', '.join(self.arg_names)})"
+        parts = self.arg_names + (["files={...}"] if self.sent_files else [])
+        return f"{accessor}({', '.join(parts)})"
 
-    def job_code_files(self, params: dict[str, Any]) -> dict[str, bytes]:
-        """The files of a job's code/ folder for a call with these params."""
-        layout = self.layout
-        python_code = self._stored_file(layout.python_file).read_bytes()
-        return {
-            layout.entrypoint: python_code,
-            layout.params_file.removeprefix(CODE_PREFIX): json.dumps(params).encode(),
-        }
+    def request_files(
+        self, params: dict[str, Any], files: dict[str, CallFile]
+    ) -> dict[str, bytes]:
+        """Every file of a call: the params file, and the files passed in files=.
+
+        Raises TypeError unless files= holds exactly the files the api takes.
+        """
+        if set(files) != set(self.sent_files):
+            raise TypeError(
+                f"{self.name}() sends files={sorted(self.sent_files)}, "
+                f"got {sorted(files)}"
+            )
+        request = {path: _file_bytes(content) for path, content in files.items()}
+        if self.params_file is not None:
+            request[self.params_file] = json.dumps(params).encode()
+        return request
 
     def _stored_file(self, rel_path: str) -> Path:
         return self.api_dir / FILES_DIR_NAME / rel_path
@@ -126,23 +123,33 @@ class Api:
         """Map a call onto the api's arguments, with defaults and type checks."""
         return bind_args(self.name, self.args, args, kwargs)
 
-    def __call__(self, *args: Any, block: bool = True, **kwargs: Any):
-        """Submit a job running this api's code with the given arguments.
+    def __call__(
+        self,
+        *args: Any,
+        block: bool = True,
+        files: dict[str, CallFile] | None = None,
+        **kwargs: Any,
+    ):
+        """Call the api: send its arguments, and any files it takes, as a request.
 
+        files= maps each file the api takes by name, other than the params
+        file, to its content or a path, e.g. {"code/data.csv": "data.csv"}.
         With block=True (the default), waits for the job to finish and returns
         it; with block=False, returns right after submitting. An api argument
-        named "block" can only be passed positionally.
+        named "block" or "files" can only be passed positionally.
         """
-        if not self.is_callable:
-            raise TypeError(
-                f"Api '{self.name}' can't be called: it needs run.sh and one Python "
-                f"file pinned by content, and one JSON file matched by name."
-            )
         params = self.bind_args(args, kwargs)
-        return self._client._submit_api_call(self, params, block=block)
+        request = self.request_files(params, files or {})
+        return self._client._submit_api_call(self, request, block=block)
 
     def __repr__(self) -> str:
         return api_repr_str(self)
 
     def _repr_html_(self) -> str:
         return api_repr_html(self)
+
+
+def _file_bytes(content: CallFile) -> bytes:
+    if isinstance(content, bytes):
+        return content
+    return Path(content).expanduser().read_bytes()

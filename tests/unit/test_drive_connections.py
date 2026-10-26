@@ -14,6 +14,7 @@ import syft.sync.connections.connection_router as connection_router_module
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.gdrive_transport import CollectionFolder
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
+from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.events.file_change_event import FileChangeEventsMessage
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.peers.peer_store import PeerStore
@@ -30,6 +31,7 @@ from syft.sync.transport import (
     Transport,
     WatcherStore,
 )
+from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import VersionInfo
 from tests.unit.test_sync_manager import _store_knowing
 
@@ -226,6 +228,12 @@ def test_peering_keeps_the_peer_registry(pair):
     assert peering.read_peer_registry(force_download=True)[DS]["state"] == "accepted"
 
 
+def test_reading_own_key_bundle_creates_no_folder(pair):
+    owner = pair[0].as_transport()
+    assert owner.peering.read_own_key_bundle(DS) is None
+    assert pair[0]._find_encryption_bundles_folder_id() is None
+
+
 def test_peering_publishes_a_key_bundle_both_sides_can_read(pair):
     do_conn, ds_conn = pair
     owner, scientist = do_conn.as_transport(), ds_conn.as_transport()
@@ -239,16 +247,19 @@ def test_peering_publishes_a_key_bundle_both_sides_can_read(pair):
     assert owner.peering.read_own_key_bundle("someone-else@example.com") is None
 
 
-def test_peering_publishes_a_version_the_peer_can_read(pair):
+def test_peering_publishes_peer_info_the_peer_can_read(pair):
     do_conn, ds_conn = pair
     owner, scientist = do_conn.as_transport(), ds_conn.as_transport()
-    version = VersionInfo.current()
+    info = PeerInfo(
+        version_info=VersionInfo.current(),
+        encryption_policy=EncryptionPolicy.REQUIRED,
+    )
 
-    owner.peering.publish_version(version)
-    owner.peering.grant_version_read(DS)
+    owner.peering.publish_peer_info(info)
+    owner.peering.grant_peer_info_read(DS, info)
 
-    assert owner.peering.read_own_version() == version
-    assert scientist.peering.read_peer_version(DO) == version
+    assert owner.peering.read_own_peer_info() == info
+    assert scientist.peering.read_peer_info(DO) == info
 
 
 # -- ConnectionRouter -------------------------------------------------------------

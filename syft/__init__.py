@@ -42,6 +42,7 @@ from syft.migrations.history import register_historic_schemas  # noqa: E402
 # Import the versioned model modules explicitly so registration is intentional,
 # not a side-effect of whatever login happened to pull in first.
 import syft.sync.version.version_info  # noqa: F401, E402
+import syft.sync.version.peer_info  # noqa: F401, E402
 import syft.sync.messages.proposed_filechange  # noqa: F401, E402
 import syft.sync.events.file_change_event  # noqa: F401, E402
 

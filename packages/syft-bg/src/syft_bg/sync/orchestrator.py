@@ -41,8 +41,13 @@ class SyncOrchestrator(BaseOrchestrator):
             raise ValueError("SyncConfig missing 'do_email'")
         if not config.syftbox_root:
             raise ValueError("SyncConfig missing 'syftbox_root'")
+        if config.encryption_policy is None:
+            raise ValueError(
+                "SyncConfig missing 'encryption_policy': run syft-bg init with an encryption policy"
+            )
 
         from syft_rds import (
+            EncryptionPolicy,
             Environment,
             SyftRDSClient,
             SyftRDSClientConfig,
@@ -53,6 +58,7 @@ class SyncOrchestrator(BaseOrchestrator):
             rds_config = SyftRDSClientConfig.for_colab(
                 email=config.do_email,
                 has_do_role=True,
+                encryption=config.encryption_policy == EncryptionPolicy.REQUIRED,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )
@@ -61,6 +67,7 @@ class SyncOrchestrator(BaseOrchestrator):
                 email=config.do_email,
                 has_do_role=True,
                 token_path=config.drive_token_path,
+                encryption=config.encryption_policy == EncryptionPolicy.REQUIRED,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )

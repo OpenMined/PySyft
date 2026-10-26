@@ -26,7 +26,7 @@ from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
 if TYPE_CHECKING:
     from syft.sync.connections.base_connection import FileCollection
     from syft.sync.connections.drive.gdrive_transport import GDriveConnection
-    from syft.sync.version.version_info import VersionInfo
+    from syft.sync.version.peer_info import PeerInfo
 
 
 class DriveP2PConnection(P2PConnection):
@@ -241,19 +241,17 @@ class DrivePeering(Peering):
     def read_peer_key_bundle(self, peer: str) -> str | None:
         return self._conn.read_peer_encryption_bundle(peer)
 
-    def publish_version(self, version_info: VersionInfo) -> None:
-        self._conn.write_version_file(version_info)
+    def publish_peer_info(self, peer_info: PeerInfo) -> None:
+        self._conn.write_peer_info_file(peer_info)
 
-    def read_own_version(self) -> VersionInfo | None:
-        return self._conn.read_own_version_file()
+    def read_own_peer_info(self) -> PeerInfo | None:
+        return self._conn.read_own_peer_info_file()
 
-    def read_peer_version(self, peer: str) -> VersionInfo | None:
-        return self._conn.read_peer_version_file(peer)
+    def read_peer_info(self, peer: str) -> PeerInfo | None:
+        return self._conn.read_peer_info_file(peer)
 
-    def grant_version_read(
-        self, peer: str, version_info: VersionInfo | None = None
-    ) -> None:
-        self._conn.share_version_file_with_peer(peer, version_info)
+    def grant_peer_info_read(self, peer: str, peer_info: PeerInfo) -> None:
+        self._conn.share_peer_info_file_with_peer(peer, peer_info)
 
 
 def drive_transport(connection: GDriveConnection) -> Transport:

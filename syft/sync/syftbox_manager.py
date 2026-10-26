@@ -26,8 +26,8 @@ from syft.sync.file_writer import FileWriter
 from syft.sync.job_file_change_handler import JobFileChangeHandler
 from syft.sync.peers.peer import Peer, PeerNotReadyError
 from syft.sync.peers.peer_list import PeerList
+from syft.sync.peers.peer_store import datasite_crypto_keys_path
 from syft.sync.encryption_policy import EncryptionPolicy
-from syft.sync.peers.peer_store import PeerStore
 from syft.sync.platforms.base_platform import BasePlatform
 from syft.sync.sync.caches.datasite_owner_cache import (
     DataSiteOwnerEventCacheConfig,
@@ -135,9 +135,8 @@ class SyftboxManagerConfig(BaseModel):
         email: str,
         has_ds_role: bool = False,
         has_do_role: bool = False,
-        encryption: bool | str = False,
+        encryption: bool = False,
         persist_owner_state: bool = True,
-        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -192,8 +191,7 @@ class SyftboxManagerConfig(BaseModel):
             connection_configs=connection_configs,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
-            encryption_policy=EncryptionPolicy.coerce(encryption),
-            crypto_keys_path=crypto_keys_path,
+            encryption_policy=EncryptionPolicy.from_bool(encryption),
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             force_ignore_peer_version=force_ignore_peer_version,
         )
@@ -217,9 +215,8 @@ class SyftboxManagerConfig(BaseModel):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         token_path: Path | None = None,
-        encryption: bool | str = False,
+        encryption: bool = False,
         persist_owner_state: bool = True,
-        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -278,8 +275,7 @@ class SyftboxManagerConfig(BaseModel):
             connection_configs=connection_configs,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
-            encryption_policy=EncryptionPolicy.coerce(encryption),
-            crypto_keys_path=crypto_keys_path,
+            encryption_policy=EncryptionPolicy.from_bool(encryption),
             skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
             force_ignore_peer_version=force_ignore_peer_version,
         )
@@ -307,6 +303,7 @@ class SyftboxManagerConfig(BaseModel):
         persist_owner_state: bool = True,
         check_versions: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
+        encryption_policy: EncryptionPolicy = EncryptionPolicy.OPTIONAL,
     ):
         # No collection specs by default: the generic sync engine knows nothing
         # about datasets. syft-rds registers its dataset spec at initialization
@@ -355,6 +352,7 @@ class SyftboxManagerConfig(BaseModel):
             force_ignore_peer_version=not check_versions,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
+            encryption_policy=encryption_policy,
         )
 
         return cls(
@@ -491,14 +489,14 @@ class SyftboxManager(BaseModelCallbackMixin):
         "should_create_checkpoint",
         "try_create_checkpoint",
         "delete_syftbox",
-        "write_own_version",
+        "write_own_peer_info",
     )
 
     def __dir__(self):
         return list(self._PUBLIC_API)
 
     # Version file IO lives in syft.sync.version.local_version, and
-    # `write_own_version` writes both the local and the remote file. A
+    # `write_own_peer_info` writes both the local and the remote file. A
     # local-only writer on the manager leaves the remote file stale, which is
     # the bug that made the login mismatch prompt repeat at every login.
 
@@ -572,7 +570,6 @@ class SyftboxManager(BaseModelCallbackMixin):
         # Every router that sends peer-directed messages downgrades them to the
         # peer's negotiated syft protocol, so each one gets the live map.
         manager_res._set_peer_schemas(peer_manager.live_peer_schemas("syft"))
-        manager_res._set_version_loader(peer_manager.load_peer_version)
 
         return manager_res
 
@@ -586,17 +583,6 @@ class SyftboxManager(BaseModelCallbackMixin):
             )
             self.datasite_watcher_syncer.datasite_watcher_cache.connection_router.set_peer_schemas(
                 peer_schemas
-            )
-
-    def _set_version_loader(self, version_loader) -> None:
-        """Wire PeerManager's version reload into all routers that send."""
-        if self.datasite_owner_syncer:
-            self.datasite_owner_syncer.connection_router.set_version_loader(
-                version_loader
-            )
-        if self.datasite_watcher_syncer:
-            self.datasite_watcher_syncer.connection_router.set_version_loader(
-                version_loader
             )
 
     def _set_peer_store(self, peer_store) -> None:
@@ -621,9 +607,8 @@ class SyftboxManager(BaseModelCallbackMixin):
         email: str,
         has_ds_role: bool = False,
         has_do_role: bool = False,
-        encryption: bool | str = False,
+        encryption: bool = False,
         persist_owner_state: bool = True,
-        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -636,7 +621,6 @@ class SyftboxManager(BaseModelCallbackMixin):
                 has_do_role=has_do_role,
                 encryption=encryption,
                 persist_owner_state=persist_owner_state,
-                crypto_keys_path=crypto_keys_path,
                 skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=force_ignore_peer_version,
             )
@@ -650,9 +634,8 @@ class SyftboxManager(BaseModelCallbackMixin):
         has_ds_role: bool = False,
         has_do_role: bool = False,
         token_path: Path | None = None,
-        encryption: bool | str = False,
+        encryption: bool = False,
         persist_owner_state: bool = True,
-        crypto_keys_path: Path | None = None,
         skip_peer_on_patch_version_diff: Optional[
             bool
         ] = None,  # None: value is determined by the role
@@ -668,7 +651,6 @@ class SyftboxManager(BaseModelCallbackMixin):
                 token_path=token_path,
                 encryption=encryption,
                 persist_owner_state=persist_owner_state,
-                crypto_keys_path=crypto_keys_path,
                 skip_peer_on_patch_version_diff=skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=force_ignore_peer_version,
             )
@@ -721,8 +703,8 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         # Write version files if version checking is enabled
         if check_versions:
-            sender_manager.peer_manager.write_own_version()
-            receiver_manager.peer_manager.write_own_version()
+            sender_manager.peer_manager.write_own_peer_info()
+            receiver_manager.peer_manager.write_own_peer_info()
 
         # this makes sure that when we write a file as sender, the inactive file watcher picks it up
         sender_manager.file_writer.add_callback(
@@ -776,7 +758,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         use_in_memory_cache: bool = True,
         persist_owner_state: bool = True,
         check_versions: bool = False,
-        encryption: bool | str = False,
+        encryption: bool = False,
         collection_specs: list["CollectionSyncSpec"] | None = None,
         ds_encryption_policy: EncryptionPolicy | None = None,
         do_encryption_policy: EncryptionPolicy | None = None,
@@ -804,6 +786,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         Returns:
             Tuple of (ds_manager, do_manager)
         """
+        default_policy = EncryptionPolicy.from_bool(encryption)
         # Create configs using the existing base config generator
         do_config = SyftboxManagerConfig._base_config_for_testing(
             email=email1,
@@ -814,6 +797,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             persist_owner_state=persist_owner_state,
             check_versions=check_versions,
             collection_specs=collection_specs,
+            encryption_policy=do_encryption_policy or default_policy,
         )
 
         ds_config = SyftboxManagerConfig._base_config_for_testing(
@@ -825,6 +809,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             persist_owner_state=persist_owner_state,
             check_versions=check_versions,
             collection_specs=collection_specs,
+            encryption_policy=ds_encryption_policy or default_policy,
         )
 
         # Create managers from configs
@@ -853,15 +838,8 @@ class SyftboxManager(BaseModelCallbackMixin):
         )
 
         # Write version files
-        ds_manager.peer_manager.write_own_version()
-        do_manager.peer_manager.write_own_version()
-
-        default_policy = EncryptionPolicy.coerce(encryption)
-        for manager, policy in (
-            (ds_manager, ds_encryption_policy or default_policy),
-            (do_manager, do_encryption_policy or default_policy),
-        ):
-            manager._apply_encryption_policy_for_testing(policy)
+        ds_manager.peer_manager.write_own_peer_info()
+        do_manager.peer_manager.write_own_peer_info()
 
         if add_peers:
             # DS creates peer request
@@ -874,26 +852,6 @@ class SyftboxManager(BaseModelCallbackMixin):
             ds_manager.load_peers()
 
         return ds_manager, do_manager
-
-    def _apply_encryption_policy_for_testing(self, policy: EncryptionPolicy) -> None:
-        """Give a mock-Drive client ``policy``, before it peers."""
-        if policy == EncryptionPolicy.REQUIRED:
-            self._init_encrypted_peer_store()
-        elif policy == EncryptionPolicy.OFF:
-            self.peer_manager.peer_store.encryption_policy = policy
-            self.peer_manager.write_own_version()
-
-    def _init_encrypted_peer_store(self) -> None:
-        """Replace the peer store with an in-memory one that requires encryption.
-
-        The version file is written again, so that peers read the new policy.
-        """
-        peer_store = PeerStore(
-            email=self.email, encryption_policy=EncryptionPolicy.REQUIRED
-        )
-        peer_store.generate_keys()
-        self._set_peer_store(peer_store)
-        self.peer_manager.write_own_version()
 
     def add_peer(
         self,
@@ -1016,7 +974,6 @@ class SyftboxManager(BaseModelCallbackMixin):
                           separate process may have updated the file.
         """
         with self.sync_file_lock():
-            self.peer_manager.peer_store.check_key_file_policy()
             self.load_peers(force_download=force_download_peer_state)
             if self.has_do_role:
                 peer_emails = [peer.email for peer in self.peer_manager.approved_peers]
@@ -1025,9 +982,6 @@ class SyftboxManager(BaseModelCallbackMixin):
                         peer_emails,
                         ignore_peer_version=ignore_peer_version,
                     )
-                )
-                compatible_emails = self.peer_manager.without_encryption_conflicts(
-                    compatible_emails
                 )
                 self.datasite_owner_syncer.sync(compatible_emails)
                 if auto_compact:
@@ -1041,11 +995,6 @@ class SyftboxManager(BaseModelCallbackMixin):
             if self.has_ds_role:
                 peer_emails = [peer.email for peer in self.peer_manager.syncable_peers]
                 self.peer_manager.warn_if_all_peers_incompatible(peer_emails)
-                peer_emails = self.peer_manager.without_encryption_conflicts(
-                    peer_emails
-                )
-                # Changes that waited for encryption with their recipient.
-                self.datasite_watcher_syncer.process_file_changes_queue()
                 self.datasite_watcher_syncer.sync_down(peer_emails)
 
     def load_peers(self, force_download: bool = False):
@@ -1143,45 +1092,6 @@ class SyftboxManager(BaseModelCallbackMixin):
         raise TimeoutError(
             f"Timed out after {timeout:g}s waiting for peer {peer_email}: {error}"
         ) from error
-
-    # ========== Encryption key fingerprints ==========
-
-    @property
-    def encryption_fingerprint(self) -> str | None:
-        """Fingerprint of our own encryption key, to give peers out of band.
-
-        None until this client has keys: it makes them when it requires
-        encryption, or when a peer first requires it.
-        """
-        return self.peer_manager.my_fingerprint()
-
-    def peer_fingerprint(self, peer_email: str) -> str | None:
-        """Fingerprint of the encryption key pinned for ``peer_email``.
-
-        Compare it with the fingerprint the peer reads out from their own
-        ``client.encryption_fingerprint``. The key arrived over Drive, and only
-        that comparison shows it is theirs. None when no key is pinned.
-        """
-        return self.peer_manager.peer_fingerprint(peer_email)
-
-    def trust_peer_key(self, peer_email: str, fingerprint: str) -> str | None:
-        """Adopt the key ``peer_email`` publishes, if it carries ``fingerprint``.
-
-        Run this after a peer reinstalled or regenerated their keys. Ask them
-        for their new ``client.encryption_fingerprint`` out of band and pass it
-        here: the storage provider is not trusted, so the published key is
-        adopted only when it matches. Spaces and case in ``fingerprint`` are
-        ignored. Returns the fingerprint now pinned.
-
-        Raises:
-            PeerFingerprintMismatchError: the published key carries another
-                fingerprint. The pin is left unchanged.
-        """
-        pinned_fingerprint = self.peer_manager.refresh_peer_bundle(
-            peer_email, trust_new_key=True, expected_fingerprint=fingerprint
-        )
-        self._emit_peers_loaded()
-        return pinned_fingerprint
 
     def _add_connection(self, connection: SyftboxPlatformConnection):
         if not (
@@ -1334,6 +1244,11 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         # Delete local syftbox folder and cache directories
         self._delete_local_dirs()
+        # The folder held the key file. The client keeps its keys, so they go
+        # back to disk: the next login must load the keys that peers know.
+        self.peer_manager.peer_store.save_keys(
+            datasite_crypto_keys_path(self.syftbox_folder, self.email)
+        )
 
         print(
             f"{_ANSI_RED}Done. If you are also running syft-bg, make sure to call "
@@ -1353,9 +1268,6 @@ class SyftboxManager(BaseModelCallbackMixin):
         for d in dirs_to_delete:
             if d.exists():
                 shutil.rmtree(d)
-        # Encryption keys live in <syftbox_folder>/<email>/private/crypto_keys.json,
-        # so deleting the syftbox folder above already removes them — a fresh state
-        # regenerates a new identity.
 
     # =========================================================================
     # CHECKPOINT METHODS

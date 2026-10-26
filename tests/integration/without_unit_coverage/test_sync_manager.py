@@ -5,10 +5,12 @@ These tests are unique to integration testing and verify behavior that
 cannot be adequately tested with mocked connections.
 """
 
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.utils.waiting import poll_until
 import os
+import time
 from pathlib import Path
-from time import sleep
 import pytest
 
 
@@ -28,6 +30,17 @@ EMAIL_DS = os.environ["AI_AUDIT_EMAIL_DS"]
 token_path_do = CREDENTIALS_DIR / FILE_DO
 token_path_ds = CREDENTIALS_DIR / FILE_DS
 
+# Drive lists a new file some time after the write.
+POLL_TIMEOUT = 60
+POLL_INTERVAL = 1
+
+
+def _poll(check, what: str):
+    """Call ``check`` until it returns a value that is not None."""
+    result = poll_until(check, time.monotonic() + POLL_TIMEOUT, POLL_INTERVAL)
+    assert result is not None, f"Timed out after {POLL_TIMEOUT}s waiting for {what}"
+    return result
+
 
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
 @pytest.mark.usefixtures("setup_delete_syftboxes")
@@ -37,10 +50,10 @@ def test_peer_request_blocks_sync_until_approved():
 
     Workflow:
     1. DS adds DO as peer (creates peer request)
-    2. DS submits a job
+    2. DS submits a job - the send raises (DO policy not known)
     3. DO syncs - nothing should sync (peer not approved)
     4. DO approves peer request
-    5. DS syncs (sends the held job), DO syncs - job should now sync
+    5. DS syncs and submits again, DO syncs - job should now sync
     """
     # Create managers with Google Drive connection, no auto-add peers
     ds_manager, do_manager = SyftboxManager._pair_with_google_drive_testing_connection(
@@ -59,11 +72,12 @@ def test_peer_request_blocks_sync_until_approved():
     # Step 1: DS makes peer request by adding DO
     ds_manager.add_peer(do_manager.email)
 
-    # Wait for sync
-    sleep(1)
-
     # Verify: DO sees this as a pending request
-    do_manager.load_peers()
+    def request_seen():
+        do_manager.load_peers()
+        return do_manager.peer_manager.requested_by_peer_peers or None
+
+    _poll(request_seen, "the peer request")
     assert len(do_manager.peer_manager.requested_by_peer_peers) == 1
     assert len(do_manager.peer_manager.approved_peers) == 0
     assert do_manager.peer_manager.requested_by_peer_peers[0].email == ds_manager.email
@@ -71,10 +85,8 @@ def test_peer_request_blocks_sync_until_approved():
     # Step 2: DS submits a simple job
     job_file_path = f"{do_manager.email}/test.job"
     job_content = "print('Hello from DS')"
-    ds_manager._send_file_change(job_file_path, job_content)
-
-    # Wait for message to be sent
-    sleep(1)
+    with pytest.raises(SyftPeerNotReadyError):
+        ds_manager._send_file_change(job_file_path, job_content)
 
     # Step 3: DO syncs WITHOUT accepting - nothing should sync
     do_manager.sync()
@@ -91,13 +103,24 @@ def test_peer_request_blocks_sync_until_approved():
     assert len(do_manager.peer_manager.approved_peers) == 1
     assert do_manager.peer_manager.approved_peers[0].email == ds_manager.email
 
-    # Step 5: DS syncs, which sends the job it held while the DO policy was
-    # unknown. DO syncs again - now it should work
-    ds_manager.sync()
-    do_manager.sync()
+    # Step 5: DS syncs, which reads the DO policy, and submits again. DO syncs
+    # again - now it should work
+    def resent():
+        ds_manager.sync()
+        try:
+            ds_manager._send_file_change(job_file_path, job_content)
+        except SyftPeerNotReadyError:
+            return None  # The DS does not see the DO version file yet.
+        return True
+
+    _poll(resent, "the DO policy")
+
+    def job_received():
+        do_manager.sync()
+        return do_cache.file_hashes or None
 
     # Verify: File synced and in cache
-    assert len(do_cache.file_hashes) > 0, "Cache should have content after approval"
+    _poll(job_received, "the job at the DO")
 
     # Verify: File is tracked in cache with correct path (stored as PosixPath)
     expected_cache_path = Path("test.job")

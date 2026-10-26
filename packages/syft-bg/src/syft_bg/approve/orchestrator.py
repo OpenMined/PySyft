@@ -1,4 +1,4 @@
-"""Approval orchestrator for auto-approving jobs and peers."""
+"""Approval orchestrator: runs api calls, and approves peers."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class ApprovalOrchestrator(BaseOrchestrator):
-    """Orchestrator for job and peer auto-approval service."""
+    """Orchestrator of the approve service: runs api calls, approves peers."""
 
     def __init__(
         self,
@@ -68,6 +68,10 @@ class ApprovalOrchestrator(BaseOrchestrator):
             raise ValueError("Config missing 'do_email' field")
         if not config.syftbox_root:
             raise ValueError("Config missing 'syftbox_root' field")
+        if config.encryption_policy is None:
+            raise ValueError(
+                "Config missing 'encryption_policy' field: run syft-bg init with an encryption policy"
+            )
 
         # Wait for sync to seed the cache before building the RDS client —
         # its nested SyftboxManager.from_config triggers
@@ -76,6 +80,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
         cls._wait_for_sync_ready(label="Approve")
 
         from syft_rds import (
+            EncryptionPolicy,
             Environment,
             SyftRDSClient,
             SyftRDSClientConfig,
@@ -86,6 +91,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
             rds_config = SyftRDSClientConfig.for_colab(
                 email=config.do_email,
                 has_do_role=True,
+                encryption=config.encryption_policy == EncryptionPolicy.REQUIRED,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )
@@ -94,6 +100,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
                 email=config.do_email,
                 has_do_role=True,
                 token_path=config.drive_token_path,
+                encryption=config.encryption_policy == EncryptionPolicy.REQUIRED,
                 skip_peer_on_patch_version_diff=config.skip_peer_on_patch_version_diff,
                 force_ignore_peer_version=config.force_ignore_peer_version,
             )
@@ -101,8 +108,8 @@ class ApprovalOrchestrator(BaseOrchestrator):
 
         return cls(client=client, config=config)
 
-    def _collect_auto_approve_emails(self) -> set[str]:
-        """Collect peer emails from all auto-approval objects."""
+    def _collect_api_peer_emails(self) -> set[str]:
+        """Collect the peer emails of every api; they are approved as peers."""
         emails: set[str] = set()
         store = ApiStore(self.client.syftbox_folder, self.client.email)
         for obj in store.load_all().values():
@@ -122,9 +129,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
                 verbose=True,
             )
 
-        self.config.peers.auto_approve_emails = list(
-            self._collect_auto_approve_emails()
-        )
+        self.config.peers.auto_approve_emails = list(self._collect_api_peer_emails())
         if self.config.peers.auto_approve_emails or self.config.peers.approved_domains:
             self._peer_monitor = PeerMonitor(
                 client=self.client,
@@ -142,7 +147,7 @@ class ApprovalOrchestrator(BaseOrchestrator):
         print(f"  SyftBox: {self.config.syftbox_root}")
         print(f"  Interval: {self.config.interval}s")
         print(
-            f"  Auto-approvals: {'enabled' if self.config.auto_approvals.enabled else 'disabled'}"
+            f"  Api calls: {'run' if self.config.auto_approvals.enabled else 'not run'}"
         )
         emails = self.config.peers.auto_approve_emails
         domains = self.config.peers.approved_domains

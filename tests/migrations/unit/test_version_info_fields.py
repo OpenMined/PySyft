@@ -29,9 +29,7 @@ V1_FIELDS = {
     "attestation_token",
 }
 
-# encryption_policy is read by syft itself, so it is a field and not a key in
-# the ``extra`` bag that other packages use.
-V2_ADDS = {"protocol_schemas", "extra", "encryption_policy"}
+V2_ADDS = {"protocol_schemas", "extra"}
 
 
 def test_v1_fields_are_frozen():

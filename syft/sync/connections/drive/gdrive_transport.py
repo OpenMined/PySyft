@@ -62,7 +62,7 @@ if TYPE_CHECKING:
     from syft.sync.connections.drive.grdrive_config import (
         GdriveConnectionConfig,
     )
-    from syft.sync.version.version_info import VersionInfo
+    from syft.sync.version.peer_info import PeerInfo
 
 # Timeout for Google API requests (in seconds)
 GOOGLE_API_TIMEOUT = 120  # 2 minutes
@@ -855,14 +855,18 @@ class GDriveConnection(SyftboxPlatformConnection):
             raise ValueError(
                 f"Event {fname} not found in inbox, event should already be created for this type of connection"
             )
+        self.owner_archive_inbox_file(gdrive_id, sender_email)
+
+    def owner_archive_inbox_file(self, file_id: str, sender_email: str) -> None:
+        """Move the inbox file ``file_id`` from ``sender_email`` to its archive folder."""
         file_info = execute_with_retries(
-            self.drive_service.files().get(fileId=gdrive_id, fields="parents")
+            self.drive_service.files().get(fileId=file_id, fields="parents")
         )
         previous_parents = ",".join(file_info.get("parents", []))
         archive_folder_id = self.owner_get_archive_folder_id(sender_email)
         execute_with_retries(
             self.drive_service.files().update(
-                fileId=gdrive_id,
+                fileId=file_id,
                 addParents=archive_folder_id,
                 removeParents=previous_parents,
                 fields="id, parents",
@@ -1845,14 +1849,14 @@ class GDriveConnection(SyftboxPlatformConnection):
         items = results.get("files", [])
         return items[0]["id"] if items else None
 
-    def write_version_file(self, version_info: "VersionInfo") -> None:
+    def write_peer_info_file(self, peer_info: "PeerInfo") -> None:
         """Write version file to /SyftBox folder. Creates or updates the file."""
 
         syftbox_folder_id = self.get_syftbox_folder_id()
         file_id = self._get_version_file_id()
 
         # Convert to JSON string
-        json_data = version_info.to_json()
+        json_data = peer_info.to_json()
         file_payload, _ = self.create_file_payload(json_data)
 
         if file_id is None:
@@ -1886,9 +1890,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         items = results.get("files", [])
         return items[0]["id"] if items else None
 
-    def read_own_version_file(self) -> Optional["VersionInfo"]:
+    def read_own_peer_info_file(self) -> Optional["PeerInfo"]:
         """Read version file from own /SyftBox folder."""
-        from syft.sync.version.version_info import VersionInfo
+        from syft.sync.version.peer_info import PeerInfo
 
         file_id = self._get_version_file_id()
         if file_id is None:
@@ -1900,14 +1904,14 @@ class GDriveConnection(SyftboxPlatformConnection):
             print(f"Warning: could not download the own version file: {e}")
             return None
         try:
-            return VersionInfo.from_json(file_data.decode("utf-8"))
+            return PeerInfo.from_json(file_data.decode("utf-8"))
         except (ValueError, MigrationError) as e:
             print(f"Warning: could not read the own version file: {e}")
             return None
 
-    def read_peer_version_file(self, peer_email: str) -> Optional["VersionInfo"]:
+    def read_peer_info_file(self, peer_email: str) -> Optional["PeerInfo"]:
         """Read version file from a peer's /SyftBox folder."""
-        from syft.sync.version.version_info import VersionInfo
+        from syft.sync.version.peer_info import PeerInfo
 
         file_id = self._get_peer_version_file_id(peer_email)
         if file_id is None:
@@ -1919,26 +1923,21 @@ class GDriveConnection(SyftboxPlatformConnection):
             print(f"Warning: could not download the version file of {peer_email}: {e}")
             return None
         try:
-            return VersionInfo.from_json(file_data.decode("utf-8"))
+            return PeerInfo.from_json(file_data.decode("utf-8"))
         except (ValueError, MigrationError) as e:
             print(f"Warning: could not read the version file of {peer_email}: {e}")
             return None
 
-    def share_version_file_with_peer(
-        self, peer_email: str, version_info: Optional["VersionInfo"] = None
+    def share_peer_info_file_with_peer(
+        self, peer_email: str, peer_info: "PeerInfo"
     ) -> None:
         """Share the version file with a peer so they can read it.
 
-        A missing file is created from ``version_info``, the version of this
-        client. Without it, the file says only what any client of this release
-        says, and not the encryption policy of this client.
+        A missing file is created from ``peer_info``, the info of this client.
         """
         file_id = self._get_version_file_id()
         if file_id is None:
-            # Version file doesn't exist yet, create it first
-            from syft.sync.version.version_info import VersionInfo
-
-            self.write_version_file(version_info or VersionInfo.current())
+            self.write_peer_info_file(peer_info)
             file_id = self._get_version_file_id()
 
         if file_id:
@@ -2393,16 +2392,25 @@ class GDriveConnection(SyftboxPlatformConnection):
     # ENCRYPTION BUNDLE METHODS
     # =========================================================================
 
-    def _get_or_create_encryption_bundles_folder_id(self) -> str:
-        """Get or create the encryption bundles folder for this user."""
+    def _find_encryption_bundles_folder_id(self) -> str | None:
+        """The id of the encryption bundles folder of this user, or None when it does not exist."""
         if self._encryption_bundles_folder_id:
             return self._encryption_bundles_folder_id
         folder_name = GdriveEncryptionBundlesFolder(email=self.email).as_string()
-        syftbox_folder_id = self.get_syftbox_folder_id()
-        folder_id = self._find_folder_by_name(folder_name, parent_id=syftbox_folder_id)
+        folder_id = self._find_folder_by_name(
+            folder_name, parent_id=self.get_syftbox_folder_id()
+        )
+        if folder_id:
+            self._encryption_bundles_folder_id = folder_id
+        return folder_id
+
+    def _get_or_create_encryption_bundles_folder_id(self) -> str:
+        """Get or create the encryption bundles folder for this user."""
+        folder_id = self._find_encryption_bundles_folder_id()
         if not folder_id:
-            folder_id = self.create_folder(folder_name, syftbox_folder_id)
-        self._encryption_bundles_folder_id = folder_id
+            folder_name = GdriveEncryptionBundlesFolder(email=self.email).as_string()
+            folder_id = self.create_folder(folder_name, self.get_syftbox_folder_id())
+            self._encryption_bundles_folder_id = folder_id
         return folder_id
 
     def _encryption_bundle_filename(self, owner_email: str, peer_email: str) -> str:
@@ -2443,8 +2451,13 @@ class GDriveConnection(SyftboxPlatformConnection):
         self.add_permission(folder_id, peer_email, write=False)
 
     def read_own_encryption_bundle(self, peer_email: str) -> str | None:
-        """Read the bundle this client published for ``peer_email``, or None."""
-        folder_id = self._get_or_create_encryption_bundles_folder_id()
+        """Read the bundle this client published for ``peer_email``, or None.
+
+        A read never creates the bundles folder: without it, nothing is published.
+        """
+        folder_id = self._find_encryption_bundles_folder_id()
+        if folder_id is None:
+            return None
         filename = self._encryption_bundle_filename(self.email, peer_email)
         query = f"name='{filename}' and '{folder_id}' in parents and trashed=false"
         results = execute_with_retries(

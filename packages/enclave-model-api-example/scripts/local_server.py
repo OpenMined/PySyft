@@ -46,7 +46,7 @@ service = InferenceService(
 )
 service.start_polling()
 uvicorn.run(
-    create_app(service, use_encryption=settings.use_encryption),
+    create_app(service),
     host="0.0.0.0",
     port=8080,
 )

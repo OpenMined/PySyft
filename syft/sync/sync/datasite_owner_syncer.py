@@ -6,8 +6,9 @@ from functools import partial
 
 from pydantic import ConfigDict, Field, BaseModel, PrivateAttr
 from concurrent.futures import ThreadPoolExecutor
+from collections import deque
 from queue import Queue
-from typing import List, Mapping, NamedTuple, Tuple
+from typing import Iterable, List, Mapping, NamedTuple, Tuple
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
     FileChangeEventsMessageFileName,
@@ -21,10 +22,7 @@ from syft.sync.sync.caches.datasite_owner_cache import (
     DataSiteOwnerEventCacheConfig,
 )
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.encryption_policy import (
-    EncryptionPolicyConflictError,
-    PeerEncryptionPendingError,
-)
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.sync.caches.datasite_owner_cache import DataSiteOwnerEventCache
 from syft.sync.sync.collection_spec import CollectionSyncSpec
 from syft.sync.callback_mixin import BaseModelCallbackMixin
@@ -252,14 +250,17 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
             for peer_email in peer_emails:
                 proposed_count = 0
-                while True:
-                    msg = self.pull_and_process_next_proposed_filechange(
-                        peer_email, raise_on_none=False
-                    )
-                    if msg is None:
-                        # no new message, we are done
-                        break
-                    proposed_count += len(msg.proposed_file_changes)
+                try:
+                    while True:
+                        msg = self.pull_and_process_next_proposed_filechange(
+                            peer_email, raise_on_none=False
+                        )
+                        if msg is None:
+                            # no new message, we are done
+                            break
+                        proposed_count += len(msg.proposed_file_changes)
+                except SyftPeerNotReadyError as e:
+                    warnings.warn(f"Messages from {peer_email} stay in the inbox: {e}")
                 if proposed_count:
                     print(
                         f"Received {proposed_count} proposed change(s) "
@@ -896,61 +897,38 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     def _send_outbox_messages(self) -> None:
         """Send each message in the outbox queue, and record it in its peer's view.
 
-        A message that is not sent leaves the view as it is, so the plan of a
-        later sync holds its changes again. Later messages to the same
-        recipient wait too, so the order stays the same.
+        A send that cannot go raises, and the messages from it on are not sent.
+        Their views stay as they are, so the plan of a later sync holds their
+        changes again.
         """
         self.perm_context._reload()
-        waiting_for = set()
-        held = []
+        unsent = deque()
+        while not self.outbox_queue.empty():
+            unsent.append(self.outbox_queue.get())
         try:
-            while not self.outbox_queue.empty():
-                recipient, message = self.outbox_queue.get()
-                if recipient in waiting_for:
-                    held.append((recipient, message))
-                    continue
-                try:
-                    status = (
-                        self.connection_router.owner_write_event_messages_to_outbox(
-                            recipient, message
-                        )
-                    )
-                except (PeerEncryptionPendingError, EncryptionPolicyConflictError) as e:
-                    if self._warn_and_should_hold(recipient, e):
-                        waiting_for.add(recipient)
-                        held.append((recipient, message))
-                else:
-                    self._record_sent(recipient, message, status)
+            while unsent:
+                recipient, message = unsent[0]
+                status = self.connection_router.owner_write_event_messages_to_outbox(
+                    recipient, message
+                )
+                unsent.popleft()
+                self._record_sent(recipient, message, status)
         finally:
-            self._requeue_unplanned_messages(held)
+            self._requeue_unplanned_messages(unsent)
 
-    def _requeue_unplanned_messages(self, held: list) -> None:
-        """Put back the unsent messages that ``deliver`` did not queue.
+    def _requeue_unplanned_messages(
+        self, unsent: Iterable[Tuple[str, FileChangeEventsMessage]]
+    ) -> None:
+        """Put back, in order, the ``unsent`` messages that ``deliver`` did not queue.
 
-        The ``held`` messages go first, so each peer keeps its order. A
-        message that ``deliver`` queued is dropped: a later send would not
+        A message that ``deliver`` queued is dropped: a later send would not
         check the views or the permissions again, so ``deliver`` plans it
         again from the views instead.
         """
-        unsent = [*held]
-        while not self.outbox_queue.empty():
-            unsent.append(self.outbox_queue.get())
         for recipient, message in unsent:
             if message.message_filepath.as_string() not in self._planned_message_names:
                 self.outbox_queue.put((recipient, message))
         self._planned_message_names.clear()
-
-    def _warn_and_should_hold(self, recipient: str, error: Exception) -> bool:
-        """Warn about an outbox message that cannot go to ``recipient`` now.
-
-        Returns True when the message waits for a later sync, and False when it
-        is dropped because ``recipient`` is not a peer.
-        """
-        if not self.connection_router.peer_store.should_hold(recipient):
-            warnings.warn(f"Dropped an outbox message for {recipient}: not a peer")
-            return False
-        warnings.warn(f"Changes for {recipient} wait for a later sync: {error}")
-        return True
 
     def _record_sent(
         self, recipient: str, message: FileChangeEventsMessage, status: SendStatus
@@ -994,13 +972,10 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         and deletes the originals.
 
         Returns the number of source messages compacted (0 if below threshold,
-        if no outbox folder, or if peer encryption is on or the peer policy is
-        not known — DO can't read peer-encrypted bytes back to merge).
+        if no outbox folder, or if peer encryption is on — DO can't read
+        peer-encrypted bytes back to merge).
         """
-        peer_store = self.connection_router.peer_store
-        if not peer_store.peer_policy_known(
-            recipient_email
-        ) or peer_store.peer_uses_encryption(recipient_email):
+        if self.connection_router.peer_store.peer_uses_encryption(recipient_email):
             logger.debug(
                 f"outbox compaction for {recipient_email} skipped — "
                 f"peer encryption is not supported yet"

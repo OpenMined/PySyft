@@ -11,6 +11,7 @@ Unit test equivalents:
 - test_datasets_shared_with_any -> test_datasets_shared_with_any
 - test_jobs -> test_jobs
 - test_file_deletion_do_to_ds -> test_file_deletion_do_to_ds
+- test_api_policies -> test_api_policies_allow_block_and_show (syft-rds)
 """
 
 from syft_datasets import Dataset
@@ -21,6 +22,8 @@ import time
 import json
 from time import sleep
 import pytest
+from syft_bg.api import create_api_from_job
+from syft_bg.approve.handlers.job import ApprovedJobHandler
 from tests.unit.utils import create_tmp_dataset_files, grant_job_inbox_access
 from tests.integration.with_unit_coverage.utils import (
     create_rds_test_pair,
@@ -282,6 +285,67 @@ with open("outputs/result.json", "w") as f:
     assert json_content["result"] == 1
 
 
+RATE_LIMIT_POLICY = """import json, os
+from pathlib import Path
+path = Path(os.environ["SYFT_POLICY_DEFAULT_STATE_PATH"])
+state = json.loads(path.read_text())
+if state.get("calls", 0) >= 1:
+    raise ValueError("Rate limit reached: 1 call")
+state["calls"] = state.get("calls", 0) + 1
+path.write_text(json.dumps(state))
+"""
+
+
+@pytest.mark.flaky(reruns=3, reruns_delay=2)
+def test_api_policies(tmp_path, monkeypatch):
+    """Create an api with an input policy, call it, and hit the rate limit."""
+    monkeypatch.setattr("syft_bg.approve.api_store.get_syftbg_dir", lambda: tmp_path)
+    ds_manager, do_manager = create_rds_test_pair(
+        do_email=EMAIL_DO,
+        ds_email=EMAIL_DS,
+        do_token_path=token_path_do,
+        ds_token_path=token_path_ds,
+        use_in_memory_cache=False,
+    )
+    project = tmp_path / "adder"
+    project.mkdir()
+    (project / "main.py").write_text(
+        "import json\n"
+        "a = json.load(open('params.json'))['a']\n"
+        "json.dump({'double': 2 * a}, open('outputs/result.json', 'w'))\n"
+    )
+    (project / "params.json").write_text('{"a": 1}')
+    ds_manager.submit_python_job(
+        user=do_manager.email, code_path=str(project), job_name="adder"
+    )
+    do_manager.sync()
+    policy = tmp_path / "rate_limit.py"
+    policy.write_text(RATE_LIMIT_POLICY)
+    assert create_api_from_job(do_manager.jobs[-1], input_policy=policy).success
+    handler = ApprovedJobHandler(
+        client=do_manager, config_path=tmp_path / "config.yaml", verbose=False
+    )
+
+    # Calls are requests. The first passes, the second is blocked; the job the
+    # api was built from is a whole job, so it stays pending.
+    do_manager.sync()
+    ds_manager.sync()
+    first = ds_manager.api.adder(2, block=False)
+    second = ds_manager.api.adder(3, block=False)
+    do_manager.sync()
+    handler.run_approved_jobs()
+    do_manager.sync()
+    ds_manager.sync()
+
+    jobs = {j.name: j for j in ds_manager.jobs}
+    assert sorted([jobs[first.name].status, jobs[second.name].status]) == [
+        "done",
+        "failed",
+    ]
+    blocked = next(j for j in jobs.values() if j.status == "failed")
+    assert blocked.policy_error == "ValueError: Rate limit reached: 1 call"
+
+
 @pytest.mark.flaky(reruns=3, reruns_delay=2)
 @pytest.mark.usefixtures("setup_delete_syftboxes")
 def test_file_deletion_do_to_ds():
@@ -477,8 +541,8 @@ def test_version_upgrade_breaks_communication():
     sleep(2)
 
     # Verify initial version compatibility
-    ds_manager.peer_manager.load_peer_version(do_manager.email)
-    do_manager.peer_manager.load_peer_version(ds_manager.email)
+    ds_manager.peer_manager.load_peer_info(do_manager.email)
+    do_manager.peer_manager.load_peer_info(ds_manager.email)
 
     assert ds_manager.peer_manager.is_peer_version_compatible(do_manager.email), (
         "DS should see DO as compatible initially"
@@ -500,17 +564,20 @@ def test_version_upgrade_breaks_communication():
     )
 
     # Write the new version to GDrive (simulating DS upgrading their client)
-    ds_connection.write_version_file(new_version)
+    own_info = ds_manager.peer_manager.get_own_peer_info()
+    ds_connection.write_peer_info_file(
+        own_info.model_copy(update={"version_info": new_version})
+    )
 
     # Phase 3: Clear DO's cached version of DS and reload from GDrive
-    do_manager.peer_manager.clear_peer_version(ds_manager.email)
+    do_manager.peer_manager.clear_peer_info(ds_manager.email)
 
     # Reload DS's version (this fetches from GDrive)
-    reloaded_version = do_manager.peer_manager.load_peer_version(ds_manager.email)
+    reloaded_info = do_manager.peer_manager.load_peer_info(ds_manager.email)
 
     # Verify the new version was loaded
-    assert reloaded_version is not None, "Should be able to reload peer version"
-    assert reloaded_version.syft_client_version == "99.0.0", (
+    assert reloaded_info is not None, "Should be able to reload peer version"
+    assert reloaded_info.version_info.syft_client_version == "99.0.0", (
         "Reloaded version should be the upgraded version"
     )
 
@@ -520,4 +587,4 @@ def test_version_upgrade_breaks_communication():
     )
 
     # Cleanup: Restore DS's version file to the original version
-    ds_connection.write_version_file(current)
+    ds_connection.write_peer_info_file(own_info)

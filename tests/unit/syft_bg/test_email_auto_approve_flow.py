@@ -1,4 +1,4 @@
-"""E2E test for email auto-approve: reply 'auto-approve' creates an auto-approval object."""
+"""E2E test for the email reply 'auto-approve': approve the job, create an api from it."""
 
 import base64
 import json
@@ -148,8 +148,8 @@ with open("outputs/result.json", "w") as f:
     return project_dir
 
 
-def test_email_auto_approve_creates_object_and_approves_future_jobs():
-    """Full flow: auto-approve reply creates approval object, second job is auto-approved."""
+def test_email_auto_approve_creates_api_that_runs_later_calls():
+    """An 'auto-approve' reply runs the job and creates an api; a call of it runs."""
 
     ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False,
@@ -206,31 +206,21 @@ def test_email_auto_approve_creates_object_and_approves_future_jobs():
         result = json.loads(ds_job.output_paths[0].read_text())
         assert result["params"]["run"] == 1
 
-        # -- Step 5: Verify auto-approve object was created correctly --
+        # -- Step 5: Verify the api was created from the job --
         obj = ApiStore(do_manager.syftbox_folder, do_manager.email).get(job_name)
         content_names = {e.relative_path for e in obj.file_contents}
         # run.sh is the file the runner executes, so an approval pins it.
-        # config.yaml is matched by name: it differs from job to job.
+        # config.yaml is left out: the DO writes it for each call.
         assert content_names == {"code/main.py", "run.sh"}
-        assert sorted(obj.file_paths) == ["code/params.json", "config.yaml"]
+        assert obj.file_paths == ["code/params.json"]
         assert obj.peers == [ds_manager.email]
 
-        # -- Step 6: Submit second job with same main.py, different params --
-        project_dir_2 = _create_project_code_files_with_json_contents({"run": 2})
-        ds_manager.submit_python_job(
-            user=do_manager.email,
-            code_path=str(project_dir_2),
-            job_name="auto_approve_test_2.job",
-            entrypoint="main.py",
-        )
+        # -- Step 6: The DS calls the api with other params --
+        ds_manager.sync()
+        call = ds_manager.api[job_name](2, block=False)
         do_manager.sync()
 
-        second_job = [
-            j for j in do_manager.jobs if j.name == "auto_approve_test_2.job"
-        ][0]
-        assert second_job.status == "pending"
-
-        # -- Step 7: Run approval orchestrator — should auto-approve --
+        # -- Step 7: Run approval orchestrator: the call arrives approved and runs --
         approve_config = SyftBgConfig.load().approve
         approve_config.do_email = do_manager.email
         approve_config.syftbox_root = do_manager.syftbox_folder
@@ -239,18 +229,14 @@ def test_email_auto_approve_creates_object_and_approves_future_jobs():
         orchestrator = ApprovalOrchestrator(client=do_manager, config=approve_config)
         orchestrator.run_once(monitor_type="jobs")
 
-        # -- Step 8: Verify second job auto-approved and DS gets results --
-        second_job = [
-            j for j in do_manager.jobs if j.name == "auto_approve_test_2.job"
-        ][0]
-        assert second_job.status == "done"
+        # -- Step 8: Verify the call ran and DS gets results --
+        called = [j for j in do_manager.jobs if j.name == call.name][0]
+        assert called.status == "done" and called.approval_method == "api"
 
         do_manager.sync()
         ds_manager.sync()
-        ds_job_2 = [j for j in ds_manager.jobs if j.name == "auto_approve_test_2.job"][
-            0
-        ]
-        assert len(ds_job_2.output_paths) > 0
+        ds_call = [j for j in ds_manager.jobs if j.name == call.name][0]
+        assert len(ds_call.output_paths) > 0
 
-        result_2 = json.loads(ds_job_2.output_paths[0].read_text())
+        result_2 = json.loads(ds_call.output_paths[0].read_text())
         assert result_2["params"]["run"] == 2

@@ -11,6 +11,7 @@ from syft.sync.peers.peer_store import PeerStore
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.messages.proposed_filechange import ProposedFileChange
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import VersionInfo
 from syft.sync.sync.caches.datasite_owner_cache import (
     ProposedEventFileOutdatedException,
@@ -167,7 +168,7 @@ def test_sync_existing_datasite_state_do():
 
     n_outbox = connection_ds.watcher_get_outbox_file_metadatas(do_manager.email, None)
     assert n_messages_in_cache >= 1  # At least 1 message with the 2 file changes
-    assert n_files_in_cache == 2  # 2 data files
+    assert n_files_in_cache == 3  # 2 data files + private/crypto_keys.json
     assert hashes_in_cache == 2  # 2 data files
     assert len(n_outbox) >= 1
 
@@ -203,7 +204,8 @@ def test_sync_existing_inbox_state_do():
     n_files_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_connection)
     hashes_in_cache = len(do_manager.datasite_owner_syncer.event_cache.file_hashes)
     assert n_events_message_in_cache >= 1  # At least 1 message with 2 file changes
-    assert n_files_in_cache == 3  # 2 data files + root syft.pub.yaml
+    # 2 data files + root syft.pub.yaml + private/crypto_keys.json
+    assert n_files_in_cache == 4
     assert hashes_in_cache == 3  # 2 data files + root syft.pub.yaml
 
 
@@ -439,18 +441,22 @@ def test_collection_files_excluded_from_outbox_sync():
 
 def _store_knowing(email: str, peer_email: str) -> PeerStore:
     """A store for ``email`` that knows ``peer_email`` as an optional peer."""
-    version = VersionInfo.current()
-    version.encryption_policy = EncryptionPolicy.OPTIONAL
+    info = PeerInfo(
+        version_info=VersionInfo.current(),
+        encryption_policy=EncryptionPolicy.OPTIONAL,
+    )
     store = PeerStore(email=email)
-    store.add_peer(Peer(email=peer_email, version=version))
+    store.add_peer(Peer(email=peer_email, info=info))
     return store
 
 
 def _add_known_peer(do_manager, email: str) -> None:
     """Make ``email`` a peer of the DO with a known version, as peering does."""
-    version = VersionInfo.current()
-    version.encryption_policy = EncryptionPolicy.OPTIONAL
-    do_manager.peer_manager.peer_store.add_peer(Peer(email=email, version=version))
+    info = PeerInfo(
+        version_info=VersionInfo.current(),
+        encryption_policy=EncryptionPolicy.OPTIONAL,
+    )
+    do_manager.peer_manager.peer_store.add_peer(Peer(email=email, info=info))
 
 
 def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:

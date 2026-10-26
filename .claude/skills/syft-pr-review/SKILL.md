@@ -1,6 +1,6 @@
 ---
 name: syft-pr-review
-description: Write a review document for a syft pull request. Takes a PR number or URL, reads the diff, and produces a checkbox-structured summary of the flows that changed, what was added, each individual change, the tests, and any code-standards problems in the new code. Use when the user says "review PR 1234", "write me a review doc for <PR link>", or "what changed in this PR".
+description: Write a review document for a syft pull request. Takes a PR number or URL, reads the diff, and produces a checkbox-structured summary of the flows that changed with the new and changed code under each, the tests, and any code-standards problems in the new code. Use when the user says "review PR 1234", "write me a review doc for <PR link>", or "what changed in this PR".
 allowed-tools: Bash(gh:*), Bash(git:*), Bash(cat:*), Bash(sed:*), Bash(grep:*), Bash(rg:*), Bash(mkdir:*), Bash(wc:*), Bash(ls:*), Bash(jq:*), Bash(bash:*), Bash(./.claude/skills/syft-pr-review/prefetch.sh:*), Read, Write, Glob, Grep
 ---
 
@@ -82,22 +82,19 @@ Flows come first, because they are why the reader opened the document.
   - [ ] **1.1 <Flow name>** _(new)_
     - [ ] When <trigger>, `A.start()` calls `B.handle()`, which calls `C.save()`.
     - [ ] Decision: we could have done Z; we do A because <reason>.
+    - [ ] **New code**
+      - [ ] NEW CLASS `Name` — `path/file.py:<line>` — <what it is for>. Built by `A.b()`.
+      - [ ] NEW helpers in `path/file.py` — `f()` <does X>, `g()` <does Y>.
+    - [ ] **Changed code**
+      - [ ] `path/file.py: Class.method()` — previously <did Z>, now <does A>.
+      - [ ] DELETED `Class.old()` and `file.py: helper()`, because <reason>.
   - [ ] **1.2 <Flow name>** _(changed)_
     - [ ] When we <do X>, we previously <did Z>. Now <A>.
-    - [ ] Now `Class.method()` computes X and calls `other.py: thing()`.
+    - [ ] **New code** — `Name` (1.1.3.1); here it <does Y>.
 
-- [ ] **2. What is new** — additions only
+- [ ] **2. Other new code** — only code no flow uses; usually dropped
 
-  - [ ] **2.1 NEW CLASS `Name`** — `path/file.py:<line>` — <what it is for>. Built by `A.b()`. (Flow 1.2)
-  - [ ] **2.2 NEW MODULE `path/file.py`** — <what it is for>. Defines `file.py: func()`. (Flow 1.1)
-  - [ ] **2.3 NEW helpers in `path/file.py`** — `f()` <does X>, `g()` <does Y>. (Flow 1.1)
-
-- [ ] **3. Changes** — everything changed or deleted except tests, grouped by theme
-
-  - [ ] **3.1 <Theme>**
-    - [ ] **3.1.1 <label>** (Flow 1.2) — When we <do X>, we previously <did Z>, now we <do A>.
-          `path/file.py: Class.method()`
-    - [ ] **3.1.2 <label>** — DELETED `Class.old()` and `file.py: helper()`, because <reason>.
+- [ ] **3. Other changes** — only changes no flow uses, grouped by theme; usually dropped
 
 - [ ] **4. Tests**
 
@@ -121,8 +118,7 @@ Flows come first, because they are why the reader opened the document.
 - [ ] **7. Comments for the author** — leave it empty; the review UI writes into it
 ```
 
-Number the comments section after the sections that survived, so it is 5, 6 or 7 depending on which
-of those were dropped. It is always last, and always there.
+Number the sections that survive in order. The comments section is always last, and always there.
 
 ### What counts as a code-standards problem
 
@@ -157,9 +153,10 @@ test_no_hint_when_do_owns_no_jobs()`
       related additions under one bullet. Collect mechanical cleanups — a moved import, a renamed
       local, a deleted comment — into one short note at the end of the theme they belong to, never a
       bullet of their own.
-- [ ] **Say it once.** Section 2 describes code that was added. Section 3 covers what behaviour
-      changed and what was deleted, and refers to new code by name rather than describing it again.
-      Tests belong only in section 4.
+- [ ] **Code sits under the flow that uses it, said once.** Describe a class or function in full
+      under the first flow that uses it; a later flow gets one bullet naming it and its number. When
+      parts of one class serve different flows, split them over those flows. The "Other" sections hold
+      only code no flow uses. Tests belong only in the tests section.
 - [ ] **One test, one bullet, nested under its file.** The file gets the parent bullet with the
       count, each test a child bullet. Do not walk through test bodies.
 - [ ] **A test bullet carries its own context.** One sentence naming the condition, what runs, and
@@ -172,7 +169,7 @@ test_no_hint_when_do_owns_no_jobs()`
 - [ ] **Standards: new code only.** Flag a standards problem only in lines this PR touched, and
       only when there is one. Never audit the surrounding code.
 - [ ] **No question list.** A reviewer can ask their own questions, so do not collect them. Only
-      name something that genuinely blocks the merge, and leave section 6 out when nothing does.
+      name something that genuinely blocks the merge, and leave that section out when nothing does.
 - [ ] **Plain words.** Explain any term you have to use. Do not write "on the wire" (say _sent over
       the network_), "opaque", "envelope", "surface", "inert" or "residual".
 - [ ] **Every bullet stands alone.** A reader three levels deep must not need the bullet above it. A
@@ -191,9 +188,10 @@ test_no_hint_when_do_owns_no_jobs()`
 - [ ] **Budget reading time:** roughly 40 bullets for a normal PR, 120 for a very large one.
 - [ ] Do not repeat the PR description. If your text matches it, you read the wrong thing.
 - [ ] **Number every section and subsection**, `**<N>.<M> <label>**`, in every section and to the
-      same depth as the template shows. A leaf bullet is not numbered — its position under a
-      numbered parent already names it. This is what lets a comment say which bullet it is about.
-- [ ] Cross-reference by number, e.g. `(Flow 1.2)` or `(3.1.2)`. Links such as `[x](#slug)` do not
+      same depth as the template shows. Deeper bullets are not numbered — the review UI numbers them
+      by position (the first bullet under 1.1 is 1.1.1), so an explicit number there would clash.
+      This is what lets a comment say which bullet it is about.
+- [ ] Cross-reference by number, e.g. `(Flow 1.2)` or `(1.1.2)`. Links such as `[x](#slug)` do not
       work: GitHub gives headings no `id` inside a comment, so there is nothing to point at.
 
 ## Finally

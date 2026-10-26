@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from pydantic import BaseModel, Field, computed_field
 
-from syft_bg.approve.config import AutoApprovalObj
+from syft_rds.apis.models import ApiDefinition
 from syft_bg.common.syft_bg_config import SyftBgConfig
 from syft_bg.services.base import ServiceInfo, ServiceStatus
 from typing import Optional
@@ -151,7 +151,7 @@ class StatusResult(BaseModel):
 
     config: "SyftBgConfig"
     service_infos: dict[str, ServiceInfo] = Field(default_factory=dict)
-    auto_approvals: dict[str, AutoApprovalObj] = Field(default_factory=dict)
+    apis: dict[str, ApiDefinition] = Field(default_factory=dict)
     is_colab: bool = False
 
     @property
@@ -207,7 +207,7 @@ class StatusResult(BaseModel):
         sep = "<br>" if as_html else "\n"
         return sep.join(s.render(as_html) for s in self._service_repr_lines())
 
-    def _auto_approval_obj_contents(self, name: str, obj: AutoApprovalObj) -> str:
+    def _api_contents(self, name: str, obj: ApiDefinition) -> str:
         contents = "\n".join(
             f"    content: {e.relative_path}" for e in obj.file_contents
         )
@@ -218,10 +218,9 @@ class StatusResult(BaseModel):
         body = "\n".join(part for part in [contents, files, peers] if part)
         return f"  [{name}]\n{body}"
 
-    def _auto_approvals_contents(self) -> str:
+    def _apis_contents(self) -> str:
         return "\n".join(
-            self._auto_approval_obj_contents(name, obj)
-            for name, obj in self.auto_approvals.items()
+            self._api_contents(name, obj) for name, obj in self.apis.items()
         )
 
     def _approved_domains_contents(self) -> str:
@@ -235,7 +234,7 @@ class StatusResult(BaseModel):
     def __repr__(self) -> str:
         from syft_bg.api.templates import (
             APPROVED_DOMAINS_SECTION,
-            AUTO_APPROVALS_SECTION,
+            APIS_SECTION,
             STATUS_TEMPLATE,
         )
 
@@ -250,10 +249,8 @@ class StatusResult(BaseModel):
             services=self._services_contents(),
         )
 
-        if self.auto_approvals:
-            result += AUTO_APPROVALS_SECTION.format(
-                line=line, contents=self._auto_approvals_contents()
-            )
+        if self.apis:
+            result += APIS_SECTION.format(line=line, contents=self._apis_contents())
 
         if self.approved_domains:
             result += APPROVED_DOMAINS_SECTION.format(
@@ -288,20 +285,33 @@ class InstallationResult(BaseModel):
         return f"InstallationResult: {self.service} {status} — {self.message}"
 
 
-class AutoApproveResult(BaseModel):
-    """Result of auto_approve() call."""
+class ApiResult(BaseModel):
+    """Result of create_api(), create_api_from_job(), set_policies() and remove_api()."""
 
     success: bool
     name: str = ""
     file_contents: list[str] = Field(default_factory=list)
     file_paths: list[str] = Field(default_factory=list)
     peers: list[str] = Field(default_factory=list)
+    policies: list[str] = Field(default_factory=list)  # e.g. ["input", "output"]
     error: str | None = None
+
+    @classmethod
+    def from_api(cls, name: str, obj: ApiDefinition) -> ApiResult:
+        policies = [k for k in ("input", "output") if getattr(obj, f"{k}_policy")]
+        return cls(
+            success=True,
+            name=name,
+            file_contents=[e.relative_path for e in obj.file_contents],
+            file_paths=obj.file_paths,
+            peers=obj.peers,
+            policies=policies,
+        )
 
     def __repr__(self) -> str:
         lines = []
         if self.success:
-            lines.append(f"AutoApproveResult: OK [{self.name}]")
+            lines.append(f"ApiResult: OK [{self.name}]")
             if self.file_contents:
                 lines.append("  file_contents:")
                 for s in self.file_contents:
@@ -312,8 +322,10 @@ class AutoApproveResult(BaseModel):
                 lines.append(f"  peers: {', '.join(self.peers)}")
             else:
                 lines.append("  peers: (any)")
+            if self.policies:
+                lines.append(f"  policies: {', '.join(self.policies)}")
         else:
-            lines.append("AutoApproveResult: FAILED")
+            lines.append("ApiResult: FAILED")
             if self.error:
                 lines.append(f"  error: {self.error}")
         return "\n".join(lines)

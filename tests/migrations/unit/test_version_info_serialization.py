@@ -57,7 +57,6 @@ def test_legacy_reader_tolerates_identity_fields():
     data.pop("version")
     data.pop("protocol_schemas")
     data.pop("extra")
-    data.pop("encryption_policy")
     # Additive-only invariant: current output minus the added fields is
     # exactly the legacy shape a 0.1.117 reader expects.
     assert set(data) == set(json.loads(LEGACY_FILE.read_text()))

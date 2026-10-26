@@ -4,24 +4,43 @@ import shutil
 from collections.abc import Sequence
 from pathlib import Path
 
+from syft_job.policies import (
+    PolicyResolutionError,
+    PolicyResult,
+    PolicyRunner,
+    PolicyState,
+)
+from syft_rds import EncryptionPolicy
 from syft_rds.apis import ApiArg
 
-from syft_bg.api.results import AutoApproveResult, InstallationResult, StatusResult
+from syft_bg.api.results import ApiResult, InstallationResult, StatusResult
 from syft_bg.api.utils import (
     confirm_no_peers,
-    load_auto_approvals_or_empty,
+    load_apis_or_empty,
     default_api_name,
+    default_disclosures,
     api_store_for_job,
     get_api_store,
+    new_policy_work_dir,
+    policy_kind_for_test,
+    policy_test_env,
+    policy_test_state_dir,
+    policy_under_test,
     read_job_args,
-    get_job_user_files,
+    job_files_for_api,
     move_token_to_syftbg_dir,
     resolve_content_files,
     resolve_job_approval_files,
     setup_orchestrator,
 )
-from syft_bg.approve.api_store import ApiExistsError, ApiStore
-from syft_bg.approve.config import AutoApprovalObj
+from syft_bg.approve.api_store import (
+    UNCHANGED,
+    ApiExistsError,
+    ApiNotFoundError,
+    ApiStore,
+    NewApi,
+)
+from syft_rds.apis.models import ApiDefinition
 from syft_bg.common.config import get_default_paths, get_syftbg_dir
 from syft_bg.common.drive import is_colab
 from syft_bg.common.syft_bg_config import SyftBgConfig
@@ -34,10 +53,16 @@ from syft_bg.systemd import install_service, is_installed, uninstall_service
 
 def init(
     do_email: str,
+    encryption: bool,
     syftbox_root: str | Path | None = None,
     token_path: str | Path | None = None,
     settings: dict[str, dict] | None = None,
 ) -> None:
+    """Write the syft-bg config for ``do_email``.
+
+    ``encryption`` takes the same values as ``login_do``, and it must match
+    the login of the notebook: both write the same datasite.
+    """
     token_kwargs: dict = {}
     if token_path is not None:
         # A single OAuth token is used for both the Gmail and Drive APIs.
@@ -47,6 +72,7 @@ def init(
     config = SyftBgConfig(
         do_email=do_email,
         syftbox_root=syftbox_root,
+        encryption_policy=EncryptionPolicy.from_bool(encryption),
         **token_kwargs,
     )
 
@@ -303,18 +329,18 @@ def status() -> StatusResult:
 
     return StatusResult(
         config=config,
-        auto_approvals=load_auto_approvals_or_empty(config),
+        apis=load_apis_or_empty(config),
         service_infos=manager.get_service_infos(),
         is_colab=is_colab(),
     )
 
 
 # ---------------------------------------------------------------------------
-# Auto-approve
+# Apis
 # ---------------------------------------------------------------------------
 
 
-def auto_approve(
+def create_api(
     contents: Sequence[str | Path],
     file_paths: list[str] | None = None,
     peers: list[str] | None = None,
@@ -323,68 +349,85 @@ def auto_approve(
     allow_any_peer: bool = False,
     api_store: ApiStore | None = None,
     args: list[ApiArg | dict] | None = None,
-) -> AutoApproveResult:
-    """Create an auto-approval object (an "api") in SyftBox.
+    input_policy: str | Path | None = None,
+    output_policy: str | Path | None = None,
+    disclosures: list[str] | None = None,
+) -> ApiResult:
+    """Create an api in SyftBox, which peers call with client.api.<name>(...).
 
     Copies the files to <datasite>/app_data/apis/<name>/, computes hashes, and
-    grants read access to the peers that can call it. The approve service
-    uses this to automatically approve matching jobs.
+    grants read access to the peers that can call it. A call sends exactly the
+    files the api takes by name; the DO's client adds the pinned files and
+    approves the call.
 
-    A job is matched on paths relative to its submission root, so an object
-    must pin "run.sh" to approve anything. `auto_approve_job` builds that
-    shape from a reviewed job; this function takes whatever paths it is given.
+    An api pins run.sh (and the rest of its code) by content, and takes the
+    files a call sends by name. No file is both, and neither holds
+    config.yaml: the DO writes it for each call.
+    `create_api_from_job` builds that shape from a reviewed job.
 
     Args:
-        contents: List of file paths to approve by content. When base_dir is set,
+        contents: List of file paths to pin by content. When base_dir is set,
                   these are relative paths resolved against it. Otherwise,
                   absolute paths or directories (expanded to all files within).
-        file_paths: Relative paths to allow by name only (e.g. ["params.json"]).
-        peers: Peer emails to restrict to. If None or empty, any peer matches
-               and everyone can read the api; you are asked to confirm this.
-        name: Name for the auto-approval object. Auto-generated if not provided.
+        file_paths: Relative paths a call sends, taken by name only, e.g.
+                  ["code/params.json"]. A call must send every one of them,
+                  and nothing else. When the only one is a params.json,
+                  client.api writes a call's arguments to it.
+        peers: Peer emails that may call the api. If None or empty, any peer
+               may, and everyone can read the api; you are asked to confirm.
+        name: Name for the api. Auto-generated if not provided.
         base_dir: Base directory to resolve relative paths in contents against.
                   When set, FileEntry.relative_path stores the relative path.
         allow_any_peer: Allow no peers without the confirmation prompt.
         api_store: Where to store the api. Defaults to the datasite in config.yaml.
-        args: Arguments of the name-only params json, in the order a caller
-              passes them positionally: ApiArg(name, type, default, required)
-              or the same as a dict.
+        args: Keys of the params.json, in the order a caller passes them
+              positionally: ApiArg(name, type, default, required) or the
+              same as a dict, e.g.
+                  args=[
+                      {"name": "a", "type": "int", "required": True},
+                      {"name": "b", "type": "float", "default": 0.5},
+                  ]
+              type is one of bool, int, float, str, list, dict or any.
+              Needs file_paths to be just that params.json.
+        input_policy: A .py or .sh script that runs before each call's job.
+              A non-zero exit stops the job. See syft_job/policies/env.py
+              for what a policy gets and the conventions it follows.
+        output_policy: A .py or .sh script that runs after each call's job
+              and decides what is shared and with whom. See env.py too.
+        disclosures: The items in DisclosureItem that a call's approval
+              releases, e.g. ["logs"]. Defaults to default_disclosures in
+              config.yaml.
 
     Returns:
-        AutoApproveResult with the created object details.
+        ApiResult with the created api's details.
     """
-    file_paths = file_paths or []
-    peers = peers or []
-
-    content_files, error = resolve_content_files(contents, base_dir)
-    if error:
-        return AutoApproveResult(success=False, error=error)
-    if not content_files and not file_paths:
-        return AutoApproveResult(success=False, error="No files to process")
-    if not peers and not allow_any_peer and not confirm_no_peers():
-        return AutoApproveResult(success=False, error="Aborted: no peers given")
-
     try:
-        name, obj = (api_store or get_api_store()).create(
-            default_api_name(name, content_files),
-            content_files,
-            file_paths,
-            peers,
-            [ApiArg.model_validate(a) for a in args or []],
+        content_files = resolve_content_files(contents, base_dir)
+        new_api = NewApi(
+            name=default_api_name(name, content_files),
+            content_files=content_files,
+            file_paths=file_paths or [],
+            peers=peers or [],
+            args=[ApiArg.model_validate(a) for a in args or []],
+            input_policy=Path(input_policy) if input_policy else None,
+            output_policy=Path(output_policy) if output_policy else None,
+            disclosures=default_disclosures() if disclosures is None else disclosures,
         )
+        _check_peers_confirmed(new_api.peers, allow_any_peer)
+        store = api_store or get_api_store()
+        name, obj = store.create(new_api)
     except (ApiExistsError, ValueError) as e:
-        return AutoApproveResult(success=False, error=str(e))
-
-    return AutoApproveResult(
-        success=True,
-        name=name,
-        file_contents=[e.relative_path for e in obj.file_contents],
-        file_paths=obj.file_paths,
-        peers=obj.peers,
-    )
+        return ApiResult(success=False, error=str(e))
+    return ApiResult.from_api(name, obj)
 
 
-def auto_approve_job(
+def _check_peers_confirmed(peers: list[str], allow_any_peer: bool) -> None:
+    """An api without peers is public: ask first, unless allow_any_peer."""
+    if not peers and not allow_any_peer and not confirm_no_peers():
+        raise ValueError("Aborted: no peers given")
+
+
+def create_api_from_job(
     job,
     contents: list[str] | None = None,
     file_paths: list[str] | None = None,
@@ -392,42 +435,50 @@ def auto_approve_job(
     name: str | None = None,
     allow_any_peer: bool = False,
     args: list[ApiArg | dict] | None = None,
-) -> AutoApproveResult:
-    """Create an auto-approval config from an existing job.
+    input_policy: str | Path | None = None,
+    output_policy: str | Path | None = None,
+    disclosures: list[str] | None = None,
+) -> ApiResult:
+    """Create an api from a job you have reviewed.
 
-    Extracts files from the job and routes them to auto_approve() based on
+    Extracts files from the job and routes them to create_api() based on
     the contents and file_paths parameters. Paths are relative to the job
-    submission root, so the object pins "run.sh", the file the runner
+    submission root, so the api pins "run.sh", the file the runner
     executes. A bare name is resolved against the job.
 
     Args:
         job: JobInfo object to use as template.
         contents: Filenames from the job to match by name AND content.
-                  When None, every file is content-matched except config.yaml
-                  and code/params.json, which are matched by name.
+                  When None, every file is pinned except code/params.json, which
+                  a call sends. config.yaml is left out: the DO writes it.
         file_paths: Filenames from the job to match by name only.
         peers: Peer emails to restrict to. If None, defaults to the job's submitter.
-        name: Name for the auto-approval object. Defaults to job name.
+        name: Name for the api. Defaults to the job name.
         allow_any_peer: Allow an empty peers list without the prompt.
         args: Arguments of the api. When None, names, types and defaults are
               inferred from the job's params json.
+        input_policy: A .py or .sh script that runs before each call's job.
+        output_policy: A .py or .sh script that runs after each call's job.
+              See create_api, and syft_job/policies/env.py for what a
+              policy gets and the conventions it follows.
+        disclosures: What a call's approval releases. See create_api.
 
     Returns:
-        AutoApproveResult with the created object details.
+        ApiResult with the created object details.
     """
     if peers is None:
         peers = [job.submitted_by]
 
     content_rel_paths, name_only, error = resolve_job_approval_files(
-        get_job_user_files(job), contents, file_paths
+        job_files_for_api(job), contents, file_paths
     )
     if error:
-        return AutoApproveResult(success=False, error=error)
+        return ApiResult(success=False, error=error)
 
     if name is None:
         name = job.name
 
-    return auto_approve(
+    return create_api(
         contents=content_rel_paths,
         file_paths=name_only,
         peers=peers,
@@ -436,32 +487,120 @@ def auto_approve_job(
         allow_any_peer=allow_any_peer,
         api_store=api_store_for_job(job),
         args=read_job_args(job, name_only) if args is None else args,
+        input_policy=input_policy,
+        output_policy=output_policy,
+        disclosures=disclosures,
     )
 
 
-def list_auto_approvals() -> dict[str, AutoApprovalObj]:
-    """Return all auto-approval objects stored in SyftBox.
+def set_policies(
+    name: str,
+    input_policy: str | Path | None = UNCHANGED,
+    output_policy: str | Path | None = UNCHANGED,
+    reset_state: bool = True,
+    api_store: ApiStore | None = None,
+) -> ApiResult:
+    """Add, replace or remove the policies of an existing api.
+
+    Leave a policy out to keep it, pass None to remove it. The api's state is
+    cleared, since it was kept for the old policies; pass reset_state=False
+    to keep it. See
+    syft_job/policies/env.py for what a policy gets and the conventions it
+    follows.
+    """
+    for policy in (input_policy, output_policy):
+        if isinstance(policy, (str, Path)) and not Path(policy).expanduser().is_file():
+            return ApiResult(success=False, error=f"No policy at {policy}")
+    try:
+        obj = (api_store or get_api_store()).set_policies(
+            name,
+            input_policy=_as_path(input_policy),
+            output_policy=_as_path(output_policy),
+            reset_state=reset_state,
+        )
+    except (ApiNotFoundError, ValueError) as e:
+        return ApiResult(success=False, error=str(e))
+    return ApiResult.from_api(name, obj)
+
+
+def run_policy(
+    script: str | Path | None = None,
+    api: str | None = None,
+    kind: str | None = None,
+    params: dict | None = None,
+    submitter: str = "ds@example.com",
+    state_dir: str | Path | None = None,
+    outputs_dir: str | Path | None = None,
+    candidates_dir: str | Path | None = None,
+    api_store: ApiStore | None = None,
+) -> PolicyResult:
+    """Run a policy on its own, the way the job runner runs it.
+
+    No job, peer or sync is needed. Pass a script on disk, or api=<name> and
+    kind ("input" or "output") to run an existing api's policy against a copy
+    of its real state, so the real state is not changed.
+
+    Args:
+        script: A .py or .sh policy file.
+        api: Name of an existing api, instead of a script.
+        kind: "input" or "output". Defaults to "output" when sample outputs
+              or candidates are given, else "input".
+        params: The call's params, as the policy reads them.
+        submitter: The data scientist's email the policy sees.
+        state_dir: A state folder to use and keep, e.g. to run a rate limit
+              several times. Defaults to a throwaway copy.
+        outputs_dir: Sample outputs (output policy). A copy is used.
+        candidates_dir: Sample output_candidates/ next to outputs/.
 
     Returns:
-        Mapping of name → AutoApprovalObj.
+        PolicyResult: passed, error (what the data scientist would see), state
+        (state.json after the run), recipients and outputs_dir (output policy).
+
+    See syft_job/policies/env.py for what a policy gets and the conventions it
+    follows.
+    """
+    policy_kind = policy_kind_for_test(kind, outputs_dir, candidates_dir)
+    work_dir = new_policy_work_dir()
+    try:
+        policy, api_name, real_state = policy_under_test(
+            work_dir, policy_kind, script, api, api_store
+        )
+    except PolicyResolutionError as e:
+        return PolicyResult(passed=False, error=str(e))
+    state = PolicyState(policy_test_state_dir(work_dir, state_dir, real_state))
+    policy_env = policy_test_env(
+        work_dir, policy_kind, api_name, submitter, params, outputs_dir, candidates_dir
+    )
+    result = PolicyRunner().run(policy, state, policy_env)
+    result.outputs_dir = policy_env.outputs_dir
+    return result
+
+
+def _as_path(policy: str | Path | None | object) -> Path | None | object:
+    return Path(policy) if isinstance(policy, str) else policy
+
+
+def list_apis() -> dict[str, ApiDefinition]:
+    """Return all apis stored in SyftBox.
+
+    Returns:
+        Mapping of name → ApiDefinition.
     """
     return get_api_store().load_all()
 
 
-def remove_auto_approve(name: str) -> AutoApproveResult:
-    """Remove an auto-approval object by name.
+def remove_api(name: str) -> ApiResult:
+    """Remove an api by name.
 
-    Deletes the api folder from SyftBox. The running approve service will
-    pick up the change on its next poll iteration (no restart required).
+    Deletes the api folder from SyftBox. A call that arrives later is
+    rejected, and an approved call whose api is gone fails before it runs.
 
     Args:
-        name: Name of the auto-approval object to remove.
+        name: Name of the api to remove.
 
     Returns:
-        AutoApproveResult with success/error status.
+        ApiResult with success/error status.
     """
     if not get_api_store().delete(name):
-        return AutoApproveResult(
-            success=False, error=f"Auto-approval object '{name}' not found"
-        )
-    return AutoApproveResult(success=True, name=name)
+        return ApiResult(success=False, error=f"Api '{name}' not found")
+    return ApiResult(success=True, name=name)

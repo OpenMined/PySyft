@@ -6,10 +6,11 @@ from typing import Iterator
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from syft_rds import EncryptionPolicy
 
 from syft_bg.approve.config import AutoApproveConfig
 from syft_bg.common.config import get_default_paths
-from syft_bg.common.locking import file_lock
+from syft_job.policies.locking import file_lock
 from syft_bg.email_approve.config import EmailApproveConfig
 from syft_bg.notify.config import NotifyConfig
 from syft_bg.sync.config import SyncConfig
@@ -24,6 +25,9 @@ class SyftBgConfig(BaseModel):
 
     do_email: str | None = None
     syftbox_root: str | Path | None = None
+    # Set by init. Must match the policy the notebook logs in with: both
+    # write the same datasite, at rest and to the same peers.
+    encryption_policy: EncryptionPolicy | None = None
     credentials_path: Path = Field(
         default_factory=lambda: get_default_paths().credentials
     )
@@ -63,6 +67,11 @@ class SyftBgConfig(BaseModel):
         ):
             if hasattr(service_config, "do_email") and service_config.do_email is None:
                 service_config.do_email = self.do_email
+            if (
+                hasattr(service_config, "encryption_policy")
+                and service_config.encryption_policy is None
+            ):
+                service_config.encryption_policy = self.encryption_policy
             if (
                 hasattr(service_config, "syftbox_root")
                 and service_config.syftbox_root is None

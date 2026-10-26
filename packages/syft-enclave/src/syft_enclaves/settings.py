@@ -150,14 +150,6 @@ class EnclaveSettings(AttestationSettings):
             "owner can see from the release whether receipts are on."
         ),
     )
-    use_encryption: bool = Field(
-        default=True,
-        description=(
-            "Require end-to-end drive encryption with every peer. Enabled by "
-            "default. When false, the enclave encrypts with each peer that "
-            "requires it. Clients read this policy and need no setting."
-        ),
-    )
     persist_owner_state: bool = Field(
         default=False,
         description=(

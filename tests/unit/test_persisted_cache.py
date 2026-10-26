@@ -151,7 +151,7 @@ def test_peer_gets_file_when_other_process_cannot_read_peer_version(monkeypatch)
     do_manager_b = do_manager._copy()
     monkeypatch.setattr(
         do_manager_b.peer_manager,
-        "_load_single_peer_version",
+        "_load_single_peer_info",
         lambda email: (email, None),
     )
     do_manager_b.sync(auto_checkpoint=False)
@@ -189,7 +189,7 @@ def test_peer_loses_file_deleted_while_other_process_skipped_it(monkeypatch):
     do_manager_b = do_manager._copy()
     monkeypatch.setattr(
         do_manager_b.peer_manager,
-        "_load_single_peer_version",
+        "_load_single_peer_info",
         lambda email: (email, None),
     )
     do_manager_b.sync(auto_checkpoint=False)
@@ -212,7 +212,7 @@ def test_read_error_on_unsent_file_raises_and_keeps_peer_copy(monkeypatch):
     do_manager_b = do_manager._copy()
     monkeypatch.setattr(
         do_manager_b.peer_manager,
-        "_load_single_peer_version",
+        "_load_single_peer_info",
         lambda email: (email, None),
     )
     do_manager_b.sync(auto_checkpoint=False)

@@ -85,7 +85,7 @@ class TestAttestPhase:
     def test_no_tee_without_require_tee_publishes_nothing(self):
         client = _make_client()
         EnclaveRunner(client=client, attestation_provider="none").init()
-        client._rds.peer_manager.write_own_version.assert_not_called()
+        client._rds.peer_manager.write_own_peer_info.assert_not_called()
 
     def test_publishes_evidence_to_the_version_file(self, monkeypatch):
         evidence = tinfoil_evidence(TINFOIL_DOC, repo="OpenMined/x")
@@ -103,7 +103,7 @@ class TestAttestPhase:
         EnclaveRunner(client=client, require_tee=True).init()
 
         assert AttestationEvidence.read_from(version) == evidence
-        client._rds.peer_manager.write_own_version.assert_called_once_with()
+        client._rds.peer_manager.write_own_peer_info.assert_called_once_with()
 
     def test_the_key_bundle_is_published_for_the_attestation_endpoint(
         self, monkeypatch
@@ -131,7 +131,6 @@ class TestAttestPhase:
         client._rds.peer_manager.syftbox_folder = Path("/tmp/SyftBox_enclave")
         store = client._rds.peer_manager.peer_store
         store.email = "enclave@openmined.org"
-        store.has_my_keys.return_value = True
         store.get_public_bundle.return_value = {"identity": "enclave@openmined.org"}
 
         EnclaveRunner(client=client, require_tee=True).init()
@@ -139,11 +138,6 @@ class TestAttestPhase:
         assert written["bundle"] == {"identity": "enclave@openmined.org"}
         # The endpoint needs the private key location to answer a nonce.
         assert written["keys_path"].name == "crypto_keys.json"
-        # And the keys must be back on disk: fresh_state wiped the folder
-        # moments earlier, so the file the endpoint signs with is gone.
-        store.save_keys.assert_called_once_with(written["keys_path"])
-        # An optional enclave makes keys at boot too, so they are bound to the report.
-        store.ensure_keys.assert_called_once_with()
 
     def test_provider_gets_the_settings_object(self, monkeypatch):
         seen = {}
@@ -185,7 +179,6 @@ class TestClaimsBinding:
         client.data_owners = ["b@openmined.org", "a@openmined.org"]
         store = client._rds.peer_manager.peer_store
         store.email = "enclave@openmined.org"
-        store.has_my_keys.return_value = True
         store.get_public_bundle.return_value = {"identity": "enclave@openmined.org"}
         return client
 
@@ -203,8 +196,9 @@ class TestClaimsBinding:
         provider = self._provider(monkeypatch, binds_claims=True)
         client = self._client()
         order = []
-        client._rds.peer_manager.peer_store.save_keys.side_effect = (
-            lambda p: order.append("keys")
+        monkeypatch.setattr(
+            "syft_enclaves.runner.write_public_bundle",
+            lambda bundle, keys_path, claims=None: order.append("keys"),
         )
         provider.collect.side_effect = lambda **kw: (
             order.append("mint"),

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.encryption_policy import PeerEncryptionPendingError
+from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import PeerState
 from syft.sync.sync import datasite_owner_syncer
 from syft.sync.sync.caches.persisted_dict import PersistedDict
@@ -357,14 +357,14 @@ def test_upgrade_keeps_pending_private_share():
 def test_held_send_outside_plan_goes_out_later(monkeypatch):
     ds_manager, do_manager = _pair()
 
-    def encryption_pending(*args, **kwargs):
-        raise PeerEncryptionPendingError("keys not known yet")
+    def peer_not_ready(self, recipient, *args, **kwargs):
+        raise SyftPeerNotReadyError(recipient, "keys not known yet", "sync later")
 
     with monkeypatch.context() as m:
         m.setattr(
-            ConnectionRouter, "owner_write_event_messages_to_outbox", encryption_pending
+            ConnectionRouter, "owner_write_event_messages_to_outbox", peer_not_ready
         )
-        with pytest.warns(UserWarning, match="wait for a later sync"):
+        with pytest.raises(SyftPeerNotReadyError):
             _push_private_file(do_manager, ds_manager)
 
     do_manager.datasite_owner_syncer.process_syftbox_events_queue()

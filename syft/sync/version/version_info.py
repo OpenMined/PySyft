@@ -14,7 +14,6 @@ from pydantic import Field
 from syft_migration import MigratableObject, ProtocolSchema
 
 from syft.migrations import client_registry, load_as_latest
-from syft.sync.encryption_policy import EncryptionPolicy
 from syft.version import (
     MIN_SUPPORTED_PROTOCOL_VERSION,
     MIN_SUPPORTED_SYFT_VERSION,
@@ -215,10 +214,6 @@ class VersionInfoV2(VersionInfoV1):
     # pydantic's own ``extra`` config, which governs unknown *fields*.
     extra: dict[str, Any] = Field(default_factory=dict)
 
-    # Peers read it to select encryption for the pair. None in a file from a
-    # syft that predates it: such a peer is outdated and must upgrade.
-    encryption_policy: Optional[EncryptionPolicy] = None
-
     @classmethod
     def current(cls) -> "VersionInfo":
         info = super().current()
@@ -239,13 +234,7 @@ def _version_info_v1_to_v2(obj: VersionInfoV1) -> VersionInfoV2:
 def _version_info_v2_to_v1(obj: VersionInfoV2) -> VersionInfoV1:
     return VersionInfoV1.model_validate(
         obj.model_dump(
-            exclude={
-                "canonical_name",
-                "version",
-                "protocol_schemas",
-                "extra",
-                "encryption_policy",
-            }
+            exclude={"canonical_name", "version", "protocol_schemas", "extra"}
         )
     )
 

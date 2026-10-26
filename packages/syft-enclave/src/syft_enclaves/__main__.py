@@ -46,7 +46,7 @@ def main() -> None:
         f"Enclave settings — email={settings.email} data_owners={settings.data_owners} "
         f"token_path={settings.token_path} poll_interval={settings.poll_interval}s "
         f"require_tee={settings.require_tee} fresh_state={settings.fresh_state} "
-        f"use_encryption={settings.use_encryption} receipts={settings.receipts} "
+        f"receipts={settings.receipts} "
         f"attestation_provider={settings.attestation_provider} "
         f"tinfoil_repo={settings.tinfoil_repo} "
         f"tinfoil_release_tag={settings.tinfoil_release_tag} "
@@ -58,7 +58,6 @@ def main() -> None:
         email=settings.email,
         token_path=settings.token_path,
         data_owners=settings.data_owners,
-        encryption=settings.use_encryption,
         persist_owner_state=settings.persist_owner_state,
     )
     if settings.receipts:

@@ -3,14 +3,25 @@
 import json
 import os
 import shutil
+import tempfile
 from collections.abc import Sequence
 from pathlib import Path, PurePosixPath
 
+from syft_job.policies import (
+    PolicyEnv,
+    PolicyKind,
+    PolicyResolutionError,
+    PolicyScript,
+)
 from syft_rds.apis import ApiArg, infer_args
+from syft_rds.apis.models import POLICY_STATE_DIR_NAME, policy_dir
+from syft_rds.apis.policies import load_job_policies
 
-from syft_bg.approve.api_store import ApiStore
-from syft_bg.approve.config import AutoApprovalObj
-from syft_bg.approve.criteria import RUN_SCRIPT_PATH, get_job_submission_files
+from syft_rds.apis.matching import submission_files
+from syft_rds.apis.models import JOB_CONFIG_PATH, RUN_SCRIPT_PATH
+from syft_rds.apis.models import ApiDefinition, params_file_of
+
+from syft_bg.approve.api_store import ApiStore, store_policy
 from syft_bg.common.config import get_default_paths, get_syftbg_dir
 from syft_bg.common.drive import is_colab
 from syft_bg.common.syft_bg_config import SyftBgConfig
@@ -216,17 +227,17 @@ def save_gcp_project_id(credentials_path: Path) -> None:
 
 
 def default_api_name(name: str | None, content_files: list[tuple[str, Path]]) -> str:
-    """Name for a new auto-approval object; ApiStore makes it unique."""
+    """Name for a new api; ApiStore makes it unique."""
     if name is not None:
         return name
     if len(content_files) == 1:
         return Path(content_files[0][0]).stem
-    return "auto_approval"
+    return "api"
 
 
 NO_PEERS_WARNING = (
-    "Warning: no peers given. Any peer can run jobs matching this "
-    "auto-approval, and everyone can read its files."
+    "Warning: no peers given. Any peer can call this api, and everyone can "
+    "read its files."
 )
 
 
@@ -240,10 +251,10 @@ def confirm_no_peers() -> bool:
     return answer.strip().lower() in ("y", "yes")
 
 
-def load_auto_approvals_or_empty(
+def load_apis_or_empty(
     config: SyftBgConfig,
-) -> dict[str, AutoApprovalObj]:
-    """Auto-approvals for status output; empty when syft-bg isn't set up."""
+) -> dict[str, ApiDefinition]:
+    """Apis for status output; empty when syft-bg isn't set up."""
     if not config.do_email or not config.syftbox_root:
         return {}
     return ApiStore(config.syftbox_root, config.do_email).load_all()
@@ -255,18 +266,16 @@ def api_store_for_job(job) -> ApiStore:
 
 
 def read_job_args(job, name_only: list[str]) -> list[ApiArg]:
-    """Arguments of a job, inferred from its one name-only json in code/.
+    """Arguments of a job, inferred from its params file (see params_file_of).
 
     Names, types and defaults come from the example values in that file.
     Returns [] when there is no such file, or it does not hold a JSON object.
     """
-    params_files = [
-        p for p in name_only if p.startswith("code/") and p.endswith(".json")
-    ]
-    if len(params_files) != 1:
+    params_file = params_file_of(name_only)
+    if params_file is None:
         return []
     try:
-        params = json.loads((job.job_submission_path / params_files[0]).read_text())
+        params = json.loads((job.job_submission_path / params_file).read_text())
     except (OSError, ValueError):
         return []
     return infer_args(params) if isinstance(params, dict) else []
@@ -284,46 +293,46 @@ def get_api_store() -> ApiStore:
 
 def resolve_content_files(
     contents: Sequence[str | Path], base_dir: Path | None
-) -> tuple[list[tuple[str, Path]], str | None]:
+) -> list[tuple[str, Path]]:
     """Resolve content paths to (relative_path, absolute_path) pairs.
 
-    Returns (content_files, error). error is None on success.
+    Raises ValueError for a path that is missing, or outside base_dir.
     """
-    content_files: list[tuple[str, Path]] = []
-    for item in contents:
-        if base_dir is not None:
-            # Normalize lexically, so "./code/main.py" is stored as the
-            # "code/main.py" a job is matched on.
-            abs_path = Path(os.path.abspath(base_dir / item))
-            try:
-                rel = abs_path.relative_to(os.path.abspath(base_dir)).as_posix()
-            except ValueError:
-                return [], f"{item} is outside the base directory {base_dir}"
-            if not abs_path.exists():
-                return [], f"File not found: {abs_path}"
-            if abs_path.is_dir():
-                return [], (
-                    f"{abs_path} is a directory. With a base directory, name "
-                    f"each file, so that the stored path is the one a job is "
-                    f"matched on."
-                )
-            content_files.append((rel, abs_path))
-        else:
-            p = Path(item).expanduser()
-            if p.is_dir():
-                found = sorted(f for f in p.rglob("*") if f.is_file())
-                if not found:
-                    return [], f"No files found in {p}"
-                for f in found:
-                    content_files.append((str(f.relative_to(p)), f))
-            elif not p.exists():
-                return [], f"File not found: {p}"
-            else:
-                content_files.append((p.name, p))
-    return content_files, None
+    if base_dir is not None:
+        return [_file_under(base_dir, item) for item in contents]
+    return [pair for item in contents for pair in _files_at(Path(item).expanduser())]
 
 
-def resolve_auto_approve_file_args(
+def _file_under(base_dir: Path, item: str | Path) -> tuple[str, Path]:
+    """One file named relative to base_dir. Normalized lexically, so
+    "./code/main.py" is stored as the "code/main.py" a job is matched on."""
+    abs_path = Path(os.path.abspath(base_dir / item))
+    try:
+        rel = abs_path.relative_to(os.path.abspath(base_dir)).as_posix()
+    except ValueError:
+        raise ValueError(f"{item} is outside the base directory {base_dir}")
+    if abs_path.is_dir():
+        raise ValueError(
+            f"{abs_path} is a directory; with a base directory, name each file"
+        )
+    if not abs_path.exists():
+        raise ValueError(f"File not found: {abs_path}")
+    return rel, abs_path
+
+
+def _files_at(path: Path) -> list[tuple[str, Path]]:
+    """A file by its name, or every file in a folder by its path inside it."""
+    if path.is_file():
+        return [(path.name, path)]
+    if not path.is_dir():
+        raise ValueError(f"File not found: {path}")
+    found = sorted(f for f in path.rglob("*") if f.is_file())
+    if not found:
+        raise ValueError(f"No files found in {path}")
+    return [(f.relative_to(path).as_posix(), f) for f in found]
+
+
+def resolve_api_file_args(
     user_files: dict[str, Path],
     contents: list[str] | None,
     file_paths: list[str] | None,
@@ -339,7 +348,7 @@ def resolve_auto_approve_file_args(
     all_files = set(user_files.keys())
 
     if contents is not None:
-        # The caller placed the files itself. auto_approve_job reports one that
+        # The caller placed the files itself. create_api_from_job reports one that
         # neither bucket names, rather than guessing where it belongs.
         return list(contents), list(file_paths or [])
 
@@ -386,12 +395,12 @@ def resolve_job_file_args(
     return resolved, None
 
 
-def validate_auto_approve_job_inputs(
+def validate_api_job_inputs(
     user_files: dict[str, Path],
     contents: list[str] | None,
     file_paths: list[str] | None,
 ) -> str | None:
-    """Validate inputs for auto_approve_job. Returns error string or None."""
+    """Validate inputs for create_api_from_job. Returns error string or None."""
     if not user_files:
         return "No user files found in job"
     if contents is not None:
@@ -409,7 +418,7 @@ def validate_auto_approve_job_inputs(
     return None
 
 
-def validate_auto_approve_object_covers_job(
+def validate_api_covers_job(
     user_files: dict[str, Path], content_rel_paths: list[str], name_only: list[str]
 ) -> str | None:
     """Check that the object being built can approve a job like this one.
@@ -499,22 +508,33 @@ def resolve_job_approval_files(
     if error:
         return [], [], error
 
-    error = validate_auto_approve_job_inputs(user_files, contents, file_paths)
+    error = validate_api_job_inputs(user_files, contents, file_paths)
     if error:
         return [], [], error
 
-    content_rel_paths, name_only = resolve_auto_approve_file_args(
+    content_rel_paths, name_only = resolve_api_file_args(
         user_files, contents, file_paths
     )
-    error = validate_auto_approve_object_covers_job(
-        user_files, content_rel_paths, name_only
-    )
+    error = validate_api_covers_job(user_files, content_rel_paths, name_only)
     if error:
         return [], [], error
     error = validate_content_files_are_text(user_files, content_rel_paths)
     if error:
         return [], [], error
     return content_rel_paths, name_only, None
+
+
+def job_files_for_api(job) -> dict[str, Path]:
+    """A job's files an api is built from: all but config.yaml.
+
+    The DO writes config.yaml for each job a call becomes, so an api neither
+    pins it nor takes it from a call.
+    """
+    return {
+        rel: path
+        for rel, path in get_job_user_files(job).items()
+        if rel != JOB_CONFIG_PATH
+    }
 
 
 def get_job_user_files(job) -> dict[str, Path]:
@@ -530,7 +550,7 @@ def get_job_user_files(job) -> dict[str, Path]:
     leaving it out would write a rule that the matcher, which counts every
     file, can never satisfy.
     """
-    user_files = get_job_submission_files(job)
+    user_files = submission_files(job.job_submission_path)
     if str(getattr(job, "status", "")) in NOT_RUN_STATUSES:
         return user_files
     return {
@@ -605,3 +625,104 @@ def get_job_user_files(job) -> dict[str, Path]:
 #         gmail_ok=gmail_ok,
 #         drive_ok=drive_ok,
 #     )
+
+
+# ---------------------------------------------------------------------------
+# run_policy
+# ---------------------------------------------------------------------------
+
+CANDIDATES_DIR_NAME = "output_candidates"
+
+
+def policy_kind_for_test(
+    kind: str | None, outputs_dir: Path | None, candidates_dir: Path | None
+) -> PolicyKind:
+    """The kind asked for, else output when sample outputs are given."""
+    if kind is not None:
+        return PolicyKind(kind)
+    if outputs_dir is not None or candidates_dir is not None:
+        return PolicyKind.OUTPUT
+    return PolicyKind.INPUT
+
+
+def policy_under_test(
+    work_dir: Path,
+    kind: PolicyKind,
+    script: str | Path | None,
+    api: str | None,
+    api_store: ApiStore | None,
+) -> tuple[PolicyScript, str, Path | None]:
+    """The script to run, the api name it sees, and the real state to copy.
+
+    A script on disk is stored in work_dir the way an api stores it, so a
+    Python file gets the same generated run.sh.
+    """
+    if (script is None) == (api is None):
+        raise ValueError("Pass either a policy script or api=<name>")
+    if script is not None:
+        store_policy(work_dir, kind, Path(script))
+        return PolicyScript(policy_dir(work_dir, kind.value)), "test_api", None
+    store = api_store or get_api_store()
+    policies = load_job_policies(api, store.api_dir(api))
+    policy = policies.script(kind)
+    if policy is None:
+        raise PolicyResolutionError(f"api '{api}' has no {kind.value} policy")
+    return policy, api, store.api_dir(api) / POLICY_STATE_DIR_NAME
+
+
+def policy_test_state_dir(
+    work_dir: Path, state_dir: str | Path | None, real_state: Path | None
+) -> Path:
+    """state_dir when given, else a copy of the api's state, else a new folder."""
+    if state_dir is not None:
+        return Path(state_dir).expanduser()
+    copy = work_dir / POLICY_STATE_DIR_NAME
+    if real_state is not None and real_state.exists():
+        shutil.copytree(real_state, copy)
+    return copy
+
+
+def policy_test_env(
+    work_dir: Path,
+    kind: PolicyKind,
+    api_name: str,
+    submitter: str,
+    params: dict | None,
+    outputs_dir: str | Path | None,
+    candidates_dir: str | Path | None,
+) -> PolicyEnv:
+    """What the policy sees: copies of the sample outputs and candidates."""
+    policy_env = PolicyEnv(
+        api_name=api_name,
+        submitter=submitter,
+        params=json.dumps(params or {}).encode(),
+    )
+    if kind == PolicyKind.OUTPUT:
+        job_dir = work_dir / "job"
+        policy_env.outputs_dir = _copy_or_create(outputs_dir, job_dir / "outputs")
+        _copy_or_create(candidates_dir, job_dir / CANDIDATES_DIR_NAME)
+        policy_env.recipients = [submitter]
+    return policy_env
+
+
+def new_policy_work_dir() -> Path:
+    """Kept after the run, so the outputs a policy wrote can be looked at."""
+    return Path(tempfile.mkdtemp(prefix="syft-run-policy-"))
+
+
+def _copy_or_create(source: str | Path | None, dest: Path) -> Path:
+    if source is None:
+        dest.mkdir(parents=True)
+    else:
+        shutil.copytree(Path(source).expanduser(), dest)
+    return dest
+
+
+# ---------------------------------------------------------------------------
+# create_api
+# ---------------------------------------------------------------------------
+
+
+def default_disclosures() -> list[str]:
+    """default_disclosures from config.yaml; none when syft-bg isn't set up."""
+    return SyftBgConfig.load().approve.default_disclosures
