@@ -62,10 +62,3 @@ class MessageFormatError(ValueError):
             detail = "is not encrypted, and the pair encrypts"
         super().__init__(f"A message from {peer_email} {detail}.")
         self.peer_email = peer_email
-
-
-def pair_uses_encryption(
-    mine: EncryptionPolicy, theirs: EncryptionPolicy | None
-) -> bool:
-    """Whether a pair with these policies encrypts. ``theirs`` is None when unknown."""
-    return EncryptionPolicy.REQUIRED in (mine, theirs)

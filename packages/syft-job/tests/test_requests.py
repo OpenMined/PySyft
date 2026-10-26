@@ -189,7 +189,7 @@ def test_client_refuses_request_to_do_without_api_calls(tmp_path: Path):
     syftbox = tmp_path / "SyftBox"
     config = SyftJobConfig(syftbox_folder=syftbox, current_user_email=DS_EMAIL)
     old_do = ProtocolSchema(protocol_name="syft-job", version="1")
-    ds = JobClient(config, peer_schemas={DO_EMAIL: old_do})
+    ds = JobClient(config, peer_schema={DO_EMAIL: old_do}.get)
 
     with pytest.raises(ValueError, match="job protocol 1"):
         ds.submit_api_request(DO_EMAIL, "call.job", API_NAME, PARAMS)

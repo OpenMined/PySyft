@@ -11,12 +11,12 @@ from typing import Any, List, Optional
 
 import syft_crypto_python as syc
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+from syft_migration import ProtocolSchema
 
 from syft.sync.encryption_policy import (
     EncryptionPolicy,
     EncryptionPolicyMismatchError,
     MessageFormatError,
-    pair_uses_encryption,
 )
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import Peer, PeerState
@@ -124,13 +124,9 @@ class PeerStore(BaseModel):
 
     _private_keys: syc.SyftPrivateKeys | None = PrivateAttr(default=None)
     _peers: List[Peer] = PrivateAttr(default_factory=list)
-    # The last policy known of each peer in this process (see policy_of).
-    _last_known_policies: dict[str, EncryptionPolicy] = PrivateAttr(
-        default_factory=dict
-    )
 
     @property
-    def use_encryption(self) -> bool:
+    def requires_encryption(self) -> bool:
         """True when this client requires encryption with every peer and at rest."""
         return self.encryption_policy == EncryptionPolicy.REQUIRED
 
@@ -139,6 +135,10 @@ class PeerStore(BaseModel):
     def clear_caches(self) -> None:
         """Clear the caches."""
         self._peers = []
+
+    @property
+    def peers(self) -> List[Peer]:
+        return list(self._peers)
 
     @property
     def approved_peers(self) -> List[Peer]:
@@ -169,8 +169,7 @@ class PeerStore(BaseModel):
             SyftPeerNotReadyError: when the policy of the peer is not known, or
                 the pair encrypts and the peer bundle is missing.
         """
-        self._raise_unless_policy_known(email)
-        if not self.peer_uses_encryption(email):
+        if not self.pair_encrypts(self._peer_for_message(email)):
             return data
         return self.encrypt(email, data)
 
@@ -187,8 +186,7 @@ class PeerStore(BaseModel):
             MessageFormatError: when ``data`` is plaintext and the pair
                 encrypts, or ``data`` is an envelope and the pair does not.
         """
-        self._raise_unless_policy_known(email)
-        encrypts = self.peer_uses_encryption(email)
+        encrypts = self.pair_encrypts(self._peer_for_message(email))
         encrypted = self.is_envelope(data)
         if encrypted != encrypts:
             raise MessageFormatError(email, encrypted)
@@ -218,32 +216,27 @@ class PeerStore(BaseModel):
         self.verify_message(owner_email, data)
         return self.decrypt(owner_email, data)
 
-    def peer_policy(self, email: str) -> Optional[EncryptionPolicy]:
-        """The policy of the cached peer ``email``, or None when not known."""
-        peer = self.get_cached_peer(email)
-        return None if peer is None else self.policy_of(peer)
+    def pair_encrypts(self, peer: Optional[Peer]) -> bool:
+        """Whether messages with ``peer`` are encrypted: one side requires it.
 
-    def policy_of(self, peer: Peer) -> Optional[EncryptionPolicy]:
-        """The policy of ``peer``, or None when not known.
-
-        When the version file can no longer be read (the peer deleted its
-        SyftBox, or a read failed), the last policy known in this process
-        applies.
+        No peer, or a peer whose policy is not known yet, counts as not
+        requiring it.
         """
-        policy = peer.encryption_policy
-        if policy is None:
-            return self._last_known_policies.get(peer.email)
-        self._last_known_policies[peer.email] = policy
-        return policy
+        return self.requires_encryption or (
+            peer is not None and peer.encryption_policy == EncryptionPolicy.REQUIRED
+        )
 
-    def _raise_unless_policy_known(self, email: str) -> None:
-        """Raise unless the policy of ``email`` is known.
+    def _peer_for_message(self, email: str) -> Peer:
+        """The peer ``email``, to send a message to or read one from.
 
         Raises:
-            SyftPeerNotReadyError: when the policy of the peer is not known.
+            SyftPeerNotReadyError: while the peer is not loaded, or while
+                whether the pair encrypts depends on a policy not known yet.
         """
         peer = self.get_cached_peer(email)
-        if peer is None or self.policy_of(peer) is None:
+        if peer is None or (
+            not self.requires_encryption and peer.encryption_policy is None
+        ):
             raise SyftPeerNotReadyError(
                 email,
                 cause=f"The encryption policy of {email} is not known yet.",
@@ -252,10 +245,16 @@ class PeerStore(BaseModel):
                     "client.sync() and send again."
                 ),
             )
+        return peer
 
-    def peer_uses_encryption(self, email: str) -> bool:
-        """Whether the pair with ``email`` encrypts. False when the peer policy is not known."""
-        return pair_uses_encryption(self.encryption_policy, self.peer_policy(email))
+    def protocol_schema(
+        self, email: str, protocol_name: str
+    ) -> Optional[ProtocolSchema]:
+        """The schema ``email`` advertises for ``protocol_name``, or None when not known."""
+        peer = self.get_cached_peer(email)
+        version = peer.version if peer is not None else None
+        # getattr: a peer's version may be a V1 object (no schemas attribute).
+        return (getattr(version, "protocol_schemas", None) or {}).get(protocol_name)
 
     def set_peer(self, peer: Peer) -> None:
         for i, p in enumerate(self._peers):
@@ -268,6 +267,17 @@ class PeerStore(BaseModel):
         self._peers.append(peer)
 
     def set_peers(self, peers: List[Peer]) -> None:
+        """Replace the peers, keeping what this process learned of each.
+
+        ``info`` and ``state_at_start`` come from reads in this process, not
+        from the peer list, so a reload would lose them.
+        """
+        previous = {p.email: p for p in self._peers}
+        for peer in peers:
+            old = previous.get(peer.email)
+            if old is not None:
+                peer.info = peer.info or old.info
+                peer.state_at_start = peer.state_at_start or old.state_at_start
         self._peers = peers
 
     # ========== Ensure helpers ==========
@@ -406,13 +416,13 @@ class PeerStore(BaseModel):
 
     def encrypt_for_self_if_needed(self, data: bytes) -> bytes:
         """Encrypt for self if this client requires encryption."""
-        if self.use_encryption:
+        if self.requires_encryption:
             return self.encrypt_for_self(data)
         return data
 
     def decrypt_and_verify_for_self_if_needed(self, data: bytes) -> bytes:
         """Verify and decrypt data for self if this client requires encryption."""
-        if self.use_encryption:
+        if self.requires_encryption:
             self.verify_message_from_self(data)
             return self.decrypt_for_self(data)
         return data

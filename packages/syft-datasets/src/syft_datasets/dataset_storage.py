@@ -3,7 +3,7 @@ import shutil
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Callable, Iterator, Optional
 from uuid import UUID, uuid4
 
 from syft_migration import (
@@ -47,6 +47,11 @@ _NON_PAYLOAD_FILES = frozenset(
 
 def _utcnow() -> datetime:
     return datetime.now(tz=timezone.utc)
+
+
+def _no_peer_schema(peer_email: str) -> Optional[ProtocolSchema]:
+    """No peer schema is known: the default when syft passes no lookup."""
+    return None
 
 
 @dataclass(frozen=True)
@@ -96,20 +101,16 @@ class DatasetStorage:
         self,
         config: SyftBoxConfig,
         registry: MigrationRegistry = dataset_registry,
-        peer_schemas: Optional[dict[str, ProtocolSchema]] = None,
+        peer_schema: Optional[Callable[[str], Optional[ProtocolSchema]]] = None,
     ) -> None:
         self.config = config
         self.registry = registry
         self.service = MigrationService(registry=registry)
-        # peer email -> dataset ProtocolSchema; syft passes PeerManager's
-        # live map here (updated in place as peer version files load). A named
-        # peer without an entry cannot be assumed to read the current layout, so
-        # it resolves to the floor.
-        # `is not None`, not `or`: the live dict starts empty and `or {}` would
-        # drop the shared reference, freezing negotiation at construction time.
-        self.peer_schemas: dict[str, ProtocolSchema] = (
-            peer_schemas if peer_schemas is not None else {}
-        )
+        # peer email -> the dataset ProtocolSchema it advertises, or None when
+        # not known; syft looks it up in the peer store on each call. A named
+        # peer without a schema cannot be assumed to read the current layout,
+        # so it resolves to the floor.
+        self.peer_schema = peer_schema or _no_peer_schema
         self.codecs = [cls(config) for cls in CODECS]
 
     @property
@@ -167,7 +168,7 @@ class DatasetStorage:
         known schema raises by default; with ``raise_on_unknown=False`` it is
         assumed to run the current protocol.
         """
-        schema = self.peer_schemas.get(peer_email)
+        schema = self.peer_schema(peer_email)
         if schema is not None:
             return self.registry.infer_protocol_version_to_use(
                 peer_version=schema.version,
@@ -208,7 +209,7 @@ class DatasetStorage:
             return set()
         versions: set[str] = set()
         for email in peer_emails:
-            schema = self.peer_schemas.get(email)
+            schema = self.peer_schema(email)
             if schema is not None:
                 versions.add(min(DATASET_PROTOCOL_VERSION, schema.version, key=int))
             else:

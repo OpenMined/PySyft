@@ -914,7 +914,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if no outbox folder, or if peer encryption is on — DO can't read
         peer-encrypted bytes back to merge).
         """
-        if self.connection_router.peer_store.peer_uses_encryption(recipient_email):
+        peer_store = self.connection_router.peer_store
+        if peer_store.pair_encrypts(peer_store.get_cached_peer(recipient_email)):
             logger.debug(
                 f"outbox compaction for {recipient_email} skipped — "
                 f"peer encryption is not supported yet"

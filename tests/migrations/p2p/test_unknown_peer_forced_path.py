@@ -27,13 +27,13 @@ def _job_storage(tmp_path: Path) -> JobStorage:
         syftbox_folder=tmp_path / "SyftBox", current_user_email=DS_EMAIL
     )
     (tmp_path / "SyftBox" / DS_EMAIL).mkdir(parents=True, exist_ok=True)
-    return JobStorage(config=config, peer_schemas={})
+    return JobStorage(config=config)
 
 
 def _dataset_storage(tmp_path: Path) -> DatasetStorage:
     config = SyftBoxConfig(syftbox_folder=tmp_path / "SyftBox", email=DO_EMAIL)
     (tmp_path / "SyftBox" / DO_EMAIL).mkdir(parents=True, exist_ok=True)
-    return DatasetStorage(config=config, peer_schemas={})
+    return DatasetStorage(config=config)
 
 
 def test_a_forced_job_reports_the_assumed_protocol(tmp_path, caplog):
@@ -65,11 +65,13 @@ def test_a_known_peer_reports_nothing(tmp_path, caplog):
     from syft_migration import ProtocolSchema
 
     storage = _job_storage(tmp_path)
-    storage.peer_schemas[DO_EMAIL] = ProtocolSchema(
-        protocol_name="syft-job",
-        version=JOB_PROTOCOL_VERSION,
-        supported_versions={"JobState": ["1"]},
-    )
+    storage.peer_schema = {
+        DO_EMAIL: ProtocolSchema(
+            protocol_name="syft-job",
+            version=JOB_PROTOCOL_VERSION,
+            supported_versions={"JobState": ["1"]},
+        )
+    }.get
     with caplog.at_level(logging.WARNING):
         storage.negotiated_protocol_version_for_peer(DO_EMAIL)
     assert caplog.records == []

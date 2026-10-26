@@ -1,9 +1,9 @@
 import logging
 import warnings
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import BaseModel, PrivateAttr
-from syft_migration import MigratableObject, ProtocolSchema
+from syft_migration import MigratableObject
 
 from syft.migrations import (
     SYFT_CLIENT_PROTOCOL_VERSION,
@@ -47,10 +47,6 @@ class ConnectionRouter(BaseModel):
 
     peer_store: PeerStore
 
-    # peer email -> syft ProtocolSchema; syft wires PeerManager's
-    # live map here (updated in place as peer version files load), so outgoing
-    # messages downgrade to what each peer reads.
-    _peer_schemas: Dict[str, ProtocolSchema] = PrivateAttr(default_factory=dict)
     # The transport jobs over connections[0], rebuilt if that connection is
     # replaced (tests swap in a mock connection with add_connection).
     _transport: Optional[Transport] = PrivateAttr(default=None)
@@ -63,10 +59,6 @@ class ConnectionRouter(BaseModel):
             self._transport = connection.as_transport()
             self._transport_source = connection
         return self._transport
-
-    def set_peer_schemas(self, peer_schemas: Dict[str, ProtocolSchema]) -> None:
-        """Adopt the live {peer email -> syft ProtocolSchema} map."""
-        self._peer_schemas = peer_schemas
 
     @classmethod
     def from_configs(cls, email: str, connection_configs: List[ConnectionConfig]):
@@ -131,7 +123,7 @@ class ConnectionRouter(BaseModel):
         A peer without a known schema is assumed to run the current protocol,
         the same policy as jobs; the assumption is logged.
         """
-        schema = self._peer_schemas.get(peer_email)
+        schema = self.peer_store.protocol_schema(peer_email, "syft")
         if schema is None:
             logger.warning(
                 f"No syft protocol schema known for peer {peer_email!r}. "
