@@ -471,67 +471,69 @@ class PeerManager(BaseModel):
         - If no existing peer, creates folders and marks REQUESTED_BY_ME.
         """
         existing_peer_obj = self.get_cached_peer(peer_email)
-        if existing_peer_obj and not force:
-            if existing_peer_obj.state == PeerState.REQUESTED_BY_ME:
-                if verbose:
-                    print_peer_already_connected(
-                        peer_email, PeerState.REQUESTED_BY_ME.value
-                    )
-                return
-            if existing_peer_obj.state == PeerState.ACCEPTED:
-                if verbose:
-                    print_peer_already_connected(peer_email, PeerState.ACCEPTED.value)
-                return
-            # REQUESTED_BY_PEER falls through to accept the incoming request
+        if self._return_early(existing_peer_obj, peer_email, force, verbose):
+            return
 
         is_accepting = (
-            existing_peer_obj and existing_peer_obj.state == PeerState.REQUESTED_BY_PEER
+            existing_peer_obj is not None
+            and existing_peer_obj.state == PeerState.REQUESTED_BY_PEER
         )
-
-        if verbose:
-            if force:
-                print_peer_request_resending(peer_email)
-            elif is_accepting:
-                print_peer_request_accepting(peer_email)
-            else:
-                print_peer_request_sending(peer_email)
-
         new_state = PeerState.ACCEPTED if is_accepting else PeerState.REQUESTED_BY_ME
+        if verbose:
+            self._print_add_peer_start(peer_email, force, is_accepting)
 
-        new_peer_obj = self.connection_router.add_peer(
-            peer_email=peer_email, verbose=False
-        )
-
-        if existing_peer_obj:
-            new_peer_obj = existing_peer_obj
+        peer = self.connection_router.add_peer(peer_email=peer_email, verbose=False)
 
         # Both sides publish their bundle at peering, so a pair can start to
-        # encrypt in a later session. The peer policy selects encryption for
-        # the pair. Before the peer accepts, its version file is not shared
-        # and the policy is unknown; load_peers reads the bundle once it is.
+        # encrypt in a later session. The peer's bundle is None until it does.
         self._write_encryption_bundle_for_peer(peer_email)
-        new_peer_obj.info = self.connection_router.read_peer_info_file(peer_email)
-        encrypted = self.peer_store.pair_encrypts(new_peer_obj)
-
-        peer_bundle = None
-        if encrypted and is_accepting:
-            peer_bundle = self._read_peer_encryption_bundle(peer_email)
+        peer.info = self.connection_router.read_peer_info_file(peer_email)
+        peer.public_encryption_bundle = self._read_peer_encryption_bundle(peer_email)
 
         self.connection_router.update_peer_state(
-            peer_email, new_state.value, public_encryption_bundle=peer_bundle
+            peer_email,
+            new_state.value,
+            public_encryption_bundle=peer.public_encryption_bundle,
         )
         self.share_peer_info_with_peer(peer_email)
 
-        if peer_bundle is not None:
-            new_peer_obj.public_encryption_bundle = peer_bundle
-        new_peer_obj.state = new_state
-        self.peer_store.set_peer(new_peer_obj)
+        peer.state = new_state
+        self.peer_store.set_peer(peer)
 
         if verbose:
-            if is_accepting:
-                print_peer_connection_established(peer_email)
-            else:
-                print_peer_request_sent(peer_email)
+            self._print_add_peer_done(peer_email, is_accepting)
+
+    def _return_early(
+        self, existing_peer_obj, peer_email: str, force: bool, verbose: bool
+    ) -> bool:
+        """True if the peer is already requested by us or accepted (unless force).
+
+        REQUESTED_BY_PEER returns False so add_peer accepts the incoming request.
+        """
+        if not existing_peer_obj or force:
+            return False
+        state = existing_peer_obj.state
+        if state not in (PeerState.REQUESTED_BY_ME, PeerState.ACCEPTED):
+            return False
+        if verbose:
+            print_peer_already_connected(peer_email, state.value)
+        return True
+
+    def _print_add_peer_start(
+        self, peer_email: str, force: bool, is_accepting: bool
+    ) -> None:
+        if force:
+            print_peer_request_resending(peer_email)
+        elif is_accepting:
+            print_peer_request_accepting(peer_email)
+        else:
+            print_peer_request_sending(peer_email)
+
+    def _print_add_peer_done(self, peer_email: str, is_accepting: bool) -> None:
+        if is_accepting:
+            print_peer_connection_established(peer_email)
+        else:
+            print_peer_request_sent(peer_email)
 
     def _write_encryption_bundle_for_peer(self, peer_email: str) -> dict | None:
         """Write own encryption bundle for a peer."""
