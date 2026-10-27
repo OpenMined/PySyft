@@ -153,7 +153,7 @@ class TestOrphanedMessageFiles:
     def test_proposal_in_do_archive_not_found(self):
         ds_manager, _, archived = _archive_one_proposal()
 
-        found = _connection(ds_manager).find_orphaned_message_files()
+        found = _connection(ds_manager).find_orphaned_syft_files()
 
         assert archived
         assert not set(archived) & set(found)
@@ -162,7 +162,7 @@ class TestOrphanedMessageFiles:
         ds_manager, do_manager, archived = _archive_one_proposal()
         do_manager.delete_syftbox(broadcast_delete_events=False)
 
-        found = _connection(ds_manager).find_orphaned_message_files()
+        found = _connection(ds_manager).find_orphaned_syft_files()
 
         assert archived
         assert set(archived) <= set(found)
@@ -175,7 +175,7 @@ class TestOrphanedMessageFiles:
             fileId=do_conn.get_syftbox_folder_id()
         ).execute()
 
-        found = _connection(ds_manager).find_orphaned_message_files()
+        found = _connection(ds_manager).find_orphaned_syft_files()
 
         assert archive_id not in do_conn.drive_service._backing_store.files
         assert archived
@@ -186,7 +186,7 @@ class TestOrphanedMessageFiles:
         drive = _connection(ds_manager).drive_service
         user_file = drive.files().create(body={"name": "checkpoint_final.pt"}).execute()
 
-        found = _connection(ds_manager).find_orphaned_message_files()
+        found = _connection(ds_manager).find_orphaned_syft_files()
 
         assert user_file["id"] not in found
 
@@ -194,7 +194,7 @@ class TestOrphanedMessageFiles:
         ds_manager, _, _ = _archive_one_proposal()
         conn = _connection(ds_manager)
 
-        found = conn.find_orphaned_message_files()
+        found = conn.find_orphaned_syft_files()
 
         assert conn.get_syftbox_folder_id() not in found
 

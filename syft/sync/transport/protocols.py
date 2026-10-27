@@ -288,6 +288,7 @@ class Peering(ABC):
 
         Raises:
             TransportUnavailableError: when the backend cannot be reached.
+            ValueError: when the document is not one this client reads.
         """
 
     @abstractmethod
@@ -296,6 +297,7 @@ class Peering(ABC):
 
         Raises:
             TransportUnavailableError: when the backend cannot be reached.
+            ValueError: when the document is not one this client reads.
         """
 
     @abstractmethod

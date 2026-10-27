@@ -323,7 +323,7 @@ def delete_remote_syftbox(
     folder_file_ids = set(conn.gather_all_file_and_folder_ids())
 
     # Find the orphaned syft files in My Drive root
-    orphaned_file_ids = set(conn.find_orphaned_message_files())
+    orphaned_file_ids = set(conn.find_orphaned_syft_files())
 
     all_file_ids = list(folder_file_ids | orphaned_file_ids)
 

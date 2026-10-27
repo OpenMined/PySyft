@@ -272,6 +272,7 @@ class PeerManager(BaseModel):
 
         Raises:
             TransportUnavailableError: when the backend cannot be reached.
+            ValueError: when the document is not one this client reads.
         """
         # Create new connection for thread safety
         connection = self.connection_router.connection_for_peer_file_read(

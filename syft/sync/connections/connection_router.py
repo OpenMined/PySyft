@@ -493,10 +493,10 @@ class ConnectionRouter(BaseModel):
         connection = self.connection_for_own_syftbox()
         return connection.gather_all_file_and_folder_ids()
 
-    def find_orphaned_message_files(self) -> List[str]:
+    def find_orphaned_syft_files(self) -> List[str]:
         """Find the orphaned syft files of this account in its My Drive root."""
         connection = self.connection_for_own_syftbox()
-        return connection.find_orphaned_message_files()
+        return connection.find_orphaned_syft_files()
 
     def reset_caches(self):
         connection = self.connection_for_own_syftbox()

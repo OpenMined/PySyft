@@ -368,7 +368,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     _encryption_bundles_folder_id: str | None = None
 
     # Cached SYFT_peers.json contents (None = not loaded yet).
-    _peers_json_cache: dict[str, dict[str, str]] | None = None
+    _peers_json_cache: dict[str, dict[str, Any]] | None = None
 
     @classmethod
     def from_config(cls, config: "GdriveConnectionConfig") -> "GDriveConnection":
@@ -551,8 +551,11 @@ class GDriveConnection(SyftboxPlatformConnection):
         items = results.get("files", [])
         return items[0]["id"] if items else None
 
-    def _download_peers_json(self) -> dict[str, dict[str, str]]:
+    def _download_peers_json(self) -> dict[str, dict[str, Any]]:
         """Fetch peers JSON from GDrive. Returns empty dict if not found.
+
+        Maps each peer email to ``{"state": str, "public_encryption_bundle":
+        dict}``, and ``_meta`` to ``{"version": int}``.
 
         Raises:
             TransportUnavailableError: when Drive cannot be reached.
@@ -570,14 +573,14 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def _get_peers_json(
         self, force_download: bool = False
-    ) -> dict[str, dict[str, str]]:
+    ) -> dict[str, dict[str, Any]]:
         """Return peers JSON, using the in-memory cache when available."""
         if self._peers_json_cache is not None and not force_download:
             return self._peers_json_cache
         self._peers_json_cache = self._download_peers_json()
         return self._peers_json_cache
 
-    def _write_peers_json(self, peers_data: dict[str, dict[str, str]]):
+    def _write_peers_json(self, peers_data: dict[str, dict[str, Any]]):
         """Write peers JSON to GDrive. Creates or updates the file."""
         peers_data = {
             **peers_data,
@@ -803,7 +806,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         file_payload, _ = self.create_file_payload(data)
         file_metadata = {"name": filename, "parents": [outbox_folder_id]}
 
-        result = self._create_syft_file(file_metadata, file_payload, "id, parents")
+        result = self._create_syft_file(
+            file_metadata, file_payload, fields="id, parents"
+        )
 
         file_id = result.get("id")
         actual_parents = result.get("parents", [])
@@ -1233,7 +1238,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         payload, _ = self.create_file_payload(data)
         file_metadata = {"name": filename, "parents": [inbox_id]}
 
-        result = self._create_syft_file(file_metadata, payload, "id, parents")
+        result = self._create_syft_file(file_metadata, payload, fields="id, parents")
 
         file_id = result.get("id")
         actual_parents = result.get("parents", [])
@@ -1329,7 +1334,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 raise e
             print(f"Warning: could not delete file {file_id}: {e}")
 
-    def find_orphaned_message_files(self) -> list[str]:
+    def find_orphaned_syft_files(self) -> list[str]:
         """Find syft files of this account in its My Drive root, except /SyftBox.
 
         Drive moves a file to the root of its owner when the file loses its

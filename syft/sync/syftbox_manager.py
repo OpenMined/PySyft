@@ -1193,7 +1193,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         folder_file_ids = set(self._connection_router.gather_all_file_and_folder_ids())
 
         # Also find the orphaned syft files in My Drive root
-        orphaned_file_ids = set(self._connection_router.find_orphaned_message_files())
+        orphaned_file_ids = set(self._connection_router.find_orphaned_syft_files())
 
         # Combine both sets and delete from Google Drive
         all_file_ids = list(folder_file_ids | orphaned_file_ids)
