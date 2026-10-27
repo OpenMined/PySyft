@@ -669,7 +669,7 @@ python {entrypoint_path}
         submission_dir = self.manager.submission_dir(ref)
         declared = metadata.headers.get(SUBMISSION_HASH_HEADER)
         if declared:
-            return code_hash(submission_dir) == declared
+            return code_hash(submission_dir, as_sent=True) == declared
         return has_listed_files(submission_dir, metadata.files)
 
     def _request_has_all_files(self, ref: RequestRef) -> bool:

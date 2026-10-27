@@ -108,12 +108,15 @@ def _digest(
 ) -> str:
     digest = hashlib.sha256()
     files = sorted(
-        path
-        for path in submission_dir.rglob("*")
-        if path.is_file()
-        and not _is_skipped(relative := path.relative_to(submission_dir))
-        and (entries is None or relative.parts[0] in entries)
-        and relative.as_posix() not in skip
+        (
+            path
+            for path in submission_dir.rglob("*")
+            if path.is_file()
+            and not _is_skipped(relative := path.relative_to(submission_dir))
+            and (entries is None or relative.parts[0] in entries)
+            and relative.as_posix() not in skip
+        ),
+        key=lambda p: p.relative_to(submission_dir).as_posix(),
     )
     for path in files:
         content = _as_sent(path) if as_sent else path.read_bytes()
