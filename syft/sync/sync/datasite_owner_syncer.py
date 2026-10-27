@@ -56,9 +56,9 @@ logger = logging.getLogger(__name__)
 # Default threshold for creating incremental checkpoint from rolling state
 DEFAULT_CHECKPOINT_EVENT_THRESHOLD = 50
 
-# Upload the rolling state at a flush once this many events were added since
-# the last upload. At 1 the rolling state on Drive holds every change after each
-# flush, so the owner's event log is not written.
+# save_owner_state() uploads the rolling state once this many events were added
+# since the last upload. At 1 the rolling state on Drive holds every change after
+# each save_owner_state(), so the owner's event log is not written.
 DEFAULT_ROLLING_STATE_UPLOAD_THRESHOLD = 1
 
 # A delivery message holds about this much file content at most. A larger
@@ -102,7 +102,7 @@ class OwnerStateOnBackend(NamedTuple):
         return messages + self.log_messages
 
 
-def _cursor_after(
+def _last_persisted_event_timestamp(
     full_checkpoint: Checkpoint | None,
     incrementals: List[IncrementalCheckpoint],
     rolling_state: RollingState | None = None,
@@ -385,7 +385,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         rolling_state = router.get_rolling_state()
         if rolling_state is not None and rolling_state.event_count == 0:
             rolling_state = None
-        since = _cursor_after(full_checkpoint, incrementals, rolling_state)
+        since = _last_persisted_event_timestamp(
+            full_checkpoint, incrementals, rolling_state
+        )
         log_is_whole = since is None and full_checkpoint is None and not incrementals
         if since is not None:
             log_messages = router.get_events_messages_since_timestamp(since)
@@ -422,7 +424,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Returns its events."""
         rolling_state = state.rolling_state
         if rolling_state is None:
-            since = _cursor_after(state.full_checkpoint, state.incremental_checkpoints)
+            since = _last_persisted_event_timestamp(
+                state.full_checkpoint, state.incremental_checkpoints
+            )
             self._rolling_state = RollingState(
                 email=self.email, base_checkpoint_timestamp=since or 0.0
             )
@@ -680,7 +684,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     def _record_local_changes(self) -> None:
         """Update the file hashes from the local files, and add the changes to
-        the owner's persisted state. The caller flushes it."""
+        the owner's persisted state. The caller then calls ``save_owner_state``."""
         file_change_events_message = self.event_cache.process_local_file_changes()
         if file_change_events_message is not None:
             self._queue_for_owner_state(file_change_events_message)
@@ -710,7 +714,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         # peer email -> {path: hash}
         return {
             peer: {
-                p: h for p, h in syncable.items() if self._may_hold(peer, p, syncable)
+                p: h for p, h in syncable.items() if self.perm_context.can_read(p, peer)
             }
             for peer in peer_emails
         }
@@ -838,7 +842,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         to restore this datasite.
 
         It goes into the rolling state, and into the owner's event log unless
-        the rolling state holds every change after each flush. A rolling state
+        the rolling state holds every change after each ``save_owner_state``. A rolling state
         that is not loaded yet is loaded from disk.
 
         Raises:
@@ -1053,7 +1057,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     def _add_events_to_rolling_state(
         self, events_message: FileChangeEventsMessage
     ) -> None:
-        """Add events to the in-memory rolling state. The next flush uploads it."""
+        """Add events to the in-memory rolling state. The next ``save_owner_state`` uploads it."""
         if self._rolling_state is None:
             return
         self._rolling_state.add_events_message(events_message)
@@ -1061,7 +1065,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     def _upload_rolling_state_if_due(self) -> None:
         """Upload the rolling state once enough events were added since the last
-        upload. A failed upload is logged, and the next flush tries again."""
+        upload. A failed upload is logged, and the next ``save_owner_state`` tries again."""
         if (
             self._events_since_rolling_state_upload
             < DEFAULT_ROLLING_STATE_UPLOAD_THRESHOLD

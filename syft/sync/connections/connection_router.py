@@ -251,15 +251,6 @@ class ConnectionRouter(BaseModel):
         filename = events_message.message_filepath.as_string()
         self.transport.owner_store.append_event(filename, data)
 
-    def owner_get_all_accepted_events_messages(self) -> List[FileChangeEventsMessage]:
-        raw_list = self.transport.owner_store.fetch_all_events()
-        return [
-            FileChangeEventsMessage.from_compressed_data(
-                self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
-            )
-            for raw in raw_list
-        ]
-
     def download_events_message_by_id(
         self, events_message_id: str
     ) -> FileChangeEventsMessage:

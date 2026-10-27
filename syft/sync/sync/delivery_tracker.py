@@ -14,8 +14,8 @@ peer may read now:
     in the view, but no longer readable           -> delete
     in the view, but the file is gone             -> delete
 
-A change that the owner accepts from a peer goes to that peer at once. Every
-other peer that may read the file gets it in its next plan, as with any change.
+A change that the owner accepts from a peer goes, like any change, to every
+peer that may read the file, that peer included.
 
 A new peer starts with an empty view, so it is sent every file it may read.
 When the owner rejects a peer, ``reset`` sets each path in its view to
@@ -141,6 +141,8 @@ class LocalDeliveryStateStore(DeliveryStateStore):
 def _apply_changes_to_view(
     view: dict[str, str], changes: Mapping[str, str | None]
 ) -> None:
+    """Apply ``changes`` (path -> new hash, None for a delete) to ``view``
+    (path -> hash)."""
     for path, new_hash in changes.items():
         if new_hash is None:
             view.pop(path, None)
@@ -148,15 +150,8 @@ def _apply_changes_to_view(
             view[path] = new_hash
 
 
-def _record_delivery(
-    state: DeliveryState, peer: str, changes: Mapping[str, str | None]
-) -> None:
-    """Apply ``changes`` to ``peer``'s view."""
-    _apply_changes_to_view(state.views.setdefault(peer, {}), changes)
-
-
 class DeliveryTracker:
-    """Per-peer views of confirmed file versions, for the data owner.
+    """Per-peer views of the file versions sent to each peer, for the data owner.
 
     Each call reads the state from the store. Each change reads and writes it
     back under the store lock, so the processes of one datasite see the same
@@ -226,5 +221,6 @@ class DeliveryTracker:
         """Record a send of ``changes`` (path -> new hash, None for a delete)."""
         with self.store.locked():
             state = self.store.load()
-            _record_delivery(state, peer, changes)
+            peer_view = state.views.setdefault(peer, {})
+            _apply_changes_to_view(peer_view, changes)
             self.store.save(state)
