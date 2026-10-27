@@ -183,6 +183,8 @@ SyftBox/
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/syft-pr-review/
+!.claude/skills/syft-pr-quickfix/
+!.claude/skills/syft-pr-quickfix-iterate/
 CLAUDE.md
 !packages/syft-enclave/tinfoil/CLAUDE.md
 
