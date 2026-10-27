@@ -258,9 +258,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 self._record_local_changes()
             for peer_email in peer_emails:
                 self._pull_proposals(peer_email)
-            self.deliver_file_changes(peer_emails)
-            # The one flush of this pass: the owner's log first, then the outbox.
+            # The owner's log goes out before any peer gets a change.
             self.process_syftbox_events_queue()
+            self.deliver_file_changes(peer_emails)
         finally:
             if self.persist_owner_state:
                 self._save_rolling_state()
@@ -719,9 +719,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         delivery_tracker.seed(self._readable_files_by_peer(peers_to_seed))
 
     def deliver_file_changes(self, peer_emails: list[str]) -> None:
-        """Queue for each peer the files its view lacks, and deletes for the files
-        it may no longer have. The caller loads the permissions first, and sends
-        the queue with ``process_syftbox_events_queue``."""
+        """Send each peer the files its view lacks, and deletes for the files it
+        may no longer have. The caller loads the permissions first."""
         delivery_tracker = self.event_cache.delivery_tracker
         plans = delivery_tracker.plan(self._readable_files_by_peer(peer_emails))
         # Build every message before the first one is queued, so a read error
@@ -735,6 +734,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         ]
         for message in messages:
             self.outbox_queue.put(message)
+        self._send_outbox_messages()
 
     def _plan_events(self, plan: DeliveryPlan) -> list[FileChangeEvent]:
         """The events that carry out ``plan``: its sends, then its deletes."""

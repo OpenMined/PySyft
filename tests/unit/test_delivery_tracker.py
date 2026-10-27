@@ -328,7 +328,6 @@ def test_peer_not_ready_does_not_block_other_peers():
     syncer._record_local_changes()
     with pytest.warns(UserWarning, match=not_ready):
         syncer.deliver_file_changes([not_ready, ds_manager.email])
-        syncer.process_syftbox_events_queue()
     assert _outbox_paths(ds_manager, do_manager) == ["shared/data.txt"]
     # The skipped peer's view did not change, so its next plan sends the file.
     readable = syncer._readable_files_by_peer([not_ready])
@@ -358,7 +357,6 @@ def test_failed_send_retried_then_logged_without_blocking_others(monkeypatch, ca
         ConnectionRouter, "owner_write_event_messages_to_outbox", fail_for_broken
     )
     syncer.deliver_file_changes([broken, ds_manager.email])
-    syncer.process_syftbox_events_queue()
     assert _outbox_paths(ds_manager, do_manager) == ["shared/data.txt"]
     tries = [r for r in caplog.records if broken in r.getMessage()]
     assert [r.levelname for r in tries] == ["INFO", "INFO", "ERROR"]
