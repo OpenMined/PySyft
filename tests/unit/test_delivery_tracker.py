@@ -10,8 +10,7 @@ from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
 from syft.sync.peers.peer import PeerState
 from syft.sync.sync import datasite_owner_syncer
-from syft.sync.sync.caches.persisted_dict import PersistedDict
-from syft.sync.sync.constants import CACHE_DIR, OWNER_PENDING_DELIVERIES_FILENAME
+from syft.sync.sync.constants import CACHE_DIR
 from syft.sync.sync.caches.datasite_owner_cache import (
     ProposedEventFileOutdatedException,
 )
@@ -189,14 +188,9 @@ def _sent_events(ds_manager, do_manager, path: str) -> list[tuple[bool, object]]
     ]
 
 
-def _simulate_earlier_client(do_manager, pending: dict[str, list[str]]) -> None:
-    """Make the DO cache look like one from a client before the delivery
-    tracker: no views, and ``pending`` paths it still had to send."""
-    cache_dir = do_manager.syftbox_folder / CACHE_DIR
-    (cache_dir / DELIVERY_VIEWS_FILENAME).unlink()
-    legacy = PersistedDict(path=cache_dir / OWNER_PENDING_DELIVERIES_FILENAME)
-    for peer, paths in pending.items():
-        legacy[peer] = dict.fromkeys(paths, "msg")
+def _lose_views(do_manager) -> None:
+    """Delete the DO's views file, keeping its file hashes."""
+    (do_manager.syftbox_folder / CACHE_DIR / DELIVERY_VIEWS_FILENAME).unlink()
 
 
 def _push_private_file(do_manager, ds_manager) -> None:
@@ -293,81 +287,50 @@ def test_restarted_owner_sends_nothing_new():
     assert _outbox_paths(ds_manager, do_manager) == sent_before
 
 
-def test_upgrade_sends_only_unsent_changes():
+def test_lost_views_sends_only_offline_changes():
     ds_manager, do_manager = _pair()
     do_manager.datasite_owner_syncer.perm_context.open("shared/").grant_read_access(
         ds_manager.email
     )
     _write(do_manager, "shared/held.txt", "one")
-    _write(do_manager, "shared/pending.txt", "one")
     do_manager.sync(auto_checkpoint=False)
 
-    _simulate_earlier_client(do_manager, {ds_manager.email: ["shared/pending.txt"]})
+    _lose_views(do_manager)
     _write(do_manager, "shared/offline.txt", "new")
 
     do_manager.sync(auto_checkpoint=False)
     sent = _outbox_paths(ds_manager, do_manager)
     assert sent.count("shared/held.txt") == 1
-    assert sent.count("shared/pending.txt") == 2
     assert sent.count("shared/offline.txt") == 1
 
 
-def test_upgrade_sends_pending_delete():
-    ds_manager, do_manager = _pair()
-    do_manager.datasite_owner_syncer.perm_context.open("shared/").grant_read_access(
-        ds_manager.email
-    )
-    _write(do_manager, "shared/gone.txt", "one")
-    do_manager.sync(auto_checkpoint=False)
-
-    # The earlier client recorded the delete, but did not send it.
-    (do_manager.syftbox_folder / do_manager.email / "shared/gone.txt").unlink()
-    do_manager.datasite_owner_syncer.event_cache.process_local_file_changes()
-    _simulate_earlier_client(do_manager, {ds_manager.email: ["shared/gone.txt"]})
-
-    do_manager.sync(auto_checkpoint=False)
-    assert _sent_events(ds_manager, do_manager, "shared/gone.txt")[-1] == (True, None)
-
-
-def test_upgrade_seeds_after_send_outside_plan():
+def test_lost_views_seeded_after_send_outside_plan():
     ds_manager, do_manager = _pair()
     do_manager.datasite_owner_syncer.perm_context.open("shared/").grant_read_access(
         ds_manager.email
     )
     _write(do_manager, "shared/held.txt", "one")
     do_manager.sync(auto_checkpoint=False)
-    _simulate_earlier_client(do_manager, {})
+    _lose_views(do_manager)
 
     _push_private_file(do_manager, ds_manager)
     do_manager.sync(auto_checkpoint=False)
     assert _outbox_paths(ds_manager, do_manager).count("shared/held.txt") == 1
 
 
-def test_upgrade_seeds_peer_skipped_in_first_sync():
+def test_lost_views_seeds_peer_skipped_in_first_sync():
     ds_manager, do_manager = _pair()
     do_manager.datasite_owner_syncer.perm_context.open("shared/").grant_read_access(
         ds_manager.email
     )
     _write(do_manager, "shared/held.txt", "one")
     do_manager.sync(auto_checkpoint=False)
-    _simulate_earlier_client(do_manager, {})
+    _lose_views(do_manager)
 
-    # The version gate skips the DS in the first sync after the upgrade.
+    # The version gate skips the DS in the first sync after the views are lost.
     do_manager.datasite_owner_syncer.sync([])
     do_manager.sync(auto_checkpoint=False)
     assert _outbox_paths(ds_manager, do_manager).count("shared/held.txt") == 1
-
-
-def test_upgrade_keeps_pending_private_share():
-    ds_manager, do_manager = _pair()
-    _push_private_file(do_manager, ds_manager)
-    do_manager.sync(auto_checkpoint=False)
-    _simulate_earlier_client(do_manager, {ds_manager.email: ["private/data.csv"]})
-
-    do_manager.sync(auto_checkpoint=False)
-    assert _sent_events(ds_manager, do_manager, "private/data.csv") == [
-        (False, b"rows")
-    ]
 
 
 def test_failed_send_outside_plan_dropped(monkeypatch):

@@ -42,7 +42,6 @@ from syft.sync.sync.caches.datasite_owner_cache import (
 from syft.sync.sync.collection_spec import CollectionSyncSpec
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
 from syft.sync.sync.delivery_tracker import (
-    UNSENT_HASH,
     AcceptedChange,
     DeliveryPlan,
 )
@@ -703,36 +702,17 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         return path in syncable and self.perm_context.can_read(path, peer)
 
     def _seed_views_if_missing(self, peer_emails: list[str]) -> None:
-        """Seed the views one time, for an owner whose state was never seeded.
+        """Seed the views one time, for an owner that has file hashes but no views.
 
-        The seed covers each approved peer, and each peer in ``peer_emails``.
+        Each approved peer, and each peer in ``peer_emails``, is taken to hold
+        every file it may read now. The caller reloads the permissions first.
         """
         deliveries = self.event_cache.deliveries
         if deliveries.is_seeded():
             return
         approved = [p.email for p in self.connection_router.peer_store.approved_peers]
         peers_to_seed = sorted({*approved, *peer_emails})
-        deliveries.seed(self._files_held_by_peer_at_seed(peers_to_seed))
-
-    def _files_held_by_peer_at_seed(
-        self, peers: list[str]
-    ) -> dict[str, dict[str, str]]:
-        """What each of ``peers`` is taken to hold when the views are seeded.
-
-        Maps each peer email to ``{path: hash}``. Each peer holds every file it may read now. A syncable path that an
-        earlier client still had to send gets ``UNSENT_HASH``, so the next plan
-        sends or deletes it. Other pending paths, such as a private dataset
-        share, stay out of the view: a plan never sends them, so it must not
-        delete them. The caller reloads the permissions first.
-        """
-        pending = self.event_cache.legacy_pending_paths()
-        # peer email -> {path: hash}
-        held = self._readable_files_by_peer(peers)
-        for peer, files in held.items():
-            unsent = [p for p in pending.get(peer, ()) if self._is_syncable(p)]
-            unsent_files = dict.fromkeys(unsent, UNSENT_HASH)
-            files.update(unsent_files)
-        return held
+        deliveries.seed(self._readable_files_by_peer(peers_to_seed))
 
     def deliver_file_changes(self, peer_emails: list[str]) -> None:
         """Send each peer the files its view lacks, and deletes for the files it
