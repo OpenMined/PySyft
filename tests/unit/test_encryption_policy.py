@@ -428,16 +428,14 @@ def test_negotiated_encryption_flow(ds_policy, do_policy):
     assert len(_ds_cached_contents(ds_manager)) > 0
 
 
-def test_owner_send_to_non_peer_raises():
+def test_owner_send_to_non_peer_warns():
     _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         do_encryption_policy=REQUIRED,
     )
     syncer = do_manager.datasite_owner_syncer
     message = FileChangeEventsMessage(events=[])
-    syncer.outbox_queue.put(
-        OutgoingMessage("former@example.com", message, planned=False)
-    )
-    with pytest.raises(SyftPeerNotReadyError, match="not known"):
+    syncer.outbox_queue.put(OutgoingMessage("former@example.com", message))
+    with pytest.warns(UserWarning, match="not known"):
         syncer.process_syftbox_events_queue()
 
 
@@ -559,7 +557,7 @@ def test_unsent_owner_change_stays_pending(monkeypatch):
 
     with monkeypatch.context() as m:
         m.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", fail)
-        with pytest.warns(UserWarning, match="wait for a later sync"):
+        with pytest.warns(UserWarning, match="are not sent"):
             do_manager.sync(auto_checkpoint=False)
 
     _assert_ds_receives_after_notebook_sync(ds_manager, do_manager)

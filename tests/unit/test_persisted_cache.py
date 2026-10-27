@@ -171,8 +171,7 @@ def test_peer_gets_file_when_other_process_fails_outbox_upload(monkeypatch):
     # ConnectionRouter is a pydantic model, so patch the class for B's sync only.
     with monkeypatch.context() as m:
         m.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", fail_upload)
-        with pytest.raises(ConnectionError):
-            do_manager_b.sync(auto_checkpoint=False)
+        do_manager_b.sync(auto_checkpoint=False)
 
     _assert_ds_receives_after_notebook_sync(ds_manager, do_manager)
 

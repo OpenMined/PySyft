@@ -310,7 +310,7 @@ def test_lost_views_seeds_peer_skipped_in_first_sync():
     assert _outbox_paths(ds_manager, do_manager).count("shared/held.txt") == 1
 
 
-def test_failed_send_outside_plan_dropped(monkeypatch):
+def test_send_to_peer_not_ready_dropped(monkeypatch):
     ds_manager, do_manager = _pair()
 
     def peer_not_ready(self, recipient, *args, **kwargs):
@@ -320,7 +320,7 @@ def test_failed_send_outside_plan_dropped(monkeypatch):
         m.setattr(
             ConnectionRouter, "owner_write_event_messages_to_outbox", peer_not_ready
         )
-        with pytest.raises(SyftPeerNotReadyError):
+        with pytest.warns(UserWarning, match="are not sent"):
             _push_private_file(do_manager, ds_manager)
 
     do_manager.datasite_owner_syncer.process_syftbox_events_queue()
@@ -347,7 +347,7 @@ def test_peer_not_ready_does_not_block_other_peers():
     ]
 
 
-def test_failed_send_does_not_block_other_peers(monkeypatch):
+def test_failed_send_retried_then_logged_without_blocking_others(monkeypatch, caplog):
     ds_manager, do_manager = _pair()
     syncer = do_manager.datasite_owner_syncer
     broken = "broken@example.com"
@@ -367,12 +367,13 @@ def test_failed_send_does_not_block_other_peers(monkeypatch):
     monkeypatch.setattr(
         ConnectionRouter, "owner_write_event_messages_to_outbox", fail_for_broken
     )
-    with pytest.raises(ConnectionError):
-        syncer.deliver_file_changes([broken, ds_manager.email])
+    syncer.deliver_file_changes([broken, ds_manager.email])
     assert _outbox_paths(ds_manager, do_manager) == ["shared/data.txt"]
+    tries = [r for r in caplog.records if broken in r.getMessage()]
+    assert [r.levelname for r in tries] == ["INFO", "INFO", "ERROR"]
 
 
-def test_failed_send_outside_plan_does_not_block_later_syncs():
+def test_send_to_stranger_does_not_block_later_syncs():
     ds_manager, do_manager = _pair()
     syncer = do_manager.datasite_owner_syncer
     _write(do_manager, "private/data.csv", "rows")
@@ -382,7 +383,7 @@ def test_failed_send_outside_plan_does_not_block_later_syncs():
     syncer.queue_event_for_syftbox(
         recipients=["stranger@example.com"], file_change_events_message=message
     )
-    with pytest.raises(SyftPeerNotReadyError):
+    with pytest.warns(UserWarning, match="stranger@example.com"):
         syncer.process_syftbox_events_queue()
 
     syncer.perm_context.open("shared/").grant_read_access(ds_manager.email)
@@ -457,7 +458,7 @@ def test_outdated_proposal_does_not_block_owner_changes():
     assert _received(ds_manager, do_manager, "shared/b.txt").read_text() == "new"
 
 
-def test_failed_send_drops_rest_of_plan(monkeypatch):
+def test_failed_send_not_retried_after_revoke(monkeypatch):
     monkeypatch.setattr(datasite_owner_syncer, "MAX_DELIVERY_MESSAGE_CONTENT", 3)
     ds_manager, do_manager = _pair()
     folder = do_manager.datasite_owner_syncer.perm_context.open("shared/")
@@ -470,10 +471,9 @@ def test_failed_send_drops_rest_of_plan(monkeypatch):
 
     with monkeypatch.context() as m:
         m.setattr(ConnectionRouter, "owner_write_event_messages_to_outbox", fail_upload)
-        with pytest.raises(ConnectionError):
-            do_manager.sync(auto_checkpoint=False)
+        do_manager.sync(auto_checkpoint=False)
 
-    # The batch after the failed one must not go out after the revoke.
+    # The failed messages must not go out after the revoke.
     folder.revoke_read_access(ds_manager.email)
     do_manager.sync(auto_checkpoint=False)
     assert _outbox_paths(ds_manager, do_manager) == []

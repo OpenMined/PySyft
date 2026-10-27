@@ -1,4 +1,5 @@
 import logging
+from collections import deque
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
@@ -67,6 +68,10 @@ MAX_DELIVERY_MESSAGE_CONTENT = 50 * 1024 * 1024
 # compact_outbox_if_needed() will merge them into a single message.
 MIN_MESSAGES_COMPACT = 20
 
+# How often the owner tries an outbox message in one send pass before it gives
+# up and logs an error. A file that a view tracks is planned again next sync.
+MAX_SEND_ATTEMPTS = 3
+
 
 class _CheckpointRestore(NamedTuple):
     """What restoring from checkpoints recovered.
@@ -121,8 +126,8 @@ class DatasiteOwnerSyncerConfig(BaseModel):
 class OutgoingMessage(NamedTuple):
     recipient: str
     message: FileChangeEventsMessage
-    # Whether `deliver_file_changes` queued the message from the views of `recipient`.
-    planned: bool
+    # Failed sends of this message so far.
+    attempts: int = 0
 
 
 def _batches_by_content_size(
@@ -230,11 +235,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         tmp.rename(path)
 
     def sync(self, peer_emails: list[str], recompute_hashes: bool = True):
-        """Send each of ``peer_emails`` what it does not hold yet, then pull
-        their proposed changes.
+        """Record the owner's changes, pull the proposed changes of
+        ``peer_emails``, then send each of them what it does not hold yet, in
+        one pass.
 
-        The send comes first, so a proposal that fails does not hold back the
-        owner's own changes.
+        Accepted proposals and the owner's own changes go out the same way: to
+        every peer that may read the file. A proposal that fails does not hold
+        back the send; its error raises after it.
         """
         if self.persist_owner_state:
             self._load_rolling_state()
@@ -246,33 +253,40 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             # Before the local changes are recorded, so that a file changed
             # while the owner was offline is not seeded as held.
             self._seed_views_if_missing(peer_emails)
-
+            # Before the proposals, so that a proposal based on an older
+            # version of a file the owner changed is refused as outdated.
             if recompute_hashes:
                 self._record_local_changes()
+            errors = [e for peer in peer_emails if (e := self._pull_proposals(peer))]
             self.deliver_file_changes(peer_emails)
-
-            for peer_email in peer_emails:
-                proposed_count = 0
-                try:
-                    while True:
-                        msg = self.pull_and_process_next_proposed_filechange(
-                            peer_email, raise_on_none=False
-                        )
-                        if msg is None:
-                            # no new message, we are done
-                            break
-                        proposed_count += len(msg.proposed_file_changes)
-                except SyftPeerNotReadyError as e:
-                    warnings.warn(f"Messages from {peer_email} stay in the inbox: {e}")
-                if proposed_count:
-                    print(
-                        f"Received {proposed_count} proposed change(s) "
-                        f"from {peer_email}"
-                    )
-                self.process_syftbox_events_queue()
+            for error in errors[1:]:
+                logger.error(f"Proposed changes failed: {error!r}")
+            if errors:
+                raise errors[0]
         finally:
             if self.persist_owner_state:
                 self._save_rolling_state()
+
+    def _pull_proposals(self, peer_email: str) -> Exception | None:
+        """Apply every proposed change waiting from ``peer_email``.
+
+        Returns the error of a proposal that failed, so that it does not hold
+        back the other peers or the owner's changes.
+        """
+        proposed_count = 0
+        try:
+            while msg := self.pull_and_process_next_proposed_filechange(
+                peer_email, raise_on_none=False
+            ):
+                proposed_count += len(msg.proposed_file_changes)
+        except SyftPeerNotReadyError as e:
+            warnings.warn(f"Messages from {peer_email} stay in the inbox: {e}")
+        except Exception as e:
+            return e
+        finally:
+            if proposed_count:
+                print(f"Received {proposed_count} proposed change(s) from {peer_email}")
+        return None
 
     def download_events_message_by_id_with_connection(
         self, events_message_id: str
@@ -717,7 +731,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         # Build every message before the first one is queued, so a read error
         # leaves no message of this plan in the queue.
         messages = [
-            OutgoingMessage(peer, FileChangeEventsMessage(events=batch), planned=True)
+            OutgoingMessage(peer, FileChangeEventsMessage(events=batch))
             for peer, plan in plans.items()
             for batch in _batches_by_content_size(
                 self._plan_events(plan), MAX_DELIVERY_MESSAGE_CONTENT
@@ -791,13 +805,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         accepted_events_message = self.event_cache.process_proposed_events_message(
             filtered_message
         )
-        if accepted_events_message is not None:
-            self.queue_event_for_syftbox(
-                recipients=[sender_email],
-                file_change_events_message=accepted_events_message,
-            )
-            if self.persist_owner_state:
-                self._add_events_to_rolling_state(accepted_events_message)
+        # The next plan sends the accepted change to every peer that may read
+        # the file, the submitter included.
+        if accepted_events_message is not None and self.persist_owner_state:
+            self.syftbox_events_queue.put(accepted_events_message)
+            self._add_events_to_rolling_state(accepted_events_message)
 
     def queue_event_for_syftbox(
         self, recipients: list[str], file_change_events_message: FileChangeEventsMessage
@@ -810,7 +822,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
         for recipient in recipients:
             self.outbox_queue.put(
-                OutgoingMessage(recipient, file_change_events_message, planned=False)
+                OutgoingMessage(recipient, file_change_events_message)
             )
 
     def process_syftbox_events_queue(self):
@@ -826,35 +838,47 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     def _send_outbox_messages(self) -> None:
         """Send the queued messages, and record each sent one in its peer's view.
 
-        A failed send does not stop the others. A peer that is not ready gets
-        none of its planned messages. They wait for the next plan, with a
-        warning. Any other failed message is dropped, and the first such error
-        raises after every other message went out. A failed planned message is
-        planned again by `deliver_file_changes`, which checks the views and the
-        permissions again.
+        Nothing raises, and a failed send does not stop the others. A failed
+        message goes to the back of this pass, and after ``MAX_SEND_ATTEMPTS``
+        tries it is dropped with an error in the log. A peer that is not ready
+        gets none of its messages in this pass, with a warning. A file that a
+        view tracks is planned again at the next sync.
         """
-        not_ready = set()
-        errors = []
+        pending = deque()
         while not self.outbox_queue.empty():
-            recipient, message, planned = self.outbox_queue.get()
-            if planned and recipient in not_ready:
+            pending.append(self.outbox_queue.get())
+        not_ready = set()
+        while pending:
+            entry = pending.popleft()
+            if entry.recipient in not_ready:
                 continue
             try:
                 status = self.connection_router.owner_write_event_messages_to_outbox(
-                    recipient, message
+                    entry.recipient, entry.message
                 )
             except SyftPeerNotReadyError as e:
-                if not planned:
-                    errors.append(e)
-                    continue
-                not_ready.add(recipient)
-                warnings.warn(f"Changes for {recipient} wait for a later sync: {e}")
+                not_ready.add(entry.recipient)
+                warnings.warn(f"Messages for {entry.recipient} are not sent: {e}")
             except Exception as e:
-                errors.append(e)
+                pending.extend(self._retry_or_give_up(entry, e))
             else:
-                self._record_sent(recipient, message, status)
-        if errors:
-            raise errors[0]
+                self._record_sent(entry.recipient, entry.message, status)
+
+    def _retry_or_give_up(
+        self, entry: OutgoingMessage, error: Exception
+    ) -> list[OutgoingMessage]:
+        """The entry to try again for a failed send, if any try is left."""
+        name = entry.message.message_filepath.as_string()
+        attempts = entry.attempts + 1
+        if attempts >= MAX_SEND_ATTEMPTS:
+            logger.error(
+                f"Gave up sending {name} to {entry.recipient} after {attempts} tries: {error!r}"
+            )
+            return []
+        logger.info(
+            f"Send of {name} to {entry.recipient} failed, trying again: {error!r}"
+        )
+        return [entry._replace(attempts=attempts)]
 
     def _record_sent(
         self, recipient: str, message: FileChangeEventsMessage, status: SendStatus
