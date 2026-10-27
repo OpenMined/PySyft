@@ -6,10 +6,15 @@ import random
 import socket
 import ssl
 import time
-from typing import Any, TypeVar
+from contextlib import contextmanager
+from typing import Any, Iterator, TypeVar
 
+import google.auth.exceptions
+import httplib2
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
+
+from syft.sync.transport.exceptions import TransportUnavailableError
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +46,14 @@ RETRYABLE_TRANSPORT_ERRORS: tuple[type[BaseException], ...] = (
     http.client.BadStatusLine,
 )
 
+# Raised when Drive cannot be reached at all: its host does not resolve, the
+# connection is refused, or the access token cannot be refreshed.
+UNREACHABLE_ERRORS: tuple[type[BaseException], ...] = (
+    httplib2.ServerNotFoundError,
+    ConnectionRefusedError,
+    google.auth.exceptions.TransportError,
+)
+
 T = TypeVar("T")
 
 
@@ -57,6 +70,22 @@ def is_retryable_error(error: Exception) -> bool:
                 if detail.get("reason") in RETRYABLE_REASONS:
                     return True
     return False
+
+
+@contextmanager
+def raise_unavailable(message: str) -> Iterator[None]:
+    """Raise TransportUnavailableError(message) when Drive cannot be reached.
+
+    Drive cannot be reached when the error is in UNREACHABLE_ERRORS, or when a
+    transient error outlasts the retries. Any other error, such as a 403 or a
+    404, passes through unchanged.
+    """
+    try:
+        yield
+    except (HttpError, *RETRYABLE_TRANSPORT_ERRORS, *UNREACHABLE_ERRORS) as e:
+        if isinstance(e, UNREACHABLE_ERRORS) or is_retryable_error(e):
+            raise TransportUnavailableError(message) from e
+        raise
 
 
 def _describe(error: Exception) -> str:

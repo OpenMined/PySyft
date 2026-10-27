@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from google.oauth2.credentials import Credentials as GoogleCredentials
 from google_auth_httplib2 import AuthorizedHttp
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload, build_http
 from pydantic import BaseModel, field_validator
 from syft_migration import MigrationError
@@ -33,10 +32,10 @@ from syft.sync.connections.base_connection import (
 )
 from syft.sync.connections.drive.drive_connections import drive_transport
 from syft.sync.connections.drive.gdrive_retry import (
-    RETRYABLE_TRANSPORT_ERRORS,
     batch_execute_with_retries,
     execute_with_retries,
     next_chunk_with_retries,
+    raise_unavailable,
 )
 from syft.sync.connections.drive.gdrive_utils import (
     gather_all_file_and_folder_ids_recursive,
@@ -51,7 +50,6 @@ from syft.sync.messages.proposed_filechange import (
     MessageFileName,
     ProposedFileChangesMessage,
 )
-from syft.sync.transport.exceptions import TransportUnavailableError
 from syft.sync.transport.naming import (  # noqa: F401 (re-exported)
     PEERS_META_KEY,
     SYFT_PEERS_VERSION,
@@ -1881,23 +1879,19 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         Raises:
             TransportUnavailableError: when Drive cannot be reached.
+            ValueError: when the file is not a peer info file this client reads.
         """
         from syft.sync.version.peer_info import PeerInfo
 
-        try:
+        with raise_unavailable("Could not read the own peer info file from Drive."):
             file_id = self._get_own_peer_info_file_id()
             if file_id is None:
                 return None
             file_data = self.download_file(file_id)
-        except (HttpError, *RETRYABLE_TRANSPORT_ERRORS) as e:
-            raise TransportUnavailableError(
-                "Could not read the own peer info file from Drive."
-            ) from e
         try:
             return PeerInfo.from_json(file_data.decode("utf-8"))
         except (ValueError, MigrationError) as e:
-            print(f"Warning: could not read the own peer info file: {e}")
-            return None
+            raise ValueError(f"Could not read the own peer info file: {e}") from e
 
     def read_peer_info_file(self, peer_email: str) -> Optional["PeerInfo"]:
         """Read the peer info file from a peer's /SyftBox folder.
@@ -1906,23 +1900,23 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         Raises:
             TransportUnavailableError: when Drive cannot be reached.
+            ValueError: when the file is not a peer info file this client reads.
         """
         from syft.sync.version.peer_info import PeerInfo
 
-        try:
+        with raise_unavailable(
+            f"Could not read the peer info file of {peer_email} from Drive."
+        ):
             file_id = self._get_peer_info_file_id_of(peer_email)
             if file_id is None:
                 return None
             file_data = self.download_file(file_id)
-        except (HttpError, *RETRYABLE_TRANSPORT_ERRORS) as e:
-            raise TransportUnavailableError(
-                f"Could not read the peer info file of {peer_email} from Drive."
-            ) from e
         try:
             return PeerInfo.from_json(file_data.decode("utf-8"))
         except (ValueError, MigrationError) as e:
-            print(f"Warning: could not read the peer info file of {peer_email}: {e}")
-            return None
+            raise ValueError(
+                f"Could not read the peer info file of {peer_email}: {e}"
+            ) from e
 
     def share_peer_info_file_with_peer(
         self, peer_email: str, peer_info: "PeerInfo"
