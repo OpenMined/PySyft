@@ -224,7 +224,7 @@ class JobClient(BaseJobClient):
             datasite_email=submitting_to_email,
             submitted_at=datetime.now(timezone.utc),
             files=["script.sh"],
-            headers={SUBMISSION_HASH_HEADER: code_hash(job_dir, as_sent=True)},
+            headers={SUBMISSION_HASH_HEADER: code_hash(job_dir)},
         )
         self.manager.write_submission(ref, config)
 
@@ -297,7 +297,7 @@ class JobClient(BaseJobClient):
             api=api_name,
             submitted_at=datetime.now(timezone.utc),
             files=sorted(files),
-            files_hash=request_hash(request_dir, as_sent=True),
+            files_hash=request_hash(request_dir),
         )
         self.manager.write_request(ref, request)
         return request_dir
@@ -572,7 +572,7 @@ python {entrypoint_path}
                 "requested_disclosures": sorted(
                     normalize_disclosures(request_disclosures)
                 ),
-                SUBMISSION_HASH_HEADER: code_hash(job_dir, as_sent=True),
+                SUBMISSION_HASH_HEADER: code_hash(job_dir),
             },
         )
         self.manager.write_submission(ref, config)
