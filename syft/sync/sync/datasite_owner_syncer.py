@@ -240,8 +240,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         one pass.
 
         Accepted proposals and the owner's own changes go out the same way: to
-        every peer that may read the file. A proposal that fails does not hold
-        back the send; its error raises after it.
+        every peer that may read the file. A proposal that fails is logged as
+        an error and does not hold back the send.
         """
         if self.persist_owner_state:
             self._load_rolling_state()
@@ -257,20 +257,17 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             # version of a file the owner changed is refused as outdated.
             if recompute_hashes:
                 self._record_local_changes()
-            errors = [e for peer in peer_emails if (e := self._pull_proposals(peer))]
+            for peer_email in peer_emails:
+                self._pull_proposals(peer_email)
             self.deliver_file_changes(peer_emails)
-            for error in errors[1:]:
-                logger.error(f"Proposed changes failed: {error!r}")
-            if errors:
-                raise errors[0]
         finally:
             if self.persist_owner_state:
                 self._save_rolling_state()
 
-    def _pull_proposals(self, peer_email: str) -> Exception | None:
+    def _pull_proposals(self, peer_email: str) -> None:
         """Apply every proposed change waiting from ``peer_email``.
 
-        Returns the error of a proposal that failed, so that it does not hold
+        A proposal that fails is logged as an error, so that it does not hold
         back the other peers or the owner's changes.
         """
         proposed_count = 0
@@ -282,11 +279,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         except SyftPeerNotReadyError as e:
             warnings.warn(f"Messages from {peer_email} stay in the inbox: {e}")
         except Exception as e:
-            return e
-        finally:
-            if proposed_count:
-                print(f"Received {proposed_count} proposed change(s) from {peer_email}")
-        return None
+            logger.error(f"Proposed changes from {peer_email} failed: {e!r}")
+        if proposed_count:
+            print(f"Received {proposed_count} proposed change(s) from {peer_email}")
 
     def download_events_message_by_id_with_connection(
         self, events_message_id: str

@@ -438,7 +438,7 @@ def test_large_catch_up_split_into_messages(monkeypatch):
     assert sorted(len(m.events) for m in messages) == [1, 2]
 
 
-def test_outdated_proposal_does_not_block_owner_changes():
+def test_outdated_proposal_logged_without_blocking_owner_changes(caplog):
     ds_manager, do_manager = _pair()
     shared = do_manager.datasite_owner_syncer.perm_context.open("shared/")
     shared.grant_write_access(ds_manager.email)
@@ -447,12 +447,15 @@ def test_outdated_proposal_does_not_block_owner_changes():
     ds_manager.sync()
 
     # The DS edits a.txt from v1 while the DO edits it too, so the
-    # proposal is outdated and its handling raises on every sync.
+    # proposal is outdated and its handling fails on every sync.
     ds_manager._send_file_change(f"{do_manager.email}/shared/a.txt", "ds edit")
     _write(do_manager, "shared/a.txt", "do edit")
     _write(do_manager, "shared/b.txt", "new")
-    with pytest.raises(ProposedEventFileOutdatedException):
-        do_manager.sync(auto_checkpoint=False)
+    do_manager.sync(auto_checkpoint=False)
+    assert ProposedEventFileOutdatedException.__name__ in caplog.text
+    assert (
+        do_manager.syftbox_folder / do_manager.email / "shared/a.txt"
+    ).read_text() == "do edit"
 
     ds_manager.sync()
     assert _received(ds_manager, do_manager, "shared/b.txt").read_text() == "new"
