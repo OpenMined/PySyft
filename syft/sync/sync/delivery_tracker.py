@@ -14,15 +14,12 @@ peer may read now:
     in the view, but no longer readable           -> delete
     in the view, but the file is gone             -> delete
 
-A change that the owner accepts from a peer goes only to that peer.
-``accept`` records it, with the other peers that may read the file at that
-time. The owner leaves the change out of their plans while the file stays in
-that state. A peer that joins later, or that may read the file only later, gets
-it. When the owner changes the file again, every peer that may read it gets it.
+A change that the owner accepts from a peer goes to that peer at once. Every
+other peer that may read the file gets it in its next plan, as with any change.
 
 A new peer starts with an empty view, so it is sent every file it may read.
 When the owner rejects a peer, ``reset`` sets each path in its view to
-``UNSENT_HASH``, and stops withholding accepted changes from it. Thus a peer
+``UNSENT_HASH``. Thus a peer
 that the owner rejects and then approves again is sent every file it may read,
 and a delete for each file that it may no longer have.
 
@@ -82,18 +79,6 @@ class QueuedSend(BaseModel):
     changes: dict[str, str | None]
 
 
-class AcceptedChange(BaseModel):
-    """A change that the owner accepted from a peer.
-
-    ``hash`` is the new hash of the file, or None for a delete.
-    ``withheld_from`` holds the other peers that could read the file when the
-    owner accepted the change.
-    """
-
-    hash: str | None
-    withheld_from: list[str] = Field(default_factory=list)
-
-
 class DeliveryState(BaseModel):
     """Everything the tracker keeps."""
 
@@ -104,8 +89,6 @@ class DeliveryState(BaseModel):
     queued: dict[str, QueuedSend] = Field(default_factory=dict)
     # Whether ``DeliveryTracker.seed`` ran on this state.
     seeded: bool = False
-    # path -> the last change that the owner accepted from a peer for it
-    accepted: dict[str, AcceptedChange] = Field(default_factory=dict)
 
 
 class DeliveryPlan(BaseModel):
@@ -187,25 +170,8 @@ def _apply_changes_to_view(
 def _record_delivery(
     state: DeliveryState, peer: str, changes: Mapping[str, str | None]
 ) -> None:
-    """Apply ``changes`` to ``peer``'s view.
-
-    After a delete, ``peer`` no longer holds the version from before an accepted
-    change, so that change is no longer withheld from it.
-    """
+    """Apply ``changes`` to ``peer``'s view."""
     _apply_changes_to_view(state.views.setdefault(peer, {}), changes)
-    for path, new_hash in changes.items():
-        change = state.accepted.get(path)
-        if new_hash is None and change is not None and peer in change.withheld_from:
-            _stop_withholding(state, path, peer)
-
-
-def _stop_withholding(state: DeliveryState, path: str, peer: str) -> None:
-    """Remove ``peer`` from the accepted change of ``path``, and drop the change
-    when it is withheld from nobody."""
-    change = state.accepted[path]
-    change.withheld_from.remove(peer)
-    if not change.withheld_from:
-        del state.accepted[path]
 
 
 class DeliveryTracker:
@@ -220,8 +186,7 @@ class DeliveryTracker:
         self.store = store
 
     def clear(self) -> None:
-        """Forget the whole state: views, queued sends, accepted changes and the
-        seeded flag."""
+        """Forget the whole state: views, queued sends and the seeded flag."""
         with self.store.locked():
             self.store.save(DeliveryState())
 
@@ -235,36 +200,7 @@ class DeliveryTracker:
             state = self.store.load()
             view = state.views.get(peer, {})
             state.views[peer] = dict.fromkeys(view, UNSENT_HASH)
-            for path, change in list(state.accepted.items()):
-                if peer in change.withheld_from:
-                    _stop_withholding(state, path, peer)
             self.store.save(state)
-
-    def accept(self, changes: Mapping[str, AcceptedChange]) -> None:
-        """Record ``changes``, by path, as the last change accepted from a peer.
-
-        A change withheld from nobody is not kept.
-        """
-        with self.store.locked():
-            state = self.store.load()
-            for path, change in changes.items():
-                if change.withheld_from:
-                    state.accepted[path] = change
-                else:
-                    state.accepted.pop(path, None)
-            self.store.save(state)
-
-    def drop_accepted(self, paths: Iterable[str]) -> None:
-        """Forget the accepted changes of ``paths``, which the owner changed."""
-        with self.store.locked():
-            state = self.store.load()
-            for path in paths:
-                state.accepted.pop(path, None)
-            self.store.save(state)
-
-    def accepted_changes(self) -> dict[str, AcceptedChange]:
-        """The last change that the owner accepted from a peer, by path."""
-        return self.store.load().accepted
 
     def is_seeded(self) -> bool:
         """Whether ``seed`` ran on the stored state."""

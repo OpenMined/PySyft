@@ -42,7 +42,6 @@ from syft.sync.sync.caches.datasite_owner_cache import (
 from syft.sync.sync.collection_spec import CollectionSyncSpec
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
 from syft.sync.sync.delivery_tracker import (
-    AcceptedChange,
     DeliveryPlan,
 )
 from syft.sync.transport.types import SendStatus
@@ -654,10 +653,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         file_change_events_message = self.event_cache.process_local_file_changes()
         if file_change_events_message is None:
             return
-        changed_paths = [
-            str(e.path_in_datasite) for e in file_change_events_message.events
-        ]
-        self.event_cache.deliveries.drop_accepted(changed_paths)
         if not self.persist_owner_state:
             return
         # Feed the events into rolling state so they flow through
@@ -720,12 +715,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         deliveries = self.event_cache.deliveries
         deliveries.confirm_deliveries(self.connection_router.transport.p2p.delivered())
         plans = deliveries.plan(self._readable_files_by_peer(peer_emails))
-        accepted = deliveries.accepted_changes()
-        syncable = self._syncable_hashes()
-        plans = {
-            peer: self._skip_accepted_from_others(peer, plan, accepted, syncable)
-            for peer, plan in plans.items()
-        }
         # Build every message before the first one is queued, so a read error
         # leaves no message of this plan in the queue.
         messages = [
@@ -738,42 +727,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         for message in messages:
             self.outbox_queue.put(message)
         self.process_syftbox_events_queue()
-
-    def _skip_accepted_from_others(
-        self,
-        peer: str,
-        plan: DeliveryPlan,
-        accepted: Mapping[str, AcceptedChange],
-        syncable: Mapping[str, str],
-    ) -> DeliveryPlan:
-        """``plan`` without the accepted changes that are withheld from ``peer``.
-
-        An accepted file is withheld while ``syncable`` still has the hash that
-        the change gave it. An accepted delete is withheld while the file stays
-        gone and ``peer`` may still read its path. A delete after a revoke
-        still goes out.
-        """
-
-        def from_other(path: str) -> bool:
-            change = accepted.get(path)
-            return (
-                change is not None
-                and peer in change.withheld_from
-                and change.hash == syncable.get(path)
-            )
-
-        return DeliveryPlan(
-            send=[p for p in plan.send if not from_other(p)],
-            delete=[
-                p
-                for p in plan.delete
-                if not (
-                    from_other(p)
-                    and accepted[p].hash is None
-                    and self.perm_context.can_read(p, peer)
-                )
-            ],
-        )
 
     def _plan_events(self, plan: DeliveryPlan) -> list[FileChangeEvent]:
         """The events that carry out ``plan``: its sends, then its deletes."""
@@ -840,39 +793,12 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             filtered_message
         )
         if accepted_events_message is not None:
-            self.event_cache.deliveries.accept(
-                self._accepted_changes(sender_email, accepted_events_message)
-            )
             self.queue_event_for_syftbox(
                 recipients=[sender_email],
                 file_change_events_message=accepted_events_message,
             )
             if self.persist_owner_state:
                 self._add_events_to_rolling_state(accepted_events_message)
-
-    def _accepted_changes(
-        self, sender_email: str, message: FileChangeEventsMessage
-    ) -> dict[str, AcceptedChange]:
-        """The changes of ``message``, accepted from ``sender_email``, by path.
-
-        Each change is withheld from the other approved peers that may read its
-        file now. The caller loads the permissions first.
-        """
-        others = [
-            p.email
-            for p in self.connection_router.peer_store.approved_peers
-            if p.email != sender_email
-        ]
-        changes = {}
-        for event in message.events:
-            path = str(event.path_in_datasite)
-            changes[path] = AcceptedChange(
-                hash=None if event.is_deleted else event.new_hash,
-                withheld_from=[
-                    p for p in others if self.perm_context.can_read(path, p)
-                ],
-            )
-        return changes
 
     def queue_event_for_syftbox(
         self, recipients: list[str], file_change_events_message: FileChangeEventsMessage

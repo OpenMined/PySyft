@@ -16,7 +16,6 @@ from syft.sync.sync.caches.datasite_owner_cache import (
 )
 from syft.sync.sync.delivery_tracker import (
     DELIVERY_STATE_VERSION,
-    AcceptedChange,
     DELIVERY_VIEWS_FILENAME,
     DeliveryState,
     DeliveryTracker,
@@ -63,28 +62,6 @@ def test_reset_resends_readable_deletes_gone():
     plan = tracker.plan({PEER: {"a": "h1"}})[PEER]
     assert plan.send == ["a"]
     assert plan.delete == ["gone"]
-
-
-def test_reset_stops_withholding_accepted_changes():
-    tracker = DeliveryTracker(MemoryDeliveryStateStore())
-    tracker.accept({"a": AcceptedChange(hash="h1", withheld_from=[PEER, "b@x.com"])})
-    tracker.reset(PEER)
-    assert tracker.accepted_changes()["a"].withheld_from == ["b@x.com"]
-
-
-def test_accepted_change_kept_only_while_withheld():
-    tracker = DeliveryTracker(MemoryDeliveryStateStore())
-    tracker.accept(
-        {
-            "a": AcceptedChange(hash="h1", withheld_from=[]),
-            "b": AcceptedChange(hash="h1", withheld_from=[PEER]),
-            "c": AcceptedChange(hash="h1", withheld_from=["c@x.com"]),
-        }
-    )
-    assert sorted(tracker.accepted_changes()) == ["b", "c"]
-    tracker.record_send(PEER, "m1", SendStatus.DELIVERED, {"b": None})
-    tracker.reset("c@x.com")
-    assert tracker.accepted_changes() == {}
 
 
 def test_queued_send_updates_view_on_confirm():
