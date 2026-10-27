@@ -34,6 +34,7 @@ from syft.sync.connections.drive.drive_connections import drive_transport
 from syft.sync.connections.drive.gdrive_retry import (
     batch_execute_with_retries,
     execute_with_retries,
+    is_unreachable,
     next_chunk_with_retries,
     raise_unavailable,
 )
@@ -50,6 +51,7 @@ from syft.sync.messages.proposed_filechange import (
     MessageFileName,
     ProposedFileChangesMessage,
 )
+from syft.sync.transport.exceptions import TransportUnavailableError
 from syft.sync.transport.naming import (  # noqa: F401 (re-exported)
     PEERS_META_KEY,
     SYFT_PEERS_VERSION,
@@ -2019,6 +2021,10 @@ class GDriveConnection(SyftboxPlatformConnection):
         try:
             return self.download_file(latest_file["id"])
         except Exception as e:
+            if is_unreachable(e):
+                raise TransportUnavailableError(
+                    "Could not read the latest checkpoint from Drive."
+                ) from e
             print(f"Warning: Failed to load checkpoint: {e}")
             return None
 
@@ -2097,6 +2103,10 @@ class GDriveConnection(SyftboxPlatformConnection):
                 file_data = self.download_file(item["id"])
                 result.append(file_data)
             except Exception as e:
+                if is_unreachable(e):
+                    raise TransportUnavailableError(
+                        "Could not read the incremental checkpoints from Drive."
+                    ) from e
                 print(
                     f"Warning: Failed to load incremental checkpoint {item['name']}: {e}"
                 )
@@ -2350,6 +2360,10 @@ class GDriveConnection(SyftboxPlatformConnection):
         try:
             return self.download_file(latest_file["id"])
         except Exception as e:
+            if is_unreachable(e):
+                raise TransportUnavailableError(
+                    "Could not read the rolling state from Drive."
+                ) from e
             print(f"Warning: Failed to load rolling state: {e}")
             self._rolling_state_file_id = None
             return None

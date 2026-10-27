@@ -8,13 +8,17 @@ Tests verify that:
 
 import time
 
+import pytest
+
 from syft.sync.checkpoints.rolling_state import (
     ROLLING_STATE_FILENAME_PREFIX,
     RollingState,
 )
+from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
+from syft.sync.transport import TransportUnavailableError
 from tests.unit.utils import fail_next_listing, get_mock_event
 
 
@@ -284,3 +288,16 @@ def test_rolling_state_read_retries_drive_error(monkeypatch):
 
     fail_next_listing(monkeypatch, ROLLING_STATE_FILENAME_PREFIX)
     assert store.get_rolling_state() == b"state"
+
+
+def test_rolling_state_read_while_drive_is_down_raises(monkeypatch):
+    do_conn, _ = pair_with_mock_service("do@example.com", "ds@example.com")
+    store = do_conn.as_transport().owner_store
+    store.put_rolling_state("rolling_state_1.0.tar.gz", b"state")
+
+    def drive_down(self, file_id: str) -> bytes:
+        raise ConnectionResetError("Drive is down")
+
+    monkeypatch.setattr(GDriveConnection, "download_file", drive_down)
+    with pytest.raises(TransportUnavailableError):
+        store.get_rolling_state()
