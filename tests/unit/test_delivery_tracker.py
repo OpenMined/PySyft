@@ -347,6 +347,31 @@ def test_peer_not_ready_does_not_block_other_peers():
     ]
 
 
+def test_failed_send_does_not_block_other_peers(monkeypatch):
+    ds_manager, do_manager = _pair()
+    syncer = do_manager.datasite_owner_syncer
+    broken = "broken@example.com"
+    shared = syncer.perm_context.open("shared/")
+    shared.grant_read_access(broken)
+    shared.grant_read_access(ds_manager.email)
+    _write(do_manager, "shared/data.txt", "one")
+    syncer._record_local_changes()
+
+    send = ConnectionRouter.owner_write_event_messages_to_outbox
+
+    def fail_for_broken(self, recipient, message):
+        if recipient == broken:
+            raise ConnectionError("upload failed")
+        return send(self, recipient, message)
+
+    monkeypatch.setattr(
+        ConnectionRouter, "owner_write_event_messages_to_outbox", fail_for_broken
+    )
+    with pytest.raises(ConnectionError):
+        syncer.deliver_file_changes([broken, ds_manager.email])
+    assert _outbox_paths(ds_manager, do_manager) == ["shared/data.txt"]
+
+
 def test_failed_send_outside_plan_does_not_block_later_syncs():
     ds_manager, do_manager = _pair()
     syncer = do_manager.datasite_owner_syncer

@@ -1,6 +1,5 @@
 import logging
 import warnings
-from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
@@ -827,38 +826,35 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     def _send_outbox_messages(self) -> None:
         """Send the queued messages, and record each sent one in its peer's view.
 
-        A peer that is not ready gets none of its planned messages. They wait
-        for the next plan, with a warning. Any other failed send raises. Only
-        the unplanned messages after it go back on the queue.
+        A failed send does not stop the others. A peer that is not ready gets
+        none of its planned messages. They wait for the next plan, with a
+        warning. Any other failed message is dropped, and the first such error
+        raises after every other message went out. A failed planned message is
+        planned again by `deliver_file_changes`, which checks the views and the
+        permissions again.
         """
-        unsent = deque()
-        while not self.outbox_queue.empty():
-            unsent.append(self.outbox_queue.get())
         not_ready = set()
-        try:
-            while unsent:
-                recipient, message, planned = unsent.popleft()
-                if planned and recipient in not_ready:
+        errors = []
+        while not self.outbox_queue.empty():
+            recipient, message, planned = self.outbox_queue.get()
+            if planned and recipient in not_ready:
+                continue
+            try:
+                status = self.connection_router.owner_write_event_messages_to_outbox(
+                    recipient, message
+                )
+            except SyftPeerNotReadyError as e:
+                if not planned:
+                    errors.append(e)
                     continue
-                try:
-                    status = (
-                        self.connection_router.owner_write_event_messages_to_outbox(
-                            recipient, message
-                        )
-                    )
-                except SyftPeerNotReadyError as e:
-                    if not planned:
-                        raise
-                    not_ready.add(recipient)
-                    warnings.warn(f"Changes for {recipient} wait for a later sync: {e}")
-                else:
-                    self._record_sent(recipient, message, status)
-        finally:
-            # A later send of a planned message would not check the views or the
-            # permissions again, so `deliver_file_changes` plans it again instead.
-            for entry in unsent:
-                if not entry.planned:
-                    self.outbox_queue.put(entry)
+                not_ready.add(recipient)
+                warnings.warn(f"Changes for {recipient} wait for a later sync: {e}")
+            except Exception as e:
+                errors.append(e)
+            else:
+                self._record_sent(recipient, message, status)
+        if errors:
+            raise errors[0]
 
     def _record_sent(
         self, recipient: str, message: FileChangeEventsMessage, status: SendStatus
