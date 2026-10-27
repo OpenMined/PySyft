@@ -169,7 +169,7 @@ def _push_private_file(do_manager, ds_manager) -> None:
     message = syncer.event_cache.create_events_for_files(
         {Path("private/data.csv"): b"rows"}
     )
-    syncer.send_events_to_peers(
+    syncer.process_events_for_own_state_and_peers(
         recipients=[ds_manager.email], file_change_events_message=message
     )
 
@@ -372,7 +372,7 @@ def test_send_to_stranger_does_not_block_later_syncs():
         {Path("private/data.csv"): b"rows"}
     )
     with pytest.warns(UserWarning, match="stranger@example.com"):
-        syncer.send_events_to_peers(
+        syncer.process_events_for_own_state_and_peers(
             recipients=["stranger@example.com"], file_change_events_message=message
         )
 

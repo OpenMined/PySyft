@@ -595,7 +595,7 @@ class SyftEnclaveClient:
         events_message = syncer.event_cache.create_events_for_files(
             files_by_datasite_path
         )
-        syncer.send_events_to_peers(
+        syncer.process_events_for_own_state_and_peers(
             recipients=recipients,
             file_change_events_message=events_message,
         )
@@ -703,7 +703,7 @@ class SyftEnclaveClient:
         events_message = syncer.event_cache.create_events_for_files(
             files_by_datasite_path
         )
-        syncer.send_events_to_peers(
+        syncer.process_events_for_own_state_and_peers(
             recipients=do_emails,
             file_change_events_message=events_message,
         )
@@ -720,7 +720,7 @@ class SyftEnclaveClient:
             events_message = syncer.event_cache.create_events_for_files(
                 files_by_datasite_path
             )
-            syncer.send_events_to_peers(
+            syncer.process_events_for_own_state_and_peers(
                 recipients=[do_email],
                 file_change_events_message=events_message,
             )

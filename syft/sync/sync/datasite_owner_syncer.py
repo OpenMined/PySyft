@@ -820,7 +820,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if accepted_events_message is not None:
             self._add_to_owner_state(accepted_events_message)
 
-    def send_events_to_peers(
+    def process_events_for_own_state_and_peers(
         self, recipients: list[str], file_change_events_message: FileChangeEventsMessage
     ) -> None:
         """Add ``file_change_events_message`` to the owner state, save that

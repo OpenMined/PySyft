@@ -1249,7 +1249,7 @@ class SyftRDSClient(BaseModel):
             events_message = self.sync_engine.datasite_owner_syncer.event_cache.create_events_for_files(
                 files
             )
-            self.sync_engine.datasite_owner_syncer.send_events_to_peers(
+            self.sync_engine.datasite_owner_syncer.process_events_for_own_state_and_peers(
                 recipients=[enclave_email],
                 file_change_events_message=events_message,
             )
