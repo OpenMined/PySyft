@@ -613,7 +613,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         connection = self.connection_router.connection_for_parallel_download()
         return connection.watcher_download_collection_file(file_id)
 
-    def _create_current_state_event(self, path: str) -> FileChangeEvent:
+    def _create_current_filestate_event(self, path: str) -> FileChangeEvent:
         """An event that sets ``path`` on a peer to its current local state.
 
         A file missing from the cache gives a deletion. A read error raises.
@@ -794,7 +794,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     def _plan_events(self, plan: DeliveryPlan) -> list[FileChangeEvent]:
         """The events that carry out ``plan``: its sends, then its deletes."""
-        events = [self._create_current_state_event(p) for p in plan.send]
+        events = [self._create_current_filestate_event(p) for p in plan.send]
         return events + [self._deletion_event(p) for p in plan.delete]
 
     def pull_and_process_next_proposed_filechange(

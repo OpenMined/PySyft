@@ -525,7 +525,9 @@ def test_read_error_leaves_no_planned_message(monkeypatch):
 
     # The plan reads the file once per peer. The read for the second peer fails.
     reads = []
-    create_event = datasite_owner_syncer.DatasiteOwnerSyncer._create_current_state_event
+    create_event = (
+        datasite_owner_syncer.DatasiteOwnerSyncer._create_current_filestate_event
+    )
 
     def fail_second_read(self, path):
         reads.append(path)
@@ -535,7 +537,7 @@ def test_read_error_leaves_no_planned_message(monkeypatch):
 
     monkeypatch.setattr(
         datasite_owner_syncer.DatasiteOwnerSyncer,
-        "_create_current_state_event",
+        "_create_current_filestate_event",
         fail_second_read,
     )
     with pytest.raises(PermissionError):
