@@ -1997,8 +1997,8 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"'{folder_id}' in parents and trashed=false "
             f"and name contains '{CHECKPOINT_FILENAME_PREFIX}'"
         )
-        results = (
-            self.drive_service.files().list(q=query, fields="files(id, name)").execute()
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
@@ -2038,8 +2038,8 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"'{folder_id}' in parents and trashed=false "
             f"and name contains '{CHECKPOINT_FILENAME_PREFIX}'"
         )
-        results = (
-            self.drive_service.files().list(q=query, fields="files(id, name)").execute()
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
@@ -2050,7 +2050,9 @@ class GDriveConnection(SyftboxPlatformConnection):
             if item["id"] == exclude_file_id:
                 continue  # Skip the newly uploaded checkpoint
             try:
-                self.drive_service.files().delete(fileId=item["id"]).execute()
+                execute_with_retries(
+                    self.drive_service.files().delete(fileId=item["id"])
+                )
             except Exception as e:
                 print(f"Warning: Failed to delete checkpoint {item['name']}: {e}")
 
@@ -2081,8 +2083,8 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"'{folder_id}' in parents and trashed=false "
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
-        results = (
-            self.drive_service.files().list(q=query, fields="files(id, name)").execute()
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
@@ -2111,7 +2113,9 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"'{folder_id}' in parents and trashed=false "
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
-        results = self.drive_service.files().list(q=query, fields="files(id)").execute()
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(id)")
+        )
         return len(results.get("files", []))
 
     def get_next_incremental_sequence_number(self) -> int:
@@ -2124,8 +2128,8 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"'{folder_id}' in parents and trashed=false "
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
-        results = (
-            self.drive_service.files().list(q=query, fields="files(name)").execute()
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(name)")
         )
         items = results.get("files", [])
 
@@ -2151,14 +2155,16 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"'{folder_id}' in parents and trashed=false "
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
-        results = (
-            self.drive_service.files().list(q=query, fields="files(id, name)").execute()
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
         for item in items:
             try:
-                self.drive_service.files().delete(fileId=item["id"]).execute()
+                execute_with_retries(
+                    self.drive_service.files().delete(fileId=item["id"])
+                )
             except Exception as e:
                 print(
                     f"Warning: Failed to delete incremental checkpoint {item['name']}: {e}"
@@ -2279,10 +2285,12 @@ class GDriveConnection(SyftboxPlatformConnection):
         # Try to update existing file if we have a cached ID
         if self._rolling_state_file_id is not None:
             try:
-                self.drive_service.files().update(
-                    fileId=self._rolling_state_file_id,
-                    media_body=payload,
-                ).execute()
+                execute_with_retries(
+                    self.drive_service.files().update(
+                        fileId=self._rolling_state_file_id,
+                        media_body=payload,
+                    )
+                )
                 return self._rolling_state_file_id
             except Exception as e:
                 # The cached file is gone or unreachable. Clear the cache and
@@ -2318,8 +2326,8 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"'{folder_id}' in parents and trashed=false "
             f"and name contains '{ROLLING_STATE_FILENAME_PREFIX}'"
         )
-        results = (
-            self.drive_service.files().list(q=query, fields="files(id, name)").execute()
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
@@ -2360,15 +2368,17 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"'{folder_id}' in parents and trashed=false "
             f"and name contains '{ROLLING_STATE_FILENAME_PREFIX}'"
         )
-        results = (
-            self.drive_service.files().list(q=query, fields="files(id, name)").execute()
+        results = execute_with_retries(
+            self.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
         # Delete each rolling state file
         for item in items:
             try:
-                self.drive_service.files().delete(fileId=item["id"]).execute()
+                execute_with_retries(
+                    self.drive_service.files().delete(fileId=item["id"])
+                )
             except Exception as e:
                 print(f"Warning: Failed to delete rolling state {item['name']}: {e}")
 

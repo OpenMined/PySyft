@@ -12,15 +12,18 @@ from uuid import uuid4
 
 import pytest
 
-from syft.sync.sync import datasite_owner_syncer
 from syft.sync.checkpoints.checkpoint import (
+    CHECKPOINT_FILENAME_PREFIX,
+    INCREMENTAL_CHECKPOINT_PREFIX,
     Checkpoint,
     IncrementalCheckpoint,
 )
 from syft.sync.checkpoints.rolling_state import RollingState
+from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.events.file_change_event import FileChangeEvent
 from syft.sync.syftbox_manager import SyftboxManager
-from tests.unit.utils import get_mock_event
+from syft.sync.sync import datasite_owner_syncer
+from tests.unit.utils import fail_next_listing, get_mock_event
 
 
 def test_checkpoint_create_and_restore():
@@ -740,3 +743,21 @@ def test_owner_state_is_written_by_default():
     assert do_manager._get_all_accepted_events_do() != []
     assert router.get_rolling_state() is not None
     assert do_manager.datasite_owner_syncer._rolling_state is not None
+
+
+def test_latest_checkpoint_read_retries_drive_error(monkeypatch):
+    do_conn, _ = pair_with_mock_service("do@example.com", "ds@example.com")
+    store = do_conn.as_transport().owner_store
+    store.put_checkpoint("checkpoint_1.0.tar.gz", b"full")
+
+    fail_next_listing(monkeypatch, CHECKPOINT_FILENAME_PREFIX)
+    assert store.latest_checkpoint() == b"full"
+
+
+def test_incremental_count_retries_drive_error(monkeypatch):
+    do_conn, _ = pair_with_mock_service("do@example.com", "ds@example.com")
+    store = do_conn.as_transport().owner_store
+    store.put_incremental("incremental_checkpoint_1_1.0.tar.gz", b"inc")
+
+    fail_next_listing(monkeypatch, INCREMENTAL_CHECKPOINT_PREFIX)
+    assert store.incremental_count() == 1

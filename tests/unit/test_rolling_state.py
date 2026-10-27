@@ -7,10 +7,15 @@ Tests verify that:
 """
 
 import time
+
+from syft.sync.checkpoints.rolling_state import (
+    ROLLING_STATE_FILENAME_PREFIX,
+    RollingState,
+)
+from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.syftbox_manager import SyftboxManager
-from syft.sync.checkpoints.rolling_state import RollingState
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
-from tests.unit.utils import get_mock_event
+from tests.unit.utils import fail_next_listing, get_mock_event
 
 
 def test_upload_and_get_rolling_state():
@@ -270,3 +275,12 @@ def test_no_rolling_state_when_owner_state_disabled():
     assert not (syncer.syftbox_folder / CACHE_DIR / ROLLING_STATE_FILENAME).exists()
     # Nothing is tracked in memory either - there is nothing to track it for.
     assert syncer._rolling_state is None
+
+
+def test_rolling_state_read_retries_drive_error(monkeypatch):
+    do_conn, _ = pair_with_mock_service("do@example.com", "ds@example.com")
+    store = do_conn.as_transport().owner_store
+    store.put_rolling_state("rolling_state_1.0.tar.gz", b"state")
+
+    fail_next_listing(monkeypatch, ROLLING_STATE_FILENAME_PREFIX)
+    assert store.get_rolling_state() == b"state"
