@@ -179,3 +179,71 @@ def test_request_has_all_files_accepts_crlf(tmp_path: Path):
     # Verify that tampered content is rejected
     (req_dir / "params.json").write_bytes(b'{"key": "tampered"}\r\n')
     assert JobClient._request_has_all_files(client, MagicMock()) is False
+
+
+def test_code_hash_mixed_newlines_and_empty_files(tmp_path: Path):
+    """Verify mixed CRLF/LF newlines, empty files, and nested paths hash identically."""
+    mix_dir = tmp_path / "mix"
+    lf_dir = tmp_path / "lf"
+    for d in (mix_dir, lf_dir):
+        (d / "code" / "sub").mkdir(parents=True)
+        (d / "code" / "empty.py").write_bytes(b"")
+
+    (mix_dir / "run.sh").write_bytes(b"#!/bin/sh\r\necho 1\necho 2\r\n")
+    (mix_dir / "code" / "sub" / "mod.py").write_bytes(b"x = 1\r\ny = 2\n")
+
+    (lf_dir / "run.sh").write_bytes(b"#!/bin/sh\necho 1\necho 2\n")
+    (lf_dir / "code" / "sub" / "mod.py").write_bytes(b"x = 1\ny = 2\n")
+
+    assert code_hash(mix_dir, as_sent=True) == code_hash(lf_dir, as_sent=True)
+    assert code_hash(mix_dir, as_sent=True) == code_hash(lf_dir, as_sent=False)
+
+
+def test_job_has_all_files_rejects_missing_or_extra_files(tmp_path: Path):
+    """Verify that missing files or extra unexpected files reject reception."""
+    job_dir = tmp_path / "missing_extra.job"
+    (job_dir / "code").mkdir(parents=True)
+    (job_dir / "run.sh").write_bytes(b"#!/bin/sh\npython code/main.py\n")
+    (job_dir / "code" / "main.py").write_bytes(b"print('hello')\n")
+
+    declared_hash = code_hash(job_dir, as_sent=True)
+
+    client = MagicMock()
+    client.manager.submission_dir.return_value = job_dir
+    client.manager.read_submission.return_value = JobSubmissionMetadata(
+        name="missing_extra.job",
+        submitted_by="ds@test.org",
+        datasite_email="do@test.org",
+        submitted_at=datetime.now(timezone.utc),
+        headers={SUBMISSION_HASH_HEADER: declared_hash},
+    )
+
+    # Sanity check: valid state accepted
+    assert JobClient._job_has_all_files(client, MagicMock()) is True
+
+    # Missing file rejected
+    (job_dir / "code" / "main.py").unlink()
+    assert JobClient._job_has_all_files(client, MagicMock()) is False
+
+    # Restore main.py, add extra unexpected file
+    (job_dir / "code" / "main.py").write_bytes(b"print('hello')\n")
+    (job_dir / "code" / "extra.py").write_bytes(b"print('extra')\n")
+    assert JobClient._job_has_all_files(client, MagicMock()) is False
+
+
+def test_submission_hash_preserves_raw_disk_integrity(tmp_path: Path):
+    """submission_hash must NOT normalize line endings; it pins raw on-disk state."""
+    crlf_sub = tmp_path / "crlf_sub"
+    lf_sub = tmp_path / "lf_sub"
+    for d in (crlf_sub, lf_sub):
+        (d / "code").mkdir(parents=True)
+        (d / "config.yaml").write_bytes(b"name: job\n")
+
+    (crlf_sub / "run.sh").write_bytes(b"#!/bin/sh\r\n")
+    (crlf_sub / "code" / "main.py").write_bytes(b"print(1)\r\n")
+
+    (lf_sub / "run.sh").write_bytes(b"#!/bin/sh\n")
+    (lf_sub / "code" / "main.py").write_bytes(b"print(1)\n")
+
+    # Raw on-disk bytes differ, so submission_hash must differ
+    assert submission_hash(crlf_sub) != submission_hash(lf_sub)
