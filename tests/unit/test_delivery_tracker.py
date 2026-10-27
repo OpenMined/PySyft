@@ -92,7 +92,7 @@ def test_queued_send_updates_view_on_confirm():
     tracker = DeliveryTracker(MemoryDeliveryStateStore())
     tracker.record_send(PEER, "m1", SendStatus.QUEUED, {"a": "h1"})
     assert tracker.plan({PEER: {"a": "h1"}})[PEER].send == ["a"]
-    tracker.confirm(["m1"])
+    tracker.confirm_deliveries(["m1"])
     assert tracker.plan({PEER: {"a": "h1"}})[PEER].send == []
 
 

@@ -40,7 +40,7 @@ Recording a send
 - ``DELIVERED``: the view changes at once.
 - ``QUEUED``: the changes are held under their ``msg_id``, and the view changes
   only when ``P2PConnection.delivered()`` reports that ``msg_id`` and
-  ``confirm`` is called. A receipt is not enough; only the peer's ack counts.
+  ``confirm_deliveries`` is called. A receipt is not enough; only the peer's ack counts.
 
 A view therefore never changes before a delivery is confirmed. A change that is
 not sent, because the upload failed, the peer was skipped, or a process
@@ -314,7 +314,7 @@ class DeliveryTracker:
     ) -> None:
         """Record a send of ``changes`` (path -> new hash, None for a delete).
 
-        ``DELIVERED`` updates the view now; ``QUEUED`` waits for ``confirm``.
+        ``DELIVERED`` updates the view now; ``QUEUED`` waits for ``confirm_deliveries``.
         """
         with self.store.locked():
             state = self.store.load()
@@ -325,7 +325,7 @@ class DeliveryTracker:
                 state.queued[msg_id] = QueuedSend(peer=peer, changes=dict(changes))
             self.store.save(state)
 
-    def confirm(self, msg_ids: Iterable[str]) -> None:
+    def confirm_deliveries(self, msg_ids: Iterable[str]) -> None:
         """Apply the queued sends that ``P2PConnection.delivered()`` reported."""
         msg_ids = list(msg_ids)
         if not msg_ids:

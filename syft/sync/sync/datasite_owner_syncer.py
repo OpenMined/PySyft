@@ -735,7 +735,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """Send each peer the files its view lacks, and deletes for the files it
         may no longer have. The caller loads the permissions first."""
         deliveries = self.event_cache.deliveries
-        deliveries.confirm(self.connection_router.transport.p2p.delivered())
+        deliveries.confirm_deliveries(self.connection_router.transport.p2p.delivered())
         plans = deliveries.plan(self._readable_files_by_peer(peer_emails))
         accepted = deliveries.accepted_changes()
         syncable = self._syncable_hashes()
