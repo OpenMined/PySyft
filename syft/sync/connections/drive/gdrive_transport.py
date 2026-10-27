@@ -1343,14 +1343,9 @@ class GDriveConnection(SyftboxPlatformConnection):
             print(f"Warning: could not delete file {file_id}: {e}")
 
     def find_orphaned_message_files(self) -> list[str]:
-        """
-        Find syft files by name pattern owned by user, regardless of parent folder.
+        """Find syft files of this account that have no parent folder.
 
-        Due to Google Drive's eventual consistency, files can become orphaned when
-        their parent folder is deleted before they're fully registered. This method
-        finds such files by searching for name patterns regardless of parent.
-
-        Returns list of file IDs.
+        Returns list of orphaned file IDs.
         """
         patterns = [
             "syfteventsmessagev3_",  # event messages
@@ -1372,13 +1367,15 @@ class GDriveConnection(SyftboxPlatformConnection):
                 results = execute_with_retries(
                     self.drive_service.files().list(
                         q=query,
-                        fields="files(id), nextPageToken",
+                        fields="files(id, parents), nextPageToken",
                         pageToken=page_token,
                     )
                 )
 
                 for item in results.get("files", []):
-                    file_ids.append(item["id"])
+                    # Drive leaves out "parents" for a file with no parent.
+                    if not item.get("parents"):
+                        file_ids.append(item["id"])
 
                 page_token = results.get("nextPageToken")
                 if not page_token:

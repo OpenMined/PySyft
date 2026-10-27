@@ -3,7 +3,9 @@
 from pathlib import Path
 from unittest.mock import patch
 
+from syft.sync.connections.drive.mock_drive_service import MockDriveFile
 from syft.sync.login_utils import handle_potential_version_mismatches_on_login
+from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.version.version_info import VersionInfo
 
 
@@ -146,3 +148,34 @@ class TestDeleteSyftboxImport:
         assert callable(delete_syftbox)
         assert callable(delete_local_syftbox)
         assert callable(delete_remote_syftbox)
+
+
+class TestOrphanedMessageFiles:
+    def test_true_orphan_found_message_in_peer_folder_kept(self):
+        ds_manager, do_manager = (
+            SyftboxManager.pair_with_mock_drive_service_connection()
+        )
+        ds_manager._send_file_change(f"{do_manager.email}/shared/x.txt", "hi")
+        # The DO moves the DS's proposal into its own archive folder. The DS
+        # still owns the file.
+        do_manager.sync()
+        conn = ds_manager._connection_router.connections[0]
+        files = conn.drive_service._backing_store.files
+        in_peer_folder = [
+            f.id
+            for f in files.values()
+            if f.name.startswith("msgv2_")
+            and files[f.parents[0]].owners[0]["emailAddress"] == do_manager.email
+        ]
+        orphan = MockDriveFile(
+            name="msgv2_1731506400.0_orphan",
+            owners=[{"emailAddress": ds_manager.email}],
+            parents=[],
+        )
+        conn.drive_service._backing_store.add_file(orphan)
+
+        found = conn.find_orphaned_message_files()
+
+        assert orphan.id in found
+        assert in_peer_folder
+        assert not set(in_peer_folder) & set(found)
