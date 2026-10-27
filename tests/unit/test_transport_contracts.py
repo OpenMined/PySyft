@@ -129,4 +129,3 @@ def test_an_empty_delivery_state_is_versioned():
     state = DeliveryState()
     assert state.version == DELIVERY_STATE_VERSION
     assert state.views == {}
-    assert state.queued == {}

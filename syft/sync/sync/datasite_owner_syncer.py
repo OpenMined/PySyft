@@ -44,7 +44,6 @@ from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
 from syft.sync.sync.delivery_tracker import (
     DeliveryPlan,
 )
-from syft.sync.transport.types import SendStatus
 from syft.sync.utils.path_filters import is_normal_syncable_path
 from syft.sync.utils.syftbox_utils import (
     create_event_timestamp,
@@ -260,6 +259,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             for peer_email in peer_emails:
                 self._pull_proposals(peer_email)
             self.deliver_file_changes(peer_emails)
+            # The one flush of this pass: the owner's log first, then the outbox.
+            self.process_syftbox_events_queue()
         finally:
             if self.persist_owner_state:
                 self._save_rolling_state()
@@ -657,7 +658,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     def _record_local_changes(self) -> None:
         """Update the file hashes from the local files. With
-        ``persist_owner_state``, also write the changes to the owner's event log."""
+        ``persist_owner_state``, also queue the changes for the owner's event
+        log; the caller flushes it."""
         file_change_events_message = self.event_cache.process_local_file_changes()
         if file_change_events_message is None:
             return
@@ -667,7 +669,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         # incremental/full checkpoints.
         self.syftbox_events_queue.put(file_change_events_message)
         self._add_events_to_rolling_state(file_change_events_message)
-        self.process_syftbox_events_queue()
 
     def _is_syncable(self, path: str) -> bool:
         """Whether a peer can get ``path`` by a delivery plan."""
@@ -710,19 +711,19 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         Each approved peer, and each peer in ``peer_emails``, is taken to hold
         every file it may read now. The caller reloads the permissions first.
         """
-        deliveries = self.event_cache.deliveries
-        if deliveries.is_seeded():
+        delivery_tracker = self.event_cache.delivery_tracker
+        if delivery_tracker.is_seeded():
             return
         approved = [p.email for p in self.connection_router.peer_store.approved_peers]
         peers_to_seed = sorted({*approved, *peer_emails})
-        deliveries.seed(self._readable_files_by_peer(peers_to_seed))
+        delivery_tracker.seed(self._readable_files_by_peer(peers_to_seed))
 
     def deliver_file_changes(self, peer_emails: list[str]) -> None:
-        """Send each peer the files its view lacks, and deletes for the files it
-        may no longer have. The caller loads the permissions first."""
-        deliveries = self.event_cache.deliveries
-        deliveries.confirm_deliveries(self.connection_router.transport.p2p.delivered())
-        plans = deliveries.plan(self._readable_files_by_peer(peer_emails))
+        """Queue for each peer the files its view lacks, and deletes for the files
+        it may no longer have. The caller loads the permissions first, and sends
+        the queue with ``process_syftbox_events_queue``."""
+        delivery_tracker = self.event_cache.delivery_tracker
+        plans = delivery_tracker.plan(self._readable_files_by_peer(peer_emails))
         # Build every message before the first one is queued, so a read error
         # leaves no message of this plan in the queue.
         messages = [
@@ -734,7 +735,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         ]
         for message in messages:
             self.outbox_queue.put(message)
-        self.process_syftbox_events_queue()
 
     def _plan_events(self, plan: DeliveryPlan) -> list[FileChangeEvent]:
         """The events that carry out ``plan``: its sends, then its deletes."""
@@ -848,7 +848,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             if entry.recipient in not_ready:
                 continue
             try:
-                status = self.connection_router.owner_write_event_messages_to_outbox(
+                self.connection_router.owner_write_event_messages_to_outbox(
                     entry.recipient, entry.message
                 )
             except SyftPeerNotReadyError as e:
@@ -857,7 +857,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             except Exception as e:
                 pending.extend(self._retry_or_give_up(entry, e))
             else:
-                self._record_sent(entry.recipient, entry.message, status)
+                self._record_sent(entry.recipient, entry.message)
 
     def _retry_or_give_up(
         self, entry: OutgoingMessage, error: Exception
@@ -875,9 +875,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         )
         return [entry._replace(attempts=attempts)]
 
-    def _record_sent(
-        self, recipient: str, message: FileChangeEventsMessage, status: SendStatus
-    ) -> None:
+    def _record_sent(self, recipient: str, message: FileChangeEventsMessage) -> None:
         """Add the changes of a sent message to ``recipient``'s view.
 
         A delete always counts. A file counts only if it is syncable and
@@ -893,9 +891,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 changes[path] = None
             elif self._may_hold(recipient, path, syncable):
                 changes[path] = event.new_hash
-        self.event_cache.deliveries.record_send(
-            recipient, message.message_filepath.as_string(), status, changes
-        )
+        self.event_cache.delivery_tracker.record_send(recipient, changes)
 
     def _download_outbox_message_with_new_connection(
         self, file_id: str

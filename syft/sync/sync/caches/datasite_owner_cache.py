@@ -68,7 +68,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
     # plain in-memory PersistedDict otherwise.
     file_hashes: PersistedDict = Field(default_factory=PersistedDict)
     # What each peer holds. Kept next to file_hashes when syftbox_folder is set.
-    deliveries: DeliveryTracker = Field(
+    delivery_tracker: DeliveryTracker = Field(
         default_factory=lambda: DeliveryTracker(MemoryDeliveryStateStore())
     )
     email: str
@@ -91,10 +91,10 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
                     key_serializer=str,
                     key_deserializer=Path,
                 )
-        if isinstance(data, dict) and "deliveries" not in data:
+        if isinstance(data, dict) and "delivery_tracker" not in data:
             folder = data.get("syftbox_folder")
             if folder is not None:
-                data["deliveries"] = DeliveryTracker(
+                data["delivery_tracker"] = DeliveryTracker(
                     LocalDeliveryStateStore(
                         Path(folder) / CACHE_DIR / DELIVERY_VIEWS_FILENAME
                     )
@@ -110,7 +110,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
                 email=config.email,
                 syftbox_folder=config.syftbox_folder,
                 file_hashes=PersistedDict(),
-                deliveries=DeliveryTracker(MemoryDeliveryStateStore()),
+                delivery_tracker=DeliveryTracker(MemoryDeliveryStateStore()),
                 collections_folder=config.collections_folder,
                 collection_variants=config.collection_variants,
             )
@@ -318,7 +318,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
         self.events_messages_connection.clear_cache()
         self.file_connection.clear_cache()
         self.file_hashes.clear()
-        self.deliveries.clear()
+        self.delivery_tracker.clear()
 
     def has_conflict(self, proposed_event: ProposedFileChange) -> bool:
         if proposed_event.path_in_datasite not in self.file_hashes:

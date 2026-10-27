@@ -23,7 +23,6 @@ from syft.sync.sync.delivery_tracker import (
     MemoryDeliveryStateStore,
 )
 from syft.sync.syftbox_manager import SyftboxManager
-from syft.sync.transport.types import SendStatus
 from syft_perms import SyftPermContext
 
 PEER = "ds@example.com"
@@ -31,7 +30,7 @@ PEER = "ds@example.com"
 
 def _tracker_holding(view: dict[str, str]) -> DeliveryTracker:
     tracker = DeliveryTracker(MemoryDeliveryStateStore())
-    tracker.record_send(PEER, "m0", SendStatus.DELIVERED, view)
+    tracker.record_send(PEER, view)
     return tracker
 
 
@@ -44,7 +43,7 @@ def test_plan_sends_changed_files_deletes_unreadable():
 
 def test_delivered_send_updates_view():
     tracker = _tracker_holding({"a": "h1", "b": "h1"})
-    tracker.record_send(PEER, "m1", SendStatus.DELIVERED, {"a": "h2", "b": None})
+    tracker.record_send(PEER, {"a": "h2", "b": None})
     assert tracker.plan({PEER: {"a": "h2"}})[PEER].send == []
     assert tracker.plan({PEER: {"a": "h2"}})[PEER].delete == []
 
@@ -64,19 +63,9 @@ def test_reset_resends_readable_deletes_gone():
     assert plan.delete == ["gone"]
 
 
-def test_queued_send_updates_view_on_confirm():
-    tracker = DeliveryTracker(MemoryDeliveryStateStore())
-    tracker.record_send(PEER, "m1", SendStatus.QUEUED, {"a": "h1"})
-    assert tracker.plan({PEER: {"a": "h1"}})[PEER].send == ["a"]
-    tracker.confirm_deliveries(["m1"])
-    assert tracker.plan({PEER: {"a": "h1"}})[PEER].send == []
-
-
 def test_local_store_persists_state_refuses_later_version(tmp_path):
     path = tmp_path / DELIVERY_VIEWS_FILENAME
-    DeliveryTracker(LocalDeliveryStateStore(path)).record_send(
-        PEER, "m1", SendStatus.DELIVERED, {"a": "h1"}
-    )
+    DeliveryTracker(LocalDeliveryStateStore(path)).record_send(PEER, {"a": "h1"})
     assert (
         DeliveryTracker(LocalDeliveryStateStore(path))
         .plan({PEER: {"a": "h1"}})[PEER]
@@ -106,7 +95,7 @@ def test_overlapping_writers_keep_both_views(tmp_path, monkeypatch):
 
     def send(peer: str):
         tracker = DeliveryTracker(LocalDeliveryStateStore(path))
-        tracker.record_send(peer, f"m-{peer}", SendStatus.DELIVERED, {"a": "h1"})
+        tracker.record_send(peer, {"a": "h1"})
 
     first = threading.Thread(target=send, args=("one@x.com",), name="first")
     second = threading.Thread(target=send, args=("two@x.com",), name="second")
@@ -339,10 +328,11 @@ def test_peer_not_ready_does_not_block_other_peers():
     syncer._record_local_changes()
     with pytest.warns(UserWarning, match=not_ready):
         syncer.deliver_file_changes([not_ready, ds_manager.email])
+        syncer.process_syftbox_events_queue()
     assert _outbox_paths(ds_manager, do_manager) == ["shared/data.txt"]
     # The skipped peer's view did not change, so its next plan sends the file.
     readable = syncer._readable_files_by_peer([not_ready])
-    assert syncer.event_cache.deliveries.plan(readable)[not_ready].send == [
+    assert syncer.event_cache.delivery_tracker.plan(readable)[not_ready].send == [
         "shared/data.txt"
     ]
 
@@ -368,6 +358,7 @@ def test_failed_send_retried_then_logged_without_blocking_others(monkeypatch, ca
         ConnectionRouter, "owner_write_event_messages_to_outbox", fail_for_broken
     )
     syncer.deliver_file_changes([broken, ds_manager.email])
+    syncer.process_syftbox_events_queue()
     assert _outbox_paths(ds_manager, do_manager) == ["shared/data.txt"]
     tries = [r for r in caplog.records if broken in r.getMessage()]
     assert [r.levelname for r in tries] == ["INFO", "INFO", "ERROR"]

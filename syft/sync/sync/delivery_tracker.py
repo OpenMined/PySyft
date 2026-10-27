@@ -1,8 +1,8 @@
 """What each peer holds, so the data owner can resend, delete and catch up.
 
 The tracker knows nothing about the transport or where its record is kept. It
-works on paths and content hashes, takes the outcome of each send as a
-``SendStatus``, and keeps its record through a ``DeliveryStateStore``.
+works on paths and content hashes, is told of each send that returned, and
+keeps its record through a ``DeliveryStateStore``.
 
 Views
 -----
@@ -30,14 +30,7 @@ not send every file again. A view that a send already recorded is kept.
 
 Recording a send
 ----------------
-``record_send`` takes the ``SendStatus`` from ``P2PConnection.send``:
-
-- ``DELIVERED``: the view changes at once.
-- ``QUEUED``: the changes are held under their ``msg_id``, and the view changes
-  only when ``P2PConnection.delivered()`` reports that ``msg_id`` and
-  ``confirm_deliveries`` is called. A receipt is not enough; only the peer's ack counts.
-
-A view therefore never changes before a delivery is confirmed. A change that is
+``record_send`` changes the view once a send returned. A change that is
 not sent, because the upload failed, the peer was skipped, or a process
 stopped before the send, stays in the plan of the next sync.
 
@@ -53,12 +46,11 @@ starts the views from them.
 from abc import ABC, abstractmethod
 from contextlib import nullcontext
 from pathlib import Path
-from typing import ContextManager, Iterable, Mapping
+from typing import ContextManager, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from syft.sync.sync.caches.persisted_dict import locked_file, write_text_atomic
-from syft.sync.transport.types import SendStatus
 
 DELIVERY_VIEWS_FILENAME = "owner_delivery_views.json"
 # Format of DeliveryState. Raise it when the layout changes, and keep a read
@@ -69,24 +61,12 @@ DELIVERY_STATE_VERSION = 1
 UNSENT_HASH = ""
 
 
-class QueuedSend(BaseModel):
-    """Changes sent to ``peer`` that wait for confirmation.
-
-    ``changes`` maps each path to its new hash, or None for a delete.
-    """
-
-    peer: str
-    changes: dict[str, str | None]
-
-
 class DeliveryState(BaseModel):
     """Everything the tracker keeps."""
 
     version: int = DELIVERY_STATE_VERSION
     # peer email -> {path: hash}
     views: dict[str, dict[str, str]] = Field(default_factory=dict)
-    # msg_id -> the send it confirms
-    queued: dict[str, QueuedSend] = Field(default_factory=dict)
     # Whether ``DeliveryTracker.seed`` ran on this state.
     seeded: bool = False
 
@@ -186,7 +166,7 @@ class DeliveryTracker:
         self.store = store
 
     def clear(self) -> None:
-        """Forget the whole state: views, queued sends and the seeded flag."""
+        """Forget the whole state: views and the seeded flag."""
         with self.store.locked():
             self.store.save(DeliveryState())
 
@@ -241,34 +221,9 @@ class DeliveryTracker:
             )
         return plans
 
-    def record_send(
-        self,
-        peer: str,
-        msg_id: str,
-        status: SendStatus,
-        changes: Mapping[str, str | None],
-    ) -> None:
-        """Record a send of ``changes`` (path -> new hash, None for a delete).
-
-        ``DELIVERED`` updates the view now; ``QUEUED`` waits for ``confirm_deliveries``.
-        """
+    def record_send(self, peer: str, changes: Mapping[str, str | None]) -> None:
+        """Record a send of ``changes`` (path -> new hash, None for a delete)."""
         with self.store.locked():
             state = self.store.load()
-            if status is SendStatus.DELIVERED:
-                _record_delivery(state, peer, changes)
-            else:
-                assert status is SendStatus.QUEUED, status
-                state.queued[msg_id] = QueuedSend(peer=peer, changes=dict(changes))
-            self.store.save(state)
-
-    def confirm_deliveries(self, msg_ids: Iterable[str]) -> None:
-        """Apply the queued sends that ``P2PConnection.delivered()`` reported."""
-        msg_ids = list(msg_ids)
-        if not msg_ids:
-            return
-        with self.store.locked():
-            state = self.store.load()
-            for msg_id in msg_ids:
-                queued = state.queued.pop(msg_id)
-                _record_delivery(state, queued.peer, queued.changes)
+            _record_delivery(state, peer, changes)
             self.store.save(state)

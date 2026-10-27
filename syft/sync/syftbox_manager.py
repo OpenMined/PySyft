@@ -1028,7 +1028,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             peer_email = (
                 email_or_peer if isinstance(email_or_peer, str) else email_or_peer.email
             )
-            self.datasite_owner_syncer.event_cache.deliveries.reset(peer_email)
+            self.datasite_owner_syncer.event_cache.delivery_tracker.reset(peer_email)
 
     def validate_peer(self, peer_email: str) -> Peer:
         """Load the peers, then return ``peer_email`` if it is approved.
