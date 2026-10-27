@@ -35,7 +35,7 @@ view that a send already recorded is kept.
 
 Recording a send
 ----------------
-``sent`` takes the ``SendStatus`` from ``P2PConnection.send``:
+``record_send`` takes the ``SendStatus`` from ``P2PConnection.send``:
 
 - ``DELIVERED``: the view changes at once.
 - ``QUEUED``: the changes are held under their ``msg_id``, and the view changes
@@ -222,7 +222,8 @@ class DeliveryTracker:
         self.store = store
 
     def clear(self) -> None:
-        """Forget every view and every queued send."""
+        """Forget the whole state: views, queued sends, accepted changes and the
+        seeded flag."""
         with self.store.locked():
             self.store.save(DeliveryState())
 
@@ -304,7 +305,7 @@ class DeliveryTracker:
             )
         return plans
 
-    def sent(
+    def record_send(
         self,
         peer: str,
         msg_id: str,

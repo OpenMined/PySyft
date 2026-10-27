@@ -655,9 +655,10 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         file_change_events_message = self.event_cache.process_local_file_changes()
         if file_change_events_message is None:
             return
-        self.event_cache.deliveries.drop_accepted(
+        changed_paths = [
             str(e.path_in_datasite) for e in file_change_events_message.events
-        )
+        ]
+        self.event_cache.deliveries.drop_accepted(changed_paths)
         if not self.persist_owner_state:
             return
         # Feed the events into rolling state so they flow through
@@ -679,7 +680,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             if self._is_syncable(str(path))
         }
 
-    def _readable_hashes(self, peer_emails: list[str]) -> dict[str, dict[str, str]]:
+    def _readable_files_by_peer(
+        self, peer_emails: list[str]
+    ) -> dict[str, dict[str, str]]:
         """For each peer, the current hash of every syncable file it may read.
 
         The caller reloads the permissions first.
@@ -706,9 +709,12 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if deliveries.is_seeded():
             return
         approved = [p.email for p in self.connection_router.peer_store.approved_peers]
-        deliveries.seed(self._held_before_seed(sorted({*approved, *peer_emails})))
+        peers_to_seed = sorted({*approved, *peer_emails})
+        deliveries.seed(self._files_held_by_peer_at_seed(peers_to_seed))
 
-    def _held_before_seed(self, peers: list[str]) -> dict[str, dict[str, str]]:
+    def _files_held_by_peer_at_seed(
+        self, peers: list[str]
+    ) -> dict[str, dict[str, str]]:
         """What each of ``peers`` is taken to hold when the views are seeded.
 
         Each peer holds every file it may read now. A syncable path that an
@@ -718,10 +724,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         delete them. The caller reloads the permissions first.
         """
         pending = self.event_cache.legacy_pending_paths()
-        held = self._readable_hashes(peers)
+        held = self._readable_files_by_peer(peers)
         for peer, files in held.items():
             unsent = [p for p in pending.get(peer, ()) if self._is_syncable(p)]
-            files.update(dict.fromkeys(unsent, UNSENT_HASH))
+            unsent_files = dict.fromkeys(unsent, UNSENT_HASH)
+            files.update(unsent_files)
         return held
 
     def deliver(self, peer_emails: list[str]) -> None:
@@ -729,7 +736,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         may no longer have. The caller loads the permissions first."""
         deliveries = self.event_cache.deliveries
         deliveries.confirm(self.connection_router.transport.p2p.delivered())
-        plans = deliveries.plan(self._readable_hashes(peer_emails))
+        plans = deliveries.plan(self._readable_files_by_peer(peer_emails))
         accepted = deliveries.accepted_changes()
         syncable = self._syncable_hashes()
         plans = {
@@ -962,7 +969,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 changes[path] = None
             elif self._may_hold(recipient, path, syncable):
                 changes[path] = event.new_hash
-        self.event_cache.deliveries.sent(
+        self.event_cache.deliveries.record_send(
             recipient, message.message_filepath.as_string(), status, changes
         )
 
