@@ -11,6 +11,7 @@ from unittest.mock import Mock
 import pytest
 
 import syft.sync.connections.connection_router as connection_router_module
+from syft.sync.sync import datasite_owner_syncer
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.gdrive_transport import CollectionFolder
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
@@ -320,9 +321,13 @@ def test_the_router_holds_no_drive_specific_code():
 # -- restoring the owner's state --------------------------------------------------
 
 
-def test_restoring_from_the_event_log_keeps_the_newest_version():
+def test_restoring_from_the_event_log_keeps_the_newest_version(monkeypatch):
     """A fresh client that restores from the event log alone replays the
     messages oldest first, so a file changed twice ends at its last version."""
+    # At 1 the event log is not written.
+    monkeypatch.setattr(
+        datasite_owner_syncer, "DEFAULT_ROLLING_STATE_UPLOAD_THRESHOLD", 2
+    )
     _, do = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=True
     )

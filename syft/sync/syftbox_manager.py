@@ -967,12 +967,7 @@ class SyftboxManager(BaseModelCallbackMixin):
                         ignore_peer_version=ignore_peer_version,
                     )
                 )
-                self.datasite_owner_syncer.sync(
-                    compatible_emails,
-                    deferred_peer_emails=[
-                        e for e in peer_emails if e not in compatible_emails
-                    ],
-                )
+                self.datasite_owner_syncer.sync(compatible_emails)
                 if auto_compact:
                     for peer_email in compatible_emails:
                         self.datasite_owner_syncer.compact_outbox_if_needed(
@@ -1023,8 +1018,17 @@ class SyftboxManager(BaseModelCallbackMixin):
         self._emit("peers_loaded")
 
     def reject_peer_request(self, email_or_peer: str | Peer):
-        """Reject a pending peer request. Delegates to PeerManager."""
+        """Reject a pending peer request. Delegates to PeerManager.
+
+        The DO resets the peer's delivery view, so a later approval sends the
+        peer every file it may read, and deletes the files it may no longer have.
+        """
         self.peer_manager.reject_peer_request(email_or_peer)
+        if self.has_do_role:
+            peer_email = (
+                email_or_peer if isinstance(email_or_peer, str) else email_or_peer.email
+            )
+            self.datasite_owner_syncer.event_cache.delivery_tracker.reset(peer_email)
 
     def validate_peer(self, peer_email: str) -> Peer:
         """Load the peers, then return ``peer_email`` if it is approved.
@@ -1098,8 +1102,10 @@ class SyftboxManager(BaseModelCallbackMixin):
     def _send_file_change(self, path: str | Path, content: str):
         self.file_writer.write_file(path, content)
 
-    def _get_all_accepted_events_do(self) -> List[FileChangeEvent]:
-        return self.datasite_owner_syncer.connection_router.owner_get_all_accepted_events_messages()
+    def _get_all_accepted_events_do(self) -> List[FileChangeEventsMessage]:
+        """The events of the owner's state on the backend since the last full
+        checkpoint, as a restore reads them."""
+        return self.datasite_owner_syncer.fetch_owner_state().events_messages()
 
     @property
     def _connection_router(self) -> ConnectionRouter:

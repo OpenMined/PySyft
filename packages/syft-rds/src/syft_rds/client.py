@@ -1249,11 +1249,10 @@ class SyftRDSClient(BaseModel):
             events_message = self.sync_engine.datasite_owner_syncer.event_cache.create_events_for_files(
                 files
             )
-            self.sync_engine.datasite_owner_syncer.queue_event_for_syftbox(
+            self.sync_engine.datasite_owner_syncer.process_events_for_own_state_and_peers(
                 recipients=[enclave_email],
                 file_change_events_message=events_message,
             )
-            self.sync_engine.datasite_owner_syncer.process_syftbox_events_queue()
 
     def _private_share_protocol_version(self, tag: str, peer_email: str) -> str:
         """The protocol version of the copy to ship privately to this peer.

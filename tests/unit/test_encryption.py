@@ -610,7 +610,7 @@ def test_verified_encrypted_message_flow():
     assert len(matching) > 0
 
 
-def test_tampered_inbox_message_raises():
+def test_tampered_inbox_message_logs_error(caplog):
     """Tampered message in mock inbox fails signature verification on sync."""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         encryption=True,
@@ -633,6 +633,9 @@ def test_tampered_inbox_message_raises():
     tampered[-1] ^= 0xFF
     mock_file.content = bytes(tampered)
 
-    # DO sync should fail due to signature verification
-    with pytest.raises(Exception):
-        do_manager.sync()
+    # DO sync logs the failed signature verification
+    do_manager.sync()
+    assert any(
+        r.levelname == "ERROR" and ds_manager.email in r.getMessage()
+        for r in caplog.records
+    )
