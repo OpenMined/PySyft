@@ -148,8 +148,8 @@ def test_early_termination_stops_pagination():
     fname2 = FileChangeEventsMessageFileName(id=uuid4(), timestamp=1731506440.0)
     fname3 = FileChangeEventsMessageFileName(id=uuid4(), timestamp=1731506430.0)
     fname4 = FileChangeEventsMessageFileName(
-        id=uuid4(), timestamp=1731506400.0
-    )  # <= since_timestamp
+        id=uuid4(), timestamp=1731506399.0
+    )  # one second older than since_timestamp
     fname5 = FileChangeEventsMessageFileName(id=uuid4(), timestamp=1731506390.0)
 
     # Mock returns 3 potential pages, but should stop after page 2
@@ -167,7 +167,7 @@ def test_early_termination_stops_pagination():
                 {
                     "name": fname4.as_string(),
                     "id": "id4",
-                },  # <= since_timestamp, should stop here
+                },  # one second older than since_timestamp, should stop here
             ],
             "nextPageToken": "token2",
         },
@@ -181,7 +181,7 @@ def test_early_termination_stops_pagination():
         "folder_id", since_timestamp=1731506400.0
     )
 
-    # Should stop after 2nd page (when it finds timestamp <= 1731506400.0)
+    # Should stop after 2nd page (when it finds a timestamp in an earlier second)
     assert conn.drive_service.files().list().execute.call_count == 2
     # Only files with timestamp > since_timestamp are returned
     assert len(files) == 3  # fname1, fname2, fname3 (fname4 is excluded)
@@ -235,3 +235,20 @@ def test_no_early_termination_when_since_timestamp_none():
     # Should fetch all pages (no early termination)
     assert conn.drive_service.files().list().execute.call_count == 2
     assert len(files) == 2
+
+
+def test_newer_message_listed_after_older_one_in_same_second_not_skipped():
+    conn = create_mock_connection()
+    older = FileChangeEventsMessageFileName(id=uuid4(), timestamp=1731506400.9)
+    newer = FileChangeEventsMessageFileName(id=uuid4(), timestamp=1731506400.95)
+    # Drive lists by "name desc": "…400.9_" sorts before "…400.95_".
+    names = sorted([older.as_string(), newer.as_string()], reverse=True)
+    conn.drive_service.files().list().execute.return_value = {
+        "files": [{"name": name, "id": name} for name in names]
+    }
+
+    files = conn.get_file_metadatas_from_folder(
+        "folder_id", since_timestamp=1731506400.92
+    )
+
+    assert [f["name"] for f in files] == [newer.as_string()]
