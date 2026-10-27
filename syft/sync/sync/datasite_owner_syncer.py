@@ -124,7 +124,7 @@ class DatasiteOwnerSyncerConfig(BaseModel):
 class OutgoingMessage(NamedTuple):
     recipient: str
     message: FileChangeEventsMessage
-    # Whether `deliver` queued the message from the views of `recipient`.
+    # Whether `deliver_file_changes` queued the message from the views of `recipient`.
     planned: bool
 
 
@@ -252,7 +252,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
             if recompute_hashes:
                 self._record_local_changes()
-            self.deliver(peer_emails)
+            self.deliver_file_changes(peer_emails)
 
             for peer_email in peer_emails:
                 proposed_count = 0
@@ -731,7 +731,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             files.update(unsent_files)
         return held
 
-    def deliver(self, peer_emails: list[str]) -> None:
+    def deliver_file_changes(self, peer_emails: list[str]) -> None:
         """Send each peer the files its view lacks, and deletes for the files it
         may no longer have. The caller loads the permissions first."""
         deliveries = self.event_cache.deliveries
@@ -946,7 +946,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                     self._record_sent(recipient, message, status)
         finally:
             # A later send of a planned message would not check the views or the
-            # permissions again, so `deliver` plans it again instead.
+            # permissions again, so `deliver_file_changes` plans it again instead.
             for entry in unsent:
                 if not entry.planned:
                     self.outbox_queue.put(entry)

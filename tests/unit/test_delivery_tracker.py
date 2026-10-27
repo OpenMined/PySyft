@@ -398,7 +398,7 @@ def test_peer_not_ready_does_not_block_other_peers():
 
     syncer._record_local_changes()
     with pytest.warns(UserWarning, match=not_ready):
-        syncer.deliver([not_ready, ds_manager.email])
+        syncer.deliver_file_changes([not_ready, ds_manager.email])
     assert _outbox_paths(ds_manager, do_manager) == ["shared/data.txt"]
     # The skipped peer's view did not change, so its next plan sends the file.
     readable = syncer._readable_files_by_peer([not_ready])
@@ -539,7 +539,7 @@ def test_read_error_leaves_no_planned_message(monkeypatch):
         fail_second_read,
     )
     with pytest.raises(PermissionError):
-        syncer.deliver([ds_manager.email, "peer_b@example.com"])
+        syncer.deliver_file_changes([ds_manager.email, "peer_b@example.com"])
     assert syncer.outbox_queue.empty()
 
 
