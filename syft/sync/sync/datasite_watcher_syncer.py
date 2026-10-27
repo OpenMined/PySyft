@@ -158,7 +158,10 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         self._record_sent_hashes(message)
 
     def on_file_change(
-        self, relative_path: Path | str, content: str | None = None, process_now=True
+        self,
+        relative_path: Path | str,
+        content: str | bytes | None = None,
+        process_now=True,
     ):
         relative_path = Path(relative_path)
         self.queue.put((relative_path, content))
