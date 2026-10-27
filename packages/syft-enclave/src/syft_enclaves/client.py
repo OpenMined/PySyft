@@ -595,11 +595,10 @@ class SyftEnclaveClient:
         events_message = syncer.event_cache.create_events_for_files(
             files_by_datasite_path
         )
-        syncer.queue_event_for_syftbox(
+        syncer.send_events_to_peers(
             recipients=recipients,
             file_change_events_message=events_message,
         )
-        syncer.process_syftbox_events_queue()
 
     def _push_approval_file(self, approval_file: Path) -> None:
         """Push a changed approval file to the enclave."""
@@ -704,11 +703,10 @@ class SyftEnclaveClient:
         events_message = syncer.event_cache.create_events_for_files(
             files_by_datasite_path
         )
-        syncer.queue_event_for_syftbox(
+        syncer.send_events_to_peers(
             recipients=do_emails,
             file_change_events_message=events_message,
         )
-        syncer.process_syftbox_events_queue()
 
     def _forward_approval_files_to_dos(self, review_dir: Path, do_emails: list[str]):
         """Forward each DO's approval state file to them individually."""
@@ -722,11 +720,10 @@ class SyftEnclaveClient:
             events_message = syncer.event_cache.create_events_for_files(
                 files_by_datasite_path
             )
-            syncer.queue_event_for_syftbox(
+            syncer.send_events_to_peers(
                 recipients=[do_email],
                 file_change_events_message=events_message,
             )
-            syncer.process_syftbox_events_queue()
 
     def _get_files_in_dir(self, directory: Path) -> dict[Path, bytes]:
         """Read all files under directory, keyed by path relative to the datasite root."""

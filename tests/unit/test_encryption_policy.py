@@ -436,7 +436,7 @@ def test_owner_send_to_non_peer_warns():
     message = FileChangeEventsMessage(events=[])
     syncer.outbox_queue.put(OutgoingMessage("former@example.com", message))
     with pytest.warns(UserWarning, match="not known"):
-        syncer.process_syftbox_events_queue()
+        syncer._send_outbox_messages()
 
 
 def test_owner_leaves_envelope_from_peer_without_bundle_in_inbox():

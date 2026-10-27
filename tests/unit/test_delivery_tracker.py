@@ -169,10 +169,9 @@ def _push_private_file(do_manager, ds_manager) -> None:
     message = syncer.event_cache.create_events_for_files(
         {Path("private/data.csv"): b"rows"}
     )
-    syncer.queue_event_for_syftbox(
+    syncer.send_events_to_peers(
         recipients=[ds_manager.email], file_change_events_message=message
     )
-    syncer.process_syftbox_events_queue()
 
 
 def test_peer_approved_later_gets_existing_files():
@@ -315,7 +314,7 @@ def test_send_to_peer_not_ready_dropped(monkeypatch):
         with pytest.warns(UserWarning, match="are not sent"):
             _push_private_file(do_manager, ds_manager)
 
-    do_manager.datasite_owner_syncer.process_syftbox_events_queue()
+    do_manager.datasite_owner_syncer._send_outbox_messages()
     assert _sent_events(ds_manager, do_manager, "private/data.csv") == []
 
 
@@ -372,11 +371,10 @@ def test_send_to_stranger_does_not_block_later_syncs():
     message = syncer.event_cache.create_events_for_files(
         {Path("private/data.csv"): b"rows"}
     )
-    syncer.queue_event_for_syftbox(
-        recipients=["stranger@example.com"], file_change_events_message=message
-    )
     with pytest.warns(UserWarning, match="stranger@example.com"):
-        syncer.process_syftbox_events_queue()
+        syncer.send_events_to_peers(
+            recipients=["stranger@example.com"], file_change_events_message=message
+        )
 
     syncer.perm_context.open("shared/").grant_read_access(ds_manager.email)
     _write(do_manager, "shared/data.txt", "one")

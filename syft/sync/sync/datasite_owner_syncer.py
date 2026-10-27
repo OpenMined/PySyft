@@ -292,7 +292,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             for peer_email in peer_emails:
                 self._pull_proposals(peer_email)
             # The owner's log goes out before any peer gets a change.
-            self.process_syftbox_events_queue()
+            self.save_owner_state()
             self.deliver_file_changes(peer_emails)
         finally:
             if self.persist_owner_state:
@@ -820,14 +820,18 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         if accepted_events_message is not None:
             self._add_to_owner_state(accepted_events_message)
 
-    def queue_event_for_syftbox(
+    def send_events_to_peers(
         self, recipients: list[str], file_change_events_message: FileChangeEventsMessage
-    ):
+    ) -> None:
+        """Add ``file_change_events_message`` to the owner state, save that
+        state, then send the message to each of ``recipients``."""
         self._add_to_owner_state(file_change_events_message)
+        self.save_owner_state()
         for recipient in recipients:
             self.outbox_queue.put(
                 OutgoingMessage(recipient, file_change_events_message)
             )
+        self._send_outbox_messages()
 
     def _add_to_owner_state(self, events_message: FileChangeEventsMessage) -> None:
         """Add ``events_message`` to the owner's persisted state, read back only
@@ -853,8 +857,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.syftbox_events_queue.put(events_message)
         self._add_events_to_rolling_state(events_message)
 
-    def process_syftbox_events_queue(self):
-        """Flush the owner's persisted state, then the outbox."""
+    def save_owner_state(self):
+        """Write the owner's event log, and upload and save its rolling state."""
         # TODO: make this atomic
         while not self.syftbox_events_queue.empty():
             file_change_events_message = self.syftbox_events_queue.get()
@@ -865,8 +869,6 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self._upload_rolling_state_if_due()
             # Also outside sync(), whose start reloads the rolling state from disk.
             self._save_rolling_state()
-        if not self.outbox_queue.empty():
-            self._send_outbox_messages()
 
     def _send_outbox_messages(self) -> None:
         """Send the queued messages, and record each sent one in its peer's view.

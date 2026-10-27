@@ -855,7 +855,7 @@ def test_accepted_delete_reaches_every_reader():
         ],
     )
     syncer.handle_proposed_filechange_events_message(ds_manager.email, proposal)
-    syncer.process_syftbox_events_queue()
+    syncer.save_owner_state()
     syncer.sync(peers)
     assert ("shared/data.txt", True) in _events_for(
         ds_manager._connection_router, do_manager
