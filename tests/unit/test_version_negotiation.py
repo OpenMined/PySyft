@@ -3,7 +3,9 @@
 import logging
 
 import pytest
+from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.transport import TransportUnavailableError
 from syft.sync.version.exceptions import (
     VersionMismatchError,
 )
@@ -274,6 +276,35 @@ class TestPeerManager:
             versions[third_peer_email].version_info.syft_client_version
             == third_peer_info.version_info.syft_client_version
         )
+
+    def test_drive_error_during_peer_version_read_raises(self, monkeypatch):
+        ds_manager, do_manager = (
+            SyftboxManager.pair_with_mock_drive_service_connection()
+        )
+        monkeypatch.setattr(GDriveConnection, "download_file", _drive_down)
+
+        with pytest.raises(TransportUnavailableError):
+            ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
+
+    def test_drive_error_during_peer_version_read_aborts_sync(self, monkeypatch):
+        ds_manager, do_manager = (
+            SyftboxManager.pair_with_mock_drive_service_connection()
+        )
+        monkeypatch.setattr(GDriveConnection, "download_file", _drive_down)
+
+        with pytest.raises(TransportUnavailableError):
+            do_manager.sync()
+
+    def test_drive_error_during_own_version_read_raises(self, monkeypatch):
+        _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+        monkeypatch.setattr(GDriveConnection, "download_file", _drive_down)
+
+        with pytest.raises(TransportUnavailableError):
+            do_manager.peer_manager.connection_router.read_own_peer_info_file()
+
+
+def _drive_down(self, file_id: str) -> bytes:
+    raise ConnectionResetError("Drive is down")
 
 
 def _set_peer_version(manager: SyftboxManager, peer_email: str, version: VersionInfo):

@@ -284,11 +284,19 @@ class Peering(ABC):
 
     @abstractmethod
     def read_own_peer_info(self) -> PeerInfo | None:
-        """My published version document, or None."""
+        """My published version document, or None.
+
+        Raises:
+            TransportUnavailableError: when the backend cannot be reached.
+        """
 
     @abstractmethod
     def read_peer_info(self, peer: str) -> PeerInfo | None:
-        """``peer``'s published version document, or None."""
+        """``peer``'s published version document, or None.
+
+        Raises:
+            TransportUnavailableError: when the backend cannot be reached.
+        """
 
     @abstractmethod
     def grant_peer_info_read(self, peer: str, peer_info: PeerInfo) -> None:

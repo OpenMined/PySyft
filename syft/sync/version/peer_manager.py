@@ -268,18 +268,16 @@ class PeerManager(BaseModel):
             cached_peer.info = peer_info
 
     def _load_single_peer_info(self, peer_email: str) -> tuple[str, Optional[PeerInfo]]:
-        """Load the info of a single peer. Used by parallel loader."""
-        try:
-            # Create new connection for thread safety
-            connection = self.connection_router.connection_for_peer_file_read(
-                create_new=True
-            )
-            peer_info = connection.read_peer_info_file(peer_email)
-        except Exception as e:
-            if not self.suppress_version_warnings:
-                warnings.warn(f"Failed to load peer info for {peer_email}: {e}")
-            return (peer_email, None)
-        return (peer_email, peer_info)
+        """Load the info of a single peer. Used by parallel loader.
+
+        Raises:
+            TransportUnavailableError: when the backend cannot be reached.
+        """
+        # Create new connection for thread safety
+        connection = self.connection_router.connection_for_peer_file_read(
+            create_new=True
+        )
+        return (peer_email, connection.read_peer_info_file(peer_email))
 
     def load_peer_infos_parallel(
         self, peer_emails: List[str], force: bool = False
