@@ -175,6 +175,23 @@ def test_owner_store_overwrites_and_deletes_the_rolling_state(pair):
     assert store.get_rolling_state() is None
 
 
+def test_owner_store_files_carry_the_syft_tag(pair):
+    do_conn, _ = pair
+    store = do_conn.as_transport().owner_store
+    store.put_checkpoint("checkpoint_1.0.tar.gz", b"full")
+    store.put_incremental("incremental_checkpoint_1_1.0.tar.gz", b"inc")
+    store.put_rolling_state("rolling_state_1.0.tar.gz", b"state")
+
+    do_files = [
+        f
+        for f in do_conn.drive_service._backing_store.files.values()
+        if f.owners[0]["emailAddress"] == DO
+    ]
+    untagged = [f.name for f in do_files if f.properties != {"syft": "true"}]
+    assert do_files
+    assert untagged == []
+
+
 # -- WatcherStore -----------------------------------------------------------------
 
 

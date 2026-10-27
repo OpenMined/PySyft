@@ -1980,11 +1980,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             "parents": [folder_id],
         }
 
-        result = (
-            self.drive_service.files()
-            .create(body=file_metadata, media_body=payload, fields="id")
-            .execute()
-        )
+        result = self._create_syft_file(file_metadata, payload)
 
         # Only delete old checkpoints after successful upload
         self.delete_all_checkpoints(exclude_file_id=result.get("id"))
@@ -2072,11 +2068,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             "parents": [folder_id],
         }
 
-        result = (
-            self.drive_service.files()
-            .create(body=file_metadata, media_body=payload, fields="id")
-            .execute()
-        )
+        result = self._create_syft_file(file_metadata, payload)
         return result.get("id")
 
     def download_all_raw_incremental_checkpoints(self) -> list[bytes]:
@@ -2308,11 +2300,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             "parents": [folder_id],
         }
 
-        result = (
-            self.drive_service.files()
-            .create(body=file_metadata, media_body=payload, fields="id")
-            .execute()
-        )
+        result = self._create_syft_file(file_metadata, payload)
         file_id = result.get("id")
         self._rolling_state_file_id = file_id
         return file_id
