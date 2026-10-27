@@ -21,7 +21,12 @@ from syft.sync.checkpoints.checkpoint import Checkpoint
 from syft.sync.sync.constants import (
     CACHE_DIR,
     OWNER_FILE_HASHES_FILENAME,
-    OWNER_PENDING_DELIVERIES_FILENAME,
+)
+from syft.sync.sync.delivery_tracker import (
+    DELIVERY_VIEWS_FILENAME,
+    DeliveryTracker,
+    LocalDeliveryStateStore,
+    MemoryDeliveryStateStore,
 )
 
 
@@ -62,9 +67,10 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
     # Wired in pre-init validator: persisted-to-disk when syftbox_folder is set,
     # plain in-memory PersistedDict otherwise.
     file_hashes: PersistedDict = Field(default_factory=PersistedDict)
-    # peer email -> {path in datasite: name of the last message that holds it}.
-    # A path stays here until the upload of that message to the peer succeeds.
-    pending_deliveries: PersistedDict = Field(default_factory=PersistedDict)
+    # What each peer holds. Kept next to file_hashes when syftbox_folder is set.
+    delivery_tracker: DeliveryTracker = Field(
+        default_factory=lambda: DeliveryTracker(MemoryDeliveryStateStore())
+    )
     email: str
     # Full path to collections (datasets) folder
     collections_folder: Path | None = None
@@ -85,11 +91,13 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
                     key_serializer=str,
                     key_deserializer=Path,
                 )
-        if isinstance(data, dict) and "pending_deliveries" not in data:
+        if isinstance(data, dict) and "delivery_tracker" not in data:
             folder = data.get("syftbox_folder")
             if folder is not None:
-                data["pending_deliveries"] = PersistedDict(
-                    path=Path(folder) / CACHE_DIR / OWNER_PENDING_DELIVERIES_FILENAME
+                data["delivery_tracker"] = DeliveryTracker(
+                    LocalDeliveryStateStore(
+                        Path(folder) / CACHE_DIR / DELIVERY_VIEWS_FILENAME
+                    )
                 )
         return data
 
@@ -102,7 +110,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
                 email=config.email,
                 syftbox_folder=config.syftbox_folder,
                 file_hashes=PersistedDict(),
-                pending_deliveries=PersistedDict(),
+                delivery_tracker=DeliveryTracker(MemoryDeliveryStateStore()),
                 collections_folder=config.collections_folder,
                 collection_variants=config.collection_variants,
             )
@@ -310,6 +318,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
         self.events_messages_connection.clear_cache()
         self.file_connection.clear_cache()
         self.file_hashes.clear()
+        self.delivery_tracker.clear()
 
     def has_conflict(self, proposed_event: ProposedFileChange) -> bool:
         if proposed_event.path_in_datasite not in self.file_hashes:
@@ -440,9 +449,10 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
         self.file_hashes.clear()
 
         # Restore from checkpoint
-        # Always write to file_connection to maintain consistent state for
-        # process_local_changes comparison. This is needed even when write_files=False
-        # because file_connection may be in-memory and serves as the source of truth.
+        # Always write to file_connection to maintain consistent state for the
+        # comparison in process_local_file_changes. This is needed even when
+        # write_files=False, because file_connection may be in-memory and serves
+        # as the source of truth.
         for file_entry in checkpoint.files:
             path = Path(file_entry.path)
             self.file_hashes[path] = file_entry.hash

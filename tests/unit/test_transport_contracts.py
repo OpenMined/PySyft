@@ -1,6 +1,5 @@
 """The transport contracts: the abstract jobs, their helper methods, the
-message types, the naming rules and the DeliveryTracker stub. No backend
-implements them yet."""
+message types, the naming rules and the DeliveryTracker state."""
 
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -13,7 +12,6 @@ from syft.sync.sync.delivery_tracker import (
     DELIVERY_STATE_VERSION,
     DeliveryState,
     DeliveryStateStore,
-    DeliveryTracker,
 )
 from syft.sync.transport import (
     Collections,
@@ -122,12 +120,6 @@ def test_message_names_carry_their_send_time(name, expected):
     assert timestamp_from_message_name(name) == expected
 
 
-def test_delivery_tracker_is_a_stub_until_implemented():
-    tracker = DeliveryTracker(store=Mock(spec=DeliveryStateStore))
-    with pytest.raises(NotImplementedError):
-        tracker.has_view("ds@example.com")
-
-
 def test_a_delivery_state_store_needs_a_backend():
     with pytest.raises(TypeError):
         DeliveryStateStore()
@@ -137,4 +129,3 @@ def test_an_empty_delivery_state_is_versioned():
     state = DeliveryState()
     assert state.version == DELIVERY_STATE_VERSION
     assert state.views == {}
-    assert state.queued == {}

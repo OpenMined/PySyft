@@ -1,10 +1,8 @@
 """What each peer holds, so the data owner can resend, delete and catch up.
 
-STUB: the names and contracts are agreed; the bodies are to be written.
-
 The tracker knows nothing about the transport or where its record is kept. It
-works on paths and content hashes, takes the outcome of each send as a
-``SendStatus``, and keeps its record through a ``DeliveryStateStore``.
+works on paths and content hashes, is told of each send that returned, and
+keeps its record through a ``DeliveryStateStore``.
 
 Views
 -----
@@ -16,76 +14,62 @@ peer may read now:
     in the view, but no longer readable           -> delete
     in the view, but the file is gone             -> delete
 
-A peer with no view, because it is new or its record was lost, gets a
-``PeerReset``: its view starts empty, so it is sent every file it may read.
+A change that the owner accepts from a peer goes, like any change, to every
+peer that may read the file, that peer included.
+
+A new peer starts with an empty view, so it is sent every file it may read.
+When the owner rejects a peer, ``reset`` sets each path in its view to
+``UNSENT_HASH``. Thus a peer
+that the owner rejects and then approves again is sent every file it may read,
+and a delete for each file that it may no longer have.
+
+An owner that lost its views file but kept or restored its file hashes, for
+example one with ``persist_owner_state`` on a new machine, has file hashes but
+no views. ``seed`` then starts the view of each approved peer with every file
+it may read now, so the owner does not send every file again. A view that a
+send already recorded is kept.
 
 Recording a send
 ----------------
-``sent`` takes the ``SendStatus`` from ``P2PConnection.send``:
-
-- ``DELIVERED``: the view changes at once.
-- ``QUEUED``: the changes are held under their ``msg_id``, and the view changes
-  only when ``P2PConnection.delivered()`` reports that ``msg_id`` and
-  ``confirm`` is called. A receipt is not enough; only the peer's ack counts.
-
-A view therefore never changes before a delivery is confirmed.
-
-Pending deliveries
-------------------
-Changes queued for a peer but not yet sent, for example because the upload
-failed or the peer was skipped by the version gate, are kept per peer by the
-owner cache's pending deliveries (PR #9563). The tracker does not duplicate
-them.
+``record_send`` changes the view once a send returned. A change that is
+not sent, because the upload failed, the peer was skipped, or a process
+stopped before the send, stays in the plan of the next sync.
 
 Storage
 -------
-``DeliveryState`` is the whole record, versioned. A ``DeliveryStateStore``
-loads and saves it: a local file next to the owner's file hashes, and with
-``persist_owner_state`` also Drive, inside the rolling state and checkpoints,
-so an enclave that wipes its local state at every boot does not reset every
-peer.
-
-Sends not routed by permission, such as the echo of a submitter's own change
-or a private dataset shared with an enclave, are recorded only where the
-recipient may read the file, so a later permission change never deletes them.
-
-Open decisions:
-- A peer rejected, then approved again: reset its view and resend (proposed).
-- Accepted job submissions: echo only to the submitter, as today (proposed), or
-  also send to every peer who may read the file.
+The views are kept on the owner's local disk only, also with
+``persist_owner_state``. An owner that loses its local state, file hashes
+included, sends every peer every file it may read once again. With
+``persist_owner_state``, the file hashes come back from Drive, so ``seed``
+starts the views from them.
 """
 
 from abc import ABC, abstractmethod
-from typing import Iterable, Mapping
+from contextlib import nullcontext
+from pathlib import Path
+from typing import ContextManager, Mapping
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from syft.sync.transport.types import SendStatus
+from syft.sync.sync.caches.persisted_dict import locked_file, write_text_atomic
 
 DELIVERY_VIEWS_FILENAME = "owner_delivery_views.json"
 # Format of DeliveryState. Raise it when the layout changes, and keep a read
 # path for every earlier version.
 DELIVERY_STATE_VERSION = 1
-
-
-class QueuedSend(BaseModel):
-    """Changes sent to ``peer`` that wait for confirmation.
-
-    ``changes`` maps each path to its new hash, or None for a delete.
-    """
-
-    peer: str
-    changes: dict[str, str | None]
+# A view hash that matches no file, for a path that the peer may hold in any
+# version. The next plan sends the path, or deletes it.
+UNSENT_HASH = ""
 
 
 class DeliveryState(BaseModel):
-    """Everything the tracker keeps: views, and sends awaiting confirmation."""
+    """Everything the tracker keeps."""
 
     version: int = DELIVERY_STATE_VERSION
-    # peer -> {path: hash}
+    # peer email -> {path: hash}
     views: dict[str, dict[str, str]] = Field(default_factory=dict)
-    # msg_id -> the send it confirms
-    queued: dict[str, QueuedSend] = Field(default_factory=dict)
+    # Whether ``DeliveryTracker.seed`` ran on this state.
+    seeded: bool = False
 
 
 class DeliveryPlan(BaseModel):
@@ -98,56 +82,145 @@ class DeliveryPlan(BaseModel):
 
 
 class DeliveryStateStore(ABC):
-    """Where a ``DeliveryState`` is kept: a local file, Drive, or memory."""
+    """Where a ``DeliveryState`` is kept: a local file or memory."""
 
     @abstractmethod
     def load(self) -> DeliveryState:
-        """The stored state, or an empty one."""
+        """The stored state, or an empty one.
+
+        Raises:
+            ValueError: when a later client wrote the state.
+        """
 
     @abstractmethod
     def save(self, state: DeliveryState) -> None:
         """Store ``state``, replacing what was there."""
 
+    def locked(self) -> ContextManager[None]:
+        """Keep other writers out from a ``load`` to the ``save`` that follows."""
+        return nullcontext()
+
+
+class MemoryDeliveryStateStore(DeliveryStateStore):
+    """A state kept in this process only."""
+
+    def __init__(self):
+        self._state = DeliveryState()
+
+    def load(self) -> DeliveryState:
+        return self._state.model_copy(deep=True)
+
+    def save(self, state: DeliveryState) -> None:
+        self._state = state.model_copy(deep=True)
+
+
+class LocalDeliveryStateStore(DeliveryStateStore):
+    """A state kept in a JSON file, shared by the processes of one datasite."""
+
+    def __init__(self, path: Path):
+        self.path = path
+
+    def load(self) -> DeliveryState:
+        if not self.path.exists():
+            return DeliveryState()
+        state = DeliveryState.model_validate_json(self.path.read_text())
+        if state.version > DELIVERY_STATE_VERSION:
+            raise ValueError(
+                f"{self.path} has version {state.version}, and this client reads "
+                f"up to version {DELIVERY_STATE_VERSION}."
+            )
+        return state
+
+    def locked(self) -> ContextManager[None]:
+        return locked_file(self.path)
+
+    def save(self, state: DeliveryState) -> None:
+        write_text_atomic(self.path, state.model_dump_json())
+
+
+def _apply_changes_to_view(
+    view: dict[str, str], changes: Mapping[str, str | None]
+) -> None:
+    """Apply ``changes`` (path -> new hash, None for a delete) to ``view``
+    (path -> hash)."""
+    for path, new_hash in changes.items():
+        if new_hash is None:
+            view.pop(path, None)
+        else:
+            view[path] = new_hash
+
 
 class DeliveryTracker:
-    """Per-peer views of confirmed file versions, for the data owner."""
+    """Per-peer views of the file versions sent to each peer, for the data owner.
+
+    Each call reads the state from the store. Each change reads and writes it
+    back under the store lock, so the processes of one datasite see the same
+    views and do not lose each other's changes.
+    """
 
     def __init__(self, store: DeliveryStateStore):
         self.store = store
 
-    def has_view(self, peer: str) -> bool:
-        """Whether ``peer`` has a view. False means a ``PeerReset`` is due."""
-        raise NotImplementedError
+    def clear(self) -> None:
+        """Forget the whole state: views and the seeded flag."""
+        with self.store.locked():
+            self.store.save(DeliveryState())
 
     def reset(self, peer: str) -> None:
-        """Start ``peer``'s view empty (a ``PeerReset``), so the next plan sends
-        it every file it may read."""
-        raise NotImplementedError
+        """Set each path in ``peer``'s view to ``UNSENT_HASH``.
+
+        The next plan sends ``peer`` every file it may read, and deletes the
+        paths of its view that it may no longer have.
+        """
+        with self.store.locked():
+            state = self.store.load()
+            view = state.views.get(peer, {})
+            state.views[peer] = dict.fromkeys(view, UNSENT_HASH)
+            self.store.save(state)
+
+    def is_seeded(self) -> bool:
+        """Whether ``seed`` ran on the stored state."""
+        return self.store.load().seeded
+
+    def seed(self, held_by_peer: Mapping[str, Mapping[str, str]]) -> None:
+        """Add the files in ``held_by_peer`` to each peer's view, one time.
+
+        ``held_by_peer`` maps each peer email to ``{path: hash}``. A path that the view already holds keeps its hash. After the first
+        call, later calls do nothing.
+        """
+        with self.store.locked():
+            state = self.store.load()
+            if state.seeded:
+                return
+            # held_by_peer: peer email -> {path: hash}
+            for peer, files in held_by_peer.items():
+                state.views[peer] = {**files, **state.views.get(peer, {})}
+            state.seeded = True
+            self.store.save(state)
 
     def plan(
-        self, peer: str, readable: Mapping[str, str], paths: Iterable[str]
-    ) -> DeliveryPlan:
-        """What to send and delete for ``peer`` among ``paths``.
+        self, readable_by_peer: Mapping[str, Mapping[str, str]]
+    ) -> dict[str, DeliveryPlan]:
+        """What to send and delete for each peer in ``readable_by_peer``.
 
-        ``readable`` maps every path ``peer`` may read now to its current hash.
-        ``paths`` are the dirty paths; for a peer with no view, every readable
-        path.
+        ``readable_by_peer`` maps each peer email to ``{path: hash}``: every
+        path it may read now, with the path's current hash.
         """
-        raise NotImplementedError
+        views = self.store.load().views
+        plans = {}
+        # readable_by_peer: peer email -> {path: hash}
+        for peer, readable in readable_by_peer.items():
+            view = views.get(peer, {})
+            plans[peer] = DeliveryPlan(
+                send=sorted(p for p, h in readable.items() if view.get(p) != h),
+                delete=sorted(p for p in view if p not in readable),
+            )
+        return plans
 
-    def sent(
-        self,
-        peer: str,
-        msg_id: str,
-        status: SendStatus,
-        changes: Mapping[str, str | None],
-    ) -> None:
-        """Record a send of ``changes`` (path -> new hash, None for a delete).
-
-        ``DELIVERED`` updates the view now; ``QUEUED`` waits for ``confirm``.
-        """
-        raise NotImplementedError
-
-    def confirm(self, msg_ids: Iterable[str]) -> None:
-        """Apply the queued sends that ``P2PConnection.delivered()`` reported."""
-        raise NotImplementedError
+    def record_send(self, peer: str, changes: Mapping[str, str | None]) -> None:
+        """Record a send of ``changes`` (path -> new hash, None for a delete)."""
+        with self.store.locked():
+            state = self.store.load()
+            peer_view = state.views.setdefault(peer, {})
+            _apply_changes_to_view(peer_view, changes)
+            self.store.save(state)
