@@ -167,6 +167,20 @@ class TestOrphanedMessageFiles:
         assert archived
         assert set(archived) <= set(found)
 
+    def test_proposal_moved_to_root_when_do_deletes_syftbox_folder_only(self):
+        ds_manager, do_manager, archived = _archive_one_proposal()
+        do_conn = _connection(do_manager)
+        archive_id = do_conn.owner_get_archive_folder_id(ds_manager.email)
+        do_conn.drive_service.files().delete(
+            fileId=do_conn.get_syftbox_folder_id()
+        ).execute()
+
+        found = _connection(ds_manager).find_orphaned_message_files()
+
+        assert archive_id not in do_conn.drive_service._backing_store.files
+        assert archived
+        assert set(archived) <= set(found)
+
     def test_untagged_file_in_root_not_found(self):
         ds_manager, _, _ = _archive_one_proposal()
         drive = _connection(ds_manager).drive_service

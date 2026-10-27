@@ -622,19 +622,26 @@ class MockDeleteRequest:
                 f"<HttpError 403 ... insufficientFilePermissions: {self._file_id}>"
             )
 
-        self._backing_store.delete_file(self._file_id)
-        # Drive moves a file of another account that loses its last parent to
-        # the root of its owner.
-        for child in self._backing_store.files.values():
-            if self._file_id in child.parents and not any(
-                owner.get("emailAddress") == self._current_user
-                for owner in child.owners
-            ):
-                child.parents.remove(self._file_id)
+        self._delete_tree(self._file_id)
+
+    def _delete_tree(self, file_id: str) -> None:
+        """Delete ``file_id`` and, like Drive, every item below it that the user owns.
+
+        Drive moves an item of another account that loses its last parent to
+        the root of its owner, with everything below it.
+        """
+        children = [
+            f for f in self._backing_store.files.values() if file_id in f.parents
+        ]
+        self._backing_store.delete_file(file_id)
+        for child in children:
+            owner = child.owners[0]["emailAddress"]
+            if owner == self._current_user:
+                self._delete_tree(child.id)
+            else:
+                child.parents.remove(file_id)
                 if not child.parents:
-                    child.parents.append(
-                        root_folder_id(child.owners[0]["emailAddress"])
-                    )
+                    child.parents.append(root_folder_id(owner))
 
 
 class MockGetRequest:
