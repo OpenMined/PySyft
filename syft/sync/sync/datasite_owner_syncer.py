@@ -683,7 +683,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         the owner's persisted state. The caller flushes it."""
         file_change_events_message = self.event_cache.process_local_file_changes()
         if file_change_events_message is not None:
-            self._add_to_owner_state(file_change_events_message)
+            self._queue_for_owner_state(file_change_events_message)
 
     def _is_syncable(self, path: str) -> bool:
         """Whether a peer can get ``path`` by a delivery plan."""
@@ -818,14 +818,14 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         # The next plan sends the accepted change to every peer that may read
         # the file, the submitter included.
         if accepted_events_message is not None:
-            self._add_to_owner_state(accepted_events_message)
+            self._queue_for_owner_state(accepted_events_message)
 
     def process_events_for_own_state_and_peers(
         self, recipients: list[str], file_change_events_message: FileChangeEventsMessage
     ) -> None:
         """Add ``file_change_events_message`` to the owner state, save that
         state, then send the message to each of ``recipients``."""
-        self._add_to_owner_state(file_change_events_message)
+        self._queue_for_owner_state(file_change_events_message)
         self.save_owner_state()
         for recipient in recipients:
             self.outbox_queue.put(
@@ -833,7 +833,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             )
         self._send_outbox_messages()
 
-    def _add_to_owner_state(self, events_message: FileChangeEventsMessage) -> None:
+    def _queue_for_owner_state(self, events_message: FileChangeEventsMessage) -> None:
         """Add ``events_message`` to the owner's persisted state, read back only
         to restore this datasite.
 
