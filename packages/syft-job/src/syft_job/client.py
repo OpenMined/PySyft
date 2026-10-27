@@ -669,7 +669,7 @@ python {entrypoint_path}
         submission_dir = self.manager.submission_dir(ref)
         declared = metadata.headers.get(SUBMISSION_HASH_HEADER)
         if declared:
-            return code_hash(submission_dir) == declared
+            return code_hash(submission_dir, as_sent=True) == declared
         return has_listed_files(submission_dir, metadata.files)
 
     def _request_has_all_files(self, ref: RequestRef) -> bool:
@@ -681,7 +681,10 @@ python {entrypoint_path}
             request = self.manager.read_request(ref)
         except METADATA_ERRORS:
             return False  # request.yaml is still arriving
-        return request_hash(self.manager.request_dir(ref)) == request.files_hash
+        return (
+            request_hash(self.manager.request_dir(ref), as_sent=True)
+            == request.files_hash
+        )
 
     def _lock_submission(self, ref: JobRef) -> None:
         """Make the job's inbox folder read-only for its submitter.

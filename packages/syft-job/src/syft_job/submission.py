@@ -87,24 +87,45 @@ def _is_skipped(relative: Path) -> bool:
     return any(part in SYNC_EXCLUDED_NAMES for part in relative.parts)
 
 
+def _as_sent(path: Path) -> bytes:
+    """The bytes the data owner ends up with for ``path``.
+
+    The submitter's syncer reads a file as text and the owner writes it back
+    as UTF-8, so line endings and the local encoding do not survive.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read().encode("utf-8")
+    except UnicodeDecodeError:
+        return path.read_bytes()
+
+
+
 def _digest(
     submission_dir: Path,
     entries: Optional[frozenset[str]],
     skip: frozenset[str] = frozenset(),
+    as_sent: bool = False,
 ) -> str:
     digest = hashlib.sha256()
-    files = sorted(
-        path
-        for path in submission_dir.rglob("*")
-        if path.is_file()
-        and not _is_skipped(relative := path.relative_to(submission_dir))
-        and (entries is None or relative.parts[0] in entries)
-        and relative.as_posix() not in skip
-    )
-    for path in files:
-        digest.update(path.relative_to(submission_dir).as_posix().encode())
+    file_entries = []
+    for path in submission_dir.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(submission_dir)
+        if _is_skipped(relative):
+            continue
+        if entries is not None and relative.parts[0] not in entries:
+            continue
+        rel_posix = relative.as_posix()
+        if rel_posix not in skip:
+            file_entries.append((rel_posix, path))
+    file_entries.sort(key=lambda item: item[0])
+    for rel_posix, path in file_entries:
+        content = _as_sent(path) if as_sent else path.read_bytes()
+        digest.update(rel_posix.encode())
         digest.update(b"\0")
-        digest.update(hashlib.sha256(path.read_bytes()).digest())
+        digest.update(hashlib.sha256(content).digest())
     return digest.hexdigest()
 
 
@@ -247,3 +268,5 @@ def lock_for_submitter(folder: Path, ds_email: str) -> None:
     """
     ruleset = RuleSet(rules=[Rule(pattern="**", access=Access(read=[ds_email]))])
     ruleset.save(folder / PERMISSION_FILE_NAME)
+
+
