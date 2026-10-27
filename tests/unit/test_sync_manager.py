@@ -300,6 +300,28 @@ def test_file_connections():
     assert (syftbox_dir_ds / do_manager.email / result_rel_path).exists()
 
 
+def test_binary_job_file_reaches_do_byte_for_byte():
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False
+    )
+    grant_job_inbox_access(do_manager, ds_manager.email)
+    job_path = path_for_job(do_manager.email, ds_manager.email, "model.bin")
+    content = b"\x89PNG\r\n\x1a\n\x00\xff\xfe"
+    local_file = ds_manager.datasite_watcher_syncer.syftbox_folder / job_path
+    local_file.parent.mkdir(parents=True, exist_ok=True)
+    local_file.write_bytes(content)
+
+    # No content given: the DS reads the file from its SyftBox folder.
+    ds_manager.datasite_watcher_syncer.on_file_change(job_path)
+    do_manager.sync()
+
+    datasite_dir_do = (
+        do_manager.datasite_owner_syncer.event_cache.file_connection.base_dir
+    )
+    job_path_in_datasite = job_path.split("/", 1)[1]
+    assert (datasite_dir_do / job_path_in_datasite).read_bytes() == content
+
+
 def test_file_deletion_do_to_ds():
     """Test that DO can delete a file and it syncs to DS"""
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(

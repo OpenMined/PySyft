@@ -310,6 +310,25 @@ with open("outputs/result.json", "w") as f:
     assert json_content["result"] == 1
 
 
+def test_job_with_crlf_code_arrives_byte_for_byte(tmp_path):
+    ds_manager, do_manager = SyftRDSClient.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=False,
+        sync_automatically=False,
+    )
+    code = b'print("a")\r\nprint("b")\r\n'
+    code_path = tmp_path / "main.py"
+    code_path.write_bytes(code)
+
+    ds_manager.submit_python_job(
+        user=do_manager.email, code_path=str(code_path), job_name="crlf.job"
+    )
+    do_manager.sync()
+
+    [job] = do_manager.job_client.jobs
+    assert (job.job_submission_path / "code" / "main.py").read_bytes() == code
+    assert job.status == "pending"
+
+
 @pytest.mark.parametrize("persist_owner_state", [True, False])
 def test_jobs_with_dataset(persist_owner_state):
     """Test job execution with dataset access using syft:// protocol.

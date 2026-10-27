@@ -61,7 +61,10 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
     # --- Pushing proposed file changes ---
 
     def get_proposed_file_change_object(
-        self, relative_path: Path, content: str, datasite_email: str | None = None
+        self,
+        relative_path: Path,
+        content: str | bytes,
+        datasite_email: str | None = None,
     ) -> ProposedFileChange:
         if datasite_email is None:
             datasite_email = self.email
@@ -82,8 +85,12 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
 
             # for in memory connection we pass content directly
             if content is None:
-                with open(self.syftbox_folder / relative_path, "r") as f:
-                    content = f.read()
+                raw = (self.syftbox_folder / relative_path).read_bytes()
+                # A text file goes as text, any other file as bytes.
+                try:
+                    content = raw.decode("utf-8")
+                except UnicodeDecodeError:
+                    content = raw
 
             datasite_email = relative_path.parts[0]
             path_in_datasite = (
