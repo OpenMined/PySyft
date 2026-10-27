@@ -119,9 +119,12 @@ def test_overlapping_writers_keep_both_views(tmp_path, monkeypatch):
 
 
 def _pair(**kwargs):
-    return SyftboxManager.pair_with_mock_drive_service_connection(
+    """A DS and DO pair. The DO synced once, so its owner state is loaded."""
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False, **kwargs
     )
+    do_manager.sync(auto_checkpoint=False)
+    return ds_manager, do_manager
 
 
 def _write(do_manager, path: str, content: str):

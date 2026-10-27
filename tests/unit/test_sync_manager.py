@@ -53,6 +53,7 @@ def test_valid_and_invalid_proposed_filechange_event():
     do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
         ds_manager.email
     )
+    do_manager.sync()
     ds_email = ds_manager.email
     do_email = do_manager.email
 

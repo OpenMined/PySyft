@@ -15,6 +15,11 @@ from syft.sync.sync.constants import (
 )
 
 
+def _owner_event_count(do_manager) -> int:
+    """The events in the owner's state on the backend."""
+    return sum(len(m.events) for m in do_manager._get_all_accepted_events_do())
+
+
 def test_no_duplicate_events_across_processes():
     """Two managers sharing a syftbox_folder must not create duplicate events
     for the same file change.
@@ -40,17 +45,13 @@ def test_no_duplicate_events_across_processes():
 
     # Process A syncs — detects changes, uploads events, saves cache
     do_manager.sync(auto_checkpoint=False)
-    events_after_a = len(
-        do_manager.datasite_owner_syncer.connection_router.owner_get_all_accepted_event_file_ids()
-    )
+    events_after_a = _owner_event_count(do_manager)
     assert events_after_a > 0
 
     # Process B (syft-bg) syncs — must NOT re-create the same events
     do_manager_b = do_manager._copy()
     do_manager_b.sync(auto_checkpoint=False)
-    events_after_b = len(
-        do_manager_b.datasite_owner_syncer.connection_router.owner_get_all_accepted_event_file_ids()
-    )
+    events_after_b = _owner_event_count(do_manager_b)
 
     # Verify cache files were created
     cache_dir = do_manager.syftbox_folder / CACHE_DIR

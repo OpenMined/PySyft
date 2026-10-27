@@ -1102,8 +1102,10 @@ class SyftboxManager(BaseModelCallbackMixin):
     def _send_file_change(self, path: str | Path, content: str):
         self.file_writer.write_file(path, content)
 
-    def _get_all_accepted_events_do(self) -> List[FileChangeEvent]:
-        return self.datasite_owner_syncer.connection_router.owner_get_all_accepted_events_messages()
+    def _get_all_accepted_events_do(self) -> List[FileChangeEventsMessage]:
+        """The events of the owner's state on the backend since the last full
+        checkpoint, as a restore reads them."""
+        return self.datasite_owner_syncer.fetch_owner_state().events_messages()
 
     @property
     def _connection_router(self) -> ConnectionRouter:

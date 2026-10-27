@@ -12,6 +12,7 @@ from uuid import uuid4
 
 import pytest
 
+from syft.sync.sync import datasite_owner_syncer
 from syft.sync.checkpoints.checkpoint import (
     Checkpoint,
     IncrementalCheckpoint,
@@ -143,8 +144,12 @@ def test_checkpoint_restore_on_sync():
     assert len(do_cache.file_hashes) == 2
 
 
-def test_checkpoint_events_since():
+def test_checkpoint_events_since(monkeypatch):
     """Test getting events since checkpoint timestamp."""
+    # At 1 the event log is not written.
+    monkeypatch.setattr(
+        datasite_owner_syncer, "DEFAULT_ROLLING_STATE_UPLOAD_THRESHOLD", 2
+    )
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=True,
     )
@@ -732,6 +737,6 @@ def test_owner_state_is_written_by_default():
     do_manager.sync(auto_checkpoint=False)
 
     router = do_manager._connection_router
-    assert router.owner_get_all_accepted_event_file_ids() != []
+    assert do_manager._get_all_accepted_events_do() != []
     assert router.get_rolling_state() is not None
     assert do_manager.datasite_owner_syncer._rolling_state is not None
