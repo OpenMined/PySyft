@@ -12,7 +12,10 @@ import pytest
 
 import syft.sync.connections.connection_router as connection_router_module
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.connections.drive.gdrive_transport import CollectionFolder
+from syft.sync.connections.drive.gdrive_transport import (
+    CollectionFolder,
+    GDriveConnection,
+)
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.events.file_change_event import FileChangeEventsMessage
@@ -29,6 +32,7 @@ from syft.sync.transport import (
     RawMessage,
     SendStatus,
     Transport,
+    TransportUnavailableError,
     WatcherStore,
 )
 from syft.sync.version.peer_info import PeerInfo
@@ -38,6 +42,10 @@ from tests.unit.test_sync_manager import _store_knowing
 DO = "do@example.com"
 DS = "ds@example.com"
 DATASETS = "syft_datasetcollection"
+
+
+def _drive_down(self, file_id: str) -> bytes:
+    raise ConnectionResetError("Drive is down")
 
 
 def _proposal_name(ts: float) -> str:
@@ -242,6 +250,20 @@ def test_peering_keeps_the_peer_registry(pair):
     do_conn, _ = pair
     peering = do_conn.as_transport().peering
     peering.update_peer_registry(DS, "accepted")
+    assert peering.read_peer_registry(force_download=True)[DS]["state"] == "accepted"
+
+
+def test_peer_registry_update_while_drive_is_down_keeps_other_peers(pair, monkeypatch):
+    do_conn, _ = pair
+    peering = do_conn.as_transport().peering
+    peering.update_peer_registry(DS, "accepted")
+    do_conn._peers_json_cache = None  # a new process has no cache
+
+    monkeypatch.setattr(GDriveConnection, "download_file", _drive_down)
+    with pytest.raises(TransportUnavailableError):
+        peering.update_peer_registry("other@example.com", "accepted")
+    monkeypatch.undo()
+
     assert peering.read_peer_registry(force_download=True)[DS]["state"] == "accepted"
 
 

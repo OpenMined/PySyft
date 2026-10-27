@@ -552,21 +552,21 @@ class GDriveConnection(SyftboxPlatformConnection):
         return items[0]["id"] if items else None
 
     def _download_peers_json(self) -> dict[str, dict[str, str]]:
-        """Fetch peers JSON from GDrive. Returns empty dict if not found."""
-        file_id = self._get_peers_file_id()
-        if file_id is None:
-            return {}
+        """Fetch peers JSON from GDrive. Returns empty dict if not found.
 
-        try:
+        Raises:
+            TransportUnavailableError: when Drive cannot be reached.
+            ValueError: when the file is not valid JSON.
+        """
+        with raise_unavailable("Could not read the peers file from Drive."):
+            file_id = self._get_peers_file_id()
+            if file_id is None:
+                return {}
             file_data = self.download_file(file_id)
-        except Exception as e:
-            print(f"Warning: could not download the peers file: {e}")
-            return {}
         try:
             return json.loads(file_data.decode("utf-8"))
         except ValueError as e:
-            print(f"Warning: could not read the peers file: {e}")
-            return {}
+            raise ValueError(f"Could not read the peers file: {e}") from e
 
     def _get_peers_json(
         self, force_download: bool = False
