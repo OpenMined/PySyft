@@ -325,7 +325,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
         """The paths that a client before the delivery tracker still had to send,
         per peer.
 
-        Empty when the views are not kept on disk, or when that client left no
+        Maps each peer email to the set of paths. Empty when the views are not kept on disk, or when that client left no
         file.
         """
         store = self.deliveries.store
@@ -335,6 +335,7 @@ class DataSiteOwnerEventCache(BaseModelCallbackMixin):
         path = store.path.parent / OWNER_PENDING_DELIVERIES_FILENAME
         if not path.exists():
             return {}
+        # peer email -> {path}
         return {peer: set(paths) for peer, paths in PersistedDict(path=path).items()}
 
     def has_conflict(self, proposed_event: ProposedFileChange) -> bool:

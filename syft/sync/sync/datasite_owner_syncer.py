@@ -685,9 +685,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     ) -> dict[str, dict[str, str]]:
         """For each peer, the current hash of every syncable file it may read.
 
-        The caller reloads the permissions first.
+        Maps each peer email to ``{path: hash}``. The caller reloads the
+        permissions first.
         """
         syncable = self._syncable_hashes()
+        # peer email -> {path: hash}
         return {
             peer: {
                 p: h for p, h in syncable.items() if self._may_hold(peer, p, syncable)
@@ -717,13 +719,14 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     ) -> dict[str, dict[str, str]]:
         """What each of ``peers`` is taken to hold when the views are seeded.
 
-        Each peer holds every file it may read now. A syncable path that an
+        Maps each peer email to ``{path: hash}``. Each peer holds every file it may read now. A syncable path that an
         earlier client still had to send gets ``UNSENT_HASH``, so the next plan
         sends or deletes it. Other pending paths, such as a private dataset
         share, stay out of the view: a plan never sends them, so it must not
         delete them. The caller reloads the permissions first.
         """
         pending = self.event_cache.legacy_pending_paths()
+        # peer email -> {path: hash}
         held = self._readable_files_by_peer(peers)
         for peer, files in held.items():
             unsent = [p for p in pending.get(peer, ()) if self._is_syncable(p)]

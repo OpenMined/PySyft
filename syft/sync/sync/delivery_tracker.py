@@ -100,7 +100,7 @@ class DeliveryState(BaseModel):
     """Everything the tracker keeps."""
 
     version: int = DELIVERY_STATE_VERSION
-    # peer -> {path: hash}
+    # peer email -> {path: hash}
     views: dict[str, dict[str, str]] = Field(default_factory=dict)
     # msg_id -> the send it confirms
     queued: dict[str, QueuedSend] = Field(default_factory=dict)
@@ -275,13 +275,14 @@ class DeliveryTracker:
     def seed(self, held_by_peer: Mapping[str, Mapping[str, str]]) -> None:
         """Add the files in ``held_by_peer`` to each peer's view, one time.
 
-        A path that the view already holds keeps its hash. After the first
+        ``held_by_peer`` maps each peer email to ``{path: hash}``. A path that the view already holds keeps its hash. After the first
         call, later calls do nothing.
         """
         with self.store.locked():
             state = self.store.load()
             if state.seeded:
                 return
+            # held_by_peer: peer email -> {path: hash}
             for peer, files in held_by_peer.items():
                 state.views[peer] = {**files, **state.views.get(peer, {})}
             state.seeded = True
@@ -292,11 +293,12 @@ class DeliveryTracker:
     ) -> dict[str, DeliveryPlan]:
         """What to send and delete for each peer in ``readable_by_peer``.
 
-        ``readable_by_peer`` maps each peer to every path it may read now, with
-        the path's current hash.
+        ``readable_by_peer`` maps each peer email to ``{path: hash}``: every
+        path it may read now, with the path's current hash.
         """
         views = self.store.load().views
         plans = {}
+        # readable_by_peer: peer email -> {path: hash}
         for peer, readable in readable_by_peer.items():
             view = views.get(peer, {})
             plans[peer] = DeliveryPlan(
