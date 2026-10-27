@@ -7,7 +7,7 @@ import pickle
 import re
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from google.oauth2.credentials import Credentials as GoogleCredentials
 from google_auth_httplib2 import AuthorizedHttp
@@ -1886,17 +1886,9 @@ class GDriveConnection(SyftboxPlatformConnection):
             TransportUnavailableError: when Drive cannot be reached.
             ValueError: when the file is not a peer info file this client reads.
         """
-        from syft.sync.version.peer_info import PeerInfo
-
-        with raise_unavailable("Could not read the own peer info file from Drive."):
-            file_id = self._get_own_peer_info_file_id()
-            if file_id is None:
-                return None
-            file_data = self.download_file(file_id)
-        try:
-            return PeerInfo.from_json(file_data.decode("utf-8"))
-        except (ValueError, MigrationError) as e:
-            raise ValueError(f"Could not read the own peer info file: {e}") from e
+        return self._read_peer_info_file(
+            self._get_own_peer_info_file_id, "the own peer info file"
+        )
 
     def read_peer_info_file(self, peer_email: str) -> Optional["PeerInfo"]:
         """Read the peer info file from a peer's /SyftBox folder.
@@ -1907,21 +1899,30 @@ class GDriveConnection(SyftboxPlatformConnection):
             TransportUnavailableError: when Drive cannot be reached.
             ValueError: when the file is not a peer info file this client reads.
         """
+        return self._read_peer_info_file(
+            lambda: self._get_peer_info_file_id_of(peer_email),
+            f"the peer info file of {peer_email}",
+        )
+
+    def _read_peer_info_file(
+        self, find_file_id: Callable[[], str | None], file_label: str
+    ) -> Optional["PeerInfo"]:
+        """Find, download and parse a peer info file.
+
+        Returns None when ``find_file_id`` finds no file. ``file_label`` names
+        the file in errors.
+        """
         from syft.sync.version.peer_info import PeerInfo
 
-        with raise_unavailable(
-            f"Could not read the peer info file of {peer_email} from Drive."
-        ):
-            file_id = self._get_peer_info_file_id_of(peer_email)
+        with raise_unavailable(f"Could not read {file_label} from Drive."):
+            file_id = find_file_id()
             if file_id is None:
                 return None
             file_data = self.download_file(file_id)
         try:
             return PeerInfo.from_json(file_data.decode("utf-8"))
         except (ValueError, MigrationError) as e:
-            raise ValueError(
-                f"Could not read the peer info file of {peer_email}: {e}"
-            ) from e
+            raise ValueError(f"Could not read {file_label}: {e}") from e
 
     def share_peer_info_file_with_peer(
         self, peer_email: str, peer_info: "PeerInfo"
