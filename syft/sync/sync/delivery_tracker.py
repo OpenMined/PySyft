@@ -23,10 +23,11 @@ When the owner rejects a peer, ``reset`` sets each path in its view to
 that the owner rejects and then approves again is sent every file it may read,
 and a delete for each file that it may no longer have.
 
-An owner that lost its views file, for example an enclave that wipes its local
-state at every boot, has file hashes but no views. ``seed`` then starts the
-view of each approved peer with every file it may read now, so the owner does
-not send every file again. A view that a send already recorded is kept.
+An owner that lost its views file but kept or restored its file hashes, for
+example one with ``persist_owner_state`` on a new machine, has file hashes but
+no views. ``seed`` then starts the view of each approved peer with every file
+it may read now, so the owner does not send every file again. A view that a
+send already recorded is kept.
 
 Recording a send
 ----------------
