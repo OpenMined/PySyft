@@ -30,6 +30,7 @@ from syft.sync.connections.base_connection import (
     FileCollection,
     SyftboxPlatformConnection,
 )
+from syft.sync.connections.drive.drive_connections import drive_transport
 from syft.sync.connections.drive.gdrive_retry import (
     batch_execute_with_retries,
     execute_with_retries,
@@ -38,7 +39,6 @@ from syft.sync.connections.drive.gdrive_retry import (
 from syft.sync.connections.drive.gdrive_utils import (
     gather_all_file_and_folder_ids_recursive,
 )
-from syft.sync.connections.drive.drive_connections import drive_transport
 from syft.sync.environments.environment import Environment
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
@@ -770,9 +770,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         valid_fname_objs = self._filter_valid_file_metadatas(file_metadatas)
         oldest_first = sorted(
             valid_fname_objs,
-            key=lambda f: FileChangeEventsMessageFileName.from_string(
-                f["name"]
-            ).timestamp,
+            key=lambda f: (
+                FileChangeEventsMessageFileName.from_string(f["name"]).timestamp
+            ),
         )
         return [f["id"] for f in oldest_first]
 
@@ -995,9 +995,9 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         Args:
             folder_id: Google Drive folder ID
-            since_timestamp: Optional timestamp. If provided, stops pagination
-                           when encountering files with timestamp <= this value.
-                           Enables early termination optimization.
+            since_timestamp: Optional timestamp. If provided, only files with a
+                           newer timestamp are returned, and pagination stops at
+                           a file from an earlier second.
             page_size: Number of files to fetch per API call. Default 100.
 
         Returns:
@@ -1030,8 +1030,10 @@ class GDriveConnection(SyftboxPlatformConnection):
                     if timestamp is not None:
                         if timestamp > since_timestamp:
                             all_files.append(file)
-                        else:
-                            # Found a file we already have! Stop pagination
+                        elif int(timestamp) < int(since_timestamp):
+                            # Drive sorts names as strings, so a 0.9 fraction of
+                            # a second lists before 0.95. We stop when the
+                            # second flips.
                             should_stop = True
                             break
                     else:
