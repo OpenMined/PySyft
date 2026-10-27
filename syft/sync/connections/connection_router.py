@@ -494,7 +494,7 @@ class ConnectionRouter(BaseModel):
         return connection.gather_all_file_and_folder_ids()
 
     def find_orphaned_message_files(self) -> List[str]:
-        """Find message files by name pattern (catches orphaned files)."""
+        """Find the orphaned syft files of this account in its My Drive root."""
         connection = self.connection_for_own_syftbox()
         return connection.find_orphaned_message_files()
 

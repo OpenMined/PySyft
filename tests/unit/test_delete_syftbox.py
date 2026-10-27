@@ -3,7 +3,6 @@
 from pathlib import Path
 from unittest.mock import patch
 
-from syft.sync.connections.drive.mock_drive_service import MockDriveFile
 from syft.sync.login_utils import handle_potential_version_mismatches_on_login
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.version.version_info import VersionInfo
@@ -151,31 +150,54 @@ class TestDeleteSyftboxImport:
 
 
 class TestOrphanedMessageFiles:
-    def test_true_orphan_found_message_in_peer_folder_kept(self):
-        ds_manager, do_manager = (
-            SyftboxManager.pair_with_mock_drive_service_connection()
-        )
-        ds_manager._send_file_change(f"{do_manager.email}/shared/x.txt", "hi")
-        # The DO moves the DS's proposal into its own archive folder. The DS
-        # still owns the file.
-        do_manager.sync()
-        conn = ds_manager._connection_router.connections[0]
-        files = conn.drive_service._backing_store.files
-        in_peer_folder = [
-            f.id
-            for f in files.values()
-            if f.name.startswith("msgv2_")
-            and files[f.parents[0]].owners[0]["emailAddress"] == do_manager.email
-        ]
-        orphan = MockDriveFile(
-            name="msgv2_1731506400.0_orphan",
-            owners=[{"emailAddress": ds_manager.email}],
-            parents=[],
-        )
-        conn.drive_service._backing_store.add_file(orphan)
+    def test_proposal_in_do_archive_not_found(self):
+        ds_manager, _, archived = _archive_one_proposal()
+
+        found = _connection(ds_manager).find_orphaned_message_files()
+
+        assert archived
+        assert not set(archived) & set(found)
+
+    def test_proposal_moved_to_root_by_do_delete_found(self):
+        ds_manager, do_manager, archived = _archive_one_proposal()
+        do_manager.delete_syftbox(broadcast_delete_events=False)
+
+        found = _connection(ds_manager).find_orphaned_message_files()
+
+        assert archived
+        assert set(archived) <= set(found)
+
+    def test_untagged_file_in_root_not_found(self):
+        ds_manager, _, _ = _archive_one_proposal()
+        drive = _connection(ds_manager).drive_service
+        user_file = drive.files().create(body={"name": "checkpoint_final.pt"}).execute()
+
+        found = _connection(ds_manager).find_orphaned_message_files()
+
+        assert user_file["id"] not in found
+
+    def test_syftbox_folder_not_found(self):
+        ds_manager, _, _ = _archive_one_proposal()
+        conn = _connection(ds_manager)
 
         found = conn.find_orphaned_message_files()
 
-        assert orphan.id in found
-        assert in_peer_folder
-        assert not set(in_peer_folder) & set(found)
+        assert conn.get_syftbox_folder_id() not in found
+
+
+def _connection(manager: SyftboxManager):
+    return manager._connection_router.connections[0]
+
+
+def _archive_one_proposal():
+    """Pair a DS and a DO, and let the DO archive one DS proposal.
+
+    The DS still owns the archived proposal, in a DO folder it cannot see.
+    """
+    ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
+    ds_manager._send_file_change(f"{do_manager.email}/shared/x.txt", "hi")
+    do_manager.sync()
+    do_conn = _connection(do_manager)
+    archive_id = do_conn.owner_get_archive_folder_id(ds_manager.email)
+    archived = [m["id"] for m in do_conn.get_file_metadatas_from_folder(archive_id)]
+    return ds_manager, do_manager, archived

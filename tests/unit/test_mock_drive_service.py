@@ -448,8 +448,11 @@ class TestGDriveConnectionWithMock:
         mock_service = MockDriveService(store, "user@example.com")
         connection = GDriveConnection.from_service("user@example.com", mock_service)
 
-        folder_id = connection.create_folder("TestFolder", None)
-        assert folder_id is not None
+        syftbox_id = connection.create_syftbox_folder()
+        folder_id = connection.create_folder("TestFolder", syftbox_id)
+
+        assert store.files[syftbox_id].properties == {"syft": "true"}
+        assert store.files[folder_id].properties == {"syft": "true"}
 
     def test_download_file(self):
         store = MockDriveBackingStore()

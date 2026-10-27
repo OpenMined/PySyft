@@ -102,11 +102,13 @@ def build_drive_service(
         return build("drive", "v3", http=authorized_http)
 
 
-LEGACY_GDRIVE_OUTBOX_INBOX_FOLDER_PREFIX = "syft_outbox_inbox"  # legacy prefix
 GDRIVE_P2P_FOLDER_DATASITE_PREFIX = "syft_datasite"
 SYFT_PEERS_FILE = "SYFT_peers.json"
 
 SYFT_VERSION_FILE = "SYFT_version.json"
+# Every file and folder that syft creates carries this property.
+SYFT_FILE_PROPERTY_KEY = "syft"
+SYFT_FILE_PROPERTY_VALUE = "true"
 
 
 class GdriveArchiveFolder(BaseModel):
@@ -505,7 +507,10 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def create_syftbox_folder(self) -> str:
         """Creates /SyftBox"""
-        return self.create_folder(SYFTBOX_FOLDER, None)
+        folder = self._create_syft_file(
+            {"name": SYFTBOX_FOLDER, "mimeType": GOOGLE_FOLDER_MIME_TYPE}
+        )
+        return folder["id"]
 
     def create_archive_folder(self, sender_email: str) -> str:
         archive_folder = GdriveArchiveFolder(
@@ -593,11 +598,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 "name": SYFT_PEERS_FILE,
                 "parents": [syftbox_folder_id],
             }
-            result = execute_with_retries(
-                self.drive_service.files().create(
-                    body=file_metadata, media_body=file_payload, fields="id"
-                )
-            )
+            result = self._create_syft_file(file_metadata, file_payload)
             self._peers_json_cache = peers_data
             return result.get("id")
         else:
@@ -750,11 +751,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         }
         file_payload, _ = self.create_file_payload(data)
 
-        res = execute_with_retries(
-            self.drive_service.files().create(
-                body=file_metadata, media_body=file_payload, fields="id"
-            )
-        )
+        res = self._create_syft_file(file_metadata, file_payload)
         gdrive_id = res.get("id")
         self.personal_syftbox_event_id_cache[filename] = gdrive_id
         return gdrive_id
@@ -808,11 +805,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         file_payload, _ = self.create_file_payload(data)
         file_metadata = {"name": filename, "parents": [outbox_folder_id]}
 
-        result = execute_with_retries(
-            self.drive_service.files().create(
-                body=file_metadata, media_body=file_payload, fields="id, parents"
-            )
-        )
+        result = self._create_syft_file(file_metadata, file_payload, "id, parents")
 
         file_id = result.get("id")
         actual_parents = result.get("parents", [])
@@ -1242,11 +1235,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         payload, _ = self.create_file_payload(data)
         file_metadata = {"name": filename, "parents": [inbox_id]}
 
-        result = execute_with_retries(
-            self.drive_service.files().create(
-                body=file_metadata, media_body=payload, fields="id, parents"
-            )
-        )
+        result = self._create_syft_file(file_metadata, payload, "id, parents")
 
         file_id = result.get("id")
         actual_parents = result.get("parents", [])
@@ -1343,45 +1332,31 @@ class GDriveConnection(SyftboxPlatformConnection):
             print(f"Warning: could not delete file {file_id}: {e}")
 
     def find_orphaned_message_files(self) -> list[str]:
-        """Find syft files of this account that have no parent folder.
+        """Find syft files of this account in its My Drive root, except /SyftBox.
+
+        Drive moves a file to the root of its owner when the file loses its
+        folder. Only /SyftBox belongs in root.
 
         Returns list of orphaned file IDs.
         """
-        patterns = [
-            "syfteventsmessagev3_",  # event messages
-            "msgv2_",  # proposed file change messages
-            CHECKPOINT_FILENAME_PREFIX,  # checkpoint and incremental checkpoint files
-            ROLLING_STATE_FILENAME_PREFIX,  # rolling state files
-            GDRIVE_P2P_FOLDER_DATASITE_PREFIX,  # new: syft_datasite_ folders
-            LEGACY_GDRIVE_OUTBOX_INBOX_FOLDER_PREFIX,  # legacy: syft_outbox_inbox folders
-            "syft_encryption_bundles",  # encryption bundles folders
-            "encryption_bundle_",  # encryption bundle files
-        ]
+        query = (
+            "'root' in parents and 'me' in owners and trashed=false and "
+            f"name != '{SYFTBOX_FOLDER}' and "
+            f"properties has {{ key='{SYFT_FILE_PROPERTY_KEY}' "
+            f"and value='{SYFT_FILE_PROPERTY_VALUE}' }}"
+        )
         file_ids = []
-
-        for pattern in patterns:
-            query = f"name contains '{pattern}' and 'me' in owners and trashed=false"
-            page_token = None
-
-            while True:
-                results = execute_with_retries(
-                    self.drive_service.files().list(
-                        q=query,
-                        fields="files(id, parents), nextPageToken",
-                        pageToken=page_token,
-                    )
+        page_token = None
+        while True:
+            results = execute_with_retries(
+                self.drive_service.files().list(
+                    q=query, fields="files(id), nextPageToken", pageToken=page_token
                 )
-
-                for item in results.get("files", []):
-                    # Drive leaves out "parents" for a file with no parent.
-                    if not item.get("parents"):
-                        file_ids.append(item["id"])
-
-                page_token = results.get("nextPageToken")
-                if not page_token:
-                    break
-
-        return file_ids
+            )
+            file_ids.extend(item["id"] for item in results["files"])
+            page_token = results.get("nextPageToken")
+            if not page_token:
+                return file_ids
 
     def create_file_payload(self, data: Any) -> tuple[MediaIoBaseUpload, str]:
         """Create a file payload for the GDrive"""
@@ -1545,16 +1520,32 @@ class GDriveConnection(SyftboxPlatformConnection):
         return message_data
 
     def create_folder(self, folder_name: str, parent_id: str) -> str:
-        file_metadata = {
-            "name": folder_name,
-            "mimeType": "application/vnd.google-apps.folder",
-        }
-        if parent_id:
-            file_metadata["parents"] = [parent_id]
-        folder = execute_with_retries(
-            self.drive_service.files().create(body=file_metadata, fields="id")
+        folder = self._create_syft_file(
+            {
+                "name": folder_name,
+                "mimeType": GOOGLE_FOLDER_MIME_TYPE,
+                "parents": [parent_id],
+            }
         )
-        return folder.get("id")
+        return folder["id"]
+
+    def _create_syft_file(
+        self,
+        body: dict,
+        media_body: MediaIoBaseUpload | None = None,
+        fields: str = "id",
+    ) -> dict:
+        """Create a file or folder with the syft tag."""
+        return execute_with_retries(
+            self.drive_service.files().create(
+                body={
+                    **body,
+                    "properties": {SYFT_FILE_PROPERTY_KEY: SYFT_FILE_PROPERTY_VALUE},
+                },
+                media_body=media_body,
+                fields=fields,
+            )
+        )
 
     def get_syftbox_folder_id_from_drive(self) -> str | None:
         query = f"name='{SYFTBOX_FOLDER}' and mimeType='application/vnd.google-apps.folder' and 'me' in owners and trashed=false"
@@ -1667,11 +1658,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             file_name = Path(file_path).name
 
             file_metadata = {"name": file_name, "parents": [folder_id]}
-            execute_with_retries(
-                self.drive_service.files().create(
-                    body=file_metadata, media_body=file_payload, fields="id"
-                )
-            )
+            self._create_syft_file(file_metadata, file_payload)
 
     def owner_list_collections(self, prefix: str) -> list[str]:
         """List collections created by DO (owned by me). Returns list of tags.
@@ -1867,11 +1854,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 "name": SYFT_VERSION_FILE,
                 "parents": [syftbox_folder_id],
             }
-            execute_with_retries(
-                self.drive_service.files().create(
-                    body=file_metadata, media_body=file_payload, fields="id"
-                )
-            )
+            self._create_syft_file(file_metadata, file_payload)
         else:
             # Update existing file
             execute_with_retries(
@@ -2450,13 +2433,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             )
         else:
             file_metadata = {"name": filename, "parents": [folder_id]}
-            execute_with_retries(
-                self.drive_service.files().create(
-                    body=file_metadata,
-                    media_body=file_payload,
-                    fields="id",
-                )
-            )
+            self._create_syft_file(file_metadata, file_payload)
 
     def share_encryption_bundles_folder(self, peer_email: str) -> None:
         """Share the bundles folder with a peer so they can read bundles."""

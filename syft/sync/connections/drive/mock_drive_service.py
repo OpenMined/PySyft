@@ -31,6 +31,11 @@ from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 GOOGLE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 
 
+def root_folder_id(email: str) -> str:
+    """The ID of the My Drive root folder of ``email``."""
+    return f"root_{email}"
+
+
 class MockDriveFile(BaseModel):
     """Represents a file or folder in the mock Google Drive."""
 
@@ -41,6 +46,7 @@ class MockDriveFile(BaseModel):
     owners: List[Dict[str, str]] = Field(default_factory=list)
     content: bytes = b""
     appProperties: Dict[str, str] = Field(default_factory=dict)
+    properties: Dict[str, str] = Field(default_factory=dict)
     trashed: bool = False
     modifiedTime: str = Field(
         default_factory=lambda: datetime.utcnow().isoformat() + "Z"
@@ -56,6 +62,7 @@ class MockDriveFile(BaseModel):
             "parents": self.parents,
             "owners": self.owners,
             "appProperties": self.appProperties,
+            "properties": self.properties,
             "trashed": self.trashed,
             "modifiedTime": self.modifiedTime,
             "size": str(len(self.content)),
@@ -140,6 +147,7 @@ def parse_gdrive_query(
 
     Supported patterns:
     - name='X' or name = 'X' - Exact name match
+    - name != 'X' - Name differs
     - name contains 'X' - Name contains substring
     - mimeType='X' - MIME type match
     - 'folder_id' in parents - Parent folder filter
@@ -147,16 +155,35 @@ def parse_gdrive_query(
     - 'me' in owners - Current user is owner
     - not 'me' in owners - Current user is NOT owner
     - trashed=false - Not trashed
+    - properties has { key='K' and value='V' } - Public property match
     - Combinations with 'and'
     """
     if not query or not query.strip():
         return lambda f: True
 
     conditions = []
-    parts = re.split(r"\s+and\s+", query, flags=re.IGNORECASE)
+
+    # Split on "and" outside braces: a "properties has" clause holds an "and".
+    parts = re.split(r"\s+and\s+(?![^{]*\})", query, flags=re.IGNORECASE)
 
     for part in parts:
         part = part.strip()
+
+        # Handle "properties has { key='K' and value='V' }"
+        match = re.match(
+            r"properties\s+has\s+\{\s*key\s*=\s*'([^']+)'\s+and\s+"
+            r"value\s*=\s*'([^']*)'\s*\}",
+            part,
+            re.IGNORECASE,
+        )
+        if match:
+            key, value = match.groups()
+
+            def has_property(f, k=key, v=value):
+                return f.properties.get(k) == v
+
+            conditions.append(has_property)
+            continue
 
         # Handle "not 'me' in owners"
         if re.match(r"not\s+['\"]me['\"]\s+in\s+owners", part, re.IGNORECASE):
@@ -200,11 +227,24 @@ def parse_gdrive_query(
         match = re.match(r"['\"]([^'\"]+)['\"]\s+in\s+parents", part, re.IGNORECASE)
         if match:
             parent_id = match.group(1)
+            if parent_id == "root":
+                parent_id = root_folder_id(current_user)
 
             def has_parent(f, pid=parent_id):
                 return pid in f.parents
 
             conditions.append(has_parent)
+            continue
+
+        # Handle "name != 'X'"
+        match = re.match(r"name\s*!=\s*['\"]([^'\"]+)['\"]", part, re.IGNORECASE)
+        if match:
+            name_val = match.group(1)
+
+            def name_differs(f, n=name_val):
+                return f.name != n
+
+            conditions.append(name_differs)
             continue
 
         # Handle "name='X'" or "name = 'X'"
@@ -304,6 +344,32 @@ def _check_file_access(
                 return True
 
     return False
+
+
+def _metadata_for_user(
+    backing_store: MockDriveBackingStore,
+    file: MockDriveFile,
+    current_user: str,
+    fields: str | None,
+) -> Dict[str, Any]:
+    """The metadata of ``file`` as ``current_user`` sees it.
+
+    Like Drive, it leaves out the parent folders that the user cannot see, and
+    the "parents" key when none is left.
+    """
+    metadata = file.to_metadata(fields)
+    if "parents" in metadata:
+        visible = [
+            parent_id
+            for parent_id in metadata["parents"]
+            if parent_id == root_folder_id(current_user)
+            or _check_file_access(backing_store, parent_id, current_user)
+        ]
+        if visible:
+            metadata["parents"] = visible
+        else:
+            del metadata["parents"]
+    return metadata
 
 
 class MockHttpResponse(dict):
@@ -408,7 +474,14 @@ class MockListRequest:
         end_idx = start_idx + self._page_size
         page_files = matching_files[start_idx:end_idx]
 
-        result = {"files": [f.to_metadata(file_fields) for f in page_files]}
+        result = {
+            "files": [
+                _metadata_for_user(
+                    self._backing_store, f, self._current_user, file_fields
+                )
+                for f in page_files
+            ]
+        }
 
         if end_idx < len(matching_files):
             result["nextPageToken"] = str(end_idx)
@@ -446,8 +519,9 @@ class MockCreateRequest:
         file = MockDriveFile(
             name=self._body.get("name", "Untitled"),
             mimeType=self._body.get("mimeType", "application/octet-stream"),
-            parents=self._body.get("parents", []),
+            parents=self._body.get("parents", [root_folder_id(self._current_user)]),
             owners=[{"emailAddress": self._current_user}],
+            properties=self._body.get("properties", {}),
             content=content,
         )
 
@@ -549,6 +623,18 @@ class MockDeleteRequest:
             )
 
         self._backing_store.delete_file(self._file_id)
+        # Drive moves a file of another account that loses its last parent to
+        # the root of its owner.
+        for child in self._backing_store.files.values():
+            if self._file_id in child.parents and not any(
+                owner.get("emailAddress") == self._current_user
+                for owner in child.owners
+            ):
+                child.parents.remove(self._file_id)
+                if not child.parents:
+                    child.parents.append(
+                        root_folder_id(child.owners[0]["emailAddress"])
+                    )
 
 
 class MockGetRequest:
@@ -572,7 +658,9 @@ class MockGetRequest:
         if file is None:
             raise Exception(f"File not found: {self._file_id}")
 
-        return file.to_metadata(self._fields)
+        return _metadata_for_user(
+            self._backing_store, file, self._current_user, self._fields
+        )
 
 
 class MockGetMediaRequest:
