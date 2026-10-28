@@ -122,28 +122,6 @@ def test_orderby_name_desc_applied():
     assert call_kwargs["orderBy"] == "name desc"
 
 
-def test_extract_timestamp_from_event_filename():
-    """Should extract timestamp from event filename"""
-    timestamp = GDriveConnection._extract_timestamp_from_filename(
-        "syfteventsmessagev3_1731506400.123_uuid.tar.gz"
-    )
-    assert timestamp == 1731506400.123
-
-
-def test_extract_timestamp_from_job_filename():
-    """Should extract timestamp from job/message filename"""
-    timestamp = GDriveConnection._extract_timestamp_from_filename(
-        "msgv2_1731506400.123_uuid.tar.gz"
-    )
-    assert timestamp == 1731506400.123
-
-
-def test_extract_timestamp_returns_none_for_invalid():
-    """Should return None for non-parseable filenames"""
-    timestamp = GDriveConnection._extract_timestamp_from_filename("invalid_file.txt")
-    assert timestamp is None
-
-
 def test_early_termination_stops_pagination():
     """Should stop fetching pages when encountering old file"""
     conn = create_mock_connection()

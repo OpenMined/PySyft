@@ -14,12 +14,9 @@ client cannot read is not erased for the other side.
 import logging
 from unittest.mock import Mock, patch
 
-from syft.sync.connections.drive.gdrive_transport import (
-    PEERS_META_KEY,
-    SYFT_PEERS_VERSION,
-    GDriveConnection,
-)
+from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.peers.peer import PeerState
+from syft.sync.transport.naming import PEERS_META_KEY, SYFT_PEERS_VERSION
 
 PEER = "bob@example.com"
 

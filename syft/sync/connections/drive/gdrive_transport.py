@@ -52,7 +52,7 @@ from syft.sync.messages.proposed_filechange import (
     ProposedFileChangesMessage,
 )
 from syft.sync.transport.exceptions import TransportUnavailableError
-from syft.sync.transport.naming import (  # noqa: F401 (re-exported)
+from syft.sync.transport.naming import (
     PEERS_META_KEY,
     SYFT_PEERS_VERSION,
     timestamp_from_message_name,
@@ -980,11 +980,6 @@ class GDriveConnection(SyftboxPlatformConnection):
             else:
                 return self.create_archive_folder(sender_email)
 
-    @staticmethod
-    def _extract_timestamp_from_filename(filename: str) -> float | None:
-        """The send time in a message file name. See ``naming.py``."""
-        return timestamp_from_message_name(filename)
-
     def get_file_metadatas_from_folder(
         self,
         folder_id: str,
@@ -1026,7 +1021,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 should_stop = False
 
                 for file in page_files:
-                    timestamp = self._extract_timestamp_from_filename(file["name"])
+                    timestamp = timestamp_from_message_name(file["name"])
 
                     if timestamp is not None:
                         if timestamp > since_timestamp:
@@ -2216,7 +2211,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         for f in file_metadatas:
             if not f["name"].startswith("syfteventsmessagev3_"):
                 continue
-            event_timestamp = self._extract_timestamp_from_filename(f["name"])
+            event_timestamp = timestamp_from_message_name(f["name"])
             if event_timestamp is not None and event_timestamp > checkpoint_timestamp:
                 count += 1
         return count

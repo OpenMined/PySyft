@@ -8,7 +8,6 @@ import pytest
 
 from syft.sync.connections.drive.gdrive_transport import (
     GDRIVE_P2P_FOLDER_DATASITE_PREFIX,
-    PEERS_META_KEY,
     GdriveP2PFolder,
 )
 from syft.sync.connections.drive.mock_drive_service import (
@@ -17,6 +16,7 @@ from syft.sync.connections.drive.mock_drive_service import (
     MockPermission,
 )
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.transport.naming import PEERS_META_KEY
 from syft.sync.version.peer_manager import PeerState
 from syft.version import SYFT_VERSION
 
