@@ -395,12 +395,18 @@ class GDriveConnection(SyftboxPlatformConnection):
         return res
 
     @classmethod
-    def from_service(cls, email: str, mock_service: Any) -> "GDriveConnection":
+    def from_service(
+        cls,
+        email: str,
+        mock_service: Any,
+        warm_syftbox_folder_id_cache: bool = True,
+    ) -> "GDriveConnection":
         """Create a GDriveConnection using a mock drive service for testing.
 
         Args:
             email: Email of the user
             mock_service: MockDriveService instance to use instead of real API
+            warm_syftbox_folder_id_cache: See ``setup``.
 
         Returns:
             GDriveConnection configured with the mock service
@@ -412,7 +418,10 @@ class GDriveConnection(SyftboxPlatformConnection):
         res = cls(email=email, token_path=None)
         if isinstance(mock_service, MockDriveService):
             mock_service = MockDriveService(mock_service._backing_store, email)
-        res.setup(drive_service=mock_service)
+        res.setup(
+            drive_service=mock_service,
+            warm_syftbox_folder_id_cache=warm_syftbox_folder_id_cache,
+        )
         return res
 
     def setup(
@@ -457,7 +466,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         )
 
         if isinstance(self.drive_service, MockDriveService):
-            new_conn = GDriveConnection.from_service(self.email, self.drive_service)
+            new_conn = GDriveConnection.from_service(
+                self.email, self.drive_service, warm_syftbox_folder_id_cache=False
+            )
         else:
             new_conn = GDriveConnection.from_token_path(
                 self.email, self.token_path, warm_syftbox_folder_id_cache=False
@@ -837,19 +848,16 @@ class GDriveConnection(SyftboxPlatformConnection):
         """Move the inbox file ``file_id`` from ``sender_email`` to its archive folder.
 
         ``sender_email`` names the archive folder, so the caller reads it from
-        the transport, never from the sender-supplied message body.
+        the transport, never from the sender-supplied message body. The inbox
+        folder is the file's only parent and its id is cached, so the move is
+        one Drive call.
         """
-        file_info = execute_with_retries(
-            self.drive_service.files().get(fileId=file_id, fields="parents")
-        )
-        previous_parents = ",".join(file_info.get("parents", []))
-        archive_folder_id = self.owner_get_archive_folder_id(sender_email)
         execute_with_retries(
             self.drive_service.files().update(
                 fileId=file_id,
-                addParents=archive_folder_id,
-                removeParents=previous_parents,
-                fields="id, parents",
+                addParents=self.owner_get_archive_folder_id(sender_email),
+                removeParents=self._get_own_datasite_inbox_id(sender_email),
+                fields="id",
                 supportsAllDrives=True,
             )
         )
@@ -949,15 +957,12 @@ class GDriveConnection(SyftboxPlatformConnection):
         return items[0]["id"] if items else None
 
     def owner_get_archive_folder_id(self, sender_email: str) -> str:
-        if sender_email in self.archive_folder_id_cache:
-            return self.archive_folder_id_cache[sender_email]
-        else:
-            archive_folder_id = self.get_archive_folder_id_from_drive(sender_email)
-            if archive_folder_id:
-                self.archive_folder_id_cache[sender_email] = archive_folder_id
-                return archive_folder_id
-            else:
-                return self.create_archive_folder(sender_email)
+        if sender_email not in self.archive_folder_id_cache:
+            archive_folder_id = self.get_archive_folder_id_from_drive(
+                sender_email
+            ) or self.create_archive_folder(sender_email)
+            self.archive_folder_id_cache[sender_email] = archive_folder_id
+        return self.archive_folder_id_cache[sender_email]
 
     @staticmethod
     def _extract_timestamp_from_filename(filename: str) -> float | None:

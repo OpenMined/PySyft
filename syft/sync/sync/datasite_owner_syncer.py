@@ -35,6 +35,7 @@ from syft.sync.events.file_change_event import (
 )
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
+from syft.sync.transport.types import RawMessage
 from syft.sync.sync.caches.datasite_owner_cache import (
     DataSiteOwnerEventCache,
     DataSiteOwnerEventCacheConfig,
@@ -306,10 +307,12 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """
         proposed_count = 0
         try:
-            while msg := self.pull_and_process_next_proposed_filechange(
-                peer_email, raise_on_none=False
-            ):
-                proposed_count += len(msg.proposed_file_changes)
+            received = self.connection_router.owner_receive_proposed_messages(
+                peer_email
+            )
+            for message in received:
+                if processed := self.process_proposed_message(message):
+                    proposed_count += len(processed.proposed_file_changes)
         except SyftPeerNotReadyError as e:
             warnings.warn(f"Messages from {peer_email} stay in the inbox: {e}")
         except Exception as e:
@@ -760,35 +763,28 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         events = [self._create_current_filestate_event(p) for p in plan.send]
         return events + [self._deletion_event(p) for p in plan.delete]
 
-    def pull_and_process_next_proposed_filechange(
-        self, sender_email: str, raise_on_none=True
+    def process_proposed_message(
+        self, received: RawMessage
     ) -> ProposedFileChangesMessage | None:
-        # raise on none is useful for testing, shouldnt be used in production
-        next_message = (
-            self.connection_router.owner_get_next_proposed_filechange_message(
-                sender_email=sender_email
-            )
-        )
-        if next_message is not None:
-            received, message = next_message
-            # The sender is the peer whose inbox held the message. The transport
-            # read the message from that peer's folder and checked the signature
-            # against that peer's key. The body is sender-supplied, so a claim
-            # there that disagrees is a spoof attempt.
-            if same_email(message.sender_email, sender_email):
-                self.handle_proposed_filechange_events_message(sender_email, message)
-            else:
-                logger.warning(
-                    f"Dropped a proposed change from {sender_email}: the message "
-                    f"claims sender {message.sender_email!r}."
-                )
-
-            self.connection_router.owner_mark_processed(received)
-            return message
-        elif raise_on_none:
-            raise ValueError("No proposed file change to process")
-        else:
+        """Apply one received proposal and mark it processed. None when it was
+        unreadable and archived unread."""
+        message = self.connection_router.owner_read_proposed_message(received)
+        if message is None:
             return None
+        # The sender is the peer whose inbox held the message. The transport
+        # read the message from that peer's folder and checked the signature
+        # against that peer's key. The body is sender-supplied, so a claim
+        # there that disagrees is a spoof attempt.
+        sender_email = received.sender
+        if same_email(message.sender_email, sender_email):
+            self.handle_proposed_filechange_events_message(sender_email, message)
+        else:
+            logger.warning(
+                f"Dropped a proposed change from {sender_email}: the message "
+                f"claims sender {message.sender_email!r}."
+            )
+        self.connection_router.owner_mark_processed(received)
+        return message
 
     def check_write_permission(self, sender_email: str, path: str) -> bool:
         """Check if sender has write access to the given path."""

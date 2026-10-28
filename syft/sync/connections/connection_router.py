@@ -149,37 +149,32 @@ class ConnectionRouter(BaseModel):
         filename = proposed_file_changes_message.message_filename.as_string()
         self.transport.p2p.send(recipient, filename, data, MessageKind.PROPOSED_CHANGES)
 
-    def owner_get_next_proposed_filechange_message(
-        self, sender_email: str
-    ) -> tuple[RawMessage, ProposedFileChangesMessage] | None:
-        """The next message from ``sender_email`` as received and as read, or
-        None when nothing is waiting. Pass the received one to
-        ``owner_mark_processed`` once it is handled.
+    def owner_receive_proposed_messages(self, sender_email: str) -> list[RawMessage]:
+        """Every proposed-changes message from ``sender_email`` not processed
+        yet, oldest first, still encrypted."""
+        return self.transport.p2p.receive(sender_email, MessageKind.PROPOSED_CHANGES)
+
+    def owner_read_proposed_message(
+        self, message: RawMessage
+    ) -> ProposedFileChangesMessage | None:
+        """``message`` decrypted, verified and decoded.
 
         A message whose format does not match the pair is marked processed
-        unread, with a warning.
+        unread, with a warning, and gives None.
 
         Raises:
             SyftPeerNotReadyError: when the message cannot be read yet. It
                 stays unprocessed.
         """
-        p2p = self.transport.p2p
-        while True:
-            received = p2p.receive(
-                sender_email, MessageKind.PROPOSED_CHANGES, max_messages=1
+        try:
+            decrypted = self.peer_store.decrypt_and_verify_if_needed(
+                message.sender, message.data
             )
-            if not received:
-                return None
-            [raw] = received
-            try:
-                decrypted = self.peer_store.decrypt_and_verify_if_needed(
-                    sender_email, raw.data
-                )
-            except MessageFormatError as e:
-                warnings.warn(f"Archived message {raw.msg_id} unread: {e}")
-                p2p.mark_processed(raw)
-                continue
-            return raw, ProposedFileChangesMessage.from_compressed_data(decrypted)
+        except MessageFormatError as e:
+            warnings.warn(f"Archived message {message.msg_id} unread: {e}")
+            self.owner_mark_processed(message)
+            return None
+        return ProposedFileChangesMessage.from_compressed_data(decrypted)
 
     def owner_mark_processed(self, message: RawMessage) -> None:
         self.transport.p2p.mark_processed(message)
