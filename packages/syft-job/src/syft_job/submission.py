@@ -93,13 +93,17 @@ def _digest(
     skip: frozenset[str] = frozenset(),
 ) -> str:
     digest = hashlib.sha256()
+    # Sort on the posix string: WindowsPath sorts case-insensitively.
     files = sorted(
-        path
-        for path in submission_dir.rglob("*")
-        if path.is_file()
-        and not _is_skipped(relative := path.relative_to(submission_dir))
-        and (entries is None or relative.parts[0] in entries)
-        and relative.as_posix() not in skip
+        (
+            path
+            for path in submission_dir.rglob("*")
+            if path.is_file()
+            and not _is_skipped(relative := path.relative_to(submission_dir))
+            and (entries is None or relative.parts[0] in entries)
+            and relative.as_posix() not in skip
+        ),
+        key=lambda path: path.relative_to(submission_dir).as_posix(),
     )
     for path in files:
         digest.update(path.relative_to(submission_dir).as_posix().encode())
