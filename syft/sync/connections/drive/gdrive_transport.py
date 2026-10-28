@@ -38,7 +38,6 @@ from syft.sync.connections.drive.gdrive_client import (
 from syft.sync.connections.drive.gdrive_retry import (
     batch_execute_with_retries,
     execute_with_retries,
-    is_unreachable,
     raise_unavailable,
 )
 from syft.sync.connections.drive.gdrive_utils import (
@@ -54,7 +53,6 @@ from syft.sync.messages.proposed_filechange import (
     MessageFileName,
     ProposedFileChangesMessage,
 )
-from syft.sync.transport.exceptions import TransportUnavailableError
 from syft.sync.transport.naming import (
     PEERS_META_KEY,
     SYFT_PEERS_VERSION,
@@ -779,6 +777,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         )
         return [f["id"] for f in oldest_first]
 
+    @raise_unavailable("Could not read the event log from Drive.")
     def owner_download_all_raw_events_from_syftbox(self) -> list[bytes]:
         """Download all event files from /SyftBox/myemail as raw bytes."""
         personal_syftbox_folder_id = self.get_personal_syftbox_folder_id()
@@ -790,12 +789,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             gdrive_id = [
                 f for f in file_metadatas if f["name"] == fname_obj.as_string()
             ][0]["id"]
-            try:
-                file_data = self.client.download_file(gdrive_id)
-            except Exception as e:
-                print(f"Warning: could not download event {fname_obj.as_string()}: {e}")
-                continue
-            result.append(file_data)
+            result.append(self.client.download_file(gdrive_id))
         return result
 
     def owner_write_raw_bytes_to_outbox(
@@ -1895,6 +1889,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         return result.get("id")
 
+    @raise_unavailable("Could not read the latest checkpoint from Drive.")
     def download_raw_latest_checkpoint(self) -> bytes | None:
         """Download the latest checkpoint as raw bytes, or None."""
         folder_id = self._get_checkpoints_folder_id()
@@ -1924,15 +1919,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         if latest_file is None:
             return None
 
-        try:
-            return self.client.download_file(latest_file["id"])
-        except Exception as e:
-            if is_unreachable(e):
-                raise TransportUnavailableError(
-                    "Could not read the latest checkpoint from Drive."
-                ) from e
-            print(f"Warning: Failed to load checkpoint: {e}")
-            return None
+        return self.client.download_file(latest_file["id"])
 
     def delete_all_checkpoints(self, exclude_file_id: str | None = None):
         """Delete all existing full checkpoints (not incremental ones).
@@ -1985,6 +1972,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         result = self.client.create_syft_file(file_metadata, payload)
         return result.get("id")
 
+    @raise_unavailable("Could not read the incremental checkpoints from Drive.")
     def download_all_raw_incremental_checkpoints(self) -> list[bytes]:
         """Download all incremental checkpoints as raw bytes."""
         folder_id = self._get_checkpoints_folder_id()
@@ -2003,21 +1991,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         if not items:
             return []
 
-        result = []
-        for item in items:
-            try:
-                file_data = self.client.download_file(item["id"])
-                result.append(file_data)
-            except Exception as e:
-                if is_unreachable(e):
-                    raise TransportUnavailableError(
-                        "Could not read the incremental checkpoints from Drive."
-                    ) from e
-                print(
-                    f"Warning: Failed to load incremental checkpoint {item['name']}: {e}"
-                )
-                continue
-        return result
+        return [self.client.download_file(item["id"]) for item in items]
 
     def get_incremental_checkpoint_count(self) -> int:
         """Get the number of incremental checkpoints on Google Drive."""
@@ -2121,6 +2095,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 count += 1
         return count
 
+    @raise_unavailable("Could not read the event log from Drive.")
     def download_raw_events_since_timestamp(
         self, since_timestamp: float
     ) -> list[bytes]:
@@ -2141,12 +2116,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 f for f in file_metadatas if f["name"] == fname_obj.as_string()
             ][0]["id"]
 
-            try:
-                file_data = self.client.download_file(gdrive_id)
-                result.append(file_data)
-            except Exception as e:
-                print(f"Warning: Failed to download event: {e}")
-                continue
+            result.append(self.client.download_file(gdrive_id))
 
         return result
 
@@ -2229,6 +2199,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         self._rolling_state_file_id = file_id
         return file_id
 
+    @raise_unavailable("Could not read the rolling state from Drive.")
     def download_raw_rolling_state(self) -> bytes | None:
         """Download the latest rolling state as raw bytes, or None.
 
@@ -2261,18 +2232,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         if latest_file is None:
             return None
 
+        data = self.client.download_file(latest_file["id"])
         self._rolling_state_file_id = latest_file["id"]
-
-        try:
-            return self.client.download_file(latest_file["id"])
-        except Exception as e:
-            if is_unreachable(e):
-                raise TransportUnavailableError(
-                    "Could not read the rolling state from Drive."
-                ) from e
-            print(f"Warning: Failed to load rolling state: {e}")
-            self._rolling_state_file_id = None
-            return None
+        return data
 
     def delete_rolling_state(self) -> None:
         """Delete all existing rolling state files and clear cache."""

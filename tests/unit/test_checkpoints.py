@@ -11,6 +11,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from googleapiclient.errors import HttpError
 
 from syft.sync.checkpoints.checkpoint import (
     CHECKPOINT_FILENAME_PREFIX,
@@ -19,7 +20,11 @@ from syft.sync.checkpoints.checkpoint import (
     IncrementalCheckpoint,
 )
 from syft.sync.checkpoints.rolling_state import RollingState
-from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
+from syft.sync.connections.drive.gdrive_client import GDriveClient
+from syft.sync.connections.drive.mock_drive_service import (
+    http_error,
+    pair_with_mock_service,
+)
 from syft.sync.events.file_change_event import FileChangeEvent
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync import datasite_owner_syncer
@@ -761,3 +766,16 @@ def test_incremental_count_retries_drive_error(monkeypatch):
 
     fail_next_listing(monkeypatch, INCREMENTAL_CHECKPOINT_PREFIX)
     assert store.incremental_count() == 1
+
+
+def test_latest_checkpoint_download_error_raises(monkeypatch):
+    do_conn, _ = pair_with_mock_service("do@example.com", "ds@example.com")
+    store = do_conn.as_transport().owner_store
+    store.put_checkpoint("checkpoint_1.0.tar.gz", b"full")
+
+    def forbidden(self, file_id: str) -> bytes:
+        raise http_error(403, "cannotDownloadFile", "The file cannot be downloaded")
+
+    monkeypatch.setattr(GDriveClient, "download_file", forbidden)
+    with pytest.raises(HttpError):
+        store.latest_checkpoint()

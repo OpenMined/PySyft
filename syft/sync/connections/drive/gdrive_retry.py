@@ -72,12 +72,6 @@ def is_retryable_error(error: Exception) -> bool:
     return False
 
 
-def is_unreachable(error: Exception) -> bool:
-    """True when ``error`` means Drive cannot be reached: an error in
-    UNREACHABLE_ERRORS, or a transient error that outlasted the retries."""
-    return isinstance(error, UNREACHABLE_ERRORS) or is_retryable_error(error)
-
-
 @contextmanager
 def raise_unavailable(message: str) -> Iterator[None]:
     """Raise TransportUnavailableError(message) when Drive cannot be reached.
@@ -89,7 +83,7 @@ def raise_unavailable(message: str) -> Iterator[None]:
     try:
         yield
     except (HttpError, *RETRYABLE_TRANSPORT_ERRORS, *UNREACHABLE_ERRORS) as e:
-        if is_unreachable(e):
+        if isinstance(e, UNREACHABLE_ERRORS) or is_retryable_error(e):
             raise TransportUnavailableError(message) from e
         raise
 

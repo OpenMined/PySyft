@@ -9,6 +9,7 @@ import uuid
 from unittest.mock import Mock
 
 import pytest
+from googleapiclient.errors import HttpError
 
 import syft.sync.connections.connection_router as connection_router_module
 from syft.sync.sync import datasite_owner_syncer
@@ -17,7 +18,10 @@ from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.gdrive_transport import (
     CollectionFolder,
 )
-from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
+from syft.sync.connections.drive.mock_drive_service import (
+    http_error,
+    pair_with_mock_service,
+)
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.events.file_change_event import FileChangeEventsMessage
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
@@ -153,6 +157,29 @@ def test_owner_event_count_matches_the_listed_handles(pair):
     store.append_event("syfteventsmessagev3_not-a-valid-name.tar.gz", b"junk")
 
     assert store.count_events_since(None) == len(store.list_event_handles()) == 1
+
+
+def test_owner_event_log_read_while_drive_is_down_raises(pair, monkeypatch):
+    do_conn, _ = pair
+    store = do_conn.as_transport().owner_store
+    store.append_event(_events_name(2.0), b"event")
+
+    monkeypatch.setattr(GDriveClient, "download_file", _drive_down)
+    with pytest.raises(TransportUnavailableError):
+        store.fetch_events_since(1.0)
+
+
+def test_owner_event_log_download_error_raises(pair, monkeypatch):
+    do_conn, _ = pair
+    store = do_conn.as_transport().owner_store
+    store.append_event(_events_name(2.0), b"event")
+
+    def forbidden(self, file_id: str) -> bytes:
+        raise http_error(403, "cannotDownloadFile", "The file cannot be downloaded")
+
+    monkeypatch.setattr(GDriveClient, "download_file", forbidden)
+    with pytest.raises(HttpError):
+        store.fetch_events_since(1.0)
 
 
 def test_owner_store_keeps_the_newest_full_checkpoint(pair):

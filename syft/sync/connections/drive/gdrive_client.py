@@ -10,6 +10,7 @@ import pickle
 from dataclasses import dataclass
 from typing import Any
 
+from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 
 from syft.sync.connections.drive.gdrive_retry import (
@@ -22,6 +23,12 @@ GOOGLE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 # Every file and folder that syft creates carries this property.
 SYFT_FILE_PROPERTY_KEY = "syft"
 SYFT_FILE_PROPERTY_VALUE = "true"
+
+
+def _has_reason(error: HttpError, reason: str) -> bool:
+    """True when Drive gave ``reason`` for ``error``."""
+    details = error.error_details
+    return isinstance(details, list) and any(d.get("reason") == reason for d in details)
 
 
 @dataclass
@@ -113,20 +120,17 @@ class GDriveClient:
         ignore_file_not_found: bool = True,
     ):
         def callback(request_id, response, exception):
-            if exception:
-                exception_str = str(exception)
-                # insufficientFilePermissions is a common error when deleting files that may already be removed
-                if (
-                    ignore_permissions_errors
-                    and "insufficientFilePermissions" in exception_str
-                ):
-                    return
-                # 404 errors occur when files are already deleted
-                if ignore_file_not_found and (
-                    "404" in exception_str or "notFound" in exception_str
-                ):
-                    return
-                raise exception
+            if exception is None:
+                return
+            # The file is already deleted.
+            if ignore_file_not_found and exception.resp.status == 404:
+                return
+            # The file belongs to another account, or was removed by one.
+            if ignore_permissions_errors and _has_reason(
+                exception, "insufficientFilePermissions"
+            ):
+                return
+            raise exception
 
         # Google Drive batch API has a limit of 100 requests per batch
         BATCH_SIZE = 100

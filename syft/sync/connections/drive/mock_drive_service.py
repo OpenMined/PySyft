@@ -21,10 +21,13 @@ Usage:
     connection = GDriveConnection.from_mock_service("user1@example.com", user1_service)
 """
 
+import json
 import re
 import uuid
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
+import httplib2
+from googleapiclient.errors import HttpError
 from pydantic import BaseModel, Field
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
@@ -592,6 +595,13 @@ class MockUpdateRequest:
         return file.to_metadata(self._fields)
 
 
+def http_error(status: int, reason: str, message: str) -> HttpError:
+    """An HttpError with the JSON body that Drive sends."""
+    errors = [{"reason": reason, "message": message}]
+    body = {"error": {"code": status, "message": message, "errors": errors}}
+    return HttpError(httplib2.Response({"status": status}), json.dumps(body).encode())
+
+
 class MockDeleteRequest:
     """Mock request for files().delete()."""
 
@@ -609,17 +619,17 @@ class MockDeleteRequest:
         """Execute the delete request."""
         file = self._backing_store.get_file(self._file_id)
         if file is None:
-            raise Exception(
-                f"<HttpError 404 ... File not found: {self._file_id} notFound>"
-            )
+            raise http_error(404, "notFound", f"File not found: {self._file_id}")
 
         # Check if user has permission to delete
         is_owner = any(
             owner.get("emailAddress") == self._current_user for owner in file.owners
         )
         if not is_owner:
-            raise Exception(
-                f"<HttpError 403 ... insufficientFilePermissions: {self._file_id}>"
+            raise http_error(
+                403,
+                "insufficientFilePermissions",
+                f"The user may not delete {self._file_id}",
             )
 
         self._delete_tree(self._file_id)
