@@ -487,7 +487,7 @@ def _add_known_peer(do_manager, email: str) -> None:
 def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:
     """Make ``email`` a second peer of the DO, and return its router."""
     conn = GDriveConnection.from_service(
-        email, ds_manager._connection_router.connections[0].drive_service
+        email, ds_manager._connection_router.connections[0].client.drive_service
     )
     conn.add_peer(do_manager.email)
     _add_known_peer(do_manager, email)

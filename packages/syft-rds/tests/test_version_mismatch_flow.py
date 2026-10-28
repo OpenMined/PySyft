@@ -33,7 +33,9 @@ def _find_p2p_folders(connection, peer_email):
         " and trashed=false"
     )
     results = (
-        connection.drive_service.files().list(q=q, fields="files(id, name)").execute()
+        connection.client.drive_service.files()
+        .list(q=q, fields="files(id, name)")
+        .execute()
     )
     return results.get("files", [])
 
@@ -47,7 +49,7 @@ def _find_versioned_p2p_folders(connection, peer_email, version):
 def _get_backing_store(manager):
     """Extract the mock backing store from a manager's connection."""
     conn = manager.peer_manager.connection_router.connections[0]
-    return conn.drive_service._backing_store
+    return conn.client.drive_service._backing_store
 
 
 def _reinitialize_manager(

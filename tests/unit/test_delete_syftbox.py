@@ -131,7 +131,9 @@ def _query_files(connection, name_contains):
     """Query mock drive for files/folders whose name contains a substring."""
     q = f"name contains '{name_contains}' and trashed=false"
     results = (
-        connection.drive_service.files().list(q=q, fields="files(id, name)").execute()
+        connection.client.drive_service.files()
+        .list(q=q, fields="files(id, name)")
+        .execute()
     )
     return results.get("files", [])
 
@@ -171,19 +173,19 @@ class TestOrphanedMessageFiles:
         ds_manager, do_manager, archived = _archive_one_proposal()
         do_conn = _connection(do_manager)
         archive_id = do_conn.owner_get_archive_folder_id(ds_manager.email)
-        do_conn.drive_service.files().delete(
+        do_conn.client.drive_service.files().delete(
             fileId=do_conn.get_syftbox_folder_id()
         ).execute()
 
         found = _connection(ds_manager).find_orphaned_syft_files()
 
-        assert archive_id not in do_conn.drive_service._backing_store.files
+        assert archive_id not in do_conn.client.drive_service._backing_store.files
         assert archived
         assert set(archived) <= set(found)
 
     def test_untagged_file_in_root_not_found(self):
         ds_manager, _, _ = _archive_one_proposal()
-        drive = _connection(ds_manager).drive_service
+        drive = _connection(ds_manager).client.drive_service
         user_file = drive.files().create(body={"name": "checkpoint_final.pt"}).execute()
 
         found = _connection(ds_manager).find_orphaned_syft_files()

@@ -17,7 +17,7 @@ def test_verify_token_matches_email_passes_when_matching():
 
 
 def _drive_service(manager):
-    return manager._connection_router.connections[0].drive_service
+    return manager._connection_router.connections[0].client.drive_service
 
 
 def test_verify_token_matches_email_raises_on_mismatch():

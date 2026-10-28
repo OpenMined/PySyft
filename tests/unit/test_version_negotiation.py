@@ -241,7 +241,7 @@ class TestPeerManager:
 
         backing_store = ds_manager._connection_router.connections[
             0
-        ].drive_service._backing_store
+        ].client.drive_service._backing_store
 
         third_peer_email = "third_peer@test.com"
         third_peer_info = PeerInfo(

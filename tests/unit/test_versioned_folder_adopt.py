@@ -18,6 +18,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.checkpoints.checkpoint import CHECKPOINT_VERSION, Checkpoint
 from syft.sync.connections.drive.gdrive_transport import (
     GDriveConnection,
@@ -31,7 +32,7 @@ EMAIL = "alice@example.com"
 
 def _conn():
     conn = GDriveConnection(email=EMAIL, verbose=False)
-    conn.drive_service = Mock()
+    conn.client = GDriveClient(Mock())
     return conn
 
 
@@ -39,7 +40,7 @@ def _renames(conn):
     """Return the (fileId, new name) pairs the connection sent to Drive."""
     return [
         (kwargs["fileId"], kwargs["body"]["name"])
-        for _, kwargs in conn.drive_service.files().update.call_args_list
+        for _, kwargs in conn.client.drive_service.files().update.call_args_list
         if "body" in kwargs and "name" in kwargs.get("body", {})
     ]
 
@@ -166,7 +167,7 @@ def _checkpoints_owner_with_version(checkpoint_version: int):
     folder_id = connection._get_checkpoints_folder_id()
     older_name = f"{do_manager.email}-0.0.1-checkpoints"
     execute_with_retries(
-        connection.drive_service.files().update(
+        connection.client.drive_service.files().update(
             fileId=folder_id, body={"name": older_name}
         )
     )

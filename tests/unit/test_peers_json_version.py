@@ -14,6 +14,7 @@ client cannot read is not erased for the other side.
 import logging
 from unittest.mock import Mock, patch
 
+from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.peers.peer import PeerState
 from syft.sync.transport.naming import PEERS_META_KEY, SYFT_PEERS_VERSION
@@ -23,7 +24,7 @@ PEER = "bob@example.com"
 
 def _conn(peers_data):
     conn = GDriveConnection(email="alice@example.com", verbose=False)
-    conn.drive_service = Mock()
+    conn.client = GDriveClient(Mock())
     conn._peers_json_cache = dict(peers_data)
     return conn
 

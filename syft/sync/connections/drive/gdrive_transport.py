@@ -31,6 +31,7 @@ from syft.sync.connections.base_connection import (
     SyftboxPlatformConnection,
 )
 from syft.sync.connections.drive.drive_connections import drive_transport
+from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.gdrive_retry import (
     batch_execute_with_retries,
     execute_with_retries,
@@ -330,7 +331,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     class Config:
         arbitrary_types_allowed = True
 
-    drive_service: Any = None
+    client: GDriveClient | None = None
     credentials: GoogleCredentials | None = None
     verbose: bool = True
     email: str
@@ -433,12 +434,11 @@ class GDriveConnection(SyftboxPlatformConnection):
                 seeded by the caller (e.g. ``copy()``).
         """
         self.credentials = credentials
-        if drive_service is not None:
-            self.drive_service = drive_service
-        else:
-            self.drive_service = build_drive_service(
+        if drive_service is None:
+            drive_service = build_drive_service(
                 self.credentials, environment=self.environment
             )
+        self.client = GDriveClient(drive_service)
 
         if warm_syftbox_folder_id_cache:
             self.get_personal_syftbox_folder_id()
@@ -458,8 +458,10 @@ class GDriveConnection(SyftboxPlatformConnection):
             MockDriveService,
         )
 
-        if isinstance(self.drive_service, MockDriveService):
-            new_conn = GDriveConnection.from_service(self.email, self.drive_service)
+        if isinstance(self.client.drive_service, MockDriveService):
+            new_conn = GDriveConnection.from_service(
+                self.email, self.client.drive_service
+            )
         else:
             new_conn = GDriveConnection.from_token_path(
                 self.email, self.token_path, warm_syftbox_folder_id_cache=False
@@ -493,9 +495,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         return check_env()
 
     def get_authenticated_email(self) -> str:
-        """Return the email of the Google account behind drive_service."""
+        """Return the email of the Google account behind the Drive service."""
         about = execute_with_retries(
-            self.drive_service.about().get(fields="user(emailAddress)")
+            self.client.drive_service.about().get(fields="user(emailAddress)")
         )
         return about["user"]["emailAddress"]
 
@@ -548,7 +550,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         syftbox_folder_id = self.get_syftbox_folder_id()
         query = f"name='{SYFT_PEERS_FILE}' and '{syftbox_folder_id}' in parents and trashed=false"
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id)")
+            self.client.drive_service.files().list(q=query, fields="files(id)")
         )
         items = results.get("files", [])
         return items[0]["id"] if items else None
@@ -607,7 +609,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         else:
             # Update existing file
             execute_with_retries(
-                self.drive_service.files().update(
+                self.client.drive_service.files().update(
                     fileId=file_id, media_body=file_payload
                 )
             )
@@ -821,7 +823,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 f"Moving file to correct folder..."
             )
             execute_with_retries(
-                self.drive_service.files().update(
+                self.client.drive_service.files().update(
                     fileId=file_id,
                     addParents=outbox_folder_id,
                     fields="id, parents",
@@ -861,12 +863,12 @@ class GDriveConnection(SyftboxPlatformConnection):
     def owner_archive_inbox_file(self, file_id: str, sender_email: str) -> None:
         """Move the inbox file ``file_id`` from ``sender_email`` to its archive folder."""
         file_info = execute_with_retries(
-            self.drive_service.files().get(fileId=file_id, fields="parents")
+            self.client.drive_service.files().get(fileId=file_id, fields="parents")
         )
         previous_parents = ",".join(file_info.get("parents", []))
         archive_folder_id = self.owner_get_archive_folder_id(sender_email)
         execute_with_retries(
-            self.drive_service.files().update(
+            self.client.drive_service.files().update(
                 fileId=file_id,
                 addParents=archive_folder_id,
                 removeParents=previous_parents,
@@ -878,7 +880,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     def _has_permission(self, file_id: str, email: str) -> bool:
         """Check if user already has permission on the file."""
         perms = execute_with_retries(
-            self.drive_service.permissions().list(
+            self.client.drive_service.permissions().list(
                 fileId=file_id, fields="permissions(emailAddress)"
             )
         )
@@ -899,7 +901,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             "emailAddress": recipient,
         }
         execute_with_retries(
-            self.drive_service.permissions().create(
+            self.client.drive_service.permissions().create(
                 fileId=file_id, body=permission, sendNotificationEmail=True
             )
         )
@@ -964,7 +966,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         archive_folder_name = archive_folder.as_string()
         query = f"name='{archive_folder_name}' and mimeType='application/vnd.google-apps.folder' and 'me' in owners and trashed=false"
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id)")
+            self.client.drive_service.files().list(q=query, fields="files(id)")
         )
         items = results.get("files", [])
         return items[0]["id"] if items else None
@@ -1005,7 +1007,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         while True:
             results = execute_with_retries(
-                self.drive_service.files().list(
+                self.client.drive_service.files().list(
                     q=query,
                     fields="files(id, name, size, mimeType, modifiedTime), nextPageToken",
                     pageSize=page_size,
@@ -1246,7 +1248,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 f"Moving file to correct folder..."
             )
             execute_with_retries(
-                self.drive_service.files().update(
+                self.client.drive_service.files().update(
                     fileId=file_id,
                     addParents=inbox_id,
                     fields="id, parents",
@@ -1280,7 +1282,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     def gather_all_file_and_folder_ids(self) -> list[str]:
         syftbox_folder_id = self.get_syftbox_folder_id()
         return gather_all_file_and_folder_ids_recursive(
-            self.drive_service, syftbox_folder_id
+            self.client.drive_service, syftbox_folder_id
         )
 
     def delete_multiple_files_by_ids(
@@ -1318,14 +1320,16 @@ class GDriveConnection(SyftboxPlatformConnection):
         BATCH_SIZE = 100
         for i in range(0, len(file_ids), BATCH_SIZE):
             chunk = file_ids[i : i + BATCH_SIZE]
-            batch = self.drive_service.new_batch_http_request(callback=callback)
+            batch = self.client.drive_service.new_batch_http_request(callback=callback)
             for file_id in chunk:
-                batch.add(self.drive_service.files().delete(fileId=file_id))
+                batch.add(self.client.drive_service.files().delete(fileId=file_id))
             batch_execute_with_retries(batch)
 
     def delete_file_by_id(self, file_id: str, raise_on_error: bool = False):
         try:
-            execute_with_retries(self.drive_service.files().delete(fileId=file_id))
+            execute_with_retries(
+                self.client.drive_service.files().delete(fileId=file_id)
+            )
         except Exception as e:
             if raise_on_error:
                 raise e
@@ -1349,7 +1353,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         page_token = None
         while True:
             results = execute_with_retries(
-                self.drive_service.files().list(
+                self.client.drive_service.files().list(
                     q=query, fields="files(id), nextPageToken", pageToken=page_token
                 )
             )
@@ -1394,7 +1398,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false {owner_email_clause} {parent_id_clause}"
 
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id)", pageSize=1)
+            self.client.drive_service.files().list(
+                q=query, fields="files(id)", pageSize=1
+            )
         )
         items = results.get("files", [])
         return items[0]["id"] if items else None
@@ -1408,7 +1414,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         page_token = None
         while True:
             page = execute_with_retries(
-                self.drive_service.files().list(
+                self.client.drive_service.files().list(
                     q=query,
                     fields=f"files({fields}), nextPageToken",
                     pageToken=page_token,
@@ -1446,7 +1452,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         page_token = None
         while True:
             page = execute_with_retries(
-                self.drive_service.files().list(
+                self.client.drive_service.files().list(
                     q=query,
                     fields="files(id, name), nextPageToken",
                     pageToken=page_token,
@@ -1511,7 +1517,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
         folder_id, name = older[-1]
         execute_with_retries(
-            self.drive_service.files().update(
+            self.client.drive_service.files().update(
                 fileId=folder_id, body={"name": current_name}
             )
         )
@@ -1525,7 +1531,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         return folder_id
 
     def download_file(self, file_id: str) -> bytes:
-        request = self.drive_service.files().get_media(fileId=file_id)
+        request = self.client.drive_service.files().get_media(fileId=file_id)
 
         file_buffer = io.BytesIO()
         downloader = MediaIoBaseDownload(
@@ -1557,7 +1563,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     ) -> dict:
         """Create a file or folder with the syft tag."""
         return execute_with_retries(
-            self.drive_service.files().create(
+            self.client.drive_service.files().create(
                 body={
                     **body,
                     "properties": {SYFT_FILE_PROPERTY_KEY: SYFT_FILE_PROPERTY_VALUE},
@@ -1570,7 +1576,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     def get_syftbox_folder_id_from_drive(self) -> str | None:
         query = f"name='{SYFTBOX_FOLDER}' and mimeType='application/vnd.google-apps.folder' and 'me' in owners and trashed=false"
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id, name)")
+            self.client.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
         return items[0]["id"] if items else None
@@ -1581,7 +1587,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         inbox_folder_id = self._get_own_datasite_inbox_id(sender_email)
         query = f"name='{name}' and '{inbox_folder_id}' in parents and trashed=false"
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id, name)")
+            self.client.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
         return items[0]["id"] if items else None
@@ -1625,7 +1631,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         """Mark collection as shared with 'any' via appProperties."""
         folder_id = self._get_collection_folder_id(prefix, tag, content_hash)
         execute_with_retries(
-            self.drive_service.files().update(
+            self.client.drive_service.files().update(
                 fileId=folder_id,
                 body={"appProperties": {"syft_shared_with_any": "true"}},
             )
@@ -1651,7 +1657,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         BATCH_SIZE = 100
         for i in range(0, len(users), BATCH_SIZE):
             chunk = users[i : i + BATCH_SIZE]
-            batch = self.drive_service.new_batch_http_request(callback=callback)
+            batch = self.client.drive_service.new_batch_http_request(callback=callback)
             for user_email in chunk:
                 permission = {
                     "type": "user",
@@ -1659,7 +1665,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                     "emailAddress": user_email,
                 }
                 batch.add(
-                    self.drive_service.permissions().create(
+                    self.client.drive_service.permissions().create(
                         fileId=file_id,
                         body=permission,
                         sendNotificationEmail=True,
@@ -1839,7 +1845,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         syftbox_folder_id = self.get_syftbox_folder_id()
         query = f"name='{SYFT_VERSION_FILE}' and '{syftbox_folder_id}' in parents and trashed=false"
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id)")
+            self.client.drive_service.files().list(q=query, fields="files(id)")
         )
         items = results.get("files", [])
         return items[0]["id"] if items else None
@@ -1864,7 +1870,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         else:
             # Update existing file
             execute_with_retries(
-                self.drive_service.files().update(
+                self.client.drive_service.files().update(
                     fileId=file_id, media_body=file_payload
                 )
             )
@@ -1875,7 +1881,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"name='{SYFT_VERSION_FILE}' and trashed=false and '{peer_email}' in owners"
         )
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id)")
+            self.client.drive_service.files().list(q=query, fields="files(id)")
         )
         items = results.get("files", [])
         return items[0]["id"] if items else None
@@ -2001,7 +2007,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"and name contains '{CHECKPOINT_FILENAME_PREFIX}'"
         )
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id, name)")
+            self.client.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
@@ -2046,7 +2052,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"and name contains '{CHECKPOINT_FILENAME_PREFIX}'"
         )
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id, name)")
+            self.client.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
@@ -2058,7 +2064,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 continue  # Skip the newly uploaded checkpoint
             try:
                 execute_with_retries(
-                    self.drive_service.files().delete(fileId=item["id"])
+                    self.client.drive_service.files().delete(fileId=item["id"])
                 )
             except Exception as e:
                 print(f"Warning: Failed to delete checkpoint {item['name']}: {e}")
@@ -2091,7 +2097,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id, name)")
+            self.client.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
@@ -2125,7 +2131,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id)")
+            self.client.drive_service.files().list(q=query, fields="files(id)")
         )
         return len(results.get("files", []))
 
@@ -2140,7 +2146,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(name)")
+            self.client.drive_service.files().list(q=query, fields="files(name)")
         )
         items = results.get("files", [])
 
@@ -2167,14 +2173,14 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"and name contains '{INCREMENTAL_CHECKPOINT_PREFIX}'"
         )
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id, name)")
+            self.client.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
         for item in items:
             try:
                 execute_with_retries(
-                    self.drive_service.files().delete(fileId=item["id"])
+                    self.client.drive_service.files().delete(fileId=item["id"])
                 )
             except Exception as e:
                 print(
@@ -2297,7 +2303,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         if self._rolling_state_file_id is not None:
             try:
                 execute_with_retries(
-                    self.drive_service.files().update(
+                    self.client.drive_service.files().update(
                         fileId=self._rolling_state_file_id,
                         media_body=payload,
                     )
@@ -2338,7 +2344,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"and name contains '{ROLLING_STATE_FILENAME_PREFIX}'"
         )
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id, name)")
+            self.client.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
@@ -2384,7 +2390,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"and name contains '{ROLLING_STATE_FILENAME_PREFIX}'"
         )
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id, name)")
+            self.client.drive_service.files().list(q=query, fields="files(id, name)")
         )
         items = results.get("files", [])
 
@@ -2392,7 +2398,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         for item in items:
             try:
                 execute_with_retries(
-                    self.drive_service.files().delete(fileId=item["id"])
+                    self.client.drive_service.files().delete(fileId=item["id"])
                 )
             except Exception as e:
                 print(f"Warning: Failed to delete rolling state {item['name']}: {e}")
@@ -2434,13 +2440,13 @@ class GDriveConnection(SyftboxPlatformConnection):
         # Check if file already exists
         query = f"name='{filename}' and '{folder_id}' in parents and trashed=false"
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id)")
+            self.client.drive_service.files().list(q=query, fields="files(id)")
         )
         items = results.get("files", [])
 
         if items:
             execute_with_retries(
-                self.drive_service.files().update(
+                self.client.drive_service.files().update(
                     fileId=items[0]["id"], media_body=file_payload
                 )
             )
@@ -2464,7 +2470,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         filename = self._encryption_bundle_filename(self.email, peer_email)
         query = f"name='{filename}' and '{folder_id}' in parents and trashed=false"
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id)")
+            self.client.drive_service.files().list(q=query, fields="files(id)")
         )
         items = results.get("files", [])
         if not items:
@@ -2480,7 +2486,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         filename = self._encryption_bundle_filename(peer_email, self.email)
         query = f"name='{filename}' and trashed=false and '{peer_email}' in owners"
         results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id)")
+            self.client.drive_service.files().list(q=query, fields="files(id)")
         )
         items = results.get("files", [])
         if not items:

@@ -149,7 +149,7 @@ class TestDatasetUploadPrivate:
             ds_manager.sync_engine._connection_router.connections[0]
         )
         results = (
-            ds_connection.drive_service.files()
+            ds_connection.client.drive_service.files()
             .list(
                 q=f"{collection_name_query(PRIVATE_DATASET_COLLECTION_PREFIX)} and trashed=false",
                 fields="files(id,name)",
@@ -163,7 +163,7 @@ class TestDatasetUploadPrivate:
             do_manager.sync_engine._connection_router.connections[0]
         )
         do_results = (
-            do_connection.drive_service.files()
+            do_connection.client.drive_service.files()
             .list(
                 q=f"{collection_name_query(PRIVATE_DATASET_COLLECTION_PREFIX)} and trashed=false",
                 fields="files(id,name)",

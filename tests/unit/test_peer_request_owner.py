@@ -48,7 +48,7 @@ def share_request_folder(
     """Put a request folder for `victim` in Drive and share it with `victim`."""
     backing_store = victim._connection_router.connections[
         0
-    ].drive_service._backing_store
+    ].client.drive_service._backing_store
     owners = [{"emailAddress": owner_email}] if owner_email else []
     folder = MockDriveFile(
         name=p2p_name(victim.email, claimed_email),

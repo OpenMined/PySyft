@@ -628,7 +628,7 @@ def test_tampered_inbox_message_logs_error(caplog):
     assert len(files) > 0
 
     file_id = files[0]["id"]
-    mock_file = do_conn.drive_service._backing_store.files[file_id]
+    mock_file = do_conn.client.drive_service._backing_store.files[file_id]
     tampered = bytearray(mock_file.content)
     tampered[-1] ^= 0xFF
     mock_file.content = bytes(tampered)

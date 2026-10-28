@@ -1081,7 +1081,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         if not (
             isinstance(connection, GDriveConnection)
             and isinstance(
-                connection.drive_service, mock_drive_service.MockDriveService
+                connection.client.drive_service, mock_drive_service.MockDriveService
             )
         ):
             raise ValueError(
@@ -1343,11 +1343,11 @@ class SyftboxManager(BaseModelCallbackMixin):
         if not isinstance(self._connection_router.connections[0], GDriveConnection):
             raise ValueError("Only GDriveConnections can be copied")
         if isinstance(
-            self._connection_router.connections[0].drive_service,
+            self._connection_router.connections[0].client.drive_service,
             mock_drive_service.MockDriveService,
         ):
             # Create new connection pointing to the same backing store
-            drive_service = self._connection_router.connections[0].drive_service
+            drive_service = self._connection_router.connections[0].client.drive_service
             new_do_connection = GDriveConnection.from_service(self.email, drive_service)
             new_manager._add_connection(new_do_connection)
         return new_manager

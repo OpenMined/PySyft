@@ -82,7 +82,7 @@ def test_spoofed_sender_does_not_name_an_archive_folder():
 
     connection = do_manager.datasite_owner_syncer.connection_router.connections[0]
     folder_names = [
-        f.name for f in connection.drive_service._backing_store.files.values()
+        f.name for f in connection.client.drive_service._backing_store.files.values()
     ]
     assert not [name for name in folder_names if claimed_email in name]
 

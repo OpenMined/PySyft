@@ -193,7 +193,7 @@ def test_owner_store_files_carry_the_syft_tag(pair):
 
     do_files = [
         f
-        for f in do_conn.drive_service._backing_store.files.values()
+        for f in do_conn.client.drive_service._backing_store.files.values()
         if f.owners[0]["emailAddress"] == DO
     ]
     untagged = [f.name for f in do_files if f.properties != {"syft": "true"}]

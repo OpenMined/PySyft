@@ -9,6 +9,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 
@@ -18,9 +19,9 @@ UNPARSEABLE = DATASET_COLLECTION_PREFIX
 
 def _conn(files):
     conn = GDriveConnection(email="alice@example.com", verbose=False)
-    conn.drive_service = Mock()
+    conn.client = GDriveClient(Mock())
     conn._syftbox_folder_id = "syftbox-id"
-    conn.drive_service.files().list().execute.return_value = {"files": files}
+    conn.client.drive_service.files().list().execute.return_value = {"files": files}
     return conn
 
 
