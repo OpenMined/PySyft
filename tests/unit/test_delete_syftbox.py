@@ -172,9 +172,9 @@ class TestOrphanedMessageFiles:
     def test_proposal_moved_to_root_when_do_deletes_syftbox_folder_only(self):
         ds_manager, do_manager, archived = _archive_one_proposal()
         do_conn = _connection(do_manager)
-        archive_id = do_conn.owner_get_archive_folder_id(ds_manager.email)
+        archive_id = do_conn.layout.get_archive_folder_id(ds_manager.email)
         do_conn.client.drive_service.files().delete(
-            fileId=do_conn.get_syftbox_folder_id()
+            fileId=do_conn.layout.get_syftbox_folder_id()
         ).execute()
 
         found = _connection(ds_manager).find_orphaned_syft_files()
@@ -198,7 +198,7 @@ class TestOrphanedMessageFiles:
 
         found = conn.find_orphaned_syft_files()
 
-        assert conn.get_syftbox_folder_id() not in found
+        assert conn.layout.get_syftbox_folder_id() not in found
 
 
 def _connection(manager: SyftboxManager):
@@ -214,6 +214,6 @@ def _archive_one_proposal():
     ds_manager._send_file_change(f"{do_manager.email}/shared/x.txt", "hi")
     do_manager.sync()
     do_conn = _connection(do_manager)
-    archive_id = do_conn.owner_get_archive_folder_id(ds_manager.email)
+    archive_id = do_conn.layout.get_archive_folder_id(ds_manager.email)
     archived = [m["id"] for m in do_conn.get_file_metadatas_from_folder(archive_id)]
     return ds_manager, do_manager, archived

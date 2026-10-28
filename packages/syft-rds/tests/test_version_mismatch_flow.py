@@ -8,10 +8,8 @@ earlier version are reused so a peer that has not upgraded still finds them.
 from unittest.mock import patch
 
 from syft.sync.connections.drive.gdrive_client import GOOGLE_FOLDER_MIME_TYPE
-from syft.sync.connections.drive.gdrive_transport import (
-    GDRIVE_P2P_FOLDER_DATASITE_PREFIX,
-    GDriveConnection,
-)
+from syft.sync.connections.drive.gdrive_layout import GDRIVE_P2P_FOLDER_DATASITE_PREFIX
+from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.connections.drive.mock_drive_service import (
     MockDriveService,
 )
@@ -182,7 +180,7 @@ def test_version_mismatch_continues_and_repairs():
     old_personal_name = f"{SYFT_VERSION}#{do_manager.email}"
     old_personal_id = do_conn.client.find_folder_by_name(
         old_personal_name,
-        parent_id=do_conn.get_syftbox_folder_id(),
+        parent_id=do_conn.layout.get_syftbox_folder_id(),
         owner_email=do_manager.email,
     )
     assert old_personal_id is not None
@@ -197,6 +195,10 @@ def test_version_mismatch_continues_and_repairs():
         patch("syft.version.SYFT_VERSION", NEW_VERSION),
         patch(
             "syft.sync.connections.drive.gdrive_transport.SYFT_VERSION",
+            NEW_VERSION,
+        ),
+        patch(
+            "syft.sync.connections.drive.gdrive_layout.SYFT_VERSION",
             NEW_VERSION,
         ),
         patch("syft.sync.login_utils.SYFT_VERSION", NEW_VERSION),
@@ -217,7 +219,7 @@ def test_version_mismatch_continues_and_repairs():
         new_personal_name = f"{NEW_VERSION}#{do_email}"
         new_personal_id = do_conn_new.client.find_folder_by_name(
             new_personal_name,
-            parent_id=do_conn_new.get_syftbox_folder_id(),
+            parent_id=do_conn_new.layout.get_syftbox_folder_id(),
             owner_email=do_email,
         )
         assert new_personal_id is not None
@@ -225,7 +227,7 @@ def test_version_mismatch_continues_and_repairs():
         assert (
             do_conn_new.client.find_folder_by_name(
                 old_personal_name,
-                parent_id=do_conn_new.get_syftbox_folder_id(),
+                parent_id=do_conn_new.layout.get_syftbox_folder_id(),
                 owner_email=do_email,
             )
             is None
@@ -253,7 +255,7 @@ def test_version_mismatch_continues_and_repairs():
         ds_personal_name = f"{NEW_VERSION}#{ds_email}"
         ds_personal_id = ds_conn_new.client.find_folder_by_name(
             ds_personal_name,
-            parent_id=ds_conn_new.get_syftbox_folder_id(),
+            parent_id=ds_conn_new.layout.get_syftbox_folder_id(),
             owner_email=ds_email,
         )
         assert ds_personal_id is not None

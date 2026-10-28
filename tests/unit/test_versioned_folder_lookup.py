@@ -7,7 +7,7 @@ Ordering and selection now live in _partition_by_version (adopt, private
 folders) and _sorted_by_version (P2P lookup), each tested separately.
 """
 
-from syft.sync.connections.drive.gdrive_transport import (
+from syft.sync.connections.drive.gdrive_layout import (
     _extract_version_from_name,
     _looks_like_version,
     _partition_by_version,

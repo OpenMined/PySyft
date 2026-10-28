@@ -6,7 +6,7 @@ share it with a victim. The name alone must not create a request.
 
 import pytest
 
-from syft.sync.connections.drive.gdrive_transport import (
+from syft.sync.connections.drive.gdrive_layout import (
     GDRIVE_P2P_FOLDER_DATASITE_PREFIX,
     GdriveP2PFolder,
 )

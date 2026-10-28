@@ -18,11 +18,11 @@ from unittest.mock import Mock
 
 import pytest
 
-from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.checkpoints.checkpoint import CHECKPOINT_VERSION, Checkpoint
+from syft.sync.connections.drive.gdrive_client import GDriveClient
+from syft.sync.connections.drive.gdrive_layout import DriveLayout, _partition_by_version
 from syft.sync.connections.drive.gdrive_transport import (
     GDriveConnection,
-    _partition_by_version,
     execute_with_retries,
 )
 from syft.sync.syftbox_manager import SyftboxManager
@@ -32,7 +32,7 @@ EMAIL = "alice@example.com"
 
 def _conn():
     conn = GDriveConnection(email=EMAIL, verbose=False)
-    conn.client = GDriveClient(Mock())
+    conn.layout = DriveLayout(GDriveClient(Mock()), conn.email)
     return conn
 
 
@@ -83,7 +83,7 @@ def test_partition_returns_empty_for_a_bad_current_version():
 def test_a_compatible_folder_wins_and_nothing_is_renamed():
     conn = _conn()
     folders = [("same", f"0.2.5#{EMAIL}"), ("old", f"0.1.9#{EMAIL}")]
-    got = conn._find_or_adopt_versioned_folder(
+    got = conn.layout.find_or_adopt_versioned_folder(
         folders, current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
     )
     assert got == "same"
@@ -93,7 +93,7 @@ def test_a_compatible_folder_wins_and_nothing_is_renamed():
 def test_an_older_folder_is_adopted_by_rename():
     conn = _conn()
     folders = [("old", f"0.1.9#{EMAIL}")]
-    got = conn._find_or_adopt_versioned_folder(
+    got = conn.layout.find_or_adopt_versioned_folder(
         folders, current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
     )
     assert got == "old", "the client must keep the folder that holds the data"
@@ -107,7 +107,7 @@ def test_the_highest_older_folder_is_adopted():
         ("v2", f"0.1.20#{EMAIL}"),
         ("v0", f"0.0.4#{EMAIL}"),
     ]
-    got = conn._find_or_adopt_versioned_folder(
+    got = conn.layout.find_or_adopt_versioned_folder(
         folders, current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
     )
     assert got == "v2"
@@ -120,7 +120,7 @@ def test_a_newer_folder_stops_the_client():
     conn = _conn()
     folders = [("new", f"0.3.0#{EMAIL}")]
     with pytest.raises(RuntimeError, match="0.3.0"):
-        conn._find_or_adopt_versioned_folder(
+        conn.layout.find_or_adopt_versioned_folder(
             folders, current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
         )
     assert _renames(conn) == []
@@ -128,7 +128,7 @@ def test_a_newer_folder_stops_the_client():
 
 def test_no_folder_returns_none_so_the_caller_creates_one():
     conn = _conn()
-    got = conn._find_or_adopt_versioned_folder(
+    got = conn.layout.find_or_adopt_versioned_folder(
         [], current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
     )
     assert got is None
@@ -139,7 +139,7 @@ def test_two_compatible_folders_still_raise():
     conn = _conn()
     folders = [("a", f"0.2.1#{EMAIL}"), ("b", f"0.2.2#{EMAIL}")]
     with pytest.raises(RuntimeError):
-        conn._find_or_adopt_versioned_folder(
+        conn.layout.find_or_adopt_versioned_folder(
             folders, current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
         )
 
@@ -179,7 +179,7 @@ def _checkpoints_folder_names(connection) -> list[str]:
         name
         for _, name in connection.client.find_folders(
             name_contains=[f"{connection.email}-", "-checkpoints"],
-            parent_id=connection.get_syftbox_folder_id(),
+            parent_id=connection.layout.get_syftbox_folder_id(),
         )
     ]
 

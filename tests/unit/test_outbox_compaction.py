@@ -21,7 +21,7 @@ def test_compact_outboxes_if_needed_collapses_to_single_message():
         )
 
     conn_do = do_manager._connection_router.connections[0]
-    outbox_id = conn_do._get_own_datasite_outbox_id(ds_manager.email)
+    outbox_id = conn_do.layout.get_own_datasite_outbox_id(ds_manager.email)
     pre = conn_do.get_file_metadatas_from_folder(outbox_id, since_timestamp=None)
     assert len(pre) == n_messages
 

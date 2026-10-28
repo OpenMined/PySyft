@@ -250,13 +250,7 @@ class ConnectionRouter(BaseModel):
     def owner_list_outbox_files(self, recipient_email: str) -> List[dict] | None:
         """The files in my outbox for ``recipient_email``, or None when that
         outbox does not exist."""
-        connection = self.connection_for_outbox()
-        folder_id = connection._get_own_datasite_outbox_id(recipient_email)
-        if folder_id is None:
-            return None
-        return connection.get_file_metadatas_from_folder(
-            folder_id, since_timestamp=None
-        )
+        return self.connection_for_outbox().owner_list_outbox_files(recipient_email)
 
     # =========================================================================
     # EVENT LOG (self-encrypted at rest when encryption enabled)

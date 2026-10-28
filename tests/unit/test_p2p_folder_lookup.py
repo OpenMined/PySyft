@@ -11,6 +11,7 @@ A folder the peer owns must be found whatever version the peer wrote into it.
 
 from unittest.mock import Mock
 
+from syft.sync.connections.drive.gdrive_layout import DriveLayout
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 
@@ -24,13 +25,13 @@ def _name(version: str, datasite: str, folder_type: str, peer: str) -> str:
 
 def _conn(found):
     conn = GDriveConnection(email=ME, verbose=False)
-    conn.client = GDriveClient(Mock())
+    conn.layout = DriveLayout(GDriveClient(Mock()), conn.email)
     conn.client.find_folders = Mock(return_value=found)
     return conn
 
 
 def _lookup(conn):
-    return conn._find_p2p_folder_id(
+    return conn.layout.find_p2p_folder_id(
         datasite_email=PEER, folder_type="inbox", peer_email=ME, owner_email=ME
     )
 

@@ -12,7 +12,9 @@ from syft.sync.connections.drive.mock_drive_service import (
 
 def test_batch_delete_raises_error_whose_text_contains_404(monkeypatch):
     do_conn, _ = pair_with_mock_service("do@example.com", "ds@example.com")
-    folder_id = do_conn.client.create_folder("folder", do_conn.get_syftbox_folder_id())
+    folder_id = do_conn.client.create_folder(
+        "folder", do_conn.layout.get_syftbox_folder_id()
+    )
 
     def forbidden(self) -> None:
         raise http_error(403, "forbidden", "Cannot delete file 1Xy404abc")

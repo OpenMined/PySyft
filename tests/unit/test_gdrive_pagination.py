@@ -1,6 +1,7 @@
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
+from syft.sync.connections.drive.gdrive_layout import DriveLayout
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.connections.drive.mock_drive_service import (
@@ -15,7 +16,7 @@ from syft.sync.events.file_change_event import (
 
 def create_mock_connection():
     conn = GDriveConnection(email="test@test.com", verbose=False)
-    conn.client = GDriveClient(Mock())
+    conn.layout = DriveLayout(GDriveClient(Mock()), conn.email)
     return conn
 
 
@@ -61,7 +62,7 @@ def test_empty_folder():
 
 
 @patch(
-    "syft.sync.connections.drive.gdrive_transport.GDriveConnection._get_peer_datasite_outbox_id"
+    "syft.sync.connections.drive.gdrive_layout.DriveLayout.get_peer_datasite_outbox_id"
 )
 @patch("syft.sync.connections.drive.gdrive_client.GDriveClient.download_file")
 def test_events_returned_in_chronological_order(mock_download_file, mock_get_folder_id):
@@ -82,7 +83,7 @@ def test_events_returned_in_chronological_order(mock_download_file, mock_get_fol
         ]
     }
 
-    # Mock _get_peer_datasite_outbox_id
+    # Mock get_peer_datasite_outbox_id
     mock_get_folder_id.return_value = "folder_id"
 
     # Mock download_file to return events with matching timestamps
