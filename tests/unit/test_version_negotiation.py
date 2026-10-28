@@ -314,7 +314,7 @@ class TestPeerManager:
         with pytest.raises(TransportUnavailableError):
             ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
 
-    def test_drive_refusal_during_peer_version_read_not_unavailable(self, monkeypatch):
+    def test_drive_refusal_during_peer_version_read_skips_peer(self, monkeypatch):
         ds_manager, do_manager = (
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
@@ -324,17 +324,19 @@ class TestPeerManager:
         )
         monkeypatch.setattr(GDriveConnection, "download_file", _raises(forbidden))
 
-        with pytest.raises(HttpError):
-            ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
+        infos = ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
 
-    def test_unreadable_peer_version_file_raises(self, monkeypatch):
+        assert infos == {do_manager.email: None}
+
+    def test_unreadable_peer_version_file_skips_peer(self, monkeypatch):
         ds_manager, do_manager = (
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
         monkeypatch.setattr(GDriveConnection, "download_file", _returns(b"{trunc"))
 
-        with pytest.raises(ValueError):
-            ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
+        infos = ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
+
+        assert infos == {do_manager.email: None}
 
 
 DRIVE_DOWN = ConnectionResetError("Drive is down")
