@@ -1,6 +1,11 @@
 from unittest.mock import Mock, patch
 from uuid import uuid4
+
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.mock_drive_service import (
+    MockDriveBackingStore,
+    MockDriveService,
+)
 from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
     FileChangeEventsMessageFileName,
@@ -252,3 +257,43 @@ def test_newer_message_listed_after_older_one_in_same_second_not_skipped():
     )
 
     assert [f["name"] for f in files] == [newer.as_string()]
+
+
+# Three pages of the mock Drive, which returns 100 files per page.
+FILE_COUNT = 250
+
+
+def _mock_connections(*emails: str) -> list[GDriveConnection]:
+    store = MockDriveBackingStore()
+    return [
+        GDriveConnection.from_service(e, MockDriveService(store, e)) for e in emails
+    ]
+
+
+def test_collection_listings_read_every_page():
+    do_conn, ds_conn = _mock_connections("do@example.com", "ds@example.com")
+    owner, reader = do_conn.as_transport(), ds_conn.as_transport()
+    tags = [f"tag{i}" for i in range(FILE_COUNT)]
+    for tag in tags:
+        owner.collections.create(
+            "syft_datasetcollection", tag, "hash", "do@example.com"
+        )
+        owner.collections.grant_read(
+            "syft_datasetcollection", tag, "hash", ["ds@example.com"]
+        )
+
+    assert sorted(owner.collections.list_mine("syft_datasetcollection")) == sorted(tags)
+    mine = owner.collections.list_mine_with_permissions("syft_datasetcollection")
+    assert len(mine) == FILE_COUNT
+    shared = reader.collections.list_shared_with_me("syft_datasetcollection")
+    assert len(shared) == FILE_COUNT
+
+
+def test_peer_requests_read_every_page():
+    peer_emails = [f"peer{i}@example.com" for i in range(FILE_COUNT)]
+    do_conn, *peers = _mock_connections("do@example.com", *peer_emails)
+    for peer in peers:
+        peer.as_transport().peering.open_channels("do@example.com")
+
+    requests = do_conn.as_transport().peering.incoming_requests()
+    assert sorted(requests) == sorted(peer_emails)

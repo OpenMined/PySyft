@@ -639,19 +639,17 @@ class GDriveConnection(SyftboxPlatformConnection):
         peers who created folders for our datasite. Filters out already-accepted
         or rejected peers from SYFT_peers.json.
         """
-        results = execute_with_retries(
-            self.drive_service.files().list(
-                q=f"name contains '{GDRIVE_P2P_FOLDER_DATASITE_PREFIX}#' "
-                f"and name contains '#{self.email}#' "
-                f"and trashed=false "
-                f"and mimeType = '{GOOGLE_FOLDER_MIME_TYPE}' "
-                f"and not 'me' in owners",
-                fields="files(id,name,owners)",
-            )
+        folders = self._list_all_files(
+            f"name contains '{GDRIVE_P2P_FOLDER_DATASITE_PREFIX}#' "
+            f"and name contains '#{self.email}#' "
+            f"and trashed=false "
+            f"and mimeType = '{GOOGLE_FOLDER_MIME_TYPE}' "
+            f"and not 'me' in owners",
+            fields="id,name,owners",
         )
 
         all_folder_peers = set()
-        for f in results.get("files", []):
+        for f in folders:
             try:
                 folder = GdriveP2PFolder.from_name(f["name"])
             except ValueError:
@@ -673,9 +671,11 @@ class GDriveConnection(SyftboxPlatformConnection):
         peers_data = self._get_peers_json()
         pending_peers = []
         for peer_email in all_folder_peers:
-            if peer_email not in peers_data:
-                pending_peers.append(peer_email)
-            elif peers_data[peer_email].get("state") not in ["accepted", "rejected"]:
+            undecided = peers_data.get(peer_email, {}).get("state") not in [
+                "accepted",
+                "rejected",
+            ]
+            if undecided:
                 pending_peers.append(peer_email)
 
         return pending_peers
@@ -1404,6 +1404,26 @@ class GDriveConnection(SyftboxPlatformConnection):
         items = results.get("files", [])
         return items[0]["id"] if items else None
 
+    def _list_all_files(self, query: str, fields: str) -> list[dict]:
+        """Every file that matches ``query``, from all result pages.
+
+        ``fields`` names the file fields to return, such as ``"id, name"``.
+        """
+        files: list[dict] = []
+        page_token = None
+        while True:
+            page = execute_with_retries(
+                self.drive_service.files().list(
+                    q=query,
+                    fields=f"files({fields}), nextPageToken",
+                    pageToken=page_token,
+                )
+            )
+            files.extend(page["files"])
+            page_token = page.get("nextPageToken")
+            if not page_token:
+                return files
+
     def _find_folders(
         self,
         *,
@@ -1675,12 +1695,8 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"{collection_name_query(prefix)} and '{syftbox_folder_id}' in parents "
             f"and 'me' in owners and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
         )
-        results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(name)")
-        )
-
         result: list[str] = []
-        for folder in results.get("files", []):
+        for folder in self._list_all_files(query, fields="name"):
             try:
                 cf = CollectionFolder.from_name(prefix, folder["name"])
             except ValueError:
@@ -1699,14 +1715,8 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"{collection_name_query(prefix)} and '{syftbox_folder_id}' in parents "
             f"and 'me' in owners and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
         )
-        results = execute_with_retries(
-            self.drive_service.files().list(
-                q=query, fields="files(id,name,appProperties)"
-            )
-        )
-
         collections = []
-        for folder in results.get("files", []):
+        for folder in self._list_all_files(query, fields="id,name,appProperties"):
             try:
                 cf = CollectionFolder.from_name(prefix, folder["name"])
             except ValueError:
@@ -1749,12 +1759,8 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"{collection_name_query(prefix)} and not 'me' in owners "
             f"and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
         )
-        results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(name, owners)")
-        )
-
         result = []
-        for folder in results.get("files", []):
+        for folder in self._list_all_files(query, fields="name, owners"):
             try:
                 cf = CollectionFolder.from_name(prefix, folder["name"])
             except ValueError:
