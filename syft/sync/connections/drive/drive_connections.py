@@ -36,10 +36,11 @@ class DriveP2PConnection(P2PConnection):
     data scientist's outbox. ``msg_id`` is the file name. A written file is
     ``DELIVERED``: it waits in the folder until the peer reads it.
 
-    Only sending goes through this class so far. The router still reads and
-    archives messages with the Drive methods directly, because doing it through
-    ``receive`` and ``ack`` changes how they behave (one rule for both folders,
-    delete on ack, no read cursor); that lands with send-and-forget.
+    Reading and archiving go through the Drive-only methods below, which keep
+    how Drive does it today: the inbox is read one message at a time and
+    archived, the outbox is read from a timestamp cursor and kept. ``receive``
+    and ``ack`` replace them with send-and-forget, which changes that behaviour
+    (one rule for both folders, delete on ack, no read cursor).
     """
 
     def __init__(self, connection: GDriveConnection):
@@ -71,6 +72,33 @@ class DriveP2PConnection(P2PConnection):
             "Messages are still archived through the Drive methods; "
             "acknowledging through P2PConnection lands with send-and-forget."
         )
+
+    def next_inbox_message(self, sender: str) -> tuple[bytes, str] | None:
+        """The oldest message from ``sender`` in the inbox and its handle, or
+        None when the inbox is empty."""
+        return self._conn.owner_download_next_raw_proposed_message_from_inbox(sender)
+
+    def find_inbox_message(self, sender: str, msg_id: str) -> str | None:
+        """The handle of the inbox message ``msg_id`` from ``sender``, or None."""
+        return self._conn.get_inbox_proposed_event_id_from_name(sender, msg_id)
+
+    def archive_inbox_message(self, sender: str, handle: str) -> None:
+        """Move the inbox message ``handle`` from ``sender`` out of the inbox."""
+        self._conn.owner_archive_inbox_file(handle, sender)
+
+    def outbox_messages(self, peer: str, since_timestamp: float | None) -> list[bytes]:
+        """The messages in ``peer``'s outbox to me, newer than ``since_timestamp``."""
+        return self._conn.watcher_download_raw_events_from_outbox(peer, since_timestamp)
+
+    def outbox_message_metadatas(
+        self, peer: str, since_timestamp: float | None
+    ) -> list[dict]:
+        """Like ``outbox_messages``, without downloading: each entry's
+        ``file_id`` is the handle to ``fetch_message`` it with."""
+        return self._conn.watcher_get_outbox_file_metadatas(peer, since_timestamp)
+
+    def fetch_message(self, handle: str) -> bytes:
+        return self._conn.download_file(handle)
 
 
 class DriveOwnerStore(OwnerStore):

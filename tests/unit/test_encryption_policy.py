@@ -73,12 +73,8 @@ def _keyed_pair(
 
 
 def _raw_inbox_message(do_manager, sender_email: str) -> bytes:
-    connection = do_manager.datasite_owner_syncer.connection_router
-    raw, _ = (
-        connection.connection_for_receive_message().owner_download_next_raw_proposed_message_from_inbox(
-            sender_email
-        )
-    )
+    router = do_manager.datasite_owner_syncer.connection_router
+    raw, _ = router.transport.p2p.next_inbox_message(sender_email)
     return raw
 
 
