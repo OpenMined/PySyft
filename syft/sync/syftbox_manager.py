@@ -1178,11 +1178,10 @@ class SyftboxManager(BaseModelCallbackMixin):
         """
         Delete all SyftBox state: Google Drive files, local caches, and local folder.
 
-        Due to Google Drive's eventual consistency, files can become orphaned when
-        their parent folder is deleted before they're fully registered. We use two
-        strategies to ensure complete cleanup:
+        Drive moves a file that loses its folder to the root of its owner. We use
+        two strategies to ensure complete cleanup:
         1. Gather all files by traversing the SyftBox folder hierarchy
-        2. Find files by name pattern (catches orphaned files from any location)
+        2. Find the syft-tagged files in My Drive root (orphaned files)
 
         Args:
             verbose: Print deletion progress.
@@ -1199,8 +1198,8 @@ class SyftboxManager(BaseModelCallbackMixin):
         # Get files by folder hierarchy
         folder_file_ids = set(self._connection_router.gather_all_file_and_folder_ids())
 
-        # Also find syft files by name pattern (catches orphaned files)
-        orphaned_file_ids = set(self._connection_router.find_orphaned_message_files())
+        # Also find the orphaned syft files in My Drive root
+        orphaned_file_ids = set(self._connection_router.find_orphaned_syft_files())
 
         # Combine both sets and delete from Google Drive
         all_file_ids = list(folder_file_ids | orphaned_file_ids)

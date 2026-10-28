@@ -8,6 +8,7 @@ from syft.sync.transport.protocols import (
     Transport,
     WatcherStore,
 )
+from syft.sync.transport.exceptions import TransportError, TransportUnavailableError
 from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
 
 __all__ = [
@@ -19,5 +20,7 @@ __all__ = [
     "RawMessage",
     "SendStatus",
     "Transport",
+    "TransportError",
+    "TransportUnavailableError",
     "WatcherStore",
 ]

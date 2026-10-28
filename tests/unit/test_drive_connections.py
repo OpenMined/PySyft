@@ -13,7 +13,10 @@ import pytest
 import syft.sync.connections.connection_router as connection_router_module
 from syft.sync.sync import datasite_owner_syncer
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.connections.drive.gdrive_transport import CollectionFolder
+from syft.sync.connections.drive.gdrive_transport import (
+    CollectionFolder,
+    GDriveConnection,
+)
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.events.file_change_event import FileChangeEventsMessage
@@ -30,6 +33,7 @@ from syft.sync.transport import (
     RawMessage,
     SendStatus,
     Transport,
+    TransportUnavailableError,
     WatcherStore,
 )
 from syft.sync.version.peer_info import PeerInfo
@@ -39,6 +43,10 @@ from tests.unit.test_sync_manager import _store_knowing
 DO = "do@example.com"
 DS = "ds@example.com"
 DATASETS = "syft_datasetcollection"
+
+
+def _drive_down(self, file_id: str) -> bytes:
+    raise ConnectionResetError("Drive is down")
 
 
 def _proposal_name(ts: float) -> str:
@@ -176,6 +184,23 @@ def test_owner_store_overwrites_and_deletes_the_rolling_state(pair):
     assert store.get_rolling_state() is None
 
 
+def test_owner_store_files_carry_the_syft_tag(pair):
+    do_conn, _ = pair
+    store = do_conn.as_transport().owner_store
+    store.put_checkpoint("checkpoint_1.0.tar.gz", b"full")
+    store.put_incremental("incremental_checkpoint_1_1.0.tar.gz", b"inc")
+    store.put_rolling_state("rolling_state_1.0.tar.gz", b"state")
+
+    do_files = [
+        f
+        for f in do_conn.drive_service._backing_store.files.values()
+        if f.owners[0]["emailAddress"] == DO
+    ]
+    untagged = [f.name for f in do_files if f.properties != {"syft": "true"}]
+    assert do_files
+    assert untagged == []
+
+
 # -- WatcherStore -----------------------------------------------------------------
 
 
@@ -226,6 +251,20 @@ def test_peering_keeps_the_peer_registry(pair):
     do_conn, _ = pair
     peering = do_conn.as_transport().peering
     peering.update_peer_registry(DS, "accepted")
+    assert peering.read_peer_registry(force_download=True)[DS]["state"] == "accepted"
+
+
+def test_peer_registry_update_while_drive_is_down_keeps_other_peers(pair, monkeypatch):
+    do_conn, _ = pair
+    peering = do_conn.as_transport().peering
+    peering.update_peer_registry(DS, "accepted")
+    do_conn._peers_json_cache = None  # a new process has no cache
+
+    monkeypatch.setattr(GDriveConnection, "download_file", _drive_down)
+    with pytest.raises(TransportUnavailableError):
+        peering.update_peer_registry("other@example.com", "accepted")
+    monkeypatch.undo()
+
     assert peering.read_peer_registry(force_download=True)[DS]["state"] == "accepted"
 
 

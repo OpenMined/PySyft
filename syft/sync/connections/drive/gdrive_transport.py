@@ -7,7 +7,7 @@ import pickle
 import re
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from google.oauth2.credentials import Credentials as GoogleCredentials
 from google_auth_httplib2 import AuthorizedHttp
@@ -35,6 +35,7 @@ from syft.sync.connections.drive.gdrive_retry import (
     batch_execute_with_retries,
     execute_with_retries,
     next_chunk_with_retries,
+    raise_unavailable,
 )
 from syft.sync.connections.drive.gdrive_utils import (
     gather_all_file_and_folder_ids_recursive,
@@ -99,11 +100,13 @@ def build_drive_service(
         return build("drive", "v3", http=authorized_http)
 
 
-LEGACY_GDRIVE_OUTBOX_INBOX_FOLDER_PREFIX = "syft_outbox_inbox"  # legacy prefix
 GDRIVE_P2P_FOLDER_DATASITE_PREFIX = "syft_datasite"
 SYFT_PEERS_FILE = "SYFT_peers.json"
 
 SYFT_VERSION_FILE = "SYFT_version.json"
+# Every file and folder that syft creates carries this property.
+SYFT_FILE_PROPERTY_KEY = "syft"
+SYFT_FILE_PROPERTY_VALUE = "true"
 
 
 class GdriveArchiveFolder(BaseModel):
@@ -365,7 +368,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     _encryption_bundles_folder_id: str | None = None
 
     # Cached SYFT_peers.json contents (None = not loaded yet).
-    _peers_json_cache: dict[str, dict[str, str]] | None = None
+    _peers_json_cache: dict[str, dict[str, Any]] | None = None
 
     @classmethod
     def from_config(cls, config: "GdriveConnectionConfig") -> "GDriveConnection":
@@ -502,7 +505,10 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def create_syftbox_folder(self) -> str:
         """Creates /SyftBox"""
-        return self.create_folder(SYFTBOX_FOLDER, None)
+        folder = self._create_syft_file(
+            {"name": SYFTBOX_FOLDER, "mimeType": GOOGLE_FOLDER_MIME_TYPE}
+        )
+        return folder["id"]
 
     def create_archive_folder(self, sender_email: str) -> str:
         archive_folder = GdriveArchiveFolder(
@@ -545,33 +551,36 @@ class GDriveConnection(SyftboxPlatformConnection):
         items = results.get("files", [])
         return items[0]["id"] if items else None
 
-    def _download_peers_json(self) -> dict[str, dict[str, str]]:
-        """Fetch peers JSON from GDrive. Returns empty dict if not found."""
-        file_id = self._get_peers_file_id()
-        if file_id is None:
-            return {}
+    def _download_peers_json(self) -> dict[str, dict[str, Any]]:
+        """Fetch peers JSON from GDrive. Returns empty dict if not found.
 
-        try:
+        Maps each peer email to ``{"state": str, "public_encryption_bundle":
+        dict}``, and ``_meta`` to ``{"version": int}``.
+
+        Raises:
+            TransportUnavailableError: when Drive cannot be reached.
+            ValueError: when the file is not valid JSON.
+        """
+        with raise_unavailable("Could not read the peers file from Drive."):
+            file_id = self._get_peers_file_id()
+            if file_id is None:
+                return {}
             file_data = self.download_file(file_id)
-        except Exception as e:
-            print(f"Warning: could not download the peers file: {e}")
-            return {}
         try:
             return json.loads(file_data.decode("utf-8"))
         except ValueError as e:
-            print(f"Warning: could not read the peers file: {e}")
-            return {}
+            raise ValueError(f"Could not read the peers file: {e}") from e
 
     def _get_peers_json(
         self, force_download: bool = False
-    ) -> dict[str, dict[str, str]]:
+    ) -> dict[str, dict[str, Any]]:
         """Return peers JSON, using the in-memory cache when available."""
         if self._peers_json_cache is not None and not force_download:
             return self._peers_json_cache
         self._peers_json_cache = self._download_peers_json()
         return self._peers_json_cache
 
-    def _write_peers_json(self, peers_data: dict[str, dict[str, str]]):
+    def _write_peers_json(self, peers_data: dict[str, dict[str, Any]]):
         """Write peers JSON to GDrive. Creates or updates the file."""
         peers_data = {
             **peers_data,
@@ -590,11 +599,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 "name": SYFT_PEERS_FILE,
                 "parents": [syftbox_folder_id],
             }
-            result = execute_with_retries(
-                self.drive_service.files().create(
-                    body=file_metadata, media_body=file_payload, fields="id"
-                )
-            )
+            result = self._create_syft_file(file_metadata, file_payload)
             self._peers_json_cache = peers_data
             return result.get("id")
         else:
@@ -747,11 +752,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         }
         file_payload, _ = self.create_file_payload(data)
 
-        res = execute_with_retries(
-            self.drive_service.files().create(
-                body=file_metadata, media_body=file_payload, fields="id"
-            )
-        )
+        res = self._create_syft_file(file_metadata, file_payload)
         gdrive_id = res.get("id")
         self.personal_syftbox_event_id_cache[filename] = gdrive_id
         return gdrive_id
@@ -805,10 +806,8 @@ class GDriveConnection(SyftboxPlatformConnection):
         file_payload, _ = self.create_file_payload(data)
         file_metadata = {"name": filename, "parents": [outbox_folder_id]}
 
-        result = execute_with_retries(
-            self.drive_service.files().create(
-                body=file_metadata, media_body=file_payload, fields="id, parents"
-            )
+        result = self._create_syft_file(
+            file_metadata, file_payload, fields="id, parents"
         )
 
         file_id = result.get("id")
@@ -1239,11 +1238,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         payload, _ = self.create_file_payload(data)
         file_metadata = {"name": filename, "parents": [inbox_id]}
 
-        result = execute_with_retries(
-            self.drive_service.files().create(
-                body=file_metadata, media_body=payload, fields="id, parents"
-            )
-        )
+        result = self._create_syft_file(file_metadata, payload, fields="id, parents")
 
         file_id = result.get("id")
         actual_parents = result.get("parents", [])
@@ -1339,49 +1334,32 @@ class GDriveConnection(SyftboxPlatformConnection):
                 raise e
             print(f"Warning: could not delete file {file_id}: {e}")
 
-    def find_orphaned_message_files(self) -> list[str]:
-        """
-        Find syft files by name pattern owned by user, regardless of parent folder.
+    def find_orphaned_syft_files(self) -> list[str]:
+        """Find syft files of this account in its My Drive root, except /SyftBox.
 
-        Due to Google Drive's eventual consistency, files can become orphaned when
-        their parent folder is deleted before they're fully registered. This method
-        finds such files by searching for name patterns regardless of parent.
+        Drive moves a file to the root of its owner when the file loses its
+        folder. Only /SyftBox belongs in root.
 
-        Returns list of file IDs.
+        Returns list of orphaned file IDs.
         """
-        patterns = [
-            "syfteventsmessagev3_",  # event messages
-            "msgv2_",  # proposed file change messages
-            CHECKPOINT_FILENAME_PREFIX,  # checkpoint and incremental checkpoint files
-            ROLLING_STATE_FILENAME_PREFIX,  # rolling state files
-            GDRIVE_P2P_FOLDER_DATASITE_PREFIX,  # new: syft_datasite_ folders
-            LEGACY_GDRIVE_OUTBOX_INBOX_FOLDER_PREFIX,  # legacy: syft_outbox_inbox folders
-            "syft_encryption_bundles",  # encryption bundles folders
-            "encryption_bundle_",  # encryption bundle files
-        ]
+        query = (
+            "'root' in parents and 'me' in owners and trashed=false and "
+            f"name != '{SYFTBOX_FOLDER}' and "
+            f"properties has {{ key='{SYFT_FILE_PROPERTY_KEY}' "
+            f"and value='{SYFT_FILE_PROPERTY_VALUE}' }}"
+        )
         file_ids = []
-
-        for pattern in patterns:
-            query = f"name contains '{pattern}' and 'me' in owners and trashed=false"
-            page_token = None
-
-            while True:
-                results = execute_with_retries(
-                    self.drive_service.files().list(
-                        q=query,
-                        fields="files(id), nextPageToken",
-                        pageToken=page_token,
-                    )
+        page_token = None
+        while True:
+            results = execute_with_retries(
+                self.drive_service.files().list(
+                    q=query, fields="files(id), nextPageToken", pageToken=page_token
                 )
-
-                for item in results.get("files", []):
-                    file_ids.append(item["id"])
-
-                page_token = results.get("nextPageToken")
-                if not page_token:
-                    break
-
-        return file_ids
+            )
+            file_ids.extend(item["id"] for item in results["files"])
+            page_token = results.get("nextPageToken")
+            if not page_token:
+                return file_ids
 
     def create_file_payload(self, data: Any) -> tuple[MediaIoBaseUpload, str]:
         """Create a file payload for the GDrive"""
@@ -1545,16 +1523,32 @@ class GDriveConnection(SyftboxPlatformConnection):
         return message_data
 
     def create_folder(self, folder_name: str, parent_id: str) -> str:
-        file_metadata = {
-            "name": folder_name,
-            "mimeType": "application/vnd.google-apps.folder",
-        }
-        if parent_id:
-            file_metadata["parents"] = [parent_id]
-        folder = execute_with_retries(
-            self.drive_service.files().create(body=file_metadata, fields="id")
+        folder = self._create_syft_file(
+            {
+                "name": folder_name,
+                "mimeType": GOOGLE_FOLDER_MIME_TYPE,
+                "parents": [parent_id],
+            }
         )
-        return folder.get("id")
+        return folder["id"]
+
+    def _create_syft_file(
+        self,
+        body: dict,
+        media_body: MediaIoBaseUpload | None = None,
+        fields: str = "id",
+    ) -> dict:
+        """Create a file or folder with the syft tag."""
+        return execute_with_retries(
+            self.drive_service.files().create(
+                body={
+                    **body,
+                    "properties": {SYFT_FILE_PROPERTY_KEY: SYFT_FILE_PROPERTY_VALUE},
+                },
+                media_body=media_body,
+                fields=fields,
+            )
+        )
 
     def get_syftbox_folder_id_from_drive(self) -> str | None:
         query = f"name='{SYFTBOX_FOLDER}' and mimeType='application/vnd.google-apps.folder' and 'me' in owners and trashed=false"
@@ -1667,11 +1661,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             file_name = Path(file_path).name
 
             file_metadata = {"name": file_name, "parents": [folder_id]}
-            execute_with_retries(
-                self.drive_service.files().create(
-                    body=file_metadata, media_body=file_payload, fields="id"
-                )
-            )
+            self._create_syft_file(file_metadata, file_payload)
 
     def owner_list_collections(self, prefix: str) -> list[str]:
         """List collections created by DO (owned by me). Returns list of tags.
@@ -1867,11 +1857,7 @@ class GDriveConnection(SyftboxPlatformConnection):
                 "name": SYFT_VERSION_FILE,
                 "parents": [syftbox_folder_id],
             }
-            execute_with_retries(
-                self.drive_service.files().create(
-                    body=file_metadata, media_body=file_payload, fields="id"
-                )
-            )
+            self._create_syft_file(file_metadata, file_payload)
         else:
             # Update existing file
             execute_with_retries(
@@ -1892,44 +1878,51 @@ class GDriveConnection(SyftboxPlatformConnection):
         return items[0]["id"] if items else None
 
     def read_own_peer_info_file(self) -> Optional["PeerInfo"]:
-        """Read the own peer info file from /SyftBox."""
-        from syft.sync.version.peer_info import PeerInfo
+        """Read the own peer info file from /SyftBox.
 
-        file_id = self._get_own_peer_info_file_id()
-        if file_id is None:
-            return None
+        Returns None when there is no file.
 
-        try:
-            file_data = self.download_file(file_id)
-        except Exception as e:
-            print(f"Warning: could not download the own peer info file: {e}")
-            return None
-        try:
-            return PeerInfo.from_json(file_data.decode("utf-8"))
-        except (ValueError, MigrationError) as e:
-            print(f"Warning: could not read the own peer info file: {e}")
-            return None
+        Raises:
+            TransportUnavailableError: when Drive cannot be reached.
+            ValueError: when the file is not a peer info file this client reads.
+        """
+        return self._read_peer_info_file(
+            self._get_own_peer_info_file_id, "the own peer info file"
+        )
 
     def read_peer_info_file(self, peer_email: str) -> Optional["PeerInfo"]:
-        """Read the peer info file from a peer's /SyftBox folder."""
+        """Read the peer info file from a peer's /SyftBox folder.
+
+        Returns None when the peer has no file that this account may read.
+
+        Raises:
+            TransportUnavailableError: when Drive cannot be reached.
+            ValueError: when the file is not a peer info file this client reads.
+        """
+        return self._read_peer_info_file(
+            lambda: self._get_peer_info_file_id_of(peer_email),
+            f"the peer info file of {peer_email}",
+        )
+
+    def _read_peer_info_file(
+        self, find_file_id: Callable[[], str | None], file_label: str
+    ) -> Optional["PeerInfo"]:
+        """Find, download and parse a peer info file.
+
+        Returns None when ``find_file_id`` finds no file. ``file_label`` names
+        the file in errors.
+        """
         from syft.sync.version.peer_info import PeerInfo
 
-        file_id = self._get_peer_info_file_id_of(peer_email)
-        if file_id is None:
-            return None
-
-        try:
+        with raise_unavailable(f"Could not read {file_label} from Drive."):
+            file_id = find_file_id()
+            if file_id is None:
+                return None
             file_data = self.download_file(file_id)
-        except Exception as e:
-            print(
-                f"Warning: could not download the peer info file of {peer_email}: {e}"
-            )
-            return None
         try:
             return PeerInfo.from_json(file_data.decode("utf-8"))
         except (ValueError, MigrationError) as e:
-            print(f"Warning: could not read the peer info file of {peer_email}: {e}")
-            return None
+            raise ValueError(f"Could not read {file_label}: {e}") from e
 
     def share_peer_info_file_with_peer(
         self, peer_email: str, peer_info: "PeerInfo"
@@ -1987,11 +1980,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             "parents": [folder_id],
         }
 
-        result = (
-            self.drive_service.files()
-            .create(body=file_metadata, media_body=payload, fields="id")
-            .execute()
-        )
+        result = self._create_syft_file(file_metadata, payload)
 
         # Only delete old checkpoints after successful upload
         self.delete_all_checkpoints(exclude_file_id=result.get("id"))
@@ -2079,11 +2068,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             "parents": [folder_id],
         }
 
-        result = (
-            self.drive_service.files()
-            .create(body=file_metadata, media_body=payload, fields="id")
-            .execute()
-        )
+        result = self._create_syft_file(file_metadata, payload)
         return result.get("id")
 
     def download_all_raw_incremental_checkpoints(self) -> list[bytes]:
@@ -2315,11 +2300,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             "parents": [folder_id],
         }
 
-        result = (
-            self.drive_service.files()
-            .create(body=file_metadata, media_body=payload, fields="id")
-            .execute()
-        )
+        result = self._create_syft_file(file_metadata, payload)
         file_id = result.get("id")
         self._rolling_state_file_id = file_id
         return file_id
@@ -2440,13 +2421,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             )
         else:
             file_metadata = {"name": filename, "parents": [folder_id]}
-            execute_with_retries(
-                self.drive_service.files().create(
-                    body=file_metadata,
-                    media_body=file_payload,
-                    fields="id",
-                )
-            )
+            self._create_syft_file(file_metadata, file_payload)
 
     def share_encryption_bundles_folder(self, peer_email: str) -> None:
         """Share the bundles folder with a peer so they can read bundles."""
