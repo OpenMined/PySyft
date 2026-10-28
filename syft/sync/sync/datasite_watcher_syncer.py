@@ -178,8 +178,7 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         Returns None when the message is skipped (see
         ``ConnectionRouter.watcher_read_events_message``).
         """
-        connection = self.connection_router.connection_for_parallel_download()
-        raw = connection.download_file(file_id)
+        raw = self.connection_router.download_outbox_message(file_id)
         return self.connection_router.watcher_read_events_message(peer_email, raw)
 
     def download_collection_file_with_new_connection(
