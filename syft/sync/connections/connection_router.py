@@ -327,20 +327,9 @@ class ConnectionRouter(BaseModel):
         proposed_filechange_message: ProposedFileChangesMessage,
         sender_email: str,
     ):
-        """Archive a handled message. ``sender_email`` is the peer it came from.
-
-        The caller reads that email from the transport. The ``sender_email``
-        field of the message is sender-supplied, and it names the archive folder,
-        so this method never reads it.
-        """
-        p2p = self.transport.p2p
-        msg_id = proposed_filechange_message.message_filename.as_string()
-        handle = proposed_filechange_message.platform_id or p2p.find_inbox_message(
-            sender_email, msg_id
+        self.transport.p2p.archive_proposed_changes(
+            proposed_filechange_message, sender_email
         )
-        if handle is None:
-            raise ValueError(f"Message {msg_id} not found in the inbox")
-        p2p.archive_inbox_message(sender_email, handle)
 
     # =========================================================================
     # ENCRYPTION BUNDLE EXCHANGE

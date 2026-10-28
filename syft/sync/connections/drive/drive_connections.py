@@ -26,6 +26,7 @@ from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
 if TYPE_CHECKING:
     from syft.sync.connections.base_connection import FileCollection
     from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+    from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
     from syft.sync.version.peer_info import PeerInfo
 
 
@@ -78,13 +79,15 @@ class DriveP2PConnection(P2PConnection):
         None when the inbox is empty."""
         return self._conn.owner_download_next_raw_proposed_message_from_inbox(sender)
 
-    def find_inbox_message(self, sender: str, msg_id: str) -> str | None:
-        """The handle of the inbox message ``msg_id`` from ``sender``, or None."""
-        return self._conn.get_inbox_proposed_event_id_from_name(sender, msg_id)
-
     def archive_inbox_message(self, sender: str, handle: str) -> None:
         """Move the inbox message ``handle`` from ``sender`` out of the inbox."""
         self._conn.owner_archive_inbox_file(handle, sender)
+
+    def archive_proposed_changes(
+        self, message: ProposedFileChangesMessage, sender: str
+    ) -> None:
+        """Move the handled ``message`` from ``sender`` out of the inbox."""
+        self._conn.owner_remove_proposed_filechange_message_from_inbox(message, sender)
 
     def outbox_messages(self, peer: str, since_timestamp: float | None) -> list[bytes]:
         """The messages in ``peer``'s outbox to me, newer than ``since_timestamp``."""

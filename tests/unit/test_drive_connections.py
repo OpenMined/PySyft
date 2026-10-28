@@ -96,12 +96,12 @@ def test_a_proposed_change_sent_through_p2p_reaches_the_owner_inbox(pair):
 
 def test_an_archived_inbox_message_is_not_read_again(pair):
     do_conn, ds_conn = pair
-    name = _proposal_name(1.0)
-    ds_conn.as_transport().p2p.send(DO, name, b"job", MessageKind.PROPOSED_CHANGES)
+    ds_conn.as_transport().p2p.send(
+        DO, _proposal_name(1.0), b"job", MessageKind.PROPOSED_CHANGES
+    )
     p2p = do_conn.as_transport().p2p
 
-    handle = p2p.find_inbox_message(DS, name)
-    assert p2p.next_inbox_message(DS) == (b"job", handle)
+    _, handle = p2p.next_inbox_message(DS)
     p2p.archive_inbox_message(DS, handle)
     assert p2p.next_inbox_message(DS) is None
 
@@ -367,22 +367,8 @@ def test_the_router_reads_the_inbox_through_p2p():
 def test_the_router_archives_a_handled_message_through_p2p():
     router, p2p = _router_with_mock_p2p()
     message = ProposedFileChangesMessage(sender_email=DS, proposed_file_changes=[])
-    p2p.find_inbox_message.return_value = "handle-1"
     router.owner_remove_proposed_filechange_from_inbox(message, DS)
-
-    p2p.find_inbox_message.assert_called_once_with(
-        DS, message.message_filename.as_string()
-    )
-    p2p.archive_inbox_message.assert_called_once_with(DS, "handle-1")
-
-
-def test_archiving_a_message_missing_from_the_inbox_raises():
-    router, p2p = _router_with_mock_p2p()
-    message = ProposedFileChangesMessage(sender_email=DS, proposed_file_changes=[])
-    p2p.find_inbox_message.return_value = None
-    with pytest.raises(ValueError):
-        router.owner_remove_proposed_filechange_from_inbox(message, DS)
-    p2p.archive_inbox_message.assert_not_called()
+    p2p.archive_proposed_changes.assert_called_once_with(message, DS)
 
 
 def test_the_router_reads_the_outbox_through_p2p():

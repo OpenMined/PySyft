@@ -833,6 +833,29 @@ class GDriveConnection(SyftboxPlatformConnection):
         fname = events_message.message_filepath.as_string()
         self.owner_write_raw_bytes_to_outbox(recipient, fname, data)
 
+    def owner_remove_proposed_filechange_message_from_inbox(
+        self,
+        proposed_filechange_message: ProposedFileChangesMessage,
+        sender_email: str,
+    ):
+        """Archive a handled message. ``sender_email`` is the peer it came from.
+
+        The caller reads that email from the transport. The ``sender_email``
+        field of the message is sender-supplied, and it names the archive folder,
+        so this method never reads it.
+        """
+        fname = proposed_filechange_message.message_filename.as_string()
+
+        # Use cached platform_id if available, otherwise fall back to name-based lookup
+        gdrive_id = proposed_filechange_message.platform_id
+        if gdrive_id is None:
+            gdrive_id = self.get_inbox_proposed_event_id_from_name(sender_email, fname)
+        if gdrive_id is None:
+            raise ValueError(
+                f"Event {fname} not found in inbox, event should already be created for this type of connection"
+            )
+        self.owner_archive_inbox_file(gdrive_id, sender_email)
+
     def owner_archive_inbox_file(self, file_id: str, sender_email: str) -> None:
         """Move the inbox file ``file_id`` from ``sender_email`` to its archive folder."""
         file_info = execute_with_retries(
