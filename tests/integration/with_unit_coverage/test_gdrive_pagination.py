@@ -17,7 +17,7 @@ from tests.integration.with_unit_coverage.utils import is_mock_mode
 @pytest.mark.usefixtures("setup_delete_syftboxes")
 def test_pagination_and_early_termination():
     """Test pagination with small page size and early termination with since_timestamp"""
-    from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+    from syft.sync.connections.drive.gdrive_layout import DriveLayout
 
     manager_ds, manager_do = SyftboxManager._pair_with_google_drive_testing_connection(
         do_email=EMAIL_DO,
@@ -36,13 +36,13 @@ def test_pagination_and_early_termination():
     sleep(1)
 
     # Test pagination with small page size
-    original_method = GDriveConnection.get_file_metadatas_from_folder
+    original_method = DriveLayout.get_file_metadatas_from_folder
 
     def get_files_page_size_2(self, folder_id, since_timestamp=None, page_size=100):
         return original_method(self, folder_id, since_timestamp, page_size=2)
 
     with patch.object(
-        GDriveConnection,
+        DriveLayout,
         "get_file_metadatas_from_folder",
         get_files_page_size_2,
     ):

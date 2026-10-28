@@ -624,7 +624,7 @@ def test_tampered_inbox_message_logs_error(caplog):
     # Tamper with raw bytes in the mock backing store
     do_conn = do_manager._connection_router.connections[0]
     inbox_id = do_conn.layout.get_own_datasite_inbox_id(ds_manager.email)
-    files = do_conn.get_file_metadatas_from_folder(inbox_id)
+    files = do_conn.layout.get_file_metadatas_from_folder(inbox_id)
     assert len(files) > 0
 
     file_id = files[0]["id"]

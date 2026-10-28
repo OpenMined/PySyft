@@ -194,7 +194,7 @@ def test_version_mismatch_continues_and_repairs():
     with (
         patch("syft.version.SYFT_VERSION", NEW_VERSION),
         patch(
-            "syft.sync.connections.drive.gdrive_transport.SYFT_VERSION",
+            "syft.sync.connections.drive.drive_owner_store.SYFT_VERSION",
             NEW_VERSION,
         ),
         patch(

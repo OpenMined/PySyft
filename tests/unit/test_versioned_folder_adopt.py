@@ -164,7 +164,7 @@ def _checkpoints_owner_with_version(checkpoint_version: int):
         Checkpoint(email=do_manager.email, version=checkpoint_version)
     )
 
-    folder_id = connection._get_checkpoints_folder_id()
+    folder_id = connection.as_transport().owner_store._get_checkpoints_folder_id()
     older_name = f"{do_manager.email}-0.0.1-checkpoints"
     execute_with_retries(
         connection.client.drive_service.files().update(
@@ -194,7 +194,7 @@ def test_an_adopted_folder_serves_a_checkpoint_from_an_earlier_client():
     assert checkpoint is not None, "the adopted folder must still serve its files"
     assert checkpoint.version == 0
     assert _checkpoints_folder_names(connection) == [
-        connection._get_checkpoints_folder_name()
+        connection.as_transport().owner_store._get_checkpoints_folder_name()
     ], "the read must go through the adopt, which renames the folder"
     assert older_name not in _checkpoints_folder_names(connection)
 

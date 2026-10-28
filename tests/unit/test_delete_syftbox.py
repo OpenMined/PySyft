@@ -215,5 +215,7 @@ def _archive_one_proposal():
     do_manager.sync()
     do_conn = _connection(do_manager)
     archive_id = do_conn.layout.get_archive_folder_id(ds_manager.email)
-    archived = [m["id"] for m in do_conn.get_file_metadatas_from_folder(archive_id)]
+    archived = [
+        m["id"] for m in do_conn.layout.get_file_metadatas_from_folder(archive_id)
+    ]
     return ds_manager, do_manager, archived

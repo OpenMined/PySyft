@@ -87,15 +87,6 @@ class ConnectionRouter(BaseModel):
     ) -> SyftboxPlatformConnection:
         return connection.clone_for_thread()
 
-    def connection_for_eventlog(
-        self, create_new: bool = False
-    ) -> SyftboxPlatformConnection:
-        existing_connection = self.connections[0]
-        if create_new:
-            return self.copy_connection(existing_connection)
-        else:
-            return existing_connection
-
     def connection_for_datasite_watcher(self) -> SyftboxPlatformConnection:
         return self.connections[0]
 
@@ -268,8 +259,7 @@ class ConnectionRouter(BaseModel):
         self, events_message_id: str
     ) -> FileChangeEventsMessage:
         """Download and decrypt a single events message (thread-safe)."""
-        connection = self.connection_for_eventlog(create_new=True)
-        raw = connection.as_transport().owner_store.fetch(events_message_id)
+        raw = self.transport_for_thread().owner_store.fetch(events_message_id)
         raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
         return FileChangeEventsMessage.from_compressed_data(raw)
 

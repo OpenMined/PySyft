@@ -284,7 +284,9 @@ with open("outputs/result.json", "w") as f:
     # queue for longer than a certain time we start pushing)
     connection_do = do_manager.sync_engine._connection_router.connections[0]
     inbox_folder_id = connection_do.layout.get_own_datasite_inbox_id(ds_manager.email)
-    inbox_file_metadatas = connection_do.get_file_metadatas_from_folder(inbox_folder_id)
+    inbox_file_metadatas = connection_do.layout.get_file_metadatas_from_folder(
+        inbox_folder_id
+    )
     assert len(inbox_file_metadatas) == 1
 
     do_manager.sync()

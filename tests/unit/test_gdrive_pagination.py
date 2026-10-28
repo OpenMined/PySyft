@@ -28,7 +28,7 @@ def test_single_page_works():
         "files": [{"name": "file1.txt", "id": "id1"}]
     }
 
-    files = conn.get_file_metadatas_from_folder("folder_id")
+    files = conn.layout.get_file_metadatas_from_folder("folder_id")
 
     assert len(files) == 1
     assert files[0]["name"] == "file1.txt"
@@ -44,7 +44,7 @@ def test_multiple_pages_pagination():
         {"files": [{"name": "file3.txt", "id": "id3"}]},
     ]
 
-    files = conn.get_file_metadatas_from_folder("folder_id")
+    files = conn.layout.get_file_metadatas_from_folder("folder_id")
 
     assert len(files) == 3
     assert conn.client.drive_service.files().list().execute.call_count == 3
@@ -56,7 +56,7 @@ def test_empty_folder():
 
     conn.client.drive_service.files().list().execute.return_value = {"files": []}
 
-    files = conn.get_file_metadatas_from_folder("folder_id")
+    files = conn.layout.get_file_metadatas_from_folder("folder_id")
 
     assert files == []
 
@@ -117,7 +117,7 @@ def test_orderby_name_desc_applied():
 
     conn.client.drive_service.files().list().execute.return_value = {"files": []}
 
-    conn.get_file_metadatas_from_folder("folder_id")
+    conn.layout.get_file_metadatas_from_folder("folder_id")
 
     # Check that orderBy was passed to Drive API
     call_kwargs = conn.client.drive_service.files().list.call_args[1]
@@ -162,7 +162,7 @@ def test_early_termination_stops_pagination():
         },
     ]
 
-    files = conn.get_file_metadatas_from_folder(
+    files = conn.layout.get_file_metadatas_from_folder(
         "folder_id", since_timestamp=1731506400.0
     )
 
@@ -191,7 +191,7 @@ def test_no_early_termination_when_all_files_new():
         },
     ]
 
-    files = conn.get_file_metadatas_from_folder(
+    files = conn.layout.get_file_metadatas_from_folder(
         "folder_id", since_timestamp=1731506400.0
     )
 
@@ -215,7 +215,9 @@ def test_no_early_termination_when_since_timestamp_none():
         },
     ]
 
-    files = conn.get_file_metadatas_from_folder("folder_id", since_timestamp=None)
+    files = conn.layout.get_file_metadatas_from_folder(
+        "folder_id", since_timestamp=None
+    )
 
     # Should fetch all pages (no early termination)
     assert conn.client.drive_service.files().list().execute.call_count == 2
@@ -232,7 +234,7 @@ def test_newer_message_listed_after_older_one_in_same_second_not_skipped():
         "files": [{"name": name, "id": name} for name in names]
     }
 
-    files = conn.get_file_metadatas_from_folder(
+    files = conn.layout.get_file_metadatas_from_folder(
         "folder_id", since_timestamp=1731506400.92
     )
 

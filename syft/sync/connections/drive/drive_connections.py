@@ -12,10 +12,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.transport.protocols import (
     Collections,
-    OwnerStore,
     P2PConnection,
     Peering,
     Transport,
@@ -71,61 +71,6 @@ class DriveP2PConnection(P2PConnection):
             "Messages are still archived through the Drive methods; "
             "acknowledging through P2PConnection lands with send-and-forget."
         )
-
-
-class DriveOwnerStore(OwnerStore):
-    """The data owner's own folders in /SyftBox: event log, checkpoints,
-    rolling state."""
-
-    def __init__(self, connection: GDriveConnection):
-        self._conn = connection
-
-    def append_event(self, name: str, data: bytes) -> str:
-        return self._conn.owner_write_raw_bytes_to_syftbox(name, data)
-
-    def list_event_handles(self, since_timestamp: float | None = None) -> list[str]:
-        return self._conn.owner_get_all_accepted_event_file_ids(since_timestamp)
-
-    def fetch(self, handle: str) -> bytes:
-        return self._conn.owner_download_raw_bytes_by_id(handle)
-
-    def fetch_events_since(self, since_timestamp: float | None) -> list[bytes]:
-        if since_timestamp is None:
-            return self.fetch_all_events()
-        return self._conn.download_raw_events_since_timestamp(since_timestamp)
-
-    def fetch_all_events(self) -> list[bytes]:
-        return self._conn.owner_download_all_raw_events_from_syftbox()
-
-    def put_checkpoint(self, name: str, data: bytes) -> str:
-        return self._conn.upload_raw_checkpoint(name, data)
-
-    def latest_checkpoint(self) -> bytes | None:
-        return self._conn.download_raw_latest_checkpoint()
-
-    def put_incremental(self, name: str, data: bytes) -> str:
-        return self._conn.upload_raw_incremental_checkpoint(name, data)
-
-    def all_incrementals(self) -> list[bytes]:
-        return self._conn.download_all_raw_incremental_checkpoints()
-
-    def incremental_count(self) -> int:
-        return self._conn.get_incremental_checkpoint_count()
-
-    def next_incremental_sequence(self) -> int:
-        return self._conn.get_next_incremental_sequence_number()
-
-    def delete_incrementals(self) -> None:
-        self._conn.delete_all_incremental_checkpoints()
-
-    def put_rolling_state(self, name: str, data: bytes) -> str:
-        return self._conn.upload_raw_rolling_state(name, data)
-
-    def get_rolling_state(self) -> bytes | None:
-        return self._conn.download_raw_rolling_state()
-
-    def delete_rolling_state(self) -> None:
-        self._conn.delete_rolling_state()
 
 
 class DriveWatcherStore(WatcherStore):
@@ -258,7 +203,7 @@ def drive_transport(connection: GDriveConnection) -> Transport:
     """The transport jobs over one Drive connection."""
     return Transport(
         p2p=DriveP2PConnection(connection),
-        owner_store=DriveOwnerStore(connection),
+        owner_store=DriveOwnerStore(connection.layout),
         watcher_store=DriveWatcherStore(connection),
         collections=DriveCollections(connection),
         peering=DrivePeering(connection),

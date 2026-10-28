@@ -14,6 +14,8 @@ from syft.sync.connections.drive.gdrive_client import (
     GDriveClient,
 )
 from syft.sync.connections.drive.gdrive_retry import execute_with_retries
+from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
+from syft.sync.transport.naming import timestamp_from_message_name
 from syft.sync.version.version_info import _parse_semver
 from syft.version import SYFT_VERSION
 
@@ -155,6 +157,21 @@ def _partition_by_version(
         return [(fid, name) for *_, fid, name in sorted(entries)]
 
     return _ordered(compatible), _ordered(older), _ordered(newer)
+
+
+def valid_events_from_file_metadatas(
+    file_metadatas: list[dict],
+) -> list[FileChangeEventsMessageFileName]:
+    res = []
+    for file_metadata in file_metadatas:
+        fname = file_metadata["name"]
+        try:
+            message_filename = FileChangeEventsMessageFileName.from_string(fname)
+        except ValueError:
+            print(f"Warning: invalid event file name: {fname}")
+            continue
+        res.append(message_filename)
+    return res
 
 
 @dataclass
@@ -464,3 +481,73 @@ class DriveLayout:
         archive_folder_name = archive_folder.as_string()
         syftbox_folder_id = self.get_syftbox_folder_id()
         return self.client.create_folder(archive_folder_name, syftbox_folder_id)
+
+    def get_file_metadatas_from_folder(
+        self,
+        folder_id: str,
+        since_timestamp: float | None = None,
+        page_size: int = 100,
+    ) -> list[dict]:
+        """
+        Get file metadatas from folder with early termination.
+
+        Args:
+            folder_id: Google Drive folder ID
+            since_timestamp: Optional timestamp. If provided, only files with a
+                           newer timestamp are returned, and pagination stops at
+                           a file from an earlier second.
+            page_size: Number of files to fetch per API call. Default 100.
+
+        Returns:
+            List of file metadata dicts, sorted by name descending (newest first)
+        """
+        query = f"'{folder_id}' in parents and trashed=false"
+        all_files = []
+        page_token = None
+
+        while True:
+            results = execute_with_retries(
+                self.client.drive_service.files().list(
+                    q=query,
+                    fields="files(id, name, size, mimeType, modifiedTime), nextPageToken",
+                    pageSize=page_size,
+                    pageToken=page_token,
+                    orderBy="name desc",
+                )
+            )
+
+            page_files = results.get("files", [])
+
+            # Early termination: Check if this page contains old files
+            if since_timestamp is not None and page_files:
+                should_stop = False
+
+                for file in page_files:
+                    timestamp = timestamp_from_message_name(file["name"])
+
+                    if timestamp is not None:
+                        if timestamp > since_timestamp:
+                            all_files.append(file)
+                        elif int(timestamp) < int(since_timestamp):
+                            # Drive sorts names as strings, so a 0.9 fraction of
+                            # a second lists before 0.95. We stop when the
+                            # second flips.
+                            should_stop = True
+                            break
+                    else:
+                        # No timestamp in filename, include the file
+                        all_files.append(file)
+
+                if should_stop:
+                    # Don't fetch more pages
+                    break
+            else:
+                # No early termination check, add all files
+                all_files.extend(page_files)
+
+            # Check for next page
+            page_token = results.get("nextPageToken")
+            if not page_token:
+                break
+
+        return all_files
