@@ -1,7 +1,7 @@
 """The transport jobs on Google Drive, and the router that calls them.
 
-The Drive classes wrap today's GDriveConnection methods, so these tests pin
-what each job promises, on the mock Drive service the rest of the suite uses.
+These tests pin what each job promises, on the mock Drive service the rest of
+the suite uses.
 """
 
 import inspect

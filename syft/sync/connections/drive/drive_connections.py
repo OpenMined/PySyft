@@ -1,11 +1,9 @@
 """The transport jobs on Google Drive.
 
-Each class wraps a ``GDriveConnection`` and calls the method that does the job
-today, so what is read from and written to Drive does not change. Where a
-contract builds a method from simpler ones, the Drive class overrides it to
-keep the single Drive call it makes today. The Drive code moves out of
-``GDriveConnection`` into these classes, over a shared ``GDriveClient``, in a
-later step.
+``drive_transport`` builds one of each job over the ``DriveLayout`` of a
+connection. Each job has its own module: ``drive_p2p``, ``drive_owner_store``,
+``drive_collections`` and ``drive_peering``. Storage for the data scientist is
+not built on Drive yet.
 """
 
 from __future__ import annotations

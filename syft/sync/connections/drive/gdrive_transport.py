@@ -1,4 +1,4 @@
-"""Google Drive Files transport layer implementation"""
+"""A Google Drive account as a syft connection."""
 
 import logging
 from pathlib import Path
@@ -83,7 +83,13 @@ def build_drive_service(
 
 
 class GDriveConnection(SyftboxPlatformConnection):
-    """Google Drive Files API transport layer"""
+    """A Google Drive account as a syft connection.
+
+    It builds the Drive service and the ``DriveLayout``, and gives out the
+    transport jobs (``as_transport``) and copies for other threads. Two jobs
+    stay here until they have a contract: reading and archiving messages, which
+    waits for send-and-forget, and the account cleanup of ``delete_syftbox``.
+    """
 
     class Config:
         arbitrary_types_allowed = True
