@@ -180,7 +180,7 @@ def test_version_mismatch_continues_and_repairs():
     )
     assert len(do_p2p_current) > 0
     old_personal_name = f"{SYFT_VERSION}#{do_manager.email}"
-    old_personal_id = do_conn._find_folder_by_name(
+    old_personal_id = do_conn.client.find_folder_by_name(
         old_personal_name,
         parent_id=do_conn.get_syftbox_folder_id(),
         owner_email=do_manager.email,
@@ -215,7 +215,7 @@ def test_version_mismatch_continues_and_repairs():
         # Personal folder is adopted (same Drive id, new name), not recreated.
         do_conn_new = do_manager.peer_manager.connection_router.connections[0]
         new_personal_name = f"{NEW_VERSION}#{do_email}"
-        new_personal_id = do_conn_new._find_folder_by_name(
+        new_personal_id = do_conn_new.client.find_folder_by_name(
             new_personal_name,
             parent_id=do_conn_new.get_syftbox_folder_id(),
             owner_email=do_email,
@@ -223,7 +223,7 @@ def test_version_mismatch_continues_and_repairs():
         assert new_personal_id is not None
         assert new_personal_id == old_personal_id
         assert (
-            do_conn_new._find_folder_by_name(
+            do_conn_new.client.find_folder_by_name(
                 old_personal_name,
                 parent_id=do_conn_new.get_syftbox_folder_id(),
                 owner_email=do_email,
@@ -251,7 +251,7 @@ def test_version_mismatch_continues_and_repairs():
 
         ds_conn_new = ds_manager.peer_manager.connection_router.connections[0]
         ds_personal_name = f"{NEW_VERSION}#{ds_email}"
-        ds_personal_id = ds_conn_new._find_folder_by_name(
+        ds_personal_id = ds_conn_new.client.find_folder_by_name(
             ds_personal_name,
             parent_id=ds_conn_new.get_syftbox_folder_id(),
             owner_email=ds_email,

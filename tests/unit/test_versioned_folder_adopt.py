@@ -177,7 +177,7 @@ def _checkpoints_owner_with_version(checkpoint_version: int):
 def _checkpoints_folder_names(connection) -> list[str]:
     return [
         name
-        for _, name in connection._find_folders(
+        for _, name in connection.client.find_folders(
             name_contains=[f"{connection.email}-", "-checkpoints"],
             parent_id=connection.get_syftbox_folder_id(),
         )

@@ -36,7 +36,6 @@ from syft.sync.connections.drive.gdrive_client import (
     GDriveClient,
 )
 from syft.sync.connections.drive.gdrive_retry import (
-    batch_execute_with_retries,
     execute_with_retries,
     raise_unavailable,
 )
@@ -529,13 +528,13 @@ class GDriveConnection(SyftboxPlatformConnection):
         inbox_id = self._get_peer_datasite_inbox_id(peer_email)
         if inbox_id is None:
             inbox_id = self._create_peer_datasite_folder(peer_email, "inbox")
-        self.add_permission(inbox_id, peer_email, write=True)
+        self.client.add_permission(inbox_id, peer_email, write=True)
 
         # Outbox: peer writes events, I read
         outbox_id = self._get_peer_datasite_outbox_id(peer_email)
         if outbox_id is None:
             outbox_id = self._create_peer_datasite_folder(peer_email, "outbox")
-        self.add_permission(outbox_id, peer_email, write=True)
+        self.client.add_permission(outbox_id, peer_email, write=True)
 
     def add_peer(self, peer_email: str):
         """Alias for create_peer_datasite_folders."""
@@ -637,7 +636,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         peers who created folders for our datasite. Filters out already-accepted
         or rejected peers from SYFT_peers.json.
         """
-        folders = self._list_all_files(
+        folders = self.client.list_all_files(
             f"name contains '{GDRIVE_P2P_FOLDER_DATASITE_PREFIX}#' "
             f"and name contains '#{self.email}#' "
             f"and trashed=false "
@@ -869,35 +868,6 @@ class GDriveConnection(SyftboxPlatformConnection):
             )
         )
 
-    def _has_permission(self, file_id: str, email: str) -> bool:
-        """Check if user already has permission on the file."""
-        perms = execute_with_retries(
-            self.client.drive_service.permissions().list(
-                fileId=file_id, fields="permissions(emailAddress)"
-            )
-        )
-        for p in perms.get("permissions", []):
-            if p.get("emailAddress", "").lower() == email.lower():
-                return True
-        return False
-
-    def add_permission(self, file_id: str, recipient: str, write=False):
-        """Add permission to the file if not already shared."""
-        if self._has_permission(file_id, recipient):
-            return
-
-        role = "writer" if write else "reader"
-        permission = {
-            "type": "user",
-            "role": role,
-            "emailAddress": recipient,
-        }
-        execute_with_retries(
-            self.client.drive_service.permissions().create(
-                fileId=file_id, body=permission, sendNotificationEmail=True
-            )
-        )
-
     def _create_peer_datasite_folder(self, peer_email: str, folder_type: str) -> str:
         """Create a datasite folder under /SyftBox for peer's datasite."""
         if folder_type not in ("inbox", "outbox"):
@@ -920,7 +890,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         """/SyftBox/{version}#{email}"""
         if self._personal_syftbox_folder_id:
             return self._personal_syftbox_folder_id
-        folders = self._find_folders(
+        folders = self.client.find_folders(
             name_contains=[f"#{self.email}"],
             parent_id=self.get_syftbox_folder_id(),
             owner_email=self.email,
@@ -1125,7 +1095,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         peer_email: str,
         owner_email: str,
     ) -> str | None:
-        folders = self._find_folders(
+        folders = self.client.find_folders(
             name_contains=[
                 f"{GDRIVE_P2P_FOLDER_DATASITE_PREFIX}#",
                 f"#{datasite_email}#{folder_type}#{peer_email}",
@@ -1311,94 +1281,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"properties has {{ key='{SYFT_FILE_PROPERTY_KEY}' "
             f"and value='{SYFT_FILE_PROPERTY_VALUE}' }}"
         )
-        file_ids = []
-        page_token = None
-        while True:
-            results = execute_with_retries(
-                self.client.drive_service.files().list(
-                    q=query, fields="files(id), nextPageToken", pageToken=page_token
-                )
-            )
-            file_ids.extend(item["id"] for item in results["files"])
-            page_token = results.get("nextPageToken")
-            if not page_token:
-                return file_ids
-
-    def _find_folder_by_name(
-        self, folder_name: str, parent_id: str = None, owner_email: str = None
-    ) -> Optional[str]:
-        """Find a folder by name, optionally within a specific parent"""
-        # parent_id = "1AQ3WLnVlLd6Zjo7p9Z_qGA1Djjf6-KIh"
-        owner_email_clause = f"and '{owner_email}' in owners" if owner_email else ""
-        parent_id_clause = f"and '{parent_id}' in parents" if parent_id else ""
-        query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false {owner_email_clause} {parent_id_clause}"
-
-        results = execute_with_retries(
-            self.client.drive_service.files().list(
-                q=query, fields="files(id)", pageSize=1
-            )
-        )
-        items = results.get("files", [])
-        return items[0]["id"] if items else None
-
-    def _list_all_files(self, query: str, fields: str) -> list[dict]:
-        """Every file that matches ``query``, from all result pages.
-
-        ``fields`` names the file fields to return, such as ``"id, name"``.
-        """
-        files: list[dict] = []
-        page_token = None
-        while True:
-            page = execute_with_retries(
-                self.client.drive_service.files().list(
-                    q=query,
-                    fields=f"files({fields}), nextPageToken",
-                    pageToken=page_token,
-                )
-            )
-            files.extend(page["files"])
-            page_token = page.get("nextPageToken")
-            if not page_token:
-                return files
-
-    def _find_folders(
-        self,
-        *,
-        name_contains: list[str] = (),
-        parent_id: str | None = None,
-        owner_email: str | None = None,
-    ) -> list[tuple[str, str]]:
-        """List folders matching the constraints. Returns (id, name) pairs.
-
-        Thin wrapper over Drive's files.list -- handles query building and
-        pagination, knows nothing about versions. Pair with
-        _partition_by_version or _sorted_by_version when the caller cares about
-        the version in the folder name.
-        """
-        clauses = [f"mimeType='{GOOGLE_FOLDER_MIME_TYPE}'", "trashed=false"]
-        for substr in name_contains:
-            clauses.append(f"name contains '{substr}'")
-        if parent_id:
-            clauses.append(f"'{parent_id}' in parents")
-        if owner_email:
-            clauses.append(f"'{owner_email}' in owners")
-        query = " and ".join(clauses)
-
-        out: list[tuple[str, str]] = []
-        page_token = None
-        while True:
-            page = execute_with_retries(
-                self.client.drive_service.files().list(
-                    q=query,
-                    fields="files(id, name), nextPageToken",
-                    pageToken=page_token,
-                )
-            )
-            out.extend((f["id"], f["name"]) for f in page.get("files", []))
-            page_token = page.get("nextPageToken")
-            if not page_token:
-                break
-        return out
+        return [f["id"] for f in self.client.list_all_files(query, fields="id")]
 
     def _expect_one(self, folders: list[tuple[str, str]]) -> str | None:
         """Return the single folder id, None if empty, raise if more than one.
@@ -1508,7 +1391,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         syftbox_folder_id = self.get_syftbox_folder_id()
 
         # Check if exists
-        folder_id = self._find_folder_by_name(folder_name, parent_id=syftbox_folder_id)
+        folder_id = self.client.find_folder_by_name(
+            folder_name, parent_id=syftbox_folder_id
+        )
         if folder_id:
             self.collection_folder_id_cache[folder_name] = folder_id
             return folder_id
@@ -1537,34 +1422,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         if not users:
             return
         folder_id = self._get_collection_folder_id(prefix, tag, content_hash)
-        self._batch_add_permissions(folder_id, users)
-
-    def _batch_add_permissions(self, file_id: str, users: list[str]) -> None:
-        """Add reader permissions for multiple users in a single batch request."""
-
-        def callback(request_id, response, exception):
-            # Ignore "already shared" errors
-            if exception and "alreadyShared" not in str(exception):
-                raise exception
-
-        BATCH_SIZE = 100
-        for i in range(0, len(users), BATCH_SIZE):
-            chunk = users[i : i + BATCH_SIZE]
-            batch = self.client.drive_service.new_batch_http_request(callback=callback)
-            for user_email in chunk:
-                permission = {
-                    "type": "user",
-                    "role": "reader",
-                    "emailAddress": user_email,
-                }
-                batch.add(
-                    self.client.drive_service.permissions().create(
-                        fileId=file_id,
-                        body=permission,
-                        sendNotificationEmail=True,
-                    )
-                )
-            batch_execute_with_retries(batch)
+        self.client.batch_add_permissions(folder_id, users)
 
     def owner_upload_collection_files(
         self, prefix: str, tag: str, content_hash: str, files: dict[str, bytes]
@@ -1590,7 +1448,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"and 'me' in owners and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
         )
         result: list[str] = []
-        for folder in self._list_all_files(query, fields="name"):
+        for folder in self.client.list_all_files(query, fields="name"):
             try:
                 cf = CollectionFolder.from_name(prefix, folder["name"])
             except ValueError:
@@ -1610,7 +1468,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"and 'me' in owners and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
         )
         collections = []
-        for folder in self._list_all_files(query, fields="id,name,appProperties"):
+        for folder in self.client.list_all_files(query, fields="id,name,appProperties"):
             try:
                 cf = CollectionFolder.from_name(prefix, folder["name"])
             except ValueError:
@@ -1654,7 +1512,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             f"and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
         )
         result = []
-        for folder in self._list_all_files(query, fields="name, owners"):
+        for folder in self.client.list_all_files(query, fields="name, owners"):
             try:
                 cf = CollectionFolder.from_name(prefix, folder["name"])
             except ValueError:
@@ -1679,7 +1537,9 @@ class GDriveConnection(SyftboxPlatformConnection):
             prefix=prefix, tag=tag, content_hash=content_hash
         ).folder_name
         # Try to find folder by name (could be owned by someone else)
-        folder_id = self._find_folder_by_name(folder_name, owner_email=owner_email)
+        folder_id = self.client.find_folder_by_name(
+            folder_name, owner_email=owner_email
+        )
 
         if not folder_id:
             raise ValueError(f"Collection {tag} with hash {content_hash} not found")
@@ -1700,7 +1560,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         folder_name = CollectionFolder(
             prefix=prefix, tag=tag, content_hash=content_hash
         ).folder_name
-        folder_id = self._find_folder_by_name(folder_name, owner_email=owner_email)
+        folder_id = self.client.find_folder_by_name(
+            folder_name, owner_email=owner_email
+        )
 
         if not folder_id:
             raise ValueError(f"Collection {tag} with hash {content_hash} not found")
@@ -1723,7 +1585,9 @@ class GDriveConnection(SyftboxPlatformConnection):
             return self.collection_folder_id_cache[folder_name]
 
         syftbox_folder_id = self.get_syftbox_folder_id()
-        folder_id = self._find_folder_by_name(folder_name, parent_id=syftbox_folder_id)
+        folder_id = self.client.find_folder_by_name(
+            folder_name, parent_id=syftbox_folder_id
+        )
 
         if not folder_id:
             raise ValueError(
@@ -1839,7 +1703,7 @@ class GDriveConnection(SyftboxPlatformConnection):
             file_id = self._get_own_peer_info_file_id()
 
         if file_id:
-            self.add_permission(file_id, peer_email, write=False)
+            self.client.add_permission(file_id, peer_email, write=False)
 
     # =========================================================================
     # CHECKPOINT METHODS
@@ -1851,7 +1715,7 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def _get_checkpoints_folder_id(self) -> str | None:
         """Find the checkpoints folder ID from Google Drive."""
-        folders = self._find_folders(
+        folders = self.client.find_folders(
             name_contains=[f"{self.email}-", "-checkpoints"],
             parent_id=self.get_syftbox_folder_id(),
         )
@@ -2138,7 +2002,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         if use_cache and self._rolling_state_folder_id is not None:
             return self._rolling_state_folder_id
 
-        folders = self._find_folders(
+        folders = self.client.find_folders(
             name_contains=[f"{self.email}-", "-rolling-state"],
             parent_id=self.get_syftbox_folder_id(),
         )
@@ -2273,7 +2137,7 @@ class GDriveConnection(SyftboxPlatformConnection):
         if self._encryption_bundles_folder_id:
             return self._encryption_bundles_folder_id
         folder_name = GdriveEncryptionBundlesFolder(email=self.email).as_string()
-        folder_id = self._find_folder_by_name(
+        folder_id = self.client.find_folder_by_name(
             folder_name, parent_id=self.get_syftbox_folder_id()
         )
         if folder_id:
@@ -2320,7 +2184,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     def share_encryption_bundles_folder(self, peer_email: str) -> None:
         """Share the bundles folder with a peer so they can read bundles."""
         folder_id = self._get_or_create_encryption_bundles_folder_id()
-        self.add_permission(folder_id, peer_email, write=False)
+        self.client.add_permission(folder_id, peer_email, write=False)
 
     def read_own_encryption_bundle(self, peer_email: str) -> str | None:
         """Read the bundle this client published for ``peer_email``, or None.

@@ -25,7 +25,7 @@ def _name(version: str, datasite: str, folder_type: str, peer: str) -> str:
 def _conn(found):
     conn = GDriveConnection(email=ME, verbose=False)
     conn.client = GDriveClient(Mock())
-    conn._find_folders = Mock(return_value=found)
+    conn.client.find_folders = Mock(return_value=found)
     return conn
 
 
