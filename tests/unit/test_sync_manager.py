@@ -186,13 +186,12 @@ def test_sync_existing_inbox_state_do():
     do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
         ds_manager.email
     )
-    connection_ds = ds_manager._connection_router.connections[0]
 
     proposed_events_messages = get_mock_proposed_events_messages(
         2, email=ds_manager.email
     )
     for message in proposed_events_messages:
-        connection_ds.watcher_send_proposed_file_changes_message(
+        ds_manager._connection_router.watcher_send_proposed_file_changes_message(
             do_manager.email, message
         )
 

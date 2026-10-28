@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING, ClassVar, Type
 from pydantic import BaseModel
-from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 
 if TYPE_CHECKING:
     from syft.sync.transport.protocols import Transport
@@ -26,11 +25,6 @@ class ConnectionConfig(BaseModel):
 class SyftboxPlatformConnection(BaseModel):
     config: ConnectionConfig | None = None
 
-    def watcher_send_proposed_file_changes_message(
-        self, proposed_file_change_message: ProposedFileChangesMessage
-    ):
-        raise NotImplementedError()
-
     @classmethod
     def from_config(cls, config: ConnectionConfig):
         return config.connection_type.from_config(config)
@@ -51,20 +45,10 @@ class SyftboxPlatformConnection(BaseModel):
     # RAW BYTES TRANSPORT (used by ConnectionRouter for encryption)
     # =========================================================================
 
-    def watcher_send_raw_bytes_to_inbox(
-        self, recipient: str, filename: str, data: bytes
-    ) -> None:
-        raise NotImplementedError()
-
     def owner_download_next_raw_proposed_message_from_inbox(
         self, sender_email: str
     ) -> tuple[bytes, str] | None:
         """Download next message from inbox as raw bytes. Returns (data, file_id) or None."""
-        raise NotImplementedError()
-
-    def owner_write_raw_bytes_to_outbox(
-        self, recipient: str, filename: str, data: bytes
-    ) -> None:
         raise NotImplementedError()
 
     def watcher_download_raw_events_from_outbox(

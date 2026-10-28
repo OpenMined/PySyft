@@ -295,43 +295,6 @@ class GDriveConnection(SyftboxPlatformConnection):
                     )
         return result
 
-    def owner_write_raw_bytes_to_outbox(
-        self, recipient: str, filename: str, data: bytes
-    ) -> None:
-        outbox_folder_id = self.layout.get_own_datasite_outbox_id(recipient)
-        if outbox_folder_id is None:
-            raise ValueError(f"Outbox folder for {recipient} not found")
-
-        file_payload, _ = self.client.create_file_payload(data)
-        file_metadata = {"name": filename, "parents": [outbox_folder_id]}
-
-        result = self.client.create_syft_file(
-            file_metadata, file_payload, fields="id, parents"
-        )
-
-        file_id = result.get("id")
-        actual_parents = result.get("parents", [])
-        if outbox_folder_id not in actual_parents:
-            print(
-                f"WARNING: Event message {file_id} was not placed in outbox folder "
-                f"{outbox_folder_id}. Actual parents: {actual_parents}. "
-                f"Moving file to correct folder..."
-            )
-            execute_with_retries(
-                self.client.drive_service.files().update(
-                    fileId=file_id,
-                    addParents=outbox_folder_id,
-                    fields="id, parents",
-                )
-            )
-
-    def owner_write_event_messages_to_outbox(
-        self, recipient: str, events_message: FileChangeEventsMessage
-    ):
-        data = events_message.as_compressed_data()
-        fname = events_message.message_filepath.as_string()
-        self.owner_write_raw_bytes_to_outbox(recipient, fname, data)
-
     def owner_remove_proposed_filechange_message_from_inbox(
         self,
         proposed_filechange_message: ProposedFileChangesMessage,
@@ -424,45 +387,6 @@ class GDriveConnection(SyftboxPlatformConnection):
         return self.layout.get_file_metadatas_from_folder(
             folder_id, since_timestamp=None
         )
-
-    def watcher_send_raw_bytes_to_inbox(
-        self, recipient: str, filename: str, data: bytes
-    ) -> None:
-        inbox_id = self.layout.get_peer_datasite_inbox_id(recipient)
-        if inbox_id is None:
-            raise Exception(f"Inbox folder for {recipient}'s datasite not found")
-
-        payload, _ = self.client.create_file_payload(data)
-        file_metadata = {"name": filename, "parents": [inbox_id]}
-
-        result = self.client.create_syft_file(
-            file_metadata, payload, fields="id, parents"
-        )
-
-        file_id = result.get("id")
-        actual_parents = result.get("parents", [])
-        if inbox_id not in actual_parents:
-            print(
-                f"WARNING: Message file {file_id} was not placed in inbox folder "
-                f"{inbox_id}. Actual parents: {actual_parents}. "
-                f"Moving file to correct folder..."
-            )
-            execute_with_retries(
-                self.client.drive_service.files().update(
-                    fileId=file_id,
-                    addParents=inbox_id,
-                    fields="id, parents",
-                )
-            )
-
-    def watcher_send_proposed_file_changes_message(
-        self,
-        recipient: str,
-        proposed_file_changes_message: ProposedFileChangesMessage,
-    ):
-        data = proposed_file_changes_message.as_compressed_data()
-        filename = proposed_file_changes_message.message_filename.as_string()
-        self.watcher_send_raw_bytes_to_inbox(recipient, filename, data)
 
     def reset_caches(self):
         self.layout.reset_caches()
