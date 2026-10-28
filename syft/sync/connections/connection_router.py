@@ -239,6 +239,25 @@ class ConnectionRouter(BaseModel):
         """Create a new connection for thread-safe parallel downloads."""
         return self.copy_connection(self.connection_for_datasite_watcher())
 
+    def transport_for_thread(self) -> Transport:
+        """The transport jobs over a new copy of the connection, for one thread."""
+        return self.connection_for_parallel_download().as_transport()
+
+    def download_outbox_message(self, file_id: str) -> bytes:
+        """The bytes of one outbox message file (thread-safe)."""
+        return self.connection_for_parallel_download().download_file(file_id)
+
+    def owner_list_outbox_files(self, recipient_email: str) -> List[dict] | None:
+        """The files in my outbox for ``recipient_email``, or None when that
+        outbox does not exist."""
+        connection = self.connection_for_outbox()
+        folder_id = connection._get_own_datasite_outbox_id(recipient_email)
+        if folder_id is None:
+            return None
+        return connection.get_file_metadatas_from_folder(
+            folder_id, since_timestamp=None
+        )
+
     # =========================================================================
     # EVENT LOG (self-encrypted at rest when encryption enabled)
     # =========================================================================

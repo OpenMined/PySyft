@@ -178,16 +178,15 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         Returns None when the message is skipped (see
         ``ConnectionRouter.watcher_read_events_message``).
         """
-        connection = self.connection_router.connection_for_parallel_download()
-        raw = connection.download_file(file_id)
+        raw = self.connection_router.download_outbox_message(file_id)
         return self.connection_router.watcher_read_events_message(peer_email, raw)
 
     def download_collection_file_with_new_connection(
         self, file_id: str, owner_email: str
     ) -> bytes:
         """Download collection file using a new connection (thread-safe)."""
-        connection = self.connection_router.connection_for_parallel_download()
-        data = connection.watcher_download_collection_file(file_id)
+        transport = self.connection_router.transport_for_thread()
+        data = transport.collections.fetch_file(file_id)
         data = self.connection_router.peer_store.decrypt_dataset_if_needed(
             owner_email, data
         )
