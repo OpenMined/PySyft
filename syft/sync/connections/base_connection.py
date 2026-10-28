@@ -117,10 +117,9 @@ class SyftboxPlatformConnection(BaseModel):
     ) -> None:
         raise NotImplementedError()
 
-    def owner_download_next_raw_proposed_message_from_inbox(
-        self, sender_email: str
-    ) -> tuple[bytes, str] | None:
-        """Download next message from inbox as raw bytes. Returns (data, file_id) or None."""
+    def owner_get_inbox_file_metadatas(self, sender_email: str) -> list[dict]:
+        """The messages in the inbox from ``sender_email``, oldest first, each
+        with ``file_id`` and ``file_name``."""
         raise NotImplementedError()
 
     def owner_write_raw_bytes_to_outbox(

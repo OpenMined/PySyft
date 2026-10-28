@@ -29,7 +29,7 @@ from syft.sync.peers.peer import Peer, PeerState
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.transport.naming import PEERS_META_KEY
 from syft.sync.transport.protocols import Transport
-from syft.sync.transport.types import MessageKind, SendStatus
+from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
 from syft.sync.utils.print_utils import (
     print_peer_added_to_platform,
     print_peer_adding_to_platform,
@@ -151,33 +151,38 @@ class ConnectionRouter(BaseModel):
 
     def owner_get_next_proposed_filechange_message(
         self, sender_email: str
-    ) -> ProposedFileChangesMessage | None:
-        """The next message from ``sender_email``, or None when the inbox is empty.
+    ) -> tuple[RawMessage, ProposedFileChangesMessage] | None:
+        """The next message from ``sender_email`` as received and as read, or
+        None when nothing is waiting. Pass the received one to
+        ``owner_mark_processed`` once it is handled.
 
-        A message whose format does not match the pair is archived unread,
-        with a warning.
+        A message whose format does not match the pair is marked processed
+        unread, with a warning.
 
         Raises:
             SyftPeerNotReadyError: when the message cannot be read yet. It
-                stays in the inbox.
+                stays unprocessed.
         """
         p2p = self.transport.p2p
         while True:
-            result = p2p.next_inbox_message(sender_email)
-            if result is None:
+            received = p2p.receive(
+                sender_email, MessageKind.PROPOSED_CHANGES, max_messages=1
+            )
+            if not received:
                 return None
-            raw_data, file_id = result
+            [raw] = received
             try:
                 decrypted = self.peer_store.decrypt_and_verify_if_needed(
-                    sender_email, raw_data
+                    sender_email, raw.data
                 )
             except MessageFormatError as e:
-                warnings.warn(f"Archived message file {file_id} unread: {e}")
-                p2p.archive_inbox_message(sender_email, file_id)
+                warnings.warn(f"Archived message {raw.msg_id} unread: {e}")
+                p2p.mark_processed(raw)
                 continue
-            msg = ProposedFileChangesMessage.from_compressed_data(decrypted)
-            msg.platform_id = file_id
-            return msg
+            return raw, ProposedFileChangesMessage.from_compressed_data(decrypted)
+
+    def owner_mark_processed(self, message: RawMessage) -> None:
+        self.transport.p2p.mark_processed(message)
 
     def owner_write_event_messages_to_outbox(
         self, recipient_email: str, events_message: FileChangeEventsMessage
@@ -319,15 +324,6 @@ class ConnectionRouter(BaseModel):
         """Update peer state in storage"""
         self.transport.peering.update_peer_registry(
             peer_email, state, public_encryption_bundle
-        )
-
-    def owner_remove_proposed_filechange_from_inbox(
-        self,
-        proposed_filechange_message: ProposedFileChangesMessage,
-        sender_email: str,
-    ):
-        self.transport.p2p.archive_proposed_changes(
-            proposed_filechange_message, sender_email
         )
 
     # =========================================================================

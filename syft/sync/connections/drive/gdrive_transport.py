@@ -833,31 +833,12 @@ class GDriveConnection(SyftboxPlatformConnection):
         fname = events_message.message_filepath.as_string()
         self.owner_write_raw_bytes_to_outbox(recipient, fname, data)
 
-    def owner_remove_proposed_filechange_message_from_inbox(
-        self,
-        proposed_filechange_message: ProposedFileChangesMessage,
-        sender_email: str,
-    ):
-        """Archive a handled message. ``sender_email`` is the peer it came from.
-
-        The caller reads that email from the transport. The ``sender_email``
-        field of the message is sender-supplied, and it names the archive folder,
-        so this method never reads it.
-        """
-        fname = proposed_filechange_message.message_filename.as_string()
-
-        # Use cached platform_id if available, otherwise fall back to name-based lookup
-        gdrive_id = proposed_filechange_message.platform_id
-        if gdrive_id is None:
-            gdrive_id = self.get_inbox_proposed_event_id_from_name(sender_email, fname)
-        if gdrive_id is None:
-            raise ValueError(
-                f"Event {fname} not found in inbox, event should already be created for this type of connection"
-            )
-        self.owner_archive_inbox_file(gdrive_id, sender_email)
-
     def owner_archive_inbox_file(self, file_id: str, sender_email: str) -> None:
-        """Move the inbox file ``file_id`` from ``sender_email`` to its archive folder."""
+        """Move the inbox file ``file_id`` from ``sender_email`` to its archive folder.
+
+        ``sender_email`` names the archive folder, so the caller reads it from
+        the transport, never from the sender-supplied message body.
+        """
         file_info = execute_with_retries(
             self.drive_service.files().get(fileId=file_id, fields="parents")
         )
@@ -1097,35 +1078,19 @@ class GDriveConnection(SyftboxPlatformConnection):
                 continue
         return res
 
-    def owner_download_next_raw_proposed_message_from_inbox(
-        self, sender_email: str
-    ) -> tuple[bytes, str] | None:
+    def owner_get_inbox_file_metadatas(self, sender_email: str) -> list[dict]:
+        """The messages in the inbox from ``sender_email``, oldest first, each
+        with ``file_id`` and ``file_name``, without downloading them."""
         inbox_folder_id = self._get_own_datasite_inbox_id(sender_email)
         if inbox_folder_id is None:
             raise ValueError(f"Inbox folder for {sender_email} not found")
         file_metadatas = self.get_file_metadatas_from_folder(inbox_folder_id)
         valid_file_names = self._get_valid_messages_from_file_metadatas(file_metadatas)
-        if len(valid_file_names) == 0:
-            return None
-        first_file_name = sorted(valid_file_names, key=lambda x: x.submitted_timestamp)[
-            0
+        name_to_id = {f["name"]: f["id"] for f in file_metadatas}
+        return [
+            {"file_id": name_to_id[name.as_string()], "file_name": name.as_string()}
+            for name in sorted(valid_file_names, key=lambda x: x.submitted_timestamp)
         ]
-        first_file_id = [
-            x for x in file_metadatas if x["name"] == first_file_name.as_string()
-        ][0]["id"]
-        raw_data = self.download_file(first_file_id)
-        return raw_data, first_file_id
-
-    def owner_get_next_proposed_filechange_message(
-        self, sender_email: str
-    ) -> ProposedFileChangesMessage | None:
-        result = self.owner_download_next_raw_proposed_message_from_inbox(sender_email)
-        if result is None:
-            return None
-        raw_data, file_id = result
-        msg = ProposedFileChangesMessage.from_compressed_data(raw_data)
-        msg.platform_id = file_id
-        return msg
 
     def _find_p2p_folder_id(
         self,
@@ -1552,17 +1517,6 @@ class GDriveConnection(SyftboxPlatformConnection):
 
     def get_syftbox_folder_id_from_drive(self) -> str | None:
         query = f"name='{SYFTBOX_FOLDER}' and mimeType='application/vnd.google-apps.folder' and 'me' in owners and trashed=false"
-        results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id, name)")
-        )
-        items = results.get("files", [])
-        return items[0]["id"] if items else None
-
-    def get_inbox_proposed_event_id_from_name(
-        self, sender_email: str, name: str
-    ) -> str | None:
-        inbox_folder_id = self._get_own_datasite_inbox_id(sender_email)
-        query = f"name='{name}' and '{inbox_folder_id}' in parents and trashed=false"
         results = execute_with_retries(
             self.drive_service.files().list(q=query, fields="files(id, name)")
         )

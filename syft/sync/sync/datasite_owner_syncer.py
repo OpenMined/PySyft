@@ -764,10 +764,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         self, sender_email: str, raise_on_none=True
     ) -> ProposedFileChangesMessage | None:
         # raise on none is useful for testing, shouldnt be used in production
-        message = self.connection_router.owner_get_next_proposed_filechange_message(
-            sender_email=sender_email
+        next_message = (
+            self.connection_router.owner_get_next_proposed_filechange_message(
+                sender_email=sender_email
+            )
         )
-        if message is not None:
+        if next_message is not None:
+            received, message = next_message
             # The sender is the peer whose inbox held the message. The transport
             # read the message from that peer's folder and checked the signature
             # against that peer's key. The body is sender-supplied, so a claim
@@ -780,10 +783,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                     f"claims sender {message.sender_email!r}."
                 )
 
-            # delete the message once we are done
-            self.connection_router.owner_remove_proposed_filechange_from_inbox(
-                message, sender_email
-            )
+            self.connection_router.owner_mark_processed(received)
             return message
         elif raise_on_none:
             raise ValueError("No proposed file change to process")

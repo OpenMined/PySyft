@@ -90,20 +90,35 @@ def test_a_proposed_change_sent_through_p2p_reaches_the_owner_inbox(pair):
         DO, _proposal_name(1.0), b"job", MessageKind.PROPOSED_CHANGES
     )
     assert status is SendStatus.DELIVERED
-    data, _ = do_conn.as_transport().p2p.next_inbox_message(DS)
-    assert data == b"job"
+    [message] = do_conn.as_transport().p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+    assert (message.sender, message.kind, message.data) == (
+        DS,
+        MessageKind.PROPOSED_CHANGES,
+        b"job",
+    )
 
 
-def test_an_archived_inbox_message_is_not_read_again(pair):
+def test_inbox_messages_are_received_oldest_first_up_to_max(pair):
+    do_conn, ds_conn = pair
+    names = {submitted: _proposal_name(submitted) for submitted in (2.0, 1.0, 3.0)}
+    for name in names.values():
+        ds_conn.as_transport().p2p.send(DO, name, b"job", MessageKind.PROPOSED_CHANGES)
+    p2p = do_conn.as_transport().p2p
+
+    received = p2p.receive(DS, MessageKind.PROPOSED_CHANGES, max_messages=2)
+    assert [m.msg_id for m in received] == [names[1.0], names[2.0]]
+
+
+def test_processed_inbox_message_is_not_received_again(pair):
     do_conn, ds_conn = pair
     ds_conn.as_transport().p2p.send(
         DO, _proposal_name(1.0), b"job", MessageKind.PROPOSED_CHANGES
     )
     p2p = do_conn.as_transport().p2p
 
-    _, handle = p2p.next_inbox_message(DS)
-    p2p.archive_inbox_message(DS, handle)
-    assert p2p.next_inbox_message(DS) is None
+    [message] = p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+    p2p.mark_processed(message)
+    assert p2p.receive(DS, MessageKind.PROPOSED_CHANGES) == []
 
 
 def test_file_events_sent_through_p2p_reach_the_scientist_outbox(pair):
@@ -144,16 +159,14 @@ def test_drive_never_has_sends_waiting_for_confirmation(pair):
     assert do_conn.as_transport().p2p.delivered() == []
 
 
-def test_receiving_through_p2p_is_not_built_yet(pair):
-    do_conn, _ = pair
-    p2p = do_conn.as_transport().p2p
-    message = RawMessage(
-        sender=DS, msg_id="m", kind=MessageKind.PROPOSED_CHANGES, data=b""
-    )
+def test_receiving_file_events_through_p2p_is_not_built_yet(pair):
+    _, ds_conn = pair
+    p2p = ds_conn.as_transport().p2p
+    message = RawMessage(sender=DO, msg_id="m", kind=MessageKind.FILE_EVENTS, data=b"")
     with pytest.raises(NotImplementedError):
-        p2p.receive()
+        p2p.receive(DO, MessageKind.FILE_EVENTS)
     with pytest.raises(NotImplementedError):
-        p2p.ack(message)
+        p2p.mark_processed(message)
 
 
 # -- OwnerStore -------------------------------------------------------------------
@@ -372,16 +385,20 @@ def test_the_router_sends_proposed_changes_through_p2p():
 
 def test_the_router_reads_the_inbox_through_p2p():
     router, p2p = _router_with_mock_p2p()
-    p2p.next_inbox_message.return_value = None
+    p2p.receive.return_value = []
     assert router.owner_get_next_proposed_filechange_message(DS) is None
-    p2p.next_inbox_message.assert_called_once_with(DS)
+    p2p.receive.assert_called_once_with(
+        DS, MessageKind.PROPOSED_CHANGES, max_messages=1
+    )
 
 
-def test_the_router_archives_a_handled_message_through_p2p():
+def test_the_router_marks_a_handled_message_processed_through_p2p():
     router, p2p = _router_with_mock_p2p()
-    message = ProposedFileChangesMessage(sender_email=DS, proposed_file_changes=[])
-    router.owner_remove_proposed_filechange_from_inbox(message, DS)
-    p2p.archive_proposed_changes.assert_called_once_with(message, DS)
+    message = RawMessage(
+        sender=DS, msg_id="m", kind=MessageKind.PROPOSED_CHANGES, data=b""
+    )
+    router.owner_mark_processed(message)
+    p2p.mark_processed.assert_called_once_with(message)
 
 
 def test_the_router_reads_the_outbox_through_p2p():
