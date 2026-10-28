@@ -44,9 +44,7 @@ def test_a_write_stamps_the_reserved_entry():
         patch.object(
             GDriveConnection, "get_syftbox_folder_id", return_value="folder-id"
         ),
-        patch.object(
-            GDriveConnection, "create_file_payload", return_value=(Mock(), None)
-        ),
+        patch.object(GDriveClient, "create_file_payload", return_value=(Mock(), None)),
     ):
         conn._write_peers_json({PEER: {"state": "accepted"}})
 

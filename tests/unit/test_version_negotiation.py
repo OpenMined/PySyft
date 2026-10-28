@@ -5,7 +5,7 @@ import logging
 import httplib2
 import pytest
 from googleapiclient.errors import HttpError
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.transport import TransportUnavailableError
 from syft.sync.version.exceptions import (
@@ -283,7 +283,7 @@ class TestPeerManager:
         ds_manager, do_manager = (
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
-        monkeypatch.setattr(GDriveConnection, "download_file", _raises(DRIVE_DOWN))
+        monkeypatch.setattr(GDriveClient, "download_file", _raises(DRIVE_DOWN))
 
         with pytest.raises(TransportUnavailableError):
             ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
@@ -292,14 +292,14 @@ class TestPeerManager:
         ds_manager, do_manager = (
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
-        monkeypatch.setattr(GDriveConnection, "download_file", _raises(DRIVE_DOWN))
+        monkeypatch.setattr(GDriveClient, "download_file", _raises(DRIVE_DOWN))
 
         with pytest.raises(TransportUnavailableError):
             do_manager.sync()
 
     def test_drive_error_during_own_version_read_raises(self, monkeypatch):
         _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
-        monkeypatch.setattr(GDriveConnection, "download_file", _raises(DRIVE_DOWN))
+        monkeypatch.setattr(GDriveClient, "download_file", _raises(DRIVE_DOWN))
 
         with pytest.raises(TransportUnavailableError):
             do_manager.peer_manager.connection_router.read_own_peer_info_file()
@@ -309,7 +309,7 @@ class TestPeerManager:
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
         no_dns = httplib2.ServerNotFoundError("no DNS")
-        monkeypatch.setattr(GDriveConnection, "download_file", _raises(no_dns))
+        monkeypatch.setattr(GDriveClient, "download_file", _raises(no_dns))
 
         with pytest.raises(TransportUnavailableError):
             ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
@@ -322,7 +322,7 @@ class TestPeerManager:
             httplib2.Response({"status": 403}),
             b'{"error": {"code": 403, "errors": [{"reason": "forbidden"}]}}',
         )
-        monkeypatch.setattr(GDriveConnection, "download_file", _raises(forbidden))
+        monkeypatch.setattr(GDriveClient, "download_file", _raises(forbidden))
 
         with pytest.raises(HttpError):
             ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])
@@ -331,7 +331,7 @@ class TestPeerManager:
         ds_manager, do_manager = (
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
-        monkeypatch.setattr(GDriveConnection, "download_file", _returns(b"{trunc"))
+        monkeypatch.setattr(GDriveClient, "download_file", _returns(b"{trunc"))
 
         with pytest.raises(ValueError):
             ds_manager.peer_manager.load_peer_infos_parallel([do_manager.email])

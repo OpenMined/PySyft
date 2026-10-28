@@ -4,29 +4,27 @@ import io
 import re
 import time
 from pathlib import Path
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
 from google.oauth2.credentials import Credentials as GoogleCredentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
 
-from syft.sync.connections.drive.gdrive_transport import (
-    build_drive_service,
-    GOOGLE_FOLDER_MIME_TYPE,
-)
-from syft.sync.connections.drive.gdrive_transport import SCOPES as GDRIVE_SCOPES
+from syft.sync.config.config import settings
+from syft.sync.connections.drive.gdrive_client import GOOGLE_FOLDER_MIME_TYPE
 from syft.sync.connections.drive.gdrive_retry import (
     execute_with_retries,
     next_chunk_with_retries,
 )
+from syft.sync.connections.drive.gdrive_transport import SCOPES as GDRIVE_SCOPES
+from syft.sync.connections.drive.gdrive_transport import build_drive_service
+from syft.sync.environments.environment import Environment
 from syft.sync.utils.syftbox_utils import (
-    check_env,
     _resolve_email,
     _resolve_token_path,
+    check_env,
 )
-from syft.sync.environments.environment import Environment
-from syft.sync.config.config import settings
 
 # Matches strings that could plausibly be a Drive ID:
 # - Only base64url chars (alphanumeric, dash, underscore)

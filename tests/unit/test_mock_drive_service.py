@@ -449,7 +449,7 @@ class TestGDriveConnectionWithMock:
         connection = GDriveConnection.from_service("user@example.com", mock_service)
 
         syftbox_id = connection.create_syftbox_folder()
-        folder_id = connection.create_folder("TestFolder", syftbox_id)
+        folder_id = connection.client.create_folder("TestFolder", syftbox_id)
 
         assert store.files[syftbox_id].properties == {"syft": "true"}
         assert store.files[folder_id].properties == {"syft": "true"}

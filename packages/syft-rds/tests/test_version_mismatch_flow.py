@@ -7,9 +7,9 @@ earlier version are reused so a peer that has not upgraded still finds them.
 
 from unittest.mock import patch
 
+from syft.sync.connections.drive.gdrive_client import GOOGLE_FOLDER_MIME_TYPE
 from syft.sync.connections.drive.gdrive_transport import (
     GDRIVE_P2P_FOLDER_DATASITE_PREFIX,
-    GOOGLE_FOLDER_MIME_TYPE,
     GDriveConnection,
 )
 from syft.sync.connections.drive.mock_drive_service import (

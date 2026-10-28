@@ -63,7 +63,7 @@ def test_empty_folder():
 @patch(
     "syft.sync.connections.drive.gdrive_transport.GDriveConnection._get_peer_datasite_outbox_id"
 )
-@patch("syft.sync.connections.drive.gdrive_transport.GDriveConnection.download_file")
+@patch("syft.sync.connections.drive.gdrive_client.GDriveClient.download_file")
 def test_events_returned_in_chronological_order(mock_download_file, mock_get_folder_id):
     """Events should be returned in chronological order by timestamp"""
     conn = create_mock_connection()
