@@ -120,6 +120,19 @@ def test_file_events_sent_through_p2p_reach_the_scientist_outbox(pair):
     assert p2p.outbox_messages(DO, since_timestamp=None) == [b"results"]
 
 
+def test_a_p2p_copy_for_another_thread_reads_the_same_outbox(pair):
+    do_conn, ds_conn = pair
+    do_conn.as_transport().p2p.send(
+        DS, _events_name(1.0), b"results", MessageKind.FILE_EVENTS
+    )
+    p2p = ds_conn.as_transport().p2p
+    [listed] = p2p.outbox_message_metadatas(DO, since_timestamp=None)
+
+    copy = p2p.clone_for_thread()
+    assert copy._conn is not ds_conn
+    assert copy.fetch_message(listed["file_id"]) == b"results"
+
+
 def test_an_unknown_message_kind_is_refused(pair):
     do_conn, _ = pair
     with pytest.raises(ValueError):

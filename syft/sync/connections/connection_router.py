@@ -225,8 +225,7 @@ class ConnectionRouter(BaseModel):
 
     def download_outbox_message(self, file_id: str) -> bytes:
         """Download one outbox message by its handle (thread-safe)."""
-        connection = self.connection_for_parallel_download()
-        return connection.as_transport().p2p.fetch_message(file_id)
+        return self.transport.p2p.clone_for_thread().fetch_message(file_id)
 
     def connection_for_parallel_download(self) -> SyftboxPlatformConnection:
         """Create a new connection for thread-safe parallel downloads."""

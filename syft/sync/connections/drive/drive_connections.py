@@ -103,6 +103,10 @@ class DriveP2PConnection(P2PConnection):
     def fetch_message(self, handle: str) -> bytes:
         return self._conn.download_file(handle)
 
+    def clone_for_thread(self) -> DriveP2PConnection:
+        """A copy safe to use from another thread: the Drive client is not."""
+        return DriveP2PConnection(self._conn.clone_for_thread())
+
 
 class DriveOwnerStore(OwnerStore):
     """The data owner's own folders in /SyftBox: event log, checkpoints,
