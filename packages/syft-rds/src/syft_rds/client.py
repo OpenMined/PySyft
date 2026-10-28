@@ -811,9 +811,7 @@ class SyftRDSClient(BaseModel):
 
         Returns ``(folder_id, content_hash)``.
         """
-        from syft.sync.connections.drive.gdrive_transport import (
-            CollectionFolder,
-        )
+        from syft.sync.connections.drive.drive_collections import CollectionFolder
 
         content_hash = CollectionFolder.compute_hash(files)
         folder_id = self.sync_engine.create_collection_folder(

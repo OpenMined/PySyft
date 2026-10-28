@@ -12,12 +12,9 @@ import pytest
 from googleapiclient.errors import HttpError
 
 import syft.sync.connections.connection_router as connection_router_module
-from syft.sync.sync import datasite_owner_syncer
 from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.connections.drive.drive_collections import CollectionFolder
 from syft.sync.connections.drive.gdrive_client import GDriveClient
-from syft.sync.connections.drive.gdrive_transport import (
-    CollectionFolder,
-)
 from syft.sync.connections.drive.mock_drive_service import (
     http_error,
     pair_with_mock_service,
@@ -28,6 +25,7 @@ from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.sync import datasite_owner_syncer
 from syft.sync.transport import (
     Collections,
     MessageKind,

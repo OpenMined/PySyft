@@ -2,10 +2,8 @@
 
 import json
 import logging
-import re
-from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from google.oauth2.credentials import Credentials as GoogleCredentials
 from google_auth_httplib2 import AuthorizedHttp
@@ -15,9 +13,9 @@ from pydantic import BaseModel
 from syft_migration import MigrationError
 
 from syft.sync.connections.base_connection import (
-    FileCollection,
     SyftboxPlatformConnection,
 )
+from syft.sync.connections.drive.drive_collections import DriveCollections
 from syft.sync.connections.drive.drive_connections import drive_transport
 from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
 from syft.sync.connections.drive.gdrive_client import (
@@ -109,74 +107,6 @@ class GdriveEncryptionBundlesFolder(BaseModel):
         return f"syft_encryption_bundles#{self.email}"
 
 
-def collection_name_query(prefix: str) -> str:
-    """A Drive query that finds a collection of ``prefix`` in any layout.
-
-    It has no trailing '_', because a layout writes its variant in that
-    position. A client that predates multi-layout searches with the '_', and so
-    never lists a layout it cannot read.
-    """
-    return f"name contains '{prefix}'"
-
-
-@lru_cache(maxsize=None)
-def _collection_name_re(prefix: str) -> "re.Pattern[str]":
-    """Matches '{prefix}{variant}_{tag}_{hash}'.
-
-    The variant and the hash hold no '_'. The tag can hold one, so it takes
-    every character in between.
-    """
-    return re.compile(
-        rf"^{re.escape(prefix)}"
-        r"(?P<variant>[^_]*)_(?P<tag>.+)_(?P<content_hash>[^_]+)$"
-    )
-
-
-class CollectionFolder(BaseModel):
-    """Naming value object for collection folders (domain-agnostic).
-
-    Collections (datasets, private datasets, or any future collection type) are
-    named ``{prefix}{variant}_{tag}_{content_hash}`` on the wire. The variant
-    names the layout (see CollectionSyncSpec) and is "" for the original one, so
-    that name is unchanged byte for byte. This is the single source of truth for
-    building and parsing the name; it also computes the content hash from the
-    folder's file contents.
-
-    A writer normally folds the variant into ``prefix`` (the spec builds the
-    qualified prefix once) and leaves ``variant`` empty; ``from_name`` splits
-    them apart again for a reader.
-    """
-
-    prefix: str
-    tag: str
-    content_hash: str
-    variant: str = ""
-
-    @property
-    def folder_name(self) -> str:
-        """The on-wire folder name. Doubles as the cache key (same string)."""
-        return f"{self.prefix}{self.variant}_{self.tag}_{self.content_hash}"
-
-    @classmethod
-    def from_name(cls, prefix: str, name: str) -> "CollectionFolder":
-        """Parse '{prefix}{variant}_{tag}_{hash}' into a CollectionFolder.
-
-        Raises ValueError if the name does not carry the prefix, so callers can
-        skip non-matching folders.
-        """
-        match = _collection_name_re(prefix).match(name)
-        if match is None:
-            raise ValueError(f"Invalid collection folder name: {name}")
-        return cls(prefix=prefix, **match.groupdict())
-
-    @staticmethod
-    def compute_hash(files: dict[str, bytes]) -> str:
-        """Compute a content hash from file contents."""
-        from syft.sync.file_utils import compute_file_hashes
-
-        return compute_file_hashes(files)
-
-
 class GDriveConnection(SyftboxPlatformConnection):
     """Google Drive Files API transport layer"""
 
@@ -192,9 +122,6 @@ class GDriveConnection(SyftboxPlatformConnection):
     # The transport jobs over this connection, built once so each job keeps
     # one set of caches.
     _transport: Transport | None = None
-
-    # tag -> dataset collection folder id
-    collection_folder_id_cache: Dict[str, str] = {}
 
     # Encryption bundles folder cache
     _encryption_bundles_folder_id: str | None = None
@@ -289,6 +216,12 @@ class GDriveConnection(SyftboxPlatformConnection):
         assert isinstance(owner_store, DriveOwnerStore)
         return owner_store
 
+    @property
+    def _collections(self) -> DriveCollections:
+        collections = self.as_transport().collections
+        assert isinstance(collections, DriveCollections)
+        return collections
+
     def clone_for_thread(self) -> "GDriveConnection":
         """A connection safe to use from another thread: the Drive client is not."""
         return self.copy()
@@ -315,11 +248,11 @@ class GDriveConnection(SyftboxPlatformConnection):
         copy doesn't re-discover folder ids via Drive search on first use."""
         self.layout.copy_caches_to(other.layout)
         self._owner_store.copy_caches_to(other._owner_store)
+        self._collections.copy_caches_to(other._collections)
         other._encryption_bundles_folder_id = self._encryption_bundles_folder_id
         other._peers_json_cache = (
             dict(self._peers_json_cache) if self._peers_json_cache is not None else None
         )
-        other.collection_folder_id_cache = dict(self.collection_folder_id_cache)
 
     @property
     def environment(self) -> Environment:
@@ -729,7 +662,7 @@ class GDriveConnection(SyftboxPlatformConnection):
     def reset_caches(self):
         self.layout.reset_caches()
         self._owner_store.reset_caches()
-        self.collection_folder_id_cache.clear()
+        self._collections.reset_caches()
         self._encryption_bundles_folder_id = None
         self._peers_json_cache = None
 
@@ -783,235 +716,6 @@ class GDriveConnection(SyftboxPlatformConnection):
         )
         items = results.get("files", [])
         return items[0]["id"] if items else None
-
-    # =========================================================================
-    # GENERIC COLLECTION METHODS (parameterized on `prefix`)
-    #
-    # Folder names are built and parsed via CollectionFolder, the single source
-    # of truth for the f"{prefix}_{tag}_{content_hash}" scheme. On-wire behavior
-    # is byte-identical to the previous inline construction.
-    # =========================================================================
-
-    def owner_create_collection_folder(
-        self, prefix: str, tag: str, content_hash: str, owner_email: str
-    ) -> str:
-        """Create /SyftBox/{prefix}_{tag}_{hash} folder."""
-        folder_name = CollectionFolder(
-            prefix=prefix, tag=tag, content_hash=content_hash
-        ).folder_name
-
-        # Check cache
-        if folder_name in self.collection_folder_id_cache:
-            return self.collection_folder_id_cache[folder_name]
-
-        syftbox_folder_id = self.layout.get_syftbox_folder_id()
-
-        # Check if exists
-        folder_id = self.client.find_folder_by_name(
-            folder_name, parent_id=syftbox_folder_id
-        )
-        if folder_id:
-            self.collection_folder_id_cache[folder_name] = folder_id
-            return folder_id
-
-        # Create new folder
-        folder_id = self.client.create_folder(folder_name, syftbox_folder_id)
-        self.collection_folder_id_cache[folder_name] = folder_id
-        return folder_id
-
-    def owner_tag_collection_as_any(
-        self, prefix: str, tag: str, content_hash: str
-    ) -> None:
-        """Mark collection as shared with 'any' via appProperties."""
-        folder_id = self._get_collection_folder_id(prefix, tag, content_hash)
-        execute_with_retries(
-            self.client.drive_service.files().update(
-                fileId=folder_id,
-                body={"appProperties": {"syft_shared_with_any": "true"}},
-            )
-        )
-
-    def owner_share_collection(
-        self, prefix: str, tag: str, content_hash: str, users: list[str]
-    ) -> None:
-        """Share collection folder with specific users via batch API."""
-        if not users:
-            return
-        folder_id = self._get_collection_folder_id(prefix, tag, content_hash)
-        self.client.batch_add_permissions(folder_id, users)
-
-    def owner_upload_collection_files(
-        self, prefix: str, tag: str, content_hash: str, files: dict[str, bytes]
-    ) -> None:
-        """Upload files to a collection folder."""
-        folder_id = self._get_collection_folder_id(prefix, tag, content_hash)
-
-        for file_path, content in files.items():
-            file_payload, _ = self.client.create_file_payload(content)
-            file_name = Path(file_path).name
-
-            file_metadata = {"name": file_name, "parents": [folder_id]}
-            self.client.create_syft_file(file_metadata, file_payload)
-
-    def owner_list_collections(self, prefix: str) -> list[str]:
-        """List collections created by DO (owned by me). Returns list of tags.
-
-        A tag appears once however many layouts hold it.
-        """
-        syftbox_folder_id = self.layout.get_syftbox_folder_id()
-        query = (
-            f"{collection_name_query(prefix)} and '{syftbox_folder_id}' in parents "
-            f"and 'me' in owners and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
-        )
-        result: list[str] = []
-        for folder in self.client.list_all_files(query, fields="name"):
-            try:
-                cf = CollectionFolder.from_name(prefix, folder["name"])
-            except ValueError:
-                continue
-            if cf.tag not in result:
-                result.append(cf.tag)
-        return result
-
-    def owner_list_all_collections_with_permissions(
-        self,
-        prefix: str,
-    ) -> list[FileCollection]:
-        """List all DO's collections with permissions info, one per layout."""
-        syftbox_folder_id = self.layout.get_syftbox_folder_id()
-        query = (
-            f"{collection_name_query(prefix)} and '{syftbox_folder_id}' in parents "
-            f"and 'me' in owners and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
-        )
-        collections = []
-        for folder in self.client.list_all_files(query, fields="id,name,appProperties"):
-            try:
-                cf = CollectionFolder.from_name(prefix, folder["name"])
-            except ValueError:
-                continue
-            has_anyone = (
-                folder.get("appProperties", {}).get("syft_shared_with_any") == "true"
-            )
-            collections.append(
-                FileCollection(
-                    folder_id=folder["id"],
-                    tag=cf.tag,
-                    content_hash=cf.content_hash,
-                    has_any_permission=has_anyone,
-                    variant=cf.variant,
-                )
-            )
-
-        return collections
-
-    def owner_delete_collection(self, prefix: str, tag: str) -> None:
-        """Delete every layout of ``tag`` published under ``prefix``."""
-        collections = self.owner_list_all_collections_with_permissions(prefix)
-        for c in collections:
-            if c.tag == tag:
-                self.client.delete_file_by_id(c.folder_id)
-                folder_name = CollectionFolder(
-                    prefix=prefix,
-                    tag=c.tag,
-                    content_hash=c.content_hash,
-                    variant=c.variant,
-                ).folder_name
-                self.collection_folder_id_cache.pop(folder_name, None)
-
-    def watcher_list_collections(self, prefix: str) -> list[dict]:
-        """List collections shared with DS (not owned by me), one per layout.
-
-        Returns list of dicts with keys: owner_email, tag, content_hash, variant
-        """
-        query = (
-            f"{collection_name_query(prefix)} and not 'me' in owners "
-            f"and trashed=false and mimeType='{GOOGLE_FOLDER_MIME_TYPE}'"
-        )
-        result = []
-        for folder in self.client.list_all_files(query, fields="name, owners"):
-            try:
-                cf = CollectionFolder.from_name(prefix, folder["name"])
-            except ValueError:
-                # Skip folders that don't match the expected format
-                continue
-            owner_email = folder.get("owners", [{}])[0].get("emailAddress", "unknown")
-            result.append(
-                {
-                    "owner_email": owner_email,
-                    "tag": cf.tag,
-                    "content_hash": cf.content_hash,
-                    "variant": cf.variant,
-                }
-            )
-        return result
-
-    def watcher_download_collection(
-        self, prefix: str, tag: str, content_hash: str, owner_email: str
-    ) -> dict[str, bytes]:
-        """Download all files from a collection."""
-        folder_name = CollectionFolder(
-            prefix=prefix, tag=tag, content_hash=content_hash
-        ).folder_name
-        # Try to find folder by name (could be owned by someone else)
-        folder_id = self.client.find_folder_by_name(
-            folder_name, owner_email=owner_email
-        )
-
-        if not folder_id:
-            raise ValueError(f"Collection {tag} with hash {content_hash} not found")
-
-        file_metadatas = self.layout.get_file_metadatas_from_folder(folder_id)
-        files = {}
-        for file_meta in file_metadatas:
-            file_id = file_meta["id"]
-            file_name = file_meta["name"]
-            files[file_name] = self.client.download_file(file_id)
-
-        return files
-
-    def watcher_get_collection_file_metadatas(
-        self, prefix: str, tag: str, content_hash: str, owner_email: str
-    ) -> List[Dict]:
-        """Get file metadata from a collection without downloading."""
-        folder_name = CollectionFolder(
-            prefix=prefix, tag=tag, content_hash=content_hash
-        ).folder_name
-        folder_id = self.client.find_folder_by_name(
-            folder_name, owner_email=owner_email
-        )
-
-        if not folder_id:
-            raise ValueError(f"Collection {tag} with hash {content_hash} not found")
-
-        file_metadatas = self.layout.get_file_metadatas_from_folder(folder_id)
-        return [{"file_id": f["id"], "file_name": f["name"]} for f in file_metadatas]
-
-    def watcher_download_collection_file(self, file_id: str) -> bytes:
-        """Download a single file from a collection."""
-        return self.client.download_file(file_id)
-
-    def _get_collection_folder_id(
-        self, prefix: str, tag: str, content_hash: str
-    ) -> str:
-        """Get folder ID for a collection, with caching."""
-        folder_name = CollectionFolder(
-            prefix=prefix, tag=tag, content_hash=content_hash
-        ).folder_name
-        if folder_name in self.collection_folder_id_cache:
-            return self.collection_folder_id_cache[folder_name]
-
-        syftbox_folder_id = self.layout.get_syftbox_folder_id()
-        folder_id = self.client.find_folder_by_name(
-            folder_name, parent_id=syftbox_folder_id
-        )
-
-        if not folder_id:
-            raise ValueError(
-                f"Collection folder {tag} with hash {content_hash} not found"
-            )
-
-        self.collection_folder_id_cache[folder_name] = folder_id
-        return folder_id
 
     def _get_own_peer_info_file_id(self) -> Optional[str]:
         """Find the own peer info file, SYFT_version.json, in /SyftBox."""

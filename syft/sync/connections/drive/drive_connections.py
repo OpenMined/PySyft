@@ -12,10 +12,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from syft.sync.connections.drive.drive_collections import DriveCollections
 from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.transport.protocols import (
-    Collections,
     P2PConnection,
     Peering,
     Transport,
@@ -24,7 +24,6 @@ from syft.sync.transport.protocols import (
 from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
 
 if TYPE_CHECKING:
-    from syft.sync.connections.base_connection import FileCollection
     from syft.sync.connections.drive.gdrive_transport import GDriveConnection
     from syft.sync.version.peer_info import PeerInfo
 
@@ -96,60 +95,6 @@ class DriveWatcherStore(WatcherStore):
         raise NotImplementedError("Watcher storage on Drive is not built yet")
 
 
-class DriveCollections(Collections):
-    """Collection folders in /SyftBox, shared by Drive permission."""
-
-    def __init__(self, connection: GDriveConnection):
-        self._conn = connection
-
-    def create(self, prefix: str, tag: str, content_hash: str, owner_email: str) -> str:
-        return self._conn.owner_create_collection_folder(
-            prefix, tag, content_hash, owner_email
-        )
-
-    def mark_shared_with_any(self, prefix: str, tag: str, content_hash: str) -> None:
-        self._conn.owner_tag_collection_as_any(prefix, tag, content_hash)
-
-    def grant_read(
-        self, prefix: str, tag: str, content_hash: str, users: list[str]
-    ) -> None:
-        self._conn.owner_share_collection(prefix, tag, content_hash, users)
-
-    def upload(
-        self, prefix: str, tag: str, content_hash: str, files: dict[str, bytes]
-    ) -> None:
-        self._conn.owner_upload_collection_files(prefix, tag, content_hash, files)
-
-    def list_mine_with_permissions(self, prefix: str) -> list[FileCollection]:
-        return self._conn.owner_list_all_collections_with_permissions(prefix)
-
-    def list_mine(self, prefix: str) -> list[str]:
-        return self._conn.owner_list_collections(prefix)
-
-    def delete(self, prefix: str, tag: str) -> None:
-        self._conn.owner_delete_collection(prefix, tag)
-
-    def list_shared_with_me(self, prefix: str) -> list[dict]:
-        return self._conn.watcher_list_collections(prefix)
-
-    def list_files(
-        self, prefix: str, tag: str, content_hash: str, owner_email: str
-    ) -> list[dict]:
-        return self._conn.watcher_get_collection_file_metadatas(
-            prefix, tag, content_hash, owner_email
-        )
-
-    def fetch_file(self, handle: str) -> bytes:
-        return self._conn.watcher_download_collection_file(handle)
-
-    def download(
-        self, prefix: str, tag: str, content_hash: str, owner_email: str
-    ) -> dict[str, bytes]:
-        return self._conn.watcher_download_collection(
-            prefix, tag, content_hash, owner_email
-        )
-
-
 class DrivePeering(Peering):
     """Identity from the Google account; channels, the peer list, key bundles
     and version files in /SyftBox."""
@@ -205,7 +150,7 @@ def drive_transport(connection: GDriveConnection) -> Transport:
         p2p=DriveP2PConnection(connection),
         owner_store=DriveOwnerStore(connection.layout),
         watcher_store=DriveWatcherStore(connection),
-        collections=DriveCollections(connection),
+        collections=DriveCollections(connection.layout),
         peering=DrivePeering(connection),
         platform=GdriveFilesPlatform(),
     )

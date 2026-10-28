@@ -1,6 +1,6 @@
+from syft.sync.connections.drive.drive_collections import collection_name_query
 from syft.sync.connections.drive.gdrive_transport import (
     GDriveConnection,
-    collection_name_query,
 )
 from syft_rds import SyftRDSClient
 from syft_datasets.dataset_manager import (

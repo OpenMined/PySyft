@@ -11,10 +11,6 @@ These tests drive that path from the name of the folder to the file on disk.
 """
 
 import pytest
-from syft.sync.connections.drive.gdrive_transport import (
-    CollectionFolder,
-    collection_name_query,
-)
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 from syft_migration import ProtocolSchema
 from syft_rds import SyftRDSClient
@@ -24,6 +20,10 @@ from syft_rds.config import (
     dataset_variant,
 )
 
+from syft.sync.connections.drive.drive_collections import (
+    CollectionFolder,
+    collection_name_query,
+)
 from tests.unit.utils import create_tmp_dataset_files
 
 DATASET_COLLECTION_NAME_QUERY = collection_name_query(DATASET_COLLECTION_PREFIX)
