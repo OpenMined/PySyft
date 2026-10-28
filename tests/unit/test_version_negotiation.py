@@ -227,7 +227,7 @@ class TestPeerManager:
         assert version is None
 
     def test_load_peer_versions_parallel(self):
-        from syft.sync.connections.drive.gdrive_transport import (
+        from syft.sync.connections.drive.drive_peering import (
             SYFT_VERSION_FILE,
         )
         from syft.sync.connections.drive.mock_drive_service import (

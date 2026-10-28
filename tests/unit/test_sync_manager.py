@@ -489,7 +489,7 @@ def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:
     conn = GDriveConnection.from_service(
         email, ds_manager._connection_router.connections[0].client.drive_service
     )
-    conn.add_peer(do_manager.email)
+    conn.as_transport().peering.open_channels(do_manager.email)
     _add_known_peer(do_manager, email)
     return ConnectionRouter(
         connections=[conn], peer_store=_store_knowing(email, do_manager.email)

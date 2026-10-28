@@ -283,7 +283,7 @@ def test_peer_registry_update_while_drive_is_down_keeps_other_peers(pair, monkey
     do_conn, _ = pair
     peering = do_conn.as_transport().peering
     peering.update_peer_registry(DS, "accepted")
-    do_conn._peers_json_cache = None  # a new process has no cache
+    do_conn._peering._peers_json_cache = None  # a new process has no cache
 
     monkeypatch.setattr(GDriveClient, "download_file", _drive_down)
     with pytest.raises(TransportUnavailableError):
@@ -296,7 +296,7 @@ def test_peer_registry_update_while_drive_is_down_keeps_other_peers(pair, monkey
 def test_reading_own_key_bundle_creates_no_folder(pair):
     owner = pair[0].as_transport()
     assert owner.peering.read_own_key_bundle(DS) is None
-    assert pair[0]._find_encryption_bundles_folder_id() is None
+    assert pair[0]._peering._find_encryption_bundles_folder_id() is None
 
 
 def test_peering_publishes_a_key_bundle_both_sides_can_read(pair):

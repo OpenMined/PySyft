@@ -16,6 +16,7 @@ from unittest.mock import Mock, patch
 
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.gdrive_layout import DriveLayout
+from syft.sync.connections.drive.drive_peering import DrivePeering
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.peers.peer import PeerState
 from syft.sync.transport.naming import PEERS_META_KEY, SYFT_PEERS_VERSION
@@ -26,7 +27,7 @@ PEER = "bob@example.com"
 def _conn(peers_data):
     conn = GDriveConnection(email="alice@example.com", verbose=False)
     conn.layout = DriveLayout(GDriveClient(Mock()), conn.email)
-    conn._peers_json_cache = dict(peers_data)
+    conn._peering._peers_json_cache = dict(peers_data)
     return conn
 
 
@@ -41,14 +42,16 @@ def _router(conn):
 def test_a_write_stamps_the_reserved_entry():
     conn = _conn({PEER: {"state": "accepted"}})
     with (
-        patch.object(GDriveConnection, "_get_peers_file_id", return_value="file-id"),
+        patch.object(DrivePeering, "_get_peers_file_id", return_value="file-id"),
         patch.object(DriveLayout, "get_syftbox_folder_id", return_value="folder-id"),
         patch.object(GDriveClient, "create_file_payload", return_value=(Mock(), None)),
     ):
-        conn._write_peers_json({PEER: {"state": "accepted"}})
+        conn._peering._write_peers_json({PEER: {"state": "accepted"}})
 
-    assert conn._peers_json_cache[PEERS_META_KEY] == {"version": SYFT_PEERS_VERSION}
-    assert conn._peers_json_cache[PEER] == {"state": "accepted"}
+    assert conn._peering._peers_json_cache[PEERS_META_KEY] == {
+        "version": SYFT_PEERS_VERSION
+    }
+    assert conn._peering._peers_json_cache[PEER] == {"state": "accepted"}
 
 
 def test_the_reserved_entry_is_not_a_peer():

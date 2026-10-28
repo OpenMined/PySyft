@@ -26,10 +26,6 @@ class ConnectionConfig(BaseModel):
 class SyftboxPlatformConnection(BaseModel):
     config: ConnectionConfig | None = None
 
-    def get_authenticated_email(self) -> str:
-        """Return the email of the account behind the underlying credentials/transport."""
-        raise NotImplementedError()
-
     def watcher_send_proposed_file_changes_message(
         self, proposed_file_change_message: ProposedFileChangesMessage
     ):

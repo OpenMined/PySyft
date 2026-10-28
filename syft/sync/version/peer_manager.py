@@ -274,11 +274,8 @@ class PeerManager(BaseModel):
             TransportUnavailableError: when the backend cannot be reached.
             ValueError: when the document is not one this client reads.
         """
-        # Create new connection for thread safety
-        connection = self.connection_router.connection_for_peer_file_read(
-            create_new=True
-        )
-        return (peer_email, connection.read_peer_info_file(peer_email))
+        peering = self.connection_router.transport_for_thread().peering
+        return (peer_email, peering.read_peer_info(peer_email))
 
     def load_peer_infos_parallel(
         self, peer_emails: List[str], force: bool = False
@@ -640,10 +637,8 @@ class PeerManager(BaseModel):
 
     def _read_own_published_bundle(self, peer_email: str) -> dict | None:
         """The bundle this client published for ``peer_email``, or None (thread-safe)."""
-        connection = self.connection_router.connection_for_peer_file_read(
-            create_new=True
-        )
-        bundle_json = connection.read_own_encryption_bundle(peer_email)
+        peering = self.connection_router.transport_for_thread().peering
+        bundle_json = peering.read_own_key_bundle(peer_email)
         if bundle_json is None:
             return None
         return json.loads(bundle_json)["public_encryption_bundle"]

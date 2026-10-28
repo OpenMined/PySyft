@@ -74,7 +74,7 @@ class ConnectionRouter(BaseModel):
         self.connections.append(connection)
 
     def get_authenticated_email(self) -> str:
-        return self.connections[0].get_authenticated_email()
+        return self.transport.peering.whoami()
 
     def connection_for_send_message(self) -> SyftboxPlatformConnection:
         return self.connections[0]
@@ -419,19 +419,6 @@ class ConnectionRouter(BaseModel):
                 for name, data in files.items()
             }
         return files
-
-    def connection_for_peer_file_read(
-        self, create_new: bool = False
-    ) -> SyftboxPlatformConnection:
-        """Connection for reading files a peer publishes: peer info and key bundles.
-
-        Can create a new one for thread safety.
-        """
-        existing_connection = self.connections[0]
-        if create_new:
-            return self.copy_connection(existing_connection)
-        else:
-            return existing_connection
 
     def write_peer_info_file(self, peer_info: "PeerInfo") -> None:
         """Write the peer info file to own SyftBox folder."""

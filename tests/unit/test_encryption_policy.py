@@ -173,8 +173,13 @@ def test_missing_version_file_created_with_own_policy():
     a_conn, b_conn = mock_drive_service.pair_with_mock_service(
         "a@example.com", "b@example.com"
     )
-    a_conn.share_peer_info_file_with_peer("b@example.com", _peer_info(REQUIRED))
-    assert b_conn.read_peer_info_file("a@example.com").encryption_policy == REQUIRED
+    a_conn.as_transport().peering.grant_peer_info_read(
+        "b@example.com", _peer_info(REQUIRED)
+    )
+    assert (
+        b_conn.as_transport().peering.read_peer_info("a@example.com").encryption_policy
+        == REQUIRED
+    )
 
 
 def test_malformed_peer_bundle_raises_on_peer_load():

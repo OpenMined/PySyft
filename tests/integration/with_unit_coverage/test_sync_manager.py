@@ -565,7 +565,7 @@ def test_version_upgrade_breaks_communication():
 
     # Write the new version to GDrive (simulating DS upgrading their client)
     own_info = ds_manager.peer_manager.get_own_peer_info()
-    ds_connection.write_peer_info_file(
+    ds_connection.as_transport().peering.publish_peer_info(
         own_info.model_copy(update={"version_info": new_version})
     )
 
@@ -587,4 +587,4 @@ def test_version_upgrade_breaks_communication():
     )
 
     # Cleanup: Restore DS's version file to the original version
-    ds_connection.write_peer_info_file(own_info)
+    ds_connection.as_transport().peering.publish_peer_info(own_info)
