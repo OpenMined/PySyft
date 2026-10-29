@@ -19,6 +19,7 @@ from syft.sync.sync.caches.datasite_watcher_cache import (
 )
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.utils.syftbox_utils import get_event_hash_from_content
+from tests.unit.utils import router_without_connections
 
 VICTIM = "victim@example.com"
 PEER = "peer@example.com"
@@ -41,7 +42,8 @@ def _event(
 
 def _cache() -> DataSiteWatcherCache:
     return DataSiteWatcherCache.from_config(
-        DataSiteWatcherCacheConfig(email=VICTIM, use_in_memory_cache=True)
+        DataSiteWatcherCacheConfig(email=VICTIM, use_in_memory_cache=True),
+        router_without_connections(VICTIM),
     )
 
 
@@ -127,11 +129,12 @@ def test_dropped_event_is_not_restored_after_restart(tmp_path):
     )
     forged = _event(VICTIM, "syft.pub.yaml")
     legitimate = _event(PEER, "data/file.txt")
-    DataSiteWatcherCache.from_config(config).apply_event_message(
+    router = router_without_connections(VICTIM)
+    DataSiteWatcherCache.from_config(config, router).apply_event_message(
         FileChangeEventsMessage(events=[forged, legitimate]), PEER
     )
 
-    restarted = DataSiteWatcherCache.from_config(config)
+    restarted = DataSiteWatcherCache.from_config(config, router)
 
     assert Path(f"{VICTIM}/syft.pub.yaml") not in restarted.file_hashes
     assert VICTIM not in restarted.last_event_timestamp_per_peer

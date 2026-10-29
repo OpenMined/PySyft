@@ -279,7 +279,7 @@ def test_client_without_policy_takes_policy_of_syftbox(tmp_path):
         config = PeerManagerConfig(
             syftbox_folder=tmp_path, email="alice@example.com", encryption_policy=policy
         )
-        return PeerManager.from_config(config).peer_store.encryption_policy
+        return PeerManager.peer_store_from_config(config).encryption_policy
 
     assert start(REQUIRED) == REQUIRED
     assert start(None) == REQUIRED
