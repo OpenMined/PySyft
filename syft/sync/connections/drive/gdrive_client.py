@@ -174,8 +174,8 @@ class GDriveClient:
         """Add reader permissions for multiple users in a single batch request."""
 
         def callback(request_id, response, exception):
-            # Ignore "already shared" errors
-            if exception and "alreadyShared" not in str(exception):
+            # Drive answers a grant the user already has with that permission.
+            if exception is not None:
                 raise exception
 
         BATCH_SIZE = 100

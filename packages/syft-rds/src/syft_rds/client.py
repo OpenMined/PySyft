@@ -387,9 +387,8 @@ class SyftRDSClient(BaseModel):
                     )
             except Exception:
                 # One dataset failing (missing folder, quota, network) must not
-                # stop us sharing the rest with this peer. "alreadyShared" is
-                # already handled in _batch_add_permissions, so anything
-                # reaching here is a real failure worth a traceback.
+                # stop us sharing the rest with this peer. Anything reaching
+                # here is a real failure worth a traceback.
                 logger.exception("Failed to share dataset %r with %s", tag, peer_email)
 
     # ------------------------------------------------------------------ #
