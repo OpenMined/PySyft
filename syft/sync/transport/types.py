@@ -28,7 +28,7 @@ class RawMessage(BaseModel):
 
     ``sender`` is set by the connection from where the message came from,
     never from its contents. ``handle`` is opaque: only the connection that
-    returned the message reads it, to acknowledge it.
+    returned the message reads it, to mark it processed.
     """
 
     model_config = ConfigDict(frozen=True)
