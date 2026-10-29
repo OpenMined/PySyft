@@ -76,12 +76,6 @@ class ConnectionRouter(BaseModel):
     def get_authenticated_email(self) -> str:
         return self.connections[0].get_authenticated_email()
 
-    def connection_for_send_message(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
-
-    def connection_for_receive_message(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
-
     def copy_connection(
         self, connection: SyftboxPlatformConnection
     ) -> SyftboxPlatformConnection:
@@ -167,11 +161,9 @@ class ConnectionRouter(BaseModel):
             SyftPeerNotReadyError: when the message cannot be read yet. It
                 stays in the inbox.
         """
-        connection = self.connection_for_receive_message()
+        p2p = self.transport.p2p
         while True:
-            result = connection.owner_download_next_raw_proposed_message_from_inbox(
-                sender_email
-            )
+            result = p2p.next_inbox_message(sender_email)
             if result is None:
                 return None
             raw_data, file_id = result
@@ -181,7 +173,7 @@ class ConnectionRouter(BaseModel):
                 )
             except MessageFormatError as e:
                 warnings.warn(f"Archived message file {file_id} unread: {e}")
-                connection.owner_archive_inbox_file(file_id, sender_email)
+                p2p.archive_inbox_message(sender_email, file_id)
                 continue
             msg = ProposedFileChangesMessage.from_compressed_data(decrypted)
             msg.platform_id = file_id
@@ -202,10 +194,7 @@ class ConnectionRouter(BaseModel):
         self, peer_email: str, since_timestamp: float | None
     ) -> List[FileChangeEventsMessage]:
         """The outbox messages of ``peer_email``, without the skipped ones."""
-        connection = self.connection_for_datasite_watcher()
-        raw_list = connection.watcher_download_raw_events_from_outbox(
-            peer_email, since_timestamp
-        )
+        raw_list = self.transport.p2p.outbox_messages(peer_email, since_timestamp)
         messages = [
             self.watcher_read_events_message(peer_email, raw) for raw in raw_list
         ]
@@ -232,8 +221,11 @@ class ConnectionRouter(BaseModel):
     def watcher_get_outbox_file_metadatas(
         self, peer_email: str, since_timestamp: float | None
     ) -> List[dict]:
-        connection = self.connection_for_datasite_watcher()
-        return connection.watcher_get_outbox_file_metadatas(peer_email, since_timestamp)
+        return self.transport.p2p.outbox_message_metadatas(peer_email, since_timestamp)
+
+    def download_outbox_message(self, file_id: str) -> bytes:
+        """Download one outbox message by its handle (thread-safe)."""
+        return self.transport.p2p.clone_for_thread().fetch_message(file_id)
 
     def connection_for_parallel_download(self) -> SyftboxPlatformConnection:
         """Create a new connection for thread-safe parallel downloads."""
@@ -334,8 +326,7 @@ class ConnectionRouter(BaseModel):
         proposed_filechange_message: ProposedFileChangesMessage,
         sender_email: str,
     ):
-        connection = self.connection_for_receive_message()
-        connection.owner_remove_proposed_filechange_message_from_inbox(
+        self.transport.p2p.archive_proposed_changes(
             proposed_filechange_message, sender_email
         )
 

@@ -13,6 +13,7 @@ import pytest
 import syft.sync.connections.connection_router as connection_router_module
 from syft.sync.sync import datasite_owner_syncer
 from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.connections.drive.drive_connections import DriveP2PConnection
 from syft.sync.connections.drive.gdrive_transport import (
     CollectionFolder,
     GDriveConnection,
@@ -89,8 +90,20 @@ def test_a_proposed_change_sent_through_p2p_reaches_the_owner_inbox(pair):
         DO, _proposal_name(1.0), b"job", MessageKind.PROPOSED_CHANGES
     )
     assert status is SendStatus.DELIVERED
-    data, _ = do_conn.owner_download_next_raw_proposed_message_from_inbox(DS)
+    data, _ = do_conn.as_transport().p2p.next_inbox_message(DS)
     assert data == b"job"
+
+
+def test_an_archived_inbox_message_is_not_read_again(pair):
+    do_conn, ds_conn = pair
+    ds_conn.as_transport().p2p.send(
+        DO, _proposal_name(1.0), b"job", MessageKind.PROPOSED_CHANGES
+    )
+    p2p = do_conn.as_transport().p2p
+
+    _, handle = p2p.next_inbox_message(DS)
+    p2p.archive_inbox_message(DS, handle)
+    assert p2p.next_inbox_message(DS) is None
 
 
 def test_file_events_sent_through_p2p_reach_the_scientist_outbox(pair):
@@ -100,8 +113,24 @@ def test_file_events_sent_through_p2p_reach_the_scientist_outbox(pair):
         DS, name, b"results", MessageKind.FILE_EVENTS
     )
     assert status is SendStatus.DELIVERED
-    listed = ds_conn.watcher_get_outbox_file_metadatas(DO, since_timestamp=None)
+    p2p = ds_conn.as_transport().p2p
+    listed = p2p.outbox_message_metadatas(DO, since_timestamp=None)
     assert [m["file_name"] for m in listed] == [name]
+    assert p2p.fetch_message(listed[0]["file_id"]) == b"results"
+    assert p2p.outbox_messages(DO, since_timestamp=None) == [b"results"]
+
+
+def test_a_p2p_copy_for_another_thread_reads_the_same_outbox(pair):
+    do_conn, ds_conn = pair
+    do_conn.as_transport().p2p.send(
+        DS, _events_name(1.0), b"results", MessageKind.FILE_EVENTS
+    )
+    p2p = ds_conn.as_transport().p2p
+    [listed] = p2p.outbox_message_metadatas(DO, since_timestamp=None)
+
+    copy = p2p.clone_for_thread()
+    assert copy._conn is not ds_conn
+    assert copy.fetch_message(listed["file_id"]) == b"results"
 
 
 def test_an_unknown_message_kind_is_refused(pair):
@@ -309,7 +338,7 @@ def _router_with_mock_p2p():
     do_conn, _ = pair_with_mock_service(DO, DS)
     router = ConnectionRouter(connections=[do_conn], peer_store=_store_knowing(DO, DS))
     drive = do_conn.as_transport()
-    p2p = Mock(spec=P2PConnection)
+    p2p = Mock(spec=DriveP2PConnection)
     router._transport = drive.model_copy(update={"p2p": p2p})
     router._transport_source = do_conn
     return router, p2p
@@ -339,6 +368,30 @@ def test_the_router_sends_proposed_changes_through_p2p():
         message.message_filename.as_string(),
         MessageKind.PROPOSED_CHANGES,
     )
+
+
+def test_the_router_reads_the_inbox_through_p2p():
+    router, p2p = _router_with_mock_p2p()
+    p2p.next_inbox_message.return_value = None
+    assert router.owner_get_next_proposed_filechange_message(DS) is None
+    p2p.next_inbox_message.assert_called_once_with(DS)
+
+
+def test_the_router_archives_a_handled_message_through_p2p():
+    router, p2p = _router_with_mock_p2p()
+    message = ProposedFileChangesMessage(sender_email=DS, proposed_file_changes=[])
+    router.owner_remove_proposed_filechange_from_inbox(message, DS)
+    p2p.archive_proposed_changes.assert_called_once_with(message, DS)
+
+
+def test_the_router_reads_the_outbox_through_p2p():
+    router, p2p = _router_with_mock_p2p()
+    p2p.outbox_messages.return_value = []
+    p2p.outbox_message_metadatas.return_value = []
+    assert router.watcher_get_events_messages(DO, 5.0) == []
+    assert router.watcher_get_outbox_file_metadatas(DO, 5.0) == []
+    p2p.outbox_messages.assert_called_once_with(DO, 5.0)
+    p2p.outbox_message_metadatas.assert_called_once_with(DO, 5.0)
 
 
 def test_the_router_reuses_its_transport_until_its_connection_changes():
