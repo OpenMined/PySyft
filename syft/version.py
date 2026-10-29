@@ -7,7 +7,8 @@ Bump these versions on each release (via `bump2version patch/minor/major`).
 # Current client version — the single source of truth.
 # pyproject.toml and syft/__init__.py read from here.
 # Must stay a plain X.Y.Z: peers compare it with _parse_semver and Drive folder
-# names embed it (see sync/version/version_info.py and gdrive_transport.py).
+# names embed it (see sync/version/version_info.py, and gdrive_layout.py and
+# drive_owner_store.py in sync/connections/drive/).
 SYFT_VERSION = "0.10.1"
 
 # Minimum client version we support communicating with.
