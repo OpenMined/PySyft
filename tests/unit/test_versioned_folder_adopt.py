@@ -25,7 +25,7 @@ from syft.sync.connections.drive.gdrive_transport import (
     execute_with_retries,
 )
 from syft.sync.syftbox_manager import SyftboxManager
-from syft.sync.connections.drive.drive_connections import drive_connection
+from syft.sync.connections.drive.drive_connections import gdrive_connection_of
 
 EMAIL = "alice@example.com"
 
@@ -159,7 +159,7 @@ def _checkpoints_owner_with_version(checkpoint_version: int):
         sync_automatically=False,
     )
     router = do_manager._connection_router
-    connection = drive_connection(router.transport)
+    connection = gdrive_connection_of(router.transport)
     router.upload_checkpoint(
         Checkpoint(email=do_manager.email, version=checkpoint_version)
     )

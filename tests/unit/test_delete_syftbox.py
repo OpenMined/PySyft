@@ -6,7 +6,7 @@ from unittest.mock import patch
 from syft.sync.login_utils import handle_potential_version_mismatches_on_login
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.version.version_info import VersionInfo
-from syft.sync.connections.drive.drive_connections import drive_connection
+from syft.sync.connections.drive.drive_connections import gdrive_connection_of
 
 
 EMAIL = "test@example.com"
@@ -201,7 +201,7 @@ class TestOrphanedMessageFiles:
 
 
 def _connection(manager: SyftboxManager):
-    return drive_connection(manager._connection_router.transport)
+    return gdrive_connection_of(manager._connection_router.transport)
 
 
 def _archive_one_proposal():

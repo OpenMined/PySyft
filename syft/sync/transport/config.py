@@ -1,20 +1,31 @@
-"""Which implementation each transport component uses, as plain config."""
+"""The connection each transport component uses, as plain config."""
+
+from typing import Self
 
 from pydantic import BaseModel
 
-DRIVE = "drive"
+from syft.sync.connections.base_connection import ConnectionConfig
+from syft.sync.transport.protocols import TRANSPORT_COMPONENTS
 
 
 class TransportConfig(BaseModel):
-    """Which implementation each transport component uses.
-    ``SyftboxManager.from_config`` builds the transport from it; only Google
-    Drive for every component is built so far."""
+    """The connection each transport component uses.
+    ``SyftboxManager.from_config`` builds the transport from it; only one
+    Google Drive connection for every component is built so far."""
 
-    p2p: str = DRIVE
-    owner_store: str = DRIVE
-    watcher_store: str = DRIVE
-    collections: str = DRIVE
-    peering: str = DRIVE
+    p2p: ConnectionConfig
+    owner_store: ConnectionConfig
+    watcher_store: ConnectionConfig
+    collections: ConnectionConfig
+    peering: ConnectionConfig
 
-    def all_drive(self) -> bool:
-        return set(self.model_dump().values()) == {DRIVE}
+    @classmethod
+    def one_connection(cls, connection_config: ConnectionConfig) -> Self:
+        """Every component over the same connection."""
+        return cls(**{name: connection_config for name in TRANSPORT_COMPONENTS})
+
+    def connection_configs(self) -> list[ConnectionConfig]:
+        return [getattr(self, name) for name in TRANSPORT_COMPONENTS]
+
+    def uses_one_connection(self) -> bool:
+        return all(config == self.p2p for config in self.connection_configs())

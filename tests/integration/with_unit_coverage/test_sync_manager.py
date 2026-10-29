@@ -30,7 +30,7 @@ from tests.integration.with_unit_coverage.utils import (
     create_test_pair,
     is_mock_mode,
 )
-from syft.sync.connections.drive.drive_connections import drive_connection
+from syft.sync.connections.drive.drive_connections import gdrive_connection_of
 
 
 def path_for_job(do_email: str, ds_email: str, filename: str = "test.job") -> str:
@@ -553,7 +553,7 @@ def test_version_upgrade_breaks_communication():
     )
 
     # Phase 2: Simulate DS "upgrading" to a new incompatible version
-    ds_connection = drive_connection(ds_manager._connection_router.transport)
+    ds_connection = gdrive_connection_of(ds_manager._connection_router.transport)
 
     current = VersionInfo.current()
     new_version = VersionInfo(

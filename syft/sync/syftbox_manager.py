@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, List, Optional, cast
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 from syft.sync.callback_mixin import BaseModelCallbackMixin
 from syft.sync.connections.connection_router import ConnectionRouter
@@ -19,7 +19,7 @@ from syft.sync.connections.drive.drive_connections import (
     DriveP2PConnection,
     DrivePeering,
     DriveWatcherStore,
-    drive_connection,
+    gdrive_connection_of,
 )
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.connections.drive.grdrive_config import GdriveConnectionConfig
@@ -144,13 +144,11 @@ class SyftboxManagerConfig(BaseModel):
     # log, rolling state, checkpoints. Off for datasites that can never
     # restore (see syft-enclave's EnclaveSettings).
     persist_owner_state: bool = True
-    # The Google Drive login. Only the manager reads it: it builds one
-    # transport over it and shares that with every part. None when the caller
-    # passes a transport to SyftboxManager.from_config instead, as tests do
-    # with a mock Drive.
-    connection_config: GdriveConnectionConfig | None = None
-    # Which implementation each transport component uses.
-    transport_config: TransportConfig = Field(default_factory=TransportConfig)
+    # The connection each transport component uses. Only the manager reads
+    # it: it builds one transport from it and shares that with every part.
+    # None when the caller passes a transport to SyftboxManager.from_config
+    # instead, as tests do with a mock Drive.
+    transport_config: TransportConfig | None = None
 
     datasite_owner_syncer_config: DatasiteOwnerSyncerConfig
     peer_manager_config: PeerManagerConfig
@@ -185,7 +183,9 @@ class SyftboxManagerConfig(BaseModel):
             syftbox_folder, email, collection_specs
         )
         collection_variants = default_collection_variants(collection_specs)
-        connection_config = GdriveConnectionConfig(email=email, token_path=None)
+        transport_config = TransportConfig.one_connection(
+            GdriveConnectionConfig(email=email, token_path=None)
+        )
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
             persist_owner_state=persist_owner_state,
@@ -222,7 +222,7 @@ class SyftboxManagerConfig(BaseModel):
         return cls(
             email=email,
             syftbox_folder=syftbox_folder,
-            connection_config=connection_config,
+            transport_config=transport_config,
             has_ds_role=has_ds_role,
             has_do_role=has_do_role,
             use_in_memory_cache=False,
@@ -262,7 +262,9 @@ class SyftboxManagerConfig(BaseModel):
         )
         collection_variants = default_collection_variants(collection_specs)
 
-        connection_config = GdriveConnectionConfig(email=email, token_path=token_path)
+        transport_config = TransportConfig.one_connection(
+            GdriveConnectionConfig(email=email, token_path=token_path)
+        )
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
             persist_owner_state=persist_owner_state,
@@ -299,7 +301,7 @@ class SyftboxManagerConfig(BaseModel):
         return cls(
             email=email,
             syftbox_folder=syftbox_folder,
-            connection_config=connection_config,
+            transport_config=transport_config,
             has_ds_role=has_ds_role,
             has_do_role=has_do_role,
             use_in_memory_cache=False,
@@ -411,7 +413,9 @@ class SyftboxManagerConfig(BaseModel):
             syftbox_folder, email, collection_specs
         )
         collection_variants = default_collection_variants(collection_specs)
-        connection_config = GdriveConnectionConfig(email=email, token_path=token_path)
+        transport_config = TransportConfig.one_connection(
+            GdriveConnectionConfig(email=email, token_path=token_path)
+        )
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
             email=email,
             persist_owner_state=persist_owner_state,
@@ -447,7 +451,7 @@ class SyftboxManagerConfig(BaseModel):
         return cls(
             email=email,
             syftbox_folder=syftbox_folder,
-            connection_config=connection_config,
+            transport_config=transport_config,
             write_files=write_files,
             persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
@@ -597,16 +601,22 @@ class SyftboxManager(BaseModelCallbackMixin):
 
     @staticmethod
     def _transport_from_config(config: SyftboxManagerConfig) -> Transport:
-        if config.connection_config is None:
+        transport_config = config.transport_config
+        if transport_config is None:
             raise ValueError(
-                "The config names no connection: set connection_config, or pass a "
+                "The config names no transport: set transport_config, or pass a "
                 "transport to SyftboxManager.from_config"
             )
-        if not config.transport_config.all_drive():
+        drive_config = transport_config.p2p
+        if not (
+            isinstance(drive_config, GdriveConnectionConfig)
+            and transport_config.uses_one_connection()
+        ):
             raise NotImplementedError(
-                "Only Google Drive for every transport component is built so far"
+                "Only one Google Drive connection for every transport component "
+                "is built so far"
             )
-        drive = GDriveConnection.from_config(config.connection_config)
+        drive = GDriveConnection.from_config(drive_config)
         return SyftboxManager._drive_transport(drive)
 
     @staticmethod
@@ -1332,7 +1342,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         from copy import deepcopy
 
         new_config = deepcopy(self.config)
-        connection = drive_connection(self._connection_router.transport)
+        connection = gdrive_connection_of(self._connection_router.transport)
         if not isinstance(connection, GDriveConnection):
             raise ValueError("Only GDriveConnections can be copied")
         if isinstance(connection.drive_service, mock_drive_service.MockDriveService):

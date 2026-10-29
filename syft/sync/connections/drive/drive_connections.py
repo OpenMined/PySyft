@@ -371,7 +371,11 @@ class DrivePeering(DriveTransportComponent, Peering):
         self._conn.share_peer_info_file_with_peer(peer, peer_info)
 
 
-def drive_connection(transport: Transport) -> GDriveConnection:
-    """The Drive connection under ``transport``, for tests and tools that need
-    Drive itself. The sync code reaches Drive only through the components."""
-    return transport.owner_store._conn
+def gdrive_connection_of(transport: Transport) -> GDriveConnection:
+    """The Google Drive connection under ``transport``, for tests and tools
+    that need Drive itself. The sync code reaches Drive only through the
+    components. Raises if the transport is not built on Drive."""
+    store = transport.owner_store
+    if not isinstance(store, DriveTransportComponent):
+        raise TypeError("This transport is not built on Google Drive")
+    return store._conn
