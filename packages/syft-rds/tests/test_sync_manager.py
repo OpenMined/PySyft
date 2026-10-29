@@ -9,6 +9,7 @@ import pytest
 
 from syft.sync.connections.drive import mock_drive_service
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.syftbox_manager import SyftboxManager
 from syft_datasets import Dataset
 from syft_datasets.dataset_manager import DATASET_COLLECTION_PREFIX
 from syft_rds import SyftRDSClient
@@ -1275,8 +1276,12 @@ def test_in_memory_connection_load_state():
     service_ds = mock_drive_service.MockDriveService(backing_store, ds_email)
     ds_connection2 = GDriveConnection.from_service(ds_email, service_ds)
 
-    do_manager2 = SyftRDSClient.from_config(do_config2, do_connection2.as_transport())
-    ds_manager2 = SyftRDSClient.from_config(ds_config2, ds_connection2.as_transport())
+    do_manager2 = SyftRDSClient.from_config(
+        do_config2, SyftboxManager._drive_transport(do_connection2)
+    )
+    ds_manager2 = SyftRDSClient.from_config(
+        ds_config2, SyftboxManager._drive_transport(ds_connection2)
+    )
 
     # Load peers
     do_manager2.load_peers()

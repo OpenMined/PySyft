@@ -43,8 +43,8 @@ class ConnectionRouter(BaseModel):
     and hands it to every part, so they share one transport, and through it
     one connection, and one peer store."""
 
-    # Built once with the router and never replaced. Its parts may come from
-    # other backends than its connection, such as a fake p2p in a test.
+    # Built once with the router and never replaced. A test may swap in a
+    # component that does not use Google Drive, such as a fake p2p.
     transport: Transport
 
     peer_store: PeerStore
@@ -408,20 +408,13 @@ class ConnectionRouter(BaseModel):
         return self.transport.owner_store.list_event_handles(since_timestamp)
 
     def delete_all(self) -> int:
-        """Delete everything this account keeps on the backend; return how
-        many files and folders went."""
+        """Delete everything this account stores; return how many files and
+        folders went."""
         return self.transport.owner_store.delete_all()
 
     def reset_caches(self):
-        transport = self.transport
-        for part in (
-            transport.p2p,
-            transport.owner_store,
-            transport.watcher_store,
-            transport.collections,
-            transport.peering,
-        ):
-            part.reset_caches()
+        for component in self.transport.components():
+            component.reset_caches()
 
     def delete_file_by_id(self, file_id: str):
         self.transport.collections.delete_by_handle(file_id)

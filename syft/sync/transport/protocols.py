@@ -26,19 +26,19 @@ if TYPE_CHECKING:
     from syft.sync.version.peer_info import PeerInfo
 
 
-class TransportPart:
-    """What every part of a transport does besides its job."""
+class TransportComponent:
+    """What every component of a transport does besides its own work."""
 
     def clone_for_thread(self) -> Self:
-        """A copy that another thread may use. This one, unless the backend's
-        client cannot be shared across threads."""
+        """A copy that another thread may use. This one, unless its
+        connection cannot be shared across threads."""
         return self
 
     def reset_caches(self) -> None:
-        """Forget what was cached from the backend."""
+        """Forget what was cached from the connection."""
 
 
-class P2PConnection(TransportPart, ABC):
+class P2PConnection(TransportComponent, ABC):
     """Messages between peers, kept until the recipient has processed them.
 
     Sending and receiving each have their own confirmation:
@@ -91,7 +91,7 @@ class P2PConnection(TransportPart, ABC):
             self.mark_processed(message)
 
 
-class OwnerStore(TransportPart, ABC):
+class OwnerStore(TransportComponent, ABC):
     """The data owner's own storage: event log, checkpoints, rolling state.
 
     Only the owner writes and reads it, and it is never shared.
@@ -168,11 +168,11 @@ class OwnerStore(TransportPart, ABC):
     # -- the whole account -----------------------------------------------------
     @abstractmethod
     def delete_all(self) -> int:
-        """Delete everything this account keeps on the backend, for every role,
-        and return how many files and folders went."""
+        """Delete everything this account stores, for every role, and return
+        how many files and folders went."""
 
 
-class WatcherStore(TransportPart, ABC):
+class WatcherStore(TransportComponent, ABC):
     """The data scientist's memory of what each owner sent it.
 
     One area per owner, in the scientist's own storage, never shared, so it
@@ -203,7 +203,7 @@ class WatcherStore(TransportPart, ABC):
         everything again."""
 
 
-class Collections(TransportPart, ABC):
+class Collections(TransportComponent, ABC):
     """Sets of files a data owner shares with named readers (datasets)."""
 
     @abstractmethod
@@ -266,7 +266,7 @@ class Collections(TransportPart, ABC):
         return {f["file_name"]: self.fetch_file(f["file_id"]) for f in files}
 
 
-class Peering(TransportPart, ABC):
+class Peering(TransportComponent, ABC):
     """Finding and trusting a peer: identity, channels, peer list, published
     documents."""
 
@@ -341,6 +341,16 @@ class Peering(TransportPart, ABC):
         """
 
 
+# The components of a transport, as named on ``Transport``.
+TRANSPORT_COMPONENTS = (
+    "p2p",
+    "owner_store",
+    "watcher_store",
+    "collections",
+    "peering",
+)
+
+
 class Transport(BaseModel):
     """One implementation of each job. The parts may come from different
     backends, though a peer's ``p2p`` and ``peering`` go together."""
@@ -354,3 +364,7 @@ class Transport(BaseModel):
     peering: Peering
     # Recorded on each Peer so a peer list says which backend reaches it.
     platform: BasePlatform
+
+    def components(self) -> list[TransportComponent]:
+        """The components, in ``TRANSPORT_COMPONENTS`` order."""
+        return [getattr(self, name) for name in TRANSPORT_COMPONENTS]

@@ -8,16 +8,19 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, List, Optional, cast
 
-from pydantic import BaseModel, ConfigDict, PrivateAttr
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from syft.sync.callback_mixin import BaseModelCallbackMixin
-from syft.sync.connections.base_connection import (
-    ConnectionConfig,
-    SyftboxPlatformConnection,
-)
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
-from syft.sync.connections.drive.drive_connections import drive_connection
+from syft.sync.connections.drive.drive_connections import (
+    DriveCollections,
+    DriveOwnerStore,
+    DriveP2PConnection,
+    DrivePeering,
+    DriveWatcherStore,
+    drive_connection,
+)
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
 from syft.sync.connections.drive.grdrive_config import GdriveConnectionConfig
 from syft.sync.events.file_change_event import (
@@ -57,6 +60,8 @@ from syft.sync.utils.syftbox_utils import (
     random_syftbox_folder_for_testing,
 )
 from syft.sync.peers.peer_store import PeerStore
+from syft.sync.transport.config import TransportConfig
+from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.transport.protocols import P2PConnection, Transport
 from syft.sync.version.peer_manager import (
     PeerManager,
@@ -119,9 +124,9 @@ def _transport_with_p2p(
     connection: GDriveConnection,
     make_p2p: Callable[[str, P2PConnection], P2PConnection] | None,
 ) -> Transport:
-    """The jobs of ``connection``, with the p2p ``make_p2p`` builds from the
-    connection's email and Drive p2p when given."""
-    transport = connection.as_transport()
+    """The Drive transport over ``connection``, with the p2p ``make_p2p``
+    builds from the connection's email and Drive p2p when given."""
+    transport = SyftboxManager._drive_transport(connection)
     if make_p2p is None:
         return transport
     p2p = make_p2p(connection.email, transport.p2p)
@@ -139,11 +144,13 @@ class SyftboxManagerConfig(BaseModel):
     # log, rolling state, checkpoints. Off for datasites that can never
     # restore (see syft-enclave's EnclaveSettings).
     persist_owner_state: bool = True
-    # The backend to connect to. Only the manager reads it: it builds one
+    # The Google Drive login. Only the manager reads it: it builds one
     # transport over it and shares that with every part. None when the caller
     # passes a transport to SyftboxManager.from_config instead, as tests do
     # with a mock Drive.
-    connection_config: ConnectionConfig | None = None
+    connection_config: GdriveConnectionConfig | None = None
+    # Which implementation each transport component uses.
+    transport_config: TransportConfig = Field(default_factory=TransportConfig)
 
     datasite_owner_syncer_config: DatasiteOwnerSyncerConfig
     peer_manager_config: PeerManagerConfig
@@ -541,7 +548,7 @@ class SyftboxManager(BaseModelCallbackMixin):
         the peer store and the connection router that holds it, and through
         the router one transport, and its connection, for the whole manager.
 
-        ``transport`` replaces the one ``config.connection_config`` describes.
+        ``transport`` replaces the one ``config`` describes.
         Tests pass one over a mock Drive, some with a fake p2p.
         """
         peer_store = PeerManager.peer_store_from_config(
@@ -592,11 +599,27 @@ class SyftboxManager(BaseModelCallbackMixin):
     def _transport_from_config(config: SyftboxManagerConfig) -> Transport:
         if config.connection_config is None:
             raise ValueError(
-                "The config names no backend: set connection_config, or pass a "
+                "The config names no connection: set connection_config, or pass a "
                 "transport to SyftboxManager.from_config"
             )
-        connection = SyftboxPlatformConnection.from_config(config.connection_config)
-        return connection.as_transport()
+        if not config.transport_config.all_drive():
+            raise NotImplementedError(
+                "Only Google Drive for every transport component is built so far"
+            )
+        drive = GDriveConnection.from_config(config.connection_config)
+        return SyftboxManager._drive_transport(drive)
+
+    @staticmethod
+    def _drive_transport(drive: GDriveConnection) -> Transport:
+        """Every transport component over one Google Drive connection."""
+        return Transport(
+            p2p=DriveP2PConnection(drive),
+            owner_store=DriveOwnerStore(drive),
+            watcher_store=DriveWatcherStore(drive),
+            collections=DriveCollections(drive),
+            peering=DrivePeering(drive),
+            platform=GdriveFilesPlatform(),
+        )
 
     @classmethod
     def for_colab(
@@ -1317,5 +1340,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             new_connection = GDriveConnection.from_service(
                 self.email, connection.drive_service
             )
-            return SyftboxManager.from_config(new_config, new_connection.as_transport())
+            return SyftboxManager.from_config(
+                new_config, SyftboxManager._drive_transport(new_connection)
+            )
         return SyftboxManager.from_config(new_config)

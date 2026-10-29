@@ -21,6 +21,7 @@ from syft.version import SYFT_VERSION
 
 from dataset_test_utils import create_test_project_folder, create_tmp_dataset_files
 from syft.sync.connections.drive.drive_connections import drive_connection
+from syft.sync.syftbox_manager import SyftboxManager
 
 NEW_VERSION = "99.0.0"
 
@@ -69,7 +70,7 @@ def _reinitialize_manager(
     )
     mock_service = MockDriveService(backing_store, email)
     conn = GDriveConnection.from_service(email, mock_service)
-    manager = SyftRDSClient.from_config(config, conn.as_transport())
+    manager = SyftRDSClient.from_config(config, SyftboxManager._drive_transport(conn))
 
     if has_ds_role:
         manager.sync_engine.file_writer.add_callback(

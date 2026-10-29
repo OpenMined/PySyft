@@ -16,7 +16,13 @@ import pytest
 import syft.sync.connections.connection_router as connection_router_module
 from syft.sync.sync import datasite_owner_syncer
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.connections.drive.drive_connections import DriveP2PConnection
+from syft.sync.connections.drive.drive_connections import (
+    DriveCollections,
+    DriveOwnerStore,
+    DriveP2PConnection,
+    DrivePeering,
+    DriveWatcherStore,
+)
 from syft.sync.connections.drive.gdrive_transport import (
     CollectionFolder,
     GDriveConnection,
@@ -65,7 +71,7 @@ def _events_name(ts: float) -> str:
 def pair():
     """DO and DS connections over one mock Drive, with the DS's channels open."""
     do_conn, ds_conn = pair_with_mock_service(DO, DS)
-    ds_conn.as_transport().peering.open_channels(DO)
+    DrivePeering(ds_conn).open_channels(DO)
     return do_conn, ds_conn
 
 
@@ -74,7 +80,7 @@ def pair():
 
 def test_drive_transport_does_every_job():
     do_conn, _ = pair_with_mock_service(DO, DS)
-    transport = do_conn.as_transport()
+    transport = SyftboxManager._drive_transport(do_conn)
     assert isinstance(transport, Transport)
     assert isinstance(transport.p2p, P2PConnection)
     assert isinstance(transport.owner_store, OwnerStore)
@@ -89,11 +95,11 @@ def test_drive_transport_does_every_job():
 
 def test_a_proposed_change_sent_through_p2p_reaches_the_owner_inbox(pair):
     do_conn, ds_conn = pair
-    status = ds_conn.as_transport().p2p.send(
+    status = DriveP2PConnection(ds_conn).send(
         DO, _proposal_name(1.0), b"job", MessageKind.PROPOSED_CHANGES
     )
     assert status is SendStatus.DELIVERED
-    [message] = do_conn.as_transport().p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+    [message] = DriveP2PConnection(do_conn).receive(DS, MessageKind.PROPOSED_CHANGES)
     assert (message.sender, message.kind, message.data) == (
         DS,
         MessageKind.PROPOSED_CHANGES,
@@ -105,10 +111,10 @@ def test_inbox_messages_are_received_oldest_first_up_to_max(pair):
     do_conn, ds_conn = pair
     names = {submitted: _proposal_name(submitted) for submitted in (2.0, 1.0, 3.0)}
     for submitted, name in names.items():
-        ds_conn.as_transport().p2p.send(
+        DriveP2PConnection(ds_conn).send(
             DO, name, f"job {submitted}".encode(), MessageKind.PROPOSED_CHANGES
         )
-    p2p = do_conn.as_transport().p2p
+    p2p = DriveP2PConnection(do_conn)
 
     received = p2p.receive(DS, MessageKind.PROPOSED_CHANGES, max_messages=2)
     assert [(m.msg_id, m.data) for m in received] == [
@@ -155,7 +161,7 @@ def _count_drive_calls(monkeypatch) -> Counter:
 def _send_proposals(ds_conn, count: int) -> list[str]:
     names = [_proposal_name(float(i)) for i in range(count)]
     for name in names:
-        ds_conn.as_transport().p2p.send(
+        DriveP2PConnection(ds_conn).send(
             DO, name, name.encode(), MessageKind.PROPOSED_CHANGES
         )
     return names
@@ -163,7 +169,7 @@ def _send_proposals(ds_conn, count: int) -> list[str]:
 
 def test_receiving_inbox_lists_once_and_downloads_each_message(pair, monkeypatch):
     do_conn, ds_conn = pair
-    p2p = do_conn.as_transport().p2p
+    p2p = DriveP2PConnection(do_conn)
     p2p.receive(DS, MessageKind.PROPOSED_CHANGES)  # finds the inbox folder once
     names = _send_proposals(ds_conn, 3)
 
@@ -191,14 +197,14 @@ def test_inbox_messages_download_at_the_same_time(pair, monkeypatch):
         return original_download(self, file_id)
 
     monkeypatch.setattr(GDriveConnection, "download_file", slow_download)
-    do_conn.as_transport().p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+    DriveP2PConnection(do_conn).receive(DS, MessageKind.PROPOSED_CHANGES)
     assert most_running[0] > 1
 
 
 def test_marking_inbox_message_processed_is_one_drive_call(pair, monkeypatch):
     do_conn, ds_conn = pair
     _send_proposals(ds_conn, 2)
-    p2p = do_conn.as_transport().p2p
+    p2p = DriveP2PConnection(do_conn)
     first, second = p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
     p2p.mark_processed(first)  # finds or creates the archive folder once
 
@@ -212,7 +218,7 @@ def test_marking_inbox_message_processed_is_one_drive_call(pair, monkeypatch):
 def test_marking_inbox_messages_processed_is_one_batch_request(pair, monkeypatch):
     do_conn, ds_conn = pair
     _send_proposals(ds_conn, 4)
-    p2p = do_conn.as_transport().p2p
+    p2p = DriveP2PConnection(do_conn)
     first, *rest = p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
     p2p.mark_processed(first)  # finds or creates the archive folder once
 
@@ -226,7 +232,7 @@ def test_marking_inbox_messages_processed_is_one_batch_request(pair, monkeypatch
 def test_move_that_fails_in_batch_warns_and_rest_are_archived(pair):
     do_conn, ds_conn = pair
     _send_proposals(ds_conn, 2)
-    p2p = do_conn.as_transport().p2p
+    p2p = DriveP2PConnection(do_conn)
     first, second = p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
     gone = first.model_copy(update={"handle": "no-such-file"})
 
@@ -257,7 +263,7 @@ def test_inbox_message_that_fails_to_download_is_skipped_with_warning(
 
     monkeypatch.setattr(GDriveConnection, "download_file", download_all_but_broken)
     with pytest.warns(UserWarning, match=f"Skipped inbox message {names[1]}"):
-        received = do_conn.as_transport().p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+        received = DriveP2PConnection(do_conn).receive(DS, MessageKind.PROPOSED_CHANGES)
 
     assert [m.msg_id for m in received] == [names[0], names[2]]
 
@@ -267,15 +273,15 @@ def test_receiving_inbox_while_drive_is_down_raises(pair, monkeypatch):
     _send_proposals(ds_conn, 2)
     monkeypatch.setattr(GDriveConnection, "download_file", _drive_down)
     with pytest.raises(TransportUnavailableError):
-        do_conn.as_transport().p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+        DriveP2PConnection(do_conn).receive(DS, MessageKind.PROPOSED_CHANGES)
 
 
 def test_processed_inbox_message_is_not_received_again(pair):
     do_conn, ds_conn = pair
-    ds_conn.as_transport().p2p.send(
+    DriveP2PConnection(ds_conn).send(
         DO, _proposal_name(1.0), b"job", MessageKind.PROPOSED_CHANGES
     )
-    p2p = do_conn.as_transport().p2p
+    p2p = DriveP2PConnection(do_conn)
 
     [message] = p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
     p2p.mark_processed(message)
@@ -285,11 +291,11 @@ def test_processed_inbox_message_is_not_received_again(pair):
 def test_file_events_sent_through_p2p_reach_the_scientist_outbox(pair):
     do_conn, ds_conn = pair
     name = _events_name(1.0)
-    status = do_conn.as_transport().p2p.send(
+    status = DriveP2PConnection(do_conn).send(
         DS, name, b"results", MessageKind.FILE_EVENTS
     )
     assert status is SendStatus.DELIVERED
-    p2p = ds_conn.as_transport().p2p
+    p2p = DriveP2PConnection(ds_conn)
     listed = p2p.outbox_message_metadatas(DO, since_timestamp=None)
     assert [m["file_name"] for m in listed] == [name]
     assert p2p.fetch_message(listed[0]["file_id"]) == b"results"
@@ -298,10 +304,10 @@ def test_file_events_sent_through_p2p_reach_the_scientist_outbox(pair):
 
 def test_a_p2p_copy_for_another_thread_reads_the_same_outbox(pair):
     do_conn, ds_conn = pair
-    do_conn.as_transport().p2p.send(
+    DriveP2PConnection(do_conn).send(
         DS, _events_name(1.0), b"results", MessageKind.FILE_EVENTS
     )
-    p2p = ds_conn.as_transport().p2p
+    p2p = DriveP2PConnection(ds_conn)
     [listed] = p2p.outbox_message_metadatas(DO, since_timestamp=None)
 
     copy = p2p.clone_for_thread()
@@ -312,17 +318,17 @@ def test_a_p2p_copy_for_another_thread_reads_the_same_outbox(pair):
 def test_an_unknown_message_kind_is_refused(pair):
     do_conn, _ = pair
     with pytest.raises(ValueError):
-        do_conn.as_transport().p2p.send(DS, _events_name(1.0), b"x", "unknown-kind")
+        DriveP2PConnection(do_conn).send(DS, _events_name(1.0), b"x", "unknown-kind")
 
 
 def test_drive_never_has_sends_waiting_for_confirmation(pair):
     do_conn, _ = pair
-    assert do_conn.as_transport().p2p.delivered() == []
+    assert DriveP2PConnection(do_conn).delivered() == []
 
 
 def test_receiving_file_events_through_p2p_is_not_built_yet(pair):
     _, ds_conn = pair
-    p2p = ds_conn.as_transport().p2p
+    p2p = DriveP2PConnection(ds_conn)
     message = RawMessage(sender=DO, msg_id="m", kind=MessageKind.FILE_EVENTS, data=b"")
     with pytest.raises(NotImplementedError):
         p2p.receive(DO, MessageKind.FILE_EVENTS)
@@ -335,7 +341,7 @@ def test_receiving_file_events_through_p2p_is_not_built_yet(pair):
 
 def test_owner_event_log_is_read_oldest_first(pair):
     do_conn, _ = pair
-    store = do_conn.as_transport().owner_store
+    store = DriveOwnerStore(do_conn)
     # Written out of order: Drive lists by name, newest first.
     second = store.append_event(_events_name(2.0), b"second")
     first = store.append_event(_events_name(1.0), b"first")
@@ -351,7 +357,7 @@ def test_owner_event_log_is_read_oldest_first(pair):
 
 def test_owner_event_count_matches_the_listed_handles(pair):
     do_conn, _ = pair
-    store = do_conn.as_transport().owner_store
+    store = DriveOwnerStore(do_conn)
     store.append_event(_events_name(1.0), b"event")
     store.append_event("syfteventsmessagev3_not-a-valid-name.tar.gz", b"junk")
 
@@ -360,7 +366,7 @@ def test_owner_event_count_matches_the_listed_handles(pair):
 
 def test_owner_store_keeps_the_newest_full_checkpoint(pair):
     do_conn, _ = pair
-    store = do_conn.as_transport().owner_store
+    store = DriveOwnerStore(do_conn)
     store.put_checkpoint("checkpoint_1.0.tar.gz", b"one")
     store.put_checkpoint("checkpoint_2.0.tar.gz", b"two")
     assert store.latest_checkpoint() == b"two"
@@ -368,7 +374,7 @@ def test_owner_store_keeps_the_newest_full_checkpoint(pair):
 
 def test_owner_store_counts_and_deletes_incremental_checkpoints(pair):
     do_conn, _ = pair
-    store = do_conn.as_transport().owner_store
+    store = DriveOwnerStore(do_conn)
     store.put_incremental("incremental_checkpoint_1_1.0.tar.gz", b"inc")
     assert store.incremental_count() == 1
     assert store.next_incremental_sequence() == 2
@@ -379,7 +385,7 @@ def test_owner_store_counts_and_deletes_incremental_checkpoints(pair):
 
 def test_owner_store_overwrites_and_deletes_the_rolling_state(pair):
     do_conn, _ = pair
-    store = do_conn.as_transport().owner_store
+    store = DriveOwnerStore(do_conn)
     store.put_rolling_state("rolling_state_1.0.tar.gz", b"state 1")
     store.put_rolling_state("rolling_state_2.0.tar.gz", b"state 2")
     assert store.get_rolling_state() == b"state 2"
@@ -389,7 +395,7 @@ def test_owner_store_overwrites_and_deletes_the_rolling_state(pair):
 
 def test_owner_store_files_carry_the_syft_tag(pair):
     do_conn, _ = pair
-    store = do_conn.as_transport().owner_store
+    store = DriveOwnerStore(do_conn)
     store.put_checkpoint("checkpoint_1.0.tar.gz", b"full")
     store.put_incremental("incremental_checkpoint_1_1.0.tar.gz", b"inc")
     store.put_rolling_state("rolling_state_1.0.tar.gz", b"state")
@@ -410,7 +416,7 @@ def test_owner_store_files_carry_the_syft_tag(pair):
 def test_watcher_storage_on_drive_is_not_built_yet(pair):
     _, ds_conn = pair
     with pytest.raises(NotImplementedError):
-        ds_conn.as_transport().watcher_store.latest_checkpoint(DO)
+        DriveWatcherStore(ds_conn).latest_checkpoint(DO)
 
 
 # -- Collections ------------------------------------------------------------------
@@ -418,26 +424,26 @@ def test_watcher_storage_on_drive_is_not_built_yet(pair):
 
 def test_a_published_collection_is_listed_and_downloaded_by_its_reader(pair):
     do_conn, ds_conn = pair
-    owner, reader = do_conn.as_transport(), ds_conn.as_transport()
+    owner, reader = DriveCollections(do_conn), DriveCollections(ds_conn)
     files = {"mock.csv": b"a,b\n1,2\n"}
     content_hash = CollectionFolder.compute_hash(files)
 
-    owner.collections.create(DATASETS, "census", content_hash, DO)
-    owner.collections.upload(DATASETS, "census", content_hash, files)
-    owner.collections.grant_read(DATASETS, "census", content_hash, [DS])
+    owner.create(DATASETS, "census", content_hash, DO)
+    owner.upload(DATASETS, "census", content_hash, files)
+    owner.grant_read(DATASETS, "census", content_hash, [DS])
 
-    assert owner.collections.list_mine(DATASETS) == ["census"]
-    mine = owner.collections.list_mine_with_permissions(DATASETS)
+    assert owner.list_mine(DATASETS) == ["census"]
+    mine = owner.list_mine_with_permissions(DATASETS)
     assert [c.tag for c in mine] == ["census"]
 
-    shared = reader.collections.list_shared_with_me(DATASETS)
+    shared = reader.list_shared_with_me(DATASETS)
     assert [(c["owner_email"], c["tag"]) for c in shared] == [(DO, "census")]
-    assert reader.collections.download(DATASETS, "census", content_hash, DO) == files
-    [listed] = reader.collections.list_files(DATASETS, "census", content_hash, DO)
-    assert reader.collections.fetch_file(listed["file_id"]) == files["mock.csv"]
+    assert reader.download(DATASETS, "census", content_hash, DO) == files
+    [listed] = reader.list_files(DATASETS, "census", content_hash, DO)
+    assert reader.fetch_file(listed["file_id"]) == files["mock.csv"]
 
-    owner.collections.delete(DATASETS, "census")
-    assert owner.collections.list_mine(DATASETS) == []
+    owner.delete(DATASETS, "census")
+    assert owner.list_mine(DATASETS) == []
 
 
 # -- Peering ----------------------------------------------------------------------
@@ -445,21 +451,21 @@ def test_a_published_collection_is_listed_and_downloaded_by_its_reader(pair):
 
 def test_peering_finds_the_peer_that_opened_channels(pair):
     do_conn, _ = pair
-    peering = do_conn.as_transport().peering
+    peering = DrivePeering(do_conn)
     assert peering.whoami() == DO
     assert DS in peering.incoming_requests()
 
 
 def test_peering_keeps_the_peer_registry(pair):
     do_conn, _ = pair
-    peering = do_conn.as_transport().peering
+    peering = DrivePeering(do_conn)
     peering.update_peer_registry(DS, "accepted")
     assert peering.read_peer_registry(force_download=True)[DS]["state"] == "accepted"
 
 
 def test_peer_registry_update_while_drive_is_down_keeps_other_peers(pair, monkeypatch):
     do_conn, _ = pair
-    peering = do_conn.as_transport().peering
+    peering = DrivePeering(do_conn)
     peering.update_peer_registry(DS, "accepted")
     do_conn._peers_json_cache = None  # a new process has no cache
 
@@ -472,37 +478,37 @@ def test_peer_registry_update_while_drive_is_down_keeps_other_peers(pair, monkey
 
 
 def test_reading_own_key_bundle_creates_no_folder(pair):
-    owner = pair[0].as_transport()
-    assert owner.peering.read_own_key_bundle(DS) is None
+    owner = DrivePeering(pair[0])
+    assert owner.read_own_key_bundle(DS) is None
     assert pair[0]._find_encryption_bundles_folder_id() is None
 
 
 def test_peering_publishes_a_key_bundle_both_sides_can_read(pair):
     do_conn, ds_conn = pair
-    owner, scientist = do_conn.as_transport(), ds_conn.as_transport()
+    owner, scientist = DrivePeering(do_conn), DrivePeering(ds_conn)
     bundle = '{"bundle": "do-public-key"}'
 
-    owner.peering.publish_key_bundle(DS, bundle)
-    owner.peering.grant_key_bundle_read(DS)
+    owner.publish_key_bundle(DS, bundle)
+    owner.grant_key_bundle_read(DS)
 
-    assert scientist.peering.read_peer_key_bundle(DO) == bundle
-    assert owner.peering.read_own_key_bundle(DS) == bundle
-    assert owner.peering.read_own_key_bundle("someone-else@example.com") is None
+    assert scientist.read_peer_key_bundle(DO) == bundle
+    assert owner.read_own_key_bundle(DS) == bundle
+    assert owner.read_own_key_bundle("someone-else@example.com") is None
 
 
 def test_peering_publishes_peer_info_the_peer_can_read(pair):
     do_conn, ds_conn = pair
-    owner, scientist = do_conn.as_transport(), ds_conn.as_transport()
+    owner, scientist = DrivePeering(do_conn), DrivePeering(ds_conn)
     info = PeerInfo(
         version_info=VersionInfo.current(),
         encryption_policy=EncryptionPolicy.REQUIRED,
     )
 
-    owner.peering.publish_peer_info(info)
-    owner.peering.grant_peer_info_read(DS, info)
+    owner.publish_peer_info(info)
+    owner.grant_peer_info_read(DS, info)
 
-    assert owner.peering.read_own_peer_info() == info
-    assert scientist.peering.read_peer_info(DO) == info
+    assert owner.read_own_peer_info() == info
+    assert scientist.read_peer_info(DO) == info
 
 
 # -- ConnectionRouter -------------------------------------------------------------
@@ -511,7 +517,7 @@ def test_peering_publishes_peer_info_the_peer_can_read(pair):
 def _router_with_mock_p2p():
     do_conn, _ = pair_with_mock_service(DO, DS)
     p2p = Mock(spec=DriveP2PConnection)
-    transport = do_conn.as_transport().model_copy(update={"p2p": p2p})
+    transport = SyftboxManager._drive_transport(do_conn).model_copy(update={"p2p": p2p})
     router = ConnectionRouter(transport=transport, peer_store=_store_knowing(DO, DS))
     return router, p2p
 

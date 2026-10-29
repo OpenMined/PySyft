@@ -4,6 +4,7 @@ from syft.sync.connections.drive.mock_drive_service import (
     MockDriveService,
 )
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.transport.protocols import Transport
 
 
@@ -64,7 +65,9 @@ def create_clients(configs) -> tuple:
 
 def _mock_transport(backing_store: MockDriveBackingStore, email: str) -> Transport:
     service = MockDriveService(backing_store, email)
-    return GDriveConnection.from_service(email, service).as_transport()
+    return SyftboxManager._drive_transport(
+        GDriveConnection.from_service(email, service)
+    )
 
 
 def setup_callbacks(managers: tuple):

@@ -16,7 +16,6 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Self
 
 from syft.sync.connections.drive.gdrive_retry import raise_unavailable
-from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.transport.exceptions import TransportUnavailableError
 from syft.sync.transport.protocols import (
     Collections,
@@ -65,8 +64,8 @@ def _require_inbox_kind(kind: MessageKind) -> None:
         )
 
 
-class _DrivePart:
-    """A transport part over one Drive connection."""
+class DriveTransportComponent:
+    """A transport component over one Google Drive connection."""
 
     def __init__(self, connection: GDriveConnection):
         self._conn = connection
@@ -79,7 +78,7 @@ class _DrivePart:
         self._conn.reset_caches()
 
 
-class DriveP2PConnection(_DrivePart, P2PConnection):
+class DriveP2PConnection(DriveTransportComponent, P2PConnection):
     """Messages through the shared inbox and outbox folders.
 
     A proposed change goes to the data owner's inbox and file events go to the
@@ -192,7 +191,7 @@ class DriveP2PConnection(_DrivePart, P2PConnection):
         self._conn.delete_multiple_files_by_ids(handles)
 
 
-class DriveOwnerStore(_DrivePart, OwnerStore):
+class DriveOwnerStore(DriveTransportComponent, OwnerStore):
     """The data owner's own folders in /SyftBox: event log, checkpoints,
     rolling state."""
 
@@ -252,7 +251,7 @@ class DriveOwnerStore(_DrivePart, OwnerStore):
         return len(file_ids)
 
 
-class DriveWatcherStore(_DrivePart, WatcherStore):
+class DriveWatcherStore(DriveTransportComponent, WatcherStore):
     """The data scientist's storage on Drive. Not built yet: today the data
     scientist keeps what it received in a local cache."""
 
@@ -272,7 +271,7 @@ class DriveWatcherStore(_DrivePart, WatcherStore):
         raise NotImplementedError("Watcher storage on Drive is not built yet")
 
 
-class DriveCollections(_DrivePart, Collections):
+class DriveCollections(DriveTransportComponent, Collections):
     """Collection folders in /SyftBox, shared by Drive permission."""
 
     def create(self, prefix: str, tag: str, content_hash: str, owner_email: str) -> str:
@@ -326,7 +325,7 @@ class DriveCollections(_DrivePart, Collections):
         )
 
 
-class DrivePeering(_DrivePart, Peering):
+class DrivePeering(DriveTransportComponent, Peering):
     """Identity from the Google account; channels, the peer list, key bundles
     and version files in /SyftBox."""
 
@@ -372,19 +371,7 @@ class DrivePeering(_DrivePart, Peering):
         self._conn.share_peer_info_file_with_peer(peer, peer_info)
 
 
-def drive_transport(connection: GDriveConnection) -> Transport:
-    """The transport jobs over one Drive connection."""
-    return Transport(
-        p2p=DriveP2PConnection(connection),
-        owner_store=DriveOwnerStore(connection),
-        watcher_store=DriveWatcherStore(connection),
-        collections=DriveCollections(connection),
-        peering=DrivePeering(connection),
-        platform=GdriveFilesPlatform(),
-    )
-
-
 def drive_connection(transport: Transport) -> GDriveConnection:
     """The Drive connection under ``transport``, for tests and tools that need
-    Drive itself. The sync code reaches Drive only through the parts."""
+    Drive itself. The sync code reaches Drive only through the components."""
     return transport.owner_store._conn

@@ -493,7 +493,7 @@ def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:
     conn.add_peer(do_manager.email)
     _add_known_peer(do_manager, email)
     return ConnectionRouter(
-        transport=conn.as_transport(),
+        transport=SyftboxManager._drive_transport(conn),
         peer_store=_store_knowing(email, do_manager.email),
     )
 

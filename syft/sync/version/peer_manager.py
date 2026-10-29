@@ -279,7 +279,7 @@ class PeerManager(BaseModel):
         Raises:
             TransportUnavailableError: when the backend cannot be reached.
         """
-        # A copy per thread: the backend's client may not be thread-safe
+        # A copy per thread: the connection may not be thread-safe
         peering = self.connection_router.transport.peering.clone_for_thread()
         try:
             return (peer_email, peering.read_peer_info(peer_email))

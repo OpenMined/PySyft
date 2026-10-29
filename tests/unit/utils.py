@@ -12,6 +12,7 @@ from syft.sync.utils.syftbox_utils import get_event_hash_from_content
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.peers.peer_store import PeerStore
+from syft.sync.syftbox_manager import SyftboxManager
 
 
 def get_mock_event(path: str = "email@email.com/test.job") -> FileChangeEvent:
@@ -227,5 +228,6 @@ def router_with_mock_connection(email: str) -> ConnectionRouter:
     ``SyftboxManager.from_config`` builds."""
     connection, _ = pair_with_mock_service(email, "peer@example.com")
     return ConnectionRouter(
-        transport=connection.as_transport(), peer_store=PeerStore(email=email)
+        transport=SyftboxManager._drive_transport(connection),
+        peer_store=PeerStore(email=email),
     )

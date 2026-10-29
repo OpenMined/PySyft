@@ -31,7 +31,6 @@ from syft.sync.connections.base_connection import (
     FileCollection,
     SyftboxPlatformConnection,
 )
-from syft.sync.connections.drive.drive_connections import drive_transport
 from syft.sync.connections.drive.gdrive_retry import (
     batch_execute_with_retries,
     execute_with_retries,
@@ -453,10 +452,6 @@ class GDriveConnection(SyftboxPlatformConnection):
         if warm_syftbox_folder_id_cache:
             self.get_personal_syftbox_folder_id()
         self._is_setup = True
-
-    def as_transport(self):
-        """This connection as the transport jobs. See ``drive_connections.py``."""
-        return drive_transport(self)
 
     def clone_for_thread(self) -> "GDriveConnection":
         """A connection safe to use from another thread: the Drive client is not."""
