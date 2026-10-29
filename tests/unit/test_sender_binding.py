@@ -69,8 +69,8 @@ def test_sender_email_in_body_cannot_claim_the_datasite_owner():
 def test_spoofed_sender_does_not_name_an_archive_folder():
     """The DO archives a handled message under the peer that sent it.
 
-    `owner_remove_proposed_filechange_message_from_inbox` builds the archive
-    folder name from an email, and creates the folder. Read that email from the
+    `owner_archive_inbox_file` builds the archive folder name from an email,
+    and creates the folder. Read that email from the
     transport, so a claim in the body cannot name a folder in the DO's Drive.
     """
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()

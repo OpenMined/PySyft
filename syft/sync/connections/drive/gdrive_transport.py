@@ -5,6 +5,7 @@ import json
 import logging
 import pickle
 import re
+import warnings
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
@@ -67,6 +68,8 @@ if TYPE_CHECKING:
 
 # Timeout for Google API requests (in seconds)
 GOOGLE_API_TIMEOUT = 120  # 2 minutes
+# Google Drive batch API has a limit of 100 requests per batch
+DRIVE_BATCH_SIZE = 100
 
 SYFTBOX_FOLDER = "SyftBox"
 GOOGLE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
@@ -395,12 +398,18 @@ class GDriveConnection(SyftboxPlatformConnection):
         return res
 
     @classmethod
-    def from_service(cls, email: str, mock_service: Any) -> "GDriveConnection":
+    def from_service(
+        cls,
+        email: str,
+        mock_service: Any,
+        warm_syftbox_folder_id_cache: bool = True,
+    ) -> "GDriveConnection":
         """Create a GDriveConnection using a mock drive service for testing.
 
         Args:
             email: Email of the user
             mock_service: MockDriveService instance to use instead of real API
+            warm_syftbox_folder_id_cache: See ``setup``.
 
         Returns:
             GDriveConnection configured with the mock service
@@ -412,7 +421,10 @@ class GDriveConnection(SyftboxPlatformConnection):
         res = cls(email=email, token_path=None)
         if isinstance(mock_service, MockDriveService):
             mock_service = MockDriveService(mock_service._backing_store, email)
-        res.setup(drive_service=mock_service)
+        res.setup(
+            drive_service=mock_service,
+            warm_syftbox_folder_id_cache=warm_syftbox_folder_id_cache,
+        )
         return res
 
     def setup(
@@ -457,7 +469,9 @@ class GDriveConnection(SyftboxPlatformConnection):
         )
 
         if isinstance(self.drive_service, MockDriveService):
-            new_conn = GDriveConnection.from_service(self.email, self.drive_service)
+            new_conn = GDriveConnection.from_service(
+                self.email, self.drive_service, warm_syftbox_folder_id_cache=False
+            )
         else:
             new_conn = GDriveConnection.from_token_path(
                 self.email, self.token_path, warm_syftbox_folder_id_cache=False
@@ -833,44 +847,44 @@ class GDriveConnection(SyftboxPlatformConnection):
         fname = events_message.message_filepath.as_string()
         self.owner_write_raw_bytes_to_outbox(recipient, fname, data)
 
-    def owner_remove_proposed_filechange_message_from_inbox(
-        self,
-        proposed_filechange_message: ProposedFileChangesMessage,
-        sender_email: str,
-    ):
-        """Archive a handled message. ``sender_email`` is the peer it came from.
-
-        The caller reads that email from the transport. The ``sender_email``
-        field of the message is sender-supplied, and it names the archive folder,
-        so this method never reads it.
-        """
-        fname = proposed_filechange_message.message_filename.as_string()
-
-        # Use cached platform_id if available, otherwise fall back to name-based lookup
-        gdrive_id = proposed_filechange_message.platform_id
-        if gdrive_id is None:
-            gdrive_id = self.get_inbox_proposed_event_id_from_name(sender_email, fname)
-        if gdrive_id is None:
-            raise ValueError(
-                f"Event {fname} not found in inbox, event should already be created for this type of connection"
-            )
-        self.owner_archive_inbox_file(gdrive_id, sender_email)
-
     def owner_archive_inbox_file(self, file_id: str, sender_email: str) -> None:
-        """Move the inbox file ``file_id`` from ``sender_email`` to its archive folder."""
-        file_info = execute_with_retries(
-            self.drive_service.files().get(fileId=file_id, fields="parents")
-        )
-        previous_parents = ",".join(file_info.get("parents", []))
-        archive_folder_id = self.owner_get_archive_folder_id(sender_email)
-        execute_with_retries(
-            self.drive_service.files().update(
-                fileId=file_id,
-                addParents=archive_folder_id,
-                removeParents=previous_parents,
-                fields="id, parents",
-                supportsAllDrives=True,
-            )
+        """Move the inbox file ``file_id`` from ``sender_email`` to its archive folder.
+
+        ``sender_email`` names the archive folder, so the caller reads it from
+        the transport, never from the sender-supplied message body.
+        """
+        execute_with_retries(self._archive_inbox_file_request(file_id, sender_email))
+
+    def owner_archive_inbox_files(self, files: list[tuple[str, str]]) -> None:
+        """Move each inbox file, given as ``(file_id, sender_email)``, to its
+        sender's archive folder, up to ``DRIVE_BATCH_SIZE`` moves per request.
+
+        A move that fails is warned about and its file stays in the inbox.
+        """
+
+        def callback(request_id, response, exception):
+            if exception is not None:
+                warnings.warn(
+                    f"Could not archive inbox file {request_id}: {exception!r}"
+                )
+
+        for i in range(0, len(files), DRIVE_BATCH_SIZE):
+            batch = self.drive_service.new_batch_http_request(callback=callback)
+            for file_id, sender_email in files[i : i + DRIVE_BATCH_SIZE]:
+                request = self._archive_inbox_file_request(file_id, sender_email)
+                batch.add(request, request_id=file_id)
+            batch_execute_with_retries(batch)
+
+    def _archive_inbox_file_request(self, file_id: str, sender_email: str):
+        """The request that moves an inbox file to its archive folder. The inbox
+        folder is the file's only parent and both folder ids are cached, so the
+        move is one Drive call."""
+        return self.drive_service.files().update(
+            fileId=file_id,
+            addParents=self.owner_get_archive_folder_id(sender_email),
+            removeParents=self._get_own_datasite_inbox_id(sender_email),
+            fields="id",
+            supportsAllDrives=True,
         )
 
     def _has_permission(self, file_id: str, email: str) -> bool:
@@ -968,15 +982,12 @@ class GDriveConnection(SyftboxPlatformConnection):
         return items[0]["id"] if items else None
 
     def owner_get_archive_folder_id(self, sender_email: str) -> str:
-        if sender_email in self.archive_folder_id_cache:
-            return self.archive_folder_id_cache[sender_email]
-        else:
-            archive_folder_id = self.get_archive_folder_id_from_drive(sender_email)
-            if archive_folder_id:
-                self.archive_folder_id_cache[sender_email] = archive_folder_id
-                return archive_folder_id
-            else:
-                return self.create_archive_folder(sender_email)
+        if sender_email not in self.archive_folder_id_cache:
+            archive_folder_id = self.get_archive_folder_id_from_drive(
+                sender_email
+            ) or self.create_archive_folder(sender_email)
+            self.archive_folder_id_cache[sender_email] = archive_folder_id
+        return self.archive_folder_id_cache[sender_email]
 
     @staticmethod
     def _extract_timestamp_from_filename(filename: str) -> float | None:
@@ -1097,35 +1108,19 @@ class GDriveConnection(SyftboxPlatformConnection):
                 continue
         return res
 
-    def owner_download_next_raw_proposed_message_from_inbox(
-        self, sender_email: str
-    ) -> tuple[bytes, str] | None:
+    def owner_get_inbox_file_metadatas(self, sender_email: str) -> list[dict]:
+        """The messages in the inbox from ``sender_email``, oldest first, each
+        with ``file_id`` and ``file_name``, without downloading them."""
         inbox_folder_id = self._get_own_datasite_inbox_id(sender_email)
         if inbox_folder_id is None:
             raise ValueError(f"Inbox folder for {sender_email} not found")
         file_metadatas = self.get_file_metadatas_from_folder(inbox_folder_id)
         valid_file_names = self._get_valid_messages_from_file_metadatas(file_metadatas)
-        if len(valid_file_names) == 0:
-            return None
-        first_file_name = sorted(valid_file_names, key=lambda x: x.submitted_timestamp)[
-            0
+        name_to_id = {f["name"]: f["id"] for f in file_metadatas}
+        return [
+            {"file_id": name_to_id[name.as_string()], "file_name": name.as_string()}
+            for name in sorted(valid_file_names, key=lambda x: x.submitted_timestamp)
         ]
-        first_file_id = [
-            x for x in file_metadatas if x["name"] == first_file_name.as_string()
-        ][0]["id"]
-        raw_data = self.download_file(first_file_id)
-        return raw_data, first_file_id
-
-    def owner_get_next_proposed_filechange_message(
-        self, sender_email: str
-    ) -> ProposedFileChangesMessage | None:
-        result = self.owner_download_next_raw_proposed_message_from_inbox(sender_email)
-        if result is None:
-            return None
-        raw_data, file_id = result
-        msg = ProposedFileChangesMessage.from_compressed_data(raw_data)
-        msg.platform_id = file_id
-        return msg
 
     def _find_p2p_folder_id(
         self,
@@ -1317,10 +1312,8 @@ class GDriveConnection(SyftboxPlatformConnection):
                     f"Failed to delete {request_id}: error status {response.get('status')}"
                 )
 
-        # Google Drive batch API has a limit of 100 requests per batch
-        BATCH_SIZE = 100
-        for i in range(0, len(file_ids), BATCH_SIZE):
-            chunk = file_ids[i : i + BATCH_SIZE]
+        for i in range(0, len(file_ids), DRIVE_BATCH_SIZE):
+            chunk = file_ids[i : i + DRIVE_BATCH_SIZE]
             batch = self.drive_service.new_batch_http_request(callback=callback)
             for file_id in chunk:
                 batch.add(self.drive_service.files().delete(fileId=file_id))
@@ -1558,17 +1551,6 @@ class GDriveConnection(SyftboxPlatformConnection):
         items = results.get("files", [])
         return items[0]["id"] if items else None
 
-    def get_inbox_proposed_event_id_from_name(
-        self, sender_email: str, name: str
-    ) -> str | None:
-        inbox_folder_id = self._get_own_datasite_inbox_id(sender_email)
-        query = f"name='{name}' and '{inbox_folder_id}' in parents and trashed=false"
-        results = execute_with_retries(
-            self.drive_service.files().list(q=query, fields="files(id, name)")
-        )
-        items = results.get("files", [])
-        return items[0]["id"] if items else None
-
     # =========================================================================
     # GENERIC COLLECTION METHODS (parameterized on `prefix`)
     #
@@ -1631,9 +1613,8 @@ class GDriveConnection(SyftboxPlatformConnection):
             if exception and "alreadyShared" not in str(exception):
                 raise exception
 
-        BATCH_SIZE = 100
-        for i in range(0, len(users), BATCH_SIZE):
-            chunk = users[i : i + BATCH_SIZE]
+        for i in range(0, len(users), DRIVE_BATCH_SIZE):
+            chunk = users[i : i + DRIVE_BATCH_SIZE]
             batch = self.drive_service.new_batch_http_request(callback=callback)
             for user_email in chunk:
                 permission = {

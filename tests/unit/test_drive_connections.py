@@ -5,7 +5,10 @@ what each job promises, on the mock Drive service the rest of the suite uses.
 """
 
 import inspect
+import threading
+import time
 import uuid
+from collections import Counter
 from unittest.mock import Mock
 
 import pytest
@@ -18,6 +21,7 @@ from syft.sync.connections.drive.gdrive_transport import (
     CollectionFolder,
     GDriveConnection,
 )
+from syft.sync.connections.drive import mock_drive_service
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.events.file_change_event import FileChangeEventsMessage
@@ -90,20 +94,193 @@ def test_a_proposed_change_sent_through_p2p_reaches_the_owner_inbox(pair):
         DO, _proposal_name(1.0), b"job", MessageKind.PROPOSED_CHANGES
     )
     assert status is SendStatus.DELIVERED
-    data, _ = do_conn.as_transport().p2p.next_inbox_message(DS)
-    assert data == b"job"
+    [message] = do_conn.as_transport().p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+    assert (message.sender, message.kind, message.data) == (
+        DS,
+        MessageKind.PROPOSED_CHANGES,
+        b"job",
+    )
 
 
-def test_an_archived_inbox_message_is_not_read_again(pair):
+def test_inbox_messages_are_received_oldest_first_up_to_max(pair):
+    do_conn, ds_conn = pair
+    names = {submitted: _proposal_name(submitted) for submitted in (2.0, 1.0, 3.0)}
+    for submitted, name in names.items():
+        ds_conn.as_transport().p2p.send(
+            DO, name, f"job {submitted}".encode(), MessageKind.PROPOSED_CHANGES
+        )
+    p2p = do_conn.as_transport().p2p
+
+    received = p2p.receive(DS, MessageKind.PROPOSED_CHANGES, max_messages=2)
+    assert [(m.msg_id, m.data) for m in received] == [
+        (names[1.0], b"job 1.0"),
+        (names[2.0], b"job 2.0"),
+    ]
+
+
+def _count_drive_calls(monkeypatch) -> Counter:
+    """Count mock Drive calls by kind: list, get, update, batch and get_media.
+    A batch request also counts each update inside it."""
+    calls = Counter()
+    lock = threading.Lock()
+
+    def count(kind: str) -> None:
+        with lock:
+            calls[kind] += 1
+
+    for kind, request_class in (
+        ("list", mock_drive_service.MockListRequest),
+        ("get", mock_drive_service.MockGetRequest),
+        ("update", mock_drive_service.MockUpdateRequest),
+        ("batch", mock_drive_service.MockBatchHttpRequest),
+    ):
+        original = request_class.execute
+
+        def counted(self, *args, _kind=kind, _original=original, **kwargs):
+            count(_kind)
+            return _original(self, *args, **kwargs)
+
+        monkeypatch.setattr(request_class, "execute", counted)
+    original_get_media = mock_drive_service.MockFilesResource.get_media
+
+    def counted_get_media(self, *args, **kwargs):
+        count("get_media")
+        return original_get_media(self, *args, **kwargs)
+
+    monkeypatch.setattr(
+        mock_drive_service.MockFilesResource, "get_media", counted_get_media
+    )
+    return calls
+
+
+def _send_proposals(ds_conn, count: int) -> list[str]:
+    names = [_proposal_name(float(i)) for i in range(count)]
+    for name in names:
+        ds_conn.as_transport().p2p.send(
+            DO, name, name.encode(), MessageKind.PROPOSED_CHANGES
+        )
+    return names
+
+
+def test_receiving_inbox_lists_once_and_downloads_each_message(pair, monkeypatch):
+    do_conn, ds_conn = pair
+    p2p = do_conn.as_transport().p2p
+    p2p.receive(DS, MessageKind.PROPOSED_CHANGES)  # finds the inbox folder once
+    names = _send_proposals(ds_conn, 3)
+
+    calls = _count_drive_calls(monkeypatch)
+    received = p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+
+    assert [(m.msg_id, m.data) for m in received] == [(n, n.encode()) for n in names]
+    assert calls == Counter(list=1, get_media=3)
+
+
+def test_inbox_messages_download_at_the_same_time(pair, monkeypatch):
+    do_conn, ds_conn = pair
+    _send_proposals(ds_conn, 3)
+    running, most_running = [0], [0]
+    lock = threading.Lock()
+    original_download = GDriveConnection.download_file
+
+    def slow_download(self, file_id: str) -> bytes:
+        with lock:
+            running[0] += 1
+            most_running[0] = max(most_running[0], running[0])
+        time.sleep(0.05)
+        with lock:
+            running[0] -= 1
+        return original_download(self, file_id)
+
+    monkeypatch.setattr(GDriveConnection, "download_file", slow_download)
+    do_conn.as_transport().p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+    assert most_running[0] > 1
+
+
+def test_marking_inbox_message_processed_is_one_drive_call(pair, monkeypatch):
+    do_conn, ds_conn = pair
+    _send_proposals(ds_conn, 2)
+    p2p = do_conn.as_transport().p2p
+    first, second = p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+    p2p.mark_processed(first)  # finds or creates the archive folder once
+
+    calls = _count_drive_calls(monkeypatch)
+    p2p.mark_processed(second)
+
+    assert calls == Counter(update=1)
+    assert p2p.receive(DS, MessageKind.PROPOSED_CHANGES) == []
+
+
+def test_marking_inbox_messages_processed_is_one_batch_request(pair, monkeypatch):
+    do_conn, ds_conn = pair
+    _send_proposals(ds_conn, 4)
+    p2p = do_conn.as_transport().p2p
+    first, *rest = p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+    p2p.mark_processed(first)  # finds or creates the archive folder once
+
+    calls = _count_drive_calls(monkeypatch)
+    p2p.mark_all_processed(rest)
+
+    assert calls == Counter(batch=1, update=3)  # one request holding three moves
+    assert p2p.receive(DS, MessageKind.PROPOSED_CHANGES) == []
+
+
+def test_move_that_fails_in_batch_warns_and_rest_are_archived(pair):
+    do_conn, ds_conn = pair
+    _send_proposals(ds_conn, 2)
+    p2p = do_conn.as_transport().p2p
+    first, second = p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+    gone = first.model_copy(update={"handle": "no-such-file"})
+
+    with pytest.warns(UserWarning, match="Could not archive inbox file no-such-file"):
+        p2p.mark_all_processed([gone, second])
+
+    assert [m.msg_id for m in p2p.receive(DS, MessageKind.PROPOSED_CHANGES)] == [
+        first.msg_id
+    ]
+
+
+def test_inbox_message_that_fails_to_download_is_skipped_with_warning(
+    pair, monkeypatch
+):
+    do_conn, ds_conn = pair
+    names = _send_proposals(ds_conn, 3)
+    [broken_id] = [
+        m["file_id"]
+        for m in do_conn.owner_get_inbox_file_metadatas(DS)
+        if m["file_name"] == names[1]
+    ]
+    original_download = GDriveConnection.download_file
+
+    def download_all_but_broken(self, file_id: str) -> bytes:
+        if file_id == broken_id:
+            raise ValueError("file is gone")
+        return original_download(self, file_id)
+
+    monkeypatch.setattr(GDriveConnection, "download_file", download_all_but_broken)
+    with pytest.warns(UserWarning, match=f"Skipped inbox message {names[1]}"):
+        received = do_conn.as_transport().p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+
+    assert [m.msg_id for m in received] == [names[0], names[2]]
+
+
+def test_receiving_inbox_while_drive_is_down_raises(pair, monkeypatch):
+    do_conn, ds_conn = pair
+    _send_proposals(ds_conn, 2)
+    monkeypatch.setattr(GDriveConnection, "download_file", _drive_down)
+    with pytest.raises(TransportUnavailableError):
+        do_conn.as_transport().p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+
+
+def test_processed_inbox_message_is_not_received_again(pair):
     do_conn, ds_conn = pair
     ds_conn.as_transport().p2p.send(
         DO, _proposal_name(1.0), b"job", MessageKind.PROPOSED_CHANGES
     )
     p2p = do_conn.as_transport().p2p
 
-    _, handle = p2p.next_inbox_message(DS)
-    p2p.archive_inbox_message(DS, handle)
-    assert p2p.next_inbox_message(DS) is None
+    [message] = p2p.receive(DS, MessageKind.PROPOSED_CHANGES)
+    p2p.mark_processed(message)
+    assert p2p.receive(DS, MessageKind.PROPOSED_CHANGES) == []
 
 
 def test_file_events_sent_through_p2p_reach_the_scientist_outbox(pair):
@@ -144,16 +321,14 @@ def test_drive_never_has_sends_waiting_for_confirmation(pair):
     assert do_conn.as_transport().p2p.delivered() == []
 
 
-def test_receiving_through_p2p_is_not_built_yet(pair):
-    do_conn, _ = pair
-    p2p = do_conn.as_transport().p2p
-    message = RawMessage(
-        sender=DS, msg_id="m", kind=MessageKind.PROPOSED_CHANGES, data=b""
-    )
+def test_receiving_file_events_through_p2p_is_not_built_yet(pair):
+    _, ds_conn = pair
+    p2p = ds_conn.as_transport().p2p
+    message = RawMessage(sender=DO, msg_id="m", kind=MessageKind.FILE_EVENTS, data=b"")
     with pytest.raises(NotImplementedError):
-        p2p.receive()
+        p2p.receive(DO, MessageKind.FILE_EVENTS)
     with pytest.raises(NotImplementedError):
-        p2p.ack(message)
+        p2p.mark_processed(message)
 
 
 # -- OwnerStore -------------------------------------------------------------------
@@ -372,16 +547,41 @@ def test_the_router_sends_proposed_changes_through_p2p():
 
 def test_the_router_reads_the_inbox_through_p2p():
     router, p2p = _router_with_mock_p2p()
-    p2p.next_inbox_message.return_value = None
-    assert router.owner_get_next_proposed_filechange_message(DS) is None
-    p2p.next_inbox_message.assert_called_once_with(DS)
+    p2p.receive.return_value = []
+    assert router.owner_receive_proposed_messages(DS) == []
+    p2p.receive.assert_called_once_with(DS, MessageKind.PROPOSED_CHANGES)
 
 
-def test_the_router_archives_a_handled_message_through_p2p():
+def test_the_router_archives_unreadable_proposal_and_returns_the_rest():
     router, p2p = _router_with_mock_p2p()
-    message = ProposedFileChangesMessage(sender_email=DS, proposed_file_changes=[])
-    router.owner_remove_proposed_filechange_from_inbox(message, DS)
-    p2p.archive_proposed_changes.assert_called_once_with(message, DS)
+    proposal = ProposedFileChangesMessage(sender_email=DS, proposed_file_changes=[])
+    unreadable = RawMessage(
+        sender=DS, msg_id="bad", kind=MessageKind.PROPOSED_CHANGES, data=b"garbage"
+    )
+    readable = RawMessage(
+        sender=DS,
+        msg_id="good",
+        kind=MessageKind.PROPOSED_CHANGES,
+        data=proposal.as_compressed_data(),
+    )
+    p2p.receive.return_value = [unreadable, readable]
+
+    with pytest.warns(UserWarning, match="Archived message bad unread"):
+        pairs = router.owner_receive_proposed_messages(DS)
+
+    assert [(raw.msg_id, message.id) for raw, message in pairs] == [
+        ("good", proposal.id)
+    ]
+    p2p.mark_processed.assert_called_once_with(unreadable)
+
+
+def test_the_router_marks_handled_messages_processed_through_p2p():
+    router, p2p = _router_with_mock_p2p()
+    message = RawMessage(
+        sender=DS, msg_id="m", kind=MessageKind.PROPOSED_CHANGES, data=b""
+    )
+    router.owner_mark_all_processed([message])
+    p2p.mark_all_processed.assert_called_once_with([message])
 
 
 def test_the_router_reads_the_outbox_through_p2p():
