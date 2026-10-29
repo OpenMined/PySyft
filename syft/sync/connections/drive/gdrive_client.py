@@ -105,13 +105,8 @@ class GDriveClient:
             )
         )
 
-    def delete_file_by_id(self, file_id: str, raise_on_error: bool = False):
-        try:
-            execute_with_retries(self.drive_service.files().delete(fileId=file_id))
-        except Exception as e:
-            if raise_on_error:
-                raise e
-            print(f"Warning: could not delete file {file_id}: {e}")
+    def delete_file_by_id(self, file_id: str) -> None:
+        execute_with_retries(self.drive_service.files().delete(fileId=file_id))
 
     def delete_multiple_files_by_ids(
         self,

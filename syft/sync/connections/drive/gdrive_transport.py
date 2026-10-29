@@ -411,8 +411,8 @@ class GDriveConnection(SyftboxPlatformConnection):
     def download_file(self, file_id: str) -> bytes:
         return self.client.download_file(file_id)
 
-    def delete_file_by_id(self, file_id: str, raise_on_error: bool = False):
-        self.client.delete_file_by_id(file_id, raise_on_error=raise_on_error)
+    def delete_file_by_id(self, file_id: str) -> None:
+        self.client.delete_file_by_id(file_id)
 
     def delete_multiple_files_by_ids(
         self,
