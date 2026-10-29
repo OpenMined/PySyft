@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
-from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.peer import Peer, PeerNotReadyError, PeerSetupError, PeerState
@@ -106,7 +105,6 @@ class PeerManagerConfig(BaseModel):
 
     syftbox_folder: Path
     email: str = ""
-    connection_configs: List[ConnectionConfig] = []
     # Proceeds with a peer whose version is unknown or whose client version is
     # incompatible, instead of skipping it.
     force_ignore_peer_version: bool = False
@@ -184,29 +182,34 @@ class PeerManager(BaseModel):
         """Get all peers we can sync with (DS side)."""
         return self.peer_store.syncable_peers
 
-    @classmethod
-    def from_config(cls, config: PeerManagerConfig, email: str = "") -> "PeerManager":
-        """Create a PeerManager from a config.
+    @staticmethod
+    def peer_store_from_config(config: PeerManagerConfig, email: str = "") -> PeerStore:
+        """The peer store ``config`` describes. The manager builds it before the
+        connection router, which holds it for every part.
 
         ``email`` is a fallback for configs built without one; the config's own
         ``email`` takes precedence so the key path matches the datasite.
         """
-        resolved_email = config.email or email
-        peer_store = PeerStore.create(
-            email=resolved_email,
+        return PeerStore.create(
+            email=config.email or email,
             encryption_policy=resolve_encryption_policy(
                 config.settings_path, config.encryption_policy
             ),
             keys_path=config.crypto_keys_path,
         )
-        connection_router = ConnectionRouter.from_configs(
-            resolved_email, config.connection_configs
-        )
-        connection_router.peer_store = peer_store
+
+    @classmethod
+    def from_config(
+        cls, config: PeerManagerConfig, connection_router: ConnectionRouter
+    ) -> "PeerManager":
+        """``config`` holds plain values only. ``connection_router`` is live and
+        shared with the other parts of the manager, so the caller builds it
+        once and passes it in next to the config (see
+        ``SyftboxManager.from_config``). The peer store is the router's."""
         return cls(
             syftbox_folder=config.syftbox_folder,
             connection_router=connection_router,
-            peer_store=peer_store,
+            peer_store=connection_router.peer_store,
             force_ignore_peer_version=config.force_ignore_peer_version,
             suppress_version_warnings=config.suppress_version_warnings,
             n_threads=config.n_threads,

@@ -61,13 +61,18 @@ class ConnectionRouter(BaseModel):
         return self._transport
 
     @classmethod
-    def from_configs(cls, email: str, connection_configs: List[ConnectionConfig]):
+    def from_configs(
+        cls, connection_configs: List[ConnectionConfig], peer_store: PeerStore
+    ) -> "ConnectionRouter":
+        """The one router of a manager. ``SyftboxManager.from_config`` builds
+        it and hands it to every part, so they share one connection, one
+        transport and one peer store."""
         return cls(
             connections=[
                 SyftboxPlatformConnection.from_config(config)
                 for config in connection_configs
             ],
-            peer_store=PeerStore(email=email),
+            peer_store=peer_store,
         )
 
     def add_connection(self, connection: SyftboxPlatformConnection):

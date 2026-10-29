@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 from syft.sync.callback_mixin import BaseModelCallbackMixin
 from syft.sync.connections.base_connection import (
+    ConnectionConfig,
     SyftboxPlatformConnection,
 )
 from syft.sync.connections.connection_router import ConnectionRouter
@@ -54,6 +55,7 @@ from syft.sync.utils.syftbox_utils import (
     random_email,
     random_syftbox_folder_for_testing,
 )
+from syft.sync.peers.peer_store import PeerStore
 from syft.sync.version.peer_manager import (
     PeerManager,
     PeerManagerConfig,
@@ -122,6 +124,10 @@ class SyftboxManagerConfig(BaseModel):
     # log, rolling state, checkpoints. Off for datasites that can never
     # restore (see syft-enclave's EnclaveSettings).
     persist_owner_state: bool = True
+    # The backends to connect to. Only the manager reads them: it builds one
+    # connection router from them and shares it with every part. Empty for
+    # tests that add a mock connection afterwards (see _add_connection).
+    connection_configs: List[ConnectionConfig] = []
 
     datasite_owner_syncer_config: DatasiteOwnerSyncerConfig
     peer_manager_config: PeerManagerConfig
@@ -163,7 +169,6 @@ class SyftboxManagerConfig(BaseModel):
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
             collection_specs=collection_specs,
-            connection_configs=connection_configs,
             cache_config=DataSiteOwnerEventCacheConfig(
                 email=email,
                 use_in_memory_cache=use_in_memory_cache,
@@ -175,19 +180,16 @@ class SyftboxManagerConfig(BaseModel):
         datasite_watcher_syncer_config = DatasiteWatcherSyncerConfig(
             syftbox_folder=syftbox_folder,
             email=email,
-            connection_configs=connection_configs,
             datasite_watcher_cache_config=DataSiteWatcherCacheConfig(
                 email=email,
                 use_in_memory_cache=use_in_memory_cache,
                 syftbox_folder=syftbox_folder,
                 collection_specs=collection_specs,
-                connection_configs=connection_configs,
             ),
         )
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
             email=email,
-            connection_configs=connection_configs,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
             encryption_policy=EncryptionPolicy.from_bool(encryption),
@@ -197,9 +199,9 @@ class SyftboxManagerConfig(BaseModel):
         return cls(
             email=email,
             syftbox_folder=syftbox_folder,
+            connection_configs=connection_configs,
             has_ds_role=has_ds_role,
             has_do_role=has_do_role,
-            connection_configs=connection_configs,
             use_in_memory_cache=False,
             persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
@@ -246,32 +248,27 @@ class SyftboxManagerConfig(BaseModel):
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
             collection_specs=collection_specs,
-            connection_configs=connection_configs,
             cache_config=DataSiteOwnerEventCacheConfig(
                 email=email,
                 use_in_memory_cache=False,
                 syftbox_folder=syftbox_folder,
                 collections_folder=collections_folder,
                 collection_variants=collection_variants,
-                connection_configs=connection_configs,
             ),
         )
         datasite_watcher_syncer_config = DatasiteWatcherSyncerConfig(
             syftbox_folder=syftbox_folder,
             email=email,
-            connection_configs=connection_configs,
             datasite_watcher_cache_config=DataSiteWatcherCacheConfig(
                 email=email,
                 use_in_memory_cache=False,
                 syftbox_folder=syftbox_folder,
                 collection_specs=collection_specs,
-                connection_configs=connection_configs,
             ),
         )
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
             email=email,
-            connection_configs=connection_configs,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
             encryption_policy=EncryptionPolicy.from_bool(encryption),
@@ -281,6 +278,7 @@ class SyftboxManagerConfig(BaseModel):
         return cls(
             email=email,
             syftbox_folder=syftbox_folder,
+            connection_configs=connection_configs,
             has_ds_role=has_ds_role,
             has_do_role=has_do_role,
             use_in_memory_cache=False,
@@ -346,7 +344,6 @@ class SyftboxManagerConfig(BaseModel):
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
             email=email,
-            connection_configs=[],  # Empty for in-memory, connections added later
             n_threads=2,  # Use fewer threads for testing
             force_ignore_peer_version=not check_versions,
             has_do_role=has_do_role,
@@ -402,7 +399,6 @@ class SyftboxManagerConfig(BaseModel):
             syftbox_folder=syftbox_folder,
             collections_folder=collections_folder,
             collection_specs=collection_specs,
-            connection_configs=connection_configs,
             cache_config=DataSiteOwnerEventCacheConfig(
                 email=email,
                 use_in_memory_cache=use_in_memory_cache,
@@ -414,20 +410,17 @@ class SyftboxManagerConfig(BaseModel):
         datasite_watcher_syncer_config = DatasiteWatcherSyncerConfig(
             syftbox_folder=syftbox_folder,
             email=email,
-            connection_configs=connection_configs,
             datasite_watcher_cache_config=DataSiteWatcherCacheConfig(
                 email=email,
                 use_in_memory_cache=use_in_memory_cache,
                 syftbox_folder=syftbox_folder,
                 collection_specs=collection_specs,
-                connection_configs=connection_configs,
             ),
         )
 
         peer_manager_config = PeerManagerConfig(
             syftbox_folder=syftbox_folder,
             email=email,
-            connection_configs=connection_configs,
             force_ignore_peer_version=not check_versions,
             has_do_role=has_do_role,
             has_ds_role=has_ds_role,
@@ -435,6 +428,7 @@ class SyftboxManagerConfig(BaseModel):
         return cls(
             email=email,
             syftbox_folder=syftbox_folder,
+            connection_configs=connection_configs,
             write_files=write_files,
             persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
@@ -466,7 +460,6 @@ class SyftboxManager(BaseModelCallbackMixin):
     _executor: ThreadPoolExecutor = PrivateAttr(
         default_factory=lambda: ThreadPoolExecutor(max_workers=10)
     )
-    _peer_store: object = PrivateAttr(default=None)
 
     _PUBLIC_API = (
         "email",
@@ -524,6 +517,20 @@ class SyftboxManager(BaseModelCallbackMixin):
 
     @classmethod
     def from_config(cls, config: SyftboxManagerConfig):
+        """Build a manager and its parts from ``config``.
+
+        Configs hold plain values only (strings, paths, flags), never live
+        objects or state. A live object that several parts share is built here,
+        once, and passed to each part's ``from_config`` next to its config:
+        the peer store and the connection router that holds it, and through
+        the router one connection and one transport for the whole manager.
+        """
+        peer_store = PeerManager.peer_store_from_config(
+            config.peer_manager_config, email=config.email
+        )
+        connection_router = ConnectionRouter.from_configs(
+            config.connection_configs, peer_store
+        )
         file_writer = FileWriter(
             base_path=config.syftbox_folder, write_files=config.write_files
         )
@@ -534,18 +541,18 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         if config.has_do_role:
             datasite_owner_syncer = DatasiteOwnerSyncer.from_config(
-                config.datasite_owner_syncer_config
+                config.datasite_owner_syncer_config, connection_router
             )
 
             job_file_change_handler = JobFileChangeHandler()
 
         if config.has_ds_role:
             datasite_watcher_syncer = DatasiteWatcherSyncer.from_config(
-                config.datasite_watcher_syncer_config
+                config.datasite_watcher_syncer_config, connection_router
             )
 
         peer_manager = PeerManager.from_config(
-            config.peer_manager_config, email=config.email
+            config.peer_manager_config, connection_router
         )
 
         manager_res = cls(
@@ -560,29 +567,7 @@ class SyftboxManager(BaseModelCallbackMixin):
             has_ds_role=config.has_ds_role,
             config=config,
         )
-
-        # PeerManager.from_config built the peer store from peer_manager_config;
-        # share that single store across every syncer's router so all sync paths
-        # see the same peers, peer policies and keys.
-        manager_res._set_peer_store(peer_manager.peer_store)
-
         return manager_res
-
-    def _set_peer_store(self, peer_store) -> None:
-        """Wire shared peer_store into all connection routers."""
-        from syft.sync.peers.peer_store import PeerStore
-
-        if not isinstance(peer_store, PeerStore):
-            return
-        self._peer_store = peer_store
-        if self.peer_manager:
-            self.peer_manager.peer_store = peer_store
-            self.peer_manager.connection_router.peer_store = peer_store
-        if self.datasite_owner_syncer:
-            self.datasite_owner_syncer.connection_router.peer_store = peer_store
-        if self.datasite_watcher_syncer:
-            self.datasite_watcher_syncer.connection_router.peer_store = peer_store
-            self.datasite_watcher_syncer.datasite_watcher_cache.connection_router.peer_store = peer_store
 
     @classmethod
     def for_colab(
@@ -1088,16 +1073,7 @@ class SyftboxManager(BaseModelCallbackMixin):
                 "Only MockDriveService connections can be added to the manager"
             )
 
-        if self.datasite_owner_syncer is not None:
-            self.datasite_owner_syncer.connection_router.add_connection(connection)
-        if self.datasite_watcher_syncer is not None:
-            self.datasite_watcher_syncer.connection_router.add_connection(connection)
-            self.datasite_watcher_syncer.datasite_watcher_cache.connection_router.add_connection(
-                connection
-            )
-
-        # Add connection to version manager's router
-        self.peer_manager.connection_router.add_connection(connection)
+        self._connection_router.add_connection(connection)
 
     def _send_file_change(self, path: str | Path, content: str):
         self.file_writer.write_file(path, content)
@@ -1109,22 +1085,17 @@ class SyftboxManager(BaseModelCallbackMixin):
 
     @property
     def _connection_router(self) -> ConnectionRouter:
-        # for DOs we have a syncer, for DSs we have a watcher syncer
-        if self.datasite_owner_syncer is not None:
-            return self.datasite_owner_syncer.connection_router
-        else:
-            return self.datasite_watcher_syncer.connection_router
+        # Every part holds the same router (see from_config); the peer manager
+        # is the one part every manager has.
+        return self.peer_manager.connection_router
+
+    @property
+    def _peer_store(self) -> PeerStore:
+        return self._connection_router.peer_store
 
     def reset_all_connection_caches(self):
-        """Reset GDrive caches on all connection router instances."""
-        if self.peer_manager:
-            self.peer_manager.connection_router.reset_caches()
-        if self.datasite_owner_syncer:
-            self.datasite_owner_syncer.connection_router.reset_caches()
-        if self.datasite_watcher_syncer:
-            self.datasite_watcher_syncer.connection_router.reset_caches()
-            if hasattr(self.datasite_watcher_syncer, "datasite_watcher_cache"):
-                self.datasite_watcher_syncer.datasite_watcher_cache.connection_router.reset_caches()
+        """Reset the Drive caches of the manager's one connection router."""
+        self._connection_router.reset_caches()
 
     def _clear_caches(self):
         if self.datasite_owner_syncer is not None:

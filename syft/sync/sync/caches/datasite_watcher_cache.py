@@ -10,7 +10,6 @@ from syft.sync.events.file_change_event import (
     FileChangeEventsMessage,
 )
 from syft.sync.connections.connection_router import ConnectionRouter
-from syft.sync.connections.base_connection import ConnectionConfig
 from syft.sync.sync.caches.cache_file_writer_connection import (
     CacheFileConnection,
     InMemoryCacheFileConnection,
@@ -58,7 +57,6 @@ class DataSiteWatcherCacheConfig(BaseModel):
     use_in_memory_cache: bool = True
     syftbox_folder: Path | None = None
     events_base_path: Path | None = None
-    connection_configs: List[ConnectionConfig] = []
     # Collections to sync down (prefix + local subpath per collection type)
     collection_specs: list[CollectionSyncSpec] = []
 
@@ -90,15 +88,18 @@ class DataSiteWatcherCache(BaseModel):
     pre_write_filter: Callable[[str, bool], bool] | None = None
 
     @classmethod
-    def from_config(cls, config: DataSiteWatcherCacheConfig):
+    def from_config(
+        cls, config: DataSiteWatcherCacheConfig, connection_router: ConnectionRouter
+    ):
+        """``config`` holds plain values only. ``connection_router`` is live and
+        shared with the other parts of the manager, so the caller builds it
+        once and passes it in next to the config (see
+        ``SyftboxManager.from_config``)."""
         if config.use_in_memory_cache:
             res = cls(
                 events_connection=InMemoryCacheFileConnection[FileChangeEvent](),
                 file_connection=InMemoryCacheFileConnection[str](),
-                connection_router=ConnectionRouter.from_configs(
-                    email=config.email,
-                    connection_configs=config.connection_configs,
-                ),
+                connection_router=connection_router,
                 syftbox_folder=config.syftbox_folder,
                 collection_specs=config.collection_specs,
             )
@@ -116,10 +117,7 @@ class DataSiteWatcherCache(BaseModel):
                     base_dir=events_folder, dtype=FileChangeEventsMessage
                 ),
                 file_connection=FSFileConnection(base_dir=config.syftbox_folder),
-                connection_router=ConnectionRouter.from_configs(
-                    email=config.email,
-                    connection_configs=config.connection_configs,
-                ),
+                connection_router=connection_router,
                 syftbox_folder=config.syftbox_folder,
                 collection_specs=config.collection_specs,
             )
