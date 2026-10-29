@@ -20,6 +20,8 @@ from syft_rds.config import SyftRDSClientConfig
 from syft.version import SYFT_VERSION
 
 from dataset_test_utils import create_test_project_folder, create_tmp_dataset_files
+from syft.sync.connections.drive.drive_connections import gdrive_connection_of
+from syft.sync.syftbox_manager import SyftboxManager
 
 NEW_VERSION = "99.0.0"
 
@@ -46,7 +48,7 @@ def _find_versioned_p2p_folders(connection, peer_email, version):
 
 def _get_backing_store(manager):
     """Extract the mock backing store from a manager's connection."""
-    conn = manager.peer_manager.connection_router.connections[0]
+    conn = gdrive_connection_of(manager.peer_manager.connection_router.transport)
     return conn.drive_service._backing_store
 
 
@@ -66,11 +68,9 @@ def _reinitialize_manager(
         use_in_memory_cache=False,
         syftbox_folder=syftbox_folder,
     )
-    manager = SyftRDSClient.from_config(config)
-
     mock_service = MockDriveService(backing_store, email)
     conn = GDriveConnection.from_service(email, mock_service)
-    manager.sync_engine._add_connection(conn)
+    manager = SyftRDSClient.from_config(config, SyftboxManager._drive_transport(conn))
 
     if has_ds_role:
         manager.sync_engine.file_writer.add_callback(
@@ -172,7 +172,7 @@ def test_version_mismatch_continues_and_repairs():
     assert do_manager.jobs[0].status == "done"
 
     # -- Step 4: Record P2P folders and personal folder id before upgrade --
-    do_conn = do_manager.peer_manager.connection_router.connections[0]
+    do_conn = gdrive_connection_of(do_manager.peer_manager.connection_router.transport)
     do_p2p_current = _find_versioned_p2p_folders(
         do_conn, ds_manager.email, SYFT_VERSION
     )
@@ -211,7 +211,9 @@ def test_version_mismatch_continues_and_repairs():
         )
 
         # Personal folder is adopted (same Drive id, new name), not recreated.
-        do_conn_new = do_manager.peer_manager.connection_router.connections[0]
+        do_conn_new = gdrive_connection_of(
+            do_manager.peer_manager.connection_router.transport
+        )
         new_personal_name = f"{NEW_VERSION}#{do_email}"
         new_personal_id = do_conn_new._find_folder_by_name(
             new_personal_name,
@@ -247,7 +249,9 @@ def test_version_mismatch_continues_and_repairs():
             syftbox_folder=ds_syftbox,
         )
 
-        ds_conn_new = ds_manager.peer_manager.connection_router.connections[0]
+        ds_conn_new = gdrive_connection_of(
+            ds_manager.peer_manager.connection_router.transport
+        )
         ds_personal_name = f"{NEW_VERSION}#{ds_email}"
         ds_personal_id = ds_conn_new._find_folder_by_name(
             ds_personal_name,
@@ -327,7 +331,7 @@ def test_login_writes_the_remote_version_file_too():
         use_in_memory_cache=False,
         check_versions=True,
     )
-    conn = do_manager.peer_manager.connection_router.connections[0]
+    conn = gdrive_connection_of(do_manager.peer_manager.connection_router.transport)
     assert (
         conn.read_own_peer_info_file().version_info.syft_client_version == SYFT_VERSION
     )
@@ -337,7 +341,9 @@ def test_login_writes_the_remote_version_file_too():
         patch("syft.sync.version.version_info.SYFT_VERSION", NEW_VERSION),
     ):
         upgraded = _upgraded_manager(do_manager)
-        new_conn = upgraded.peer_manager.connection_router.connections[0]
+        new_conn = gdrive_connection_of(
+            upgraded.peer_manager.connection_router.transport
+        )
         # Still the pre-upgrade version: nothing has refreshed it yet.
         assert (
             new_conn.read_own_peer_info_file().version_info.syft_client_version
@@ -388,7 +394,7 @@ def test_the_mismatch_prompt_does_not_return_after_a_login():
             handle_potential_version_mismatches_on_login,
         )
 
-        conn = do_manager.peer_manager.connection_router.connections[0]
+        conn = gdrive_connection_of(do_manager.peer_manager.connection_router.transport)
         with patch(
             "syft.sync.login_utils._read_remote_version",
             side_effect=lambda e, t: conn.read_own_peer_info_file().version_info,

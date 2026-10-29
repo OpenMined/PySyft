@@ -15,6 +15,7 @@ from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.peer_manager import CompatAction
 from syft.sync.version.version_info import CompatibilityStatus, VersionInfo
+from syft.sync.connections.drive.drive_connections import gdrive_connection_of
 
 
 def build_client_version(client_version: str) -> VersionInfo:
@@ -239,9 +240,9 @@ class TestPeerManager:
             SyftboxManager.pair_with_mock_drive_service_connection()
         )
 
-        backing_store = ds_manager._connection_router.connections[
-            0
-        ].drive_service._backing_store
+        backing_store = gdrive_connection_of(
+            ds_manager._connection_router.transport
+        ).drive_service._backing_store
 
         third_peer_email = "third_peer@test.com"
         third_peer_info = PeerInfo(

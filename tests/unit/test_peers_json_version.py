@@ -20,6 +20,7 @@ from syft.sync.connections.drive.gdrive_transport import (
     GDriveConnection,
 )
 from syft.sync.peers.peer import PeerState
+from syft.sync.syftbox_manager import SyftboxManager
 
 PEER = "bob@example.com"
 
@@ -33,7 +34,7 @@ def _conn(peers_data):
 
 def _router(conn):
     router = Mock()
-    router.transport = conn.as_transport()
+    router.transport = SyftboxManager._drive_transport(conn)
     from syft.sync.connections.connection_router import ConnectionRouter
 
     return ConnectionRouter.get_all_peers_from_json.__get__(router, ConnectionRouter)

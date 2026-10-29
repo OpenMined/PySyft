@@ -187,8 +187,8 @@ class DatasiteWatcherSyncer(BaseModelCallbackMixin):
         self, file_id: str, owner_email: str
     ) -> bytes:
         """Download collection file using a new connection (thread-safe)."""
-        connection = self.connection_router.connection_for_parallel_download()
-        data = connection.watcher_download_collection_file(file_id)
+        collections = self.connection_router.transport.collections.clone_for_thread()
+        data = collections.fetch_file(file_id)
         data = self.connection_router.peer_store.decrypt_dataset_if_needed(
             owner_email, data
         )

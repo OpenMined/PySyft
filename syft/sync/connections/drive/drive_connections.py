@@ -13,10 +13,9 @@ from __future__ import annotations
 import threading
 import warnings
 from concurrent.futures import ThreadPoolExecutor
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from syft.sync.connections.drive.gdrive_retry import raise_unavailable
-from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.transport.exceptions import TransportUnavailableError
 from syft.sync.transport.protocols import (
     Collections,
@@ -65,7 +64,21 @@ def _require_inbox_kind(kind: MessageKind) -> None:
         )
 
 
-class DriveP2PConnection(P2PConnection):
+class DriveTransportComponent:
+    """A transport component over one Google Drive connection."""
+
+    def __init__(self, connection: GDriveConnection):
+        self._conn = connection
+
+    def clone_for_thread(self) -> Self:
+        """A copy safe to use from another thread: the Drive client is not."""
+        return type(self)(self._conn.clone_for_thread())
+
+    def reset_caches(self) -> None:
+        self._conn.reset_caches()
+
+
+class DriveP2PConnection(DriveTransportComponent, P2PConnection):
     """Messages through the shared inbox and outbox folders.
 
     A proposed change goes to the data owner's inbox and file events go to the
@@ -78,9 +91,6 @@ class DriveP2PConnection(P2PConnection):
     reading it again. It moves to ``receive`` with send-and-forget, once the
     data scientist keeps what it received in its own storage.
     """
-
-    def __init__(self, connection: GDriveConnection):
-        self._conn = connection
 
     def send(
         self, peer: str, msg_id: str, data: bytes, kind: MessageKind
@@ -167,17 +177,23 @@ class DriveP2PConnection(P2PConnection):
     def fetch_message(self, handle: str) -> bytes:
         return self._conn.download_file(handle)
 
-    def clone_for_thread(self) -> DriveP2PConnection:
-        """A copy safe to use from another thread: the Drive client is not."""
-        return DriveP2PConnection(self._conn.clone_for_thread())
+    def own_outbox_message_metadatas(self, peer: str) -> list[dict]:
+        """The messages in my outbox to ``peer``, without downloading. An
+        outbox whose folder is not found holds none."""
+        folder_id = self._conn._get_own_datasite_outbox_id(peer)
+        if folder_id is None:
+            return []
+        return self._conn.get_file_metadatas_from_folder(
+            folder_id, since_timestamp=None
+        )
+
+    def delete_messages(self, handles: list[str]) -> None:
+        self._conn.delete_multiple_files_by_ids(handles)
 
 
-class DriveOwnerStore(OwnerStore):
+class DriveOwnerStore(DriveTransportComponent, OwnerStore):
     """The data owner's own folders in /SyftBox: event log, checkpoints,
     rolling state."""
-
-    def __init__(self, connection: GDriveConnection):
-        self._conn = connection
 
     def append_event(self, name: str, data: bytes) -> str:
         return self._conn.owner_write_raw_bytes_to_syftbox(name, data)
@@ -226,13 +242,18 @@ class DriveOwnerStore(OwnerStore):
     def delete_rolling_state(self) -> None:
         self._conn.delete_rolling_state()
 
+    def delete_all(self) -> int:
+        """Everything in /SyftBox, and the syft files Drive moved to the root
+        of My Drive when they lost their folder."""
+        file_ids = set(self._conn.gather_all_file_and_folder_ids())
+        file_ids |= set(self._conn.find_orphaned_syft_files())
+        self._conn.delete_multiple_files_by_ids(list(file_ids))
+        return len(file_ids)
 
-class DriveWatcherStore(WatcherStore):
+
+class DriveWatcherStore(DriveTransportComponent, WatcherStore):
     """The data scientist's storage on Drive. Not built yet: today the data
     scientist keeps what it received in a local cache."""
-
-    def __init__(self, connection: GDriveConnection):
-        self._conn = connection
 
     def put_checkpoint(self, peer: str, name: str, data: bytes) -> str:
         raise NotImplementedError("Watcher storage on Drive is not built yet")
@@ -250,11 +271,8 @@ class DriveWatcherStore(WatcherStore):
         raise NotImplementedError("Watcher storage on Drive is not built yet")
 
 
-class DriveCollections(Collections):
+class DriveCollections(DriveTransportComponent, Collections):
     """Collection folders in /SyftBox, shared by Drive permission."""
-
-    def __init__(self, connection: GDriveConnection):
-        self._conn = connection
 
     def create(self, prefix: str, tag: str, content_hash: str, owner_email: str) -> str:
         return self._conn.owner_create_collection_folder(
@@ -283,6 +301,9 @@ class DriveCollections(Collections):
     def delete(self, prefix: str, tag: str) -> None:
         self._conn.owner_delete_collection(prefix, tag)
 
+    def delete_by_handle(self, handle: str) -> None:
+        self._conn.delete_file_by_id(handle)
+
     def list_shared_with_me(self, prefix: str) -> list[dict]:
         return self._conn.watcher_list_collections(prefix)
 
@@ -304,12 +325,9 @@ class DriveCollections(Collections):
         )
 
 
-class DrivePeering(Peering):
+class DrivePeering(DriveTransportComponent, Peering):
     """Identity from the Google account; channels, the peer list, key bundles
     and version files in /SyftBox."""
-
-    def __init__(self, connection: GDriveConnection):
-        self._conn = connection
 
     def whoami(self) -> str:
         return self._conn.get_authenticated_email()
@@ -353,13 +371,11 @@ class DrivePeering(Peering):
         self._conn.share_peer_info_file_with_peer(peer, peer_info)
 
 
-def drive_transport(connection: GDriveConnection) -> Transport:
-    """The transport jobs over one Drive connection."""
-    return Transport(
-        p2p=DriveP2PConnection(connection),
-        owner_store=DriveOwnerStore(connection),
-        watcher_store=DriveWatcherStore(connection),
-        collections=DriveCollections(connection),
-        peering=DrivePeering(connection),
-        platform=GdriveFilesPlatform(),
-    )
+def gdrive_connection_of(transport: Transport) -> GDriveConnection:
+    """The Google Drive connection under ``transport``, for tests and tools
+    that need Drive itself. The sync code reaches Drive only through the
+    components. Raises if the transport is not built on Drive."""
+    store = transport.owner_store
+    if not isinstance(store, DriveTransportComponent):
+        raise TypeError("This transport is not built on Google Drive")
+    return store._conn

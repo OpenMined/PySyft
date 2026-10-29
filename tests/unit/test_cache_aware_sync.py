@@ -10,7 +10,7 @@ from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.collection_spec import CollectionSyncSpec
 
 from tests.unit.utils import (
-    router_without_connections,
+    router_with_mock_connection,
     TEST_COLLECTION_PREFIX,
     TEST_COLLECTION_SUBPATH,
     get_mock_events_messages,
@@ -247,7 +247,7 @@ def test_ds_cache_handles_deletions_correctly():
         ],
     )
     new_cache = DataSiteWatcherCache.from_config(
-        config, router_without_connections(do_manager.email)
+        config, router_with_mock_connection(do_manager.email)
     )
 
     # Verify deleted file is not in reloaded cache
