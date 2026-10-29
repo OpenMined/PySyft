@@ -11,10 +11,13 @@ later step.
 from __future__ import annotations
 
 import threading
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING
 
+from syft.sync.connections.drive.gdrive_retry import raise_unavailable
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
+from syft.sync.transport.exceptions import TransportUnavailableError
 from syft.sync.transport.protocols import (
     Collections,
     OwnerStore,
@@ -33,6 +36,24 @@ if TYPE_CHECKING:
 
 # Threads that download the messages of one receive at the same time.
 DOWNLOAD_WORKERS = 10
+
+
+def _download_or_skip(connection: GDriveConnection, listed: dict) -> bytes | None:
+    """The bytes of one listed inbox file, or None with a warning when this
+    file cannot be downloaded, for example because it was deleted.
+
+    Raises:
+        TransportUnavailableError: when Drive cannot be reached.
+    """
+    name = listed["file_name"]
+    try:
+        with raise_unavailable(f"Drive is unreachable; inbox message {name} waits"):
+            return connection.download_file(listed["file_id"])
+    except TransportUnavailableError:
+        raise
+    except Exception as e:
+        warnings.warn(f"Skipped inbox message {name}: download failed: {e!r}")
+        return None
 
 
 def _require_inbox_kind(kind: MessageKind) -> None:
@@ -79,10 +100,18 @@ class DriveP2PConnection(P2PConnection):
     def receive(
         self, peer: str, kind: MessageKind, max_messages: int | None = None
     ) -> list[RawMessage]:
-        # One listing for the whole inbox, then the files download in parallel.
+        """One listing for the whole inbox, then the files download in parallel.
+
+        A file that cannot be downloaded is left out with a warning, so it does
+        not hold back the others.
+
+        Raises:
+            TransportUnavailableError: when Drive cannot be reached. Every
+                message stays in the inbox.
+        """
         _require_inbox_kind(kind)
         listed = self._conn.owner_get_inbox_file_metadatas(peer)[:max_messages]
-        contents = self._download_all([m["file_id"] for m in listed])
+        contents = self._download_all(listed)
         return [
             RawMessage(
                 sender=peer,
@@ -92,30 +121,37 @@ class DriveP2PConnection(P2PConnection):
                 handle=m["file_id"],
             )
             for m, data in zip(listed, contents)
+            if data is not None
         ]
 
-    def _download_all(self, file_ids: list[str]) -> list[bytes]:
-        """The bytes of each file, in order. Several files download over a
-        thread pool with one connection copy per thread, because the Drive
-        client is not thread-safe."""
-        if len(file_ids) <= 1:
-            return [self._conn.download_file(f) for f in file_ids]
+    def _download_all(self, listed: list[dict]) -> list[bytes | None]:
+        """The bytes of each listed file, in order; None for a file that could
+        not be downloaded. Several files download over a thread pool with one
+        connection copy per thread, because the Drive client is not
+        thread-safe."""
+        if len(listed) <= 1:
+            return [_download_or_skip(self._conn, m) for m in listed]
         per_thread = threading.local()
 
-        def download(file_id: str) -> bytes:
+        def download(m: dict) -> bytes | None:
             if not hasattr(per_thread, "conn"):
                 per_thread.conn = self._conn.clone_for_thread()
-            return per_thread.conn.download_file(file_id)
+            return _download_or_skip(per_thread.conn, m)
 
-        workers = min(DOWNLOAD_WORKERS, len(file_ids))
+        workers = min(DOWNLOAD_WORKERS, len(listed))
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            return list(pool.map(download, file_ids))
+            return list(pool.map(download, listed))
 
     def mark_processed(self, message: RawMessage) -> None:
         # The archive folder is named after ``message.sender``, which receive
         # set from the inbox folder, never from the message body.
         _require_inbox_kind(message.kind)
         self._conn.owner_archive_inbox_file(message.handle, message.sender)
+
+    def mark_all_processed(self, messages: list[RawMessage]) -> None:
+        for message in messages:
+            _require_inbox_kind(message.kind)
+        self._conn.owner_archive_inbox_files([(m.handle, m.sender) for m in messages])
 
     def outbox_messages(self, peer: str, since_timestamp: float | None) -> list[bytes]:
         """The messages in ``peer``'s outbox to me, newer than ``since_timestamp``."""

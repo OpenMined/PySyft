@@ -5,6 +5,7 @@ import json
 import logging
 import pickle
 import re
+import warnings
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
@@ -67,6 +68,8 @@ if TYPE_CHECKING:
 
 # Timeout for Google API requests (in seconds)
 GOOGLE_API_TIMEOUT = 120  # 2 minutes
+# Google Drive batch API has a limit of 100 requests per batch
+DRIVE_BATCH_SIZE = 100
 
 SYFTBOX_FOLDER = "SyftBox"
 GOOGLE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
@@ -848,18 +851,40 @@ class GDriveConnection(SyftboxPlatformConnection):
         """Move the inbox file ``file_id`` from ``sender_email`` to its archive folder.
 
         ``sender_email`` names the archive folder, so the caller reads it from
-        the transport, never from the sender-supplied message body. The inbox
-        folder is the file's only parent and its id is cached, so the move is
-        one Drive call.
+        the transport, never from the sender-supplied message body.
         """
-        execute_with_retries(
-            self.drive_service.files().update(
-                fileId=file_id,
-                addParents=self.owner_get_archive_folder_id(sender_email),
-                removeParents=self._get_own_datasite_inbox_id(sender_email),
-                fields="id",
-                supportsAllDrives=True,
-            )
+        execute_with_retries(self._archive_inbox_file_request(file_id, sender_email))
+
+    def owner_archive_inbox_files(self, files: list[tuple[str, str]]) -> None:
+        """Move each inbox file, given as ``(file_id, sender_email)``, to its
+        sender's archive folder, up to ``DRIVE_BATCH_SIZE`` moves per request.
+
+        A move that fails is warned about and its file stays in the inbox.
+        """
+
+        def callback(request_id, response, exception):
+            if exception is not None:
+                warnings.warn(
+                    f"Could not archive inbox file {request_id}: {exception!r}"
+                )
+
+        for i in range(0, len(files), DRIVE_BATCH_SIZE):
+            batch = self.drive_service.new_batch_http_request(callback=callback)
+            for file_id, sender_email in files[i : i + DRIVE_BATCH_SIZE]:
+                request = self._archive_inbox_file_request(file_id, sender_email)
+                batch.add(request, request_id=file_id)
+            batch_execute_with_retries(batch)
+
+    def _archive_inbox_file_request(self, file_id: str, sender_email: str):
+        """The request that moves an inbox file to its archive folder. The inbox
+        folder is the file's only parent and both folder ids are cached, so the
+        move is one Drive call."""
+        return self.drive_service.files().update(
+            fileId=file_id,
+            addParents=self.owner_get_archive_folder_id(sender_email),
+            removeParents=self._get_own_datasite_inbox_id(sender_email),
+            fields="id",
+            supportsAllDrives=True,
         )
 
     def _has_permission(self, file_id: str, email: str) -> bool:
@@ -1287,10 +1312,8 @@ class GDriveConnection(SyftboxPlatformConnection):
                     f"Failed to delete {request_id}: error status {response.get('status')}"
                 )
 
-        # Google Drive batch API has a limit of 100 requests per batch
-        BATCH_SIZE = 100
-        for i in range(0, len(file_ids), BATCH_SIZE):
-            chunk = file_ids[i : i + BATCH_SIZE]
+        for i in range(0, len(file_ids), DRIVE_BATCH_SIZE):
+            chunk = file_ids[i : i + DRIVE_BATCH_SIZE]
             batch = self.drive_service.new_batch_http_request(callback=callback)
             for file_id in chunk:
                 batch.add(self.drive_service.files().delete(fileId=file_id))
@@ -1590,9 +1613,8 @@ class GDriveConnection(SyftboxPlatformConnection):
             if exception and "alreadyShared" not in str(exception):
                 raise exception
 
-        BATCH_SIZE = 100
-        for i in range(0, len(users), BATCH_SIZE):
-            chunk = users[i : i + BATCH_SIZE]
+        for i in range(0, len(users), DRIVE_BATCH_SIZE):
+            chunk = users[i : i + DRIVE_BATCH_SIZE]
             batch = self.drive_service.new_batch_http_request(callback=callback)
             for user_email in chunk:
                 permission = {

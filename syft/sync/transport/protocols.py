@@ -73,6 +73,11 @@ class P2PConnection(ABC):
         """Record that ``message`` was processed; ``receive`` never returns it
         again."""
 
+    def mark_all_processed(self, messages: list[RawMessage]) -> None:
+        """``mark_processed`` for each of ``messages``."""
+        for message in messages:
+            self.mark_processed(message)
+
 
 class OwnerStore(ABC):
     """The data owner's own storage: event log, checkpoints, rolling state.

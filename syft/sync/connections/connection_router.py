@@ -149,35 +149,49 @@ class ConnectionRouter(BaseModel):
         filename = proposed_file_changes_message.message_filename.as_string()
         self.transport.p2p.send(recipient, filename, data, MessageKind.PROPOSED_CHANGES)
 
-    def owner_receive_proposed_messages(self, sender_email: str) -> list[RawMessage]:
-        """Every proposed-changes message from ``sender_email`` not processed
-        yet, oldest first, still encrypted."""
-        return self.transport.p2p.receive(sender_email, MessageKind.PROPOSED_CHANGES)
+    def owner_receive_proposed_messages(
+        self, sender_email: str
+    ) -> list[tuple[RawMessage, ProposedFileChangesMessage]]:
+        """Every readable proposal waiting from ``sender_email``, oldest first,
+        as received and as read. Pass the received ones to
+        ``owner_mark_all_processed`` once they are handled.
 
-    def owner_read_proposed_message(
-        self, message: RawMessage
-    ) -> ProposedFileChangesMessage | None:
-        """``message`` decrypted, verified and decoded.
-
-        A message whose format does not match the pair is marked processed
-        unread, with a warning, and gives None.
+        A message that cannot be read (wrong format for the pair, bad
+        signature, cannot be decrypted or decoded) is marked processed unread,
+        with a warning, so it does not hold back the others.
 
         Raises:
-            SyftPeerNotReadyError: when the message cannot be read yet. It
-                stays unprocessed.
+            SyftPeerNotReadyError: when the peer is not set up yet. Every
+                message stays unprocessed.
         """
+        received = self.transport.p2p.receive(
+            sender_email, MessageKind.PROPOSED_CHANGES
+        )
+        readable = []
+        for raw in received:
+            if (message := self._read_proposed_message(raw)) is not None:
+                readable.append((raw, message))
+        return readable
+
+    def _read_proposed_message(
+        self, raw: RawMessage
+    ) -> ProposedFileChangesMessage | None:
+        """``raw`` verified, decrypted and decoded, or None when it cannot be
+        read; that message is then marked processed with a warning."""
         try:
             decrypted = self.peer_store.decrypt_and_verify_if_needed(
-                message.sender, message.data
+                raw.sender, raw.data
             )
-        except MessageFormatError as e:
-            warnings.warn(f"Archived message {message.msg_id} unread: {e}")
-            self.owner_mark_processed(message)
+            return ProposedFileChangesMessage.from_compressed_data(decrypted)
+        except SyftPeerNotReadyError:
+            raise
+        except Exception as e:
+            warnings.warn(f"Archived message {raw.msg_id} unread: {e!r}")
+            self.transport.p2p.mark_processed(raw)
             return None
-        return ProposedFileChangesMessage.from_compressed_data(decrypted)
 
-    def owner_mark_processed(self, message: RawMessage) -> None:
-        self.transport.p2p.mark_processed(message)
+    def owner_mark_all_processed(self, messages: list[RawMessage]) -> None:
+        self.transport.p2p.mark_all_processed(messages)
 
     def owner_write_event_messages_to_outbox(
         self, recipient_email: str, events_message: FileChangeEventsMessage

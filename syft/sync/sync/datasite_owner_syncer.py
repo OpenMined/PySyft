@@ -300,19 +300,24 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
                 self._save_rolling_state()
 
     def _pull_proposals(self, peer_email: str) -> None:
-        """Apply every proposed change waiting from ``peer_email``.
+        """Apply every proposed change waiting from ``peer_email``, then archive
+        them all in one go.
 
-        A proposal that fails is logged as an error, so that it does not hold
-        back the other peers or the owner's changes.
+        A proposal that cannot be read or applied is archived with a warning,
+        so it never holds back the ones after it. Proposals stay in the inbox
+        only while the peer is not set up yet or Drive cannot be reached; that
+        is logged, so it does not hold back the other peers or the owner's
+        changes.
         """
         proposed_count = 0
         try:
             received = self.connection_router.owner_receive_proposed_messages(
                 peer_email
             )
-            for message in received:
-                if processed := self.process_proposed_message(message):
-                    proposed_count += len(processed.proposed_file_changes)
+            for raw, message in received:
+                if self._apply_proposed_message(raw, message):
+                    proposed_count += len(message.proposed_file_changes)
+            self.connection_router.owner_mark_all_processed([r for r, _ in received])
         except SyftPeerNotReadyError as e:
             warnings.warn(f"Messages from {peer_email} stay in the inbox: {e}")
         except Exception as e:
@@ -763,28 +768,31 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         events = [self._create_current_filestate_event(p) for p in plan.send]
         return events + [self._deletion_event(p) for p in plan.delete]
 
-    def process_proposed_message(
-        self, received: RawMessage
-    ) -> ProposedFileChangesMessage | None:
-        """Apply one received proposal and mark it processed. None when it was
-        unreadable and archived unread."""
-        message = self.connection_router.owner_read_proposed_message(received)
-        if message is None:
-            return None
+    def _apply_proposed_message(
+        self, received: RawMessage, message: ProposedFileChangesMessage
+    ) -> bool:
+        """Apply one proposal; False, with a warning, when applying it failed.
+        Either way the caller archives it, so it does not hold back the next."""
         # The sender is the peer whose inbox held the message. The transport
         # read the message from that peer's folder and checked the signature
         # against that peer's key. The body is sender-supplied, so a claim
         # there that disagrees is a spoof attempt.
         sender_email = received.sender
-        if same_email(message.sender_email, sender_email):
-            self.handle_proposed_filechange_events_message(sender_email, message)
-        else:
-            logger.warning(
-                f"Dropped a proposed change from {sender_email}: the message "
-                f"claims sender {message.sender_email!r}."
+        try:
+            if same_email(message.sender_email, sender_email):
+                self.handle_proposed_filechange_events_message(sender_email, message)
+            else:
+                logger.warning(
+                    f"Dropped a proposed change from {sender_email}: the message "
+                    f"claims sender {message.sender_email!r}."
+                )
+            return True
+        except Exception as e:
+            warnings.warn(
+                f"Archived proposed change {received.msg_id} from {sender_email}: "
+                f"applying it failed: {e!r}"
             )
-        self.connection_router.owner_mark_processed(received)
-        return message
+            return False
 
     def check_write_permission(self, sender_email: str, path: str) -> bool:
         """Check if sender has write access to the given path."""
