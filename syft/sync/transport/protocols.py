@@ -14,7 +14,7 @@ backend may override when it can do them faster.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from pydantic import BaseModel, ConfigDict
 
@@ -26,7 +26,19 @@ if TYPE_CHECKING:
     from syft.sync.version.peer_info import PeerInfo
 
 
-class P2PConnection(ABC):
+class TransportPart:
+    """What every part of a transport does besides its job."""
+
+    def clone_for_thread(self) -> Self:
+        """A copy that another thread may use. This one, unless the backend's
+        client cannot be shared across threads."""
+        return self
+
+    def reset_caches(self) -> None:
+        """Forget what was cached from the backend."""
+
+
+class P2PConnection(TransportPart, ABC):
     """Messages between peers, kept until the recipient has processed them.
 
     Sending and receiving each have their own confirmation:
@@ -79,7 +91,7 @@ class P2PConnection(ABC):
             self.mark_processed(message)
 
 
-class OwnerStore(ABC):
+class OwnerStore(TransportPart, ABC):
     """The data owner's own storage: event log, checkpoints, rolling state.
 
     Only the owner writes and reads it, and it is never shared.
@@ -153,8 +165,14 @@ class OwnerStore(ABC):
     def delete_rolling_state(self) -> None:
         """Remove the rolling state."""
 
+    # -- the whole account -----------------------------------------------------
+    @abstractmethod
+    def delete_all(self) -> int:
+        """Delete everything this account keeps on the backend, for every role,
+        and return how many files and folders went."""
 
-class WatcherStore(ABC):
+
+class WatcherStore(TransportPart, ABC):
     """The data scientist's memory of what each owner sent it.
 
     One area per owner, in the scientist's own storage, never shared, so it
@@ -185,7 +203,7 @@ class WatcherStore(ABC):
         everything again."""
 
 
-class Collections(ABC):
+class Collections(TransportPart, ABC):
     """Sets of files a data owner shares with named readers (datasets)."""
 
     @abstractmethod
@@ -222,6 +240,10 @@ class Collections(ABC):
         """Remove every layout of ``tag`` published under ``prefix``."""
 
     @abstractmethod
+    def delete_by_handle(self, handle: str) -> None:
+        """Remove the one collection folder ``handle`` names."""
+
+    @abstractmethod
     def list_shared_with_me(self, prefix: str) -> list[dict]:
         """Collections peers shared with me, each with owner_email, tag,
         content_hash and variant."""
@@ -244,7 +266,7 @@ class Collections(ABC):
         return {f["file_name"]: self.fetch_file(f["file_id"]) for f in files}
 
 
-class Peering(ABC):
+class Peering(TransportPart, ABC):
     """Finding and trusting a peer: identity, channels, peer list, published
     documents."""
 

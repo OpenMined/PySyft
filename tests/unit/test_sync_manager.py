@@ -24,6 +24,7 @@ from tests.unit.utils import (
     get_mock_proposed_events_messages,
     grant_job_inbox_access,
 )
+from syft.sync.connections.drive.drive_connections import drive_connection
 
 
 def path_for_job(do_email: str, ds_email: str, filename: str = "test.job") -> str:
@@ -148,7 +149,7 @@ def test_sync_existing_datasite_state_do():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False
     )
-    connection_ds = ds_manager._connection_router.connections[0]
+    connection_ds = drive_connection(ds_manager._connection_router.transport)
     events_messages = get_mock_events_messages(2)
 
     for message in events_messages:
@@ -186,7 +187,7 @@ def test_sync_existing_inbox_state_do():
     do_manager.datasite_owner_syncer.perm_context.open(".").grant_write_access(
         ds_manager.email
     )
-    connection_ds = ds_manager._connection_router.connections[0]
+    connection_ds = drive_connection(ds_manager._connection_router.transport)
 
     proposed_events_messages = get_mock_proposed_events_messages(
         2, email=ds_manager.email
@@ -487,12 +488,13 @@ def _add_known_peer(do_manager, email: str) -> None:
 def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:
     """Make ``email`` a second peer of the DO, and return its router."""
     conn = GDriveConnection.from_service(
-        email, ds_manager._connection_router.connections[0].drive_service
+        email, drive_connection(ds_manager._connection_router.transport).drive_service
     )
     conn.add_peer(do_manager.email)
     _add_known_peer(do_manager, email)
     return ConnectionRouter(
-        connections=[conn], peer_store=_store_knowing(email, do_manager.email)
+        transport=conn.as_transport(),
+        peer_store=_store_knowing(email, do_manager.email),
     )
 
 

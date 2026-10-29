@@ -8,6 +8,7 @@ from syft_datasets.dataset_manager import (
     PRIVATE_DATASET_COLLECTION_PREFIX,
 )
 from dataset_test_utils import create_tmp_dataset_files
+from syft.sync.connections.drive.drive_connections import drive_connection
 
 
 class TestDatasetUploadPrivate:
@@ -145,8 +146,8 @@ class TestDatasetUploadPrivate:
         )
 
         # Get the DS's raw GDrive connection and search for private folders
-        ds_connection: GDriveConnection = (
-            ds_manager.sync_engine._connection_router.connections[0]
+        ds_connection: GDriveConnection = drive_connection(
+            ds_manager.sync_engine._connection_router.transport
         )
         results = (
             ds_connection.drive_service.files()
@@ -159,8 +160,8 @@ class TestDatasetUploadPrivate:
         assert len(results.get("files", [])) == 0
 
         # DO should find it with the same query
-        do_connection: GDriveConnection = (
-            do_manager.sync_engine._connection_router.connections[0]
+        do_connection: GDriveConnection = drive_connection(
+            do_manager.sync_engine._connection_router.transport
         )
         do_results = (
             do_connection.drive_service.files()

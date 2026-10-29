@@ -10,6 +10,7 @@ from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.messages.proposed_filechange import ProposedFileChange
 from syft.sync.utils.syftbox_utils import get_event_hash_from_content
 from syft.sync.connections.connection_router import ConnectionRouter
+from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.peers.peer_store import PeerStore
 
 
@@ -220,8 +221,11 @@ def grant_job_inbox_access(do_manager, ds_email: str) -> None:
     ).grant_write_access(ds_email)
 
 
-def router_without_connections(email: str) -> ConnectionRouter:
-    """A connection router with no backend, for a part a test builds on its own.
-    In a manager every part shares the router ``SyftboxManager.from_config``
-    builds."""
-    return ConnectionRouter(connections=[], peer_store=PeerStore(email=email))
+def router_with_mock_connection(email: str) -> ConnectionRouter:
+    """A connection router over a mock Drive, for a part a test builds on its
+    own. In a manager every part shares the router
+    ``SyftboxManager.from_config`` builds."""
+    connection, _ = pair_with_mock_service(email, "peer@example.com")
+    return ConnectionRouter(
+        transport=connection.as_transport(), peer_store=PeerStore(email=email)
+    )

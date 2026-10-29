@@ -12,6 +12,7 @@ from syft.sync.messages.proposed_filechange import (
     ProposedFileChangesMessage,
 )
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.connections.drive.drive_connections import drive_connection
 
 
 def send_spoofed_message(
@@ -80,7 +81,9 @@ def test_spoofed_sender_does_not_name_an_archive_folder():
     send_spoofed_message(ds_manager, do_email, claimed_email, "any.txt")
     sync_do(do_manager)
 
-    connection = do_manager.datasite_owner_syncer.connection_router.connections[0]
+    connection = drive_connection(
+        do_manager.datasite_owner_syncer.connection_router.transport
+    )
     folder_names = [
         f.name for f in connection.drive_service._backing_store.files.values()
     ]

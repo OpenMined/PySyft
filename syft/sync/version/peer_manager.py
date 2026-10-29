@@ -279,12 +279,10 @@ class PeerManager(BaseModel):
         Raises:
             TransportUnavailableError: when the backend cannot be reached.
         """
-        # Create new connection for thread safety
-        connection = self.connection_router.connection_for_peer_file_read(
-            create_new=True
-        )
+        # A copy per thread: the backend's client may not be thread-safe
+        peering = self.connection_router.transport.peering.clone_for_thread()
         try:
-            return (peer_email, connection.read_peer_info_file(peer_email))
+            return (peer_email, peering.read_peer_info(peer_email))
         except TransportUnavailableError:
             raise
         except Exception as e:
@@ -652,10 +650,8 @@ class PeerManager(BaseModel):
 
     def _read_own_published_bundle(self, peer_email: str) -> dict | None:
         """The bundle this client published for ``peer_email``, or None (thread-safe)."""
-        connection = self.connection_router.connection_for_peer_file_read(
-            create_new=True
-        )
-        bundle_json = connection.read_own_encryption_bundle(peer_email)
+        peering = self.connection_router.transport.peering.clone_for_thread()
+        bundle_json = peering.read_own_key_bundle(peer_email)
         if bundle_json is None:
             return None
         return json.loads(bundle_json)["public_encryption_bundle"]

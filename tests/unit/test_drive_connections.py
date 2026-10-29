@@ -26,7 +26,6 @@ from syft.sync.connections.drive.mock_drive_service import pair_with_mock_servic
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.events.file_change_event import FileChangeEventsMessage
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
-from syft.sync.peers.peer_store import PeerStore
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.transport import (
@@ -511,11 +510,9 @@ def test_peering_publishes_peer_info_the_peer_can_read(pair):
 
 def _router_with_mock_p2p():
     do_conn, _ = pair_with_mock_service(DO, DS)
-    router = ConnectionRouter(connections=[do_conn], peer_store=_store_knowing(DO, DS))
-    drive = do_conn.as_transport()
     p2p = Mock(spec=DriveP2PConnection)
-    router._transport = drive.model_copy(update={"p2p": p2p})
-    router._transport_source = do_conn
+    transport = do_conn.as_transport().model_copy(update={"p2p": p2p})
+    router = ConnectionRouter(transport=transport, peer_store=_store_knowing(DO, DS))
     return router, p2p
 
 
@@ -592,16 +589,6 @@ def test_the_router_reads_the_outbox_through_p2p():
     assert router.watcher_get_outbox_file_metadatas(DO, 5.0) == []
     p2p.outbox_messages.assert_called_once_with(DO, 5.0)
     p2p.outbox_message_metadatas.assert_called_once_with(DO, 5.0)
-
-
-def test_the_router_reuses_its_transport_until_its_connection_changes():
-    do_conn, other_conn = pair_with_mock_service(DO, DS)
-    router = ConnectionRouter(connections=[do_conn], peer_store=PeerStore(email=DO))
-    first = router.transport
-    assert router.transport is first
-
-    router.connections[0] = other_conn
-    assert router.transport is not first
 
 
 def test_the_router_holds_no_drive_specific_code():

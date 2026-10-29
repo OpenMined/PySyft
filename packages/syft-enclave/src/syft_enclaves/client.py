@@ -15,6 +15,7 @@ from syft_perms.syftperm_context import SyftPermContext
 from syft_rds import SyftRDSClient, SyftRDSClientConfig
 from syft_rds.waiting import JobCheck, JobStatusArg, wait_for_job
 
+from syft.sync.transport.protocols import Transport
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_list import PeerList
@@ -45,7 +46,6 @@ from syft_enclaves.utils import (
     create_clients,
     create_configs,
     setup_callbacks,
-    setup_connections,
     wire_peers,
     write_versions,
 )
@@ -783,6 +783,7 @@ class SyftEnclaveClient:
         cls,
         config: SyftRDSClientConfig,
         data_owners: list[str] | None = None,
+        transport: Transport | None = None,
     ) -> "SyftEnclaveClient":
         """Build a SyftEnclaveClient from an RDS config with a wrapped job_client.
 
@@ -790,8 +791,10 @@ class SyftEnclaveClient:
         ``peer_manager_config.encryption_policy``; ``SyftboxManager.from_config``
         (invoked inside ``SyftRDSClient.from_config``) loads/generates this
         datasite's keys from its per-datasite key file, so no extra step is needed.
+        ``transport`` replaces the one ``config.sync`` describes; tests pass
+        one over a mock Drive.
         """
-        rds = SyftRDSClient.from_config(config)
+        rds = SyftRDSClient.from_config(config, transport)
         rds.job_client = EnclaveJobClient(rds.job_client)
 
         sync_engine = rds.sync_engine
@@ -885,12 +888,10 @@ class SyftEnclaveClient:
         enclave, do1, do2, ds = clients
         enclave.data_owners = [do1.email, do2.email]
         # The setup helpers manipulate the generic sync engine directly
-        # (connections, file-watcher callbacks, version files, encryption,
-        # peering). Each client's sync engine lives at ``rds.sync_engine``; the
+        # (file-watcher callbacks, version files, encryption, peering). Each client's sync engine lives at ``rds.sync_engine``; the
         # RDS-owned job/dataset managers react via the peer-lifecycle callbacks
         # registered on that same engine during SyftRDSClient.__init__.
         managers = tuple(c._rds.sync_engine for c in clients)
-        setup_connections(managers)
         setup_callbacks(managers)
         write_versions(managers)
         wire_peers(managers)

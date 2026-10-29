@@ -641,8 +641,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         self, collection: FileCollection, spec: CollectionSyncSpec
     ) -> list:
         """Get file metadatas for a collection using a new connection for thread safety."""
-        connection = self.connection_router.connection_for_parallel_download()
-        return connection.watcher_get_collection_file_metadatas(
+        collections = self.connection_router.transport.collections.clone_for_thread()
+        return collections.list_files(
             spec.wire_prefix(collection.variant),
             tag=collection.tag,
             content_hash=collection.content_hash,
@@ -651,8 +651,8 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     def _download_file_with_new_connection(self, file_id: str) -> bytes:
         """Download a file using a new connection for thread safety."""
-        connection = self.connection_router.connection_for_parallel_download()
-        return connection.watcher_download_collection_file(file_id)
+        collections = self.connection_router.transport.collections.clone_for_thread()
+        return collections.fetch_file(file_id)
 
     def _create_current_filestate_event(self, path: str) -> FileChangeEvent:
         """An event that sets ``path`` on a peer to its current local state.
@@ -945,8 +945,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         self, file_id: str
     ) -> FileChangeEventsMessage:
         """Download and decompress one outbox events-message file."""
-        connection = self.connection_router.connection_for_parallel_download()
-        raw = connection.download_file(file_id)
+        raw = self.connection_router.download_outbox_message(file_id)
         return FileChangeEventsMessage.from_compressed_data(raw)
 
     def compact_outbox_if_needed(
@@ -972,16 +971,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             )
             return 0
 
-        conn = self.connection_router.connection_for_outbox()
-        folder_id = conn._get_own_datasite_outbox_id(recipient_email)
-        if folder_id is None:
-            logger.info(
-                f"WARNING: outbox compaction for {recipient_email} skipped — "
-                f"could not resolve outbox folder id"
-            )
-            return 0
-
-        metas = conn.get_file_metadatas_from_folder(folder_id, since_timestamp=None)
+        metas = self.connection_router.owner_get_outbox_file_metadatas(recipient_email)
 
         # Keep only well-formed events-message filenames; track timestamps so
         # we apply events in order in the merged message.
@@ -1022,7 +1012,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             self.connection_router.owner_write_event_messages_to_outbox(
                 recipient_email, FileChangeEventsMessage(events=batch)
             )
-        conn.delete_multiple_files_by_ids(file_ids)
+        self.connection_router.owner_delete_outbox_messages(file_ids)
         return len(parsed)
 
     def write_file_filesystem(self, path: str, content: str):

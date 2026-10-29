@@ -29,6 +29,7 @@ from syft.sync.utils.syftbox_utils import uncompress_data
 from syft_migration import MigrationError, ProtocolSchema
 
 from tests.unit.utils import get_mock_events_messages, mock_message
+from syft.sync.connections.drive.drive_connections import drive_connection
 
 
 def _client_schema(
@@ -128,9 +129,9 @@ def _raw_proposal_version(do_manager, ds_email: str) -> str:
 
 def _raw_outbox_versions(ds_manager, do_email: str) -> list[str]:
     """The version fields of the DO's outbox blobs for us, unparsed."""
-    raw_list = ds_manager._connection_router.connections[
-        0
-    ].watcher_download_raw_events_from_outbox(do_email, None)
+    raw_list = drive_connection(
+        ds_manager._connection_router.transport
+    ).watcher_download_raw_events_from_outbox(do_email, None)
     return [_wire_version(ds_manager, do_email, raw) for raw in raw_list]
 
 

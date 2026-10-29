@@ -4,6 +4,7 @@ from syft.sync.connections.drive.mock_drive_service import (
     MockDriveService,
 )
 from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.transport.protocols import Transport
 
 
 def create_configs(
@@ -49,18 +50,21 @@ def create_configs(
 
 
 def create_clients(configs) -> tuple:
+    """One client per config, all on one mock Drive."""
     from syft_enclaves.client import SyftEnclaveClient
 
-    return tuple(SyftEnclaveClient.from_config(c) for c in configs)
-
-
-def setup_connections(managers: tuple):
     backing_store = MockDriveBackingStore()
+    return tuple(
+        SyftEnclaveClient.from_config(
+            c, transport=_mock_transport(backing_store, c.sync.email)
+        )
+        for c in configs
+    )
 
-    for manager in managers:
-        service = MockDriveService(backing_store, manager.email)
-        connection = GDriveConnection.from_service(manager.email, service)
-        manager._add_connection(connection)
+
+def _mock_transport(backing_store: MockDriveBackingStore, email: str) -> Transport:
+    service = MockDriveService(backing_store, email)
+    return GDriveConnection.from_service(email, service).as_transport()
 
 
 def setup_callbacks(managers: tuple):

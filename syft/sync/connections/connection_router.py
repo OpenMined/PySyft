@@ -2,7 +2,7 @@ import logging
 import warnings
 from typing import TYPE_CHECKING, List, Optional
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel
 from syft_migration import MigratableObject
 
 from syft.migrations import (
@@ -12,11 +12,7 @@ from syft.migrations import (
 )
 from syft.sync.checkpoints.checkpoint import Checkpoint, IncrementalCheckpoint
 from syft.sync.checkpoints.rolling_state import RollingState
-from syft.sync.connections.base_connection import (
-    ConnectionConfig,
-    FileCollection,
-    SyftboxPlatformConnection,
-)
+from syft.sync.connections.base_connection import FileCollection
 from syft.sync.encryption_policy import (
     MessageFormatError,
 )
@@ -43,66 +39,18 @@ logger = logging.getLogger(__name__)
 
 
 class ConnectionRouter(BaseModel):
-    connections: List[SyftboxPlatformConnection]
+    """The one router of a manager. ``SyftboxManager.from_config`` builds it
+    and hands it to every part, so they share one transport, and through it
+    one connection, and one peer store."""
+
+    # Built once with the router and never replaced. Its parts may come from
+    # other backends than its connection, such as a fake p2p in a test.
+    transport: Transport
 
     peer_store: PeerStore
 
-    # The transport jobs over connections[0], rebuilt if that connection is
-    # replaced (tests swap in a mock connection with add_connection).
-    _transport: Optional[Transport] = PrivateAttr(default=None)
-    _transport_source: Optional[SyftboxPlatformConnection] = PrivateAttr(default=None)
-
-    @property
-    def transport(self) -> Transport:
-        connection = self.connections[0]
-        if self._transport is None or self._transport_source is not connection:
-            self._transport = connection.as_transport()
-            self._transport_source = connection
-        return self._transport
-
-    @classmethod
-    def from_configs(
-        cls, connection_configs: List[ConnectionConfig], peer_store: PeerStore
-    ) -> "ConnectionRouter":
-        """The one router of a manager. ``SyftboxManager.from_config`` builds
-        it and hands it to every part, so they share one connection, one
-        transport and one peer store."""
-        return cls(
-            connections=[
-                SyftboxPlatformConnection.from_config(config)
-                for config in connection_configs
-            ],
-            peer_store=peer_store,
-        )
-
-    def add_connection(self, connection: SyftboxPlatformConnection):
-        self.connections.append(connection)
-
     def get_authenticated_email(self) -> str:
-        return self.connections[0].get_authenticated_email()
-
-    def copy_connection(
-        self, connection: SyftboxPlatformConnection
-    ) -> SyftboxPlatformConnection:
-        return connection.clone_for_thread()
-
-    def connection_for_eventlog(
-        self, create_new: bool = False
-    ) -> SyftboxPlatformConnection:
-        existing_connection = self.connections[0]
-        if create_new:
-            return self.copy_connection(existing_connection)
-        else:
-            return existing_connection
-
-    def connection_for_datasite_watcher(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
-
-    def connection_for_outbox(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
-
-    def connection_for_own_syftbox(self) -> SyftboxPlatformConnection:
-        return self.connections[0]
+        return self.transport.peering.whoami()
 
     # =========================================================================
     # MESSAGE SEND/RECEIVE (with encryption)
@@ -246,9 +194,12 @@ class ConnectionRouter(BaseModel):
         """Download one outbox message by its handle (thread-safe)."""
         return self.transport.p2p.clone_for_thread().fetch_message(file_id)
 
-    def connection_for_parallel_download(self) -> SyftboxPlatformConnection:
-        """Create a new connection for thread-safe parallel downloads."""
-        return self.copy_connection(self.connection_for_datasite_watcher())
+    def owner_get_outbox_file_metadatas(self, recipient_email: str) -> List[dict]:
+        """The messages in my outbox to ``recipient_email``, without downloading."""
+        return self.transport.p2p.own_outbox_message_metadatas(recipient_email)
+
+    def owner_delete_outbox_messages(self, file_ids: List[str]) -> None:
+        self.transport.p2p.delete_messages(file_ids)
 
     # =========================================================================
     # EVENT LOG (self-encrypted at rest when encryption enabled)
@@ -266,8 +217,7 @@ class ConnectionRouter(BaseModel):
         self, events_message_id: str
     ) -> FileChangeEventsMessage:
         """Download and decrypt a single events message (thread-safe)."""
-        connection = self.connection_for_eventlog(create_new=True)
-        raw = connection.as_transport().owner_store.fetch(events_message_id)
+        raw = self.transport.owner_store.clone_for_thread().fetch(events_message_id)
         raw = self.peer_store.decrypt_and_verify_for_self_if_needed(raw)
         return FileChangeEventsMessage.from_compressed_data(raw)
 
@@ -418,19 +368,6 @@ class ConnectionRouter(BaseModel):
             }
         return files
 
-    def connection_for_peer_file_read(
-        self, create_new: bool = False
-    ) -> SyftboxPlatformConnection:
-        """Connection for reading files a peer publishes: peer info and key bundles.
-
-        Can create a new one for thread safety.
-        """
-        existing_connection = self.connections[0]
-        if create_new:
-            return self.copy_connection(existing_connection)
-        else:
-            return existing_connection
-
     def write_peer_info_file(self, peer_info: "PeerInfo") -> None:
         """Write the peer info file to own SyftBox folder."""
         self.transport.peering.publish_peer_info(peer_info)
@@ -465,40 +402,29 @@ class ConnectionRouter(BaseModel):
     # MISC
     # =========================================================================
 
-    def delete_multiple_files_by_ids(
-        self,
-        file_ids: List[str],
-        ignore_permissions_errors: bool = True,
-        ignore_file_not_found: bool = True,
-    ):
-        connection = self.connection_for_own_syftbox()
-        connection.delete_multiple_files_by_ids(
-            file_ids,
-            ignore_permissions_errors=ignore_permissions_errors,
-            ignore_file_not_found=ignore_file_not_found,
-        )
-
     def owner_get_all_accepted_event_file_ids(
         self, since_timestamp: float | None = None
     ) -> List[str]:
         return self.transport.owner_store.list_event_handles(since_timestamp)
 
-    def gather_all_file_and_folder_ids(self) -> List[str]:
-        connection = self.connection_for_own_syftbox()
-        return connection.gather_all_file_and_folder_ids()
-
-    def find_orphaned_syft_files(self) -> List[str]:
-        """Find the orphaned syft files of this account in its My Drive root."""
-        connection = self.connection_for_own_syftbox()
-        return connection.find_orphaned_syft_files()
+    def delete_all(self) -> int:
+        """Delete everything this account keeps on the backend; return how
+        many files and folders went."""
+        return self.transport.owner_store.delete_all()
 
     def reset_caches(self):
-        connection = self.connection_for_own_syftbox()
-        connection.reset_caches()
+        transport = self.transport
+        for part in (
+            transport.p2p,
+            transport.owner_store,
+            transport.watcher_store,
+            transport.collections,
+            transport.peering,
+        ):
+            part.reset_caches()
 
     def delete_file_by_id(self, file_id: str):
-        connection = self.connection_for_own_syftbox()
-        connection.delete_file_by_id(file_id)
+        self.transport.collections.delete_by_handle(file_id)
 
     # =========================================================================
     # CHECKPOINT METHODS

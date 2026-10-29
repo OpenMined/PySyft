@@ -3,6 +3,7 @@
 from syft.sync.events.file_change_event import FileChangeEventsMessage
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.utils import get_mock_event
+from syft.sync.connections.drive.drive_connections import drive_connection
 
 
 def test_compact_outboxes_if_needed_collapses_to_single_message():
@@ -20,7 +21,7 @@ def test_compact_outboxes_if_needed_collapses_to_single_message():
             ds_manager.email, msg
         )
 
-    conn_do = do_manager._connection_router.connections[0]
+    conn_do = drive_connection(do_manager._connection_router.transport)
     outbox_id = conn_do._get_own_datasite_outbox_id(ds_manager.email)
     pre = conn_do.get_file_metadatas_from_folder(outbox_id, since_timestamp=None)
     assert len(pre) == n_messages
