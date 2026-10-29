@@ -2,8 +2,7 @@
 
 ``drive_transport`` builds one of each job over the ``DriveLayout`` of a
 connection. Each job has its own module: ``drive_p2p``, ``drive_owner_store``,
-``drive_collections`` and ``drive_peering``. Storage for the data scientist is
-not built on Drive yet.
+``drive_collections`` and ``drive_peering``.
 """
 
 from __future__ import annotations
@@ -25,8 +24,8 @@ if TYPE_CHECKING:
 
 
 class DriveWatcherStore(WatcherStore):
-    """The data scientist's storage on Drive. Not built yet: today the data
-    scientist keeps what it received in a local cache."""
+    """The DS's storage on Drive. Not built yet: today the DS keeps what it
+    received in a local cache."""
 
     def __init__(self, connection: GDriveConnection):
         self._conn = connection

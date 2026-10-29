@@ -1,4 +1,4 @@
-"""The data owner's own storage on Google Drive.
+"""The DO's own storage on Google Drive.
 
 The event log is the personal folder /SyftBox/{version}#{email}. Checkpoints
 and the rolling state have folders of their own under /SyftBox.
@@ -45,8 +45,7 @@ def _filter_valid_file_metadatas(
 
 
 class DriveOwnerStore(OwnerStore):
-    """The data owner's own folders in /SyftBox: event log, checkpoints,
-    rolling state."""
+    """The DO's own folders in /SyftBox: event log, checkpoints, rolling state."""
 
     def __init__(self, layout: DriveLayout):
         self._layout = layout

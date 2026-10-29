@@ -9,8 +9,8 @@ from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
 class DriveP2PConnection(P2PConnection):
     """Messages through the shared inbox and outbox folders.
 
-    A proposed change goes to the data owner's inbox and file events go to the
-    data scientist's outbox. ``msg_id`` is the file name. A written file is
+    A proposed change goes to the DO's inbox and file events go to the DS's
+    outbox. ``msg_id`` is the file name. A written file is
     ``DELIVERED``: it waits in the folder until the peer reads it.
 
     Only sending goes through this class so far. The router still reads and

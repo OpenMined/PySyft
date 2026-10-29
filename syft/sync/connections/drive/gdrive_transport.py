@@ -86,9 +86,9 @@ class GDriveConnection(SyftboxPlatformConnection):
     """A Google Drive account as a syft connection.
 
     It builds the Drive service and the ``DriveLayout``, and gives out the
-    transport jobs (``as_transport``) and copies for other threads. Two jobs
-    stay here until they have a contract: reading and archiving messages, which
-    waits for send-and-forget, and the account cleanup of ``delete_syftbox``.
+    transport jobs (``as_transport``) and copies for other threads. It also
+    reads and archives messages, and cleans up the account for
+    ``delete_syftbox``.
     """
 
     class Config:
