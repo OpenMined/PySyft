@@ -6,7 +6,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Callable, List, Optional, cast
+from typing import List, Optional, cast
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 
@@ -62,7 +62,7 @@ from syft.sync.utils.syftbox_utils import (
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.transport.config import TransportConfig
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
-from syft.sync.transport.protocols import P2PConnection, Transport
+from syft.sync.transport.protocols import Transport
 from syft.sync.version.peer_manager import (
     PeerManager,
     PeerManagerConfig,
@@ -118,19 +118,6 @@ def default_collection_variants(
     if spec is None:
         return []
     return [layout.variant for layout in spec.layouts]
-
-
-def _transport_with_p2p(
-    connection: GDriveConnection,
-    make_p2p: Callable[[str, P2PConnection], P2PConnection] | None,
-) -> Transport:
-    """The Drive transport over ``connection``, with the p2p ``make_p2p``
-    builds from the connection's email and Drive p2p when given."""
-    transport = SyftboxManager._drive_transport(connection)
-    if make_p2p is None:
-        return transport
-    p2p = make_p2p(connection.email, transport.p2p)
-    return transport.model_copy(update={"p2p": p2p})
 
 
 class SyftboxManagerConfig(BaseModel):
@@ -792,7 +779,6 @@ class SyftboxManager(BaseModelCallbackMixin):
         collection_specs: list["CollectionSyncSpec"] | None = None,
         ds_encryption_policy: EncryptionPolicy | None = None,
         do_encryption_policy: EncryptionPolicy | None = None,
-        make_p2p: Callable[[str, P2PConnection], P2PConnection] | None = None,
     ):
         """Create a pair of managers using mock Google Drive services for testing.
 
@@ -813,9 +799,6 @@ class SyftboxManager(BaseModelCallbackMixin):
             encryption: Require encryption on both sides
             ds_encryption_policy: Policy of the DS; overrides ``encryption``
             do_encryption_policy: Policy of the DO; overrides ``encryption``
-            make_p2p: Builds each manager's p2p from its email and its Drive
-                p2p; tests pass a fake. Each manager keeps its Drive p2p
-                without it.
 
         Returns:
             Tuple of (ds_manager, do_manager)
@@ -850,10 +833,10 @@ class SyftboxManager(BaseModelCallbackMixin):
             do_config.email, ds_config.email
         )
         do_manager = cls.from_config(
-            do_config, _transport_with_p2p(do_connection, make_p2p)
+            do_config, SyftboxManager._drive_transport(do_connection)
         )
         ds_manager = cls.from_config(
-            ds_config, _transport_with_p2p(ds_connection, make_p2p)
+            ds_config, SyftboxManager._drive_transport(ds_connection)
         )
 
         # Set up callbacks for DS -> DO communication
