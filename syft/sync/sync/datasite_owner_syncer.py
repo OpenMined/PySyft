@@ -23,10 +23,7 @@ from syft.sync.checkpoints.rolling_state import (
     RollingState,
     raise_for_later_version,
 )
-from syft.sync.connections.base_connection import (
-    ConnectionConfig,
-    FileCollection,
-)
+from syft.sync.connections.base_connection import FileCollection
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.events.file_change_event import (
     FileChangeEvent,
@@ -153,7 +150,6 @@ class DatasiteOwnerSyncerConfig(BaseModel):
     cache_config: DataSiteOwnerEventCacheConfig = Field(
         default_factory=DataSiteOwnerEventCacheConfig
     )
-    connection_configs: List[ConnectionConfig] = []
 
 
 class OutgoingMessage(NamedTuple):
@@ -216,7 +212,13 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     _events_since_rolling_state_upload: int = PrivateAttr(default=0)
 
     @classmethod
-    def from_config(cls, config: DatasiteOwnerSyncerConfig):
+    def from_config(
+        cls, config: DatasiteOwnerSyncerConfig, connection_router: ConnectionRouter
+    ):
+        """``config`` holds plain values only. ``connection_router`` is live and
+        shared with the other parts of the manager, so the caller builds it
+        once and passes it in next to the config (see
+        ``SyftboxManager.from_config``)."""
         # Ensure cache config has the same collections_folder (both are now full paths)
         if config.collections_folder is not None:
             config.cache_config.collections_folder = config.collections_folder
@@ -228,9 +230,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
             event_cache=DataSiteOwnerEventCache.from_config(config.cache_config),
             write_files=config.write_files,
             persist_owner_state=config.persist_owner_state,
-            connection_router=ConnectionRouter.from_configs(
-                config.email, config.connection_configs
-            ),
+            connection_router=connection_router,
             email=config.email,
             syftbox_folder=config.syftbox_folder,
             perm_context=SyftPermContext(datasite=datasite),
