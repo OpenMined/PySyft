@@ -268,7 +268,7 @@ class DriveCollections(Collections):
         collections = self.owner_list_all_collections_with_permissions(prefix)
         for c in collections:
             if c.tag == tag:
-                self._layout.client.delete_file_by_id(c.folder_id)
+                self._layout.client.delete_file_by_id(c.folder_id, raise_on_error=True)
                 folder_name = CollectionFolder(
                     prefix=prefix,
                     tag=c.tag,

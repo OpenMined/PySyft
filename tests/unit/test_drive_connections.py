@@ -16,6 +16,7 @@ from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.drive_collections import CollectionFolder
 from syft.sync.connections.drive.gdrive_client import GDriveClient
 from syft.sync.connections.drive.mock_drive_service import (
+    MockDeleteRequest,
     http_error,
     pair_with_mock_service,
 )
@@ -260,6 +261,22 @@ def test_a_published_collection_is_listed_and_downloaded_by_its_reader(pair):
 
     owner.collections.delete(DATASETS, "census")
     assert owner.collections.list_mine(DATASETS) == []
+
+
+def test_a_failed_collection_delete_raises(pair, monkeypatch):
+    do_conn, _ = pair
+    owner = do_conn.as_transport().collections
+    owner.create(DATASETS, "census", "hash", DO)
+
+    def forbidden(self) -> None:
+        raise http_error(403, "forbidden", "The user may not delete this folder")
+
+    monkeypatch.setattr(MockDeleteRequest, "execute", forbidden)
+    with pytest.raises(HttpError):
+        owner.delete(DATASETS, "census")
+    monkeypatch.undo()
+
+    assert owner.list_mine(DATASETS) == ["census"]
 
 
 # -- Peering ----------------------------------------------------------------------
