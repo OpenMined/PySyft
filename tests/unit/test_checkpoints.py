@@ -779,3 +779,52 @@ def test_latest_checkpoint_download_error_raises(monkeypatch):
     monkeypatch.setattr(GDriveClient, "download_file", forbidden)
     with pytest.raises(HttpError):
         store.latest_checkpoint()
+
+
+def _file_event(do_email: str, path: str, content: str) -> FileChangeEvent:
+    return FileChangeEvent(
+        id=uuid4(),
+        path_in_datasite=Path(path),
+        datasite_email=do_email,
+        content=content,
+        old_hash=None,
+        new_hash=f"hash_{content}",
+        is_deleted=False,
+        submitted_timestamp=time.time(),
+        timestamp=time.time(),
+    )
+
+
+def test_incremental_left_after_compaction_does_not_revert_a_file():
+    """A delete that fails after compaction leaves a merged incremental on the
+    backend. Restore and the next compaction must not apply it again."""
+    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=True,
+    )
+    do_email = do_manager.email
+    router = do_manager._connection_router
+    syncer = do_manager.datasite_owner_syncer
+    older = IncrementalCheckpoint(
+        email=do_email,
+        sequence_number=1,
+        events=[_file_event(do_email, "file1.txt", "v1")],
+    )
+    newer = IncrementalCheckpoint(
+        email=do_email,
+        sequence_number=2,
+        events=[_file_event(do_email, "file1.txt", "v2")],
+    )
+    router.upload_incremental_checkpoint(older)
+    router.upload_incremental_checkpoint(newer)
+    syncer.compact_checkpoints()
+    # The delete of the older incremental failed: it is still on the backend.
+    router.upload_incremental_checkpoint(older)
+
+    syncer.event_cache.clear_cache()
+    syncer.initial_sync_done = False
+    do_manager.sync(auto_checkpoint=False)
+    assert syncer.event_cache.file_connection.read_file("file1.txt") == "v2"
+
+    compacted = syncer.compact_checkpoints()
+    [file1] = [f for f in compacted.files if f.path == "file1.txt"]
+    assert file1.content == "v2"
