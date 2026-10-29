@@ -170,6 +170,8 @@ class GDriveConnection(SyftboxPlatformConnection):
                 self.credentials, environment=self.environment
             )
         self.layout = DriveLayout(GDriveClient(drive_service), self.email)
+        # The jobs hold the layout, so a new layout needs new jobs.
+        self._transport = None
 
         if warm_syftbox_folder_id_cache:
             self.layout.get_personal_syftbox_folder_id()

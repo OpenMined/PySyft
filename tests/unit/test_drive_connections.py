@@ -352,8 +352,7 @@ def _router_with_mock_p2p():
     router = ConnectionRouter(connections=[do_conn], peer_store=_store_knowing(DO, DS))
     drive = do_conn.as_transport()
     p2p = Mock(spec=P2PConnection)
-    router._transport = drive.model_copy(update={"p2p": p2p})
-    router._transport_source = do_conn
+    do_conn._transport = drive.model_copy(update={"p2p": p2p})
     return router, p2p
 
 
@@ -381,6 +380,16 @@ def test_the_router_sends_proposed_changes_through_p2p():
         message.message_filename.as_string(),
         MessageKind.PROPOSED_CHANGES,
     )
+
+
+def test_setup_gives_the_jobs_the_new_layout():
+    do_conn, _ = pair_with_mock_service(DO, DS)
+    do_conn.as_transport()
+    do_conn.setup(
+        drive_service=do_conn.client.drive_service,
+        warm_syftbox_folder_id_cache=False,
+    )
+    assert do_conn.as_transport().owner_store._layout is do_conn.layout
 
 
 def test_the_router_reuses_its_transport_until_its_connection_changes():

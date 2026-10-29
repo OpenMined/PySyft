@@ -2,7 +2,7 @@ import logging
 import warnings
 from typing import TYPE_CHECKING, List, Optional
 
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel
 from syft_migration import MigratableObject
 
 from syft.migrations import (
@@ -47,18 +47,10 @@ class ConnectionRouter(BaseModel):
 
     peer_store: PeerStore
 
-    # The transport jobs over connections[0], rebuilt if that connection is
-    # replaced (tests swap in a mock connection with add_connection).
-    _transport: Optional[Transport] = PrivateAttr(default=None)
-    _transport_source: Optional[SyftboxPlatformConnection] = PrivateAttr(default=None)
-
     @property
     def transport(self) -> Transport:
-        connection = self.connections[0]
-        if self._transport is None or self._transport_source is not connection:
-            self._transport = connection.as_transport()
-            self._transport_source = connection
-        return self._transport
+        """The transport jobs over connections[0]."""
+        return self.connections[0].as_transport()
 
     @classmethod
     def from_configs(cls, email: str, connection_configs: List[ConnectionConfig]):
