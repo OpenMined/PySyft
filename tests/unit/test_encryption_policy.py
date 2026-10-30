@@ -29,7 +29,7 @@ from syft.sync.peers.peer_store import (
 )
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.datasite_owner_syncer import OutgoingMessage
-from syft.sync.transport import MessageKind
+from syft.sync.connections.types import MessageKind
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.peer_manager import PeerManager, PeerManagerConfig
 from syft.sync.version.version_info import VersionInfo
@@ -76,7 +76,7 @@ def _keyed_pair(
 
 def _raw_inbox_message(do_manager, sender_email: str) -> bytes:
     router = do_manager.datasite_owner_syncer.connection_router
-    [message] = router.transport.p2p.receive(
+    [message] = router.connections.p2p_con.receive(
         sender_email, MessageKind.PROPOSED_CHANGES, max_messages=1
     )
     return message.data

@@ -150,7 +150,7 @@ def test_sync_existing_datasite_state_do():
     ds_manager, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
         use_in_memory_cache=False
     )
-    ds_p2p = ds_manager._connection_router.transport.p2p
+    ds_p2p = ds_manager._connection_router.connections.p2p_con
     events_messages = get_mock_events_messages(2)
 
     for message in events_messages:
@@ -489,13 +489,13 @@ def _peer_router(ds_manager, do_manager, email: str) -> ConnectionRouter:
     cached_client = DriveCachedClient.from_service(
         email,
         drive_cached_client_of(
-            ds_manager._connection_router.transport
+            ds_manager._connection_router.connections
         ).client.drive_service,
     )
     DrivePeeringConnection(cached_client).open_channels(do_manager.email)
     _add_known_peer(do_manager, email)
     return ConnectionRouter(
-        transport=SyftboxManager._drive_transport(cached_client),
+        connections=SyftboxManager._drive_connections(cached_client),
         peer_store=_store_knowing(email, do_manager.email),
     )
 

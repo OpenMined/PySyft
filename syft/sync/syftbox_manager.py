@@ -60,9 +60,9 @@ from syft.sync.utils.syftbox_utils import (
     random_syftbox_folder_for_testing,
 )
 from syft.sync.peers.peer_store import PeerStore
-from syft.sync.transport.config import TransportConfig
+from syft.sync.connections.config import ConnectionRouterConfig
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
-from syft.sync.transport.protocols import Transport
+from syft.sync.connections.protocols import Connections
 from syft.sync.version.peer_manager import (
     PeerManager,
     PeerManagerConfig,
@@ -131,11 +131,11 @@ class SyftboxManagerConfig(BaseModel):
     # log, rolling state, checkpoints. Off for datasites that can never
     # restore (see syft-enclave's EnclaveSettings).
     persist_owner_state: bool = True
-    # The connection each transport component uses. Only the manager reads
-    # it: it builds one transport from it and shares that with every part.
-    # None when the caller passes a transport to SyftboxManager.from_config
+    # The login each connection of the router uses. Only the manager reads
+    # it: it builds the connections from it and shares them with every part.
+    # None when the caller passes connections to SyftboxManager.from_config
     # instead, as tests do with a mock Drive.
-    transport_config: TransportConfig | None = None
+    connection_router_config: ConnectionRouterConfig | None = None
 
     datasite_owner_syncer_config: DatasiteOwnerSyncerConfig
     peer_manager_config: PeerManagerConfig
@@ -170,7 +170,7 @@ class SyftboxManagerConfig(BaseModel):
             syftbox_folder, email, collection_specs
         )
         collection_variants = default_collection_variants(collection_specs)
-        transport_config = TransportConfig.one_connection(
+        connection_router_config = ConnectionRouterConfig.one_connection(
             GdriveConnectionConfig(email=email, token_path=None)
         )
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
@@ -209,7 +209,7 @@ class SyftboxManagerConfig(BaseModel):
         return cls(
             email=email,
             syftbox_folder=syftbox_folder,
-            transport_config=transport_config,
+            connection_router_config=connection_router_config,
             has_ds_role=has_ds_role,
             has_do_role=has_do_role,
             use_in_memory_cache=False,
@@ -249,7 +249,7 @@ class SyftboxManagerConfig(BaseModel):
         )
         collection_variants = default_collection_variants(collection_specs)
 
-        transport_config = TransportConfig.one_connection(
+        connection_router_config = ConnectionRouterConfig.one_connection(
             GdriveConnectionConfig(email=email, token_path=token_path)
         )
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
@@ -288,7 +288,7 @@ class SyftboxManagerConfig(BaseModel):
         return cls(
             email=email,
             syftbox_folder=syftbox_folder,
-            transport_config=transport_config,
+            connection_router_config=connection_router_config,
             has_ds_role=has_ds_role,
             has_do_role=has_do_role,
             use_in_memory_cache=False,
@@ -400,7 +400,7 @@ class SyftboxManagerConfig(BaseModel):
             syftbox_folder, email, collection_specs
         )
         collection_variants = default_collection_variants(collection_specs)
-        transport_config = TransportConfig.one_connection(
+        connection_router_config = ConnectionRouterConfig.one_connection(
             GdriveConnectionConfig(email=email, token_path=token_path)
         )
         datasite_owner_syncer_config = DatasiteOwnerSyncerConfig(
@@ -438,7 +438,7 @@ class SyftboxManagerConfig(BaseModel):
         return cls(
             email=email,
             syftbox_folder=syftbox_folder,
-            transport_config=transport_config,
+            connection_router_config=connection_router_config,
             write_files=write_files,
             persist_owner_state=persist_owner_state,
             datasite_owner_syncer_config=datasite_owner_syncer_config,
@@ -529,7 +529,7 @@ class SyftboxManager(BaseModelCallbackMixin):
     def from_config(
         cls,
         config: SyftboxManagerConfig,
-        transport: Transport | None = None,
+        connections: Connections | None = None,
     ):
         """Build a manager and its parts from ``config``.
 
@@ -537,17 +537,19 @@ class SyftboxManager(BaseModelCallbackMixin):
         objects or state. A live object that several parts share is built here,
         once, and passed to each part's ``from_config`` next to its config:
         the peer store and the connection router that holds it, and through
-        the router one transport, and its connection, for the whole manager.
+        the router one set of connections for the whole manager.
 
-        ``transport`` replaces the one ``config`` describes.
+        ``connections`` replace the ones ``config`` describes.
         Tests pass one over a mock Drive, some with a fake p2p.
         """
         peer_store = PeerManager.peer_store_from_config(
             config.peer_manager_config, email=config.email
         )
-        if transport is None:
-            transport = cls._transport_from_config(config)
-        connection_router = ConnectionRouter(transport=transport, peer_store=peer_store)
+        if connections is None:
+            connections = cls._connections_from_config(config)
+        connection_router = ConnectionRouter(
+            connections=connections, peer_store=peer_store
+        )
         file_writer = FileWriter(
             base_path=config.syftbox_folder, write_files=config.write_files
         )
@@ -587,34 +589,33 @@ class SyftboxManager(BaseModelCallbackMixin):
         return manager_res
 
     @staticmethod
-    def _transport_from_config(config: SyftboxManagerConfig) -> Transport:
-        transport_config = config.transport_config
-        if transport_config is None:
+    def _connections_from_config(config: SyftboxManagerConfig) -> Connections:
+        connection_router_config = config.connection_router_config
+        if connection_router_config is None:
             raise ValueError(
-                "The config names no transport: set transport_config, or pass a "
-                "transport to SyftboxManager.from_config"
+                "The config names no connections: set connection_router_config, "
+                "or pass connections to SyftboxManager.from_config"
             )
-        drive_config = transport_config.p2p
+        drive_config = connection_router_config.p2p_con
         if not (
             isinstance(drive_config, GdriveConnectionConfig)
-            and transport_config.uses_one_connection()
+            and connection_router_config.uses_one_connection()
         ):
             raise NotImplementedError(
-                "Only one Google Drive connection for every transport component "
-                "is built so far"
+                "Only one Google Drive login for every connection is built so far"
             )
         cached_client = DriveCachedClient.from_config(drive_config)
-        return SyftboxManager._drive_transport(cached_client)
+        return SyftboxManager._drive_connections(cached_client)
 
     @staticmethod
-    def _drive_transport(cached_client: DriveCachedClient) -> Transport:
-        """Every transport component over one Google Drive account."""
-        return Transport(
-            p2p=DriveP2PConnection(cached_client),
-            owner_store=DriveOwnerStoreConnection(cached_client),
-            watcher_store=DriveWatcherStoreConnection(),
-            collections=DriveCollectionsConnection(cached_client),
-            peering=DrivePeeringConnection(cached_client),
+    def _drive_connections(cached_client: DriveCachedClient) -> Connections:
+        """Every connection of the router over one Google Drive account."""
+        return Connections(
+            p2p_con=DriveP2PConnection(cached_client),
+            owner_store_con=DriveOwnerStoreConnection(cached_client),
+            watcher_store_con=DriveWatcherStoreConnection(),
+            collections_con=DriveCollectionsConnection(cached_client),
+            peering_con=DrivePeeringConnection(cached_client),
             platform=GdriveFilesPlatform(),
         )
 
@@ -833,10 +834,10 @@ class SyftboxManager(BaseModelCallbackMixin):
             do_config.email, ds_config.email
         )
         do_manager = cls.from_config(
-            do_config, SyftboxManager._drive_transport(do_cached_client)
+            do_config, SyftboxManager._drive_connections(do_cached_client)
         )
         ds_manager = cls.from_config(
-            ds_config, SyftboxManager._drive_transport(ds_cached_client)
+            ds_config, SyftboxManager._drive_connections(ds_cached_client)
         )
 
         # Set up callbacks for DS -> DO communication
@@ -1326,12 +1327,12 @@ class SyftboxManager(BaseModelCallbackMixin):
 
         new_config = deepcopy(self.config)
         drive_service = drive_cached_client_of(
-            self._connection_router.transport
+            self._connection_router.connections
         ).client.drive_service
         if isinstance(drive_service, mock_drive_service.MockDriveService):
             # A new connection to the same backing store
             cached_client = DriveCachedClient.from_service(self.email, drive_service)
             return SyftboxManager.from_config(
-                new_config, SyftboxManager._drive_transport(cached_client)
+                new_config, SyftboxManager._drive_connections(cached_client)
             )
         return SyftboxManager.from_config(new_config)

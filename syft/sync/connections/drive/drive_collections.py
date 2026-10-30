@@ -14,7 +14,7 @@ from syft.sync.connections.base_connection import FileCollection
 from syft.sync.connections.drive.gdrive_client import GOOGLE_FOLDER_MIME_TYPE
 from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.gdrive_retry import execute_with_retries
-from syft.sync.transport.protocols import CollectionsConnection
+from syft.sync.connections.protocols import CollectionsConnection
 
 
 def collection_name_query(prefix: str) -> str:

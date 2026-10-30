@@ -15,9 +15,9 @@ from syft.sync.connections.drive.gdrive_retry import (
     raise_unavailable,
 )
 from syft.sync.messages.proposed_filechange import FileNameParseError, MessageFileName
-from syft.sync.transport.exceptions import TransportUnavailableError
-from syft.sync.transport.protocols import P2PConnection
-from syft.sync.transport.types import MessageKind, RawMessage, SendStatus
+from syft.sync.connections.exceptions import ConnectionUnavailableError
+from syft.sync.connections.protocols import P2PConnection
+from syft.sync.connections.types import MessageKind, RawMessage, SendStatus
 
 # Threads that download the messages of one receive at the same time.
 DOWNLOAD_WORKERS = 10
@@ -28,13 +28,13 @@ def _download_or_skip(client: GDriveClient, listed: dict) -> bytes | None:
     file cannot be downloaded, for example because it was deleted.
 
     Raises:
-        TransportUnavailableError: when Drive cannot be reached.
+        ConnectionUnavailableError: when Drive cannot be reached.
     """
     name = listed["file_name"]
     try:
         with raise_unavailable(f"Drive is unreachable; inbox message {name} waits"):
             return client.download_file(listed["file_id"])
-    except TransportUnavailableError:
+    except ConnectionUnavailableError:
         raise
     except Exception as e:
         warnings.warn(f"Skipped inbox message {name}: download failed: {e!r}")
@@ -108,7 +108,7 @@ class DriveP2PConnection(P2PConnection):
         not hold back the others.
 
         Raises:
-            TransportUnavailableError: when Drive cannot be reached. Every
+            ConnectionUnavailableError: when Drive cannot be reached. Every
                 message stays in the inbox.
         """
         _require_inbox_kind(kind)

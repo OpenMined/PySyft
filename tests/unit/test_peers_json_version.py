@@ -19,7 +19,7 @@ from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.drive_peering import DrivePeeringConnection
 from syft.sync.peers.peer import PeerState
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
-from syft.sync.transport.naming import PEERS_META_KEY, SYFT_PEERS_VERSION
+from syft.sync.connections.naming import PEERS_META_KEY, SYFT_PEERS_VERSION
 
 PEER = "bob@example.com"
 
@@ -33,8 +33,8 @@ def _peering(peers_data):
 
 def _router(peering):
     router = Mock()
-    router.transport.peering = peering
-    router.transport.platform = GdriveFilesPlatform()
+    router.connections.peering_con = peering
+    router.connections.platform = GdriveFilesPlatform()
     from syft.sync.connections.connection_router import ConnectionRouter
 
     return ConnectionRouter.get_all_peers_from_json.__get__(router, ConnectionRouter)

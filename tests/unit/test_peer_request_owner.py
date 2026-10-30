@@ -16,7 +16,7 @@ from syft.sync.connections.drive.mock_drive_service import (
     MockPermission,
 )
 from syft.sync.syftbox_manager import SyftboxManager
-from syft.sync.transport.naming import PEERS_META_KEY
+from syft.sync.connections.naming import PEERS_META_KEY
 from syft.sync.version.peer_manager import PeerState
 from syft.version import SYFT_VERSION
 from syft.sync.connections.drive.drive_connections import drive_cached_client_of
@@ -48,7 +48,7 @@ def share_request_folder(
 ) -> None:
     """Put a request folder for `victim` in Drive and share it with `victim`."""
     backing_store = drive_cached_client_of(
-        victim._connection_router.transport
+        victim._connection_router.connections
     ).client.drive_service._backing_store
     owners = [{"emailAddress": owner_email}] if owner_email else []
     folder = MockDriveFile(

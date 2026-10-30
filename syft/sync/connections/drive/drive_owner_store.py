@@ -31,7 +31,7 @@ from syft.sync.connections.drive.gdrive_utils import (
     gather_all_file_and_folder_ids_recursive,
 )
 from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
-from syft.sync.transport.protocols import OwnerStoreConnection
+from syft.sync.connections.protocols import OwnerStoreConnection
 from syft.version import SYFT_VERSION
 
 

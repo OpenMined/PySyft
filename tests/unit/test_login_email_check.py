@@ -19,7 +19,7 @@ def test_verify_token_matches_email_passes_when_matching():
 
 def _drive_service(manager):
     return drive_cached_client_of(
-        manager._connection_router.transport
+        manager._connection_router.connections
     ).client.drive_service
 
 

@@ -144,7 +144,7 @@ class TestDatasetUploadPrivate:
 
         # Get the DS's raw GDrive connection and search for private folders
         ds_cached_client = drive_cached_client_of(
-            ds_manager.sync_engine._connection_router.transport
+            ds_manager.sync_engine._connection_router.connections
         )
         results = (
             ds_cached_client.client.drive_service.files()
@@ -158,7 +158,7 @@ class TestDatasetUploadPrivate:
 
         # DO should find it with the same query
         do_cached_client = drive_cached_client_of(
-            do_manager.sync_engine._connection_router.transport
+            do_manager.sync_engine._connection_router.connections
         )
         do_results = (
             do_cached_client.client.drive_service.files()

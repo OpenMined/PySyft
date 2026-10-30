@@ -1,4 +1,4 @@
-"""The transport jobs on Google Drive, and the router that calls them.
+"""The connections on Google Drive, and the router that calls them.
 
 These tests pin what each job promises, on the mock Drive service the rest of
 the suite uses.
@@ -37,18 +37,16 @@ from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.platforms.gdrive_files_platform import GdriveFilesPlatform
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync import datasite_owner_syncer
-from syft.sync.transport import (
+from syft.sync.connections.exceptions import ConnectionUnavailableError
+from syft.sync.connections.protocols import (
     CollectionsConnection,
-    MessageKind,
+    Connections,
     OwnerStoreConnection,
     P2PConnection,
     PeeringConnection,
-    RawMessage,
-    SendStatus,
-    Transport,
-    TransportUnavailableError,
     WatcherStoreConnection,
 )
+from syft.sync.connections.types import MessageKind, RawMessage, SendStatus
 from syft.sync.version.peer_info import PeerInfo
 from syft.sync.version.version_info import VersionInfo
 from tests.unit.test_sync_manager import _store_knowing
@@ -78,19 +76,19 @@ def pair():
     return do_cached_client, ds_cached_client
 
 
-# -- the transport ----------------------------------------------------------------
+# -- the connections --------------------------------------------------------------
 
 
-def test_drive_transport_does_every_job():
+def test_drive_connections_do_every_job():
     do_cached_client, _ = pair_with_mock_service(DO, DS)
-    transport = SyftboxManager._drive_transport(do_cached_client)
-    assert isinstance(transport, Transport)
-    assert isinstance(transport.p2p, P2PConnection)
-    assert isinstance(transport.owner_store, OwnerStoreConnection)
-    assert isinstance(transport.watcher_store, WatcherStoreConnection)
-    assert isinstance(transport.collections, CollectionsConnection)
-    assert isinstance(transport.peering, PeeringConnection)
-    assert isinstance(transport.platform, GdriveFilesPlatform)
+    connections = SyftboxManager._drive_connections(do_cached_client)
+    assert isinstance(connections, Connections)
+    assert isinstance(connections.p2p_con, P2PConnection)
+    assert isinstance(connections.owner_store_con, OwnerStoreConnection)
+    assert isinstance(connections.watcher_store_con, WatcherStoreConnection)
+    assert isinstance(connections.collections_con, CollectionsConnection)
+    assert isinstance(connections.peering_con, PeeringConnection)
+    assert isinstance(connections.platform, GdriveFilesPlatform)
 
 
 # -- P2PConnection ----------------------------------------------------------------
@@ -279,7 +277,7 @@ def test_receiving_inbox_while_drive_is_down_raises(pair, monkeypatch):
     do_cached_client, ds_cached_client = pair
     _send_proposals(ds_cached_client, 2)
     monkeypatch.setattr(GDriveClient, "download_file", _drive_down)
-    with pytest.raises(TransportUnavailableError):
+    with pytest.raises(ConnectionUnavailableError):
         DriveP2PConnection(do_cached_client).receive(DS, MessageKind.PROPOSED_CHANGES)
 
 
@@ -379,7 +377,7 @@ def test_owner_event_log_read_while_drive_is_down_raises(pair, monkeypatch):
     store.append_event(_events_name(2.0), b"event")
 
     monkeypatch.setattr(GDriveClient, "download_file", _drive_down)
-    with pytest.raises(TransportUnavailableError):
+    with pytest.raises(ConnectionUnavailableError):
         store.fetch_events_since(1.0)
 
 
@@ -521,7 +519,7 @@ def test_peer_registry_update_while_drive_is_down_keeps_other_peers(pair, monkey
     peering._peers_json_cache = None  # a new process has no cache
 
     monkeypatch.setattr(GDriveClient, "download_file", _drive_down)
-    with pytest.raises(TransportUnavailableError):
+    with pytest.raises(ConnectionUnavailableError):
         peering.update_peer_registry("other@example.com", "accepted")
     monkeypatch.undo()
 
@@ -574,10 +572,12 @@ def test_peering_publishes_peer_info_the_peer_can_read(pair):
 def _router_with_mock_p2p():
     do_cached_client, _ = pair_with_mock_service(DO, DS)
     p2p = Mock(spec=DriveP2PConnection)
-    transport = SyftboxManager._drive_transport(do_cached_client).model_copy(
-        update={"p2p": p2p}
+    connections = SyftboxManager._drive_connections(do_cached_client).model_copy(
+        update={"p2p_con": p2p}
     )
-    router = ConnectionRouter(transport=transport, peer_store=_store_knowing(DO, DS))
+    router = ConnectionRouter(
+        connections=connections, peer_store=_store_knowing(DO, DS)
+    )
     return router, p2p
 
 

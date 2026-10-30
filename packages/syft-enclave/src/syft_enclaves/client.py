@@ -15,7 +15,7 @@ from syft_perms.syftperm_context import SyftPermContext
 from syft_rds import SyftRDSClient, SyftRDSClientConfig
 from syft_rds.waiting import JobCheck, JobStatusArg, wait_for_job
 
-from syft.sync.transport.protocols import Transport
+from syft.sync.connections.protocols import Connections
 from syft.sync.encryption_policy import EncryptionPolicy
 from syft.sync.peers.peer import Peer
 from syft.sync.peers.peer_list import PeerList
@@ -783,7 +783,7 @@ class SyftEnclaveClient:
         cls,
         config: SyftRDSClientConfig,
         data_owners: list[str] | None = None,
-        transport: Transport | None = None,
+        connections: Connections | None = None,
     ) -> "SyftEnclaveClient":
         """Build a SyftEnclaveClient from an RDS config with a wrapped job_client.
 
@@ -791,10 +791,10 @@ class SyftEnclaveClient:
         ``peer_manager_config.encryption_policy``; ``SyftboxManager.from_config``
         (invoked inside ``SyftRDSClient.from_config``) loads/generates this
         datasite's keys from its per-datasite key file, so no extra step is needed.
-        ``transport`` replaces the one ``config.sync`` describes; tests pass
-        one over a mock Drive.
+        ``connections`` replace the ones ``config.sync`` describes; tests pass
+        them over a mock Drive.
         """
-        rds = SyftRDSClient.from_config(config, transport)
+        rds = SyftRDSClient.from_config(config, connections)
         rds.job_client = EnclaveJobClient(rds.job_client)
 
         sync_engine = rds.sync_engine

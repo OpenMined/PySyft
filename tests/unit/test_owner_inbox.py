@@ -9,7 +9,7 @@ import pytest
 
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.datasite_owner_syncer import DatasiteOwnerSyncer
-from syft.sync.transport import MessageKind
+from syft.sync.connections.types import MessageKind
 from tests.unit.test_sender_binding import send_spoofed_message, sync_do, written_paths
 
 
@@ -25,7 +25,7 @@ def _send_proposal(ds_manager: SyftboxManager, do_email: str, path: str) -> None
 
 
 def _inbox(do_manager: SyftboxManager, ds_email: str) -> list:
-    p2p = do_manager.datasite_owner_syncer.connection_router.transport.p2p
+    p2p = do_manager.datasite_owner_syncer.connection_router.connections.p2p_con
     return p2p.receive(ds_email, MessageKind.PROPOSED_CHANGES)
 
 
@@ -54,7 +54,7 @@ def test_proposal_that_fails_to_apply_is_archived_and_next_is_applied(monkeypatc
 def test_unreadable_proposal_is_archived_and_next_is_applied():
     ds_manager, do_manager = _pair_with_write_access()
     older = f"msgv2_{time.time() - 60}_{uuid.uuid4().hex}.tar.gz"
-    ds_p2p = ds_manager.datasite_watcher_syncer.connection_router.transport.p2p
+    ds_p2p = ds_manager.datasite_watcher_syncer.connection_router.connections.p2p_con
     ds_p2p.send(do_manager.email, older, b"garbage", MessageKind.PROPOSED_CHANGES)
     _send_proposal(ds_manager, do_manager.email, "after_garbage.txt")
 

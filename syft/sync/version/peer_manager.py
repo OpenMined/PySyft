@@ -20,7 +20,7 @@ from syft.sync.peers.peer_store import (
     datasite_settings_path,
     resolve_encryption_policy,
 )
-from syft.sync.transport.exceptions import TransportUnavailableError
+from syft.sync.connections.exceptions import ConnectionUnavailableError
 from syft.sync.utils.print_utils import (
     print_peer_already_connected,
     print_peer_connection_established,
@@ -277,13 +277,13 @@ class PeerManager(BaseModel):
         A peer whose file cannot be read gets None, so it does not stop the sync.
 
         Raises:
-            TransportUnavailableError: when the backend cannot be reached.
+            ConnectionUnavailableError: when the backend cannot be reached.
         """
         # A copy per thread: the connection may not be thread-safe
-        peering = self.connection_router.transport.peering.clone_for_thread()
+        peering = self.connection_router.connections.peering_con.clone_for_thread()
         try:
             return (peer_email, peering.read_peer_info(peer_email))
-        except TransportUnavailableError:
+        except ConnectionUnavailableError:
             raise
         except Exception as e:
             if not self.suppress_version_warnings:
@@ -594,7 +594,7 @@ class PeerManager(BaseModel):
                 peers.append(
                     Peer(
                         email=email,
-                        platforms=[self.connection_router.transport.platform],
+                        platforms=[self.connection_router.connections.platform],
                         state=PeerState.REQUESTED_BY_PEER,
                     )
                 )
@@ -650,7 +650,7 @@ class PeerManager(BaseModel):
 
     def _read_own_published_bundle(self, peer_email: str) -> dict | None:
         """The bundle this client published for ``peer_email``, or None (thread-safe)."""
-        peering = self.connection_router.transport.peering.clone_for_thread()
+        peering = self.connection_router.connections.peering_con.clone_for_thread()
         bundle_json = peering.read_own_key_bundle(peer_email)
         if bundle_json is None:
             return None

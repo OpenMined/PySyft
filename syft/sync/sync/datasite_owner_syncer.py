@@ -32,7 +32,7 @@ from syft.sync.events.file_change_event import (
 )
 from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
 from syft.sync.peers.exceptions import SyftPeerNotReadyError
-from syft.sync.transport.types import RawMessage
+from syft.sync.connections.types import RawMessage
 from syft.sync.sync.caches.datasite_owner_cache import (
     DataSiteOwnerEventCache,
     DataSiteOwnerEventCacheConfig,
@@ -656,7 +656,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         self, collection: FileCollection, spec: CollectionSyncSpec
     ) -> list:
         """Get file metadatas for a collection using a new connection for thread safety."""
-        collections = self.connection_router.transport.collections.clone_for_thread()
+        collections = (
+            self.connection_router.connections.collections_con.clone_for_thread()
+        )
         return collections.list_files(
             spec.wire_prefix(collection.variant),
             tag=collection.tag,
@@ -666,7 +668,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
 
     def _download_file_with_new_connection(self, file_id: str) -> bytes:
         """Download a file using a new connection for thread safety."""
-        collections = self.connection_router.transport.collections.clone_for_thread()
+        collections = (
+            self.connection_router.connections.collections_con.clone_for_thread()
+        )
         return collections.fetch_file(file_id)
 
     def _create_current_filestate_event(self, path: str) -> FileChangeEvent:
@@ -788,7 +792,7 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
     ) -> bool:
         """Apply one proposal; False, with a warning, when applying it failed.
         Either way the caller archives it, so it does not hold back the next."""
-        # The sender is the peer whose inbox held the message. The transport
+        # The sender is the peer whose inbox held the message. The p2p connection
         # read the message from that peer's folder and checked the signature
         # against that peer's key. The body is sender-supplied, so a claim
         # there that disagrees is a spoof attempt.

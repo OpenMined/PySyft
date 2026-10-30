@@ -552,7 +552,7 @@ def test_version_upgrade_breaks_communication():
     )
 
     # Phase 2: Simulate DS "upgrading" to a new incompatible version
-    ds_peering = ds_manager._connection_router.transport.peering
+    ds_peering = ds_manager._connection_router.connections.peering_con
 
     current = VersionInfo.current()
     new_version = VersionInfo(

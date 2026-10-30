@@ -24,7 +24,7 @@ from syft.sync.connections.drive.mock_drive_service import (
 )
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.sync.constants import CACHE_DIR, ROLLING_STATE_FILENAME
-from syft.sync.transport import TransportUnavailableError
+from syft.sync.connections.exceptions import ConnectionUnavailableError
 from tests.unit.utils import fail_next_listing, get_mock_event
 
 
@@ -305,7 +305,7 @@ def test_rolling_state_read_while_drive_is_down_raises(monkeypatch):
         raise ConnectionResetError("Drive is down")
 
     monkeypatch.setattr(GDriveClient, "download_file", drive_down)
-    with pytest.raises(TransportUnavailableError):
+    with pytest.raises(ConnectionUnavailableError):
         store.get_rolling_state()
 
 
@@ -318,7 +318,7 @@ def test_rolling_state_listing_while_drive_is_down_raises(monkeypatch):
         raise ConnectionRefusedError("Drive is down")
 
     monkeypatch.setattr(MockListRequest, "execute", drive_down)
-    with pytest.raises(TransportUnavailableError):
+    with pytest.raises(ConnectionUnavailableError):
         store.get_rolling_state()
 
 

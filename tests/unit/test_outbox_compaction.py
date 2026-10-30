@@ -21,7 +21,7 @@ def test_compact_outboxes_if_needed_collapses_to_single_message():
             ds_manager.email, msg
         )
 
-    do_cached_client = drive_cached_client_of(do_manager._connection_router.transport)
+    do_cached_client = drive_cached_client_of(do_manager._connection_router.connections)
     outbox_id = do_cached_client.get_own_datasite_outbox_id(ds_manager.email)
     pre = do_cached_client.get_file_metadatas_from_folder(
         outbox_id, since_timestamp=None

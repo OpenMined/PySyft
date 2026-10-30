@@ -13,7 +13,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict
 from syft_migration import ProtocolSchema
 
-from syft.sync.transport.protocols import Transport
+from syft.sync.connections.protocols import Connections
 from syft.sync.syftbox_manager import SyftboxManager
 from syft.sync.peers.peer import Peer
 from syft.sync.utils.waiting import DEFAULT_POLL_INTERVAL, DEFAULT_WAIT_TIMEOUT
@@ -152,11 +152,11 @@ class SyftRDSClient(BaseModel):
     def from_config(
         cls,
         config: "SyftRDSClientConfig",
-        transport: Transport | None = None,
+        connections: Connections | None = None,
     ) -> "SyftRDSClient":
-        """``transport`` replaces the one ``config.sync`` describes; tests pass
-        one over a mock Drive (see ``SyftboxManager.from_config``)."""
-        sync_engine = SyftboxManager.from_config(config.sync, transport)
+        """``connections`` replace the ones ``config.sync`` describes; tests
+        pass them over a mock Drive (see ``SyftboxManager.from_config``)."""
+        sync_engine = SyftboxManager.from_config(config.sync, connections)
         # The job client selects a job protocol version per peer from the
         # schema the peer advertises, as the dataset manager does for layouts.
         job_client = JobClient.from_config(

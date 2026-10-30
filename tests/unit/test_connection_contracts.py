@@ -1,4 +1,4 @@
-"""The transport contracts: the abstract jobs, their helper methods, the
+"""The connection contracts: the abstract jobs, their helper methods, the
 message types, the naming rules and the DeliveryTracker state."""
 
 from types import SimpleNamespace
@@ -13,17 +13,16 @@ from syft.sync.sync.delivery_tracker import (
     DeliveryState,
     DeliveryStateStore,
 )
-from syft.sync.transport import (
+from syft.sync.connections.protocols import (
     CollectionsConnection,
-    MessageKind,
+    Connections,
     OwnerStoreConnection,
     P2PConnection,
     PeeringConnection,
-    RawMessage,
-    Transport,
     WatcherStoreConnection,
 )
-from syft.sync.transport.naming import timestamp_from_message_name
+from syft.sync.connections.types import MessageKind, RawMessage
+from syft.sync.connections.naming import timestamp_from_message_name
 
 JOBS = [
     P2PConnection,
@@ -87,17 +86,17 @@ def test_download_fetches_every_listed_file_by_name():
     assert files == {"mock.csv": b"id-1", "readme.md": b"id-2"}
 
 
-def test_a_transport_bundles_one_of_each_job_and_cannot_be_changed():
-    transport = Transport(
-        p2p=Mock(spec=P2PConnection),
-        owner_store=Mock(spec=OwnerStoreConnection),
-        watcher_store=Mock(spec=WatcherStoreConnection),
-        collections=Mock(spec=CollectionsConnection),
-        peering=Mock(spec=PeeringConnection),
+def test_connections_hold_one_of_each_job_and_cannot_be_changed():
+    connections = Connections(
+        p2p_con=Mock(spec=P2PConnection),
+        owner_store_con=Mock(spec=OwnerStoreConnection),
+        watcher_store_con=Mock(spec=WatcherStoreConnection),
+        collections_con=Mock(spec=CollectionsConnection),
+        peering_con=Mock(spec=PeeringConnection),
         platform=GdriveFilesPlatform(),
     )
     with pytest.raises(ValidationError):
-        transport.p2p = Mock(spec=P2PConnection)
+        connections.p2p_con = Mock(spec=P2PConnection)
 
 
 def test_a_received_message_cannot_be_changed():

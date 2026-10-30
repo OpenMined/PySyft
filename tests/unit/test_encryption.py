@@ -624,7 +624,7 @@ def test_tampered_inbox_message_is_archived_with_warning():
     ds_manager._send_file_change(file_path, "will be tampered")
 
     # Tamper with raw bytes in the mock backing store
-    do_cached_client = drive_cached_client_of(do_manager._connection_router.transport)
+    do_cached_client = drive_cached_client_of(do_manager._connection_router.connections)
     inbox_id = do_cached_client.get_own_datasite_inbox_id(ds_manager.email)
     files = do_cached_client.get_file_metadatas_from_folder(inbox_id)
     assert len(files) > 0

@@ -22,7 +22,7 @@ from syft.sync.connections.drive.gdrive_client import (
 )
 from syft.sync.connections.drive.gdrive_retry import execute_with_retries
 from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
-from syft.sync.transport.naming import timestamp_from_message_name
+from syft.sync.connections.naming import timestamp_from_message_name
 from syft.sync.utils.syftbox_utils import check_env
 from syft.sync.version.version_info import _parse_semver
 from syft.version import SYFT_VERSION
@@ -192,7 +192,7 @@ class DriveCachedClient:
 
     It logs in, finds and creates syft's folders, follows the version rules for
     a versioned folder name, and caches the folder ids so a lookup costs no
-    Drive call the second time. The transport components share one.
+    Drive call the second time. The router's connections share one.
     """
 
     client: GDriveClient

@@ -52,7 +52,7 @@ def _find_versioned_p2p_folders(cached_client, peer_email, version):
 def _get_backing_store(manager):
     """Extract the mock backing store from a manager's connection."""
     cached_client = drive_cached_client_of(
-        manager.peer_manager.connection_router.transport
+        manager.peer_manager.connection_router.connections
     )
     return cached_client.client.drive_service._backing_store
 
@@ -76,7 +76,7 @@ def _reinitialize_manager(
     mock_service = MockDriveService(backing_store, email)
     cached_client = DriveCachedClient.from_service(email, mock_service)
     manager = SyftRDSClient.from_config(
-        config, SyftboxManager._drive_transport(cached_client)
+        config, SyftboxManager._drive_connections(cached_client)
     )
 
     if has_ds_role:
@@ -180,7 +180,7 @@ def test_version_mismatch_continues_and_repairs():
 
     # -- Step 4: Record P2P folders and personal folder id before upgrade --
     do_cached_client = drive_cached_client_of(
-        do_manager.peer_manager.connection_router.transport
+        do_manager.peer_manager.connection_router.connections
     )
     do_p2p_current = _find_versioned_p2p_folders(
         do_cached_client, ds_manager.email, SYFT_VERSION
@@ -225,7 +225,7 @@ def test_version_mismatch_continues_and_repairs():
 
         # Personal folder is adopted (same Drive id, new name), not recreated.
         do_cached_client_new = drive_cached_client_of(
-            do_manager.peer_manager.connection_router.transport
+            do_manager.peer_manager.connection_router.connections
         )
         new_personal_name = f"{NEW_VERSION}#{do_email}"
         new_personal_id = do_cached_client_new.client.find_folder_by_name(
@@ -263,7 +263,7 @@ def test_version_mismatch_continues_and_repairs():
         )
 
         ds_cached_client_new = drive_cached_client_of(
-            ds_manager.peer_manager.connection_router.transport
+            ds_manager.peer_manager.connection_router.connections
         )
         ds_personal_name = f"{NEW_VERSION}#{ds_email}"
         ds_personal_id = ds_cached_client_new.client.find_folder_by_name(
@@ -348,7 +348,7 @@ def test_login_writes_the_remote_version_file_too():
         use_in_memory_cache=False,
         check_versions=True,
     )
-    peering = do_manager.peer_manager.connection_router.transport.peering
+    peering = do_manager.peer_manager.connection_router.connections.peering_con
     assert peering.read_own_peer_info().version_info.syft_client_version == SYFT_VERSION
 
     with (
@@ -356,7 +356,7 @@ def test_login_writes_the_remote_version_file_too():
         patch("syft.sync.version.version_info.SYFT_VERSION", NEW_VERSION),
     ):
         upgraded = _upgraded_manager(do_manager)
-        new_peering = upgraded.peer_manager.connection_router.transport.peering
+        new_peering = upgraded.peer_manager.connection_router.connections.peering_con
         # Still the pre-upgrade version: nothing has refreshed it yet.
         assert (
             new_peering.read_own_peer_info().version_info.syft_client_version
@@ -407,7 +407,7 @@ def test_the_mismatch_prompt_does_not_return_after_a_login():
             handle_potential_version_mismatches_on_login,
         )
 
-        peering = do_manager.peer_manager.connection_router.transport.peering
+        peering = do_manager.peer_manager.connection_router.connections.peering_con
         with patch(
             "syft.sync.login_utils._read_remote_version",
             side_effect=lambda e, t: peering.read_own_peer_info().version_info,

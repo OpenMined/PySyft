@@ -251,6 +251,6 @@ def router_with_mock_connection(email: str) -> ConnectionRouter:
     ``SyftboxManager.from_config`` builds."""
     cached_client, _ = pair_with_mock_service(email, "peer@example.com")
     return ConnectionRouter(
-        transport=SyftboxManager._drive_transport(cached_client),
+        connections=SyftboxManager._drive_connections(cached_client),
         peer_store=PeerStore(email=email),
     )
