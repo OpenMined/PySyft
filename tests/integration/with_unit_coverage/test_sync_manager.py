@@ -30,7 +30,6 @@ from tests.integration.with_unit_coverage.utils import (
     create_test_pair,
     is_mock_mode,
 )
-from syft.sync.connections.drive.drive_connections import gdrive_connection_of
 
 
 def path_for_job(do_email: str, ds_email: str, filename: str = "test.job") -> str:
@@ -553,7 +552,7 @@ def test_version_upgrade_breaks_communication():
     )
 
     # Phase 2: Simulate DS "upgrading" to a new incompatible version
-    ds_connection = gdrive_connection_of(ds_manager._connection_router.transport)
+    ds_peering = ds_manager._connection_router.transport.peering
 
     current = VersionInfo.current()
     new_version = VersionInfo(
@@ -566,7 +565,7 @@ def test_version_upgrade_breaks_communication():
 
     # Write the new version to GDrive (simulating DS upgrading their client)
     own_info = ds_manager.peer_manager.get_own_peer_info()
-    ds_connection.write_peer_info_file(
+    ds_peering.publish_peer_info(
         own_info.model_copy(update={"version_info": new_version})
     )
 
@@ -588,4 +587,4 @@ def test_version_upgrade_breaks_communication():
     )
 
     # Cleanup: Restore DS's version file to the original version
-    ds_connection.write_peer_info_file(own_info)
+    ds_peering.publish_peer_info(own_info)

@@ -1,14 +1,11 @@
-from syft.sync.connections.drive.gdrive_transport import (
-    GDriveConnection,
-    collection_name_query,
-)
+from syft.sync.connections.drive.drive_collections import collection_name_query
 from syft_rds import SyftRDSClient
 from syft_datasets.dataset_manager import (
     DATASET_COLLECTION_PREFIX,
     PRIVATE_DATASET_COLLECTION_PREFIX,
 )
 from dataset_test_utils import create_tmp_dataset_files
-from syft.sync.connections.drive.drive_connections import gdrive_connection_of
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 
 
 class TestDatasetUploadPrivate:
@@ -146,11 +143,11 @@ class TestDatasetUploadPrivate:
         )
 
         # Get the DS's raw GDrive connection and search for private folders
-        ds_connection: GDriveConnection = gdrive_connection_of(
+        ds_cached_client = drive_cached_client_of(
             ds_manager.sync_engine._connection_router.transport
         )
         results = (
-            ds_connection.drive_service.files()
+            ds_cached_client.client.drive_service.files()
             .list(
                 q=f"{collection_name_query(PRIVATE_DATASET_COLLECTION_PREFIX)} and trashed=false",
                 fields="files(id,name)",
@@ -160,11 +157,11 @@ class TestDatasetUploadPrivate:
         assert len(results.get("files", [])) == 0
 
         # DO should find it with the same query
-        do_connection: GDriveConnection = gdrive_connection_of(
+        do_cached_client = drive_cached_client_of(
             do_manager.sync_engine._connection_router.transport
         )
         do_results = (
-            do_connection.drive_service.files()
+            do_cached_client.client.drive_service.files()
             .list(
                 q=f"{collection_name_query(PRIVATE_DATASET_COLLECTION_PREFIX)} and trashed=false",
                 fields="files(id,name)",

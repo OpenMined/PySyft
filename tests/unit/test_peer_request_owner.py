@@ -6,9 +6,8 @@ share it with a victim. The name alone must not create a request.
 
 import pytest
 
-from syft.sync.connections.drive.gdrive_transport import (
+from syft.sync.connections.drive.drive_cached_client import (
     GDRIVE_P2P_FOLDER_DATASITE_PREFIX,
-    PEERS_META_KEY,
     GdriveP2PFolder,
 )
 from syft.sync.connections.drive.mock_drive_service import (
@@ -17,9 +16,10 @@ from syft.sync.connections.drive.mock_drive_service import (
     MockPermission,
 )
 from syft.sync.syftbox_manager import SyftboxManager
+from syft.sync.transport.naming import PEERS_META_KEY
 from syft.sync.version.peer_manager import PeerState
 from syft.version import SYFT_VERSION
-from syft.sync.connections.drive.drive_connections import gdrive_connection_of
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 
 DO_EMAIL = "do@test.com"
 DS_EMAIL = "ds@test.com"
@@ -47,9 +47,9 @@ def share_request_folder(
     victim: SyftboxManager, owner_email: str | None, claimed_email: str
 ) -> None:
     """Put a request folder for `victim` in Drive and share it with `victim`."""
-    backing_store = gdrive_connection_of(
+    backing_store = drive_cached_client_of(
         victim._connection_router.transport
-    ).drive_service._backing_store
+    ).client.drive_service._backing_store
     owners = [{"emailAddress": owner_email}] if owner_email else []
     folder = MockDriveFile(
         name=p2p_name(victim.email, claimed_email),

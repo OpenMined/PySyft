@@ -12,7 +12,7 @@ from syft.sync.peers.peer_store import PeerStore, import_key_file
 from syft.sync.syftbox_manager import SyftboxManager
 from tests.unit.test_sync_manager import path_for_job
 from tests.unit.utils import grant_job_inbox_access
-from syft.sync.connections.drive.drive_connections import gdrive_connection_of
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 
 
 # =========================================================================
@@ -624,17 +624,17 @@ def test_tampered_inbox_message_is_archived_with_warning():
     ds_manager._send_file_change(file_path, "will be tampered")
 
     # Tamper with raw bytes in the mock backing store
-    do_conn = gdrive_connection_of(do_manager._connection_router.transport)
-    inbox_id = do_conn._get_own_datasite_inbox_id(ds_manager.email)
-    files = do_conn.get_file_metadatas_from_folder(inbox_id)
+    do_cached_client = drive_cached_client_of(do_manager._connection_router.transport)
+    inbox_id = do_cached_client.get_own_datasite_inbox_id(ds_manager.email)
+    files = do_cached_client.get_file_metadatas_from_folder(inbox_id)
     assert len(files) > 0
 
     file_id = files[0]["id"]
-    mock_file = do_conn.drive_service._backing_store.files[file_id]
+    mock_file = do_cached_client.client.drive_service._backing_store.files[file_id]
     tampered = bytearray(mock_file.content)
     tampered[-1] ^= 0xFF
     mock_file.content = bytes(tampered)
 
     with pytest.warns(UserWarning, match="unread"):
         do_manager.sync()
-    assert do_conn.get_file_metadatas_from_folder(inbox_id) == []
+    assert do_cached_client.get_file_metadatas_from_folder(inbox_id) == []

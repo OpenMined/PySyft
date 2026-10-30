@@ -394,9 +394,8 @@ class SyftRDSClient(BaseModel):
                     )
             except Exception:
                 # One dataset failing (missing folder, quota, network) must not
-                # stop us sharing the rest with this peer. "alreadyShared" is
-                # already handled in _batch_add_permissions, so anything
-                # reaching here is a real failure worth a traceback.
+                # stop us sharing the rest with this peer. Anything reaching
+                # here is a real failure worth a traceback.
                 logger.exception("Failed to share dataset %r with %s", tag, peer_email)
 
     # ------------------------------------------------------------------ #
@@ -818,9 +817,7 @@ class SyftRDSClient(BaseModel):
 
         Returns ``(folder_id, content_hash)``.
         """
-        from syft.sync.connections.drive.gdrive_transport import (
-            CollectionFolder,
-        )
+        from syft.sync.connections.drive.drive_collections import CollectionFolder
 
         content_hash = CollectionFolder.compute_hash(files)
         folder_id = self.sync_engine.create_collection_folder(

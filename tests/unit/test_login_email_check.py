@@ -2,7 +2,7 @@ import pytest
 
 from syft.sync.login import _verify_token_matches_email
 from syft.sync.syftbox_manager import SyftboxManager
-from syft.sync.connections.drive.drive_connections import gdrive_connection_of
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 
 
 def test_get_authenticated_email_matches_constructor_email():
@@ -18,7 +18,9 @@ def test_verify_token_matches_email_passes_when_matching():
 
 
 def _drive_service(manager):
-    return gdrive_connection_of(manager._connection_router.transport).drive_service
+    return drive_cached_client_of(
+        manager._connection_router.transport
+    ).client.drive_service
 
 
 def test_verify_token_matches_email_raises_on_mismatch():

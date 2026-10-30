@@ -13,15 +13,15 @@ from pydantic import BaseModel, ConfigDict, PrivateAttr
 from syft.sync.callback_mixin import BaseModelCallbackMixin
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive import mock_drive_service
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
+from syft.sync.connections.drive.drive_collections import DriveCollections
 from syft.sync.connections.drive.drive_connections import (
-    DriveCollections,
-    DriveOwnerStore,
-    DriveP2PConnection,
-    DrivePeering,
     DriveWatcherStore,
-    gdrive_connection_of,
+    drive_cached_client_of,
 )
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
+from syft.sync.connections.drive.drive_p2p import DriveP2PConnection
+from syft.sync.connections.drive.drive_peering import DrivePeering
 from syft.sync.connections.drive.grdrive_config import GdriveConnectionConfig
 from syft.sync.events.file_change_event import (
     FileChangeEvent,
@@ -603,18 +603,18 @@ class SyftboxManager(BaseModelCallbackMixin):
                 "Only one Google Drive connection for every transport component "
                 "is built so far"
             )
-        drive = GDriveConnection.from_config(drive_config)
-        return SyftboxManager._drive_transport(drive)
+        cached_client = DriveCachedClient.from_config(drive_config)
+        return SyftboxManager._drive_transport(cached_client)
 
     @staticmethod
-    def _drive_transport(drive: GDriveConnection) -> Transport:
-        """Every transport component over one Google Drive connection."""
+    def _drive_transport(cached_client: DriveCachedClient) -> Transport:
+        """Every transport component over one Google Drive account."""
         return Transport(
-            p2p=DriveP2PConnection(drive),
-            owner_store=DriveOwnerStore(drive),
-            watcher_store=DriveWatcherStore(drive),
-            collections=DriveCollections(drive),
-            peering=DrivePeering(drive),
+            p2p=DriveP2PConnection(cached_client),
+            owner_store=DriveOwnerStore(cached_client),
+            watcher_store=DriveWatcherStore(),
+            collections=DriveCollections(cached_client),
+            peering=DrivePeering(cached_client),
             platform=GdriveFilesPlatform(),
         )
 
@@ -782,7 +782,7 @@ class SyftboxManager(BaseModelCallbackMixin):
     ):
         """Create a pair of managers using mock Google Drive services for testing.
 
-        This creates managers that use the actual GDriveConnection code but with
+        This creates managers that use the actual Google Drive code but with
         mock services instead of real Google Drive API calls. This allows testing
         the full GDrive code path without network calls.
 
@@ -829,14 +829,14 @@ class SyftboxManager(BaseModelCallbackMixin):
             encryption_policy=ds_encryption_policy or default_policy,
         )
 
-        do_connection, ds_connection = mock_drive_service.pair_with_mock_service(
+        do_cached_client, ds_cached_client = mock_drive_service.pair_with_mock_service(
             do_config.email, ds_config.email
         )
         do_manager = cls.from_config(
-            do_config, SyftboxManager._drive_transport(do_connection)
+            do_config, SyftboxManager._drive_transport(do_cached_client)
         )
         ds_manager = cls.from_config(
-            ds_config, SyftboxManager._drive_transport(ds_connection)
+            ds_config, SyftboxManager._drive_transport(ds_cached_client)
         )
 
         # Set up callbacks for DS -> DO communication
@@ -1325,15 +1325,13 @@ class SyftboxManager(BaseModelCallbackMixin):
         from copy import deepcopy
 
         new_config = deepcopy(self.config)
-        connection = gdrive_connection_of(self._connection_router.transport)
-        if not isinstance(connection, GDriveConnection):
-            raise ValueError("Only GDriveConnections can be copied")
-        if isinstance(connection.drive_service, mock_drive_service.MockDriveService):
+        drive_service = drive_cached_client_of(
+            self._connection_router.transport
+        ).client.drive_service
+        if isinstance(drive_service, mock_drive_service.MockDriveService):
             # A new connection to the same backing store
-            new_connection = GDriveConnection.from_service(
-                self.email, connection.drive_service
-            )
+            cached_client = DriveCachedClient.from_service(self.email, drive_service)
             return SyftboxManager.from_config(
-                new_config, SyftboxManager._drive_transport(new_connection)
+                new_config, SyftboxManager._drive_transport(cached_client)
             )
         return SyftboxManager.from_config(new_config)

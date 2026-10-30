@@ -1,7 +1,7 @@
-"""Mock Google Drive service for testing GDriveConnection without real API calls.
+"""Mock Google Drive service for testing the Drive code without real API calls.
 
 This module provides a mock implementation of the Google Drive API that can be
-injected into GDriveConnection, allowing testing of actual GDrive code paths
+injected into DriveCachedClient, allowing testing of actual GDrive code paths
 without making real API calls.
 
 Usage:
@@ -17,16 +17,19 @@ Usage:
     user1_service = MockDriveService(shared_backing_store, "user1@example.com")
     user2_service = MockDriveService(shared_backing_store, "user2@example.com")
 
-    # Inject into GDriveConnection
-    connection = GDriveConnection.from_mock_service("user1@example.com", user1_service)
+    # Inject into DriveCachedClient
+    cached_client = DriveCachedClient.from_service("user1@example.com", user1_service)
 """
 
+import json
 import re
 import uuid
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
+import httplib2
+from googleapiclient.errors import HttpError
 from pydantic import BaseModel, Field
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 
 GOOGLE_FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 
@@ -592,6 +595,13 @@ class MockUpdateRequest:
         return file.to_metadata(self._fields)
 
 
+def http_error(status: int, reason: str, message: str) -> HttpError:
+    """An HttpError with the JSON body that Drive sends."""
+    errors = [{"reason": reason, "message": message}]
+    body = {"error": {"code": status, "message": message, "errors": errors}}
+    return HttpError(httplib2.Response({"status": status}), json.dumps(body).encode())
+
+
 class MockDeleteRequest:
     """Mock request for files().delete()."""
 
@@ -609,17 +619,17 @@ class MockDeleteRequest:
         """Execute the delete request."""
         file = self._backing_store.get_file(self._file_id)
         if file is None:
-            raise Exception(
-                f"<HttpError 404 ... File not found: {self._file_id} notFound>"
-            )
+            raise http_error(404, "notFound", f"File not found: {self._file_id}")
 
         # Check if user has permission to delete
         is_owner = any(
             owner.get("emailAddress") == self._current_user for owner in file.owners
         )
         if not is_owner:
-            raise Exception(
-                f"<HttpError 403 ... insufficientFilePermissions: {self._file_id}>"
+            raise http_error(
+                403,
+                "insufficientFilePermissions",
+                f"The user may not delete {self._file_id}",
             )
 
         self._delete_tree(self._file_id)
@@ -979,8 +989,8 @@ class MockDriveService:
 
 def pair_with_mock_service(
     email1: str, email2: str
-) -> Tuple[GDriveConnection, GDriveConnection]:
-    """Pair two GDriveConnections using mock services.
+) -> Tuple[DriveCachedClient, DriveCachedClient]:
+    """Pair two DriveCachedClients using mock services.
 
     Args:
         email1: Email for the first user
@@ -989,6 +999,6 @@ def pair_with_mock_service(
     backing_store = MockDriveBackingStore()
     service1 = MockDriveService(backing_store, email1)
     service2 = MockDriveService(backing_store, email2)
-    return GDriveConnection.from_service(
+    return DriveCachedClient.from_service(
         email1, service1
-    ), GDriveConnection.from_service(email2, service2)
+    ), DriveCachedClient.from_service(email2, service2)

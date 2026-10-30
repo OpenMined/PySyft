@@ -6,8 +6,11 @@ from unittest.mock import Mock
 import pytest
 
 from syft.sync.connections.base_connection import ConnectionConfig
-from syft.sync.connections.drive.drive_connections import gdrive_connection_of
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.drive_connections import (
+    DriveWatcherStore,
+    drive_cached_client_of,
+)
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 from syft.sync.connections.drive.grdrive_config import GdriveConnectionConfig
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.syftbox_manager import SyftboxManager, SyftboxManagerConfig
@@ -25,14 +28,14 @@ def _drive_config(email: str) -> GdriveConnectionConfig:
     return GdriveConnectionConfig(email=email, token_path=None)
 
 
-def _mock_connection(email: str) -> GDriveConnection:
-    connection, _ = pair_with_mock_service(email, "peer@example.com")
-    return connection
+def _mock_cached_client(email: str) -> DriveCachedClient:
+    cached_client, _ = pair_with_mock_service(email, "peer@example.com")
+    return cached_client
 
 
 def test_every_part_of_manager_shares_one_router():
     config = _config_with_both_roles()
-    transport = SyftboxManager._drive_transport(_mock_connection(config.email))
+    transport = SyftboxManager._drive_transport(_mock_cached_client(config.email))
     manager = SyftboxManager.from_config(config, transport)
     router = manager._connection_router
 
@@ -46,40 +49,50 @@ def test_every_part_of_manager_shares_one_router():
     assert manager._peer_store is router.peer_store
 
 
+def _drive_cached_clients(transport) -> list[DriveCachedClient]:
+    """The cached client of each component that uses Drive. The watcher store does not
+    use it yet."""
+    return [
+        component._cached_client
+        for component in transport.components()
+        if not isinstance(component, DriveWatcherStore)
+    ]
+
+
 def test_manager_builds_one_drive_connection_from_its_config(monkeypatch):
     built = []
 
-    def build_mock_connection(connection_config):
-        built.append(_mock_connection(connection_config.email))
+    def build_mock_cached_client(connection_config):
+        built.append(_mock_cached_client(connection_config.email))
         return built[-1]
 
-    monkeypatch.setattr(GDriveConnection, "from_config", build_mock_connection)
+    monkeypatch.setattr(DriveCachedClient, "from_config", build_mock_cached_client)
     config = _config_with_both_roles()
     config.transport_config = TransportConfig.one_connection(
         _drive_config(config.email)
     )
     manager = SyftboxManager.from_config(config)
 
-    [connection] = built
-    for component in manager._connection_router.transport.components():
-        assert component._conn is connection
+    [built_client] = built
+    for cached_client in _drive_cached_clients(manager._connection_router.transport):
+        assert cached_client is built_client
 
 
-def test_every_transport_component_shares_one_mock_connection():
+def test_every_drive_component_shares_one_cached_client():
     _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection()
     transport = do_manager._connection_router.transport
-    connection = gdrive_connection_of(transport)
+    cached_client = drive_cached_client_of(transport)
 
-    for component in transport.components():
-        assert component._conn is connection
+    for component_cached_client in _drive_cached_clients(transport):
+        assert component_cached_client is cached_client
 
 
-def test_gdrive_connection_of_transport_not_on_drive_raises():
-    transport = SyftboxManager._drive_transport(_mock_connection("do@example.com"))
+def test_drive_cached_client_of_transport_not_on_drive_raises():
+    transport = SyftboxManager._drive_transport(_mock_cached_client("do@example.com"))
     transport = transport.model_copy(update={"owner_store": Mock(spec=OwnerStore)})
 
     with pytest.raises(TypeError, match="not built on Google Drive"):
-        gdrive_connection_of(transport)
+        drive_cached_client_of(transport)
 
 
 def test_manager_without_transport_config_fails_at_init():

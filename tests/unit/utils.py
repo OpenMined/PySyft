@@ -1,18 +1,41 @@
-from syft.sync.events.file_change_event import FileChangeEventsMessage
-from syft.sync.events.file_change_event import FileChangeEvent
-from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
-from pathlib import Path
-import uuid
 import random
-from typing import List
 import time
-from syft.sync.messages.proposed_filechange import ProposedFileChangesMessage
-from syft.sync.messages.proposed_filechange import ProposedFileChange
+import uuid
+from pathlib import Path
+from typing import List
+
+from syft.sync.connections.drive import gdrive_retry
+from syft.sync.connections.drive.mock_drive_service import MockListRequest
+from syft.sync.events.file_change_event import (
+    FileChangeEvent,
+    FileChangeEventsMessage,
+    FileChangeEventsMessageFileName,
+)
+from syft.sync.messages.proposed_filechange import (
+    ProposedFileChange,
+    ProposedFileChangesMessage,
+)
 from syft.sync.utils.syftbox_utils import get_event_hash_from_content
 from syft.sync.connections.connection_router import ConnectionRouter
 from syft.sync.connections.drive.mock_drive_service import pair_with_mock_service
 from syft.sync.peers.peer_store import PeerStore
 from syft.sync.syftbox_manager import SyftboxManager
+
+
+def fail_next_listing(monkeypatch, name_prefix: str) -> None:
+    """Make the next mock Drive listing of files named ``name_prefix`` fail once,
+    with an error the Drive client retries."""
+    monkeypatch.setattr(gdrive_retry.time, "sleep", lambda _: None)
+    execute = MockListRequest.execute
+    failed = []
+
+    def fail_once(request: MockListRequest) -> dict:
+        if not failed and f"name contains '{name_prefix}'" in request._q:
+            failed.append(request)
+            raise ConnectionResetError("Drive dropped the connection")
+        return execute(request)
+
+    monkeypatch.setattr(MockListRequest, "execute", fail_once)
 
 
 def get_mock_event(path: str = "email@email.com/test.job") -> FileChangeEvent:
@@ -226,8 +249,8 @@ def router_with_mock_connection(email: str) -> ConnectionRouter:
     """A connection router over a mock Drive, for a part a test builds on its
     own. In a manager every part shares the router
     ``SyftboxManager.from_config`` builds."""
-    connection, _ = pair_with_mock_service(email, "peer@example.com")
+    cached_client, _ = pair_with_mock_service(email, "peer@example.com")
     return ConnectionRouter(
-        transport=SyftboxManager._drive_transport(connection),
+        transport=SyftboxManager._drive_transport(cached_client),
         peer_store=PeerStore(email=email),
     )

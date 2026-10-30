@@ -116,6 +116,19 @@ def _last_persisted_event_timestamp(
     return since
 
 
+def _incrementals_after(
+    full_checkpoint: Checkpoint | None, incrementals: List[IncrementalCheckpoint]
+) -> List[IncrementalCheckpoint]:
+    """The incrementals that ``full_checkpoint`` does not hold yet.
+
+    A full checkpoint is built after the incrementals it holds, so an older
+    incremental is already in it. A failed delete can leave one on the backend.
+    """
+    if full_checkpoint is None:
+        return incrementals
+    return [cp for cp in incrementals if cp.timestamp > full_checkpoint.timestamp]
+
+
 def _later_timestamp(current: float | None, candidate: float | None) -> float | None:
     """The later of two event timestamps, either of which may be missing."""
     if candidate is None:
@@ -389,7 +402,9 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         """
         router = self.connection_router
         full_checkpoint = router.get_latest_checkpoint()
-        incrementals = router.get_all_incremental_checkpoints()
+        incrementals = _incrementals_after(
+            full_checkpoint, router.get_all_incremental_checkpoints()
+        )
         rolling_state = router.get_rolling_state()
         if rolling_state is not None and rolling_state.event_count == 0:
             rolling_state = None
@@ -1237,10 +1252,11 @@ class DatasiteOwnerSyncer(BaseModelCallbackMixin):
         existing_checkpoint = self.connection_router.get_latest_checkpoint()
 
         # Download all incremental checkpoints
-        incremental_cps = self.connection_router.get_all_incremental_checkpoints()
+        all_incremental_cps = self.connection_router.get_all_incremental_checkpoints()
 
-        if not incremental_cps:
+        if not all_incremental_cps:
             raise ValueError("No incremental checkpoints to compact")
+        incremental_cps = _incrementals_after(existing_checkpoint, all_incremental_cps)
 
         print(f"Found {len(incremental_cps)} incremental checkpoints to compact")
 

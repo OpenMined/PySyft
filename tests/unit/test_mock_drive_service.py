@@ -1,7 +1,7 @@
 """Tests for MockDriveService and pair_with_mock_drive_service_connection.
 
 These tests verify that the mock Google Drive service provides a compatible
-interface for testing GDriveConnection code paths without real API calls.
+interface for testing the Drive code paths without real API calls.
 """
 
 from syft.sync.syftbox_manager import SyftboxManager
@@ -13,7 +13,7 @@ from syft.sync.connections.drive.mock_drive_service import (
     parse_gdrive_query,
     GOOGLE_FOLDER_MIME_TYPE,
 )
-from syft.sync.connections.drive.gdrive_transport import GDriveConnection
+from syft.sync.connections.drive.drive_cached_client import DriveCachedClient
 
 
 class TestMockDriveBackingStore:
@@ -431,25 +431,25 @@ class TestMockDriveService:
         assert len(list_result["files"]) == 1
 
 
-class TestGDriveConnectionWithMock:
-    """Tests for GDriveConnection with mock service."""
+class TestDriveCachedClientWithMock:
+    """Tests for DriveCachedClient with mock service."""
 
     def test_from_mock_service(self):
         store = MockDriveBackingStore()
         mock_service = MockDriveService(store, "user@example.com")
 
-        connection = GDriveConnection.from_service("user@example.com", mock_service)
+        cached_client = DriveCachedClient.from_service("user@example.com", mock_service)
 
-        assert connection.email == "user@example.com"
-        assert connection._is_setup is True
+        assert cached_client.email == "user@example.com"
+        assert cached_client.client.drive_service._backing_store is store
 
     def test_create_folder(self):
         store = MockDriveBackingStore()
         mock_service = MockDriveService(store, "user@example.com")
-        connection = GDriveConnection.from_service("user@example.com", mock_service)
+        cached_client = DriveCachedClient.from_service("user@example.com", mock_service)
 
-        syftbox_id = connection.create_syftbox_folder()
-        folder_id = connection.create_folder("TestFolder", syftbox_id)
+        syftbox_id = cached_client.create_syftbox_folder()
+        folder_id = cached_client.client.create_folder("TestFolder", syftbox_id)
 
         assert store.files[syftbox_id].properties == {"syft": "true"}
         assert store.files[folder_id].properties == {"syft": "true"}
@@ -466,9 +466,9 @@ class TestGDriveConnectionWithMock:
         store.add_file(file)
 
         mock_service = MockDriveService(store, "user@example.com")
-        connection = GDriveConnection.from_service("user@example.com", mock_service)
+        cached_client = DriveCachedClient.from_service("user@example.com", mock_service)
 
-        content = connection.download_file(file.id)
+        content = cached_client.client.download_file(file.id)
         assert content == b"Test content"
 
 

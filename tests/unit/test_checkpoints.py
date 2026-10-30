@@ -11,16 +11,25 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from googleapiclient.errors import HttpError
 
-from syft.sync.sync import datasite_owner_syncer
+from syft.sync.connections.drive.drive_owner_store import DriveOwnerStore
 from syft.sync.checkpoints.checkpoint import (
+    CHECKPOINT_FILENAME_PREFIX,
+    INCREMENTAL_CHECKPOINT_PREFIX,
     Checkpoint,
     IncrementalCheckpoint,
 )
 from syft.sync.checkpoints.rolling_state import RollingState
+from syft.sync.connections.drive.gdrive_client import GDriveClient
+from syft.sync.connections.drive.mock_drive_service import (
+    http_error,
+    pair_with_mock_service,
+)
 from syft.sync.events.file_change_event import FileChangeEvent
 from syft.sync.syftbox_manager import SyftboxManager
-from tests.unit.utils import get_mock_event
+from syft.sync.sync import datasite_owner_syncer
+from tests.unit.utils import fail_next_listing, get_mock_event
 
 
 def test_checkpoint_create_and_restore():
@@ -740,3 +749,83 @@ def test_owner_state_is_written_by_default():
     assert do_manager._get_all_accepted_events_do() != []
     assert router.get_rolling_state() is not None
     assert do_manager.datasite_owner_syncer._rolling_state is not None
+
+
+def test_latest_checkpoint_read_retries_drive_error(monkeypatch):
+    do_cached_client, _ = pair_with_mock_service("do@example.com", "ds@example.com")
+    store = DriveOwnerStore(do_cached_client)
+    store.put_checkpoint("checkpoint_1.0.tar.gz", b"full")
+
+    fail_next_listing(monkeypatch, CHECKPOINT_FILENAME_PREFIX)
+    assert store.latest_checkpoint() == b"full"
+
+
+def test_incremental_count_retries_drive_error(monkeypatch):
+    do_cached_client, _ = pair_with_mock_service("do@example.com", "ds@example.com")
+    store = DriveOwnerStore(do_cached_client)
+    store.put_incremental("incremental_checkpoint_1_1.0.tar.gz", b"inc")
+
+    fail_next_listing(monkeypatch, INCREMENTAL_CHECKPOINT_PREFIX)
+    assert store.incremental_count() == 1
+
+
+def test_latest_checkpoint_download_error_raises(monkeypatch):
+    do_cached_client, _ = pair_with_mock_service("do@example.com", "ds@example.com")
+    store = DriveOwnerStore(do_cached_client)
+    store.put_checkpoint("checkpoint_1.0.tar.gz", b"full")
+
+    def forbidden(self, file_id: str) -> bytes:
+        raise http_error(403, "cannotDownloadFile", "The file cannot be downloaded")
+
+    monkeypatch.setattr(GDriveClient, "download_file", forbidden)
+    with pytest.raises(HttpError):
+        store.latest_checkpoint()
+
+
+def _file_event(do_email: str, path: str, content: str) -> FileChangeEvent:
+    return FileChangeEvent(
+        id=uuid4(),
+        path_in_datasite=Path(path),
+        datasite_email=do_email,
+        content=content,
+        old_hash=None,
+        new_hash=f"hash_{content}",
+        is_deleted=False,
+        submitted_timestamp=time.time(),
+        timestamp=time.time(),
+    )
+
+
+def test_incremental_left_after_compaction_does_not_revert_a_file():
+    """A delete that fails after compaction leaves a merged incremental on the
+    backend. Restore and the next compaction must not apply it again."""
+    _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
+        use_in_memory_cache=True,
+    )
+    do_email = do_manager.email
+    router = do_manager._connection_router
+    syncer = do_manager.datasite_owner_syncer
+    older = IncrementalCheckpoint(
+        email=do_email,
+        sequence_number=1,
+        events=[_file_event(do_email, "file1.txt", "v1")],
+    )
+    newer = IncrementalCheckpoint(
+        email=do_email,
+        sequence_number=2,
+        events=[_file_event(do_email, "file1.txt", "v2")],
+    )
+    router.upload_incremental_checkpoint(older)
+    router.upload_incremental_checkpoint(newer)
+    syncer.compact_checkpoints()
+    # The delete of the older incremental failed: it is still on the backend.
+    router.upload_incremental_checkpoint(older)
+
+    syncer.event_cache.clear_cache()
+    syncer.initial_sync_done = False
+    do_manager.sync(auto_checkpoint=False)
+    assert syncer.event_cache.file_connection.read_file("file1.txt") == "v2"
+
+    compacted = syncer.compact_checkpoints()
+    [file1] = [f for f in compacted.files if f.path == "file1.txt"]
+    assert file1.content == "v2"

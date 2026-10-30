@@ -19,28 +19,27 @@ from unittest.mock import Mock
 import pytest
 
 from syft.sync.checkpoints.checkpoint import CHECKPOINT_VERSION, Checkpoint
-from syft.sync.connections.drive.gdrive_transport import (
-    GDriveConnection,
+from syft.sync.connections.drive.gdrive_client import GDriveClient
+from syft.sync.connections.drive.drive_cached_client import (
+    DriveCachedClient,
     _partition_by_version,
-    execute_with_retries,
 )
+from syft.sync.connections.drive.gdrive_retry import execute_with_retries
 from syft.sync.syftbox_manager import SyftboxManager
-from syft.sync.connections.drive.drive_connections import gdrive_connection_of
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 
 EMAIL = "alice@example.com"
 
 
-def _conn():
-    conn = GDriveConnection(email=EMAIL, verbose=False)
-    conn.drive_service = Mock()
-    return conn
+def _cached_client():
+    return DriveCachedClient(GDriveClient(Mock(), Mock), EMAIL)
 
 
-def _renames(conn):
-    """Return the (fileId, new name) pairs the connection sent to Drive."""
+def _renames(cached_client):
+    """Return the (fileId, new name) pairs the cached client sent to Drive."""
     return [
         (kwargs["fileId"], kwargs["body"]["name"])
-        for _, kwargs in conn.drive_service.files().update.call_args_list
+        for _, kwargs in cached_client.client.drive_service.files().update.call_args_list
         if "body" in kwargs and "name" in kwargs.get("body", {})
     ]
 
@@ -81,65 +80,65 @@ def test_partition_returns_empty_for_a_bad_current_version():
 
 
 def test_a_compatible_folder_wins_and_nothing_is_renamed():
-    conn = _conn()
+    cached_client = _cached_client()
     folders = [("same", f"0.2.5#{EMAIL}"), ("old", f"0.1.9#{EMAIL}")]
-    got = conn._find_or_adopt_versioned_folder(
+    got = cached_client.find_or_adopt_versioned_folder(
         folders, current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
     )
     assert got == "same"
-    assert _renames(conn) == []
+    assert _renames(cached_client) == []
 
 
 def test_an_older_folder_is_adopted_by_rename():
-    conn = _conn()
+    cached_client = _cached_client()
     folders = [("old", f"0.1.9#{EMAIL}")]
-    got = conn._find_or_adopt_versioned_folder(
+    got = cached_client.find_or_adopt_versioned_folder(
         folders, current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
     )
     assert got == "old", "the client must keep the folder that holds the data"
-    assert _renames(conn) == [("old", f"0.2.7#{EMAIL}")]
+    assert _renames(cached_client) == [("old", f"0.2.7#{EMAIL}")]
 
 
 def test_the_highest_older_folder_is_adopted():
-    conn = _conn()
+    cached_client = _cached_client()
     folders = [
         ("v1", f"0.1.9#{EMAIL}"),
         ("v2", f"0.1.20#{EMAIL}"),
         ("v0", f"0.0.4#{EMAIL}"),
     ]
-    got = conn._find_or_adopt_versioned_folder(
+    got = cached_client.find_or_adopt_versioned_folder(
         folders, current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
     )
     assert got == "v2"
-    assert _renames(conn) == [("v2", f"0.2.7#{EMAIL}")]
+    assert _renames(cached_client) == [("v2", f"0.2.7#{EMAIL}")]
 
 
 def test_a_newer_folder_stops_the_client():
     # A new folder here would hide data that this client cannot read. Report the
     # version to install instead.
-    conn = _conn()
+    cached_client = _cached_client()
     folders = [("new", f"0.3.0#{EMAIL}")]
     with pytest.raises(RuntimeError, match="0.3.0"):
-        conn._find_or_adopt_versioned_folder(
+        cached_client.find_or_adopt_versioned_folder(
             folders, current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
         )
-    assert _renames(conn) == []
+    assert _renames(cached_client) == []
 
 
 def test_no_folder_returns_none_so_the_caller_creates_one():
-    conn = _conn()
-    got = conn._find_or_adopt_versioned_folder(
+    cached_client = _cached_client()
+    got = cached_client.find_or_adopt_versioned_folder(
         [], current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
     )
     assert got is None
-    assert _renames(conn) == []
+    assert _renames(cached_client) == []
 
 
 def test_two_compatible_folders_still_raise():
-    conn = _conn()
+    cached_client = _cached_client()
     folders = [("a", f"0.2.1#{EMAIL}"), ("b", f"0.2.2#{EMAIL}")]
     with pytest.raises(RuntimeError):
-        conn._find_or_adopt_versioned_folder(
+        cached_client.find_or_adopt_versioned_folder(
             folders, current_name=f"0.2.7#{EMAIL}", current_version="0.2.7"
         )
 
@@ -151,7 +150,7 @@ def _checkpoints_owner_with_version(checkpoint_version: int):
     """A DO whose checkpoints folder is named for an earlier client version.
 
     Uploads one checkpoint at `checkpoint_version`, then renames the folder as a
-    pre-upgrade client would have left it. Returns (router, connection,
+    pre-upgrade client would have left it. Returns (router, cached_client,
     older_name).
     """
     _, do_manager = SyftboxManager.pair_with_mock_drive_service_connection(
@@ -159,27 +158,27 @@ def _checkpoints_owner_with_version(checkpoint_version: int):
         sync_automatically=False,
     )
     router = do_manager._connection_router
-    connection = gdrive_connection_of(router.transport)
+    cached_client = drive_cached_client_of(router.transport)
     router.upload_checkpoint(
         Checkpoint(email=do_manager.email, version=checkpoint_version)
     )
 
-    folder_id = connection._get_checkpoints_folder_id()
+    folder_id = router.transport.owner_store._get_checkpoints_folder_id()
     older_name = f"{do_manager.email}-0.0.1-checkpoints"
     execute_with_retries(
-        connection.drive_service.files().update(
+        cached_client.client.drive_service.files().update(
             fileId=folder_id, body={"name": older_name}
         )
     )
-    return router, connection, older_name
+    return router, cached_client, older_name
 
 
-def _checkpoints_folder_names(connection) -> list[str]:
+def _checkpoints_folder_names(cached_client) -> list[str]:
     return [
         name
-        for _, name in connection._find_folders(
-            name_contains=[f"{connection.email}-", "-checkpoints"],
-            parent_id=connection.get_syftbox_folder_id(),
+        for _, name in cached_client.client.find_folders(
+            name_contains=[f"{cached_client.email}-", "-checkpoints"],
+            parent_id=cached_client.get_syftbox_folder_id(),
         )
     ]
 
@@ -187,16 +186,16 @@ def _checkpoints_folder_names(connection) -> list[str]:
 def test_an_adopted_folder_serves_a_checkpoint_from_an_earlier_client():
     # Version 0 predates the field, which is the shape an earlier client wrote.
     # The rename finds the folder and the file still loads.
-    router, connection, older_name = _checkpoints_owner_with_version(0)
+    router, cached_client, older_name = _checkpoints_owner_with_version(0)
 
     checkpoint = router.get_latest_checkpoint()
 
     assert checkpoint is not None, "the adopted folder must still serve its files"
     assert checkpoint.version == 0
-    assert _checkpoints_folder_names(connection) == [
-        connection._get_checkpoints_folder_name()
+    assert _checkpoints_folder_names(cached_client) == [
+        router.transport.owner_store._get_checkpoints_folder_name()
     ], "the read must go through the adopt, which renames the folder"
-    assert older_name not in _checkpoints_folder_names(connection)
+    assert older_name not in _checkpoints_folder_names(cached_client)
 
 
 def test_an_adopted_folder_still_refuses_a_later_checkpoint(capsys):
@@ -204,7 +203,7 @@ def test_an_adopted_folder_still_refuses_a_later_checkpoint(capsys):
     # the rename does not vouch for the content. A checkpoint from a later client
     # is refused inside an adopted folder exactly as it is anywhere else, and the
     # caller falls back to a download of all events.
-    router, connection, _ = _checkpoints_owner_with_version(CHECKPOINT_VERSION + 1)
+    router, cached_client, _ = _checkpoints_owner_with_version(CHECKPOINT_VERSION + 1)
 
     assert router.get_latest_checkpoint() is None
     assert "Failed to load checkpoint" in capsys.readouterr().out

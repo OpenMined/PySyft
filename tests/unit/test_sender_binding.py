@@ -12,7 +12,7 @@ from syft.sync.messages.proposed_filechange import (
     ProposedFileChangesMessage,
 )
 from syft.sync.syftbox_manager import SyftboxManager
-from syft.sync.connections.drive.drive_connections import gdrive_connection_of
+from syft.sync.connections.drive.drive_connections import drive_cached_client_of
 
 
 def send_spoofed_message(
@@ -46,8 +46,8 @@ def sync_do(do_manager: SyftboxManager) -> None:
 
 
 def written_paths(do_manager: SyftboxManager) -> list[str]:
-    connection = do_manager.datasite_owner_syncer.event_cache.file_connection
-    return [str(path) for path, _ in connection.get_items()]
+    do_cached_client = do_manager.datasite_owner_syncer.event_cache.file_connection
+    return [str(path) for path, _ in do_cached_client.get_items()]
 
 
 def test_sender_email_in_body_cannot_claim_the_datasite_owner():
@@ -81,11 +81,12 @@ def test_spoofed_sender_does_not_name_an_archive_folder():
     send_spoofed_message(ds_manager, do_email, claimed_email, "any.txt")
     sync_do(do_manager)
 
-    connection = gdrive_connection_of(
+    do_cached_client = drive_cached_client_of(
         do_manager.datasite_owner_syncer.connection_router.transport
     )
     folder_names = [
-        f.name for f in connection.drive_service._backing_store.files.values()
+        f.name
+        for f in do_cached_client.client.drive_service._backing_store.files.values()
     ]
     assert not [name for name in folder_names if claimed_email in name]
 
