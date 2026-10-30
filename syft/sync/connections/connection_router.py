@@ -109,7 +109,7 @@ class ConnectionRouter(BaseModel):
     ) -> list[tuple[RawMessage, ProposedFileChangesMessage]]:
         """Every readable proposal waiting from ``sender_email``, oldest first,
         as received and as read. Pass the received ones to
-        ``owner_mark_all_processed`` once they are handled.
+        ``mark_all_processed`` once they are handled.
 
         A message that cannot be read (wrong format for the pair, bad
         signature, cannot be decrypted or decoded) is marked processed unread,
@@ -145,7 +145,8 @@ class ConnectionRouter(BaseModel):
             self.connections.p2p_con.mark_processed(raw)
             return None
 
-    def owner_mark_all_processed(self, messages: list[RawMessage]) -> None:
+    def mark_all_processed(self, messages: list[RawMessage]) -> None:
+        """Finish ``messages``, as received by either role."""
         self.connections.p2p_con.mark_all_processed(messages)
 
     def owner_write_event_messages_to_outbox(
@@ -159,43 +160,36 @@ class ConnectionRouter(BaseModel):
             recipient_email, fname, data, MessageKind.FILE_EVENTS
         )
 
-    def watcher_get_events_messages(
-        self, peer_email: str, since_timestamp: float | None
-    ) -> List[FileChangeEventsMessage]:
-        """The outbox messages of ``peer_email``, without the skipped ones."""
-        raw_list = self.connections.p2p_con.outbox_messages(peer_email, since_timestamp)
-        messages = [
-            self.watcher_read_events_message(peer_email, raw) for raw in raw_list
-        ]
-        return [m for m in messages if m is not None]
+    def watcher_receive_events_messages(
+        self, sender_email: str, after: str | None = None
+    ) -> list[tuple[RawMessage, FileChangeEventsMessage]]:
+        """Every readable events message from ``sender_email`` after the
+        message ``after``, oldest first, as received and as read. Pass the
+        received ones to ``mark_all_processed`` once they are applied.
 
-    def watcher_read_events_message(
-        self, peer_email: str, raw: bytes
-    ) -> FileChangeEventsMessage | None:
-        """Verify, decrypt and parse one outbox message of ``peer_email``.
-
-        Returns None when the message is skipped, with a warning: its format
-        does not match the pair, or it cannot be read now.
+        A message that cannot be read now is left out with a warning.
         """
+        received = self.connections.p2p_con.receive(
+            sender_email, MessageKind.FILE_EVENTS, after=after
+        )
+        readable = []
+        for raw in received:
+            if (message := self._read_events_message(raw)) is not None:
+                readable.append((raw, message))
+        return readable
+
+    def _read_events_message(self, raw: RawMessage) -> FileChangeEventsMessage | None:
+        """``raw`` verified, decrypted and decoded, or None with a warning when
+        its format does not match the pair or it cannot be read now."""
         try:
-            data = self.peer_store.decrypt_and_verify_if_needed(peer_email, raw)
-        except (
-            MessageFormatError,
-            SyftPeerNotReadyError,
-        ) as e:
-            warnings.warn(f"Skipped an outbox message of {peer_email}: {e}")
+            data = self.peer_store.decrypt_and_verify_if_needed(raw.sender, raw.data)
+        except (MessageFormatError, SyftPeerNotReadyError) as e:
+            warnings.warn(f"Skipped an outbox message of {raw.sender}: {e}")
             return None
         return FileChangeEventsMessage.from_compressed_data(data)
 
-    def watcher_get_outbox_file_metadatas(
-        self, peer_email: str, since_timestamp: float | None
-    ) -> List[dict]:
-        return self.connections.p2p_con.outbox_message_metadatas(
-            peer_email, since_timestamp
-        )
-
     def download_outbox_message(self, file_id: str) -> bytes:
-        """Download one outbox message by its handle (thread-safe)."""
+        """Download one message of my own outbox by its handle (thread-safe)."""
         return self.connections.p2p_con.clone_for_thread().fetch_message(file_id)
 
     def owner_get_outbox_file_metadatas(self, recipient_email: str) -> List[dict]:

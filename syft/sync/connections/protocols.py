@@ -72,10 +72,18 @@ class P2PConnection(RouterConnection, ABC):
 
     @abstractmethod
     def receive(
-        self, peer: str, kind: MessageKind, max_messages: int | None = None
+        self,
+        peer: str,
+        kind: MessageKind,
+        after: str | None = None,
+        max_messages: int | None = None,
     ) -> list[RawMessage]:
         """Messages of ``kind`` from ``peer`` that are not processed yet, oldest
         first, at most ``max_messages`` of them.
+
+        ``after`` is the ``msg_id`` of the last message the receiver processed.
+        A connection that keeps processed messages, as Drive keeps the outbox,
+        returns only the later ones. A connection that drops them ignores it.
 
         A peer whose channel does not exist yet has no messages. The connection
         sets each ``RawMessage.sender`` from where the message came from.
@@ -84,7 +92,8 @@ class P2PConnection(RouterConnection, ABC):
     @abstractmethod
     def mark_processed(self, message: RawMessage) -> None:
         """Record that ``message`` was processed; ``receive`` never returns it
-        again."""
+        again, or, on a connection that keeps processed messages, not once
+        ``after`` is at or past it."""
 
     def mark_all_processed(self, messages: list[RawMessage]) -> None:
         """``mark_processed`` for each of ``messages``."""
