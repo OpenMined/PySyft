@@ -199,12 +199,25 @@ def test_traceback_record_is_staged(tmp_path):
     assert (review / FRAMES_FILENAME).exists()
 
 
+def test_release_with_nothing_released_skips_permissions(tmp_path, monkeypatch):
+    """The permission context scans the whole datasite, so build it only to grant."""
+    job, _, _ = run_job(tmp_path, OK_PY, share_logs=None)
+
+    def no_permission_work(self):
+        raise AssertionError("release built a permission context")
+
+    monkeypatch.setattr(JobInfo, "_get_perm_context", no_permission_work)
+
+    assert job.release([FRAMES_FILENAME], [DS_EMAIL]) == []
+
+
 def test_rerun_clears_both_locations(tmp_path):
     """A staged log from the old run must not survive into a later release."""
     job, review, staging = run_job(tmp_path, OK_PY, share_logs=False)
     (review / "returncode.txt").write_text("0")
     assert (staging / "stdout.txt").exists()
-    assert (review / "outputs").exists() or (staging / "outputs").exists()
+    assert job.release(["outputs"], [DS_EMAIL]) == ["outputs"]
+    assert (review / "outputs").exists()
 
     job.rerun()
 
@@ -212,7 +225,6 @@ def test_rerun_clears_both_locations(tmp_path):
     assert not (staging / "stderr.txt").exists()
     assert not (review / "stdout.txt").exists()
     assert not (review / "outputs").exists()
-    assert not (staging / "outputs").exists()
 
 
 def test_rerun_clears_crash_record(tmp_path):
@@ -293,6 +305,27 @@ os.symlink({str(results)!r}, "outputs")
     assert (staging / "outputs" / "result.txt").read_text() == "done"
     job.rerun()
     assert not (staging / "outputs").exists()
+
+
+def test_rerun_drops_outputs_recipients_of_old_run(tmp_path):
+    """A recipient of the old outputs must not read the outputs of the rerun."""
+    peer = "peer@test.org"
+    job, _, _ = run_job(tmp_path, OK_PY, share_logs=None)
+    # As on a datasite: the DS review folder has its own permission file, so the
+    # outputs grant goes there, not inside outputs/.
+    JobClient(config=do_config_for(tmp_path)).setup_ds_job_folder_as_do(DS_EMAIL)
+    job.release(["outputs"], [DS_EMAIL, peer])
+
+    job.rerun()
+    run_approved(tmp_path)
+    reload_job(tmp_path).release(["outputs"], [DS_EMAIL])
+
+    ctx = SyftPermContext(datasite=tmp_path / "SyftBox" / DO_EMAIL)
+    result = ctx.open(
+        f"app_data/job/review/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/outputs/result.txt"
+    )
+    assert result.has_read_access(DS_EMAIL)
+    assert not result.has_read_access(peer)
 
 
 def test_new_run_drops_recipients_and_outputs_error_of_old_run(tmp_path):

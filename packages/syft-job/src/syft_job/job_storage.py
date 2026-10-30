@@ -10,6 +10,7 @@ from syft_migration import (
     MigrationService,
     ProtocolSchema,
 )
+from syft_perms import SyftPermContext
 
 from .config import SyftJobConfig, is_protocol_dir_name
 from .job_ref import JobRef, JobStateNotFoundError, RequestRef
@@ -137,7 +138,17 @@ class JobStorage:
         return self._codec_for(ref.protocol_version).staging_dir(ref)
 
     def remove_outputs(self, ref: JobRef) -> bool:
-        """Delete outputs/ in review/ and in staging/. Returns True if one existed."""
+        """Delete outputs/ in review/ and in staging/, and the read grant on them.
+
+        Returns True if one of the folders existed. The grant can sit in a
+        permission file above outputs/, so it goes on its own, and the next
+        release starts with no recipient.
+        """
+        datasite = self.config.syftbox_folder / ref.datasite_email
+        released = self.review_dir(ref) / "outputs"
+        SyftPermContext(datasite=datasite).modifier.remove_all_rules(
+            str(released.relative_to(datasite)), is_folder=True
+        )
         removed = False
         for outputs_dir in (
             self.review_dir(ref) / "outputs",

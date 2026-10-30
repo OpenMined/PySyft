@@ -117,7 +117,8 @@ class JobInfo:
         filenames = list(filenames)
         moved = self._move_to_review(filenames)
         released = [n for n in filenames if (self.job_review_path / n).exists()]
-        self._grant_read(released, recipients)
+        if released:
+            self._grant_read(released, recipients)
         return moved
 
     def _move_to_review(self, filenames: Iterable[str]) -> list[str]:

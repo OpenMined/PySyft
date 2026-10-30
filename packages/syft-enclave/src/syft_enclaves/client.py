@@ -1,10 +1,10 @@
-import json
 import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
+from syft.sync.transport.protocols import Transport
 from syft_datasets import Dataset
 from syft_datasets.dataset_manager import SyftDatasetManager
 from syft_job.disclosures import DisclosuresArg, gated_names
@@ -50,7 +50,6 @@ from syft_enclaves.utils import (
     write_versions,
 )
 
-FORWARDED_RECORD = "forwarded_artifacts.json"
 RESULTS_SHARED_MARKER = "results_shared"
 # How the enclave records an approval: every data owner approved the same job.
 ENCLAVE_APPROVAL_METHOD = "enclave"
@@ -477,15 +476,16 @@ class SyftEnclaveClient:
         """Release each granted artifact to the parties of its job.
 
         An artifact that no party released stays in the staging folder, where no
-        party holds a grant.
+        party holds a grant. A job with no granted artifact left in staging is
+        skipped, because each release scans the datasite permissions.
         """
         for job in self._local_jobs():
             if job.status not in ("done", "failed"):
                 continue
-            job.release(
-                gated_names(self.granted_disclosures(job)),
-                self._disclosure_recipients(job),
-            )
+            granted = gated_names(self.granted_disclosures(job))
+            if not any((job.job_staging_path / name).exists() for name in granted):
+                continue
+            job.release(granted, self._disclosure_recipients(job))
 
     def _disclosure_recipients(self, job: JobInfo) -> list[str]:
         """The submitter and each DO of the job, who all get a released artifact."""
@@ -500,14 +500,11 @@ class SyftEnclaveClient:
             if job.status not in ("done", "failed"):
                 continue
             self._release_results_once(job)
-            # A grant can arrive after the results went out, so a released
-            # artifact travels on its own schedule.
-            self._push_new_disclosures(job)
 
         self._rds.sync()
 
     def _release_results_once(self, job: JobInfo) -> None:
-        """Send the outputs and the state, the first time the job finishes."""
+        """Release the outputs and send the state, the first time the job finishes."""
         marker = job.job_review_path / RESULTS_SHARED_MARKER
         if marker.exists():
             return
@@ -525,40 +522,6 @@ class SyftEnclaveClient:
             self._release_outputs(job, do_emails)
 
         marker.write_text("shared")
-
-    def _push_new_disclosures(self, job: JobInfo) -> list[str]:
-        """Send each released artifact that the parties do not hold yet.
-
-        A party that releases an item also receives it, so the data owners get
-        the same file as the submitter. The record names what already went out,
-        because a grant can arrive long after the results did.
-        """
-        review_dir = job.job_review_path
-        sent_path = review_dir / FORWARDED_RECORD
-        try:
-            sent = set(json.loads(sent_path.read_text()))
-        except (OSError, TypeError, json.JSONDecodeError):
-            sent = set()
-
-        pending = sorted(
-            name
-            for name in gated_names(self.granted_disclosures(job))
-            if name not in sent and (review_dir / name).is_file()
-        )
-        if not pending:
-            return []
-
-        datasite_dir = self._rds.syftbox_folder / self._rds.email
-        files = {
-            (review_dir / name).relative_to(datasite_dir): (
-                review_dir / name
-            ).read_bytes()
-            for name in pending
-        }
-        self._push_files_to_recipients(files, self._disclosure_recipients(job))
-
-        sent_path.write_text(json.dumps(sorted(sent.union(pending))))
-        return pending
 
     def _try_write_receipt(self, job: JobInfo) -> None:
         """Sign a receipt into the job's outputs, so it ships with them.
@@ -582,14 +545,13 @@ class SyftEnclaveClient:
         return {state_rel: state_file.read_bytes()}
 
     def _release_outputs(self, job: JobInfo, recipients: list[str]) -> None:
-        """Release the outputs to ``recipients``, and push them with the job state."""
+        """Release the outputs to ``recipients``, and push the job state to them.
+
+        The sync sends the outputs, because the recipients now read them. The
+        data owners do not read the job state, so it goes by push.
+        """
         job.release(["outputs"], recipients)
-        outputs_dir = job.job_review_path / "outputs"
-        files_by_datasite_path = (
-            self._get_files_in_dir(outputs_dir) if outputs_dir.exists() else {}
-        )
-        files_by_datasite_path.update(self._read_state_file(job))
-        self._push_files_to_recipients(files_by_datasite_path, recipients)
+        self._push_files_to_recipients(self._read_state_file(job), recipients)
 
     def _push_files_to_recipients(
         self, files_by_datasite_path: dict, recipients: list[str]

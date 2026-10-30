@@ -153,8 +153,8 @@ def _kill_process_tree(pid: int, timeout: float = 2.0) -> None:
 class SyftJobRunner:
     """Job runner that monitors and executes approved jobs.
 
-    Reads run.sh from inbox/. Outputs and state go to review/, logs and the
-    return code to staging/.
+    Reads run.sh from inbox/. State goes to review/. Outputs, logs and the
+    return code go to staging/, until a release moves them to review/.
     """
 
     def __init__(
@@ -486,8 +486,8 @@ class SyftJobRunner:
 
         The inbox is copied into a fresh folder outside the SyftBox, and the
         copy must match the approved hash before anything runs, so an edit of
-        the submitter's inbox never runs. Outputs and state go to review/, logs
-        and the return code to staging/.
+        the submitter's inbox never runs. State goes to review/. Outputs, logs
+        and the return code go to staging/, until a release moves them.
 
         Args:
             ref: Ref of the job to execute.
