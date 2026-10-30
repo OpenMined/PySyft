@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from syft.sync.transport.protocols import Transport
 from syft_datasets import Dataset
 from syft_datasets.dataset_manager import SyftDatasetManager
 from syft_job.disclosures import DisclosuresArg, gated_names
