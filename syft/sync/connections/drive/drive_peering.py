@@ -51,7 +51,8 @@ class DrivePeering(Peering):
         self._layout = layout
         # Encryption bundles folder cache
         self._encryption_bundles_folder_id: str | None = None
-        # Cached SYFT_peers.json contents (None = not loaded yet).
+        # SYFT_peers.json as loaded: peer email -> {"state", "public_encryption_bundle"},
+        # plus "_meta" -> {"version"}. None until the first read.
         self._peers_json_cache: dict[str, dict[str, Any]] | None = None
 
     def copy_caches_to(self, other: "DrivePeering") -> None:

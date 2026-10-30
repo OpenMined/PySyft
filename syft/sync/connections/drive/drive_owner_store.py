@@ -23,7 +23,6 @@ from syft.sync.connections.drive.gdrive_retry import (
     raise_unavailable,
 )
 from syft.sync.events.file_change_event import FileChangeEventsMessageFileName
-from syft.sync.transport.naming import timestamp_from_message_name
 from syft.sync.transport.protocols import OwnerStore
 from syft.version import SYFT_VERSION
 
@@ -191,41 +190,6 @@ class DriveOwnerStore(OwnerStore):
             result.append(self._layout.client.download_file(gdrive_id))
 
         return result
-
-    def get_events_count_since_checkpoint(
-        self, checkpoint_timestamp: float | None
-    ) -> int:
-        """
-        Count events created after the checkpoint timestamp.
-
-        Args:
-            checkpoint_timestamp: The timestamp of the checkpoint, or None for all events.
-
-        Returns:
-            Number of events since the checkpoint.
-        """
-        personal_folder_id = self._layout.get_personal_syftbox_folder_id()
-        file_metadatas = self._layout.get_file_metadatas_from_folder(personal_folder_id)
-
-        if checkpoint_timestamp is None:
-            # Count all events
-            return len(
-                [
-                    f
-                    for f in file_metadatas
-                    if f["name"].startswith("syfteventsmessagev3_")
-                ]
-            )
-
-        # Count events after checkpoint
-        count = 0
-        for f in file_metadatas:
-            if not f["name"].startswith("syfteventsmessagev3_"):
-                continue
-            event_timestamp = timestamp_from_message_name(f["name"])
-            if event_timestamp is not None and event_timestamp > checkpoint_timestamp:
-                count += 1
-        return count
 
     def _get_checkpoints_folder_name(self) -> str:
         """Get the checkpoints folder name: {email}-{version}-checkpoints"""
