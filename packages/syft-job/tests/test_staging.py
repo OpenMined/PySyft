@@ -135,7 +135,7 @@ def test_failure_after_run_stages_return_code(tmp_path, monkeypatch):
     def fail(*args, **kwargs):
         raise OSError("disk full")
 
-    monkeypatch.setattr(SyftJobRunner, "_move_outputs_to_review", fail)
+    monkeypatch.setattr(SyftJobRunner, "_move_outputs_to_staging", fail)
     job, review, staging = run_job(tmp_path, OK_PY, share_logs=None)
 
     assert (staging / "returncode.txt").read_text().strip() == "-1"

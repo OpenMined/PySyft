@@ -597,7 +597,6 @@ class SyftJobRunner:
         policies: JobPolicies | None = None,
     ) -> None:
         job_name = ref.job_name
-        review_dir = self.manager.review_dir(ref)
         self._prepare_outputs_dir(ref, run_dir)
 
         print(f" Executing job: {job_name}")
@@ -615,8 +614,7 @@ class SyftJobRunner:
             self._capture_traceback(ref, returncode, run_dir / "code")
             returncode = self._run_output_policy(ref, run_dir, policies, returncode)
 
-            # Move outputs from the run copy to review/
-            self._move_outputs_to_review(run_dir, review_dir)
+            self._move_outputs_to_staging(ref, run_dir)
 
             self._finalize(ref, returncode)
             self._report_result(ref, returncode)
@@ -652,7 +650,7 @@ class SyftJobRunner:
         """Run the output policy, record who gets the outputs, return the exit code.
 
         A failed job or a deny shares the outputs with nobody; a deny also
-        fails the job. The outputs still go to review/, for the data owner.
+        fails the job. The outputs still go to staging/, for the data owner.
         """
         if policies is None or policies.output is None:
             return returncode
@@ -688,7 +686,7 @@ class SyftJobRunner:
     def _deny(self, ref: JobRef, kind: PolicyKind, result: PolicyResult) -> None:
         """Release the reason of a deny to the submitter."""
         self._write_staged(ref, POLICY_ERROR_FILENAME, f"{result.error}\n")
-        self._get_job_info(ref)._release_to_submitter([POLICY_ERROR_FILENAME])
+        self._get_job_info(ref).release([POLICY_ERROR_FILENAME], [ref.ds_email])
         print(f" Job {ref.job_name} denied by the {kind.value} policy: {result.error}")
 
     def _write_recipients(self, ref: JobRef, recipients: list[str]) -> None:
@@ -742,23 +740,14 @@ class SyftJobRunner:
         state.return_code = None
         self.manager.write_state(ref, state)
 
-    def _move_outputs_to_review(self, run_dir: Path, review_dir: Path) -> None:
-        run_outputs = run_dir / "code" / "outputs"
-        review_outputs = review_dir / "outputs"
-        if run_outputs.exists() and run_outputs.is_dir():
-            # Merge into review/outputs (which was pre-created by _prepare_outputs_dir)
-            for item in run_outputs.iterdir():
-                dest = review_outputs / item.name
-                if item.is_file():
-                    shutil.copy2(str(item), str(dest))
-                elif item.is_dir():
-                    if dest.exists():
-                        shutil.rmtree(dest)
-                    shutil.copytree(str(item), str(dest))
-            shutil.rmtree(run_outputs)
+    def _move_outputs_to_staging(self, ref: JobRef, run_dir: Path) -> None:
+        """Move the outputs from the run copy to staging/, to wait for a release."""
+        staging_dir = self.manager.staging_dir(ref)
+        staging_dir.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(run_dir / "code" / "outputs"), str(staging_dir / "outputs"))
 
     def _prepare_outputs_dir(self, ref: JobRef, run_dir: Path) -> None:
-        """Create outputs/ in the run copy (for the job) and review/ (for results).
+        """Create outputs/ in the run copy, and remove the outputs of a previous run.
 
         The job writes its outputs in the run copy, outside the SyftBox, so no
         sync can send them to the submitter before they are released.
@@ -766,20 +755,12 @@ class SyftJobRunner:
         # Create outputs/ inside code/ dir so job scripts can write there (cwd is code/)
         (run_dir / "code" / "outputs").mkdir(parents=True, exist_ok=True)
 
-        # Create outputs/ in review dir with owner-only read permissions
-        review_dir = self.manager.review_dir(ref)
-        outputs_dir = review_dir / "outputs"
-        if outputs_dir.exists():
-            shutil.rmtree(outputs_dir)
-        outputs_dir.mkdir(parents=True, exist_ok=True)
-
-        from syft_perms import SyftPermContext
-
-        datasite = self.config.syftbox_folder / self.config.current_user_email
-        rel_path = str(outputs_dir.relative_to(datasite)) + "/"
-        ctx = SyftPermContext(datasite=datasite)
-        folder = ctx.open(rel_path)
-        folder.grant_read_access(self.config.current_user_email)
+        for outputs_dir in (
+            self.manager.review_dir(ref) / "outputs",
+            self.manager.staging_dir(ref) / "outputs",
+        ):
+            if outputs_dir.exists():
+                shutil.rmtree(outputs_dir)
 
     def _replace_ds_folder_reads(self) -> None:
         """Replace the read grant on a whole DS review folder with the named files.
@@ -946,13 +927,13 @@ class SyftJobRunner:
         job_info = self._get_job_info(ref)
         job_info.release_disclosures()
         if share_outputs:
-            job_info.share_outputs(recipients)
+            job_info.release(["outputs"], recipients)
             if ref.ds_email not in recipients:
                 # An empty marker: that the submitter can read this file is
                 # the message. Their job then shows "Outputs not shared with
                 # you" instead of looking like it wrote no outputs.
                 self._write_staged(ref, OUTPUTS_WITHHELD_FILENAME, "")
-                job_info._release_to_submitter([OUTPUTS_WITHHELD_FILENAME])
+                job_info.release([OUTPUTS_WITHHELD_FILENAME], [ref.ds_email])
         if share_logs:
             job_info.release_logs()
 

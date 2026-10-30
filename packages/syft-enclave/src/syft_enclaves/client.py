@@ -506,13 +506,14 @@ class SyftEnclaveClient:
             self._try_write_receipt(job)
 
         # Always share results with the DS (submitter)
+        job.release(["outputs"], [job.submitted_by])
         self._forward_results_to_recipients(job, [job.submitted_by])
 
         # Optionally share with DOs
         datasets = job.job_metadata.datasets
         if job.job_headers.get("share_results_with_do") and datasets:
             do_emails = list(datasets.keys())
-            job.share_outputs(do_emails)
+            job.release(["outputs"], do_emails)
             self._forward_results_to_recipients(job, do_emails)
 
         marker.write_text("shared")

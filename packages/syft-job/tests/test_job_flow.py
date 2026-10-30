@@ -93,7 +93,6 @@ def test_full_job_lifecycle(tmp_path: Path):
     assert job.status == "done"
 
     # --- Check outputs ---
-    # output_paths includes syft.pub.yaml created by _prepare_outputs_dir
     output_names = {p.name for p in job.output_paths}
     assert "result.txt" in output_names
     result_file = next(p for p in job.output_paths if p.name == "result.txt")
@@ -109,7 +108,7 @@ def test_full_job_lifecycle(tmp_path: Path):
     returncode_path = staging_path / "returncode.txt"
     assert returncode_path.read_text().strip() == "0"
     # Nothing readable sits in review/ before the release.
-    for name in LOG_FILES:
+    for name in (*LOG_FILES, "outputs"):
         assert not (review_path / name).exists()
     # The viewer finds the staged file, because the DO reads both directories.
     assert "hello from job" in str(job.stdout)
@@ -128,13 +127,12 @@ def test_full_job_lifecycle(tmp_path: Path):
             f"app_data/job/staging/{DS_EMAIL}/{PROTOCOL_DIR}/test.job/{name}"
         ).has_read_access(DS_EMAIL)
 
-    # --- Release the logs, then share outputs and logs with DS ---
-    job.share_outputs([DS_EMAIL])
+    # --- Release the outputs and the logs to the DS ---
+    assert job.release(["outputs"], [DS_EMAIL]) == ["outputs"]
     assert sorted(job.release_logs()) == sorted(LOG_FILES)
-    job.share_logs([DS_EMAIL])
 
     # The release moved the files into review/, which is the disclosure.
-    for name in LOG_FILES:
+    for name in (*LOG_FILES, "outputs"):
         assert (review_path / name).exists()
         assert not (staging_path / name).exists()
 

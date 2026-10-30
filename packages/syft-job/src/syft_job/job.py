@@ -97,28 +97,31 @@ class JobInfo:
         return self.job_staging_path / filename
 
     def release_logs(self) -> list[str]:
-        """Release the logs and the exit code to the submitter.
+        """Move the logs and the exit code to review/, for the submitter to read.
 
-        Returns the names moved. A copy that already reached another party does
-        not come back.
+        Returns the names that moved. This call cannot take back a copy that
+        another party already has.
         """
-        return self._release_to_submitter(STAGED_LOG_FILES)
+        return self.release(STAGED_LOG_FILES, [self.submitted_by])
 
-    def _release_to_submitter(self, filenames: Iterable[str]) -> list[str]:
-        """Move the named staged files into review/, and grant the submitter read.
+    def release(self, filenames: Iterable[str], readers: list[str]) -> list[str]:
+        """Move the named staged files to review/, and give ``readers`` read access.
 
-        The move discloses a file to a reader with the review folder grant. The
-        file grant covers a reader that holds no folder grant.
+        Returns the names that moved. A file that is already in review/ also
+        gets the read access, so a caller can add a reader later. A reader with
+        read access on the whole review folder also sees each file that moves.
         """
+        filenames = list(filenames)
         moved = self.release_artifacts(filenames)
-        self._grant_read(moved, [self.submitted_by])
+        released = [n for n in filenames if (self.job_review_path / n).exists()]
+        self._grant_read(released, readers)
         return moved
 
     def release_artifacts(self, filenames: Iterable[str]) -> list[str]:
-        """Move the named staged artifacts into the review directory.
+        """Move the named staged files to review/, and give no read access.
 
-        Returns the names it moved. A name that is absent from staging, or that
-        a release already moved, is skipped.
+        Returns the names that moved. The method skips a name that is not in
+        staging/, for example a file that moved before.
         """
         moved = []
         for filename in filenames:
@@ -205,7 +208,7 @@ class JobInfo:
 
     def release_disclosures(self) -> list[str]:
         """Release the granted items to the submitter, and return the names moved."""
-        return self._release_to_submitter(gated_names(self.granted_disclosures))
+        return self.release(gated_names(self.granted_disclosures), [self.submitted_by])
 
     # ──────────────────────────────────────────────
     # Properties from config (inbox/)
@@ -265,7 +268,7 @@ class JobInfo:
         status = self._state.status
 
         def _list_output_files() -> List[Path]:
-            outputs_dir = self.job_review_path / "outputs"
+            outputs_dir = self.artifact_path("outputs")
             if not outputs_dir.exists():
                 return []
             try:
@@ -533,7 +536,7 @@ class JobInfo:
             path: Path to the result file or folder to deposit
 
         Returns:
-            Path to the deposited result in the review/outputs directory
+            Path to the deposited result in the staging/outputs directory
 
         Raises:
             ValueError: If job is not in pending or approved status
@@ -548,8 +551,8 @@ class JobInfo:
         if not result_path.exists():
             raise FileNotFoundError(f"Result path not found: {path}")
 
-        # Create outputs directory in review/
-        outputs_dir = self.job_review_path / "outputs"
+        # The result waits in staging/ until a release, like a run's outputs.
+        outputs_dir = self.job_staging_path / "outputs"
         outputs_dir.mkdir(parents=True, exist_ok=True)
 
         # Handle both files and folders
@@ -608,10 +611,13 @@ class JobInfo:
                     f.unlink()
                     changes_made.append(filename)
 
-        outputs_dir = self.job_review_path / "outputs"
-        if outputs_dir.exists() and outputs_dir.is_dir():
-            shutil.rmtree(outputs_dir)
-            changes_made.append("outputs directory")
+        for outputs_dir in (
+            self.job_review_path / "outputs",
+            self.job_staging_path / "outputs",
+        ):
+            if outputs_dir.is_dir():
+                shutil.rmtree(outputs_dir)
+                changes_made.append("outputs directory")
 
         # Reset state to approved
         self._state.status = JobStatus.APPROVED
@@ -642,18 +648,6 @@ class JobInfo:
             self._client.config.syftbox_folder / self.datasite_owner_email
         )
         return rel / subpath
-
-    def share_outputs(self, users: list[str]) -> None:
-        """Grant read access to the outputs directory for given users."""
-        ctx = self._get_perm_context()
-        outputs_rel = self._relative_review_path("outputs")
-        folder = ctx.open(outputs_rel)
-        for user in users:
-            folder.grant_read_access(user)
-
-    def share_logs(self, users: list[str]) -> None:
-        """Grant read access to log files (stdout, stderr, returncode) for given users."""
-        self._grant_read(STAGED_LOG_FILES, users)
 
     def _grant_read(self, filenames: Iterable[str], users: list[str]) -> None:
         """Grant read access to the named review/ files for the given users."""
